@@ -55,23 +55,23 @@ class Version:
       raise ValueError("types.Version can only be compared with other Version instances")
     
     for attr in ("major", "minor", "micro", "patch"):
-      myVersion = max(0, self.__dict__[attr])
-      otherVersion = max(0, other.__dict__[attr])
+      my_version = max(0, self.__dict__[attr])
+      other_version = max(0, other.__dict__[attr])
       
-      if myVersion > otherVersion: return 1
-      elif myVersion < otherVersion: return -1
+      if my_version > other_version: return 1
+      elif my_version < other_version: return -1
     
-    myStatus = self.status if self.status else ""
-    otherStatus = other.status if other.status else ""
+    my_status = self.status if self.status else ""
+    other_status = other.status if other.status else ""
     
-    return cmp(myStatus, otherStatus)
+    return cmp(my_status, other_status)
 
-def get_version(versionStr):
+def get_version(version_str):
   """
   Parses a version string, providing back a types.Version instance.
   
   Arguments:
-    versionStr (str) - string representing a tor version (ex. "0.2.2.23-alpha")
+    version_str (str) - representation of a tor version (ex. "0.2.2.23-alpha")
   
   Returns:
     types.Version instance
@@ -80,10 +80,10 @@ def get_version(versionStr):
     ValueError if input isn't a valid tor version
   """
   
-  if not isinstance(versionStr, str):
+  if not isinstance(version_str, str):
     raise ValueError("argument is not a string")
   
-  m = re.match(r'^([0-9]+).([0-9]+).([0-9]+)(.[0-9]+)?(-\S*)?$', versionStr)
+  m = re.match(r'^([0-9]+).([0-9]+).([0-9]+)(.[0-9]+)?(-\S*)?$', version_str)
   
   if m:
     major, minor, micro, patch, status = m.groups()
@@ -95,5 +95,5 @@ def get_version(versionStr):
     if status: status = status[1:]
     
     return Version(int(major), int(minor), int(micro), patch, status)
-  else: raise ValueError("'%s' isn't a properly formatted tor version" % versionStr)
+  else: raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
 

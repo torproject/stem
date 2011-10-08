@@ -91,24 +91,24 @@ class TestVerionFunctions(unittest.TestCase):
     self.assertEqual(version.patch, patch)
     self.assertEqual(version.status, status)
   
-  def assert_version_is_greater(self, firstVersion, secondVersion):
+  def assert_version_is_greater(self, first_version, second_version):
     """
     Asserts that the parsed version of the first version is greate than the
     second (also checking the inverse).
     """
     
-    version1 = stem.types.get_version(firstVersion)
-    version2 = stem.types.get_version(secondVersion)
+    version1 = stem.types.get_version(first_version)
+    version2 = stem.types.get_version(second_version)
     self.assertEqual(version1 > version2, True)
     self.assertEqual(version1 < version2, False)
   
-  def assert_version_is_equal(self, firstVersion, secondVersion):
+  def assert_version_is_equal(self, first_version, second_version):
     """
     Asserts that the parsed version of the first version equals the second.
     """
     
-    version1 = stem.types.get_version(firstVersion)
-    version2 = stem.types.get_version(secondVersion)
+    version1 = stem.types.get_version(first_version)
+    version2 = stem.types.get_version(second_version)
     self.assertEqual(version1, version2)
   
   def assert_string_matches(self, version):
