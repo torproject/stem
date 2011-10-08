@@ -76,7 +76,7 @@ def get_version(version_str):
   Returns:
     types.Version instance
   
-  Throws:
+  Raises:
     ValueError if input isn't a valid tor version
   """
   
