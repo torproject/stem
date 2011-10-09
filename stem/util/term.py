@@ -2,7 +2,7 @@
 Utilities for working with the terminal.
 """
 
-import enum
+from stem.util import enum
 
 TERM_COLORS = ("BLACK", "RED", "GREEN", "YELLOW", "BLUE", "MAGENTA", "CYAN", "WHITE")
 
