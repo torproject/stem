@@ -2,5 +2,5 @@
 Utility functions used by the stem library.
 """
 
-__all__ = ["enum", "term"]
+__all__ = ["enum", "system", "term"]
 
