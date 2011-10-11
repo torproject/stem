@@ -1,12 +1,212 @@
 """
 Classes for miscellaneous tor object. This includes...
 
-types.Version - Tor versioning information.
-  * get_version(versionStr)
-    Converts a version string to a types.Version instance.
+ProtocolError - Malformed socket data.
+ControlSocketClosed - Socket terminated.
+
+read_message - Reads a ControlMessage from a control socket.
+ControlMessage - Message from the control socket.
+  |- content - provides the parsed message content
+  |- raw_content - unparsed socket data
+  |- __str__ - content stripped of protocol formatting
+  +- __iter__ - message components stripped of protocol formatting
+
+get_version - Converts a version string to a Version instance.
+Version - Tor versioning information.
+  |- __str__ - string representation
+  +- __cmp__ - compares with another Version
 """
 
 import re
+
+from stem.util import log
+
+class ProtocolError(Exception):
+  "Malformed content from the control socket."
+  pass
+
+class ControlSocketClosed(Exception):
+  "Control socket was closed before completing the message."
+  pass
+
+def read_message(control_file):
+  """
+  Pulls from a control socket until we either have a complete message or
+  encounter a problem.
+  
+  Arguments:
+    control_file - file derived from the control socket (see the socket's
+                   makefile() method for more information)
+  
+  Returns:
+    ControlMessage read from the socket
+  
+  Raises:
+    ProtocolError the content from the socket is malformed
+    ControlSocketClosed if the socket closes before we receive a complete
+      message
+  """
+  
+  parsed_content, raw_content = [], ""
+  
+  while True:
+    line = control_file.readline()
+    raw_content += line
+    
+    # Parses the tor control lines. These are of the form...
+    # <status code><divider><content>\r\n
+    
+    if len(line) < 4:
+      log.log(log.WARN, "ProtocolError: line too short (%s)" % line)
+      raise ProtocolError("Badly formatted reply line: too short")
+    elif not line.endswith("\r\n"):
+      log.log(log.WARN, "ProtocolError: no CRLF linebreak (%s)" % line)
+      raise ProtocolError("All lines should end with CRLF")
+    
+    line = line[:-2] # strips off the CRLF
+    status_code, divider, content = line[:3], line[3], line[4:]
+    
+    if divider == "-":
+      # mid-reply line, keep pulling for more content
+      parsed_content.append((status_code, divider, content))
+    elif divider == " ":
+      # end of the message, return the message
+      parsed_content.append((status_code, divider, content))
+      
+      log.log(log.DEBUG, "Received message:\n" + raw_content)
+      
+      return ControlMessage(parsed_content, raw_content)
+    elif divider == "+":
+      # data entry, all of the following lines belong to the content until we
+      # get a line with just a period
+      
+      while True:
+        line = control_file.readline()
+        raw_content += line
+        
+        if not line.endswith("\r\n"):
+          log.log(log.WARN, "ProtocolError: no CRLF linebreak for data entry (%s)" % line)
+          raise ProtocolError("All lines should end with CRLF")
+        elif line == ".\r\n":
+          break # data block termination
+        
+        line = line[:-2] # strips off the CRLF
+        
+        # lines starting with a pariod are escaped by a second period (as per
+        # section 2.4 of the control-spec)
+        if line.startswith(".."): line = line[1:]
+        
+        # appends to previous content, using a newline rather than CRLF
+        # separator (more contentional for multi-line string content outside
+        # the windows world)
+        
+        content += "\n" + line
+      
+      parsed_content.append((status_code, divider, content))
+    else:
+      log.log(log.WARN, "ProtocolError: unrecognized divider type (%s)" % line)
+      raise ProtocolError("Unrecognized type '%s': %s" % (divider, line))
+
+class ControlMessage:
+  """
+  Message from the control socket. This is iterable and can be stringified for
+  individual message components stripped of protocol formatting.
+  """
+  
+  def __init__(self, parsed_content, raw_content):
+    self._parsed_content = parsed_content
+    self._raw_content = raw_content
+  
+  def content(self):
+    """
+    Provides the parsed message content. These are entries of the form...
+    (status_code, divider, content)
+    
+    * status_code - Three character code for the type of response (defined in
+                    section 4 of the control-spec).
+    * divider     - Single character to indicate if this is mid-reply, data, or
+                    an end to the message (defined in section 2.3 of the
+                    control-spec).
+    * content     - The following content is the actual payload of the line.
+    
+    For data entries the content is the full multi-line payload with newline
+    linebreaks and leading periods unescaped.
+    
+    Returns:
+      list of (str, str, str) tuples for the components of this message
+    """
+    
+    return list(self._parsed_content)
+  
+  def raw_content(self):
+    """
+    Provides the unparsed content read from the control socket.
+    
+    Returns:
+      string of the socket data used to generate this message
+    """
+    
+    return self._raw_content
+  
+  def __str__(self):
+    """
+    Content of the message, stripped of status code and divider protocol
+    formatting.
+    """
+    
+    return "\n".join(list(self))
+  
+  def __iter__(self):
+    """
+    Provides the content of the message (stripped of status codes and dividers)
+    for each component of the message. Ie...
+    
+    250+info/names=
+    desc/id/* -- Router descriptors by ID.
+    desc/name/* -- Router descriptors by nickname.
+    .
+    250 OK
+    
+    Would provide two entries...
+    1st - "info/names=
+           desc/id/* -- Router descriptors by ID.
+           desc/name/* -- Router descriptors by nickname."
+    2nd - "OK"
+    """
+    
+    for _, _, content in self._parsed_content:
+      yield content
+
+def get_version(version_str):
+  """
+  Parses a version string, providing back a types.Version instance.
+  
+  Arguments:
+    version_str (str) - representation of a tor version (ex. "0.2.2.23-alpha")
+  
+  Returns:
+    types.Version instance
+  
+  Raises:
+    ValueError if input isn't a valid tor version
+  """
+  
+  if not isinstance(version_str, str):
+    raise ValueError("argument is not a string")
+  
+  m = re.match(r'^([0-9]+).([0-9]+).([0-9]+)(.[0-9]+)?(-\S*)?$', version_str)
+  
+  if m:
+    major, minor, micro, patch, status = m.groups()
+    
+    # The patch and status matches are optional (may be None) and have an extra
+    # proceeding period or dash if they exist. Stripping those off.
+    
+    if patch: patch = int(patch[1:])
+    if status: status = status[1:]
+    
+    return Version(int(major), int(minor), int(micro), patch, status)
+  else: raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
 
 class Version:
   """
@@ -65,35 +265,4 @@ class Version:
     other_status = other.status if other.status else ""
     
     return cmp(my_status, other_status)
-
-def get_version(version_str):
-  """
-  Parses a version string, providing back a types.Version instance.
-  
-  Arguments:
-    version_str (str) - representation of a tor version (ex. "0.2.2.23-alpha")
-  
-  Returns:
-    types.Version instance
-  
-  Raises:
-    ValueError if input isn't a valid tor version
-  """
-  
-  if not isinstance(version_str, str):
-    raise ValueError("argument is not a string")
-  
-  m = re.match(r'^([0-9]+).([0-9]+).([0-9]+)(.[0-9]+)?(-\S*)?$', version_str)
-  
-  if m:
-    major, minor, micro, patch, status = m.groups()
-    
-    # The patch and status matches are optional (may be None) and have an extra
-    # proceeding period or dash if they exist. Stripping those off.
-    
-    if patch: patch = int(patch[1:])
-    if status: status = status[1:]
-    
-    return Version(int(major), int(minor), int(micro), patch, status)
-  else: raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
 
