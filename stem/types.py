@@ -1,5 +1,6 @@
 """
-Classes for miscellaneous tor object. This includes...
+Class representations for a variety of tor objects. These are most commonly
+return values rather than being instantiated by users directly.
 
 ProtocolError - Malformed socket data.
 ControlSocketClosed - Socket terminated.
@@ -92,12 +93,12 @@ def read_message(control_file):
         
         line = line[:-2] # strips off the CRLF
         
-        # lines starting with a pariod are escaped by a second period (as per
+        # lines starting with a period are escaped by a second period (as per
         # section 2.4 of the control-spec)
         if line.startswith(".."): line = line[1:]
         
         # appends to previous content, using a newline rather than CRLF
-        # separator (more contentional for multi-line string content outside
+        # separator (more conventional for multi-line string content outside
         # the windows world)
         
         content += "\n" + line
@@ -247,7 +248,7 @@ class Version:
   
   def __cmp__(self, other):
     """
-    Simple comparision of versions. An undefined patch level is treated as zero
+    Simple comparison of versions. An undefined patch level is treated as zero
     and status tags are compared lexically (as per the version spec).
     """
     

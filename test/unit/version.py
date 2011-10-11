@@ -1,5 +1,5 @@
 """
-Unit tests for types functions and classes.
+Unit tests for the types.Version parsing and class.
 """
 
 import unittest

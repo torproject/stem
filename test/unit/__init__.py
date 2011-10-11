@@ -2,5 +2,5 @@
 Unit tests for the stem library.
 """
 
-__all__ = ["version"]
+__all__ = ["message", "version"]
 

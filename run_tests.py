@@ -7,13 +7,19 @@ Runs unit and integration tests.
 import sys
 import getopt
 import unittest
+import test.unit.message
 import test.unit.version
 
 from stem.util import enum, term
 
 OPT = "uit:h"
 OPT_EXPANDED = ["unit", "integ", "targets=", "help"]
-DIVIDER = "=" * 80
+DIVIDER = "=" * 70
+
+# (name, class) tuples for all of our unit tests
+UNIT_TESTS = (("stem.types.ControlMessage", test.unit.message.TestMessageFunctions),
+              ("stem.types.Version", test.unit.version.TestVerionFunctions),
+             )
 
 # Configurations that the intergration tests can be ran with. Attributs are
 # tuples of the test runner and description.
@@ -87,15 +93,29 @@ if __name__ == '__main__':
     sys.exit()
   
   if run_unit_tests:
-    print "%s\nUnit Tests\n%s\n" % (DIVIDER, DIVIDER)
+    print "%s\n%s\n%s\n" % (DIVIDER, "UNIT TESTS".center(70), DIVIDER)
     
-    suite = unittest.TestLoader().loadTestsFromTestCase(test.unit.version.TestVerionFunctions)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    for name, test_class in UNIT_TESTS:
+      print "%s\n%s\n%s\n" % (DIVIDER, name, DIVIDER)
+      #print name
+      suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+      unittest.TextTestRunner(verbosity=2).run(suite)
+      print
     
-    print ""
+    #import test.unit
+    #suite = unittest.TestLoader().loadTestsFromTestCase(test.unit.version.TestVerionFunctions)
+    #suite = unittest.TestLoader().discover("test/unit/", "*.py")
+    #suite.addTests(unittest.loader.loadTestsFromTestCase(test.unit.message.TestMessageFunctions))
+    
+    #suite = unittest.TestLoader()
+    #suite.loadTestsFromTestCase(test.unit.message.TestMessageFunctions)
+    #suite.loadTestsFromTestCase(test.unit.version.TestVerionFunctions)
+    #unittest.TextTestRunner(verbosity=2).run(suite)
+    
+    print
   
   if run_integ_tests:
-    print "%s\nIntegration Tests\n%s\n" % (DIVIDER, DIVIDER)
+    print "%s\n%s\n%s\n" % (DIVIDER, "INTEGRATION TESTS".center(70), DIVIDER)
     
     for target in integ_targets:
       runner, description = TARGET_ATTR[target]

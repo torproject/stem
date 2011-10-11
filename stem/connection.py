@@ -14,7 +14,7 @@ class ControlConnection:
   """
   Connection to a Tor control port. This is a very lightweight wrapper around
   the socket, providing basic process communication and event listening. Don't
-  use this directly - subclasses provide frendlier controller access.
+  use this directly - subclasses provide friendlier controller access.
   """
   
   def __init__(self, control_socket):
@@ -59,7 +59,8 @@ class ControlConnection:
     whenever we receive an event from the control socket.
     
     Arguments:
-      event_message (ControlMessage) - message received from the control socket
+      event_message (types.ControlMessage) - message received from the control
+                                             socket
     """
     
     pass
@@ -72,7 +73,7 @@ class ControlConnection:
       message (str) - message to be sent to the control socket
     
     Returns:
-      ControlMessage with the response from the control socket
+      types.ControlMessage with the response from the control socket
     """
     
     # makes sure that the message ends with a CRLF
@@ -88,7 +89,7 @@ class ControlConnection:
   def _event_loop(self):
     """
     Continually pulls messages from the _event_thread and sends them to
-    handle_event. This is done via its own thread so subclasses with a lenghty
+    handle_event. This is done via its own thread so subclasses with a lengthy
     handle_event implementation don't block further reading from the socket.
     """
     
