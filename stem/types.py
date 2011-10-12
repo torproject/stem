@@ -60,6 +60,9 @@ def read_message(control_file):
     if len(line) < 4:
       log.log(log.WARN, "ProtocolError: line too short (%s)" % line)
       raise ProtocolError("Badly formatted reply line: too short")
+    elif not re.match(r'^[a-zA-Z0-9]{3}[-+ ]', line):
+      log.log(log.WARN, "ProtocolError: malformed status code/divider (%s)" % line)
+      raise ProtocolError("Badly formatted reply line: beginning is malformed")
     elif not line.endswith("\r\n"):
       log.log(log.WARN, "ProtocolError: no CRLF linebreak (%s)" % line)
       raise ProtocolError("All lines should end with CRLF")
@@ -105,6 +108,8 @@ def read_message(control_file):
       
       parsed_content.append((status_code, divider, content))
     else:
+      # this should never be reached due to the prefix regex, but might as well
+      # be safe...
       log.log(log.WARN, "ProtocolError: unrecognized divider type (%s)" % line)
       raise ProtocolError("Unrecognized type '%s': %s" % (divider, line))
 

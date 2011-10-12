@@ -6,20 +6,27 @@ import StringIO
 import unittest
 import stem.types
 
-GETINFO_VERSION_REPLY = """250-version=0.2.2.23-alpha (git-b85eb949b528f4d7)\r
-250 OK\r
-"""
+OK_REPLY = "250 OK\r\n"
 
-GETINFO_INFONAMES_REPLY = """250+info/names=\r
-accounting/bytes -- Number of bytes read/written so far in the accounting interval.\r
-accounting/bytes-left -- Number of bytes left to write/read so far in the accounting interval.\r
-accounting/enabled -- Is accounting currently enabled?\r
-accounting/hibernating -- Are we hibernating or awake?\r
-stream-status -- List of current streams.\r
-version -- The current version of Tor.\r
-.\r
-250 OK\r
-"""
+EVENT_BW = "650 BW 32326 2856\r\n"
+EVENT_CIRC_TIMEOUT = "650 CIRC 5 FAILED PURPOSE=GENERAL REASON=TIMEOUT\r\n"
+EVENT_CIRC_LAUNCHED = "650 CIRC 9 LAUNCHED PURPOSE=GENERAL\r\n"
+EVENT_CIRC_EXTENDED = "650 CIRC 5 EXTENDED $A200F527C82C59A25CCA44884B49D3D65B122652=faktor PURPOSE=MEASURE_TIMEOUT\r\n"
+
+GETINFO_VERSION = """250-version=0.2.2.23-alpha (git-b85eb949b528f4d7)
+250 OK
+""".replace("\n", "\r\n")
+
+GETINFO_INFONAMES = """250+info/names=
+accounting/bytes -- Number of bytes read/written so far in the accounting interval.
+accounting/bytes-left -- Number of bytes left to write/read so far in the accounting interval.
+accounting/enabled -- Is accounting currently enabled?
+accounting/hibernating -- Are we hibernating or awake?
+stream-status -- List of current streams.
+version -- The current version of Tor.
+.
+250 OK
+""".replace("\n", "\r\n")
 
 class TestMessageFunctions(unittest.TestCase):
   """
@@ -27,13 +34,47 @@ class TestMessageFunctions(unittest.TestCase):
   StringIO to make 'files' to mock socket input.
   """
   
-  def test_getinfo_results(self):
+  def test_ok_response(self):
     """
-    Checks parsing against some actual GETINFO responses.
+    Checks the basic 'OK' response that we get for most commands.
+    """
+    
+    message = self.assert_message_parses(OK_REPLY)
+    self.assertEquals("OK", str(message))
+    
+    contents = message.content()
+    self.assertEquals(1, len(contents))
+    self.assertEquals(("250", " ", "OK"), contents[0])
+  
+  def test_event_response(self):
+    """
+    Checks parsing of actual events.
+    """
+    
+    # BW event
+    message = self.assert_message_parses(EVENT_BW)
+    self.assertEquals("BW 32326 2856", str(message))
+    
+    contents = message.content()
+    self.assertEquals(1, len(contents))
+    self.assertEquals(("650", " ", "BW 32326 2856"), contents[0])
+    
+    # few types of CIRC events
+    for circ_content in (EVENT_CIRC_TIMEOUT, EVENT_CIRC_LAUNCHED, EVENT_CIRC_EXTENDED):
+      message = self.assert_message_parses(circ_content)
+      self.assertEquals(circ_content[4:-2], str(message))
+      
+      contents = message.content()
+      self.assertEquals(1, len(contents))
+      self.assertEquals(("650", " ", str(message)), contents[0])
+  
+  def test_getinfo_response(self):
+    """
+    Checks parsing of actual GETINFO responses.
     """
     
     # GETINFO version (basic single-line results)
-    message = self.assert_message_parses(GETINFO_VERSION_REPLY)
+    message = self.assert_message_parses(GETINFO_VERSION)
     self.assertEquals(2, len(list(message)))
     self.assertEquals(2, len(str(message).split("\n")))
     
@@ -44,7 +85,7 @@ class TestMessageFunctions(unittest.TestCase):
     self.assertEquals(("250", " ", "OK"), contents[1])
     
     # GETINFO info/names (data entry)
-    message = self.assert_message_parses(GETINFO_INFONAMES_REPLY)
+    message = self.assert_message_parses(GETINFO_INFONAMES)
     self.assertEquals(2, len(list(message)))
     self.assertEquals(8, len(str(message).split("\n")))
     
@@ -55,6 +96,56 @@ class TestMessageFunctions(unittest.TestCase):
     first_entry = (contents[0][0], contents[0][1], contents[0][2][:contents[0][2].find("\n")])
     self.assertEquals(("250", "+", "info/names="), first_entry)
     self.assertEquals(("250", " ", "OK"), contents[1])
+  
+  def test_no_crlf(self):
+    """
+    Checks that we get a ProtocolError when we don't have both a carrage
+    returna and newline for line endings. This doesn't really check for
+    newlines (since that's what readline would break on), but not the end of
+    the world.
+    """
+    
+    # Replaces each of the CRLF entries with just LF, confirming that this
+    # causes a parsing error. This should test line endings for both data
+    # entry parsing and non-data.
+    
+    infonames_lines = [line + "\n" for line in GETINFO_INFONAMES.split("\n")[:-1]]
+    
+    for i in range(len(infonames_lines)):
+      # replace the CRLF for the line
+      infonames_lines[i] = infonames_lines[i].rstrip("\r\n") + "\n"
+      test_socket_file = StringIO.StringIO("".join(infonames_lines))
+      self.assertRaises(stem.types.ProtocolError, stem.types.read_message, test_socket_file)
+      
+      # puts the CRLF back
+      infonames_lines[i] = infonames_lines[i].rstrip("\n") + "\r\n"
+    
+    # sanity check the above test isn't broken due to leaving infonames_lines
+    # with invalid data
+    
+    self.assert_message_parses("".join(infonames_lines))
+  
+  def test_malformed_prefix(self):
+    """
+    Checks parsing for responses where the header is missing a digit or divider.
+    """
+    
+    for i in range(len(EVENT_BW)):
+      # makes test input with that character missing or replaced
+      removal_test_input = EVENT_BW[:i] + EVENT_BW[i + 1:]
+      replacement_test_input = EVENT_BW[:i] + "#" + EVENT_BW[i + 1:]
+      
+      if i < 4 or i >= (len(EVENT_BW) - 2):
+        # dropping the character should cause an error if...
+        # - this is part of the message prefix
+        # - this is disrupting the line ending
+        
+        self.assertRaises(stem.types.ProtocolError, stem.types.read_message, StringIO.StringIO(removal_test_input))
+        self.assertRaises(stem.types.ProtocolError, stem.types.read_message, StringIO.StringIO(replacement_test_input))
+      else:
+        # otherwise the data will be malformed, but this goes undetected
+        self.assert_message_parses(removal_test_input)
+        self.assert_message_parses(replacement_test_input)
   
   def assert_message_parses(self, controller_reply):
     """
