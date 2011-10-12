@@ -2,6 +2,7 @@
 Unit tests for the types.ControlMessage parsing and class.
 """
 
+import socket
 import StringIO
 import unittest
 import stem.types
@@ -146,6 +147,16 @@ class TestMessageFunctions(unittest.TestCase):
         # otherwise the data will be malformed, but this goes undetected
         self.assert_message_parses(removal_test_input)
         self.assert_message_parses(replacement_test_input)
+  
+  def test_disconnected_socket(self):
+    """
+    Tests when the read function is given a file derived from a disconnected
+    socket.
+    """
+    
+    control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    control_socket_file = control_socket.makefile()
+    self.assertRaises(stem.types.ControlSocketClosed, stem.types.read_message, control_socket_file)
   
   def assert_message_parses(self, controller_reply):
     """

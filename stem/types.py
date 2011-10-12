@@ -19,6 +19,7 @@ Version - Tor versioning information.
 """
 
 import re
+import socket
 
 from stem.util import log
 
@@ -51,7 +52,9 @@ def read_message(control_file):
   parsed_content, raw_content = [], ""
   
   while True:
-    line = control_file.readline()
+    try: line = control_file.readline()
+    except socket.error, exc: raise ControlSocketClosed(exc)
+    
     raw_content += line
     
     # Parses the tor control lines. These are of the form...
@@ -85,7 +88,9 @@ def read_message(control_file):
       # get a line with just a period
       
       while True:
-        line = control_file.readline()
+        try: line = control_file.readline()
+        except socket.error, exc: raise ControlSocketClosed(exc)
+        
         raw_content += line
         
         if not line.endswith("\r\n"):
