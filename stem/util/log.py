@@ -39,6 +39,9 @@ def log(level, msg, event_time = None):
                        undefined
   """
   
+  # config attempts to disable log entries by using a runlevel of None
+  if not level: return
+  
   if event_time == None: event_time = time.time()
   
   LOG_LOCK.acquire()
