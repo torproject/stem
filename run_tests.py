@@ -4,13 +4,18 @@
 Runs unit and integration tests.
 """
 
+import os
 import sys
+import time
 import getopt
+import signal
+import tempfile
 import unittest
+import subprocess
 import test.unit.message
 import test.unit.version
 
-from stem.util import enum, term
+from stem.util import enum, system, term
 
 OPT = "uit:h"
 OPT_EXPANDED = ["unit", "integ", "targets=", "help"]
@@ -45,6 +50,57 @@ Runs tests for the stem library.
   Integration targets:
     %s
 """
+
+# Number of seconds before we time out our attempt to start a tor instance
+TOR_INIT_TIMEOUT = 20
+
+def init_tor_process(torrc_dst):
+  """
+  Initializes and returns a tor process. This blocks until initialization
+  completes or we error out.
+  
+  Arguments:
+    torrc_dst (str) - path for a torrc configuration to use
+  
+  Returns:
+    subprocess.Popen instance for the instantiated tor process
+  
+  Raises:
+    OSError if we either fail to create the tor process or reached a timeout without success
+  """
+  
+  start_time = time.time()
+  
+  # starts a tor subprocess, raising an OSError if it fails
+  tor_process = subprocess.Popen(["tor", "-f", torrc_dst], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+  
+  # time ourselves out if we reach TOR_INIT_TIMEOUT
+  def timeout_handler(signum, frame):
+    # terminates the uninitialized tor process and raise on timeout
+    tor_process.kill()
+    raise OSError("unable to start tor: reached a %i second timeout without success" % TOR_INIT_TIMEOUT)
+  
+  signal.signal(signal.SIGALRM, timeout_handler)
+  signal.alarm(TOR_INIT_TIMEOUT)
+  
+  print term.format("Starting tor...", term.Color.BLUE, term.Attr.BOLD)
+  
+  while True:
+    init_line = tor_process.stdout.readline().strip()
+    
+    # this will provide empty results if the process is terminated
+    if not init_line:
+      tor_process.kill() # ... but best make sure
+      raise OSError("tor process terminated")
+    
+    print term.format("  %s" % init_line, term.Color.BLUE)
+    
+    # return the process if we're done with bootstrapping
+    if init_line.endswith("Bootstrapped 100%: Done."):
+      print term.format("  done (%i seconds)" % (time.time() - start_time), term.Color.BLUE, term.Attr.BOLD)
+      print
+      
+      return tor_process
 
 if __name__ == '__main__':
   run_unit_tests = False
@@ -97,35 +153,82 @@ if __name__ == '__main__':
     
     for name, test_class in UNIT_TESTS:
       print "%s\n%s\n%s\n" % (DIVIDER, name, DIVIDER)
-      #print name
       suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
       unittest.TextTestRunner(verbosity=2).run(suite)
       print
     
-    #import test.unit
-    #suite = unittest.TestLoader().loadTestsFromTestCase(test.unit.version.TestVerionFunctions)
-    #suite = unittest.TestLoader().discover("test/unit/", "*.py")
-    #suite.addTests(unittest.loader.loadTestsFromTestCase(test.unit.message.TestMessageFunctions))
-    
-    #suite = unittest.TestLoader()
-    #suite.loadTestsFromTestCase(test.unit.message.TestMessageFunctions)
-    #suite.loadTestsFromTestCase(test.unit.version.TestVerionFunctions)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
-    
     print
   
   if run_integ_tests:
+    # TODO: check if there's already a tor instance running
+    
     print "%s\n%s\n%s\n" % (DIVIDER, "INTEGRATION TESTS".center(70), DIVIDER)
     
-    for target in integ_targets:
-      runner, description = TARGET_ATTR[target]
+    print term.format("Setting up a test instance...", term.Color.BLUE, term.Attr.BOLD)
+    
+    # makes a temporary directory for the runtime resources of our integ test
+    test_dir = tempfile.mktemp("-stem-integ")
+    
+    try:
+      os.makedirs(test_dir)
+      print term.format("  created test directory: %s" % test_dir, term.Color.BLUE, term.Attr.BOLD)
+    except OSError, exc:
+      print term.format("Unable to make testing directory: %s" % exc, term.Color.RED, term.Attr.BOLD)
+      sys.exit(1)
+    
+    # makes a basic torrc for the integration tests to run against
+    torrc_contents = """# basic integration testing configuration
+DataDirectory %s
+ControlPort 9051
+""" % test_dir
+    
+    # writes our testing torrc
+    torrc_dst = os.path.join(test_dir, "torrc")
+    try:
+      torrc_file = open(torrc_dst, "w")
+      torrc_file.write(torrc_contents)
+      torrc_file.close()
       
-      print "Configuration: %s - %s" % (target, description)
+      print term.format("  wrote torrc: %s" % torrc_dst, term.Color.BLUE, term.Attr.BOLD)
       
-      if runner:
-        pass # TODO: implement
-      else:
-        print "  %s" % term.format("Unimplemented", term.Color.RED, term.Attr.BOLD)
+      for line in torrc_contents.split("\n"):
+        print term.format("    %s" % line.strip(), term.Color.BLUE)
+    except Exception, exc:
+      print term.format("Unable to write testing torrc: %s" % exc, term.Color.RED, term.Attr.BOLD)
+      sys.exit(1)
+    
+    # starts a tor instance
+    try:
+      tor_process = init_tor_process(torrc_dst)
+    except OSError, exc:
+      print term.format("Unable to start a tor instance: %s" % exc, term.Color.RED, term.Attr.BOLD)
+      sys.exit(1)
       
-      print ""
+    print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
+    print
+    
+    # TODO: run tests
+    
+    print term.format("Shutting down tor...", term.Color.BLUE, term.Attr.BOLD)
+    tor_process.kill()
+    print term.format("  done", term.Color.BLUE, term.Attr.BOLD)
+    
+    
+    
+    
+    
+    # TODO: we might do target selection later but for now we should simply
+    # work with a single simple tor instance and see how it works out
+    #
+    #for target in integ_targets:
+    #  runner, description = TARGET_ATTR[target]
+    #  
+    #  print "Configuration: %s - %s" % (target, description)
+    #  
+    #  if runner:
+    #    pass # TODO: implement
+    #  else:
+    #    print "  %s" % term.format("Unimplemented", term.Color.RED, term.Attr.BOLD)
+    #  
+    #  print ""
 
