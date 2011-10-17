@@ -127,4 +127,16 @@ class Runner:
       self._tor_process.kill()
       sys.stdout.write(term.format("done\n", term.Color.BLUE, term.Attr.BOLD))
       print # extra newline
+  
+  def get_pid(self):
+    """
+    Provides the process id of tor.
+    
+    Returns:
+      int pid for the tor process, or None if it isn't running
+    """
+    
+    if self._tor_process:
+      return self._tor_process.pid
+    else: return None
 

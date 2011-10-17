@@ -10,6 +10,7 @@ import unittest
 import test.unit.message
 import test.unit.version
 import test.integ.runner
+import test.integ.system
 
 from stem.util import enum, term
 
@@ -17,10 +18,13 @@ OPT = "uit:h"
 OPT_EXPANDED = ["unit", "integ", "targets=", "help"]
 DIVIDER = "=" * 70
 
-# (name, class) tuples for all of our unit tests
+# (name, class) tuples for all of our unit and integration tests
 UNIT_TESTS = (("stem.types.ControlMessage", test.unit.message.TestMessageFunctions),
               ("stem.types.Version", test.unit.version.TestVerionFunctions),
              )
+
+INTEG_TESTS = (("stem.util.system", test.integ.system.TestSystemFunctions),
+              )
 
 # Configurations that the intergration tests can be ran with. Attributs are
 # tuples of the test runner and description.
@@ -113,8 +117,13 @@ if __name__ == '__main__':
       integ_runner.run_setup()
       integ_runner.start()
       
-      # TODO: run tests
       print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
+      for name, test_class in INTEG_TESTS:
+        print "%s\n%s\n%s\n" % (DIVIDER, name, DIVIDER)
+        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+        unittest.TextTestRunner(verbosity=2).run(suite)
+        print
+    
       print
     except OSError:
       pass
