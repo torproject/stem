@@ -1,5 +1,5 @@
 """
-Starts and stops test instances for integration tests.
+Runtime context for the integration tests.
 """
 
 import os

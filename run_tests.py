@@ -8,9 +8,9 @@ import sys
 import time
 import getopt
 import unittest
+import test.runner
 import test.unit.message
 import test.unit.version
-import test.integ.runner
 import test.integ.system
 
 from stem.util import enum, term
@@ -113,7 +113,7 @@ if __name__ == '__main__':
   if run_integ_tests:
     print "%s\n%s\n%s\n" % (DIVIDER, "INTEGRATION TESTS".center(70), DIVIDER)
     
-    integ_runner = test.integ.runner.get_runner()
+    integ_runner = test.runner.get_runner()
     
     try:
       integ_runner.run_setup()

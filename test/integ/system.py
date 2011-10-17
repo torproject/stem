@@ -3,7 +3,7 @@ Unit tests for the util.system functions in the context of a tor process.
 """
 
 import unittest
-import test.integ.runner
+import test.runner
 
 from stem.util import system
 
@@ -36,7 +36,7 @@ class TestSystemFunctions(unittest.TestCase):
     Checks the util.system.get_pid function.
     """
     
-    runner = test.integ.runner.get_runner()
+    runner = test.runner.get_runner()
     self.assertEquals(runner.get_pid(), system.get_pid("tor"))
     self.assertEquals(runner.get_pid(), system.get_pid("tor", runner.get_control_port()))
     self.assertEquals(None, system.get_pid("blarg_and_stuff"))
