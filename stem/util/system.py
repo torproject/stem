@@ -61,7 +61,27 @@ def is_running(command, suppress_exc = True):
     OSError if this can't be determined and suppress_exc is False
   """
   
-  command_listing = call("ps -A co command")
+  # Linux and the BSD families have different variants of ps. Guess based on
+  # os.uname() results which to try first, then fall back to the other.
+  #
+  # Linux
+  #   -A          - Select all processes. Identical to -e.
+  #   -co command - Shows just the base command.
+  #
+  # Mac / BSD
+  #   -a        - Display information about other users' processes as well as
+  #               your own.
+  #   -o ucomm= - Shows just the ucomm attribute ("name to be used for
+  #               accounting")
+  
+  primary_resolver, secondary_resolver = "ps -A co command", "ps -ao ucomm="
+  
+  if os.uname()[0] in ("Darwin", "FreeBSD", "OpenBSD"):
+    primary_resolver, secondary_resolver = secondary_resolver, primary_resolver
+  
+  command_listing = call(primary_resolver)
+  if not command_listing:
+    command_listing = call(secondary_resolver)
   
   if command_listing:
     return command in command_listing
