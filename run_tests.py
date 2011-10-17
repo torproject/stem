@@ -11,6 +11,7 @@ import unittest
 import test.runner
 import test.unit.message
 import test.unit.version
+import test.integ.message
 import test.integ.system
 
 from stem.util import enum, term
@@ -24,7 +25,8 @@ UNIT_TESTS = (("stem.types.ControlMessage", test.unit.message.TestMessageFunctio
               ("stem.types.Version", test.unit.version.TestVerionFunctions),
              )
 
-INTEG_TESTS = (("stem.util.system", test.integ.system.TestSystemFunctions),
+INTEG_TESTS = (("stem.types.ControlMessage", test.integ.message.TestMessageFunctions),
+               ("stem.util.system", test.integ.system.TestSystemFunctions),
               )
 
 # Configurations that the intergration tests can be ran with. Attributs are

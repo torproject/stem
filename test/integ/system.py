@@ -37,7 +37,6 @@ class TestSystemFunctions(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
-    self.assertEquals(runner.get_pid(), system.get_pid("tor"))
     self.assertEquals(runner.get_pid(), system.get_pid("tor", runner.get_control_port()))
     self.assertEquals(None, system.get_pid("blarg_and_stuff"))
   

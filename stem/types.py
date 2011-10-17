@@ -53,14 +53,28 @@ def read_message(control_file):
   
   while True:
     try: line = control_file.readline()
-    except socket.error, exc: raise ControlSocketClosed(exc)
+    except AttributeError, exc:
+      # if the control_file has been closed then we will receive:
+      # AttributeError: 'NoneType' object has no attribute 'recv'
+      
+      log.log(log.WARN, "ControlSocketClosed: socket file has been closed")
+      raise ControlSocketClosed("socket file has been closed")
+    except socket.error, exc:
+      log.log(log.WARN, "ControlSocketClosed: received an exception (%s)" % exc)
+      raise ControlSocketClosed(exc)
     
     raw_content += line
     
     # Parses the tor control lines. These are of the form...
     # <status code><divider><content>\r\n
     
-    if len(line) < 4:
+    if len(line) == 0:
+      # if the socket is disconnected then the readline() method will provide
+      # empty content
+      
+      log.log(log.WARN, "ControlSocketClosed: empty socket content")
+      raise ControlSocketClosed("Received empty socket content.")
+    elif len(line) < 4:
       log.log(log.WARN, "ProtocolError: line too short (%s)" % line)
       raise ProtocolError("Badly formatted reply line: too short")
     elif not re.match(r'^[a-zA-Z0-9]{3}[-+ ]', line):

@@ -3,6 +3,7 @@ Helper functions for working with the underlying system. These are mostly os
 dependent, only working on linux, osx, and bsd.
 """
 
+import re
 import os
 import time
 import subprocess
@@ -123,7 +124,7 @@ def get_pid(process_name, process_port = None):
   try:
     results = call("pgrep -x %s" % process_name)
     
-    if len(results) == 1 and len(results[0].split()) == 1:
+    if results and len(results) == 1 and len(results[0].split()) == 1:
       pid = results[0].strip()
       if pid.isdigit(): return int(pid)
   except IOError: pass
@@ -135,7 +136,7 @@ def get_pid(process_name, process_port = None):
   try:
     results = call("pidof %s" % process_name)
     
-    if len(results) == 1 and len(results[0].split()) == 1:
+    if results and len(results) == 1 and len(results[0].split()) == 1:
       pid = results[0].strip()
       if pid.isdigit(): return int(pid)
   except IOError: pass
@@ -145,12 +146,16 @@ def get_pid(process_name, process_port = None):
   
   if process_port:
     try:
-      results = call("netstat -npl | grep 127.0.0.1:%i" % process_port)
+      results = call("netstat -npl")
       
-      if len(results) == 1:
-        results = results[0].split()[6] # process field (ex. "7184/tor")
-        pid = results[:results.find("/")]
-        if pid.isdigit(): return int(pid)
+      # filters to results with our port (same as "grep 127.0.0.1:<port>")
+      if results:
+        results = [r for r in results if "127.0.0.1:%i" % process_port in r]
+        
+        if len(results) == 1:
+          results = results[0].split()[6] # process field (ex. "7184/tor")
+          pid = results[:results.find("/")]
+          if pid.isdigit(): return int(pid)
     except IOError: pass
   
   # attempts to resolve using ps, failing if:
@@ -160,7 +165,7 @@ def get_pid(process_name, process_port = None):
   try:
     results = call("ps -o pid -C %s" % process_name)
     
-    if len(results) == 2:
+    if results and len(results) == 2:
       pid = results[1].strip()
       if pid.isdigit(): return int(pid)
   except IOError: pass
@@ -175,11 +180,15 @@ def get_pid(process_name, process_port = None):
   
   if process_port:
     try:
-      results = call("sockstat -4l -P tcp -p %i | grep %s" % (process_port, process_name))
+      results = call("sockstat -4l -P tcp -p %i" % process_port)
       
-      if len(results) == 1 and len(results[0].split()) == 7:
-        pid = results[0].split()[2]
-        if pid.isdigit(): return int(pid)
+      # filters to results with our port (same as "grep <name>")
+      if results:
+        results = [r for r in results if process_name in r]
+        
+        if len(results) == 1 and len(results[0].split()) == 7:
+          pid = results[0].split()[2]
+          if pid.isdigit(): return int(pid)
     except IOError: pass
   
   # attempts to resolve via a ps command that works on mac/bsd (this and lsof
@@ -188,11 +197,15 @@ def get_pid(process_name, process_port = None):
   # - there are multiple instances
   
   try:
-    results = call("ps axc | egrep \" %s$\"" % process_name)
+    results = call("ps axc")
     
-    if len(results) == 1 and len(results[0].split()) > 0:
-      pid = results[0].split()[0]
-      if pid.isdigit(): return int(pid)
+    # filters to results with our port (same as "egrep ' <name>$'")
+    if results:
+      results = [r for r in results if r.endswith(" %s" % process_name)]
+      
+      if len(results) == 1 and len(results[0].split()) > 0:
+        pid = results[0].split()[0]
+        if pid.isdigit(): return int(pid)
   except IOError: pass
   
   # attempts to resolve via lsof, this should work on linux, mac, and bsd
@@ -202,8 +215,12 @@ def get_pid(process_name, process_port = None):
   # - there are multiple instances using the same port on different addresses
   
   try:
-    port_comp = str(process_port) if process_port else ""
-    results = call("lsof -wnPi | egrep \"^%s.*:%s\"" % (process_name, port_comp))
+    results = call("lsof -wnPi")
+    
+    # filters to results with our port (same as "egrep '^<name>.*:<port>'")
+    if results:
+      port_comp = str(process_port) if process_port else ""
+      results = [r for r in results if re.match("^%s.*:%s" % (process_name, port_comp), r)]
     
     # This can result in multiple entries with the same pid (from the query
     # itself). Checking all lines to see if they're in agreement about the pid.

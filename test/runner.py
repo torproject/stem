@@ -5,6 +5,7 @@ Runtime context for the integration tests.
 import os
 import sys
 import time
+import shutil
 import signal
 import tempfile
 import subprocess
@@ -12,10 +13,11 @@ import subprocess
 from stem.util import term
 
 # number of seconds before we time out our attempt to start a tor instance
-TOR_INIT_TIMEOUT = 60
+TOR_INIT_TIMEOUT = 90
 
 BASIC_TORRC = """# configuration for stem integration tests
 DataDirectory %s
+SocksPort 0
 ControlPort 1111
 """
 
@@ -57,7 +59,7 @@ class Runner:
       raise exc
     
     # writes our testing torrc
-    torrc_dst = os.path.join(self._test_dir, "torrc")
+    torrc_dst = self.get_torrc_path()
     try:
       sys.stdout.write(term.format("  writing torrc (%s)... " % torrc_dst, term.Color.BLUE, term.Attr.BOLD))
       
@@ -93,7 +95,7 @@ class Runner:
       if self._tor_process: self._tor_process.kill()
       
       # double check that we have a torrc to work with
-      torrc_dst = os.path.join(self._test_dir, "torrc")
+      torrc_dst = self.get_torrc_path()
       if not os.path.exists(torrc_dst):
         raise OSError("torrc doesn't exist (%s)" % torrc_dst)
       
@@ -139,6 +141,7 @@ class Runner:
       self._tor_process.kill()
       self._tor_process.communicate() # blocks until the process is done
       self._tor_process = None
+      shutil.rmtree(self._test_dir, ignore_errors=True)
       sys.stdout.write(term.format("done\n", term.Color.BLUE, term.Attr.BOLD))
   
   def get_pid(self):
@@ -164,4 +167,24 @@ class Runner:
     
     # TODO: this will be fetched from torrc contents when we use custom configs
     return 1111
+  
+  def get_torrc_path(self):
+    """
+    Provides the absolute path for where our testing torrc resides.
+    
+    Returns:
+      str with our torrc path
+    """
+    
+    return os.path.join(self._test_dir, "torrc")
+  
+  def get_torrc_contents(self):
+    """
+    Provides the contents of our torrc.
+    
+    Returns:
+      str with the contents of our torrc, lines are newline separated
+    """
+    
+    return self._torrc_contents
 
