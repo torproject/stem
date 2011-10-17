@@ -12,12 +12,24 @@ import subprocess
 from stem.util import term
 
 # number of seconds before we time out our attempt to start a tor instance
-TOR_INIT_TIMEOUT = 30
+TOR_INIT_TIMEOUT = 60
 
 BASIC_TORRC = """# configuration for stem integration tests
 DataDirectory %s
 ControlPort 1111
 """
+
+# singleton Runner instance
+INTEG_RUNNER = None
+
+def get_runner():
+  """
+  Singleton for the runtime context of integration tests.
+  """
+  
+  global INTEG_RUNNER
+  if not INTEG_RUNNER: INTEG_RUNNER = Runner()
+  return INTEG_RUNNER
 
 class Runner:
   def __init__(self):
@@ -125,8 +137,9 @@ class Runner:
     if self._tor_process:
       sys.stdout.write(term.format("Shutting down tor... ", term.Color.BLUE, term.Attr.BOLD))
       self._tor_process.kill()
+      self._tor_process.communicate() # blocks until the process is done
+      self._tor_process = None
       sys.stdout.write(term.format("done\n", term.Color.BLUE, term.Attr.BOLD))
-      print # extra newline
   
   def get_pid(self):
     """
@@ -139,4 +152,16 @@ class Runner:
     if self._tor_process:
       return self._tor_process.pid
     else: return None
+  
+  def get_control_port(self):
+    """
+    Provides the control port tor is running with.
+    
+    Returns:
+      int for the port tor's controller interface is bound to, None if it
+      doesn't have one
+    """
+    
+    # TODO: this will be fetched from torrc contents when we use custom configs
+    return 1111
 

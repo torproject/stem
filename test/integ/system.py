@@ -3,6 +3,7 @@ Unit tests for the util.system functions in the context of a tor process.
 """
 
 import unittest
+import test.integ.runner
 
 from stem.util import system
 
@@ -29,4 +30,23 @@ class TestSystemFunctions(unittest.TestCase):
     
     self.assertTrue(system.is_running("tor"))
     self.assertFalse(system.is_running("blarg_and_stuff"))
+
+  def test_get_pid(self):
+    """
+    Checks the util.system.get_pid function.
+    """
+    
+    runner = test.integ.runner.get_runner()
+    self.assertEquals(runner.get_pid(), system.get_pid("tor"))
+    self.assertEquals(runner.get_pid(), system.get_pid("tor", runner.get_control_port()))
+    self.assertEquals(None, system.get_pid("blarg_and_stuff"))
+  
+  def test_get_bsd_jail_id(self):
+    """
+    Exercises the util.system.get_bsd_jail_id function, running through the
+    failure case (since I'm not on BSD I can't really test this function
+    properly).
+    """
+    
+    self.assertEquals(0, system.get_bsd_jail_id("blarg_and_stuff"))
 

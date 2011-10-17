@@ -5,6 +5,7 @@ Runs unit and integration tests.
 """
 
 import sys
+import time
 import getopt
 import unittest
 import test.unit.message
@@ -52,6 +53,7 @@ Runs tests for the stem library.
 """
 
 if __name__ == '__main__':
+  start_time = time.time()
   run_unit_tests = False
   run_integ_tests = False
   integ_targets = TARGETS.values()
@@ -111,20 +113,20 @@ if __name__ == '__main__':
   if run_integ_tests:
     print "%s\n%s\n%s\n" % (DIVIDER, "INTEGRATION TESTS".center(70), DIVIDER)
     
-    integ_runner = test.integ.runner.Runner()
+    integ_runner = test.integ.runner.get_runner()
     
     try:
       integ_runner.run_setup()
       integ_runner.start()
       
       print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
+      print
+      
       for name, test_class in INTEG_TESTS:
         print "%s\n%s\n%s\n" % (DIVIDER, name, DIVIDER)
         suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
         unittest.TextTestRunner(verbosity=2).run(suite)
         print
-    
-      print
     except OSError:
       pass
     finally:
@@ -144,4 +146,7 @@ if __name__ == '__main__':
     #    print "  %s" % term.format("Unimplemented", term.Color.RED, term.Attr.BOLD)
     #  
     #  print ""
+  
+  print term.format("Testing Completed (%i seconds)" % (time.time() - start_time), term.Color.GREEN, term.Attr.BOLD)
+  print
 

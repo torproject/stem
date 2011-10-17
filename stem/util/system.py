@@ -89,6 +89,168 @@ def is_running(command, suppress_exc = True):
     if suppress_exc: return None
     else: raise OSError("Unable to check via 'ps -A co command'")
 
+def get_pid(process_name, process_port = None):
+  """
+  Attempts to determine the process id for a running process, using the
+  following:
+  
+  1. "pgrep -x <name>"
+  2. "pidof <name>"
+  3. "netstat -npl | grep 127.0.0.1:<port>"
+  4. "ps -o pid -C <name>"
+  5. "sockstat -4l -P tcp -p <port> | grep <name>"
+  6. "ps axc | egrep \" <name>$\""
+  7. "lsof -wnPi | egrep \"^<name>.*:<port>\""
+  
+  If pidof or ps provide multiple instance of the process then their results
+  are discarded (since only netstat can differentiate using a bound port).
+  
+  Arguments:
+    process_name (str) - process name for which to fetch the pid
+    process_port (int) - port that the process we're interested in is bound to,
+                         this is used to disambiguate if there's multiple
+                         instances running
+  
+  Returns:
+    int with the process id, None if either no running process exists or it
+    can't be determined
+  """
+  
+  # attempts to resolve using pgrep, failing if:
+  # - the process is running under a different name
+  # - there are multiple instances
+  
+  try:
+    results = call("pgrep -x %s" % process_name)
+    
+    if len(results) == 1 and len(results[0].split()) == 1:
+      pid = results[0].strip()
+      if pid.isdigit(): return int(pid)
+  except IOError: pass
+  
+  # attempts to resolve using pidof, failing if:
+  # - the process is running under a different name
+  # - there are multiple instances
+  
+  try:
+    results = call("pidof %s" % process_name)
+    
+    if len(results) == 1 and len(results[0].split()) == 1:
+      pid = results[0].strip()
+      if pid.isdigit(): return int(pid)
+  except IOError: pass
+  
+  # attempts to resolve using netstat, failing if:
+  # - the process being run as a different user due to permissions
+  
+  if process_port:
+    try:
+      results = call("netstat -npl | grep 127.0.0.1:%i" % process_port)
+      
+      if len(results) == 1:
+        results = results[0].split()[6] # process field (ex. "7184/tor")
+        pid = results[:results.find("/")]
+        if pid.isdigit(): return int(pid)
+    except IOError: pass
+  
+  # attempts to resolve using ps, failing if:
+  # - the process is running under a different name
+  # - there are multiple instances
+  
+  try:
+    results = call("ps -o pid -C %s" % process_name)
+    
+    if len(results) == 2:
+      pid = results[1].strip()
+      if pid.isdigit(): return int(pid)
+  except IOError: pass
+  
+  # attempts to resolve using sockstat, failing if:
+  # - sockstat doesn't accept the -4 flag (BSD only)
+  # - the process is running under a different name
+  # - there are multiple instances using the same port on different addresses
+  # 
+  # TODO: The later two issues could be solved by filtering for an expected IP
+  # address instead of the process name.
+  
+  if process_port:
+    try:
+      results = call("sockstat -4l -P tcp -p %i | grep %s" % (process_port, process_name))
+      
+      if len(results) == 1 and len(results[0].split()) == 7:
+        pid = results[0].split()[2]
+        if pid.isdigit(): return int(pid)
+    except IOError: pass
+  
+  # attempts to resolve via a ps command that works on mac/bsd (this and lsof
+  # are the only resolvers to work on that platform). This fails if:
+  # - the process is running under a different name
+  # - there are multiple instances
+  
+  try:
+    results = call("ps axc | egrep \" %s$\"" % process_name)
+    
+    if len(results) == 1 and len(results[0].split()) > 0:
+      pid = results[0].split()[0]
+      if pid.isdigit(): return int(pid)
+  except IOError: pass
+  
+  # attempts to resolve via lsof, this should work on linux, mac, and bsd
+  # and only fail if:
+  # - the process is running under a different name
+  # - the process being run as a different user due to permissions
+  # - there are multiple instances using the same port on different addresses
+  
+  try:
+    port_comp = str(process_port) if process_port else ""
+    results = call("lsof -wnPi | egrep \"^%s.*:%s\"" % (process_name, port_comp))
+    
+    # This can result in multiple entries with the same pid (from the query
+    # itself). Checking all lines to see if they're in agreement about the pid.
+    
+    if results:
+      pid = ""
+      
+      for line in results:
+        line_comp = line.split()
+        
+        if len(line_comp) >= 2 and (not pid or line_comp[1] == pid):
+          pid = line_comp[1]
+        else: raise IOError
+      
+      if pid.isdigit(): return int(pid)
+  except IOError: pass
+  
+  return None
+
+def get_bsd_jail_id(pid):
+  """
+  Get the FreeBSD jail id for a process.
+  
+  Arguments:
+    pid (int) - process id of the jail id to be queried
+  
+  Returns:
+    int for the jail id, zero if this can't be determined
+  """
+  
+  # Output when called from a FreeBSD jail or when Tor isn't jailed:
+  #   JID
+  #    0
+  # 
+  # Otherwise it's something like:
+  #   JID
+  #    1
+  
+  ps_output = call("ps -p %s -o jid" % pid)
+  
+  if len(ps_output) == 2 and len(ps_output[1].split()) == 1:
+    jid = ps_output[1].strip()
+    if jid.isdigit(): return int(jid)
+  
+  log.log(log.WARN, "Failed to figure out the FreeBSD jail id. Assuming 0.")
+  return 0
+
 def call(command, suppress_exc = True):
   """
   Issues a command in a subprocess, blocking until completion and returning the
