@@ -67,13 +67,13 @@ class TestMessageFunctions(unittest.TestCase):
     try:
       control_socket_file.close()
       control_socket_file.write("GETINFO version\r\n")
-      
-      # receives: AttributeError: 'NoneType' object has no attribute 'sendall'
-      self.assertRaises(AttributeError, control_socket_file.flush)
-      
-      # receives: stem.types.ControlSocketClosed: socket file has been closed
-      self.assertRaises(stem.types.ControlSocketClosed, stem.types.read_message, control_socket_file)
     except: pass
+    
+    # receives: AttributeError: 'NoneType' object has no attribute 'sendall'
+    self.assertRaises(AttributeError, control_socket_file.flush)
+    
+    # receives: stem.types.ControlSocketClosed: socket file has been closed
+    self.assertRaises(stem.types.ControlSocketClosed, stem.types.read_message, control_socket_file)
   
   def test_invalid_command(self):
     """
