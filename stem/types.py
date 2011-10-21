@@ -41,7 +41,7 @@ def read_message(control_file):
                    makefile() method for more information)
   
   Returns:
-    ControlMessage read from the socket
+    stem.types.ControlMessage read from the socket
   
   Raises:
     ProtocolError the content from the socket is malformed
@@ -210,7 +210,7 @@ def get_version(version_str):
     version_str (str) - representation of a tor version (ex. "0.2.2.23-alpha")
   
   Returns:
-    types.Version instance
+    stem.types.Version instance
   
   Raises:
     ValueError if input isn't a valid tor version

@@ -59,8 +59,8 @@ class ControlConnection:
     whenever we receive an event from the control socket.
     
     Arguments:
-      event_message (types.ControlMessage) - message received from the control
-                                             socket
+      event_message (stem.types.ControlMessage) -
+          message received from the control socket
     """
     
     pass
@@ -73,7 +73,7 @@ class ControlConnection:
       message (str) - message to be sent to the control socket
     
     Returns:
-      types.ControlMessage with the response from the control socket
+      stem.types.ControlMessage with the response from the control socket
     """
     
     # makes sure that the message ends with a CRLF

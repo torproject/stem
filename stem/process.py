@@ -7,8 +7,50 @@ import os
 import signal
 import subprocess
 
+import stem.types
+
+from stem.util import system
+
 # number of seconds before we time out our attempt to start a tor instance
 DEFAULT_INIT_TIMEOUT = 90
+
+def get_version(tor_cmd = "tor"):
+  """
+  Provides the version of tor.
+  
+  Arguments:
+    tor_cmd (str) - command used to run tor
+  
+  Returns:
+    stem.types.Version provided by the tor command
+  
+  Raises:
+    IOError if unable to query or parse the version
+  """
+  
+  try:
+    version_cmd = "%s --version" % tor_cmd
+    version_output = system.call(version_cmd)
+  except OSError, exc:
+    raise IOError(exc)
+  
+  if version_output:
+    # output example:
+    # Oct 21 07:19:27.438 [notice] Tor v0.2.1.30. This is experimental software. Do not rely on it for strong anonymity. (Running on Linux i686)
+    # Tor version 0.2.1.30.
+    
+    last_line = version_output[-1]
+    
+    if last_line.startswith("Tor version ") and last_line.endswith("."):
+      try:
+        version_str = last_line[12:-1]
+        return stem.types.get_version(version_str)
+      except ValueError, exc:
+        raise IOError(exc)
+    else:
+      raise IOError("Unexpected response from '%s': %s" % (version_cmd, last_line))
+  else:
+    raise IOError("'%s' didn't have any output" % version_cmd)
 
 def launch_tor(torrc_path, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
   """
