@@ -272,7 +272,7 @@ def call(command, suppress_exc = True):
   """
   Issues a command in a subprocess, blocking until completion and returning the
   results. This is not actually ran in a shell so pipes and other shell syntax
-  aren't permitted.
+  are not permitted.
   
   Arguments:
     command (str)       - command to be issued
@@ -280,7 +280,7 @@ def call(command, suppress_exc = True):
                           this raises the exception
   
   Returns:
-    List with the lines of output from the command, None in case of failure if
+    list with the lines of output from the command, None in case of failure if
     suppress_exc is True
   
   Raises:
