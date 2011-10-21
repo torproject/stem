@@ -101,6 +101,8 @@ class Runner:
       self._tor_process = stem.process.launch_tor(self.get_torrc_path(), print_init_line)
       print term.format("  done (%i seconds)" % (time.time() - start_time), term.Color.BLUE, term.Attr.BOLD)
       return
+    except KeyboardInterrupt:
+      sys.exit(1) # quietly terminate
     except OSError, exc:
       print term.format("  failed to start tor: %s" % exc, term.Color.RED, term.Attr.BOLD)
       raise exc
