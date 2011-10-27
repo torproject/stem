@@ -420,9 +420,12 @@ class Config():
       line = line.strip()
       
       # parse the key/value pair
-      if line and " " in line:
-        key, value = line.split(" ", 1)
-        value = value.strip()
+      if line:
+        if " " in line:
+          key, value = line.split(" ", 1)
+          value = value.strip()
+        else:
+          key, value = line, ""
         
         if key in self._contents: self._contents[key].append(value)
         else: self._contents[key] = [value]

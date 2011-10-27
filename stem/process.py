@@ -3,6 +3,7 @@ Helper functions for working with tor as a process. These are mostly os
 dependent, only working on linux, osx, and bsd.
 """
 
+import re
 import os
 import signal
 import subprocess
@@ -52,7 +53,7 @@ def get_version(tor_cmd = "tor"):
   else:
     raise IOError("'%s' didn't have any output" % version_cmd)
 
-def launch_tor(torrc_path, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
+def launch_tor(torrc_path, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
   """
   Initializes a tor process. This blocks until initialization completes or we
   error out.
@@ -64,6 +65,8 @@ def launch_tor(torrc_path, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEO
   
   Arguments:
     torrc_path (str)           - location of the torrc for us to use
+    completion_percent (int)   - percent of bootstrap completion at which
+                                 this'll return
     init_msg_handler (functor) - optional functor that will be provided with
                                  tor's initialization stdout as we get it
     timeout (int)              - time after which the attempt to start tor is
@@ -93,6 +96,8 @@ def launch_tor(torrc_path, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEO
     signal.signal(signal.SIGALRM, timeout_handler)
     signal.alarm(timeout)
   
+  bootstrap_line = re.compile("Bootstrapped ([0-9]+)%: ")
+  
   while True:
     init_line = tor_process.stdout.readline().strip()
     
@@ -105,6 +110,8 @@ def launch_tor(torrc_path, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEO
     if init_msg_handler: init_msg_handler(init_line)
     
     # return the process if we're done with bootstrapping
-    if init_line.endswith("Bootstrapped 100%: Done."):
+    bootstrap_match = bootstrap_line.search(init_line)
+    
+    if bootstrap_match and int(bootstrap_match.groups()[0]) >= completion_percent:
       return tor_process
 

@@ -4,6 +4,7 @@
 Runs unit and integration tests.
 """
 
+import os
 import sys
 import time
 import getopt
@@ -14,7 +15,7 @@ import test.unit.version
 import test.integ.message
 import test.integ.system
 
-from stem.util import enum, term
+from stem.util import conf, enum, term
 
 OPT = "uit:h"
 OPT_EXPANDED = ["unit", "integ", "targets=", "help"]
@@ -29,6 +30,7 @@ INTEG_TESTS = (("stem.types.ControlMessage", test.integ.message.TestMessageFunct
                ("stem.util.system", test.integ.system.TestSystemFunctions),
               )
 
+# TODO: drop targets?
 # Configurations that the intergration tests can be ran with. Attributs are
 # tuples of the test runner and description.
 TARGETS = enum.Enum(*[(v, v) for v in ("NONE", "NO_CONTROL", "NO_AUTH", "COOKIE", "PASSWORD", "SOCKET")])
@@ -97,6 +99,15 @@ if __name__ == '__main__':
       print HELP_MSG % "\n    ".join(target_lines)
       sys.exit()
   
+  test_config = conf.get_config("test")
+  
+  try:
+    config_path = os.path.dirname(__file__) + "/test/settings.cfg"
+    test_config.load(config_path)
+  except IOError, exc:
+    print term.format("Unable to load testing configuration: %s" % exc, term.Color.RED, term.Attr.BOLD)
+    sys.exit(1)
+  
   if not run_unit_tests and not run_integ_tests:
     print "Nothing to run (for usage provide --help)\n"
     sys.exit()
@@ -118,8 +129,7 @@ if __name__ == '__main__':
     integ_runner = test.runner.get_runner()
     
     try:
-      integ_runner.run_setup()
-      integ_runner.start()
+      integ_runner.start(user_config = test_config)
       
       print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
       print

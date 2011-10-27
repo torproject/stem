@@ -199,9 +199,9 @@ class TestMessageFunctions(unittest.TestCase):
     self.assertEquals("250 OK\r\n", setevents_response.raw_content())
     self.assertEquals([("250", " ", "OK")], setevents_response.content())
     
-    # Tor will emit a BW event once per second. Parsing three of them.
+    # Tor will emit a BW event once per second. Parsing two of them.
     
-    for _ in range(3):
+    for _ in range(2):
       bw_event = stem.types.read_message(control_socket_file)
       self.assertTrue(re.match("BW [0-9]+ [0-9]+", str(bw_event)))
       self.assertTrue(re.match("650 BW [0-9]+ [0-9]+\r\n", bw_event.raw_content()))
