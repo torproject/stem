@@ -291,5 +291,6 @@ class Version:
     
     return cmp(my_status, other_status)
 
-REQ_GETINFO_CONFIG_TEXT = get_version("0.2.2.7")
+# TODO: version requirements will probably be moved to another module later
+REQ_GETINFO_CONFIG_TEXT = get_version("0.2.2.7-alpha")
 

@@ -1,6 +1,9 @@
 """
 Helper functions for working with tor as a process. These are mostly os
 dependent, only working on linux, osx, and bsd.
+
+get_tor_version - gets the version of our system's tor installation
+launch_tor - starts up a tor process
 """
 
 import re
@@ -18,9 +21,9 @@ DEFAULT_INIT_TIMEOUT = 90
 # cache for the get_version function
 VERSION_CACHE = {}
 
-def get_version(tor_cmd = "tor"):
+def get_tor_version(tor_cmd = "tor"):
   """
-  Provides the version of tor.
+  Queries tor for its version.
   
   Arguments:
     tor_cmd (str) - command used to run tor

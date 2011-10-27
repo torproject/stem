@@ -140,7 +140,7 @@ class TestMessageFunctions(unittest.TestCase):
     Parses the 'GETINFO config-text' response.
     """
     
-    if stem.process.get_version() < stem.types.REQ_GETINFO_CONFIG_TEXT:
+    if stem.process.get_tor_version() < stem.types.REQ_GETINFO_CONFIG_TEXT:
       return
     
     # We can't be certain of the order, and there may be extra config-text

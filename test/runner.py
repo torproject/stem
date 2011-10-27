@@ -2,6 +2,18 @@
 Runtime context for the integration tests. This is used both by the test runner
 to start and stop tor, and by the integration tests themselves for information
 about the tor test instance they're running against.
+
+RunnerStopped - Runner doesn't have an active tor instance.
+
+get_runner - Singleton for fetching our runtime context.
+Runner - Runtime context for our integration tests.
+  |- start - prepares and starts a tor instance for our tests to run against
+  |- stop - stops our tor instance and cleans up any temporary files
+  |- is_running - checks if our tor test instance is running
+  |- get_torrc_path - path to our tor instance's torrc
+  |- get_torrc_contents - contents of our tor instance's torrc
+  |- get_control_port - port that our tor instance is listening on
+  +- get_pid - process id of our tor process
 """
 
 import os
