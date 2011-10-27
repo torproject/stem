@@ -291,3 +291,5 @@ class Version:
     
     return cmp(my_status, other_status)
 
+REQ_GETINFO_CONFIG_TEXT = get_version("0.2.2.7")
+

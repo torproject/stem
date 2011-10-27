@@ -140,8 +140,8 @@ class TestMessageFunctions(unittest.TestCase):
     Parses the 'GETINFO config-text' response.
     """
     
-    # TODO: add a 0.2.2.7-alpha version check for this test (that was when
-    # 'GETINFO config-text' was added)
+    if stem.process.get_version() < stem.types.REQ_GETINFO_CONFIG_TEXT:
+      return
     
     # We can't be certain of the order, and there may be extra config-text
     # entries as per...
