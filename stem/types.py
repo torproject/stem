@@ -12,7 +12,6 @@ ControlMessage - Message from the control socket.
   |- __str__ - content stripped of protocol formatting
   +- __iter__ - message components stripped of protocol formatting
 
-get_version - Converts a version string to a Version instance.
 Version - Tor versioning information.
   |- __str__ - string representation
   +- __cmp__ - compares with another Version
@@ -202,37 +201,6 @@ class ControlMessage:
     for _, _, content in self._parsed_content:
       yield content
 
-def get_version(version_str):
-  """
-  Parses a version string, providing back a types.Version instance.
-  
-  Arguments:
-    version_str (str) - representation of a tor version (ex. "0.2.2.23-alpha")
-  
-  Returns:
-    stem.types.Version instance
-  
-  Raises:
-    ValueError if input isn't a valid tor version
-  """
-  
-  if not isinstance(version_str, str):
-    raise ValueError("argument is not a string")
-  
-  m = re.match(r'^([0-9]+).([0-9]+).([0-9]+)(.[0-9]+)?(-\S*)?$', version_str)
-  
-  if m:
-    major, minor, micro, patch, status = m.groups()
-    
-    # The patch and status matches are optional (may be None) and have an extra
-    # proceeding period or dash if they exist. Stripping those off.
-    
-    if patch: patch = int(patch[1:])
-    if status: status = status[1:]
-    
-    return Version(int(major), int(minor), int(micro), patch, status)
-  else: raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
-
 class Version:
   """
   Comparable tor version, as per the 'new version' of the version-spec...
@@ -247,12 +215,32 @@ class Version:
                    'alpha', 'beta-dev', etc (None if undefined)
   """
   
-  def __init__(self, major, minor, micro, patch = None, status = None):
-    self.major = major
-    self.minor = minor
-    self.micro = micro
-    self.patch = patch
-    self.status = status
+  def __init__(self, version_str):
+    """
+    Parses a valid tor version string, for instance "0.1.4" or
+    "0.2.2.23-alpha".
+    
+    Raises:
+      ValueError if input isn't a valid tor version
+    """
+    
+    m = re.match(r'^([0-9]+).([0-9]+).([0-9]+)(.[0-9]+)?(-\S*)?$', version_str)
+    
+    if m:
+      major, minor, micro, patch, status = m.groups()
+      
+      # The patch and status matches are optional (may be None) and have an extra
+      # proceeding period or dash if they exist. Stripping those off.
+      
+      if patch: patch = int(patch[1:])
+      if status: status = status[1:]
+      
+      self.major = int(major)
+      self.minor = int(minor)
+      self.micro = int(micro)
+      self.patch = patch
+      self.status = status
+    else: raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
   
   def __str__(self):
     """
@@ -292,5 +280,5 @@ class Version:
     return cmp(my_status, other_status)
 
 # TODO: version requirements will probably be moved to another module later
-REQ_GETINFO_CONFIG_TEXT = get_version("0.2.2.7-alpha")
+REQ_GETINFO_CONFIG_TEXT = Version("0.2.2.7-alpha")
 

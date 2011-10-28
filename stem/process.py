@@ -18,7 +18,7 @@ from stem.util import system
 # number of seconds before we time out our attempt to start a tor instance
 DEFAULT_INIT_TIMEOUT = 90
 
-# cache for the get_version function
+# cache for the get_tor_version function
 VERSION_CACHE = {}
 
 def get_tor_version(tor_cmd = "tor"):
@@ -52,7 +52,7 @@ def get_tor_version(tor_cmd = "tor"):
       if last_line.startswith("Tor version ") and last_line.endswith("."):
         try:
           version_str = last_line[12:-1]
-          VERSION_CACHE[tor_cmd] = stem.types.get_version(version_str)
+          VERSION_CACHE[tor_cmd] = stem.types.Version(version_str)
         except ValueError, exc:
           raise IOError(exc)
       else:
