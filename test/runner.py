@@ -25,7 +25,7 @@ import threading
 
 import stem.process
 
-from stem.util import term
+from stem.util import conf, term
 
 DEFAULT_CONFIG = {
   "test.integ.test_directory": "./test/data",
@@ -41,6 +41,10 @@ DataDirectory %s
 SocksPort 0
 ControlPort 1111
 """
+
+# We make some paths relative to stem's base directory (the one above us)
+# rather than the process' cwd. This doesn't end with a slash.
+STEM_BASE = "/".join(__file__.split("/")[:-2])
 
 # singleton Runner instance
 INTEG_RUNNER = None
@@ -68,15 +72,15 @@ class Runner:
     self._torrc_contents = ""
     self._tor_process = None
   
-  def start(self, quiet = False, user_config = None):
+  def start(self, quiet = False, config_path = None):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
     
     Arguments:
-      quiet (bool) - if False then this prints status information as we start
-                     up to stdout
-      user_config (stem.util.conf.Config) - custom test configuration
+      quiet (bool)      - if False then this prints status information as we
+                          start up to stdout
+      config_path (str) - path to a custom test configuration
     
     Raises:
       OSError if unable to run test preparations or start tor
@@ -88,8 +92,10 @@ class Runner:
     # it so we can start a fresh instance
     if self._tor_process: self.stop(quiet)
     
-    # apply any custom configuration attributes
-    if user_config: user_config.update(self._config)
+    _print_status("Setting up a test instance...\n", STATUS_ATTR, quiet)
+    
+    # load and apply any custom configurations
+    self._load_config(config_path, quiet)
     
     # if 'test_directory' is unset then we make a new data directory in /tmp
     # and clean it up when we're done
@@ -97,10 +103,9 @@ class Runner:
     config_test_dir = self._config["test.integ.test_directory"]
     
     if config_test_dir:
-      # makes paths relative of stem's base directory (the one above us)
+      # makes paths relative of stem's base directory
       if config_test_dir.startswith("./"):
-        stem_base = "/".join(__file__.split("/")[:-2])
-        config_test_dir = stem_base + config_test_dir[1:]
+        config_test_dir = STEM_BASE + config_test_dir[1:]
       
       self._test_dir = os.path.expanduser(config_test_dir)
     else:
@@ -259,6 +264,45 @@ class Runner:
     finally:
       self._runner_lock.release()
   
+  def _load_config(self, config_path, quiet):
+    """
+    Loads the given configuration file, printing the contents if successful and
+    the exception if not.
+    
+    Arguments:
+      config_path (str) - path to custom testing configuration options, skipped
+                          if None
+      quiet (bool)      - prints status information to stdout if False
+    """
+    
+    if not config_path:
+      _print_status("  loading test configuration... skipped\n", STATUS_ATTR, quiet)
+    else:
+      # loads custom testing configuration
+      test_config = conf.get_config("test")
+      config_path = os.path.abspath(config_path)
+      
+      try:
+        _print_status("  loading test configuration (%s)... " % config_path, STATUS_ATTR, quiet)
+        
+        test_config.load(config_path)
+        test_config.update(self._config)
+        
+        _print_status("done\n", STATUS_ATTR, quiet)
+        
+        for config_key in test_config.keys():
+          key_entry = "    %s => " % config_key
+          
+          # if there's multiple values then list them on separate lines
+          value_div = ",\n" + (" " * len(key_entry))
+          value_entry = value_div.join(test_config.get_value(config_key, multiple = True))
+          
+          _print_status(key_entry + value_entry + "\n", SUBSTATUS_ATTR, quiet)
+        
+        _print_status("\n", (), quiet)
+      except IOError, exc:
+        _print_status("failed (%s)\n" % exc, ERROR_ATTR, quiet)
+  
   def _run_setup(self, quiet):
     """
     Makes a temporary runtime resources of our integration test instance.
@@ -269,8 +313,6 @@ class Runner:
     Raises:
       OSError if unsuccessful
     """
-    
-    _print_status("Setting up a test instance...\n", STATUS_ATTR, quiet)
     
     # makes a temporary data directory if needed
     try:
@@ -302,7 +344,7 @@ class Runner:
       _print_status("\n", (), quiet)
     except Exception, exc:
       _print_status("failed (%s)\n\n" % exc, ERROR_ATTR, quiet)
-      raise exc
+      raise OSError(exc)
   
   def _start_tor(self, quiet):
     """

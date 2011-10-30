@@ -15,10 +15,10 @@ import test.unit.version
 import test.integ.message
 import test.integ.system
 
-from stem.util import conf, enum, term
+from stem.util import enum, term
 
-OPT = "uit:h"
-OPT_EXPANDED = ["unit", "integ", "targets=", "help"]
+OPT = "uic:t:h"
+OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "help"]
 DIVIDER = "=" * 70
 
 # (name, class) tuples for all of our unit and integration tests
@@ -46,11 +46,12 @@ TARGET_ATTR = {
 HELP_MSG = """Usage runTests.py [OPTION]
 Runs tests for the stem library.
 
-  -u, --unit      runs unit tests
-  -i, --integ     runs integration tests
-  -t, --target    comma separated list of tor configurations to use for the
-                    integration tests (all are used by default)
-  -h, --help      presents this help
+  -u, --unit            runs unit tests
+  -i, --integ           runs integration tests
+  -c, --config PATH     path to a custom test configuration
+  -t, --target TARGET   comma separated list of tor configurations to use for
+                        the integration tests (all are used by default)
+  -h, --help            presents this help
 
   Integration targets:
     %s
@@ -60,6 +61,7 @@ if __name__ == '__main__':
   start_time = time.time()
   run_unit_tests = False
   run_integ_tests = False
+  config_path = None
   integ_targets = TARGETS.values()
   
   # parses user input, noting any issues
@@ -72,6 +74,7 @@ if __name__ == '__main__':
   for opt, arg in opts:
     if opt in ("-u", "--unit"): run_unit_tests = True
     elif opt in ("-i", "--integ"): run_integ_tests = True
+    elif opt in ("-c", "--config"): config_path = arg
     elif opt in ("-t", "--targets"):
       integ_targets = arg.split(",")
       
@@ -99,15 +102,6 @@ if __name__ == '__main__':
       print HELP_MSG % "\n    ".join(target_lines)
       sys.exit()
   
-  test_config = conf.get_config("test")
-  
-  try:
-    config_path = os.path.dirname(__file__) + "/test/settings.cfg"
-    test_config.load(config_path)
-  except IOError, exc:
-    print term.format("Unable to load testing configuration: %s" % exc, term.Color.RED, term.Attr.BOLD)
-    sys.exit(1)
-  
   if not run_unit_tests and not run_integ_tests:
     print "Nothing to run (for usage provide --help)\n"
     sys.exit()
@@ -129,7 +123,8 @@ if __name__ == '__main__':
     integ_runner = test.runner.get_runner()
     
     try:
-      integ_runner.start(user_config = test_config)
+      # TODO: note unused config options afterward
+      integ_runner.start(config_path = config_path)
       
       print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
       print

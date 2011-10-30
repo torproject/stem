@@ -359,7 +359,7 @@ class Config():
       if type(val) == type(conf_mappings[entry]):
         conf_mappings[entry] = val
   
-  def get_keys(self):
+  def keys(self):
     """
     Provides all keys in the currently loaded configuration.
     
@@ -369,7 +369,7 @@ class Config():
     
     return self._contents.keys()
   
-  def get_unused_keys(self):
+  def unused_keys(self):
     """
     Provides the configuration keys that have never been provided to a caller
     via the get, get_value, or update methods.
