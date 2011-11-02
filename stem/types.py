@@ -22,6 +22,10 @@ import socket
 
 from stem.util import log
 
+# Escape sequences from the 'esc_for_log' function of tor's 'common/util.c'.
+CONTROL_ESCAPES = {r"\\": "\\",  r"\"": "\"",   r"\'": "'",
+                   r"\r": "\r",  r"\n": "\n",   r"\t": "\t"}
+
 class ProtocolError(Exception):
   "Malformed content from the control socket."
   pass
@@ -281,4 +285,80 @@ class Version:
 
 # TODO: version requirements will probably be moved to another module later
 REQ_GETINFO_CONFIG_TEXT = Version("0.2.2.7-alpha")
+
+# TODO: trying this out temporarily to see if it's generally helpful or another
+# parser function would be a better fit
+def get_entry(line, mapping = False, quoted = False, escaped = False):
+  """
+  Parses a space separated series of entries, providing back a tuple with the
+  first entry in the string and the remainder (dropping the space between).
+  
+  This is meant to be a helper function for stem to parse tor's control
+  protocol lines rather than being used directly by this library's users.
+  
+  Example:
+    get_entry('hello there random person') =>
+      (None, "hello", "there random person")
+    get_entry('version="0.1.2.3"', True, True) =>
+      ("version", "0.1.2.3", "")
+    get_entry('"this has a \" and \\ in it" foo=bar more_data', False, True, True) =>
+      (None, 'this has a " and \ in it', "foo=bar more_data")
+  
+  Arguments:
+    line (str)     - string with a space separated series of entries
+    mapping (bool) - parses the next entry as a KEY=VALUE entry, if False then
+                     the 'key' attribute of the returned tuple is None
+    quoted (bool)  - parses the next entry as a quoted value, removing the
+                     quotes
+    escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+  
+  Returns:
+    tuple of the form (key, value, remainder)
+  
+  Raises:
+    ValueError if 'mapping' is True without a '=' or 'quoted' is True without
+      the value being quoted
+  """
+  
+  # Start by splitting apart the 'key=everything else' portion. The key
+  # shouldn't have any spaces in it.
+  
+  if mapping:
+    key_match = re.match("^(\S+)=", line)
+    
+    if key_match:
+      key = key_match.groups()[0]
+      remainder = line[key_match.end():]
+    else:
+      raise ValueError("mapping doesn't contain a '=': " + line)
+  else: key, remainder = None, line
+  
+  if quoted:
+    # Check that we have a starting quote.
+    if not remainder.startswith("\""):
+      raise ValueError("quoted value doesn't have a leading quote: " + line)
+    
+    # Finds the ending quote. If we have escapes then we need to skip any '\"'
+    # entries.
+    end_quote = remainder.find("\"", 1)
+    
+    if is_escaped:
+      while end_quote != -1 and remainder[end_quote - 1] == "/":
+        end_quote = remainder.find("\"", end_quote + 1)
+    
+    # Check that we have an ending quote.
+    if end_quote == -1:
+      raise ValueError("quoted value doesn't have an ending quote: " + line)
+    
+    value, remainder = remainder[1:end_quote], remainder[end_quote + 1:]
+  else:
+    # Non-quoted value. Just need to check if there's more data afterward.
+    if " " in remainder: value, remainder = remainder.split(" ", 1)
+    else: value, remainder = remainder, ""
+  
+  if escaped:
+    for esc_sequence, replacement in CONTROL_ESCAPES.items():
+      value = value.replace(esc_sequence, replacement)
+  
+  return (key, value, remainder)
 
