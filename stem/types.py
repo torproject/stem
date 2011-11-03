@@ -342,8 +342,8 @@ def get_entry(line, mapping = False, quoted = False, escaped = False):
     # entries.
     end_quote = remainder.find("\"", 1)
     
-    if is_escaped:
-      while end_quote != -1 and remainder[end_quote - 1] == "/":
+    if escaped:
+      while end_quote != -1 and remainder[end_quote - 1] == "\\":
         end_quote = remainder.find("\"", end_quote + 1)
     
     # Check that we have an ending quote.
@@ -360,5 +360,5 @@ def get_entry(line, mapping = False, quoted = False, escaped = False):
     for esc_sequence, replacement in CONTROL_ESCAPES.items():
       value = value.replace(esc_sequence, replacement)
   
-  return (key, value, remainder)
+  return (key, value, remainder.lstrip())
 

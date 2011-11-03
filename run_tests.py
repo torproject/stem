@@ -12,6 +12,7 @@ import unittest
 import test.runner
 import test.unit.message
 import test.unit.version
+import test.unit.types
 import test.integ.message
 import test.integ.system
 
@@ -24,6 +25,7 @@ DIVIDER = "=" * 70
 # (name, class) tuples for all of our unit and integration tests
 UNIT_TESTS = (("stem.types.ControlMessage", test.unit.message.TestMessageFunctions),
               ("stem.types.Version", test.unit.version.TestVerionFunctions),
+              ("stem.types.get_entry", test.unit.types.TestGetEntry),
              )
 
 INTEG_TESTS = (("stem.types.ControlMessage", test.integ.message.TestMessageFunctions),
