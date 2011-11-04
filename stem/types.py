@@ -19,8 +19,11 @@ Version - Tor versioning information.
 
 import re
 import socket
+import threading
 
 from stem.util import log
+
+KEY_ARG = re.compile("^(\S+)=")
 
 # Escape sequences from the 'esc_for_log' function of tor's 'common/util.c'.
 CONTROL_ESCAPES = {r"\\": "\\",  r"\"": "\"",   r"\'": "'",
@@ -186,8 +189,8 @@ class ControlMessage:
   
   def __iter__(self):
     """
-    Provides the content of the message (stripped of status codes and dividers)
-    for each component of the message. Ie...
+    Provides ControlLine instances for the content of the message. This is
+    stripped of status codes and dividers, for instance...
     
     250+info/names=
     desc/id/* -- Router descriptors by ID.
@@ -203,7 +206,225 @@ class ControlMessage:
     """
     
     for _, _, content in self._parsed_content:
-      yield content
+      yield ControlLine(content)
+
+class ControlLine(str):
+  """
+  String subclass that represents a line of controller output. This behaves as
+  a normal string with additional methods for parsing and popping entries from
+  a space delimited series of elements like a stack.
+  
+  None of these additional methods effect ourselves as a string (which is still
+  immutable). All methods are thread safe.
+  """
+  
+  def __new__(self, value):
+    return str.__new__(self, value)
+  
+  def __init__(self, value):
+    self._remainder = value
+    self._remainder_lock = threading.RLock()
+  
+  def remainder(self):
+    """
+    Provides our unparsed content. This is an empty string after we've popped
+    all entries.
+    
+    Returns:
+      str of the unparsed content
+    """
+    
+    return self._remainder
+  
+  def is_empty(self):
+    """
+    Checks if we have further content to pop or not.
+    
+    Returns:
+      True if we have additional content, False otherwise
+    """
+    
+    return self._remainder == ""
+  
+  def is_next_quoted(self, escaped = False):
+    """
+    Checks if our next entry is a quoted value or not.
+    
+    Arguments:
+      escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+    
+    Returns:
+      True if the next entry can be parsed as a quoted value, False otherwise
+    """
+    
+    start_quote, end_quote = _get_quote_indeces(self._remainder, escaped)
+    return start_quote == 0 and end_quote != -1
+  
+  def is_next_mapping(self, quoted = False, escaped = False):
+    """
+    Checks if our next entry is a KEY=VALUE mapping or not.
+    
+    Arguments:
+      quoted (bool)  - checks that the mapping is to a quoted value
+      escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+    
+    Returns:
+      True if the next entry can be parsed as a key=value mapping, False
+      otherwise
+    """
+    
+    remainder = self._remainder # temp copy to avoid locking
+    key_match = KEY_ARG.match(remainder)
+    
+    if key_match and quoted:
+      # checks that we have a quoted value and that it comes after the 'key='
+      start_quote, end_quote = _get_quote_indeces(remainder, escaped)
+      return start_quote == key_match.end() and end_quote != -1
+    elif key_match:
+      return True # we just needed to check for the key
+    else:
+      return False # doesn't start with a key
+  
+  def pop(self, quoted = False, escaped = False):
+    """
+    Parses the next space separated entry, removing it and the space from our
+    remaining content. Examples...
+    
+    >>> line = ControlLine('"We're all mad here." says the grinning cat.')
+    >>> print line.pop(True)
+      "We're all mad here."
+    >>> print line.pop()
+      "says"
+    >>> print line.remainder()
+      "the grinning cat."
+    
+    >>> line = ControlLine('"this has a \\\" and \\\\ in it" foo=bar more_data')
+    >>> print line.pop(True, True)
+      "this has a \" and \\ in it"
+    
+    Arguments:
+      quoted (bool)  - parses the next entry as a quoted value, removing the
+                       quotes
+      escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+    
+    Returns:
+      str of the next space separated entry
+    
+    Raises:
+      ValueError if quoted is True without the value being quoted
+      IndexError if we don't have any remaining content left to parse
+    """
+    
+    try:
+      self._remainder_lock.acquire()
+      next_entry, remainder = _parse_entry(self._remainder, quoted, escaped)
+      self._remainder = remainder
+      return next_entry
+    finally:
+      self._remainder_lock.release()
+  
+  def pop_mapping(self, quoted = False, escaped = False):
+    """
+    Parses the next space separated entry as a KEY=VALUE mapping, removing it
+    and the space from our remaining content.
+    
+    Arguments:
+      quoted (bool)  - parses the value as being quoted, removing the quotes
+      escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+    
+    Returns:
+      tuple of the form (key, value)
+    
+    Raises:
+      ValueError if this isn't a KEY=VALUE mapping or if quoted is True without
+        the value being quoted
+    """
+    
+    try:
+      self._remainder_lock.acquire()
+      key_match = KEY_ARG.match(self._remainder)
+      
+      if not key_match:
+        raise ValueError("the next entry isn't a KEY=VALUE mapping: " + self._remainder)
+      
+      # parse off the key
+      key = key_match.groups()[0]
+      remainder = self._remainder[key_match.end():]
+      
+      next_entry, remainder = _parse_entry(remainder, quoted, escaped)
+      self._remainder = remainder
+      return (key, next_entry)
+    finally:
+      self._remainder_lock.release()
+
+def _parse_entry(line, quoted, escaped):
+  """
+  Parses the next entry from the given space separated content.
+  
+  Arguments:
+    line (str)     - content to be parsed
+    quoted (bool)  - parses the next entry as a quoted value, removing the
+                     quotes
+    escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+  
+  Returns:
+    tuple of the form (entry, remainder)
+  
+  Raises:
+    ValueError if quoted is True without the next value being quoted
+    IndexError if there's nothing to parse from the line
+  """
+  
+  if line == "":
+    raise IndexError("no remaining content to parse")
+  
+  next_entry, remainder = "", line
+  
+  if quoted:
+    # validate and parse the quoted value
+    start_quote, end_quote = _get_quote_indeces(remainder, escaped)
+    
+    if start_quote != 0 or end_quote == -1:
+      raise ValueError("the next entry isn't a quoted value: " + line)
+    
+    next_entry, remainder = remainder[1 : end_quote], remainder[end_quote + 1:]
+  else:
+    # non-quoted value, just need to check if there's more data afterward
+    if " " in remainder: next_entry, remainder = remainder.split(" ", 1)
+    else: next_entry, remainder = remainder, ""
+  
+  if escaped:
+    for esc_sequence, replacement in CONTROL_ESCAPES.items():
+      next_entry = next_entry.replace(esc_sequence, replacement)
+  
+  return (next_entry, remainder.lstrip())
+
+def _get_quote_indeces(line, escaped):
+  """
+  Provides the indices of the next two quotes in the given content.
+  
+  Arguments:
+    line (str)     - content to be parsed
+    escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+  
+  Returns:
+    tuple of two ints, indices being -1 if a quote doesn't exist
+  """
+  
+  indices, quote_index = [], -1
+  
+  for _ in range(2):
+    quote_index = line.find("\"", quote_index + 1)
+    
+    # if we have escapes then we need to skip any r'\"' entries
+    if escaped:
+      # skip check if index is -1 (no match) or 0 (first character)
+      while quote_index >= 1 and line[quote_index - 1] == "\\":
+        quote_index = line.find("\"", quote_index + 1)
+    
+    indices.append(quote_index)
+  
+  return tuple(indices)
 
 class Version:
   """
@@ -285,80 +506,4 @@ class Version:
 
 # TODO: version requirements will probably be moved to another module later
 REQ_GETINFO_CONFIG_TEXT = Version("0.2.2.7-alpha")
-
-# TODO: trying this out temporarily to see if it's generally helpful or another
-# parser function would be a better fit
-def get_entry(line, mapping = False, quoted = False, escaped = False):
-  """
-  Parses a space separated series of entries, providing back a tuple with the
-  first entry in the string and the remainder (dropping the space between).
-  
-  This is meant to be a helper function for stem to parse tor's control
-  protocol lines rather than being used directly by this library's users.
-  
-  Example:
-    get_entry('hello there random person') =>
-      (None, "hello", "there random person")
-    get_entry('version="0.1.2.3"', True, True) =>
-      ("version", "0.1.2.3", "")
-    get_entry('"this has a \" and \\ in it" foo=bar more_data', False, True, True) =>
-      (None, 'this has a " and \ in it', "foo=bar more_data")
-  
-  Arguments:
-    line (str)     - string with a space separated series of entries
-    mapping (bool) - parses the next entry as a KEY=VALUE entry, if False then
-                     the 'key' attribute of the returned tuple is None
-    quoted (bool)  - parses the next entry as a quoted value, removing the
-                     quotes
-    escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
-  
-  Returns:
-    tuple of the form (key, value, remainder)
-  
-  Raises:
-    ValueError if 'mapping' is True without a '=' or 'quoted' is True without
-      the value being quoted
-  """
-  
-  # Start by splitting apart the 'key=everything else' portion. The key
-  # shouldn't have any spaces in it.
-  
-  if mapping:
-    key_match = re.match("^(\S+)=", line)
-    
-    if key_match:
-      key = key_match.groups()[0]
-      remainder = line[key_match.end():]
-    else:
-      raise ValueError("mapping doesn't contain a '=': " + line)
-  else: key, remainder = None, line
-  
-  if quoted:
-    # Check that we have a starting quote.
-    if not remainder.startswith("\""):
-      raise ValueError("quoted value doesn't have a leading quote: " + line)
-    
-    # Finds the ending quote. If we have escapes then we need to skip any '\"'
-    # entries.
-    end_quote = remainder.find("\"", 1)
-    
-    if escaped:
-      while end_quote != -1 and remainder[end_quote - 1] == "\\":
-        end_quote = remainder.find("\"", end_quote + 1)
-    
-    # Check that we have an ending quote.
-    if end_quote == -1:
-      raise ValueError("quoted value doesn't have an ending quote: " + line)
-    
-    value, remainder = remainder[1:end_quote], remainder[end_quote + 1:]
-  else:
-    # Non-quoted value. Just need to check if there's more data afterward.
-    if " " in remainder: value, remainder = remainder.split(" ", 1)
-    else: value, remainder = remainder, ""
-  
-  if escaped:
-    for esc_sequence, replacement in CONTROL_ESCAPES.items():
-      value = value.replace(esc_sequence, replacement)
-  
-  return (key, value, remainder.lstrip())
 
