@@ -298,7 +298,7 @@ class ControlLine(str):
     Parses the next space separated entry, removing it and the space from our
     remaining content. Examples...
     
-    >>> line = ControlLine('"We're all mad here." says the grinning cat.')
+    >>> line = ControlLine("\"We're all mad here.\" says the grinning cat.")
     >>> print line.pop(True)
       "We're all mad here."
     >>> print line.pop()
@@ -306,7 +306,7 @@ class ControlLine(str):
     >>> print line.remainder()
       "the grinning cat."
     
-    >>> line = ControlLine('"this has a \\\" and \\\\ in it" foo=bar more_data')
+    >>> line = ControlLine("\"this has a \\\" and \\\\ in it\" foo=bar more_data")
     >>> print line.pop(True, True)
       "this has a \" and \\ in it"
     

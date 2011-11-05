@@ -24,7 +24,7 @@ DIVIDER = "=" * 70
 
 # (name, class) tuples for all of our unit and integration tests
 UNIT_TESTS = (("stem.types.ControlMessage", test.unit.types.control_message.TestControlMessage),
-              ("stem.types.ControlLine", test.unit.types.control_line.TestGetEntry),
+              ("stem.types.ControlLine", test.unit.types.control_line.TestControlLine),
               ("stem.types.Version", test.unit.types.version.TestVerion),
              )
 

@@ -1,29 +1,25 @@
 """
-Unit tests for the types.get_entry function.
+Unit tests for the types.ControlLine class.
 """
 
 import unittest
 import stem.types
 
-class TestGetEntry(unittest.TestCase):
+class TestControlLine(unittest.TestCase):
   """
-  Tests the types.get_entry function.
+  Tests methods of the types.ControlLine class.
   """
   
-  def test_examples(self):
+  def test_pop_examples(self):
     """
-    Checks that the examples from the pydoc are correct.
+    Checks that the pop method's pydoc examples are correct.
     """
     
-    example_input = 'hello there random person'
-    example_result = (None, "hello", "there random person")
-    self.assertEquals(stem.types.get_entry(example_input), example_result)
+    line = stem.types.ControlLine("\"We're all mad here.\" says the grinning cat.")
+    self.assertEquals(line.pop(True), "We're all mad here.")
+    self.assertEquals(line.pop(), "says")
+    self.assertEquals(line.remainder(), "the grinning cat.")
     
-    example_input = 'version="0.1.2.3"'
-    example_result = ("version", "0.1.2.3", "")
-    self.assertEquals(stem.types.get_entry(example_input, True, True), example_result)
-    
-    example_input = r'"this has a \" and \\ in it" foo=bar more_data'
-    example_result = (None, r'this has a " and \ in it', "foo=bar more_data")
-    self.assertEquals(stem.types.get_entry(example_input, False, True, True), example_result)
+    line = stem.types.ControlLine("\"this has a \\\" and \\\\ in it\" foo=bar more_data")
+    self.assertEquals(line.pop(True, True), "this has a \" and \\ in it")
 
