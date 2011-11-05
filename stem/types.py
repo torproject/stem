@@ -10,7 +10,15 @@ ControlMessage - Message from the control socket.
   |- content - provides the parsed message content
   |- raw_content - unparsed socket data
   |- __str__ - content stripped of protocol formatting
-  +- __iter__ - message components stripped of protocol formatting
+  +- __iter__ - ControlLine entries for the content of the message
+
+ControlLine - String subclass with methods for parsing controller responses.
+  |- remainder - provides the unparsed content
+  |- is_empty - checks if the remaining content is empty
+  |- is_next_quoted - checks if the next entry is a quoted value
+  |- is_next_mapping - checks if the next entry is a KEY=VALUE mapping
+  |- pop - removes and returns the next entry
+  +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
 
 Version - Tor versioning information.
   |- __str__ - string representation
