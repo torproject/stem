@@ -29,7 +29,7 @@ version -- The current version of Tor.
 250 OK
 """.replace("\n", "\r\n")
 
-class TestMessageFunctions(unittest.TestCase):
+class TestControlMessage(unittest.TestCase):
   """
   Tests methods and functions related to 'types.ControlMessage'. This uses
   StringIO to make 'files' to mock socket input.

@@ -5,7 +5,7 @@ Unit tests for the types.Version parsing and class.
 import unittest
 import stem.types
 
-class TestVerionFunctions(unittest.TestCase):
+class TestVerion(unittest.TestCase):
   """
   Tests methods and functions related to 'types.Version'.
   """

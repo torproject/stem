@@ -10,9 +10,9 @@ import time
 import getopt
 import unittest
 import test.runner
-import test.unit.message
-import test.unit.version
-import test.unit.types
+import test.unit.types.control_message
+import test.unit.types.control_line
+import test.unit.types.version
 import test.integ.message
 import test.integ.system
 
@@ -23,9 +23,9 @@ OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "help"]
 DIVIDER = "=" * 70
 
 # (name, class) tuples for all of our unit and integration tests
-UNIT_TESTS = (("stem.types.ControlMessage", test.unit.message.TestMessageFunctions),
-              ("stem.types.Version", test.unit.version.TestVerionFunctions),
-              ("stem.types.get_entry", test.unit.types.TestGetEntry),
+UNIT_TESTS = (("stem.types.ControlMessage", test.unit.types.control_message.TestControlMessage),
+              ("stem.types.ControlLine", test.unit.types.control_line.TestGetEntry),
+              ("stem.types.Version", test.unit.types.version.TestVerion),
              )
 
 INTEG_TESTS = (("stem.types.ControlMessage", test.integ.message.TestMessageFunctions),
