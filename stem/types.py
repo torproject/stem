@@ -34,6 +34,13 @@ from stem.util import log
 KEY_ARG = re.compile("^(\S+)=")
 
 # Escape sequences from the 'esc_for_log' function of tor's 'common/util.c'.
+# It's hard to tell what controller functions use this in practice, but direct
+# users are...
+# - 'COOKIEFILE' field of PROTOCOLINFO responses
+# - logged messages about bugs
+# - the 'getinfo_helper_listeners' function of control.c which looks to be dead
+#   code
+
 CONTROL_ESCAPES = {r"\\": "\\",  r"\"": "\"",   r"\'": "'",
                    r"\r": "\r",  r"\n": "\n",   r"\t": "\t"}
 
@@ -350,6 +357,7 @@ class ControlLine(str):
     
     try:
       self._remainder_lock.acquire()
+      if self.is_empty(): raise IndexError("no remaining content to parse")
       key_match = KEY_ARG.match(self._remainder)
       
       if not key_match:
