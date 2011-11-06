@@ -275,11 +275,13 @@ class ControlLine(str):
     start_quote, end_quote = _get_quote_indeces(self._remainder, escaped)
     return start_quote == 0 and end_quote != -1
   
-  def is_next_mapping(self, quoted = False, escaped = False):
+  def is_next_mapping(self, key = None, quoted = False, escaped = False):
     """
     Checks if our next entry is a KEY=VALUE mapping or not.
     
     Arguments:
+      key (str)      - checks that the key matches this value, skipping the
+                       check if None
       quoted (bool)  - checks that the mapping is to a quoted value
       escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
     
@@ -291,12 +293,16 @@ class ControlLine(str):
     remainder = self._remainder # temp copy to avoid locking
     key_match = KEY_ARG.match(remainder)
     
-    if key_match and quoted:
-      # checks that we have a quoted value and that it comes after the 'key='
-      start_quote, end_quote = _get_quote_indeces(remainder, escaped)
-      return start_quote == key_match.end() and end_quote != -1
-    elif key_match:
-      return True # we just needed to check for the key
+    if key_match:
+      if key and key != key_match.groups()[0]:
+        return False
+      
+      if quoted:
+        # checks that we have a quoted value and that it comes after the 'key='
+        start_quote, end_quote = _get_quote_indeces(remainder, escaped)
+        return start_quote == key_match.end() and end_quote != -1
+      else:
+        return True # we just needed to check for the key
     else:
       return False # doesn't start with a key
   
