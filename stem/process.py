@@ -12,8 +12,7 @@ import signal
 import subprocess
 
 import stem.types
-
-from stem.util import system
+import stem.util.system
 
 # number of seconds before we time out our attempt to start a tor instance
 DEFAULT_INIT_TIMEOUT = 90
@@ -38,7 +37,7 @@ def get_tor_version(tor_cmd = "tor"):
   if not tor_cmd in VERSION_CACHE:
     try:
       version_cmd = "%s --version" % tor_cmd
-      version_output = system.call(version_cmd)
+      version_output = stem.util.system.call(version_cmd)
     except OSError, exc:
       raise IOError(exc)
     

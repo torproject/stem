@@ -3,9 +3,9 @@ Unit tests for the util.system functions in the context of a tor process.
 """
 
 import unittest
-import test.runner
 
-from stem.util import system
+import test.runner
+import stem.util.system as system
 
 class TestSystemFunctions(unittest.TestCase):
   """

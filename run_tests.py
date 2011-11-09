@@ -10,6 +10,7 @@ import time
 import getopt
 import logging
 import unittest
+
 import test.runner
 import test.unit.types.control_message
 import test.unit.types.control_line
@@ -17,7 +18,8 @@ import test.unit.types.version
 import test.integ.message
 import test.integ.system
 
-from stem.util import enum, term
+import stem.util.enum
+import stem.util.term as term
 
 OPT = "uic:t:h"
 OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "help"]
@@ -36,7 +38,8 @@ INTEG_TESTS = (("stem.types.ControlMessage", test.integ.message.TestMessageFunct
 # TODO: drop targets?
 # Configurations that the intergration tests can be ran with. Attributs are
 # tuples of the test runner and description.
-TARGETS = enum.Enum(*[(v, v) for v in ("NONE", "NO_CONTROL", "NO_AUTH", "COOKIE", "PASSWORD", "SOCKET")])
+TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("NONE", "NO_CONTROL", "NO_AUTH", "COOKIE", "PASSWORD", "SOCKET")])
+
 TARGET_ATTR = {
   TARGETS.NONE: (None, "No running tor instance."),
   TARGETS.NO_CONTROL: (None, "Basic client, no control port or socket."),

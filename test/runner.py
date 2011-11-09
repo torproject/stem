@@ -25,8 +25,8 @@ import tempfile
 import threading
 
 import stem.process
-
-from stem.util import conf, term
+import stem.util.conf
+import stem.util.term as term
 
 DEFAULT_CONFIG = {
   "test.integ.test_directory": "./test/data",
@@ -281,7 +281,7 @@ class Runner:
       _print_status("  loading test configuration... skipped\n", STATUS_ATTR, quiet)
     else:
       # loads custom testing configuration
-      test_config = conf.get_config("test")
+      test_config = stem.util.conf.get_config("test")
       config_path = os.path.abspath(config_path)
       
       try:

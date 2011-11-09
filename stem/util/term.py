@@ -2,13 +2,13 @@
 Utilities for working with the terminal.
 """
 
-from stem.util import enum
+import stem.util.enum
 
 TERM_COLORS = ("BLACK", "RED", "GREEN", "YELLOW", "BLUE", "MAGENTA", "CYAN", "WHITE")
 
-Color = enum.Enum(*TERM_COLORS)
-BgColor = enum.Enum(*["BG_" + color for color in TERM_COLORS])
-Attr = enum.Enum("BOLD", "UNDERLINE", "HILIGHT")
+Color = stem.util.enum.Enum(*TERM_COLORS)
+BgColor = stem.util.enum.Enum(*["BG_" + color for color in TERM_COLORS])
+Attr = stem.util.enum.Enum("BOLD", "UNDERLINE", "HILIGHT")
 
 # mappings of terminal attribute enums to their ANSI escape encoding
 FG_ENCODING = dict([(Color.values()[i], str(30 + i)) for i in range(8)])
@@ -45,7 +45,7 @@ def format(msg, *attr):
   
   encodings = []
   for text_attr in attr:
-    text_attr, encoding = enum.to_camel_case(text_attr), None
+    text_attr, encoding = stem.util.enum.to_camel_case(text_attr), None
     encoding = FG_ENCODING.get(text_attr, encoding)
     encoding = BG_ENCODING.get(text_attr, encoding)
     encoding = ATTR_ENCODING.get(text_attr, encoding)

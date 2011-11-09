@@ -20,14 +20,14 @@ import socket
 import base64
 import logging
 
-from stem.util import enum
+import stem.util.enum
 
 LOGGER = logging.getLogger("stem")
 
 # cached system values
 IS_PROC_AVAILABLE, SYS_START_TIME, SYS_PHYSICAL_MEMORY = None, None, None
 CLOCK_TICKS = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
-Stat = enum.Enum(("COMMAND", "command"), ("CPU_UTIME", "utime"),
+Stat = stem.util.enum.Enum(("COMMAND", "command"), ("CPU_UTIME", "utime"),
                  ("CPU_STIME", "stime"), ("START_TIME", "start time"))
 
 def is_available():
