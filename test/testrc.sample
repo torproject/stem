@@ -8,10 +8,15 @@
 #   have a faster startup and lower load on authorities). If set to an empty
 #   value then this makes a fresh data directory for each test run.
 #
+# test.integ.log
+#   Path runtime logs are placed. Relative paths are expanded in reference to
+#   'run_tests.py'. Logging is disabled if set ot an empty value.
+#
 # test.integ.run.online
 #   Runs tests with network activity. If set then we'll wait for tor to fully
 #   bootstrap when starting, which won't happen without a network connection.
 
 test.integ.test_directory ./test/data
+test.integ.log ./test/data/log
 test.integ.run.online false
 

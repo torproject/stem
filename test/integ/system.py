@@ -47,5 +47,5 @@ class TestSystemFunctions(unittest.TestCase):
     properly).
     """
     
-    self.assertEquals(0, system.get_bsd_jail_id("blarg_and_stuff"))
+    self.assertEquals(0, system.get_bsd_jail_id(99999))
 

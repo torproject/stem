@@ -6,9 +6,10 @@ dependent, only working on linux, osx, and bsd.
 import re
 import os
 import time
+import logging
 import subprocess
 
-from stem.util import log
+LOGGER = logging.getLogger("stem")
 
 # Mapping of commands to if they're available or not. This isn't always
 # reliable, failing for some special commands. For these the cache is
@@ -265,7 +266,7 @@ def get_bsd_jail_id(pid):
     jid = ps_output[1].strip()
     if jid.isdigit(): return int(jid)
   
-  log.log(log.WARN, "Failed to figure out the FreeBSD jail id. Assuming 0.")
+  LOGGER.warn("Failed to figure out the FreeBSD jail id. Assuming 0.")
   return 0
 
 def call(command, suppress_exc = True):
@@ -295,13 +296,13 @@ def call(command, suppress_exc = True):
     
     msg = "system call: %s (runtime: %0.2f)" % (command, runtime)
     if stderr: msg += "\nstderr: %s" % stderr
-    log.log(log.DEBUG, msg)
+    LOGGER.debug(msg)
     
     if stdout: return stdout.split("\n")
     else: return []
   except OSError, exc:
     msg = "system call (failed): %s (error: %s)" % (command, exc)
-    log.log(log.INFO, msg)
+    LOGGER.debug(msg)
     
     if suppress_exc: return None
     else: raise exc

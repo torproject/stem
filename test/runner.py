@@ -20,6 +20,7 @@ import os
 import sys
 import time
 import shutil
+import logging
 import tempfile
 import threading
 
@@ -29,6 +30,7 @@ from stem.util import conf, term
 
 DEFAULT_CONFIG = {
   "test.integ.test_directory": "./test/data",
+  "test.integ.log": "./test/data/log",
   "test.integ.run.online": False,
 }
 
@@ -326,6 +328,34 @@ class Runner:
     except OSError, exc:
       _print_status("failed (%s)\n" % exc, ERROR_ATTR, quiet)
       raise exc
+    
+    # configures logging
+    logging_path = self._config["test.integ.log"]
+    
+    if logging_path:
+      # makes paths relative of stem's base directory
+      if logging_path.startswith("./"):
+        logging_path = STEM_BASE + logging_path[1:]
+      
+      _print_status("  configuring logger (%s)... " % logging_path, STATUS_ATTR, quiet)
+      
+      # delete the old log
+      if os.path.exists: os.remove(logging_path)
+      
+      logging.basicConfig(
+        filename = logging_path,
+        level = logging.DEBUG,
+        format = '%(asctime)s [%(levelname)s] %(message)s',
+        datefmt = '%D %H:%M:%S',
+      )
+      
+      stem_logger = logging.getLogger("stem")
+      stem_logger.info("Logging opened for integration test run")
+      #datefmt='%m/%d/%Y %I:%M:%S %p',
+      
+      _print_status("done\n", STATUS_ATTR, quiet)
+    else:
+      _print_status("  configuring logger... skipped\n", STATUS_ATTR, quiet)
     
     # writes our testing torrc
     torrc_dst = os.path.join(self._test_dir, "torrc")

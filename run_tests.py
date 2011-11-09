@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import getopt
+import logging
 import unittest
 import test.runner
 import test.unit.types.control_message
@@ -123,6 +124,7 @@ if __name__ == '__main__':
     print "%s\n%s\n%s\n" % (DIVIDER, "INTEGRATION TESTS".center(70), DIVIDER)
     
     integ_runner = test.runner.get_runner()
+    stem_logger = logging.getLogger("stem")
     
     try:
       # TODO: note unused config options afterward
@@ -133,6 +135,7 @@ if __name__ == '__main__':
       
       for name, test_class in INTEG_TESTS:
         print "%s\n%s\n%s\n" % (DIVIDER, name, DIVIDER)
+        stem_logger.info("STARTING INTEGRATION TEST => %s" % name)
         suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
         unittest.TextTestRunner(verbosity=2).run(suite)
         print

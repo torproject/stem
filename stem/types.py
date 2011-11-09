@@ -27,9 +27,10 @@ Version - Tor versioning information.
 
 import re
 import socket
+import logging
 import threading
 
-from stem.util import log
+LOGGER = logging.getLogger("stem")
 
 KEY_ARG = re.compile("^(\S+)=")
 
@@ -78,10 +79,10 @@ def read_message(control_file):
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
       
-      log.log(log.WARN, "ControlSocketClosed: socket file has been closed")
+      LOGGER.warn("ControlSocketClosed: socket file has been closed")
       raise ControlSocketClosed("socket file has been closed")
     except socket.error, exc:
-      log.log(log.WARN, "ControlSocketClosed: received an exception (%s)" % exc)
+      LOGGER.warn("ControlSocketClosed: received an exception (%s)" % exc)
       raise ControlSocketClosed(exc)
     
     raw_content += line
@@ -93,16 +94,16 @@ def read_message(control_file):
       # if the socket is disconnected then the readline() method will provide
       # empty content
       
-      log.log(log.WARN, "ControlSocketClosed: empty socket content")
+      LOGGER.warn("ControlSocketClosed: empty socket content")
       raise ControlSocketClosed("Received empty socket content.")
     elif len(line) < 4:
-      log.log(log.WARN, "ProtocolError: line too short (%s)" % line)
+      LOGGER.warn("ProtocolError: line too short (%s)" % line)
       raise ProtocolError("Badly formatted reply line: too short")
     elif not re.match(r'^[a-zA-Z0-9]{3}[-+ ]', line):
-      log.log(log.WARN, "ProtocolError: malformed status code/divider (%s)" % line)
+      LOGGER.warn("ProtocolError: malformed status code/divider (%s)" % line)
       raise ProtocolError("Badly formatted reply line: beginning is malformed")
     elif not line.endswith("\r\n"):
-      log.log(log.WARN, "ProtocolError: no CRLF linebreak (%s)" % line)
+      LOGGER.warn("ProtocolError: no CRLF linebreak (%s)" % line)
       raise ProtocolError("All lines should end with CRLF")
     
     line = line[:-2] # strips off the CRLF
@@ -115,7 +116,7 @@ def read_message(control_file):
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
       
-      log.log(log.DEBUG, "Received message:\n" + raw_content)
+      LOGGER.debug("Received message:\n" + raw_content)
       
       return ControlMessage(parsed_content, raw_content)
     elif divider == "+":
@@ -129,7 +130,7 @@ def read_message(control_file):
         raw_content += line
         
         if not line.endswith("\r\n"):
-          log.log(log.WARN, "ProtocolError: no CRLF linebreak for data entry (%s)" % line)
+          LOGGER.warn("ProtocolError: no CRLF linebreak for data entry (%s)" % line)
           raise ProtocolError("All lines should end with CRLF")
         elif line == ".\r\n":
           break # data block termination
@@ -150,7 +151,7 @@ def read_message(control_file):
     else:
       # this should never be reached due to the prefix regex, but might as well
       # be safe...
-      log.log(log.WARN, "ProtocolError: unrecognized divider type (%s)" % line)
+      LOGGER.warn("ProtocolError: unrecognized divider type (%s)" % line)
       raise ProtocolError("Unrecognized type '%s': %s" % (divider, line))
 
 class ControlMessage:
