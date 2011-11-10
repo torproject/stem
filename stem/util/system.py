@@ -9,6 +9,8 @@ import time
 import logging
 import subprocess
 
+import stem.util.proc
+
 LOGGER = logging.getLogger("stem")
 
 # Mapping of commands to if they're available or not. This isn't always
@@ -240,6 +242,76 @@ def get_pid(process_name, process_port = None):
   except IOError: pass
   
   return None
+
+def get_pwd(pid):
+  """
+  Provices the working directory of the given process.
+  
+  Arguments:
+    pid (int) - process id of the process to be queried
+  
+  Returns:
+    str with the absolute path for the process' present working directory
+  
+  Raises:
+    IOError if it can't be determined
+  """
+  
+  # try fetching via the proc contents if it's available
+  if stem.util.proc.is_available():
+    try: return stem.util.proc.get_pwd(pid)
+    except IOError: pass
+  
+  # Fall back to a pwdx query. This isn't available on BSD. If we attempt this
+  # lookup then it trumps lsof when reporting an exception at the end since
+  # it's the better lookup method for this information.
+  
+  exc_msg = None
+  
+  if is_available("pwdx"):
+    # pwdx results are of the form:
+    # 3799: /home/atagar
+    # 5839: No such process
+    
+    try:
+      results = call("pwdx %s" % pid)
+      
+      if not results:
+        exc_msg = "pwdx didn't return any results"
+      elif results[0].endswith("No such process"):
+        exc_msg = "pwdx reported no process for pid %s" % pid
+      elif len(results) != 1 or results[0].count(" ") != 1:
+        exc_msg = "we got unexpected output from pwdx: %s" % results
+      else:
+        return results[0].split(" ", 1)[1].strip()
+    except OSError, exc:
+      exc_msg = "pwdx query for %s failed: %s" % (pid, exc)
+  
+  # Use lsof as the final fallback. This is available on both Linux and is the
+  # only lookup method here that works for BSD...
+  # https://trac.torproject.org/projects/tor/ticket/4236
+  #
+  # ~$ lsof -a -p 75717 -d cwd -Fn
+  # p75717
+  # n/Users/atagar/tor/src/or
+  
+  try:
+    results = call("lsof -a -p %s -d cwd -Fn" % pid)
+    
+    if results and len(results) == 2 and results[1].startswith("n/"):
+      return results[1][1:].strip()
+    elif not exc_msg:
+      exc_msg = "we got unexpected output from lsof: %s" % results
+  except OSError, exc:
+    if not exc_msg:
+      exc_msg = "lsof query for the pwd of %s failed: %s" % (pid, exc)
+  
+  if not exc_msg:
+    # shouldn't happen, somehow we never registered a failure...
+    exc_msg = "unable to query pwdx or lsof"
+  
+  # we failed all lookups, raise
+  raise IOError(exc_msg)
 
 def get_bsd_jail_id(pid):
   """

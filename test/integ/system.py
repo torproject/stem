@@ -2,6 +2,7 @@
 Unit tests for the util.system functions in the context of a tor process.
 """
 
+import os
 import unittest
 
 import test.runner
@@ -39,6 +40,16 @@ class TestSystemFunctions(unittest.TestCase):
     runner = test.runner.get_runner()
     self.assertEquals(runner.get_pid(), system.get_pid("tor", runner.get_control_port()))
     self.assertEquals(None, system.get_pid("blarg_and_stuff"))
+  
+  def test_get_pwd(self):
+    """
+    Checks the util.system.get_pwd function.
+    """
+    
+    # tor's pwd will match our process since we started it
+    runner = test.runner.get_runner()
+    self.assertEquals(os.getcwd(), system.get_pwd(runner.get_pid()))
+    self.assertRaises(IOError, system.get_pwd, 99999)
   
   def test_get_bsd_jail_id(self):
     """
