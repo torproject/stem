@@ -2,8 +2,10 @@
 Class representations for a variety of tor objects. These are most commonly
 return values rather than being instantiated by users directly.
 
-ProtocolError - Malformed socket data.
-ControlSocketClosed - Socket terminated.
+ControllerError - Base exception raised when using the controller.
+  |- ProtocolError - Malformed socket data.
+  |- SocketError - Socket used for controller communication errored.
+  +- SocketClosed - Socket terminated.
 
 read_message - Reads a ControlMessage from a control socket.
 ControlMessage - Message from the control socket.
@@ -45,11 +47,18 @@ KEY_ARG = re.compile("^(\S+)=")
 CONTROL_ESCAPES = {r"\\": "\\",  r"\"": "\"",   r"\'": "'",
                    r"\r": "\r",  r"\n": "\n",   r"\t": "\t"}
 
-class ProtocolError(Exception):
+class ControllerError(Exception):
+  "Base error for controller communication issues."
+
+class ProtocolError(ControllerError):
   "Malformed content from the control socket."
   pass
 
-class ControlSocketClosed(Exception):
+class SocketError(ControllerError):
+  "Error arose while communicating with the control socket."
+  pass
+
+class SocketClosed(ControllerError):
   "Control socket was closed before completing the message."
   pass
 
@@ -67,8 +76,7 @@ def read_message(control_file):
   
   Raises:
     ProtocolError the content from the socket is malformed
-    ControlSocketClosed if the socket closes before we receive a complete
-      message
+    SocketClosed if the socket closes before we receive a complete message
   """
   
   parsed_content, raw_content = [], ""
@@ -79,11 +87,11 @@ def read_message(control_file):
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
       
-      LOGGER.warn("ControlSocketClosed: socket file has been closed")
-      raise ControlSocketClosed("socket file has been closed")
+      LOGGER.warn("SocketClosed: socket file has been closed")
+      raise SocketClosed("socket file has been closed")
     except socket.error, exc:
-      LOGGER.warn("ControlSocketClosed: received an exception (%s)" % exc)
-      raise ControlSocketClosed(exc)
+      LOGGER.warn("SocketClosed: received an exception (%s)" % exc)
+      raise SocketClosed(exc)
     
     raw_content += line
     
@@ -94,8 +102,8 @@ def read_message(control_file):
       # if the socket is disconnected then the readline() method will provide
       # empty content
       
-      LOGGER.warn("ControlSocketClosed: empty socket content")
-      raise ControlSocketClosed("Received empty socket content.")
+      LOGGER.warn("SocketClosed: empty socket content")
+      raise SocketClosed("Received empty socket content.")
     elif len(line) < 4:
       LOGGER.warn("ProtocolError: line too short (%s)" % line)
       raise ProtocolError("Badly formatted reply line: too short")
@@ -125,7 +133,7 @@ def read_message(control_file):
       
       while True:
         try: line = control_file.readline()
-        except socket.error, exc: raise ControlSocketClosed(exc)
+        except socket.error, exc: raise SocketClosed(exc)
         
         raw_content += line
         

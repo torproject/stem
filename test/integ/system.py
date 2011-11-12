@@ -49,7 +49,8 @@ class TestSystemFunctions(unittest.TestCase):
     # tor's pwd will match our process since we started it
     runner = test.runner.get_runner()
     self.assertEquals(os.getcwd(), system.get_cwd(runner.get_pid()))
-    self.assertRaises(IOError, system.get_cwd, 99999)
+    self.assertEquals(None, system.get_cwd(99999, True))
+    self.assertRaises(IOError, system.get_cwd, 99999, False)
   
   def test_get_bsd_jail_id(self):
     """

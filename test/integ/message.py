@@ -40,16 +40,16 @@ class TestMessageFunctions(unittest.TestCase):
     control_socket_file.write("GETINFO version\r\n")
     control_socket_file.flush()
     
-    self.assertRaises(stem.types.ControlSocketClosed, stem.types.read_message, control_socket_file)
+    self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
     
     # Additional socket usage should fail, and pulling more responses will fail
     # with more closed exceptions.
     
     control_socket_file.write("GETINFO version\r\n")
     self.assertRaises(socket.error, control_socket_file.flush)
-    self.assertRaises(stem.types.ControlSocketClosed, stem.types.read_message, control_socket_file)
-    self.assertRaises(stem.types.ControlSocketClosed, stem.types.read_message, control_socket_file)
-    self.assertRaises(stem.types.ControlSocketClosed, stem.types.read_message, control_socket_file)
+    self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
+    self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
+    self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
     
     # The socket connection is already broken so calling close shouldn't have
     # an impact.
@@ -57,7 +57,7 @@ class TestMessageFunctions(unittest.TestCase):
     control_socket.close()
     control_socket_file.write("GETINFO version\r\n")
     self.assertRaises(socket.error, control_socket_file.flush)
-    self.assertRaises(stem.types.ControlSocketClosed, stem.types.read_message, control_socket_file)
+    self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
     
     # Closing the file handler, however, will cause a different type of error.
     # This seems to depend on the python version, in 2.6 we get an
@@ -72,8 +72,8 @@ class TestMessageFunctions(unittest.TestCase):
     # receives: AttributeError: 'NoneType' object has no attribute 'sendall'
     self.assertRaises(AttributeError, control_socket_file.flush)
     
-    # receives: stem.types.ControlSocketClosed: socket file has been closed
-    self.assertRaises(stem.types.ControlSocketClosed, stem.types.read_message, control_socket_file)
+    # receives: stem.types.SocketClosed: socket file has been closed
+    self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
   
   def test_invalid_command(self):
     """

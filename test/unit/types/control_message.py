@@ -156,7 +156,7 @@ class TestControlMessage(unittest.TestCase):
     
     control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     control_socket_file = control_socket.makefile()
-    self.assertRaises(stem.types.ControlSocketClosed, stem.types.read_message, control_socket_file)
+    self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
   
   def assert_message_parses(self, controller_reply):
     """
