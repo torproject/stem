@@ -93,7 +93,7 @@ def is_running(command, suppress_exc = True):
     if suppress_exc: return None
     else: raise OSError("Unable to check via 'ps -A co command'")
 
-def get_pid(process_name, process_port = None):
+def get_pid(process_name, process_port = None, suppress_exc = True):
   """
   Attempts to determine the process id for a running process, using the
   following:
@@ -110,14 +110,20 @@ def get_pid(process_name, process_port = None):
   are discarded (since only netstat can differentiate using a bound port).
   
   Arguments:
-    process_name (str) - process name for which to fetch the pid
-    process_port (int) - port that the process we're interested in is bound to,
-                         this is used to disambiguate if there's multiple
-                         instances running
+    process_name (str)  - process name for which to fetch the pid
+    process_port (int)  - port that the process we're interested in is bound
+                          to, this is used to disambiguate if there's multiple
+                          instances running
+    suppress_exc (bool) - if True then None is returned on failure, otherwise
+                          this raises the exception
   
   Returns:
-    int with the process id, None if either no running process exists or it
-    can't be determined
+    int with the process id, None if it can't be determined and suppress_exc is
+    True
+  
+  Raises:
+    IOError if either no running process exists or it can't be determined and
+    suppress_exc is True
   """
   
   # attempts to resolve using pgrep, failing if:
@@ -241,30 +247,39 @@ def get_pid(process_name, process_port = None):
       if pid.isdigit(): return int(pid)
   except IOError: pass
   
-  return None
+  exc_msg = "failed to resolve a pid for %s" % process_name
+  
+  if suppress_exc:
+    LOGGER.debug(exc_msg)
+    return None
+  else:
+    raise IOError(exc_msg)
 
-def get_pwd(pid):
+def get_cwd(pid, suppress_exc = True):
   """
   Provices the working directory of the given process.
   
   Arguments:
-    pid (int) - process id of the process to be queried
+    pid (int)           - process id of the process to be queried
+    suppress_exc (bool) - if True then None is returned on failure, otherwise
+                          this raises the exception
   
   Returns:
-    str with the absolute path for the process' present working directory
+    str with the absolute path for the process' present working directory, None
+    if it can't be determined and suppress_exc is True
   
   Raises:
-    IOError if it can't be determined
+    IOError if this fails and suppress_exc is False
   """
   
   # try fetching via the proc contents if it's available
   if stem.util.proc.is_available():
-    try: return stem.util.proc.get_pwd(pid)
+    try: return stem.util.proc.get_cwd(pid)
     except IOError: pass
   
   # Fall back to a pwdx query. This isn't available on BSD. If we attempt this
-  # lookup then it trumps lsof when reporting an exception at the end since
-  # it's the better lookup method for this information.
+  # lookup then it trumps lsof when logging isssues at the end since it's the
+  # better lookup method for this information.
   
   exc_msg = None
   
@@ -304,14 +319,18 @@ def get_pwd(pid):
       exc_msg = "we got unexpected output from lsof: %s" % results
   except OSError, exc:
     if not exc_msg:
-      exc_msg = "lsof query for the pwd of %s failed: %s" % (pid, exc)
+      exc_msg = "lsof query for the cwd of %s failed: %s" % (pid, exc)
   
   if not exc_msg:
     # shouldn't happen, somehow we never registered a failure...
-    exc_msg = "unable to query pwdx or lsof"
+    exc_msg = "unable to query pwdx or lsof for the cwd of %s" % pid
   
-  # we failed all lookups, raise
-  raise IOError(exc_msg)
+  # we failed all lookups, either raise or log the issue and return None
+  if suppress_exc:
+    LOGGER.debug(exc_msg)
+    return None
+  else:
+    raise IOError(exc_msg)
 
 def get_bsd_jail_id(pid):
   """
@@ -340,6 +359,47 @@ def get_bsd_jail_id(pid):
   
   LOGGER.warn("Failed to figure out the FreeBSD jail id. Assuming 0.")
   return 0
+
+def is_relative_path(path):
+  """
+  Checks if the path can be expanded by the expand_path function.
+  
+  Returns:
+    bool that's True if the path is relative or begins with an expandable home,
+    False otherwise
+  """
+  
+  return path and not path.startswith("/")
+
+def expand_path(path, cwd = None):
+  """
+  Provides an absolute path, expanding tildas with the user's home and
+  appending a current working directory if the path was relative.
+  
+  Arguments:
+    path (str) - path to be expanded
+    cwd  (str) - current working directory to expand relative paths with, our
+                 process' if this is None.
+  
+  Returns:
+    str of the path expanded to be an absolute path
+  """
+  
+  if not path or path[0] == "/":
+    # empty or already absolute - nothing to do
+    return path
+  elif path.startswith("~"):
+    # prefixed with a ~ or ~user entry
+    return os.path.expanduser(path)
+  else:
+    # relative path, expand with the cwd
+    if not cwd: cwd = os.getcwd()
+    
+    # we'll be dealing with both "my/path/" and "./my/path" entries, so
+    # cropping the later
+    if path.startswith("./"): path = path[2:]
+    
+    return os.path.join(cwd, path)
 
 def call(command, suppress_exc = True):
   """
@@ -373,8 +433,7 @@ def call(command, suppress_exc = True):
     if stdout: return stdout.split("\n")
     else: return []
   except OSError, exc:
-    msg = "system call (failed): %s (error: %s)" % (command, exc)
-    LOGGER.debug(msg)
+    LOGGER.debug("system call (failed): %s (error: %s)" % (command, exc))
     
     if suppress_exc: return None
     else: raise exc

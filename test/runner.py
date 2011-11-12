@@ -105,11 +105,7 @@ class Runner:
     config_test_dir = self._config["test.integ.test_directory"]
     
     if config_test_dir:
-      # makes paths relative of stem's base directory
-      if config_test_dir.startswith("./"):
-        config_test_dir = STEM_BASE + config_test_dir[1:]
-      
-      self._test_dir = os.path.expanduser(config_test_dir)
+      self._test_dir = stem.util.system.expand_path(config_test_dir, STEM_BASE)
     else:
       self._test_dir = tempfile.mktemp("-stem-integ")
     
@@ -333,10 +329,7 @@ class Runner:
     logging_path = self._config["test.integ.log"]
     
     if logging_path:
-      # makes paths relative of stem's base directory
-      if logging_path.startswith("./"):
-        logging_path = STEM_BASE + logging_path[1:]
-      
+      logging_path = stem.util.system.expand_path(logging_path, STEM_BASE)
       _print_status("  configuring logger (%s)... " % logging_path, STATUS_ATTR, quiet)
       
       # delete the old log

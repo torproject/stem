@@ -41,15 +41,15 @@ class TestSystemFunctions(unittest.TestCase):
     self.assertEquals(runner.get_pid(), system.get_pid("tor", runner.get_control_port()))
     self.assertEquals(None, system.get_pid("blarg_and_stuff"))
   
-  def test_get_pwd(self):
+  def test_get_cwd(self):
     """
-    Checks the util.system.get_pwd function.
+    Checks the util.system.get_cwd function.
     """
     
     # tor's pwd will match our process since we started it
     runner = test.runner.get_runner()
-    self.assertEquals(os.getcwd(), system.get_pwd(runner.get_pid()))
-    self.assertRaises(IOError, system.get_pwd, 99999)
+    self.assertEquals(os.getcwd(), system.get_cwd(runner.get_pid()))
+    self.assertRaises(IOError, system.get_cwd, 99999)
   
   def test_get_bsd_jail_id(self):
     """
