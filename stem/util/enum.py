@@ -5,7 +5,7 @@ constructed as simple type listings, ie:
 >>> insects.ANT
 'Ant'
 >>> insects.values()
-['Ant', 'Wasp', 'Ladybug', 'Firefly']
+('Ant', 'Wasp', 'Ladybug', 'Firefly')
 
 with overwritten string counterparts:
 >>> pets = Enum(("DOG", "Skippy"), "CAT", ("FISH", "Nemo"))
@@ -14,10 +14,13 @@ with overwritten string counterparts:
 >>> pets.CAT
 'Cat'
 
-or with entirely custom string components as an unordered enum with:
->>> pets = LEnum(DOG="Skippy", CAT="Kitty", FISH="Nemo")
->>> pets.CAT
-'Kitty'
+to_camel_case - converts a string to camel case
+Enum - Provides a basic, ordered  enumeration.
+  |- values - string representation of our enums
+  |- index_of - indice of an enum value
+  |- next - provides the enum after a given enum value
+  |- previous - provides the enum before a given value
+  +- __iter__ - iterator over our enum keys
 """
 
 def to_camel_case(label, word_divider = " "):
@@ -61,16 +64,6 @@ class Enum:
     
     self._keys = tuple(keys)
     self._values = tuple(values)
-  
-  def keys(self):
-    """
-    Provides an ordered listing of the enumeration keys in this set.
-    
-    Returns:
-      tuple with our enum keys
-    """
-    
-    return self._keys
   
   def values(self):
     """
@@ -137,14 +130,12 @@ class Enum:
     
     prev_index = (self._values.index(value) - 1) % len(self._values)
     return self._values[prev_index]
-
-class LEnum(Enum):
-  """
-  Enumeration that accepts custom string mappings.
-  """
   
-  def __init__(self, **args):
-    Enum.__init__(self)
-    self.__dict__.update(args)
-    self._values = sorted(args.values())
+  def __iter__(self):
+    """
+    Provides an ordered listing of the enumeration keys in this set.
+    """
+    
+    for entry in self._keys:
+      yield entry
 
