@@ -15,6 +15,7 @@ import test.runner
 import test.unit.types.control_message
 import test.unit.types.control_line
 import test.unit.types.version
+import test.unit.connection.protocolinfo_response
 import test.integ.message
 import test.integ.system
 
@@ -29,6 +30,7 @@ DIVIDER = "=" * 70
 UNIT_TESTS = (("stem.types.ControlMessage", test.unit.types.control_message.TestControlMessage),
               ("stem.types.ControlLine", test.unit.types.control_line.TestControlLine),
               ("stem.types.Version", test.unit.types.version.TestVerion),
+              ("stem.connection.ProtocolInfoResponse", test.unit.connection.protocolinfo_response.TestProtocolInfoResponse),
              )
 
 INTEG_TESTS = (("stem.types.ControlMessage", test.integ.message.TestMessageFunctions),

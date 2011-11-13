@@ -53,7 +53,8 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
   
   def convert(control_message):
     """
-    Parses a ControlMessage, converting it into a ProtocolInfoResponse.
+    Parses a ControlMessage, performing an in-place conversion of it into a
+    ProtocolInfoResponse.
     
     Arguments:
       control_message (stem.types.ControlMessage) -
@@ -61,7 +62,7 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
     
     Raises:
       stem.types.ProtocolError the message isn't a proper PROTOCOLINFO response
-      ValueError if argument is of the wrong type
+      TypeError if argument isn't a ControlMessage
     """
     
     if isinstance(control_message, stem.types.ControlMessage):
@@ -69,7 +70,7 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
       control_message._parse_message()
       return control_message
     else:
-      raise ValueError("Only able to convert stem.types.ControlMessage instances")
+      raise TypeError("Only able to convert stem.types.ControlMessage instances")
   
   convert = staticmethod(convert)
   
@@ -152,7 +153,7 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
         
         # parse optional COOKIEFILE mapping (quoted and can have escapes)
         if line.is_next_mapping("COOKIEFILE", True, True):
-          self.cookie_file = line.pop_mapping(True, True)[0]
+          self.cookie_file = line.pop_mapping(True, True)[1]
           
           # attempt to expand relative cookie paths
           if stem.util.system.is_relative_path(self.cookie_file):
@@ -286,6 +287,7 @@ class ControlConnection:
     
     while self.is_running():
       try:
+        # TODO: this raises a SocketClosed when... well, the socket is closed
         control_message = stem.types.read_message(self._control_socket_file)
         
         if control_message.content()[-1][0] == "650":
