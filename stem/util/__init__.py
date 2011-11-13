@@ -11,7 +11,10 @@ import logging
 class NullHandler(logging.Handler):
   def emit(self, record): pass
 
-logging.getLogger("stem").addHandler(NullHandler())
+stem_logger = logging.getLogger("stem")
+
+if not stem_logger.handlers:
+  stem_logger.addHandler(NullHandler())
 
 __all__ = ["conf", "enum", "log", "proc", "system", "term"]
 
