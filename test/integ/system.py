@@ -1,5 +1,5 @@
 """
-Unit tests for the util.system functions in the context of a tor process.
+Unit tests for the stem.util.system functions in the context of a tor process.
 """
 
 import os
@@ -10,12 +10,13 @@ import stem.util.system as system
 
 class TestSystemFunctions(unittest.TestCase):
   """
-  Tests the util.system functions against the tor process that we're running.
+  Tests the stem.util.system functions against the tor process that we're
+  running.
   """
   
   def test_is_available(self):
     """
-    Checks the util.system.is_available function.
+    Checks the stem.util.system.is_available function.
     """
     
     # since we're running tor it would be kinda sad if this didn't detect it
@@ -26,7 +27,7 @@ class TestSystemFunctions(unittest.TestCase):
   
   def test_is_running(self):
     """
-    Checks the util.system.is_running function.
+    Checks the stem.util.system.is_running function.
     """
     
     self.assertTrue(system.is_running("tor"))
@@ -34,7 +35,7 @@ class TestSystemFunctions(unittest.TestCase):
 
   def test_get_pid(self):
     """
-    Checks the util.system.get_pid function.
+    Checks the stem.util.system.get_pid function.
     """
     
     runner = test.runner.get_runner()
@@ -43,7 +44,7 @@ class TestSystemFunctions(unittest.TestCase):
   
   def test_get_cwd(self):
     """
-    Checks the util.system.get_cwd function.
+    Checks the stem.util.system.get_cwd function.
     """
     
     # tor's pwd will match our process since we started it

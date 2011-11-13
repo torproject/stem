@@ -1,5 +1,5 @@
 """
-Integration tests for the types.ControlMessage class.
+Integration tests for the stem.types.ControlMessage class.
 """
 
 import re
@@ -11,7 +11,7 @@ import test.runner
 
 class TestMessageFunctions(unittest.TestCase):
   """
-  Exercises the 'types.ControlMessage' class with an actual tor instance.
+  Exercises the 'stem.types.ControlMessage' class with an actual tor instance.
   """
   
   def test_unestablished_socket(self):

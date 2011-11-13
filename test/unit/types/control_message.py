@@ -1,5 +1,5 @@
 """
-Unit tests for the types.ControlMessage parsing and class.
+Unit tests for the stem.types.ControlMessage parsing and class.
 """
 
 import socket
@@ -31,7 +31,7 @@ version -- The current version of Tor.
 
 class TestControlMessage(unittest.TestCase):
   """
-  Tests methods and functions related to 'types.ControlMessage'. This uses
+  Tests methods and functions related to 'stem.types.ControlMessage'. This uses
   StringIO to make 'files' to mock socket input.
   """
   
@@ -163,7 +163,7 @@ class TestControlMessage(unittest.TestCase):
     Performs some basic sanity checks that a reply mirrors its parsed result.
     
     Returns:
-      types.ControlMessage for the given input
+      stem.types.ControlMessage for the given input
     """
     
     message = stem.types.read_message(StringIO.StringIO(controller_reply))

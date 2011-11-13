@@ -1,5 +1,5 @@
 """
-Unit tests for the types.ControlLine class.
+Unit tests for the stem.types.ControlLine class.
 """
 
 import unittest
@@ -15,7 +15,7 @@ PROTOCOLINFO_RESPONSE = (
 
 class TestControlLine(unittest.TestCase):
   """
-  Tests methods of the types.ControlLine class.
+  Tests methods of the stem.types.ControlLine class.
   """
   
   def test_pop_examples(self):

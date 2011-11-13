@@ -1,5 +1,5 @@
 """
-Unit tests for the types.Version parsing and class.
+Unit tests for the stem.types.Version parsing and class.
 """
 
 import unittest
@@ -7,7 +7,7 @@ import stem.types
 
 class TestVerion(unittest.TestCase):
   """
-  Tests methods and functions related to 'types.Version'.
+  Tests methods and functions related to 'stem.types.Version'.
   """
   
   def test_parsing(self):
