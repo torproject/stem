@@ -9,7 +9,7 @@ import unittest
 import stem.types
 import test.runner
 
-class TestMessageFunctions(unittest.TestCase):
+class TestControlMessage(unittest.TestCase):
   """
   Exercises the 'stem.types.ControlMessage' class with an actual tor instance.
   """
@@ -141,7 +141,7 @@ class TestMessageFunctions(unittest.TestCase):
     """
     
     if stem.process.get_tor_version() < stem.types.REQ_GETINFO_CONFIG_TEXT:
-      return
+      self.skipTest("(requires %s)" % stem.types.REQ_GETINFO_CONFIG_TEXT)
     
     # We can't be certain of the order, and there may be extra config-text
     # entries as per...
