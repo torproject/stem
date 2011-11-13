@@ -3,73 +3,26 @@ This provides handlers for specially formatted configuration files. Entries are
 expected to consist of simple key/value pairs, and anything after "#" is
 stripped as a comment. Excess whitespace is trimmed and empty lines are
 ignored. For instance:
-# This is my sample config
 
-user.name Galen
-user.password yabba1234 # here's an inline comment
-user.notes takes a fancy to pepperjack chese
-blankEntry.example
+  # This is my sample config
+  user.name Galen
+  user.password yabba1234 # here's an inline comment
+  user.notes takes a fancy to pepperjack chese
+  blankEntry.example
 
-would be loaded as four entries (the last one's value being an empty string).
-If a key's defined multiple times then the last instance of it is used.
+would be loaded as four entries, the last one's value being an empty string.
 
-Example usage:
-  User has a file at '/home/atagar/myConfig' with...
-    destination.ip 1.2.3.4
-    destination.port blarg
-    
-    startup.run export PATH=$PATH:~/bin
-    startup.run alias l=ls
-  
-  And they have a script with...
-    import stem.util.conf
-    
-    # Configuration values we'll use in this file. These are mappings of
-    # configuration keys to the default values we'll use if the user doesn't
-    # have something different in their config file (or it doesn't match this
-    # type).
-    
-    ssh_config = {"login.user": "atagar",
-                  "login.password": "pepperjack_is_awesome!",
-                  "destination.ip": "127.0.0.1",
-                  "destination.port": 22,
-                  "startup.run": []}
-    
-    # Makes an empty config instance with the handle of 'ssh_login'. This is a
-    # singleton so other classes can fetch this same configuration from this
-    # handle.
-    
-    user_config = stem.util.conf.get_config("ssh_login")
-    
-    # Loads the user's configuration file, warning if this fails.
-    
-    try:
-      user_config.load("/home/atagar/myConfig")
-    except IOError, exc:
-      print "Unable to load the user's config: %s" % exc
-    
-    # Replaces the contents of ssh_config with the values from the user's
-    # config file if...
-    # - the key is present in the config file
-    # - we're able to convert the configuration file's value to the same type
-    #   as what's in the mapping (see the Config.get() method for how these
-    #   type inferences work)
-    #
-    # For instance in this case the login values are left alone (because they
-    # aren't in the user's config file), and the 'destination.port' is also
-    # left with the value of 22 because we can't turn "blarg" into an integer.
-    #
-    # The other values are replaced, so ssh_config now becomes...
-    # {"login.user": "atagar",
-    #  "login.password": "pepperjack_is_awesome!",
-    #  "destination.ip": "1.2.3.4",
-    #  "destination.port": 22,
-    #  "startup.run": ["export PATH=$PATH:~/bin", "alias l=ls"]}
-    #
-    # Information for what values fail to load and why are reported to
-    # 'stem.util.log'.
-    
-    user_config.update(ssh_config)
+get_config - Singleton for getting configurations
+Config - Custom configuration.
+  |- load - reads a configuration file
+  |- clear - empties our loaded configuration contents
+  |- update - replaces mappings in a dictionary with the config's values
+  |- keys - provides keys in the loaded configuration
+  |- unused_keys - provides keys that have never been requested
+  |- get - provides the value for a given key, with type inference
+  |- get_value - provides the value for a given key as a string
+  |- get_str_csv - gets a value as a comma separated list of strings
+  +- get_int_csv - gets a value as a comma separated list of integers
 """
 
 import logging
@@ -107,6 +60,65 @@ class Config():
   """
   Handler for easily working with custom configurations, providing persistence
   to and from files. All operations are thread safe.
+  
+  Example usage:
+    User has a file at '/home/atagar/myConfig' with...
+      destination.ip 1.2.3.4
+      destination.port blarg
+      
+      startup.run export PATH=$PATH:~/bin
+      startup.run alias l=ls
+    
+    And they have a script with...
+      import stem.util.conf
+      
+      # Configuration values we'll use in this file. These are mappings of
+      # configuration keys to the default values we'll use if the user doesn't
+      # have something different in their config file (or it doesn't match this
+      # type).
+      
+      ssh_config = {"login.user": "atagar",
+                    "login.password": "pepperjack_is_awesome!",
+                    "destination.ip": "127.0.0.1",
+                    "destination.port": 22,
+                    "startup.run": []}
+      
+      # Makes an empty config instance with the handle of 'ssh_login'. This is
+      # a singleton so other classes can fetch this same configuration from
+      # this handle.
+      
+      user_config = stem.util.conf.get_config("ssh_login")
+      
+      # Loads the user's configuration file, warning if this fails.
+      
+      try:
+        user_config.load("/home/atagar/myConfig")
+      except IOError, exc:
+        print "Unable to load the user's config: %s" % exc
+      
+      # Replaces the contents of ssh_config with the values from the user's
+      # config file if...
+      # - the key is present in the config file
+      # - we're able to convert the configuration file's value to the same type
+      #   as what's in the mapping (see the Config.get() method for how these
+      #   type inferences work)
+      #
+      # For instance in this case the login values are left alone (because they
+      # aren't in the user's config file), and the 'destination.port' is also
+      # left with the value of 22 because we can't turn "blarg" into an
+      # integer.
+      #
+      # The other values are replaced, so ssh_config now becomes...
+      # {"login.user": "atagar",
+      #  "login.password": "pepperjack_is_awesome!",
+      #  "destination.ip": "1.2.3.4",
+      #  "destination.port": 22,
+      #  "startup.run": ["export PATH=$PATH:~/bin", "alias l=ls"]}
+      #
+      # Information for what values fail to load and why are reported to
+      # 'stem.util.log'.
+      
+      user_config.update(ssh_config)
   """
   
   def __init__(self):
@@ -124,35 +136,116 @@ class Config():
     # keys that have been requested (used to provide unused config contents)
     self._requested_keys = set()
   
-  def get_value(self, key, default = None, multiple = False):
+  def load(self, path):
     """
-    This provides the currently value associated with a given key.
+    Reads in the contents of the given path, adding its configuration values
+    to our current contents.
     
     Arguments:
-      key (str)        - config setting to be fetched
-      default (object) - value provided if no such key exists
-      multiple (bool)  - provides back a list of all values if true, otherwise
-                         this returns the last loaded configuration value
+      path (str) - file path to be loaded
     
-    Returns:
-      string or list of string configuration values associated with the given
-      key, providing the default if no such key exists
+    Raises:
+      IOError if we fail to read the file (it doesn't exist, insufficient
+      permissions, etc)
+    """
+    
+    config_file = open(path, "r")
+    read_contents = config_file.readlines()
+    config_file.close()
+    
+    self._contents_lock.acquire()
+    self._raw_contents = read_contents
+    
+    for line in self._raw_contents:
+      # strips any commenting or excess whitespace
+      comment_start = line.find("#")
+      if comment_start != -1: line = line[:comment_start]
+      line = line.strip()
+      
+      # parse the key/value pair
+      if line:
+        if " " in line:
+          key, value = line.split(" ", 1)
+          value = value.strip()
+        else:
+          key, value = line, ""
+        
+        if key in self._contents: self._contents[key].append(value)
+        else: self._contents[key] = [value]
+    
+    self._path = path
+    self._contents_lock.release()
+  
+  def clear(self):
+    """
+    Drops the configuration contents and reverts back to a blank, unloaded
+    state.
     """
     
     self._contents_lock.acquire()
-    
-    if key in self._contents:
-      val = self._contents[key]
-      if not multiple: val = val[-1]
-      self._requested_keys.add(key)
-    else:
-      msg = "config entry '%s' not found, defaulting to '%s'" % (key, default)
-      LOGGER.debug(msg)
-      val = default
-    
+    self._path = None
+    self._contents.clear()
+    self._raw_contents = []
+    self._requested_keys = set()
     self._contents_lock.release()
+  
+  def update(self, conf_mappings, limits = None):
+    """
+    This takes a dictionary of 'config_key => default_value' mappings and
+    changes the values to reflect our current configuration. This will leave
+    the previous values alone if...
     
-    return val
+    a. we don't have a value for that config_key
+    b. we can't convert our value to be the same type as the default_value
+    
+    For more information about how we convert types see our get() method.
+    
+    Arguments:
+      conf_mappings (dict) - configuration key/value mappings to be revised
+      limits (dict)        - mappings of limits on numeric values, expected to
+                             be of the form "configKey -> min" or "configKey ->
+                             (min, max)"
+    """
+    
+    if limits == None: limits = {}
+    
+    for entry in conf_mappings.keys():
+      val = self.get(entry, conf_mappings[entry])
+      
+      # if this was a numeric value then apply constraints
+      if entry in limits and (isinstance(val, int) or isinstance(val, float)):
+        if isinstance(limits[entry], tuple):
+          val = max(val, limits[entry][0])
+          val = min(val, limits[entry][1])
+        else: val = max(val, limits[entry])
+      
+      # only use this value if it wouldn't change the type of the mapping (this
+      # will only fail if the type isn't either a string or one of the types
+      # recognized by the get method)
+      
+      if type(val) == type(conf_mappings[entry]):
+        conf_mappings[entry] = val
+  
+  def keys(self):
+    """
+    Provides all keys in the currently loaded configuration.
+    
+    Returns:
+      list if strings for the configuration keys we've loaded
+    """
+    
+    return self._contents.keys()
+  
+  def unused_keys(self):
+    """
+    Provides the configuration keys that have never been provided to a caller
+    via the get, get_value, or update methods.
+    
+    Returns:
+      set of configuration keys we've loaded but have never been requested
+    """
+    
+    return set(self.get_keys()).difference(self._requested_keys)
   
   def get(self, key, default = None):
     """
@@ -242,6 +335,36 @@ class Config():
     
     return val
   
+  def get_value(self, key, default = None, multiple = False):
+    """
+    This provides the currently value associated with a given key.
+    
+    Arguments:
+      key (str)        - config setting to be fetched
+      default (object) - value provided if no such key exists
+      multiple (bool)  - provides back a list of all values if true, otherwise
+                         this returns the last loaded configuration value
+    
+    Returns:
+      string or list of string configuration values associated with the given
+      key, providing the default if no such key exists
+    """
+    
+    self._contents_lock.acquire()
+    
+    if key in self._contents:
+      val = self._contents[key]
+      if not multiple: val = val[-1]
+      self._requested_keys.add(key)
+    else:
+      msg = "config entry '%s' not found, defaulting to '%s'" % (key, default)
+      LOGGER.debug(msg)
+      val = default
+    
+    self._contents_lock.release()
+    
+    return val
+  
   def get_str_csv(self, key, default = None, count = None):
     """
     Fetches the given key as a comma separated value.
@@ -319,115 +442,4 @@ class Config():
       LOGGER.info(error_msg)
       return default
     else: return [int(val) for val in conf_comp]
-  
-  def update(self, conf_mappings, limits = None):
-    """
-    This takes a dictionary of 'config_key => default_value' mappings and
-    changes the values to reflect our current configuration. This will leave
-    the previous values alone if...
-    
-    a. we don't have a value for that config_key
-    b. we can't convert our value to be the same type as the default_value
-    
-    For more information about how we convert types see our get() method.
-    
-    Arguments:
-      conf_mappings (dict) - configuration key/value mappings to be revised
-      limits (dict)        - mappings of limits on numeric values, expected to
-                             be of the form "configKey -> min" or "configKey ->
-                             (min, max)"
-    """
-    
-    if limits == None: limits = {}
-    
-    for entry in conf_mappings.keys():
-      val = self.get(entry, conf_mappings[entry])
-      
-      # if this was a numeric value then apply constraints
-      if entry in limits and (isinstance(val, int) or isinstance(val, float)):
-        if isinstance(limits[entry], tuple):
-          val = max(val, limits[entry][0])
-          val = min(val, limits[entry][1])
-        else: val = max(val, limits[entry])
-      
-      # only use this value if it wouldn't change the type of the mapping (this
-      # will only fail if the type isn't either a string or one of the types
-      # recognized by the get method)
-      
-      if type(val) == type(conf_mappings[entry]):
-        conf_mappings[entry] = val
-  
-  def keys(self):
-    """
-    Provides all keys in the currently loaded configuration.
-    
-    Returns:
-      list if strings for the configuration keys we've loaded
-    """
-    
-    return self._contents.keys()
-  
-  def unused_keys(self):
-    """
-    Provides the configuration keys that have never been provided to a caller
-    via the get, get_value, or update methods.
-    
-    Returns:
-      set of configuration keys we've loaded but have never been requested
-    """
-    
-    return set(self.get_keys()).difference(self._requested_keys)
-  
-  def reset(self):
-    """
-    Drops the configuration contents and reverts back to a blank, unloaded
-    state.
-    """
-    
-    self._contents_lock.acquire()
-    self._path = None
-    self._contents.clear()
-    self._raw_contents = []
-    self._requested_keys = set()
-    self._contents_lock.release()
-  
-  def load(self, path):
-    """
-    Reads in the contents of the given path, adding its configuration values
-    to our current contents.
-    
-    Arguments:
-      path (str) - file path to be loaded
-    
-    Raises:
-      IOError if we fail to read the file (it doesn't exist, insufficient
-      permissions, etc)
-    """
-    
-    config_file = open(path, "r")
-    read_contents = config_file.readlines()
-    config_file.close()
-    
-    self._contents_lock.acquire()
-    self._raw_contents = read_contents
-    
-    for line in self._raw_contents:
-      # strips any commenting or excess whitespace
-      comment_start = line.find("#")
-      if comment_start != -1: line = line[:comment_start]
-      line = line.strip()
-      
-      # parse the key/value pair
-      if line:
-        if " " in line:
-          key, value = line.split(" ", 1)
-          value = value.strip()
-        else:
-          key, value = line, ""
-        
-        if key in self._contents: self._contents[key].append(value)
-        else: self._contents[key] = [value]
-    
-    self._path = path
-    self._contents_lock.release()
 
