@@ -11,6 +11,15 @@ https://code.google.com/p/psutil/
 
 which was written by Jay Loden, Dave Daeschler, Giampaolo Rodola' and is under
 the BSD license.
+
+is_available - checks if proc utilities can be used on this system
+get_system_start_time - unix timestamp for when the system started
+get_physical_memory - memory available on this system
+get_cwd - provides the current working directory for a process
+get_uid - provides the user id a process is running under
+get_memory_usage - provides the memory usage of a process
+get_stats - queries statistics about a process
+get_connections - provides the connections made by a process
 """
 
 import os

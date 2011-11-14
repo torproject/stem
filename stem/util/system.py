@@ -1,6 +1,15 @@
 """
 Helper functions for working with the underlying system. These are mostly os
 dependent, only working on linux, osx, and bsd.
+
+is_available - determines if a command is availabe on this system
+is_running - determines if a given process is running
+get_pid - provides the process id a given process is running under
+get_cwd - provides the current working directory for a given process
+get_bsd_jail_id - provides the BSD jail id a given process is running within
+is_relative_path - checks if a given path can be expanded by expand_path
+expand_path - expands relative paths and ~ entries
+call - runs the given system command and provides back the results
 """
 
 import re
