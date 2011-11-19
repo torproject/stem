@@ -9,6 +9,7 @@ import time
 import getopt
 import logging
 import unittest
+import StringIO
 
 import test.runner
 import test.unit.types.control_message
@@ -70,6 +71,36 @@ Runs tests for the stem library.
     %s
 """
 
+# TODO: add an option to disable output coloring?
+
+HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
+CATEGORY_ATTR = (term.Color.GREEN, term.Attr.BOLD)
+DEFAULT_TEST_ATTR = (term.Color.CYAN,)
+
+TEST_OUTPUT_ATTR = {
+  "... ok": (term.Color.GREEN,),
+  "... FAIL": (term.Color.RED, term.Attr.BOLD),
+  "... ERROR": (term.Color.RED, term.Attr.BOLD),
+  "... skipped": (term.Color.BLUE,),
+}
+
+def print_divider(msg, is_header = False):
+  attr = HEADER_ATTR if is_header else CATEGORY_ATTR
+  print term.format("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
+
+def print_test_results(test_results):
+  test_results.seek(0)
+  for line in test_results.readlines():
+    line_attr = DEFAULT_TEST_ATTR
+    
+    for result in TEST_OUTPUT_ATTR:
+      if result in line:
+        line_attr = TEST_OUTPUT_ATTR[result]
+        break
+    
+    if line_attr: line = term.format(line, *line_attr)
+    sys.stdout.write(line)
+
 if __name__ == '__main__':
   start_time = time.time()
   run_unit_tests = False
@@ -120,18 +151,20 @@ if __name__ == '__main__':
     sys.exit()
   
   if run_unit_tests:
-    print "%s\n%s\n%s\n" % (DIVIDER, "UNIT TESTS".center(70), DIVIDER)
+    print_divider("UNIT TESTS", True)
     
     for name, test_class in UNIT_TESTS:
-      print "%s\n%s\n%s\n" % (DIVIDER, name, DIVIDER)
+      print_divider(name)
       suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-      unittest.TextTestRunner(verbosity=2).run(suite)
+      test_results = StringIO.StringIO()
+      unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+      print_test_results(test_results)
       print
     
     print
   
   if run_integ_tests:
-    print "%s\n%s\n%s\n" % (DIVIDER, "INTEGRATION TESTS".center(70), DIVIDER)
+    print_divider("INTEGRATION TESTS", True)
     
     integ_runner = test.runner.get_runner()
     stem_logger = logging.getLogger("stem")
@@ -144,10 +177,12 @@ if __name__ == '__main__':
       print
       
       for name, test_class in INTEG_TESTS:
-        print "%s\n%s\n%s\n" % (DIVIDER, name, DIVIDER)
+        print_divider(name)
         stem_logger.info("STARTING INTEGRATION TEST => %s" % name)
         suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        unittest.TextTestRunner(verbosity=2).run(suite)
+        test_results = StringIO.StringIO()
+        unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+        print_test_results(test_results)
         print
     except OSError:
       pass
