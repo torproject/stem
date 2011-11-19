@@ -184,13 +184,13 @@ class TestSystem(unittest.TestCase):
       self.skipTest("(pwdx unavailable)")
     
     # filter the call function to only allow this command
-    pwdx_prefix = GET_CWD_PWDX % ""
+    pwdx_prefix = stem.util.system.GET_CWD_PWDX % ""
     stem.util.system.CALL_MOCKING = lambda cmd: cmd.startswith(pwdx_prefix)
     
     runner_pid = test.runner.get_runner().get_pid()
     self.assertEquals(os.getcwd(), stem.util.system.get_cwd(runner_pid))
   
-  def test_get_cwd_pwdx(self):
+  def test_get_cwd_lsof(self):
     """
     Tests the get_pid_by_cwd function with a lsof response.
     """

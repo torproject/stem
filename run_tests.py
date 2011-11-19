@@ -4,7 +4,6 @@
 Runs unit and integration tests.
 """
 
-import os
 import sys
 import time
 import getopt
