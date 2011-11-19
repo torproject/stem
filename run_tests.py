@@ -17,6 +17,7 @@ import test.unit.types.control_line
 import test.unit.types.version
 import test.unit.connection.protocolinfo_response
 import test.unit.util.enum
+import test.unit.util.system
 import test.integ.types.control_message
 import test.integ.util.conf
 import test.integ.util.system
@@ -34,6 +35,7 @@ UNIT_TESTS = (("stem.types.ControlMessage", test.unit.types.control_message.Test
               ("stem.types.Version", test.unit.types.version.TestVerion),
               ("stem.connection.ProtocolInfoResponse", test.unit.connection.protocolinfo_response.TestProtocolInfoResponse),
               ("stem.util.enum", test.unit.util.enum.TestEnum),
+              ("stem.util.system", test.unit.util.system.TestSystem),
              )
 
 INTEG_TESTS = (("stem.types.ControlMessage", test.integ.types.control_message.TestControlMessage),

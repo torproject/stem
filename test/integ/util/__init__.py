@@ -2,5 +2,5 @@
 Integration tests for stem.util.* contents.
 """
 
-__all__ = ["system"]
+__all__ = ["conf", "system"]
 

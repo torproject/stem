@@ -22,6 +22,10 @@ startup.run alias l=ls
 """ % CONF_HEADER
 
 class TestConf(unittest.TestCase):
+  """
+  Tests the stem.util.conf contents.
+  """
+  
   def tearDown(self):
     # cleans up test configurations we made
     if os.path.exists(CONF_PATH):
