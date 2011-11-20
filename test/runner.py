@@ -12,16 +12,19 @@ Runner - Runtime context for our integration tests.
   |- is_running - checks if our tor test instance is running
   |- get_torrc_path - path to our tor instance's torrc
   |- get_torrc_contents - contents of our tor instance's torrc
-  |- get_control_port - port that our tor instance is listening on
-  +- get_pid - process id of our tor process
+  |- get_connection_type - method by which controllers can connect to tor
+  |- get_pid - process id of our tor process
+  +- get_tor_socket - provides a socket to the tor instance
 """
 
 import os
 import sys
 import time
+import socket
 import shutil
 import logging
 import tempfile
+import binascii
 import threading
 
 import stem.process
@@ -32,7 +35,7 @@ import stem.util.term as term
 DEFAULT_CONFIG = {
   "test.integ.test_directory": "./test/data",
   "test.integ.log": "./test/data/log",
-  "test.integ.run.online": False,
+  "test.integ.target.online": False,
 }
 
 # Methods for connecting to tor. General integration tests only run with the
@@ -67,6 +70,17 @@ OPT_COOKIE = "CookieAuthentication 1"
 OPT_PASSWORD = "HashedControlPassword 16:8C423A41EF4A542C6078985270AE28A4E04D056FB63F9F201505DB8E06"
 OPT_SOCKET = "ControlSocket %s" % CONTROL_SOCKET_PATH
 
+# mapping of TorConnection to their options
+
+CONNECTION_OPTS = {
+  TorConnection.NONE: [],
+  TorConnection.NO_AUTH: [OPT_PORT],
+  TorConnection.PASSWORD: [OPT_PORT, OPT_PASSWORD],
+  TorConnection.COOKIE: [OPT_PORT, OPT_COOKIE],
+  TorConnection.MULTIPLE: [OPT_PORT, OPT_PASSWORD, OPT_COOKIE],
+  TorConnection.SOCKET: [OPT_SOCKET],
+}
+
 def get_runner():
   """
   Singleton for the runtime context of integration tests.
@@ -82,25 +96,11 @@ def get_torrc(connection_type = DEFAULT_TOR_CONNECTION):
   for "pw".
   """
   
-  connection_opt, torrc = [], BASE_TORRC
-  
-  if connection_type == TorConnection.NONE:
-    pass
-  elif connection_type == TorConnection.NO_AUTH:
-    connection_opt = [OPT_PORT]
-  elif connection_type == TorConnection.PASSWORD:
-    connection_opt = [OPT_PORT, OPT_PASSWORD]
-  elif connection_type == TorConnection.COOKIE:
-    connection_opt = [OPT_PORT, OPT_COOKIE]
-  elif connection_type == TorConnection.MULTIPLE:
-    connection_opt = [OPT_PORT, OPT_PASSWORD, OPT_COOKIE]
-  elif connection_type == TorConnection.SOCKET:
-    connection_opt = [OPT_SOCKET]
+  connection_opt, torrc = CONNECTION_OPTS[connection_type], BASE_TORRC
   
   if connection_opt:
-    torrc += "\n" + "\n".join(connection_opt)
-  
-  return torrc
+    return torrc + "\n".join(connection_opt) + "\n"
+  else: return torrc
 
 class RunnerStopped(Exception):
   "Raised when we try to use a Runner that doesn't have an active tor instance"
@@ -114,9 +114,10 @@ class Runner:
     # runtime attributes, set by the start method
     self._test_dir = ""
     self._torrc_contents = ""
+    self._connection_type = None
     self._tor_process = None
   
-  def start(self, connection_type = DEFAULT_TOR_CONNECTION, quiet = False, config_path = None):
+  def start(self, connection_type = DEFAULT_TOR_CONNECTION, quiet = False):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
@@ -126,7 +127,6 @@ class Runner:
                           to tor
       quiet (bool)      - if False then this prints status information as we
                           start up to stdout
-      config_path (str) - path to a custom test configuration
     
     Raises:
       OSError if unable to run test preparations or start tor
@@ -134,14 +134,14 @@ class Runner:
     
     self._runner_lock.acquire()
     
+    test_config = stem.util.conf.get_config("test")
+    test_config.update(self._config)
+    
     # if we're holding on to a tor process (running or not) then clean up after
     # it so we can start a fresh instance
     if self._tor_process: self.stop(quiet)
     
     _print_status("Setting up a test instance...\n", STATUS_ATTR, quiet)
-    
-    # load and apply any custom configurations
-    self._load_config(config_path, quiet)
     
     # if 'test_directory' is unset then we make a new data directory in /tmp
     # and clean it up when we're done
@@ -153,6 +153,7 @@ class Runner:
     else:
       self._test_dir = tempfile.mktemp("-stem-integ")
     
+    self._connection_type = connection_type
     self._torrc_contents = get_torrc(connection_type) % self._test_dir
     
     try:
@@ -185,6 +186,7 @@ class Runner:
     
     self._test_dir = ""
     self._torrc_contents = ""
+    self._connection_type = None
     self._tor_process = None
     
     _print_status("done\n", STATUS_ATTR, quiet)
@@ -241,33 +243,16 @@ class Runner:
     
     return self._get("_torrc_contents")
   
-  def get_control_port(self):
+  def get_connection_type(self):
     """
-    Provides the control port tor is running with.
+    Provides the method we can use for connecting to the tor instance.
     
     Returns:
-      int for the port tor's controller interface is bound to, None if it
-      doesn't have one
-    
-    Raises:
-      RunnerStopped if we aren't running
-      ValueError if our torrc has a malformed ControlPort entry
+      test.runner.TorConnection enumeration for the method we can use for
+      connecting to the tor test instance
     """
     
-    torrc_contents = self.get_torrc_contents()
-    
-    for line in torrc_contents.split("\n"):
-      line_comp = line.strip().split()
-      if not line_comp: continue
-      
-      if line_comp[0] == "ControlPort":
-        if len(line_comp) == 2 and line_comp[1].isdigit():
-          return int(line_comp[1])
-        else:
-          raise ValueError("Malformed ControlPort entry: %s" % line)
-    
-    # torrc doesn't have a ControlPort
-    return None
+    return self._connection_type
   
   def get_pid(self):
     """
@@ -282,6 +267,59 @@ class Runner:
     
     tor_process = self._get("_tor_process")
     return tor_process.pid
+  
+  def get_tor_socket(self, authenticate = True):
+    """
+    Provides a socket connected to the tor test instance's control socket.
+    
+    Arguments:
+      authenticate (bool) - if True then the socket is authenticated
+    
+    Returns:
+      socket.socket connected with our testing instance, returning None if we
+      either don't have a test instance or it can't be connected to
+    """
+    
+    # TODO: replace with higher level connection functions when we have them
+    
+    connection_type, test_dir = self.get_connection_type(), self._get("_test_dir")
+    if connection_type == None: return None
+    
+    conn_opts = CONNECTION_OPTS[connection_type]
+    
+    if OPT_PORT in conn_opts:
+      control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      control_socket.connect(("127.0.0.1", CONTROL_PORT))
+    elif OPT_SOCKET in conn_opts:
+      control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+      control_socket.connect(CONTROL_SOCKET_PATH)
+    else: return None
+    
+    if authenticate:
+      control_socket_file = control_socket.makefile()
+      
+      if OPT_COOKIE in conn_opts:
+        cookie_path = os.path.join(test_dir, "control_auth_cookie")
+        
+        auth_cookie = open(cookie_path, "r")
+        auth_cookie_contents = auth_cookie.read()
+        auth_cookie.close()
+        
+        control_socket_file.write("AUTHENTICATE %s\r\n" % binascii.b2a_hex(auth_cookie_contents))
+      elif OPT_PASSWORD in conn_opts:
+        control_socket_file.write("AUTHENTICATE \"%s\"\r\n" % CONTROL_PASSWORD)
+      else:
+        control_socket_file.write("AUTHENTICATE\r\n")
+      
+      control_socket_file.flush()
+      authenticate_response = stem.types.read_message(control_socket_file)
+      control_socket_file.close()
+      
+      if str(authenticate_response) != "OK":
+        # authentication was rejected
+        logging.error("AUTHENTICATE returned a failure response: %s" % authenticate_response)
+    
+    return control_socket
   
   def _get(self, attr):
     """
@@ -306,45 +344,6 @@ class Runner:
       else: raise RunnerStopped()
     finally:
       self._runner_lock.release()
-  
-  def _load_config(self, config_path, quiet):
-    """
-    Loads the given configuration file, printing the contents if successful and
-    the exception if not.
-    
-    Arguments:
-      config_path (str) - path to custom testing configuration options, skipped
-                          if None
-      quiet (bool)      - prints status information to stdout if False
-    """
-    
-    if not config_path:
-      _print_status("  loading test configuration... skipped\n", STATUS_ATTR, quiet)
-    else:
-      # loads custom testing configuration
-      test_config = stem.util.conf.get_config("test")
-      config_path = os.path.abspath(config_path)
-      
-      try:
-        _print_status("  loading test configuration (%s)... " % config_path, STATUS_ATTR, quiet)
-        
-        test_config.load(config_path)
-        test_config.update(self._config)
-        
-        _print_status("done\n", STATUS_ATTR, quiet)
-        
-        for config_key in test_config.keys():
-          key_entry = "    %s => " % config_key
-          
-          # if there's multiple values then list them on separate lines
-          value_div = ",\n" + (" " * len(key_entry))
-          value_entry = value_div.join(test_config.get_value(config_key, multiple = True))
-          
-          _print_status(key_entry + value_entry + "\n", SUBSTATUS_ATTR, quiet)
-        
-        _print_status("\n", (), quiet)
-      except IOError, exc:
-        _print_status("failed (%s)\n" % exc, ERROR_ATTR, quiet)
   
   def _run_setup(self, quiet):
     """
@@ -378,7 +377,8 @@ class Runner:
       _print_status("  configuring logger (%s)... " % logging_path, STATUS_ATTR, quiet)
       
       # delete the old log
-      if os.path.exists: os.remove(logging_path)
+      if os.path.exists(logging_path):
+        os.remove(logging_path)
       
       logging.basicConfig(
         filename = logging_path,
@@ -389,7 +389,6 @@ class Runner:
       
       stem_logger = logging.getLogger("stem")
       stem_logger.info("Logging opened for integration test run")
-      #datefmt='%m/%d/%Y %I:%M:%S %p',
       
       _print_status("done\n", STATUS_ATTR, quiet)
     else:
@@ -433,7 +432,7 @@ class Runner:
     try:
       # wait to fully complete if we're running tests with network activity,
       # otherwise finish after local bootstraping
-      complete_percent = 100 if self._config["test.integ.run.online"] else 5
+      complete_percent = 100 if self._config["test.integ.target.online"] else 5
       
       # prints output from tor's stdout while it starts up
       print_init_line = lambda line: _print_status("  %s\n" % line, SUBSTATUS_ATTR, quiet)

@@ -4,6 +4,7 @@
 Runs unit and integration tests.
 """
 
+import os
 import sys
 import time
 import getopt
@@ -45,18 +46,12 @@ INTEG_TESTS = (("stem.types.ControlMessage", test.integ.types.control_message.Te
                ("stem.util.system", test.integ.util.system.TestSystem),
               )
 
-# TODO: drop targets?
-# Configurations that the intergration tests can be ran with. Attributs are
-# tuples of the test runner and description.
-TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("NONE", "NO_CONTROL", "NO_AUTH", "COOKIE", "PASSWORD", "SOCKET")])
+# Integration tests above the basic suite.
+TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "CONNECTION")])
 
 TARGET_ATTR = {
-  TARGETS.NONE: (None, "No running tor instance."),
-  TARGETS.NO_CONTROL: (None, "Basic client, no control port or socket."),
-  TARGETS.NO_AUTH: (None, "Basic client, control port with no authenticaion."),
-  TARGETS.COOKIE: (None, "Basic client, control port with cookie authenticaion."),
-  TARGETS.PASSWORD: (None, "Basic client, control port wiht password authentication."),
-  TARGETS.SOCKET: (None, "Basic client, control socket."),
+  TARGETS.ONLINE: ("test.integ.target.online", "Includes tests that require network activity."),
+  TARGETS.CONNECTION: ("test.integ.target.connection", "Runs the suite over multiple connection configurations."),
 }
 
 HELP_MSG = """Usage runTests.py [OPTION]
@@ -65,8 +60,7 @@ Runs tests for the stem library.
   -u, --unit            runs unit tests
   -i, --integ           runs integration tests
   -c, --config PATH     path to a custom test configuration
-  -t, --target TARGET   comma separated list of tor configurations to use for
-                        the integration tests (all are used by default)
+  -t, --target TARGET   comma separated list of extra targets for integ tests
   -h, --help            presents this help
 
   Integration targets:
@@ -108,7 +102,7 @@ if __name__ == '__main__':
   run_unit_tests = False
   run_integ_tests = False
   config_path = None
-  integ_targets = TARGETS.values()
+  test_config = stem.util.conf.get_config("test")
   
   # parses user input, noting any issues
   try:
@@ -120,7 +114,7 @@ if __name__ == '__main__':
   for opt, arg in opts:
     if opt in ("-u", "--unit"): run_unit_tests = True
     elif opt in ("-i", "--integ"): run_integ_tests = True
-    elif opt in ("-c", "--config"): config_path = arg
+    elif opt in ("-c", "--config"): config_path = os.path.abspath(arg)
     elif opt in ("-t", "--targets"):
       integ_targets = arg.split(",")
       
@@ -130,19 +124,23 @@ if __name__ == '__main__':
         sys.exit(1)
       
       for target in integ_targets:
-        if not target in TARGETS.values():
+        if not target in TARGETS:
           print "Invalid integration target: %s" % target
           sys.exit(1)
+        else:
+          # sets the configuration flag
+          config_flag = TARGET_ATTR[target][0]
+          test_config.set(config_flag, "true")
     elif opt in ("-h", "--help"):
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
       
       # gets the longest target length so we can show the entries in columns
-      target_name_length = max([len(name) for name in TARGETS.values()])
+      target_name_length = max([len(name) for name in TARGETS])
       description_format = "%%-%is - %%s" % target_name_length
       
       target_lines = []
-      for target in TARGETS.values():
+      for target in TARGETS:
         target_lines.append(description_format % (target, TARGET_ATTR[target][1]))
       
       print HELP_MSG % "\n    ".join(target_lines)
@@ -151,6 +149,28 @@ if __name__ == '__main__':
   if not run_unit_tests and not run_integ_tests:
     print "Nothing to run (for usage provide --help)\n"
     sys.exit()
+  
+  if config_path:
+    print_divider("TESTING CONFIG", True)
+    print
+    
+    try:
+      sys.stdout.write(term.format("Loading test configuration (%s)... " % config_path, term.Color.BLUE, term.Attr.BOLD))
+      test_config.load(config_path)
+      sys.stdout.write(term.format("done\n", term.Color.BLUE, term.Attr.BOLD))
+      
+      for config_key in test_config.keys():
+        key_entry = "  %s => " % config_key
+        
+        # if there's multiple values then list them on separate lines
+        value_div = ",\n" + (" " * len(key_entry))
+        value_entry = value_div.join(test_config.get_value(config_key, multiple = True))
+        
+        sys.stdout.write(term.format(key_entry + value_entry + "\n", term.Color.BLUE))
+    except IOError, exc:
+      sys.stdout.write(term.format("failed (%s)\n" % exc, term.Color.RED, term.Attr.BOLD))
+    
+    print
   
   if run_unit_tests:
     print_divider("UNIT TESTS", True)
@@ -167,44 +187,38 @@ if __name__ == '__main__':
   
   if run_integ_tests:
     print_divider("INTEGRATION TESTS", True)
-    
     integ_runner = test.runner.get_runner()
     stem_logger = logging.getLogger("stem")
     
-    try:
-      # TODO: note unused config options afterward
-      integ_runner.start(config_path = config_path)
-      
-      print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
-      print
-      
-      for name, test_class in INTEG_TESTS:
-        print_divider(name)
-        stem_logger.info("STARTING INTEGRATION TEST => %s" % name)
-        suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        test_results = StringIO.StringIO()
-        unittest.TextTestRunner(test_results, verbosity=2).run(suite)
-        print_test_results(test_results)
-        print
-    except OSError:
-      pass
-    finally:
-      integ_runner.stop()
+    # just a single integ run with the default connection method unless we've
+    # set the 'CONNECTION' target, in which case we run 'em all
     
-    # TODO: we might do target selection later but for now we should simply
-    # work with a single simple tor instance and see how it works out
-    #
-    #for target in integ_targets:
-    #  runner, description = TARGET_ATTR[target]
-    #  
-    #  print "Configuration: %s - %s" % (target, description)
-    #  
-    #  if runner:
-    #    pass # TODO: implement
-    #  else:
-    #    print "  %s" % term.format("Unimplemented", term.Color.RED, term.Attr.BOLD)
-    #  
-    #  print ""
+    if test_config.get("test.integ.target.connection", False):
+      connection_types = list(test.runner.TorConnection)
+    else:
+      connection_types = [test.runner.DEFAULT_TOR_CONNECTION]
+    
+    for connection_type in connection_types:
+      try:
+        integ_runner.start(connection_type = connection_type)
+        
+        print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
+        print
+        
+        for name, test_class in INTEG_TESTS:
+          print_divider(name)
+          stem_logger.info("STARTING INTEGRATION TEST => %s" % name)
+          suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+          test_results = StringIO.StringIO()
+          unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+          print_test_results(test_results)
+          print
+      except OSError:
+        pass
+      finally:
+        integ_runner.stop()
+    
+    # TODO: note unused config options afterward?
   
   print term.format("Testing Completed (%i seconds)" % (time.time() - start_time), term.Color.GREEN, term.Attr.BOLD)
   print

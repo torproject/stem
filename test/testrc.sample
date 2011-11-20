@@ -12,11 +12,16 @@
 #   Path runtime logs are placed. Relative paths are expanded in reference to
 #   'run_tests.py'. Logging is disabled if set ot an empty value.
 #
-# test.integ.run.online
+# test.integ.target.online
 #   Runs tests with network activity. If set then we'll wait for tor to fully
 #   bootstrap when starting, which won't happen without a network connection.
+#
+# test.integ.target.connection
+#   Runs integration tests for multiple connection and authentiction methods if
+#   true. Otherwise they'll only be run for a single connection type.
 
 test.integ.test_directory ./test/data
 test.integ.log ./test/data/log
-test.integ.run.online false
+test.integ.target.online false
+test.integ.target.connection false
 

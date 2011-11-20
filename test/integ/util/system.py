@@ -111,8 +111,10 @@ class TestSystem(unittest.TestCase):
     Checks general usage of the stem.util.system.get_pid_by_port function.
     """
     
-    runner = test.runner.get_runner()
-    tor_pid, tor_port = runner.get_pid(), runner.get_control_port()
+    if not self._has_port():
+      self.skipTest("(test instance has no port)")
+    
+    tor_pid, tor_port = test.runner.get_runner().get_pid(), test.runner.CONTROL_PORT
     self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(tor_port))
     self.assertEquals(None, stem.util.system.get_pid_by_port(99999))
   
@@ -121,38 +123,41 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_port function with a netstat response.
     """
     
-    if not stem.util.system.is_available("netstat"):
+    if not self._has_port():
+      self.skipTest("(test instance has no port)")
+    elif not stem.util.system.is_available("netstat"):
       self.skipTest("(netstat unavailable)")
     elif stem.util.system.is_bsd(): self.skipTest("(linux only)")
     
     netstat_cmd = stem.util.system.GET_PID_BY_PORT_NETSTAT
-    runner_port = test.runner.get_runner().get_control_port()
-    self._run_pid_test(netstat_cmd, stem.util.system.get_pid_by_port, runner_port)
+    self._run_pid_test(netstat_cmd, stem.util.system.get_pid_by_port, test.runner.CONTROL_PORT)
   
   def test_get_pid_by_port_sockstat(self):
     """
     Tests the get_pid_by_port function with a sockstat response.
     """
     
-    if not stem.util.system.is_available("sockstat"):
+    if not self._has_port():
+      self.skipTest("(test instance has no port)")
+    elif not stem.util.system.is_available("sockstat"):
       self.skipTest("(sockstat unavailable)")
     elif not stem.util.system.is_bsd(): self.skipTest("(bsd only)")
     
     sockstat_prefix = stem.util.system.GET_PID_BY_PORT_SOCKSTAT % ""
-    runner_port = test.runner.get_runner().get_control_port()
-    self._run_pid_test(sockstat_prefix, stem.util.system.get_pid_by_port, runner_port)
+    self._run_pid_test(sockstat_prefix, stem.util.system.get_pid_by_port, test.runner.CONTROL_PORT)
   
   def test_get_pid_by_port_lsof(self):
     """
     Tests the get_pid_by_port function with a lsof response.
     """
     
-    if not stem.util.system.is_available("lsof"):
+    if not self._has_port():
+      self.skipTest("(test instance has no port)")
+    elif not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
     
     lsof_cmd = stem.util.system.GET_PID_BY_PORT_LSOF
-    runner_port = test.runner.get_runner().get_control_port()
-    self._run_pid_test(lsof_cmd, stem.util.system.get_pid_by_port, runner_port)
+    self._run_pid_test(lsof_cmd, stem.util.system.get_pid_by_port, test.runner.CONTROL_PORT)
   
   def test_get_pid_by_open_file(self):
     """
@@ -239,4 +244,12 @@ class TestSystem(unittest.TestCase):
     
     runner_pid = test.runner.get_runner().get_pid()
     self.assertEquals(runner_pid, test_function(arg))
+  
+  def _has_port(self):
+    """
+    True if our test runner has a control port, False otherwise.
+    """
+    
+    connection_type = runner = test.runner.get_runner().get_connection_type()
+    return test.runner.OPT_PORT in test.runner.CONNECTION_OPTS[connection_type]
 

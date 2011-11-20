@@ -537,4 +537,5 @@ class Version:
 
 # TODO: version requirements will probably be moved to another module later
 REQ_GETINFO_CONFIG_TEXT = Version("0.2.2.7-alpha")
+REQ_CONTROL_SOCKET = Version("0.2.0.30")
 

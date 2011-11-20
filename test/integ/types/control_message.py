@@ -19,7 +19,9 @@ class TestControlMessage(unittest.TestCase):
     Checks message parsing when we have a valid but unauthenticated socket.
     """
     
-    control_socket, control_socket_file = self._get_control_socket(False)
+    control_socket = test.runner.get_runner().get_tor_socket(False)
+    if not control_socket: self.skipTest("(no control socket)")
+    control_socket_file = control_socket.makefile()
     
     # If an unauthenticated connection gets a message besides AUTHENTICATE or
     # PROTOCOLINFO then tor will give an 'Authentication required.' message and
@@ -35,10 +37,14 @@ class TestControlMessage(unittest.TestCase):
     self.assertEquals([("514", " ", "Authentication required.")], auth_required_response.content())
     
     # The socket's broken but doesn't realize it yet. Send another message and
-    # it should fail with a closed exception.
+    # it should fail with a closed exception. With a control port we won't get
+    # an error until we read from the socket. However, with a control socket
+    # the flush will raise a socket.error.
     
-    control_socket_file.write("GETINFO version\r\n")
-    control_socket_file.flush()
+    try:
+      control_socket_file.write("GETINFO version\r\n")
+      control_socket_file.flush()
+    except: pass
     
     self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
     
@@ -80,7 +86,9 @@ class TestControlMessage(unittest.TestCase):
     Parses the response for a command which doesn't exist.
     """
     
-    control_socket, control_socket_file = self._get_control_socket()
+    control_socket = test.runner.get_runner().get_tor_socket()
+    if not control_socket: self.skipTest("(no control socket)")
+    control_socket_file = control_socket.makefile()
     
     control_socket_file.write("blarg\r\n")
     control_socket_file.flush()
@@ -99,7 +107,9 @@ class TestControlMessage(unittest.TestCase):
     Parses the response for a GETINFO query which doesn't exist.
     """
     
-    control_socket, control_socket_file = self._get_control_socket()
+    control_socket = test.runner.get_runner().get_tor_socket()
+    if not control_socket: self.skipTest("(no control socket)")
+    control_socket_file = control_socket.makefile()
     
     control_socket_file.write("GETINFO blarg\r\n")
     control_socket_file.flush()
@@ -121,7 +131,9 @@ class TestControlMessage(unittest.TestCase):
     runner = test.runner.get_runner()
     torrc_dst = runner.get_torrc_path()
     
-    control_socket, control_socket_file = self._get_control_socket()
+    control_socket = runner.get_tor_socket()
+    if not control_socket: self.skipTest("(no control socket)")
+    control_socket_file = control_socket.makefile()
     
     control_socket_file.write("GETINFO config-file\r\n")
     control_socket_file.flush()
@@ -158,7 +170,9 @@ class TestControlMessage(unittest.TestCase):
       if line and not line.startswith("#"):
         torrc_contents.append(line)
     
-    control_socket, control_socket_file = self._get_control_socket()
+    control_socket = runner.get_tor_socket()
+    if not control_socket: self.skipTest("(no control socket)")
+    control_socket_file = control_socket.makefile()
     
     control_socket_file.write("GETINFO config-text\r\n")
     control_socket_file.flush()
@@ -188,7 +202,9 @@ class TestControlMessage(unittest.TestCase):
     Issues 'SETEVENTS BW' and parses a few events.
     """
     
-    control_socket, control_socket_file = self._get_control_socket()
+    control_socket = test.runner.get_runner().get_tor_socket()
+    if not control_socket: self.skipTest("(no control socket)")
+    control_socket_file = control_socket.makefile()
     
     control_socket_file.write("SETEVENTS BW\r\n")
     control_socket_file.flush()
@@ -209,34 +225,4 @@ class TestControlMessage(unittest.TestCase):
     
     control_socket.close()
     control_socket_file.close()
-  
-  def _get_control_socket(self, authenticate = True):
-    """
-    Provides a socket connected to the tor test instance's control port.
-    
-    Arguments:
-      authenticate (bool) - if True then the socket is authenticated
-    
-    Returns:
-      (socket.socket, file) tuple with the control socket and its file
-    """
-    
-    runner = test.runner.get_runner()
-    
-    control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    control_socket.connect(("127.0.0.1", runner.get_control_port()))
-    control_socket_file = control_socket.makefile()
-    
-    if authenticate:
-      control_socket_file.write("AUTHENTICATE\r\n")
-      control_socket_file.flush()
-      
-      authenticate_response = stem.types.read_message(control_socket_file)
-      
-      self.assertEquals("OK", str(authenticate_response))
-      self.assertEquals(["OK"], list(authenticate_response))
-      self.assertEquals("250 OK\r\n", authenticate_response.raw_content())
-      self.assertEquals([("250", " ", "OK")], authenticate_response.content())
-    
-    return (control_socket, control_socket_file)
 

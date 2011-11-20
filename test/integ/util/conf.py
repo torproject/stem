@@ -55,4 +55,6 @@ class TestConf(unittest.TestCase):
     self.assertEquals("1.2.3.4", ssh_config["destination.ip"])
     self.assertEquals(22, ssh_config["destination.port"])
     self.assertEquals(["export PATH=$PATH:~/bin", "alias l=ls"], ssh_config["startup.run"])
+    
+    user_config.clear()
 

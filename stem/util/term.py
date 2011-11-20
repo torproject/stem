@@ -11,8 +11,8 @@ BgColor = stem.util.enum.Enum(*["BG_" + color for color in TERM_COLORS])
 Attr = stem.util.enum.Enum("BOLD", "UNDERLINE", "HILIGHT")
 
 # mappings of terminal attribute enums to their ANSI escape encoding
-FG_ENCODING = dict([(Color.values()[i], str(30 + i)) for i in range(8)])
-BG_ENCODING = dict([(BgColor.values()[i], str(40 + i)) for i in range(8)])
+FG_ENCODING = dict([(list(Color)[i], str(30 + i)) for i in range(8)])
+BG_ENCODING = dict([(list(BgColor)[i], str(40 + i)) for i in range(8)])
 ATTR_ENCODING = {Attr.BOLD: "1", Attr.UNDERLINE: "4", Attr.HILIGHT: "7"}
 
 CSI = "\x1B[%sm"

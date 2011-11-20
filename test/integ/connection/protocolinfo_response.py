@@ -21,9 +21,8 @@ class TestProtocolInfoResponse(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
-    
-    control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    control_socket.connect(("127.0.0.1", runner.get_control_port()))
+    control_socket = runner.get_tor_socket(False)
+    if not control_socket: self.skipTest("(no control socket)")
     control_socket_file = control_socket.makefile()
     
     control_socket_file.write("PROTOCOLINFO\r\n")
@@ -38,6 +37,9 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertEqual(1, protocolinfo_response.protocol_version)
     self.assertNotEqual(None, protocolinfo_response.tor_version)
     self.assertNotEqual(None, protocolinfo_response.auth_methods)
+    
+    if runner.get_connection_type() != test.runner.TorConnection.NO_AUTH:
+      self.skipTest("(haven't yet implemented...)") # TODO: implement
     
     # TODO: The following is for the default integ test configuration. We
     # should run tests that exercise all of tor's startup configs
