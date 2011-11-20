@@ -33,7 +33,7 @@ class TestEnum(unittest.TestCase):
     
     insects = stem.util.enum.Enum("ANT", "WASP", "LADYBUG", "FIREFLY")
     self.assertEquals("Ant", insects.ANT)
-    self.assertEquals(("Ant", "Wasp", "Ladybug", "Firefly"), insects.values())
+    self.assertEquals(("Ant", "Wasp", "Ladybug", "Firefly"), tuple(insects))
     
     pets = stem.util.enum.Enum(("DOG", "Skippy"), "CAT", ("FISH", "Nemo"))
     self.assertEquals("Skippy", pets.DOG)
@@ -54,6 +54,6 @@ class TestEnum(unittest.TestCase):
     self.assertEquals(insects.FIREFLY, insects.previous(insects.ANT))
     self.assertEquals(insects.LADYBUG, insects.previous(insects.FIREFLY))
     
-    # __iter__ method
-    self.assertEquals(("ANT", "WASP", "LADYBUG", "FIREFLY"), tuple(insects))
+    # keys method
+    self.assertEquals(("ANT", "WASP", "LADYBUG", "FIREFLY"), insects.keys())
 

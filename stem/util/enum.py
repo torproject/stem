@@ -4,7 +4,7 @@ constructed as simple type listings, ie:
 >>> insects = Enum("ANT", "WASP", "LADYBUG", "FIREFLY")
 >>> insects.ANT
 'Ant'
->>> insects.values()
+>>> tuple(insects)
 ('Ant', 'Wasp', 'Ladybug', 'Firefly')
 
 with overwritten string counterparts:
@@ -65,15 +65,15 @@ class Enum:
     self._keys = tuple(keys)
     self._values = tuple(values)
   
-  def values(self):
+  def keys(self):
     """
-    Provides an ordered listing of the enumerations in this set.
+    Provides an ordered listing of the enumeration keys in this set.
     
     Returns:
-      tuple with our enum values
+      tuple with our enum keys
     """
     
-    return self._values
+    return self._keys
   
   def index_of(self, value):
     """
@@ -133,9 +133,9 @@ class Enum:
   
   def __iter__(self):
     """
-    Provides an ordered listing of the enumeration keys in this set.
+    Provides an ordered listing of the enums in this set.
     """
     
-    for entry in self._keys:
+    for entry in self._values:
       yield entry
 
