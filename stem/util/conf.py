@@ -18,6 +18,7 @@ Config - Custom configuration.
   |- clear - empties our loaded configuration contents
   |- update - replaces mappings in a dictionary with the config's values
   |- keys - provides keys in the loaded configuration
+  |- set - sets the given key/value pair
   |- unused_keys - provides keys that have never been requested
   |- get - provides the value for a given key, with type inference
   |- get_value - provides the value for a given key as a string
@@ -170,8 +171,7 @@ class Config():
         else:
           key, value = line, ""
         
-        if key in self._contents: self._contents[key].append(value)
-        else: self._contents[key] = [value]
+        self.set(key, value)
     
     self._path = path
     self._contents_lock.release()
@@ -246,6 +246,19 @@ class Config():
     """
     
     return set(self.get_keys()).difference(self._requested_keys)
+  
+  def set(self, key, value):
+    """
+    Appends the given key/value configuration mapping, behaving the same as if
+    we'd loaded this from a configuration file.
+    
+    Arguments:
+      key (str)   - key for the configuration mapping
+      value (str) - value we're setting the mapping to
+    """
+    
+    if key in self._contents: self._contents[key].append(value)
+    else: self._contents[key] = [value]
   
   def get(self, key, default = None):
     """
