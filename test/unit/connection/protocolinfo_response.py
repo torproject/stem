@@ -41,6 +41,12 @@ MINIMUM_RESPONSE = """250-PROTOCOLINFO 5
 250 OK
 """.replace("\n", "\r\n")
 
+RELATIVE_COOKIE_PATH = r"""250-PROTOCOLINFO 1
+250-AUTH METHODS=COOKIE COOKIEFILE="./tor-browser_en-US/Data/control_auth_cookie"
+250-VERSION Tor="0.2.1.30"
+250 OK
+""".replace("\n", "\r\n")
+
 class TestProtocolInfoResponse(unittest.TestCase):
   """
   Tests the parsing of ControlMessages for PROTOCOLINFO responses.
@@ -141,4 +147,35 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertEquals((), control_message.unknown_auth_methods)
     self.assertEquals(None, control_message.cookie_file)
     self.assertEquals(None, control_message.socket)
+  
+  def test_relative_cookie(self):
+    """
+    Checks an authentication cookie with a relative path where expansion both
+    succeeds and fails.
+    """
+    
+    # we need to mock both pid and cwd lookups since the general cookie
+    # expanion works by...
+    # - resolving the pid of the "tor" process
+    # - using that to get tor's cwd
+    
+    def call_mocking(command):
+      if command == stem.util.system.GET_PID_BY_NAME_PGREP % "tor":
+        return ["10"]
+      if command == stem.util.system.GET_CWD_PWDX % 10:
+        return ["10: /tmp/foo"]
+    
+    stem.util.system.CALL_MOCKING = call_mocking
+    
+    control_message = stem.types.read_message(StringIO.StringIO(RELATIVE_COOKIE_PATH))
+    stem.connection.ProtocolInfoResponse.convert(control_message)
+    self.assertEquals("/tmp/foo/tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_file)
+    
+    # exercise cookie expansion where both calls fail (should work, just
+    # leaving the path unexpanded)
+    
+    stem.util.system.CALL_MOCKING = lambda cmd: None
+    control_message = stem.types.read_message(StringIO.StringIO(RELATIVE_COOKIE_PATH))
+    stem.connection.ProtocolInfoResponse.convert(control_message)
+    self.assertEquals("./tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_file)
 
