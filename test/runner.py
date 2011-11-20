@@ -26,6 +26,7 @@ import threading
 
 import stem.process
 import stem.util.conf
+import stem.util.enum
 import stem.util.term as term
 
 DEFAULT_CONFIG = {
@@ -34,14 +35,19 @@ DEFAULT_CONFIG = {
   "test.integ.run.online": False,
 }
 
+# Methods for connecting to tor. General integration tests only run with the
+# DEFAULT_TOR_CONNECTION, but expanded integ tests will run with all of them.
+
+TorConnection = stem.util.enum.Enum("NONE", "NO_AUTH", "PASSWORD", "COOKIE", "MULTIPLE", "SOCKET")
+DEFAULT_TOR_CONNECTION = TorConnection.NO_AUTH
+
 STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
 SUBSTATUS_ATTR = (term.Color.BLUE, )
 ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
 
-BASIC_TORRC = """# configuration for stem integration tests
+BASE_TORRC = """# configuration for stem integration tests
 DataDirectory %s
 SocksPort 0
-ControlPort 1111
 """
 
 # We make some paths relative to stem's base directory (the one above us)
@@ -51,6 +57,16 @@ STEM_BASE = "/".join(__file__.split("/")[:-2])
 # singleton Runner instance
 INTEG_RUNNER = None
 
+# control authentication options and attributes
+CONTROL_PASSWORD = "pw"
+CONTROL_PORT = 1111
+CONTROL_SOCKET_PATH = "/tmp/stem_integ_socket"
+
+OPT_PORT = "ControlPort %i" % CONTROL_PORT
+OPT_COOKIE = "CookieAuthentication 1"
+OPT_PASSWORD = "HashedControlPassword 16:8C423A41EF4A542C6078985270AE28A4E04D056FB63F9F201505DB8E06"
+OPT_SOCKET = "ControlSocket %s" % CONTROL_SOCKET_PATH
+
 def get_runner():
   """
   Singleton for the runtime context of integration tests.
@@ -59,6 +75,32 @@ def get_runner():
   global INTEG_RUNNER
   if not INTEG_RUNNER: INTEG_RUNNER = Runner()
   return INTEG_RUNNER
+
+def get_torrc(connection_type = DEFAULT_TOR_CONNECTION):
+  """
+  Provides a basic torrc with the given connection method. Hashed passwords are
+  for "pw".
+  """
+  
+  connection_opt, torrc = [], BASE_TORRC
+  
+  if connection_type == TorConnection.NONE:
+    pass
+  elif connection_type == TorConnection.NO_AUTH:
+    connection_opt = [OPT_PORT]
+  elif connection_type == TorConnection.PASSWORD:
+    connection_opt = [OPT_PORT, OPT_PASSWORD]
+  elif connection_type == TorConnection.COOKIE:
+    connection_opt = [OPT_PORT, OPT_COOKIE]
+  elif connection_type == TorConnection.MULTIPLE:
+    connection_opt = [OPT_PORT, OPT_PASSWORD, OPT_COOKIE]
+  elif connection_type == TorConnection.SOCKET:
+    connection_opt = [OPT_SOCKET]
+  
+  if connection_opt:
+    torrc += "\n" + "\n".join(connection_opt)
+  
+  return torrc
 
 class RunnerStopped(Exception):
   "Raised when we try to use a Runner that doesn't have an active tor instance"
@@ -74,12 +116,14 @@ class Runner:
     self._torrc_contents = ""
     self._tor_process = None
   
-  def start(self, quiet = False, config_path = None):
+  def start(self, connection_type = DEFAULT_TOR_CONNECTION, quiet = False, config_path = None):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
     
     Arguments:
+      connection_type (TorConnection) - method for controllers to authenticate
+                          to tor
       quiet (bool)      - if False then this prints status information as we
                           start up to stdout
       config_path (str) - path to a custom test configuration
@@ -109,7 +153,7 @@ class Runner:
     else:
       self._test_dir = tempfile.mktemp("-stem-integ")
     
-    self._torrc_contents = BASIC_TORRC % self._test_dir
+    self._torrc_contents = get_torrc(connection_type) % self._test_dir
     
     try:
       self._run_setup(quiet)
@@ -214,6 +258,7 @@ class Runner:
     
     for line in torrc_contents.split("\n"):
       line_comp = line.strip().split()
+      if not line_comp: continue
       
       if line_comp[0] == "ControlPort":
         if len(line_comp) == 2 and line_comp[1].isdigit():
