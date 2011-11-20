@@ -273,11 +273,6 @@ class Config():
       * values are split into key/value pairs on "=>" with extra whitespace
         stripped
     
-    - key starts with "log." => stem.util.log.Runlevel
-      * values are case insensitive
-      * 'none' values are mapped to None
-      * provides the default if the value isn't a runlevel or 'none'
-    
     Arguments:
       key (str)        - config setting to be fetched
       default (object) - value provided if no such key exists or fails to be
@@ -324,14 +319,6 @@ class Config():
           msg = "Ignoring invalid %s config entry (expected a mapping, but \"%s\" was missing \"=>\")" % (key, entry)
           LOGGER.info(msg)
       val = valMap
-    elif key.startswith("log."):
-      if val.upper() == "NONE": val = None
-      elif val.upper() in log.Runlevel.values(): val = val.upper()
-      else:
-        msg = "Config entry '%s' is expected to be a runlevel" % key
-        if default != None: msg += ", defaulting to '%s'" % default
-        LOGGER.info(msg)
-        val = default
     
     return val
   
