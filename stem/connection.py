@@ -158,8 +158,12 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
           # attempt to expand relative cookie paths
           if stem.util.system.is_relative_path(self.cookie_file):
             try:
-              tor_pid = stem.util.system.get_pid("tor", suppress_exc = False)
-              tor_cwd = stem.util.system.get_cwd(tor_pid, False)
+              tor_pid = stem.util.system.get_pid_by_name("tor")
+              if not tor_pid: raise IOError("pid lookup failed")
+              
+              tor_cwd = stem.util.system.get_cwd(tor_pid)
+              if not tor_cwd: raise IOError("cwd lookup failed")
+              
               self.cookie_file = stem.util.system.expand_path(self.cookie_file, tor_cwd)
             except IOError, exc:
               LOGGER.debug("unable to expand relative tor cookie path: %s" % exc)
