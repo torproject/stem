@@ -521,7 +521,7 @@ class Version:
     """
     
     if not isinstance(other, Version):
-      raise ValueError("types.Version can only be compared with other Version instances")
+      return 1 # this is also used for equality checks
     
     for attr in ("major", "minor", "micro", "patch"):
       my_version = max(0, self.__dict__[attr])
