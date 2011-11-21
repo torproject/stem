@@ -21,8 +21,12 @@ class TestProtocolInfoResponse(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
+    connection_type = runner.get_connection_type()
+    
+    if connection_type == test.runner.TorConnection.NONE:
+      self.skipTest("(no connection)")
+    
     control_socket = runner.get_tor_socket(False)
-    if not control_socket: self.skipTest("(no control socket)")
     control_socket_file = control_socket.makefile()
     
     control_socket_file.write("PROTOCOLINFO\r\n")
@@ -38,15 +42,24 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertNotEqual(None, protocolinfo_response.tor_version)
     self.assertNotEqual(None, protocolinfo_response.auth_methods)
     
-    if runner.get_connection_type() != test.runner.TorConnection.NO_AUTH:
-      self.skipTest("(haven't yet implemented...)") # TODO: implement
-    
-    # TODO: The following is for the default integ test configuration. We
-    # should run tests that exercise all of tor's startup configs
-    # (password/cookie auth and control sockets)
-    
-    self.assertEqual((stem.connection.AuthMethod.NONE,), protocolinfo_response.auth_methods)
     self.assertEqual((), protocolinfo_response.unknown_auth_methods)
-    self.assertEqual(None, protocolinfo_response.cookie_file)
     self.assertEqual(None, protocolinfo_response.socket)
+    
+    if connection_type == test.runner.TorConnection.NO_AUTH:
+      self.assertEqual((stem.connection.AuthMethod.NONE,), protocolinfo_response.auth_methods)
+      self.assertEqual(None, protocolinfo_response.cookie_file)
+    elif connection_type == test.runner.TorConnection.PASSWORD:
+      self.assertEqual((stem.connection.AuthMethod.PASSWORD,), protocolinfo_response.auth_methods)
+      self.assertEqual(None, protocolinfo_response.cookie_file)
+    elif connection_type == test.runner.TorConnection.COOKIE:
+      self.assertEqual((stem.connection.AuthMethod.COOKIE,), protocolinfo_response.auth_methods)
+      self.assertEqual(runner.get_auth_cookie_path(), protocolinfo_response.cookie_file)
+    elif connection_type == test.runner.TorConnection.MULTIPLE:
+      self.assertEqual((stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.PASSWORD), protocolinfo_response.auth_methods)
+      self.assertEqual(runner.get_auth_cookie_path(), protocolinfo_response.cookie_file)
+    elif connection_type == test.runner.TorConnection.SOCKET:
+      self.assertEqual((stem.connection.AuthMethod.NONE,), protocolinfo_response.auth_methods)
+      self.assertEqual(None, protocolinfo_response.cookie_file)
+    else:
+      self.fail("Unrecognized connection type: %s" % connection_type)
 

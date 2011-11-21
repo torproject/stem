@@ -230,6 +230,20 @@ class Runner:
     test_dir = self._get("_test_dir")
     return os.path.join(test_dir, "torrc")
   
+  def get_auth_cookie_path(self):
+    """
+    Provides the absolute path for our authentication cookie if we have one.
+    
+    Returns:
+      str with our auth cookie path
+    
+    Raises:
+      RunnerStopped if we aren't running
+    """
+    
+    test_dir = self._get("_test_dir")
+    return os.path.join(test_dir, "control_auth_cookie")
+  
   def get_torrc_contents(self):
     """
     Provides the contents of our torrc.
@@ -282,7 +296,7 @@ class Runner:
     
     # TODO: replace with higher level connection functions when we have them
     
-    connection_type, test_dir = self.get_connection_type(), self._get("_test_dir")
+    connection_type, cookie_path = self.get_connection_type(), self.get_auth_cookie_path()
     if connection_type == None: return None
     
     conn_opts = CONNECTION_OPTS[connection_type]
@@ -299,8 +313,6 @@ class Runner:
       control_socket_file = control_socket.makefile()
       
       if OPT_COOKIE in conn_opts:
-        cookie_path = os.path.join(test_dir, "control_auth_cookie")
-        
         auth_cookie = open(cookie_path, "r")
         auth_cookie_contents = auth_cookie.read()
         auth_cookie.close()
