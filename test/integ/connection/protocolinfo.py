@@ -46,20 +46,35 @@ class TestProtocolInfo(unittest.TestCase):
     self.assertEqual(None, protocolinfo_response.socket)
     self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
   
-  def test_get_protocolinfo_port(self):
+  def test_get_protocolinfo_by_port(self):
     """
-    Exercises the stem.connection.get_protocolinfo_port function.
+    Exercises the stem.connection.get_protocolinfo_by_port function.
     """
     
     connection_type = test.runner.get_runner().get_connection_type()
     
     if test.runner.OPT_PORT in test.runner.CONNECTION_OPTS[connection_type]:
-      protocolinfo_response = stem.connection.get_protocolinfo_port(control_port = test.runner.CONTROL_PORT)
+      protocolinfo_response = stem.connection.get_protocolinfo_by_port(control_port = test.runner.CONTROL_PORT)
       self.assertEqual(None, protocolinfo_response.socket)
       self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
     else:
       # we don't have a control port
-      self.assertRaises(stem.types.SocketError, stem.connection.get_protocolinfo_port, "127.0.0.1", test.runner.CONTROL_PORT)
+      self.assertRaises(stem.types.SocketError, stem.connection.get_protocolinfo_by_port, "127.0.0.1", test.runner.CONTROL_PORT)
+  
+  def test_get_protocolinfo_by_socket(self):
+    """
+    Exercises the stem.connection.get_protocolinfo_by_socket function.
+    """
+    
+    connection_type = test.runner.get_runner().get_connection_type()
+    
+    if test.runner.OPT_SOCKET in test.runner.CONNECTION_OPTS[connection_type]:
+      protocolinfo_response = stem.connection.get_protocolinfo_by_socket(socket_path = test.runner.CONTROL_SOCKET_PATH)
+      self.assertEqual(None, protocolinfo_response.socket)
+      self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
+    else:
+      # we don't have a control socket
+      self.assertRaises(stem.types.SocketError, stem.connection.get_protocolinfo_by_socket, test.runner.CONTROL_SOCKET_PATH)
   
   def assert_protocolinfo_attr(self, protocolinfo_response, connection_type):
     """
@@ -86,9 +101,9 @@ class TestProtocolInfo(unittest.TestCase):
     self.assertEqual((), protocolinfo_response.unknown_auth_methods)
     self.assertEqual(auth_methods, protocolinfo_response.auth_methods)
     
+    auth_cookie_path = None
     if test.runner.OPT_COOKIE in test.runner.CONNECTION_OPTS[connection_type]:
       auth_cookie_path = test.runner.get_runner().get_auth_cookie_path()
-      self.assertEqual(auth_cookie_path, protocolinfo_response.cookie_file)
-    else:
-      self.assertEqual(None, protocolinfo_response.cookie_file)
+    
+    self.assertEqual(auth_cookie_path, protocolinfo_response.cookie_path)
 

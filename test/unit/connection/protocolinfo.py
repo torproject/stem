@@ -89,7 +89,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertEquals(stem.types.Version("0.2.1.30"), control_message.tor_version)
     self.assertEquals((stem.connection.AuthMethod.NONE, ), control_message.auth_methods)
     self.assertEquals((), control_message.unknown_auth_methods)
-    self.assertEquals(None, control_message.cookie_file)
+    self.assertEquals(None, control_message.cookie_path)
     self.assertEquals(None, control_message.socket)
   
   def test_password_auth(self):
@@ -110,7 +110,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     control_message = stem.types.read_message(StringIO.StringIO(COOKIE_AUTH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     self.assertEquals((stem.connection.AuthMethod.COOKIE, ), control_message.auth_methods)
-    self.assertEquals("/tmp/my data\\\"dir//control_auth_cookie", control_message.cookie_file)
+    self.assertEquals("/tmp/my data\\\"dir//control_auth_cookie", control_message.cookie_path)
   
   def test_multiple_auth(self):
     """
@@ -120,7 +120,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     control_message = stem.types.read_message(StringIO.StringIO(MULTIPLE_AUTH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     self.assertEquals((stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.PASSWORD), control_message.auth_methods)
-    self.assertEquals("/home/atagar/.tor/control_auth_cookie", control_message.cookie_file)
+    self.assertEquals("/home/atagar/.tor/control_auth_cookie", control_message.cookie_path)
   
   def test_unknown_auth(self):
     """
@@ -145,7 +145,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertEquals(None , control_message.tor_version)
     self.assertEquals((), control_message.auth_methods)
     self.assertEquals((), control_message.unknown_auth_methods)
-    self.assertEquals(None, control_message.cookie_file)
+    self.assertEquals(None, control_message.cookie_path)
     self.assertEquals(None, control_message.socket)
   
   def test_relative_cookie(self):
@@ -169,7 +169,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     
     control_message = stem.types.read_message(StringIO.StringIO(RELATIVE_COOKIE_PATH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
-    self.assertEquals("/tmp/foo/tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_file)
+    self.assertEquals("/tmp/foo/tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_path)
     
     # exercise cookie expansion where both calls fail (should work, just
     # leaving the path unexpanded)
@@ -177,7 +177,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     stem.util.system.CALL_MOCKING = lambda cmd: None
     control_message = stem.types.read_message(StringIO.StringIO(RELATIVE_COOKIE_PATH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
-    self.assertEquals("./tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_file)
+    self.assertEquals("./tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_path)
     
     # reset system call mocking
     stem.util.system.CALL_MOCKING = None
