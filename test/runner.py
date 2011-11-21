@@ -36,6 +36,7 @@ DEFAULT_CONFIG = {
   "test.integ.test_directory": "./test/data",
   "test.integ.log": "./test/data/log",
   "test.integ.target.online": False,
+  "test.integ.target.relative_data_dir": False,
 }
 
 # Methods for connecting to tor. General integration tests only run with the
@@ -113,6 +114,7 @@ class Runner:
     
     # runtime attributes, set by the start method
     self._test_dir = ""
+    self._tor_cwd = ""
     self._torrc_contents = ""
     self._connection_type = None
     self._tor_process = None
@@ -125,8 +127,8 @@ class Runner:
     Arguments:
       connection_type (TorConnection) - method for controllers to authenticate
                           to tor
-      quiet (bool)      - if False then this prints status information as we
-                          start up to stdout
+      quiet (bool) - if False then this prints status information as we start
+                     up to stdout
     
     Raises:
       OSError if unable to run test preparations or start tor
@@ -153,12 +155,26 @@ class Runner:
     else:
       self._test_dir = tempfile.mktemp("-stem-integ")
     
+    original_cwd, data_dir_path = os.getcwd(), self._test_dir
+    
+    if self._config["test.integ.target.relative_data_dir"]:
+      tor_cwd = os.path.dirname(self._test_dir)
+      if not os.path.exists(tor_cwd): os.makedirs(tor_cwd)
+      
+      os.chdir(tor_cwd)
+      data_dir_path = "./%s" % os.path.basename(self._test_dir)
+    
     self._connection_type = connection_type
-    self._torrc_contents = get_torrc(connection_type) % self._test_dir
+    self._torrc_contents = get_torrc(connection_type) % data_dir_path
     
     try:
+      self._tor_cwd = os.getcwd()
       self._run_setup(quiet)
       self._start_tor(quiet)
+      
+      # revert our cwd back to normal
+      if self._config["test.integ.target.relative_data_dir"]:
+        os.chdir(original_cwd)
     except OSError, exc:
       self.stop(quiet)
       raise exc
@@ -185,6 +201,7 @@ class Runner:
       shutil.rmtree(self._test_dir, ignore_errors = True)
     
     self._test_dir = ""
+    self._tor_cwd = ""
     self._torrc_contents = ""
     self._connection_type = None
     self._tor_process = None
@@ -243,6 +260,13 @@ class Runner:
     
     test_dir = self._get("_test_dir")
     return os.path.join(test_dir, "control_auth_cookie")
+  
+  def get_tor_cwd(self):
+    """
+    Provides the current working directory of our tor process.
+    """
+    
+    return self._get("_tor_cwd")
   
   def get_torrc_contents(self):
     """

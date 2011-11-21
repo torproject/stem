@@ -175,9 +175,8 @@ class TestSystem(unittest.TestCase):
     Checks general usage of the stem.util.system.get_cwd function.
     """
     
-    # tor's pwd will match our process since we started it
     runner = test.runner.get_runner()
-    self.assertEquals(os.getcwd(), stem.util.system.get_cwd(runner.get_pid()))
+    self.assertEquals(runner.get_tor_cwd(), stem.util.system.get_cwd(runner.get_pid()))
     self.assertEquals(None, stem.util.system.get_cwd(99999))
   
   def test_get_cwd_pwdx(self):
@@ -192,8 +191,9 @@ class TestSystem(unittest.TestCase):
     pwdx_prefix = stem.util.system.GET_CWD_PWDX % ""
     stem.util.system.CALL_MOCKING = lambda cmd: cmd.startswith(pwdx_prefix)
     
-    runner_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(os.getcwd(), stem.util.system.get_cwd(runner_pid))
+    runner = test.runner.get_runner()
+    runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
+    self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
   
   def test_get_cwd_lsof(self):
     """
@@ -207,8 +207,9 @@ class TestSystem(unittest.TestCase):
     lsof_prefix = "lsof -a -p "
     stem.util.system.CALL_MOCKING = lambda cmd: cmd.startswith(lsof_prefix)
     
-    runner_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(os.getcwd(), stem.util.system.get_cwd(runner_pid))
+    runner = test.runner.get_runner()
+    runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
+    self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
   
   def test_get_bsd_jail_id(self):
     """

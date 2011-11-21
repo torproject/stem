@@ -47,10 +47,11 @@ INTEG_TESTS = (("stem.types.ControlMessage", test.integ.types.control_message.Te
               )
 
 # Integration tests above the basic suite.
-TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "CONNECTION")])
+TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "CONNECTION")])
 
 TARGET_ATTR = {
   TARGETS.ONLINE: ("test.integ.target.online", "Includes tests that require network activity."),
+  TARGETS.RELATIVE: ("test.integ.target.relative_data_dir", "Uses a relative path for tor's data directory."),
   TARGETS.CONNECTION: ("test.integ.target.connection", "Runs the suite over multiple connection configurations."),
 }
 

@@ -16,6 +16,9 @@
 #   Runs tests with network activity. If set then we'll wait for tor to fully
 #   bootstrap when starting, which won't happen without a network connection.
 #
+# test.integ.target.relative_data_dir
+#   Uses a relative path for the tor data directory if set.
+#
 # test.integ.target.connection
 #   Runs integration tests for multiple connection and authentiction methods if
 #   true. Otherwise they'll only be run for a single connection type.
@@ -23,5 +26,6 @@
 test.integ.test_directory ./test/data
 test.integ.log ./test/data/log
 test.integ.target.online false
+test.integ.target.relative_data_dir false
 test.integ.target.connection false
 
