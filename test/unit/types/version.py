@@ -68,6 +68,18 @@ class TestVerion(unittest.TestCase):
     self.assert_version_is_equal("0.1.2.3", "0.1.2.3")
     self.assert_version_is_equal("0.1.2", "0.1.2")
   
+  def test_nonversion_comparison(self):
+    """
+    Checks that we can be compared with other types.
+    """
+    
+    test_version = stem.types.Version("0.1.2.3")
+    self.assertNotEqual(test_version, None)
+    self.assertTrue(test_version > None)
+    
+    self.assertNotEqual(test_version, 5)
+    self.assertTrue(test_version > 5)
+  
   def test_string(self):
     """
     Tests the Version -> string conversion.
