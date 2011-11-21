@@ -1,20 +1,21 @@
 """
-Integration tests for the stem.connections.ProtocolInfoResponse class.
+Integration tests for the stem.connections.ProtocolInfoResponse class and
+related functions.
 """
 
-import socket
 import unittest
 
 import test.runner
 import stem.types
 import stem.connection
 
-class TestProtocolInfoResponse(unittest.TestCase):
+class TestProtocolInfo(unittest.TestCase):
   """
-  Processes a ProtocolInfo query for a variety of setups.
+  Queries and parses PROTOCOLINFO. This should be run with the 'CONNECTION'
+  integ target to exercise the widest range of use cases.
   """
   
-  def testProtocolInfoResponse(self):
+  def test_parsing(self):
     """
     Makes a PROTOCOLINFO query and processes the response for our control
     connection.
@@ -29,7 +30,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     control_socket = runner.get_tor_socket(False)
     control_socket_file = control_socket.makefile()
     
-    control_socket_file.write("PROTOCOLINFO\r\n")
+    control_socket_file.write("PROTOCOLINFO 1\r\n")
     control_socket_file.flush()
     
     protocolinfo_response = stem.types.read_message(control_socket_file)
@@ -42,24 +43,52 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertNotEqual(None, protocolinfo_response.tor_version)
     self.assertNotEqual(None, protocolinfo_response.auth_methods)
     
-    self.assertEqual((), protocolinfo_response.unknown_auth_methods)
     self.assertEqual(None, protocolinfo_response.socket)
+    self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
+  
+  def test_get_protocolinfo_port(self):
+    """
+    Exercises the stem.connection.get_protocolinfo_port function.
+    """
+    
+    connection_type = test.runner.get_runner().get_connection_type()
+    
+    if test.runner.OPT_PORT in test.runner.CONNECTION_OPTS[connection_type]:
+      protocolinfo_response = stem.connection.get_protocolinfo_port(control_port = test.runner.CONTROL_PORT)
+      self.assertEqual(None, protocolinfo_response.socket)
+      self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
+    else:
+      # we don't have a control port
+      self.assertRaises(stem.types.SocketError, stem.connection.get_protocolinfo_port, "127.0.0.1", test.runner.CONTROL_PORT)
+  
+  def assert_protocolinfo_attr(self, protocolinfo_response, connection_type):
+    """
+    Makes assertions that the protocolinfo response's attributes match those of
+    a given connection type.
+    """
+    
+    # This should never have test.runner.TorConnection.NONE. If we somehow got
+    # a protocolinfo_response from that config then we have an issue. :)
     
     if connection_type == test.runner.TorConnection.NO_AUTH:
-      self.assertEqual((stem.connection.AuthMethod.NONE,), protocolinfo_response.auth_methods)
-      self.assertEqual(None, protocolinfo_response.cookie_file)
+      auth_methods = (stem.connection.AuthMethod.NONE,)
     elif connection_type == test.runner.TorConnection.PASSWORD:
-      self.assertEqual((stem.connection.AuthMethod.PASSWORD,), protocolinfo_response.auth_methods)
-      self.assertEqual(None, protocolinfo_response.cookie_file)
+      auth_methods = (stem.connection.AuthMethod.PASSWORD,)
     elif connection_type == test.runner.TorConnection.COOKIE:
-      self.assertEqual((stem.connection.AuthMethod.COOKIE,), protocolinfo_response.auth_methods)
-      self.assertEqual(runner.get_auth_cookie_path(), protocolinfo_response.cookie_file)
+      auth_methods = (stem.connection.AuthMethod.COOKIE,)
     elif connection_type == test.runner.TorConnection.MULTIPLE:
-      self.assertEqual((stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.PASSWORD), protocolinfo_response.auth_methods)
-      self.assertEqual(runner.get_auth_cookie_path(), protocolinfo_response.cookie_file)
+      auth_methods = (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.PASSWORD)
     elif connection_type == test.runner.TorConnection.SOCKET:
-      self.assertEqual((stem.connection.AuthMethod.NONE,), protocolinfo_response.auth_methods)
-      self.assertEqual(None, protocolinfo_response.cookie_file)
+      auth_methods = (stem.connection.AuthMethod.NONE,)
     else:
       self.fail("Unrecognized connection type: %s" % connection_type)
+    
+    self.assertEqual((), protocolinfo_response.unknown_auth_methods)
+    self.assertEqual(auth_methods, protocolinfo_response.auth_methods)
+    
+    if test.runner.OPT_COOKIE in test.runner.CONNECTION_OPTS[connection_type]:
+      auth_cookie_path = test.runner.get_runner().get_auth_cookie_path()
+      self.assertEqual(auth_cookie_path, protocolinfo_response.cookie_file)
+    else:
+      self.assertEqual(None, protocolinfo_response.cookie_file)
 

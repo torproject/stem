@@ -41,7 +41,7 @@ UNIT_TESTS = (("stem.types.ControlMessage", test.unit.types.control_message.Test
              )
 
 INTEG_TESTS = (("stem.types.ControlMessage", test.integ.types.control_message.TestControlMessage),
-              ("stem.connection.ProtocolInfoResponse", test.integ.connection.protocolinfo.TestProtocolInfoResponse),
+              ("stem.connection.ProtocolInfoResponse", test.integ.connection.protocolinfo.TestProtocolInfo),
                ("stem.util.conf", test.integ.util.conf.TestConf),
                ("stem.util.system", test.integ.util.system.TestSystem),
               )

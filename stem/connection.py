@@ -28,6 +28,78 @@ LOGGER = logging.getLogger("stem")
 
 AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "UNKNOWN")
 
+def get_protocolinfo_port(control_addr = "127.0.0.1", control_port = 9051, keep_alive = False):
+  """
+  Issues a PROTOCOLINFO query to a control port, getting information about the
+  tor process running on it.
+  
+  Arguments:
+    control_addr (str) - ip address of the controller
+    control_port (int) - port number of the controller
+    keep_alive (bool)  - keeps the socket used to issue the PROTOCOLINFO query
+                         open if True, closes otherwise
+  
+  Returns:
+    ProtocolInfoResponse with the response given by the tor process
+  
+  Raises:
+    stem.types.ProtocolError if the PROTOCOLINFO response is malformed
+    stem.types.SocketError if problems arise in establishing or using the
+      socket
+  """
+  
+  control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  control_socket_file = control_socket.makefile()
+  protocolinfo_response, raised_exc = None, None
+  
+  try:
+    # initiates connection
+    control_socket.connect((control_addr, control_port))
+    
+    # issues the PROTOCOLINFO query
+    control_socket_file.write("PROTOCOLINFO 1\r\n")
+    control_socket_file.flush()
+    
+    protocolinfo_response = stem.types.read_message(control_socket_file)
+    ProtocolInfoResponse.convert(protocolinfo_response)
+  except socket.error, exc:
+    raised_exc = stem.types.SocketError(exc)
+  except (stem.types.ProtocolError, stem.types.SocketError), exc:
+    raised_exc = exc
+  
+  control_socket_file.close() # done with the linked file
+  
+  if not keep_alive or raised_exc:
+    # shut down the socket we were using
+    try: control_socket.shutdown(socket.SHUT_RDWR)
+    except socket.error: pass
+    
+    control_socket.close()
+  else:
+    # if we're keeping the socket open then attach it to the response
+    protocolinfo_response.socket = control_socket
+  
+  if raised_exc:
+    raise raised_exc
+  else:
+    # if we have an unresolved cookie path then try to expand it again, using
+    # our port to infer a pid
+    
+    cookie_path = protocolinfo_response.cookie_file
+    if cookie_path and control_addr == "127.0.0.1" and stem.util.system.is_relative_path(cookie_path):
+      try:
+        tor_pid = stem.util.system.get_pid_by_port(control_port)
+        if not tor_pid: raise IOError("pid lookup failed")
+        
+        tor_cwd = stem.util.system.get_cwd(tor_pid)
+        if not tor_cwd: raise IOError("cwd lookup failed")
+        
+        protocolinfo_response.cookie_file = stem.util.system.expand_path(cookie_path, tor_cwd)
+      except IOError, exc:
+        LOGGER.debug("unable to expand relative tor cookie path by port: %s" % exc)
+    
+    return protocolinfo_response
+
 class ProtocolInfoResponse(stem.types.ControlMessage):
   """
   Version one PROTOCOLINFO query response.
@@ -166,7 +238,7 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
               
               self.cookie_file = stem.util.system.expand_path(self.cookie_file, tor_cwd)
             except IOError, exc:
-              LOGGER.debug("unable to expand relative tor cookie path: %s" % exc)
+              LOGGER.debug("unable to expand relative tor cookie path by name: %s" % exc)
       elif line_type == "VERSION":
         # Line format:
         #   VersionLine = "250-VERSION" SP "Tor=" TorVersion OptArguments CRLF
