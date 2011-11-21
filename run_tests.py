@@ -16,13 +16,13 @@ import test.runner
 import test.unit.types.control_message
 import test.unit.types.control_line
 import test.unit.types.version
-import test.unit.connection.protocolinfo_response
+import test.unit.connection.protocolinfo
 import test.unit.util.enum
 import test.unit.util.system
 import test.integ.types.control_message
 import test.integ.util.conf
 import test.integ.util.system
-import test.integ.connection.protocolinfo_response
+import test.integ.connection.protocolinfo
 
 import stem.util.enum
 import stem.util.term as term
@@ -35,13 +35,13 @@ DIVIDER = "=" * 70
 UNIT_TESTS = (("stem.types.ControlMessage", test.unit.types.control_message.TestControlMessage),
               ("stem.types.ControlLine", test.unit.types.control_line.TestControlLine),
               ("stem.types.Version", test.unit.types.version.TestVerion),
-              ("stem.connection.ProtocolInfoResponse", test.unit.connection.protocolinfo_response.TestProtocolInfoResponse),
+              ("stem.connection.ProtocolInfoResponse", test.unit.connection.protocolinfo.TestProtocolInfoResponse),
               ("stem.util.enum", test.unit.util.enum.TestEnum),
               ("stem.util.system", test.unit.util.system.TestSystem),
              )
 
 INTEG_TESTS = (("stem.types.ControlMessage", test.integ.types.control_message.TestControlMessage),
-              ("stem.connection.ProtocolInfoResponse", test.integ.connection.protocolinfo_response.TestProtocolInfoResponse),
+              ("stem.connection.ProtocolInfoResponse", test.integ.connection.protocolinfo.TestProtocolInfoResponse),
                ("stem.util.conf", test.integ.util.conf.TestConf),
                ("stem.util.system", test.integ.util.system.TestSystem),
               )

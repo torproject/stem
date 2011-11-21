@@ -2,5 +2,5 @@
 Unit tests for stem.connection.
 """
 
-__all__ = ["protocolinfo_response"]
+__all__ = ["protocolinfo"]
 
