@@ -178,4 +178,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     control_message = stem.types.read_message(StringIO.StringIO(RELATIVE_COOKIE_PATH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     self.assertEquals("./tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_file)
+    
+    # reset system call mocking
+    stem.util.system.CALL_MOCKING = None
 
