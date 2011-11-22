@@ -87,6 +87,9 @@ TEST_OUTPUT_ATTR = {
   "... skipped": (term.Color.BLUE,),
 }
 
+# lines that print_test_results have processed which contained a test failure
+PRINTED_ERRORS = []
+
 def print_divider(msg, is_header = False):
   attr = HEADER_ATTR if is_header else CATEGORY_ATTR
   print term.format("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
@@ -99,6 +102,10 @@ def print_test_results(test_results):
     for result in TEST_OUTPUT_ATTR:
       if result in line:
         line_attr = TEST_OUTPUT_ATTR[result]
+        
+        if result in ("... FAIL", "... ERROR"):
+          PRINTED_ERRORS.append(line)
+        
         break
     
     if line_attr: line = term.format(line, *line_attr)
@@ -240,6 +247,14 @@ if __name__ == '__main__':
     
     # TODO: note unused config options afterward?
   
-  print term.format("Testing Completed (%i seconds)" % (time.time() - start_time), term.Color.GREEN, term.Attr.BOLD)
-  print
+  runtime_label = "(%i seconds)" % (time.time() - start_time)
+  
+  if PRINTED_ERRORS:
+    print term.format("TESTING FAILED %s" % runtime_label, term.Color.RED, term.Attr.BOLD)
+    
+    for line in PRINTED_ERRORS:
+      print term.format("  %s" % line, term.Color.RED, term.Attr.BOLD)
+  else:
+    print term.format("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
+    print
 
