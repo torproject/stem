@@ -8,10 +8,11 @@ import unittest
 import test.runner
 import stem.types
 import stem.connection
+import stem.util.system
 
 class TestProtocolInfo(unittest.TestCase):
   """
-  Queries and parses PROTOCOLINFO. This should be run with the 'CONNECTION'
+  Queries and parses PROTOCOLINFO. This should be run with the 'CONN_ALL'
   integ target to exercise the widest range of use cases.
   """
   
@@ -51,6 +52,23 @@ class TestProtocolInfo(unittest.TestCase):
     Exercises the stem.connection.get_protocolinfo_by_port function.
     """
     
+    # If we have both the 'RELATIVE' target and a cookie then test_parsing
+    # should exercise cookie expansion using a pid lookup by process name.
+    # Disabling those lookups so we exercise the lookup by port/socket file
+    # too.
+    
+    port_lookup_prefixes = (
+      stem.util.system.GET_PID_BY_PORT_NETSTAT,
+      stem.util.system.GET_PID_BY_PORT_SOCKSTAT % "",
+      stem.util.system.GET_PID_BY_PORT_LSOF)
+    
+    def port_lookup_filter(command):
+      for prefix in port_lookup_prefixes:
+        if command.startswith(prefix): return True
+      
+      return False
+    
+    stem.util.system.CALL_MOCKING = port_lookup_filter
     connection_type = test.runner.get_runner().get_connection_type()
     
     if test.runner.OPT_PORT in test.runner.CONNECTION_OPTS[connection_type]:
@@ -60,12 +78,16 @@ class TestProtocolInfo(unittest.TestCase):
     else:
       # we don't have a control port
       self.assertRaises(stem.types.SocketError, stem.connection.get_protocolinfo_by_port, "127.0.0.1", test.runner.CONTROL_PORT)
+    
+    stem.util.system.CALL_MOCKING = None
   
   def test_get_protocolinfo_by_socket(self):
     """
     Exercises the stem.connection.get_protocolinfo_by_socket function.
     """
     
+    socket_file_prefix = stem.util.system.GET_PID_BY_FILE_LSOF % ""
+    stem.util.system.CALL_MOCKING = lambda cmd: cmd.startswith(socket_file_prefix)
     connection_type = test.runner.get_runner().get_connection_type()
     
     if test.runner.OPT_SOCKET in test.runner.CONNECTION_OPTS[connection_type]:
@@ -75,6 +97,8 @@ class TestProtocolInfo(unittest.TestCase):
     else:
       # we don't have a control socket
       self.assertRaises(stem.types.SocketError, stem.connection.get_protocolinfo_by_socket, test.runner.CONTROL_SOCKET_PATH)
+    
+    stem.util.system.CALL_MOCKING = None
   
   def assert_protocolinfo_attr(self, protocolinfo_response, connection_type):
     """
@@ -85,7 +109,7 @@ class TestProtocolInfo(unittest.TestCase):
     # This should never have test.runner.TorConnection.NONE. If we somehow got
     # a protocolinfo_response from that config then we have an issue. :)
     
-    if connection_type == test.runner.TorConnection.NO_AUTH:
+    if connection_type == test.runner.TorConnection.OPEN:
       auth_methods = (stem.connection.AuthMethod.NONE,)
     elif connection_type == test.runner.TorConnection.PASSWORD:
       auth_methods = (stem.connection.AuthMethod.PASSWORD,)
