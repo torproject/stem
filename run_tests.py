@@ -47,12 +47,18 @@ INTEG_TESTS = (("stem.types.ControlMessage", test.integ.types.control_message.Te
               )
 
 # Integration tests above the basic suite.
-TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "CONNECTION")])
+TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "CONN_NONE", "CONN_OPEN", "CONN_PASSWORD", "CONN_COOKIE", "CONN_MULTIPLE", "CONN_SOCKET", "CONN_ALL")])
 
 TARGET_ATTR = {
   TARGETS.ONLINE: ("test.integ.target.online", "Includes tests that require network activity."),
   TARGETS.RELATIVE: ("test.integ.target.relative_data_dir", "Uses a relative path for tor's data directory."),
-  TARGETS.CONNECTION: ("test.integ.target.connection", "Runs the suite over multiple connection configurations."),
+  TARGETS.CONN_NONE: ("test.integ.target.connection.none", "Configuration without a way for controllers to connect."),
+  TARGETS.CONN_OPEN: ("test.integ.target.connection.open", "Configuration with an open control port (default)."),
+  TARGETS.CONN_PASSWORD: ("test.integ.target.connection.password", "Configuration with password authentication."),
+  TARGETS.CONN_COOKIE: ("test.integ.target.connection.cookie", "Configuration with an authentication cookie."),
+  TARGETS.CONN_MULTIPLE: ("test.integ.target.connection.multiple", "Configuration with both password and cookie authentication."),
+  TARGETS.CONN_SOCKET: ("test.integ.target.connection.socket", "Configuration with a control socket."),
+  TARGETS.CONN_ALL: ("test.integ.target.connection.all", "Runs integration tests for all connection configurations."),
 }
 
 HELP_MSG = """Usage runTests.py [OPTION]
@@ -191,13 +197,26 @@ if __name__ == '__main__':
     integ_runner = test.runner.get_runner()
     stem_logger = logging.getLogger("stem")
     
-    # just a single integ run with the default connection method unless we've
-    # set the 'CONNECTION' target, in which case we run 'em all
+    # queue up all of the tor configurations we want to run the integration
+    # tests on
     
-    if test_config.get("test.integ.target.connection", False):
+    connection_types = []
+    
+    if test_config.get("test.integ.target.connection.all", False):
       connection_types = list(test.runner.TorConnection)
     else:
-      connection_types = [test.runner.DEFAULT_TOR_CONNECTION]
+      conn_type_mappings = {
+        "none": test.runner.TorConnection.NONE,
+        "open": test.runner.TorConnection.OPEN,
+        "password": test.runner.TorConnection.PASSWORD,
+        "cookie": test.runner.TorConnection.COOKIE,
+        "multiple": test.runner.TorConnection.MULTIPLE,
+        "socket": test.runner.TorConnection.SOCKET,
+      }
+      
+      for type_key in conn_type_mappings:
+        if test_config.get("test.integ.target.connection.%s" % type_key, False):
+          connection_types.append(conn_type_mappings[type_key])
     
     for connection_type in connection_types:
       try:

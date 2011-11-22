@@ -19,13 +19,26 @@
 # test.integ.target.relative_data_dir
 #   Uses a relative path for the tor data directory if set.
 #
-# test.integ.target.connection
-#   Runs integration tests for multiple connection and authentiction methods if
-#   true. Otherwise they'll only be run for a single connection type.
+# test.integ.target.connection.none
+# test.integ.target.connection.open
+# test.integ.target.connection.password
+# test.integ.target.connection.cookie
+# test.integ.target.connection.muiltipe
+# test.integ.target.connection.socket
+# test.integ.target.connection.all
+#   Runs the integration test suite for all of the given connection and
+#   authentication configurations. If the 'all' option is set then the other
+#   flags are ignored.
 
 test.integ.test_directory ./test/data
 test.integ.log ./test/data/log
 test.integ.target.online false
 test.integ.target.relative_data_dir false
-test.integ.target.connection false
+test.integ.target.connection.none false
+test.integ.target.connection.open true
+test.integ.target.connection.password false
+test.integ.target.connection.cookie false
+test.integ.target.connection.muiltipe false
+test.integ.target.connection.socket false
+test.integ.target.connection.all false
 

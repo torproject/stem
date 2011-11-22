@@ -42,8 +42,8 @@ DEFAULT_CONFIG = {
 # Methods for connecting to tor. General integration tests only run with the
 # DEFAULT_TOR_CONNECTION, but expanded integ tests will run with all of them.
 
-TorConnection = stem.util.enum.Enum("NONE", "NO_AUTH", "PASSWORD", "COOKIE", "MULTIPLE", "SOCKET")
-DEFAULT_TOR_CONNECTION = TorConnection.NO_AUTH
+TorConnection = stem.util.enum.Enum("NONE", "OPEN", "PASSWORD", "COOKIE", "MULTIPLE", "SOCKET")
+DEFAULT_TOR_CONNECTION = TorConnection.OPEN
 
 STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
 SUBSTATUS_ATTR = (term.Color.BLUE, )
@@ -75,7 +75,7 @@ OPT_SOCKET = "ControlSocket %s" % CONTROL_SOCKET_PATH
 
 CONNECTION_OPTS = {
   TorConnection.NONE: [],
-  TorConnection.NO_AUTH: [OPT_PORT],
+  TorConnection.OPEN: [OPT_PORT],
   TorConnection.PASSWORD: [OPT_PORT, OPT_PASSWORD],
   TorConnection.COOKIE: [OPT_PORT, OPT_COOKIE],
   TorConnection.MULTIPLE: [OPT_PORT, OPT_PASSWORD, OPT_COOKIE],
