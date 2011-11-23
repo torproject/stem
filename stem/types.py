@@ -124,7 +124,9 @@ def read_message(control_file):
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
       
-      LOGGER.debug("Received message:\n" + raw_content)
+      # replacing the \r\n newline endings and the ending newline since it
+      # leads to more readable log messages
+      LOGGER.debug("Received message:\n" + raw_content.replace("\r\n", "\n").rstrip())
       
       return ControlMessage(parsed_content, raw_content)
     elif divider == "+":
