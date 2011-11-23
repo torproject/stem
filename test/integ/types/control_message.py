@@ -27,8 +27,7 @@ class TestControlMessage(unittest.TestCase):
     # PROTOCOLINFO then tor will give an 'Authentication required.' message and
     # hang up.
     
-    control_socket_file.write("GETINFO version\r\n")
-    control_socket_file.flush()
+    stem.types.write_message(control_socket_file, "GETINFO version")
     
     auth_required_response = stem.types.read_message(control_socket_file)
     self.assertEquals("Authentication required.", str(auth_required_response))
@@ -39,11 +38,10 @@ class TestControlMessage(unittest.TestCase):
     # The socket's broken but doesn't realize it yet. Send another message and
     # it should fail with a closed exception. With a control port we won't get
     # an error until we read from the socket. However, with a control socket
-    # the flush will raise a socket.error.
+    # the write will cause a SocketError.
     
     try:
-      control_socket_file.write("GETINFO version\r\n")
-      control_socket_file.flush()
+      stem.types.write_message(control_socket_file, "GETINFO version")
     except: pass
     
     self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
@@ -51,8 +49,7 @@ class TestControlMessage(unittest.TestCase):
     # Additional socket usage should fail, and pulling more responses will fail
     # with more closed exceptions.
     
-    control_socket_file.write("GETINFO version\r\n")
-    self.assertRaises(socket.error, control_socket_file.flush)
+    self.assertRaises(stem.types.SocketError, stem.types.write_message, control_socket_file, "GETINFO version")
     self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
     self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
     self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
@@ -61,22 +58,17 @@ class TestControlMessage(unittest.TestCase):
     # an impact.
     
     control_socket.close()
-    control_socket_file.write("GETINFO version\r\n")
-    self.assertRaises(socket.error, control_socket_file.flush)
+    self.assertRaises(stem.types.SocketError, stem.types.write_message, control_socket_file, "GETINFO version")
     self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
     
-    # Closing the file handler, however, will cause a different type of error.
-    # This seems to depend on the python version, in 2.6 we get an
-    # AttributeError and in 2.7 the close() call raises...
-    #   error: [Errno 32] Broken pipe
+    # Tries again with the file explicitely closed. In python 2.7 the close
+    # call will raise...
+    # error: [Errno 32] Broken pipe
     
-    try:
-      control_socket_file.close()
-      control_socket_file.write("GETINFO version\r\n")
+    try: control_socket_file.close()
     except: pass
     
-    # receives: AttributeError: 'NoneType' object has no attribute 'sendall'
-    self.assertRaises(AttributeError, control_socket_file.flush)
+    self.assertRaises(stem.types.SocketError, stem.types.write_message, control_socket_file, "GETINFO version")
     
     # receives: stem.types.SocketClosed: socket file has been closed
     self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
@@ -90,9 +82,7 @@ class TestControlMessage(unittest.TestCase):
     if not control_socket: self.skipTest("(no control socket)")
     control_socket_file = control_socket.makefile()
     
-    control_socket_file.write("blarg\r\n")
-    control_socket_file.flush()
-    
+    stem.types.write_message(control_socket_file, "blarg")
     unrecognized_command_response = stem.types.read_message(control_socket_file)
     self.assertEquals('Unrecognized command "blarg"', str(unrecognized_command_response))
     self.assertEquals(['Unrecognized command "blarg"'], list(unrecognized_command_response))
@@ -111,9 +101,7 @@ class TestControlMessage(unittest.TestCase):
     if not control_socket: self.skipTest("(no control socket)")
     control_socket_file = control_socket.makefile()
     
-    control_socket_file.write("GETINFO blarg\r\n")
-    control_socket_file.flush()
-    
+    stem.types.write_message(control_socket_file, "GETINFO blarg")
     unrecognized_key_response = stem.types.read_message(control_socket_file)
     self.assertEquals('Unrecognized key "blarg"', str(unrecognized_key_response))
     self.assertEquals(['Unrecognized key "blarg"'], list(unrecognized_key_response))
@@ -135,9 +123,7 @@ class TestControlMessage(unittest.TestCase):
     if not control_socket: self.skipTest("(no control socket)")
     control_socket_file = control_socket.makefile()
     
-    control_socket_file.write("GETINFO config-file\r\n")
-    control_socket_file.flush()
-    
+    stem.types.write_message(control_socket_file, "GETINFO config-file")
     config_file_response = stem.types.read_message(control_socket_file)
     self.assertEquals("config-file=%s\nOK" % torrc_dst, str(config_file_response))
     self.assertEquals(["config-file=%s" % torrc_dst, "OK"], list(config_file_response))
@@ -174,9 +160,7 @@ class TestControlMessage(unittest.TestCase):
     if not control_socket: self.skipTest("(no control socket)")
     control_socket_file = control_socket.makefile()
     
-    control_socket_file.write("GETINFO config-text\r\n")
-    control_socket_file.flush()
-    
+    stem.types.write_message(control_socket_file, "GETINFO config-text")
     config_text_response = stem.types.read_message(control_socket_file)
     
     # the response should contain two entries, the first being a data response
@@ -206,9 +190,7 @@ class TestControlMessage(unittest.TestCase):
     if not control_socket: self.skipTest("(no control socket)")
     control_socket_file = control_socket.makefile()
     
-    control_socket_file.write("SETEVENTS BW\r\n")
-    control_socket_file.flush()
-    
+    stem.types.write_message(control_socket_file, "SETEVENTS BW")
     setevents_response = stem.types.read_message(control_socket_file)
     self.assertEquals("OK", str(setevents_response))
     self.assertEquals(["OK"], list(setevents_response))

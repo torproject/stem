@@ -7,6 +7,8 @@ ControllerError - Base exception raised when using the controller.
   |- SocketError - Socket used for controller communication errored.
   +- SocketClosed - Socket terminated.
 
+write_message - Writes a message to a control socket.
+format_write_message - Performs the formatting expected from sent messages.
 read_message - Reads a ControlMessage from a control socket.
 ControlMessage - Message from the control socket.
   |- content - provides the parsed message content
@@ -58,9 +60,81 @@ class SocketError(ControllerError):
   "Error arose while communicating with the control socket."
   pass
 
-class SocketClosed(ControllerError):
+class SocketClosed(SocketError):
   "Control socket was closed before completing the message."
   pass
+
+def write_message(control_file, message, raw = False):
+  """
+  Sends a message to the control socket, adding the expected formatting for
+  single verses multiline messages. Neither message type should contain an
+  ending newline (if so it'll be treated as a multi-line message with a blank
+  line at the end). If the message doesn't contain a newline then it's sent
+  as...
+  
+  <message>\r\n
+  
+  and if it does contain newlines then it's split on \n and sent as...
+  
+  +<line 1>\r\n
+  <line 2>\r\n
+  <line 3>\r\n
+  .\r\n
+  
+  Arguments:
+    control_file (file) - file derived from the control socket (see the
+                          socket's makefile() method for more information)
+    message (str)       - message to be sent on the control socket
+    raw (bool)          - leaves the message formatting untouched, passing it
+                          to the socket as-is
+  
+  Raises:
+    SocketError if a problem arises in using the socket
+  """
+  
+  if not raw: message = format_write_message(message)
+  
+  try:
+    LOGGER.debug("Sending message:\n" + message.replace("\r\n", "\n").rstrip())
+    control_file.write(message)
+    control_file.flush()
+  except socket.error, exc:
+    LOGGER.info("Failed to send message: %s" % exc)
+    raise SocketError(exc)
+  except AttributeError:
+    # This happens after the file's close() method has been called, the flush
+    # causing...
+    # AttributeError: 'NoneType' object has no attribute 'sendall'
+    
+    LOGGER.info("Failed to send message: file has been closed")
+    raise SocketError("file has been closed")
+
+def format_write_message(message):
+  """
+  Performs the formatting expected of control messages (for more information
+  see the write_message function).
+  
+  Arguments:
+    message (str) - message to be formatted
+  
+  Returns:
+    str of the message wrapped by the formatting expected from controllers
+  """
+  
+  # From 'Commands from controller to Tor' (section 2.2) of the control spec...
+  #
+  # Command = Keyword OptArguments CRLF / "+" Keyword OptArguments CRLF CmdData
+  # Keyword = 1*ALPHA
+  # OptArguments = [ SP *(SP / VCHAR) ]
+  #
+  # A command is either a single line containing a Keyword and arguments, or a
+  # multiline command whose initial keyword begins with +, and whose data
+  # section ends with a single "." on a line of its own.
+  
+  if "\n" in message:
+    return "+%s\r\n.\r\n" % message.replace("\n", "\r\n")
+  else:
+    return message + "\r\n"
 
 def read_message(control_file):
   """
@@ -68,8 +142,8 @@ def read_message(control_file):
   encounter a problem.
   
   Arguments:
-    control_file - file derived from the control socket (see the socket's
-                   makefile() method for more information)
+    control_file (file) - file derived from the control socket (see the
+                          socket's makefile() method for more information)
   
   Returns:
     stem.types.ControlMessage read from the socket

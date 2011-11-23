@@ -31,9 +31,7 @@ class TestProtocolInfo(unittest.TestCase):
     control_socket = runner.get_tor_socket(False)
     control_socket_file = control_socket.makefile()
     
-    control_socket_file.write("PROTOCOLINFO 1\r\n")
-    control_socket_file.flush()
-    
+    stem.types.write_message(control_socket_file, "PROTOCOLINFO 1")
     protocolinfo_response = stem.types.read_message(control_socket_file)
     stem.connection.ProtocolInfoResponse.convert(protocolinfo_response)
     

@@ -107,8 +107,7 @@ def _get_protocolinfo_impl(control_socket, connection_args, keep_alive):
     control_socket.connect(connection_args)
     
     # issues the PROTOCOLINFO query
-    control_socket_file.write("PROTOCOLINFO 1\r\n")
-    control_socket_file.flush()
+    stem.types.write_message(control_socket_file, "PROTOCOLINFO 1")
     
     protocolinfo_response = stem.types.read_message(control_socket_file)
     ProtocolInfoResponse.convert(protocolinfo_response)
