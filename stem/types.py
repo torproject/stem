@@ -95,7 +95,13 @@ def write_message(control_file, message, raw = False):
   if not raw: message = format_write_message(message)
   
   try:
-    LOGGER.debug("Sending message:\n" + message.replace("\r\n", "\n").rstrip())
+    log_message = message.replace("\r\n", "\n").rstrip()
+    
+    # starts with a newline if this is a multi-line message (more readable)
+    if "\n" in log_message: log_message = "\n" + log_message
+    
+    LOGGER.debug("Sending: " + log_message)
+    
     control_file.write(message)
     control_file.flush()
   except socket.error, exc:
@@ -200,7 +206,12 @@ def read_message(control_file):
       
       # replacing the \r\n newline endings and the ending newline since it
       # leads to more readable log messages
-      LOGGER.debug("Received message:\n" + raw_content.replace("\r\n", "\n").rstrip())
+      log_message = raw_content.replace("\r\n", "\n").rstrip()
+      
+      # starts with a newline if this is a multi-line message (more readable)
+      if "\n" in log_message: log_message = "\n" + log_message
+      
+      LOGGER.debug("Received: " + log_message)
       
       return ControlMessage(parsed_content, raw_content)
     elif divider == "+":
