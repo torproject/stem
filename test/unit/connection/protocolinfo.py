@@ -5,6 +5,7 @@ Unit tests for the stem.connection.ProtocolInfoResponse class.
 import unittest
 import StringIO
 import stem.connection
+import stem.socket
 import stem.types
 
 NO_AUTH = """250-PROTOCOLINFO 1
@@ -59,11 +60,11 @@ class TestProtocolInfoResponse(unittest.TestCase):
     """
     
     # working case
-    control_message = stem.types.read_message(StringIO.StringIO(NO_AUTH))
+    control_message = stem.socket.recv_message(StringIO.StringIO(NO_AUTH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     
     # now this should be a ProtocolInfoResponse (ControlMessage subclass)
-    self.assertTrue(isinstance(control_message, stem.types.ControlMessage))
+    self.assertTrue(isinstance(control_message, stem.socket.ControlMessage))
     self.assertTrue(isinstance(control_message, stem.connection.ProtocolInfoResponse))
     
     # exercise some of the ControlMessage functionality
@@ -74,15 +75,15 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertRaises(TypeError, stem.connection.ProtocolInfoResponse.convert, "hello world")
     
     # attempt to convert a different message type
-    bw_event_control_message = stem.types.read_message(StringIO.StringIO("650 BW 32326 2856\r\n"))
-    self.assertRaises(stem.types.ProtocolError, stem.connection.ProtocolInfoResponse.convert, bw_event_control_message)
+    bw_event_control_message = stem.socket.recv_message(StringIO.StringIO("650 BW 32326 2856\r\n"))
+    self.assertRaises(stem.socket.ProtocolError, stem.connection.ProtocolInfoResponse.convert, bw_event_control_message)
   
   def test_no_auth(self):
     """
     Checks a response when there's no authentication.
     """
     
-    control_message = stem.types.read_message(StringIO.StringIO(NO_AUTH))
+    control_message = stem.socket.recv_message(StringIO.StringIO(NO_AUTH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     
     self.assertEquals(1, control_message.protocol_version)
@@ -97,7 +98,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     Checks a response with password authentication.
     """
     
-    control_message = stem.types.read_message(StringIO.StringIO(PASSWORD_AUTH))
+    control_message = stem.socket.recv_message(StringIO.StringIO(PASSWORD_AUTH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     self.assertEquals((stem.connection.AuthMethod.PASSWORD, ), control_message.auth_methods)
   
@@ -107,7 +108,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     characters.
     """
     
-    control_message = stem.types.read_message(StringIO.StringIO(COOKIE_AUTH))
+    control_message = stem.socket.recv_message(StringIO.StringIO(COOKIE_AUTH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     self.assertEquals((stem.connection.AuthMethod.COOKIE, ), control_message.auth_methods)
     self.assertEquals("/tmp/my data\\\"dir//control_auth_cookie", control_message.cookie_path)
@@ -117,7 +118,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     Checks a response with multiple authentication methods.
     """
     
-    control_message = stem.types.read_message(StringIO.StringIO(MULTIPLE_AUTH))
+    control_message = stem.socket.recv_message(StringIO.StringIO(MULTIPLE_AUTH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     self.assertEquals((stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.PASSWORD), control_message.auth_methods)
     self.assertEquals("/home/atagar/.tor/control_auth_cookie", control_message.cookie_path)
@@ -127,7 +128,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     Checks a response with an unrecognized authtentication method.
     """
     
-    control_message = stem.types.read_message(StringIO.StringIO(UNKNOWN_AUTH))
+    control_message = stem.socket.recv_message(StringIO.StringIO(UNKNOWN_AUTH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     self.assertEquals((stem.connection.AuthMethod.UNKNOWN, stem.connection.AuthMethod.PASSWORD), control_message.auth_methods)
     self.assertEquals(("MAGIC", "PIXIE_DUST"), control_message.unknown_auth_methods)
@@ -138,7 +139,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     information to be a valid response.
     """
     
-    control_message = stem.types.read_message(StringIO.StringIO(MINIMUM_RESPONSE))
+    control_message = stem.socket.recv_message(StringIO.StringIO(MINIMUM_RESPONSE))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     
     self.assertEquals(5, control_message.protocol_version)
@@ -167,7 +168,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     
     stem.util.system.CALL_MOCKING = call_mocking
     
-    control_message = stem.types.read_message(StringIO.StringIO(RELATIVE_COOKIE_PATH))
+    control_message = stem.socket.recv_message(StringIO.StringIO(RELATIVE_COOKIE_PATH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     self.assertEquals("/tmp/foo/tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_path)
     
@@ -175,7 +176,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     # leaving the path unexpanded)
     
     stem.util.system.CALL_MOCKING = lambda cmd: None
-    control_message = stem.types.read_message(StringIO.StringIO(RELATIVE_COOKIE_PATH))
+    control_message = stem.socket.recv_message(StringIO.StringIO(RELATIVE_COOKIE_PATH))
     stem.connection.ProtocolInfoResponse.convert(control_message)
     self.assertEquals("./tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_path)
     

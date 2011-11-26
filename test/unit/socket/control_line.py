@@ -1,9 +1,9 @@
 """
-Unit tests for the stem.types.ControlLine class.
+Unit tests for the stem.socket.ControlLine class.
 """
 
 import unittest
-import stem.types
+import stem.socket
 
 # response made by having 'DataDirectory /tmp/my data\"dir/' in the torrc
 PROTOCOLINFO_RESPONSE = (
@@ -15,7 +15,7 @@ PROTOCOLINFO_RESPONSE = (
 
 class TestControlLine(unittest.TestCase):
   """
-  Tests methods of the stem.types.ControlLine class.
+  Tests methods of the stem.socket.ControlLine class.
   """
   
   def test_pop_examples(self):
@@ -23,12 +23,12 @@ class TestControlLine(unittest.TestCase):
     Checks that the pop method's pydoc examples are correct.
     """
     
-    line = stem.types.ControlLine("\"We're all mad here.\" says the grinning cat.")
+    line = stem.socket.ControlLine("\"We're all mad here.\" says the grinning cat.")
     self.assertEquals(line.pop(True), "We're all mad here.")
     self.assertEquals(line.pop(), "says")
     self.assertEquals(line.remainder(), "the grinning cat.")
     
-    line = stem.types.ControlLine("\"this has a \\\" and \\\\ in it\" foo=bar more_data")
+    line = stem.socket.ControlLine("\"this has a \\\" and \\\\ in it\" foo=bar more_data")
     self.assertEquals(line.pop(True, True), "this has a \" and \\ in it")
   
   def test_string(self):
@@ -36,7 +36,7 @@ class TestControlLine(unittest.TestCase):
     Basic checks that we behave as a regular immutable string.
     """
     
-    line = stem.types.ControlLine(PROTOCOLINFO_RESPONSE[0])
+    line = stem.socket.ControlLine(PROTOCOLINFO_RESPONSE[0])
     self.assertEquals(line, 'PROTOCOLINFO 1')
     self.assertTrue(line.startswith('PROTOCOLINFO '))
     
@@ -51,7 +51,7 @@ class TestControlLine(unittest.TestCase):
     """
     
     # pops a series of basic, space separated entries
-    line = stem.types.ControlLine(PROTOCOLINFO_RESPONSE[0])
+    line = stem.socket.ControlLine(PROTOCOLINFO_RESPONSE[0])
     self.assertEquals(line.remainder(), 'PROTOCOLINFO 1')
     self.assertFalse(line.is_empty())
     self.assertFalse(line.is_next_quoted())
@@ -86,7 +86,7 @@ class TestControlLine(unittest.TestCase):
     # version entry with a space
     version_entry = 'Tor="0.2.1.30 (0a083b0188cacd2f07838ff0446113bd5211a024)"'
     
-    line = stem.types.ControlLine(version_entry)
+    line = stem.socket.ControlLine(version_entry)
     self.assertEquals(line.remainder(), version_entry)
     self.assertFalse(line.is_empty())
     self.assertFalse(line.is_next_quoted())
@@ -104,7 +104,7 @@ class TestControlLine(unittest.TestCase):
     self.assertRaises(ValueError, line.pop_mapping)
     
     # try popping this as a quoted mapping
-    line = stem.types.ControlLine(version_entry)
+    line = stem.socket.ControlLine(version_entry)
     self.assertEquals(line.pop_mapping(True), ('Tor', '0.2.1.30 (0a083b0188cacd2f07838ff0446113bd5211a024)'))
     self.assertEquals(line.remainder(), '')
     self.assertTrue(line.is_empty())
@@ -119,7 +119,7 @@ class TestControlLine(unittest.TestCase):
     """
     
     auth_line = PROTOCOLINFO_RESPONSE[1]
-    line = stem.types.ControlLine(auth_line)
+    line = stem.socket.ControlLine(auth_line)
     self.assertEquals(line, auth_line)
     self.assertEquals(line.remainder(), auth_line)
     
@@ -139,25 +139,25 @@ class TestControlLine(unittest.TestCase):
     self.assertTrue(line.is_empty())
     
     # try a general pop with escapes
-    line = stem.types.ControlLine(cookie_file_entry)
+    line = stem.socket.ControlLine(cookie_file_entry)
     self.assertEquals(line.pop(escaped = True), 'COOKIEFILE="/tmp/my')
     self.assertEquals(line.pop(escaped = True), r'data\"dir//control_auth_cookie"')
     self.assertTrue(line.is_empty())
     
     # try a mapping pop
-    line = stem.types.ControlLine(cookie_file_entry)
+    line = stem.socket.ControlLine(cookie_file_entry)
     self.assertEquals(line.pop_mapping(), ('COOKIEFILE', '"/tmp/my'))
     self.assertEquals(line.remainder(), r'data\\\"dir//control_auth_cookie"')
     self.assertFalse(line.is_empty())
     
     # try a quoted mapping pop (this should trip up on the escaped quote)
-    line = stem.types.ControlLine(cookie_file_entry)
+    line = stem.socket.ControlLine(cookie_file_entry)
     self.assertEquals(line.pop_mapping(True), ('COOKIEFILE', '/tmp/my data\\\\\\'))
     self.assertEquals(line.remainder(), 'dir//control_auth_cookie"')
     self.assertFalse(line.is_empty())
     
     # try an escaped quoted mapping pop
-    line = stem.types.ControlLine(cookie_file_entry)
+    line = stem.socket.ControlLine(cookie_file_entry)
     self.assertEquals(line.pop_mapping(True, True), ('COOKIEFILE', r'/tmp/my data\"dir//control_auth_cookie'))
     self.assertTrue(line.is_empty())
 

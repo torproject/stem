@@ -13,13 +13,13 @@ import unittest
 import StringIO
 
 import test.runner
-import test.unit.types.control_message
-import test.unit.types.control_line
+import test.unit.socket.control_message
+import test.unit.socket.control_line
 import test.unit.types.version
 import test.unit.connection.protocolinfo
 import test.unit.util.enum
 import test.unit.util.system
-import test.integ.types.control_message
+import test.integ.socket.control_message
 import test.integ.util.conf
 import test.integ.util.system
 import test.integ.connection.protocolinfo
@@ -32,15 +32,15 @@ OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "help"]
 DIVIDER = "=" * 70
 
 # (name, class) tuples for all of our unit and integration tests
-UNIT_TESTS = (("stem.types.ControlMessage", test.unit.types.control_message.TestControlMessage),
-              ("stem.types.ControlLine", test.unit.types.control_line.TestControlLine),
+UNIT_TESTS = (("stem.socket.ControlMessage", test.unit.socket.control_message.TestControlMessage),
+              ("stem.socket.ControlLine", test.unit.socket.control_line.TestControlLine),
               ("stem.types.Version", test.unit.types.version.TestVerion),
               ("stem.connection.ProtocolInfoResponse", test.unit.connection.protocolinfo.TestProtocolInfoResponse),
               ("stem.util.enum", test.unit.util.enum.TestEnum),
               ("stem.util.system", test.unit.util.system.TestSystem),
              )
 
-INTEG_TESTS = (("stem.types.ControlMessage", test.integ.types.control_message.TestControlMessage),
+INTEG_TESTS = (("stem.socket.ControlMessage", test.integ.socket.control_message.TestControlMessage),
               ("stem.connection.ProtocolInfoResponse", test.integ.connection.protocolinfo.TestProtocolInfo),
                ("stem.util.conf", test.integ.util.conf.TestConf),
                ("stem.util.system", test.integ.util.system.TestSystem),

@@ -1,11 +1,11 @@
 """
-Unit tests for the stem.types.ControlMessage parsing and class.
+Unit tests for the stem.socket.ControlMessage parsing and class.
 """
 
 import socket
 import StringIO
 import unittest
-import stem.types
+import stem.socket
 
 OK_REPLY = "250 OK\r\n"
 
@@ -31,7 +31,7 @@ version -- The current version of Tor.
 
 class TestControlMessage(unittest.TestCase):
   """
-  Tests methods and functions related to 'stem.types.ControlMessage'. This uses
+  Tests methods and functions related to 'stem.socket.ControlMessage'. This uses
   StringIO to make 'files' to mock socket input.
   """
   
@@ -116,7 +116,7 @@ class TestControlMessage(unittest.TestCase):
       # replace the CRLF for the line
       infonames_lines[i] = infonames_lines[i].rstrip("\r\n") + "\n"
       test_socket_file = StringIO.StringIO("".join(infonames_lines))
-      self.assertRaises(stem.types.ProtocolError, stem.types.read_message, test_socket_file)
+      self.assertRaises(stem.socket.ProtocolError, stem.socket.recv_message, test_socket_file)
       
       # puts the CRLF back
       infonames_lines[i] = infonames_lines[i].rstrip("\n") + "\r\n"
@@ -141,8 +141,8 @@ class TestControlMessage(unittest.TestCase):
         # - this is part of the message prefix
         # - this is disrupting the line ending
         
-        self.assertRaises(stem.types.ProtocolError, stem.types.read_message, StringIO.StringIO(removal_test_input))
-        self.assertRaises(stem.types.ProtocolError, stem.types.read_message, StringIO.StringIO(replacement_test_input))
+        self.assertRaises(stem.socket.ProtocolError, stem.socket.recv_message, StringIO.StringIO(removal_test_input))
+        self.assertRaises(stem.socket.ProtocolError, stem.socket.recv_message, StringIO.StringIO(replacement_test_input))
       else:
         # otherwise the data will be malformed, but this goes undetected
         self.assert_message_parses(removal_test_input)
@@ -156,17 +156,17 @@ class TestControlMessage(unittest.TestCase):
     
     control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     control_socket_file = control_socket.makefile()
-    self.assertRaises(stem.types.SocketClosed, stem.types.read_message, control_socket_file)
+    self.assertRaises(stem.socket.SocketClosed, stem.socket.recv_message, control_socket_file)
   
   def assert_message_parses(self, controller_reply):
     """
     Performs some basic sanity checks that a reply mirrors its parsed result.
     
     Returns:
-      stem.types.ControlMessage for the given input
+      stem.socket.ControlMessage for the given input
     """
     
-    message = stem.types.read_message(StringIO.StringIO(controller_reply))
+    message = stem.socket.recv_message(StringIO.StringIO(controller_reply))
     
     # checks that the raw_content equals the input value
     self.assertEqual(controller_reply, message.raw_content())

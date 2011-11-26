@@ -341,13 +341,13 @@ class Runner:
         auth_cookie_contents = auth_cookie.read()
         auth_cookie.close()
         
-        stem.types.write_message(control_socket_file, "AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
+        stem.socket.send_message(control_socket_file, "AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
       elif OPT_PASSWORD in conn_opts:
-        stem.types.write_message(control_socket_file, "AUTHENTICATE \"%s\"" % CONTROL_PASSWORD)
+        stem.socket.send_message(control_socket_file, "AUTHENTICATE \"%s\"" % CONTROL_PASSWORD)
       else:
-        stem.types.write_message(control_socket_file, "AUTHENTICATE")
+        stem.socket.send_message(control_socket_file, "AUTHENTICATE")
       
-      authenticate_response = stem.types.read_message(control_socket_file)
+      authenticate_response = stem.socket.recv_message(control_socket_file)
       control_socket_file.close()
       
       if str(authenticate_response) != "OK":

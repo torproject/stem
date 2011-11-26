@@ -14,11 +14,13 @@ ProtocolInfoResponse - Reply from a PROTOCOLINFO query.
   +- convert - parses a ControlMessage, turning it into a ProtocolInfoResponse
 """
 
+from __future__ import absolute_import
 import Queue
 import socket
 import logging
 import threading
 
+import stem.socket
 import stem.types
 import stem.util.enum
 import stem.util.system
@@ -55,8 +57,8 @@ def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, ke
     ProtocolInfoResponse with the response given by the tor process
   
   Raises:
-    stem.types.ProtocolError if the PROTOCOLINFO response is malformed
-    stem.types.SocketError if problems arise in establishing or using the
+    stem.socket.ProtocolError if the PROTOCOLINFO response is malformed
+    stem.socket.SocketError if problems arise in establishing or using the
       socket
   """
   
@@ -80,8 +82,8 @@ def get_protocolinfo_by_socket(socket_path = "/var/run/tor/control", keep_alive 
                         open if True, closes otherwise
   
   Raises:
-    stem.types.ProtocolError if the PROTOCOLINFO response is malformed
-    stem.types.SocketError if problems arise in establishing or using the
+    stem.socket.ProtocolError if the PROTOCOLINFO response is malformed
+    stem.socket.SocketError if problems arise in establishing or using the
       socket
   """
   
@@ -107,13 +109,13 @@ def _get_protocolinfo_impl(control_socket, connection_args, keep_alive):
     control_socket.connect(connection_args)
     
     # issues the PROTOCOLINFO query
-    stem.types.write_message(control_socket_file, "PROTOCOLINFO 1")
+    stem.socket.send_message(control_socket_file, "PROTOCOLINFO 1")
     
-    protocolinfo_response = stem.types.read_message(control_socket_file)
+    protocolinfo_response = stem.socket.recv_message(control_socket_file)
     ProtocolInfoResponse.convert(protocolinfo_response)
   except socket.error, exc:
-    raised_exc = stem.types.SocketError(exc)
-  except (stem.types.ProtocolError, stem.types.SocketError), exc:
+    raised_exc = stem.socket.SocketError(exc)
+  except (stem.socket.ProtocolError, stem.socket.SocketError), exc:
     raised_exc = exc
   
   control_socket_file.close() # done with the linked file
@@ -159,7 +161,7 @@ def _expand_cookie_path(cookie_path, pid_resolver, pid_resolution_arg):
   
   return cookie_path
 
-class ProtocolInfoResponse(stem.types.ControlMessage):
+class ProtocolInfoResponse(stem.socket.ControlMessage):
   """
   Version one PROTOCOLINFO query response.
   
@@ -188,20 +190,20 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
     ProtocolInfoResponse.
     
     Arguments:
-      control_message (stem.types.ControlMessage) -
+      control_message (stem.socket.ControlMessage) -
         message to be parsed as a PROTOCOLINFO reply
     
     Raises:
-      stem.types.ProtocolError the message isn't a proper PROTOCOLINFO response
+      stem.socket.ProtocolError the message isn't a proper PROTOCOLINFO response
       TypeError if argument isn't a ControlMessage
     """
     
-    if isinstance(control_message, stem.types.ControlMessage):
+    if isinstance(control_message, stem.socket.ControlMessage):
       control_message.__class__ = ProtocolInfoResponse
       control_message._parse_message()
       return control_message
     else:
-      raise TypeError("Only able to convert stem.types.ControlMessage instances")
+      raise TypeError("Only able to convert stem.socket.ControlMessage instances")
   
   convert = staticmethod(convert)
   
@@ -222,7 +224,7 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
     # sanity check that we're a PROTOCOLINFO response
     if not list(self)[0].startswith("PROTOCOLINFO"):
       msg = "Message is not a PROTOCOLINFO response"
-      raise stem.types.ProtocolError(msg)
+      raise stem.socket.ProtocolError(msg)
     
     for line in self:
       if line == "OK": break
@@ -237,13 +239,13 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
         
         if line.is_empty():
           msg = "PROTOCOLINFO response's initial line is missing the protocol version: %s" % line
-          raise stem.types.ProtocolError(msg)
+          raise stem.socket.ProtocolError(msg)
         
         piversion = line.pop()
         
         if not piversion.isdigit():
           msg = "PROTOCOLINFO response version is non-numeric: %s" % line
-          raise stem.types.ProtocolError(msg)
+          raise stem.socket.ProtocolError(msg)
         
         self.protocol_version = int(piversion)
         
@@ -264,7 +266,7 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
         # parse AuthMethod mapping
         if not line.is_next_mapping("METHODS"):
           msg = "PROTOCOLINFO response's AUTH line is missing its mandatory 'METHODS' mapping: %s" % line
-          raise stem.types.ProtocolError(msg)
+          raise stem.socket.ProtocolError(msg)
         
         for method in line.pop_mapping()[1].split(","):
           if method == "NULL":
@@ -295,14 +297,14 @@ class ProtocolInfoResponse(stem.types.ControlMessage):
         
         if not line.is_next_mapping("Tor", True):
           msg = "PROTOCOLINFO response's VERSION line is missing its mandatory tor version mapping: %s" % line
-          raise stem.types.ProtocolError(msg)
+          raise stem.socket.ProtocolError(msg)
         
         torversion = line.pop_mapping(True)[1]
         
         try:
           self.tor_version = stem.types.Version(torversion)
         except ValueError, exc:
-          raise stem.types.ProtocolError(exc)
+          raise stem.socket.ProtocolError(exc)
       else:
         LOGGER.debug("unrecognized PROTOCOLINFO line type '%s', ignoring entry: %s" % (line_type, line))
     
@@ -358,7 +360,7 @@ class ControlConnection:
     whenever we receive an event from the control socket.
     
     Arguments:
-      event_message (stem.types.ControlMessage) -
+      event_message (stem.socket.ControlMessage) -
           message received from the control socket
     """
     
@@ -372,7 +374,7 @@ class ControlConnection:
       message (str) - message to be sent to the control socket
     
     Returns:
-      stem.types.ControlMessage with the response from the control socket
+      stem.socket.ControlMessage with the response from the control socket
     """
     
     # makes sure that the message ends with a CRLF
@@ -413,7 +415,7 @@ class ControlConnection:
     while self.is_running():
       try:
         # TODO: this raises a SocketClosed when... well, the socket is closed
-        control_message = stem.types.read_message(self._control_socket_file)
+        control_message = stem.socket.recv_message(self._control_socket_file)
         
         if control_message.content()[-1][0] == "650":
           # adds this to the event queue and wakes up the handler
@@ -425,7 +427,7 @@ class ControlConnection:
         else:
           # TODO: figure out a good method for terminating the socket thread
           self._reply_queue.put(control_message)
-      except stem.types.ProtocolError, exc:
+      except stem.socket.ProtocolError, exc:
         LOGGER.error("Error reading control socket message: %s" % exc)
         # TODO: terminate?
   

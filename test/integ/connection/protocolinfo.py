@@ -6,7 +6,7 @@ related functions.
 import unittest
 
 import test.runner
-import stem.types
+import stem.socket
 import stem.connection
 import stem.util.system
 
@@ -31,8 +31,8 @@ class TestProtocolInfo(unittest.TestCase):
     control_socket = runner.get_tor_socket(False)
     control_socket_file = control_socket.makefile()
     
-    stem.types.write_message(control_socket_file, "PROTOCOLINFO 1")
-    protocolinfo_response = stem.types.read_message(control_socket_file)
+    stem.socket.send_message(control_socket_file, "PROTOCOLINFO 1")
+    protocolinfo_response = stem.socket.recv_message(control_socket_file)
     stem.connection.ProtocolInfoResponse.convert(protocolinfo_response)
     
     # according to the control spec the following _could_ differ or be
@@ -75,7 +75,7 @@ class TestProtocolInfo(unittest.TestCase):
       self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
     else:
       # we don't have a control port
-      self.assertRaises(stem.types.SocketError, stem.connection.get_protocolinfo_by_port, "127.0.0.1", test.runner.CONTROL_PORT)
+      self.assertRaises(stem.socket.SocketError, stem.connection.get_protocolinfo_by_port, "127.0.0.1", test.runner.CONTROL_PORT)
     
     stem.util.system.CALL_MOCKING = None
   
@@ -94,7 +94,7 @@ class TestProtocolInfo(unittest.TestCase):
       self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
     else:
       # we don't have a control socket
-      self.assertRaises(stem.types.SocketError, stem.connection.get_protocolinfo_by_socket, test.runner.CONTROL_SOCKET_PATH)
+      self.assertRaises(stem.socket.SocketError, stem.connection.get_protocolinfo_by_socket, test.runner.CONTROL_SOCKET_PATH)
     
     stem.util.system.CALL_MOCKING = None
   
