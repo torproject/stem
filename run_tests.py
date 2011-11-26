@@ -214,19 +214,21 @@ if __name__ == '__main__':
     else:
       # mapping of config type to (enum, default) tuple
       conn_type_mappings = {
-        "none": (test.runner.TorConnection.NONE, False),
-        "open": (test.runner.TorConnection.OPEN, True),
-        "password": (test.runner.TorConnection.PASSWORD, False),
-        "cookie": (test.runner.TorConnection.COOKIE, False),
-        "multiple": (test.runner.TorConnection.MULTIPLE, False),
-        "socket": (test.runner.TorConnection.SOCKET, False),
+        "none": test.runner.TorConnection.NONE,
+        "open": test.runner.TorConnection.OPEN,
+        "password": test.runner.TorConnection.PASSWORD,
+        "cookie": test.runner.TorConnection.COOKIE,
+        "multiple": test.runner.TorConnection.MULTIPLE,
+        "socket": test.runner.TorConnection.SOCKET,
       }
       
       for type_key in conn_type_mappings:
-        default = conn_type_mappings[type_key][1]
-        
-        if test_config.get("test.integ.target.connection.%s" % type_key, default):
-          connection_types.append(conn_type_mappings[type_key][0])
+        if test_config.get("test.integ.target.connection.%s" % type_key, False):
+          connection_types.append(conn_type_mappings[type_key])
+    
+    # TorConnection.OPEN is the default if we don't have any defined
+    if not connection_types:
+      connection_types = [test.runner.TorConnection.OPEN]
     
     for connection_type in connection_types:
       try:
