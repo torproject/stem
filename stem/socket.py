@@ -517,14 +517,12 @@ def send_message(control_file, message, raw = False):
   
   if not raw: message = send_formatting(message)
   
+  # uses a newline divider if this is a multi-line message (more readable)
+  log_message = message.replace("\r\n", "\n").rstrip()
+  div = "\n" if "\n" in log_message else " "
+  LOGGER.debug("Sending:" + div + log_message)
+  
   try:
-    log_message = message.replace("\r\n", "\n").rstrip()
-    
-    # starts with a newline if this is a multi-line message (more readable)
-    if "\n" in log_message: log_message = "\n" + log_message
-    
-    LOGGER.debug("Sending: " + log_message)
-    
     control_file.write(message)
     control_file.flush()
   except socket.error, exc:
@@ -603,14 +601,10 @@ def recv_message(control_file):
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
       
-      # replacing the \r\n newline endings and the ending newline since it
-      # leads to more readable log messages
+      # uses a newline divider if this is a multi-line message (more readable)
       log_message = raw_content.replace("\r\n", "\n").rstrip()
-      
-      # starts with a newline if this is a multi-line message (more readable)
-      if "\n" in log_message: log_message = "\n" + log_message
-      
-      LOGGER.debug("Received: " + log_message)
+      div = "\n" if "\n" in log_message else " "
+      LOGGER.debug("Received:" + div + log_message)
       
       return ControlMessage(parsed_content, raw_content)
     elif divider == "+":
