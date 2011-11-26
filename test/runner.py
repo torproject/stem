@@ -42,7 +42,7 @@ DEFAULT_CONFIG = {
 # Methods for connecting to tor. General integration tests only run with the
 # DEFAULT_TOR_CONNECTION, but expanded integ tests will run with all of them.
 
-TorConnection = stem.util.enum.Enum("NONE", "OPEN", "PASSWORD", "COOKIE", "MULTIPLE", "SOCKET")
+TorConnection = stem.util.enum.Enum("NONE", "OPEN", "PASSWORD", "COOKIE", "MULTIPLE", "SOCKET", "SCOOKIE")
 DEFAULT_TOR_CONNECTION = TorConnection.OPEN
 
 STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
@@ -80,6 +80,7 @@ CONNECTION_OPTS = {
   TorConnection.COOKIE: [OPT_PORT, OPT_COOKIE],
   TorConnection.MULTIPLE: [OPT_PORT, OPT_PASSWORD, OPT_COOKIE],
   TorConnection.SOCKET: [OPT_SOCKET],
+  TorConnection.SCOOKIE: [OPT_SOCKET, OPT_COOKIE],
 }
 
 def get_runner():

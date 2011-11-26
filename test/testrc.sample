@@ -40,5 +40,6 @@ test.integ.target.connection.password false
 test.integ.target.connection.cookie false
 test.integ.target.connection.muiltipe false
 test.integ.target.connection.socket false
+test.integ.target.connection.scookie false
 test.integ.target.connection.all false
 

@@ -47,7 +47,7 @@ INTEG_TESTS = (("stem.socket.ControlMessage", test.integ.socket.control_message.
               )
 
 # Integration tests above the basic suite.
-TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "CONN_NONE", "CONN_OPEN", "CONN_PASSWORD", "CONN_COOKIE", "CONN_MULTIPLE", "CONN_SOCKET", "CONN_ALL")])
+TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "CONN_NONE", "CONN_OPEN", "CONN_PASSWORD", "CONN_COOKIE", "CONN_MULTIPLE", "CONN_SOCKET", "CONN_SCOOKIE", "CONN_ALL")])
 
 TARGET_ATTR = {
   TARGETS.ONLINE: ("test.integ.target.online", "Includes tests that require network activity."),
@@ -58,6 +58,7 @@ TARGET_ATTR = {
   TARGETS.CONN_COOKIE: ("test.integ.target.connection.cookie", "Configuration with an authentication cookie."),
   TARGETS.CONN_MULTIPLE: ("test.integ.target.connection.multiple", "Configuration with both password and cookie authentication."),
   TARGETS.CONN_SOCKET: ("test.integ.target.connection.socket", "Configuration with a control socket."),
+  TARGETS.CONN_SCOOKIE: ("test.integ.target.connection.scookie", "Configuration with a control socket and authentication cookie."),
   TARGETS.CONN_ALL: ("test.integ.target.connection.all", "Runs integration tests for all connection configurations."),
 }
 
@@ -220,6 +221,7 @@ if __name__ == '__main__':
         "cookie": test.runner.TorConnection.COOKIE,
         "multiple": test.runner.TorConnection.MULTIPLE,
         "socket": test.runner.TorConnection.SOCKET,
+        "scookie": test.runner.TorConnection.SCOOKIE,
       }
       
       for type_key in conn_type_mappings:

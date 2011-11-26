@@ -16,6 +16,10 @@ class TestProtocolInfo(unittest.TestCase):
   integ target to exercise the widest range of use cases.
   """
   
+  def tearDown(self):
+    # resets call mocking back to being disabled
+    stem.util.system.CALL_MOCKING = None
+  
   def test_parsing(self):
     """
     Makes a PROTOCOLINFO query and processes the response for our control
@@ -53,15 +57,17 @@ class TestProtocolInfo(unittest.TestCase):
     # If we have both the 'RELATIVE' target and a cookie then test_parsing
     # should exercise cookie expansion using a pid lookup by process name.
     # Disabling those lookups so we exercise the lookup by port/socket file
-    # too.
+    # too. Gotta remember the get_cwd functions too.
     
-    port_lookup_prefixes = (
+    cwd_by_port_lookup_prefixes = (
       stem.util.system.GET_PID_BY_PORT_NETSTAT,
       stem.util.system.GET_PID_BY_PORT_SOCKSTAT % "",
-      stem.util.system.GET_PID_BY_PORT_LSOF)
+      stem.util.system.GET_PID_BY_PORT_LSOF,
+      stem.util.system.GET_CWD_PWDX % "",
+      "lsof -a -p ")
     
     def port_lookup_filter(command):
-      for prefix in port_lookup_prefixes:
+      for prefix in cwd_by_port_lookup_prefixes:
         if command.startswith(prefix): return True
       
       return False
@@ -76,16 +82,24 @@ class TestProtocolInfo(unittest.TestCase):
     else:
       # we don't have a control port
       self.assertRaises(stem.socket.SocketError, stem.connection.get_protocolinfo_by_port, "127.0.0.1", test.runner.CONTROL_PORT)
-    
-    stem.util.system.CALL_MOCKING = None
   
   def test_get_protocolinfo_by_socket(self):
     """
     Exercises the stem.connection.get_protocolinfo_by_socket function.
     """
     
-    socket_file_prefix = stem.util.system.GET_PID_BY_FILE_LSOF % ""
-    stem.util.system.CALL_MOCKING = lambda cmd: cmd.startswith(socket_file_prefix)
+    cwd_by_socket_lookup_prefixes = (
+      stem.util.system.GET_PID_BY_FILE_LSOF % "",
+      stem.util.system.GET_CWD_PWDX % "",
+      "lsof -a -p ")
+    
+    def socket_lookup_filter(command):
+      for prefix in cwd_by_socket_lookup_prefixes:
+        if command.startswith(prefix): return True
+      
+      return False
+    
+    stem.util.system.CALL_MOCKING = socket_lookup_filter
     connection_type = test.runner.get_runner().get_connection_type()
     
     if test.runner.OPT_SOCKET in test.runner.CONNECTION_OPTS[connection_type]:
@@ -95,8 +109,6 @@ class TestProtocolInfo(unittest.TestCase):
     else:
       # we don't have a control socket
       self.assertRaises(stem.socket.SocketError, stem.connection.get_protocolinfo_by_socket, test.runner.CONTROL_SOCKET_PATH)
-    
-    stem.util.system.CALL_MOCKING = None
   
   def assert_protocolinfo_attr(self, protocolinfo_response, connection_type):
     """
@@ -117,6 +129,8 @@ class TestProtocolInfo(unittest.TestCase):
       auth_methods = (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.PASSWORD)
     elif connection_type == test.runner.TorConnection.SOCKET:
       auth_methods = (stem.connection.AuthMethod.NONE,)
+    elif connection_type == test.runner.TorConnection.SCOOKIE:
+      auth_methods = (stem.connection.AuthMethod.COOKIE,)
     else:
       self.fail("Unrecognized connection type: %s" % connection_type)
     
