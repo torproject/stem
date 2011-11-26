@@ -101,37 +101,24 @@ def _get_protocolinfo_impl(control_socket, connection_args, keep_alive):
   connects the given socket and issues a PROTOCOLINFO query with it.
   """
   
-  control_socket_file = control_socket.makefile()
-  protocolinfo_response, raised_exc = None, None
+  try:
+    control_socket.connect(connection_args)
+    control_socket = stem.socket.ControlSocket(control_socket)
+  except socket.error, exc:
+    raise stem.socket.SocketError(exc)
   
   try:
-    # initiates connection
-    control_socket.connect(connection_args)
-    
-    # issues the PROTOCOLINFO query
-    stem.socket.send_message(control_socket_file, "PROTOCOLINFO 1")
-    
-    protocolinfo_response = stem.socket.recv_message(control_socket_file)
+    control_socket.send("PROTOCOLINFO 1")
+    protocolinfo_response = control_socket.recv()
     ProtocolInfoResponse.convert(protocolinfo_response)
-  except socket.error, exc:
-    raised_exc = stem.socket.SocketError(exc)
-  except (stem.socket.ProtocolError, stem.socket.SocketError), exc:
-    raised_exc = exc
-  
-  control_socket_file.close() # done with the linked file
-  
-  if not keep_alive or raised_exc:
-    # shut down the socket we were using
-    try: control_socket.shutdown(socket.SHUT_RDWR)
-    except socket.error: pass
     
+    if keep_alive: protocolinfo_response.socket = control_socket
+    else: control_socket.close()
+    
+    return protocolinfo_response
+  except stem.socket.ControllerError, exc:
     control_socket.close()
-  else:
-    # if we're keeping the socket open then attach it to the response
-    protocolinfo_response.socket = control_socket
-  
-  if raised_exc: raise raised_exc
-  else: return protocolinfo_response
+    raise exc
 
 def _expand_cookie_path(cookie_path, pid_resolver, pid_resolution_arg):
   """
@@ -173,7 +160,7 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
   correct this.
   
   The protocol_version is the only mandatory data for a valid PROTOCOLINFO
-  response, so all other values are None if undefined or empty if a collecion.
+  response, so all other values are None if undefined or empty if a collection.
   
   Attributes:
     protocol_version (int)             - protocol version of the response
@@ -181,7 +168,7 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
     auth_methods (tuple)               - AuthMethod types that tor will accept
     unknown_auth_methods (tuple)       - strings of unrecognized auth methods
     cookie_path (str)                  - path of tor's authentication cookie
-    socket (socket.socket)             - socket used to make the query
+    socket (stem.socket.ControlSocket) - socket used to make the query
   """
   
   def convert(control_message):
