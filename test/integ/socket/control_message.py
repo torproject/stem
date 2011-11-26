@@ -7,7 +7,7 @@ import socket
 import unittest
 
 import stem.socket
-import stem.types
+import stem.version
 import test.runner
 
 class TestControlMessage(unittest.TestCase):
@@ -139,8 +139,9 @@ class TestControlMessage(unittest.TestCase):
     Parses the 'GETINFO config-text' response.
     """
     
-    if stem.process.get_tor_version() < stem.types.REQ_GETINFO_CONFIG_TEXT:
-      self.skipTest("(requires %s)" % stem.types.REQ_GETINFO_CONFIG_TEXT)
+    req_version = stem.version.Requirement.GETINFO_CONFIG_TEXT
+    if stem.version.get_system_tor_version() < req_version:
+      self.skipTest("(requires %s)" % req_version)
     
     # We can't be certain of the order, and there may be extra config-text
     # entries as per...

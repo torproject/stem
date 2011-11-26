@@ -4,9 +4,10 @@ Unit tests for the stem.connection.ProtocolInfoResponse class.
 
 import unittest
 import StringIO
+
 import stem.connection
 import stem.socket
-import stem.types
+import stem.version
 
 NO_AUTH = """250-PROTOCOLINFO 1
 250-AUTH METHODS=NULL
@@ -87,7 +88,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     stem.connection.ProtocolInfoResponse.convert(control_message)
     
     self.assertEquals(1, control_message.protocol_version)
-    self.assertEquals(stem.types.Version("0.2.1.30"), control_message.tor_version)
+    self.assertEquals(stem.version.Version("0.2.1.30"), control_message.tor_version)
     self.assertEquals((stem.connection.AuthMethod.NONE, ), control_message.auth_methods)
     self.assertEquals((), control_message.unknown_auth_methods)
     self.assertEquals(None, control_message.cookie_path)

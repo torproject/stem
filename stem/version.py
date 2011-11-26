@@ -1,18 +1,75 @@
 """
-Class representations for a variety of tor objects. These are most commonly
-return values rather than being instantiated by users directly.
+Tor versioning information and requirements for its features. These can be
+easily parsed and compared, for instance...
 
+>>> my_version = stem.version.get_system_tor_version()
+>>> print my_version
+0.2.1.30
+>>> my_version > stem.version.Requirement.CONTROL_SOCKET
+True
+
+get_system_tor_version - gets the version of our system's tor installation
 Version - Tor versioning information.
   |- __str__ - string representation
   +- __cmp__ - compares with another Version
+
+Requirement - Enumerations for the version requirements of features.
+  |- GETINFO_CONFIG_TEXT - 'GETINFO config-text' query
+  +- CONTROL_SOCKET      - 'ControlSocket <path>' config option
 """
 
 import re
-import socket
 import logging
-import threading
+
+import stem.util.enum
+import stem.util.system
 
 LOGGER = logging.getLogger("stem")
+
+# cache for the get_tor_version function
+VERSION_CACHE = {}
+
+def get_system_tor_version(tor_cmd = "tor"):
+  """
+  Queries tor for its version. This is os dependent, only working on linux,
+  osx, and bsd.
+  
+  Arguments:
+    tor_cmd (str) - command used to run tor
+  
+  Returns:
+    stem.version.Version provided by the tor command
+  
+  Raises:
+    IOError if unable to query or parse the version
+  """
+  
+  if not tor_cmd in VERSION_CACHE:
+    try:
+      version_cmd = "%s --version" % tor_cmd
+      version_output = stem.util.system.call(version_cmd)
+    except OSError, exc:
+      raise IOError(exc)
+    
+    if version_output:
+      # output example:
+      # Oct 21 07:19:27.438 [notice] Tor v0.2.1.30. This is experimental software. Do not rely on it for strong anonymity. (Running on Linux i686)
+      # Tor version 0.2.1.30.
+      
+      last_line = version_output[-1]
+      
+      if last_line.startswith("Tor version ") and last_line.endswith("."):
+        try:
+          version_str = last_line[12:-1]
+          VERSION_CACHE[tor_cmd] = Version(version_str)
+        except ValueError, exc:
+          raise IOError(exc)
+      else:
+        raise IOError("Unexpected response from '%s': %s" % (version_cmd, last_line))
+    else:
+      raise IOError("'%s' didn't have any output" % version_cmd)
+  
+  return VERSION_CACHE[tor_cmd]
 
 class Version:
   """
@@ -92,7 +149,8 @@ class Version:
     
     return cmp(my_status, other_status)
 
-# TODO: version requirements will probably be moved to another module later
-REQ_GETINFO_CONFIG_TEXT = Version("0.2.2.7-alpha")
-REQ_CONTROL_SOCKET = Version("0.2.0.30")
+Requirement = stem.util.enum.Enum(
+  ("GETINFO_CONFIG_TEXT", Version("0.2.2.7-alpha")),
+  ("CONTROL_SOCKET", Version("0.2.0.30")),
+)
 

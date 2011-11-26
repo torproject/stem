@@ -1,13 +1,13 @@
 """
-Unit tests for the stem.types.Version parsing and class.
+Unit tests for the stem.version.Version parsing and class.
 """
 
 import unittest
-import stem.types
+import stem.version
 
 class TestVerion(unittest.TestCase):
   """
-  Tests methods and functions related to 'stem.types.Version'.
+  Tests methods and functions related to 'stem.version.Version'.
   """
   
   def test_parsing(self):
@@ -16,32 +16,32 @@ class TestVerion(unittest.TestCase):
     """
     
     # valid versions with various number of compontents to the version
-    version = stem.types.Version("0.1.2.3-tag")
+    version = stem.version.Version("0.1.2.3-tag")
     self.assert_versions_match(version, 0, 1, 2, 3, "tag")
     
-    version = stem.types.Version("0.1.2.3")
+    version = stem.version.Version("0.1.2.3")
     self.assert_versions_match(version, 0, 1, 2, 3, None)
     
-    version = stem.types.Version("0.1.2-tag")
+    version = stem.version.Version("0.1.2-tag")
     self.assert_versions_match(version, 0, 1, 2, None, "tag")
     
-    version = stem.types.Version("0.1.2")
+    version = stem.version.Version("0.1.2")
     self.assert_versions_match(version, 0, 1, 2, None, None)
     
     # checks an empty tag
-    version = stem.types.Version("0.1.2.3-")
+    version = stem.version.Version("0.1.2.3-")
     self.assert_versions_match(version, 0, 1, 2, 3, "")
     
-    version = stem.types.Version("0.1.2-")
+    version = stem.version.Version("0.1.2-")
     self.assert_versions_match(version, 0, 1, 2, None, "")
     
     # checks invalid version strings
-    self.assertRaises(ValueError, stem.types.Version, "")
-    self.assertRaises(ValueError, stem.types.Version, "1.2.3.4nodash")
-    self.assertRaises(ValueError, stem.types.Version, "1.2.3.a")
-    self.assertRaises(ValueError, stem.types.Version, "1.2.a.4")
-    self.assertRaises(ValueError, stem.types.Version, "12.3")
-    self.assertRaises(ValueError, stem.types.Version, "1.-2.3")
+    self.assertRaises(ValueError, stem.version.Version, "")
+    self.assertRaises(ValueError, stem.version.Version, "1.2.3.4nodash")
+    self.assertRaises(ValueError, stem.version.Version, "1.2.3.a")
+    self.assertRaises(ValueError, stem.version.Version, "1.2.a.4")
+    self.assertRaises(ValueError, stem.version.Version, "12.3")
+    self.assertRaises(ValueError, stem.version.Version, "1.-2.3")
   
   def test_comparison(self):
     """
@@ -73,7 +73,7 @@ class TestVerion(unittest.TestCase):
     Checks that we can be compared with other types.
     """
     
-    test_version = stem.types.Version("0.1.2.3")
+    test_version = stem.version.Version("0.1.2.3")
     self.assertNotEqual(test_version, None)
     self.assertTrue(test_version > None)
     
@@ -109,8 +109,8 @@ class TestVerion(unittest.TestCase):
     second (also checking the inverse).
     """
     
-    version1 = stem.types.Version(first_version)
-    version2 = stem.types.Version(second_version)
+    version1 = stem.version.Version(first_version)
+    version2 = stem.version.Version(second_version)
     self.assertEqual(version1 > version2, True)
     self.assertEqual(version1 < version2, False)
   
@@ -119,8 +119,8 @@ class TestVerion(unittest.TestCase):
     Asserts that the parsed version of the first version equals the second.
     """
     
-    version1 = stem.types.Version(first_version)
-    version2 = stem.types.Version(second_version)
+    version1 = stem.version.Version(first_version)
+    version2 = stem.version.Version(second_version)
     self.assertEqual(version1, version2)
   
   def assert_string_matches(self, version):
@@ -129,5 +129,5 @@ class TestVerion(unittest.TestCase):
     matches the input.
     """
     
-    self.assertEqual(version, str(stem.types.Version(version)))
+    self.assertEqual(version, str(stem.version.Version(version)))
 

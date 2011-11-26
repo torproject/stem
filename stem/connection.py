@@ -21,7 +21,7 @@ import logging
 import threading
 
 import stem.socket
-import stem.types
+import stem.version
 import stem.util.enum
 import stem.util.system
 
@@ -176,12 +176,12 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
   response, so all other values are None if undefined or empty if a collecion.
   
   Attributes:
-    protocol_version (int)           - protocol version of the response
-    tor_version (stem.types.Version) - version of the tor process
-    auth_methods (tuple)             - AuthMethod types that tor will accept
-    unknown_auth_methods (tuple)     - strings of unrecognized auth methods
-    cookie_path (str)                - path of tor's authentication cookie
-    socket (socket.socket)           - socket used to make the query
+    protocol_version (int)             - protocol version of the response
+    tor_version (stem.version.Version) - version of the tor process
+    auth_methods (tuple)               - AuthMethod types that tor will accept
+    unknown_auth_methods (tuple)       - strings of unrecognized auth methods
+    cookie_path (str)                  - path of tor's authentication cookie
+    socket (socket.socket)             - socket used to make the query
   """
   
   def convert(control_message):
@@ -302,7 +302,7 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
         torversion = line.pop_mapping(True)[1]
         
         try:
-          self.tor_version = stem.types.Version(torversion)
+          self.tor_version = stem.version.Version(torversion)
         except ValueError, exc:
           raise stem.socket.ProtocolError(exc)
       else:

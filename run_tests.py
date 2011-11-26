@@ -13,9 +13,9 @@ import unittest
 import StringIO
 
 import test.runner
+import test.unit.version
 import test.unit.socket.control_message
 import test.unit.socket.control_line
-import test.unit.types.version
 import test.unit.connection.protocolinfo
 import test.unit.util.enum
 import test.unit.util.system
@@ -34,7 +34,7 @@ DIVIDER = "=" * 70
 # (name, class) tuples for all of our unit and integration tests
 UNIT_TESTS = (("stem.socket.ControlMessage", test.unit.socket.control_message.TestControlMessage),
               ("stem.socket.ControlLine", test.unit.socket.control_line.TestControlLine),
-              ("stem.types.Version", test.unit.types.version.TestVerion),
+              ("stem.types.Version", test.unit.version.TestVerion),
               ("stem.connection.ProtocolInfoResponse", test.unit.connection.protocolinfo.TestProtocolInfoResponse),
               ("stem.util.enum", test.unit.util.enum.TestEnum),
               ("stem.util.system", test.unit.util.system.TestSystem),
