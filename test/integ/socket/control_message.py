@@ -22,15 +22,14 @@ class TestControlMessage(unittest.TestCase):
     
     control_socket = test.runner.get_runner().get_tor_socket(False)
     if not control_socket: self.skipTest("(no control socket)")
-    control_socket_file = control_socket.makefile()
     
     # If an unauthenticated connection gets a message besides AUTHENTICATE or
     # PROTOCOLINFO then tor will give an 'Authentication required.' message and
     # hang up.
     
-    stem.socket.send_message(control_socket_file, "GETINFO version")
+    control_socket.send("GETINFO version")
     
-    auth_required_response = stem.socket.recv_message(control_socket_file)
+    auth_required_response = control_socket.recv()
     self.assertEquals("Authentication required.", str(auth_required_response))
     self.assertEquals(["Authentication required."], list(auth_required_response))
     self.assertEquals("514 Authentication required.\r\n", auth_required_response.raw_content())
@@ -42,37 +41,25 @@ class TestControlMessage(unittest.TestCase):
     # the write will cause a SocketError.
     
     try:
-      stem.socket.send_message(control_socket_file, "GETINFO version")
+      control_socket.send("GETINFO version")
     except: pass
     
-    self.assertRaises(stem.socket.SocketClosed, stem.socket.recv_message, control_socket_file)
+    self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
     
     # Additional socket usage should fail, and pulling more responses will fail
     # with more closed exceptions.
     
-    self.assertRaises(stem.socket.SocketError, stem.socket.send_message, control_socket_file, "GETINFO version")
-    self.assertRaises(stem.socket.SocketClosed, stem.socket.recv_message, control_socket_file)
-    self.assertRaises(stem.socket.SocketClosed, stem.socket.recv_message, control_socket_file)
-    self.assertRaises(stem.socket.SocketClosed, stem.socket.recv_message, control_socket_file)
+    self.assertRaises(stem.socket.SocketError, control_socket.send, "GETINFO version")
+    self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
+    self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
+    self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
     
     # The socket connection is already broken so calling close shouldn't have
     # an impact.
     
     control_socket.close()
-    self.assertRaises(stem.socket.SocketError, stem.socket.send_message, control_socket_file, "GETINFO version")
-    self.assertRaises(stem.socket.SocketClosed, stem.socket.recv_message, control_socket_file)
-    
-    # Tries again with the file explicitely closed. In python 2.7 the close
-    # call will raise...
-    # error: [Errno 32] Broken pipe
-    
-    try: control_socket_file.close()
-    except: pass
-    
-    self.assertRaises(stem.socket.SocketError, stem.socket.send_message, control_socket_file, "GETINFO version")
-    
-    # receives: stem.socket.SocketClosed: socket file has been closed
-    self.assertRaises(stem.socket.SocketClosed, stem.socket.recv_message, control_socket_file)
+    self.assertRaises(stem.socket.SocketClosed, control_socket.send, "GETINFO version")
+    self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
   
   def test_invalid_command(self):
     """
@@ -81,17 +68,15 @@ class TestControlMessage(unittest.TestCase):
     
     control_socket = test.runner.get_runner().get_tor_socket()
     if not control_socket: self.skipTest("(no control socket)")
-    control_socket_file = control_socket.makefile()
     
-    stem.socket.send_message(control_socket_file, "blarg")
-    unrecognized_command_response = stem.socket.recv_message(control_socket_file)
+    control_socket.send("blarg")
+    unrecognized_command_response = control_socket.recv()
     self.assertEquals('Unrecognized command "blarg"', str(unrecognized_command_response))
     self.assertEquals(['Unrecognized command "blarg"'], list(unrecognized_command_response))
     self.assertEquals('510 Unrecognized command "blarg"\r\n', unrecognized_command_response.raw_content())
     self.assertEquals([('510', ' ', 'Unrecognized command "blarg"')], unrecognized_command_response.content())
     
     control_socket.close()
-    control_socket_file.close()
   
   def test_invalid_getinfo(self):
     """
@@ -100,17 +85,15 @@ class TestControlMessage(unittest.TestCase):
     
     control_socket = test.runner.get_runner().get_tor_socket()
     if not control_socket: self.skipTest("(no control socket)")
-    control_socket_file = control_socket.makefile()
     
-    stem.socket.send_message(control_socket_file, "GETINFO blarg")
-    unrecognized_key_response = stem.socket.recv_message(control_socket_file)
+    control_socket.send("GETINFO blarg")
+    unrecognized_key_response = control_socket.recv()
     self.assertEquals('Unrecognized key "blarg"', str(unrecognized_key_response))
     self.assertEquals(['Unrecognized key "blarg"'], list(unrecognized_key_response))
     self.assertEquals('552 Unrecognized key "blarg"\r\n', unrecognized_key_response.raw_content())
     self.assertEquals([('552', ' ', 'Unrecognized key "blarg"')], unrecognized_key_response.content())
     
     control_socket.close()
-    control_socket_file.close()
   
   def test_getinfo_config_file(self):
     """
@@ -122,17 +105,15 @@ class TestControlMessage(unittest.TestCase):
     
     control_socket = runner.get_tor_socket()
     if not control_socket: self.skipTest("(no control socket)")
-    control_socket_file = control_socket.makefile()
     
-    stem.socket.send_message(control_socket_file, "GETINFO config-file")
-    config_file_response = stem.socket.recv_message(control_socket_file)
+    control_socket.send("GETINFO config-file")
+    config_file_response = control_socket.recv()
     self.assertEquals("config-file=%s\nOK" % torrc_dst, str(config_file_response))
     self.assertEquals(["config-file=%s" % torrc_dst, "OK"], list(config_file_response))
     self.assertEquals("250-config-file=%s\r\n250 OK\r\n" % torrc_dst, config_file_response.raw_content())
     self.assertEquals([("250", "-", "config-file=%s" % torrc_dst), ("250", " ", "OK")], config_file_response.content())
     
     control_socket.close()
-    control_socket_file.close()
   
   def test_getinfo_config_text(self):
     """
@@ -160,10 +141,9 @@ class TestControlMessage(unittest.TestCase):
     
     control_socket = runner.get_tor_socket()
     if not control_socket: self.skipTest("(no control socket)")
-    control_socket_file = control_socket.makefile()
     
-    stem.socket.send_message(control_socket_file, "GETINFO config-text")
-    config_text_response = stem.socket.recv_message(control_socket_file)
+    control_socket.send("GETINFO config-text")
+    config_text_response = control_socket.recv()
     
     # the response should contain two entries, the first being a data response
     self.assertEqual(2, len(list(config_text_response)))
@@ -181,7 +161,6 @@ class TestControlMessage(unittest.TestCase):
       self.assertTrue("%s" % torrc_entry in config_text_response.content()[0][2])
     
     control_socket.close()
-    control_socket_file.close()
   
   def test_bw_event(self):
     """
@@ -190,10 +169,9 @@ class TestControlMessage(unittest.TestCase):
     
     control_socket = test.runner.get_runner().get_tor_socket()
     if not control_socket: self.skipTest("(no control socket)")
-    control_socket_file = control_socket.makefile()
     
-    stem.socket.send_message(control_socket_file, "SETEVENTS BW")
-    setevents_response = stem.socket.recv_message(control_socket_file)
+    control_socket.send("SETEVENTS BW")
+    setevents_response = control_socket.recv()
     self.assertEquals("OK", str(setevents_response))
     self.assertEquals(["OK"], list(setevents_response))
     self.assertEquals("250 OK\r\n", setevents_response.raw_content())
@@ -202,11 +180,10 @@ class TestControlMessage(unittest.TestCase):
     # Tor will emit a BW event once per second. Parsing two of them.
     
     for _ in range(2):
-      bw_event = stem.socket.recv_message(control_socket_file)
+      bw_event = control_socket.recv()
       self.assertTrue(re.match("BW [0-9]+ [0-9]+", str(bw_event)))
       self.assertTrue(re.match("650 BW [0-9]+ [0-9]+\r\n", bw_event.raw_content()))
       self.assertEquals(("650", " "), bw_event.content()[0][:2])
     
     control_socket.close()
-    control_socket_file.close()
 

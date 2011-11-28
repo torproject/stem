@@ -1,5 +1,5 @@
 """
-Integration tests for the stem.connections.ProtocolInfoResponse class and
+Integration tests for the stem.connection.ProtocolInfoResponse class and
 related functions.
 """
 
@@ -33,10 +33,9 @@ class TestProtocolInfo(unittest.TestCase):
       self.skipTest("(no connection)")
     
     control_socket = runner.get_tor_socket(False)
-    control_socket_file = control_socket.makefile()
     
-    stem.socket.send_message(control_socket_file, "PROTOCOLINFO 1")
-    protocolinfo_response = stem.socket.recv_message(control_socket_file)
+    control_socket.send("PROTOCOLINFO 1")
+    protocolinfo_response = control_socket.recv()
     stem.connection.ProtocolInfoResponse.convert(protocolinfo_response)
     
     # according to the control spec the following _could_ differ or be

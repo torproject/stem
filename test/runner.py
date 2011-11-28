@@ -27,6 +27,7 @@ import tempfile
 import binascii
 import threading
 
+import stem.socket
 import stem.process
 import stem.util.conf
 import stem.util.enum
@@ -315,11 +316,9 @@ class Runner:
       authenticate (bool) - if True then the socket is authenticated
     
     Returns:
-      socket.socket connected with our testing instance, returning None if we
-      either don't have a test instance or it can't be connected to
+      stem.socket.ControlSocket connected with our testing instance, returning
+      None if we either don't have a test instance or it can't be connected to
     """
-    
-    # TODO: replace with higher level connection functions when we have them
     
     connection_type, cookie_path = self.get_connection_type(), self.get_auth_cookie_path()
     if connection_type == None: return None
@@ -327,29 +326,27 @@ class Runner:
     conn_opts = CONNECTION_OPTS[connection_type]
     
     if OPT_PORT in conn_opts:
-      control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      control_socket.connect(("127.0.0.1", CONTROL_PORT))
+      control_socket = stem.socket.ControlPort(control_port = CONTROL_PORT)
     elif OPT_SOCKET in conn_opts:
-      control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-      control_socket.connect(CONTROL_SOCKET_PATH)
+      control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
     else: return None
     
+    control_socket.connect()
+    
+    # TODO: replace with higher level authentication functions when we have them
     if authenticate:
-      control_socket_file = control_socket.makefile()
-      
       if OPT_COOKIE in conn_opts:
         auth_cookie = open(cookie_path, "r")
         auth_cookie_contents = auth_cookie.read()
         auth_cookie.close()
         
-        stem.socket.send_message(control_socket_file, "AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
+        control_socket.send("AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
       elif OPT_PASSWORD in conn_opts:
-        stem.socket.send_message(control_socket_file, "AUTHENTICATE \"%s\"" % CONTROL_PASSWORD)
+        control_socket.send("AUTHENTICATE \"%s\"" % CONTROL_PASSWORD)
       else:
-        stem.socket.send_message(control_socket_file, "AUTHENTICATE")
+        control_socket.send("AUTHENTICATE")
       
-      authenticate_response = stem.socket.recv_message(control_socket_file)
-      control_socket_file.close()
+      authenticate_response = control_socket.recv()
       
       if str(authenticate_response) != "OK":
         # authentication was rejected
