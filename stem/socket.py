@@ -9,9 +9,17 @@ ControllerError - Base exception raised when using the controller.
      +- SocketClosed - Socket has been shut down.
 
 ControlSocket - Socket wrapper that speaks the tor control protocol.
+  |- ControlPort - Control connection via a port.
+  |  |- get_address - provides the ip address of our socket
+  |  +- get_port - provides the port of our socket
+  |
+  |- ControlSocketFile - Control connection via a local file socket.
+  |  +- get_socket_path - provides the path of the socket we connect to
+  |
   |- send - sends a message to the socket
   |- recv - receives a ControlMessage from the socket
   |- is_alive - reports if the socket is known to be closed
+  |- connect - connects a new socket
   +- close - shuts down the socket
 
 ControlMessage - Message that's read from the control socket.
@@ -74,20 +82,14 @@ class ControlSocket:
   Wrapper for a socket connection that speaks the Tor control protocol. To the
   better part this transparently handles the formatting for sending and
   receiving complete messages. All methods are thread safe.
+  
+  Callers should not instantiate this class directly, but rather use subclasses
+  which are expected to implement the _make_socket method.
   """
   
-  def __init__(self, control_socket):
-    """
-    Constructs as a wrapper around an established socket connection. Further
-    interaction with the raw socket is discouraged.
-    
-    Arguments:
-      control_socket (socket.socket) - established tor control socket
-    """
-    
-    self._socket = control_socket
-    self._socket_file = control_socket.makefile()
-    self._is_alive = True
+  def __init__(self):
+    self._socket, self._socket_file = None, None
+    self._is_alive = False
     
     # Tracks sending and receiving separately. This should be safe, and doing
     # so prevents deadlock where we block writes because we're waiting to read
@@ -162,6 +164,31 @@ class ControlSocket:
     
     return self._is_alive
   
+  def connect(self):
+    """
+    Connects to a new socket, closing our previous one if we're already
+    attached.
+    
+    Raises:
+      stem.socket.SocketError if unable to make a socket
+    """
+    
+    # we need both locks for this
+    self._send_cond.acquire()
+    self._recv_cond.acquire()
+    
+    # close the socket if we're currently attached to one
+    if self.is_alive(): self.close()
+    
+    try:
+      control_socket = self._make_socket()
+      self._socket = control_socket
+      self._socket_file = control_socket.makefile()
+      self._is_alive = True
+    finally:
+      self._send_cond.release()
+      self._recv_cond.release()
+  
   def close(self):
     """
     Shuts down the socket. If it's already closed then this is a no-op.
@@ -171,26 +198,123 @@ class ControlSocket:
     self._send_cond.acquire()
     self._recv_cond.acquire()
     
-    # if we haven't yet established a connection then this raises an error
-    # socket.error: [Errno 107] Transport endpoint is not connected
-    try: self._socket.shutdown(socket.SHUT_RDWR)
-    except socket.error: pass
+    if self._socket:
+      # if we haven't yet established a connection then this raises an error
+      # socket.error: [Errno 107] Transport endpoint is not connected
+      try: self._socket.shutdown(socket.SHUT_RDWR)
+      except socket.error: pass
+      
+      # Suppressing unexpected exceptions from close. For instance, if the
+      # socket's file has already been closed then with python 2.7 that raises
+      # with...
+      # error: [Errno 32] Broken pipe
+      
+      try: self._socket.close()
+      except: pass
     
-    # Suppressing unexpected exceptions from close. For instance, if the
-    # socket's file has already been closed then with python 2.7 that raises
-    # with...
-    # error: [Errno 32] Broken pipe
-    
-    try: self._socket.close()
-    except: pass
-    
-    try: self._socket_file.close()
-    except: pass
+    if self._socket_file:
+      try: self._socket_file.close()
+      except: pass
     
     self._is_alive = False
     
     self._send_cond.release()
     self._recv_cond.release()
+  
+  def _make_socket(self):
+    """
+    Constructs and connects new socket. This is implemented by subclasses.
+    
+    Returns:
+      socket.socket for our configuration
+    
+    Raises:
+      stem.socket.SocketError if unable to make a socket
+    """
+    
+    raise SocketError("Unsupported Operation: this should be implemented by the ControlSocket subclass")
+
+class ControlPort(ControlSocket):
+  """
+  Control connection to tor. For more information see tor's ControlPort torrc
+  option.
+  """
+  
+  def __init__(self, control_addr = "127.0.0.1", control_port = 9051):
+    """
+    ControlPort constructor.
+    
+    Arguments:
+      control_addr (str) - ip address of the controller
+      control_port (int) - port number of the controller
+    """
+    
+    ControlSocket.__init__(self)
+    self._control_addr = control_addr
+    self._control_port = control_port
+  
+  def get_address(self):
+    """
+    Provides the ip address our socket connects to.
+    
+    Returns:
+      str with the ip address of our socket
+    """
+    
+    return self._control_addr
+  
+  def get_port(self):
+    """
+    Provides the port our socket connects to.
+    
+    Returns:
+      int with the port of our socket
+    """
+    
+    return self._control_port
+  
+  def _make_socket(self):
+    try:
+      control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      control_socket.connect((self._control_addr, self._control_port))
+      return control_socket
+    except socket.error, exc:
+      raise SocketError(exc)
+
+class ControlSocketFile(ControlSocket):
+  """
+  Control connection to tor. For more information see tor's ControlSocket torrc
+  option.
+  """
+  
+  def __init__(self, socket_path = "/var/run/tor/control"):
+    """
+    ControlSocketFile constructor.
+    
+    Arguments:
+      socket_path (str) - path where the control socket is located
+    """
+    
+    ControlSocket.__init__(self)
+    self._socket_path = socket_path
+  
+  def get_socket_path(self):
+    """
+    Provides the path our socket connects to.
+    
+    Returns:
+      str with the path for our control socket
+    """
+    
+    return self._socket_path
+  
+  def _make_socket(self):
+    try:
+      control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+      control_socket.connect(self._socket_path)
+      return control_socket
+    except socket.error, exc:
+      raise SocketError(exc)
 
 class ControlMessage:
   """

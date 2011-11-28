@@ -14,11 +14,7 @@ ProtocolInfoResponse - Reply from a PROTOCOLINFO query.
   +- convert - parses a ControlMessage, turning it into a ProtocolInfoResponse
 """
 
-from __future__ import absolute_import
-import Queue
-import socket
 import logging
-import threading
 
 import stem.socket
 import stem.version
@@ -62,14 +58,24 @@ def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, ke
       socket
   """
   
-  control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  connection_args = (control_addr, control_port)
-  protocolinfo_response = _get_protocolinfo_impl(control_socket, connection_args, keep_alive)
-  
-  # attempt to expand relative cookie paths using our port to infer the pid
-  protocolinfo_response.cookie_path = _expand_cookie_path(protocolinfo_response.cookie_path, stem.util.system.get_pid_by_port, control_port)
-  
-  return protocolinfo_response
+  try:
+    control_socket = stem.socket.ControlPort(control_addr, control_port)
+    control_socket.connect()
+    control_socket.send("PROTOCOLINFO 1")
+    protocolinfo_response = control_socket.recv()
+    ProtocolInfoResponse.convert(protocolinfo_response)
+    
+    if keep_alive: protocolinfo_response.socket = control_socket
+    else: control_socket.close()
+    
+    # attempt to expand relative cookie paths using our port to infer the pid
+    if control_addr == "127.0.0.1":
+      _expand_cookie_path(protocolinfo_response, stem.util.system.get_pid_by_port, control_port)
+    
+    return protocolinfo_response
+  except stem.socket.ControllerError, exc:
+    control_socket.close()
+    raise exc
 
 def get_protocolinfo_by_socket(socket_path = "/var/run/tor/control", keep_alive = False):
   """
@@ -87,27 +93,9 @@ def get_protocolinfo_by_socket(socket_path = "/var/run/tor/control", keep_alive 
       socket
   """
   
-  control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-  protocolinfo_response = _get_protocolinfo_impl(control_socket, socket_path, keep_alive)
-  
-  # attempt to expand relative cookie paths using our socket to infer the pid
-  protocolinfo_response.cookie_path = _expand_cookie_path(protocolinfo_response.cookie_path, stem.util.system.get_pid_by_open_file, socket_path)
-  
-  return protocolinfo_response
-
-def _get_protocolinfo_impl(control_socket, connection_args, keep_alive):
-  """
-  Common implementation behind the get_protocolinfo_by_* functions. This
-  connects the given socket and issues a PROTOCOLINFO query with it.
-  """
-  
   try:
-    control_socket.connect(connection_args)
-    control_socket = stem.socket.ControlSocket(control_socket)
-  except socket.error, exc:
-    raise stem.socket.SocketError(exc)
-  
-  try:
+    control_socket = stem.socket.ControlSocketFile(socket_path)
+    control_socket.connect()
     control_socket.send("PROTOCOLINFO 1")
     protocolinfo_response = control_socket.recv()
     ProtocolInfoResponse.convert(protocolinfo_response)
@@ -115,18 +103,22 @@ def _get_protocolinfo_impl(control_socket, connection_args, keep_alive):
     if keep_alive: protocolinfo_response.socket = control_socket
     else: control_socket.close()
     
+    # attempt to expand relative cookie paths using our port to infer the pid
+    _expand_cookie_path(protocolinfo_response, stem.util.system.get_pid_by_open_file, socket_path)
+    
     return protocolinfo_response
   except stem.socket.ControllerError, exc:
     control_socket.close()
     raise exc
 
-def _expand_cookie_path(cookie_path, pid_resolver, pid_resolution_arg):
+def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg):
   """
   Attempts to expand a relative cookie path with the given pid resolver. This
-  returns the input path if it's already absolute, None, or the system calls
-  fail.
+  leaves the cookie_path alone if it's already absolute, None, or the system
+  calls fail.
   """
   
+  cookie_path = protocolinfo_response.cookie_path
   if cookie_path and stem.util.system.is_relative_path(cookie_path):
     try:
       tor_pid = pid_resolver(pid_resolution_arg)
@@ -146,7 +138,7 @@ def _expand_cookie_path(cookie_path, pid_resolver, pid_resolution_arg):
       pid_resolver_label = resolver_labels.get(pid_resolver, "")
       LOGGER.debug("unable to expand relative tor cookie path%s: %s" % (pid_resolver_label, exc))
   
-  return cookie_path
+  protocolinfo_response.cookie_path = cookie_path
 
 class ProtocolInfoResponse(stem.socket.ControlMessage):
   """
@@ -276,7 +268,7 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
           self.cookie_path = line.pop_mapping(True, True)[1]
           
           # attempt to expand relative cookie paths
-          self.cookie_path = _expand_cookie_path(self.cookie_path, stem.util.system.get_pid_by_name, "tor")
+          _expand_cookie_path(self, stem.util.system.get_pid_by_name, "tor")
       elif line_type == "VERSION":
         # Line format:
         #   VersionLine = "250-VERSION" SP "Tor=" TorVersion OptArguments CRLF

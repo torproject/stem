@@ -1,6 +1,11 @@
 # The following is very much a work in progress and mostly scratch (I just
 # wanted to make sure other work would nicely do the async event handling).
 
+import Queue
+import threading
+
+import stem.socket
+
 class ControlConnection:
   """
   Connection to a Tor control port. This is a very lightweight wrapper around
