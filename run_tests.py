@@ -22,6 +22,7 @@ import test.unit.util.system
 import test.integ.socket.control_message
 import test.integ.util.conf
 import test.integ.util.system
+import test.integ.connection.authentication
 import test.integ.connection.protocolinfo
 
 import stem.util.enum
@@ -41,6 +42,7 @@ UNIT_TESTS = (("stem.socket.ControlMessage", test.unit.socket.control_message.Te
              )
 
 INTEG_TESTS = (("stem.socket.ControlMessage", test.integ.socket.control_message.TestControlMessage),
+              ("stem.connection.authenticate_*", test.integ.connection.authentication.TestAuthenticate),
               ("stem.connection.ProtocolInfoResponse", test.integ.connection.protocolinfo.TestProtocolInfo),
                ("stem.util.conf", test.integ.util.conf.TestConf),
                ("stem.util.system", test.integ.util.system.TestSystem),

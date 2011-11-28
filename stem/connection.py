@@ -38,6 +38,30 @@ LOGGER = logging.getLogger("stem")
 
 AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "UNKNOWN")
 
+def authenticate_none(control_socket):
+  """
+  Authenticates to an open control socket. All control connections need to
+  authenticate before they can be used, even if tor hasn't been configured to
+  use any authentication.
+  
+  If authentication fails then tor will close the control socket.
+  
+  Arguments:
+    control_socket (stem.socket.ControlSocket) - socket to be authenticated
+  
+  Raises:
+    ValueError if the empty authentication credentials aren't accepted
+    stem.socket.ProtocolError the content from the socket is malformed
+    stem.socket.SocketError if problems arise in using the socket
+  """
+  
+  control_socket.send("AUTHENTICATE")
+  auth_response = control_socket.recv()
+  
+  # if we got anything but an OK response then error
+  if str(auth_response) != "OK":
+    raise ValueError(str(auth_response))
+
 def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, get_socket = False):
   """
   Issues a PROTOCOLINFO query to a control port, getting information about the
