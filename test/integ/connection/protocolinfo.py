@@ -101,8 +101,13 @@ class TestProtocolInfo(unittest.TestCase):
     connection_type = test.runner.get_runner().get_connection_type()
     
     if test.runner.OPT_SOCKET in test.runner.CONNECTION_OPTS[connection_type]:
-      protocolinfo_response = stem.connection.get_protocolinfo_by_socket(socket_path = test.runner.CONTROL_SOCKET_PATH)
+      protocolinfo_response, control_socket = stem.connection.get_protocolinfo_by_socket(socket_path = test.runner.CONTROL_SOCKET_PATH, get_socket = True)
       self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
+      
+      # also exercising the get_socket argument - we should have a usable
+      # socket at this point
+      self.assertTrue(control_socket.is_alive())
+      control_socket.close()
     else:
       # we don't have a control socket
       self.assertRaises(stem.socket.SocketError, stem.connection.get_protocolinfo_by_socket, test.runner.CONTROL_SOCKET_PATH)
