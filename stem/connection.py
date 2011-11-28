@@ -38,7 +38,7 @@ LOGGER = logging.getLogger("stem")
 
 AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "UNKNOWN")
 
-def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, keep_alive = False):
+def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, get_socket = False):
   """
   Issues a PROTOCOLINFO query to a control port, getting information about the
   tor process running on it.
@@ -46,11 +46,13 @@ def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, ke
   Arguments:
     control_addr (str) - ip address of the controller
     control_port (int) - port number of the controller
-    keep_alive (bool)  - keeps the socket used to issue the PROTOCOLINFO query
-                         open if True, closes otherwise
+    get_socket (bool)  - provides the socket with the response if True,
+                         otherwise the socket is closed when we're done
   
   Returns:
-    ProtocolInfoResponse with the response given by the tor process
+    stem.connection.ProtocolInfoResponse provided by tor, if get_socket is True
+    then this provides a tuple instead with both the response and connected
+    socket (stem.socket.ControlPort)
   
   Raises:
     stem.socket.ProtocolError if the PROTOCOLINFO response is malformed
@@ -65,27 +67,33 @@ def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, ke
     protocolinfo_response = control_socket.recv()
     ProtocolInfoResponse.convert(protocolinfo_response)
     
-    if keep_alive: protocolinfo_response.socket = control_socket
-    else: control_socket.close()
-    
     # attempt to expand relative cookie paths using our port to infer the pid
     if control_addr == "127.0.0.1":
       _expand_cookie_path(protocolinfo_response, stem.util.system.get_pid_by_port, control_port)
     
-    return protocolinfo_response
+    if get_socket:
+      return (protocolinfo_response, control_socket)
+    else:
+      control_socket.close()
+      return protocolinfo_response
   except stem.socket.ControllerError, exc:
     control_socket.close()
     raise exc
 
-def get_protocolinfo_by_socket(socket_path = "/var/run/tor/control", keep_alive = False):
+def get_protocolinfo_by_socket(socket_path = "/var/run/tor/control", get_socket = False):
   """
   Issues a PROTOCOLINFO query to a control socket, getting information about
   the tor process running on it.
   
   Arguments:
     socket_path (str) - path where the control socket is located
-    keep_alive (bool) - keeps the socket used to issue the PROTOCOLINFO query
-                        open if True, closes otherwise
+    get_socket (bool) - provides the socket with the response if True,
+                        otherwise the socket is closed when we're done
+  
+  Returns:
+    stem.connection.ProtocolInfoResponse provided by tor, if get_socket is True
+    then this provides a tuple instead with both the response and connected
+    socket (stem.socket.ControlSocketFile)
   
   Raises:
     stem.socket.ProtocolError if the PROTOCOLINFO response is malformed
@@ -100,13 +108,14 @@ def get_protocolinfo_by_socket(socket_path = "/var/run/tor/control", keep_alive 
     protocolinfo_response = control_socket.recv()
     ProtocolInfoResponse.convert(protocolinfo_response)
     
-    if keep_alive: protocolinfo_response.socket = control_socket
-    else: control_socket.close()
-    
     # attempt to expand relative cookie paths using our port to infer the pid
     _expand_cookie_path(protocolinfo_response, stem.util.system.get_pid_by_open_file, socket_path)
     
-    return protocolinfo_response
+    if get_socket:
+      return (protocolinfo_response, control_socket)
+    else:
+      control_socket.close()
+      return protocolinfo_response
   except stem.socket.ControllerError, exc:
     control_socket.close()
     raise exc
@@ -160,7 +169,6 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
     auth_methods (tuple)               - AuthMethod types that tor will accept
     unknown_auth_methods (tuple)       - strings of unrecognized auth methods
     cookie_path (str)                  - path of tor's authentication cookie
-    socket (stem.socket.ControlSocket) - socket used to make the query
   """
   
   def convert(control_message):
@@ -196,7 +204,6 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
     self.protocol_version = None
     self.tor_version = None
     self.cookie_path = None
-    self.socket = None
     
     auth_methods, unknown_auth_methods = [], []
     

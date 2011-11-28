@@ -92,7 +92,6 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertEquals((stem.connection.AuthMethod.NONE, ), control_message.auth_methods)
     self.assertEquals((), control_message.unknown_auth_methods)
     self.assertEquals(None, control_message.cookie_path)
-    self.assertEquals(None, control_message.socket)
   
   def test_password_auth(self):
     """
@@ -148,7 +147,6 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertEquals((), control_message.auth_methods)
     self.assertEquals((), control_message.unknown_auth_methods)
     self.assertEquals(None, control_message.cookie_path)
-    self.assertEquals(None, control_message.socket)
   
   def test_relative_cookie(self):
     """

@@ -46,7 +46,6 @@ class TestProtocolInfo(unittest.TestCase):
     self.assertNotEqual(None, protocolinfo_response.tor_version)
     self.assertNotEqual(None, protocolinfo_response.auth_methods)
     
-    self.assertEqual(None, protocolinfo_response.socket)
     self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
   
   def test_get_protocolinfo_by_port(self):
@@ -77,7 +76,6 @@ class TestProtocolInfo(unittest.TestCase):
     
     if test.runner.OPT_PORT in test.runner.CONNECTION_OPTS[connection_type]:
       protocolinfo_response = stem.connection.get_protocolinfo_by_port(control_port = test.runner.CONTROL_PORT)
-      self.assertEqual(None, protocolinfo_response.socket)
       self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
     else:
       # we don't have a control port
@@ -104,7 +102,6 @@ class TestProtocolInfo(unittest.TestCase):
     
     if test.runner.OPT_SOCKET in test.runner.CONNECTION_OPTS[connection_type]:
       protocolinfo_response = stem.connection.get_protocolinfo_by_socket(socket_path = test.runner.CONTROL_SOCKET_PATH)
-      self.assertEqual(None, protocolinfo_response.socket)
       self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
     else:
       # we don't have a control socket
