@@ -62,6 +62,36 @@ def authenticate_none(control_socket):
   if str(auth_response) != "OK":
     raise ValueError(str(auth_response))
 
+def authenticate_password(control_socket, password):
+  """
+  Authenticates to a control socket that uses a password (via the
+  HashedControlPassword torrc option). Quotes in the password are escaped.
+  
+  If authentication fails then tor will close the control socket.
+  
+  Arguments:
+    control_socket (stem.socket.ControlSocket) - socket to be authenticated
+    password (str) - passphrase to present to the socket
+  
+  Raises:
+    ValueError if the authentication credentials aren't accepted
+    stem.socket.ProtocolError the content from the socket is malformed
+    stem.socket.SocketError if problems arise in using the socket
+  """
+  
+  # Escapes quotes. Tor can include those in the password hash, in which case
+  # it expects escaped quotes from the controller. For more information see...
+  # https://trac.torproject.org/projects/tor/ticket/4600
+  
+  password = password.replace('"', '\\"')
+  
+  control_socket.send("AUTHENTICATE \"%s\"" % password)
+  auth_response = control_socket.recv()
+  
+  # if we got anything but an OK response then error
+  if str(auth_response) != "OK":
+    raise ValueError(str(auth_response))
+
 def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, get_socket = False):
   """
   Issues a PROTOCOLINFO query to a control port, getting information about the
