@@ -14,7 +14,9 @@ ProtocolInfoResponse - Reply from a PROTOCOLINFO query.
   +- convert - parses a ControlMessage, turning it into a ProtocolInfoResponse
 """
 
+import os
 import logging
+import binascii
 
 import stem.socket
 import stem.version
@@ -37,6 +39,9 @@ LOGGER = logging.getLogger("stem")
 #            protocol.
 
 AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "UNKNOWN")
+
+AUTH_COOKIE_MISSING = "Authentication failed: '%s' doesn't exist"
+AUTH_COOKIE_WRONG_SIZE = "Authentication failed: authentication cookie '%s' is the wrong size (%i bytes instead of 32)"
 
 def authenticate_none(control_socket):
   """
@@ -91,6 +96,57 @@ def authenticate_password(control_socket, password):
   # if we got anything but an OK response then error
   if str(auth_response) != "OK":
     raise ValueError(str(auth_response))
+
+def authenticate_cookie(control_socket, cookie_path):
+  """
+  Authenticates to a control socket that uses the contents of an authentication
+  cookie (generated via the CookieAuthentication torrc option). This does basic
+  validation that this is a cookie before presenting the contents to the
+  socket.
+  
+  If authentication fails then tor will close the control socket.
+  
+  Arguments:
+    control_socket (stem.socket.ControlSocket) - socket to be authenticated
+    cookie_path (str) - path of the authentication cookie to send to tor
+  
+  Raises:
+    ValueError if the authentication credentials aren't accepted
+    OSError if the cookie file doesn't exist or we're unable to read it
+    stem.socket.ProtocolError the content from the socket is malformed
+    stem.socket.SocketError if problems arise in using the socket
+  """
+  
+  if not os.path.exists(cookie_path):
+    raise OSError(AUTH_COOKIE_MISSING % cookie_path)
+  
+  # Abort if the file isn't 32 bytes long. This is to avoid exposing arbitrary
+  # file content to the port.
+  #
+  # Without this a malicious socket could, for instance, claim that
+  # '~/.bash_history' or '~/.ssh/id_rsa' was its authentication cookie to trick
+  # us into reading it for them with our current permissions.
+  #
+  # https://trac.torproject.org/projects/tor/ticket/4303
+  
+  auth_cookie_size = os.path.getsize(cookie_path)
+  
+  if auth_cookie_size != 32:
+    raise ValueError(AUTH_COOKIE_WRONG_SIZE % (cookie_path, auth_cookie_size))
+  
+  try:
+    auth_cookie_file = open(cookie_path, "r")
+    auth_cookie_contents = auth_cookie_file.read()
+    auth_cookie_file.close()
+    
+    control_socket.send("AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
+    auth_response = control_socket.recv()
+    
+    # if we got anything but an OK response then error
+    if str(auth_response) != "OK":
+      raise ValueError(str(auth_response))
+  except IOError, exc:
+    raise OSError(exc)
 
 def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, get_socket = False):
   """
