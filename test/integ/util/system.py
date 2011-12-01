@@ -16,6 +16,18 @@ class TestSystem(unittest.TestCase):
   running.
   """
   
+  is_extra_tor_running = None
+  
+  def setUp(self):
+    # Try to figure out if there's more than one tor instance running. This
+    # check will fail if pgrep is unavailable (for instance on bsd) but this
+    # isn't the end of the world. It's just used to skip tests if they should
+    # legitemately fail.
+    
+    if self.is_extra_tor_running == None:
+      pgrep_results = stem.util.system.call("pgrep -x tor")
+      self.is_extra_tor_running = len(pgrep_results) > 1
+  
   def tearDown(self):
     # resets call mocking back to being disabled
     stem.util.system.CALL_MOCKING = None
@@ -45,6 +57,9 @@ class TestSystem(unittest.TestCase):
     will fail if there's other tor instances running.
     """
     
+    if self.is_extra_tor_running:
+      self.skipTest("(multiple tor instances)")
+    
     runner = test.runner.get_runner()
     self.assertEquals(runner.get_pid(), stem.util.system.get_pid_by_name("tor"))
     self.assertEquals(None, stem.util.system.get_pid_by_name("blarg_and_stuff"))
@@ -54,7 +69,9 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with a pgrep response.
     """
     
-    if not stem.util.system.is_available("pgrep"):
+    if self.is_extra_tor_running:
+      self.skipTest("(multiple tor instances)")
+    elif not stem.util.system.is_available("pgrep"):
       self.skipTest("(pgrep unavailable)")
     
     pgrep_prefix = stem.util.system.GET_PID_BY_NAME_PGREP % ""
@@ -65,7 +82,9 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with a pidof response.
     """
     
-    if not stem.util.system.is_available("pidof"):
+    if self.is_extra_tor_running:
+      self.skipTest("(multiple tor instances)")
+    elif not stem.util.system.is_available("pidof"):
       self.skipTest("(pidof unavailable)")
     
     pidof_prefix = stem.util.system.GET_PID_BY_NAME_PIDOF % ""
@@ -76,9 +95,12 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with the linux variant of ps.
     """
     
-    if not stem.util.system.is_available("ps"):
+    if self.is_extra_tor_running:
+      self.skipTest("(multiple tor instances)")
+    elif not stem.util.system.is_available("ps"):
       self.skipTest("(ps unavailable)")
-    elif stem.util.system.is_bsd(): self.skipTest("(linux only)")
+    elif stem.util.system.is_bsd():
+      self.skipTest("(linux only)")
     
     ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_LINUX % ""
     self._run_pid_test(ps_prefix, stem.util.system.get_pid_by_name, "tor")
@@ -88,9 +110,12 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with the bsd variant of ps.
     """
     
-    if not stem.util.system.is_available("ps"):
+    if self.is_extra_tor_running:
+      self.skipTest("(multiple tor instances)")
+    elif not stem.util.system.is_available("ps"):
       self.skipTest("(ps unavailable)")
-    elif not stem.util.system.is_bsd(): self.skipTest("(bsd only)")
+    elif not stem.util.system.is_bsd():
+      self.skipTest("(bsd only)")
     
     ps_cmd = stem.util.system.GET_PID_BY_NAME_PS_BSD
     self._run_pid_test(ps_cmd, stem.util.system.get_pid_by_name, "tor")
@@ -100,7 +125,9 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with a lsof response.
     """
     
-    if not stem.util.system.is_available("lsof"):
+    if self.is_extra_tor_running:
+      self.skipTest("(multiple tor instances)")
+    elif not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
     
     lsof_prefix = stem.util.system.GET_PID_BY_NAME_LSOF % ""
