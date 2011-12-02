@@ -112,13 +112,13 @@ def authenticate_cookie(control_socket, cookie_path):
   
   Raises:
     ValueError if the authentication credentials aren't accepted
-    OSError if the cookie file doesn't exist or we're unable to read it
+    IOError if the cookie file doesn't exist or we're unable to read it
     stem.socket.ProtocolError the content from the socket is malformed
     stem.socket.SocketError if problems arise in using the socket
   """
   
   if not os.path.exists(cookie_path):
-    raise OSError(AUTH_COOKIE_MISSING % cookie_path)
+    raise IOError(AUTH_COOKIE_MISSING % cookie_path)
   
   # Abort if the file isn't 32 bytes long. This is to avoid exposing arbitrary
   # file content to the port.
@@ -134,19 +134,16 @@ def authenticate_cookie(control_socket, cookie_path):
   if auth_cookie_size != 32:
     raise ValueError(AUTH_COOKIE_WRONG_SIZE % (cookie_path, auth_cookie_size))
   
-  try:
-    auth_cookie_file = open(cookie_path, "r")
-    auth_cookie_contents = auth_cookie_file.read()
-    auth_cookie_file.close()
-    
-    control_socket.send("AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
-    auth_response = control_socket.recv()
-    
-    # if we got anything but an OK response then error
-    if str(auth_response) != "OK":
-      raise ValueError(str(auth_response))
-  except IOError, exc:
-    raise OSError(exc)
+  auth_cookie_file = open(cookie_path, "r")
+  auth_cookie_contents = auth_cookie_file.read()
+  auth_cookie_file.close()
+  
+  control_socket.send("AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
+  auth_response = control_socket.recv()
+  
+  # if we got anything but an OK response then error
+  if str(auth_response) != "OK":
+    raise ValueError(str(auth_response))
 
 def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, get_socket = False):
   """

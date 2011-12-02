@@ -73,7 +73,7 @@ class TestAuthenticate(unittest.TestCase):
     """
     
     test_path = "/if/this/exists/then/they're/asking/for/a/failure"
-    expected_exc = OSError(stem.connection.AUTH_COOKIE_MISSING % test_path)
+    expected_exc = IOError(stem.connection.AUTH_COOKIE_MISSING % test_path)
     self._check_auth(stem.connection.AuthMethod.COOKIE, test_path, False, expected_exc)
   
   def test_authenticate_cookie_wrong_size(self):
