@@ -17,7 +17,9 @@ COOKIE_AUTH_FAIL = "Authentication failed: Wrong length on authentication cookie
 PASSWORD_AUTH_FAIL = "Authentication failed: Password did not match HashedControlPassword value from configuration. Maybe you tried a plain text password? If so, the standard requires that you put it in double quotes."
 MULTIPLE_AUTH_FAIL = "Authentication failed: Password did not match HashedControlPassword *or* authentication cookie."
 
-# this only arises in password-only auth when we authenticate by password
+# this only arises in cookie-only or password-only auth when we authenticate
+# with the wrong value
+INCORRECT_COOKIE_FAIL = "Authentication failed: Authentication cookie did not match expected value."
 INCORRECT_PASSWORD_FAIL = "Authentication failed: Password did not match HashedControlPassword value from configuration"
 
 class TestAuthenticate(unittest.TestCase):
@@ -87,6 +89,34 @@ class TestAuthenticate(unittest.TestCase):
     else:
       self.assertRaises(stem.connection.CookieAuthRejected, self._check_auth, auth_type, auth_value)
       self._assert_auth_rejected_msg(auth_type, auth_value)
+  
+  def test_authenticate_cookie_invalid(self):
+    """
+    Tests the authenticate_cookie function with a properly sized but incorrect
+    value.
+    """
+    
+    auth_type = stem.connection.AuthMethod.COOKIE
+    auth_value = os.path.join(test.runner.get_runner().get_test_dir(), "fake_cookie")
+    
+    # we need to create a 32 byte cookie file to load from
+    fake_cookie = open(auth_value, "w")
+    fake_cookie.write("0" * 32)
+    fake_cookie.close()
+    
+    if self._can_authenticate(test.runner.TorConnection.NONE):
+      # authentication will work anyway
+      self._check_auth(auth_type, auth_value)
+    else:
+      if self._can_authenticate(auth_type):
+        exc_type = stem.connection.IncorrectCookieValue
+      else:
+        exc_type = stem.connection.CookieAuthRejected
+      
+      self.assertRaises(exc_type, self._check_auth, auth_type, auth_value)
+      self._assert_auth_rejected_msg(auth_type, auth_value)
+    
+    os.remove(auth_value)
   
   def test_authenticate_cookie_missing(self):
     """
@@ -198,11 +228,18 @@ class TestAuthenticate(unittest.TestCase):
     if cookie_auth and password_auth:
       failure_msg = MULTIPLE_AUTH_FAIL
     elif cookie_auth:
-      failure_msg = COOKIE_AUTH_FAIL
-    elif auth_type == stem.connection.AuthMethod.PASSWORD:
-      failure_msg = INCORRECT_PASSWORD_FAIL
+      if auth_type == stem.connection.AuthMethod.COOKIE:
+        failure_msg = INCORRECT_COOKIE_FAIL
+      else:
+        failure_msg = COOKIE_AUTH_FAIL
+    elif password_auth:
+      if auth_type == stem.connection.AuthMethod.PASSWORD:
+        failure_msg = INCORRECT_PASSWORD_FAIL
+      else:
+        failure_msg = PASSWORD_AUTH_FAIL
     else:
-      failure_msg = PASSWORD_AUTH_FAIL
+      # shouldn't happen, if so then the test has a bug
+      raise ValueError("No methods of authentication. If this is an open socket then auth shoulnd't fail.")
     
     try:
       auth_function()

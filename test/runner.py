@@ -10,6 +10,7 @@ Runner - Runtime context for our integration tests.
   |- start - prepares and starts a tor instance for our tests to run against
   |- stop - stops our tor instance and cleans up any temporary files
   |- is_running - checks if our tor test instance is running
+  |- get_test_dir - testing directory path
   |- get_torrc_path - path to our tor instance's torrc
   |- get_torrc_contents - contents of our tor instance's torrc
   |- get_connection_type - method by which controllers can connect to tor
@@ -234,6 +235,19 @@ class Runner:
     self._runner_lock.release()
     
     return is_running
+  
+  def get_test_dir(self):
+    """
+    Provides the absolute path for our testing directory.
+    
+    Returns:
+      str with our test direcectory path
+    
+    Raises:
+      RunnerStopped if we aren't running
+    """
+    
+    return self._get("_test_dir")
   
   def get_torrc_path(self):
     """

@@ -278,10 +278,11 @@ def authenticate_cookie(control_socket, cookie_path, suppress_ctl_errors = True)
       control_socket.close()
       
       # all we have to go on is the error message from tor...
-      # ... Wrong length on authentication cookie.
+      # ... Authentication cookie did not match expected value.
       # ... *or* authentication cookie.
       
-      if "authentication cookie." in str(auth_response):
+      if "*or* authentication cookie." in str(auth_response) or \
+         "Authentication cookie did not match expected value." in str(auth_response):
         raise IncorrectCookieValue(str(auth_response), auth_response)
       else:
         raise CookieAuthRejected(str(auth_response), auth_response)
