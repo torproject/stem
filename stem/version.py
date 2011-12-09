@@ -131,7 +131,7 @@ class Version:
   def __cmp__(self, other):
     """
     Simple comparison of versions. An undefined patch level is treated as zero
-    and status tags are compared lexically (as per the version spec).
+    and status tags are not included in comparisions (as per the version spec).
     """
     
     if not isinstance(other, Version):
@@ -147,7 +147,9 @@ class Version:
     my_status = self.status if self.status else ""
     other_status = other.status if other.status else ""
     
-    return cmp(my_status, other_status)
+    # not including tags in comparisons because the spec declares them to be
+    # 'purely informational'
+    return 0
 
 Requirement = stem.util.enum.Enum(
   ("GETINFO_CONFIG_TEXT", Version("0.2.2.7-alpha")),

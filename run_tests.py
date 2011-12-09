@@ -35,7 +35,7 @@ DIVIDER = "=" * 70
 # (name, class) tuples for all of our unit and integration tests
 UNIT_TESTS = (("stem.socket.ControlMessage", test.unit.socket.control_message.TestControlMessage),
               ("stem.socket.ControlLine", test.unit.socket.control_line.TestControlLine),
-              ("stem.types.Version", test.unit.version.TestVerion),
+              ("stem.types.Version", test.unit.version.TestVersion),
               ("stem.connection.ProtocolInfoResponse", test.unit.connection.protocolinfo.TestProtocolInfoResponse),
               ("stem.util.enum", test.unit.util.enum.TestEnum),
               ("stem.util.system", test.unit.util.system.TestSystem),
