@@ -67,15 +67,12 @@ class ControllerError(Exception):
 
 class ProtocolError(ControllerError):
   "Malformed content from the control socket."
-  pass
 
 class SocketError(ControllerError):
   "Error arose while communicating with the control socket."
-  pass
 
 class SocketClosed(SocketError):
   "Control socket was closed before completing the message."
-  pass
 
 class ControlSocket:
   """

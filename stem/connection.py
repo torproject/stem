@@ -1,6 +1,30 @@
 """
 Functions for connecting and authenticating to the tor process.
 
+AuthenticationFailure - Base exception raised for authentication failures.
+  |- UnrecognizedAuthMethods - Authentication methods are unsupported.
+  |- OpenAuthRejected - Tor rejected this method of authentication.
+  |
+  |- PasswordAuthFailed - Failure when authenticating by a password.
+  |  |- PasswordAuthRejected - Tor rejected this method of authentication.
+  |  |- IncorrectPassword - Password was rejected.
+  |  +- MissingPassword - Socket supports password auth but wasn't attempted.
+  |
+  |- CookieAuthFailed - Failure when authenticating by a cookie.
+  |  |- CookieAuthRejected - Tor rejected this method of authentication.
+  |  |- IncorrectCookieValue - Authentication cookie was rejected.
+  |  |- IncorrectCookieSize - Size of the cookie file is incorrect.
+  |  +- UnreadableCookieFile - Unable to read the contents of the auth cookie.
+  |
+  +- MissingAuthInfo - Unexpected PROTOCOLINFO response, missing auth info.
+     |- NoAuthMethods - Missing any methods for authenticating.
+     +- NoAuthCookie - Supports cookie auth but doesn't have its path.
+
+authenticate - Main method for authenticating to a control socket.
+authenticate_none - Authenticates to an open control socket.
+authenticate_password - Authenticates to a socket supporting password auth.
+authenticate_cookie - Authenticates to a socket supporting cookie auth.
+
 get_protocolinfo_by_port - PROTOCOLINFO query via a control port.
 get_protocolinfo_by_socket - PROTOCOLINFO query via a control socket.
 ProtocolInfoResponse - Reply from a PROTOCOLINFO query.
@@ -9,8 +33,7 @@ ProtocolInfoResponse - Reply from a PROTOCOLINFO query.
   |  |- tor_version
   |  |- auth_methods
   |  |- unknown_auth_methods
-  |  |- cookie_path
-  |  +- socket
+  |  +- cookie_path
   +- convert - parses a ControlMessage, turning it into a ProtocolInfoResponse
 """
 
@@ -40,48 +63,121 @@ LOGGER = logging.getLogger("stem")
 
 AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "UNKNOWN")
 
-AUTH_COOKIE_MISSING = "Authentication failed: '%s' doesn't exist"
-AUTH_COOKIE_WRONG_SIZE = "Authentication failed: authentication cookie '%s' is the wrong size (%i bytes instead of 32)"
+class AuthenticationFailure(Exception):
+  """
+  Base error for authentication failures.
+  
+  Attributes:
+    auth_response (stem.socket.ControlMessage) - AUTHENTICATE response from
+      the control socket, None if one wasn't received
+  """
+  
+  def __init__(self, message, auth_response = None):
+    Exception.__init__(self, message)
+    self.auth_response = auth_response
 
-def authenticate_none(control_socket):
+class UnrecognizedAuthMethods(AuthenticationFailure):
+  "All methods for authenticating aren't recognized."
+
+class OpenAuthRejected(AuthenticationFailure):
+  "Attempt to connect to an open control socket was rejected."
+
+class PasswordAuthFailed(AuthenticationFailure):
+  "Failure to authenticate with a password."
+
+class PasswordAuthRejected(PasswordAuthFailed):
+  "Socket does not support password authentication."
+
+class IncorrectPassword(PasswordAuthFailed):
+  "Authentication password incorrect."
+
+class MissingPassword(PasswordAuthFailed):
+  "Password authentication is supported but we weren't provided with one."
+
+class CookieAuthFailed(AuthenticationFailure):
+  "Failure to authenticate with an authentication cookie."
+
+class CookieAuthRejected(CookieAuthFailed):
+  "Socket does not support password authentication."
+
+class IncorrectCookieValue(CookieAuthFailed):
+  "Authentication cookie value was rejected."
+
+class IncorrectCookieSize(CookieAuthFailed):
+  "Aborted because the cookie file is the wrong size."
+
+class UnreadableCookieFile(CookieAuthFailed):
+  "Error arose in reading the authentication cookie."
+
+class MissingAuthInfo(AuthenticationFailure):
+  """
+  The PROTOCOLINFO response didn't have enough information to authenticate.
+  These are valid control responses but really shouldn't happen in practice.
+  """
+
+class NoAuthMethods(MissingAuthInfo):
+  "PROTOCOLINFO response didn't have any methods for authenticating."
+
+class NoAuthCookie(MissingAuthInfo):
+  "PROTOCOLINFO response supports cookie auth but doesn't have its path."
+
+def authenticate_none(control_socket, suppress_ctl_errors = True):
   """
   Authenticates to an open control socket. All control connections need to
   authenticate before they can be used, even if tor hasn't been configured to
   use any authentication.
   
-  If authentication fails then tor will close the control socket.
+  For general usage use the authenticate function instead. If authentication
+  fails then tor will close the control socket.
   
   Arguments:
     control_socket (stem.socket.ControlSocket) - socket to be authenticated
+    suppress_ctl_errors (bool) - reports raised stem.socket.ControllerError as
+      authentication rejection if True, otherwise they're re-raised
   
   Raises:
-    ValueError if the empty authentication credentials aren't accepted
-    stem.socket.ProtocolError the content from the socket is malformed
-    stem.socket.SocketError if problems arise in using the socket
+    stem.connection.OpenAuthRejected if the empty authentication credentials
+      aren't accepted
   """
   
-  control_socket.send("AUTHENTICATE")
-  auth_response = control_socket.recv()
-  
-  # if we got anything but an OK response then error
-  if str(auth_response) != "OK":
-    raise ValueError(str(auth_response))
+  try:
+    control_socket.send("AUTHENTICATE")
+    auth_response = control_socket.recv()
+    
+    # if we got anything but an OK response then error
+    if str(auth_response) != "OK":
+      control_socket.close()
+      raise OpenAuthRejected(str(auth_response), auth_response)
+  except stem.socket.ControllerError, exc:
+    control_socket.close()
+    
+    if not suppress_ctl_errors: raise exc
+    else: raise OpenAuthRejected("Socket failed (%s)" % exc)
 
-def authenticate_password(control_socket, password):
+def authenticate_password(control_socket, password, suppress_ctl_errors = True):
   """
   Authenticates to a control socket that uses a password (via the
   HashedControlPassword torrc option). Quotes in the password are escaped.
   
-  If authentication fails then tor will close the control socket.
+  For general usage use the authenticate function instead. If authentication
+  fails then tor will close the control socket.
+  
+  note: If you use this function directly, rather than authenticate(), we may
+  mistakenly raise a PasswordAuthRejected rather than IncorrectPassword. This
+  is because we rely on tor's error messaging which is liable to change in
+  future versions.
   
   Arguments:
     control_socket (stem.socket.ControlSocket) - socket to be authenticated
     password (str) - passphrase to present to the socket
+    suppress_ctl_errors (bool) - reports raised stem.socket.ControllerError as
+      authentication rejection if True, otherwise they're re-raised
   
   Raises:
-    ValueError if the authentication credentials aren't accepted
-    stem.socket.ProtocolError the content from the socket is malformed
-    stem.socket.SocketError if problems arise in using the socket
+    stem.connection.PasswordAuthRejected if the socket doesn't accept password
+      authentication
+    stem.connection.IncorrectPassword if the authentication credentials aren't
+      accepted
   """
   
   # Escapes quotes. Tor can include those in the password hash, in which case
@@ -90,35 +186,64 @@ def authenticate_password(control_socket, password):
   
   password = password.replace('"', '\\"')
   
-  control_socket.send("AUTHENTICATE \"%s\"" % password)
-  auth_response = control_socket.recv()
-  
-  # if we got anything but an OK response then error
-  if str(auth_response) != "OK":
-    raise ValueError(str(auth_response))
+  try:
+    control_socket.send("AUTHENTICATE \"%s\"" % password)
+    auth_response = control_socket.recv()
+    
+    # if we got anything but an OK response then error
+    if str(auth_response) != "OK":
+      control_socket.close()
+      
+      # all we have to go on is the error message from tor...
+      # Password did not match HashedControlPassword value value from configuration...
+      # Password did not match HashedControlPassword *or*...
+      
+      if "Password did not match HashedControlPassword" in str(auth_response):
+        raise IncorrectPassword(str(auth_response), auth_response)
+      else:
+        raise PasswordAuthRejected(str(auth_response), auth_response)
+  except stem.socket.ControllerError, exc:
+    control_socket.close()
+    
+    if not suppress_ctl_errors: raise exc
+    else: raise PasswordAuthRejected("Socket failed (%s)" % exc)
 
-def authenticate_cookie(control_socket, cookie_path):
+def authenticate_cookie(control_socket, cookie_path, suppress_ctl_errors = True):
   """
   Authenticates to a control socket that uses the contents of an authentication
   cookie (generated via the CookieAuthentication torrc option). This does basic
   validation that this is a cookie before presenting the contents to the
   socket.
   
-  If authentication fails then tor will close the control socket.
+  The IncorrectCookieSize and UnreadableCookieFile exceptions take precidence
+  over the other types.
+  
+  For general usage use the authenticate function instead. If authentication
+  fails then tor will close the control socket.
+  
+  note: If you use this function directly, rather than authenticate(), we may
+  mistakenly raise a CookieAuthRejected rather than IncorrectCookieValue. This
+  is because we rely on tor's error messaging which is liable to change in
+  future versions.
   
   Arguments:
     control_socket (stem.socket.ControlSocket) - socket to be authenticated
     cookie_path (str) - path of the authentication cookie to send to tor
+    suppress_ctl_errors (bool) - reports raised stem.socket.ControllerError as
+      authentication rejection if True, otherwise they're re-raised
   
   Raises:
-    ValueError if the authentication credentials aren't accepted
-    IOError if the cookie file doesn't exist or we're unable to read it
-    stem.socket.ProtocolError the content from the socket is malformed
-    stem.socket.SocketError if problems arise in using the socket
+    stem.connection.IncorrectCookieSize if the cookie file's size is wrong
+    stem.connection.UnreadableCookieFile if the cookie file doesn't exist or
+      we're unable to read it
+    stem.connection.CookieAuthRejected if cookie authentication is attempted
+      but the socket doesn't accept it
+    stem.connection.IncorrectCookieValue if the cookie file's value is rejected
   """
   
   if not os.path.exists(cookie_path):
-    raise IOError(AUTH_COOKIE_MISSING % cookie_path)
+    control_socket.close()
+    raise UnreadableCookieFile("Authentication failed: '%s' doesn't exist" % cookie_path)
   
   # Abort if the file isn't 32 bytes long. This is to avoid exposing arbitrary
   # file content to the port.
@@ -132,18 +257,39 @@ def authenticate_cookie(control_socket, cookie_path):
   auth_cookie_size = os.path.getsize(cookie_path)
   
   if auth_cookie_size != 32:
-    raise ValueError(AUTH_COOKIE_WRONG_SIZE % (cookie_path, auth_cookie_size))
+    control_socket.close()
+    exc_msg = "Authentication failed: authentication cookie '%s' is the wrong size (%i bytes instead of 32)" % (cookie_path, auth_cookie_size)
+    raise IncorrectCookieSize(exc_msg)
   
-  auth_cookie_file = open(cookie_path, "r")
-  auth_cookie_contents = auth_cookie_file.read()
-  auth_cookie_file.close()
+  try:
+    auth_cookie_file = open(cookie_path, "r")
+    auth_cookie_contents = auth_cookie_file.read()
+    auth_cookie_file.close()
+  except IOError, exc:
+    control_socket.close()
+    raise UnreadableCookieFile("Authentication failed: unable to read '%s' (%s)" % (cookie_path, exc)) 
   
-  control_socket.send("AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
-  auth_response = control_socket.recv()
-  
-  # if we got anything but an OK response then error
-  if str(auth_response) != "OK":
-    raise ValueError(str(auth_response))
+  try:
+    control_socket.send("AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
+    auth_response = control_socket.recv()
+    
+    # if we got anything but an OK response then error
+    if str(auth_response) != "OK":
+      control_socket.close()
+      
+      # all we have to go on is the error message from tor...
+      # ... Wrong length on authentication cookie.
+      # ... *or* authentication cookie.
+      
+      if "authentication cookie." in str(auth_response):
+        raise IncorrectCookieValue(str(auth_response), auth_response)
+      else:
+        raise CookieAuthRejected(str(auth_response), auth_response)
+  except stem.socket.ControllerError, exc:
+    control_socket.close()
+    
+    if not suppress_ctl_errors: raise exc
+    else: raise CookieAuthRejected("Socket failed (%s)" % exc)
 
 def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, get_socket = False):
   """
