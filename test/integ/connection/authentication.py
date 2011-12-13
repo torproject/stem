@@ -246,8 +246,9 @@ class TestAuthenticate(unittest.TestCase):
       control_socket.close()
       self.fail()
     except stem.connection.AuthenticationFailure, exc:
-      self.assertFalse(control_socket.is_alive())
+      self.assertTrue(control_socket.is_alive())
       self.assertEqual(failure_msg, str(exc))
+      control_socket.close()
   
   def _check_auth(self, auth_type, *auth_args):
     """
@@ -268,8 +269,13 @@ class TestAuthenticate(unittest.TestCase):
     control_socket = runner.get_tor_socket(False)
     auth_function = self._get_auth_function(control_socket, auth_type, *auth_args)
     
-    # run the authentication, letting this raise if there's a problem
-    auth_function()
+    # run the authentication, re-raising if there's a problem
+    try:
+      auth_function()
+    except stem.connection.AuthenticationFailure, exc:
+      self.assertTrue(control_socket.is_alive())
+      control_socket.close()
+      raise exc
     
     # issues a 'GETINFO config-file' query to confirm that we can use the socket
     control_socket.send("GETINFO config-file")
