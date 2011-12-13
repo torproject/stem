@@ -94,6 +94,7 @@ class Version:
       ValueError if input isn't a valid tor version
     """
     
+    self.version_str = version_str
     m = re.match(r'^([0-9]+).([0-9]+).([0-9]+)(.[0-9]+)?(-\S*)?$', version_str)
     
     if m:
@@ -114,19 +115,10 @@ class Version:
   
   def __str__(self):
     """
-    Provides the normal representation for the version, for instance:
-    "0.2.2.23-alpha"
+    Provides the string used to construct the Version.
     """
     
-    suffix = ""
-    
-    if self.patch:
-      suffix += ".%i" % self.patch
-    
-    if self.status:
-      suffix += "-%s" % self.status
-    
-    return "%i.%i.%i%s" % (self.major, self.minor, self.micro, suffix)
+    return self.version_str
   
   def __cmp__(self, other):
     """
