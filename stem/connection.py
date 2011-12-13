@@ -25,8 +25,7 @@ authenticate_none - Authenticates to an open control socket.
 authenticate_password - Authenticates to a socket supporting password auth.
 authenticate_cookie - Authenticates to a socket supporting cookie auth.
 
-get_protocolinfo_by_port - PROTOCOLINFO query via a control port.
-get_protocolinfo_by_socket - PROTOCOLINFO query via a control socket.
+get_protocolinfo - issues a PROTOCOLINFO query
 ProtocolInfoResponse - Reply from a PROTOCOLINFO query.
   |- Attributes:
   |  |- protocol_version
@@ -292,63 +291,19 @@ def authenticate_cookie(control_socket, cookie_path, suppress_ctl_errors = True)
     if not suppress_ctl_errors: raise exc
     else: raise CookieAuthRejected("Socket failed (%s)" % exc)
 
-def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, get_socket = False):
-  """
-  Issues a PROTOCOLINFO query to a control port, getting information about the
-  tor process running on it.
-  
-  Arguments:
-    control_addr (str) - ip address of the controller
-    control_port (int) - port number of the controller
-    get_socket (bool)  - provides the socket with the response if True,
-                         otherwise the socket is closed when we're done
-  
-  Returns:
-    stem.connection.ProtocolInfoResponse provided by tor, if get_socket is True
-    then this provides a tuple instead with both the response and connected
-    socket (stem.socket.ControlPort)
-  
-  Raises:
-    stem.socket.ProtocolError if the PROTOCOLINFO response is malformed
-    stem.socket.SocketError if problems arise in establishing or using the
-      socket
-  """
-  
-  control_socket = stem.socket.ControlPort(control_addr, control_port, False)
-  
-  try:
-    control_socket.connect()
-    control_socket.send("PROTOCOLINFO 1")
-    protocolinfo_response = control_socket.recv()
-    ProtocolInfoResponse.convert(protocolinfo_response)
-    
-    # attempt to expand relative cookie paths using our port to infer the pid
-    if control_addr == "127.0.0.1":
-      _expand_cookie_path(protocolinfo_response, stem.util.system.get_pid_by_port, control_port)
-    
-    if get_socket:
-      return (protocolinfo_response, control_socket)
-    else:
-      control_socket.close()
-      return protocolinfo_response
-  except stem.socket.ControllerError, exc:
-    control_socket.close()
-    raise exc
-
-def get_protocolinfo_by_socket(socket_path = "/var/run/tor/control", get_socket = False):
+def get_protocolinfo(control_socket):
   """
   Issues a PROTOCOLINFO query to a control socket, getting information about
   the tor process running on it.
   
+  Tor hangs up on sockets after receiving a PROTOCOLINFO query if it isn't next
+  followed by authentication.
+  
   Arguments:
-    socket_path (str) - path where the control socket is located
-    get_socket (bool) - provides the socket with the response if True,
-                        otherwise the socket is closed when we're done
+    control_socket (stem.socket.ControlSocket) - connected tor control socket
   
   Returns:
-    stem.connection.ProtocolInfoResponse provided by tor, if get_socket is True
-    then this provides a tuple instead with both the response and connected
-    socket (stem.socket.ControlSocketFile)
+    stem.connection.ProtocolInfoResponse provided by tor
   
   Raises:
     stem.socket.ProtocolError if the PROTOCOLINFO response is malformed
@@ -356,25 +311,20 @@ def get_protocolinfo_by_socket(socket_path = "/var/run/tor/control", get_socket 
       socket
   """
   
-  control_socket = stem.socket.ControlSocketFile(socket_path, False)
+  control_socket.send("PROTOCOLINFO 1")
+  protocolinfo_response = control_socket.recv()
+  ProtocolInfoResponse.convert(protocolinfo_response)
   
-  try:
-    control_socket.connect()
-    control_socket.send("PROTOCOLINFO 1")
-    protocolinfo_response = control_socket.recv()
-    ProtocolInfoResponse.convert(protocolinfo_response)
-    
-    # attempt to expand relative cookie paths using our port to infer the pid
-    _expand_cookie_path(protocolinfo_response, stem.util.system.get_pid_by_open_file, socket_path)
-    
-    if get_socket:
-      return (protocolinfo_response, control_socket)
-    else:
-      control_socket.close()
-      return protocolinfo_response
-  except stem.socket.ControllerError, exc:
-    control_socket.close()
-    raise exc
+  # attempt ot expand relative cookie paths via the control port or socket file
+  if isinstance(control_socket, stem.socket.ControlPort):
+    if control_socket.get_address() == "127.0.0.1":
+      pid_method = stem.util.system.get_pid_by_port
+      _expand_cookie_path(protocolinfo_response, pid_method, control_socket.get_port())
+  elif isinstance(control_socket, stem.socket.ControlSocketFile):
+    pid_method = stem.util.system.get_pid_by_open_file
+    _expand_cookie_path(protocolinfo_response, pid_method, control_socket.get_socket_path())
+  
+  return protocolinfo_response
 
 def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg):
   """

@@ -49,7 +49,8 @@ class TestProtocolInfo(unittest.TestCase):
   
   def test_get_protocolinfo_by_port(self):
     """
-    Exercises the stem.connection.get_protocolinfo_by_port function.
+    Exercises the stem.connection.get_protocolinfo function with a control
+    port.
     """
     
     # If we have both the 'RELATIVE' target and a cookie then test_parsing
@@ -74,15 +75,21 @@ class TestProtocolInfo(unittest.TestCase):
     connection_type = test.runner.get_runner().get_connection_type()
     
     if test.runner.OPT_PORT in test.runner.CONNECTION_OPTS[connection_type]:
-      protocolinfo_response = stem.connection.get_protocolinfo_by_port(control_port = test.runner.CONTROL_PORT)
+      control_socket = stem.socket.ControlPort(control_port = test.runner.CONTROL_PORT)
+      protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
       self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
+      
+      # we should have a usable socket at this point
+      self.assertTrue(control_socket.is_alive())
+      control_socket.close()
     else:
       # we don't have a control port
-      self.assertRaises(stem.socket.SocketError, stem.connection.get_protocolinfo_by_port, "127.0.0.1", test.runner.CONTROL_PORT)
+      self.assertRaises(stem.socket.SocketError, stem.socket.ControlPort, "127.0.0.1", test.runner.CONTROL_PORT)
   
   def test_get_protocolinfo_by_socket(self):
     """
-    Exercises the stem.connection.get_protocolinfo_by_socket function.
+    Exercises the stem.connection.get_protocolinfo function with a control
+    socket.
     """
     
     cwd_by_socket_lookup_prefixes = (
@@ -100,16 +107,16 @@ class TestProtocolInfo(unittest.TestCase):
     connection_type = test.runner.get_runner().get_connection_type()
     
     if test.runner.OPT_SOCKET in test.runner.CONNECTION_OPTS[connection_type]:
-      protocolinfo_response, control_socket = stem.connection.get_protocolinfo_by_socket(socket_path = test.runner.CONTROL_SOCKET_PATH, get_socket = True)
+      control_socket = stem.socket.ControlSocketFile(test.runner.CONTROL_SOCKET_PATH)
+      protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
       self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
       
-      # also exercising the get_socket argument - we should have a usable
-      # socket at this point
+      # we should have a usable socket at this point
       self.assertTrue(control_socket.is_alive())
       control_socket.close()
     else:
       # we don't have a control socket
-      self.assertRaises(stem.socket.SocketError, stem.connection.get_protocolinfo_by_socket, test.runner.CONTROL_SOCKET_PATH)
+      self.assertRaises(stem.socket.SocketError, stem.socket.ControlSocketFile, test.runner.CONTROL_SOCKET_PATH)
   
   def assert_protocolinfo_attr(self, protocolinfo_response, connection_type):
     """
