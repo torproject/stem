@@ -314,8 +314,9 @@ def get_protocolinfo_by_port(control_addr = "127.0.0.1", control_port = 9051, ge
       socket
   """
   
+  control_socket = stem.socket.ControlPort(control_addr, control_port, False)
+  
   try:
-    control_socket = stem.socket.ControlPort(control_addr, control_port)
     control_socket.connect()
     control_socket.send("PROTOCOLINFO 1")
     protocolinfo_response = control_socket.recv()
@@ -355,8 +356,9 @@ def get_protocolinfo_by_socket(socket_path = "/var/run/tor/control", get_socket 
       socket
   """
   
+  control_socket = stem.socket.ControlSocketFile(socket_path, False)
+  
   try:
-    control_socket = stem.socket.ControlSocketFile(socket_path)
     control_socket.connect()
     control_socket.send("PROTOCOLINFO 1")
     protocolinfo_response = control_socket.recv()

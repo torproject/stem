@@ -345,8 +345,6 @@ class Runner:
       control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
     else: return None
     
-    control_socket.connect()
-    
     # TODO: replace with higher level authentication functions when we have them
     if authenticate:
       if OPT_COOKIE in conn_opts:

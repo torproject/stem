@@ -237,18 +237,26 @@ class ControlPort(ControlSocket):
   option.
   """
   
-  def __init__(self, control_addr = "127.0.0.1", control_port = 9051):
+  def __init__(self, control_addr = "127.0.0.1", control_port = 9051, connect = True):
     """
     ControlPort constructor.
     
     Arguments:
       control_addr (str) - ip address of the controller
       control_port (int) - port number of the controller
+      connect (bool)     - connects to the socket if True, leaves it
+                           unconnected otherwise
+    
+    Raises:
+      stem.socket.SocketError if connect is True and we're unable to establish
+        a connection
     """
     
     ControlSocket.__init__(self)
     self._control_addr = control_addr
     self._control_port = control_port
+    
+    if connect: self.connect()
   
   def get_address(self):
     """
@@ -284,16 +292,24 @@ class ControlSocketFile(ControlSocket):
   option.
   """
   
-  def __init__(self, socket_path = "/var/run/tor/control"):
+  def __init__(self, socket_path = "/var/run/tor/control", connect = True):
     """
     ControlSocketFile constructor.
     
     Arguments:
       socket_path (str) - path where the control socket is located
+      connect (bool)     - connects to the socket if True, leaves it
+                           unconnected otherwise
+    
+    Raises:
+      stem.socket.SocketError if connect is True and we're unable to establish
+        a connection
     """
     
     ControlSocket.__init__(self)
     self._socket_path = socket_path
+    
+    if connect: self.connect()
   
   def get_socket_path(self):
     """
