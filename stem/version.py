@@ -88,14 +88,14 @@ class Version:
   def __init__(self, version_str):
     """
     Parses a valid tor version string, for instance "0.1.4" or
-    "0.2.2.23-alpha".
+    "0.2.2.23-alpha (git-7dcd105be34a4f44)".
     
     Raises:
       ValueError if input isn't a valid tor version
     """
     
     self.version_str = version_str
-    m = re.match(r'^([0-9]+).([0-9]+).([0-9]+)(.[0-9]+)?(-\S*)?$', version_str)
+    m = re.match(r'^([0-9]+).([0-9]+).([0-9]+)(.[0-9]+)?(-.*)?$', version_str)
     
     if m:
       major, minor, micro, patch, status = m.groups()
