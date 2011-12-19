@@ -3,7 +3,10 @@ Functions for connecting and authenticating to the tor process.
 
 AuthenticationFailure - Base exception raised for authentication failures.
   |- UnrecognizedAuthMethods - Authentication methods are unsupported.
-  |- OpenAuthRejected - Tor rejected this method of authentication.
+  |- IncorrectSocketType - Socket does not speak the tor control protocol.
+  |
+  |- OpenAuthFailed - Failure when authenticating by an open socket.
+  |  +- OpenAuthRejected - Tor rejected this method of authentication.
   |
   |- PasswordAuthFailed - Failure when authenticating by a password.
   |  |- PasswordAuthRejected - Tor rejected this method of authentication.
@@ -77,8 +80,18 @@ class AuthenticationFailure(Exception):
 
 class UnrecognizedAuthMethods(AuthenticationFailure):
   "All methods for authenticating aren't recognized."
+  
+  def __init__(self, message, unknown_auth_methods):
+    AuthenticationFailure.__init__(self, message)
+    self.unknown_auth_methods = unknown_auth_methods
 
-class OpenAuthRejected(AuthenticationFailure):
+class IncorrectSocketType(AuthenticationFailure):
+  "Socket does not speak the control protocol."
+
+class OpenAuthFailed(AuthenticationFailure):
+  "Failure to authenticate to an open socket."
+
+class OpenAuthRejected(OpenAuthFailed):
   "Attempt to connect to an open control socket was rejected."
 
 class PasswordAuthFailed(AuthenticationFailure):
@@ -119,6 +132,205 @@ class NoAuthMethods(MissingAuthInfo):
 
 class NoAuthCookie(MissingAuthInfo):
   "PROTOCOLINFO response supports cookie auth but doesn't have its path."
+
+# authentication exceptions ordered as per the authenticate function's pydocs
+AUTHENTICATE_EXCEPTIONS = (
+  IncorrectSocketType,
+  UnrecognizedAuthMethods,
+  MissingPassword,
+  IncorrectPassword,
+  IncorrectCookieSize,
+  UnreadableCookieFile,
+  IncorrectCookieValue,
+  OpenAuthRejected,
+  MissingAuthInfo,
+  AuthenticationFailure,
+)
+
+def authenticate(control_socket, password = None, protocolinfo_response = None):
+  """
+  Authenticates to a control socket using the information provided by a
+  PROTOCOLINFO response. In practice this will often be all we need to
+  authenticate, raising an exception if all attempts to authenticate fail.
+  
+  All exceptions are subclasses of AuthenticationFailure so, in practice,
+  callers should catch the types of authentication failure that they care
+  about, then have a AuthenticationFailure catch-all at the end. For example...
+  
+    import sys
+    import getpass
+    import stem.connection
+    import stem.socket
+    
+    try:
+      control_socket = stem.socket.ControlPort(control_port = 9051)
+    except stem.socket.SocketError, exc:
+      print "Unable to connect to port 9051 (%s)" % exc
+      sys.exit(1)
+    
+    try:
+      stem.connection.authenticate(control_socket)
+    except stem.connection.IncorrectSocketType:
+      print "Please check in your torrc that 9051 is the ControlPort."
+      print "Maybe you configured it to be the ORPort or SocksPort instead?"
+      sys.exit(1)
+    except stem.connection.MissingPassword:
+      controller_password = getpass.getpass("Controller password: ")
+      
+      try:
+        stem.connection.authenticate_password(control_socket, controller_password)
+      except stem.connection.PasswordAuthFailed:
+        print "Unable to authenticate, password is incorrect"
+        sys.exit(1)
+    except stem.connection.AuthenticationFailure, exc:
+      print "Unable to authenticate: %s" % exc
+      sys.exit(1)
+  
+  Arguments:
+    control_socket (stem.socket.ControlSocket) - socket to be authenticated
+    password (str) - passphrase to present to the socket if it uses password
+        authentication (skips password auth if None)
+    protocolinfo_response (stem.connection.ProtocolInfoResponse) -
+        tor protocolinfo response, this is retrieved on our own if None
+  
+  Raises:
+    AuthenticationFailed subclass if all attempts to authenticate fail. Since
+    this may try multiple authentication methods it may encounter multiple
+    exceptions. If so then the exception this raises is prioritized as
+    follows...
+    
+    stem.connection.IncorrectSocketType
+      The control_socket does not speak the tor control protocol. Most often
+      this happened because the user confused the SocksPort or ORPort with the
+      ControlPort.
+    
+    stem.connection.UnrecognizedAuthMethods
+      All of the authentication methods tor will accept are new and
+      unrecognized. Please upgrade stem and, if that doesn't work, file a
+      ticket on 'trac.torproject.org' and I'd be happy to add support.
+    
+    stem.connection.MissingPassword
+      We were unable to authenticate but didn't attempt password authentication
+      because none was provided. You should prompt the user for a password and
+      try again via 'authenticate_password'.
+    
+    stem.connection.IncorrectPassword
+      We were provided with a password but it was incorrect.
+    
+    stem.connection.IncorrectCookieSize
+      Tor allows for authentication by reading it a cookie file, but that file
+      is the wrong size to be an authentication cookie.
+    
+    stem.connection.UnreadableCookieFile
+      Tor allows for authentication by reading it a cookie file, but we can't
+      read that file (probaby due to permissions).
+    
+    stem.connection.IncorrectCookieValue (*)
+      Tor allows for authentication by reading it a cookie file, but rejected
+      the contents of that file.
+    
+    stem.connection.OpenAuthRejected (*)
+      Tor says that it allows for authentication without any credentials, but
+      then rejected our authentication attempt.
+    
+    stem.connection.MissingAuthInfo (*)
+      Tor provided us with a PROTOCOLINFO reply that is technically valid, but
+      missing the information we need to authenticate.
+    
+    stem.connection.AuthenticationFailure (*)
+      There are numerous other ways that authentication could have failed
+      including socket failures, malformed controller responses, etc. These
+      mostly constitute transient failures or bugs.
+    
+    * In practice it is highly unusual for this to occure, being more of a
+      theoretical possability rather than something you should expect. It's
+      fine to treat these as errors. If you have a use case where this commonly
+      happens, please file a ticket on 'trac.torproject.org'.
+      
+      In the future new AuthenticationFailure subclasses may be added to allow
+      for better error handling.
+  """
+  
+  if not protocolinfo_response:
+    try:
+      protocolinfo_response = get_protocolinfo(control_socket)
+    except stem.socket.ProtocolError:
+      raise IncorrectSocketType("unable to use the control socket")
+    except stem.socket.SocketError, exc:
+      raise AuthenticationFailure("socket connection failed (%s)" % exc)
+  
+  auth_methods = list(protocolinfo_response.auth_methods)
+  auth_exceptions = []
+  
+  if len(auth_methods) == 0:
+    raise NoAuthMethods("our PROTOCOLINFO response did not have any methods for authenticating")
+  
+  # remove authentication methods that are either unknown or for which we don't
+  # have an input
+  if AuthMethod.UNKNOWN in auth_methods:
+    auth_methods.remove(AuthMethod.UNKNOWN)
+    
+    unknown_methods = protocolinfo_response.unknown_auth_methods
+    plural_label = "s" if len(unknown_methods) > 1 else ""
+    methods_label = ", ".join(unknown_methods)
+    
+    # we... er, can't do anything with only unrecognized auth types
+    if not auth_methods:
+      exc_msg = "unrecognized authentication method%s (%s)" % (plural_label, methods_label)
+      auth_exceptions.append(UnrecognizedAuthMethods(exc_msg, unknown_methods))
+    else:
+      LOGGER.debug("Authenticating to a socket with unrecognized auth method%s, ignoring them: %s" % (plural_label, methods_label))
+  
+  if AuthMethod.COOKIE in auth_methods and protocolinfo_response.cookie_path == None:
+    auth_methods.remove(AuthMethod.COOKIE)
+    auth_exceptions.append(NoAuthCookie("our PROTOCOLINFO reponse did not have the location of our authentication cookie"))
+  
+  if AuthMethod.PASSWORD in auth_methods and password == None:
+    auth_methods.remove(AuthMethod.PASSWORD)
+    auth_exceptions.append(MissingPassword("no passphrase provided"))
+  
+  # iterating over AuthMethods so we can try them in this order
+  for auth_type in (AuthMethod.NONE, AuthMethod.PASSWORD, AuthMethod.COOKIE):
+    if not auth_type in auth_methods: continue
+    
+    try:
+      if auth_type == AuthMethod.NONE:
+        authenticate_none(control_socket, False)
+      elif auth_type == AuthMethod.PASSWORD:
+        authenticate_password(control_socket, password, False)
+      elif auth_type == AuthMethod.COOKIE:
+        authenticate_cookie(control_socket, protocolinfo_response.cookie_path, False)
+      
+      return # success!
+    except OpenAuthRejected, exc:
+      auth_exceptions.append(exc)
+    except IncorrectPassword, exc:
+      auth_exceptions.append(exc)
+    except PasswordAuthRejected, exc:
+      # Since the PROTOCOLINFO says password auth is available we can assume
+      # that if PasswordAuthRejected is raised it's being raised in error.
+      LOGGER.debug("The authenticate_password method raised a PasswordAuthRejected when password auth should be available. Stem may need to be corrected to recognize this response: %s" % exc)
+      auth_exceptions.append(IncorrectPassword(str(exc)))
+    except (IncorrectCookieSize, UnreadableCookieFile, IncorrectCookieValue), exc:
+      auth_exceptions.append(exc)
+    except CookieAuthRejected, exc:
+      LOGGER.debug("The authenticate_cookie method raised a CookieAuthRejected when cookie auth should be available. Stem may need to be corrected to recognize this response: %s" % exc)
+      auth_exceptions.append(IncorrectCookieValue(str(exc)))
+    except stem.socket.ControllerError, exc:
+      auth_exceptions.append(AuthenticationFailure(str(exc)))
+  
+  # All authentication attempts failed. Raise the exception that takes priority
+  # according to our pydocs.
+  
+  for exc_type in AUTHENTICATE_EXCEPTIONS:
+    for auth_exc in auth_exceptions:
+      if isinstance(auth_exc, exc_type):
+        raise auth_exc
+  
+  # We really, really shouldn't get here. It means that auth_exceptions is
+  # either empty or contains something that isn't an AuthenticationFailure.
+  
+  raise AssertionError("BUG: Authenticaion failed without providing a recognized exception: %s" % str(auth_exceptions))
 
 def authenticate_none(control_socket, suppress_ctl_errors = True):
   """
