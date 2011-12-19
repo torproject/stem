@@ -25,9 +25,12 @@ class TestSystem(unittest.TestCase):
     # legitemately fail.
     
     if self.is_extra_tor_running == None:
-      pgrep_results = stem.util.system.call("pgrep -x tor")
-      self.is_extra_tor_running = len(pgrep_results) > 1
-  
+      if not stem.util.system.is_bsd():
+        pgrep_results = stem.util.system.call("pgrep -x tor")
+        self.is_extra_tor_running = len(pgrep_results) > 1
+      else:
+        pgrep_results = stem.util.system.call("ps -axo pid,command,args  | grep -i tor | awk '{ print $1}'")
+        self.is_extra_tor_running = len(pgrep_results) > 1
   def tearDown(self):
     # resets call mocking back to being disabled
     stem.util.system.CALL_MOCKING = None
