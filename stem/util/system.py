@@ -136,6 +136,7 @@ def is_running(command):
       command_listing = call(secondary_resolver)
     
     if command_listing:
+      command_listing = map(str.strip, command_listing)
       return command in command_listing
   
   return None
