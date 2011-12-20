@@ -1,6 +1,6 @@
 """
 Integration tests for authenticating to the control socket via
-stem.connection.authenticate_* functions.
+stem.connection.authenticate* functions.
 """
 
 import os
@@ -9,6 +9,7 @@ import functools
 
 import test.runner
 import stem.connection
+import stem.socket
 
 # Responses given by tor for various authentication failures. These may change
 # in the future and if they do then this test should be updated.
@@ -34,6 +35,41 @@ class TestAuthenticate(unittest.TestCase):
     # none of these tests apply if there's no control connection
     if connection_type == test.runner.TorConnection.NONE:
       self.skipTest("(no connection)")
+  
+  def test_authenticate_general_example(self):
+    """
+    Tests the authenticate function with something like its pydoc example.
+    """
+    
+    connection_type = test.runner.get_runner().get_connection_type()
+    connection_options = test.runner.CONNECTION_OPTS[connection_type]
+    
+    try:
+      control_socket = stem.socket.ControlPort(control_port = test.runner.CONTROL_PORT)
+    except stem.socket.SocketError:
+      # assert that we didn't have a socket to connect to
+      self.assertFalse(test.runner.OPT_PORT in connection_options)
+      return
+    
+    try:
+      # this authenticate call should work for everything but password-only auth
+      stem.connection.authenticate(control_socket)
+      self._exercise_socket(control_socket)
+    except stem.connection.IncorrectSocketType:
+      self.fail()
+    except stem.connection.MissingPassword:
+      self.assertTrue(test.runner.OPT_PASSWORD in connection_options)
+      controller_password = test.runner.CONTROL_PASSWORD
+      
+      try:
+        stem.connection.authenticate_password(control_socket, controller_password)
+        self._exercise_socket(control_socket)
+      except stem.connection.PasswordAuthFailed:
+        self.fail()
+    except stem.connection.AuthenticationFailure, exc:
+      self.fail()
+    finally:
+      control_socket.close()
   
   def test_authenticate_none(self):
     """
@@ -265,8 +301,7 @@ class TestAuthenticate(unittest.TestCase):
       stem.connection.AuthenticationFailure if the authentication fails
     """
     
-    runner = test.runner.get_runner()
-    control_socket = runner.get_tor_socket(False)
+    control_socket = test.runner.get_runner().get_tor_socket(False)
     auth_function = self._get_auth_function(control_socket, auth_type, *auth_args)
     
     # run the authentication, re-raising if there's a problem
@@ -277,9 +312,17 @@ class TestAuthenticate(unittest.TestCase):
       control_socket.close()
       raise exc
     
-    # issues a 'GETINFO config-file' query to confirm that we can use the socket
+    self._exercise_socket(control_socket)
+    control_socket.close()
+  
+  def _exercise_socket(self, control_socket):
+    """
+    Checks that we can now use the socket by issuing a 'GETINFO config-file'
+    query.
+    """
+    
+    torrc_path = test.runner.get_runner().get_torrc_path()
     control_socket.send("GETINFO config-file")
     config_file_response = control_socket.recv()
-    self.assertEquals("config-file=%s\nOK" % runner.get_torrc_path(), str(config_file_response))
-    control_socket.close()
+    self.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
 
