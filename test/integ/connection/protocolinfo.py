@@ -118,6 +118,27 @@ class TestProtocolInfo(unittest.TestCase):
       # we don't have a control socket
       self.assertRaises(stem.socket.SocketError, stem.socket.ControlSocketFile, test.runner.CONTROL_SOCKET_PATH)
   
+  def test_multiple_protocolinfo_calls(self):
+    """
+    Tests making repeated PROTOCOLINFO queries. This use case is interesting
+    because tor will shut down the socket and stem should transparently
+    re-establish it.
+    """
+    
+    runner = test.runner.get_runner()
+    connection_type = runner.get_connection_type()
+    
+    if connection_type == test.runner.TorConnection.NONE:
+      self.skipTest("(no connection)")
+    
+    control_socket = runner.get_tor_socket(False)
+    
+    for i in range(5):
+      protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
+      self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
+    
+    control_socket.close()
+  
   def assert_protocolinfo_attr(self, protocolinfo_response, connection_type):
     """
     Makes assertions that the protocolinfo response's attributes match those of

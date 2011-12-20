@@ -521,9 +521,6 @@ def get_protocolinfo(control_socket):
   Issues a PROTOCOLINFO query to a control socket, getting information about
   the tor process running on it.
   
-  Tor hangs up on sockets after receiving a PROTOCOLINFO query if it isn't next
-  followed by authentication.
-  
   Arguments:
     control_socket (stem.socket.ControlSocket) - connected tor control socket
   
@@ -538,6 +535,15 @@ def get_protocolinfo(control_socket):
   
   control_socket.send("PROTOCOLINFO 1")
   protocolinfo_response = control_socket.recv()
+  
+  # Tor hangs up on sockets after receiving a PROTOCOLINFO query if it isn't
+  # next followed by authentication. Transparently reconnect if that happens.
+  
+  if str(protocolinfo_response) == "Authentication required.":
+    control_socket.connect()
+    control_socket.send("PROTOCOLINFO 1")
+    protocolinfo_response = control_socket.recv()
+  
   ProtocolInfoResponse.convert(protocolinfo_response)
   
   # attempt ot expand relative cookie paths via the control port or socket file
@@ -640,7 +646,7 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
     
     # sanity check that we're a PROTOCOLINFO response
     if not list(self)[0].startswith("PROTOCOLINFO"):
-      msg = "Message is not a PROTOCOLINFO response"
+      msg = "Message is not a PROTOCOLINFO response (%s)" % self
       raise stem.socket.ProtocolError(msg)
     
     for line in self:
