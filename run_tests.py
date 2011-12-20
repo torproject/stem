@@ -42,8 +42,8 @@ UNIT_TESTS = (("stem.socket.ControlMessage", test.unit.socket.control_message.Te
              )
 
 INTEG_TESTS = (("stem.socket.ControlMessage", test.integ.socket.control_message.TestControlMessage),
-              ("stem.connection.authenticate_*", test.integ.connection.authentication.TestAuthenticate),
-              ("stem.connection.ProtocolInfoResponse", test.integ.connection.protocolinfo.TestProtocolInfo),
+              ("stem.connection.authenticate", test.integ.connection.authentication.TestAuthenticate),
+              ("stem.connection.get_protocolinfo", test.integ.connection.protocolinfo.TestProtocolInfo),
                ("stem.util.conf", test.integ.util.conf.TestConf),
                ("stem.util.system", test.integ.util.system.TestSystem),
               )

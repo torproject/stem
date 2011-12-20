@@ -36,6 +36,16 @@ class TestAuthenticate(unittest.TestCase):
     if connection_type == test.runner.TorConnection.NONE:
       self.skipTest("(no connection)")
   
+  def test_authenticate_general(self):
+    """
+    Tests that the authenticate function can authenticate to our socket.
+    """
+    
+    control_socket = test.runner.get_runner().get_tor_socket(False)
+    stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD)
+    self._exercise_socket(control_socket)
+    control_socket.close()
+  
   def test_authenticate_general_example(self):
     """
     Tests the authenticate function with something like its pydoc example.
@@ -66,7 +76,7 @@ class TestAuthenticate(unittest.TestCase):
         self._exercise_socket(control_socket)
       except stem.connection.PasswordAuthFailed:
         self.fail()
-    except stem.connection.AuthenticationFailure, exc:
+    except stem.connection.AuthenticationFailure:
       self.fail()
     finally:
       control_socket.close()
