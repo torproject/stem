@@ -81,6 +81,48 @@ class TestAuthenticate(unittest.TestCase):
     finally:
       control_socket.close()
   
+  def test_authenticate_general_password(self):
+    """
+    Tests the authenticate function's password argument.
+    """
+    
+    # this is a much better test if we're just using password auth, since
+    # authenticate will work reguardless if there's something else to
+    # authenticate with
+    
+    runner = test.runner.get_runner()
+    is_password_only = test.runner.TorConnection.PASSWORD == runner.get_connection_type()
+    
+    # tests without a password
+    control_socket = runner.get_tor_socket(False)
+    auth_function = functools.partial(stem.connection.authenticate, control_socket)
+    
+    if is_password_only:
+      self.assertRaises(stem.connection.MissingPassword, auth_function)
+    else:
+      auth_function()
+      self._exercise_socket(control_socket)
+    
+    control_socket.close()
+    
+    # tests with the incorrect password
+    control_socket = runner.get_tor_socket(False)
+    auth_function = functools.partial(stem.connection.authenticate, control_socket, "blarg")
+    
+    if is_password_only:
+      self.assertRaises(stem.connection.IncorrectPassword, auth_function)
+    else:
+      auth_function()
+      self._exercise_socket(control_socket)
+    
+    control_socket.close()
+    
+    # tests with the right password
+    control_socket = runner.get_tor_socket(False)
+    stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD)
+    self._exercise_socket(control_socket)
+    control_socket.close()
+  
   def test_authenticate_none(self):
     """
     Tests the authenticate_none function.
