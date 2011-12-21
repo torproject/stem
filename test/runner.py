@@ -345,24 +345,8 @@ class Runner:
       control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
     else: return None
     
-    # TODO: replace with higher level authentication functions when we have them
     if authenticate:
-      if OPT_COOKIE in conn_opts:
-        auth_cookie = open(cookie_path, "r")
-        auth_cookie_contents = auth_cookie.read()
-        auth_cookie.close()
-        
-        control_socket.send("AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
-      elif OPT_PASSWORD in conn_opts:
-        control_socket.send("AUTHENTICATE \"%s\"" % CONTROL_PASSWORD)
-      else:
-        control_socket.send("AUTHENTICATE")
-      
-      authenticate_response = control_socket.recv()
-      
-      if str(authenticate_response) != "OK":
-        # authentication was rejected
-        logging.error("AUTHENTICATE returned a failure response: %s" % authenticate_response)
+      stem.connection.authenticate(control_socket, CONTROL_PASSWORD)
     
     return control_socket
   
