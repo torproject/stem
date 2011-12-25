@@ -16,6 +16,7 @@ import test.runner
 import test.unit.version
 import test.unit.socket.control_message
 import test.unit.socket.control_line
+import test.unit.connection.authentication
 import test.unit.connection.protocolinfo
 import test.unit.util.enum
 import test.unit.util.system
@@ -36,6 +37,7 @@ DIVIDER = "=" * 70
 UNIT_TESTS = (("stem.socket.ControlMessage", test.unit.socket.control_message.TestControlMessage),
               ("stem.socket.ControlLine", test.unit.socket.control_line.TestControlLine),
               ("stem.types.Version", test.unit.version.TestVersion),
+              ("stem.connection.authenticate", test.unit.connection.authentication.TestAuthenticate),
               ("stem.connection.ProtocolInfoResponse", test.unit.connection.protocolinfo.TestProtocolInfoResponse),
               ("stem.util.enum", test.unit.util.enum.TestEnum),
               ("stem.util.system", test.unit.util.system.TestSystem),
