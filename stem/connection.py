@@ -1,6 +1,9 @@
 """
 Functions for connecting and authenticating to the tor process.
 
+connect_port - Convenience method to get an authenticated control connection.
+connect_socket_file - Similar to connect_port, but for control socket files.
+
 authenticate - Main method for authenticating to a control socket.
 authenticate_none - Authenticates to an open control socket.
 authenticate_password - Authenticates to a socket supporting password auth.
@@ -40,6 +43,7 @@ AuthenticationFailure - Base exception raised for authentication failures.
 """
 
 import os
+import getpass
 import logging
 import binascii
 
@@ -49,6 +53,9 @@ import stem.util.enum
 import stem.util.system
 
 LOGGER = logging.getLogger("stem")
+
+# enums representing classes that the connect_* methods can return
+Controller = stem.util.enum.Enum("NONE")
 
 # Methods by which a controller can authenticate to the control port. Tor gives
 # a list of all the authentication methods it will accept in response to
@@ -146,6 +153,86 @@ AUTHENTICATE_EXCEPTIONS = (
   MissingAuthInfo,
   AuthenticationFailure,
 )
+
+def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, controller = Controller.NONE):
+  """
+  Convenience function for quickly getting a control connection. This is very
+  handy for debugging or CLI setup, handling setup and prompting for a password
+  if necessary (and none is provided). If any issues arise this prints a
+  description of the problem and returns None.
+  
+  Arguments:
+    control_addr (str)      - ip address of the controller
+    control_port (int)      - port number of the controller
+    password (str)          - passphrase to authenticate to the socket
+    controller (Controller) - controller type to be returned
+  
+  Returns:
+    Authenticated control connection, the type based on the controller enum...
+      Controller.NONE => stem.socket.ControlPort
+  """
+  
+  # TODO: replace the controller arg's default when we have something better
+  
+  try:
+    control_port = stem.socket.ControlPort(control_addr, control_port)
+  except stem.socket.SocketError, exc:
+    print exc
+    return None
+  
+  return _connect(control_port, password, controller)
+
+def connect_socket_file(socket_path = "/var/run/tor/control", password = None, controller = Controller.NONE):
+  """
+  Convenience function for quickly getting a control connection. For more
+  information see the connect_port function.
+  
+  Arguments:
+    socket_path (str)       - path where the control socket is located
+    password (str)          - passphrase to authenticate to the socket
+    controller (Controller) - controller type to be returned
+  
+  Returns:
+    Authenticated control connection, the type based on the controller enum.
+  """
+  
+  try:
+    control_socket = stem.socket.ControlSocketFile(socket_path)
+  except stem.socket.SocketError, exc:
+    print exc
+    return None
+  
+  return _connect(control_socket, password, controller)
+
+def _connect(control_socket, password, controller):
+  """
+  Common implementation for the connect_* functions.
+  
+  Arguments:
+    control_socket (stem.socket.ControlSocket) - socket being authenticated to
+    password (str)          - passphrase to authenticate to the socket
+    controller (Controller) - controller type to be returned
+  
+  Returns:
+    Authenticated control connection with a type based on the controller enum.
+  """
+  
+  try:
+    authenticate(control_socket, password)
+    
+    if controller == Controller.NONE:
+      return control_socket
+  except MissingPassword:
+    assert password == None, "BUG: authenticate raised MissingPassword despite getting one"
+    
+    try: password = getpass.getpass("Controller password: ")
+    except KeyboardInterrupt: return None
+    
+    return _connect(control_socket, password, controller)
+  except AuthenticationFailure, exc:
+    control_socket.close()
+    print "Unable to authenticate: %s" % exc
+    return None
 
 def authenticate(control_socket, password = None, protocolinfo_response = None):
   """

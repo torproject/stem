@@ -43,7 +43,7 @@ class TestAuthenticate(unittest.TestCase):
     
     control_socket = test.runner.get_runner().get_tor_socket(False)
     stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD)
-    self._exercise_socket(control_socket)
+    test.runner.exercise_socket(self, control_socket)
     control_socket.close()
   
   def test_authenticate_general_example(self):
@@ -64,7 +64,7 @@ class TestAuthenticate(unittest.TestCase):
     try:
       # this authenticate call should work for everything but password-only auth
       stem.connection.authenticate(control_socket)
-      self._exercise_socket(control_socket)
+      test.runner.exercise_socket(self, control_socket)
     except stem.connection.IncorrectSocketType:
       self.fail()
     except stem.connection.MissingPassword:
@@ -73,7 +73,7 @@ class TestAuthenticate(unittest.TestCase):
       
       try:
         stem.connection.authenticate_password(control_socket, controller_password)
-        self._exercise_socket(control_socket)
+        test.runner.exercise_socket(self, control_socket)
       except stem.connection.PasswordAuthFailed:
         self.fail()
     except stem.connection.AuthenticationFailure:
@@ -101,7 +101,7 @@ class TestAuthenticate(unittest.TestCase):
       self.assertRaises(stem.connection.MissingPassword, auth_function)
     else:
       auth_function()
-      self._exercise_socket(control_socket)
+      test.runner.exercise_socket(self, control_socket)
     
     control_socket.close()
     
@@ -113,14 +113,14 @@ class TestAuthenticate(unittest.TestCase):
       self.assertRaises(stem.connection.IncorrectPassword, auth_function)
     else:
       auth_function()
-      self._exercise_socket(control_socket)
+      test.runner.exercise_socket(self, control_socket)
     
     control_socket.close()
     
     # tests with the right password
     control_socket = runner.get_tor_socket(False)
     stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD)
-    self._exercise_socket(control_socket)
+    test.runner.exercise_socket(self, control_socket)
     control_socket.close()
   
   def test_authenticate_none(self):
@@ -364,17 +364,6 @@ class TestAuthenticate(unittest.TestCase):
       control_socket.close()
       raise exc
     
-    self._exercise_socket(control_socket)
+    test.runner.exercise_socket(self, control_socket)
     control_socket.close()
-  
-  def _exercise_socket(self, control_socket):
-    """
-    Checks that we can now use the socket by issuing a 'GETINFO config-file'
-    query.
-    """
-    
-    torrc_path = test.runner.get_runner().get_torrc_path()
-    control_socket.send("GETINFO config-file")
-    config_file_response = control_socket.recv()
-    self.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
 

@@ -106,6 +106,21 @@ def get_torrc(connection_type = DEFAULT_TOR_CONNECTION):
     return torrc + "\n".join(connection_opt) + "\n"
   else: return torrc
 
+def exercise_socket(test_case, control_socket):
+  """
+  Checks that we can now use the socket by issuing a 'GETINFO config-file'
+  query.
+  
+  Arguments:
+    test_case (unittest.TestCase) - unit testing case being ran
+    control_socket (stem.socket.ControlSocket) - socket to be tested
+  """
+  
+  torrc_path = get_runner().get_torrc_path()
+  control_socket.send("GETINFO config-file")
+  config_file_response = control_socket.recv()
+  test_case.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
+
 class RunnerStopped(Exception):
   "Raised when we try to use a Runner that doesn't have an active tor instance"
   pass
