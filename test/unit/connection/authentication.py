@@ -29,6 +29,7 @@ def get_protocolinfo(auth_methods):
   protocolinfo_response = stem.socket.recv_message(StringIO.StringIO(control_message))
   stem.connection.ProtocolInfoResponse.convert(protocolinfo_response)
   protocolinfo_response.auth_methods = auth_methods
+  protocolinfo_response.cookie_path = "/tmp/blah"
   return lambda *args: protocolinfo_response
 
 def _get_all_auth_method_combinations():
@@ -135,11 +136,19 @@ class TestAuthenticate(unittest.TestCase):
             stem.connection.authenticate_password = raise_exception(auth_password_exc)
             stem.connection.authenticate_cookie = raise_exception(auth_cookie_exc)
             
-            # calling authenticate should either succeed or raise a
-            # AuthenticationFailure subclass
+            auth_tuple_set = (
+              (stem.connection.AuthMethod.NONE, auth_none_exc),
+              (stem.connection.AuthMethod.PASSWORD, auth_password_exc),
+              (stem.connection.AuthMethod.COOKIE, auth_cookie_exc))
             
-            try:
-              stem.connection.authenticate(None, protocolinfo_response = protocolinfo_input)
-            except stem.connection.AuthenticationFailure:
-              pass
+            expect_success = False
+            for auth_type, auth_exc in auth_tuple_set:
+              if auth_type in auth_methods and not auth_exc:
+                expect_success = True
+                break
+            
+            if expect_success:
+              stem.connection.authenticate(None, "blah", protocolinfo_input)
+            else:
+              self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, "blah", protocolinfo_input)
 
