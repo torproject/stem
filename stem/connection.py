@@ -7,7 +7,7 @@ authenticated control connection. This is handy for CLI applications and the
 python interactive interpretor, but does several things that makes it
 undesirable for applications (uses stdin/stdout, suppresses exceptions, etc).
 
-The 'authenicate' function, however, gives easy but fine-grained control over
+The 'authenticate' function, however, gives easy but fine-grained control over
 the authentication process. For instance...
 
   import sys
@@ -319,7 +319,7 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
     
     stem.connection.UnreadableCookieFile
       Tor allows for authentication by reading it a cookie file, but we can't
-      read that file (probaby due to permissions).
+      read that file (probably due to permissions).
     
     stem.connection.IncorrectCookieValue (*)
       Tor allows for authentication by reading it a cookie file, but rejected
@@ -338,8 +338,8 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
       including socket failures, malformed controller responses, etc. These
       mostly constitute transient failures or bugs.
     
-    * In practice it is highly unusual for this to occure, being more of a
-      theoretical possability rather than something you should expect. It's
+    * In practice it is highly unusual for this to occur, being more of a
+      theoretical possibility rather than something you should expect. It's
       fine to treat these as errors. If you have a use case where this commonly
       happens, please file a ticket on 'trac.torproject.org'.
       
@@ -379,7 +379,7 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
   
   if AuthMethod.COOKIE in auth_methods and protocolinfo_response.cookie_path == None:
     auth_methods.remove(AuthMethod.COOKIE)
-    auth_exceptions.append(NoAuthCookie("our PROTOCOLINFO reponse did not have the location of our authentication cookie"))
+    auth_exceptions.append(NoAuthCookie("our PROTOCOLINFO response did not have the location of our authentication cookie"))
   
   if AuthMethod.PASSWORD in auth_methods and password == None:
     auth_methods.remove(AuthMethod.PASSWORD)
@@ -426,7 +426,7 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
   # We really, really shouldn't get here. It means that auth_exceptions is
   # either empty or contains something that isn't an AuthenticationFailure.
   
-  raise AssertionError("BUG: Authenticaion failed without providing a recognized exception: %s" % str(auth_exceptions))
+  raise AssertionError("BUG: Authentication failed without providing a recognized exception: %s" % str(auth_exceptions))
 
 def authenticate_none(control_socket, suppress_ctl_errors = True):
   """
@@ -533,7 +533,7 @@ def authenticate_cookie(control_socket, cookie_path, suppress_ctl_errors = True)
   validation that this is a cookie before presenting the contents to the
   socket.
   
-  The IncorrectCookieSize and UnreadableCookieFile exceptions take precidence
+  The IncorrectCookieSize and UnreadableCookieFile exceptions take precedence
   over the other types.
   
   If authentication fails tor will disconnect and we'll make a best effort
