@@ -1,5 +1,43 @@
 """
-Functions for connecting and authenticating to the tor process.
+Functions for connecting and authenticating to the tor process. Most commonly
+you'll either want the 'connect_*' or 'authenticate' function.
+
+The 'connect_*' functions give an easy, one line method for getting an
+authenticated control connection. This is handy for CLI applications and the
+python interactive interpretor, but does several things that makes it
+undesirable for applications (uses stdin/stdout, suppresses exceptions, etc).
+
+The 'authenicate' function, however, gives easy but fine-grained control over
+the authentication process. For instance...
+
+  import sys
+  import getpass
+  import stem.connection
+  import stem.socket
+  
+  try:
+    control_socket = stem.socket.ControlPort(control_port = 9051)
+  except stem.socket.SocketError, exc:
+    print "Unable to connect to port 9051 (%s)" % exc
+    sys.exit(1)
+  
+  try:
+    stem.connection.authenticate(control_socket)
+  except stem.connection.IncorrectSocketType:
+    print "Please check in your torrc that 9051 is the ControlPort."
+    print "Maybe you configured it to be the ORPort or SocksPort instead?"
+    sys.exit(1)
+  except stem.connection.MissingPassword:
+    controller_password = getpass.getpass("Controller password: ")
+    
+    try:
+      stem.connection.authenticate_password(control_socket, controller_password)
+    except stem.connection.PasswordAuthFailed:
+      print "Unable to authenticate, password is incorrect"
+      sys.exit(1)
+  except stem.connection.AuthenticationFailure, exc:
+    print "Unable to authenticate: %s" % exc
+    sys.exit(1)
 
 connect_port - Convenience method to get an authenticated control connection.
 connect_socket_file - Similar to connect_port, but for control socket files.
@@ -242,36 +280,7 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
   
   All exceptions are subclasses of AuthenticationFailure so, in practice,
   callers should catch the types of authentication failure that they care
-  about, then have a AuthenticationFailure catch-all at the end. For example...
-  
-    import sys
-    import getpass
-    import stem.connection
-    import stem.socket
-    
-    try:
-      control_socket = stem.socket.ControlPort(control_port = 9051)
-    except stem.socket.SocketError, exc:
-      print "Unable to connect to port 9051 (%s)" % exc
-      sys.exit(1)
-    
-    try:
-      stem.connection.authenticate(control_socket)
-    except stem.connection.IncorrectSocketType:
-      print "Please check in your torrc that 9051 is the ControlPort."
-      print "Maybe you configured it to be the ORPort or SocksPort instead?"
-      sys.exit(1)
-    except stem.connection.MissingPassword:
-      controller_password = getpass.getpass("Controller password: ")
-      
-      try:
-        stem.connection.authenticate_password(control_socket, controller_password)
-      except stem.connection.PasswordAuthFailed:
-        print "Unable to authenticate, password is incorrect"
-        sys.exit(1)
-    except stem.connection.AuthenticationFailure, exc:
-      print "Unable to authenticate: %s" % exc
-      sys.exit(1)
+  about, then have a AuthenticationFailure catch-all at the end.
   
   Arguments:
     control_socket (stem.socket.ControlSocket) - socket to be authenticated
