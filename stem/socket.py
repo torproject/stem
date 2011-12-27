@@ -3,11 +3,6 @@ Supports message based communication with sockets speaking the tor control
 protocol. This lets users send messages as basic strings and receive responses
 as instances of the ControlMessage class.
 
-ControllerError - Base exception raised when using the controller.
-  |- ProtocolError - Malformed socket data.
-  +- SocketError - Communication with the socket failed.
-     +- SocketClosed - Socket has been shut down.
-
 ControlSocket - Socket wrapper that speaks the tor control protocol.
   |- ControlPort - Control connection via a port.
   |  |- get_address - provides the ip address of our socket
@@ -39,6 +34,11 @@ ControlLine - String subclass with methods for parsing controller responses.
 send_message - Writes a message to a control socket.
 recv_message - Reads a ControlMessage from a control socket.
 send_formatting - Performs the formatting expected from sent messages.
+
+ControllerError - Base exception raised when using the controller.
+  |- ProtocolError - Malformed socket data.
+  +- SocketError - Communication with the socket failed.
+     +- SocketClosed - Socket has been shut down.
 """
 
 from __future__ import absolute_import

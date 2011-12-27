@@ -1,6 +1,21 @@
 """
 Functions for connecting and authenticating to the tor process.
 
+authenticate - Main method for authenticating to a control socket.
+authenticate_none - Authenticates to an open control socket.
+authenticate_password - Authenticates to a socket supporting password auth.
+authenticate_cookie - Authenticates to a socket supporting cookie auth.
+
+get_protocolinfo - Issues a PROTOCOLINFO query.
+ProtocolInfoResponse - Reply from a PROTOCOLINFO query.
+  |- Attributes:
+  |  |- protocol_version
+  |  |- tor_version
+  |  |- auth_methods
+  |  |- unknown_auth_methods
+  |  +- cookie_path
+  +- convert - parses a ControlMessage, turning it into a ProtocolInfoResponse
+
 AuthenticationFailure - Base exception raised for authentication failures.
   |- UnrecognizedAuthMethods - Authentication methods are unsupported.
   |- IncorrectSocketType - Socket does not speak the tor control protocol.
@@ -22,21 +37,6 @@ AuthenticationFailure - Base exception raised for authentication failures.
   +- MissingAuthInfo - Unexpected PROTOCOLINFO response, missing auth info.
      |- NoAuthMethods - Missing any methods for authenticating.
      +- NoAuthCookie - Supports cookie auth but doesn't have its path.
-
-authenticate - Main method for authenticating to a control socket.
-authenticate_none - Authenticates to an open control socket.
-authenticate_password - Authenticates to a socket supporting password auth.
-authenticate_cookie - Authenticates to a socket supporting cookie auth.
-
-get_protocolinfo - issues a PROTOCOLINFO query
-ProtocolInfoResponse - Reply from a PROTOCOLINFO query.
-  |- Attributes:
-  |  |- protocol_version
-  |  |- tor_version
-  |  |- auth_methods
-  |  |- unknown_auth_methods
-  |  +- cookie_path
-  +- convert - parses a ControlMessage, turning it into a ProtocolInfoResponse
 """
 
 import os
