@@ -3,6 +3,8 @@ Variety of filters for the python unit testing output, which can be chained
 together for improved readability.
 """
 
+import re
+
 import stem.util.enum
 import stem.util.term as term
 
@@ -66,6 +68,16 @@ def colorize(line_type, line_content):
   """
   
   return term.format(line_content, *LINE_ATTR[line_type])
+
+def strip_module(line_type, line_content):
+  """
+  Removes the module name from testing output. This information tends to be
+  repetative, and redundant with the headers.
+  """
+  
+  m = re.match(".*( \(.*?\)).*", line_content)
+  if m: line_content = line_content.replace(m.groups()[0], "", 1)
+  return line_content
 
 class ErrorTracker:
   """

@@ -35,23 +35,24 @@ OPT = "uic:t:h"
 OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "help"]
 DIVIDER = "=" * 70
 
-# (name, class) tuples for all of our unit and integration tests
-UNIT_TESTS = (("stem.socket.ControlMessage", test.unit.socket.control_message.TestControlMessage),
-              ("stem.socket.ControlLine", test.unit.socket.control_line.TestControlLine),
-              ("stem.types.Version", test.unit.version.TestVersion),
-              ("stem.connection.authenticate", test.unit.connection.authentication.TestAuthenticate),
-              ("stem.connection.ProtocolInfoResponse", test.unit.connection.protocolinfo.TestProtocolInfoResponse),
-              ("stem.util.enum", test.unit.util.enum.TestEnum),
-              ("stem.util.system", test.unit.util.system.TestSystem),
-             )
+UNIT_TESTS = (
+  test.unit.socket.control_message.TestControlMessage,
+  test.unit.socket.control_line.TestControlLine,
+  test.unit.version.TestVersion,
+  test.unit.connection.authentication.TestAuthenticate,
+  test.unit.connection.protocolinfo.TestProtocolInfoResponse,
+  test.unit.util.enum.TestEnum,
+  test.unit.util.system.TestSystem,
+)
 
-INTEG_TESTS = (("stem.socket.ControlMessage", test.integ.socket.control_message.TestControlMessage),
-              ("stem.connection.authenticate", test.integ.connection.authentication.TestAuthenticate),
-              ("stem.connection.connect_*", test.integ.connection.connect.TestConnect),
-              ("stem.connection.get_protocolinfo", test.integ.connection.protocolinfo.TestProtocolInfo),
-               ("stem.util.conf", test.integ.util.conf.TestConf),
-               ("stem.util.system", test.integ.util.system.TestSystem),
-              )
+INTEG_TESTS = (
+  test.integ.socket.control_message.TestControlMessage,
+  test.integ.connection.authentication.TestAuthenticate,
+  test.integ.connection.connect.TestConnect,
+  test.integ.connection.protocolinfo.TestProtocolInfo,
+  test.integ.util.conf.TestConf,
+  test.integ.util.system.TestSystem,
+)
 
 # Integration tests above the basic suite.
 TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "CONN_NONE", "CONN_OPEN", "CONN_PASSWORD", "CONN_COOKIE", "CONN_MULTIPLE", "CONN_SOCKET", "CONN_SCOOKIE", "CONN_ALL")])
@@ -175,13 +176,13 @@ if __name__ == '__main__':
     print
   
   error_tracker = test.output.ErrorTracker()
-  output_filters = (error_tracker.get_filter(), test.output.colorize, )
+  output_filters = (error_tracker.get_filter(), test.output.strip_module, test.output.colorize)
   
   if run_unit_tests:
     print_divider("UNIT TESTS", True)
     
-    for name, test_class in UNIT_TESTS:
-      print_divider(name)
+    for test_class in UNIT_TESTS:
+      print_divider(test_class.__module__)
       suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
       test_results = StringIO.StringIO()
       unittest.TextTestRunner(test_results, verbosity=2).run(suite)
@@ -230,9 +231,9 @@ if __name__ == '__main__':
         print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
         
-        for name, test_class in INTEG_TESTS:
-          print_divider(name)
-          stem_logger.info("STARTING INTEGRATION TEST => %s" % name)
+        for test_class in INTEG_TESTS:
+          print_divider(test_class.__module__)
+          stem_logger.info("STARTING INTEGRATION TEST => %s" % test_class.__module__)
           suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
           test_results = StringIO.StringIO()
           unittest.TextTestRunner(test_results, verbosity=2).run(suite)
