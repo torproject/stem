@@ -79,6 +79,23 @@ def strip_module(line_type, line_content):
   if m: line_content = line_content.replace(m.groups()[0], "", 1)
   return line_content
 
+def align_results(line_type, line_content):
+  """
+  Strips the normal test results, and adds a right aligned variant instead with
+  a bold attribute.
+  """
+  
+  if line_type == LineType.CONTENT: return line_content
+  
+  # strip our current ending
+  for ending in LINE_ENDINGS:
+    if LINE_ENDINGS[ending] == line_type:
+      line_content = line_content.rstrip(ending).rstrip()
+      break
+  
+  new_ending = term.format(line_type.upper(), term.Attr.BOLD)
+  return "%-65s[%s]" % (line_content, new_ending)
+
 class ErrorTracker:
   """
   Stores any failure or error results we've encountered.

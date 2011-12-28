@@ -43,6 +43,11 @@ def format(msg, *attr):
     attributes and ending with a reset
   """
   
+  # if we have reset sequences in the message then apply our attributes
+  # after each of them
+  if RESET in msg:
+    return "".join([format(comp, *attr) for comp in msg.split(RESET)])
+  
   encodings = []
   for text_attr in attr:
     text_attr, encoding = stem.util.enum.to_camel_case(text_attr), None

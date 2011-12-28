@@ -176,7 +176,12 @@ if __name__ == '__main__':
     print
   
   error_tracker = test.output.ErrorTracker()
-  output_filters = (error_tracker.get_filter(), test.output.strip_module, test.output.colorize)
+  output_filters = (
+    error_tracker.get_filter(),
+    test.output.strip_module,
+    test.output.align_results,
+    test.output.colorize,
+  )
   
   if run_unit_tests:
     print_divider("UNIT TESTS", True)
