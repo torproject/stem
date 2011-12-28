@@ -12,6 +12,7 @@ import logging
 import unittest
 import StringIO
 
+import test.output
 import test.runner
 import test.unit.version
 import test.unit.socket.control_message
@@ -94,29 +95,9 @@ TEST_OUTPUT_ATTR = {
   "... skipped": (term.Color.BLUE,),
 }
 
-# lines that print_test_results have processed which contained a test failure
-PRINTED_ERRORS = []
-
 def print_divider(msg, is_header = False):
   attr = HEADER_ATTR if is_header else CATEGORY_ATTR
   print term.format("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
-
-def print_test_results(test_results):
-  test_results.seek(0)
-  for line in test_results.readlines():
-    line_attr = DEFAULT_TEST_ATTR
-    
-    for result in TEST_OUTPUT_ATTR:
-      if result in line:
-        line_attr = TEST_OUTPUT_ATTR[result]
-        
-        if result in ("... FAIL", "... ERROR"):
-          PRINTED_ERRORS.append(line)
-        
-        break
-    
-    if line_attr: line = term.format(line, *line_attr)
-    sys.stdout.write(line)
 
 if __name__ == '__main__':
   start_time = time.time()
@@ -193,6 +174,9 @@ if __name__ == '__main__':
     
     print
   
+  error_tracker = test.output.ErrorTracker()
+  output_filters = (error_tracker.get_filter(), test.output.colorize, )
+  
   if run_unit_tests:
     print_divider("UNIT TESTS", True)
     
@@ -201,7 +185,8 @@ if __name__ == '__main__':
       suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
       test_results = StringIO.StringIO()
       unittest.TextTestRunner(test_results, verbosity=2).run(suite)
-      print_test_results(test_results)
+      
+      sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
       print
     
     print
@@ -251,7 +236,8 @@ if __name__ == '__main__':
           suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
           test_results = StringIO.StringIO()
           unittest.TextTestRunner(test_results, verbosity=2).run(suite)
-          print_test_results(test_results)
+          
+          sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
           print
       except OSError:
         pass
@@ -262,10 +248,10 @@ if __name__ == '__main__':
   
   runtime_label = "(%i seconds)" % (time.time() - start_time)
   
-  if PRINTED_ERRORS:
+  if error_tracker.has_error_occured():
     print term.format("TESTING FAILED %s" % runtime_label, term.Color.RED, term.Attr.BOLD)
     
-    for line in PRINTED_ERRORS:
+    for line in error_tracker:
       print term.format("  %s" % line, term.Color.RED, term.Attr.BOLD)
   else:
     print term.format("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
