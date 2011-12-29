@@ -11,10 +11,10 @@ import stem.util.term as term
 LineType = stem.util.enum.Enum("OK", "FAIL", "ERROR", "SKIPPED", "CONTENT")
 
 LINE_ENDINGS = {
-  "... ok": LineType.OK,
-  "... FAIL": LineType.FAIL,
-  "... ERROR": LineType.ERROR,
-  "... skipped": LineType.SKIPPED,
+  " ... ok": LineType.OK,
+  " ... FAIL": LineType.FAIL,
+  " ... ERROR": LineType.ERROR,
+  " ... skipped": LineType.SKIPPED,
 }
 
 LINE_ATTR = {
@@ -49,7 +49,7 @@ def apply_filters(testing_output, *filters):
     line_type = LineType.CONTENT
     
     for ending in LINE_ENDINGS:
-      if line.endswith(ending):
+      if ending in line:
         line_type = LINE_ENDINGS[ending]
         break
     
@@ -90,11 +90,24 @@ def align_results(line_type, line_content):
   # strip our current ending
   for ending in LINE_ENDINGS:
     if LINE_ENDINGS[ending] == line_type:
-      line_content = line_content.rstrip(ending).rstrip()
+      line_content = line_content.replace(ending, "", 1)
       break
   
-  new_ending = term.format(line_type.upper(), term.Attr.BOLD)
-  return "%-65s[%s]" % (line_content, new_ending)
+  # skipped tests have extra single quotes around the reason
+  if line_type == LineType.SKIPPED:
+    line_content = line_content.replace("'(", "(", 1).replace(")'", ")", 1)
+  
+  if line_type == LineType.OK:
+    new_ending = "SUCCESS"
+  elif line_type in (LineType.FAIL, LineType.ERROR):
+    new_ending = "FAILURE"
+  elif line_type == LineType.SKIPPED:
+    new_ending = "SKIPPED"
+  else:
+    assert False, "Unexpected line type: %s" % line_type
+    return line_content
+  
+  return "%-61s[%s]" % (line_content, term.format(new_ending, term.Attr.BOLD))
 
 class ErrorTracker:
   """
