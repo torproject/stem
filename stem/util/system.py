@@ -484,7 +484,15 @@ def get_bsd_jail_id(pid):
     jid = ps_output[1].strip()
     if jid.isdigit(): return int(jid)
   
-  LOGGER.warn("Failed to figure out the FreeBSD jail id. Assuming 0.")
+  # TODO: Is this function exclusive to FreeBSD or does it work on other BSD
+  # systems? It should fail on OpenBSD but might work on OSX.
+  
+  os_name = os.uname()[0]
+  if os_name == "FreeBSD":
+    LOGGER.warn("Failed to figure out the FreeBSD jail id for pid %s. Guessing that it's not in a jail." % pid)
+  else:
+    LOGGER.debug("get_bsd_jail_id(%s): this function isn't supported on %s" % (pid, os_name))
+  
   return 0
 
 def is_relative_path(path):
