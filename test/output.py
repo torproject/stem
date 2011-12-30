@@ -4,6 +4,7 @@ together for improved readability.
 """
 
 import re
+import logging
 
 import stem.util.enum
 import stem.util.term as term
@@ -132,4 +133,25 @@ class ErrorTracker:
   def __iter__(self):
     for error_line in self._errors:
       yield error_line
+
+class LogBuffer(logging.Handler):
+  """
+  Basic log handler that listens for all stem events and stores them so they
+  can be read later. Log entries are cleared as they are read.
+  """
+  
+  def __init__(self):
+    logging.Handler.__init__(self, level = logging.DEBUG)
+    self.formatter = logging.Formatter(
+      fmt = '%(asctime)s [%(levelname)s] %(message)s',
+      datefmt = '%D %H:%M:%S')
+    
+    self._buffer = []
+  
+  def __iter__(self):
+    while self._buffer:
+      yield self.formatter.format(self._buffer.pop(0))
+  
+  def emit(self, record):
+    self._buffer.append(record)
 

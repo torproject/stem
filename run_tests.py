@@ -31,8 +31,8 @@ import test.integ.connection.protocolinfo
 import stem.util.enum
 import stem.util.term as term
 
-OPT = "uic:t:h"
-OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "help"]
+OPT = "uic:t:lh"
+OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log", "help"]
 DIVIDER = "=" * 70
 
 UNIT_TESTS = (
@@ -77,6 +77,7 @@ Runs tests for the stem library.
   -i, --integ           runs integration tests
   -c, --config PATH     path to a custom test configuration
   -t, --target TARGET   comma separated list of extra targets for integ tests
+  -l, --log             includes logging output with test results
   -h, --help            presents this help
 
   Integration targets:
@@ -100,12 +101,19 @@ def print_divider(msg, is_header = False):
   attr = HEADER_ATTR if is_header else CATEGORY_ATTR
   print term.format("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
 
+def print_logging(logging_buffer):
+  for line in logging_buffer:
+    print term.format(line, term.Color.MAGENTA)
+  
+  print
+
 if __name__ == '__main__':
   start_time = time.time()
   run_unit_tests = False
   run_integ_tests = False
   config_path = None
   test_config = stem.util.conf.get_config("test")
+  include_logging = False
   
   # parses user input, noting any issues
   try:
@@ -134,6 +142,8 @@ if __name__ == '__main__':
           # sets the configuration flag
           config_flag = TARGET_ATTR[target][0]
           test_config.set(config_flag, "true")
+    elif opt in ("-l", "--log"):
+      include_logging = True
     elif opt in ("-h", "--help"):
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
@@ -183,6 +193,11 @@ if __name__ == '__main__':
     test.output.colorize,
   )
   
+  stem_logger = logging.getLogger("stem")
+  logging_buffer = test.output.LogBuffer()
+  stem_logger.addHandler(logging_buffer)
+  stem_logger.setLevel(logging.DEBUG)
+  
   if run_unit_tests:
     print_divider("UNIT TESTS", True)
     
@@ -194,13 +209,14 @@ if __name__ == '__main__':
       
       sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
       print
+      
+      if include_logging: print_logging(logging_buffer)
     
     print
   
   if run_integ_tests:
     print_divider("INTEGRATION TESTS", True)
     integ_runner = test.runner.get_runner()
-    stem_logger = logging.getLogger("stem")
     
     # queue up all of the tor configurations we want to run the integration
     # tests on
@@ -245,6 +261,8 @@ if __name__ == '__main__':
           
           sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
           print
+          
+          if include_logging: print_logging(logging_buffer)
       except OSError:
         pass
       finally:
