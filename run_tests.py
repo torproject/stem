@@ -31,8 +31,8 @@ import test.integ.connection.protocolinfo
 import stem.util.enum
 import stem.util.term as term
 
-OPT = "uic:t:lh"
-OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log", "help"]
+OPT = "uic:t:l:h"
+OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "help"]
 DIVIDER = "=" * 70
 
 UNIT_TESTS = (
@@ -77,7 +77,8 @@ Runs tests for the stem library.
   -i, --integ           runs integration tests
   -c, --config PATH     path to a custom test configuration
   -t, --target TARGET   comma separated list of extra targets for integ tests
-  -l, --log             includes logging output with test results
+  -l, --log RUNLEVEL    includes logging output with test results, runlevels:
+                          TRACE, DEBUG, INFO, NOTICE, WARN, ERROR
   -h, --help            presents this help
 
   Integration targets:
@@ -102,10 +103,11 @@ def print_divider(msg, is_header = False):
   print term.format("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
 
 def print_logging(logging_buffer):
-  for line in logging_buffer:
-    print term.format(line, term.Color.MAGENTA)
-  
-  print
+  if not logging_buffer.is_empty():
+    for line in logging_buffer:
+      print term.format(line, term.Color.MAGENTA)
+    
+    print
 
 if __name__ == '__main__':
   start_time = time.time()
@@ -113,7 +115,7 @@ if __name__ == '__main__':
   run_integ_tests = False
   config_path = None
   test_config = stem.util.conf.get_config("test")
-  include_logging = False
+  logging_runlevel = logging.FATAL
   
   # parses user input, noting any issues
   try:
@@ -143,7 +145,19 @@ if __name__ == '__main__':
           config_flag = TARGET_ATTR[target][0]
           test_config.set(config_flag, "true")
     elif opt in ("-l", "--log"):
-      include_logging = True
+      runlevel = arg.upper()
+      
+      # TODO: logger has no notion of a TRACE or NOTICE runlevel
+      if runlevel == "TRACE": logging_runlevel = logging.DEBUG - 5
+      elif runlevel == "DEBUG": logging_runlevel = logging.DEBUG
+      elif runlevel == "INFO": logging_runlevel = logging.INFO
+      elif runlevel == "NOTICE": logging_runlevel = logging.INFO + 5
+      elif runlevel == "WARN": logging_runlevel = logging.WARN
+      elif runlevel == "ERROR": logging_runlevel = logging.ERROR
+      else:
+        print "'%s' isn't a logging runlevel, use one of the following instead:" % arg
+        print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
+        sys.exit(1)
     elif opt in ("-h", "--help"):
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
@@ -194,7 +208,7 @@ if __name__ == '__main__':
   )
   
   stem_logger = logging.getLogger("stem")
-  logging_buffer = test.output.LogBuffer()
+  logging_buffer = test.output.LogBuffer(logging_runlevel)
   stem_logger.addHandler(logging_buffer)
   stem_logger.setLevel(logging.DEBUG)
   
@@ -210,7 +224,7 @@ if __name__ == '__main__':
       sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
       print
       
-      if include_logging: print_logging(logging_buffer)
+      print_logging(logging_buffer)
     
     print
   
@@ -262,7 +276,7 @@ if __name__ == '__main__':
           sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
           print
           
-          if include_logging: print_logging(logging_buffer)
+          print_logging(logging_buffer)
       except OSError:
         pass
       finally:

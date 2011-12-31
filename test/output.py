@@ -140,13 +140,16 @@ class LogBuffer(logging.Handler):
   can be read later. Log entries are cleared as they are read.
   """
   
-  def __init__(self):
-    logging.Handler.__init__(self, level = logging.DEBUG)
+  def __init__(self, runlevel):
+    logging.Handler.__init__(self, level = runlevel)
     self.formatter = logging.Formatter(
       fmt = '%(asctime)s [%(levelname)s] %(message)s',
       datefmt = '%D %H:%M:%S')
     
     self._buffer = []
+  
+  def is_empty(self):
+    return not bool(self._buffer)
   
   def __iter__(self):
     while self._buffer:
