@@ -27,11 +27,9 @@ import sys
 import time
 import socket
 import base64
-import logging
 
 import stem.util.enum
-
-LOGGER = logging.getLogger("stem")
+import stem.util.log as log
 
 # cached system values
 IS_PROC_AVAILABLE, SYS_START_TIME, SYS_PHYSICAL_MEMORY = None, None, None
@@ -441,8 +439,7 @@ def _log_runtime(parameter, proc_location, start_time):
   """
   
   runtime = time.time() - start_time
-  msg = "proc call (%s): %s (runtime: %0.4f)" % (parameter, proc_location, runtime)
-  LOGGER.debug(msg)
+  log.debug("proc call (%s): %s (runtime: %0.4f)" % (parameter, proc_location, runtime))
 
 def _log_failure(parameter, exc):
   """
@@ -453,6 +450,5 @@ def _log_failure(parameter, exc):
     exc (Exception) - exception that we're raising
   """
   
-  msg = "proc call failed (%s): %s" % (parameter, exc)
-  LOGGER.debug(msg)
+  log.debug("proc call failed (%s): %s" % (parameter, exc))
 

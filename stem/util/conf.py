@@ -26,10 +26,10 @@ Config - Custom configuration.
   +- get_int_csv - gets a value as a comma separated list of integers
 """
 
-import logging
 import threading
 
-LOGGER = logging.getLogger("stem")
+import stem.util.log as log
+
 CONFS = {}  # mapping of identifier to singleton instances of configs
 
 # TODO: methods that will be needed if we want to allow for runtime
@@ -303,20 +303,17 @@ class Config():
       if val.lower() == "true": val = True
       elif val.lower() == "false": val = False
       else:
-        msg = "Config entry '%s' is expected to be a boolean, defaulting to '%s'" % (key, str(default))
-        LOGGER.info(msg)
+        log.info("Config entry '%s' is expected to be a boolean, defaulting to '%s'" % (key, str(default)))
         val = default
     elif isinstance(default, int):
       try: val = int(val)
       except ValueError:
-        msg = "Config entry '%s' is expected to be an integer, defaulting to '%i'" % (key, default)
-        LOGGER.info(msg)
+        log.info("Config entry '%s' is expected to be an integer, defaulting to '%i'" % (key, default))
         val = default
     elif isinstance(default, float):
       try: val = float(val)
       except ValueError:
-        msg = "Config entry '%s' is expected to be a float, defaulting to '%f'" % (key, default)
-        LOGGER.info(msg)
+        log.info("Config entry '%s' is expected to be a float, defaulting to '%f'" % (key, default))
         val = default
     elif isinstance(default, list):
       pass # nothing special to do (already a list)
@@ -329,8 +326,7 @@ class Config():
           entryKey, entryVal = entry.split("=>", 1)
           valMap[entryKey.strip()] = entryVal.strip()
         else:
-          msg = "Ignoring invalid %s config entry (expected a mapping, but \"%s\" was missing \"=>\")" % (key, entry)
-          LOGGER.info(msg)
+          log.info("Ignoring invalid %s config entry (expected a mapping, but \"%s\" was missing \"=>\")" % (key, entry))
       val = valMap
     
     return val
@@ -357,8 +353,7 @@ class Config():
       if not multiple: val = val[-1]
       self._requested_keys.add(key)
     else:
-      msg = "config entry '%s' not found, defaulting to '%s'" % (key, default)
-      LOGGER.debug(msg)
+      log.debug("config entry '%s' not found, defaulting to '%s'" % (key, default))
       val = default
     
     self._contents_lock.release()
@@ -392,7 +387,7 @@ class Config():
           defaultStr = ", ".join([str(i) for i in default])
           msg += ", defaulting to '%s'" % defaultStr
         
-        LOGGER.info(msg)
+        log.info(msg)
         return default
       
       return conf_comp
@@ -439,7 +434,7 @@ class Config():
           break
     
     if error_msg:
-      LOGGER.info(error_msg)
+      log.info(error_msg)
       return default
     else: return [int(val) for val in conf_comp]
 

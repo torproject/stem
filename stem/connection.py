@@ -82,15 +82,13 @@ AuthenticationFailure - Base exception raised for authentication failures.
 
 import os
 import getpass
-import logging
 import binascii
 
 import stem.socket
 import stem.version
 import stem.util.enum
 import stem.util.system
-
-LOGGER = logging.getLogger("stem")
+import stem.util.log as log
 
 # enums representing classes that the connect_* methods can return
 Controller = stem.util.enum.Enum("NONE")
@@ -375,7 +373,7 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
       exc_msg = "unrecognized authentication method%s (%s)" % (plural_label, methods_label)
       auth_exceptions.append(UnrecognizedAuthMethods(exc_msg, unknown_methods))
     else:
-      LOGGER.debug("Authenticating to a socket with unrecognized auth method%s, ignoring them: %s" % (plural_label, methods_label))
+      log.debug("Authenticating to a socket with unrecognized auth method%s, ignoring them: %s" % (plural_label, methods_label))
   
   if AuthMethod.COOKIE in auth_methods and protocolinfo_response.cookie_path == None:
     auth_methods.remove(AuthMethod.COOKIE)
@@ -405,12 +403,12 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
     except PasswordAuthRejected, exc:
       # Since the PROTOCOLINFO says password auth is available we can assume
       # that if PasswordAuthRejected is raised it's being raised in error.
-      LOGGER.debug("The authenticate_password method raised a PasswordAuthRejected when password auth should be available. Stem may need to be corrected to recognize this response: %s" % exc)
+      log.debug("The authenticate_password method raised a PasswordAuthRejected when password auth should be available. Stem may need to be corrected to recognize this response: %s" % exc)
       auth_exceptions.append(IncorrectPassword(str(exc)))
     except (IncorrectCookieSize, UnreadableCookieFile, IncorrectCookieValue), exc:
       auth_exceptions.append(exc)
     except CookieAuthRejected, exc:
-      LOGGER.debug("The authenticate_cookie method raised a CookieAuthRejected when cookie auth should be available. Stem may need to be corrected to recognize this response: %s" % exc)
+      log.debug("The authenticate_cookie method raised a CookieAuthRejected when cookie auth should be available. Stem may need to be corrected to recognize this response: %s" % exc)
       auth_exceptions.append(IncorrectCookieValue(str(exc)))
     except stem.socket.ControllerError, exc:
       auth_exceptions.append(AuthenticationFailure(str(exc)))
@@ -678,7 +676,7 @@ def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg)
       }
       
       pid_resolver_label = resolver_labels.get(pid_resolver, "")
-      LOGGER.debug("unable to expand relative tor cookie path%s: %s" % (pid_resolver_label, exc))
+      log.debug("unable to expand relative tor cookie path%s: %s" % (pid_resolver_label, exc))
   
   protocolinfo_response.cookie_path = cookie_path
 
@@ -774,7 +772,7 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
         # an effort to parse like a v1 response.
         
         if self.protocol_version != 1:
-          LOGGER.warn("We made a PROTOCOLINFO v1 query but got a version %i response instead. We'll still try to use it, but this may cause problems." % self.protocol_version)
+          log.warn("We made a PROTOCOLINFO v1 query but got a version %i response instead. We'll still try to use it, but this may cause problems." % self.protocol_version)
       elif line_type == "AUTH":
         # Line format:
         #   AuthLine = "250-AUTH" SP "METHODS=" AuthMethod *("," AuthMethod)
@@ -796,7 +794,7 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
             auth_methods.append(AuthMethod.COOKIE)
           else:
             unknown_auth_methods.append(method)
-            LOGGER.info("PROTOCOLINFO response had an unrecognized authentication method: %s" % method)
+            log.info("PROTOCOLINFO response had an unrecognized authentication method: %s" % method)
             
             # our auth_methods should have a single AuthMethod.UNKNOWN entry if
             # any unknown authentication methods exist
@@ -825,7 +823,7 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
         except ValueError, exc:
           raise stem.socket.ProtocolError(exc)
       else:
-        LOGGER.debug("unrecognized PROTOCOLINFO line type '%s', ignoring entry: %s" % (line_type, line))
+        log.debug("unrecognized PROTOCOLINFO line type '%s', ignoring entry: %s" % (line_type, line))
     
     self.auth_methods = tuple(auth_methods)
     self.unknown_auth_methods = tuple(unknown_auth_methods)

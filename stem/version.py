@@ -19,12 +19,9 @@ Requirement - Enumerations for the version requirements of features.
 """
 
 import re
-import logging
 
 import stem.util.enum
 import stem.util.system
-
-LOGGER = logging.getLogger("stem")
 
 # cache for the get_tor_version function
 VERSION_CACHE = {}

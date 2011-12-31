@@ -44,10 +44,9 @@ ControllerError - Base exception raised when using the controller.
 from __future__ import absolute_import
 import re
 import socket
-import logging
 import threading
 
-LOGGER = logging.getLogger("stem.socket")
+import stem.util.log as log
 
 KEY_ARG = re.compile("^(\S+)=")
 
@@ -657,19 +656,19 @@ def send_message(control_file, message, raw = False):
   # uses a newline divider if this is a multi-line message (more readable)
   log_message = message.replace("\r\n", "\n").rstrip()
   div = "\n" if "\n" in log_message else " "
-  LOGGER.debug("Sending:" + div + log_message)
+  log.debug("Sending:" + div + log_message)
   
   try:
     control_file.write(message)
     control_file.flush()
   except socket.error, exc:
-    LOGGER.info("Failed to send message: %s" % exc)
+    log.info("Failed to send message: %s" % exc)
     raise SocketError(exc)
   except AttributeError:
     # if the control_file has been closed then flush will receive:
     # AttributeError: 'NoneType' object has no attribute 'sendall'
     
-    LOGGER.info("Failed to send message: file has been closed")
+    log.info("Failed to send message: file has been closed")
     raise SocketClosed("file has been closed")
 
 def recv_message(control_file):
@@ -698,13 +697,13 @@ def recv_message(control_file):
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
       
-      LOGGER.warn("SocketClosed: socket file has been closed")
+      log.warn("SocketClosed: socket file has been closed")
       raise SocketClosed("socket file has been closed")
     except socket.error, exc:
       # when disconnected we get...
       # socket.error: [Errno 107] Transport endpoint is not connected
       
-      LOGGER.warn("SocketClosed: received an exception (%s)" % exc)
+      log.warn("SocketClosed: received an exception (%s)" % exc)
       raise SocketClosed(exc)
     
     raw_content += line
@@ -716,16 +715,16 @@ def recv_message(control_file):
       # if the socket is disconnected then the readline() method will provide
       # empty content
       
-      LOGGER.warn("SocketClosed: empty socket content")
+      log.warn("SocketClosed: empty socket content")
       raise SocketClosed("Received empty socket content.")
     elif len(line) < 4:
-      LOGGER.warn("ProtocolError: line too short (%s)" % line)
+      log.warn("ProtocolError: line too short (%s)" % line)
       raise ProtocolError("Badly formatted reply line: too short")
     elif not re.match(r'^[a-zA-Z0-9]{3}[-+ ]', line):
-      LOGGER.warn("ProtocolError: malformed status code/divider (%s)" % line)
+      log.warn("ProtocolError: malformed status code/divider (%s)" % line)
       raise ProtocolError("Badly formatted reply line: beginning is malformed")
     elif not line.endswith("\r\n"):
-      LOGGER.warn("ProtocolError: no CRLF linebreak (%s)" % line)
+      log.warn("ProtocolError: no CRLF linebreak (%s)" % line)
       raise ProtocolError("All lines should end with CRLF")
     
     line = line[:-2] # strips off the CRLF
@@ -741,7 +740,7 @@ def recv_message(control_file):
       # uses a newline divider if this is a multi-line message (more readable)
       log_message = raw_content.replace("\r\n", "\n").rstrip()
       div = "\n" if "\n" in log_message else " "
-      LOGGER.debug("Received:" + div + log_message)
+      log.debug("Received:" + div + log_message)
       
       return ControlMessage(parsed_content, raw_content)
     elif divider == "+":
@@ -755,7 +754,7 @@ def recv_message(control_file):
         raw_content += line
         
         if not line.endswith("\r\n"):
-          LOGGER.warn("ProtocolError: no CRLF linebreak for data entry (%s)" % line)
+          log.warn("ProtocolError: no CRLF linebreak for data entry (%s)" % line)
           raise ProtocolError("All lines should end with CRLF")
         elif line == ".\r\n":
           break # data block termination
@@ -776,7 +775,7 @@ def recv_message(control_file):
     else:
       # this should never be reached due to the prefix regex, but might as well
       # be safe...
-      LOGGER.warn("ProtocolError: unrecognized divider type (%s)" % line)
+      log.warn("ProtocolError: unrecognized divider type (%s)" % line)
       raise ProtocolError("Unrecognized type '%s': %s" % (divider, line))
 
 def send_formatting(message):

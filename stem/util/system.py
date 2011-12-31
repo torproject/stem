@@ -18,12 +18,10 @@ call - runs the given system command and provides back the results
 
 import os
 import time
-import logging
 import subprocess
 
 import stem.util.proc
-
-LOGGER = logging.getLogger("stem")
+import stem.util.log as log
 
 # Functor for mocking the call function, which should either return a string
 # (or None) to emulate responses, or a boolean to indicate if we should filter
@@ -247,7 +245,7 @@ def get_pid_by_name(process_name):
       pid = results[0].strip()
       if pid.isdigit(): return int(pid)
   
-  LOGGER.debug("failed to resolve a pid for %s" % process_name)
+  log.debug("failed to resolve a pid for %s" % process_name)
   return None
 
 def get_pid_by_port(port):
@@ -426,11 +424,11 @@ def get_cwd(pid):
     results = call(GET_CWD_PWDX % pid)
     
     if not results:
-      LOGGER.debug("%s pwdx didn't return any results" % logging_prefix)
+      log.debug("%s pwdx didn't return any results" % logging_prefix)
     elif results[0].endswith("No such process"):
-      LOGGER.debug("%s pwdx processes reported for this pid" % logging_prefix)
+      log.debug("%s pwdx processes reported for this pid" % logging_prefix)
     elif len(results) != 1 or results[0].count(" ") != 1 or not results[0].startswith("%s: " % pid):
-      LOGGER.debug("%s we got unexpected output from pwdx: %s" % (logging_prefix, results))
+      log.debug("%s we got unexpected output from pwdx: %s" % (logging_prefix, results))
     else:
       return results[0].split(" ", 1)[1].strip()
   
@@ -455,7 +453,7 @@ def get_cwd(pid):
     if results and len(results) == 2 and results[1].startswith("n/"):
       return results[1][1:].strip()
     else:
-      LOGGER.debug("%s we got unexpected output from lsof: %s" % (logging_prefix, results))
+      log.debug("%s we got unexpected output from lsof: %s" % (logging_prefix, results))
   
   return None # all queries failed
 
@@ -489,9 +487,9 @@ def get_bsd_jail_id(pid):
   
   os_name = os.uname()[0]
   if os_name == "FreeBSD":
-    LOGGER.warn("Failed to figure out the FreeBSD jail id for pid %s. Guessing that it's not in a jail." % pid)
+    log.warn("Failed to figure out the FreeBSD jail id for pid %s. Guessing that it's not in a jail." % pid)
   else:
-    LOGGER.debug("get_bsd_jail_id(%s): this function isn't supported on %s" % (pid, os_name))
+    log.debug("get_bsd_jail_id(%s): this function isn't supported on %s" % (pid, os_name))
   
   return 0
 
@@ -592,12 +590,12 @@ def call(command, suppress_exc = True):
     
     msg = "system call: %s (runtime: %0.2f)" % (command, runtime)
     if stderr: msg += "\nstderr: %s" % stderr
-    LOGGER.debug(msg)
+    log.debug(msg)
     
     if stdout: return stdout.split("\n")
     else: return []
   except OSError, exc:
-    LOGGER.debug("system call (failed): %s (error: %s)" % (command, exc))
+    log.debug("system call (failed): %s (error: %s)" % (command, exc))
     
     if suppress_exc: return None
     else: raise exc

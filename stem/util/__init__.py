@@ -16,5 +16,5 @@ stem_logger = logging.getLogger("stem")
 if not stem_logger.handlers:
   stem_logger.addHandler(NullHandler())
 
-__all__ = ["conf", "enum", "proc", "system", "term"]
+__all__ = ["conf", "enum", "log", "proc", "system", "term"]
 
