@@ -459,7 +459,8 @@ def get_cwd(pid):
 
 def get_bsd_jail_id(pid):
   """
-  Get the FreeBSD jail id for a process.
+  Gets the jail id for a process. These seem to only exist for FreeBSD (this
+  style for jails does not exist on Linux, OSX, or OpenBSD).
   
   Arguments:
     pid (int) - process id of the jail id to be queried
@@ -482,14 +483,11 @@ def get_bsd_jail_id(pid):
     jid = ps_output[1].strip()
     if jid.isdigit(): return int(jid)
   
-  # TODO: Is this function exclusive to FreeBSD or does it work on other BSD
-  # systems? It should fail on OpenBSD but might work on OSX.
-  
   os_name = os.uname()[0]
   if os_name == "FreeBSD":
-    log.warn("Failed to figure out the FreeBSD jail id for pid %s. Guessing that it's not in a jail." % pid)
+    log.warn("Unable to get the jail id for process %s." % pid)
   else:
-    log.debug("get_bsd_jail_id(%s): this function isn't supported on %s" % (pid, os_name))
+    log.debug("get_bsd_jail_id(%s): jail ids do not exist on %s" % (pid, os_name))
   
   return 0
 
