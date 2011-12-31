@@ -29,6 +29,7 @@ import test.integ.connection.connect
 import test.integ.connection.protocolinfo
 
 import stem.util.enum
+import stem.util.log as log
 import stem.util.term as term
 
 OPT = "uic:t:l:h"
@@ -115,7 +116,7 @@ if __name__ == '__main__':
   run_integ_tests = False
   config_path = None
   test_config = stem.util.conf.get_config("test")
-  logging_runlevel = logging.FATAL
+  logging_runlevel = None
   
   # parses user input, noting any issues
   try:
@@ -145,16 +146,9 @@ if __name__ == '__main__':
           config_flag = TARGET_ATTR[target][0]
           test_config.set(config_flag, "true")
     elif opt in ("-l", "--log"):
-      runlevel = arg.upper()
+      logging_runlevel = arg.upper()
       
-      # TODO: logger has no notion of a TRACE or NOTICE runlevel
-      if runlevel == "TRACE": logging_runlevel = logging.DEBUG - 5
-      elif runlevel == "DEBUG": logging_runlevel = logging.DEBUG
-      elif runlevel == "INFO": logging_runlevel = logging.INFO
-      elif runlevel == "NOTICE": logging_runlevel = logging.INFO + 5
-      elif runlevel == "WARN": logging_runlevel = logging.WARN
-      elif runlevel == "ERROR": logging_runlevel = logging.ERROR
-      else:
+      if not logging_runlevel in log.LOG_VALUES:
         print "'%s' isn't a logging runlevel, use one of the following instead:" % arg
         print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
         sys.exit(1)
@@ -208,7 +202,7 @@ if __name__ == '__main__':
   )
   
   stem_logger = logging.getLogger("stem")
-  logging_buffer = test.output.LogBuffer(logging_runlevel)
+  logging_buffer = test.output.LogBuffer(log.logging_level(logging_runlevel))
   stem_logger.addHandler(logging_buffer)
   stem_logger.setLevel(logging.DEBUG)
   

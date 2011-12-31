@@ -57,6 +57,17 @@ def get_logger():
   
   return LOGGER
 
+def logging_level(runlevel):
+  """
+  Translates a runlevel into the value expected by the logging module.
+  
+  Arguments:
+    runlevel (Runlevel) - runlevel to be returned, no logging if None
+  """
+  
+  if runlevel: return LOG_VALUES[runlevel]
+  else: return logging.FATAL + 5
+
 def log(runlevel, message):
   """
   Logs a message at the given runlevel.
