@@ -772,7 +772,7 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
         # an effort to parse like a v1 response.
         
         if self.protocol_version != 1:
-          log.warn("We made a PROTOCOLINFO v1 query but got a version %i response instead. We'll still try to use it, but this may cause problems." % self.protocol_version)
+          log.info("We made a PROTOCOLINFO version 1 query but got a version %i response instead. We'll still try to use it, but this may cause problems." % self.protocol_version)
       elif line_type == "AUTH":
         # Line format:
         #   AuthLine = "250-AUTH" SP "METHODS=" AuthMethod *("," AuthMethod)
