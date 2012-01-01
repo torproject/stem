@@ -697,13 +697,13 @@ def recv_message(control_file):
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
       
-      log.warn("SocketClosed: socket file has been closed")
+      log.info("SocketClosed: socket file has been closed")
       raise SocketClosed("socket file has been closed")
     except socket.error, exc:
       # when disconnected we get...
       # socket.error: [Errno 107] Transport endpoint is not connected
       
-      log.warn("SocketClosed: received an exception (%s)" % exc)
+      log.info("SocketClosed: received an exception (%s)" % exc)
       raise SocketClosed(exc)
     
     raw_content += line
@@ -715,16 +715,16 @@ def recv_message(control_file):
       # if the socket is disconnected then the readline() method will provide
       # empty content
       
-      log.warn("SocketClosed: empty socket content")
+      log.info("SocketClosed: empty socket content")
       raise SocketClosed("Received empty socket content.")
     elif len(line) < 4:
-      log.warn("ProtocolError: line too short (%s)" % line)
+      log.info("ProtocolError: line too short (%s)" % log.escape(line))
       raise ProtocolError("Badly formatted reply line: too short")
     elif not re.match(r'^[a-zA-Z0-9]{3}[-+ ]', line):
-      log.warn("ProtocolError: malformed status code/divider (%s)" % line)
+      log.info("ProtocolError: malformed status code/divider (%s)" % log.escape(line))
       raise ProtocolError("Badly formatted reply line: beginning is malformed")
     elif not line.endswith("\r\n"):
-      log.warn("ProtocolError: no CRLF linebreak (%s)" % line)
+      log.info("ProtocolError: no CRLF linebreak (%s)" % log.escape(line))
       raise ProtocolError("All lines should end with CRLF")
     
     line = line[:-2] # strips off the CRLF
@@ -754,7 +754,7 @@ def recv_message(control_file):
         raw_content += line
         
         if not line.endswith("\r\n"):
-          log.warn("ProtocolError: no CRLF linebreak for data entry (%s)" % line)
+          log.info("ProtocolError: no CRLF linebreak for data entry (%s)" % log.escape(line))
           raise ProtocolError("All lines should end with CRLF")
         elif line == ".\r\n":
           break # data block termination

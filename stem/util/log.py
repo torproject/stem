@@ -89,3 +89,20 @@ def notice(message): log(Runlevel.NOTICE, message)
 def warn(message):   log(Runlevel.WARN, message)
 def error(message):  log(Runlevel.ERROR, message)
 
+def escape(message):
+  """
+  Escapes specific sequences for logging (newlines, tabs, carrage returns).
+  
+  Arguments:
+    message (str) - string to be escaped
+  
+  Returns:
+    str that is escaped
+  """
+  
+  for pattern, replacement in (("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")):
+    message = message.replace(pattern, replacement)
+  
+  return message
+
+
