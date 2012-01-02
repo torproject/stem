@@ -121,8 +121,15 @@ class TestControlMessage(unittest.TestCase):
     """
     
     req_version = stem.version.Requirement.GETINFO_CONFIG_TEXT
-    if stem.version.get_system_tor_version() < req_version:
-      self.skipTest("(requires %s)" % req_version)
+    
+    try:
+      if stem.version.get_system_tor_version() < req_version:
+        self.skipTest("(requires %s)" % req_version)
+    except IOError:
+      # This is a best-effot lookup to avoid showing a valid failure. If the
+      # version lookup fails then running the test.
+      
+      pass
     
     # We can't be certain of the order, and there may be extra config-text
     # entries as per...
