@@ -172,7 +172,15 @@ class TestAuthenticate(unittest.TestCase):
     auth_type = stem.connection.AuthMethod.COOKIE
     auth_value = test.runner.get_runner().get_auth_cookie_path()
     
-    if self._can_authenticate(auth_type):
+    if not os.path.exists(auth_value):
+      # If the authentication cookie doesn't exist then we'll be getting an
+      # error for that rather than rejection. This will even fail if
+      # _can_authenticate is true because we *can* authenticate with cookie
+      # auth but the function will short circuit with failure due to the
+      # missing file.
+      
+      self.assertRaises(stem.connection.UnreadableCookieFile, self._check_auth, auth_type, auth_value)
+    elif self._can_authenticate(auth_type):
       self._check_auth(auth_type, auth_value)
     else:
       self.assertRaises(stem.connection.CookieAuthRejected, self._check_auth, auth_type, auth_value)
