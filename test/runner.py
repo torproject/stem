@@ -15,7 +15,8 @@ Runner - Runtime context for our integration tests.
   |- get_torrc_contents - contents of our tor instance's torrc
   |- get_connection_type - method by which controllers can connect to tor
   |- get_pid - process id of our tor process
-  +- get_tor_socket - provides a socket to the tor instance
+  |- get_tor_socket - provides a socket to the tor instance
+  +- get_tor_version - provides the version of tor we're running against
 """
 
 import os
@@ -30,6 +31,7 @@ import threading
 
 import stem.socket
 import stem.process
+import stem.version
 import stem.util.conf
 import stem.util.enum
 import stem.util.term as term
@@ -364,6 +366,28 @@ class Runner:
       stem.connection.authenticate(control_socket, CONTROL_PASSWORD)
     
     return control_socket
+  
+  def get_tor_version(self):
+    """
+    Queries our test instance for tor's version.
+    
+    Returns:
+      stem.version.Version for our test instance, None if we're unable to
+      connect to it
+    """
+    
+    # TODO: replace with higher level functions when we've completed a basic
+    # controller class
+    
+    control_socket = self.get_tor_socket()
+    if not control_socket: return None
+    
+    control_socket.send("GETINFO version")
+    version_response = control_socket.recv()
+    control_socket.close()
+    
+    tor_version = list(version_response)[0][8:]
+    return stem.version.Version(tor_version)
   
   def _get(self, attr):
     """

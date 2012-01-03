@@ -120,16 +120,12 @@ class TestControlMessage(unittest.TestCase):
     Parses the 'GETINFO config-text' response.
     """
     
+    runner = test.runner.get_runner()
     req_version = stem.version.Requirement.GETINFO_CONFIG_TEXT
+    our_version = runner.get_tor_version()
     
-    try:
-      if stem.version.get_system_tor_version() < req_version:
-        self.skipTest("(requires %s)" % req_version)
-    except IOError:
-      # This is a best-effot lookup to avoid showing a valid failure. If the
-      # version lookup fails then running the test.
-      
-      pass
+    if our_version and our_version < req_version:
+      self.skipTest("(requires %s)" % req_version)
     
     # We can't be certain of the order, and there may be extra config-text
     # entries as per...
@@ -137,7 +133,6 @@ class TestControlMessage(unittest.TestCase):
     #
     # so we'll just check that the response is a superset of our config
     
-    runner = test.runner.get_runner()
     torrc_contents = []
     
     for line in runner.get_torrc_contents().split("\n"):
