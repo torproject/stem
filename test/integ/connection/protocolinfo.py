@@ -37,6 +37,7 @@ class TestProtocolInfo(unittest.TestCase):
     control_socket.send("PROTOCOLINFO 1")
     protocolinfo_response = control_socket.recv()
     stem.connection.ProtocolInfoResponse.convert(protocolinfo_response)
+    control_socket.close()
     
     # according to the control spec the following _could_ differ or be
     # undefined but if that actually happens then it's gonna make people sad

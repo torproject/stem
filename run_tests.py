@@ -14,19 +14,20 @@ import StringIO
 
 import test.output
 import test.runner
-import test.unit.version
-import test.unit.socket.control_message
-import test.unit.socket.control_line
 import test.unit.connection.authentication
 import test.unit.connection.protocolinfo
+import test.unit.socket.control_line
+import test.unit.socket.control_message
 import test.unit.util.enum
 import test.unit.util.system
-import test.integ.socket.control_message
-import test.integ.util.conf
-import test.integ.util.system
+import test.unit.version
 import test.integ.connection.authentication
 import test.integ.connection.connect
 import test.integ.connection.protocolinfo
+import test.integ.socket.control_message
+import test.integ.util.conf
+import test.integ.util.system
+import test.integ.version
 
 import stem.util.enum
 import stem.util.log as log
@@ -36,23 +37,29 @@ OPT = "uic:t:l:h"
 OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "help"]
 DIVIDER = "=" * 70
 
+# Tests are ordered by the dependencies so the lowest level tests come first.
+# This is because a problem in say, controller message parsing, will cause all
+# higher level tests to fail too. Hence we want the test that most narrowly
+# exhibits problems to come first.
+
 UNIT_TESTS = (
-  test.unit.socket.control_message.TestControlMessage,
-  test.unit.socket.control_line.TestControlLine,
-  test.unit.version.TestVersion,
-  test.unit.connection.authentication.TestAuthenticate,
-  test.unit.connection.protocolinfo.TestProtocolInfoResponse,
   test.unit.util.enum.TestEnum,
   test.unit.util.system.TestSystem,
+  test.unit.version.TestVersion,
+  test.unit.socket.control_message.TestControlMessage,
+  test.unit.socket.control_line.TestControlLine,
+  test.unit.connection.authentication.TestAuthenticate,
+  test.unit.connection.protocolinfo.TestProtocolInfoResponse,
 )
 
 INTEG_TESTS = (
-  test.integ.socket.control_message.TestControlMessage,
-  test.integ.connection.authentication.TestAuthenticate,
-  test.integ.connection.connect.TestConnect,
-  test.integ.connection.protocolinfo.TestProtocolInfo,
   test.integ.util.conf.TestConf,
   test.integ.util.system.TestSystem,
+  test.integ.version.TestVersion,
+  test.integ.socket.control_message.TestControlMessage,
+  test.integ.connection.protocolinfo.TestProtocolInfo,
+  test.integ.connection.authentication.TestAuthenticate,
+  test.integ.connection.connect.TestConnect,
 )
 
 # Integration tests above the basic suite.
