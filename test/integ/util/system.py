@@ -30,7 +30,7 @@ class TestSystem(unittest.TestCase):
         self.is_extra_tor_running = len(pgrep_results) > 1
       else:
         ps_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PS_BSD)
-        results = [r for r in ps_results if r.endswith("tor")]
+        results = [r for r in ps_results if r.endswith(" tor")]
         self.is_extra_tor_running = len(results) > 1
         
   def tearDown(self):
