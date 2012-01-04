@@ -245,7 +245,7 @@ def get_pid_by_name(process_name):
       pid = results[0].strip()
       if pid.isdigit(): return int(pid)
   
-  log.debug("failed to resolve a pid for %s" % process_name)
+  log.debug("failed to resolve a pid for '%s'" % process_name)
   return None
 
 def get_pid_by_port(port):

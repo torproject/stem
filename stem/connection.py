@@ -795,7 +795,7 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
           else:
             unknown_auth_methods.append(method)
             message_id = "stem.connection.unknown_auth_%s" % method
-            log.log_once(message_id, log.INFO, "PROTOCOLINFO response had an unrecognized authentication method: %s" % method)
+            log.log_once(message_id, log.INFO, "PROTOCOLINFO response included a type of authentication that we don't recognize: %s" % method)
             
             # our auth_methods should have a single AuthMethod.UNKNOWN entry if
             # any unknown authentication methods exist

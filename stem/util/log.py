@@ -36,6 +36,7 @@ LOG_VALUES = {
 }
 
 LOGGER = logging.getLogger("stem")
+LOGGER.setLevel(LOG_VALUES[TRACE])
 
 # There's some messages that we don't want to log more than once. This set has
 # the messages IDs that we've logged which fall into this category.

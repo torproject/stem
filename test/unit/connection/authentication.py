@@ -7,6 +7,7 @@ import functools
 import unittest
 
 import stem.connection
+import stem.util.log as log
 
 # Functors to replace get_protocolinfo and authenticate_*. All of them take any
 # number of arguments.
@@ -106,6 +107,11 @@ class TestAuthenticate(unittest.TestCase):
     subclass being raised.
     """
     
+    # mute the logger for this test since otherwise the output is overwhelming
+    
+    stem_logger = log.get_logger()
+    stem_logger.setLevel(log.logging_level(None))
+    
     # exceptions that the authentication functions are documented to raise
     auth_none_exc_types = (None,
       stem.connection.OpenAuthRejected)
@@ -151,4 +157,7 @@ class TestAuthenticate(unittest.TestCase):
               stem.connection.authenticate(None, "blah", protocolinfo_input)
             else:
               self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, "blah", protocolinfo_input)
+    
+    # revert logging back to normal
+    stem_logger.setLevel(log.logging_level(log.TRACE))
 

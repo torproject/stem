@@ -690,6 +690,7 @@ def recv_message(control_file):
   """
   
   parsed_content, raw_content = [], ""
+  logging_prefix = "Error while receiving a control message (%s): "
   
   while True:
     try: line = control_file.readline()
@@ -697,13 +698,15 @@ def recv_message(control_file):
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
       
-      log.info("SocketClosed: socket file has been closed")
+      prefix = logging_prefix % "SocketClosed"
+      log.info(prefix + "socket file has been closed")
       raise SocketClosed("socket file has been closed")
     except socket.error, exc:
       # when disconnected we get...
       # socket.error: [Errno 107] Transport endpoint is not connected
       
-      log.info("SocketClosed: received an exception (%s)" % exc)
+      prefix = logging_prefix % "SocketClosed"
+      log.info(prefix + "received exception \"%s\"" % exc)
       raise SocketClosed(exc)
     
     raw_content += line
@@ -715,16 +718,20 @@ def recv_message(control_file):
       # if the socket is disconnected then the readline() method will provide
       # empty content
       
-      log.info("SocketClosed: empty socket content")
+      prefix = logging_prefix % "SocketClosed"
+      log.info(prefix + "empty socket content")
       raise SocketClosed("Received empty socket content.")
     elif len(line) < 4:
-      log.info("ProtocolError: line too short (%s)" % log.escape(line))
+      prefix = logging_prefix % "ProtocolError"
+      log.info(prefix + "line too short, \"%s\"" % log.escape(line))
       raise ProtocolError("Badly formatted reply line: too short")
     elif not re.match(r'^[a-zA-Z0-9]{3}[-+ ]', line):
-      log.info("ProtocolError: malformed status code/divider (%s)" % log.escape(line))
+      prefix = logging_prefix % "ProtocolError"
+      log.info(prefix + "malformed status code/divider, \"%s\"" % log.escape(line))
       raise ProtocolError("Badly formatted reply line: beginning is malformed")
     elif not line.endswith("\r\n"):
-      log.info("ProtocolError: no CRLF linebreak (%s)" % log.escape(line))
+      prefix = logging_prefix % "ProtocolError"
+      log.info(prefix + "no CRLF linebreak, \"%s\"" % log.escape(line))
       raise ProtocolError("All lines should end with CRLF")
     
     line = line[:-2] # strips off the CRLF
@@ -740,7 +747,7 @@ def recv_message(control_file):
       # uses a newline divider if this is a multi-line message (more readable)
       log_message = raw_content.replace("\r\n", "\n").rstrip()
       div = "\n" if "\n" in log_message else " "
-      log.debug("Received:" + div + log_message)
+      log.trace("Received from Tor:" + div + log_message)
       
       return ControlMessage(parsed_content, raw_content)
     elif divider == "+":
@@ -749,12 +756,16 @@ def recv_message(control_file):
       
       while True:
         try: line = control_file.readline()
-        except socket.error, exc: raise SocketClosed(exc)
+        except socket.error, exc:
+          prefix = logging_prefix % "SocketClosed"
+          log.info(prefix + "received an exception while mid-way through a data reply (exception: \"%s\", read content: \"%s\")" % (exc, log.escape(raw_content)))
+          raise SocketClosed(exc)
         
         raw_content += line
         
         if not line.endswith("\r\n"):
-          log.info("ProtocolError: no CRLF linebreak for data entry (%s)" % log.escape(line))
+          prefix = logging_prefix % "ProtocolError"
+          log.info(prefix + "CRLF linebreaks missing from a data reply, \"%s\"" % log.escape(raw_content))
           raise ProtocolError("All lines should end with CRLF")
         elif line == ".\r\n":
           break # data block termination
@@ -775,8 +786,9 @@ def recv_message(control_file):
     else:
       # this should never be reached due to the prefix regex, but might as well
       # be safe...
-      log.warn("ProtocolError: unrecognized divider type (%s)" % line)
-      raise ProtocolError("Unrecognized type '%s': %s" % (divider, line))
+      prefix = logging_prefix % "ProtocolError"
+      log.warn(prefix + "\"%s\" isn't a recognized divider type" % line)
+      raise ProtocolError("Unrecognized divider type '%s': %s" % (divider, line))
 
 def send_formatting(message):
   """

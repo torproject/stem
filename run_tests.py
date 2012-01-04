@@ -8,7 +8,6 @@ import os
 import sys
 import time
 import getopt
-import logging
 import unittest
 import StringIO
 
@@ -208,10 +207,9 @@ if __name__ == '__main__':
     test.output.colorize,
   )
   
-  stem_logger = logging.getLogger("stem")
+  stem_logger = log.get_logger()
   logging_buffer = test.output.LogBuffer(log.logging_level(logging_runlevel))
   stem_logger.addHandler(logging_buffer)
-  stem_logger.setLevel(logging.DEBUG)
   
   if run_unit_tests:
     print_divider("UNIT TESTS", True)
