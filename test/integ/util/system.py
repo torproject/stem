@@ -196,6 +196,9 @@ class TestSystem(unittest.TestCase):
     Checks the stem.util.system.get_pid_by_open_file function.
     """
     
+    # on macs this test is unreliable because Quicklook sometimes claims '/tmp'
+    if os.uname()[0] == "Darwin": self.skipTest("(unreliable due to Quicklook)")
+    
     # we're not running with a control socket so this just exercises the
     # failure case
     
