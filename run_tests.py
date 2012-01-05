@@ -111,8 +111,8 @@ def print_divider(msg, is_header = False):
 
 def print_logging(logging_buffer):
   if not logging_buffer.is_empty():
-    for line in logging_buffer:
-      print term.format(line, term.Color.MAGENTA)
+    for entry in logging_buffer:
+      print term.format(entry.replace("\n", "\n  "), term.Color.MAGENTA)
     
     print
 
