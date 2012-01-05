@@ -455,9 +455,6 @@ class Runner:
         datefmt = '%D %H:%M:%S',
       )
       
-      stem_logger = logging.getLogger("stem")
-      stem_logger.info("Logging opened for integration test run")
-      
       _print_status("done\n", STATUS_ATTR, quiet)
     else:
       _print_status("  configuring logger... skipped\n", STATUS_ATTR, quiet)

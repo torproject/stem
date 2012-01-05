@@ -582,13 +582,17 @@ def call(command, suppress_exc = True):
   
   try:
     start_time = time.time()
+    log.trace("Sent to system:\n" + command)
     stdout, stderr = subprocess.Popen(command.split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
     stdout, stderr = stdout.strip(), stderr.strip()
     runtime = time.time() - start_time
     
-    msg = "system call: %s (runtime: %0.2f)" % (command, runtime)
-    if stderr: msg += "\nstderr: %s" % stderr
-    log.debug(msg)
+    if not stderr:
+      log.trace("Received from system:\n" + stdout)
+    else:
+      log.trace("Received from system:\nstdout: %s\nstderr: %s" % (stdout, stderr))
+    
+    log.debug("system call: %s (runtime: %0.2f)" % (command, runtime))
     
     if stdout: return stdout.split("\n")
     else: return []

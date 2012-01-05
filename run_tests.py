@@ -267,7 +267,6 @@ if __name__ == '__main__':
         
         for test_class in INTEG_TESTS:
           print_divider(test_class.__module__)
-          stem_logger.info("STARTING INTEGRATION TEST => %s" % test_class.__module__)
           suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
           test_results = StringIO.StringIO()
           unittest.TextTestRunner(test_results, verbosity=2).run(suite)

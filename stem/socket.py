@@ -656,11 +656,13 @@ def send_message(control_file, message, raw = False):
   # uses a newline divider if this is a multi-line message (more readable)
   log_message = message.replace("\r\n", "\n").rstrip()
   div = "\n" if "\n" in log_message else " "
-  log.debug("Sending:" + div + log_message)
   
   try:
     control_file.write(message)
     control_file.flush()
+    
+    log_message = message.replace("\r\n", "\n").rstrip()
+    log.trace("Sent to tor:\n" + log_message)
   except socket.error, exc:
     log.info("Failed to send message: %s" % exc)
     raise SocketError(exc)
@@ -744,10 +746,8 @@ def recv_message(control_file):
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
       
-      # uses a newline divider if this is a multi-line message (more readable)
       log_message = raw_content.replace("\r\n", "\n").rstrip()
-      div = "\n" if "\n" in log_message else " "
-      log.trace("Received from Tor:" + div + log_message)
+      log.trace("Received from tor:\n" + log_message)
       
       return ControlMessage(parsed_content, raw_content)
     elif divider == "+":
