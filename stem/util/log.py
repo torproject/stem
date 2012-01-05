@@ -35,6 +35,9 @@ LOG_VALUES = {
   Runlevel.ERROR: logging.ERROR,
 }
 
+logging.addLevelName(LOG_VALUES[TRACE], "TRACE")
+logging.addLevelName(LOG_VALUES[NOTICE], "NOTICE")
+
 LOGGER = logging.getLogger("stem")
 LOGGER.setLevel(LOG_VALUES[TRACE])
 
@@ -130,5 +133,4 @@ def escape(message):
     message = message.replace(pattern, replacement)
   
   return message
-
 
