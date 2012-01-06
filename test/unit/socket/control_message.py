@@ -77,7 +77,7 @@ class TestControlMessage(unittest.TestCase):
     # GETINFO version (basic single-line results)
     message = self.assert_message_parses(GETINFO_VERSION)
     self.assertEquals(2, len(list(message)))
-    self.assertEquals(2, len(str(message).split("\n")))
+    self.assertEquals(2, len(str(message).splitlines()))
     
     # manually checks the contents
     contents = message.content()
@@ -88,7 +88,7 @@ class TestControlMessage(unittest.TestCase):
     # GETINFO info/names (data entry)
     message = self.assert_message_parses(GETINFO_INFONAMES)
     self.assertEquals(2, len(list(message)))
-    self.assertEquals(8, len(str(message).split("\n")))
+    self.assertEquals(8, len(str(message).splitlines()))
     
     # manually checks the contents
     contents = message.content()
@@ -110,7 +110,7 @@ class TestControlMessage(unittest.TestCase):
     # causes a parsing error. This should test line endings for both data
     # entry parsing and non-data.
     
-    infonames_lines = [line + "\n" for line in GETINFO_INFONAMES.split("\n")[:-1]]
+    infonames_lines = [line + "\n" for line in GETINFO_INFONAMES.splitlines()]
     
     for i in range(len(infonames_lines)):
       # replace the CRLF for the line
@@ -172,7 +172,7 @@ class TestControlMessage(unittest.TestCase):
     self.assertEqual(controller_reply, message.raw_content())
     
     # checks that the contents match the input
-    message_lines = str(message).split("\n")
+    message_lines = str(message).splitlines()
     controller_lines = controller_reply.split("\r\n")
     controller_lines.pop() # the ControlMessage won't have a trailing newline
     

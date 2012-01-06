@@ -45,7 +45,7 @@ def apply_filters(testing_output, *filters):
   
   results = []
   
-  for line in testing_output.split("\n"):
+  for line in testing_output.splitlines():
     # determine the type of the line
     line_type = LineType.CONTENT
     

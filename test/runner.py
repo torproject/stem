@@ -470,7 +470,7 @@ class Runner:
       
       _print_status("done\n", STATUS_ATTR, quiet)
       
-      for line in self._torrc_contents.strip().split("\n"):
+      for line in self._torrc_contents.strip().splitlines():
         _print_status("    %s\n" % line.strip(), SUBSTATUS_ATTR, quiet)
       
       _print_status("\n", (), quiet)

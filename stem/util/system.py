@@ -596,7 +596,7 @@ def call(command, suppress_exc = True):
     elif stderr:
       log.trace(trace_prefix + ", stderr:\n%s" % stderr)
     
-    if stdout: return stdout.split("\n")
+    if stdout: return stdout.splitlines()
     else: return []
   except OSError, exc:
     log.debug("System call (failed): %s (error: %s)" % (command, exc))

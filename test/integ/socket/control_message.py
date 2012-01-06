@@ -135,7 +135,7 @@ class TestControlMessage(unittest.TestCase):
     
     torrc_contents = []
     
-    for line in runner.get_torrc_contents().split("\n"):
+    for line in runner.get_torrc_contents().splitlines():
       line = line.strip()
       
       if line and not line.startswith("#"):
