@@ -8,6 +8,25 @@ runlevels being used as follows...
   INFO   - high level library activity
   DEBUG  - low level library activity
   TRACE  - request/reply logging
+
+get_logger - provides the stem's Logger instance
+logging_level - converts a runlevel to its logging number
+escape - escapes special characters in a message in preparation for logging
+
+log - logs a message at the given runlevel
+log_once - logs a message, deduplicating if it has already been logged
+trace - logs a message at the TRACE runlevel
+debug - logs a message at the DEBUG runlevel
+info - logs a message at the INFO runlevel
+notice - logs a message at the NOTICE runlevel
+warn - logs a message at the WARN runlevel
+error - logs a message at the ERROR runlevel
+
+LogBuffer - Buffers logged events so they can be iterated over.
+  |- is_empty - checks if there's events in our buffer
+  +- __iter__ - iterates over and removes the buffered events
+
+log_to_stdout - reports further logged events to stdout
 """
 
 import logging
@@ -76,6 +95,22 @@ def logging_level(runlevel):
   if runlevel: return LOG_VALUES[runlevel]
   else: return logging.FATAL + 5
 
+def escape(message):
+  """
+  Escapes specific sequences for logging (newlines, tabs, carrage returns).
+  
+  Arguments:
+    message (str) - string to be escaped
+  
+  Returns:
+    str that is escaped
+  """
+  
+  for pattern, replacement in (("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")):
+    message = message.replace(pattern, replacement)
+  
+  return message
+
 def log(runlevel, message):
   """
   Logs a message at the given runlevel.
@@ -118,19 +153,41 @@ def notice(message): log(Runlevel.NOTICE, message)
 def warn(message):   log(Runlevel.WARN, message)
 def error(message):  log(Runlevel.ERROR, message)
 
-def escape(message):
+class LogBuffer(logging.Handler):
   """
-  Escapes specific sequences for logging (newlines, tabs, carrage returns).
+  Basic log handler that listens for stem events and stores them so they can be
+  read later. Log entries are cleared as they are read.
+  """
+  
+  def __init__(self, runlevel):
+    logging.Handler.__init__(self, level = logging_level(runlevel))
+    self.formatter = logging.Formatter(
+      fmt = '%(asctime)s [%(levelname)s] %(message)s',
+      datefmt = '%D %H:%M:%S')
+    
+    self._buffer = []
+  
+  def is_empty(self):
+    return not bool(self._buffer)
+  
+  def __iter__(self):
+    while self._buffer:
+      yield self.formatter.format(self._buffer.pop(0))
+  
+  def emit(self, record):
+    self._buffer.append(record)
+
+def log_to_stdout(runlevel):
+  """
+  Logs further events to stdout.
   
   Arguments:
-    message (str) - string to be escaped
-  
-  Returns:
-    str that is escaped
+    runlevel (Runlevel) - minimum runlevel a message needs to be to be logged
   """
   
-  for pattern, replacement in (("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")):
-    message = message.replace(pattern, replacement)
-  
-  return message
+  logging.basicConfig(
+    level = logging_level(runlevel),
+    format = '%(asctime)s [%(levelname)s] %(message)s',
+    datefmt = '%D %H:%M:%S',
+  )
 

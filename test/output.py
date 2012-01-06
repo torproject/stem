@@ -61,7 +61,7 @@ def apply_filters(testing_output, *filters):
     if line != None:
       results.append(line)
   
-  return "\n".join(results)
+  return "\n".join(results) + "\n"
 
 def colorize(line_type, line_content):
   """
@@ -133,28 +133,4 @@ class ErrorTracker:
   def __iter__(self):
     for error_line in self._errors:
       yield error_line
-
-class LogBuffer(logging.Handler):
-  """
-  Basic log handler that listens for all stem events and stores them so they
-  can be read later. Log entries are cleared as they are read.
-  """
-  
-  def __init__(self, runlevel):
-    logging.Handler.__init__(self, level = runlevel)
-    self.formatter = logging.Formatter(
-      fmt = '%(asctime)s [%(levelname)s] %(message)s',
-      datefmt = '%D %H:%M:%S')
-    
-    self._buffer = []
-  
-  def is_empty(self):
-    return not bool(self._buffer)
-  
-  def __iter__(self):
-    while self._buffer:
-      yield self.formatter.format(self._buffer.pop(0))
-  
-  def emit(self, record):
-    self._buffer.append(record)
 

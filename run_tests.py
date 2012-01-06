@@ -208,7 +208,7 @@ if __name__ == '__main__':
   )
   
   stem_logger = log.get_logger()
-  logging_buffer = test.output.LogBuffer(log.logging_level(logging_runlevel))
+  logging_buffer = log.LogBuffer(logging_runlevel)
   stem_logger.addHandler(logging_buffer)
   
   if run_unit_tests:
