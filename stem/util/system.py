@@ -582,22 +582,24 @@ def call(command, suppress_exc = True):
   
   try:
     start_time = time.time()
-    log.trace("Sent to system:\n" + command)
     stdout, stderr = subprocess.Popen(command.split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
     stdout, stderr = stdout.strip(), stderr.strip()
     runtime = time.time() - start_time
     
-    if not stderr:
-      log.trace("Received from system:\n" + stdout)
-    else:
-      log.trace("Received from system:\nstdout: %s\nstderr: %s" % (stdout, stderr))
+    log.debug("System call: %s (runtime: %0.2f)" % (command, runtime))
+    trace_prefix = "Received from system (%s)" % command
     
-    log.debug("system call: %s (runtime: %0.2f)" % (command, runtime))
+    if stdout and stderr:
+      log.trace(trace_prefix + ", stdout:\n%s\nstderr:\n%s" % (stdout, stderr))
+    elif stdout:
+      log.trace(trace_prefix + ", stdout:\n%s" % stdout)
+    elif stderr:
+      log.trace(trace_prefix + ", stderr:\n%s" % stderr)
     
     if stdout: return stdout.split("\n")
     else: return []
   except OSError, exc:
-    log.debug("system call (failed): %s (error: %s)" % (command, exc))
+    log.debug("System call (failed): %s (error: %s)" % (command, exc))
     
     if suppress_exc: return None
     else: raise exc
