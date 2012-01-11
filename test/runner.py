@@ -139,12 +139,13 @@ class Runner:
     self._connection_type = None
     self._tor_process = None
   
-  def start(self, connection_type = DEFAULT_TOR_CONNECTION, quiet = False):
+  def start(self, tor_cmd, connection_type = DEFAULT_TOR_CONNECTION, quiet = False):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
     
     Arguments:
+      tor_cmd (str) - command to start tor with
       connection_type (TorConnection) - method for controllers to authenticate
                           to tor
       quiet (bool) - if False then this prints status information as we start
@@ -190,7 +191,7 @@ class Runner:
     try:
       self._tor_cwd = os.getcwd()
       self._run_setup(quiet)
-      self._start_tor(quiet)
+      self._start_tor(tor_cmd, quiet)
       
       # revert our cwd back to normal
       if self._config["test.integ.target.relative_data_dir"]:
@@ -478,13 +479,14 @@ class Runner:
       _print_status("failed (%s)\n\n" % exc, ERROR_ATTR, quiet)
       raise OSError(exc)
   
-  def _start_tor(self, quiet):
+  def _start_tor(self, tor_cmd, quiet):
     """
     Initializes a tor process. This blocks until initialization completes or we
     error out.
     
     Arguments:
-      quiet (bool) - prints status information to stdout if False
+      tor_cmd (str) - command to start tor with
+      quiet (bool)  - prints status information to stdout if False
     
     Raises:
       OSError if we either fail to create the tor process or reached a timeout
@@ -503,7 +505,7 @@ class Runner:
       print_init_line = lambda line: _print_status("  %s\n" % line, SUBSTATUS_ATTR, quiet)
       
       torrc_dst = os.path.join(self._test_dir, "torrc")
-      self._tor_process = stem.process.launch_tor(torrc_dst, complete_percent, print_init_line)
+      self._tor_process = stem.process.launch_tor(tor_cmd, torrc_dst, complete_percent, print_init_line)
       
       runtime = time.time() - start_time
       _print_status("  done (%i seconds)\n\n" % runtime, STATUS_ATTR, quiet)

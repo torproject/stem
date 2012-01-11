@@ -33,7 +33,7 @@ import stem.util.log as log
 import stem.util.term as term
 
 OPT = "uic:t:l:h"
-OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "help"]
+OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "tor=", "help"]
 DIVIDER = "=" * 70
 
 # Tests are ordered by the dependencies so the lowest level tests come first.
@@ -86,6 +86,7 @@ Runs tests for the stem library.
   -t, --target TARGET   comma separated list of extra targets for integ tests
   -l, --log RUNLEVEL    includes logging output with test results, runlevels:
                           TRACE, DEBUG, INFO, NOTICE, WARN, ERROR
+      --tor PATH        custom tor binary to run testing against
   -h, --help            presents this help
 
   Integration targets:
@@ -123,6 +124,7 @@ if __name__ == '__main__':
   config_path = None
   test_config = stem.util.conf.get_config("test")
   logging_runlevel = None
+  tor_cmd = "tor"
   
   # parses user input, noting any issues
   try:
@@ -158,6 +160,12 @@ if __name__ == '__main__':
         print "'%s' isn't a logging runlevel, use one of the following instead:" % arg
         print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
         sys.exit(1)
+    elif opt in ("--tor"):
+      if not os.path.exists(arg):
+        print "Unable to start tor, '%s' does not exists." % arg
+        sys.exit(1)
+      
+      tor_cmd = arg
     elif opt in ("-h", "--help"):
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
@@ -260,7 +268,7 @@ if __name__ == '__main__':
     
     for connection_type in connection_types:
       try:
-        integ_runner.start(connection_type = connection_type)
+        integ_runner.start(tor_cmd, connection_type = connection_type)
         
         print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print

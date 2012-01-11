@@ -13,7 +13,7 @@ import subprocess
 # number of seconds before we time out our attempt to start a tor instance
 DEFAULT_INIT_TIMEOUT = 90
 
-def launch_tor(torrc_path, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
+def launch_tor(tor_cmd = "tor", torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
   """
   Initializes a tor process. This blocks until initialization completes or we
   error out.
@@ -24,6 +24,7 @@ def launch_tor(torrc_path, completion_percent = 100, init_msg_handler = None, ti
   to get stuck, taking well over the default timeout.
   
   Arguments:
+    tor_cmd (str)              - command for starting tor
     torrc_path (str)           - location of the torrc for us to use
     completion_percent (int)   - percent of bootstrap completion at which
                                  this'll return
@@ -45,7 +46,10 @@ def launch_tor(torrc_path, completion_percent = 100, init_msg_handler = None, ti
     raise OSError("torrc doesn't exist (%s)" % torrc_path)
   
   # starts a tor subprocess, raising an OSError if it fails
-  tor_process = subprocess.Popen(["tor", "-f", torrc_path], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+  runtime_args = [tor_cmd]
+  if torrc_path: runtime_args += ["-f", torrc_path]
+  
+  tor_process = subprocess.Popen(runtime_args, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
   
   if timeout:
     def timeout_handler(signum, frame):
