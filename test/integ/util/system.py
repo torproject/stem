@@ -130,10 +130,13 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with a lsof response.
     """
     
+    runner = test.runner.get_runner()
     if self.is_extra_tor_running:
       self.skipTest("(multiple tor instances)")
     elif not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
+    elif runner.is_debugging_prevented():
+      self.skipTest("(DisableDebuggerAttachment is set)")
     
     lsof_prefix = stem.util.system.GET_PID_BY_NAME_LSOF % ""
     self._run_pid_test(lsof_prefix, stem.util.system.get_pid_by_name, "tor")
@@ -143,10 +146,13 @@ class TestSystem(unittest.TestCase):
     Checks general usage of the stem.util.system.get_pid_by_port function.
     """
     
+    runner = test.runner.get_runner()
     if not self._has_port():
       self.skipTest("(test instance has no port)")
+    elif runner.is_debugging_prevented():
+      self.skipTest("(DisableDebuggerAttachment is set)")
     
-    tor_pid, tor_port = test.runner.get_runner().get_pid(), test.runner.CONTROL_PORT
+    tor_pid, tor_port = runner.get_pid(), test.runner.CONTROL_PORT
     self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(tor_port))
     self.assertEquals(None, stem.util.system.get_pid_by_port(99999))
   
@@ -155,11 +161,15 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_port function with a netstat response.
     """
     
+    runner = test.runner.get_runner()
     if not self._has_port():
       self.skipTest("(test instance has no port)")
     elif not stem.util.system.is_available("netstat"):
       self.skipTest("(netstat unavailable)")
-    elif stem.util.system.is_bsd(): self.skipTest("(linux only)")
+    elif stem.util.system.is_bsd():
+      self.skipTest("(linux only)")
+    elif runner.is_debugging_prevented():
+      self.skipTest("(DisableDebuggerAttachment is set)")
     
     netstat_cmd = stem.util.system.GET_PID_BY_PORT_NETSTAT
     self._run_pid_test(netstat_cmd, stem.util.system.get_pid_by_port, test.runner.CONTROL_PORT)
@@ -169,11 +179,15 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_port function with a sockstat response.
     """
     
+    runner = test.runner.get_runner()
     if not self._has_port():
       self.skipTest("(test instance has no port)")
     elif not stem.util.system.is_available("sockstat"):
       self.skipTest("(sockstat unavailable)")
-    elif not stem.util.system.is_bsd(): self.skipTest("(bsd only)")
+    elif not stem.util.system.is_bsd():
+      self.skipTest("(bsd only)")
+    elif runner.is_debugging_prevented():
+      self.skipTest("(DisableDebuggerAttachment is set)")
     
     sockstat_prefix = stem.util.system.GET_PID_BY_PORT_SOCKSTAT % ""
     self._run_pid_test(sockstat_prefix, stem.util.system.get_pid_by_port, test.runner.CONTROL_PORT)
@@ -183,10 +197,13 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_port function with a lsof response.
     """
     
+    runner = test.runner.get_runner()
     if not self._has_port():
       self.skipTest("(test instance has no port)")
     elif not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
+    elif runner.is_debugging_prevented():
+      self.skipTest("(DisableDebuggerAttachment is set)")
     
     lsof_cmd = stem.util.system.GET_PID_BY_PORT_LSOF
     self._run_pid_test(lsof_cmd, stem.util.system.get_pid_by_port, test.runner.CONTROL_PORT)
@@ -211,6 +228,10 @@ class TestSystem(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
+    
+    if runner.is_debugging_prevented():
+      self.skipTest("(DisableDebuggerAttachment is set)")
+    
     self.assertEquals(runner.get_tor_cwd(), stem.util.system.get_cwd(runner.get_pid()))
     self.assertEquals(None, stem.util.system.get_cwd(99999))
   
@@ -219,14 +240,16 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_cwd function with a pwdx response.
     """
     
+    runner = test.runner.get_runner()
     if not stem.util.system.is_available("pwdx"):
       self.skipTest("(pwdx unavailable)")
+    elif runner.is_debugging_prevented():
+      self.skipTest("(DisableDebuggerAttachment is set)")
     
     # filter the call function to only allow this command
     pwdx_prefix = stem.util.system.GET_CWD_PWDX % ""
     stem.util.system.CALL_MOCKING = lambda cmd: cmd.startswith(pwdx_prefix)
     
-    runner = test.runner.get_runner()
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
     self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
   
@@ -235,14 +258,16 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_cwd function with a lsof response.
     """
     
+    runner = test.runner.get_runner()
     if not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
+    elif runner.is_debugging_prevented():
+      self.skipTest("(DisableDebuggerAttachment is set)")
     
     # filter the call function to only allow this command
     lsof_prefix = "lsof -a -p "
     stem.util.system.CALL_MOCKING = lambda cmd: cmd.startswith(lsof_prefix)
     
-    runner = test.runner.get_runner()
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
     self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
   

@@ -254,6 +254,27 @@ class Runner:
     
     return is_running
   
+  def is_debugging_prevented(self):
+    """
+    Checks if tor's 'DisableDebuggerAttachment' option is set. This feature has
+    a lot of adverse side effects as per...
+    https://trac.torproject.org/projects/tor/ticket/3313
+    
+    Returns:
+      True if debugger attachment is disallowd, False otherwise, and None if
+      tor can't be checked
+    """
+    
+    # TODO: replace higher level GETCONF query when we have a controller class
+    control_socket = self.get_tor_socket()
+    if control_socket == None: return None
+    
+    control_socket.send("GETCONF DisableDebuggerAttachment")
+    getconf_response = control_socket.recv()
+    control_socket.close()
+    
+    return str(getconf_response) == "DisableDebuggerAttachment=1"
+  
   def get_test_dir(self):
     """
     Provides the absolute path for our testing directory.
