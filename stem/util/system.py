@@ -451,7 +451,13 @@ def get_cwd(pid):
     results = call(GET_CWD_LSOF % pid)
     
     if results and len(results) == 2 and results[1].startswith("n/"):
-      return results[1][1:].strip()
+      lsof_result = results[1][1:].strip()
+      
+      # If we lack read permissions for the cwd then it returns...
+      # p2683
+      # n/proc/2683/cwd (readlink: Permission denied)
+      
+      if not " " in lsof_result: return lsof_result
     else:
       log.debug("%s we got unexpected output from lsof: %s" % (logging_prefix, results))
   
