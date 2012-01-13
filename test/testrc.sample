@@ -23,8 +23,10 @@
 # test.integ.target.connection.open
 # test.integ.target.connection.password
 # test.integ.target.connection.cookie
-# test.integ.target.connection.muiltipe
+# test.integ.target.connection.multiple
 # test.integ.target.connection.socket
+# test.integ.target.connection.scookie
+# test.integ.target.connection.ptrace
 # test.integ.target.connection.all
 #   Runs the integration test suite for all of the given connection and
 #   authentication configurations. If the 'all' option is set then the other
@@ -41,5 +43,6 @@ test.integ.target.connection.cookie false
 test.integ.target.connection.muiltipe false
 test.integ.target.connection.socket false
 test.integ.target.connection.scookie false
+test.integ.target.connection.ptrace false
 test.integ.target.connection.all false
 

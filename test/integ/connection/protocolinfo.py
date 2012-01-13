@@ -161,6 +161,8 @@ class TestProtocolInfo(unittest.TestCase):
       auth_methods = (stem.connection.AuthMethod.NONE,)
     elif connection_type == test.runner.TorConnection.SCOOKIE:
       auth_methods = (stem.connection.AuthMethod.COOKIE,)
+    elif connection_type == test.runner.TorConnection.PTRACE:
+      auth_methods = (stem.connection.AuthMethod.NONE,)
     else:
       self.fail("Unrecognized connection type: %s" % connection_type)
     

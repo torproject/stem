@@ -62,7 +62,7 @@ INTEG_TESTS = (
 )
 
 # Integration tests above the basic suite.
-TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "CONN_NONE", "CONN_OPEN", "CONN_PASSWORD", "CONN_COOKIE", "CONN_MULTIPLE", "CONN_SOCKET", "CONN_SCOOKIE", "CONN_ALL")])
+TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "CONN_NONE", "CONN_OPEN", "CONN_PASSWORD", "CONN_COOKIE", "CONN_MULTIPLE", "CONN_SOCKET", "CONN_SCOOKIE", "CONN_PTRACE", "CONN_ALL")])
 
 TARGET_ATTR = {
   TARGETS.ONLINE: ("test.integ.target.online", "Includes tests that require network activity."),
@@ -74,6 +74,7 @@ TARGET_ATTR = {
   TARGETS.CONN_MULTIPLE: ("test.integ.target.connection.multiple", "Configuration with both password and cookie authentication."),
   TARGETS.CONN_SOCKET: ("test.integ.target.connection.socket", "Configuration with a control socket."),
   TARGETS.CONN_SCOOKIE: ("test.integ.target.connection.scookie", "Configuration with a control socket and authentication cookie."),
+  TARGETS.CONN_PTRACE: ("test.integ.target.connection.ptrace", "Configuration with an open control port and 'DisableDebuggerAttachment 0'"),
   TARGETS.CONN_ALL: ("test.integ.target.connection.all", "Runs integration tests for all connection configurations."),
 }
 
@@ -256,6 +257,7 @@ if __name__ == '__main__':
         "multiple": test.runner.TorConnection.MULTIPLE,
         "socket": test.runner.TorConnection.SOCKET,
         "scookie": test.runner.TorConnection.SCOOKIE,
+        "ptrace": test.runner.TorConnection.PTRACE,
       }
       
       for type_key in conn_type_mappings:
@@ -267,6 +269,15 @@ if __name__ == '__main__':
       connection_types = [test.runner.TorConnection.OPEN]
     
     for connection_type in connection_types:
+      if connection_type == test.runner.TorConnection.PTRACE:
+        our_version = stem.version.get_system_tor_version(tor_cmd)
+        req_version = stem.version.Requirement.DISABLE_DEBUGGER_ATTACHMENT
+        
+        if our_version < req_version:
+          print term.format("Unable to run CONN_PTRACE target: DisableDebuggerAttachment was added in %s" % req_version, term.Color.RED, term.Attr.BOLD)
+          print
+          continue
+      
       try:
         integ_runner.start(tor_cmd, connection_type = connection_type)
         

@@ -143,5 +143,6 @@ class Version:
 Requirement = stem.util.enum.Enum(
   ("GETINFO_CONFIG_TEXT", Version("0.2.2.7-alpha")),
   ("CONTROL_SOCKET", Version("0.2.0.30")),
+  ("DISABLE_DEBUGGER_ATTACHMENT", Version("0.2.3.9")),
 )
 
