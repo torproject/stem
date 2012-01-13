@@ -10,6 +10,7 @@ Runner - Runtime context for our integration tests.
   |- start - prepares and starts a tor instance for our tests to run against
   |- stop - stops our tor instance and cleans up any temporary files
   |- is_running - checks if our tor test instance is running
+  |- is_debugging_prevented - checks if DisableDebuggerAttachment is set
   |- get_test_dir - testing directory path
   |- get_torrc_path - path to our tor instance's torrc
   |- get_torrc_contents - contents of our tor instance's torrc
@@ -22,6 +23,7 @@ Runner - Runtime context for our integration tests.
 import os
 import sys
 import time
+import stat
 import socket
 import shutil
 import logging
@@ -68,7 +70,7 @@ INTEG_RUNNER = None
 # control authentication options and attributes
 CONTROL_PASSWORD = "pw"
 CONTROL_PORT = 1111
-CONTROL_SOCKET_PATH = "/tmp/stem_integ_socket"
+CONTROL_SOCKET_PATH = "/tmp/stem_integ/socket"
 
 OPT_PORT = "ControlPort %i" % CONTROL_PORT
 OPT_COOKIE = "CookieAuthentication 1"
@@ -458,6 +460,28 @@ class Runner:
     except OSError, exc:
       _print_status("failed (%s)\n" % exc, ERROR_ATTR, quiet)
       raise exc
+    
+    # Makes a directory for the control socket if needed. As of, at least, Tor
+    # 0.2.3.10 it checks during startup that the directory a control socket
+    # resides in is only accessable by the tor user (and refuses to finish
+    # starting if it isn't).
+    
+    if OPT_SOCKET in CONNECTION_OPTS[self._connection_type]:
+      try:
+        socket_dir = os.path.dirname(CONTROL_SOCKET_PATH)
+        _print_status("  making control socket directory (%s)... " % socket_dir, STATUS_ATTR, quiet)
+        
+        if os.path.exists(socket_dir) and stat.S_IMODE(os.stat(socket_dir).st_mode) == 0700:
+          _print_status("skipped\n", STATUS_ATTR, quiet)
+        else:
+          if not os.path.exists(socket_dir):
+            os.makedirs(socket_dir)
+          
+          os.chmod(socket_dir, 0700)
+          _print_status("done\n", STATUS_ATTR, quiet)
+      except OSError, exc:
+        _print_status("failed (%s)\n" % exc, ERROR_ATTR, quiet)
+        raise exc
     
     # configures logging
     logging_path = self._config["test.integ.log"]
