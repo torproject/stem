@@ -135,7 +135,9 @@ class TestSystem(unittest.TestCase):
       self.skipTest("(multiple tor instances)")
     elif not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
-    elif runner.is_debugging_prevented():
+    elif not runner.is_accessible():
+      self.skipTest("(unable to check for DisableDebuggerAttachment)")
+    elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     lsof_prefix = stem.util.system.GET_PID_BY_NAME_LSOF % ""
@@ -149,7 +151,7 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
     if not self._has_port():
       self.skipTest("(test instance has no port)")
-    elif runner.is_debugging_prevented():
+    elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     tor_pid, tor_port = runner.get_pid(), test.runner.CONTROL_PORT
@@ -168,7 +170,7 @@ class TestSystem(unittest.TestCase):
       self.skipTest("(netstat unavailable)")
     elif stem.util.system.is_bsd():
       self.skipTest("(linux only)")
-    elif runner.is_debugging_prevented():
+    elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     netstat_cmd = stem.util.system.GET_PID_BY_PORT_NETSTAT
@@ -186,7 +188,7 @@ class TestSystem(unittest.TestCase):
       self.skipTest("(sockstat unavailable)")
     elif not stem.util.system.is_bsd():
       self.skipTest("(bsd only)")
-    elif runner.is_debugging_prevented():
+    elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     sockstat_prefix = stem.util.system.GET_PID_BY_PORT_SOCKSTAT % ""
@@ -202,7 +204,7 @@ class TestSystem(unittest.TestCase):
       self.skipTest("(test instance has no port)")
     elif not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
-    elif runner.is_debugging_prevented():
+    elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     lsof_cmd = stem.util.system.GET_PID_BY_PORT_LSOF
@@ -229,7 +231,9 @@ class TestSystem(unittest.TestCase):
     
     runner = test.runner.get_runner()
     
-    if runner.is_debugging_prevented():
+    if not runner.is_accessible():
+      self.skipTest("(unable to check for DisableDebuggerAttachment)")
+    elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     self.assertEquals(runner.get_tor_cwd(), stem.util.system.get_cwd(runner.get_pid()))
@@ -243,7 +247,9 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
     if not stem.util.system.is_available("pwdx"):
       self.skipTest("(pwdx unavailable)")
-    elif runner.is_debugging_prevented():
+    elif not runner.is_accessible():
+      self.skipTest("(unable to check for DisableDebuggerAttachment)")
+    elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     # filter the call function to only allow this command
@@ -261,7 +267,9 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
     if not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
-    elif runner.is_debugging_prevented():
+    elif not runner.is_accessible():
+      self.skipTest("(unable to check for DisableDebuggerAttachment)")
+    elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     # filter the call function to only allow this command

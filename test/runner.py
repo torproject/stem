@@ -11,7 +11,7 @@ Runner - Runtime context for our integration tests.
   |- stop - stops our tor instance and cleans up any temporary files
   |- is_running - checks if our tor test instance is running
   |- is_accessible - checks if our tor instance can be connected to
-  |- is_debugging_prevented - checks if DisableDebuggerAttachment is set
+  |- is_ptraceable - checks if DisableDebuggerAttachment is set
   |- get_test_dir - testing directory path
   |- get_torrc_path - path to our tor instance's torrc
   |- get_torrc_contents - contents of our tor instance's torrc
@@ -273,7 +273,7 @@ class Runner:
     conn_opts = self.get_connection_options()
     return OPT_PORT in conn_opts or OPT_SOCKET in conn_opts
   
-  def is_debugging_prevented(self):
+  def is_ptraceable(self):
     """
     Checks if tor's 'DisableDebuggerAttachment' option is set. This feature has
     a lot of adverse side effects as per...
@@ -292,7 +292,7 @@ class Runner:
     getconf_response = control_socket.recv()
     control_socket.close()
     
-    return str(getconf_response) == "DisableDebuggerAttachment=1"
+    return str(getconf_response) != "DisableDebuggerAttachment=1"
   
   def get_test_dir(self):
     """
