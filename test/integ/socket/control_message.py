@@ -20,13 +20,14 @@ class TestControlMessage(unittest.TestCase):
     Checks message parsing when we have a valid but unauthenticated socket.
     """
     
-    control_socket = test.runner.get_runner().get_tor_socket(False)
-    if not control_socket: self.skipTest("(no control socket)")
+    runner = test.runner.get_runner()
+    if not runner.is_accessible(): self.skipTest("(no control socket)")
     
     # If an unauthenticated connection gets a message besides AUTHENTICATE or
     # PROTOCOLINFO then tor will give an 'Authentication required.' message and
     # hang up.
     
+    control_socket = runner.get_tor_socket(False)
     control_socket.send("GETINFO version")
     
     auth_required_response = control_socket.recv()
@@ -66,8 +67,9 @@ class TestControlMessage(unittest.TestCase):
     Parses the response for a command which doesn't exist.
     """
     
-    control_socket = test.runner.get_runner().get_tor_socket()
-    if not control_socket: self.skipTest("(no control socket)")
+    runner = test.runner.get_runner()
+    if not runner.is_accessible(): self.skipTest("(no control socket)")
+    control_socket = runner.get_tor_socket()
     
     control_socket.send("blarg")
     unrecognized_command_response = control_socket.recv()
@@ -83,8 +85,9 @@ class TestControlMessage(unittest.TestCase):
     Parses the response for a GETINFO query which doesn't exist.
     """
     
-    control_socket = test.runner.get_runner().get_tor_socket()
-    if not control_socket: self.skipTest("(no control socket)")
+    runner = test.runner.get_runner()
+    if not runner.is_accessible(): self.skipTest("(no control socket)")
+    control_socket = runner.get_tor_socket()
     
     control_socket.send("GETINFO blarg")
     unrecognized_key_response = control_socket.recv()
@@ -102,9 +105,8 @@ class TestControlMessage(unittest.TestCase):
     
     runner = test.runner.get_runner()
     torrc_dst = runner.get_torrc_path()
-    
+    if not runner.is_accessible(): self.skipTest("(no control socket)")
     control_socket = runner.get_tor_socket()
-    if not control_socket: self.skipTest("(no control socket)")
     
     control_socket.send("GETINFO config-file")
     config_file_response = control_socket.recv()
@@ -122,9 +124,10 @@ class TestControlMessage(unittest.TestCase):
     
     runner = test.runner.get_runner()
     req_version = stem.version.Requirement.GETINFO_CONFIG_TEXT
-    our_version = runner.get_tor_version()
     
-    if our_version and our_version < req_version:
+    if not runner.is_accessible():
+      self.skipTest("(no control socket)")
+    elif runner.get_tor_version() < req_version:
       self.skipTest("(requires %s)" % req_version)
     
     # We can't be certain of the order, and there may be extra config-text
@@ -142,8 +145,6 @@ class TestControlMessage(unittest.TestCase):
         torrc_contents.append(line)
     
     control_socket = runner.get_tor_socket()
-    if not control_socket: self.skipTest("(no control socket)")
-    
     control_socket.send("GETINFO config-text")
     config_text_response = control_socket.recv()
     
@@ -169,8 +170,9 @@ class TestControlMessage(unittest.TestCase):
     Issues 'SETEVENTS BW' and parses a few events.
     """
     
-    control_socket = test.runner.get_runner().get_tor_socket()
-    if not control_socket: self.skipTest("(no control socket)")
+    runner = test.runner.get_runner()
+    if not runner.is_accessible(): self.skipTest("(no control socket)")
+    control_socket = runner.get_tor_socket()
     
     control_socket.send("SETEVENTS BW")
     setevents_response = control_socket.recv()

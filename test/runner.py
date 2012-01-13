@@ -10,11 +10,13 @@ Runner - Runtime context for our integration tests.
   |- start - prepares and starts a tor instance for our tests to run against
   |- stop - stops our tor instance and cleans up any temporary files
   |- is_running - checks if our tor test instance is running
+  |- is_accessible - checks if our tor instance can be connected to
   |- is_debugging_prevented - checks if DisableDebuggerAttachment is set
   |- get_test_dir - testing directory path
   |- get_torrc_path - path to our tor instance's torrc
   |- get_torrc_contents - contents of our tor instance's torrc
   |- get_connection_type - method by which controllers can connect to tor
+  |- get_connection_options - connection related options we're running with
   |- get_pid - process id of our tor process
   |- get_tor_socket - provides a socket to the tor instance
   +- get_tor_version - provides the version of tor we're running against
@@ -127,6 +129,10 @@ def exercise_socket(test_case, control_socket):
 
 class RunnerStopped(Exception):
   "Raised when we try to use a Runner that doesn't have an active tor instance"
+  pass
+
+class TorInaccessable(Exception):
+  "Raised when information is needed from tor but the instance we have is inaccessable"
   pass
 
 class Runner:
@@ -256,6 +262,17 @@ class Runner:
     
     return is_running
   
+  def is_accessible(self):
+    """
+    Checks if our tor instance has a method of being connected to or not.
+    
+    Returns:
+      True if tor has a control socket or port, False otherwise
+    """
+    
+    conn_opts = self.get_connection_options()
+    return OPT_PORT in conn_opts or OPT_SOCKET in conn_opts
+  
   def is_debugging_prevented(self):
     """
     Checks if tor's 'DisableDebuggerAttachment' option is set. This feature has
@@ -263,14 +280,14 @@ class Runner:
     https://trac.torproject.org/projects/tor/ticket/3313
     
     Returns:
-      True if debugger attachment is disallowd, False otherwise, and None if
-      tor can't be checked
+      True if debugger attachment is disallowd, False otherwise
+    
+    Raises:
+      TorInaccessable if this can't be determined
     """
     
     # TODO: replace higher level GETCONF query when we have a controller class
     control_socket = self.get_tor_socket()
-    if control_socket == None: return None
-    
     control_socket.send("GETCONF DisableDebuggerAttachment")
     getconf_response = control_socket.recv()
     control_socket.close()
@@ -349,6 +366,16 @@ class Runner:
     
     return self._connection_type
   
+  def get_connection_options(self):
+    """
+    Provides the connection related options we're running with.
+    
+    Returns:
+      list of connection contstants (test.runner.OPT_*) we're running with
+    """
+    
+    return CONNECTION_OPTS[self.get_connection_type()]
+  
   def get_pid(self):
     """
     Provides the process id of the tor process.
@@ -371,20 +398,19 @@ class Runner:
       authenticate (bool) - if True then the socket is authenticated
     
     Returns:
-      stem.socket.ControlSocket connected with our testing instance, returning
-      None if we either don't have a test instance or it can't be connected to
+      stem.socket.ControlSocket connected with our testing instance
+    
+    Raises:
+      TorInaccessable if tor can't be connected to
     """
     
-    connection_type, cookie_path = self.get_connection_type(), self.get_auth_cookie_path()
-    if connection_type == None: return None
-    
-    conn_opts = CONNECTION_OPTS[connection_type]
+    conn_opts = self.get_connection_options()
     
     if OPT_PORT in conn_opts:
       control_socket = stem.socket.ControlPort(control_port = CONTROL_PORT)
     elif OPT_SOCKET in conn_opts:
       control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
-    else: return None
+    else: raise TorInaccessable("Unable to connect to tor")
     
     if authenticate:
       stem.connection.authenticate(control_socket, CONTROL_PASSWORD)
@@ -396,15 +422,16 @@ class Runner:
     Queries our test instance for tor's version.
     
     Returns:
-      stem.version.Version for our test instance, None if we're unable to
-      connect to it
+      stem.version.Version for our test instance
+    
+    Raises:
+      TorInaccessable if this can't be determined
     """
     
     # TODO: replace with higher level functions when we've completed a basic
     # controller class
     
     control_socket = self.get_tor_socket()
-    if not control_socket: return None
     
     control_socket.send("GETINFO version")
     version_response = control_socket.recv()
@@ -466,7 +493,7 @@ class Runner:
     # resides in is only accessable by the tor user (and refuses to finish
     # starting if it isn't).
     
-    if OPT_SOCKET in CONNECTION_OPTS[self._connection_type]:
+    if OPT_SOCKET in self.get_connection_options():
       try:
         socket_dir = os.path.dirname(CONTROL_SOCKET_PATH)
         _print_status("  making control socket directory (%s)... " % socket_dir, STATUS_ATTR, quiet)
