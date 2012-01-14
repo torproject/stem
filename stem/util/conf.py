@@ -150,9 +150,8 @@ class Config():
       permissions, etc)
     """
     
-    config_file = open(path, "r")
-    read_contents = config_file.readlines()
-    config_file.close()
+    with open(path, "r") as config_file:
+      read_contents = config_file.readlines()
     
     self._contents_lock.acquire()
     self._raw_contents = read_contents
@@ -165,11 +164,12 @@ class Config():
       
       # parse the key/value pair
       if line:
-        if " " in line:
+        try:
           key, value = line.split(" ", 1)
-          value = value.strip()
-        else:
+        except ValueError:
+          log.debug("Config entry '%s' is expected to be of the format 'Key Value', defaulting to '%s' -> ''" % (line, line))
           key, value = line, ""
+        value = value.strip()
         
         self.set(key, value)
     
@@ -333,7 +333,7 @@ class Config():
   
   def get_value(self, key, default = None, multiple = False):
     """
-    This provides the currently value associated with a given key.
+    This provides the current value associated with a given key.
     
     Arguments:
       key (str)        - config setting to be fetched
