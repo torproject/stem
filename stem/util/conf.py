@@ -439,3 +439,11 @@ class Config():
       return default
     else: return [int(val) for val in conf_comp]
 
+  def save(self):
+    self._contents_lock.acquire()
+
+    with open(path, 'w') as f:
+      for entry in self.keys():
+        f.write('%s %s\n' % (entry, self.get(entry)))
+
+    self._contents_lock.release()
