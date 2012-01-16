@@ -15,6 +15,7 @@ would be loaded as four entries, the last one's value being an empty string.
 get_config - Singleton for getting configurations
 Config - Custom configuration.
   |- load - reads a configuration file
+  |- save - writes the current configuration to a file
   |- clear - empties our loaded configuration contents
   |- update - replaces mappings in a dictionary with the config's values
   |- keys - provides keys in the loaded configuration
@@ -166,14 +167,27 @@ class Config():
       if line:
         try:
           key, value = line.split(" ", 1)
+          value = value.strip()
         except ValueError:
           log.debug("Config entry '%s' is expected to be of the format 'Key Value', defaulting to '%s' -> ''" % (line, line))
           key, value = line, ""
-        value = value.strip()
         
         self.set(key, value)
     
     self._path = path
+    self._contents_lock.release()
+  
+  def save(self):
+    self._contents_lock.acquire()
+    
+    config_keys = self.keys()
+    config_keys.sort()
+    
+    with open(path, 'w') as f:
+      for entry_key in config_keys:
+        for entry_value in self.get_value(entry_key, multiple = True):
+          f.write('%s %s\n' % (entry_key, entry_value))
+    
     self._contents_lock.release()
   
   def clear(self):
@@ -439,11 +453,3 @@ class Config():
       return default
     else: return [int(val) for val in conf_comp]
 
-  def save(self):
-    self._contents_lock.acquire()
-
-    with open(path, 'w') as f:
-      for entry in self.keys():
-        f.write('%s %s\n' % (entry, self.get(entry)))
-
-    self._contents_lock.release()
