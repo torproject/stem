@@ -16,10 +16,8 @@ class TestConnect(unittest.TestCase):
   """
   
   def setUp(self):
-    connection_type = test.runner.get_runner().get_connection_type()
-    
     # none of these tests apply if there's no control connection
-    if connection_type == test.runner.TorConnection.NONE:
+    if not test.runner.get_runner().is_accessible():
       self.skipTest("(no connection)")
   
   def test_connect_port(self):
@@ -46,7 +44,6 @@ class TestConnect(unittest.TestCase):
     sys.stdout = StringIO.StringIO()
     
     try:
-      connection_type = test.runner.get_runner().get_connection_type()
       ctl_pw = test.runner.CONTROL_PASSWORD
       controller = stem.connection.Controller.NONE
       
@@ -59,7 +56,7 @@ class TestConnect(unittest.TestCase):
         ctl_socket = test.runner.CONTROL_SOCKET_PATH
         control_socket = stem.connection.connect_socket_file(socket_path = ctl_socket, password = ctl_pw, controller = controller)
       
-      if opt_type in test.runner.CONNECTION_OPTS[connection_type]:
+      if opt_type in test.runner.get_runner().get_connection_options():
         test.runner.exercise_socket(self, control_socket)
         control_socket.close()
       else:

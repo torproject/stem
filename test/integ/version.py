@@ -40,9 +40,8 @@ class TestVersion(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
-    connection_type = runner.get_connection_type()
     
-    if connection_type == test.runner.TorConnection.NONE:
+    if not runner.is_accessible():
       self.skipTest("(no connection)")
     
     control_socket = runner.get_tor_socket()

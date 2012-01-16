@@ -15,7 +15,6 @@ Runner - Runtime context for our integration tests.
   |- get_test_dir - testing directory path
   |- get_torrc_path - path to our tor instance's torrc
   |- get_torrc_contents - contents of our tor instance's torrc
-  |- get_connection_type - method by which controllers can connect to tor
   |- get_connection_options - connection related options we're running with
   |- get_pid - process id of our tor process
   |- get_tor_socket - provides a socket to the tor instance
@@ -357,17 +356,6 @@ class Runner:
     
     return self._get("_torrc_contents")
   
-  def get_connection_type(self):
-    """
-    Provides the method we can use for connecting to the tor instance.
-    
-    Returns:
-      test.runner.TorConnection enumeration for the method we can use for
-      connecting to the tor test instance
-    """
-    
-    return self._connection_type
-  
   def get_connection_options(self):
     """
     Provides the connection related options we're running with.
@@ -376,7 +364,7 @@ class Runner:
       list of connection contstants (test.runner.OPT_*) we're running with
     """
     
-    return CONNECTION_OPTS[self.get_connection_type()]
+    return CONNECTION_OPTS[self._connection_type]
   
   def get_pid(self):
     """

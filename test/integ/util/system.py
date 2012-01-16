@@ -319,6 +319,5 @@ class TestSystem(unittest.TestCase):
     True if our test runner has a control port, False otherwise.
     """
     
-    connection_type = runner = test.runner.get_runner().get_connection_type()
-    return test.runner.OPT_PORT in test.runner.CONNECTION_OPTS[connection_type]
+    return test.runner.OPT_PORT in test.runner.get_runner().get_connection_options()
 

@@ -27,9 +27,8 @@ class TestProtocolInfo(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
-    connection_type = runner.get_connection_type()
     
-    if connection_type == test.runner.TorConnection.NONE:
+    if not runner.is_accessible():
       self.skipTest("(no connection)")
     
     control_socket = runner.get_tor_socket(False)
@@ -46,7 +45,7 @@ class TestProtocolInfo(unittest.TestCase):
     self.assertNotEqual(None, protocolinfo_response.tor_version)
     self.assertNotEqual(None, protocolinfo_response.auth_methods)
     
-    self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
+    self.assert_protocolinfo_attr(protocolinfo_response)
   
   def test_get_protocolinfo_by_port(self):
     """
@@ -73,12 +72,11 @@ class TestProtocolInfo(unittest.TestCase):
       return False
     
     stem.util.system.CALL_MOCKING = port_lookup_filter
-    connection_type = test.runner.get_runner().get_connection_type()
     
-    if test.runner.OPT_PORT in test.runner.CONNECTION_OPTS[connection_type]:
+    if test.runner.OPT_PORT in test.runner.get_runner().get_connection_options():
       control_socket = stem.socket.ControlPort(control_port = test.runner.CONTROL_PORT)
       protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
-      self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
+      self.assert_protocolinfo_attr(protocolinfo_response)
       
       # we should have a usable socket at this point
       self.assertTrue(control_socket.is_alive())
@@ -105,12 +103,11 @@ class TestProtocolInfo(unittest.TestCase):
       return False
     
     stem.util.system.CALL_MOCKING = socket_lookup_filter
-    connection_type = test.runner.get_runner().get_connection_type()
     
-    if test.runner.OPT_SOCKET in test.runner.CONNECTION_OPTS[connection_type]:
+    if test.runner.OPT_SOCKET in test.runner.get_runner().get_connection_options():
       control_socket = stem.socket.ControlSocketFile(test.runner.CONTROL_SOCKET_PATH)
       protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
-      self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
+      self.assert_protocolinfo_attr(protocolinfo_response)
       
       # we should have a usable socket at this point
       self.assertTrue(control_socket.is_alive())
@@ -127,20 +124,19 @@ class TestProtocolInfo(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
-    connection_type = runner.get_connection_type()
     
-    if connection_type == test.runner.TorConnection.NONE:
+    if not runner.is_accessible():
       self.skipTest("(no connection)")
     
     control_socket = runner.get_tor_socket(False)
     
     for i in range(5):
       protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
-      self.assert_protocolinfo_attr(protocolinfo_response, connection_type)
+      self.assert_protocolinfo_attr(protocolinfo_response)
     
     control_socket.close()
   
-  def assert_protocolinfo_attr(self, protocolinfo_response, connection_type):
+  def assert_protocolinfo_attr(self, protocolinfo_response):
     """
     Makes assertions that the protocolinfo response's attributes match those of
     a given connection type.
@@ -149,28 +145,24 @@ class TestProtocolInfo(unittest.TestCase):
     # This should never have test.runner.TorConnection.NONE. If we somehow got
     # a protocolinfo_response from that config then we have an issue. :)
     
-    if connection_type == test.runner.TorConnection.OPEN:
-      auth_methods = (stem.connection.AuthMethod.NONE,)
-    elif connection_type == test.runner.TorConnection.PASSWORD:
-      auth_methods = (stem.connection.AuthMethod.PASSWORD,)
-    elif connection_type == test.runner.TorConnection.COOKIE:
-      auth_methods = (stem.connection.AuthMethod.COOKIE,)
-    elif connection_type == test.runner.TorConnection.MULTIPLE:
-      auth_methods = (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.PASSWORD)
-    elif connection_type == test.runner.TorConnection.SOCKET:
-      auth_methods = (stem.connection.AuthMethod.NONE,)
-    elif connection_type == test.runner.TorConnection.SCOOKIE:
-      auth_methods = (stem.connection.AuthMethod.COOKIE,)
-    elif connection_type == test.runner.TorConnection.PTRACE:
-      auth_methods = (stem.connection.AuthMethod.NONE,)
-    else:
-      self.fail("Unrecognized connection type: %s" % connection_type)
+    connection_options = test.runner.get_runner().get_connection_options()
+    
+    auth_methods = []
+    
+    if test.runner.OPT_COOKIE in connection_options:
+      auth_methods.append(stem.connection.AuthMethod.COOKIE)
+    
+    if test.runner.OPT_PASSWORD in connection_options:
+      auth_methods.append(stem.connection.AuthMethod.PASSWORD)
+    
+    if not auth_methods:
+      auth_methods.append(stem.connection.AuthMethod.NONE)
     
     self.assertEqual((), protocolinfo_response.unknown_auth_methods)
-    self.assertEqual(auth_methods, protocolinfo_response.auth_methods)
+    self.assertEqual(tuple(auth_methods), protocolinfo_response.auth_methods)
     
     auth_cookie_path = None
-    if test.runner.OPT_COOKIE in test.runner.CONNECTION_OPTS[connection_type]:
+    if test.runner.OPT_COOKIE in connection_options:
       auth_cookie_path = test.runner.get_runner().get_auth_cookie_path()
     
     self.assertEqual(auth_cookie_path, protocolinfo_response.cookie_path)

@@ -30,10 +30,8 @@ class TestAuthenticate(unittest.TestCase):
   """
   
   def setUp(self):
-    connection_type = test.runner.get_runner().get_connection_type()
-    
     # none of these tests apply if there's no control connection
-    if connection_type == test.runner.TorConnection.NONE:
+    if not test.runner.get_runner().is_accessible():
       self.skipTest("(no connection)")
   
   def test_authenticate_general(self):
@@ -51,8 +49,7 @@ class TestAuthenticate(unittest.TestCase):
     Tests the authenticate function with something like its pydoc example.
     """
     
-    connection_type = test.runner.get_runner().get_connection_type()
-    connection_options = test.runner.CONNECTION_OPTS[connection_type]
+    connection_options = test.runner.get_runner().get_connection_options()
     
     try:
       control_socket = stem.socket.ControlPort(control_port = test.runner.CONTROL_PORT)
@@ -91,7 +88,8 @@ class TestAuthenticate(unittest.TestCase):
     # authenticate with
     
     runner = test.runner.get_runner()
-    is_password_only = test.runner.TorConnection.PASSWORD == runner.get_connection_type()
+    connection_options = runner.get_connection_options()
+    is_password_only = test.runner.OPT_PASSWORD in connection_options and not test.runner.OPT_COOKIE in connection_options
     
     # tests without a password
     control_socket = runner.get_tor_socket(False)
@@ -248,8 +246,7 @@ class TestAuthenticate(unittest.TestCase):
       bool tuple of the form (password_auth, cookie_auth)
     """
     
-    connection_type = test.runner.get_runner().get_connection_type()
-    connection_options = test.runner.CONNECTION_OPTS[connection_type]
+    connection_options = test.runner.get_runner().get_connection_options()
     password_auth = test.runner.OPT_PASSWORD in connection_options
     cookie_auth = test.runner.OPT_COOKIE in connection_options
     
