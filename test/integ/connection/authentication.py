@@ -198,7 +198,7 @@ class TestAuthenticate(unittest.TestCase):
     fake_cookie.write("0" * 32)
     fake_cookie.close()
     
-    if self._can_authenticate(test.runner.TorConnection.NONE):
+    if self._can_authenticate(stem.connection.AuthMethod.NONE):
       # authentication will work anyway
       self._check_auth(auth_type, auth_value)
     else:

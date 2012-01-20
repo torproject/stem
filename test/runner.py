@@ -25,11 +25,9 @@ import os
 import sys
 import time
 import stat
-import socket
 import shutil
 import logging
 import tempfile
-import binascii
 import threading
 
 import stem.socket
@@ -45,12 +43,6 @@ DEFAULT_CONFIG = {
   "test.integ.target.online": False,
   "test.integ.target.relative_data_dir": False,
 }
-
-# Methods for connecting to tor. General integration tests only run with the
-# DEFAULT_TOR_CONNECTION, but expanded integ tests will run with all of them.
-
-TorConnection = stem.util.enum.Enum("NONE", "OPEN", "PASSWORD", "COOKIE", "MULTIPLE", "SOCKET", "SCOOKIE", "PTRACE")
-DEFAULT_TOR_CONNECTION = TorConnection.OPEN
 
 STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
 SUBSTATUS_ATTR = (term.Color.BLUE, )
@@ -79,19 +71,6 @@ OPT_PASSWORD = "HashedControlPassword 16:8C423A41EF4A542C6078985270AE28A4E04D056
 OPT_SOCKET = "ControlSocket %s" % CONTROL_SOCKET_PATH
 OPT_PTRACE = "DisableDebuggerAttachment 0"
 
-# mapping of TorConnection to their options
-
-CONNECTION_OPTS = {
-  TorConnection.NONE: [],
-  TorConnection.OPEN: [OPT_PORT],
-  TorConnection.PASSWORD: [OPT_PORT, OPT_PASSWORD],
-  TorConnection.COOKIE: [OPT_PORT, OPT_COOKIE],
-  TorConnection.MULTIPLE: [OPT_PORT, OPT_PASSWORD, OPT_COOKIE],
-  TorConnection.SOCKET: [OPT_SOCKET],
-  TorConnection.SCOOKIE: [OPT_SOCKET, OPT_COOKIE],
-  TorConnection.PTRACE: [OPT_PORT, OPT_PTRACE],
-}
-
 def get_runner():
   """
   Singleton for the runtime context of integration tests.
@@ -101,17 +80,15 @@ def get_runner():
   if not INTEG_RUNNER: INTEG_RUNNER = Runner()
   return INTEG_RUNNER
 
-def get_torrc(connection_type = DEFAULT_TOR_CONNECTION):
+def get_torrc(extra_torrc_opts):
   """
   Provides a basic torrc with the given connection method. Hashed passwords are
   for "pw".
   """
   
-  connection_opt, torrc = CONNECTION_OPTS[connection_type], BASE_TORRC
-  
-  if connection_opt:
-    return torrc + "\n".join(connection_opt) + "\n"
-  else: return torrc
+  if extra_torrc_opts:
+    return BASE_TORRC + "\n".join(extra_torrc_opts) + "\n"
+  else: return BASE_TORRC
 
 def exercise_socket(test_case, control_socket):
   """
@@ -145,18 +122,17 @@ class Runner:
     self._test_dir = ""
     self._tor_cwd = ""
     self._torrc_contents = ""
-    self._connection_type = None
+    self._extra_torrc_opts = None
     self._tor_process = None
   
-  def start(self, tor_cmd, connection_type = DEFAULT_TOR_CONNECTION, quiet = False):
+  def start(self, tor_cmd, extra_torrc_opts, quiet = False):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
     
     Arguments:
       tor_cmd (str) - command to start tor with
-      connection_type (TorConnection) - method for controllers to authenticate
-                          to tor
+      extra_torrc_opts (list) - additional torrc options for our test instance
       quiet (bool) - if False then this prints status information as we start
                      up to stdout
     
@@ -194,8 +170,8 @@ class Runner:
       os.chdir(tor_cwd)
       data_dir_path = "./%s" % os.path.basename(self._test_dir)
     
-    self._connection_type = connection_type
-    self._torrc_contents = get_torrc(connection_type) % data_dir_path
+    self._extra_torrc_opts = extra_torrc_opts
+    self._torrc_contents = get_torrc(extra_torrc_opts) % data_dir_path
     
     try:
       self._tor_cwd = os.getcwd()
@@ -233,7 +209,7 @@ class Runner:
     self._test_dir = ""
     self._tor_cwd = ""
     self._torrc_contents = ""
-    self._connection_type = None
+    self._extra_torrc_opts = None
     self._tor_process = None
     
     _print_status("done\n", STATUS_ATTR, quiet)
@@ -364,7 +340,8 @@ class Runner:
       list of connection contstants (test.runner.OPT_*) we're running with
     """
     
-    return CONNECTION_OPTS[self._connection_type]
+    # TODO: rename function
+    return self._extra_torrc_opts
   
   def get_pid(self):
     """

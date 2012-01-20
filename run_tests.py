@@ -64,19 +64,102 @@ INTEG_TESTS = (
 # Integration tests above the basic suite.
 TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "CONN_NONE", "CONN_OPEN", "CONN_PASSWORD", "CONN_COOKIE", "CONN_MULTIPLE", "CONN_SOCKET", "CONN_SCOOKIE", "CONN_PTRACE", "CONN_ALL")])
 
+# Attributes that integ targets can have are...
+# 
+# config
+#   Configuration option with which this is synced. If an option is set via
+#   both the config and '--target' argument then the argument takes precedence.
+# 
+# description
+#   The '--help' description of the target.
+# 
+# prereq
+#   Version that we need to run the target.
+# 
+# torrc
+#   Configuration options for the test instance. For each of these targets that
+#   we have we make an integration test run.
+# 
+# TODO: This is a very, very long block and it's only gonna get worse. Should
+# this be moved to a 'settings.cfg'? It might be problematic due to constants.
+
 TARGET_ATTR = {
-  TARGETS.ONLINE: ("test.integ.target.online", "Includes tests that require network activity."),
-  TARGETS.RELATIVE: ("test.integ.target.relative_data_dir", "Uses a relative path for tor's data directory."),
-  TARGETS.CONN_NONE: ("test.integ.target.connection.none", "Configuration without a way for controllers to connect."),
-  TARGETS.CONN_OPEN: ("test.integ.target.connection.open", "Configuration with an open control port (default)."),
-  TARGETS.CONN_PASSWORD: ("test.integ.target.connection.password", "Configuration with password authentication."),
-  TARGETS.CONN_COOKIE: ("test.integ.target.connection.cookie", "Configuration with an authentication cookie."),
-  TARGETS.CONN_MULTIPLE: ("test.integ.target.connection.multiple", "Configuration with both password and cookie authentication."),
-  TARGETS.CONN_SOCKET: ("test.integ.target.connection.socket", "Configuration with a control socket."),
-  TARGETS.CONN_SCOOKIE: ("test.integ.target.connection.scookie", "Configuration with a control socket and authentication cookie."),
-  TARGETS.CONN_PTRACE: ("test.integ.target.connection.ptrace", "Configuration with an open control port and 'DisableDebuggerAttachment 0'"),
-  TARGETS.CONN_ALL: ("test.integ.target.connection.all", "Runs integration tests for all connection configurations."),
+  TARGETS.ONLINE: {
+    "config": "test.integ.target.online",
+    "description": "Includes tests that require network activity.",
+  },
+  TARGETS.RELATIVE: {
+    "config": "test.integ.target.relative_data_dir",
+    "description": "Uses a relative path for tor's data directory.",
+  },
+  TARGETS.CONN_NONE: {
+    "config": "test.integ.target.connection.none",
+    "description": "Configuration without a way for controllers to connect.",
+    "torrc": (),
+  },
+  TARGETS.CONN_OPEN: {
+    "config": "test.integ.target.connection.open",
+    "description": "Configuration with an open control port (default).",
+    "torrc": (
+      test.runner.OPT_PORT,
+    ),
+  },
+  TARGETS.CONN_PASSWORD: {
+    "config": "test.integ.target.connection.password",
+    "description": "Configuration with password authentication.",
+    "torrc": (
+      test.runner.OPT_PORT,
+      test.runner.OPT_PASSWORD,
+    ),
+  },
+  TARGETS.CONN_COOKIE: {
+    "config": "test.integ.target.connection.cookie",
+    "description": "Configuration with an authentication cookie.",
+    "torrc": (
+      test.runner.OPT_PORT,
+      test.runner.OPT_COOKIE,
+    ),
+  },
+  TARGETS.CONN_MULTIPLE: {
+    "config": "test.integ.target.connection.multiple",
+    "description": "Configuration with both password and cookie authentication.",
+    "torrc": (
+      test.runner.OPT_PORT,
+      test.runner.OPT_PASSWORD,
+      test.runner.OPT_COOKIE,
+    ),
+  },
+  TARGETS.CONN_SOCKET: {
+    "config": "test.integ.target.connection.socket",
+    "description": "Configuration with a control socket.",
+    "torrc": (
+      test.runner.OPT_SOCKET,
+    ),
+  },
+  TARGETS.CONN_SCOOKIE: {
+    "config": "test.integ.target.connection.scookie",
+    "description": "Configuration with a control socket and authentication cookie.",
+    "torrc": (
+      test.runner.OPT_SOCKET,
+      test.runner.OPT_COOKIE,
+    ),
+  },
+  TARGETS.CONN_PTRACE: {
+    "config": "test.integ.target.connection.ptrace",
+    "description": "Configuration with an open control port and 'DisableDebuggerAttachment 0'",
+    "prereq": stem.version.Requirement.DISABLE_DEBUGGER_ATTACHMENT,
+    "torrc": (
+      test.runner.OPT_PORT,
+      test.runner.OPT_PTRACE,
+    ),
+  },
+  TARGETS.CONN_ALL: {
+    "config": "test.integ.target.connection.all",
+    "description": "Runs integration tests for all connection configurations.",
+  },
 }
+
+DEFAULT_RUN_TARGET = TARGETS.CONN_OPEN
 
 HELP_MSG = """Usage runTests.py [OPTION]
 Runs tests for the stem library.
@@ -124,6 +207,7 @@ if __name__ == '__main__':
   run_integ_tests = False
   config_path = None
   test_config = stem.util.conf.get_config("test")
+  override_targets = []
   logging_runlevel = None
   tor_cmd = "tor"
   
@@ -151,9 +235,7 @@ if __name__ == '__main__':
           print "Invalid integration target: %s" % target
           sys.exit(1)
         else:
-          # sets the configuration flag
-          config_flag = TARGET_ATTR[target][0]
-          test_config.set(config_flag, "true")
+          override_targets.append(target)
     elif opt in ("-l", "--log"):
       logging_runlevel = arg.upper()
       
@@ -177,7 +259,7 @@ if __name__ == '__main__':
       
       target_lines = []
       for target in TARGETS:
-        target_lines.append(description_format % (target, TARGET_ATTR[target][1]))
+        target_lines.append(description_format % (target, TARGET_ATTR[target]["description"]))
       
       print HELP_MSG % "\n    ".join(target_lines)
       sys.exit()
@@ -207,6 +289,13 @@ if __name__ == '__main__':
       sys.stdout.write(term.format("failed (%s)\n" % exc, term.Color.RED, term.Attr.BOLD))
     
     print
+  
+  # Set the configuration flag for our '--target' arguments. This is meant to
+  # override our configuration flags if both set a target.
+  
+  for target in override_targets:
+    target_config = TARGET_ATTR[target].get("config")
+    if target_config: test_config.set(target_config, "true")
   
   error_tracker = test.output.ErrorTracker()
   output_filters = (
@@ -240,46 +329,46 @@ if __name__ == '__main__':
     print_divider("INTEGRATION TESTS", True)
     integ_runner = test.runner.get_runner()
     
-    # queue up all of the tor configurations we want to run the integration
-    # tests on
+    # Queue up all the targets with torrc options we want to run against.
     
-    connection_types = []
+    integ_run_targets = []
+    all_run_targets = [t for t in TARGETS if "torrc" in TARGET_ATTR[t]]
     
     if test_config.get("test.integ.target.connection.all", False):
-      connection_types = list(test.runner.TorConnection)
+      # test against everything with torrc options
+      integ_run_targets = all_run_targets
     else:
-      # mapping of config type to (enum, default) tuple
-      conn_type_mappings = {
-        "none": test.runner.TorConnection.NONE,
-        "open": test.runner.TorConnection.OPEN,
-        "password": test.runner.TorConnection.PASSWORD,
-        "cookie": test.runner.TorConnection.COOKIE,
-        "multiple": test.runner.TorConnection.MULTIPLE,
-        "socket": test.runner.TorConnection.SOCKET,
-        "scookie": test.runner.TorConnection.SCOOKIE,
-        "ptrace": test.runner.TorConnection.PTRACE,
-      }
-      
-      for type_key in conn_type_mappings:
-        if test_config.get("test.integ.target.connection.%s" % type_key, False):
-          connection_types.append(conn_type_mappings[type_key])
-    
-    # TorConnection.OPEN is the default if we don't have any defined
-    if not connection_types:
-      connection_types = [test.runner.TorConnection.OPEN]
-    
-    for connection_type in connection_types:
-      if connection_type == test.runner.TorConnection.PTRACE:
-        our_version = stem.version.get_system_tor_version(tor_cmd)
-        req_version = stem.version.Requirement.DISABLE_DEBUGGER_ATTACHMENT
+      for target in all_run_targets:
+        target_config = TARGET_ATTR[target].get("config")
         
-        if our_version < req_version:
-          print term.format("Unable to run CONN_PTRACE target: DisableDebuggerAttachment was added in %s" % req_version, term.Color.RED, term.Attr.BOLD)
-          print
-          continue
+        if target_config and test_config.get(target_config, False):
+          integ_run_targets.append(target)
+    
+    # if we didn't specify any targets then use the default
+    if not integ_run_targets:
+      integ_run_targets.append(DEFAULT_RUN_TARGET)
+    
+    # Determine targets we don't meet the prereqs for. Warnings are given about
+    # these at the end of the test run so they're more noticeable.
+    
+    our_version, skip_targets = None, []
+    
+    for target in integ_run_targets:
+      target_prereq = TARGET_ATTR[target].get("prereq")
+      
+      if target_prereq:
+        # lazy loaded to skip system call if we don't have any prereqs
+        if not our_version:
+          our_version = stem.version.get_system_tor_version(tor_cmd)
+        
+        if our_version < target_prereq:
+          skip_targets.append(target)
+    
+    for target in integ_run_targets:
+      if target in skip_targets: continue
       
       try:
-        integ_runner.start(tor_cmd, connection_type = connection_type)
+        integ_runner.start(tor_cmd, extra_torrc_opts = TARGET_ATTR[target].get("torrc", []))
         
         print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
@@ -298,6 +387,14 @@ if __name__ == '__main__':
         pass
       finally:
         integ_runner.stop()
+    
+    if skip_targets:
+      print
+      
+      for target in skip_targets:
+        print term.format("Unable to run target %s, this requires tor version %s" % (target, TARGET_ATTR[target]["prereq"]), term.Color.RED, term.Attr.BOLD)
+      
+      print
     
     # TODO: note unused config options afterward?
   
