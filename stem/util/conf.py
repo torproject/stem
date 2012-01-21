@@ -375,7 +375,7 @@ class Config():
     
     return val
   
-  def get_str_csv(self, key, default = None, count = None):
+  def get_str_csv(self, key, default = None, count = None, sub_key = None):
     """
     Fetches the given key as a comma separated value.
     
@@ -385,13 +385,18 @@ class Config():
                          the count
       count (int)      - if set then the default is returned when the number of
                          elements doesn't match this value
+      sub_key (str)    - handle the configuration entry as a dictionary and use
+                         this key within it
     
     Returns:
       list with the stripped values
     """
     
-    conf_value = self.get_value(key)
+    if sub_key: conf_value = self.get(key, {}).get(sub_key)
+    else: conf_value = self.get_value(key)
+    
     if conf_value == None: return default
+    elif not conf_value.strip(): return [] # empty string
     else:
       conf_comp = [entry.strip() for entry in conf_value.split(",")]
       
@@ -407,7 +412,7 @@ class Config():
       
       return conf_comp
   
-  def get_int_csv(self, key, default = None, count = None, min_value = None, max_value = None):
+  def get_int_csv(self, key, default = None, count = None, min_value = None, max_value = None, sub_key = None):
     """
     Fetches the given comma separated value, returning the default if the
     values aren't integers or don't follow the given constraints.
@@ -419,12 +424,14 @@ class Config():
       count (int)      - checks that the number of values matches this if set
       min_value (int)  - checks that all values are over this if set
       max_value (int)  - checks that all values are under this if set
+      sub_key (str)    - handle the configuration entry as a dictionary and use
+                         this key within it
     
     Returns:
       list with the stripped values
     """
     
-    conf_comp = self.get_str_csv(key, default, count)
+    conf_comp = self.get_str_csv(key, default, count, sub_key)
     if conf_comp == default: return default
     
     # validates the input, setting the error_msg if there's a problem

@@ -80,7 +80,7 @@ class Enum:
     Provides the index of the given value in the collection.
     
     Arguments:
-      value - entry to be looked up
+      value (str) - entry to be looked up
     
     Returns:
       integer index of the given entry
@@ -96,7 +96,7 @@ class Enum:
     Provides the next enumeration after the given value.
     
     Arguments:
-      value - enumeration for which to get the next entry
+      value (str) - enumeration for which to get the next entry
     
     Returns:
       enum value following the given entry
@@ -116,7 +116,7 @@ class Enum:
     Provides the previous enumeration before the given value.
     
     Arguments:
-      value - enumeration for which to get the previous entry
+      value (str) - enumeration for which to get the previous entry
     
     Returns:
       enum value proceeding the given entry
@@ -130,6 +130,26 @@ class Enum:
     
     prev_index = (self._values.index(value) - 1) % len(self._values)
     return self._values[prev_index]
+  
+  def __getitem__(self, item):
+    """
+    Provides the values for the given key.
+    
+    Arguments:
+      item (str) - key to be looked up
+    
+    Returns:
+      str with the value for the given key
+    
+    Raises:
+      ValueError if the key doesn't exist
+    """
+    
+    if item in self.__dict__:
+      return self.__dict__[item]
+    else:
+      keys = ", ".join(self.keys())
+      raise ValueError("'%s' isn't among our enumeration keys, which includes: %s" % (item, keys))
   
   def __iter__(self):
     """
