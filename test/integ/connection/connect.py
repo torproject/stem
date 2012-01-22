@@ -56,7 +56,7 @@ class TestConnect(unittest.TestCase):
         ctl_socket = test.runner.CONTROL_SOCKET_PATH
         control_socket = stem.connection.connect_socket_file(socket_path = ctl_socket, password = ctl_pw, controller = controller)
       
-      if opt_type in test.runner.get_runner().get_connection_options():
+      if opt_type in test.runner.get_runner().get_options():
         test.runner.exercise_socket(self, control_socket)
         control_socket.close()
       else:

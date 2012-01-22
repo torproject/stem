@@ -4,6 +4,7 @@ to start and stop tor, and by the integration tests themselves for information
 about the tor test instance they're running against.
 
 RunnerStopped - Runner doesn't have an active tor instance.
+TorInaccessable - Tor can't be queried for the information.
 
 get_runner - Singleton for fetching our runtime context.
 Runner - Runtime context for our integration tests.
@@ -12,10 +13,10 @@ Runner - Runtime context for our integration tests.
   |- is_running - checks if our tor test instance is running
   |- is_accessible - checks if our tor instance can be connected to
   |- is_ptraceable - checks if DisableDebuggerAttachment is set
+  |- get_options - custom torrc options used for our test instance
   |- get_test_dir - testing directory path
   |- get_torrc_path - path to our tor instance's torrc
   |- get_torrc_contents - contents of our tor instance's torrc
-  |- get_connection_options - connection related options we're running with
   |- get_pid - process id of our tor process
   |- get_tor_socket - provides a socket to the tor instance
   +- get_tor_version - provides the version of tor we're running against
@@ -124,7 +125,7 @@ class Runner:
     self._test_dir = ""
     self._tor_cwd = ""
     self._torrc_contents = ""
-    self._extra_torrc_opts = None
+    self._custom_opts = None
     self._tor_process = None
   
   def start(self, tor_cmd, extra_torrc_opts, quiet = False):
@@ -172,7 +173,7 @@ class Runner:
       os.chdir(tor_cwd)
       data_dir_path = "./%s" % os.path.basename(self._test_dir)
     
-    self._extra_torrc_opts = extra_torrc_opts
+    self._custom_opts = extra_torrc_opts
     self._torrc_contents = get_torrc(extra_torrc_opts) % data_dir_path
     
     try:
@@ -211,7 +212,7 @@ class Runner:
     self._test_dir = ""
     self._tor_cwd = ""
     self._torrc_contents = ""
-    self._extra_torrc_opts = None
+    self._custom_opts = None
     self._tor_process = None
     
     _print_status("done\n", STATUS_ATTR, quiet)
@@ -249,8 +250,7 @@ class Runner:
       True if tor has a control socket or port, False otherwise
     """
     
-    conn_opts = self.get_connection_options()
-    return Torrc.PORT in conn_opts or Torrc.SOCKET in conn_opts
+    return Torrc.PORT in self._custom_opts or Torrc.SOCKET in self._custom_opts
   
   def is_ptraceable(self):
     """
@@ -272,6 +272,16 @@ class Runner:
     control_socket.close()
     
     return str(getconf_response) != "DisableDebuggerAttachment=1"
+  
+  def get_options(self):
+    """
+    Provides the custom torrc options our tor instance is running with.
+    
+    Returns:
+      list of Torrc enumerations being used by our test instance
+    """
+    
+    return self._custom_opts
   
   def get_test_dir(self):
     """
@@ -334,17 +344,6 @@ class Runner:
     
     return self._get("_torrc_contents")
   
-  def get_connection_options(self):
-    """
-    Provides the connection related options we're running with.
-    
-    Returns:
-      list of connection contstants (test.runner.OPT_*) we're running with
-    """
-    
-    # TODO: rename function
-    return self._extra_torrc_opts
-  
   def get_pid(self):
     """
     Provides the process id of the tor process.
@@ -373,11 +372,9 @@ class Runner:
       TorInaccessable if tor can't be connected to
     """
     
-    conn_opts = self.get_connection_options()
-    
-    if Torrc.PORT in conn_opts:
+    if Torrc.PORT in self._custom_opts:
       control_socket = stem.socket.ControlPort(control_port = CONTROL_PORT)
-    elif Torrc.SOCKET in conn_opts:
+    elif Torrc.SOCKET in self._custom_opts:
       control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
     else: raise TorInaccessable("Unable to connect to tor")
     
@@ -462,7 +459,7 @@ class Runner:
     # resides in is only accessable by the tor user (and refuses to finish
     # starting if it isn't).
     
-    if Torrc.SOCKET in self.get_connection_options():
+    if Torrc.SOCKET in self._custom_opts:
       try:
         socket_dir = os.path.dirname(CONTROL_SOCKET_PATH)
         _print_status("  making control socket directory (%s)... " % socket_dir, STATUS_ATTR, quiet)

@@ -49,13 +49,13 @@ class TestAuthenticate(unittest.TestCase):
     Tests the authenticate function with something like its pydoc example.
     """
     
-    connection_options = test.runner.get_runner().get_connection_options()
+    tor_options = test.runner.get_runner().get_options()
     
     try:
       control_socket = stem.socket.ControlPort(control_port = test.runner.CONTROL_PORT)
     except stem.socket.SocketError:
       # assert that we didn't have a socket to connect to
-      self.assertFalse(test.runner.Torrc.PORT in connection_options)
+      self.assertFalse(test.runner.Torrc.PORT in tor_options)
       return
     
     try:
@@ -65,7 +65,7 @@ class TestAuthenticate(unittest.TestCase):
     except stem.connection.IncorrectSocketType:
       self.fail()
     except stem.connection.MissingPassword:
-      self.assertTrue(test.runner.Torrc.PASSWORD in connection_options)
+      self.assertTrue(test.runner.Torrc.PASSWORD in tor_options)
       controller_password = test.runner.CONTROL_PASSWORD
       
       try:
@@ -88,8 +88,8 @@ class TestAuthenticate(unittest.TestCase):
     # authenticate with
     
     runner = test.runner.get_runner()
-    connection_options = runner.get_connection_options()
-    is_password_only = test.runner.Torrc.PASSWORD in connection_options and not test.runner.Torrc.COOKIE in connection_options
+    tor_options = runner.get_options()
+    is_password_only = test.runner.Torrc.PASSWORD in tor_options and not test.runner.Torrc.COOKIE in tor_options
     
     # tests without a password
     control_socket = runner.get_tor_socket(False)
@@ -246,9 +246,9 @@ class TestAuthenticate(unittest.TestCase):
       bool tuple of the form (password_auth, cookie_auth)
     """
     
-    connection_options = test.runner.get_runner().get_connection_options()
-    password_auth = test.runner.Torrc.PASSWORD in connection_options
-    cookie_auth = test.runner.Torrc.COOKIE in connection_options
+    tor_options = test.runner.get_runner().get_options()
+    password_auth = test.runner.Torrc.PASSWORD in tor_options
+    cookie_auth = test.runner.Torrc.COOKIE in tor_options
     
     return password_auth, cookie_auth
   

@@ -319,5 +319,5 @@ class TestSystem(unittest.TestCase):
     True if our test runner has a control port, False otherwise.
     """
     
-    return test.runner.Torrc.PORT in test.runner.get_runner().get_connection_options()
+    return test.runner.Torrc.PORT in test.runner.get_runner().get_options()
 
