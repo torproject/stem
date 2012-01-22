@@ -172,7 +172,7 @@ class Config():
           log.debug("Config entry '%s' is expected to be of the format 'Key Value', defaulting to '%s' -> ''" % (line, line))
           key, value = line, ""
         
-        self.set(key, value)
+        self.set(key, value, False)
     
     self._path = path
     self._contents_lock.release()
@@ -261,18 +261,27 @@ class Config():
     
     return set(self.get_keys()).difference(self._requested_keys)
   
-  def set(self, key, value):
+  def set(self, key, value, overwrite = True):
     """
     Appends the given key/value configuration mapping, behaving the same as if
     we'd loaded this from a configuration file.
     
     Arguments:
-      key (str)   - key for the configuration mapping
-      value (str) - value we're setting the mapping to
+      key (str)           - key for the configuration mapping
+      value (str or list) - value we're setting the mapping to
+      overwrite (bool)    - replaces the previous value if true, otherwise
+                            the values are appended
     """
     
-    if key in self._contents: self._contents[key].append(value)
-    else: self._contents[key] = [value]
+    if isinstance(value, str):
+      if not overwrite and key in self._contents: self._contents[key].append(value)
+      else: self._contents[key] = [value]
+    elif isinstance(value, list) or isinstance(value, tuple):
+      if not overwrite and key in self._contents:
+        self._contents[key] += value
+      else: self._contents[key] = value
+    else:
+      raise ValueError("Config.set() only accepts str, list, or tuple. Provided value was a '%s'" % type(value))
   
   def get(self, key, default = None):
     """
