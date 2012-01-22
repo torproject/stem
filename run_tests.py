@@ -62,7 +62,7 @@ INTEG_TESTS = (
 )
 
 # Integration tests above the basic suite.
-TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "CONN_NONE", "CONN_OPEN", "CONN_PASSWORD", "CONN_COOKIE", "CONN_MULTIPLE", "CONN_SOCKET", "CONN_SCOOKIE", "CONN_PTRACE", "CONN_ALL")])
+TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "RUN_NONE", "RUN_OPEN", "RUN_PASSWORD", "RUN_COOKIE", "RUN_MULTIPLE", "RUN_SOCKET", "RUN_SCOOKIE", "RUN_PTRACE", "RUN_ALL")])
 
 CONFIG = {
   "target.config": {},
@@ -71,7 +71,7 @@ CONFIG = {
   "target.torrc": {},
 }
 
-DEFAULT_RUN_TARGET = TARGETS.CONN_OPEN
+DEFAULT_RUN_TARGET = TARGETS.RUN_OPEN
 
 HELP_MSG = """Usage runTests.py [OPTION]
 Runs tests for the stem library.
@@ -263,7 +263,7 @@ if __name__ == '__main__':
     integ_run_targets = []
     all_run_targets = [t for t in TARGETS if CONFIG["target.torrc"].get(t)]
     
-    if test_config.get("test.integ.target.connection.all", False):
+    if test_config.get("test.target.run.all", False):
       # test against everything with torrc options
       integ_run_targets = all_run_targets
     else:

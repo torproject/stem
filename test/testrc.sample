@@ -12,37 +12,37 @@
 #   Path runtime logs are placed. Relative paths are expanded in reference to
 #   'run_tests.py'. Logging is disabled if set ot an empty value.
 #
-# test.integ.target.online
+# test.target.online
 #   Runs tests with network activity. If set then we'll wait for tor to fully
 #   bootstrap when starting, which won't happen without a network connection.
 #
-# test.integ.target.relative_data_dir
+# test.target.relative_data_dir
 #   Uses a relative path for the tor data directory if set.
 #
-# test.integ.target.connection.none
-# test.integ.target.connection.open
-# test.integ.target.connection.password
-# test.integ.target.connection.cookie
-# test.integ.target.connection.multiple
-# test.integ.target.connection.socket
-# test.integ.target.connection.scookie
-# test.integ.target.connection.ptrace
-# test.integ.target.connection.all
+# test.target.run.none
+# test.target.run.open
+# test.target.run.password
+# test.target.run.cookie
+# test.target.run.multiple
+# test.target.run.socket
+# test.target.run.scookie
+# test.target.run.ptrace
+# test.target.run.all
 #   Runs the integration test suite for all of the given connection and
 #   authentication configurations. If the 'all' option is set then the other
 #   flags are ignored.
 
 test.integ.test_directory ./test/data
 test.integ.log ./test/data/log
-test.integ.target.online false
-test.integ.target.relative_data_dir false
-test.integ.target.connection.none false
-test.integ.target.connection.open true
-test.integ.target.connection.password false
-test.integ.target.connection.cookie false
-test.integ.target.connection.muiltipe false
-test.integ.target.connection.socket false
-test.integ.target.connection.scookie false
-test.integ.target.connection.ptrace false
-test.integ.target.connection.all false
+test.target.online false
+test.target.relative_data_dir false
+test.target.run.none false
+test.target.run.open true
+test.target.run.password false
+test.target.run.cookie false
+test.target.run.muiltipe false
+test.target.run.socket false
+test.target.run.scookie false
+test.target.run.ptrace false
+test.target.run.all false
 

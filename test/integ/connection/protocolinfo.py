@@ -12,7 +12,7 @@ import stem.util.system
 
 class TestProtocolInfo(unittest.TestCase):
   """
-  Queries and parses PROTOCOLINFO. This should be run with the 'CONN_ALL'
+  Queries and parses PROTOCOLINFO. This should be run with the 'RUN_ALL'
   integ target to exercise the widest range of use cases.
   """
   

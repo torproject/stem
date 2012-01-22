@@ -25,7 +25,7 @@ INCORRECT_PASSWORD_FAIL = "Authentication failed: Password did not match HashedC
 
 class TestAuthenticate(unittest.TestCase):
   """
-  Tests the authentication methods. This should be run with the 'CONN_ALL'
+  Tests the authentication methods. This should be run with the 'RUN_ALL'
   integ target to exercise the widest range of use cases.
   """
   

@@ -11,7 +11,7 @@ import test.runner
 
 class TestConnect(unittest.TestCase):
   """
-  Tests the connection methods. This should be run with the 'CONN_ALL' integ
+  Tests the connection methods. This should be run with the 'RUN_ALL' integ
   target to exercise the widest range of use cases.
   """
   
