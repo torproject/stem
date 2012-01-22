@@ -3,8 +3,10 @@ Runtime context for the integration tests. This is used both by the test runner
 to start and stop tor, and by the integration tests themselves for information
 about the tor test instance they're running against.
 
-RunnerStopped - Runner doesn't have an active tor instance.
-TorInaccessable - Tor can't be queried for the information.
+RunnerStopped - Runner doesn't have an active tor instance
+TorInaccessable - Tor can't be queried for the information
+
+exercise_socket - Does a basic sanity check that a control socket can be used
 
 get_runner - Singleton for fetching our runtime context.
 Runner - Runtime context for our integration tests.
@@ -56,7 +58,7 @@ SocksPort 0
 
 # We make some paths relative to stem's base directory (the one above us)
 # rather than the process' cwd. This doesn't end with a slash.
-STEM_BASE = "/".join(__file__.split("/")[:-2])
+STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 # singleton Runner instance
 INTEG_RUNNER = None
@@ -74,24 +76,13 @@ Torrc = stem.util.enum.Enum(
   ("PTRACE", "DisableDebuggerAttachment 0"),
 )
 
-def get_runner():
-  """
-  Singleton for the runtime context of integration tests.
-  """
-  
-  global INTEG_RUNNER
-  if not INTEG_RUNNER: INTEG_RUNNER = Runner()
-  return INTEG_RUNNER
+class RunnerStopped(Exception):
+  "Raised when we try to use a Runner that doesn't have an active tor instance"
+  pass
 
-def get_torrc(extra_torrc_opts):
-  """
-  Provides a basic torrc with the given connection method. Hashed passwords are
-  for "pw".
-  """
-  
-  if extra_torrc_opts:
-    return BASE_TORRC + "\n".join(extra_torrc_opts) + "\n"
-  else: return BASE_TORRC
+class TorInaccessable(Exception):
+  "Raised when information is needed from tor but the instance we have is inaccessable"
+  pass
 
 def exercise_socket(test_case, control_socket):
   """
@@ -108,13 +99,14 @@ def exercise_socket(test_case, control_socket):
   config_file_response = control_socket.recv()
   test_case.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
 
-class RunnerStopped(Exception):
-  "Raised when we try to use a Runner that doesn't have an active tor instance"
-  pass
-
-class TorInaccessable(Exception):
-  "Raised when information is needed from tor but the instance we have is inaccessable"
-  pass
+def get_runner():
+  """
+  Singleton for the runtime context of integration tests.
+  """
+  
+  global INTEG_RUNNER
+  if not INTEG_RUNNER: INTEG_RUNNER = Runner()
+  return INTEG_RUNNER
 
 class Runner:
   def __init__(self):
@@ -174,7 +166,10 @@ class Runner:
       data_dir_path = "./%s" % os.path.basename(self._test_dir)
     
     self._custom_opts = extra_torrc_opts
-    self._torrc_contents = get_torrc(extra_torrc_opts) % data_dir_path
+    self._torrc_contents = BASE_TORRC % data_dir_path
+    
+    if extra_torrc_opts:
+      self._torrc_contents += "\n".join(extra_torrc_opts) + "\n"
     
     try:
       self._tor_cwd = os.getcwd()

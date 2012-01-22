@@ -115,9 +115,7 @@ def print_logging(logging_buffer):
 
 if __name__ == '__main__':
   # loads the builtin testing configuration
-  stem_path = os.path.join(*os.path.split(__file__)[:-1])
-  stem_path = stem.util.system.expand_path(stem_path)
-  settings_path = os.path.join(stem_path, "test", "settings.cfg")
+  settings_path = os.path.join(test.runner.STEM_BASE, "test", "settings.cfg")
   
   test_config = stem.util.conf.get_config("test")
   test_config.load(settings_path)
@@ -323,7 +321,8 @@ if __name__ == '__main__':
       print
       
       for target in skip_targets:
-        print term.format("Unable to run target %s, this requires tor version %s" % (target, CONFIG["target.prereq"][target]), term.Color.RED, term.Attr.BOLD)
+        req_version = stem.version.Requirement[CONFIG["target.prereq"][target]]
+        print term.format("Unable to run target %s, this requires tor version %s" % (target, req_version), term.Color.RED, term.Attr.BOLD)
       
       print
     
