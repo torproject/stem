@@ -48,11 +48,11 @@ class TestConnect(unittest.TestCase):
       controller = stem.connection.Controller.NONE
       
       if is_port:
-        opt_type = test.runner.OPT_PORT
+        opt_type = test.runner.Torrc.PORT
         ctl_port = test.runner.CONTROL_PORT
         control_socket = stem.connection.connect_port(control_port = ctl_port, password = ctl_pw, controller = controller)
       else:
-        opt_type = test.runner.OPT_SOCKET
+        opt_type = test.runner.Torrc.SOCKET
         ctl_socket = test.runner.CONTROL_SOCKET_PATH
         control_socket = stem.connection.connect_socket_file(socket_path = ctl_socket, password = ctl_pw, controller = controller)
       

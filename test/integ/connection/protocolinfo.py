@@ -73,7 +73,7 @@ class TestProtocolInfo(unittest.TestCase):
     
     stem.util.system.CALL_MOCKING = port_lookup_filter
     
-    if test.runner.OPT_PORT in test.runner.get_runner().get_connection_options():
+    if test.runner.Torrc.PORT in test.runner.get_runner().get_connection_options():
       control_socket = stem.socket.ControlPort(control_port = test.runner.CONTROL_PORT)
       protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
       self.assert_protocolinfo_attr(protocolinfo_response)
@@ -104,7 +104,7 @@ class TestProtocolInfo(unittest.TestCase):
     
     stem.util.system.CALL_MOCKING = socket_lookup_filter
     
-    if test.runner.OPT_SOCKET in test.runner.get_runner().get_connection_options():
+    if test.runner.Torrc.SOCKET in test.runner.get_runner().get_connection_options():
       control_socket = stem.socket.ControlSocketFile(test.runner.CONTROL_SOCKET_PATH)
       protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
       self.assert_protocolinfo_attr(protocolinfo_response)
@@ -149,10 +149,10 @@ class TestProtocolInfo(unittest.TestCase):
     
     auth_methods = []
     
-    if test.runner.OPT_COOKIE in connection_options:
+    if test.runner.Torrc.COOKIE in connection_options:
       auth_methods.append(stem.connection.AuthMethod.COOKIE)
     
-    if test.runner.OPT_PASSWORD in connection_options:
+    if test.runner.Torrc.PASSWORD in connection_options:
       auth_methods.append(stem.connection.AuthMethod.PASSWORD)
     
     if not auth_methods:
@@ -162,7 +162,7 @@ class TestProtocolInfo(unittest.TestCase):
     self.assertEqual(tuple(auth_methods), protocolinfo_response.auth_methods)
     
     auth_cookie_path = None
-    if test.runner.OPT_COOKIE in connection_options:
+    if test.runner.Torrc.COOKIE in connection_options:
       auth_cookie_path = test.runner.get_runner().get_auth_cookie_path()
     
     self.assertEqual(auth_cookie_path, protocolinfo_response.cookie_path)

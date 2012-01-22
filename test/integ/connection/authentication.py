@@ -55,7 +55,7 @@ class TestAuthenticate(unittest.TestCase):
       control_socket = stem.socket.ControlPort(control_port = test.runner.CONTROL_PORT)
     except stem.socket.SocketError:
       # assert that we didn't have a socket to connect to
-      self.assertFalse(test.runner.OPT_PORT in connection_options)
+      self.assertFalse(test.runner.Torrc.PORT in connection_options)
       return
     
     try:
@@ -65,7 +65,7 @@ class TestAuthenticate(unittest.TestCase):
     except stem.connection.IncorrectSocketType:
       self.fail()
     except stem.connection.MissingPassword:
-      self.assertTrue(test.runner.OPT_PASSWORD in connection_options)
+      self.assertTrue(test.runner.Torrc.PASSWORD in connection_options)
       controller_password = test.runner.CONTROL_PASSWORD
       
       try:
@@ -89,7 +89,7 @@ class TestAuthenticate(unittest.TestCase):
     
     runner = test.runner.get_runner()
     connection_options = runner.get_connection_options()
-    is_password_only = test.runner.OPT_PASSWORD in connection_options and not test.runner.OPT_COOKIE in connection_options
+    is_password_only = test.runner.Torrc.PASSWORD in connection_options and not test.runner.Torrc.COOKIE in connection_options
     
     # tests without a password
     control_socket = runner.get_tor_socket(False)
@@ -247,8 +247,8 @@ class TestAuthenticate(unittest.TestCase):
     """
     
     connection_options = test.runner.get_runner().get_connection_options()
-    password_auth = test.runner.OPT_PASSWORD in connection_options
-    cookie_auth = test.runner.OPT_COOKIE in connection_options
+    password_auth = test.runner.Torrc.PASSWORD in connection_options
+    cookie_auth = test.runner.Torrc.COOKIE in connection_options
     
     return password_auth, cookie_auth
   

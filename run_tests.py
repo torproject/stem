@@ -71,16 +71,6 @@ CONFIG = {
   "target.torrc": {},
 }
 
-# mapping between 'target.torrc' options and runner attributes
-# TODO: switch OPT_* to enums so this is unnecessary
-RUNNER_OPT_MAPPING = {
-  "PORT": test.runner.OPT_PORT,
-  "PASSWORD": test.runner.OPT_PASSWORD,
-  "COOKIE": test.runner.OPT_COOKIE,
-  "SOCKET": test.runner.OPT_SOCKET,
-  "PTRACE": test.runner.OPT_PTRACE,
-}
-
 DEFAULT_RUN_TARGET = TARGETS.CONN_OPEN
 
 HELP_MSG = """Usage runTests.py [OPTION]
@@ -133,12 +123,16 @@ if __name__ == '__main__':
   test_config.load(settings_path)
   test_config.update(CONFIG)
   
-  # parses target.torrc as csv values and convert to runner OPT_* values
+  # parses target.torrc as csv values and convert to runner Torrc enums
   for target in CONFIG["target.torrc"]:
     CONFIG["target.torrc"][target] = []
     
     for opt in test_config.get_str_csv("target.torrc", [], sub_key = target):
-      CONFIG["target.torrc"][target].append(RUNNER_OPT_MAPPING[opt])
+      if opt in test.runner.Torrc.keys():
+        CONFIG["target.torrc"][target].append(test.runner.Torrc[opt])
+      else:
+        print "'%s' isn't a test.runner.Torrc enumeration" % opt
+        sys.exit(1)
   
   start_time = time.time()
   run_unit_tests = False

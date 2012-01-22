@@ -65,11 +65,13 @@ CONTROL_PASSWORD = "pw"
 CONTROL_PORT = 1111
 CONTROL_SOCKET_PATH = "/tmp/stem_integ/socket"
 
-OPT_PORT = "ControlPort %i" % CONTROL_PORT
-OPT_COOKIE = "CookieAuthentication 1"
-OPT_PASSWORD = "HashedControlPassword 16:8C423A41EF4A542C6078985270AE28A4E04D056FB63F9F201505DB8E06"
-OPT_SOCKET = "ControlSocket %s" % CONTROL_SOCKET_PATH
-OPT_PTRACE = "DisableDebuggerAttachment 0"
+Torrc = stem.util.enum.Enum(
+  ("PORT", "ControlPort %i" % CONTROL_PORT),
+  ("COOKIE", "CookieAuthentication 1"),
+  ("PASSWORD", "HashedControlPassword 16:8C423A41EF4A542C6078985270AE28A4E04D056FB63F9F201505DB8E06"),
+  ("SOCKET", "ControlSocket %s" % CONTROL_SOCKET_PATH),
+  ("PTRACE", "DisableDebuggerAttachment 0"),
+)
 
 def get_runner():
   """
@@ -248,7 +250,7 @@ class Runner:
     """
     
     conn_opts = self.get_connection_options()
-    return OPT_PORT in conn_opts or OPT_SOCKET in conn_opts
+    return Torrc.PORT in conn_opts or Torrc.SOCKET in conn_opts
   
   def is_ptraceable(self):
     """
@@ -373,9 +375,9 @@ class Runner:
     
     conn_opts = self.get_connection_options()
     
-    if OPT_PORT in conn_opts:
+    if Torrc.PORT in conn_opts:
       control_socket = stem.socket.ControlPort(control_port = CONTROL_PORT)
-    elif OPT_SOCKET in conn_opts:
+    elif Torrc.SOCKET in conn_opts:
       control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
     else: raise TorInaccessable("Unable to connect to tor")
     
@@ -460,7 +462,7 @@ class Runner:
     # resides in is only accessable by the tor user (and refuses to finish
     # starting if it isn't).
     
-    if OPT_SOCKET in self.get_connection_options():
+    if Torrc.SOCKET in self.get_connection_options():
       try:
         socket_dir = os.path.dirname(CONTROL_SOCKET_PATH)
         _print_status("  making control socket directory (%s)... " % socket_dir, STATUS_ATTR, quiet)
