@@ -147,6 +147,8 @@ def load_user_configuration(test_config):
       arg_overrides["argument.log"] = arg.upper()
     elif opt in ("--tor"):
       arg_overrides["argument.tor"] = arg
+    elif opt in ("--no-color"):
+      arg_overrides["argument.no_color"] = "true"
     elif opt in ("-h", "--help"):
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
@@ -202,7 +204,7 @@ if __name__ == '__main__':
   load_user_configuration(test_config)
   
   if not CONFIG["argument.unit"] and not CONFIG["argument.integ"]:
-    print "Nothing to run (for usage provide --help)\n"
+    test.output.print_line("Nothing to run (for usage provide --help)\n")
     sys.exit()
   
   # if we have verbose logging then provide the testing config
@@ -289,12 +291,12 @@ if __name__ == '__main__':
           if opt in test.runner.Torrc.keys():
             torrc_opts.append(test.runner.Torrc[opt])
           else:
-            print "'%s' isn't a test.runner.Torrc enumeration" % opt
+            test.output.print_line("'%s' isn't a test.runner.Torrc enumeration" % opt)
             sys.exit(1)
         
         integ_runner.start(CONFIG["argument.tor"], extra_torrc_opts = torrc_opts)
         
-        print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
+        test.output.print_line("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
         
         for test_class in INTEG_TESTS:
@@ -317,7 +319,7 @@ if __name__ == '__main__':
       
       for target in skip_targets:
         req_version = stem.version.Requirement[CONFIG["target.prereq"][target]]
-        print term.format("Unable to run target %s, this requires tor version %s" % (target, req_version), term.Color.RED, term.Attr.BOLD)
+        test.output.print_line("Unable to run target %s, this requires tor version %s" % (target, req_version), term.Color.RED, term.Attr.BOLD)
       
       print
     
@@ -326,11 +328,11 @@ if __name__ == '__main__':
   runtime_label = "(%i seconds)" % (time.time() - start_time)
   
   if error_tracker.has_error_occured():
-    print term.format("TESTING FAILED %s" % runtime_label, term.Color.RED, term.Attr.BOLD)
+    test.output.print_line("TESTING FAILED %s" % runtime_label, term.Color.RED, term.Attr.BOLD)
     
     for line in error_tracker:
-      print term.format("  %s" % line, term.Color.RED, term.Attr.BOLD)
+      test.output.print_line("  %s" % line, term.Color.RED, term.Attr.BOLD)
   else:
-    print term.format("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
+    test.output.print_line("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
     print
 

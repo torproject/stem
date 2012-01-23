@@ -39,6 +39,7 @@ import stem.version
 import stem.util.conf
 import stem.util.enum
 import stem.util.term as term
+import test.output
 
 CONFIG = {
   "integ.test_directory": "./test/data",
@@ -121,7 +122,7 @@ class Runner:
     self._custom_opts = None
     self._tor_process = None
   
-  def start(self, tor_cmd, extra_torrc_opts, quiet = False):
+  def start(self, tor_cmd, extra_torrc_opts):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
@@ -129,8 +130,6 @@ class Runner:
     Arguments:
       tor_cmd (str) - command to start tor with
       extra_torrc_opts (list) - additional torrc options for our test instance
-      quiet (bool) - if False then this prints status information as we start
-                     up to stdout
     
     Raises:
       OSError if unable to run test preparations or start tor
@@ -140,9 +139,9 @@ class Runner:
     
     # if we're holding on to a tor process (running or not) then clean up after
     # it so we can start a fresh instance
-    if self._tor_process: self.stop(quiet)
+    if self._tor_process: self.stop()
     
-    _print_status("Setting up a test instance...\n", STATUS_ATTR, quiet)
+    test.output.print_line("Setting up a test instance...", *STATUS_ATTR)
     
     # if 'test_directory' is unset then we make a new data directory in /tmp
     # and clean it up when we're done
@@ -171,28 +170,25 @@ class Runner:
     
     try:
       self._tor_cwd = os.getcwd()
-      self._run_setup(quiet)
-      self._start_tor(tor_cmd, quiet)
+      self._run_setup()
+      self._start_tor(tor_cmd)
       
       # revert our cwd back to normal
       if CONFIG["test.target.relative_data_dir"]:
         os.chdir(original_cwd)
     except OSError, exc:
-      self.stop(quiet)
+      self.stop()
       raise exc
     finally:
       self._runner_lock.release()
   
-  def stop(self, quiet = False):
+  def stop(self):
     """
     Stops our tor test instance and cleans up any temporary resources.
-    
-    Argument:
-      quiet (bool) - prints status information to stdout if False
     """
     
     self._runner_lock.acquire()
-    _print_status("Shutting down tor... ", STATUS_ATTR, quiet)
+    test.output.print_noline("Shutting down tor... ", *STATUS_ATTR)
     
     if self._tor_process:
       self._tor_process.kill()
@@ -208,7 +204,7 @@ class Runner:
     self._custom_opts = None
     self._tor_process = None
     
-    _print_status("done\n", STATUS_ATTR, quiet)
+    test.output.print_line("done", *STATUS_ATTR)
     self._runner_lock.release()
   
   def is_running(self):
@@ -423,12 +419,9 @@ class Runner:
     finally:
       self._runner_lock.release()
   
-  def _run_setup(self, quiet):
+  def _run_setup(self):
     """
     Makes a temporary runtime resources of our integration test instance.
-    
-    Arguments:
-      quiet (bool) - prints status information to stdout if False
     
     Raises:
       OSError if unsuccessful
@@ -436,15 +429,15 @@ class Runner:
     
     # makes a temporary data directory if needed
     try:
-      _print_status("  making test directory (%s)... " % self._test_dir, STATUS_ATTR, quiet)
+      test.output.print_noline("  making test directory (%s)... " % self._test_dir, *STATUS_ATTR)
       
       if os.path.exists(self._test_dir):
-        _print_status("skipped\n", STATUS_ATTR, quiet)
+        test.output.print_line("skipped", *STATUS_ATTR)
       else:
         os.makedirs(self._test_dir)
-        _print_status("done\n", STATUS_ATTR, quiet)
+        test.output.print_line("done", *STATUS_ATTR)
     except OSError, exc:
-      _print_status("failed (%s)\n" % exc, ERROR_ATTR, quiet)
+      test.output.print_line("failed (%s)" % exc, *ERROR_ATTR)
       raise exc
     
     # Makes a directory for the control socket if needed. As of, at least, Tor
@@ -455,18 +448,18 @@ class Runner:
     if Torrc.SOCKET in self._custom_opts:
       try:
         socket_dir = os.path.dirname(CONTROL_SOCKET_PATH)
-        _print_status("  making control socket directory (%s)... " % socket_dir, STATUS_ATTR, quiet)
+        test.output.print_noline("  making control socket directory (%s)... " % socket_dir, *STATUS_ATTR)
         
         if os.path.exists(socket_dir) and stat.S_IMODE(os.stat(socket_dir).st_mode) == 0700:
-          _print_status("skipped\n", STATUS_ATTR, quiet)
+          test.output.print_line("skipped", *STATUS_ATTR)
         else:
           if not os.path.exists(socket_dir):
             os.makedirs(socket_dir)
           
           os.chmod(socket_dir, 0700)
-          _print_status("done\n", STATUS_ATTR, quiet)
+          test.output.print_line("done", *STATUS_ATTR)
       except OSError, exc:
-        _print_status("failed (%s)\n" % exc, ERROR_ATTR, quiet)
+        test.output.print_line("failed (%s)" % exc, *ERROR_ATTR)
         raise exc
     
     # configures logging
@@ -474,7 +467,7 @@ class Runner:
     
     if logging_path:
       logging_path = stem.util.system.expand_path(logging_path, STEM_BASE)
-      _print_status("  configuring logger (%s)... " % logging_path, STATUS_ATTR, quiet)
+      test.output.print_noline("  configuring logger (%s)... " % logging_path, *STATUS_ATTR)
       
       # delete the old log
       if os.path.exists(logging_path):
@@ -487,44 +480,43 @@ class Runner:
         datefmt = '%D %H:%M:%S',
       )
       
-      _print_status("done\n", STATUS_ATTR, quiet)
+      test.output.print_line("done", *STATUS_ATTR)
     else:
-      _print_status("  configuring logger... skipped\n", STATUS_ATTR, quiet)
+      test.output.print_line("  configuring logger... skipped", *STATUS_ATTR)
     
     # writes our testing torrc
     torrc_dst = os.path.join(self._test_dir, "torrc")
     try:
-      _print_status("  writing torrc (%s)... " % torrc_dst, STATUS_ATTR, quiet)
+      test.output.print_noline("  writing torrc (%s)... " % torrc_dst, *STATUS_ATTR)
       
       torrc_file = open(torrc_dst, "w")
       torrc_file.write(self._torrc_contents)
       torrc_file.close()
       
-      _print_status("done\n", STATUS_ATTR, quiet)
+      test.output.print_line("done", *STATUS_ATTR)
       
       for line in self._torrc_contents.strip().splitlines():
-        _print_status("    %s\n" % line.strip(), SUBSTATUS_ATTR, quiet)
+        test.output.print_line("    %s" % line.strip(), *SUBSTATUS_ATTR)
       
-      _print_status("\n", (), quiet)
+      print
     except Exception, exc:
-      _print_status("failed (%s)\n\n" % exc, ERROR_ATTR, quiet)
+      test.output.print_line("failed (%s)\n" % exc, *ERROR_ATTR)
       raise OSError(exc)
   
-  def _start_tor(self, tor_cmd, quiet):
+  def _start_tor(self, tor_cmd):
     """
     Initializes a tor process. This blocks until initialization completes or we
     error out.
     
     Arguments:
       tor_cmd (str) - command to start tor with
-      quiet (bool)  - prints status information to stdout if False
     
     Raises:
       OSError if we either fail to create the tor process or reached a timeout
       without success
     """
     
-    _print_status("Starting tor...\n", STATUS_ATTR, quiet)
+    test.output.print_line("Starting tor...\n", *STATUS_ATTR)
     start_time = time.time()
     
     try:
@@ -533,30 +525,17 @@ class Runner:
       complete_percent = 100 if CONFIG["test.target.online"] else 5
       
       # prints output from tor's stdout while it starts up
-      print_init_line = lambda line: _print_status("  %s\n" % line, SUBSTATUS_ATTR, quiet)
+      print_init_line = lambda line: test.output.print_line("  %s" % line, *SUBSTATUS_ATTR)
       
       torrc_dst = os.path.join(self._test_dir, "torrc")
       self._tor_process = stem.process.launch_tor(tor_cmd, torrc_dst, complete_percent, print_init_line)
       
       runtime = time.time() - start_time
-      _print_status("  done (%i seconds)\n\n" % runtime, STATUS_ATTR, quiet)
+      test.output.print_line("  done (%i seconds)\n" % runtime, *STATUS_ATTR)
     except KeyboardInterrupt:
-      _print_status("  aborted starting tor: keyboard interrupt\n\n", ERROR_ATTR, quiet)
+      test.output.print_line("  aborted starting tor: keyboard interrupt\n", *ERROR_ATTR)
       raise OSError("keyboard interrupt")
     except OSError, exc:
-      _print_status("  failed to start tor: %s\n\n" % exc, ERROR_ATTR, quiet)
+      test.output.print_line("  failed to start tor: %s\n" % exc, *ERROR_ATTR)
       raise exc
-
-def _print_status(msg, attr = (), quiet = False):
-  """
-  Short alias for printing status messages.
-  
-  Arguments:
-    msg (str)    - text to be printed
-    attr (tuple) - list of term attributes to be applied to the text
-    quiet (bool) - no-op if true, prints otherwise
-  """
-  
-  if not quiet:
-    sys.stdout.write(term.format(msg, *attr))
 

@@ -4,10 +4,18 @@ together for improved readability.
 """
 
 import re
+import sys
 import logging
 
+import stem.util.conf
 import stem.util.enum
 import stem.util.term as term
+
+CONFIG = {
+  "argument.no_color": False,
+}
+
+stem.util.conf.get_config("test").sync(CONFIG)
 
 DIVIDER = "=" * 70
 HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
@@ -30,33 +38,37 @@ LINE_ATTR = {
   LineType.CONTENT: (term.Color.CYAN,),
 }
 
+def print_line(msg, *attr):
+  if CONFIG["argument.no_color"]: print msg
+  else: print term.format(msg, *attr)
+
+def print_noline(msg, *attr):
+  if CONFIG["argument.no_color"]: sys.stdout.write(msg)
+  else: sys.stdout.write(term.format(msg, *attr))
+
 def print_divider(msg, is_header = False):
   attr = HEADER_ATTR if is_header else CATEGORY_ATTR
-  print term.format("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
+  print_line("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
 
 def print_logging(logging_buffer):
   if not logging_buffer.is_empty():
     for entry in logging_buffer:
-      print term.format(entry.replace("\n", "\n  "), term.Color.MAGENTA)
+      print_line(entry.replace("\n", "\n  "), term.Color.MAGENTA)
     
     print
 
 def print_config(test_config):
   print_divider("TESTING CONFIG", True)
+  print_line("Test configuration... ", term.Color.BLUE, term.Attr.BOLD)
   
-  try:
-    print term.format("Test configuration... ", term.Color.BLUE, term.Attr.BOLD)
+  for config_key in test_config.keys():
+    key_entry = "  %s => " % config_key
     
-    for config_key in test_config.keys():
-      key_entry = "  %s => " % config_key
-      
-      # if there's multiple values then list them on separate lines
-      value_div = ",\n" + (" " * len(key_entry))
-      value_entry = value_div.join(test_config.get_value(config_key, multiple = True))
-      
-      print term.format(key_entry + value_entry, term.Color.BLUE)
-  except IOError, exc:
-    sys.stdout.write(term.format("failed (%s)\n" % exc, term.Color.RED, term.Attr.BOLD))
+    # if there's multiple values then list them on separate lines
+    value_div = ",\n" + (" " * len(key_entry))
+    value_entry = value_div.join(test_config.get_value(config_key, multiple = True))
+    
+    print_line(key_entry + value_entry, term.Color.BLUE)
   
   print
 
@@ -102,7 +114,8 @@ def colorize(line_type, line_content):
   Applies escape sequences so each line is colored according to its type.
   """
   
-  return term.format(line_content, *LINE_ATTR[line_type])
+  if CONFIG["argument.no_color"]: return line_content
+  else: return term.format(line_content, *LINE_ATTR[line_type])
 
 def strip_module(line_type, line_content):
   """
