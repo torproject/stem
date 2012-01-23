@@ -17,6 +17,7 @@ import test.unit.connection.authentication
 import test.unit.connection.protocolinfo
 import test.unit.socket.control_line
 import test.unit.socket.control_message
+import test.unit.util.conf
 import test.unit.util.enum
 import test.unit.util.system
 import test.unit.version
@@ -71,6 +72,7 @@ DEFAULT_RUN_TARGET = TARGETS.RUN_OPEN
 
 UNIT_TESTS = (
   test.unit.util.enum.TestEnum,
+  test.unit.util.conf.TestConf,
   test.unit.util.system.TestSystem,
   test.unit.version.TestVersion,
   test.unit.socket.control_message.TestControlMessage,

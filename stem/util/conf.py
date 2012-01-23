@@ -19,6 +19,7 @@ Config - Custom configuration.
   |- clear - empties our loaded configuration contents
   |- update - replaces mappings in a dictionary with the config's values
   |- add_listener - notifies the given listener when an update occures
+  |- clear_listeners - removes any attached listeners
   |- sync - keeps a dictionary synchronized with our config
   |- keys - provides keys in the loaded configuration
   |- set - sets the given key/value pair
@@ -272,9 +273,16 @@ class Config():
     
     if backfill:
       for key in self.keys():
-        listener(key)
+        listener(self, key)
     
     self._contents_lock.release()
+  
+  def clear_listeners(self):
+    """
+    Removes any attached listeners.
+    """
+    
+    self._listeners = []
   
   def sync(self, config_dict, interceptor = None):
     """
@@ -314,7 +322,7 @@ class Config():
       set of configuration keys we've loaded but have never been requested
     """
     
-    return set(self.get_keys()).difference(self._requested_keys)
+    return set(self.keys()).difference(self._requested_keys)
   
   def set(self, key, value, overwrite = True):
     """
