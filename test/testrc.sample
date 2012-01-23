@@ -1,13 +1,13 @@
 # Integration Test Settings
 #
-# test.arg.unit
-# test.arg.integ
-# test.arg.log
-# test.arg.tor
-# test.arg.no_color
+# argument.unit
+# argument.integ
+# argument.log
+# argument.tor
+# argument.no_color
 #   Default values for runner arguments.
 #
-# test.integ.test_directory
+# integ.test_directory
 #   Path used for our data directory and any temporary test resources. Relative
 #   paths are expanded in reference to the location of 'run_tests.py'.
 #   
@@ -15,48 +15,48 @@
 #   have a faster startup and lower load on authorities). If set to an empty
 #   value then this makes a fresh data directory for each test run.
 #
-# test.integ.log
+# integ.log
 #   Path runtime logs are placed. Relative paths are expanded in reference to
 #   'run_tests.py'. Logging is disabled if set ot an empty value.
 #
-# test.target.online
+# integ.target.online
 #   Runs tests with network activity. If set then we'll wait for tor to fully
 #   bootstrap when starting, which won't happen without a network connection.
 #
-# test.target.relative_data_dir
+# integ.target.relative_data_dir
 #   Uses a relative path for the tor data directory if set.
 #
-# test.target.run.none
-# test.target.run.open
-# test.target.run.password
-# test.target.run.cookie
-# test.target.run.multiple
-# test.target.run.socket
-# test.target.run.scookie
-# test.target.run.ptrace
-# test.target.run.all
+# integ.target.run.none
+# integ.target.run.open
+# integ.target.run.password
+# integ.target.run.cookie
+# integ.target.run.multiple
+# integ.target.run.socket
+# integ.target.run.scookie
+# integ.target.run.ptrace
+# integ.target.run.all
 #   Runs the integration test suite for all of the given connection and
 #   authentication configurations. If the 'all' option is set then the other
 #   flags are ignored.
 
-test.arg.unit false
-test.arg.integ false
-test.arg.log
-test.arg.tor tor
-test.arg.no_color false
+argument.unit false
+argument.integ false
+argument.log
+argument.tor tor
+argument.no_color false
 
-test.integ.test_directory ./test/data
-test.integ.log ./test/data/log
+integ.test_directory ./test/data
+integ.log ./test/data/log
 
-test.target.online false
-test.target.relative_data_dir false
-test.target.run.none false
-test.target.run.open true
-test.target.run.password false
-test.target.run.cookie false
-test.target.run.muiltipe false
-test.target.run.socket false
-test.target.run.scookie false
-test.target.run.ptrace false
-test.target.run.all false
+integ.target.online false
+integ.target.relative_data_dir false
+integ.target.run.none false
+integ.target.run.open true
+integ.target.run.password false
+integ.target.run.cookie false
+integ.target.run.muiltipe false
+integ.target.run.socket false
+integ.target.run.scookie false
+integ.target.run.ptrace false
+integ.target.run.all false
 

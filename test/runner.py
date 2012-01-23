@@ -41,8 +41,8 @@ import stem.util.enum
 import stem.util.term as term
 
 CONFIG = {
-  "test.integ.test_directory": "./test/data",
-  "test.integ.log": "./test/data/log",
+  "integ.test_directory": "./test/data",
+  "integ.log": "./test/data/log",
   "test.target.online": False,
   "test.target.relative_data_dir": False,
 }
@@ -147,7 +147,7 @@ class Runner:
     # if 'test_directory' is unset then we make a new data directory in /tmp
     # and clean it up when we're done
     
-    config_test_dir = CONFIG["test.integ.test_directory"]
+    config_test_dir = CONFIG["integ.test_directory"]
     
     if config_test_dir:
       self._test_dir = stem.util.system.expand_path(config_test_dir, STEM_BASE)
@@ -199,7 +199,7 @@ class Runner:
       self._tor_process.communicate() # blocks until the process is done
     
     # if we've made a temporary data directory then clean it up
-    if self._test_dir and CONFIG["test.integ.test_directory"] == "":
+    if self._test_dir and CONFIG["integ.test_directory"] == "":
       shutil.rmtree(self._test_dir, ignore_errors = True)
     
     self._test_dir = ""
@@ -470,7 +470,7 @@ class Runner:
         raise exc
     
     # configures logging
-    logging_path = CONFIG["test.integ.log"]
+    logging_path = CONFIG["integ.log"]
     
     if logging_path:
       logging_path = stem.util.system.expand_path(logging_path, STEM_BASE)

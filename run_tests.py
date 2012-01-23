@@ -37,11 +37,11 @@ OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "tor=", "no-colo
 DIVIDER = "=" * 70
 
 CONFIG = {
-  "test.arg.unit": False,
-  "test.arg.integ": False,
-  "test.arg.log": None,
-  "test.arg.tor": "tor",
-  "test.arg.no_color": False,
+  "argument.unit": False,
+  "argument.integ": False,
+  "argument.log": None,
+  "argument.tor": "tor",
+  "argument.no_color": False,
   "target.config": {},
   "target.description": {},
   "target.prereq": {},
@@ -123,9 +123,9 @@ def load_user_configuration(test_config):
   
   for opt, arg in opts:
     if opt in ("-u", "--unit"):
-      arg_overrides["test.arg.unit"] = "true"
+      arg_overrides["argument.unit"] = "true"
     elif opt in ("-i", "--integ"):
-      arg_overrides["test.arg.integ"] = "true"
+      arg_overrides["argument.integ"] = "true"
     elif opt in ("-c", "--config"):
       config_path = os.path.abspath(arg)
     elif opt in ("-t", "--targets"):
@@ -144,9 +144,9 @@ def load_user_configuration(test_config):
           target_config = test_config.get("target.config", {}).get(target)
           if target_config: arg_overrides[target_config] = "true"
     elif opt in ("-l", "--log"):
-      arg_overrides["test.arg.log"] = arg.upper()
+      arg_overrides["argument.log"] = arg.upper()
     elif opt in ("--tor"):
-      arg_overrides["test.arg.tor"] = arg
+      arg_overrides["argument.tor"] = arg
     elif opt in ("-h", "--help"):
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
@@ -178,13 +178,13 @@ def load_user_configuration(test_config):
   
   # basic validation on user input
   
-  log_config = CONFIG["test.arg.log"]
+  log_config = CONFIG["argument.log"]
   if log_config and not log_config in log.LOG_VALUES:
     print "'%s' isn't a logging runlevel, use one of the following instead:" % log_config
     print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
     sys.exit(1)
   
-  tor_config = CONFIG["test.arg.tor"]
+  tor_config = CONFIG["argument.tor"]
   if not os.path.exists(tor_config) and not stem.util.system.is_available(tor_config):
     print "Unable to start tor, '%s' does not exists." % tor_config
     sys.exit(1)
@@ -201,12 +201,12 @@ if __name__ == '__main__':
   
   load_user_configuration(test_config)
   
-  if not CONFIG["test.arg.unit"] and not CONFIG["test.arg.integ"]:
+  if not CONFIG["argument.unit"] and not CONFIG["argument.integ"]:
     print "Nothing to run (for usage provide --help)\n"
     sys.exit()
   
   # if we have verbose logging then provide the testing config
-  our_level = stem.util.log.logging_level(CONFIG["test.arg.log"])
+  our_level = stem.util.log.logging_level(CONFIG["argument.log"])
   info_level = stem.util.log.logging_level(stem.util.log.INFO)
   
   if our_level <= info_level: test.output.print_config(test_config)
@@ -220,10 +220,10 @@ if __name__ == '__main__':
   )
   
   stem_logger = log.get_logger()
-  logging_buffer = log.LogBuffer(CONFIG["test.arg.log"])
+  logging_buffer = log.LogBuffer(CONFIG["argument.log"])
   stem_logger.addHandler(logging_buffer)
   
-  if CONFIG["test.arg.unit"]:
+  if CONFIG["argument.unit"]:
     test.output.print_divider("UNIT TESTS", True)
     
     for test_class in UNIT_TESTS:
@@ -239,7 +239,7 @@ if __name__ == '__main__':
     
     print
   
-  if CONFIG["test.arg.integ"]:
+  if CONFIG["argument.integ"]:
     test.output.print_divider("INTEGRATION TESTS", True)
     integ_runner = test.runner.get_runner()
     
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     integ_run_targets = []
     all_run_targets = [t for t in TARGETS if CONFIG["target.torrc"].get(t)]
     
-    if test_config.get("test.target.run.all", False):
+    if test_config.get("integ.target.run.all", False):
       # test against everything with torrc options
       integ_run_targets = all_run_targets
     else:
@@ -273,7 +273,7 @@ if __name__ == '__main__':
       if target_prereq:
         # lazy loaded to skip system call if we don't have any prereqs
         if not our_version:
-          our_version = stem.version.get_system_tor_version(CONFIG["test.arg.tor"])
+          our_version = stem.version.get_system_tor_version(CONFIG["argument.tor"])
         
         if our_version < stem.version.Requirement[target_prereq]:
           skip_targets.append(target)
@@ -292,7 +292,7 @@ if __name__ == '__main__':
             print "'%s' isn't a test.runner.Torrc enumeration" % opt
             sys.exit(1)
         
-        integ_runner.start(CONFIG["test.arg.tor"], extra_torrc_opts = torrc_opts)
+        integ_runner.start(CONFIG["argument.tor"], extra_torrc_opts = torrc_opts)
         
         print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
