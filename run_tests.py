@@ -49,7 +49,7 @@ CONFIG = {
   "target.torrc": {},
 }
 
-TARGETS = stem.util.enum.Enum(*[(v, v) for v in (
+Target = stem.util.enum.Enum(*[(v, v) for v in (
   "ONLINE",
   "RELATIVE",
   "RUN_NONE",
@@ -63,7 +63,7 @@ TARGETS = stem.util.enum.Enum(*[(v, v) for v in (
   "RUN_ALL",
 )])
 
-DEFAULT_RUN_TARGET = TARGETS.RUN_OPEN
+DEFAULT_RUN_TARGET = Target.RUN_OPEN
 
 # Tests are ordered by the dependencies so the lowest level tests come first.
 # This is because a problem in say, controller message parsing, will cause all
@@ -139,7 +139,7 @@ def load_user_configuration(test_config):
         sys.exit(1)
       
       for target in integ_targets:
-        if not target in TARGETS:
+        if not target in Target:
           print "Invalid integration target: %s" % target
           sys.exit(1)
         else:
@@ -158,10 +158,10 @@ def load_user_configuration(test_config):
       print HELP_MSG
       
       # gets the longest target length so we can show the entries in columns
-      target_name_length = max(map(len, TARGETS))
+      target_name_length = max(map(len, Target))
       description_format = "    %%-%is - %%s" % target_name_length
       
-      for target in TARGETS:
+      for target in Target:
         print description_format % (target, CONFIG["target.description"].get(target, ""))
       
       print
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     # Queue up all the targets with torrc options we want to run against.
     
     integ_run_targets = []
-    all_run_targets = [t for t in TARGETS if CONFIG["target.torrc"].get(t)]
+    all_run_targets = [t for t in Target if CONFIG["target.torrc"].get(t) != None]
     
     if test_config.get("integ.target.run.all", False):
       # test against everything with torrc options
