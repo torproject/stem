@@ -1,5 +1,12 @@
 # Integration Test Settings
 #
+# test.arg.unit
+# test.arg.integ
+# test.arg.log
+# test.arg.tor
+# test.arg.no_color
+#   Default values for runner arguments.
+#
 # test.integ.test_directory
 #   Path used for our data directory and any temporary test resources. Relative
 #   paths are expanded in reference to the location of 'run_tests.py'.
@@ -32,8 +39,15 @@
 #   authentication configurations. If the 'all' option is set then the other
 #   flags are ignored.
 
+test.arg.unit false
+test.arg.integ false
+test.arg.log
+test.arg.tor tor
+test.arg.no_color false
+
 test.integ.test_directory ./test/data
 test.integ.log ./test/data/log
+
 test.target.online false
 test.target.relative_data_dir false
 test.target.run.none false

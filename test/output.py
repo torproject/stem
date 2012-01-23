@@ -9,6 +9,10 @@ import logging
 import stem.util.enum
 import stem.util.term as term
 
+DIVIDER = "=" * 70
+HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
+CATEGORY_ATTR = (term.Color.GREEN, term.Attr.BOLD)
+
 LineType = stem.util.enum.Enum("OK", "FAIL", "ERROR", "SKIPPED", "CONTENT")
 
 LINE_ENDINGS = {
@@ -25,6 +29,36 @@ LINE_ATTR = {
   LineType.SKIPPED: (term.Color.BLUE,),
   LineType.CONTENT: (term.Color.CYAN,),
 }
+
+def print_divider(msg, is_header = False):
+  attr = HEADER_ATTR if is_header else CATEGORY_ATTR
+  print term.format("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
+
+def print_logging(logging_buffer):
+  if not logging_buffer.is_empty():
+    for entry in logging_buffer:
+      print term.format(entry.replace("\n", "\n  "), term.Color.MAGENTA)
+    
+    print
+
+def print_config(test_config):
+  print_divider("TESTING CONFIG", True)
+  
+  try:
+    print term.format("Test configuration... ", term.Color.BLUE, term.Attr.BOLD)
+    
+    for config_key in test_config.keys():
+      key_entry = "  %s => " % config_key
+      
+      # if there's multiple values then list them on separate lines
+      value_div = ",\n" + (" " * len(key_entry))
+      value_entry = value_div.join(test_config.get_value(config_key, multiple = True))
+      
+      print term.format(key_entry + value_entry, term.Color.BLUE)
+  except IOError, exc:
+    sys.stdout.write(term.format("failed (%s)\n" % exc, term.Color.RED, term.Attr.BOLD))
+  
+  print
 
 def apply_filters(testing_output, *filters):
   """

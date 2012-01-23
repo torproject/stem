@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Runs unit and integration tests.
+Runs unit and integration tests. For usage information run this with '--help'.
 """
 
 import os
@@ -33,8 +33,36 @@ import stem.util.log as log
 import stem.util.term as term
 
 OPT = "uic:l:t:h"
-OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "tor=", "help"]
+OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "tor=", "no-color", "help"]
 DIVIDER = "=" * 70
+
+CONFIG = {
+  "test.arg.unit": False,
+  "test.arg.integ": False,
+  "test.arg.log": None,
+  "test.arg.tor": "tor",
+  "test.arg.no_color": False,
+  "target.config": {},
+  "target.description": {},
+  "target.prereq": {},
+  "target.torrc": {},
+}
+
+TARGETS = stem.util.enum.Enum(*[(v, v) for v in (
+  "ONLINE",
+  "RELATIVE",
+  "RUN_NONE",
+  "RUN_OPEN",
+  "RUN_PASSWORD",
+  "RUN_COOKIE",
+  "RUN_MULTIPLE",
+  "RUN_SOCKET",
+  "RUN_SCOOKIE",
+  "RUN_PTRACE",
+  "RUN_ALL",
+)])
+
+DEFAULT_RUN_TARGET = TARGETS.RUN_OPEN
 
 # Tests are ordered by the dependencies so the lowest level tests come first.
 # This is because a problem in say, controller message parsing, will cause all
@@ -61,18 +89,7 @@ INTEG_TESTS = (
   test.integ.connection.connect.TestConnect,
 )
 
-# Integration tests above the basic suite.
-TARGETS = stem.util.enum.Enum(*[(v, v) for v in ("ONLINE", "RELATIVE", "RUN_NONE", "RUN_OPEN", "RUN_PASSWORD", "RUN_COOKIE", "RUN_MULTIPLE", "RUN_SOCKET", "RUN_SCOOKIE", "RUN_PTRACE", "RUN_ALL")])
-
-CONFIG = {
-  "target.config": {},
-  "target.description": {},
-  "target.prereq": {},
-  "target.torrc": {},
-}
-
-DEFAULT_RUN_TARGET = TARGETS.RUN_OPEN
-
+# TODO: move into settings.cfg when we have multi-line options
 HELP_MSG = """Usage runTests.py [OPTION]
 Runs tests for the stem library.
 
@@ -83,74 +100,34 @@ Runs tests for the stem library.
   -l, --log RUNLEVEL    includes logging output with test results, runlevels:
                           TRACE, DEBUG, INFO, NOTICE, WARN, ERROR
       --tor PATH        custom tor binary to run testing against
+      --no-color        displays testing output without color
   -h, --help            presents this help
 
-  Integration targets:
-    %s
-"""
+  Integration targets:"""
 
-# TODO: add an option to disable output coloring?
-
-HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
-CATEGORY_ATTR = (term.Color.GREEN, term.Attr.BOLD)
-DEFAULT_TEST_ATTR = (term.Color.CYAN,)
-
-TEST_OUTPUT_ATTR = {
-  "... ok": (term.Color.GREEN,),
-  "... FAIL": (term.Color.RED, term.Attr.BOLD),
-  "... ERROR": (term.Color.RED, term.Attr.BOLD),
-  "... skipped": (term.Color.BLUE,),
-}
-
-def print_divider(msg, is_header = False):
-  attr = HEADER_ATTR if is_header else CATEGORY_ATTR
-  print term.format("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
-
-def print_logging(logging_buffer):
-  if not logging_buffer.is_empty():
-    for entry in logging_buffer:
-      print term.format(entry.replace("\n", "\n  "), term.Color.MAGENTA)
-    
-    print
-
-if __name__ == '__main__':
-  # loads the builtin testing configuration
-  settings_path = os.path.join(test.runner.STEM_BASE, "test", "settings.cfg")
+def load_user_configuration(test_config):
+  """
+  Parses our commandline arguments, loading our custom test configuration if
+  '--config' was provided and then appending arguments to that. This does some
+  sanity checking on the input, printing an error and quitting if validation
+  fails.
+  """
   
-  test_config = stem.util.conf.get_config("test")
-  test_config.load(settings_path)
-  test_config.update(CONFIG)
+  arg_overrides, config_path = {}, None
   
-  # parses target.torrc as csv values and convert to runner Torrc enums
-  for target in CONFIG["target.torrc"]:
-    CONFIG["target.torrc"][target] = []
-    
-    for opt in test_config.get_str_csv("target.torrc", [], sub_key = target):
-      if opt in test.runner.Torrc.keys():
-        CONFIG["target.torrc"][target].append(test.runner.Torrc[opt])
-      else:
-        print "'%s' isn't a test.runner.Torrc enumeration" % opt
-        sys.exit(1)
-  
-  start_time = time.time()
-  run_unit_tests = False
-  run_integ_tests = False
-  config_path = None
-  override_targets = []
-  logging_runlevel = None
-  tor_cmd = "tor"
-  
-  # parses user input, noting any issues
   try:
     opts, args = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)
   except getopt.GetoptError, exc:
-    print str(exc) + " (for usage provide --help)"
+    print "%s (for usage provide --help)" % exc
     sys.exit(1)
   
   for opt, arg in opts:
-    if opt in ("-u", "--unit"): run_unit_tests = True
-    elif opt in ("-i", "--integ"): run_integ_tests = True
-    elif opt in ("-c", "--config"): config_path = os.path.abspath(arg)
+    if opt in ("-u", "--unit"):
+      arg_overrides["test.arg.unit"] = "true"
+    elif opt in ("-i", "--integ"):
+      arg_overrides["test.arg.integ"] = "true"
+    elif opt in ("-c", "--config"):
+      config_path = os.path.abspath(arg)
     elif opt in ("-t", "--targets"):
       integ_targets = arg.split(",")
       
@@ -164,67 +141,75 @@ if __name__ == '__main__':
           print "Invalid integration target: %s" % target
           sys.exit(1)
         else:
-          override_targets.append(target)
+          target_config = test_config.get("target.config", {}).get(target)
+          if target_config: arg_overrides[target_config] = "true"
     elif opt in ("-l", "--log"):
-      logging_runlevel = arg.upper()
-      
-      if not logging_runlevel in log.LOG_VALUES:
-        print "'%s' isn't a logging runlevel, use one of the following instead:" % arg
-        print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
-        sys.exit(1)
+      arg_overrides["test.arg.log"] = arg.upper()
     elif opt in ("--tor"):
-      if not os.path.exists(arg):
-        print "Unable to start tor, '%s' does not exists." % arg
-        sys.exit(1)
-      
-      tor_cmd = arg
+      arg_overrides["test.arg.tor"] = arg
     elif opt in ("-h", "--help"):
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
       
+      print HELP_MSG
+      
       # gets the longest target length so we can show the entries in columns
-      target_name_length = max([len(name) for name in TARGETS])
-      description_format = "%%-%is - %%s" % target_name_length
+      target_name_length = max(map(len, TARGETS))
+      description_format = "    %%-%is - %%s" % target_name_length
       
-      target_lines = []
       for target in TARGETS:
-        target_lines.append(description_format % (target, CONFIG["target.description"].get(target, "")))
+        print description_format % (target, CONFIG["target.description"].get(target, ""))
       
-      print HELP_MSG % "\n    ".join(target_lines)
+      print
+      
       sys.exit()
   
-  if not run_unit_tests and not run_integ_tests:
+  # load a testrc if '--config' was given, then apply arguments
+  
+  if config_path:
+    try:
+      test_config.load(config_path)
+    except IOError, exc:
+      print "Unable to load testing configuration at '%s': %s" % (config_path, exc)
+      sys.exit(1)
+  
+  for key, value in arg_overrides.items():
+    test_config.set(key, value)
+  
+  # basic validation on user input
+  
+  log_config = CONFIG["test.arg.log"]
+  if log_config and not log_config in log.LOG_VALUES:
+    print "'%s' isn't a logging runlevel, use one of the following instead:" % log_config
+    print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
+    sys.exit(1)
+  
+  tor_config = CONFIG["test.arg.tor"]
+  if not os.path.exists(tor_config) and not stem.util.system.is_available(tor_config):
+    print "Unable to start tor, '%s' does not exists." % tor_config
+    sys.exit(1)
+
+if __name__ == '__main__':
+  start_time = time.time()
+  
+  # loads and validates our various configurations
+  test_config = stem.util.conf.get_config("test")
+  test_config.sync(CONFIG)
+  
+  settings_path = os.path.join(test.runner.STEM_BASE, "test", "settings.cfg")
+  test_config.load(settings_path)
+  
+  load_user_configuration(test_config)
+  
+  if not CONFIG["test.arg.unit"] and not CONFIG["test.arg.integ"]:
     print "Nothing to run (for usage provide --help)\n"
     sys.exit()
   
-  if config_path:
-    print_divider("TESTING CONFIG", True)
-    print
-    
-    try:
-      sys.stdout.write(term.format("Loading test configuration (%s)... " % config_path, term.Color.BLUE, term.Attr.BOLD))
-      test_config.load(config_path)
-      sys.stdout.write(term.format("done\n", term.Color.BLUE, term.Attr.BOLD))
-      
-      for config_key in test_config.keys():
-        key_entry = "  %s => " % config_key
-        
-        # if there's multiple values then list them on separate lines
-        value_div = ",\n" + (" " * len(key_entry))
-        value_entry = value_div.join(test_config.get_value(config_key, multiple = True))
-        
-        sys.stdout.write(term.format(key_entry + value_entry + "\n", term.Color.BLUE))
-    except IOError, exc:
-      sys.stdout.write(term.format("failed (%s)\n" % exc, term.Color.RED, term.Attr.BOLD))
-    
-    print
+  # if we have verbose logging then provide the testing config
+  our_level = stem.util.log.logging_level(CONFIG["test.arg.log"])
+  info_level = stem.util.log.logging_level(stem.util.log.INFO)
   
-  # Set the configuration flag for our '--target' arguments. This is meant to
-  # override our configuration flags if both set a target.
-  
-  for target in override_targets:
-    target_config = CONFIG["target.config"].get(target)
-    if target_config: test_config.set(target_config, "true")
+  if our_level <= info_level: test.output.print_config(test_config)
   
   error_tracker = test.output.ErrorTracker()
   output_filters = (
@@ -235,14 +220,14 @@ if __name__ == '__main__':
   )
   
   stem_logger = log.get_logger()
-  logging_buffer = log.LogBuffer(logging_runlevel)
+  logging_buffer = log.LogBuffer(CONFIG["test.arg.log"])
   stem_logger.addHandler(logging_buffer)
   
-  if run_unit_tests:
-    print_divider("UNIT TESTS", True)
+  if CONFIG["test.arg.unit"]:
+    test.output.print_divider("UNIT TESTS", True)
     
     for test_class in UNIT_TESTS:
-      print_divider(test_class.__module__)
+      test.output.print_divider(test_class.__module__)
       suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
       test_results = StringIO.StringIO()
       unittest.TextTestRunner(test_results, verbosity=2).run(suite)
@@ -250,12 +235,12 @@ if __name__ == '__main__':
       sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
       print
       
-      print_logging(logging_buffer)
+      test.output.print_logging(logging_buffer)
     
     print
   
-  if run_integ_tests:
-    print_divider("INTEGRATION TESTS", True)
+  if CONFIG["test.arg.integ"]:
+    test.output.print_divider("INTEGRATION TESTS", True)
     integ_runner = test.runner.get_runner()
     
     # Queue up all the targets with torrc options we want to run against.
@@ -288,7 +273,7 @@ if __name__ == '__main__':
       if target_prereq:
         # lazy loaded to skip system call if we don't have any prereqs
         if not our_version:
-          our_version = stem.version.get_system_tor_version(tor_cmd)
+          our_version = stem.version.get_system_tor_version(CONFIG["test.arg.tor"])
         
         if our_version < stem.version.Requirement[target_prereq]:
           skip_targets.append(target)
@@ -297,13 +282,23 @@ if __name__ == '__main__':
       if target in skip_targets: continue
       
       try:
-        integ_runner.start(tor_cmd, extra_torrc_opts = CONFIG["target.torrc"].get(target, []))
+        # converts the 'target.torrc' csv into a list of test.runner.Torrc enums
+        torrc_opts = []
+        
+        for opt in test_config.get_str_csv("target.torrc", [], sub_key = target):
+          if opt in test.runner.Torrc.keys():
+            torrc_opts.append(test.runner.Torrc[opt])
+          else:
+            print "'%s' isn't a test.runner.Torrc enumeration" % opt
+            sys.exit(1)
+        
+        integ_runner.start(CONFIG["test.arg.tor"], extra_torrc_opts = torrc_opts)
         
         print term.format("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
         
         for test_class in INTEG_TESTS:
-          print_divider(test_class.__module__)
+          test.output.print_divider(test_class.__module__)
           suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
           test_results = StringIO.StringIO()
           unittest.TextTestRunner(test_results, verbosity=2).run(suite)
@@ -311,7 +306,7 @@ if __name__ == '__main__':
           sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
           print
           
-          print_logging(logging_buffer)
+          test.output.print_logging(logging_buffer)
       except OSError:
         pass
       finally:

@@ -18,6 +18,8 @@ Config - Custom configuration.
   |- save - writes the current configuration to a file
   |- clear - empties our loaded configuration contents
   |- update - replaces mappings in a dictionary with the config's values
+  |- add_listener - notifies the given listener when an update occures
+  |- sync - keeps a dictionary synchronized with our config
   |- keys - provides keys in the loaded configuration
   |- set - sets the given key/value pair
   |- unused_keys - provides keys that have never been requested
@@ -33,14 +35,27 @@ import stem.util.log as log
 
 CONFS = {}  # mapping of identifier to singleton instances of configs
 
+class SyncListener:
+  def __init__(self, config_dict, interceptor):
+    self.config_dict = config_dict
+    self.interceptor = interceptor
+  
+  def update(self, config, key):
+    if key in self.config_dict:
+      new_value = config.get(key, self.config_dict[key])
+      if new_value == self.config_dict[key]: return # no change
+      
+      if self.interceptor:
+        interceptor_value = self.interceptor(key, new_value)
+        if interceptor_value: new_value = interceptor_value
+      
+      self.config_dict[key] = new_value
+
 # TODO: methods that will be needed if we want to allow for runtime
 # customization...
 #
 # Config.set(key, value) - accepts any type that the get() method does,
 #   updating our contents with the string conversion
-#
-# Config.addListener(functor) - allow other classes to have callbacks for when
-#   the configuration is changed (either via load() or set())
 #
 # Config.save(path) - writes our current configurations, ideally merging them
 #   with the file that exists there so commenting and such are preserved
@@ -131,6 +146,7 @@ class Config():
     self._path = None        # location we last loaded from or saved to
     self._contents = {}      # configuration key/value pairs
     self._raw_contents = []  # raw contents read from configuration file
+    self._listeners = []     # functors to be notified of config changes
     
     # used for both _contents and _raw_contents access
     self._contents_lock = threading.RLock()
@@ -240,6 +256,45 @@ class Config():
       if type(val) == type(conf_mappings[entry]):
         conf_mappings[entry] = val
   
+  def add_listener(self, listener, backfill = True):
+    """
+    Registers the given function to be notified of configuration updates.
+    Listeners are expected to be functors which accept (config, key).
+    
+    Arguments:
+      listener (functor) - function to be notified when our configuration is
+                           changed
+      backfill (bool)    - calls the function with our current values if true
+    """
+    
+    self._contents_lock.acquire()
+    self._listeners.append(listener)
+    
+    if backfill:
+      for key in self.keys():
+        listener(key)
+    
+    self._contents_lock.release()
+  
+  def sync(self, config_dict, interceptor = None):
+    """
+    Synchronizes a dictionary with our current configuration (like the 'update'
+    method), and registers it to be updated whenever our configuration changes.
+    
+    If an interceptor is provided then this is called just prior to assigning
+    new values to the config_dict. The interceptor function is expected to
+    accept the (key, value) for the new values and return what we should
+    actually insert into the dictionary. If this returns None then the value is
+    updated as normal.
+    
+    Arguments:
+      config_dict (dict)    - dictionary to keep synchronized with our
+                              configuration
+      interceptor (functor) - function referred to prior to assigning values
+    """
+    
+    self.add_listener(SyncListener(config_dict, interceptor).update)
+  
   def keys(self):
     """
     Provides all keys in the currently loaded configuration.
@@ -273,15 +328,24 @@ class Config():
                             the values are appended
     """
     
-    if isinstance(value, str):
-      if not overwrite and key in self._contents: self._contents[key].append(value)
-      else: self._contents[key] = [value]
-    elif isinstance(value, list) or isinstance(value, tuple):
-      if not overwrite and key in self._contents:
-        self._contents[key] += value
-      else: self._contents[key] = value
-    else:
-      raise ValueError("Config.set() only accepts str, list, or tuple. Provided value was a '%s'" % type(value))
+    try:
+      self._contents_lock.acquire()
+      
+      if isinstance(value, str):
+        if not overwrite and key in self._contents: self._contents[key].append(value)
+        else: self._contents[key] = [value]
+        
+        for listener in self._listeners: listener(self, key)
+      elif isinstance(value, list) or isinstance(value, tuple):
+        if not overwrite and key in self._contents:
+          self._contents[key] += value
+        else: self._contents[key] = value
+        
+        for listener in self._listeners: listener(self, key)
+      else:
+        raise ValueError("Config.set() only accepts str, list, or tuple. Provided value was a '%s'" % type(value))
+    finally:
+      self._contents_lock.release()
   
   def get(self, key, default = None):
     """
