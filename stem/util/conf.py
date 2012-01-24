@@ -11,6 +11,13 @@ ignored. For instance:
   blankEntry.example
 
 would be loaded as four entries, the last one's value being an empty string.
+Mulit-line entries can be defined my providing an entry followed by lines with
+a '|' prefix. For instance...
+
+  msg.greeting
+  |This is a multi-line message
+  |exclaiming about the wonders
+  |and awe that is pepperjack!
 
 get_config - Singleton for getting configurations
 Config - Custom configuration.
@@ -173,8 +180,11 @@ class Config():
     
     self._contents_lock.acquire()
     self._raw_contents = read_contents
+    remainder = list(self._raw_contents)
     
-    for line in self._raw_contents:
+    while remainder:
+      line = remainder.pop(0)
+      
       # strips any commenting or excess whitespace
       comment_start = line.find("#")
       if comment_start != -1: line = line[:comment_start]
@@ -188,6 +198,19 @@ class Config():
         except ValueError:
           log.debug("Config entry '%s' is expected to be of the format 'Key Value', defaulting to '%s' -> ''" % (line, line))
           key, value = line, ""
+        
+        if not value:
+          # this might be a multi-line entry, try processing it as such
+          multiline_buffer = []
+          
+          while remainder and remainder[0].lstrip().startswith("|"):
+            content = remainder.pop(0).lstrip()[1:] # removes '\s+|' prefix
+            content = content.rstrip("\n")          # trailing newline
+            multiline_buffer.append(content)
+          
+          if multiline_buffer:
+            self.set(key, "\n".join(multiline_buffer), False)
+            continue
         
         self.set(key, value, False)
     

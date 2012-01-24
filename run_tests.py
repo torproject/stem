@@ -43,6 +43,7 @@ CONFIG = {
   "argument.log": None,
   "argument.tor": "tor",
   "argument.no_color": False,
+  "msg.help": "",
   "target.config": {},
   "target.description": {},
   "target.prereq": {},
@@ -90,22 +91,6 @@ INTEG_TESTS = (
   test.integ.connection.authentication.TestAuthenticate,
   test.integ.connection.connect.TestConnect,
 )
-
-# TODO: move into settings.cfg when we have multi-line options
-HELP_MSG = """Usage runTests.py [OPTION]
-Runs tests for the stem library.
-
-  -u, --unit            runs unit tests
-  -i, --integ           runs integration tests
-  -c, --config PATH     path to a custom test configuration
-  -t, --target TARGET   comma separated list of extra targets for integ tests
-  -l, --log RUNLEVEL    includes logging output with test results, runlevels:
-                          TRACE, DEBUG, INFO, NOTICE, WARN, ERROR
-      --tor PATH        custom tor binary to run testing against
-      --no-color        displays testing output without color
-  -h, --help            presents this help
-
-  Integration targets:"""
 
 def load_user_configuration(test_config):
   """
@@ -155,7 +140,7 @@ def load_user_configuration(test_config):
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
       
-      print HELP_MSG
+      print CONFIG["msg.help"]
       
       # gets the longest target length so we can show the entries in columns
       target_name_length = max(map(len, Target))
