@@ -229,6 +229,7 @@ if __name__ == '__main__':
   
   if CONFIG["argument.unit"]:
     test.output.print_divider("UNIT TESTS", True)
+    error_tracker.set_category("UNIT TEST")
     
     for test_class in UNIT_TESTS:
       test.output.print_divider(test_class.__module__)
@@ -284,6 +285,7 @@ if __name__ == '__main__':
     
     for target in integ_run_targets:
       if target in skip_targets: continue
+      error_tracker.set_category(target)
       
       try:
         # converts the 'target.torrc' csv into a list of test.runner.Torrc enums

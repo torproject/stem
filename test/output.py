@@ -164,6 +164,22 @@ class ErrorTracker:
   
   def __init__(self):
     self._errors = []
+    self._category = None
+  
+  def set_category(self, category):
+    """
+    Optional label that will be presented with testing failures until another
+    category is specified. If set to None then no category labels are included.
+    
+    For tests with a lot of output this is intended to help narrow the haystack
+    in which the user needs to look for failures. In practice this is mostly
+    used to specify the integ target we're running under.
+    
+    Arguments:
+      category (str) - category to label errors as being under
+    """
+    
+    self._category = category
   
   def has_error_occured(self):
     return bool(self._errors)
@@ -171,6 +187,9 @@ class ErrorTracker:
   def get_filter(self):
     def _error_tracker(line_type, line_content):
       if line_type in (LineType.FAIL, LineType.ERROR):
+        if self._category:
+          line_content = "[%s] %s" % (self._category, line_content)
+        
         self._errors.append(line_content)
       
       return line_content
