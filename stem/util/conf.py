@@ -217,6 +217,11 @@ class Config():
     self._path = path
     self._contents_lock.release()
   
+  # TODO: pending improvements...
+  # - missing pydocs
+  # - integ testing
+  # - does not yet handle multi-line entries
+  # - should have an optional path argument
   def save(self):
     self._contents_lock.acquire()
     
