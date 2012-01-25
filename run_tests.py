@@ -29,6 +29,7 @@ import test.integ.util.conf
 import test.integ.util.system
 import test.integ.version
 
+import stem.util.conf
 import stem.util.enum
 import stem.util.log as log
 import stem.util.term as term
@@ -37,7 +38,7 @@ OPT = "uic:l:t:h"
 OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "tor=", "no-color", "help"]
 DIVIDER = "=" * 70
 
-CONFIG = {
+CONFIG = stem.util.conf.config_dict("test", {
   "argument.unit": False,
   "argument.integ": False,
   "argument.log": None,
@@ -48,7 +49,7 @@ CONFIG = {
   "target.description": {},
   "target.prereq": {},
   "target.torrc": {},
-}
+})
 
 Target = stem.util.enum.Enum(*[(v, v) for v in (
   "ONLINE",
@@ -183,7 +184,6 @@ if __name__ == '__main__':
   
   # loads and validates our various configurations
   test_config = stem.util.conf.get_config("test")
-  test_config.sync(CONFIG)
   
   settings_path = os.path.join(test.runner.STEM_BASE, "test", "settings.cfg")
   test_config.load(settings_path)

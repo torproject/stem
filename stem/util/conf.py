@@ -19,6 +19,26 @@ a '|' prefix. For instance...
   |exclaiming about the wonders
   |and awe that is pepperjack!
 
+The Config class acts as a central store for configuration values. Users of
+this store have their own dictionaries of config key/value pairs that provide
+three things...
+
+  1. Default values for the configuration keys in case they're either undefined
+     or of the wrong type.
+  2. Types that we should attempt to cast the configuration values to.
+  3. An easily accessable container for getting the config values.
+
+There are many ways of using the Config class but the most common ones are...
+
+- Call config_dict to get a dictionary that's always synced with with a Config.
+
+- Make a dictionary and call synchronize() to bring it into sync with the
+  Config. This does not keep it in sync as the Config changes. See the Config
+  class' pydocs for an example.
+
+- Just call the Config's get() or get_value() methods directly.
+
+config_dict - provides a dictionary that's kept synchronized with a config
 get_config - Singleton for getting configurations
 Config - Custom configuration.
   |- load - reads a configuration file
@@ -27,7 +47,6 @@ Config - Custom configuration.
   |- synchronize - replaces mappings in a dictionary with the config's values
   |- add_listener - notifies the given listener when an update occures
   |- clear_listeners - removes any attached listeners
-  |- sync - keeps a dictionary synchronized with our config
   |- keys - provides keys in the loaded configuration
   |- set - sets the given key/value pair
   |- unused_keys - provides keys that have never been requested
@@ -59,14 +78,27 @@ class SyncListener:
       
       self.config_dict[key] = new_value
 
-# TODO: methods that will be needed if we want to allow for runtime
-# customization...
-#
-# Config.set(key, value) - accepts any type that the get() method does,
-#   updating our contents with the string conversion
-#
-# Config.save(path) - writes our current configurations, ideally merging them
-#   with the file that exists there so commenting and such are preserved
+def config_dict(handle, conf_mappings, handler = None):
+  """
+  Makes a dictionary that stays synchronized with a configuration. The process
+  for staying in sync is similar to the Config class' synchronize() method,
+  only changing the dictionary's values if we're able to cast to the same type.
+  
+  If an handler is provided then this is called just prior to assigning new
+  values to the config_dict. The handler function is expected to accept the
+  (key, value) for the new values and return what we should actually insert
+  into the dictionary. If this returns None then the value is updated as
+  normal.
+  
+  Arguments:
+    handle (str)         - unique identifier for a config instance
+    conf_mappings (dict) - config key/value mappings used as our defaults
+    handler (functor)    - function referred to prior to assigning values
+  """
+  
+  selected_config = get_config(handle)
+  selected_config.add_listener(SyncListener(conf_mappings, handler).update)
+  return conf_mappings
 
 def get_config(handle):
   """
@@ -311,26 +343,6 @@ class Config():
     """
     
     self._listeners = []
-  
-  def sync(self, config_dict, interceptor = None):
-    """
-    Synchronizes a dictionary with our current configuration (like the
-    'synchronize' method), and registers it to be updated whenever our
-    configuration changes.
-    
-    If an interceptor is provided then this is called just prior to assigning
-    new values to the config_dict. The interceptor function is expected to
-    accept the (key, value) for the new values and return what we should
-    actually insert into the dictionary. If this returns None then the value is
-    updated as normal.
-    
-    Arguments:
-      config_dict (dict)    - dictionary to keep synchronized with our
-                              configuration
-      interceptor (functor) - function referred to prior to assigning values
-    """
-    
-    self.add_listener(SyncListener(config_dict, interceptor).update)
   
   def keys(self):
     """

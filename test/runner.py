@@ -41,14 +41,12 @@ import stem.util.enum
 import stem.util.term as term
 import test.output
 
-CONFIG = {
+CONFIG = stem.util.conf.config_dict("test", {
   "integ.test_directory": "./test/data",
   "integ.log": "./test/data/log",
   "test.target.online": False,
   "test.target.relative_data_dir": False,
-}
-
-stem.util.conf.get_config("test").sync(CONFIG)
+})
 
 STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
 SUBSTATUS_ATTR = (term.Color.BLUE, )

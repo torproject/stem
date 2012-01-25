@@ -16,6 +16,43 @@ class TestConf(unittest.TestCase):
     test_config.clear()
     test_config.clear_listeners()
   
+  def test_config_dict(self):
+    """
+    Tests the config_dict function.
+    """
+    
+    my_config = {
+      "bool_value": False,
+      "int_value": 5,
+      "str_value": "hello",
+      "list_value": [],
+    }
+    
+    test_config = stem.util.conf.get_config("unit_testing")
+    
+    # checks that sync causes existing contents to be applied
+    test_config.set("bool_value", "true")
+    my_config = stem.util.conf.config_dict("unit_testing", my_config)
+    self.assertEquals(True, my_config["bool_value"])
+    
+    # check a basic synchronize
+    test_config.set("str_value", "me")
+    self.assertEquals("me", my_config["str_value"])
+    
+    # synchronize with a type mismatch, should keep the old value
+    test_config.set("int_value", "7a")
+    self.assertEquals(5, my_config["int_value"])
+    
+    # changes for a collection
+    test_config.set("list_value", "a", False)
+    self.assertEquals(["a"], my_config["list_value"])
+    
+    test_config.set("list_value", "b", False)
+    self.assertEquals(["a", "b"], my_config["list_value"])
+    
+    test_config.set("list_value", "c", False)
+    self.assertEquals(["a", "b", "c"], my_config["list_value"])
+  
   def test_clear(self):
     """
     Tests the clear method.
@@ -112,43 +149,6 @@ class TestConf(unittest.TestCase):
     
     test_config.set("foo", "bar")
     self.assertEquals(["hello"], listener_received_keys)
-  
-  def test_sync(self):
-    """
-    Tests the sync method.
-    """
-    
-    my_config = {
-      "bool_value": False,
-      "int_value": 5,
-      "str_value": "hello",
-      "list_value": [],
-    }
-    
-    test_config = stem.util.conf.get_config("unit_testing")
-    
-    # checks that sync causes existing contents to be applied
-    test_config.set("bool_value", "true")
-    test_config.sync(my_config)
-    self.assertEquals(True, my_config["bool_value"])
-    
-    # check a basic synchronize
-    test_config.set("str_value", "me")
-    self.assertEquals("me", my_config["str_value"])
-    
-    # synchronize with a type mismatch, should keep the old value
-    test_config.set("int_value", "7a")
-    self.assertEquals(5, my_config["int_value"])
-    
-    # changes for a collection
-    test_config.set("list_value", "a", False)
-    self.assertEquals(["a"], my_config["list_value"])
-    
-    test_config.set("list_value", "b", False)
-    self.assertEquals(["a", "b"], my_config["list_value"])
-    
-    test_config.set("list_value", "c", False)
-    self.assertEquals(["a", "b", "c"], my_config["list_value"])
   
   def test_unused_keys(self):
     """

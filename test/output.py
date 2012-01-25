@@ -11,11 +11,9 @@ import stem.util.conf
 import stem.util.enum
 import stem.util.term as term
 
-CONFIG = {
+CONFIG = stem.util.conf.config_dict("test", {
   "argument.no_color": False,
-}
-
-stem.util.conf.get_config("test").sync(CONFIG)
+})
 
 DIVIDER = "=" * 70
 HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
