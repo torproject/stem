@@ -186,9 +186,9 @@ class ErrorTracker:
     def _error_tracker(line_type, line_content):
       if line_type in (LineType.FAIL, LineType.ERROR):
         if self._category:
-          line_content = "[%s] %s" % (self._category, line_content)
-        
-        self._errors.append(line_content)
+          self._errors.append("[%s] %s" % (self._category, line_content))
+        else:
+          self._errors.append(line_content)
       
       return line_content
     
