@@ -24,7 +24,7 @@ Config - Custom configuration.
   |- load - reads a configuration file
   |- save - writes the current configuration to a file
   |- clear - empties our loaded configuration contents
-  |- update - replaces mappings in a dictionary with the config's values
+  |- synchronize - replaces mappings in a dictionary with the config's values
   |- add_listener - notifies the given listener when an update occures
   |- clear_listeners - removes any attached listeners
   |- sync - keeps a dictionary synchronized with our config
@@ -143,7 +143,7 @@ class Config():
       # Information for what values fail to load and why are reported to
       # 'stem.util.log'.
       
-      user_config.update(ssh_config)
+      user_config.synchronize(ssh_config)
   """
   
   def __init__(self):
@@ -248,7 +248,7 @@ class Config():
     self._requested_keys = set()
     self._contents_lock.release()
   
-  def update(self, conf_mappings, limits = None):
+  def synchronize(self, conf_mappings, limits = None):
     """
     This takes a dictionary of 'config_key => default_value' mappings and
     changes the values to reflect our current configuration. This will leave
@@ -314,8 +314,9 @@ class Config():
   
   def sync(self, config_dict, interceptor = None):
     """
-    Synchronizes a dictionary with our current configuration (like the 'update'
-    method), and registers it to be updated whenever our configuration changes.
+    Synchronizes a dictionary with our current configuration (like the
+    'synchronize' method), and registers it to be updated whenever our
+    configuration changes.
     
     If an interceptor is provided then this is called just prior to assigning
     new values to the config_dict. The interceptor function is expected to
@@ -344,7 +345,7 @@ class Config():
   def unused_keys(self):
     """
     Provides the configuration keys that have never been provided to a caller
-    via the get, get_value, or update methods.
+    via the get, get_value, or synchronize methods.
     
     Returns:
       set of configuration keys we've loaded but have never been requested

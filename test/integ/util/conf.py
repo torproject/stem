@@ -72,7 +72,7 @@ class TestConf(unittest.TestCase):
     
     user_config = stem.util.conf.get_config("integ_testing")
     user_config.load(CONF_PATH)
-    user_config.update(ssh_config)
+    user_config.synchronize(ssh_config)
     
     self.assertEquals("atagar", ssh_config["login.user"])
     self.assertEquals("pepperjack_is_awesome!", ssh_config["login.password"])
