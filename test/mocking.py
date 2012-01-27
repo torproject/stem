@@ -1,10 +1,27 @@
 """
 Helper functions for creating mock objects and monkey patching to help with
 testing.
+
+Mocking Functions
+  no_op           - does nothing
+  return_value    - returns a given value
+  return_true     - returns True
+  return_false    - returns False
+  return_none     - returns None
+  raise_exception - raises an exception when called
+
+mock - replaces a function with an alternative implementation
+revert_mocking - reverts any changes made by the mock function
+
+get_protocolinfo_response - provides a ProtocolInfoResponse instance
 """
 
 import inspect
 import itertools
+import StringIO
+
+import stem.connection
+import stem.socket
 
 # Once we've mocked a function we can't rely on its __module__ or __name__
 # attributes, so instead we associate a unique 'mock_id' attribute that maps
@@ -27,6 +44,10 @@ def return_value(value):
 def return_true(): return return_value(True)
 def return_false(): return return_value(False)
 def return_none(): return return_value(None)
+
+def raise_exception(exception):
+  def _raise(*args): raise exception
+  return _raise
 
 def mock(target, mock_call):
   """
@@ -72,4 +93,26 @@ def revert_mocking():
     module.__dict__[function] = impl
   
   MOCK_STATE.clear()
+
+def get_protocolinfo_response(**attributes):
+  """
+  Provides a ProtocolInfoResponse, customized with the given attributes. The
+  base instance is minimal, with its version set to one and everything else
+  left with the default.
+  
+  Arguments:
+    attributes (dict) - attributes to customize the the 
+  
+  Returns:
+    stem.connection.ProtocolInfoResponse instance
+  """
+  
+  control_message = "250-PROTOCOLINFO 1\r\n250 OK\r\n"
+  protocolinfo_response = stem.socket.recv_message(StringIO.StringIO(control_message))
+  stem.connection.ProtocolInfoResponse.convert(protocolinfo_response)
+  
+  for attr in attributes:
+    protocolinfo_response.__dict__[attr] = attributes[attr]
+  
+  return protocolinfo_response
 

@@ -2,36 +2,11 @@
 Unit tests for the stem.connection.authenticate function.
 """
 
-import StringIO
-import functools
 import unittest
 
 import stem.connection
 import stem.util.log as log
-
-# Functors to replace get_protocolinfo and authenticate_*. All of them take any
-# number of arguments.
-def no_op():
-  def _no_op(*args):
-    pass
-  
-  return _no_op
-
-def raise_exception(exception_type):
-  if not exception_type: return no_op()
-  
-  def _raise(exc_type, *args):
-    raise exc_type(None)
-  
-  return functools.partial(_raise, exception_type)
-
-def get_protocolinfo(auth_methods):
-  control_message = "250-PROTOCOLINFO 1\r\n250 OK\r\n"
-  protocolinfo_response = stem.socket.recv_message(StringIO.StringIO(control_message))
-  stem.connection.ProtocolInfoResponse.convert(protocolinfo_response)
-  protocolinfo_response.auth_methods = auth_methods
-  protocolinfo_response.cookie_path = "/tmp/blah"
-  return lambda *args: protocolinfo_response
+import test.mocking as mocking
 
 def _get_all_auth_method_combinations():
   """
@@ -63,25 +38,13 @@ class TestAuthenticate(unittest.TestCase):
   """
   
   def setUp(self):
-    # preserves all of the functors we'll need to monkey patch, and make them
-    # no-ops
-    
-    self.original_get_protocolinfo = stem.connection.get_protocolinfo
-    self.original_authenticate_none = stem.connection.authenticate_none
-    self.original_authenticate_password = stem.connection.authenticate_password
-    self.original_authenticate_cookie = stem.connection.authenticate_cookie
-    
-    stem.connection.get_protocolinfo = no_op()
-    stem.connection.authenticate_none = no_op()
-    stem.connection.authenticate_password = no_op()
-    stem.connection.authenticate_cookie = no_op()
+    mocking.mock(stem.connection.get_protocolinfo, mocking.no_op())
+    mocking.mock(stem.connection.authenticate_none, mocking.no_op())
+    mocking.mock(stem.connection.authenticate_password, mocking.no_op())
+    mocking.mock(stem.connection.authenticate_cookie, mocking.no_op())
   
   def tearDown(self):
-    # restore functions
-    stem.connection.get_protocolinfo = self.original_get_protocolinfo
-    stem.connection.authenticate_none = self.original_authenticate_none
-    stem.connection.authenticate_password = self.original_authenticate_password
-    stem.connection.authenticate_cookie = self.original_authenticate_cookie
+    mocking.revert_mocking()
   
   def test_with_get_protocolinfo(self):
     """
@@ -89,15 +52,20 @@ class TestAuthenticate(unittest.TestCase):
     """
     
     # tests where get_protocolinfo succeeds
-    stem.connection.get_protocolinfo = get_protocolinfo((stem.connection.AuthMethod.NONE, ))
+    protocolinfo_response = mocking.get_protocolinfo_response(
+      auth_methods = (stem.connection.AuthMethod.NONE, ),
+    )
+    
+    mocking.mock(stem.connection.get_protocolinfo, mocking.return_value(protocolinfo_response))
     stem.connection.authenticate(None)
     
-    # tests where get_protocolinfo raises a ProtocolError
-    stem.connection.get_protocolinfo = raise_exception(stem.socket.ProtocolError)
+    # tests where get_protocolinfo raises an exception
+    raised_exc = stem.socket.ProtocolError(None)
+    mocking.mock(stem.connection.get_protocolinfo, mocking.raise_exception(raised_exc))
     self.assertRaises(stem.connection.IncorrectSocketType, stem.connection.authenticate, None)
     
-    # tests where get_protocolinfo raises a SocketError
-    stem.connection.get_protocolinfo = raise_exception(stem.socket.SocketError)
+    raised_exc = stem.socket.SocketError(None)
+    mocking.mock(stem.connection.get_protocolinfo, mocking.raise_exception(raised_exc))
     self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None)
   
   def test_all_use_cases(self):
@@ -113,50 +81,70 @@ class TestAuthenticate(unittest.TestCase):
     stem_logger.setLevel(log.logging_level(None))
     
     # exceptions that the authentication functions are documented to raise
-    auth_none_exc_types = (None,
-      stem.connection.OpenAuthRejected)
+    all_auth_none_exc = (None,
+      stem.connection.OpenAuthRejected(None))
     
-    auth_password_exc_types = (None,
-      stem.connection.PasswordAuthRejected,
-      stem.connection.IncorrectPassword)
+    all_auth_password_exc = (None,
+      stem.connection.PasswordAuthRejected(None),
+      stem.connection.IncorrectPassword(None))
     
-    auth_cookie_exc_types = (None,
-      stem.connection.IncorrectCookieSize,
-      stem.connection.UnreadableCookieFile,
-      stem.connection.CookieAuthRejected,
-      stem.connection.IncorrectCookieValue)
+    all_auth_cookie_exc = (None,
+      stem.connection.IncorrectCookieSize(None),
+      stem.connection.UnreadableCookieFile(None),
+      stem.connection.CookieAuthRejected(None),
+      stem.connection.IncorrectCookieValue(None))
     
-    # auth functions don't suppress controller exceptions
-    control_exc_types = (
-      stem.socket.ProtocolError,
-      stem.socket.SocketError,
-      stem.socket.SocketClosed)
+    # authentication functions might raise a controller error when
+    # 'suppress_ctl_errors' is False, so including those
     
-    for auth_methods in _get_all_auth_method_combinations():
-      protocolinfo_input = get_protocolinfo(auth_methods)()
+    control_exc = (
+      stem.socket.ProtocolError(None),
+      stem.socket.SocketError(None),
+      stem.socket.SocketClosed(None))
+    
+    all_auth_none_exc += control_exc
+    all_auth_password_exc += control_exc
+    all_auth_cookie_exc += control_exc
+    
+    for protocolinfo_auth_methods in _get_all_auth_method_combinations():
+      # protocolinfo input for the authenticate() call we'll be making
+      protocolinfo_arg = mocking.get_protocolinfo_response(
+        auth_methods = protocolinfo_auth_methods,
+        cookie_path = "/tmp/blah",
+      )
       
-      for auth_none_exc in auth_none_exc_types + control_exc_types:
-        for auth_password_exc in auth_password_exc_types + control_exc_types:
-          for auth_cookie_exc in auth_cookie_exc_types + control_exc_types:
-            stem.connection.authenticate_none = raise_exception(auth_none_exc)
-            stem.connection.authenticate_password = raise_exception(auth_password_exc)
-            stem.connection.authenticate_cookie = raise_exception(auth_cookie_exc)
-            
-            auth_tuple_set = (
-              (stem.connection.AuthMethod.NONE, auth_none_exc),
-              (stem.connection.AuthMethod.PASSWORD, auth_password_exc),
-              (stem.connection.AuthMethod.COOKIE, auth_cookie_exc))
+      for auth_none_exc in all_auth_none_exc:
+        for auth_password_exc in all_auth_password_exc:
+          for auth_cookie_exc in all_auth_cookie_exc:
+            # determine if the authenticate() call will succeed and mock each
+            # of the authenticate_* function to raise its given exception
             
             expect_success = False
-            for auth_type, auth_exc in auth_tuple_set:
-              if auth_type in auth_methods and not auth_exc:
-                expect_success = True
-                break
+            auth_mocks = {
+              stem.connection.AuthMethod.NONE:
+                (stem.connection.authenticate_none, auth_none_exc),
+              stem.connection.AuthMethod.PASSWORD:
+                (stem.connection.authenticate_password, auth_password_exc),
+              stem.connection.AuthMethod.COOKIE:
+                (stem.connection.authenticate_cookie, auth_cookie_exc),
+            }
+            
+            for auth_method in auth_mocks:
+              auth_function, raised_exc = auth_mocks[auth_method]
+              
+              if not raised_exc:
+                # Mocking this authentication method so it will succeed. If
+                # it's among the protocolinfo methods then expect success.
+                
+                mocking.mock(auth_function, mocking.no_op())
+                expect_success |= auth_method in protocolinfo_auth_methods
+              else:
+                mocking.mock(auth_function, mocking.raise_exception(raised_exc))
             
             if expect_success:
-              stem.connection.authenticate(None, "blah", protocolinfo_input)
+              stem.connection.authenticate(None, "blah", protocolinfo_arg)
             else:
-              self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, "blah", protocolinfo_input)
+              self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, "blah", protocolinfo_arg)
     
     # revert logging back to normal
     stem_logger.setLevel(log.logging_level(log.TRACE))
