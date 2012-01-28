@@ -314,7 +314,9 @@ if __name__ == '__main__':
     
     # TODO: note unused config options afterward?
   
-  runtime_label = "(%i seconds)" % (time.time() - start_time)
+  runtime = time.time() - start_time
+  if runtime < 1: runtime_label = "(%0.1f seconds)" % runtime
+  else: runtime_label = "(%i seconds)" % runtime
   
   if error_tracker.has_error_occured():
     test.output.print_line("TESTING FAILED %s" % runtime_label, term.Color.RED, term.Attr.BOLD)
