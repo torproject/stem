@@ -35,6 +35,15 @@ class TestEnum(unittest.TestCase):
     self.assertEquals("Skippy", pets.DOG)
     self.assertEquals("Cat", pets.CAT)
   
+  def test_uppercase_enum_example(self):
+    """
+    Checks that the pydoc example for the UppercaseEnum constructor function is
+    accurate.
+    """
+    
+    runlevels = stem.util.enum.UppercaseEnum("DEBUG", "INFO", "NOTICE", "WARN", "ERROR")
+    self.assertEquals("DEBUG", runlevels.DEBUG)
+  
   def test_enum_methods(self):
     """
     Exercises enumeration methods.

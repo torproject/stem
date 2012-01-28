@@ -15,11 +15,13 @@ with overwritten string counterparts:
 'Cat'
 
 to_camel_case - converts a string to camel case
+UppercaseEnum - Provides an enum instance with capitalized values.
 Enum - Provides a basic, ordered  enumeration.
-  |- values - string representation of our enums
+  |- keys - string representation of our enum keys
   |- index_of - indice of an enum value
   |- next - provides the enum after a given enum value
   |- previous - provides the enum before a given value
+  |- __getitem__ - provides the value for an enum key
   +- __iter__ - iterator over our enum keys
 """
 
@@ -41,6 +43,25 @@ def to_camel_case(label, word_divider = " "):
     else: words.append(entry[0].upper() + entry[1:].lower())
   
   return word_divider.join(words)
+
+def UppercaseEnum(*args):
+  """
+  Provides an Enum instance where the values are identical to the keys. Since
+  the keys are uppercase by convention this means the values are too. For
+  instance...
+  
+  >>> runlevels = UppercaseEnum("DEBUG", "INFO", "NOTICE", "WARN", "ERROR")
+  >>> runlevels.DEBUG
+  'DEBUG'
+  
+  Arguments:
+    args (str) - list of enum keys to initialize with
+  
+  Returns:
+    stem.util.Enum instance with the given keys
+  """
+  
+  return Enum(*[(v, v) for v in args])
 
 class Enum:
   """

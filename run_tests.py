@@ -51,7 +51,7 @@ CONFIG = stem.util.conf.config_dict("test", {
   "target.torrc": {},
 })
 
-Target = stem.util.enum.Enum(*[(v, v) for v in (
+Target = stem.util.enum.UppercaseEnum(
   "ONLINE",
   "RELATIVE",
   "RUN_NONE",
@@ -63,7 +63,7 @@ Target = stem.util.enum.Enum(*[(v, v) for v in (
   "RUN_SCOOKIE",
   "RUN_PTRACE",
   "RUN_ALL",
-)])
+)
 
 DEFAULT_RUN_TARGET = Target.RUN_OPEN
 

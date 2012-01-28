@@ -36,10 +36,7 @@ import stem.util.enum
 # Logging runlevels. These are *very* commonly used so including shorter
 # aliases (so they can be referenced as log.DEBUG, log.WARN, etc).
 
-Runlevel = stem.util.enum.Enum(
-  ("TRACE", "TRACE"),   ("DEBUG", "DEBUG"), ("INFO", "INFO"),
-  ("NOTICE", "NOTICE"), ("WARN", "WARN"),   ("ERROR", "ERROR"))
-
+Runlevel = stem.util.enum.UppercaseEnum("TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR")
 TRACE, DEBUG, INFO, NOTICE, WARN, ERR = list(Runlevel)
 
 # mapping of runlevels to the logger module's values, TRACE and DEBUG aren't
