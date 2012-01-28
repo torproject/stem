@@ -7,9 +7,9 @@ system running the tests.
 
 import functools
 import unittest
-import test.mocking
 import stem.util.proc
 import stem.util.system as system
+import test.mocking as mocking
 
 # Base responses for the get_pid_by_name tests. The 'success' and
 # 'multiple_results' entries are filled in by tests.
@@ -50,35 +50,49 @@ GET_PID_BY_PORT_LSOF_RESULTS = [
   "tor     1745 atagar    6u  IPv4  14229      0t0  TCP 127.0.0.1:9051 (LISTEN)",
   "apache   329 atagar    6u  IPv4  14229      0t0  TCP 127.0.0.1:80 (LISTEN)"]
 
-def mock_call(base_cmd, responses, command):
+def mock_call(base_cmd, responses):
   """
-  Template mock function for testing a series of test inputs. Test functions
-  make a partial with the first two values filled out, then the system's call
-  method provides the 'command' argument.
+  Provides mocking for the system module's call function. There are a couple
+  ways of using this...
+  
+  - Simple usage is for base_cmd is the system call we want to respond to and
+    responses is a list containing the respnose. For instance...
+    
+    mock_call("ls my_dir", ["file1", "file2", "file3"])
+  
+  - The base_cmd can be a formatted string and responses are a dictionary of
+    completions for tat string to the responses. For instance...
+    
+    mock_call("ls %s", {"dir1": ["file1", "file2"], "dir2": ["file3", "file4"]})
   
   Arguments:
     base_cmd (str)         - command to match against
     responses (list, dict) - either list with the response, or mapping of
                              base_cmd formatted string completions to responses
-    command (str)          - system call being mocked
+  
+  Returns:
+    functor to override stem.util.system.call with
   """
   
-  if isinstance(responses, list):
-    if base_cmd == command: return responses
-    else: return None
-  else:
-    for cmd_completion in responses:
-      if command == base_cmd % cmd_completion:
-        return responses[cmd_completion]
+  def _mock_call(base_cmd, responses, command):
+    if isinstance(responses, list):
+      if base_cmd == command: return responses
+      else: return None
+    else:
+      for cmd_completion in responses:
+        if command == base_cmd % cmd_completion:
+          return responses[cmd_completion]
+  
+  return functools.partial(_mock_call, base_cmd, responses)
 
 class TestSystem(unittest.TestCase):
   def setUp(self):
-    test.mocking.mock(stem.util.proc.is_available, test.mocking.return_false())
-    test.mocking.mock(system.is_available, test.mocking.return_true())
-    test.mocking.mock(system.call, test.mocking.return_none())
+    mocking.mock(stem.util.proc.is_available, mocking.return_false())
+    mocking.mock(system.is_available, mocking.return_true())
+    mocking.mock(system.call, mocking.return_none())
   
   def tearDown(self):
-    test.mocking.revert_mocking()
+    mocking.revert_mocking()
   
   def test_is_running(self):
     """
@@ -89,7 +103,7 @@ class TestSystem(unittest.TestCase):
     running_commands = ["irssi", "moc", "tor", "ps", "  firefox  "]
     
     for ps_cmd in (system.IS_RUNNING_PS_LINUX, system.IS_RUNNING_PS_BSD):
-      test.mocking.mock(system.call, functools.partial(mock_call, ps_cmd, running_commands))
+      mocking.mock(system.call, mock_call(ps_cmd, running_commands))
       
       self.assertTrue(system.is_running("irssi"))
       self.assertTrue(system.is_running("moc"))
@@ -99,7 +113,7 @@ class TestSystem(unittest.TestCase):
       self.assertEqual(False, system.is_running("something_else"))
     
     # mock both calls failing
-    test.mocking.mock(system.call, test.mocking.return_none())
+    mocking.mock(system.call, mocking.return_none())
     self.assertFalse(system.is_running("irssi"))
     self.assertEquals(None, system.is_running("irssi"))
   
@@ -111,7 +125,7 @@ class TestSystem(unittest.TestCase):
     responses = dict(GET_PID_BY_NAME_BASE_RESULTS)
     responses["success"] = ["1111"]
     responses["multiple_results"] = ["123", "456", "789"]
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_PID_BY_NAME_PGREP, responses))
+    mocking.mock(system.call, mock_call(system.GET_PID_BY_NAME_PGREP, responses))
     
     for test_input in responses:
       expected_response = 1111 if test_input == "success" else None
@@ -125,7 +139,7 @@ class TestSystem(unittest.TestCase):
     responses = dict(GET_PID_BY_NAME_BASE_RESULTS)
     responses["success"] = ["1111"]
     responses["multiple_results"] = ["123 456 789"]
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_PID_BY_NAME_PIDOF, responses))
+    mocking.mock(system.call, mock_call(system.GET_PID_BY_NAME_PIDOF, responses))
     
     for test_input in responses:
       expected_response = 1111 if test_input == "success" else None
@@ -136,11 +150,11 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with the linux variant of ps.
     """
     
-    test.mocking.mock(system.is_bsd, test.mocking.return_false())
+    mocking.mock(system.is_bsd, mocking.return_false())
     responses = dict(GET_PID_BY_NAME_BASE_RESULTS)
     responses["success"] = ["PID", " 1111"]
     responses["multiple_results"] = ["PID", " 123", " 456", " 789"]
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_PID_BY_NAME_PS_LINUX, responses))
+    mocking.mock(system.call, mock_call(system.GET_PID_BY_NAME_PS_LINUX, responses))
     
     for test_input in responses:
       expected_response = 1111 if test_input == "success" else None
@@ -151,8 +165,8 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with the bsd variant of ps.
     """
     
-    test.mocking.mock(system.is_bsd, test.mocking.return_true())
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_PID_BY_NAME_PS_BSD, GET_PID_BY_NAME_PS_BSD))
+    mocking.mock(system.is_bsd, mocking.return_true())
+    mocking.mock(system.call, mock_call(system.GET_PID_BY_NAME_PS_BSD, GET_PID_BY_NAME_PS_BSD))
     self.assertEquals(1, system.get_pid_by_name("launchd"))
     self.assertEquals(11, system.get_pid_by_name("DirectoryService"))
     self.assertEquals(None, system.get_pid_by_name("blarg"))
@@ -165,7 +179,7 @@ class TestSystem(unittest.TestCase):
     responses = dict(GET_PID_BY_NAME_BASE_RESULTS)
     responses["success"] = ["1111"]
     responses["multiple_results"] = ["123", "456", "789"]
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_PID_BY_NAME_LSOF, responses))
+    mocking.mock(system.call, mock_call(system.GET_PID_BY_NAME_LSOF, responses))
     
     for test_input in responses:
       expected_response = 1111 if test_input == "success" else None
@@ -176,7 +190,7 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_port function with a netstat response.
     """
     
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_PID_BY_PORT_NETSTAT, GET_PID_BY_PORT_NETSTAT_RESULTS))
+    mocking.mock(system.call, mock_call(system.GET_PID_BY_PORT_NETSTAT, GET_PID_BY_PORT_NETSTAT_RESULTS))
     self.assertEquals(1641, system.get_pid_by_port(9051))
     self.assertEquals(1641, system.get_pid_by_port("9051"))
     self.assertEquals(None, system.get_pid_by_port(631))
@@ -187,7 +201,7 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_port function with a sockstat response.
     """
     
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_PID_BY_PORT_SOCKSTAT % 9051, GET_PID_BY_PORT_SOCKSTAT_RESULTS))
+    mocking.mock(system.call, mock_call(system.GET_PID_BY_PORT_SOCKSTAT % 9051, GET_PID_BY_PORT_SOCKSTAT_RESULTS))
     self.assertEquals(4397, system.get_pid_by_port(9051))
     self.assertEquals(4397, system.get_pid_by_port("9051"))
     self.assertEquals(None, system.get_pid_by_port(123))
@@ -197,7 +211,7 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_port function with a lsof response.
     """
     
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_PID_BY_PORT_LSOF, GET_PID_BY_PORT_LSOF_RESULTS))
+    mocking.mock(system.call, mock_call(system.GET_PID_BY_PORT_LSOF, GET_PID_BY_PORT_LSOF_RESULTS))
     self.assertEquals(1745, system.get_pid_by_port(9051))
     self.assertEquals(1745, system.get_pid_by_port("9051"))
     self.assertEquals(329, system.get_pid_by_port(80))
@@ -209,7 +223,7 @@ class TestSystem(unittest.TestCase):
     """
     
     lsof_query = system.GET_PID_BY_FILE_LSOF % "/tmp/foo"
-    test.mocking.mock(system.call, functools.partial(mock_call, lsof_query, ["4762"]))
+    mocking.mock(system.call, mock_call(lsof_query, ["4762"]))
     self.assertEquals(4762, system.get_pid_by_open_file("/tmp/foo"))
     self.assertEquals(None, system.get_pid_by_open_file("/tmp/somewhere_else"))
   
@@ -225,7 +239,7 @@ class TestSystem(unittest.TestCase):
       "7878": None,
     }
     
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_CWD_PWDX, responses))
+    mocking.mock(system.call, mock_call(system.GET_CWD_PWDX, responses))
     
     for test_input in responses:
       expected_response = "/home/atagar" if test_input == "3799" else None
@@ -242,7 +256,7 @@ class TestSystem(unittest.TestCase):
       "7878": None,
     }
     
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_CWD_LSOF, responses))
+    mocking.mock(system.call, mock_call(system.GET_CWD_LSOF, responses))
     
     for test_input in responses:
       expected_response = "/Users/atagar/tor/src/or" if test_input == "75717" else None
@@ -262,7 +276,7 @@ class TestSystem(unittest.TestCase):
       "6666": None
     }
     
-    test.mocking.mock(system.call, functools.partial(mock_call, system.GET_BSD_JAIL_ID_PS, responses))
+    mocking.mock(system.call, mock_call(system.GET_BSD_JAIL_ID_PS, responses))
     
     for test_input in responses:
       expected_response = 1 if test_input == "1111" else 0
