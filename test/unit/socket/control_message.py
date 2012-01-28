@@ -35,7 +35,7 @@ class TestControlMessage(unittest.TestCase):
     Checks the basic 'OK' response that we get for most commands.
     """
     
-    message = self.assert_message_parses(OK_REPLY)
+    message = self._assert_message_parses(OK_REPLY)
     self.assertEquals("OK", str(message))
     
     contents = message.content()
@@ -48,7 +48,7 @@ class TestControlMessage(unittest.TestCase):
     """
     
     # BW event
-    message = self.assert_message_parses(EVENT_BW)
+    message = self._assert_message_parses(EVENT_BW)
     self.assertEquals("BW 32326 2856", str(message))
     
     contents = message.content()
@@ -57,7 +57,7 @@ class TestControlMessage(unittest.TestCase):
     
     # few types of CIRC events
     for circ_content in (EVENT_CIRC_TIMEOUT, EVENT_CIRC_LAUNCHED, EVENT_CIRC_EXTENDED):
-      message = self.assert_message_parses(circ_content)
+      message = self._assert_message_parses(circ_content)
       self.assertEquals(circ_content[4:-2], str(message))
       
       contents = message.content()
@@ -70,7 +70,7 @@ class TestControlMessage(unittest.TestCase):
     """
     
     # GETINFO version (basic single-line results)
-    message = self.assert_message_parses(GETINFO_VERSION)
+    message = self._assert_message_parses(GETINFO_VERSION)
     self.assertEquals(2, len(list(message)))
     self.assertEquals(2, len(str(message).splitlines()))
     
@@ -81,7 +81,7 @@ class TestControlMessage(unittest.TestCase):
     self.assertEquals(("250", " ", "OK"), contents[1])
     
     # GETINFO info/names (data entry)
-    message = self.assert_message_parses(GETINFO_INFONAMES)
+    message = self._assert_message_parses(GETINFO_INFONAMES)
     self.assertEquals(2, len(list(message)))
     self.assertEquals(8, len(str(message).splitlines()))
     
@@ -119,7 +119,7 @@ class TestControlMessage(unittest.TestCase):
     # sanity check the above test isn't broken due to leaving infonames_lines
     # with invalid data
     
-    self.assert_message_parses("".join(infonames_lines))
+    self._assert_message_parses("".join(infonames_lines))
   
   def test_malformed_prefix(self):
     """
@@ -140,8 +140,8 @@ class TestControlMessage(unittest.TestCase):
         self.assertRaises(stem.socket.ProtocolError, stem.socket.recv_message, StringIO.StringIO(replacement_test_input))
       else:
         # otherwise the data will be malformed, but this goes undetected
-        self.assert_message_parses(removal_test_input)
-        self.assert_message_parses(replacement_test_input)
+        self._assert_message_parses(removal_test_input)
+        self._assert_message_parses(replacement_test_input)
   
   def test_disconnected_socket(self):
     """
@@ -153,7 +153,7 @@ class TestControlMessage(unittest.TestCase):
     control_socket_file = control_socket.makefile()
     self.assertRaises(stem.socket.SocketClosed, stem.socket.recv_message, control_socket_file)
   
-  def assert_message_parses(self, controller_reply):
+  def _assert_message_parses(self, controller_reply):
     """
     Performs some basic sanity checks that a reply mirrors its parsed result.
     
