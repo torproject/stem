@@ -1,6 +1,11 @@
 """
 Helper functions for creating mock objects and monkey patching to help with
-testing.
+testing. With python's builtin unit testing framework the setUp and test
+functions set up mocking, which is then reverted in the tearDown method by
+calling 'revert_mocking'.
+
+mock - replaces a function with an alternative implementation
+revert_mocking - reverts any changes made by the mock function
 
 Mocking Functions
   no_op           - does nothing
@@ -10,10 +15,9 @@ Mocking Functions
   return_none     - returns None
   raise_exception - raises an exception when called
 
-mock - replaces a function with an alternative implementation
-revert_mocking - reverts any changes made by the mock function
-
-get_protocolinfo_response - provides a ProtocolInfoResponse instance
+Instance Constructors
+  get_message               - stem.socket.ControlMessage
+  get_protocolinfo_response - stem.connection.ProtocolInfoResponse
 """
 
 import inspect
@@ -94,6 +98,27 @@ def revert_mocking():
   
   MOCK_STATE.clear()
 
+def get_message(content, reformat = True):
+  """
+  Provides a ControlMessage with content modified to be parsable. This makes
+  the following changes unless 'reformat' is false...
+  - ensures the content ends with a newline
+  - newlines are replaced with a carrage return and newline pair
+  
+  Arguments:
+    content (str)  - base content for the controller message
+    reformat (str) - modifies content to be more accomidateing to being parsed
+  
+  Returns:
+    stem.socket.ControlMessage instance
+  """
+  
+  if reformat:
+    if not content.endswith("\n"): content += "\n"
+    content = content.replace("\n", "\r\n")
+  
+  return stem.socket.recv_message(StringIO.StringIO(content))
+
 def get_protocolinfo_response(**attributes):
   """
   Provides a ProtocolInfoResponse, customized with the given attributes. The
@@ -107,8 +132,7 @@ def get_protocolinfo_response(**attributes):
     stem.connection.ProtocolInfoResponse instance
   """
   
-  control_message = "250-PROTOCOLINFO 1\r\n250 OK\r\n"
-  protocolinfo_response = stem.socket.recv_message(StringIO.StringIO(control_message))
+  protocolinfo_response = get_message("250-PROTOCOLINFO 1\n250 OK")
   stem.connection.ProtocolInfoResponse.convert(protocolinfo_response)
   
   for attr in attributes:
