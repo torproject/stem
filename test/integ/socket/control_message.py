@@ -11,10 +11,6 @@ import stem.version
 import test.runner
 
 class TestControlMessage(unittest.TestCase):
-  """
-  Exercises the 'stem.socket.ControlMessage' class with an actual tor instance.
-  """
-  
   def test_unestablished_socket(self):
     """
     Checks message parsing when we have a valid but unauthenticated socket.

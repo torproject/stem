@@ -24,11 +24,6 @@ INCORRECT_COOKIE_FAIL = "Authentication failed: Authentication cookie did not ma
 INCORRECT_PASSWORD_FAIL = "Authentication failed: Password did not match HashedControlPassword value from configuration"
 
 class TestAuthenticate(unittest.TestCase):
-  """
-  Tests the authentication methods. This should be run with the 'RUN_ALL'
-  integ target to exercise the widest range of use cases.
-  """
-  
   def setUp(self):
     # none of these tests apply if there's no control connection
     if not test.runner.get_runner().is_accessible():

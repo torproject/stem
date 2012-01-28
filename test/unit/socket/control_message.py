@@ -30,11 +30,6 @@ version -- The current version of Tor.
 """.replace("\n", "\r\n")
 
 class TestControlMessage(unittest.TestCase):
-  """
-  Tests methods and functions related to 'stem.socket.ControlMessage'. This uses
-  StringIO to make 'files' to mock socket input.
-  """
-  
   def test_ok_response(self):
     """
     Checks the basic 'OK' response that we get for most commands.

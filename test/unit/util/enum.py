@@ -6,10 +6,6 @@ import unittest
 import stem.util.enum
 
 class TestEnum(unittest.TestCase):
-  """
-  Tests the stem.util.enum contents.
-  """
-  
   def test_to_camel_case(self):
     """
     Checks the stem.util.enum.to_camel_case function.

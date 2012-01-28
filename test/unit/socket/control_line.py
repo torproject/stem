@@ -14,10 +14,6 @@ PROTOCOLINFO_RESPONSE = (
 )
 
 class TestControlLine(unittest.TestCase):
-  """
-  Tests methods of the stem.socket.ControlLine class.
-  """
-  
   def test_pop_examples(self):
     """
     Checks that the pop method's pydoc examples are correct.

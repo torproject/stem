@@ -41,10 +41,6 @@ multiline.entry.squashed_bottom
 """
 
 class TestConf(unittest.TestCase):
-  """
-  Tests the stem.util.conf contents.
-  """
-  
   def tearDown(self):
     # clears the config contents
     test_config = stem.util.conf.get_config("integ_testing")

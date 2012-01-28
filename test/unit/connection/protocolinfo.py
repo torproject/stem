@@ -43,10 +43,6 @@ RELATIVE_COOKIE_PATH = r"""250-PROTOCOLINFO 1
 250 OK"""
 
 class TestProtocolInfoResponse(unittest.TestCase):
-  """
-  Tests the parsing of ControlMessages for PROTOCOLINFO responses.
-  """
-  
   def test_convert(self):
     """
     Exercises functionality of the convert method both when it works and

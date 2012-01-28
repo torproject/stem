@@ -1,5 +1,6 @@
 """
-Integration tests for tor version parsing.
+Tests that the stem.version functions can handle the tor instance we're
+running with.
 """
 
 import unittest
@@ -8,11 +9,6 @@ import test.runner
 import stem.version
 
 class TestVersion(unittest.TestCase):
-  """
-  Tests that the stem.version functions can handle the tor instance we're
-  running with.
-  """
-  
   def test_get_system_tor_version(self):
     """
     Basic verification checks for the get_system_tor_version() function.

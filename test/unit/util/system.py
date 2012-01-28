@@ -72,10 +72,6 @@ def mock_call(base_cmd, responses, command):
         return responses[cmd_completion]
 
 class TestSystem(unittest.TestCase):
-  """
-  Tests the stem.util.system contents.
-  """
-  
   def setUp(self):
     test.mocking.mock(stem.util.proc.is_available, test.mocking.return_false())
     test.mocking.mock(system.is_available, test.mocking.return_true())

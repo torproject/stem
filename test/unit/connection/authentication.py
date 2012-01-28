@@ -1,5 +1,12 @@
 """
 Unit tests for the stem.connection.authenticate function.
+
+Under the covers the authentiate function really just translates a
+PROTOCOLINFO response into authenticate_* calls, then does prioritization
+on the exceptions if they all fail.
+
+This monkey patches the various functions authenticate relies on to exercise
+various error conditions, and make sure that the right exception is raised.
 """
 
 import unittest
@@ -28,15 +35,6 @@ def _get_all_auth_method_combinations():
           yield tuple(auth_methods)
 
 class TestAuthenticate(unittest.TestCase):
-  """
-  Under the covers the authentiate function really just translates a
-  PROTOCOLINFO response into authenticate_* calls, then does prioritization
-  on the exceptions if they all fail.
-  
-  This monkey patches the various functions authenticate relies on to exercise
-  various error conditions, and make sure that the right exception is raised.
-  """
-  
   def setUp(self):
     mocking.mock(stem.connection.get_protocolinfo, mocking.no_op())
     mocking.mock(stem.connection.authenticate_none, mocking.no_op())

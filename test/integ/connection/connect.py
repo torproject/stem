@@ -10,11 +10,6 @@ import stem.connection
 import test.runner
 
 class TestConnect(unittest.TestCase):
-  """
-  Tests the connection methods. This should be run with the 'RUN_ALL' integ
-  target to exercise the widest range of use cases.
-  """
-  
   def setUp(self):
     # none of these tests apply if there's no control connection
     if not test.runner.get_runner().is_accessible():

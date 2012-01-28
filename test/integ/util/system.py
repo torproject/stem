@@ -1,6 +1,6 @@
 """
-Integration tests for the stem.util.system functions in the context of a tor
-process.
+Integratnio tests for the stem.util.system functions against the tor process
+that we're running.
 """
 
 import os
@@ -11,11 +11,6 @@ import test.runner
 import stem.util.system
 
 class TestSystem(unittest.TestCase):
-  """
-  Tests the stem.util.system functions against the tor process that we're
-  running.
-  """
-  
   is_extra_tor_running = None
   
   def setUp(self):

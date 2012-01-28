@@ -6,10 +6,6 @@ import unittest
 import stem.version
 
 class TestVersion(unittest.TestCase):
-  """
-  Tests methods and functions related to 'stem.version.Version'.
-  """
-  
   def test_parsing(self):
     """
     Tests parsing by the Version class constructor.
