@@ -29,6 +29,20 @@ class TestVersion(unittest.TestCase):
     # try running against a command that doesn't exist
     self.assertRaises(IOError, stem.version.get_system_tor_version, "blarg")
   
+  def test_get_system_tor_version_value(self):
+    """
+    Checks that the get_system_tor_version() provides the same value as our
+    test instance provides.
+    """
+    
+    runner = test.runner.get_runner()
+    
+    if not runner.is_accessible():
+      self.skipTest("(no connection)")
+    
+    system_tor_version = stem.version.get_system_tor_version(runner.get_tor_command())
+    self.assertEquals(runner.get_tor_version(), system_tor_version)
+  
   def test_getinfo_version_parsing(self):
     """
     Issues a 'GETINFO version' query to our test instance and makes sure that

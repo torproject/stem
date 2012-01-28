@@ -21,7 +21,8 @@ Runner - Runtime context for our integration tests.
   |- get_torrc_contents - contents of our tor instance's torrc
   |- get_pid - process id of our tor process
   |- get_tor_socket - provides a socket to the tor instance
-  +- get_tor_version - provides the version of tor we're running against
+  |- get_tor_version - provides the version of tor we're running against
+  +- get_tor_command - provides the command used to start tor
 """
 
 import os
@@ -115,6 +116,7 @@ class Runner:
     
     # runtime attributes, set by the start method
     self._test_dir = ""
+    self._tor_cmd = None
     self._tor_cwd = ""
     self._torrc_contents = ""
     self._custom_opts = None
@@ -160,6 +162,7 @@ class Runner:
       os.chdir(tor_cwd)
       data_dir_path = "./%s" % os.path.basename(self._test_dir)
     
+    self._tor_cmd = tor_cmd
     self._custom_opts = extra_torrc_opts
     self._torrc_contents = BASE_TORRC % data_dir_path
     
@@ -197,6 +200,7 @@ class Runner:
       shutil.rmtree(self._test_dir, ignore_errors = True)
     
     self._test_dir = ""
+    self._tor_cmd = None
     self._tor_cwd = ""
     self._torrc_contents = ""
     self._custom_opts = None
@@ -392,6 +396,13 @@ class Runner:
     
     tor_version = list(version_response)[0][8:]
     return stem.version.Version(tor_version)
+  
+  def get_tor_command(self):
+    """
+    Provides the command used to run our tor instance.
+    """
+    
+    return self._get("_tor_cmd")
   
   def _get(self, attr):
     """
