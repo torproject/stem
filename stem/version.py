@@ -23,7 +23,7 @@ import re
 import stem.util.enum
 import stem.util.system
 
-# cache for the get_tor_version function
+# cache for the get_system_tor_version function
 VERSION_CACHE = {}
 
 def get_system_tor_version(tor_cmd = "tor"):
@@ -141,8 +141,8 @@ class Version:
     return 0
 
 Requirement = stem.util.enum.Enum(
-  ("GETINFO_CONFIG_TEXT", Version("0.2.2.7-alpha")),
-  ("CONTROL_SOCKET", Version("0.2.0.30")),
-  ("DISABLE_DEBUGGER_ATTACHMENT", Version("0.2.3.9")),
+  ("GETINFO_CONFIG_TEXT", Version("0.2.2.7")),
+  ("TORRC_CONTROL_SOCKET", Version("0.2.0.30")),
+  ("TORRC_DISABLE_DEBUGGER_ATTACHMENT", Version("0.2.3.9")),
 )
 
