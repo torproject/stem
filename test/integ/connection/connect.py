@@ -11,9 +11,7 @@ import test.runner
 
 class TestConnect(unittest.TestCase):
   def setUp(self):
-    # none of these tests apply if there's no control connection
-    if not test.runner.get_runner().is_accessible():
-      self.skipTest("(no connection)")
+    test.runner.require_control(self)
     
     # prevents the function from printing to the real stdout
     self.original_stdout = sys.stdout

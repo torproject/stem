@@ -6,6 +6,8 @@ about the tor test instance they're running against.
 RunnerStopped - Runner doesn't have an active tor instance
 TorInaccessable - Tor can't be queried for the information
 
+require_control - skips the test unless tor provides a controller endpoint
+require_version - skips the test unless we meet a tor version requirement
 exercise_socket - Does a basic sanity check that a control socket can be used
 
 get_runner - Singleton for fetching our runtime context.
@@ -86,13 +88,36 @@ class TorInaccessable(Exception):
   "Raised when information is needed from tor but the instance we have is inaccessable"
   pass
 
+def require_control(test_case):
+  """
+  Skips the test unless tor provides an endpoint for controllers to attach to.
+  
+  Arguments:
+    test_case (unittest.TestCase) - test being ran
+  """
+  
+  if not test.runner.get_runner().is_accessible():
+    test_case.skipTest("(no connection)")
+
+def require_version(test_case, req_version):
+  """
+  Skips the test unless we meet the required version.
+  
+  Arguments:
+    test_case (unittest.TestCase) - test being ran
+    req_version (stem.version.Version) - required tor version for the test
+  """
+  
+  if get_runner().get_tor_version() < req_version:
+    test_case.skipTest("(requires %s)" % req_version)
+
 def exercise_socket(test_case, control_socket):
   """
   Checks that we can now use the socket by issuing a 'GETINFO config-file'
   query.
   
   Arguments:
-    test_case (unittest.TestCase) - unit testing case being ran
+    test_case (unittest.TestCase) - test being ran
     control_socket (stem.socket.ControlSocket) - socket to be tested
   """
   
@@ -380,22 +405,21 @@ class Runner:
     
     Returns:
       stem.version.Version for our test instance
-    
-    Raises:
-      TorInaccessable if this can't be determined
     """
     
-    # TODO: replace with higher level functions when we've completed a basic
-    # controller class
-    
-    control_socket = self.get_tor_socket()
-    
-    control_socket.send("GETINFO version")
-    version_response = control_socket.recv()
-    control_socket.close()
-    
-    tor_version = list(version_response)[0][8:]
-    return stem.version.Version(tor_version)
+    try:
+      # TODO: replace with higher level functions when we've completed a basic
+      # controller class
+      control_socket = self.get_tor_socket()
+      
+      control_socket.send("GETINFO version")
+      version_response = control_socket.recv()
+      control_socket.close()
+      
+      tor_version = list(version_response)[0][8:]
+      return stem.version.Version(tor_version)
+    except TorInaccessable:
+      return stem.version.get_system_tor_version(self.get_tor_command())
   
   def get_tor_command(self):
     """

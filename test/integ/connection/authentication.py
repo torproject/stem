@@ -78,9 +78,7 @@ def _get_auth_failure_message(auth_type):
 
 class TestAuthenticate(unittest.TestCase):
   def setUp(self):
-    # none of these tests apply if there's no control connection
-    if not test.runner.get_runner().is_accessible():
-      self.skipTest("(no connection)")
+    test.runner.require_control(self)
   
   def test_authenticate_general(self):
     """

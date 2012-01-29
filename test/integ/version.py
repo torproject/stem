@@ -35,11 +35,9 @@ class TestVersion(unittest.TestCase):
     test instance provides.
     """
     
+    test.runner.require_control(self)
+    
     runner = test.runner.get_runner()
-    
-    if not runner.is_accessible():
-      self.skipTest("(no connection)")
-    
     system_tor_version = stem.version.get_system_tor_version(runner.get_tor_command())
     self.assertEquals(runner.get_tor_version(), system_tor_version)
   
@@ -49,12 +47,9 @@ class TestVersion(unittest.TestCase):
     we can parse it.
     """
     
-    runner = test.runner.get_runner()
+    test.runner.require_control(self)
     
-    if not runner.is_accessible():
-      self.skipTest("(no connection)")
-    
-    control_socket = runner.get_tor_socket()
+    control_socket = test.runner.get_runner().get_tor_socket()
     control_socket.send("GETINFO version")
     version_response = control_socket.recv()
     control_socket.close()

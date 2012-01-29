@@ -26,9 +26,7 @@ def filter_system_call(prefixes):
 
 class TestProtocolInfo(unittest.TestCase):
   def setUp(self):
-    if not test.runner.get_runner().is_accessible():
-      self.skipTest("(no connection)")
-    
+    test.runner.require_control(self)
     mocking.mock(stem.util.proc.is_available, mocking.return_false())
     mocking.mock(stem.util.system.is_available, mocking.return_true())
   
