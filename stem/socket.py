@@ -217,6 +217,12 @@ class ControlSocket:
     self._send_cond.release()
     self._recv_cond.release()
   
+  def __enter__(self):
+    return self
+  
+  def __exit__(self, type, value, traceback):
+    self.close()
+  
   def _make_socket(self):
     """
     Constructs and connects new socket. This is implemented by subclasses.
