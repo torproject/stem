@@ -3,25 +3,24 @@ Integration tests for the stem.util.conf class and functions.
 """
 
 import os
-import tempfile
 import unittest
 
 import stem.util.conf
+import test.runner
 
-CONF_PATH = tempfile.mktemp("-conf-test")
 CONF_HEADER = """# Demo configuration for integration tests to run against. Nothing to see here,
 # move along, move along.
 """
 
-EXAMPLE_CONF = """%s
+EXAMPLE_CONF = """
 destination.ip 1.2.3.4
 destination.port blarg
 
 startup.run export PATH=$PATH:~/bin
 startup.run alias l=ls
-""" % CONF_HEADER
+"""
 
-MULTILINE_CONF = """%s
+MULTILINE_CONF = """
 multiline.entry.simple
 |la de da
 |and a ho hum
@@ -40,6 +39,23 @@ multiline.entry.squashed_bottom
 |and a ho hum
 """
 
+def _get_test_config_path():
+  return os.path.join(test.runner.get_runner().get_test_dir(), "integ_test_cfg")
+
+def _make_config(contents):
+  """
+  Writes a test configuration to disk, returning the path where it is located.
+  """
+  
+  test_config_path = _get_test_config_path()
+  
+  test_conf_file = open(test_config_path, "w")
+  test_conf_file.write(CONF_HEADER)
+  test_conf_file.write(contents)
+  test_conf_file.close()
+  
+  return test_config_path
+
 class TestConf(unittest.TestCase):
   def tearDown(self):
     # clears the config contents
@@ -48,17 +64,15 @@ class TestConf(unittest.TestCase):
     test_config.clear_listeners()
     
     # cleans up test configurations we made
-    if os.path.exists(CONF_PATH):
-      os.remove(CONF_PATH)
+    test_config_path = _get_test_config_path()
+    
+    if os.path.exists(test_config_path):
+      os.remove(test_config_path)
   
   def test_example(self):
     """
     Checks that the pydoc example is correct.
     """
-    
-    test_conf_file = open(CONF_PATH, "w")
-    test_conf_file.write(EXAMPLE_CONF)
-    test_conf_file.close()
     
     ssh_config = {"login.user": "atagar",
                   "login.password": "pepperjack_is_awesome!",
@@ -66,8 +80,9 @@ class TestConf(unittest.TestCase):
                   "destination.port": 22,
                   "startup.run": []}
     
+    test_config_path = _make_config(EXAMPLE_CONF)
     user_config = stem.util.conf.get_config("integ_testing")
-    user_config.load(CONF_PATH)
+    user_config.load(test_config_path)
     user_config.synchronize(ssh_config)
     
     self.assertEquals("atagar", ssh_config["login.user"])
@@ -81,12 +96,9 @@ class TestConf(unittest.TestCase):
     Tests the load method with multi-line configuration files.
     """
     
-    test_conf_file = open(CONF_PATH, "w")
-    test_conf_file.write(MULTILINE_CONF)
-    test_conf_file.close()
-    
+    test_config_path = _make_config(MULTILINE_CONF)
     test_config = stem.util.conf.get_config("integ_testing")
-    test_config.load(CONF_PATH)
+    test_config.load(test_config_path)
     
     for entry in ("simple", "leading_whitespace", "squashed_top", "squashed_bottom"):
       self.assertEquals("la de da\nand a ho hum", test_config.get("multiline.entry.%s" % entry))
