@@ -23,16 +23,6 @@ import subprocess
 import stem.util.proc
 import stem.util.log as log
 
-# Functor for mocking the call function, which should either return a string
-# (or None) to emulate responses, or a boolean to indicate if we should filter
-# the call. Also, when set...
-# - we don't check that commands exist before calling them
-# - the use of proc functions is disabled
-#
-# This is intended for testing purposes only.
-
-CALL_MOCKING = None
-
 # Mapping of commands to if they're available or not. This isn't always
 # reliable, failing for some special commands. For these the cache is
 # prepopulated to skip lookups.
@@ -121,7 +111,7 @@ def is_running(command):
   #   -o ucomm= - Shows just the ucomm attribute ("name to be used for
   #               accounting")
   
-  if CALL_MOCKING or is_available("ps"):
+  if is_available("ps"):
     if is_bsd():
       primary_resolver = IS_RUNNING_PS_BSD
       secondary_resolver = IS_RUNNING_PS_LINUX
@@ -166,7 +156,7 @@ def get_pid_by_name(process_name):
   #   3283
   #   3392
   
-  if CALL_MOCKING or is_available("pgrep"):
+  if is_available("pgrep"):
     results = call(GET_PID_BY_NAME_PGREP % process_name)
     
     if results and len(results) == 1:
@@ -180,7 +170,7 @@ def get_pid_by_name(process_name):
   #   atagar@morrigan:~$ pidof vim
   #   3392 3283
   
-  if CALL_MOCKING or is_available("pidof"):
+  if is_available("pidof"):
     results = call(GET_PID_BY_NAME_PIDOF % process_name)
     
     if results and len(results) == 1 and len(results[0].split()) == 1:
@@ -203,8 +193,8 @@ def get_pid_by_name(process_name):
   #      11   ??  Ss     5:47.36 DirectoryService
   #      12   ??  Ss     3:01.44 notifyd
   
-  if CALL_MOCKING or is_available("ps"):
-    if CALL_MOCKING or not is_bsd():
+  if is_available("ps"):
+    if not is_bsd():
       # linux variant of ps
       results = call(GET_PID_BY_NAME_PS_LINUX % process_name)
       
@@ -212,7 +202,7 @@ def get_pid_by_name(process_name):
         pid = results[1].strip()
         if pid.isdigit(): return int(pid)
     
-    if CALL_MOCKING or is_bsd():
+    if is_bsd():
       # bsd variant of ps
       results = call(GET_PID_BY_NAME_PS_BSD)
       
@@ -238,7 +228,7 @@ def get_pid_by_name(process_name):
   #   2470
   #   2561
   
-  if CALL_MOCKING or is_available("lsof"):
+  if is_available("lsof"):
     results = call(GET_PID_BY_NAME_LSOF % process_name)
     
     if results and len(results) == 1:
@@ -286,7 +276,7 @@ def get_pid_by_port(port):
   #   udp        0      0 0.0.0.0:5353            0.0.0.0:*                  -
   #   udp6       0      0 fe80::7ae4:ff:fe2f::123 :::*                       -
   
-  if CALL_MOCKING or is_available("netstat"):
+  if is_available("netstat"):
     results = call(GET_PID_BY_PORT_NETSTAT)
     
     if results:
@@ -320,7 +310,7 @@ def get_pid_by_port(port):
   #   _tor     tor        4397  15 tcp4   51.64.7.84:59374   7.42.1.102:9001
   #   _tor     tor        4397  20 tcp4   51.64.7.84:51946   32.83.7.104:443
   
-  if CALL_MOCKING or is_available("sockstat"):
+  if is_available("sockstat"):
     results = call(GET_PID_BY_PORT_SOCKSTAT % port)
     
     if results:
@@ -348,7 +338,7 @@ def get_pid_by_port(port):
   #   COMMAND  PID   USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
   #   tor     1745 atagar    6u  IPv4  14229      0t0  TCP 127.0.0.1:9051 (LISTEN)
   
-  if CALL_MOCKING or is_available("lsof"):
+  if is_available("lsof"):
     results = call(GET_PID_BY_PORT_LSOF)
     
     if results:
@@ -387,7 +377,7 @@ def get_pid_by_open_file(path):
   #   atagar@morrigan:~$ lsof -tw /tmp/foo
   #   4762
   
-  if CALL_MOCKING or is_available("lsof"):
+  if is_available("lsof"):
     results = call(GET_PID_BY_FILE_LSOF % path)
     
     if results and len(results) == 1:
@@ -409,14 +399,14 @@ def get_cwd(pid):
   """
   
   # try fetching via the proc contents if it's available
-  if stem.util.proc.is_available() and not CALL_MOCKING:
+  if stem.util.proc.is_available():
     try: return stem.util.proc.get_cwd(pid)
     except IOError: pass
   
   # Fall back to a pwdx query. This isn't available on BSD.
   logging_prefix = "get_cwd(%s):" % pid
   
-  if CALL_MOCKING or is_available("pwdx"):
+  if is_available("pwdx"):
     # pwdx results are of the form:
     # 3799: /home/atagar
     # 5839: No such process
@@ -447,7 +437,7 @@ def get_cwd(pid):
   #   p75717
   #   n/Users/atagar/tor/src/or
   
-  if CALL_MOCKING or is_available("lsof"):
+  if is_available("lsof"):
     results = call(GET_CWD_LSOF % pid)
     
     if results and len(results) == 2 and results[1].startswith("n/"):
@@ -562,29 +552,6 @@ def call(command, suppress_exc = True):
   Raises:
     OSError if this fails and suppress_exc is False
   """
-  
-  # Most of our system functions rely on system calls through this function, so
-  # testing may need to mock responses to exercise our various functionality.
-  
-  if CALL_MOCKING:
-    mock_response = CALL_MOCKING(command)
-    
-    # Mocking either returns...
-    # - str/None for unit tests to emulate system calls
-    # - bool for integ tests to indicate if we should make this system call or
-    #   suppress it, to selectively trigger logic
-    
-    if isinstance(mock_response, bool):
-      if mock_response:
-        pass # mocking indicates that we should go on to make the real call
-      else:
-        # call should be suppressed
-        if suppress_exc: return None
-        else: raise OSError("System call filtered by mocking")
-    else:
-      if mock_response == None and not suppress_exc:
-        raise OSError("Mocking provided a None response")
-      else: return mock_response
   
   try:
     start_time = time.time()
