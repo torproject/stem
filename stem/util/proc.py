@@ -369,7 +369,15 @@ def _decode_proc_address_encoding(addr):
   # The IPv4 address portion is a little-endian four-byte hexadecimal number.
   # That is, the least significant byte is listed first, so we need to reverse
   # the order of the bytes to convert it to an IP address.
-  ip = socket.inet_ntop(socket.AF_INET, base64.b16decode(ip)[::-1])
+  #
+  # This needs to account for the endian ordering as per...
+  # http://code.google.com/p/psutil/issues/detail?id=201
+  # https://trac.torproject.org/projects/tor/ticket/4777
+  
+  if sys.byteorder == 'little':
+    ip = socket.inet_ntop(socket.AF_INET, base64.b16decode(ip)[::-1])
+  else:
+    ip = socket.inet_ntop(socket.AF_INET, base64.b16decode(ip))
   
   return (ip, port)
 
