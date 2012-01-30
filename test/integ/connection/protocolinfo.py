@@ -91,6 +91,23 @@ class TestProtocolInfo(unittest.TestCase):
         protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
         self.assert_matches_test_config(protocolinfo_response)
   
+  def test_pre_disconnected_query(self):
+    """
+    Tests making a PROTOCOLINFO query when previous use of the socket had
+    already disconnected it.
+    """
+    
+    with test.runner.get_runner().get_tor_socket(False) as control_socket:
+      # makes a couple protocolinfo queries outside of get_protocolinfo first
+      control_socket.send("PROTOCOLINFO 1")
+      control_socket.recv()
+      
+      control_socket.send("PROTOCOLINFO 1")
+      control_socket.recv()
+      
+      protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
+      self.assert_matches_test_config(protocolinfo_response)
+  
   def assert_matches_test_config(self, protocolinfo_response):
     """
     Makes assertions that the protocolinfo response's attributes match those of

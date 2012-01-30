@@ -627,16 +627,23 @@ def get_protocolinfo(control_socket):
       socket
   """
   
-  control_socket.send("PROTOCOLINFO 1")
-  protocolinfo_response = control_socket.recv()
+  try:
+    control_socket.send("PROTOCOLINFO 1")
+    protocolinfo_response = control_socket.recv()
+  except:
+    protocolinfo_response = None
   
   # Tor hangs up on sockets after receiving a PROTOCOLINFO query if it isn't
   # next followed by authentication. Transparently reconnect if that happens.
   
-  if str(protocolinfo_response) == "Authentication required.":
+  if not protocolinfo_response or str(protocolinfo_response) == "Authentication required.":
     control_socket.connect()
-    control_socket.send("PROTOCOLINFO 1")
-    protocolinfo_response = control_socket.recv()
+    
+    try:
+      control_socket.send("PROTOCOLINFO 1")
+      protocolinfo_response = control_socket.recv()
+    except stem.socket.SocketClosed, exc:
+      raise stem.socket.SocketError(exc)
   
   ProtocolInfoResponse.convert(protocolinfo_response)
   
