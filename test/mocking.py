@@ -6,6 +6,7 @@ calling 'revert_mocking'.
 
 mock - replaces a function with an alternative implementation
 revert_mocking - reverts any changes made by the mock function
+get_real_function - provides the non-mocked version of a function
 
 Mocking Functions
   no_op           - does nothing
@@ -97,6 +98,24 @@ def revert_mocking():
     module.__dict__[function] = impl
   
   MOCK_STATE.clear()
+
+def get_real_function(function):
+  """
+  Provides the original, non-mocked implementation for a function. This simply
+  returns the current implementation if it isn't being mocked.
+  
+  Arguments:
+    function (function) - function to look up the original implementation of
+  
+  Returns:
+    original implementation of the function
+  """
+  
+  if "mock_id" in function.__dict__:
+    mocking_id = function.__dict__["mock_id"]
+    return MOCK_STATE[mocking_id][2]
+  else:
+    return function
 
 def get_message(content, reformat = True):
   """

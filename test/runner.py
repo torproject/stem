@@ -276,18 +276,14 @@ class Runner:
     
     Returns:
       True if debugger attachment is disallowd, False otherwise
-    
-    Raises:
-      TorInaccessable if this can't be determined
     """
     
-    # TODO: replace higher level GETCONF query when we have a controller class
-    control_socket = self.get_tor_socket()
-    control_socket.send("GETCONF DisableDebuggerAttachment")
-    getconf_response = control_socket.recv()
-    control_socket.close()
+    # If we're running a tor version where ptrace is disabled and we didn't
+    # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
     
-    return str(getconf_response) != "DisableDebuggerAttachment=1"
+    tor_version = self.get_tor_version()
+    has_option = tor_version >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
+    return not has_option or Torrc.PTRACE in self.get_options()
   
   def get_options(self):
     """

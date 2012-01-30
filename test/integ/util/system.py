@@ -1,5 +1,5 @@
 """
-Integratnio tests for the stem.util.system functions against the tor process
+Integration tests for the stem.util.system functions against the tor process
 that we're running.
 """
 
@@ -7,8 +7,30 @@ import os
 import getpass
 import unittest
 
-import test.runner
 import stem.util.system
+import test.runner
+import test.mocking as mocking
+
+def filter_system_call(prefixes):
+  """
+  Provides a functor that passes calls on to the stem.util.system.call()
+  function if it matches one of the prefixes, and acts as a no-op otherwise.
+  """
+  
+  def _filter_system_call(command):
+    for prefix in prefixes:
+      if command.startswith(prefix):
+        real_call_function = mocking.get_real_function(stem.util.system.call)
+        return real_call_function(command)
+  
+  return _filter_system_call
+
+def _has_port():
+  """
+  True if our test runner has a control port, False otherwise.
+  """
+  
+  return test.runner.Torrc.PORT in test.runner.get_runner().get_options()
 
 class TestSystem(unittest.TestCase):
   is_extra_tor_running = None
@@ -27,10 +49,9 @@ class TestSystem(unittest.TestCase):
         ps_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PS_BSD)
         results = [r for r in ps_results if r.endswith(" tor")]
         self.is_extra_tor_running = len(results) > 1
-        
+  
   def tearDown(self):
-    # resets call mocking back to being disabled
-    stem.util.system.CALL_MOCKING = None
+    mocking.revert_mocking()
   
   def test_is_available(self):
     """
@@ -60,8 +81,8 @@ class TestSystem(unittest.TestCase):
     if self.is_extra_tor_running:
       self.skipTest("(multiple tor instances)")
     
-    runner = test.runner.get_runner()
-    self.assertEquals(runner.get_pid(), stem.util.system.get_pid_by_name("tor"))
+    tor_pid = test.runner.get_runner().get_pid()
+    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
     self.assertEquals(None, stem.util.system.get_pid_by_name("blarg_and_stuff"))
   
   def test_get_pid_by_name_pgrep(self):
@@ -75,7 +96,10 @@ class TestSystem(unittest.TestCase):
       self.skipTest("(pgrep unavailable)")
     
     pgrep_prefix = stem.util.system.GET_PID_BY_NAME_PGREP % ""
-    self._run_pid_test(pgrep_prefix, stem.util.system.get_pid_by_name, "tor")
+    mocking.mock(stem.util.system.call, filter_system_call([pgrep_prefix]))
+    
+    tor_pid = test.runner.get_runner().get_pid()
+    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
   
   def test_get_pid_by_name_pidof(self):
     """
@@ -88,7 +112,10 @@ class TestSystem(unittest.TestCase):
       self.skipTest("(pidof unavailable)")
     
     pidof_prefix = stem.util.system.GET_PID_BY_NAME_PIDOF % ""
-    self._run_pid_test(pidof_prefix, stem.util.system.get_pid_by_name, "tor")
+    mocking.mock(stem.util.system.call, filter_system_call([pidof_prefix]))
+    
+    tor_pid = test.runner.get_runner().get_pid()
+    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
   
   def test_get_pid_by_name_ps_linux(self):
     """
@@ -103,7 +130,10 @@ class TestSystem(unittest.TestCase):
       self.skipTest("(linux only)")
     
     ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_LINUX % ""
-    self._run_pid_test(ps_prefix, stem.util.system.get_pid_by_name, "tor")
+    mocking.mock(stem.util.system.call, filter_system_call([ps_prefix]))
+    
+    tor_pid = test.runner.get_runner().get_pid()
+    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
   
   def test_get_pid_by_name_ps_bsd(self):
     """
@@ -117,8 +147,11 @@ class TestSystem(unittest.TestCase):
     elif not stem.util.system.is_bsd():
       self.skipTest("(bsd only)")
     
-    ps_cmd = stem.util.system.GET_PID_BY_NAME_PS_BSD
-    self._run_pid_test(ps_cmd, stem.util.system.get_pid_by_name, "tor")
+    ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_BSD
+    mocking.mock(stem.util.system.call, filter_system_call([ps_prefix]))
+    
+    tor_pid = test.runner.get_runner().get_pid()
+    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
   
   def test_get_pid_by_name_lsof(self):
     """
@@ -130,13 +163,14 @@ class TestSystem(unittest.TestCase):
       self.skipTest("(multiple tor instances)")
     elif not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
-    elif not runner.is_accessible():
-      self.skipTest("(unable to check for DisableDebuggerAttachment)")
     elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     lsof_prefix = stem.util.system.GET_PID_BY_NAME_LSOF % ""
-    self._run_pid_test(lsof_prefix, stem.util.system.get_pid_by_name, "tor")
+    mocking.mock(stem.util.system.call, filter_system_call([lsof_prefix]))
+    
+    tor_pid = test.runner.get_runner().get_pid()
+    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
   
   def test_get_pid_by_port(self):
     """
@@ -144,7 +178,7 @@ class TestSystem(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
-    if not self._has_port():
+    if not _has_port():
       self.skipTest("(test instance has no port)")
     elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
@@ -159,7 +193,7 @@ class TestSystem(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
-    if not self._has_port():
+    if not _has_port():
       self.skipTest("(test instance has no port)")
     elif not stem.util.system.is_available("netstat"):
       self.skipTest("(netstat unavailable)")
@@ -168,8 +202,11 @@ class TestSystem(unittest.TestCase):
     elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
-    netstat_cmd = stem.util.system.GET_PID_BY_PORT_NETSTAT
-    self._run_pid_test(netstat_cmd, stem.util.system.get_pid_by_port, test.runner.CONTROL_PORT)
+    netstat_prefix = stem.util.system.GET_PID_BY_PORT_NETSTAT
+    mocking.mock(stem.util.system.call, filter_system_call([netstat_prefix]))
+    
+    tor_pid = test.runner.get_runner().get_pid()
+    self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
   
   def test_get_pid_by_port_sockstat(self):
     """
@@ -177,7 +214,7 @@ class TestSystem(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
-    if not self._has_port():
+    if not _has_port():
       self.skipTest("(test instance has no port)")
     elif not stem.util.system.is_available("sockstat"):
       self.skipTest("(sockstat unavailable)")
@@ -187,7 +224,10 @@ class TestSystem(unittest.TestCase):
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     sockstat_prefix = stem.util.system.GET_PID_BY_PORT_SOCKSTAT % ""
-    self._run_pid_test(sockstat_prefix, stem.util.system.get_pid_by_port, test.runner.CONTROL_PORT)
+    mocking.mock(stem.util.system.call, filter_system_call([sockstat_prefix]))
+    
+    tor_pid = test.runner.get_runner().get_pid()
+    self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
   
   def test_get_pid_by_port_lsof(self):
     """
@@ -195,15 +235,18 @@ class TestSystem(unittest.TestCase):
     """
     
     runner = test.runner.get_runner()
-    if not self._has_port():
+    if not _has_port():
       self.skipTest("(test instance has no port)")
     elif not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
     elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
-    lsof_cmd = stem.util.system.GET_PID_BY_PORT_LSOF
-    self._run_pid_test(lsof_cmd, stem.util.system.get_pid_by_port, test.runner.CONTROL_PORT)
+    lsof_prefix = stem.util.system.GET_PID_BY_PORT_LSOF
+    mocking.mock(stem.util.system.call, filter_system_call([lsof_prefix]))
+    
+    tor_pid = test.runner.get_runner().get_pid()
+    self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
   
   def test_get_pid_by_open_file(self):
     """
@@ -226,12 +269,11 @@ class TestSystem(unittest.TestCase):
     
     runner = test.runner.get_runner()
     
-    if not runner.is_accessible():
-      self.skipTest("(unable to check for DisableDebuggerAttachment)")
-    elif not runner.is_ptraceable():
+    if not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
-    self.assertEquals(runner.get_tor_cwd(), stem.util.system.get_cwd(runner.get_pid()))
+    runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
+    self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
     self.assertEquals(None, stem.util.system.get_cwd(99999))
   
   def test_get_cwd_pwdx(self):
@@ -242,14 +284,12 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
     if not stem.util.system.is_available("pwdx"):
       self.skipTest("(pwdx unavailable)")
-    elif not runner.is_accessible():
-      self.skipTest("(unable to check for DisableDebuggerAttachment)")
     elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     # filter the call function to only allow this command
     pwdx_prefix = stem.util.system.GET_CWD_PWDX % ""
-    stem.util.system.CALL_MOCKING = lambda cmd: cmd.startswith(pwdx_prefix)
+    mocking.mock(stem.util.system.call, filter_system_call([pwdx_prefix]))
     
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
     self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
@@ -262,14 +302,12 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
     if not stem.util.system.is_available("lsof"):
       self.skipTest("(lsof unavailable)")
-    elif not runner.is_accessible():
-      self.skipTest("(unable to check for DisableDebuggerAttachment)")
     elif not runner.is_ptraceable():
       self.skipTest("(DisableDebuggerAttachment is set)")
     
     # filter the call function to only allow this command
     lsof_prefix = "lsof -a -p "
-    stem.util.system.CALL_MOCKING = lambda cmd: cmd.startswith(lsof_prefix)
+    mocking.mock(stem.util.system.call, filter_system_call([lsof_prefix]))
     
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
     self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
@@ -297,22 +335,4 @@ class TestSystem(unittest.TestCase):
     self.assertEquals(home_dir, stem.util.system.expand_path("~/"))
     self.assertEquals(home_dir, stem.util.system.expand_path("~%s" % username))
     self.assertEquals(os.path.join(home_dir, "foo"), stem.util.system.expand_path("~%s/foo" % username))
-  
-  def _run_pid_test(self, cmd_prefix, test_function, arg):
-    """
-    Runs a get_pid_by_* test with the given inputs.
-    """
-    
-    # filter the call function to only allow this command
-    stem.util.system.CALL_MOCKING = lambda cmd: cmd.startswith(cmd_prefix)
-    
-    runner_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(runner_pid, test_function(arg))
-  
-  def _has_port(self):
-    """
-    True if our test runner has a control port, False otherwise.
-    """
-    
-    return test.runner.Torrc.PORT in test.runner.get_runner().get_options()
 

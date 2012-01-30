@@ -10,19 +10,7 @@ import stem.socket
 import stem.connection
 import stem.util.system
 import test.mocking as mocking
-
-def filter_system_call(prefixes):
-  """
-  Provides a functor that passes calls on to the stem.util.system.call()
-  function if it matches one of the prefixes, and acts as a no-op otherwise.
-  """
-  
-  def _filter_system_call(command):
-    for prefix in prefixes:
-      if command.startswith(prefix):
-        return stem.util.system.call(command)
-  
-  return _filter_system_call
+from test.integ.util.system import filter_system_call
 
 class TestProtocolInfo(unittest.TestCase):
   def setUp(self):
