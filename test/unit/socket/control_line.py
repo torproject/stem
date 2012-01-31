@@ -52,6 +52,7 @@ class TestControlLine(unittest.TestCase):
     self.assertFalse(line.is_empty())
     self.assertFalse(line.is_next_quoted())
     self.assertFalse(line.is_next_mapping())
+    self.assertEquals(None, line.peek_key())
     
     self.assertRaises(ValueError, line.pop_mapping)
     self.assertEquals(line.pop(), 'PROTOCOLINFO')
@@ -59,6 +60,7 @@ class TestControlLine(unittest.TestCase):
     self.assertFalse(line.is_empty())
     self.assertFalse(line.is_next_quoted())
     self.assertFalse(line.is_next_mapping())
+    self.assertEquals(None, line.peek_key())
     
     self.assertRaises(ValueError, line.pop_mapping)
     self.assertEquals(line.pop(), '1')
@@ -66,6 +68,7 @@ class TestControlLine(unittest.TestCase):
     self.assertTrue(line.is_empty())
     self.assertFalse(line.is_next_quoted())
     self.assertFalse(line.is_next_mapping())
+    self.assertEquals(None, line.peek_key())
     
     self.assertRaises(IndexError, line.pop_mapping)
     self.assertRaises(IndexError, line.pop)
@@ -73,6 +76,7 @@ class TestControlLine(unittest.TestCase):
     self.assertTrue(line.is_empty())
     self.assertFalse(line.is_next_quoted())
     self.assertFalse(line.is_next_mapping())
+    self.assertEquals(None, line.peek_key())
   
   def test_pop_mapping(self):
     """
@@ -90,6 +94,7 @@ class TestControlLine(unittest.TestCase):
     self.assertTrue(line.is_next_mapping(key = "Tor"))
     self.assertTrue(line.is_next_mapping(key = "Tor", quoted = True))
     self.assertTrue(line.is_next_mapping(quoted = True))
+    self.assertEquals("Tor", line.peek_key())
     
     # try popping this as a non-quoted mapping
     self.assertEquals(line.pop_mapping(), ('Tor', '"0.2.1.30'))
@@ -98,6 +103,7 @@ class TestControlLine(unittest.TestCase):
     self.assertFalse(line.is_next_quoted())
     self.assertFalse(line.is_next_mapping())
     self.assertRaises(ValueError, line.pop_mapping)
+    self.assertEquals(None, line.peek_key())
     
     # try popping this as a quoted mapping
     line = stem.socket.ControlLine(version_entry)
@@ -106,6 +112,7 @@ class TestControlLine(unittest.TestCase):
     self.assertTrue(line.is_empty())
     self.assertFalse(line.is_next_quoted())
     self.assertFalse(line.is_next_mapping())
+    self.assertEquals(None, line.peek_key())
   
   def test_escapes(self):
     """

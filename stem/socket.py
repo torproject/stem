@@ -28,6 +28,7 @@ ControlLine - String subclass with methods for parsing controller responses.
   |- is_empty - checks if the remaining content is empty
   |- is_next_quoted - checks if the next entry is a quoted value
   |- is_next_mapping - checks if the next entry is a KEY=VALUE mapping
+  |- peek_key - provides the key of the next entry
   |- pop - removes and returns the next entry
   +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
 
@@ -486,6 +487,23 @@ class ControlLine(str):
         return True # we just needed to check for the key
     else:
       return False # doesn't start with a key
+  
+  def peek_key(self):
+    """
+    Provides the key of the next entry, providing None if it isn't a key/value
+    mapping.
+    
+    Returns:
+      str with the next entry's key
+    """
+    
+    remainder = self._remainder
+    key_match = KEY_ARG.match(remainder)
+    
+    if key_match:
+      return key_match.groups()[0]
+    else:
+      return None
   
   def pop(self, quoted = False, escaped = False):
     """
