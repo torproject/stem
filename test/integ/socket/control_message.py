@@ -36,11 +36,17 @@ class TestControlMessage(unittest.TestCase):
     # an error until we read from the socket. However, with a control socket
     # the write will cause a SocketError.
     
+    self.assertTrue(control_socket.is_alive())
+    
     try:
       control_socket.send("GETINFO version")
     except: pass
     
+    # at this point is_alive is True with a control port and False with a
+    # control socket
+    
     self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
+    self.assertFalse(control_socket.is_alive())
     
     # Additional socket usage should fail, and pulling more responses will fail
     # with more closed exceptions.
