@@ -96,6 +96,7 @@ def revert_mocking():
   for mock_id in mock_ids:
     module, function, impl = MOCK_STATE[mock_id]
     module.__dict__[function] = impl
+    del MOCK_STATE[mock_id]
   
   MOCK_STATE.clear()
 
