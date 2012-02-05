@@ -11,6 +11,7 @@ with the behavior of the socket itself.
 import unittest
 
 import stem.connection
+import stem.control
 import stem.socket
 import test.runner
 
@@ -64,7 +65,12 @@ class TestControlSocket(unittest.TestCase):
       # If we send another message to a port based socket then it will seem to
       # succeed. However, a file based socket should report a failure.
       
-      if isinstance(control_socket, stem.socket.ControlPort):
+      if isinstance(control_socket, stem.control.BaseController):
+        base_socket = control_socket.socket
+      else:
+        base_socket = control_socket
+      
+      if isinstance(base_socket, stem.socket.ControlPort):
         control_socket.send("blarg")
         self.assertTrue(control_socket.is_alive())
       else:

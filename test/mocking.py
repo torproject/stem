@@ -81,6 +81,41 @@ def mock(target, mock_call):
   # mocks the function with this wrapper
   target_module.__dict__[target_function] = mock_wrapper
 
+def mock_method(target_class, method_name, mock_call):
+  """
+  Mocks the given class method in a similar fasion as what mock() does for
+  functions.
+  
+  Arguments:
+    target_class (class) - class with the method we want to mock
+    method_name (str)    - name of the method to be mocked
+    mock_call (functor)  - mocking to replace the method with
+  """
+  
+  # Ideally callers could call us with just the method, for instance like...
+  #   mock_method(MyClass.foo, mocking.return_true())
+  #
+  # However, while classes reference the methods they have the methods
+  # themselves don't reference the class. This is unfortunate because it means
+  # that we need to know both the class and method we're replacing.
+  
+  target_method = target_class.__dict__[method_name]
+  
+  if "mock_id" in target_method.__dict__:
+    # we're overriding an already mocked method
+    mocking_id = target_method.mock_id
+    _, target_method, _ = MOCK_STATE[mocking_id]
+  else:
+    # this is a new mocking, save the original state
+    mocking_id = MOCK_ID.next()
+    MOCK_STATE[mocking_id] = (target_class, method_name, target_method)
+  
+  mock_wrapper = lambda *args: mock_call(*args)
+  mock_wrapper.__dict__["mock_id"] = mocking_id
+  
+  # mocks the function with this wrapper
+  target_class.__dict__[method_name] = mock_wrapper
+
 def revert_mocking():
   """
   Reverts any mocking done by this function.
@@ -102,8 +137,8 @@ def revert_mocking():
 
 def get_real_function(function):
   """
-  Provides the original, non-mocked implementation for a function. This simply
-  returns the current implementation if it isn't being mocked.
+  Provides the original, non-mocked implementation for a function or method.
+  This simply returns the current implementation if it isn't being mocked.
   
   Arguments:
     function (function) - function to look up the original implementation of
