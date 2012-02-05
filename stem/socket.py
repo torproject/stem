@@ -107,7 +107,7 @@ class ControlSocket:
     
     Raises:
       stem.socket.SocketError if a problem arises in using the socket
-      stem.socket.SocketClosed if the socket is shut down
+      stem.socket.SocketClosed if the socket is known to be shut down
     """
     
     self._send_cond.acquire()
@@ -155,6 +155,14 @@ class ControlSocket:
     Checks if the socket is known to be closed. We won't be aware if it is
     until we either use it or have explicitily shut it down.
     
+    In practice a socket derived from a port knows about its disconnection
+    after a failed recv() call. Socket file derived connections know after
+    either a send() or recv().
+    
+    This means that to have reliable detection for when we're disconnected
+    you need to continually pull from the socket (which is part of what the
+    BaseController does).
+    
     Returns:
       bool that's True if we're known to be shut down and False otherwise
     """
@@ -178,9 +186,8 @@ class ControlSocket:
     if self.is_alive(): self.close()
     
     try:
-      control_socket = self._make_socket()
-      self._socket = control_socket
-      self._socket_file = control_socket.makefile()
+      self._socket = self._make_socket()
+      self._socket_file = self._socket.makefile()
       self._is_alive = True
     finally:
       self._send_cond.release()
@@ -213,6 +220,8 @@ class ControlSocket:
       try: self._socket_file.close()
       except: pass
     
+    self._socket = None
+    self._socket_file = None
     self._is_alive = False
     
     self._send_cond.release()
@@ -673,6 +682,7 @@ def send_message(control_file, message, raw = False):
   
   Raises:
     stem.socket.SocketError if a problem arises in using the socket
+    stem.socket.SocketClosed if the socket is known to be shut down
   """
   
   if not raw: message = send_formatting(message)
@@ -689,7 +699,15 @@ def send_message(control_file, message, raw = False):
     log.trace("Sent to tor:\n" + log_message)
   except socket.error, exc:
     log.info("Failed to send message: %s" % exc)
-    raise SocketError(exc)
+    
+    # When sending there doesn't seem to be a reliable method for
+    # distinguishing between failures from a disconnect verses other things.
+    # Just accounting for known disconnection responses.
+    
+    if str(exc) == "[Errno 32] Broken pipe":
+      raise SocketClosed(exc)
+    else:
+      raise SocketError(exc)
   except AttributeError:
     # if the control_file has been closed then flush will receive:
     # AttributeError: 'NoneType' object has no attribute 'sendall'

@@ -613,7 +613,8 @@ def authenticate_cookie(control_socket, cookie_path, suppress_ctl_errors = True)
 def get_protocolinfo(control_socket):
   """
   Issues a PROTOCOLINFO query to a control socket, getting information about
-  the tor process running on it.
+  the tor process running on it. If the socket is already closed then it is
+  first reconnected.
   
   Arguments:
     control_socket (stem.socket.ControlSocket) - connected tor control socket

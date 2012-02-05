@@ -31,20 +31,10 @@ class TestControlMessage(unittest.TestCase):
     self.assertEquals("514 Authentication required.\r\n", auth_required_response.raw_content())
     self.assertEquals([("514", " ", "Authentication required.")], auth_required_response.content())
     
-    # The socket's broken but doesn't realize it yet. Send another message and
-    # it should fail with a closed exception. With a control port we won't get
-    # an error until we read from the socket. However, with a control socket
-    # the write will cause a SocketError.
+    # The socket's broken but doesn't realize it yet. These use cases are
+    # checked in more depth by the ControlSocket integ tests.
     
     self.assertTrue(control_socket.is_alive())
-    
-    try:
-      control_socket.send("GETINFO version")
-    except: pass
-    
-    # at this point is_alive is True with a control port and False with a
-    # control socket
-    
     self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
     self.assertFalse(control_socket.is_alive())
     
