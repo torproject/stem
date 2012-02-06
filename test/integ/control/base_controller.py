@@ -5,6 +5,7 @@ Integration tests for the stem.control.BaseController class.
 import unittest
 
 import stem.control
+import stem.socket
 import test.runner
 import test.mocking as mocking
 import test.integ.socket.control_socket
@@ -15,6 +16,28 @@ class TestBaseController(unittest.TestCase):
   
   def tearDown(self):
     mocking.revert_mocking()
+  
+  def test_from_port(self):
+    """
+    Basic sanity check for the from_port constructor.
+    """
+    
+    if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
+      controller = stem.control.BaseController.from_port(control_port = test.runner.CONTROL_PORT)
+      self.assertTrue(isinstance(controller, stem.control.BaseController))
+    else:
+      self.assertRaises(stem.socket.SocketError, stem.control.BaseController.from_port, "127.0.0.1", test.runner.CONTROL_PORT)
+  
+  def test_from_socket_file(self):
+    """
+    Basic sanity check for the from_socket_file constructor.
+    """
+    
+    if test.runner.Torrc.SOCKET in test.runner.get_runner().get_options():
+      controller = stem.control.BaseController.from_socket_file(test.runner.CONTROL_SOCKET_PATH)
+      self.assertTrue(isinstance(controller, stem.control.BaseController))
+    else:
+      self.assertRaises(stem.socket.SocketError, stem.control.BaseController.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
   
   def test_socket_passthrough(self):
     """
