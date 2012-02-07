@@ -92,8 +92,8 @@ class ControlSocket:
     # so prevents deadlock where we block writes because we're waiting to read
     # a message that isn't coming.
     
-    self._send_cond = threading.Condition()
-    self._recv_cond = threading.Condition()
+    self._send_lock = threading.RLock()
+    self._recv_lock = threading.RLock()
   
   def send(self, message, raw = False):
     """
@@ -110,7 +110,7 @@ class ControlSocket:
       stem.socket.SocketClosed if the socket is known to be shut down
     """
     
-    self._send_cond.acquire()
+    self._send_lock.acquire()
     
     try:
       if not self.is_alive(): raise SocketClosed()
@@ -121,7 +121,7 @@ class ControlSocket:
       if self.is_alive(): self.close()
       raise exc
     finally:
-      self._send_cond.release()
+      self._send_lock.release()
   
   def recv(self):
     """
@@ -137,7 +137,7 @@ class ControlSocket:
         complete message
     """
     
-    self._recv_cond.acquire()
+    self._recv_lock.acquire()
     
     try:
       if not self.is_alive(): raise SocketClosed()
@@ -148,7 +148,7 @@ class ControlSocket:
       if self.is_alive(): self.close()
       raise exc
     finally:
-      self._recv_cond.release()
+      self._recv_lock.release()
   
   def is_alive(self):
     """
@@ -179,8 +179,8 @@ class ControlSocket:
     """
     
     # we need both locks for this
-    self._send_cond.acquire()
-    self._recv_cond.acquire()
+    self._send_lock.acquire()
+    self._recv_lock.acquire()
     
     # close the socket if we're currently attached to one
     if self.is_alive(): self.close()
@@ -190,8 +190,8 @@ class ControlSocket:
       self._socket_file = self._socket.makefile()
       self._is_alive = True
     finally:
-      self._send_cond.release()
-      self._recv_cond.release()
+      self._send_lock.release()
+      self._recv_lock.release()
   
   def close(self):
     """
@@ -199,8 +199,8 @@ class ControlSocket:
     """
     
     # we need both locks for this
-    self._send_cond.acquire()
-    self._recv_cond.acquire()
+    self._send_lock.acquire()
+    self._recv_lock.acquire()
     
     if self._socket:
       # if we haven't yet established a connection then this raises an error
@@ -224,8 +224,8 @@ class ControlSocket:
     self._socket_file = None
     self._is_alive = False
     
-    self._send_cond.release()
-    self._recv_cond.release()
+    self._send_lock.release()
+    self._recv_lock.release()
   
   def __enter__(self):
     return self
