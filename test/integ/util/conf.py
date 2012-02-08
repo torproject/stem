@@ -99,9 +99,52 @@ class TestConf(unittest.TestCase):
     test_config_path = _make_config(MULTILINE_CONF)
     test_config = stem.util.conf.get_config("integ_testing")
     test_config.load(test_config_path)
-    
+        
     for entry in ("simple", "leading_whitespace", "squashed_top", "squashed_bottom"):
       self.assertEquals("la de da\nand a ho hum", test_config.get("multiline.entry.%s" % entry))
     
     self.assertEquals("", test_config.get("multiline.entry.empty"))
 
+  def test_save_multiline(self):
+    """
+    Tests the save method with multi-line configuration files.
+    """
+
+    test_config_path = _make_config(MULTILINE_CONF)
+    test_config = stem.util.conf.get_config("integ_testing")
+    test_config.load(test_config_path)
+
+    test_config.save()
+    test_config.clear()
+
+    test_config = stem.util.conf.get_config("integ_testing")
+    test_config.load(test_config_path)
+
+    for entry in ("simple", "leading_whitespace", "squashed_top", "squashed_bottom"):
+      self.assertEquals("la de da\nand a ho hum", test_config.get("multiline.entry.%s" % entry))
+    
+    self.assertEquals("", test_config.get("multiline.entry.empty"))
+
+  def test_save_singleline(self):
+    """
+    Tests the save method with mingle-line configuration files.
+    """
+    ssh_config = {"login.user": "atagar",
+                  "login.password": "pepperjack_is_awesome!",
+                  "destination.ip": "127.0.0.1",
+                  "destination.port": 22,
+                  "startup.run": []}
+    
+    test_config_path = _make_config(EXAMPLE_CONF)
+    user_config = stem.util.conf.get_config("integ_testing")
+    user_config.load(test_config_path)
+        
+    user_config.set("destination.port", '22')
+    user_config.set("destination.ip", "127.0.0.1")
+
+    user_config.save()
+    user_config.clear()
+    user_config.load(test_config_path)
+
+    self.assertEquals('22', user_config.get("destination.port"))
+    self.assertEquals("127.0.0.1", user_config.get("destination.ip"))
