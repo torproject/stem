@@ -268,7 +268,9 @@ class Config():
     with open(self._path, 'w') as output_file:
       for entry_key in sorted(self.keys()):
         for entry_value in self.get_value(entry_key, multiple = True):
-          output_file.write('%s\n|%s\n' % (entry_key, entry_value.replace("\n", "\n|")))
+          # check for multi line entries
+          if "\n" in entry_value: entry_value = "\n|" + entry_value.replace("\n", "\n|")
+          output_file.write('%s %s\n' % (entry_key, entry_value))
                     
     self._contents_lock.release()
   
