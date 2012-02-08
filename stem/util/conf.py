@@ -250,21 +250,26 @@ class Config():
     self._contents_lock.release()
   
   # TODO: pending improvements...
-  # - missing pydocs
-  # - integ testing
-  # - does not yet handle multi-line entries
-  # - should have an optional path argument
-  def save(self):
+  # - integ testing 
+  def save(self, path = None):
+    """
+    Saves configuration contents to the config file or to the path
+    specified.
+
+    If path is not None, then the default path for this config handler
+    updated to the argument passed.
+    """
+    
     self._contents_lock.acquire()
-    
-    config_keys = self.keys()
-    config_keys.sort()
-    
-    with open(path, 'w') as f:
-      for entry_key in config_keys:
+
+    if path:
+      self.path = path
+      
+    with open(self._path, 'w') as output_file:
+      for entry_key in sorted(self.keys()):
         for entry_value in self.get_value(entry_key, multiple = True):
-          f.write('%s %s\n' % (entry_key, entry_value))
-    
+          output_file.write('%s\n|%s\n' % (entry_key, entry_value.replace("\n", "\n|")))
+                    
     self._contents_lock.release()
   
   def clear(self):
