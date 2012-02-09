@@ -242,9 +242,10 @@ class ControlSocket:
     
     Raises:
       stem.socket.SocketError if unable to make a socket
+      NotImplementedError if not implemented by a subclass
     """
     
-    raise SocketError("Unsupported Operation: this should be implemented by the ControlSocket subclass")
+    raise NotImplementedError("Unsupported Operation: this should be implemented by the ControlSocket subclass")
 
 class ControlPort(ControlSocket):
   """
