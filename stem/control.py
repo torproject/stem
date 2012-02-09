@@ -19,8 +19,8 @@ class BaseController(stem.socket.ControlSocket):
   controllers, providing basic process communication and event listing. Don't
   use this directly - subclasses provide higher level functionality.
   
-  Attributes:
-    socket - ControlSocket from which this was constructed
+  Do not continue to directly interacte with the ControlSocket we're
+  constructed from - use our wrapper methods instead.
   """
   
   # TODO: Convenience methods for the BaseController are pointless since
@@ -66,22 +66,34 @@ class BaseController(stem.socket.ControlSocket):
   from_socket_file = staticmethod(from_socket_file)
   
   def __init__(self, control_socket):
-    self.socket = control_socket
+    self._socket = control_socket
+    
+    def provide_self(): return self
+    self._socket._get_self = provide_self
   
   def send(self, message, raw = False):
-    self.socket.send(message, raw)
+    self._socket.send(message, raw)
   
   def recv(self):
-    return self.socket.recv()
+    return self._socket.recv()
   
   def is_alive(self):
-    return self.socket.is_alive()
+    return self._socket.is_alive()
   
   def connect(self):
-    self.socket.connect()
+    self._socket.connect()
   
   def close(self):
-    self.socket.close()
+    self._socket.close()
+  
+  def get_socket(self):
+    return self._socket
+  
+  def add_status_listener(self, callback, spawn = True):
+    self._socket.add_status_listener(callback, spawn)
+  
+  def remove_status_listener(self, callback):
+    self._socket.remove_status_listener(callback)
   
   def _make_socket(self):
     self._control_socket._make_socket()
