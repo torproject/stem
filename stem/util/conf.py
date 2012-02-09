@@ -194,7 +194,7 @@ class Config():
     # keys that have been requested (used to provide unused config contents)
     self._requested_keys = set()
   
-  def load(self, path):
+  def load(self, path = None):
     """
     Reads in the contents of the given path, adding its configuration values
     to our current contents.
@@ -204,10 +204,16 @@ class Config():
     
     Raises:
       IOError if we fail to read the file (it doesn't exist, insufficient
-      permissions, etc)
+        permissions, etc)
+      ValueError if we don't have a default path and none was provided
     """
     
-    with open(path, "r") as config_file:
+    if path:
+      self._path = path
+    elif not self._path:
+      raise ValueError("Unable to load configuration: no path provided")
+    
+    with open(self._path, "r") as config_file:
       read_contents = config_file.readlines()
     
     self._contents_lock.acquire()
@@ -246,24 +252,35 @@ class Config():
         
         self.set(key, value, False)
     
-    self._path = path
     self._contents_lock.release()
   
-  # TODO: pending improvements...
-  # - missing pydocs
-  # - integ testing
-  # - does not yet handle multi-line entries
-  # - should have an optional path argument
-  def save(self):
+  def save(self, path = None):
+    """
+    Saves configuration contents to the config file or to the path
+    specified. If a path is provided then it replaces the configuration
+    location that we track.
+    
+    Arguments:
+      path (str) - location to be saved to
+    
+    Raises:
+      ValueError if we don't have a default path and none was provided
+    """
+    
+    if path:
+      self._path = path
+    elif not self._path:
+      raise ValueError("Unable to save configuration: no path provided")
+    
     self._contents_lock.acquire()
     
-    config_keys = self.keys()
-    config_keys.sort()
-    
-    with open(path, 'w') as f:
-      for entry_key in config_keys:
+    with open(self._path, 'w') as output_file:
+      for entry_key in sorted(self.keys()):
         for entry_value in self.get_value(entry_key, multiple = True):
-          f.write('%s %s\n' % (entry_key, entry_value))
+          # check for multi line entries
+          if "\n" in entry_value: entry_value = "\n|" + entry_value.replace("\n", "\n|")
+          
+          output_file.write('%s %s\n' % (entry_key, entry_value))
     
     self._contents_lock.release()
   
@@ -274,7 +291,6 @@ class Config():
     """
     
     self._contents_lock.acquire()
-    self._path = None
     self._contents.clear()
     self._raw_contents = []
     self._requested_keys = set()

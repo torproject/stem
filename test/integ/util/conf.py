@@ -39,6 +39,12 @@ multiline.entry.squashed_bottom
 |and a ho hum
 """
 
+HERALD_POEM = """
+What a beautiful morning,
+what a beautiful day.
+Why are those arrows",
+coming my way?!?"""
+
 def _get_test_config_path():
   return os.path.join(test.runner.get_runner().get_test_dir(), "integ_test_cfg")
 
@@ -99,9 +105,31 @@ class TestConf(unittest.TestCase):
     test_config_path = _make_config(MULTILINE_CONF)
     test_config = stem.util.conf.get_config("integ_testing")
     test_config.load(test_config_path)
-    
+        
     for entry in ("simple", "leading_whitespace", "squashed_top", "squashed_bottom"):
       self.assertEquals("la de da\nand a ho hum", test_config.get("multiline.entry.%s" % entry))
     
     self.assertEquals("", test_config.get("multiline.entry.empty"))
+  
+  def test_save(self):
+    """
+    Saves then reloads a configuration with several types of values.
+    """
+    
+    # makes a configuration with a variety of types
+    test_config = stem.util.conf.get_config("integ_testing")
+    
+    test_config.set("single_value", "yup, I'm there")
+    test_config.set("multiple_values", "a", False)
+    test_config.set("multiple_values", "b", False)
+    test_config.set("multiple_values", "c", False)
+    test_config.set("multiline_value", HERALD_POEM)
+    
+    test_config.save(_get_test_config_path())
+    test_config.clear()
+    test_config.load()
+    
+    self.assertEquals("yup, I'm there", test_config.get_value("single_value"))
+    self.assertEquals(["a", "b", "c"], test_config.get_value("multiple_values", multiple = True))
+    self.assertEquals(HERALD_POEM, test_config.get_value("multiline_value"))
 
