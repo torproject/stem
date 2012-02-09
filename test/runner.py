@@ -160,79 +160,75 @@ class Runner:
       OSError if unable to run test preparations or start tor
     """
     
-    self._runner_lock.acquire()
-    
-    # if we're holding on to a tor process (running or not) then clean up after
-    # it so we can start a fresh instance
-    if self._tor_process: self.stop()
-    
-    test.output.print_line("Setting up a test instance...", *STATUS_ATTR)
-    
-    # if 'test_directory' is unset then we make a new data directory in /tmp
-    # and clean it up when we're done
-    
-    config_test_dir = CONFIG["integ.test_directory"]
-    
-    if config_test_dir:
-      self._test_dir = stem.util.system.expand_path(config_test_dir, STEM_BASE)
-    else:
-      self._test_dir = tempfile.mktemp("-stem-integ")
-    
-    original_cwd, data_dir_path = os.getcwd(), self._test_dir
-    
-    if CONFIG["test.target.relative_data_dir"]:
-      tor_cwd = os.path.dirname(self._test_dir)
-      if not os.path.exists(tor_cwd): os.makedirs(tor_cwd)
+    with self._runner_lock:
+      # if we're holding on to a tor process (running or not) then clean up after
+      # it so we can start a fresh instance
+      if self._tor_process: self.stop()
       
-      os.chdir(tor_cwd)
-      data_dir_path = "./%s" % os.path.basename(self._test_dir)
-    
-    self._tor_cmd = tor_cmd
-    self._custom_opts = extra_torrc_opts
-    self._torrc_contents = BASE_TORRC % data_dir_path
-    
-    if extra_torrc_opts:
-      self._torrc_contents += "\n".join(extra_torrc_opts) + "\n"
-    
-    try:
-      self._tor_cwd = os.getcwd()
-      self._run_setup()
-      self._start_tor(tor_cmd)
+      test.output.print_line("Setting up a test instance...", *STATUS_ATTR)
       
-      # revert our cwd back to normal
+      # if 'test_directory' is unset then we make a new data directory in /tmp
+      # and clean it up when we're done
+      
+      config_test_dir = CONFIG["integ.test_directory"]
+      
+      if config_test_dir:
+        self._test_dir = stem.util.system.expand_path(config_test_dir, STEM_BASE)
+      else:
+        self._test_dir = tempfile.mktemp("-stem-integ")
+      
+      original_cwd, data_dir_path = os.getcwd(), self._test_dir
+      
       if CONFIG["test.target.relative_data_dir"]:
-        os.chdir(original_cwd)
-    except OSError, exc:
-      self.stop()
-      raise exc
-    finally:
-      self._runner_lock.release()
+        tor_cwd = os.path.dirname(self._test_dir)
+        if not os.path.exists(tor_cwd): os.makedirs(tor_cwd)
+        
+        os.chdir(tor_cwd)
+        data_dir_path = "./%s" % os.path.basename(self._test_dir)
+      
+      self._tor_cmd = tor_cmd
+      self._custom_opts = extra_torrc_opts
+      self._torrc_contents = BASE_TORRC % data_dir_path
+      
+      if extra_torrc_opts:
+        self._torrc_contents += "\n".join(extra_torrc_opts) + "\n"
+      
+      try:
+        self._tor_cwd = os.getcwd()
+        self._run_setup()
+        self._start_tor(tor_cmd)
+        
+        # revert our cwd back to normal
+        if CONFIG["test.target.relative_data_dir"]:
+          os.chdir(original_cwd)
+      except OSError, exc:
+        self.stop()
+        raise exc
   
   def stop(self):
     """
     Stops our tor test instance and cleans up any temporary resources.
     """
     
-    self._runner_lock.acquire()
-    test.output.print_noline("Shutting down tor... ", *STATUS_ATTR)
-    
-    if self._tor_process:
-      self._tor_process.kill()
-      self._tor_process.communicate() # blocks until the process is done
-    
-    # if we've made a temporary data directory then clean it up
-    if self._test_dir and CONFIG["integ.test_directory"] == "":
-      shutil.rmtree(self._test_dir, ignore_errors = True)
-    
-    self._test_dir = ""
-    self._tor_cmd = None
-    self._tor_cwd = ""
-    self._torrc_contents = ""
-    self._custom_opts = None
-    self._tor_process = None
-    
-    test.output.print_line("done", *STATUS_ATTR)
-    self._runner_lock.release()
+    with self._runner_lock:
+      test.output.print_noline("Shutting down tor... ", *STATUS_ATTR)
+      
+      if self._tor_process:
+        self._tor_process.kill()
+        self._tor_process.communicate() # blocks until the process is done
+      
+      # if we've made a temporary data directory then clean it up
+      if self._test_dir and CONFIG["integ.test_directory"] == "":
+        shutil.rmtree(self._test_dir, ignore_errors = True)
+      
+      self._test_dir = ""
+      self._tor_cmd = None
+      self._tor_cwd = ""
+      self._torrc_contents = ""
+      self._custom_opts = None
+      self._tor_process = None
+      
+      test.output.print_line("done", *STATUS_ATTR)
   
   def is_running(self):
     """
@@ -242,21 +238,16 @@ class Runner:
       True if we have a running tor test instance, False otherwise
     """
     
-    # subprocess.Popen.poll() checks the return code, returning None if it's
-    # still going
-    
-    self._runner_lock.acquire()
-    is_running = self._tor_process and self._tor_process.poll() == None
-    
-    # If the tor process closed unexpectedly then this is probably the first
-    # place that we're realizing it. Clean up the temporary resources now since
-    # we might not end up calling stop() as normal.
-    
-    if not is_running: self.stop(True)
-    
-    self._runner_lock.release()
-    
-    return is_running
+    with self._runner_lock:
+      # Check for an unexpected shutdown by calling subprocess.Popen.poll(),
+      # which returns the exit code or None if we're still running.
+      
+      if self._tor_process and self._tor_process.poll() != None:
+        # clean up the temporary resources and note the unexpected shutdown
+        self.stop()
+        test.output.print_line("tor shut down unexpectedly", *ERROR_ATTR)
+      
+      return bool(self._tor_process)
   
   def is_accessible(self):
     """
@@ -439,14 +430,10 @@ class Runner:
       RunnerStopped if we aren't running
     """
     
-    try:
-      self._runner_lock.acquire()
-      
+    with self._runner_lock:
       if self.is_running():
         return self.__dict__[attr]
       else: raise RunnerStopped()
-    finally:
-      self._runner_lock.release()
   
   def _run_setup(self):
     """

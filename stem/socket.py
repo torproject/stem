@@ -110,18 +110,15 @@ class ControlSocket:
       stem.socket.SocketClosed if the socket is known to be shut down
     """
     
-    self._send_lock.acquire()
-    
-    try:
-      if not self.is_alive(): raise SocketClosed()
-      send_message(self._socket_file, message, raw)
-    except SocketClosed, exc:
-      # if send_message raises a SocketClosed then we should properly shut
-      # everything down
-      if self.is_alive(): self.close()
-      raise exc
-    finally:
-      self._send_lock.release()
+    with self._send_lock:
+      try:
+        if not self.is_alive(): raise SocketClosed()
+        send_message(self._socket_file, message, raw)
+      except SocketClosed, exc:
+        # if send_message raises a SocketClosed then we should properly shut
+        # everything down
+        if self.is_alive(): self.close()
+        raise exc
   
   def recv(self):
     """
@@ -137,18 +134,15 @@ class ControlSocket:
         complete message
     """
     
-    self._recv_lock.acquire()
-    
-    try:
-      if not self.is_alive(): raise SocketClosed()
-      return recv_message(self._socket_file)
-    except SocketClosed, exc:
-      # if recv_message raises a SocketClosed then we should properly shut
-      # everything down
-      if self.is_alive(): self.close()
-      raise exc
-    finally:
-      self._recv_lock.release()
+    with self._recv_lock:
+      try:
+        if not self.is_alive(): raise SocketClosed()
+        return recv_message(self._socket_file)
+      except SocketClosed, exc:
+        # if recv_message raises a SocketClosed then we should properly shut
+        # everything down
+        if self.is_alive(): self.close()
+        raise exc
   
   def is_alive(self):
     """
@@ -178,54 +172,41 @@ class ControlSocket:
       stem.socket.SocketError if unable to make a socket
     """
     
-    # we need both locks for this
-    self._send_lock.acquire()
-    self._recv_lock.acquire()
-    
-    # close the socket if we're currently attached to one
-    if self.is_alive(): self.close()
-    
-    try:
+    with self._send_lock, self._recv_lock:
+      # close the socket if we're currently attached to one
+      if self.is_alive(): self.close()
+      
       self._socket = self._make_socket()
       self._socket_file = self._socket.makefile()
       self._is_alive = True
-    finally:
-      self._send_lock.release()
-      self._recv_lock.release()
   
   def close(self):
     """
     Shuts down the socket. If it's already closed then this is a no-op.
     """
     
-    # we need both locks for this
-    self._send_lock.acquire()
-    self._recv_lock.acquire()
-    
-    if self._socket:
-      # if we haven't yet established a connection then this raises an error
-      # socket.error: [Errno 107] Transport endpoint is not connected
-      try: self._socket.shutdown(socket.SHUT_RDWR)
-      except socket.error: pass
+    with self._send_lock, self._recv_lock:
+      if self._socket:
+        # if we haven't yet established a connection then this raises an error
+        # socket.error: [Errno 107] Transport endpoint is not connected
+        try: self._socket.shutdown(socket.SHUT_RDWR)
+        except socket.error: pass
+        
+        # Suppressing unexpected exceptions from close. For instance, if the
+        # socket's file has already been closed then with python 2.7 that raises
+        # with...
+        # error: [Errno 32] Broken pipe
+        
+        try: self._socket.close()
+        except: pass
       
-      # Suppressing unexpected exceptions from close. For instance, if the
-      # socket's file has already been closed then with python 2.7 that raises
-      # with...
-      # error: [Errno 32] Broken pipe
+      if self._socket_file:
+        try: self._socket_file.close()
+        except: pass
       
-      try: self._socket.close()
-      except: pass
-    
-    if self._socket_file:
-      try: self._socket_file.close()
-      except: pass
-    
-    self._socket = None
-    self._socket_file = None
-    self._is_alive = False
-    
-    self._send_lock.release()
-    self._recv_lock.release()
+      self._socket = None
+      self._socket_file = None
+      self._is_alive = False
   
   def __enter__(self):
     return self
@@ -545,13 +526,10 @@ class ControlLine(str):
       IndexError if we don't have any remaining content left to parse
     """
     
-    try:
-      self._remainder_lock.acquire()
+    with self._remainder_lock:
       next_entry, remainder = _parse_entry(self._remainder, quoted, escaped)
       self._remainder = remainder
       return next_entry
-    finally:
-      self._remainder_lock.release()
   
   def pop_mapping(self, quoted = False, escaped = False):
     """
@@ -570,8 +548,7 @@ class ControlLine(str):
         the value being quoted
     """
     
-    try:
-      self._remainder_lock.acquire()
+    with self._remainder_lock:
       if self.is_empty(): raise IndexError("no remaining content to parse")
       key_match = KEY_ARG.match(self._remainder)
       
@@ -585,8 +562,6 @@ class ControlLine(str):
       next_entry, remainder = _parse_entry(remainder, quoted, escaped)
       self._remainder = remainder
       return (key, next_entry)
-    finally:
-      self._remainder_lock.release()
 
 def _parse_entry(line, quoted, escaped):
   """

@@ -30,7 +30,7 @@ three things...
 
 There are many ways of using the Config class but the most common ones are...
 
-- Call config_dict to get a dictionary that's always synced with with a Config.
+- Call config_dict to get a dictionary that's always synced with a Config.
 
 - Make a dictionary and call synchronize() to bring it into sync with the
   Config. This does not keep it in sync as the Config changes. See the Config
@@ -216,43 +216,41 @@ class Config():
     with open(self._path, "r") as config_file:
       read_contents = config_file.readlines()
     
-    self._contents_lock.acquire()
-    self._raw_contents = read_contents
-    remainder = list(self._raw_contents)
-    
-    while remainder:
-      line = remainder.pop(0)
+    with self._contents_lock:
+      self._raw_contents = read_contents
+      remainder = list(self._raw_contents)
       
-      # strips any commenting or excess whitespace
-      comment_start = line.find("#")
-      if comment_start != -1: line = line[:comment_start]
-      line = line.strip()
-      
-      # parse the key/value pair
-      if line:
-        try:
-          key, value = line.split(" ", 1)
-          value = value.strip()
-        except ValueError:
-          log.debug("Config entry '%s' is expected to be of the format 'Key Value', defaulting to '%s' -> ''" % (line, line))
-          key, value = line, ""
+      while remainder:
+        line = remainder.pop(0)
         
-        if not value:
-          # this might be a multi-line entry, try processing it as such
-          multiline_buffer = []
-          
-          while remainder and remainder[0].lstrip().startswith("|"):
-            content = remainder.pop(0).lstrip()[1:] # removes '\s+|' prefix
-            content = content.rstrip("\n")          # trailing newline
-            multiline_buffer.append(content)
-          
-          if multiline_buffer:
-            self.set(key, "\n".join(multiline_buffer), False)
-            continue
+        # strips any commenting or excess whitespace
+        comment_start = line.find("#")
+        if comment_start != -1: line = line[:comment_start]
+        line = line.strip()
         
-        self.set(key, value, False)
-    
-    self._contents_lock.release()
+        # parse the key/value pair
+        if line:
+          try:
+            key, value = line.split(" ", 1)
+            value = value.strip()
+          except ValueError:
+            log.debug("Config entry '%s' is expected to be of the format 'Key Value', defaulting to '%s' -> ''" % (line, line))
+            key, value = line, ""
+          
+          if not value:
+            # this might be a multi-line entry, try processing it as such
+            multiline_buffer = []
+            
+            while remainder and remainder[0].lstrip().startswith("|"):
+              content = remainder.pop(0).lstrip()[1:] # removes '\s+|' prefix
+              content = content.rstrip("\n")          # trailing newline
+              multiline_buffer.append(content)
+            
+            if multiline_buffer:
+              self.set(key, "\n".join(multiline_buffer), False)
+              continue
+          
+          self.set(key, value, False)
   
   def save(self, path = None):
     """
@@ -272,17 +270,13 @@ class Config():
     elif not self._path:
       raise ValueError("Unable to save configuration: no path provided")
     
-    self._contents_lock.acquire()
-    
-    with open(self._path, 'w') as output_file:
+    with self._contents_lock, open(self._path, 'w') as output_file:
       for entry_key in sorted(self.keys()):
         for entry_value in self.get_value(entry_key, multiple = True):
           # check for multi line entries
           if "\n" in entry_value: entry_value = "\n|" + entry_value.replace("\n", "\n|")
           
           output_file.write('%s %s\n' % (entry_key, entry_value))
-    
-    self._contents_lock.release()
   
   def clear(self):
     """
@@ -290,11 +284,10 @@ class Config():
     state.
     """
     
-    self._contents_lock.acquire()
-    self._contents.clear()
-    self._raw_contents = []
-    self._requested_keys = set()
-    self._contents_lock.release()
+    with self._contents_lock:
+      self._contents.clear()
+      self._raw_contents = []
+      self._requested_keys = set()
   
   def synchronize(self, conf_mappings, limits = None):
     """
@@ -344,14 +337,12 @@ class Config():
       backfill (bool)    - calls the function with our current values if true
     """
     
-    self._contents_lock.acquire()
-    self._listeners.append(listener)
-    
-    if backfill:
-      for key in self.keys():
-        listener(self, key)
-    
-    self._contents_lock.release()
+    with self._contents_lock:
+      self._listeners.append(listener)
+      
+      if backfill:
+        for key in self.keys():
+          listener(self, key)
   
   def clear_listeners(self):
     """
@@ -393,9 +384,7 @@ class Config():
                             the values are appended
     """
     
-    try:
-      self._contents_lock.acquire()
-      
+    with self._contents_lock:
       if isinstance(value, str):
         if not overwrite and key in self._contents: self._contents[key].append(value)
         else: self._contents[key] = [value]
@@ -409,8 +398,6 @@ class Config():
         for listener in self._listeners: listener(self, key)
       else:
         raise ValueError("Config.set() only accepts str, list, or tuple. Provided value was a '%s'" % type(value))
-    finally:
-      self._contents_lock.release()
   
   def get(self, key, default = None):
     """
@@ -498,20 +485,18 @@ class Config():
       key, providing the default if no such key exists
     """
     
-    self._contents_lock.acquire()
-    
-    if key in self._contents:
-      val = self._contents[key]
-      if not multiple: val = val[-1]
-      self._requested_keys.add(key)
-    else:
-      message_id = "stem.util.conf.missing_config_key_%s" % key
-      log.log_once(message_id, log.TRACE, "config entry '%s' not found, defaulting to '%s'" % (key, default))
-      val = default
-    
-    self._contents_lock.release()
-    
-    return val
+    with self._contents_lock:
+      if key in self._contents:
+        self._requested_keys.add(key)
+        
+        if multiple:
+          return self._contents[key]
+        else:
+          return self._contents[key][-1]
+      else:
+        message_id = "stem.util.conf.missing_config_key_%s" % key
+        log.log_once(message_id, log.TRACE, "config entry '%s' not found, defaulting to '%s'" % (key, default))
+        return default
   
   def get_str_csv(self, key, default = None, count = None, sub_key = None):
     """
