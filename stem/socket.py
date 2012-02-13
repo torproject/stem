@@ -15,10 +15,7 @@ ControlSocket - Socket wrapper that speaks the tor control protocol.
   |- recv - receives a ControlMessage from the socket
   |- is_alive - reports if the socket is known to be closed
   |- connect - connects a new socket
-  |- close - shuts down the socket
-  |- get_socket - provides socket providing base control communication
-  |- add_status_listener - notifies a callback of changes in the socket status
-  +- remove_status_listener - prevents further notification of status changes
+  +- close - shuts down the socket
 
 ControlMessage - Message that's read from the control socket.
   |- content - provides the parsed message content
@@ -47,20 +44,11 @@ ControllerError - Base exception raised when using the controller.
 
 from __future__ import absolute_import
 import re
-import time
 import socket
-import thread
 import threading
 
 import stem.util.enum
 import stem.util.log as log
-
-# state changes a control socket can have
-# INIT   - new control connection
-# RESET  - received a reset/sighup signal
-# CLOSED - control connection closed
-
-State = stem.util.enum.Enum("INIT", "RESET", "CLOSED")
 
 KEY_ARG = re.compile("^(\S+)=")
 
@@ -100,9 +88,6 @@ class ControlSocket:
   def __init__(self):
     self._socket, self._socket_file = None, None
     self._is_alive = False
-    
-    self._status_listeners = [] # tuples of the form (callback, spawn_thread)
-    self._status_listeners_lock = threading.RLock()
     
     # Tracks sending and receiving separately. This should be safe, and doing
     # so prevents deadlock where we block writes because we're waiting to read
@@ -196,7 +181,7 @@ class ControlSocket:
       self._socket_file = self._socket.makefile()
       self._is_alive = True
       
-      self._notify_status_listeners(State.INIT, True)
+      self._connect()
   
   def close(self):
     """
@@ -204,10 +189,10 @@ class ControlSocket:
     """
     
     with self._send_lock, self._recv_lock:
-      # Function is idempotent with one exception: we notify listeners if this
+      # Function is idempotent with one exception: we notify _close() if this
       # is causing our is_alive() state to change.
       
-      notify_listeners = self.is_alive()
+      is_change = self.is_alive()
       
       if self._socket:
         # if we haven't yet established a connection then this raises an error
@@ -232,125 +217,28 @@ class ControlSocket:
       self._socket_file = None
       self._is_alive = False
       
-      if notify_listeners:
-        self._notify_status_listeners(State.CLOSED, False)
-  
-  def get_socket(self):
-    """
-    Provides our base ControlSocket that speaks with the socket. For standard
-    subclasses this is simply ourselves, but for wrapper instances this is the
-    ContorlSocket they wrap.
-    
-    Use of this, rather than going through its wrapper instance, isn't
-    generally a good idea.
-    
-    Returns:
-      ControlSocket for base controller communications
-    """
-    
-    return self
-  
-  def add_status_listener(self, callback, spawn = True):
-    """
-    Notifies a given function when the state of our socket changes. Functions
-    are expected to be of the form...
-    
-      my_function(control_socket, state, timestamp)
-    
-    The state is a value from stem.socket.State, functions *must* allow for
-    new values in this field. The timestamp is a float for the unix time when
-    the change occured.
-    
-    This class only provides State.INIT and State.CLOSED notifications.
-    Subclasses may provide others.
-    
-    If spawn is True then the callback is notified via a new daemon thread. If
-    false then the notice is under our locks, within the thread where the
-    change occured. In general this isn't advised, especially if your callback
-    could block for a while.
-    
-    Arguments:
-      callback (function) - function to be notified when our state changes
-      spawn (bool)        - calls function via a new thread if True, otherwise
-                            it's part of the connect/close method call
-    """
-    
-    with self._status_listeners_lock:
-      self._status_listeners.append((callback, spawn))
-  
-  def remove_status_listener(self, callback):
-    """
-    Stops listener from being notified of further events.
-    
-    Arguments:
-      callback (function) - function to be removed from our listeners
-    
-    Returns:
-      bool that's True if we removed one or more occurances of the callback,
-      False otherwise
-    """
-    
-    with self._status_listeners_lock:
-      new_listeners, is_changed = [], False
-      
-      for listener, spawn in self._status_listeners:
-        if listener != callback:
-          new_listeners.append((listener, spawn))
-        else: is_changed = True
-      
-      self._status_listeners = new_listeners
-      return is_changed
-  
-  def _notify_status_listeners(self, state, expect_alive = None):
-    """
-    Informs our status listeners that a state change occured.
-    
-    States imply that our socket is either alive or not, which may not hold
-    true when multiple events occure in quick succession. For instance, a
-    sighup could cause two events (State.RESET for the sighup and State.CLOSE
-    if it causes tor to crash). However, there's no guarentee of the order in
-    which they occure, and it would be bad if listeners got the State.RESET
-    last, implying that we were alive.
-    
-    If set, the expect_alive flag will discard our event if it conflicts with
-    our current is_alive() state.
-    
-    Arguments:
-      state (stem.socket.State) - state change that has occured
-      expect_alive (bool)       - discard event if it conflicts with our
-                                  is_alive() state
-    """
-    
-    # Our own calles (the connect() and close() methods) already acquire these
-    # locks. However, our subclasses that use this method probably won't have
-    # them, so locking to prevent those from conflicting with each other and
-    # connect() / close().
-    
-    with self._send_lock, self._recv_lock:
-      change_timestamp = time.time()
-      
-      if expect_alive != None and expect_alive != self.is_alive():
-        return
-      
-      for listener, spawn in self._status_listeners:
-        if spawn:
-          thread.start_new_thread(listener, (self._get_self(), state, change_timestamp))
-        else:
-          listener(self._get_self(), state, change_timestamp)
-  
-  def _get_self(self):
-    """
-    Provides our self reference. For basic subclasses this is ourselves, but
-    for wrappers this is the instance wrapping us.
-    """
-    
-    return self
+      if is_change:
+        self._close()
   
   def __enter__(self):
     return self
   
   def __exit__(self, type, value, traceback):
     self.close()
+  
+  def _connect(self):
+    """
+    Connection callback that can be overwritten by subclasses and wrappers.
+    """
+    
+    pass
+  
+  def _close(self):
+    """
+    Disconnection callback that can be overwritten by subclasses and wrappers.
+    """
+    
+    pass
   
   def _make_socket(self):
     """
@@ -800,10 +688,6 @@ def send_message(control_file, message, raw = False):
   """
   
   if not raw: message = send_formatting(message)
-  
-  # uses a newline divider if this is a multi-line message (more readable)
-  log_message = message.replace("\r\n", "\n").rstrip()
-  div = "\n" if "\n" in log_message else " "
   
   try:
     control_file.write(message)

@@ -2,13 +2,33 @@
 Integration tests for the stem.control.BaseController class.
 """
 
+import time
 import unittest
 
 import stem.control
 import stem.socket
 import test.runner
 import test.mocking as mocking
-import test.integ.socket.control_socket
+
+class StateObserver:
+  """
+  Simple container for listening to ControlSocket state changes and
+  rembembering them for the test.
+  """
+  
+  controller = None
+  state = None
+  timestamp = None
+  
+  def reset(self):
+    self.controller = None
+    self.state = None
+    self.timestamp = None
+  
+  def listener(self, controller, state, timestamp):
+    self.controller = controller
+    self.state = state
+    self.timestamp = timestamp
 
 class TestBaseController(unittest.TestCase):
   def setUp(self):
@@ -39,29 +59,59 @@ class TestBaseController(unittest.TestCase):
     else:
       self.assertRaises(stem.socket.SocketError, stem.control.BaseController.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
   
-  def test_socket_passthrough(self):
+  def test_status_notifications(self):
     """
-    The BaseController is a passthrough for the socket it is built from, so
-    runs the ControlSocket integ tests again against it.
+    Checks basic functionality of the add_status_listener() and
+    remove_status_listener() methods.
     """
     
-    # overwrites the Runner's get_tor_socket() to provide back a ControlSocket
-    # wrapped by a BaseContorller
+    state_observer = StateObserver()
     
-    def mock_get_tor_socket(self, authenticate = True):
-      real_get_tor_socket = mocking.get_real_function(test.runner.Runner.get_tor_socket)
-      control_socket = real_get_tor_socket(self, authenticate)
-      return stem.control.BaseController(control_socket)
-    
-    mocking.mock_method(test.runner.Runner, "get_tor_socket", mock_get_tor_socket)
-    
-    # sanity check that the mocking is working
-    example_socket = test.runner.get_runner().get_tor_socket()
-    self.assertTrue(isinstance(example_socket, stem.control.BaseController))
-    
-    # re-runs all of the control_socket tests
-    socket_test_class = test.integ.socket.control_socket.TestControlSocket
-    for method in socket_test_class.__dict__:
-      if method.startswith("test_"):
-        socket_test_class.__dict__[method](self)
+    with test.runner.get_runner().get_tor_socket(False) as control_socket:
+      controller = stem.control.BaseController(control_socket)
+      controller.add_status_listener(state_observer.listener, False)
+      
+      control_socket.close()
+      self.assertEquals(controller, state_observer.controller)
+      self.assertEquals(stem.control.State.CLOSED, state_observer.state)
+      self.assertTrue(state_observer.timestamp < time.time())
+      self.assertTrue(state_observer.timestamp > time.time() - 1.0)
+      state_observer.reset()
+      
+      control_socket.connect()
+      self.assertEquals(controller, state_observer.controller)
+      self.assertEquals(stem.control.State.INIT, state_observer.state)
+      self.assertTrue(state_observer.timestamp < time.time())
+      self.assertTrue(state_observer.timestamp > time.time() - 1.0)
+      state_observer.reset()
+      
+      # cause the socket to shut down without calling close()
+      control_socket.send("Blarg!")
+      control_socket.recv()
+      self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
+      self.assertEquals(controller, state_observer.controller)
+      self.assertEquals(stem.control.State.CLOSED, state_observer.state)
+      self.assertTrue(state_observer.timestamp < time.time())
+      self.assertTrue(state_observer.timestamp > time.time() - 1.0)
+      state_observer.reset()
+      
+      # remove listener and make sure we don't get further notices
+      controller.remove_status_listener(state_observer.listener)
+      control_socket.connect()
+      self.assertEquals(None, state_observer.controller)
+      self.assertEquals(None, state_observer.state)
+      self.assertEquals(None, state_observer.timestamp)
+      state_observer.reset()
+      
+      # add with spawn as true, we need a little delay on this since we then
+      # get the notice asynchronously
+      
+      controller.add_status_listener(state_observer.listener, True)
+      control_socket.close()
+      time.sleep(0.1) # not much work going on so this doesn't need to be much
+      self.assertEquals(controller, state_observer.controller)
+      self.assertEquals(stem.control.State.CLOSED, state_observer.state)
+      self.assertTrue(state_observer.timestamp < time.time())
+      self.assertTrue(state_observer.timestamp > time.time() - 1.0)
+      state_observer.reset()
 
