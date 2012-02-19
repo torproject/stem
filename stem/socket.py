@@ -135,15 +135,15 @@ class ControlSocket:
         complete message
     """
     
-    with self._recv_lock:
-      try:
+    try:
+      with self._recv_lock:
         if not self.is_alive(): raise SocketClosed()
         return recv_message(self._socket_file)
-      except SocketClosed, exc:
-        # if recv_message raises a SocketClosed then we should properly shut
-        # everything down
-        if self.is_alive(): self.close()
-        raise exc
+    except SocketClosed, exc:
+      # if recv_message raises a SocketClosed then we should properly shut
+      # everything down
+      if self.is_alive(): self.close()
+      raise exc
   
   def is_alive(self):
     """
@@ -173,22 +173,26 @@ class ControlSocket:
       stem.socket.SocketError if unable to make a socket
     """
     
-    with self._send_lock, self._recv_lock:
-      # close the socket if we're currently attached to one
+    with self._send_lock:
+      # Closes the socket if we're currently attached to one. Once we're no
+      # longer alive it'll be safe to acquire the recv lock because recv()
+      # calls no longer block (raising SocketClosed instead).
+      
       if self.is_alive(): self.close()
       
-      self._socket = self._make_socket()
-      self._socket_file = self._socket.makefile()
-      self._is_alive = True
-      
-      self._connect()
+      with self._recv_lock:
+        self._socket = self._make_socket()
+        self._socket_file = self._socket.makefile()
+        self._is_alive = True
+        
+        self._connect()
   
   def close(self):
     """
     Shuts down the socket. If it's already closed then this is a no-op.
     """
     
-    with self._send_lock, self._recv_lock:
+    with self._send_lock:
       # Function is idempotent with one exception: we notify _close() if this
       # is causing our is_alive() state to change.
       
@@ -219,6 +223,19 @@ class ControlSocket:
       
       if is_change:
         self._close()
+  
+  def _get_send_lock(self):
+    """
+    The send lock is useful to classes that interact with us at a deep level
+    because it's used to lock connect() / close(), and by extension our
+    is_alive() state changes.
+    
+    Returns:
+      threading.RLock that governs sending messages to our socket and state
+      changes
+    """
+    
+    return self._send_lock
   
   def __enter__(self):
     return self

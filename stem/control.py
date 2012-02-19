@@ -9,19 +9,21 @@ from_port - Provides a Controller based on a port connection.
 from_socket_file - Provides a Controller based on a socket file connection.
 
 BaseController - Base controller class asynchronous message handling.
-  |- is_alive - reports if the socket is known to be closed
-  |- connect - connects a new socket
-  |- close - shuts down the socket
-  |- get_socket - provides socket providing base control communication
-  |- add_status_listener - notifies a callback of changes in the socket status
+  |- msg - communicates with the tor process
+  |- is_alive - reports if our connection to tor is open or closed
+  |- connect - connects or reconnects to tor
+  |- close - shuts down our connection to the tor process
+  |- get_socket - provides the socket used for control communication
+  |- add_status_listener - notifies a callback of changes in our status
   +- remove_status_listener - prevents further notification of status changes
 """
 
 import time
-import thread
+import Queue
 import threading
 
 import stem.socket
+import stem.util.log as log
 
 # state changes a control socket can have
 # INIT   - new control connection
@@ -84,9 +86,21 @@ class BaseController:
   
   def __init__(self, control_socket):
     self._socket = control_socket
+    self._msg_lock = threading.RLock()
     
     self._status_listeners = [] # tuples of the form (callback, spawn_thread)
     self._status_listeners_lock = threading.RLock()
+    
+    # queues where incoming messages are directed
+    self._reply_queue = Queue.Queue()
+    self._event_queue = Queue.Queue()
+    
+    # thread to continually pull from the control socket
+    self._reader_thread = None
+    
+    # thread to pull from the _event_queue and call handle_event
+    self._event_cond = threading.Condition()
+    self._event_thread = None
     
     # saves our socket's prior _connect() and _close() methods so they can be
     # called along with ours
@@ -96,6 +110,72 @@ class BaseController:
     
     self._socket._connect = self._connect
     self._socket._close = self._close
+    
+    if self._socket.is_alive():
+      self._launch_threads()
+  
+  def msg(self, message):
+    """
+    Sends a message to our control socket and provides back its reply.
+    
+    Arguments:
+      message (str) - message to be formatted and sent to tor
+    
+    Returns:
+      stem.socket.ControlMessage with the response
+    
+    Raises:
+      stem.socket.ProtocolError the content from the socket is malformed
+      stem.socket.SocketError if a problem arises in using the socket
+      stem.socket.SocketClosed if the socket is shut down
+    """
+    
+    with self._msg_lock:
+      # If our _reply_queue isn't empty then one of a few things happened...
+      #
+      # - Our connection was closed and probably re-restablished. This was
+      #   in reply to pulling for an asynchronous event and getting this is
+      #   expected - ignore it.
+      #
+      # - Pulling for asynchronous events produced an error. If this was a
+      #   ProtocolError then it's a tor bug, and if a non-closure SocketError
+      #   then it was probably a socket glitch. Deserves an INFO level log
+      #   message.
+      #
+      # - This is a leftover response for a msg() call. We can't tell who an
+      #   exception was airmarked for, so we only know that this was the case
+      #   if it's a ControlMessage. This should not be possable and indicates
+      #   a stem bug. This deserves a NOTICE level log message since it
+      #   indicates that one of our callers didn't get their reply.
+      
+      while not self._reply_queue.empty():
+        try:
+          response = self._reply_queue.get_nowait()
+          
+          if isinstance(response, stem.socket.SocketClosed):
+            pass # this is fine
+          elif isinstance(response, stem.socket.ProtocolError):
+            log.info("Tor provided a malformed message (%s)" % response)
+          elif isinstance(response, stem.socket.ControllerError):
+            log.info("Socket experienced a problem (%s)" % response)
+          elif isinstance(response, stem.socket.ControlMessage):
+            log.notice("BUG: the msg() function failed to deliver a response: %s" % response)
+        except Queue.Empty:
+          # the empty() method is documented to not be fully reliable so this
+          # isn't entirely surprising
+          
+          break
+      
+      self._socket.send(message)
+      response = self._reply_queue.get()
+      
+      # If the message we received back had an exception then re-raise it to the
+      # caller. Otherwise return the response.
+      
+      if isinstance(response, stem.socket.ControllerError):
+        raise response
+      else:
+        return response
   
   def is_alive(self):
     """
@@ -189,11 +269,38 @@ class BaseController:
       self._status_listeners = new_listeners
       return is_changed
   
+  def _handle_event(self, event_message):
+    """
+    Callback to be overwritten by subclasses for event listening. This is
+    notified whenever we receive an event from the control socket.
+    
+    Arguments:
+      event_message (stem.socket.ControlMessage) - message received from the
+          control socket
+    """
+    
+    pass
+  
   def _connect(self):
+    self._launch_threads()
     self._notify_status_listeners(State.INIT, True)
     self._socket_connect()
   
   def _close(self):
+    # Our is_alive() state is now false. Our reader thread should already be
+    # awake from recv() raising a closure exception. Wake up the event thread
+    # too so it can end.
+    
+    self._event_cond.acquire()
+    self._event_cond.notifyAll()
+    self._event_cond.release()
+    
+    # joins on our threads if it's safe to do so
+    
+    for t in (self._reader_thread, self._event_thread):
+      if t and t.is_alive() and threading.current_thread() != t:
+        t.join()
+    
     self._notify_status_listeners(State.CLOSED, False)
     self._socket_close()
   
@@ -217,12 +324,10 @@ class BaseController:
                                   is_alive() state
     """
     
-    # Our socket's calles (the connect() and close() methods) already acquire
-    # these locks. However, our subclasses that use this method probably won't
-    # have them, so locking to prevent those from conflicting with each other
-    # and connect() / close().
+    # Any changes to our is_alive() state happen under the send lock, so we
+    # need to have it to ensure it doesn't change beneath us.
     
-    with self._socket._send_lock, self._socket._recv_lock, self._status_listeners_lock:
+    with self._socket._get_send_lock(), self._status_listeners_lock:
       change_timestamp = time.time()
       
       if expect_alive != None and expect_alive != self.is_alive():
@@ -230,7 +335,79 @@ class BaseController:
       
       for listener, spawn in self._status_listeners:
         if spawn:
-          thread.start_new_thread(listener, (self, state, change_timestamp))
+          name = "%s notification" % state
+          args = (self, state, change_timestamp)
+          
+          notice_thread = threading.Thread(target = listener, args = args, name = name)
+          notice_thread.setDaemon(True)
+          notice_thread.start()
         else:
           listener(self, state, change_timestamp)
+  
+  def _launch_threads(self):
+    """
+    Initializes daemon threads. Threads can't be reused so we need to recreate
+    them if we're restarted.
+    """
+    
+    # In theory concurrent calls could result in multple start() calls on a
+    # single thread, which would cause an unexpeceted exception. Best be safe.
+    
+    with self._socket._get_send_lock():
+      if not self._reader_thread or not self._reader_thread.is_alive():
+        self._reader_thread = threading.Thread(target = self._reader_loop, name = "Tor Listener")
+        self._reader_thread.setDaemon(True)
+        self._reader_thread.start()
+      
+      if not self._event_thread or not self._event_thread.is_alive():
+        self._event_thread = threading.Thread(target = self._event_loop, name = "Event Notifier")
+        self._event_thread.setDaemon(True)
+        self._event_thread.start()
+  
+  def _reader_loop(self):
+    """
+    Continually pulls from the control socket, directing the messages into
+    queues based on their type. Controller messages come in two varieties...
+    
+    - Responses to messages we've sent (GETINFO, SETCONF, etc).
+    - Asynchronous events, identified by a status code of 650.
+    """
+    
+    while self.is_alive():
+      try:
+        control_message = self._socket.recv()
+        
+        if control_message.content()[-1][0] == "650":
+          # asynchronous message, adds to the event queue and wakes up its handler
+          self._event_cond.acquire()
+          self._event_queue.put(control_message)
+          self._event_cond.notifyAll()
+          self._event_cond.release()
+        else:
+          # response to a msg() call
+          self._reply_queue.put(control_message)
+      except stem.socket.ControllerError, exc:
+        # Assume that all exceptions belong to the reader. This isn't always
+        # true, but the msg() call can do a better job of sorting it out.
+        #
+        # Be aware that the msg() method relies on this to unblock callers.
+        
+        self._reply_queue.put(exc)
+  
+  def _event_loop(self):
+    """
+    Continually pulls messages from the _event_queue and sends them to our
+    handle_event callback. This is done via its own thread so subclasses with a
+    lengthy handle_event implementation don't block further reading from the
+    socket.
+    """
+    
+    while self.is_alive():
+      try:
+        event_message = self._event_queue.get_nowait()
+        self._handle_event(event_message)
+      except Queue.Empty:
+        self._event_cond.acquire()
+        self._event_cond.wait()
+        self._event_cond.release()
 
