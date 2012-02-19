@@ -38,8 +38,6 @@ class TestBaseController(unittest.TestCase):
     Basic sanity check for the from_port constructor.
     """
     
-    self.skipTest("work in progress")
-    
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
       controller = stem.control.BaseController.from_port(control_port = test.runner.CONTROL_PORT)
       self.assertTrue(isinstance(controller, stem.control.BaseController))
@@ -51,20 +49,29 @@ class TestBaseController(unittest.TestCase):
     Basic sanity check for the from_socket_file constructor.
     """
     
-    self.skipTest("work in progress")
-    
     if test.runner.Torrc.SOCKET in test.runner.get_runner().get_options():
       controller = stem.control.BaseController.from_socket_file(test.runner.CONTROL_SOCKET_PATH)
       self.assertTrue(isinstance(controller, stem.control.BaseController))
     else:
       self.assertRaises(stem.socket.SocketError, stem.control.BaseController.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
   
+  def test_connect_repeatedly(self):
+    """
+    Connects and closes the socket repeatedly. This is a simple attempt to
+    trigger concurrency issues.
+    """
+    
+    with test.runner.get_runner().get_tor_socket() as control_socket:
+      controller = stem.control.BaseController(control_socket)
+      
+      for i in xrange(250):
+        controller.connect()
+        controller.close()
+  
   def test_msg(self):
     """
     Tests a basic query with the msg() method.
     """
-    
-    self.skipTest("work in progress")
     
     runner = test.runner.get_runner()
     with runner.get_tor_socket() as control_socket:
@@ -79,8 +86,6 @@ class TestBaseController(unittest.TestCase):
     Tests the msg() method against an invalid controller command.
     """
     
-    self.skipTest("work in progress")
-    
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
       response = controller.msg("invalid")
@@ -90,8 +95,6 @@ class TestBaseController(unittest.TestCase):
     """
     Tests the msg() method against a non-existant GETINFO option.
     """
-    
-    self.skipTest("work in progress")
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
@@ -103,8 +106,6 @@ class TestBaseController(unittest.TestCase):
     Checks basic functionality of the add_status_listener() and
     remove_status_listener() methods.
     """
-    
-    self.skipTest("work in progress")
     
     state_observer = StateObserver()
     

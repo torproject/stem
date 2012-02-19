@@ -99,7 +99,7 @@ class BaseController:
     self._reader_thread = None
     
     # thread to pull from the _event_queue and call handle_event
-    self._event_cond = threading.Condition()
+    self._event_notice = threading.Event()
     self._event_thread = None
     
     # saves our socket's prior _connect() and _close() methods so they can be
@@ -291,9 +291,7 @@ class BaseController:
     # awake from recv() raising a closure exception. Wake up the event thread
     # too so it can end.
     
-    self._event_cond.acquire()
-    self._event_cond.notifyAll()
-    self._event_cond.release()
+    self._event_notice.set()
     
     # joins on our threads if it's safe to do so
     
@@ -379,10 +377,8 @@ class BaseController:
         
         if control_message.content()[-1][0] == "650":
           # asynchronous message, adds to the event queue and wakes up its handler
-          self._event_cond.acquire()
           self._event_queue.put(control_message)
-          self._event_cond.notifyAll()
-          self._event_cond.release()
+          self._event_notice.set()
         else:
           # response to a msg() call
           self._reply_queue.put(control_message)
@@ -407,7 +403,6 @@ class BaseController:
         event_message = self._event_queue.get_nowait()
         self._handle_event(event_message)
       except Queue.Empty:
-        self._event_cond.acquire()
-        self._event_cond.wait()
-        self._event_cond.release()
+        self._event_notice.wait()
+        self._event_notice.clear()
 

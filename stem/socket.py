@@ -89,6 +89,9 @@ class ControlSocket:
     self._socket, self._socket_file = None, None
     self._is_alive = False
     
+    # indicates that we're in the midst of calling close()
+    self._handling_close = False
+    
     # Tracks sending and receiving separately. This should be safe, and doing
     # so prevents deadlock where we block writes because we're waiting to read
     # a message that isn't coming.
@@ -135,15 +138,22 @@ class ControlSocket:
         complete message
     """
     
-    try:
-      with self._recv_lock:
-        if not self.is_alive(): raise SocketClosed()
-        return recv_message(self._socket_file)
-    except SocketClosed, exc:
-      # if recv_message raises a SocketClosed then we should properly shut
-      # everything down
-      if self.is_alive(): self.close()
-      raise exc
+    with self._recv_lock:
+      try:
+        # makes a temporary reference to the _socket_file because connect()
+        # and close() may set or unset it
+        
+        socket_file = self._socket_file
+        
+        if not socket_file: raise SocketClosed()
+        return recv_message(socket_file)
+      except SocketClosed, exc:
+        # If recv_message raises a SocketClosed then we should properly shut
+        # everything down. However, if this was caused *from* a close call
+        # and it's joining on our thread then this would risk deadlock.
+        
+        if self.is_alive() and not self._handling_close: self.close()
+        raise exc
   
   def is_alive(self):
     """
@@ -197,6 +207,7 @@ class ControlSocket:
       # is causing our is_alive() state to change.
       
       is_change = self.is_alive()
+      self._handling_close = True
       
       if self._socket:
         # if we haven't yet established a connection then this raises an error
@@ -223,6 +234,8 @@ class ControlSocket:
       
       if is_change:
         self._close()
+      
+      self._handling_close = False
   
   def _get_send_lock(self):
     """
