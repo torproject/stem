@@ -4,6 +4,7 @@ Integration tests for the stem.control.BaseController class.
 
 import time
 import unittest
+import threading
 
 import stem.control
 import stem.socket
@@ -100,6 +101,39 @@ class TestBaseController(unittest.TestCase):
       controller = stem.control.BaseController(control_socket)
       response = controller.msg("GETINFO blarg")
       self.assertEquals('Unrecognized key "blarg"', str(response))
+  
+  def test_msg_repeatedly(self):
+    """
+    Connects, sends a burst of messages, and closes the socket repeatedly. This
+    is a simple attempt to trigger concurrency issues.
+    """
+    
+    with test.runner.get_runner().get_tor_socket() as control_socket:
+      controller = stem.control.BaseController(control_socket)
+      
+      def run_getinfo():
+        for i in xrange(150):
+          try:
+            controller.msg("GETINFO version")
+            controller.msg("GETINFO blarg")
+            controller.msg("blarg")
+          except stem.socket.ControllerError:
+            pass
+      
+      message_threads = []
+      
+      for i in xrange(5):
+        msg_thread = threading.Thread(target = run_getinfo)
+        message_threads.append(msg_thread)
+        msg_thread.setDaemon(True)
+        msg_thread.start()
+      
+      for i in xrange(100):
+        controller.connect()
+        controller.close()
+      
+      for msg_thread in message_threads:
+        msg_thread.join()
   
   def test_status_notifications(self):
     """

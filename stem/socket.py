@@ -202,12 +202,13 @@ class ControlSocket:
     Shuts down the socket. If it's already closed then this is a no-op.
     """
     
+    self._handling_close = True
+    
     with self._send_lock:
       # Function is idempotent with one exception: we notify _close() if this
       # is causing our is_alive() state to change.
       
       is_change = self.is_alive()
-      self._handling_close = True
       
       if self._socket:
         # if we haven't yet established a connection then this raises an error
