@@ -214,7 +214,12 @@ class Runner:
       test.output.print_noline("Shutting down tor... ", *STATUS_ATTR)
       
       if self._tor_process:
-        self._tor_process.kill()
+        # if the tor process has stopped on its own then the following raises
+        # an OSError ([Errno 3] No such process)
+        
+        try: self._tor_process.kill()
+        except OSError: pass
+        
         self._tor_process.communicate() # blocks until the process is done
       
       # if we've made a temporary data directory then clean it up
