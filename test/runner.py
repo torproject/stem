@@ -548,9 +548,6 @@ class Runner:
       
       runtime = time.time() - start_time
       test.output.print_line("  done (%i seconds)\n" % runtime, *STATUS_ATTR)
-    except KeyboardInterrupt:
-      test.output.print_line("  aborted starting tor: keyboard interrupt\n", *ERROR_ATTR)
-      raise OSError("keyboard interrupt")
     except OSError, exc:
       test.output.print_line("  failed to start tor: %s\n" % exc, *ERROR_ATTR)
       raise exc

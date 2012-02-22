@@ -69,6 +69,8 @@ Target = stem.util.enum.UppercaseEnum(
 
 DEFAULT_RUN_TARGET = Target.RUN_OPEN
 
+ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
+
 # Tests are ordered by the dependencies so the lowest level tests come first.
 # This is because a problem in say, controller message parsing, will cause all
 # higher level tests to fail too. Hence we want the test that most narrowly
@@ -302,6 +304,9 @@ if __name__ == '__main__':
           print
           
           test.output.print_logging(logging_buffer)
+      except KeyboardInterrupt:
+        test.output.print_line("  aborted starting tor: keyboard interrupt\n", *ERROR_ATTR)
+        break
       except OSError:
         pass
       finally:
