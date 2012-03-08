@@ -24,6 +24,7 @@ Instance Constructors
 import inspect
 import itertools
 import StringIO
+import __builtin__
 
 import stem.connection
 import stem.socket
@@ -37,6 +38,8 @@ MOCK_ID = itertools.count(0)
 # mock_id => (module, function_name, original_function)
 
 MOCK_STATE = {}
+
+BUILTIN_TYPE = type(open)
 
 def no_op():
   def _no_op(*args): pass
@@ -54,6 +57,19 @@ def raise_exception(exception):
   def _raise(*args): raise exception
   return _raise
 
+def support_with(obj):
+  """
+  Provides no-op support for the 'with' keyword, adding __enter__ and __exit__
+  methods to the object. The __enter__ provides the object itself and __exit__
+  does nothing.
+  
+  Arguments:
+    obj (object) - object to support the 'with' keyword
+  """
+  
+  obj.__dict__["__enter__"] = return_value(obj)
+  obj.__dict__["__exit__"] = no_op()
+
 def mock(target, mock_call):
   """
   Mocks the given function, saving the initial implementation so it can be
@@ -63,6 +79,24 @@ def mock(target, mock_call):
     target (function)   - function to be mocked
     mock_call (functor) - mocking to replace the function with
   """
+  
+  # Builtin functions need special care because the builtin_function_or_method
+  # type lacks the normal '__dict__'.
+  
+  if isinstance(target, BUILTIN_TYPE):
+    # check if we have already mocked this function
+    target_function = target.__name__
+    is_mocked = False
+    
+    for module, function_name, _ in MOCK_STATE.values():
+      if module == __builtin__ and function_name == target_function:
+        is_mocked = True
+    
+    if not is_mocked:
+      MOCK_STATE[MOCK_ID.next()] = (__builtin__, target_function, target)
+    
+    setattr(__builtin__, target.__name__, mock_call)
+    return
   
   if "mock_id" in target.__dict__:
     # we're overriding an already mocked function
@@ -130,7 +164,12 @@ def revert_mocking():
   
   for mock_id in mock_ids:
     module, function, impl = MOCK_STATE[mock_id]
-    module.__dict__[function] = impl
+    
+    if module == __builtin__:
+      setattr(__builtin__, function, impl)
+    else:
+      module.__dict__[function] = impl
+    
     del MOCK_STATE[mock_id]
   
   MOCK_STATE.clear()
