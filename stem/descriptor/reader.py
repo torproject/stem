@@ -16,7 +16,7 @@ Example:
 """
 
 import os
-import theading
+import threading
 import mimetypes
 import Queue
 
