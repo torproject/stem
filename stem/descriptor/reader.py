@@ -81,7 +81,10 @@ def save_processed_files(processed_files, path):
   
   with open(path, "w") as output_file:
     for path, timestamp in processed_files.items():
-      output_file.write("%s %i" % (path, timestamp))
+      if not os.path.isabs(path):
+        raise TypeError("Only absolute paths are acceptable: %s" % path)
+      
+      output_file.write("%s %i\n" % (path, timestamp))
 
 class DescriptorReader(threading.Thread):
   """
