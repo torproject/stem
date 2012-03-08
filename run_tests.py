@@ -17,6 +17,7 @@ import test.unit.connection.authentication
 import test.unit.connection.protocolinfo
 import test.unit.socket.control_line
 import test.unit.socket.control_message
+import test.unit.descriptor.reader
 import test.unit.util.conf
 import test.unit.util.enum
 import test.unit.util.system
@@ -80,6 +81,7 @@ UNIT_TESTS = (
   test.unit.util.enum.TestEnum,
   test.unit.util.conf.TestConf,
   test.unit.util.system.TestSystem,
+  test.unit.descriptor.reader.TestDescriptorReader,
   test.unit.version.TestVersion,
   test.unit.socket.control_message.TestControlMessage,
   test.unit.socket.control_line.TestControlLine,
