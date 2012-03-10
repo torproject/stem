@@ -14,6 +14,9 @@ BASIC_LISTING = """
 /file with spaces/and \\ stuff 890
 """
 
+my_dir = os.path.dirname(__file__)
+DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
+
 def _get_processed_files_path():
   return os.path.join(test.runner.get_runner().get_test_dir(), "descriptor_processed_files")
 
@@ -101,4 +104,16 @@ class TestDescriptorReader(unittest.TestCase):
     
     for listing in (missing_filename, relative_filename, string_timestamp):
       self.assertRaises(TypeError, stem.descriptor.reader.save_processed_files, listing, "/tmp/foo")
+  
+  def test_basic_example(self):
+    """
+    Exercises something similar to the first example in the header
+    documentation, checking that the contetns match the actual file.
+    """
+    
+    reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
+    
+    with reader:
+      for descriptor in reader:
+        print descriptor # TODO: change to be an automated check
 
