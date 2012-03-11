@@ -122,20 +122,23 @@ class TestDescriptorReader(unittest.TestCase):
     with open(descriptor_path) as descriptor_file:
       descriptor_entries.append(descriptor_file.read())
     
-    reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
-    
-    with reader:
-      for descriptor in reader:
-        descriptor_str = str(descriptor)
-        
-        if descriptor_str in descriptor_entries:
-          descriptor_entries.remove(descriptor_str)
-        else:
-          # iterator is providing output that we didn't expect
-          self.fail()
-    
-    # check that we've seen all of the descriptor_entries
-    self.assertTrue(len(descriptor_entries) == 0)
+    # running this test multiple times to flush out concurrency issues
+    for i in xrange(15):
+      reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
+      remaining_entries = list(descriptor_entries)
+      
+      with reader:
+        for descriptor in reader:
+          descriptor_str = str(descriptor)
+          
+          if descriptor_str in remaining_entries:
+            remaining_entries.remove(descriptor_str)
+          else:
+            # iterator is providing output that we didn't expect
+            self.fail()
+      
+      # check that we've seen all of the descriptor_entries
+      self.assertTrue(len(remaining_entries) == 0)
   
   def test_stop(self):
     """

@@ -287,7 +287,7 @@ class DescriptorReader(threading.Thread):
           yield self._unreturned_descriptors.get_nowait()
         except Queue.Empty:
           # if we've finished and there aren't any descriptors then we're done
-          if not self._is_reading.isSet(): break
+          if not self._is_reading.isSet() and self._unreturned_descriptors.empty(): break
           
           self._iter_notice.wait()
           self._iter_notice.clear()
