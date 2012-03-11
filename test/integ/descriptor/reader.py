@@ -162,4 +162,26 @@ class TestDescriptorReader(unittest.TestCase):
     reader.stop()
     reader.join()
     is_test_running = False
+  
+  def test_get_processed_files(self):
+    """
+    Checks that get_processed_files() provides the expected results after
+    iterating over our test data.
+    """
+    
+    expected_results = {}
+    
+    for root, _, files in os.walk(DESCRIPTOR_TEST_DATA):
+      for filename in files:
+        path = os.path.join(root, filename)
+        last_modified = os.stat(path).st_mtime
+        expected_results[path] = last_modified
+    
+    reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
+    
+    with reader:
+      for descriptor in reader:
+        pass
+    
+    self.assertEquals(expected_results, reader.get_processed_files())
 
