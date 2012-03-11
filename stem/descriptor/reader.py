@@ -69,6 +69,12 @@ import Queue
 # - restarting when __iter__ is called additional times
 # - maximum read-ahead
 
+# TODO: Remianing impementation items...
+# - integ test that we skip the 'processed files' items
+# - impelment skip listening and add a test for it
+# - remove start and join methods from header?
+# - implement gzip and bz2 reading
+
 # Maximum number of descriptors that we'll read ahead before waiting for our
 # caller to fetch some of them. This is included to avoid unbounded memory
 # usage. This condition will be removed if set to zero.
@@ -160,6 +166,7 @@ class DescriptorReader(threading.Thread):
     
     self._iter_lock = threading.RLock()
     self._iter_notice = threading.Event()
+    self._is_reading = threading.Event()
     
     # files or directories that remain to be read
     self._remaining_files = list(self._targets)
@@ -226,6 +233,8 @@ class DescriptorReader(threading.Thread):
     self._iter_notice.set()
   
   def run(self):
+    self._is_reading.set()
+    
     while self._remaining_files and not self._stop_called.isSet():
       target = self._remaining_files.pop(0)
       if not os.path.exists(target): continue
@@ -262,6 +271,7 @@ class DescriptorReader(threading.Thread):
           
           with open(target) as target_file:
             # TODO: replace with actual descriptor parsing when we have it
+            # TODO: impement skip listening
             self._unreturned_descriptors.put(target_file.read())
             self._iter_notice.set()
         elif target_type[0] == 'application/x-tar':
@@ -270,7 +280,7 @@ class DescriptorReader(threading.Thread):
           elif target_type[1] == 'bzip2':
             pass # TODO: implement
     
-    self._finished_reading.set()
+    self._is_reading.clear()
     self._iter_notice.set()
   
   def __iter__(self):
@@ -280,7 +290,7 @@ class DescriptorReader(threading.Thread):
           yield self._unreturned_descriptors.get_nowait()
         except Queue.Empty:
           # if we've finished and there aren't any descriptors then we're done
-          if self._finished_reading.isSet(): break
+          if not self._is_reading.isSet(): break
           
           self._iter_notice.wait()
           self._iter_notice.clear()
