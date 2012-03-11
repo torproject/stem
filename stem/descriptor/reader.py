@@ -108,10 +108,13 @@ class ReadFailed(FileSkipped):
   "An IOError occured while trying to read the file."
   
   def __init__(self, read_exception):
-    self.exception = exception
+    self.exception = read_exception
 
 class FileMissing(ReadFailed):
   "File does not exist."
+  
+  def __init__(self):
+    ReadFailed.__init__(self, None)
 
 def load_processed_files(path):
   """

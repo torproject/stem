@@ -249,4 +249,25 @@ class TestDescriptorReader(unittest.TestCase):
     
     if os.path.exists(test_path):
       os.remove(test_path)
+  
+  def test_skip_listener_file_missing(self):
+    """
+    Listens for a file that's skipped because the file doesn't exist.
+    """
+    
+    test_path = "/foo/bar/doesn't_exist"
+    
+    skip_listener = SkipListener()
+    reader = stem.descriptor.reader.DescriptorReader([test_path])
+    reader.register_skip_listener(skip_listener.listener)
+    
+    with reader:
+      for descriptor in reader:
+        pass
+    
+    self.assertTrue(len(skip_listener.results) == 1)
+    
+    skipped_path, skip_exception = skip_listener.results[0]
+    self.assertEqual(test_path, skipped_path)
+    self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.FileMissing))
 
