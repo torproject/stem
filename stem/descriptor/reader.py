@@ -151,34 +151,29 @@ class DescriptorReader(threading.Thread):
   """
   Iterator for the descriptor data on the local file system. This can process
   text files, tarball archives (gzip or bzip2), or recurse directories.
+  
+  Arguments:
+    targets (list)      - paths for files or directories to be read from
+    follow_links (bool) - determines if we'll follow symlinks when transversing
+                          directories
   """
   
   def __init__(self, targets, follow_links = False):
     threading.Thread.__init__(self, name="Descriptor Reader")
     self.setDaemon(True)
     
-    # flag to indicate if we'll follow symlinks when transversing directories
-    self._follow_links = follow_links
-    
     self._targets = targets
+    self._follow_links = follow_links
     self._skip_listeners = []
     self._processed_files = {}
     
     self._iter_lock = threading.RLock()
     self._iter_notice = threading.Event()
     self._is_reading = threading.Event()
-    
-    # files or directories that remain to be read
-    self._remaining_files = list(self._targets)
+    self._is_stopped = threading.Event()
     
     # descriptors that we have read, but not yet provided to the caller
     self._unreturned_descriptors = Queue.Queue()
-    
-    # flag that's set when stop() is called
-    self._stop_called = threading.Event()
-    
-    # flag that's set when we're out of descriptor files to read
-    self._finished_reading = threading.Event()
   
   def get_processed_files(self):
     """
@@ -229,24 +224,25 @@ class DescriptorReader(threading.Thread):
     Stops further reading of descriptor files.
     """
     
-    self._stop_called.set()
+    self._is_stopped.set()
     self._iter_notice.set()
   
   def run(self):
     self._is_reading.set()
+    remaining_files = list(self._targets)
     
-    while self._remaining_files and not self._stop_called.isSet():
-      target = self._remaining_files.pop(0)
+    while remaining_files and not self._is_stopped.isSet():
+      target = remaining_files.pop(0)
       if not os.path.exists(target): continue
       
       if os.path.isdir(target):
         # adds all of the files that it contains
         for root, _, files in os.walk(target, followlinks = self._follow_links):
           for filename in files:
-            self._remaining_files.append(os.path.join(root, filename))
+            remaining_files.append(os.path.join(root, filename))
           
           # this can take a while if, say, we're including the root directory
-          if self._stop_called.isSet(): break
+          if self._is_stopped.isSet(): break
       else:
         # This is a file. Register it's last modified timestamp and check if
         # it's a file that we should skip.
@@ -285,7 +281,7 @@ class DescriptorReader(threading.Thread):
   
   def __iter__(self):
     with self._iter_lock:
-      while not self._stop_called.isSet():
+      while not self._is_stopped.isSet():
         try:
           yield self._unreturned_descriptors.get_nowait()
         except Queue.Empty:
