@@ -3,6 +3,7 @@ Integration tests for stem.descriptor.reader.
 """
 
 import os
+import sys
 import time
 import signal
 import unittest
@@ -187,4 +188,27 @@ class TestDescriptorReader(unittest.TestCase):
         pass
     
     self.assertEquals(expected_results, reader.get_processed_files())
+  
+  def test_set_processed_files(self):
+    """
+    Checks that calling set_processed_files() prior to reading makes us skip
+    those files.
+    """
+    
+    # path and file contents that we want the DescriptorReader to skip
+    skip_file = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    
+    with open(skip_file) as descriptor_file:
+      skip_contents = descriptor_file.read()
+    
+    initial_processed_files = {skip_file: sys.maxint}
+    
+    reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
+    reader.set_processed_files(initial_processed_files)
+    self.assertEquals(initial_processed_files, reader.get_processed_files())
+    
+    with reader:
+      for descriptor in reader:
+        if str(descriptor) == skip_contents:
+          self.fail() # we read the file that we were trying to skip
 
