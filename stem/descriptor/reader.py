@@ -185,11 +185,12 @@ class DescriptorReader(threading.Thread):
     This includes entries set through the set_processed_files() method.
     
     Returns:
-      dict with the paths and unix timestamp for the last modified times of the
-      files we have processed
+      dict with the absolute paths and unix timestamp for the last modified
+      times of the files we have processed
     """
     
-    return dict(self._processed_files)
+    # make sure that we only provide back absolute paths
+    return dict((os.path.abspath(k), v) for (k, v) in self._processed_files.items())
   
   def set_processed_files(self, processed_files):
     """
