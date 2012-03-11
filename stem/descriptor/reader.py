@@ -58,6 +58,12 @@ DescriptorReader - Iterator for descriptor data on the local file system.
   |- join - joins on the thread used to process descriptor data
   |- __enter__ / __exit__ - manages the descriptor reader thread in the context
   +- __iter__ - iterates over descriptor data in unread files
+
+FileSkipped - Base exception for a file that was skipped.
+  |- ParsingFailure - Contents can't be parsed as descriptor data.
+  |- UnrecognizedType - File extension indicates non-descriptor data.
+  +- ReadFailed - Wraps an error that was raised while reading the file.
+     +- FileMissing - File does not exist.
 """
 
 import os
@@ -70,7 +76,6 @@ import Queue
 # - maximum read-ahead
 
 # TODO: Remianing impementation items...
-# - integ test that we skip the 'processed files' items
 # - impelment skip listening and add a test for it
 # - remove start and join methods from header?
 # - implement gzip and bz2 reading
@@ -83,6 +88,30 @@ MAX_STORED_DESCRIPTORS = 20
 
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = "DONE"
+
+class FileSkipped(Exception):
+  "Base error when we can't provide descriptor data from a file."
+
+class ParsingFailure(FileSkipped):
+  "File contents could not be parsed as descriptor data."
+  
+  def __init__(self, parsing_exception):
+    self.exception = parsing_exception
+
+class UnrecognizedType(FileSkipped):
+  "File's mime type indicates that it isn't descriptor data."
+  
+  def __init__(self, mime_type):
+    self.mime_type = mime_type
+
+class ReadFailed(FileSkipped):
+  "An IOError occured while trying to read the file."
+  
+  def __init__(self, read_exception):
+    self.exception = exception
+
+class FileMissing(ReadFailed):
+  "File does not exist."
 
 def load_processed_files(path):
   """
@@ -237,7 +266,10 @@ class DescriptorReader(threading.Thread):
     
     while remaining_files and not self._is_stopped.is_set():
       target = remaining_files.pop(0)
-      if not os.path.exists(target): continue
+      
+      if not os.path.exists(target):
+        self._notify_skip_listeners(target, FileMissing())
+        continue
       
       if os.path.isdir(target):
         # adds all of the files that it contains
@@ -266,19 +298,14 @@ class DescriptorReader(threading.Thread):
         target_type = mimetypes.guess_type(target)
         
         if target_type[0] in (None, 'text/plain'):
-          # if either a '.txt' or unknown type then try to process it as a
-          # descriptor file
-          
-          with open(target) as target_file:
-            # TODO: replace with actual descriptor parsing when we have it
-            # TODO: impement skip listening
-            self._unreturned_descriptors.put(target_file.read())
-            self._iter_notice.set()
-        elif target_type[0] == 'application/x-tar':
-          if target_type[1] == 'gzip':
-            pass # TODO: implement
-          elif target_type[1] == 'bzip2':
-            pass # TODO: implement
+          # either '.txt' or an unknown type
+          self._handle_descriptor_file(target)
+        elif target_type == ('application/x-tar', 'gzip'):
+          self._handle_archive_gzip(target)
+        elif target_type == ('application/x-tar', 'bzip2'):
+          self._handle_archive_gzip(target)
+        else:
+          self._notify_skip_listeners(target, UnrecognizedType(target_type))
     
     self._unreturned_descriptors.put(FINISHED)
     self._iter_notice.set()
@@ -295,7 +322,22 @@ class DescriptorReader(threading.Thread):
           self._iter_notice.wait()
           self._iter_notice.clear()
   
-  def _notify_skip_listener(self, path, exception):
+  def _handle_descriptor_file(self, target):
+    try:
+      # TODO: replace with actual descriptor parsing when we have it
+      target_file = open(target)
+      self._unreturned_descriptors.put(target_file.read())
+      self._iter_notice.set()
+    except IOError, exc:
+      self._notify_skip_listeners(target, ReadFailed(exc))
+  
+  def _handle_archive_gzip(self, target):
+    pass # TODO: implement
+  
+  def _handle_archive_bzip(self, target):
+    pass # TODO: implement
+  
+  def _notify_skip_listeners(self, path, exception):
     for listener in self.skip_listeners:
       listener(path, exception)
   
