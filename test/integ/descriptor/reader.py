@@ -3,6 +3,8 @@ Integration tests for stem.descriptor.reader.
 """
 
 import os
+import time
+import signal
 import unittest
 
 import stem.descriptor.reader
@@ -134,4 +136,30 @@ class TestDescriptorReader(unittest.TestCase):
     
     # check that we've seen all of the descriptor_entries
     self.assertTrue(len(descriptor_entries) == 0)
+  
+  def test_stop(self):
+    """
+    Runs a DescriptorReader over the root directory, then checks that calling
+    stop() makes it terminate in a timely fashion.
+    """
+    
+    is_test_running = True
+    reader = stem.descriptor.reader.DescriptorReader(["/"])
+    
+    # Fails the test after a couple seconds if we don't finish successfully.
+    # Depending on what we're blocked on this might not work when the test
+    # fails, requiring that we give a manual kill to the test.
+    
+    def timeout_handler(signum, frame):
+      if is_test_running:
+        self.fail()
+    
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(2)
+    
+    reader.start()
+    time.sleep(0.1)
+    reader.stop()
+    reader.join()
+    is_test_running = False
 
