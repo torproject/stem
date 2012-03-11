@@ -37,6 +37,13 @@ def _make_processed_files_listing(contents):
   
   return test_listing_path
 
+class SkipListener:
+  def __init__(self):
+    self.results = [] # (path, exception) tuples that we've received
+  
+  def listener(self, path, exception):
+    self.results.append((path, exception))
+
 class TestDescriptorReader(unittest.TestCase):
   def tearDown(self):
     # cleans up 'processed file' listings that we made
@@ -211,4 +218,35 @@ class TestDescriptorReader(unittest.TestCase):
       for descriptor in reader:
         if str(descriptor) == skip_contents:
           self.fail() # we read the file that we were trying to skip
+  
+  def test_skip_listener_unrecognized_type(self):
+    """
+    Listens for a file that's skipped because its file type isn't recognized.
+    """
+    
+    # types are solely based on file extensions so making something that looks
+    # like an png image
+    
+    test_path = os.path.join(test.runner.get_runner().get_test_dir(), "test.png")
+    
+    with open(test_path, "w") as test_file:
+      test_file.write("test data for test_skip_listener_unrecognized_type()")
+    
+    skip_listener = SkipListener()
+    reader = stem.descriptor.reader.DescriptorReader([test_path])
+    reader.register_skip_listener(skip_listener.listener)
+    
+    with reader:
+      for descriptor in reader:
+        pass
+    
+    self.assertTrue(len(skip_listener.results) == 1)
+    
+    skipped_path, skip_exception = skip_listener.results[0]
+    self.assertEqual(test_path, skipped_path)
+    self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
+    self.assertEqual(("image/png", None), skip_exception.mime_type)
+    
+    if os.path.exists(test_path):
+      os.remove(test_path)
 

@@ -338,7 +338,7 @@ class DescriptorReader(threading.Thread):
     pass # TODO: implement
   
   def _notify_skip_listeners(self, path, exception):
-    for listener in self.skip_listeners:
+    for listener in self._skip_listeners:
       listener(path, exception)
   
   def __enter__(self):
