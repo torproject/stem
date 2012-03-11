@@ -108,12 +108,30 @@ class TestDescriptorReader(unittest.TestCase):
   def test_basic_example(self):
     """
     Exercises something similar to the first example in the header
-    documentation, checking that the contetns match the actual file.
+    documentation, checking that some of the contents match what we'd expect.
     """
+    
+    # snag some of the plaintext descriptors so we can later make sure that we
+    # iterate over them
+    
+    descriptor_entries = []
+    
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    with open(descriptor_path) as descriptor_file:
+      descriptor_entries.append(descriptor_file.read())
     
     reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
     
     with reader:
       for descriptor in reader:
-        print descriptor # TODO: change to be an automated check
+        descriptor_str = str(descriptor)
+        
+        if descriptor_str in descriptor_entries:
+          descriptor_entries.remove(descriptor_str)
+        else:
+          # iterator is providing output that we didn't expect
+          self.fail()
+    
+    # check that we've seen all of the descriptor_entries
+    self.assertTrue(len(descriptor_entries) == 0)
 

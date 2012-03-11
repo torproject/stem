@@ -171,6 +171,7 @@ class DescriptorReader(threading.Thread):
     # TODO: implement
     # flag that's set when we're done
     self._stop_event = threading.Event()
+    self._finished_reading = threading.Event()
   
   def get_processed_files(self):
     """
@@ -266,9 +267,7 @@ class DescriptorReader(threading.Thread):
           elif target_type[1] == 'bzip2':
             pass # TODO: implement
     
-    # TODO: bug: __iter__ should finish with the _unreturned_descriptors
-    # contents. Could be fixed by adding a 'is done reading' event.
-    self._stop_event.set()
+    self._finished_reading.set()
     self._iter_notice.set()
   
   def __iter__(self):
@@ -277,6 +276,9 @@ class DescriptorReader(threading.Thread):
         try:
           yield self._unreturned_descriptors.get_nowait()
         except Queue.Empty:
+          # if we've finished and there aren't any descriptors then we're done
+          if self._finished_reading.isSet(): break
+          
           self._iter_notice.wait()
           self._iter_notice.clear()
   
