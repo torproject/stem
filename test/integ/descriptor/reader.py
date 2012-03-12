@@ -232,23 +232,24 @@ class TestDescriptorReader(unittest.TestCase):
     with open(test_path, "w") as test_file:
       test_file.write("test data for test_skip_listener_unrecognized_type()")
     
-    skip_listener = SkipListener()
-    reader = stem.descriptor.reader.DescriptorReader([test_path])
-    reader.register_skip_listener(skip_listener.listener)
-    
-    with reader:
-      for descriptor in reader:
-        pass
-    
-    self.assertTrue(len(skip_listener.results) == 1)
-    
-    skipped_path, skip_exception = skip_listener.results[0]
-    self.assertEqual(test_path, skipped_path)
-    self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
-    self.assertEqual(("image/png", None), skip_exception.mime_type)
-    
-    if os.path.exists(test_path):
-      os.remove(test_path)
+    try:
+      skip_listener = SkipListener()
+      reader = stem.descriptor.reader.DescriptorReader([test_path])
+      reader.register_skip_listener(skip_listener.listener)
+      
+      with reader:
+        for descriptor in reader:
+          pass
+      
+      self.assertTrue(len(skip_listener.results) == 1)
+      
+      skipped_path, skip_exception = skip_listener.results[0]
+      self.assertEqual(test_path, skipped_path)
+      self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
+      self.assertEqual(("image/png", None), skip_exception.mime_type)
+    finally:
+      if os.path.exists(test_path):
+        os.remove(test_path)
   
   def test_skip_listener_read_failure(self):
     """
@@ -262,23 +263,24 @@ class TestDescriptorReader(unittest.TestCase):
     
     os.chmod(test_path, 0077) # remove read permissions
     
-    skip_listener = SkipListener()
-    reader = stem.descriptor.reader.DescriptorReader([test_path])
-    reader.register_skip_listener(skip_listener.listener)
-    
-    with reader:
-      for descriptor in reader:
-        pass
-    
-    self.assertTrue(len(skip_listener.results) == 1)
-    
-    skipped_path, skip_exception = skip_listener.results[0]
-    self.assertEqual(test_path, skipped_path)
-    self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.ReadFailed))
-    self.assertTrue(isinstance(skip_exception.exception, IOError))
-    
-    if os.path.exists(test_path):
-      os.remove(test_path)
+    try:
+      skip_listener = SkipListener()
+      reader = stem.descriptor.reader.DescriptorReader([test_path])
+      reader.register_skip_listener(skip_listener.listener)
+      
+      with reader:
+        for descriptor in reader:
+          pass
+      
+      self.assertTrue(len(skip_listener.results) == 1)
+      
+      skipped_path, skip_exception = skip_listener.results[0]
+      self.assertEqual(test_path, skipped_path)
+      self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.ReadFailed))
+      self.assertTrue(isinstance(skip_exception.exception, IOError))
+    finally:
+      if os.path.exists(test_path):
+        os.remove(test_path)
   
   def test_skip_listener_file_missing(self):
     """
