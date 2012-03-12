@@ -59,6 +59,7 @@ DescriptorReader - Iterator for descriptor data on the local file system.
   +- __iter__ - iterates over descriptor data in unread files
 
 FileSkipped - Base exception for a file that was skipped.
+  |- AlreadyRead - We've already read a file with this last modified timestamp.
   |- ParsingFailure - Contents can't be parsed as descriptor data.
   |- UnrecognizedType - File extension indicates non-descriptor data.
   +- ReadFailed - Wraps an error that was raised while reading the file.
@@ -85,6 +86,13 @@ FINISHED = "DONE"
 
 class FileSkipped(Exception):
   "Base error when we can't provide descriptor data from a file."
+
+class AlreadyRead(FileSkipped):
+  "Already read a file with this 'last modified' timestamp or later."
+  
+  def __init__(self, last_modified, last_modified_when_read):
+    self.last_modified = last_modified
+    self.last_modified_when_read = last_modified_when_read
 
 class ParsingFailure(FileSkipped):
   "File contents could not be parsed as descriptor data."
@@ -306,6 +314,7 @@ class DescriptorReader:
         last_used = self._processed_files.get(target)
         
         if last_used and last_used >= last_modified:
+          self._notify_skip_listeners(target, AlreadyRead(last_modified, last_used))
           continue
         else:
           self._processed_files[target] = last_modified

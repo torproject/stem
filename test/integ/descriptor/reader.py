@@ -217,28 +217,31 @@ class TestDescriptorReader(unittest.TestCase):
     
     self.assertEquals(expected_results, reader.get_processed_files())
   
-  def test_set_processed_files(self):
+  def test_skip_listener_already_read(self):
     """
     Checks that calling set_processed_files() prior to reading makes us skip
-    those files.
+    those files. This also doubles for testing that skip listeners are notified
+    of files that we've already read.
     """
     
-    # path and file contents that we want the DescriptorReader to skip
-    skip_file = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    # path that we want the DescriptorReader to skip
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    initial_processed_files = {test_path: sys.maxint}
     
-    with open(skip_file) as descriptor_file:
-      skip_contents = descriptor_file.read()
-    
-    initial_processed_files = {skip_file: sys.maxint}
-    
+    skip_listener = SkipListener()
     reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
+    reader.register_skip_listener(skip_listener.listener)
     reader.set_processed_files(initial_processed_files)
-    self.assertEquals(initial_processed_files, reader.get_processed_files())
     
-    with reader:
-      for descriptor in reader:
-        if str(descriptor) == skip_contents:
-          self.fail() # we read the file that we were trying to skip
+    self.assertEquals(initial_processed_files, reader.get_processed_files())
+    with reader: list(reader) # iterates over all of the descriptors
+    
+    self.assertTrue(len(skip_listener.results) == 1)
+    
+    skipped_path, skip_exception = skip_listener.results[0]
+    self.assertEqual(test_path, skipped_path)
+    self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.AlreadyRead))
+    self.assertEqual(sys.maxint, skip_exception.last_modified_when_read)
   
   def test_skip_listener_unrecognized_type(self):
     """
