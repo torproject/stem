@@ -213,10 +213,7 @@ class TestDescriptorReader(unittest.TestCase):
         expected_results[path] = last_modified
     
     reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
-    
-    with reader:
-      for descriptor in reader:
-        pass
+    with reader: list(reader) # iterates over all of the descriptors
     
     self.assertEquals(expected_results, reader.get_processed_files())
   
@@ -260,10 +257,7 @@ class TestDescriptorReader(unittest.TestCase):
       skip_listener = SkipListener()
       reader = stem.descriptor.reader.DescriptorReader([test_path])
       reader.register_skip_listener(skip_listener.listener)
-      
-      with reader:
-        for descriptor in reader:
-          pass
+      with reader: list(reader) # iterates over all of the descriptors
       
       self.assertTrue(len(skip_listener.results) == 1)
       
@@ -291,10 +285,7 @@ class TestDescriptorReader(unittest.TestCase):
       skip_listener = SkipListener()
       reader = stem.descriptor.reader.DescriptorReader([test_path])
       reader.register_skip_listener(skip_listener.listener)
-      
-      with reader:
-        for descriptor in reader:
-          pass
+      with reader: list(reader) # iterates over all of the descriptors
       
       self.assertTrue(len(skip_listener.results) == 1)
       
@@ -316,10 +307,7 @@ class TestDescriptorReader(unittest.TestCase):
     skip_listener = SkipListener()
     reader = stem.descriptor.reader.DescriptorReader([test_path])
     reader.register_skip_listener(skip_listener.listener)
-    
-    with reader:
-      for descriptor in reader:
-        pass
+    with reader: list(reader) # iterates over all of the descriptors
     
     self.assertTrue(len(skip_listener.results) == 1)
     
