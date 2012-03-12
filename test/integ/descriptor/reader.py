@@ -158,20 +158,20 @@ class TestDescriptorReader(unittest.TestCase):
     reader = stem.descriptor.reader.DescriptorReader([descriptor_path])
     
     with reader:
-      self.assertEquals(len(list(reader)), 1)
+      self.assertEquals(1, len(list(reader)))
     
     # run it a second time, this shouldn't provide any descriptors because we
     # have already read it
     
     with reader:
-      self.assertEquals(len(list(reader)), 0)
+      self.assertEquals(0, len(list(reader)))
     
     # clear the DescriptorReader's memory of seeing the file and run it again
     
     reader.set_processed_files([])
     
     with reader:
-      self.assertEquals(len(list(reader)), 1)
+      self.assertEquals(1, len(list(reader)))
   
   def test_stop(self):
     """
@@ -236,7 +236,7 @@ class TestDescriptorReader(unittest.TestCase):
     self.assertEquals(initial_processed_files, reader.get_processed_files())
     with reader: list(reader) # iterates over all of the descriptors
     
-    self.assertTrue(len(skip_listener.results) == 1)
+    self.assertTrue(1, len(skip_listener.results))
     
     skipped_path, skip_exception = skip_listener.results[0]
     self.assertEqual(test_path, skipped_path)
@@ -253,16 +253,17 @@ class TestDescriptorReader(unittest.TestCase):
     
     test_path = os.path.join(test.runner.get_runner().get_test_dir(), "test.png")
     
-    with open(test_path, "w") as test_file:
-      test_file.write("test data for test_skip_listener_unrecognized_type()")
-    
     try:
+      test_file = open(test_path, "w")
+      test_file.write("test data for test_skip_listener_unrecognized_type()")
+      test_file.close()
+      
       skip_listener = SkipListener()
       reader = stem.descriptor.reader.DescriptorReader([test_path])
       reader.register_skip_listener(skip_listener.listener)
       with reader: list(reader) # iterates over all of the descriptors
       
-      self.assertTrue(len(skip_listener.results) == 1)
+      self.assertTrue(1, len(skip_listener.results))
       
       skipped_path, skip_exception = skip_listener.results[0]
       self.assertEqual(test_path, skipped_path)
@@ -279,18 +280,19 @@ class TestDescriptorReader(unittest.TestCase):
     
     test_path = os.path.join(test.runner.get_runner().get_test_dir(), "secret_file")
     
-    with open(test_path, "w") as test_file:
-      test_file.write("test data for test_skip_listener_unrecognized_type()")
-    
-    os.chmod(test_path, 0077) # remove read permissions
-    
     try:
+      test_file = open(test_path, "w")
+      test_file.write("test data for test_skip_listener_unrecognized_type()")
+      test_file.close()
+      
+      os.chmod(test_path, 0077) # remove read permissions
+      
       skip_listener = SkipListener()
       reader = stem.descriptor.reader.DescriptorReader([test_path])
       reader.register_skip_listener(skip_listener.listener)
       with reader: list(reader) # iterates over all of the descriptors
       
-      self.assertTrue(len(skip_listener.results) == 1)
+      self.assertTrue(1, len(skip_listener.results))
       
       skipped_path, skip_exception = skip_listener.results[0]
       self.assertEqual(test_path, skipped_path)
@@ -305,14 +307,14 @@ class TestDescriptorReader(unittest.TestCase):
     Listens for a file that's skipped because the file doesn't exist.
     """
     
-    test_path = "/foo/bar/doesn't_exist"
+    test_path = "/non-existant/path"
     
     skip_listener = SkipListener()
     reader = stem.descriptor.reader.DescriptorReader([test_path])
     reader.register_skip_listener(skip_listener.listener)
     with reader: list(reader) # iterates over all of the descriptors
     
-    self.assertTrue(len(skip_listener.results) == 1)
+    self.assertTrue(1, len(skip_listener.results))
     
     skipped_path, skip_exception = skip_listener.results[0]
     self.assertEqual(test_path, skipped_path)
