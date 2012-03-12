@@ -148,6 +148,31 @@ class TestDescriptorReader(unittest.TestCase):
       # check that we've seen all of the descriptor_entries
       self.assertTrue(len(remaining_entries) == 0)
   
+  def test_multiple_runs(self):
+    """
+    Runs a DescriptorReader instance multiple times over the same content,
+    making sure that it can be used repeatedly.
+    """
+    
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    reader = stem.descriptor.reader.DescriptorReader([descriptor_path])
+    
+    with reader:
+      self.assertEquals(len(list(reader)), 1)
+    
+    # run it a second time, this shouldn't provide any descriptors because we
+    # have already read it
+    
+    with reader:
+      self.assertEquals(len(list(reader)), 0)
+    
+    # clear the DescriptorReader's memory of seeing the file and run it again
+    
+    reader.set_processed_files([])
+    
+    with reader:
+      self.assertEquals(len(list(reader)), 1)
+  
   def test_stop(self):
     """
     Runs a DescriptorReader over the root directory, then checks that calling
@@ -171,7 +196,6 @@ class TestDescriptorReader(unittest.TestCase):
     reader.start()
     time.sleep(0.1)
     reader.stop()
-    reader.join()
     is_test_running = False
   
   def test_get_processed_files(self):
