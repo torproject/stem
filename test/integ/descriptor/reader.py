@@ -44,6 +44,7 @@ class SkipListener:
   def listener(self, path, exception):
     self.results.append((path, exception))
 
+# TODO: test buffer_size when we have more descriptor examples
 class TestDescriptorReader(unittest.TestCase):
   def tearDown(self):
     # cleans up 'processed file' listings that we made
