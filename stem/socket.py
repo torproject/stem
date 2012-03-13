@@ -254,7 +254,7 @@ class ControlSocket:
   def __enter__(self):
     return self
   
-  def __exit__(self, type, value, traceback):
+  def __exit__(self, exit_type, value, traceback):
     self.close()
   
   def _connect(self):
