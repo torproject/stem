@@ -67,6 +67,7 @@ FileSkipped - Base exception for a file that was skipped.
 """
 
 import os
+import tarfile
 import threading
 import mimetypes
 import Queue
@@ -328,10 +329,9 @@ class DescriptorReader:
         if target_type[0] in (None, 'text/plain'):
           # either '.txt' or an unknown type
           self._handle_descriptor_file(target)
-        elif target_type == ('application/x-tar', 'gzip'):
-          self._handle_archive_gzip(target)
-        elif target_type == ('application/x-tar', 'bzip2'):
-          self._handle_archive_gzip(target)
+        elif tarfile.is_tarfile(target):
+          # handles gzip, bz2, and decompressed tarballs among others
+          self._handle_archive(target)
         else:
           self._notify_skip_listeners(target, UnrecognizedType(target_type))
     
@@ -355,15 +355,22 @@ class DescriptorReader:
       # TODO: replace with actual descriptor parsing when we have it
       target_file = open(target)
       self._enqueue_descriptor(target_file.read())
+      target_file.close()
+      
       self._iter_notice.set()
     except IOError, exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
   
-  def _handle_archive_gzip(self, target):
-    pass # TODO: implement
-  
-  def _handle_archive_bzip(self, target):
-    pass # TODO: implement
+  def _handle_archive(self, target):
+    with tarfile.open(target) as tar_file:
+      for tar_entry in tar_file:
+        if tar_entry.isfile():
+          # TODO: replace with actual descriptor parsing when we have it
+          entry = tar_file.extractfile(tar_entry)
+          self._enqueue_descriptor(entry.read())
+          entry.close()
+          
+          self._iter_notice.set()
   
   def _enqueue_descriptor(self, descriptor):
     # blocks until their is either room for the descriptor or we're stopped

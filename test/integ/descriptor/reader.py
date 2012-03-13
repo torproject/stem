@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import signal
+import tarfile
 import unittest
 
 import stem.descriptor.reader
@@ -19,6 +20,8 @@ BASIC_LISTING = """
 
 my_dir = os.path.dirname(__file__)
 DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
+
+TAR_DESCRIPTORS = []
 
 def _get_processed_files_path():
   return os.path.join(test.runner.get_runner().get_test_dir(), "descriptor_processed_files")
@@ -36,6 +39,21 @@ def _make_processed_files_listing(contents):
   test_listing_file.close()
   
   return test_listing_path
+
+def _get_raw_tar_descriptors():
+  global TAR_DESCRIPTORS
+  
+  if not TAR_DESCRIPTORS:
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar")
+    
+    with tarfile.open(test_path) as tar_file:
+      for tar_entry in tar_file:
+        if tar_entry.isfile():
+          entry = tar_file.extractfile(tar_entry)
+          TAR_DESCRIPTORS.append(entry.read())
+          entry.close()
+  
+  return TAR_DESCRIPTORS
 
 class SkipListener:
   def __init__(self):
@@ -133,7 +151,7 @@ class TestDescriptorReader(unittest.TestCase):
     
     # running this test multiple times to flush out concurrency issues
     for i in xrange(15):
-      reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
+      reader = stem.descriptor.reader.DescriptorReader([descriptor_path])
       remaining_entries = list(descriptor_entries)
       
       with reader:
@@ -173,6 +191,45 @@ class TestDescriptorReader(unittest.TestCase):
     
     with reader:
       self.assertEquals(1, len(list(reader)))
+  
+  def test_archived_uncompressed(self):
+    """
+    Checks that we can read descriptors from an uncompressed archive.
+    """
+    
+    expected_results = _get_raw_tar_descriptors()
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar")
+    reader = stem.descriptor.reader.DescriptorReader([test_path])
+    
+    with reader:
+      read_descriptors = [str(desc) for desc in list(reader)]
+      self.assertEquals(expected_results, read_descriptors)
+  
+  def test_archived_gzip(self):
+    """
+    Checks that we can read descriptors from a gzipped archive.
+    """
+    
+    expected_results = _get_raw_tar_descriptors()
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar.gz")
+    reader = stem.descriptor.reader.DescriptorReader([test_path])
+    
+    with reader:
+      read_descriptors = [str(desc) for desc in list(reader)]
+      self.assertEquals(expected_results, read_descriptors)
+  
+  def test_archived_bz2(self):
+    """
+    Checks that we can read descriptors from an bzipped archive.
+    """
+    
+    expected_results = _get_raw_tar_descriptors()
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar.bz2")
+    reader = stem.descriptor.reader.DescriptorReader([test_path])
+    
+    with reader:
+      read_descriptors = [str(desc) for desc in list(reader)]
+      self.assertEquals(expected_results, read_descriptors)
   
   def test_stop(self):
     """
