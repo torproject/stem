@@ -150,10 +150,9 @@ class TestDescriptorReader(unittest.TestCase):
     
     # running this test multiple times to flush out concurrency issues
     for i in xrange(15):
-      reader = stem.descriptor.reader.DescriptorReader([descriptor_path])
       remaining_entries = list(descriptor_entries)
       
-      with reader:
+      with stem.descriptor.reader.DescriptorReader([descriptor_path]) as reader:
         for descriptor in reader:
           descriptor_str = str(descriptor)
           

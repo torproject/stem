@@ -8,10 +8,8 @@ descriptor data in a series of destinations. For example...
     "/tmp/archived_descriptors/",
   ]
   
-  reader = DescriptorReader(my_descriptors)
-  
   # prints the contents of all the descriptor files
-  with reader:
+  with DescriptorReader(my_descriptors) as reader:
     for descriptor in reader:
       print descriptor
 
