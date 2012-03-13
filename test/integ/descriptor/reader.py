@@ -62,7 +62,6 @@ class SkipListener:
   def listener(self, path, exception):
     self.results.append((path, exception))
 
-# TODO: test buffer_size when we have more descriptor examples
 class TestDescriptorReader(unittest.TestCase):
   def tearDown(self):
     # cleans up 'processed file' listings that we made
@@ -192,6 +191,20 @@ class TestDescriptorReader(unittest.TestCase):
     with reader:
       self.assertEquals(1, len(list(reader)))
   
+  def test_buffer_size(self):
+    """
+    Checks that we can process sets of descriptors larger than our buffer size,
+    that we don't exceed it, and that we can still stop midway through reading
+    them.
+    """
+    
+    reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA], buffer_size = 2)
+    
+    with reader:
+      self.assertTrue(reader.get_buffered_descriptor_count() <= 2)
+      time.sleep(0.01)
+      self.assertTrue(reader.get_buffered_descriptor_count() <= 2)
+  
   def test_archived_uncompressed(self):
     """
     Checks that we can read descriptors from an uncompressed archive.
@@ -199,9 +212,8 @@ class TestDescriptorReader(unittest.TestCase):
     
     expected_results = _get_raw_tar_descriptors()
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar")
-    reader = stem.descriptor.reader.DescriptorReader([test_path])
     
-    with reader:
+    with stem.descriptor.reader.DescriptorReader([test_path]) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
       self.assertEquals(expected_results, read_descriptors)
   
@@ -212,9 +224,8 @@ class TestDescriptorReader(unittest.TestCase):
     
     expected_results = _get_raw_tar_descriptors()
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar.gz")
-    reader = stem.descriptor.reader.DescriptorReader([test_path])
     
-    with reader:
+    with stem.descriptor.reader.DescriptorReader([test_path]) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
       self.assertEquals(expected_results, read_descriptors)
   
@@ -225,9 +236,8 @@ class TestDescriptorReader(unittest.TestCase):
     
     expected_results = _get_raw_tar_descriptors()
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar.bz2")
-    reader = stem.descriptor.reader.DescriptorReader([test_path])
     
-    with reader:
+    with stem.descriptor.reader.DescriptorReader([test_path]) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
       self.assertEquals(expected_results, read_descriptors)
   

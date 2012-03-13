@@ -261,6 +261,18 @@ class DescriptorReader:
     
     self._skip_listeners.append(listener)
   
+  def get_buffered_descriptor_count(self):
+    """
+    Provides the number of descriptors that are waiting to be iterated over.
+    This is limited to the buffer_size that we were constructed with.
+    
+    Returns:
+      int for the estimated number of currently enqueued descriptors, this is
+      not entirely reliable
+    """
+    
+    return self._unreturned_descriptors.qsize()
+  
   def start(self):
     """
     Starts reading our descriptor files.
@@ -388,6 +400,7 @@ class DescriptorReader:
   
   def __enter__(self):
     self.start()
+    return self
   
   def __exit__(self, exit_type, value, traceback):
     self.stop()
