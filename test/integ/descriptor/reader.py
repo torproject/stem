@@ -21,7 +21,7 @@ BASIC_LISTING = """
 my_dir = os.path.dirname(__file__)
 DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
 
-TAR_DESCRIPTORS = []
+TAR_DESCRIPTORS = None
 
 def _get_processed_files_path():
   return os.path.join(test.runner.get_runner().get_test_dir(), "descriptor_processed_files")
@@ -45,13 +45,16 @@ def _get_raw_tar_descriptors():
   
   if not TAR_DESCRIPTORS:
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar")
+    raw_descriptors = []
     
     with tarfile.open(test_path) as tar_file:
       for tar_entry in tar_file:
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
-          TAR_DESCRIPTORS.append(entry.read())
+          raw_descriptors.append(entry.read())
           entry.close()
+    
+    TAR_DESCRIPTORS = raw_descriptors
   
   return TAR_DESCRIPTORS
 
