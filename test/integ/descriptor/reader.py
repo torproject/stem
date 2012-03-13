@@ -116,7 +116,7 @@ class TestDescriptorReader(unittest.TestCase):
     
     # saves the initial_listing to a file then reloads it
     test_listing_path = _get_processed_files_path()
-    stem.descriptor.reader.save_processed_files(initial_listing, test_listing_path)
+    stem.descriptor.reader.save_processed_files(test_listing_path, initial_listing)
     loaded_listing = stem.descriptor.reader.load_processed_files(test_listing_path)
     
     self.assertEquals(initial_listing, loaded_listing)
@@ -131,7 +131,7 @@ class TestDescriptorReader(unittest.TestCase):
     string_timestamp = {"/tmp": "123a"}
     
     for listing in (missing_filename, relative_filename, string_timestamp):
-      self.assertRaises(TypeError, stem.descriptor.reader.save_processed_files, listing, "/tmp/foo")
+      self.assertRaises(TypeError, stem.descriptor.reader.save_processed_files, "/tmp/foo", listing)
   
   def test_basic_example(self):
     """

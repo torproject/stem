@@ -151,15 +151,15 @@ def load_processed_files(path):
   
   return processed_files
 
-def save_processed_files(processed_files, path):
+def save_processed_files(path, processed_files):
   """
   Persists a dictionary of 'path => last modified timestamp' mappings (as
   provided by the DescriptorReader's get_processed_files() method) so that they
   can be loaded later and applied to another DescriptorReader.
   
   Arguments:
-    processed_files (dict) - 'path => last modified' mappings
     path (str)             - location to save the processed files dictionary to
+    processed_files (dict) - 'path => last modified' mappings
   
   Raises:
     IOError if unable to write to the file
