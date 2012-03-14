@@ -70,6 +70,8 @@ import threading
 import mimetypes
 import Queue
 
+import stem.descriptor.descriptor
+
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = "DONE"
 
@@ -362,25 +364,31 @@ class DescriptorReader:
   
   def _handle_descriptor_file(self, target):
     try:
-      # TODO: replace with actual descriptor parsing when we have it
-      target_file = open(target)
-      self._enqueue_descriptor(target_file.read())
-      target_file.close()
-      
-      self._iter_notice.set()
+      with open(target) as target_file:
+        for desc in stem.descriptor.descriptor.parse_descriptors(target, target_file):
+          self._enqueue_descriptor(desc)
+          self._iter_notice.set()
+    except TypeError, exc:
+      self._notify_skip_listeners(target, ParsingFailure(exc))
     except IOError, exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
   
   def _handle_archive(self, target):
-    with tarfile.open(target) as tar_file:
-      for tar_entry in tar_file:
-        if tar_entry.isfile():
-          # TODO: replace with actual descriptor parsing when we have it
-          entry = tar_file.extractfile(tar_entry)
-          self._enqueue_descriptor(entry.read())
-          entry.close()
-          
-          self._iter_notice.set()
+    try:
+      with tarfile.open(target) as tar_file:
+        for tar_entry in tar_file:
+          if tar_entry.isfile():
+            entry = tar_file.extractfile(tar_entry)
+            
+            for desc in stem.descriptor.descriptor.parse_descriptors(target, entry):
+              self._enqueue_descriptor(desc)
+              self._iter_notice.set()
+            
+            entry.close()
+    except TypeError, exc:
+      self._notify_skip_listeners(target, ParsingFailure(exc))
+    except IOError, exc:
+      self._notify_skip_listeners(target, ReadFailed(exc))
   
   def _enqueue_descriptor(self, descriptor):
     # blocks until their is either room for the descriptor or we're stopped
