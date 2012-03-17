@@ -2,6 +2,8 @@
 Common functionality for descriptors.
 """
 
+import os
+
 def parse_descriptors(path, descriptor_file):
   """
   Provides an iterator for the descriptors within a given file.
@@ -18,6 +20,22 @@ def parse_descriptors(path, descriptor_file):
     IOError if unable to read from the descriptor_file
   """
   
+  # The tor descriptor specifications do not provide a reliable method for
+  # identifying a descriptor file's type and version so we need to guess
+  # based on its filename for resources from the data directory and contents
+  # for files provided by metrics.
+  
+  filename = os.path.basename(path)
+  
+  if filename == "cached-descriptors":
+    pass # server descriptors from tor's data directory
+  
+  first_line = descriptor_file.readline()
+  descriptor_file.seek(0)
+  
+  if first_line.startswith("router "):
+    pass # server descriptor
+  
   # TODO: implement actual descriptor type recognition and parsing
   # TODO: add integ test for non-descriptor text content
   yield Descriptor(path, descriptor_file.read())
@@ -27,9 +45,9 @@ class Descriptor:
   Common parent for all types of descriptors.
   """
   
-  def __init__(self, path, raw_contents):
-    self._path = path
-    self._raw_contents = raw_contents
+  def __init__(self, contents):
+    self._path = None
+    self._raw_contents = contents
   
   def get_path(self):
     """
@@ -52,6 +70,9 @@ class Descriptor:
     """
     
     return []
+  
+  def _set_path(self, path):
+    self._path = path
   
   def __str__(self):
     return self._raw_contents
