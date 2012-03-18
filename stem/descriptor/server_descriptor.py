@@ -72,14 +72,15 @@ class ServerDescriptorV2(Descriptor):
     published (datetime.datetime) - time in GMT when the descriptor was generated (*)
     fingerprint (str)        - fourty hex digits that make up the relay's fingerprint
     hibernating (bool)       - flag to indicate if the relay was hibernating when published (*)
+    uptime (int)             - relay's uptime when published in seconds
     
     * required fields, others are left as None if undefined
   """
   
   nickname = address = or_port = socks_port = dir_port = None
   average_bandwidth = burst_bandwidth = observed_bandwidth = None
-  platform = tor_version = None
-  published = fingerprint = None
+  platform = tor_version = published = fingerprint = None
+  uptime = None
   hibernating = False
   
   def __init__(self, contents):
@@ -216,4 +217,10 @@ class ServerDescriptorV2(Descriptor):
           raise TypeError("Hibernating line had an invalid value, must be zero or one: %s" % value)
         
         self.hibernating = value == "1"
+      elif keyword == "uptime":
+        if not value.isdigit():
+          raise TypeError("Uptime line must have an integer value: %s" % value)
+        
+        self.uptime = int(value)
+          
 
