@@ -94,7 +94,13 @@ class ServerDescriptorV2(Descriptor):
     exit_policy_lines = []
     
     for line in contents.split("\n"):
-      line_match = KEYWORD_LINE.match()
+      # Some lines have an 'opt ' for backward compatability. They should be
+      # ignored. This prefix is being removed in...
+      # https://trac.torproject.org/projects/tor/ticket/5419
+      
+      line = line.lstrip("opt ")
+      
+      line_match = KEYWORD_LINE.match(line)
       
       if not line_match:
         raise ValueError("Line contains invalid characters: %s" % line)
