@@ -19,6 +19,7 @@ import test.unit.socket.control_line
 import test.unit.socket.control_message
 import test.unit.descriptor.reader
 import test.unit.util.conf
+import test.unit.util.connection
 import test.unit.util.enum
 import test.unit.util.system
 import test.unit.version
@@ -80,6 +81,7 @@ ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
 
 UNIT_TESTS = (
   test.unit.util.enum.TestEnum,
+  test.unit.util.connection.TestConnection,
   test.unit.util.conf.TestConf,
   test.unit.util.system.TestSystem,
   test.unit.descriptor.reader.TestDescriptorReader,
