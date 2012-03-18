@@ -57,20 +57,20 @@ class ServerDescriptorV2(Descriptor):
   https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec-v2.txt
   
   Attributes:
-    nickname (str)   - relay's nickname (*)
-    address (str)    - IPv4 address of the relay (*)
-    or_port (int)    - port used for relaying (*)
-    socks_port (int) - deprecated attribute, always zero (*)
-    dir_port (int)   - deprecated port used for descriptor mirroring (*)
+    nickname (str)           - relay's nickname (*)
+    address (str)            - IPv4 address of the relay (*)
+    or_port (int)            - port used for relaying (*)
+    socks_port (int)         - deprecated attribute, always zero (*)
+    dir_port (int)           - deprecated port used for descriptor mirroring (*)
+    average_bandwidth (int)  - rate of traffic relay is willing to relay in bytes/s (*)
+    burst_bandwidth (int)    - rate of traffic relay is willing to burst to in bytes/s (*)
+    observed_bandwidth (int) - estimated capacity of the relay based on usage in bytes/s (*)
     
     * required fields, others are left as None if undefined
   """
   
-  nickname = None
-  address = None
-  or_port = None
-  socks_port = None
-  dir_port = None
+  nickname = address = or_port = socks_port = dir_port = None
+  average_bandwidth = burst_bandwidth = observed_bandwidth = None
   
   def __init__(self, contents):
     Descriptor.__init__(self, contents)
@@ -136,4 +136,20 @@ class ServerDescriptorV2(Descriptor):
         self.or_port    = router_comp[2]
         self.socks_port = router_comp[3]
         self.dir_port   = router_comp[4]
+      elif keyword == "bandwidth":
+        # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
+        bandwidth_comp = values[0].split()
+        
+        if len(bandwidth_comp) != 3:
+          raise ValueError("Bandwidth line must have three values: bandwidth %s" % values[0]
+        elif not bandwidth_comp[0].isdigit()):
+          raise TypeError("Bandwidth line's average rate isn't numeric: %s" % bandwidth_comp[0])
+        elif not bandwidth_comp[1].isdigit()):
+          raise TypeError("Bandwidth line's burst rate isn't numeric: %s" % bandwidth_comp[1])
+        elif not bandwidth_comp[2].isdigit()):
+          raise TypeError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
+        
+        average_bandwidth  = int(router_comp[0])
+        burst_bandwidth    = int(router_comp[1])
+        observed_bandwidth = int(router_comp[2])
 
