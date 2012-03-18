@@ -10,6 +10,7 @@ etc). This information is provided from a few sources...
 
 import re
 
+import stem.version
 from stem.descriptor.descriptor import Descriptor
 import stem.util.connection
 import stem.util.tor_tools
@@ -65,12 +66,16 @@ class ServerDescriptorV2(Descriptor):
     average_bandwidth (int)  - rate of traffic relay is willing to relay in bytes/s (*)
     burst_bandwidth (int)    - rate of traffic relay is willing to burst to in bytes/s (*)
     observed_bandwidth (int) - estimated capacity of the relay based on usage in bytes/s (*)
+    platform (str)           - operating system and tor version
+    tor_version (stem.version.Version) - version of tor
+    
     
     * required fields, others are left as None if undefined
   """
   
   nickname = address = or_port = socks_port = dir_port = None
   average_bandwidth = burst_bandwidth = observed_bandwidth = None
+  platform = tor_version = None
   
   def __init__(self, contents):
     Descriptor.__init__(self, contents)
@@ -152,4 +157,21 @@ class ServerDescriptorV2(Descriptor):
         average_bandwidth  = int(router_comp[0])
         burst_bandwidth    = int(router_comp[1])
         observed_bandwidth = int(router_comp[2])
+      elif keyword == "platform":
+        # "platform" string
+        
+        self.platform = values[0]
+        
+        # This line can contain any arbitrary data, but tor seems to report its
+        # version followed by the os like the following...
+        # platform Tor 0.2.2.35 (git-73ff13ab3cc9570d) on Linux x86_64
+        #
+        # There's no guerentee that we'll be able to pick out the version.
+        
+        platform_comp = platform.split()
+        
+        if platform_comp[0] == "Tor" and len(platform_comp) >= 2:
+          try:
+            tor_version = stem.version.Version(platform_comp[1])
+          except ValueError: pass
 
