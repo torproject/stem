@@ -25,10 +25,10 @@ class TestTorTools(unittest.TestCase):
     )
     
     for fingerprint in valid_fingerprints:
-      self.assertTrue(stem.util.tor_tools.is_valid_fingerprint(fingerprint))
+      self.assertTrue(stem.util.tor_tools.is_valid_fingerprint(fingerprint, True))
     
     for fingerprint in invalid_fingerprints:
-      self.assertFalse(stem.util.tor_tools.is_valid_fingerprint(fingerprint))
+      self.assertFalse(stem.util.tor_tools.is_valid_fingerprint(fingerprint, True))
   
   def test_is_valid_nickname(self):
     """

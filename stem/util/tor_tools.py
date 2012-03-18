@@ -13,19 +13,26 @@ import re
 # case insensitive. Tor doesn't define this in the spec so flipping a coin
 # and going with case insensitive.
 
-FINGERPRINT_PATTERN = re.compile("^\$[0-9a-fA-F]{40}$")
+FINGERPRINT_PATTERN = re.compile("^[0-9a-fA-F]{40}$")
 NICKNAME_PATTERN = re.compile("^[a-zA-Z0-9]{1,19}$")
 
-def is_valid_fingerprint(entry):
+def is_valid_fingerprint(entry, check_prefix = False):
   """
-  Checks if a string is a properly formatted relay fingerprint.
+  Checks if a string is a properly formatted relay fingerprint. This checks for
+  a '$' prefix if check_prefix is true, otherwise this only validates the hex
+  digits.
   
   Arguments:
-    entry (str) - string to be checked
+    entry (str)         - string to be checked
+    check_prefix (bool) - checks for a '$' prefix
   
   Returns:
     True if the string could be a relay fingerprint, False otherwise.
   """
+  
+  if check_prefix:
+    if not entry or entry[0] != "$": return False
+    entry = entry[1:]
   
   return bool(FINGERPRINT_PATTERN.match(entry))
 

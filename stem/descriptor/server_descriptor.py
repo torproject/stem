@@ -70,6 +70,7 @@ class ServerDescriptorV2(Descriptor):
     platform (str)           - operating system and tor version
     tor_version (stem.version.Version) - version of tor
     published (datetime.datetime) - time in GMT when the descriptor was generated (*)
+    fingerprint (str)        - fourty hex digits that make up the relay's fingerprint
     
     * required fields, others are left as None if undefined
   """
@@ -77,7 +78,7 @@ class ServerDescriptorV2(Descriptor):
   nickname = address = or_port = socks_port = dir_port = None
   average_bandwidth = burst_bandwidth = observed_bandwidth = None
   platform = tor_version = None
-  published = None
+  published = fingerprint = None
   
   def __init__(self, contents):
     Descriptor.__init__(self, contents)
@@ -127,12 +128,15 @@ class ServerDescriptorV2(Descriptor):
     # parse all the entries into our attributes
     
     for keyword, values in entres.items():
+      value = values[0] # most just work with the first (and only) value
+      line = "%s %s" % (keyword, value) # original line
+      
       if keyword == "router":
         # "router" nickname address ORPort SocksPort DirPort
-        router_comp = values[0].split()
+        router_comp = value.split()
         
         if len(router_comp) != 5:
-          raise ValueError("Router line must have five values: router %s" % values[0]
+          raise ValueError("Router line must have five values: %s" % line
         elif not stem.util.tor_tools.is_valid_nickname(router_comp[0]):
           raise TypeError("Router line entry isn't a valid nickname: %s" % router_comp[0])
         elif not stem.util.connection.is_valid_ip_address(router_comp[1]):
@@ -151,10 +155,10 @@ class ServerDescriptorV2(Descriptor):
         self.dir_port   = router_comp[4]
       elif keyword == "bandwidth":
         # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
-        bandwidth_comp = values[0].split()
+        bandwidth_comp = value.split()
         
         if len(bandwidth_comp) != 3:
-          raise ValueError("Bandwidth line must have three values: bandwidth %s" % values[0]
+          raise ValueError("Bandwidth line must have three values: %s" % line
         elif not bandwidth_comp[0].isdigit()):
           raise TypeError("Bandwidth line's average rate isn't numeric: %s" % bandwidth_comp[0])
         elif not bandwidth_comp[1].isdigit()):
@@ -168,7 +172,7 @@ class ServerDescriptorV2(Descriptor):
       elif keyword == "platform":
         # "platform" string
         
-        self.platform = values[0]
+        self.platform = value
         
         # This line can contain any arbitrary data, but tor seems to report its
         # version followed by the os like the following...
@@ -186,7 +190,21 @@ class ServerDescriptorV2(Descriptor):
         # "published" YYYY-MM-DD HH:MM:SS
         
         try:
-          self.published = datetime.datetime.strptime(values[0], "%Y-%m-%d %H:%M:%S")
+          self.published = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         except ValueError:
-          raise TypeError("Published line's time wasn't parseable: %s" % values[0])
+          raise TypeError("Published line's time wasn't parseable: %s" % line)
+      elif keyword == "fingerprint":
+        # This is fourty hex digits split into space separated groups of four.
+        # Checking that we match this pattern.
+        
+        fingerprint = value.replace(" ", "")
+        
+        for grouping in value.split(" "):
+          if len(grouping) != 4:
+            raise TypeError("Fingerprint line should have groupings of four hex digits: %s" % value)
+        
+        if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
+          raise TypeError("Tor relay fingerprints consist of fourty hex digits: %s" % value)
+        
+        self.fingerprint = fingerprint
 
