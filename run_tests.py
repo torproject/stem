@@ -22,6 +22,7 @@ import test.unit.util.conf
 import test.unit.util.connection
 import test.unit.util.enum
 import test.unit.util.system
+import test.unit.util.tor_tools
 import test.unit.version
 import test.integ.connection.authentication
 import test.integ.connection.connect
@@ -84,6 +85,7 @@ UNIT_TESTS = (
   test.unit.util.connection.TestConnection,
   test.unit.util.conf.TestConf,
   test.unit.util.system.TestSystem,
+  test.unit.util.tor_tools.TestTorTools,
   test.unit.descriptor.reader.TestDescriptorReader,
   test.unit.version.TestVersion,
   test.unit.socket.control_message.TestControlMessage,
