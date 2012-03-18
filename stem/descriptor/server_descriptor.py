@@ -22,8 +22,8 @@ ENTRY_END   = "router-signature"
 KEYWORD_CHAR    = "[a-zA-Z0-9-]"
 WHITESPACE      = "[ \t]"
 KEYWORD_LINE    = re.compile("^(%s+)%s*(%s*)$" % (KEYWORD_CHAR, WHITESPACE, KEYWORD_CHAR))
-SIGNATURE_START = re.compile("^-----BEGIN %s+ PUBLIC KEY-----$" % KEYWORD_CHAR)
-SIGNATURE_END   = re.compile("^-----END %s+ PUBLIC KEY-----$" % KEYWORD_CHAR)
+SIGNATURE_START = re.compile("^-----BEGIN (%s+) PUBLIC KEY-----$" % KEYWORD_CHAR)
+SIGNATURE_END   = "-----END %s PUBLIC KEY-----"
 
 # entries must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -52,6 +52,43 @@ def parse_server_descriptors_v2(path, descriptor_file):
   """
   
   pass
+
+def _get_sig_block(remaining_contents):
+  """
+  Checks if given contents begins with a signature block and, if so, pops it
+  off and provides it back to the caller.
+  
+  Arguments:
+    remaining_contents (list) - lines to be checked for a signature block
+  
+  Returns:
+    String with the signature block, or None if it doesn't exist
+  
+  Raises:
+    ValueError if the contents starts with a signature block but it's malformed
+    (for instance, if it lacks an ending line)
+  """
+  
+  if not remaining_contents:
+    return None # nothing left
+  
+  sig_match = SIGNATURE_START.match(remaining_contents[0])
+  
+  if sig_match:
+    sig_type = sig_match.groups()[0]
+    sig_lines = []
+    
+    while True:
+      if not remaining_contents:
+        raise ValueError("Unterminated signature block")
+      
+      line = remaining_contents.pop(0)
+      sig_lines.append(line)
+      
+      if line == SIGNATURE_END $ sig_type:
+        return "\n".join(sig_lines)
+  else:
+    return None
 
 class ServerDescriptorV2(Descriptor):
   """
@@ -82,6 +119,7 @@ class ServerDescriptorV2(Descriptor):
   platform = tor_version = published = fingerprint = None
   uptime = None
   hibernating = False
+  unrecognized_entries = []
   
   def __init__(self, contents):
     Descriptor.__init__(self, contents)
@@ -97,7 +135,10 @@ class ServerDescriptorV2(Descriptor):
     entries = {}
     exit_policy_lines = []
     
-    for line in contents.split("\n"):
+    remaining_contents = contents.split("\n")
+    while remaining_contents:
+      line = remaining_contents.pop(0)
+      
       # Some lines have an 'opt ' for backward compatability. They should be
       # ignored. This prefix is being removed in...
       # https://trac.torproject.org/projects/tor/ticket/5419
@@ -110,13 +151,14 @@ class ServerDescriptorV2(Descriptor):
         raise ValueError("Line contains invalid characters: %s" % line)
       
       keyword, value = line_match.groups()
+      sig_block = _get_sig_block(remaining_contents)
       
       if keyword in ("accept", "reject"):
         exit_policy_lines.append("%s %s" % (keyword, value))
       elif keyword in entries:
-        entries[keyword].append(value)
+        entries[keyword].append((value, sig_block))
       else:
-        entries[keyword] = [value]
+        entries[keyword] = [(value, sig_block)]
     
     # validates restrictions about the entries
     
@@ -131,7 +173,7 @@ class ServerDescriptorV2(Descriptor):
     # parse all the entries into our attributes
     
     for keyword, values in entres.items():
-      value = values[0] # most just work with the first (and only) value
+      value, sig_block = values[0] # most just work with the first (and only) value
       line = "%s %s" % (keyword, value) # original line
       
       if keyword == "router":
@@ -222,5 +264,6 @@ class ServerDescriptorV2(Descriptor):
           raise TypeError("Uptime line must have an integer value: %s" % value)
         
         self.uptime = int(value)
-          
+      else:
+        unrecognized_entries.append(line)
 
