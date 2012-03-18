@@ -22,8 +22,8 @@ ENTRY_END   = "router-signature"
 KEYWORD_CHAR    = "[a-zA-Z0-9-]"
 WHITESPACE      = "[ \t]"
 KEYWORD_LINE    = re.compile("^(%s+)%s*(%s*)$" % (KEYWORD_CHAR, WHITESPACE, KEYWORD_CHAR))
-SIGNATURE_START = re.compile("^-----BEGIN (%s+) PUBLIC KEY-----$" % KEYWORD_CHAR)
-SIGNATURE_END   = "-----END %s PUBLIC KEY-----"
+PUBLIC_KEY_START = re.compile("^-----BEGIN (%s+) PUBLIC KEY-----$" % KEYWORD_CHAR)
+PUBLIC_KEY_END   = "-----END %s PUBLIC KEY-----"
 
 # entries must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -53,40 +53,40 @@ def parse_server_descriptors_v2(path, descriptor_file):
   
   pass
 
-def _get_sig_block(remaining_contents):
+def _get_key_block(remaining_contents):
   """
-  Checks if given contents begins with a signature block and, if so, pops it
+  Checks if given contents begins with a public key block and, if so, pops it
   off and provides it back to the caller.
   
   Arguments:
-    remaining_contents (list) - lines to be checked for a signature block
+    remaining_contents (list) - lines to be checked for a public key block
   
   Returns:
-    String with the signature block, or None if it doesn't exist
+    String with the public key block, or None if it doesn't exist
   
   Raises:
-    ValueError if the contents starts with a signature block but it's malformed
-    (for instance, if it lacks an ending line)
+    ValueError if the contents starts with a key block but it's malformed (for
+    instance, if it lacks an ending line)
   """
   
   if not remaining_contents:
     return None # nothing left
   
-  sig_match = SIGNATURE_START.match(remaining_contents[0])
+  key_match = PUBLIC_KEY_START.match(remaining_contents[0])
   
-  if sig_match:
-    sig_type = sig_match.groups()[0]
-    sig_lines = []
+  if key_match:
+    key_type = key_match.groups()[0]
+    key_lines = []
     
     while True:
       if not remaining_contents:
-        raise ValueError("Unterminated signature block")
+        raise ValueError("Unterminated public key block")
       
       line = remaining_contents.pop(0)
-      sig_lines.append(line)
+      key_lines.append(line)
       
-      if line == SIGNATURE_END $ sig_type:
-        return "\n".join(sig_lines)
+      if line == PUBLIC_KEY_END $ key_type:
+        return "\n".join(key_lines)
   else:
     return None
 
@@ -110,6 +110,8 @@ class ServerDescriptorV2(Descriptor):
     fingerprint (str)        - fourty hex digits that make up the relay's fingerprint
     hibernating (bool)       - flag to indicate if the relay was hibernating when published (*)
     uptime (int)             - relay's uptime when published in seconds
+    onion_key (str)          - key used to encrypt EXTEND cells (*)
+    signing_key (str)        - relay's long-term identity key (*)
     
     * required fields, others are left as None if undefined
   """
@@ -117,7 +119,7 @@ class ServerDescriptorV2(Descriptor):
   nickname = address = or_port = socks_port = dir_port = None
   average_bandwidth = burst_bandwidth = observed_bandwidth = None
   platform = tor_version = published = fingerprint = None
-  uptime = None
+  uptime = onion_key = signing_key = None
   hibernating = False
   unrecognized_entries = []
   
@@ -151,14 +153,14 @@ class ServerDescriptorV2(Descriptor):
         raise ValueError("Line contains invalid characters: %s" % line)
       
       keyword, value = line_match.groups()
-      sig_block = _get_sig_block(remaining_contents)
+      key_block = _get_key_block(remaining_contents)
       
       if keyword in ("accept", "reject"):
         exit_policy_lines.append("%s %s" % (keyword, value))
       elif keyword in entries:
-        entries[keyword].append((value, sig_block))
+        entries[keyword].append((value, key_block))
       else:
-        entries[keyword] = [(value, sig_block)]
+        entries[keyword] = [(value, key_block)]
     
     # validates restrictions about the entries
     
@@ -173,7 +175,7 @@ class ServerDescriptorV2(Descriptor):
     # parse all the entries into our attributes
     
     for keyword, values in entres.items():
-      value, sig_block = values[0] # most just work with the first (and only) value
+      value, key_block = values[0] # most just work with the first (and only) value
       line = "%s %s" % (keyword, value) # original line
       
       if keyword == "router":
@@ -264,6 +266,16 @@ class ServerDescriptorV2(Descriptor):
           raise TypeError("Uptime line must have an integer value: %s" % value)
         
         self.uptime = int(value)
+      elif keyword == "onion-key":
+        if not key_block:
+          raise TypeError("Onion key line must be followed by a public key: %s" % value)
+          
+        self.onion_key = key_block
+      elif keyword == "signing-key":
+        if not key_block:
+          raise TypeError("Signing key line must be followed by a public key: %s" % value)
+          
+        self.signing_key = key_block
       else:
         unrecognized_entries.append(line)
 
