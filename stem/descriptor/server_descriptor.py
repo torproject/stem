@@ -9,11 +9,12 @@ etc). This information is provided from a few sources...
 """
 
 import re
+import datetime
 
 import stem.version
-from stem.descriptor.descriptor import Descriptor
 import stem.util.connection
 import stem.util.tor_tools
+from stem.descriptor.descriptor import Descriptor
 
 ENTRY_START = "router"
 ENTRY_END   = "router-signature"
@@ -68,7 +69,7 @@ class ServerDescriptorV2(Descriptor):
     observed_bandwidth (int) - estimated capacity of the relay based on usage in bytes/s (*)
     platform (str)           - operating system and tor version
     tor_version (stem.version.Version) - version of tor
-    
+    published (datetime.datetime) - time in GMT when the descriptor was generated (*)
     
     * required fields, others are left as None if undefined
   """
@@ -76,6 +77,7 @@ class ServerDescriptorV2(Descriptor):
   nickname = address = or_port = socks_port = dir_port = None
   average_bandwidth = burst_bandwidth = observed_bandwidth = None
   platform = tor_version = None
+  published = None
   
   def __init__(self, contents):
     Descriptor.__init__(self, contents)
@@ -174,4 +176,11 @@ class ServerDescriptorV2(Descriptor):
           try:
             tor_version = stem.version.Version(platform_comp[1])
           except ValueError: pass
+      elif keyword == "published":
+        # "published" YYYY-MM-DD HH:MM:SS
+        
+        try:
+          self.published = datetime.datetime.strptime(values[0], "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+          raise TypeError("Published line's time wasn't parseable: %s" % values[0])
 
