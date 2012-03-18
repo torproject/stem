@@ -11,6 +11,8 @@ etc). This information is provided from a few sources...
 import re
 
 from stem.descriptor.descriptor import Descriptor
+import stem.util.connection
+import stem.util.tor_tools
 
 ENTRY_START = "router"
 ENTRY_END   = "router-signature"
@@ -61,7 +63,7 @@ class ServerDescriptorV2(Descriptor):
     socks_port (int) - deprecated attribute, always zero (*)
     dir_port (int)   - deprecated port used for descriptor mirroring (*)
     
-    * required fields
+    * required fields, others are left as None if undefined
   """
   
   nickname = None
@@ -118,11 +120,16 @@ class ServerDescriptorV2(Descriptor):
         
         if len(router_comp) != 5:
           raise ValueError("Router line must have five values: router %s" % values[0]
-        
-        # TODO: also check validity of other fields
-        # Fingerprint = "$" 40*HEXDIG
-        # NicknameChar = "a"-"z" / "A"-"Z" / "0" - "9"
-        # Nickname = 1*19 NicknameChar
+        elif not stem.util.tor_tools.is_valid_nickname(router_comp[0]):
+          raise TypeError("Router line entry isn't a valid nickname: %s" % router_comp[0])
+        elif not stem.util.connection.is_valid_ip_address(router_comp[1]):
+          raise TypeError("Router line entry isn't a valid IPv4 address: %s" % router_comp[1])
+        elif not stem.util.connection.is_valid_port(router_comp[2], allow_zero = True):
+          raise TypeError("Router line's ORPort is invalid: %s" % router_comp[2])
+        elif router_comp[3] != "0":
+          raise TypeError("Router line's SocksPort should be zero: %s" % router_comp[3])
+        elif not stem.util.connection.is_valid_port(router_comp[4], allow_zero = True):
+          raise TypeError("Router line's DirPort is invalid: %s" % router_comp[4])
         
         self.nickname   = router_comp[0]
         self.address    = router_comp[1]
