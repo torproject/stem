@@ -71,6 +71,7 @@ class ServerDescriptorV2(Descriptor):
     tor_version (stem.version.Version) - version of tor
     published (datetime.datetime) - time in GMT when the descriptor was generated (*)
     fingerprint (str)        - fourty hex digits that make up the relay's fingerprint
+    hibernating (bool)       - flag to indicate if the relay was hibernating when published (*)
     
     * required fields, others are left as None if undefined
   """
@@ -79,6 +80,7 @@ class ServerDescriptorV2(Descriptor):
   average_bandwidth = burst_bandwidth = observed_bandwidth = None
   platform = tor_version = None
   published = fingerprint = None
+  hibernating = False
   
   def __init__(self, contents):
     Descriptor.__init__(self, contents)
@@ -207,4 +209,11 @@ class ServerDescriptorV2(Descriptor):
           raise TypeError("Tor relay fingerprints consist of fourty hex digits: %s" % value)
         
         self.fingerprint = fingerprint
+      elif keyword == "hibernating":
+        # "hibernating" 0|1 (in practice only set if one)
+        
+        if not value in ("0", "1"):
+          raise TypeError("Hibernating line had an invalid value, must be zero or one: %s" % value)
+        
+        self.hibernating = value == "1"
 
