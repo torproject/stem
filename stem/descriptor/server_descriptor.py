@@ -19,11 +19,11 @@ from stem.descriptor.descriptor import Descriptor
 ENTRY_START = "router"
 ENTRY_END   = "router-signature"
 
-KEYWORD_CHAR    = "[a-zA-Z0-9-]"
-WHITESPACE      = "[ \t]"
-KEYWORD_LINE    = re.compile("^(%s+)%s*(%s*)$" % (KEYWORD_CHAR, WHITESPACE, KEYWORD_CHAR))
-PUBLIC_KEY_START = re.compile("^-----BEGIN (%s+) PUBLIC KEY-----$" % KEYWORD_CHAR)
-PUBLIC_KEY_END   = "-----END %s PUBLIC KEY-----"
+KEYWORD_CHAR    = "a-zA-Z0-9-"
+WHITESPACE      = " \t"
+KEYWORD_LINE    = re.compile("^([%s]+)[%s]*([%s]*)$" % (KEYWORD_CHAR, WHITESPACE, KEYWORD_CHAR))
+PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHITESPACE))
+PGP_BLOCK_END   = "-----END %s-----"
 
 # entries must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -53,16 +53,17 @@ def parse_server_descriptors_v2(path, descriptor_file):
   
   pass
 
-def _get_key_block(remaining_contents):
+def _get_psudo_pgp_block(remaining_contents):
   """
-  Checks if given contents begins with a public key block and, if so, pops it
-  off and provides it back to the caller.
+  Checks if given contents begins with a pseudo-Open-PGP-style block and, if
+  so, pops it off and provides it back to the caller.
   
   Arguments:
     remaining_contents (list) - lines to be checked for a public key block
   
   Returns:
-    String with the public key block, or None if it doesn't exist
+    (str, str) tuple with the block type and the armor wrapped contents, this
+    returns (None, None) instead if it doesn't exist
   
   Raises:
     ValueError if the contents starts with a key block but it's malformed (for
@@ -70,25 +71,25 @@ def _get_key_block(remaining_contents):
   """
   
   if not remaining_contents:
-    return None # nothing left
+    return (None, None) # nothing left
   
-  key_match = PUBLIC_KEY_START.match(remaining_contents[0])
+  block_match = PGP_BLOCK_START.match(remaining_contents[0])
   
-  if key_match:
-    key_type = key_match.groups()[0]
-    key_lines = []
+  if block_match:
+    block_type = block_match.groups()[0]
+    block_lines = []
     
     while True:
       if not remaining_contents:
         raise ValueError("Unterminated public key block")
       
       line = remaining_contents.pop(0)
-      key_lines.append(line)
+      block_lines.append(line)
       
-      if line == PUBLIC_KEY_END $ key_type:
-        return "\n".join(key_lines)
+      if line == PGP_BLOCK_END $ block_type:
+        return block_type, "\n".join(block_lines)
   else:
-    return None
+    return (None, None)
 
 class ServerDescriptorV2(Descriptor):
   """
@@ -111,7 +112,9 @@ class ServerDescriptorV2(Descriptor):
     hibernating (bool)       - flag to indicate if the relay was hibernating when published (*)
     uptime (int)             - relay's uptime when published in seconds
     onion_key (str)          - key used to encrypt EXTEND cells (*)
+    onion_key_type (str)     - block type of the onion_key, probably "RSA PUBLIC KEY" (*)
     signing_key (str)        - relay's long-term identity key (*)
+    signing_key_type (str)   - block type of the signing_key, probably "RSA PUBLIC KEY" (*)
     
     * required fields, others are left as None if undefined
   """
@@ -153,14 +156,14 @@ class ServerDescriptorV2(Descriptor):
         raise ValueError("Line contains invalid characters: %s" % line)
       
       keyword, value = line_match.groups()
-      key_block = _get_key_block(remaining_contents)
+      block_type, block_contents = _get_psudo_pgp_block(remaining_contents)
       
       if keyword in ("accept", "reject"):
         exit_policy_lines.append("%s %s" % (keyword, value))
       elif keyword in entries:
-        entries[keyword].append((value, key_block))
+        entries[keyword].append((value, block_type, block_contents))
       else:
-        entries[keyword] = [(value, key_block)]
+        entries[keyword] = [(value, block_type, block_contents)]
     
     # validates restrictions about the entries
     
@@ -175,7 +178,9 @@ class ServerDescriptorV2(Descriptor):
     # parse all the entries into our attributes
     
     for keyword, values in entres.items():
-      value, key_block = values[0] # most just work with the first (and only) value
+      # most just work with the first (and only) value
+      value, block_type, block_contents = values[0]
+      
       line = "%s %s" % (keyword, value) # original line
       
       if keyword == "router":
@@ -267,15 +272,17 @@ class ServerDescriptorV2(Descriptor):
         
         self.uptime = int(value)
       elif keyword == "onion-key":
-        if not key_block:
+        if not block_type or not block_contents:
           raise TypeError("Onion key line must be followed by a public key: %s" % value)
           
-        self.onion_key = key_block
+        self.onion_key_type = block_type
+        self.onion_key = block_contents
       elif keyword == "signing-key":
-        if not key_block:
+        if not block_type or not block_contents:
           raise TypeError("Signing key line must be followed by a public key: %s" % value)
           
-        self.signing_key = key_block
+        self.signing_key_type = block_type
+        self.signing_key = block_contents
       else:
         unrecognized_entries.append(line)
 
