@@ -146,7 +146,7 @@ class ServerDescriptorV2(Descriptor):
       
       # Some lines have an 'opt ' for backward compatability. They should be
       # ignored. This prefix is being removed in...
-      # https://trac.torproject.org/projects/tor/ticket/5419
+      # https://trac.torproject.org/projects/tor/ticket/5124
       
       line = line.lstrip("opt ")
       
