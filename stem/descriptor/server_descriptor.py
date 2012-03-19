@@ -119,16 +119,19 @@ class ServerDescriptorV2(Descriptor):
     signing_key_type (str)   - block type of the signing_key, probably "RSA PUBLIC KEY" (*)
     router_sig (str)         - signature for this descriptor (*)
     router_sig_type (str)    - block type of the router_sig, probably "SIGNATURE" (*)
+    contact (str)            - relay's contact information
+    family (list)            - nicknames or fingerprints of relays it has a declared family with (*)
     
     * required fields, others are left as None if undefined
   """
   
   nickname = address = or_port = socks_port = dir_port = None
   average_bandwidth = burst_bandwidth = observed_bandwidth = None
-  platform = tor_version = published = fingerprint = None
-  uptime = onion_key = signing_key = None
+  platform = tor_version = published = fingerprint = uptime = None
+  onion_key = onion_key_type = signing_key = signing_key_type = None
+  router_sig = router_sig_type = contact = None
   hibernating = False
-  unrecognized_entries = []
+  family = unrecognized_entries = []
   
   def __init__(self, contents):
     Descriptor.__init__(self, contents)
@@ -294,6 +297,20 @@ class ServerDescriptorV2(Descriptor):
         
         self.router_sig_type = block_type
         self.router_sig = block_contents
+      elif keyword == "contact":
+        self.contact = value
+      elif keyword == "family":
+        self.family = value.split(" ")
       else:
         unrecognized_entries.append(line)
+  
+  def is_valid(self):
+    """
+    Validates that our content matches our signature.
+    
+    Returns:
+      True if our signature matches our content, False otherwise
+    """
+    
+    raise NotImplementedError # TODO: implement
 
