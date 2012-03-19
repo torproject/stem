@@ -26,11 +26,13 @@ PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHIT
 PGP_BLOCK_END   = "-----END %s-----"
 
 # entries must have exactly one of the following
+# TODO: spec doesn't list 'router-signature', but that's a spec bug I should fix
 REQUIRED_FIELDS = (
   "published",
   "onion-key",
   "signing-key",
   "bandwidth",
+  "router-signature",
 )
 
 # optional entries that can appear at most once
@@ -115,6 +117,8 @@ class ServerDescriptorV2(Descriptor):
     onion_key_type (str)     - block type of the onion_key, probably "RSA PUBLIC KEY" (*)
     signing_key (str)        - relay's long-term identity key (*)
     signing_key_type (str)   - block type of the signing_key, probably "RSA PUBLIC KEY" (*)
+    router_sig (str)         - signature for this descriptor (*)
+    router_sig_type (str)    - block type of the router_sig, probably "SIGNATURE" (*)
     
     * required fields, others are left as None if undefined
   """
@@ -182,6 +186,7 @@ class ServerDescriptorV2(Descriptor):
       value, block_type, block_contents = values[0]
       
       line = "%s %s" % (keyword, value) # original line
+      if block_contents: line += "\n%s" % block_contents
       
       if keyword == "router":
         # "router" nickname address ORPort SocksPort DirPort
@@ -273,16 +278,22 @@ class ServerDescriptorV2(Descriptor):
         self.uptime = int(value)
       elif keyword == "onion-key":
         if not block_type or not block_contents:
-          raise TypeError("Onion key line must be followed by a public key: %s" % value)
-          
+          raise TypeError("Onion key line must be followed by a public key: %s" % line)
+        
         self.onion_key_type = block_type
         self.onion_key = block_contents
       elif keyword == "signing-key":
         if not block_type or not block_contents:
-          raise TypeError("Signing key line must be followed by a public key: %s" % value)
-          
+          raise TypeError("Signing key line must be followed by a public key: %s" % line)
+        
         self.signing_key_type = block_type
         self.signing_key = block_contents
+      elif keyword == "router-signature":
+        if not block_type or not block_contents:
+          raise TypeError("Router signature line must be followed by a signature block: %s" % line)
+        
+        self.router_sig_type = block_type
+        self.router_sig = block_contents
       else:
         unrecognized_entries.append(line)
 
