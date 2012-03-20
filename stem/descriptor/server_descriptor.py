@@ -109,6 +109,7 @@ class ServerDescriptorV2(Descriptor):
     observed_bandwidth (int) - estimated capacity of the relay based on usage in bytes/s (*)
     platform (str)           - operating system and tor version
     tor_version (stem.version.Version) - version of tor
+    exit_policy (stem.exit_policy.ExitPolicy) - relay's stated exit policy
     published (datetime.datetime) - time in GMT when the descriptor was generated (*)
     fingerprint (str)        - fourty hex digits that make up the relay's fingerprint
     hibernating (bool)       - flag to indicate if the relay was hibernating when published (*)
@@ -132,6 +133,11 @@ class ServerDescriptorV2(Descriptor):
   router_sig = router_sig_type = contact = None
   hibernating = False
   family = unrecognized_entries = []
+  
+  # TODO: Until we have a proper ExitPolicy class this is just a list of the
+  # exit policy strings...
+  
+  exit_policy = []
   
   def __init__(self, contents, validate = True):
     """
@@ -163,7 +169,6 @@ class ServerDescriptorV2(Descriptor):
     # does not matter so breaking it into key / value pairs.
     
     entries = {}
-    exit_policy_lines = []
     
     remaining_contents = contents.split("\n")
     while remaining_contents:
@@ -185,7 +190,7 @@ class ServerDescriptorV2(Descriptor):
       block_type, block_contents = _get_psudo_pgp_block(remaining_contents)
       
       if keyword in ("accept", "reject"):
-        exit_policy_lines.append("%s %s" % (keyword, value))
+        self.exit_policy.append("%s %s" % (keyword, value))
       elif keyword in entries:
         entries[keyword].append((value, block_type, block_contents))
       else:
