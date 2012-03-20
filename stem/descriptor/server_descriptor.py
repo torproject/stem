@@ -133,7 +133,25 @@ class ServerDescriptorV2(Descriptor):
   hibernating = False
   family = unrecognized_entries = []
   
-  def __init__(self, contents):
+  def __init__(self, contents, validate = True):
+    """
+    Version 2 server descriptor constructor, created from an individual relay's
+    descriptor content (as provided by "GETINFO desc/*", cached descriptors,
+    and metrics).
+    
+    By default this validates the descriptor's content as it's parsed. This
+    validation can be disables to either improve performance or be accepting of
+    malformed data.
+    
+    Arguments:
+      contents (str)  - descriptor content provided by the relay
+      validate (bool) - checks the validity of the descriptor's content if True,
+                        skips these checks otherwise
+    
+    Raises:
+      ValueError if the contents is malformed and validate is True
+    """
+    
     Descriptor.__init__(self, contents)
     
     # A descriptor contains a series of 'keyword lines' which are simply a
@@ -160,6 +178,7 @@ class ServerDescriptorV2(Descriptor):
       line_match = KEYWORD_LINE.match(line)
       
       if not line_match:
+        if not validate: continue
         raise ValueError("Line contains invalid characters: %s" % line)
       
       keyword, value = line_match.groups()
@@ -174,13 +193,14 @@ class ServerDescriptorV2(Descriptor):
     
     # validates restrictions about the entries
     
-    for keyword in REQUIRED_FIELDS:
-      if not keyword in entries:
-        raise ValueError("Descriptor must have a '%s' entry" % keyword
-    
-    for keyword in SINGLE_FIELDS + REQUIRED_FIELDS:
-      if keyword in entries and len(entries[keyword]) > 1:
-        raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
+    if validate:
+      for keyword in REQUIRED_FIELDS:
+        if not keyword in entries:
+          raise ValueError("Descriptor must have a '%s' entry" % keyword
+      
+      for keyword in SINGLE_FIELDS + REQUIRED_FIELDS:
+        if keyword in entries and len(entries[keyword]) > 1:
+          raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
     
     # parse all the entries into our attributes
     
@@ -196,17 +216,20 @@ class ServerDescriptorV2(Descriptor):
         router_comp = value.split()
         
         if len(router_comp) != 5:
+          if not validate: continue
           raise ValueError("Router line must have five values: %s" % line
-        elif not stem.util.tor_tools.is_valid_nickname(router_comp[0]):
-          raise TypeError("Router line entry isn't a valid nickname: %s" % router_comp[0])
-        elif not stem.util.connection.is_valid_ip_address(router_comp[1]):
-          raise TypeError("Router line entry isn't a valid IPv4 address: %s" % router_comp[1])
-        elif not stem.util.connection.is_valid_port(router_comp[2], allow_zero = True):
-          raise TypeError("Router line's ORPort is invalid: %s" % router_comp[2])
-        elif router_comp[3] != "0":
-          raise TypeError("Router line's SocksPort should be zero: %s" % router_comp[3])
-        elif not stem.util.connection.is_valid_port(router_comp[4], allow_zero = True):
-          raise TypeError("Router line's DirPort is invalid: %s" % router_comp[4])
+        
+        if validate:
+          if not stem.util.tor_tools.is_valid_nickname(router_comp[0]):
+            raise ValueError("Router line entry isn't a valid nickname: %s" % router_comp[0])
+          elif not stem.util.connection.is_valid_ip_address(router_comp[1]):
+            raise ValueError("Router line entry isn't a valid IPv4 address: %s" % router_comp[1])
+          elif not stem.util.connection.is_valid_port(router_comp[2], allow_zero = True):
+            raise ValueError("Router line's ORPort is invalid: %s" % router_comp[2])
+          elif router_comp[3] != "0":
+            raise ValueError("Router line's SocksPort should be zero: %s" % router_comp[3])
+          elif not stem.util.connection.is_valid_port(router_comp[4], allow_zero = True):
+            raise ValueError("Router line's DirPort is invalid: %s" % router_comp[4])
         
         self.nickname   = router_comp[0]
         self.address    = router_comp[1]
@@ -218,13 +241,16 @@ class ServerDescriptorV2(Descriptor):
         bandwidth_comp = value.split()
         
         if len(bandwidth_comp) != 3:
+          if not validate: continue
           raise ValueError("Bandwidth line must have three values: %s" % line
-        elif not bandwidth_comp[0].isdigit()):
-          raise TypeError("Bandwidth line's average rate isn't numeric: %s" % bandwidth_comp[0])
-        elif not bandwidth_comp[1].isdigit()):
-          raise TypeError("Bandwidth line's burst rate isn't numeric: %s" % bandwidth_comp[1])
-        elif not bandwidth_comp[2].isdigit()):
-          raise TypeError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
+        
+        if validate:
+          if not bandwidth_comp[0].isdigit()):
+            raise ValueError("Bandwidth line's average rate isn't numeric: %s" % bandwidth_comp[0])
+          elif not bandwidth_comp[1].isdigit()):
+            raise ValueError("Bandwidth line's burst rate isn't numeric: %s" % bandwidth_comp[1])
+          elif not bandwidth_comp[2].isdigit()):
+            raise ValueError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
         
         average_bandwidth  = int(router_comp[0])
         burst_bandwidth    = int(router_comp[1])
@@ -252,48 +278,51 @@ class ServerDescriptorV2(Descriptor):
         try:
           self.published = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         except ValueError:
-          raise TypeError("Published line's time wasn't parseable: %s" % line)
+          if validate:
+            raise ValueError("Published line's time wasn't parseable: %s" % line)
       elif keyword == "fingerprint":
         # This is fourty hex digits split into space separated groups of four.
         # Checking that we match this pattern.
         
         fingerprint = value.replace(" ", "")
         
-        for grouping in value.split(" "):
-          if len(grouping) != 4:
-            raise TypeError("Fingerprint line should have groupings of four hex digits: %s" % value)
-        
-        if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
-          raise TypeError("Tor relay fingerprints consist of fourty hex digits: %s" % value)
+        if validate:
+          for grouping in value.split(" "):
+            if len(grouping) != 4:
+              raise ValueError("Fingerprint line should have groupings of four hex digits: %s" % value)
+          
+          if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
+            raise ValueError("Tor relay fingerprints consist of fourty hex digits: %s" % value)
         
         self.fingerprint = fingerprint
       elif keyword == "hibernating":
         # "hibernating" 0|1 (in practice only set if one)
         
-        if not value in ("0", "1"):
-          raise TypeError("Hibernating line had an invalid value, must be zero or one: %s" % value)
+        if validate and not value in ("0", "1"):
+          raise ValueError("Hibernating line had an invalid value, must be zero or one: %s" % value)
         
         self.hibernating = value == "1"
       elif keyword == "uptime":
         if not value.isdigit():
-          raise TypeError("Uptime line must have an integer value: %s" % value)
+          if not validate: continue
+          raise ValueError("Uptime line must have an integer value: %s" % value)
         
         self.uptime = int(value)
       elif keyword == "onion-key":
-        if not block_type or not block_contents:
-          raise TypeError("Onion key line must be followed by a public key: %s" % line)
+        if validate and (not block_type or not block_contents):
+          raise ValueError("Onion key line must be followed by a public key: %s" % line)
         
         self.onion_key_type = block_type
         self.onion_key = block_contents
       elif keyword == "signing-key":
-        if not block_type or not block_contents:
-          raise TypeError("Signing key line must be followed by a public key: %s" % line)
+        if validate and (not block_type or not block_contents):
+          raise ValueError("Signing key line must be followed by a public key: %s" % line)
         
         self.signing_key_type = block_type
         self.signing_key = block_contents
       elif keyword == "router-signature":
-        if not block_type or not block_contents:
-          raise TypeError("Router signature line must be followed by a signature block: %s" % line)
+        if validate and (not block_type or not block_contents):
+          raise ValueError("Router signature line must be followed by a signature block: %s" % line)
         
         self.router_sig_type = block_type
         self.router_sig = block_contents
