@@ -153,7 +153,10 @@ def align_results(line_type, line_content):
     assert False, "Unexpected line type: %s" % line_type
     return line_content
   
-  return "%-61s[%s]" % (line_content, term.format(new_ending, term.Attr.BOLD))
+  if CONFIG["argument.no_color"]:
+    return "%-61s[%s]" % (line_content, term.format(new_ending))
+  else:
+    return "%-61s[%s]" % (line_content, term.format(new_ending, term.Attr.BOLD))
 
 class ErrorTracker:
   """
