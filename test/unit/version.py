@@ -4,17 +4,37 @@ Unit tests for the stem.version.Version parsing and class.
 
 import unittest
 import stem.version
+import stem.util.system
+
+import test.mocking as mocking
+
+
+TOR_VERSION_OUTPUT = """Mar 22 23:09:37.088 [notice] Tor v0.2.2.35 \
+(git-73ff13ab3cc9570d). This is experimental software. Do not rely on it for \
+strong anonymity. (Running on Linux i686)
+Tor version 0.2.2.35 (git-73ff13ab3cc9570d)."""
 
 class TestVersion(unittest.TestCase):
+  def tearDown(self):
+    mocking.revert_mocking()
+  
+  def test_get_system_tor_version(self):
+    def _mock_call(command):
+      if command == "tor --version":
+        return TOR_VERSION_OUTPUT.splitlines()
+      else:
+        raise ValueError("stem.util.system.call received an unexpected command")
+
+    mocking.mock(stem.util.system.call, _mock_call)
+    version = stem.version.get_system_tor_version()
+    self.assert_versions_match(version, 0, 2, 2, 35, None)
+    
   def test_parsing(self):
     """
     Tests parsing by the Version class constructor.
     """
     
     # valid versions with various number of compontents to the version
-    
-    version = stem.version.Version("0.1.2.3-tag (git-7dcd105be34a4f44)")
-    self.assert_versions_match(version, 0, 1, 2, 3, "tag (git-7dcd105be34a4f44)")
     
     version = stem.version.Version("0.1.2.3-tag")
     self.assert_versions_match(version, 0, 1, 2, 3, "tag")
@@ -50,7 +70,6 @@ class TestVersion(unittest.TestCase):
     
     # check for basic incrementing in each portion
     self.assert_version_is_greater("1.1.2.3-tag", "0.1.2.3-tag")
-    self.assert_version_is_greater("1.1.2.3-tag (git-7dcd105be34a4f44)", "0.1.2.3-tag (git-7dcd105be34a4f44)")
     self.assert_version_is_greater("0.2.2.3-tag", "0.1.2.3-tag")
     self.assert_version_is_greater("0.1.3.3-tag", "0.1.2.3-tag")
     self.assert_version_is_greater("0.1.2.4-tag", "0.1.2.3-tag")
@@ -87,7 +106,6 @@ class TestVersion(unittest.TestCase):
     """
     
     # checks conversion with various numbers of arguments
-    self.assert_string_matches("0.1.2.3-tag (git-7dcd105be34a4f44)")
     self.assert_string_matches("0.1.2.3-tag")
     self.assert_string_matches("0.1.2.3")
     self.assert_string_matches("0.1.2")
