@@ -7,6 +7,8 @@ import unittest
 import stem.connection
 import stem.socket
 import stem.version
+import stem.util.proc
+import stem.util.system
 import test.mocking as mocking
 
 NO_AUTH = """250-PROTOCOLINFO 1
@@ -155,6 +157,8 @@ class TestProtocolInfoResponse(unittest.TestCase):
       elif command == stem.util.system.GET_CWD_PWDX % 10:
         return ["10: /tmp/foo"]
     
+    mocking.mock(stem.util.proc.is_available, mocking.return_false())
+    mocking.mock(stem.util.system.is_available, mocking.return_true())
     mocking.mock(stem.util.system.call, call_mocking)
     
     control_message = mocking.get_message(RELATIVE_COOKIE_PATH)
