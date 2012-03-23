@@ -4,6 +4,8 @@ Common functionality for descriptors.
 
 import os
 
+import stem.descriptor.server_descriptor
+
 def parse_descriptors(path, descriptor_file):
   """
   Provides an iterator for the descriptors within a given file.
@@ -28,13 +30,21 @@ def parse_descriptors(path, descriptor_file):
   filename = os.path.basename(path)
   
   if filename == "cached-descriptors":
-    pass # server descriptors from tor's data directory
+    # server descriptors from tor's data directory
+    while descriptor_file:
+      yield stem.descriptor.server_descriptor.parse_server_descriptors_v2(path, descriptor_file)
+    
+    return
   
   first_line = descriptor_file.readline()
   descriptor_file.seek(0)
   
   if first_line.startswith("router "):
-    pass # server descriptor
+    # server descriptor
+    while descriptor_file:
+      yield stem.descriptor.server_descriptor.parse_server_descriptors_v2(path, descriptor_file)
+    
+    return
   
   # TODO: implement actual descriptor type recognition and parsing
   # TODO: add integ test for non-descriptor text content
