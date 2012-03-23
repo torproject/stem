@@ -88,7 +88,9 @@ def parse_server_descriptors_v2(path, descriptor_file):
     # caller.
     
     if descriptor_content:
-      yield ServerDescriptorV2(descriptr_content, annotations = annotations)
+      descriptor = ServerDescriptorV2(descriptor_content, annotations = annotations)
+      descriptor._set_path(path)
+      yield descriptor
 
 def _read_until_keyword(keyword, descriptor_file, inclusive = False):
   """
@@ -157,7 +159,7 @@ def _get_psudo_pgp_block(remaining_contents):
       line = remaining_contents.pop(0)
       block_lines.append(line)
       
-      if line == PGP_BLOCK_END $ block_type:
+      if line == PGP_BLOCK_END % block_type:
         return block_type, "\n".join(block_lines)
   else:
     return (None, None)
@@ -280,7 +282,7 @@ class ServerDescriptorV2(Descriptor):
     if validate:
       for keyword in REQUIRED_FIELDS:
         if not keyword in entries:
-          raise ValueError("Descriptor must have a '%s' entry" % keyword
+          raise ValueError("Descriptor must have a '%s' entry" % keyword)
       
       for keyword in SINGLE_FIELDS + REQUIRED_FIELDS:
         if keyword in entries and len(entries[keyword]) > 1:
@@ -288,7 +290,7 @@ class ServerDescriptorV2(Descriptor):
     
     # parse all the entries into our attributes
     
-    for keyword, values in entres.items():
+    for keyword, values in entries.items():
       # most just work with the first (and only) value
       value, block_type, block_contents = values[0]
       
@@ -301,7 +303,7 @@ class ServerDescriptorV2(Descriptor):
         
         if len(router_comp) != 5:
           if not validate: continue
-          raise ValueError("Router line must have five values: %s" % line
+          raise ValueError("Router line must have five values: %s" % line)
         
         if validate:
           if not stem.util.tor_tools.is_valid_nickname(router_comp[0]):
@@ -326,19 +328,19 @@ class ServerDescriptorV2(Descriptor):
         
         if len(bandwidth_comp) != 3:
           if not validate: continue
-          raise ValueError("Bandwidth line must have three values: %s" % line
+          raise ValueError("Bandwidth line must have three values: %s" % line)
         
         if validate:
-          if not bandwidth_comp[0].isdigit()):
+          if not bandwidth_comp[0].isdigit():
             raise ValueError("Bandwidth line's average rate isn't numeric: %s" % bandwidth_comp[0])
-          elif not bandwidth_comp[1].isdigit()):
+          elif not bandwidth_comp[1].isdigit():
             raise ValueError("Bandwidth line's burst rate isn't numeric: %s" % bandwidth_comp[1])
-          elif not bandwidth_comp[2].isdigit()):
+          elif not bandwidth_comp[2].isdigit():
             raise ValueError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
         
-        average_bandwidth  = int(router_comp[0])
-        burst_bandwidth    = int(router_comp[1])
-        observed_bandwidth = int(router_comp[2])
+        self.average_bandwidth  = int(router_comp[0])
+        self.burst_bandwidth    = int(router_comp[1])
+        self.observed_bandwidth = int(router_comp[2])
       elif keyword == "platform":
         # "platform" string
         
@@ -350,11 +352,11 @@ class ServerDescriptorV2(Descriptor):
         #
         # There's no guerentee that we'll be able to pick out the version.
         
-        platform_comp = platform.split()
+        platform_comp = self.platform.split()
         
         if platform_comp[0] == "Tor" and len(platform_comp) >= 2:
           try:
-            tor_version = stem.version.Version(platform_comp[1])
+            self.tor_version = stem.version.Version(platform_comp[1])
           except ValueError: pass
       elif keyword == "published":
         # "published" YYYY-MM-DD HH:MM:SS
@@ -415,7 +417,7 @@ class ServerDescriptorV2(Descriptor):
       elif keyword == "family":
         self.family = value.split(" ")
       else:
-        unrecognized_entries.append(line)
+        self.unrecognized_entries.append(line)
   
   def get_annotations(self):
     """
