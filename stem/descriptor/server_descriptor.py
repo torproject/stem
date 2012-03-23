@@ -53,7 +53,76 @@ def parse_server_descriptors_v2(path, descriptor_file):
   Iterates over the verion 2 server descriptors in a descriptor file.
   """
   
-  pass
+  # Cached descriptors consist of annotations followed by the descriptor
+  # itself. For instance...
+  #
+  #   @downloaded-at 2012-03-14 16:31:05
+  #   @source "145.53.65.130"
+  #   router caerSidi 71.35.143.157 9001 0 0
+  #   platform Tor 0.2.1.30 on Linux x86_64
+  #   <rest of the descriptor content>
+  #   router-signature
+  #   -----BEGIN SIGNATURE-----
+  #   <signature for the above descriptor>
+  #   -----END SIGNATURE-----
+  #
+  # Metrics descriptor files are the same, but lack any annotations. The
+  # following simply does the following...
+  #
+  #   - parse as annotations until we get to ENTRY_START
+  #   - parse as descriptor content until we get to ENTRY_END followed by the
+  #     end of the signature block
+  #   - construct a descriptor and provide it back to the caller
+  
+  while descriptor_file:
+    annotations = _read_until_keyword(ENTRY_START, descriptor_file)
+    descriptor_content = _read_until_keyword(ENTRY_END, descriptor_file)
+    
+    # we've reached the 'router-signature', now include the pgp style block
+    block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
+    descriptor_content += _read_until_keyword(block_end_prefix, descriptor_file, True)
+    
+    # If the file has ending annotations (ie, non-descriptor text after the
+    # last descriptor) then we won't have any descriptor content at this point.
+    # This is fine. Those ending annotations are simply never returned to the
+    # caller.
+    
+    if descriptor_content:
+      yield ServerDescriptorV2(descriptr_content, annotations = annotations)
+
+def _read_until_keyword(keyword, descriptor_file, inclusive = False):
+  """
+  Reads from the descriptor file until we get to the given keyword or reach the
+  end of the file.
+  
+  Arguments:
+    keyword (str)          - keyword we want to read until
+    descriptor_file (file) - file with the descriptor content
+    inclusive (bool)       - includes the line with the keyword if True
+  
+  Returns:
+    list with the lines until we find the keyword
+  """
+  
+  content = []
+  
+  while descriptor_file:
+    last_position = descriptor_file.tell()
+    line = descriptor_file.readline()
+    
+    if not line: continue # blank line
+    elif " " in line: line_keyword = line.split(" ", 1)[0]
+    else: line_keyword = line
+    
+    if line_keyword == keyword:
+      if inclusive: content.append(line)
+      else: descriptor_file.seek(last_position)
+      
+      break
+    else:
+      content.append(line)
+  
+  return content
 
 def _get_psudo_pgp_block(remaining_contents):
   """
@@ -139,7 +208,7 @@ class ServerDescriptorV2(Descriptor):
   
   exit_policy = []
   
-  def __init__(self, contents, validate = True):
+  def __init__(self, contents, validate = True, annotations = None):
     """
     Version 2 server descriptor constructor, created from an individual relay's
     descriptor content (as provided by "GETINFO desc/*", cached descriptors,
@@ -150,15 +219,25 @@ class ServerDescriptorV2(Descriptor):
     malformed data.
     
     Arguments:
-      contents (str)  - descriptor content provided by the relay
-      validate (bool) - checks the validity of the descriptor's content if True,
-                        skips these checks otherwise
+      contents (str)     - descriptor content provided by the relay
+      validate (bool)    - checks the validity of the descriptor's content if
+                           True, skips these checks otherwise
+      annotations (list) - lines that appeared prior to the descriptor
     
     Raises:
       ValueError if the contents is malformed and validate is True
     """
     
     Descriptor.__init__(self, contents)
+    
+    self._annotation_lines = annotations
+    self._annotation_dict = {}
+    
+    for line in annotations:
+      if " " in line:
+        key, value = line.split(" ", 1)
+        self._annotation_dict[key] = value
+      else: self._annotation_dict[line] = None
     
     # A descriptor contains a series of 'keyword lines' which are simply a
     # keyword followed by an optional value. Lines can also be followed by a
@@ -337,6 +416,32 @@ class ServerDescriptorV2(Descriptor):
         self.family = value.split(" ")
       else:
         unrecognized_entries.append(line)
+  
+  def get_annotations(self):
+    """
+    Provides content that appeard prior to the descriptor. If this comes from
+    the cached-descriptors file then this commonly contains content like...
+    
+      @downloaded-at 2012-03-18 21:18:29
+      @source "173.254.216.66"
+    
+    Returns:
+      dict with the key/value pairs in our annotations
+    """
+    
+    return self._annotation_dict
+  
+  def get_annotation_lines(self):
+    """
+    Provides the lines of content that appeared prior to the descriptor. This
+    is the same as the get_annotations() results, but with the unparsed lines
+    and ordering retained.
+    
+    Returns:
+      list with the lines of annotation that came before this descriptor
+    """
+    
+    return self._annotation_lines
   
   def is_valid(self):
     """
