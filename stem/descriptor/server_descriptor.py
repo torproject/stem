@@ -14,7 +14,7 @@ import datetime
 import stem.version
 import stem.util.connection
 import stem.util.tor_tools
-import stem.descriptor.descriptor
+import stem.descriptor
 
 ENTRY_START = "router"
 ENTRY_END   = "router-signature"
@@ -164,7 +164,7 @@ def _get_psudo_pgp_block(remaining_contents):
   else:
     return (None, None)
 
-class ServerDescriptorV2(stem.descriptor.descriptor.Descriptor):
+class ServerDescriptorV2(stem.descriptor.Descriptor):
   """
   Version 2 server descriptor, as specified in...
   https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec-v2.txt
@@ -230,7 +230,7 @@ class ServerDescriptorV2(stem.descriptor.descriptor.Descriptor):
       ValueError if the contents is malformed and validate is True
     """
     
-    stem.descriptor.descriptor.Descriptor.__init__(self, contents)
+    stem.descriptor.Descriptor.__init__(self, contents)
     
     self._annotation_lines = annotations
     self._annotation_dict = {}
