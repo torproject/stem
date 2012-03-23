@@ -19,15 +19,6 @@ class ExitPolicyLine:
         # sets the ip address component
         self.isIpWildcard = entryIp == "*" or entryIp.endswith("/0")
 
-        # checks for the private alias (which expands this to a chain of entries)
-        if entryIp.lower() == "private":
-            # constructs the chain backwards (last first)
-            prefix = "accept " if self.isAccept else "reject "
-            suffix = ":" + entryPort
-            for addr in PRIVATE_IP_RANGES:
-                # TODO: Add ExitPolicy.add method 
-                ExitPolicy.add(prefix + addr + suffix) 
-
         if "/" in entryIp:
             ipComp = entryIp.split("/", 1)
             self.ipAddress = ipComp[0]
@@ -121,7 +112,13 @@ class ExitPolicy:
         self._policies = []
   
     def add(self, ruleEntry):
-        self._policies.append(ExitPolicyLine(ruleEntry))
+        # checks for the private alias (which expands this to a chain of entries)
+        if "private" in ruleEntry.lower():
+            for addr in PRIVATE_IP_RANGES:
+                newEntry = ruleEntry.replace("private", addr)
+                self._policies.append(ExitPolicyLine(newEntry))
+        else:
+            self._policies.append(ExitPolicyLine(ruleEntry))
 
     def isExitingAllowed(self):
         """
