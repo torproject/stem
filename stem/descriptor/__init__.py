@@ -43,14 +43,16 @@ def parse_descriptors(path, descriptor_file):
   
   if first_line.startswith("router "):
     # server descriptor
-    while descriptor_file:
-      yield stem.descriptor.server_descriptor.parse_server_descriptors_v2(path, descriptor_file)
+    for desc in stem.descriptor.server_descriptor.parse_server_descriptors_v2(path, descriptor_file):
+      yield desc
     
     return
   
   # TODO: implement actual descriptor type recognition and parsing
   # TODO: add integ test for non-descriptor text content
-  yield Descriptor(path, descriptor_file.read())
+  desc = Descriptor(descriptor_file.read())
+  desc._set_path(path)
+  yield desc
 
 class Descriptor:
   """

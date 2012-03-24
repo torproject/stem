@@ -21,7 +21,7 @@ ENTRY_END   = "router-signature"
 
 KEYWORD_CHAR    = "a-zA-Z0-9-"
 WHITESPACE      = " \t"
-KEYWORD_LINE    = re.compile("^([%s]+)[%s]*([%s]*)$" % (KEYWORD_CHAR, WHITESPACE, KEYWORD_CHAR))
+KEYWORD_LINE    = re.compile("^([%s]+)[%s]*(.*)$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END   = "-----END %s-----"
 
@@ -74,7 +74,7 @@ def parse_server_descriptors_v2(path, descriptor_file):
   #     end of the signature block
   #   - construct a descriptor and provide it back to the caller
   
-  while descriptor_file:
+  while True:
     annotations = _read_until_keyword(ENTRY_START, descriptor_file)
     descriptor_content = _read_until_keyword(ENTRY_END, descriptor_file)
     
@@ -88,9 +88,10 @@ def parse_server_descriptors_v2(path, descriptor_file):
     # caller.
     
     if descriptor_content:
-      descriptor = ServerDescriptorV2(descriptor_content, annotations = annotations)
+      descriptor = ServerDescriptorV2("\n".join(descriptor_content), annotations = annotations)
       descriptor._set_path(path)
       yield descriptor
+    else: return # done parsing descriptors
 
 def _read_until_keyword(keyword, descriptor_file, inclusive = False):
   """
@@ -108,12 +109,14 @@ def _read_until_keyword(keyword, descriptor_file, inclusive = False):
   
   content = []
   
-  while descriptor_file:
+  while True:
     last_position = descriptor_file.tell()
     line = descriptor_file.readline()
     
-    if not line: continue # blank line
-    elif " " in line: line_keyword = line.split(" ", 1)[0]
+    if not line: break # EOF
+    line = line.strip()
+    
+    if " " in line: line_keyword = line.split(" ", 1)[0]
     else: line_keyword = line
     
     if line_keyword == keyword:
@@ -259,7 +262,7 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
       # ignored. This prefix is being removed in...
       # https://trac.torproject.org/projects/tor/ticket/5124
       
-      line = line.lstrip("opt ")
+      if line.startswith("opt "): line = line[4:]
       
       line_match = KEYWORD_LINE.match(line)
       
@@ -278,7 +281,6 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
         entries[keyword] = [(value, block_type, block_contents)]
     
     # validates restrictions about the entries
-    
     if validate:
       for keyword in REQUIRED_FIELDS:
         if not keyword in entries:
@@ -338,9 +340,9 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
           elif not bandwidth_comp[2].isdigit():
             raise ValueError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
         
-        self.average_bandwidth  = int(router_comp[0])
-        self.burst_bandwidth    = int(router_comp[1])
-        self.observed_bandwidth = int(router_comp[2])
+        self.average_bandwidth  = int(bandwidth_comp[0])
+        self.burst_bandwidth    = int(bandwidth_comp[1])
+        self.observed_bandwidth = int(bandwidth_comp[2])
       elif keyword == "platform":
         # "platform" string
         
