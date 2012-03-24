@@ -70,7 +70,7 @@ import threading
 import mimetypes
 import Queue
 
-import stem.descriptor.descriptor
+import stem.descriptor
 
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = "DONE"
@@ -365,7 +365,7 @@ class DescriptorReader:
   def _handle_descriptor_file(self, target):
     try:
       with open(target) as target_file:
-        for desc in stem.descriptor.descriptor.parse_descriptors(target, target_file):
+        for desc in stem.descriptor.parse_descriptors(target, target_file):
           self._enqueue_descriptor(desc)
           self._iter_notice.set()
     except TypeError, exc:
@@ -380,7 +380,7 @@ class DescriptorReader:
           if tar_entry.isfile():
             entry = tar_file.extractfile(tar_entry)
             
-            for desc in stem.descriptor.descriptor.parse_descriptors(target, entry):
+            for desc in stem.descriptor.parse_descriptors(target, entry):
               self._enqueue_descriptor(desc)
               self._iter_notice.set()
             
