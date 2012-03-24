@@ -6,8 +6,6 @@ __all__ = ["descriptor", "reader", "server_descriptor", "parse_descriptors", "De
 
 import os
 
-import stem.descriptor.server_descriptor
-
 def parse_descriptors(path, descriptor_file):
   """
   Provides an iterator for the descriptors within a given file.
@@ -23,6 +21,8 @@ def parse_descriptors(path, descriptor_file):
     TypeError if we can't match the contents of the file to a descriptor type
     IOError if unable to read from the descriptor_file
   """
+  
+  import stem.descriptor.server_descriptor
   
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
