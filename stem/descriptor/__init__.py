@@ -1,12 +1,18 @@
 """
 Package for parsing and processing descriptor data.
+
+parse_file - Iterates over the descriptors in a file.
+Descriptor - Common parent for all descriptor file types.
+  |- get_path - location of the descriptor on disk if it came from a file
+  |- get_unrecognized_lines - unparsed descriptor content
+  +- __str__ - string that the descriptor was made from
 """
 
-__all__ = ["descriptor", "reader", "server_descriptor", "parse_descriptors", "Descriptor"]
+__all__ = ["descriptor", "reader", "server_descriptor", "parse_file", "Descriptor"]
 
 import os
 
-def parse_descriptors(path, descriptor_file):
+def parse_file(path, descriptor_file):
   """
   Provides an iterator for the descriptors within a given file.
   
@@ -15,7 +21,7 @@ def parse_descriptors(path, descriptor_file):
     descriptor_file (file) - opened file with the descriptor contents
   
   Returns:
-    iterator that parses the file's contents into descriptors
+    iterator for Descriptor instances in the file
   
   Raises:
     TypeError if we can't match the contents of the file to a descriptor type
@@ -26,33 +32,21 @@ def parse_descriptors(path, descriptor_file):
   
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
-  # based on its filename for resources from the data directory and contents
-  # for files provided by metrics.
+  # based on...
+  # - its filename for resources from the tor data directory
+  # - first line of our contents for files provided by metrics
   
   filename = os.path.basename(path)
-  
-  if filename == "cached-descriptors":
-    # server descriptors from tor's data directory
-    while descriptor_file:
-      yield stem.descriptor.server_descriptor.parse_server_descriptors_v2(path, descriptor_file)
-    
-    return
-  
   first_line = descriptor_file.readline()
   descriptor_file.seek(0)
   
-  if first_line.startswith("router "):
-    # server descriptor
-    for desc in stem.descriptor.server_descriptor.parse_server_descriptors_v2(path, descriptor_file):
+  if filename == "cached-descriptors" or first_line.startswith("router "):
+    for desc in stem.descriptor.server_descriptor.parse_file_v2(descriptor_file):
+      desc._set_path(path)
       yield desc
-    
-    return
-  
-  # TODO: implement actual descriptor type recognition and parsing
-  # TODO: add integ test for non-descriptor text content
-  desc = Descriptor(descriptor_file.read())
-  desc._set_path(path)
-  yield desc
+  else:
+    # unrecognized descritor type
+    raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
 
 class Descriptor:
   """
@@ -83,12 +77,11 @@ class Descriptor:
       list of lines of unrecognized content
     """
     
-    return []
+    raise NotImplementedError
   
   def _set_path(self, path):
     self._path = path
   
   def __str__(self):
     return self._raw_contents
-
 

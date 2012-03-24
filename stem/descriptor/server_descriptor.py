@@ -6,15 +6,22 @@ etc). This information is provided from a few sources...
 - control port via 'GETINFO desc/*' queries
 - the 'cached-descriptors' file in tor's data directory
 - tor metrics, at https://metrics.torproject.org/data.html
+
+parse_file_v2 - Iterates over the server descriptors in a file.
+ServerDescriptorV2 - Tor server descriptor, version 2.
+  |- get_unrecognized_lines - lines with unrecognized content
+  |- get_annotations - dictionary of content prior to the descriptor entry
+  |- get_annotation_lines - lines that provided the annotations
+  +- is_valid - checks the signature against the descriptor content
 """
 
 import re
 import datetime
 
+import stem.descriptor
 import stem.version
 import stem.util.connection
 import stem.util.tor_tools
-import stem.descriptor
 
 ENTRY_START = "router"
 ENTRY_END   = "router-signature"
@@ -48,9 +55,21 @@ SINGLE_FIELDS = (
   "family",
 )
 
-def parse_server_descriptors_v2(path, descriptor_file):
+def parse_file_v2(descriptor_file, validate = True):
   """
-  Iterates over the verion 2 server descriptors in a descriptor file.
+  Iterates over the version 2 server descriptors in a file.
+  
+  Arguments:
+    descriptor_file (file) - file with descriptor content
+    validate (bool)        - checks the validity of the descriptor's content if
+                             True, skips these checks otherwise
+  
+  Returns:
+    iterator for ServerDescriptorV2 instances in the file
+  
+  Raises:
+    ValueError if the contents is malformed and validate is True
+    IOError if the file can't be read
   """
   
   # Cached descriptors consist of annotations followed by the descriptor
@@ -73,6 +92,9 @@ def parse_server_descriptors_v2(path, descriptor_file):
   #   - parse as descriptor content until we get to ENTRY_END followed by the
   #     end of the signature block
   #   - construct a descriptor and provide it back to the caller
+  #
+  # Any annotations after the last server descriptor is ignored (never provided
+  # to the caller).
   
   while True:
     annotations = _read_until_keyword(ENTRY_START, descriptor_file)
@@ -82,16 +104,14 @@ def parse_server_descriptors_v2(path, descriptor_file):
     block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
     descriptor_content += _read_until_keyword(block_end_prefix, descriptor_file, True)
     
-    # If the file has ending annotations (ie, non-descriptor text after the
-    # last descriptor) then we won't have any descriptor content at this point.
-    # This is fine. Those ending annotations are simply never returned to the
-    # caller.
-    
     if descriptor_content:
-      descriptor = ServerDescriptorV2("\n".join(descriptor_content), annotations = annotations)
-      descriptor._set_path(path)
+      # strip newlines from annotations
+      annotations = map(str.strip, annotations)
+      
+      descriptor_text = "".join(descriptor_content)
+      descriptor = ServerDescriptorV2(descriptor_text, validate, annotations)
       yield descriptor
-    else: return # done parsing descriptors
+    else: break # done parsing descriptors
 
 def _read_until_keyword(keyword, descriptor_file, inclusive = False):
   """
@@ -112,12 +132,10 @@ def _read_until_keyword(keyword, descriptor_file, inclusive = False):
   while True:
     last_position = descriptor_file.tell()
     line = descriptor_file.readline()
-    
     if not line: break # EOF
-    line = line.strip()
     
     if " " in line: line_keyword = line.split(" ", 1)[0]
-    else: line_keyword = line
+    else: line_keyword = line.strip()
     
     if line_keyword == keyword:
       if inclusive: content.append(line)
@@ -157,13 +175,13 @@ def _get_psudo_pgp_block(remaining_contents):
     
     while True:
       if not remaining_contents:
-        raise ValueError("Unterminated public key block")
+        raise ValueError("Unterminated pgp style block")
       
       line = remaining_contents.pop(0)
       block_lines.append(line)
       
       if line == PGP_BLOCK_END % block_type:
-        return block_type, "\n".join(block_lines)
+        return (block_type, "\n".join(block_lines))
   else:
     return (None, None)
 
@@ -197,7 +215,7 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
     contact (str)            - relay's contact information
     family (list)            - nicknames or fingerprints of relays it has a declared family with (*)
     
-    * required fields, others are left as None if undefined
+    (*) required fields, others are left as None if undefined
   """
   
   nickname = address = or_port = socks_port = dir_port = None
@@ -206,7 +224,7 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
   onion_key = onion_key_type = signing_key = signing_key_type = None
   router_sig = router_sig_type = contact = None
   hibernating = False
-  family = unrecognized_entries = []
+  family = unrecognized_lines = []
   
   # TODO: Until we have a proper ExitPolicy class this is just a list of the
   # exit policy strings...
@@ -258,6 +276,9 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
     while remaining_contents:
       line = remaining_contents.pop(0)
       
+      # last line can be empty
+      if not line and not remaining_contents: continue
+      
       # Some lines have an 'opt ' for backward compatability. They should be
       # ignored. This prefix is being removed in...
       # https://trac.torproject.org/projects/tor/ticket/5124
@@ -271,7 +292,12 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
         raise ValueError("Line contains invalid characters: %s" % line)
       
       keyword, value = line_match.groups()
-      block_type, block_contents = _get_psudo_pgp_block(remaining_contents)
+      
+      try:
+        block_type, block_contents = _get_psudo_pgp_block(remaining_contents)
+      except ValueError, exc:
+        if not validate: continue
+        raise exc
       
       if keyword in ("accept", "reject"):
         self.exit_policy.append("%s %s" % (keyword, value))
@@ -291,7 +317,6 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
           raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
     
     # parse all the entries into our attributes
-    
     for keyword, values in entries.items():
       # most just work with the first (and only) value
       value, block_type, block_contents = values[0]
@@ -332,13 +357,15 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
           if not validate: continue
           raise ValueError("Bandwidth line must have three values: %s" % line)
         
-        if validate:
-          if not bandwidth_comp[0].isdigit():
-            raise ValueError("Bandwidth line's average rate isn't numeric: %s" % bandwidth_comp[0])
-          elif not bandwidth_comp[1].isdigit():
-            raise ValueError("Bandwidth line's burst rate isn't numeric: %s" % bandwidth_comp[1])
-          elif not bandwidth_comp[2].isdigit():
-            raise ValueError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
+        if not bandwidth_comp[0].isdigit():
+          if not validate: continue
+          raise ValueError("Bandwidth line's average rate isn't numeric: %s" % bandwidth_comp[0])
+        elif not bandwidth_comp[1].isdigit():
+          if not validate: continue
+          raise ValueError("Bandwidth line's burst rate isn't numeric: %s" % bandwidth_comp[1])
+        elif not bandwidth_comp[2].isdigit():
+          if not validate: continue
+          raise ValueError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
         
         self.average_bandwidth  = int(bandwidth_comp[0])
         self.burst_bandwidth    = int(bandwidth_comp[1])
@@ -419,7 +446,10 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
       elif keyword == "family":
         self.family = value.split(" ")
       else:
-        self.unrecognized_entries.append(line)
+        self.unrecognized_lines.append(line)
+  
+  def get_unrecognized_lines(self):
+    return list(unrecognized_lines)
   
   def get_annotations(self):
     """
