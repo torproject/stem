@@ -287,6 +287,24 @@ class TestDescriptorReader(unittest.TestCase):
     
     self.assertEquals(expected_results, reader.get_processed_files())
   
+  def test_skip_nondescriptor_contents(self):
+    """
+    Checks that the reader properly reports when it skips both binary and
+    plaintext non-descriptor files.
+    """
+    
+    skip_listener = SkipListener()
+    reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
+    reader.register_skip_listener(skip_listener.listener)
+    
+    with reader: list(reader) # iterates over all of the descriptors
+    
+    self.assertTrue(2, len(skip_listener.results))
+    
+    for skip_path, skip_exception in skip_listener.results:
+      self.assertTrue(os.path.basename(skip_path) in ("riddle", "tiny.png"))
+      self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
+  
   def test_skip_listener_already_read(self):
     """
     Checks that calling set_processed_files() prior to reading makes us skip

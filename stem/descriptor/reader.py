@@ -94,7 +94,10 @@ class ParsingFailure(FileSkipped):
     self.exception = parsing_exception
 
 class UnrecognizedType(FileSkipped):
-  "File's mime type indicates that it isn't descriptor data."
+  """
+  File doesn't contain descriptor data. This could either be due to its file
+  type or because it doens't conform to a recognizable descriptor type.
+  """
   
   def __init__(self, mime_type):
     FileSkipped.__init__(self)
@@ -369,6 +372,8 @@ class DescriptorReader:
           self._enqueue_descriptor(desc)
           self._iter_notice.set()
     except TypeError, exc:
+      self._notify_skip_listeners(target, UnrecognizedType(None))
+    except ValueError, exc:
       self._notify_skip_listeners(target, ParsingFailure(exc))
     except IOError, exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
