@@ -31,6 +31,7 @@ import test.integ.control.base_controller
 import test.integ.socket.control_message
 import test.integ.socket.control_socket
 import test.integ.descriptor.reader
+import test.integ.descriptor.server_descriptor
 import test.integ.util.conf
 import test.integ.util.system
 import test.integ.version
@@ -98,6 +99,7 @@ INTEG_TESTS = (
   test.integ.util.conf.TestConf,
   test.integ.util.system.TestSystem,
   test.integ.descriptor.reader.TestDescriptorReader,
+  test.integ.descriptor.server_descriptor.TestServerDescriptor,
   test.integ.version.TestVersion,
   test.integ.socket.control_socket.TestControlSocket,
   test.integ.socket.control_message.TestControlMessage,

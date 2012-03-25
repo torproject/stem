@@ -192,44 +192,32 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
   
   Attributes:
     nickname (str)           - relay's nickname (*)
+    fingerprint (str)        - fourty hex digits that make up the relay's fingerprint
     address (str)            - IPv4 address of the relay (*)
     or_port (int)            - port used for relaying (*)
     socks_port (int)         - deprecated attribute, always zero (*)
     dir_port (int)           - deprecated port used for descriptor mirroring (*)
+    platform (str)           - operating system and tor version
+    tor_version (stem.version.Version) - version of tor
+    operating_system (str)   - relay's operating system
+    uptime (int)             - relay's uptime when published in seconds
+    published (datetime.datetime) - time in GMT when the descriptor was generated (*)
+    contact (str)            - relay's contact information
+    hibernating (bool)       - flag to indicate if the relay was hibernating when published (*)
+    exit_policy (stem.exit_policy.ExitPolicy) - relay's stated exit policy
+    family (list)            - nicknames or fingerprints of relays it has a declared family with (*)
     average_bandwidth (int)  - rate of traffic relay is willing to relay in bytes/s (*)
     burst_bandwidth (int)    - rate of traffic relay is willing to burst to in bytes/s (*)
     observed_bandwidth (int) - estimated capacity of the relay based on usage in bytes/s (*)
-    platform (str)           - operating system and tor version
-    tor_version (stem.version.Version) - version of tor
-    exit_policy (stem.exit_policy.ExitPolicy) - relay's stated exit policy
-    published (datetime.datetime) - time in GMT when the descriptor was generated (*)
-    fingerprint (str)        - fourty hex digits that make up the relay's fingerprint
-    hibernating (bool)       - flag to indicate if the relay was hibernating when published (*)
-    uptime (int)             - relay's uptime when published in seconds
     onion_key (str)          - key used to encrypt EXTEND cells (*)
     onion_key_type (str)     - block type of the onion_key, probably "RSA PUBLIC KEY" (*)
     signing_key (str)        - relay's long-term identity key (*)
     signing_key_type (str)   - block type of the signing_key, probably "RSA PUBLIC KEY" (*)
-    router_sig (str)         - signature for this descriptor (*)
-    router_sig_type (str)    - block type of the router_sig, probably "SIGNATURE" (*)
-    contact (str)            - relay's contact information
-    family (list)            - nicknames or fingerprints of relays it has a declared family with (*)
+    signature (str)          - signature for this descriptor (*)
+    signature_type (str)     - block type of the signature, probably "SIGNATURE" (*)
     
     (*) required fields, others are left as None if undefined
   """
-  
-  nickname = address = or_port = socks_port = dir_port = None
-  average_bandwidth = burst_bandwidth = observed_bandwidth = None
-  platform = tor_version = published = fingerprint = uptime = None
-  onion_key = onion_key_type = signing_key = signing_key_type = None
-  router_sig = router_sig_type = contact = None
-  hibernating = False
-  family = unrecognized_lines = []
-  
-  # TODO: Until we have a proper ExitPolicy class this is just a list of the
-  # exit policy strings...
-  
-  exit_policy = []
   
   def __init__(self, contents, validate = True, annotations = None):
     """
@@ -253,14 +241,49 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
     
     stem.descriptor.Descriptor.__init__(self, contents)
     
-    self._annotation_lines = annotations
-    self._annotation_dict = {}
+    self.nickname = None
+    self.fingerprint = None
+    self.address = None
+    self.or_port = None
+    self.socks_port = None
+    self.dir_port = None
+    self.platform = None
+    self.tor_version = None
+    self.operating_system = None
+    self.uptime = None
+    self.published = None
+    self.contact = None
+    self.hibernating = False
+    self.family = []
+    self.average_bandwidth = None
+    self.burst_bandwidth = None
+    self.observed_bandwidth = None
+    self.onion_key = None
+    self.onion_key_type = None
+    self.signing_key = None
+    self.signing_key_type = None
+    self.signature = None
+    self.signature_type = None
     
-    for line in annotations:
-      if " " in line:
-        key, value = line.split(" ", 1)
-        self._annotation_dict[key] = value
-      else: self._annotation_dict[line] = None
+    # TODO: Until we have a proper ExitPolicy class this is just a list of the
+    # exit policy strings...
+    
+    self.exit_policy = []
+    
+    self._unrecognized_lines = []
+    
+    if annotations:
+      self._annotation_lines = annotations
+      self._annotation_dict = {}
+      
+      for line in annotations:
+        if " " in line:
+          key, value = line.split(" ", 1)
+          self._annotation_dict[key] = value
+        else: self._annotation_dict[line] = None
+    else:
+      self._annotation_lines = []
+      self._annotation_dict = {}
     
     # A descriptor contains a series of 'keyword lines' which are simply a
     # keyword followed by an optional value. Lines can also be followed by a
@@ -271,7 +294,6 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
     # does not matter so breaking it into key / value pairs.
     
     entries = {}
-    
     remaining_contents = contents.split("\n")
     while remaining_contents:
       line = remaining_contents.pop(0)
@@ -343,12 +365,14 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
             raise ValueError("Router line's SocksPort should be zero: %s" % router_comp[3])
           elif not stem.util.connection.is_valid_port(router_comp[4], allow_zero = True):
             raise ValueError("Router line's DirPort is invalid: %s" % router_comp[4])
+        elif not (router_comp[2].isdigit() and router_comp[3].isdigit() and router_comp[4].isdigit()):
+          continue
         
         self.nickname   = router_comp[0]
         self.address    = router_comp[1]
-        self.or_port    = router_comp[2]
-        self.socks_port = router_comp[3]
-        self.dir_port   = router_comp[4]
+        self.or_port    = int(router_comp[2])
+        self.socks_port = int(router_comp[3])
+        self.dir_port   = int(router_comp[4])
       elif keyword == "bandwidth":
         # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
         bandwidth_comp = value.split()
@@ -379,13 +403,16 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
         # version followed by the os like the following...
         # platform Tor 0.2.2.35 (git-73ff13ab3cc9570d) on Linux x86_64
         #
-        # There's no guerentee that we'll be able to pick out the version.
+        # There's no guerentee that we'll be able to pick these out the
+        # version, but might as well try to save our caller the effot.
         
-        platform_comp = self.platform.split()
+        platform_match = re.match("^Tor (\S*).* on (.*)$", self.platform)
         
-        if platform_comp[0] == "Tor" and len(platform_comp) >= 2:
+        if platform_match:
+          version_str, self.operating_system = platform_match.groups()
+          
           try:
-            self.tor_version = stem.version.Version(platform_comp[1])
+            self.tor_version = stem.version.Version(version_str)
           except ValueError: pass
       elif keyword == "published":
         # "published" YYYY-MM-DD HH:MM:SS
@@ -439,17 +466,17 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
         if validate and (not block_type or not block_contents):
           raise ValueError("Router signature line must be followed by a signature block: %s" % line)
         
-        self.router_sig_type = block_type
-        self.router_sig = block_contents
+        self.signature_type = block_type
+        self.signature = block_contents
       elif keyword == "contact":
         self.contact = value
       elif keyword == "family":
         self.family = value.split(" ")
       else:
-        self.unrecognized_lines.append(line)
+        self._unrecognized_lines.append(line)
   
   def get_unrecognized_lines(self):
-    return list(unrecognized_lines)
+    return list(self._unrecognized_lines)
   
   def get_annotations(self):
     """
