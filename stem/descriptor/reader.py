@@ -41,7 +41,7 @@ again...
     
     time.sleep(1)
   
-  save_processed_files(reader.get_processed_files(), "/tmp/used_descriptors")
+  save_processed_files("/tmp/used_descriptors", reader.get_processed_files())
 
 
 load_processed_files - Loads a listing of processed files.
