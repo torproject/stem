@@ -60,6 +60,7 @@ class TestVersion(unittest.TestCase):
     self.assertRaises(ValueError, stem.version.Version, "1.2.3.4nodash")
     self.assertRaises(ValueError, stem.version.Version, "1.2.3.a")
     self.assertRaises(ValueError, stem.version.Version, "1.2.a.4")
+    self.assertRaises(ValueError, stem.version.Version, "1x2x3x4")
     self.assertRaises(ValueError, stem.version.Version, "12.3")
     self.assertRaises(ValueError, stem.version.Version, "1.-2.3")
   
