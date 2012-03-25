@@ -109,6 +109,11 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.server_descriptor.parse_file_v3(descriptor_file):
+        # the following attributes should be deprecated, and not appear in the wild
+        self.assertEquals(None, desc.read_history)
+        self.assertEquals(None, desc.write_history)
+        self.assertEquals(True, desc.eventdns)
+        
         unrecognized_lines = desc.get_unrecognized_lines()
         
         if unrecognized_lines:

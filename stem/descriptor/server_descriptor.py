@@ -22,6 +22,7 @@ import stem.descriptor
 import stem.version
 import stem.util.connection
 import stem.util.tor_tools
+import stem.util.log as log
 
 ENTRY_START = "router"
 ENTRY_END   = "router-signature"
@@ -199,7 +200,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     fingerprint (str)        - fourty hex digits that make up the relay's fingerprint
     address (str)            - IPv4 address of the relay (*)
     or_port (int)            - port used for relaying (*)
-    socks_port (int)         - deprecated attribute, always zero (*)
+    socks_port (int)         - (deprecated) always zero (*)
     dir_port (int)           - deprecated port used for descriptor mirroring (*)
     platform (str)           - operating system and tor version
     tor_version (stem.version.Version) - version of tor
@@ -219,6 +220,9 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     average_bandwidth (int)  - rate of traffic relay is willing to relay in bytes/s (*)
     burst_bandwidth (int)    - rate of traffic relay is willing to burst to in bytes/s (*)
     observed_bandwidth (int) - estimated capacity of the relay based on usage in bytes/s (*)
+    read_history (str)       - (deprecated) always unset
+    write_history (str)      - (deprecated) always unset
+    eventdns (bool)          - (deprecated) always unset (*)
     onion_key (str)          - key used to encrypt EXTEND cells (*)
     signing_key (str)        - relay's long-term identity key (*)
     signature (str)          - signature for this descriptor (*)
@@ -271,6 +275,9 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     self.average_bandwidth = None
     self.burst_bandwidth = None
     self.observed_bandwidth = None
+    self.read_history = None
+    self.write_history = None
+    self.eventdns = True
     self.onion_key = None
     self.signing_key = None
     self.signature = None
@@ -508,6 +515,15 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
           raise ValueError("Protocols line did not match the expected pattern: %s" % line)
       elif keyword == "family":
         self.family = value.split(" ")
+      elif keyword == "read-history":
+        log.info("Read an unexpected 'read-history' line in a v3 server descriptor. These should only appear in extra-info. line: %s" % line)
+        self.read_history = value
+      elif keyword == "write-history":
+        log.info("Read an unexpected 'write-history' line in a v3 server descriptor. These should only appear in extra-info. line: %s" % line)
+        self.write_history = value
+      elif keyword == "eventdns":
+        log.info("Read an unexpected 'eventdns' line in a v3 server descriptor. These should be deprecated. line: %s" % line)
+        self.eventdns = value == "1"
       else:
         self._unrecognized_lines.append(line)
   
