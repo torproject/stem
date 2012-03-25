@@ -279,7 +279,7 @@ class TestDescriptorReader(unittest.TestCase):
     for root, _, files in os.walk(DESCRIPTOR_TEST_DATA):
       for filename in files:
         path = os.path.join(root, filename)
-        last_modified = os.stat(path).st_mtime
+        last_modified = int(os.stat(path).st_mtime)
         expected_results[path] = last_modified
     
     reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])

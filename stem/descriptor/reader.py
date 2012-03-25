@@ -326,7 +326,7 @@ class DescriptorReader:
         # This is a file. Register it's last modified timestamp and check if
         # it's a file that we should skip.
         
-        last_modified = os.stat(target).st_mtime
+        last_modified = int(os.stat(target).st_mtime)
         last_used = self._processed_files.get(target)
         
         if last_used and last_used >= last_modified:
