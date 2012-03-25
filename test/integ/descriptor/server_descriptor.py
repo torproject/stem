@@ -8,9 +8,15 @@ import unittest
 
 import stem.version
 import stem.descriptor.server_descriptor
+import test.runner
 
 my_dir = os.path.dirname(__file__)
 DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
+
+# 'test_cached_descriptor' is a lengthy test and uneffected by testing targets,
+# so including a flag to prevent it from being ran multiple times
+
+RAN_CACHED_DESCRIPTOR_TEST = False
 
 class TestServerDescriptor(unittest.TestCase):
   def test_metrics_descriptor(self):
@@ -83,4 +89,35 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(expected_onion_key, desc.onion_key)
     self.assertEquals(expected_signing_key, desc.signing_key)
     self.assertEquals(expected_signature, desc.signature)
+    self.assertEquals([], desc.get_unrecognized_lines())
+  
+  def test_cached_descriptor(self):
+    """
+    Parses the cached descriptor file in our data directory, checking that it
+    doesn't raise any validation issues and looking for unrecognized descriptor
+    additions.
+    """
+    
+    global RAN_CACHED_DESCRIPTOR_TEST
+    
+    if RAN_CACHED_DESCRIPTOR_TEST:
+      self.skipTest("(already ran)")
+    else:
+      RAN_CACHED_DESCRIPTOR_TEST = True
+    
+    descriptor_path = os.path.join(test.runner.get_runner().get_test_dir(), "cached-descriptors")
+    
+    with open(descriptor_path) as descriptor_file:
+      for desc in stem.descriptor.server_descriptor.parse_file_v3(descriptor_file):
+        unrecognized_lines = desc.get_unrecognized_lines()
+        
+        if unrecognized_lines:
+          # TODO: This isn't actually a problem, and rather than failing we
+          # should alert the user about these entries at the end of the tests
+          # (along with new events, getinfo options, and such). For now though
+          # there doesn't seem to be anything in practice to trigger this so
+          # failing to get our attention if it does.
+          
+          print "Unrecognized descriptor content: %s" % unrecognized_lines
+          self.fail()
 
