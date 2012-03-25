@@ -92,7 +92,7 @@ class Version:
     """
     
     self.version_str = version_str
-    m = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-.*)?$', version_str)
+    m = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?$', version_str)
     
     if m:
       major, minor, micro, patch, status = m.groups()
