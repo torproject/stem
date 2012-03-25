@@ -98,14 +98,19 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     additions.
     """
     
+    descriptor_path = os.path.join(test.runner.get_runner().get_test_dir(), "cached-descriptors")
+    
+    # if this is our first time running the integ tests and we didn't wait for
+    # a full tor initialization then the cached descriptors won't exist yet
+    if not os.path.exists(descriptor_path):
+      self.skipTest("(no cached descriptors)")
+    
     global RAN_CACHED_DESCRIPTOR_TEST
     
     if RAN_CACHED_DESCRIPTOR_TEST:
       self.skipTest("(already ran)")
     else:
       RAN_CACHED_DESCRIPTOR_TEST = True
-    
-    descriptor_path = os.path.join(test.runner.get_runner().get_test_dir(), "cached-descriptors")
     
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.server_descriptor.parse_file_v3(descriptor_file):
