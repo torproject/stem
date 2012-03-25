@@ -55,7 +55,7 @@ dskLSPz8beUW7bzwDjR6EVNGpyoZde83Ejvau+5F2c6cGnlu91fiZN3suE88iE6e
 Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 -----END SIGNATURE-----"""
     
-    desc = stem.descriptor.server_descriptor.ServerDescriptorV2(descriptor_contents)
+    desc = stem.descriptor.server_descriptor.ServerDescriptorV3(descriptor_contents)
     self.assertEquals("caerSidi", desc.nickname)
     self.assertEquals("A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB", desc.fingerprint)
     self.assertEquals("71.35.133.197", desc.address)

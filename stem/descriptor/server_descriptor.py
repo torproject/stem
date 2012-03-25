@@ -7,8 +7,8 @@ etc). This information is provided from a few sources...
 - the 'cached-descriptors' file in tor's data directory
 - tor metrics, at https://metrics.torproject.org/data.html
 
-parse_file_v2 - Iterates over the server descriptors in a file.
-ServerDescriptorV2 - Tor server descriptor, version 2.
+parse_file_v3 - Iterates over the server descriptors in a file.
+ServerDescriptorV3 - Tor server descriptor, version 3.
   |- get_unrecognized_lines - lines with unrecognized content
   |- get_annotations - dictionary of content prior to the descriptor entry
   |- get_annotation_lines - lines that provided the annotations
@@ -55,9 +55,9 @@ SINGLE_FIELDS = (
   "family",
 )
 
-def parse_file_v2(descriptor_file, validate = True):
+def parse_file_v3(descriptor_file, validate = True):
   """
-  Iterates over the version 2 server descriptors in a file.
+  Iterates over the version 3 server descriptors in a file.
   
   Arguments:
     descriptor_file (file) - file with descriptor content
@@ -65,7 +65,7 @@ def parse_file_v2(descriptor_file, validate = True):
                              True, skips these checks otherwise
   
   Returns:
-    iterator for ServerDescriptorV2 instances in the file
+    iterator for ServerDescriptorV3 instances in the file
   
   Raises:
     ValueError if the contents is malformed and validate is True
@@ -109,7 +109,7 @@ def parse_file_v2(descriptor_file, validate = True):
       annotations = map(str.strip, annotations)
       
       descriptor_text = "".join(descriptor_content)
-      descriptor = ServerDescriptorV2(descriptor_text, validate, annotations)
+      descriptor = ServerDescriptorV3(descriptor_text, validate, annotations)
       yield descriptor
     else: break # done parsing descriptors
 
@@ -185,10 +185,10 @@ def _get_psudo_pgp_block(remaining_contents):
   else:
     return (None, None)
 
-class ServerDescriptorV2(stem.descriptor.Descriptor):
+class ServerDescriptorV3(stem.descriptor.Descriptor):
   """
-  Version 2 server descriptor, as specified in...
-  https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec-v2.txt
+  Version 3 server descriptor, as specified in...
+  https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt
   
   Attributes:
     nickname (str)           - relay's nickname (*)
@@ -221,7 +221,7 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
   
   def __init__(self, contents, validate = True, annotations = None):
     """
-    Version 2 server descriptor constructor, created from an individual relay's
+    Version 3 server descriptor constructor, created from an individual relay's
     descriptor content (as provided by "GETINFO desc/*", cached descriptors,
     and metrics).
     
@@ -350,7 +350,7 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
         # "router" nickname address ORPort SocksPort DirPort
         router_comp = value.split()
         
-        if len(router_comp) != 5:
+        if len(router_comp) < 5:
           if not validate: continue
           raise ValueError("Router line must have five values: %s" % line)
         
@@ -377,7 +377,7 @@ class ServerDescriptorV2(stem.descriptor.Descriptor):
         # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
         bandwidth_comp = value.split()
         
-        if len(bandwidth_comp) != 3:
+        if len(bandwidth_comp) < 3:
           if not validate: continue
           raise ValueError("Bandwidth line must have three values: %s" % line)
         
