@@ -18,6 +18,7 @@ import test.unit.connection.protocolinfo
 import test.unit.socket.control_line
 import test.unit.socket.control_message
 import test.unit.descriptor.reader
+import test.unit.descriptor.server_descriptor
 import test.unit.util.conf
 import test.unit.util.connection
 import test.unit.util.enum
@@ -88,6 +89,7 @@ UNIT_TESTS = (
   test.unit.util.system.TestSystem,
   test.unit.util.tor_tools.TestTorTools,
   test.unit.descriptor.reader.TestDescriptorReader,
+  test.unit.descriptor.server_descriptor.TestServerDescriptor,
   test.unit.version.TestVersion,
   test.unit.socket.control_message.TestControlMessage,
   test.unit.socket.control_line.TestControlLine,

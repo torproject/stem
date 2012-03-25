@@ -312,11 +312,13 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     
     entries = {}
     remaining_contents = contents.split("\n")
+    first_entry, last_entry = remaining_contents[0], remaining_contents[0]
     while remaining_contents:
       line = remaining_contents.pop(0)
       
       # last line can be empty
       if not line and not remaining_contents: continue
+      last_entry = line
       
       # Some lines have an 'opt ' for backward compatability. They should be
       # ignored. This prefix is being removed in...
@@ -355,7 +357,11 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
         if keyword in entries and len(entries[keyword]) > 1:
           raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
       
-      if not self.exit_policy:
+      if not first_entry.startswith(ENTRY_START):
+        raise ValueError("Descriptor must start with a '%s' entry" % ENTRY_START)
+      elif not last_entry.startswith(ENTRY_END):
+        raise ValueError("Descriptor must end with a '%s' entry" % ENTRY_END)
+      elif not self.exit_policy:
         raise ValueError("Descriptor must have at least one 'accept' or 'reject' entry")
     
     # parse all the entries into our attributes
