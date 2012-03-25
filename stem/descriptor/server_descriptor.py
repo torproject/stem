@@ -161,8 +161,7 @@ def _get_psudo_pgp_block(remaining_contents):
     remaining_contents (list) - lines to be checked for a public key block
   
   Returns:
-    (str, str) tuple with the block type and the armor wrapped contents, this
-    returns (None, None) instead if it doesn't exist
+    str with the armor wrapped contents or None if it doesn't exist
   
   Raises:
     ValueError if the contents starts with a key block but it's malformed (for
@@ -170,7 +169,7 @@ def _get_psudo_pgp_block(remaining_contents):
   """
   
   if not remaining_contents:
-    return (None, None) # nothing left
+    return None # nothing left
   
   block_match = PGP_BLOCK_START.match(remaining_contents[0])
   
@@ -186,9 +185,9 @@ def _get_psudo_pgp_block(remaining_contents):
       block_lines.append(line)
       
       if line == PGP_BLOCK_END % block_type:
-        return (block_type, "\n".join(block_lines))
+        return "\n".join(block_lines)
   else:
-    return (None, None)
+    return None
 
 class ServerDescriptorV3(stem.descriptor.Descriptor):
   """
@@ -221,11 +220,8 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     burst_bandwidth (int)    - rate of traffic relay is willing to burst to in bytes/s (*)
     observed_bandwidth (int) - estimated capacity of the relay based on usage in bytes/s (*)
     onion_key (str)          - key used to encrypt EXTEND cells (*)
-    onion_key_type (str)     - block type of the onion_key, probably "RSA PUBLIC KEY" (*)
     signing_key (str)        - relay's long-term identity key (*)
-    signing_key_type (str)   - block type of the signing_key, probably "RSA PUBLIC KEY" (*)
     signature (str)          - signature for this descriptor (*)
-    signature_type (str)     - block type of the signature, probably "SIGNATURE" (*)
     
     (*) required fields, others are left as None if undefined
   """
@@ -276,11 +272,8 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     self.burst_bandwidth = None
     self.observed_bandwidth = None
     self.onion_key = None
-    self.onion_key_type = None
     self.signing_key = None
-    self.signing_key_type = None
     self.signature = None
-    self.signature_type = None
     
     # TODO: Until we have a proper ExitPolicy class this is just a list of the
     # exit policy strings...
@@ -333,7 +326,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
       keyword, value = line_match.groups()
       
       try:
-        block_type, block_contents = _get_psudo_pgp_block(remaining_contents)
+        block_contents = _get_psudo_pgp_block(remaining_contents)
       except ValueError, exc:
         if not validate: continue
         raise exc
@@ -341,9 +334,9 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
       if keyword in ("accept", "reject"):
         self.exit_policy.append("%s %s" % (keyword, value))
       elif keyword in entries:
-        entries[keyword].append((value, block_type, block_contents))
+        entries[keyword].append((value, block_contents))
       else:
-        entries[keyword] = [(value, block_type, block_contents)]
+        entries[keyword] = [(value, block_contents)]
     
     # validates restrictions about the entries
     if validate:
@@ -361,7 +354,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     # parse all the entries into our attributes
     for keyword, values in entries.items():
       # most just work with the first (and only) value
-      value, block_type, block_contents = values[0]
+      value, block_contents = values[0]
       
       line = "%s %s" % (keyword, value) # original line
       if block_contents: line += "\n%s" % block_contents
@@ -488,22 +481,19 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
         
         self.uptime = int(value)
       elif keyword == "onion-key":
-        if validate and (not block_type or not block_contents):
+        if validate and not block_contents:
           raise ValueError("Onion key line must be followed by a public key: %s" % line)
         
-        self.onion_key_type = block_type
         self.onion_key = block_contents
       elif keyword == "signing-key":
-        if validate and (not block_type or not block_contents):
+        if validate and not block_contents:
           raise ValueError("Signing key line must be followed by a public key: %s" % line)
         
-        self.signing_key_type = block_type
         self.signing_key = block_contents
       elif keyword == "router-signature":
-        if validate and (not block_type or not block_contents):
+        if validate and not block_contents:
           raise ValueError("Router signature line must be followed by a signature block: %s" % line)
         
-        self.signature_type = block_type
         self.signature = block_contents
       elif keyword == "contact":
         self.contact = value

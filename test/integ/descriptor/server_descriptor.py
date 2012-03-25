@@ -81,9 +81,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(104590, desc.observed_bandwidth)
     self.assertEquals(["reject *:*"], desc.exit_policy)
     self.assertEquals(expected_onion_key, desc.onion_key)
-    self.assertEquals("RSA PUBLIC KEY", desc.onion_key_type)
     self.assertEquals(expected_signing_key, desc.signing_key)
-    self.assertEquals("RSA PUBLIC KEY", desc.signing_key_type)
     self.assertEquals(expected_signature, desc.signature)
-    self.assertEquals("SIGNATURE", desc.signature_type)
 
