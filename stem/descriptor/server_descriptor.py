@@ -33,26 +33,31 @@ PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHIT
 PGP_BLOCK_END   = "-----END %s-----"
 
 # entries must have exactly one of the following
-# TODO: spec doesn't list 'router-signature', but that's a spec bug I should fix
 REQUIRED_FIELDS = (
+  "router",
+  "bandwidth",
   "published",
   "onion-key",
   "signing-key",
-  "bandwidth",
   "router-signature",
 )
 
 # optional entries that can appear at most once
 SINGLE_FIELDS = (
-  "contact",
-  "uptime",
+  "platform",
   "fingerprint",
   "hibernating",
+  "uptime",
+  "contact",
   "read-history",
   "write-history",
   "eventdns",
-  "platform",
   "family",
+  "caches-extra-info",
+  "extra-info-digest",
+  "hidden-service-dir",
+  "protocols",
+  "allow-single-hop-exits",
 )
 
 def parse_file_v3(descriptor_file, validate = True):
@@ -203,7 +208,13 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     uptime (int)             - relay's uptime when published in seconds
     published (datetime.datetime) - time in GMT when the descriptor was generated (*)
     contact (str)            - relay's contact information
+    link_protocols (list)    - link protocols supported by the relay
+    circuit_protocols (list) - circuit protocols supported by the relay
     hibernating (bool)       - flag to indicate if the relay was hibernating when published (*)
+    allow_single_hop_exits (bool) - flag to indicate if single hop exiting is allowed from it (*)
+    extra_info_cache (bool)  - flag to indicate if it's a mirror for extra-info documents (*)
+    extra_info_digest (str)  - hex encoded digest of our extra-info document
+    hidden_service_dir (list) - hidden service descriptor versions that it stores
     exit_policy (stem.exit_policy.ExitPolicy) - relay's stated exit policy
     family (list)            - nicknames or fingerprints of relays it has a declared family with (*)
     average_bandwidth (int)  - rate of traffic relay is willing to relay in bytes/s (*)
@@ -253,7 +264,13 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     self.uptime = None
     self.published = None
     self.contact = None
+    self.link_protocols = None
+    self.circuit_protocols = None
     self.hibernating = False
+    self.allow_single_hop_exits = False
+    self.extra_info_cache = False
+    self.extra_info_digest = None
+    self.hidden_service_dir = None
     self.family = []
     self.average_bandwidth = None
     self.burst_bandwidth = None
@@ -337,6 +354,9 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
       for keyword in SINGLE_FIELDS + REQUIRED_FIELDS:
         if keyword in entries and len(entries[keyword]) > 1:
           raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
+      
+      if not self.exit_policy:
+        raise ValueError("Descriptor must have at least one 'accept' or 'reject' entry")
     
     # parse all the entries into our attributes
     for keyword, values in entries.items():
@@ -444,6 +464,23 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
           raise ValueError("Hibernating line had an invalid value, must be zero or one: %s" % value)
         
         self.hibernating = value == "1"
+      elif keyword == "allow-single-hop-exits":
+        self.allow_single_hop_exits = True
+      elif keyword == "caches-extra-info":
+        self.extra_info_cache = True
+      elif keyword == "extra-info-digest":
+        # this is fourty hex digits which just so happens to be the same a
+        # fingerprint
+        
+        if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
+          raise ValueError("Hidden service digests should consist of fourty hex digits: %s" % value)
+        
+        self.extra_info_digest = value
+      elif keyword == "hidden-service-dir":
+        if value:
+          self.hidden_service_dir = value.split(" ")
+        else:
+          self.hidden_service_dir = ["2"]
       elif keyword == "uptime":
         if not value.isdigit():
           if not validate: continue
@@ -470,6 +507,15 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
         self.signature = block_contents
       elif keyword == "contact":
         self.contact = value
+      elif keyword == "protocols":
+        protocols_match = re.match("^Link (.*) Circuit (.*)$", value)
+        
+        if protocols_match:
+          link_versions, circuit_versions = protocols_match.groups()
+          self.link_protocols = link_versions.split(" ")
+          self.circuit_protocols = circuit_versions.split(" ")
+        elif validate:
+          raise ValueError("Protocols line did not match the expected pattern: %s" % line)
       elif keyword == "family":
         self.family = value.split(" ")
       else:
