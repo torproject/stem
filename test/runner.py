@@ -47,8 +47,8 @@ import test.output
 CONFIG = stem.util.conf.config_dict("test", {
   "integ.test_directory": "./test/data",
   "integ.log": "./test/data/log",
-  "test.target.online": False,
-  "test.target.relative_data_dir": False,
+  "integ.target.online": False,
+  "integ.target.relative_data_dir": False,
 })
 
 STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
@@ -179,7 +179,7 @@ class Runner:
       
       original_cwd, data_dir_path = os.getcwd(), self._test_dir
       
-      if CONFIG["test.target.relative_data_dir"]:
+      if CONFIG["integ.target.relative_data_dir"]:
         tor_cwd = os.path.dirname(self._test_dir)
         if not os.path.exists(tor_cwd): os.makedirs(tor_cwd)
         
@@ -199,7 +199,7 @@ class Runner:
         self._start_tor(tor_cmd)
         
         # revert our cwd back to normal
-        if CONFIG["test.target.relative_data_dir"]:
+        if CONFIG["integ.target.relative_data_dir"]:
           os.chdir(original_cwd)
       except OSError, exc:
         self.stop()
@@ -543,7 +543,7 @@ class Runner:
     try:
       # wait to fully complete if we're running tests with network activity,
       # otherwise finish after local bootstraping
-      complete_percent = 100 if CONFIG["test.target.online"] else 5
+      complete_percent = 100 if CONFIG["integ.target.online"] else 5
       
       # prints output from tor's stdout while it starts up
       print_init_line = lambda line: test.output.print_line("  %s" % line, *SUBSTATUS_ATTR)
