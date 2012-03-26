@@ -211,7 +211,7 @@ class TestAuthenticate(unittest.TestCase):
       # auth but the function will short circuit with failure due to the
       # missing file.
       
-      self.assertRaises(stem.connection.UnreadableCookieFile, self._check_auth, auth_type, auth_value)
+      self.assertRaises(stem.connection.UnreadableCookieFile, self._check_auth, auth_type, auth_value, False)
     elif _can_authenticate(auth_type):
       self._check_auth(auth_type, auth_value)
     else:
