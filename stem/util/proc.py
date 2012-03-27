@@ -33,7 +33,10 @@ import stem.util.log as log
 
 # cached system values
 IS_PROC_AVAILABLE, SYS_START_TIME, SYS_PHYSICAL_MEMORY = None, None, None
-CLOCK_TICKS = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
+try:
+  CLOCK_TICKS = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
+except AttributeError:
+  pass
 Stat = stem.util.enum.Enum(("COMMAND", "command"), ("CPU_UTIME", "utime"),
                  ("CPU_STIME", "stime"), ("START_TIME", "start time"))
 
