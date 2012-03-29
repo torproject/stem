@@ -130,4 +130,45 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
           
           print "Unrecognized descriptor content: %s" % unrecognized_lines
           self.fail()
+  
+  def test_non_ascii_descriptor(self):
+    """
+    Parses a descriptor with non-ascii content.
+    """
+    
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "non-ascii_descriptor")
+    
+    descriptor_file = open(descriptor_path)
+    descriptor_contents = descriptor_file.read()
+    descriptor_file.close()
+    
+    expected_published = datetime.datetime(2012, 3, 21, 16, 28, 14)
+    expected_contact = "2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf"
+    
+    desc = stem.descriptor.server_descriptor.ServerDescriptorV3(descriptor_contents)
+    self.assertEquals("torrelay389752132", desc.nickname)
+    self.assertEquals("FEBC7F992AC418BBE42BC13FE94EFCFE6549197E", desc.fingerprint)
+    self.assertEquals("130.243.230.116", desc.address)
+    self.assertEquals(9001, desc.or_port)
+    self.assertEquals(0, desc.socks_port)
+    self.assertEquals(0, desc.dir_port)
+    self.assertEquals("Tor 0.2.2.35 (git-4f42b0a93422f70e) on Linux x86_64", desc.platform)
+    self.assertEquals(stem.version.Version("0.2.2.35"), desc.tor_version)
+    self.assertEquals("Linux x86_64", desc.operating_system)
+    self.assertEquals(3103848, desc.uptime)
+    self.assertEquals(expected_published, desc.published)
+    self.assertEquals(expected_contact, desc.contact)
+    self.assertEquals(["1", "2"], desc.link_protocols)
+    self.assertEquals(["1"], desc.circuit_protocols)
+    self.assertEquals(False, desc.hibernating)
+    self.assertEquals(False, desc.allow_single_hop_exits)
+    self.assertEquals(False, desc.extra_info_cache)
+    self.assertEquals("51E9FD0DA7C235D8C0250BAFB6E1ABB5F1EF9F04", desc.extra_info_digest)
+    self.assertEquals(["2"], desc.hidden_service_dir)
+    self.assertEquals([], desc.family)
+    self.assertEquals(81920, desc.average_bandwidth)
+    self.assertEquals(102400, desc.burst_bandwidth)
+    self.assertEquals(84275, desc.observed_bandwidth)
+    self.assertEquals(["reject *:*"], desc.exit_policy)
+    self.assertEquals([], desc.get_unrecognized_lines())
 
