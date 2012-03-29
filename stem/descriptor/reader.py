@@ -193,7 +193,7 @@ class DescriptorReader:
   
   Arguments:
     targets (list)      - paths for files or directories to be read from
-    follow_links (bool) - determines if we'll follow symlinks when transversing
+    follow_links (bool) - determines if we'll follow symlinks when traversing
                           directories
     buffer_size (int)   - descriptors we'll buffer before waiting for some to
                           be read, this is unbounded if zero
@@ -323,7 +323,7 @@ class DescriptorReader:
           # this can take a while if, say, we're including the root directory
           if self._is_stopped.is_set(): break
       else:
-        # This is a file. Register it's last modified timestamp and check if
+        # This is a file. Register its last modified timestamp and check if
         # it's a file that we should skip.
         
         last_modified = int(os.stat(target).st_mtime)
@@ -396,7 +396,7 @@ class DescriptorReader:
       self._notify_skip_listeners(target, ReadFailed(exc))
   
   def _enqueue_descriptor(self, descriptor):
-    # blocks until their is either room for the descriptor or we're stopped
+    # blocks until there is either room for the descriptor or we're stopped
     
     while True:
       try:

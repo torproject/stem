@@ -45,7 +45,7 @@ def parse_file(path, descriptor_file):
       desc._set_path(path)
       yield desc
   else:
-    # unrecognized descritor type
+    # unrecognized descriptor type
     raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
 
 class Descriptor:

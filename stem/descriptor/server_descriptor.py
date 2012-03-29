@@ -153,7 +153,7 @@ def _read_until_keyword(keyword, descriptor_file, inclusive = False):
   
   return content
 
-def _get_psudo_pgp_block(remaining_contents):
+def _get_pseudo_pgp_block(remaining_contents):
   """
   Checks if given contents begins with a pseudo-Open-PGP-style block and, if
   so, pops it off and provides it back to the caller.
@@ -335,7 +335,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
       keyword, value = line_match.groups()
       
       try:
-        block_contents = _get_psudo_pgp_block(remaining_contents)
+        block_contents = _get_pseudo_pgp_block(remaining_contents)
       except ValueError, exc:
         if not validate: continue
         raise exc
@@ -429,7 +429,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
         # version followed by the os like the following...
         # platform Tor 0.2.2.35 (git-73ff13ab3cc9570d) on Linux x86_64
         #
-        # There's no guerentee that we'll be able to pick these out the
+        # There's no guarantee that we'll be able to pick these out the
         # version, but might as well try to save our caller the effot.
         
         platform_match = re.match("^Tor (\S*).* on (.*)$", self.platform)
@@ -479,7 +479,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
         # fingerprint
         
         if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError("Hidden service digests should consist of fourty hex digits: %s" % value)
+          raise ValueError("Extra-info digests should consist of fourty hex digits: %s" % value)
         
         self.extra_info_digest = value
       elif keyword == "hidden-service-dir":
