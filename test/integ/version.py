@@ -55,9 +55,11 @@ class TestVersion(unittest.TestCase):
     control_socket.close()
     
     # the getinfo response looks like...
-    # 250-version=0.2.1.30
+    # 250-version=0.2.3.10-alpha-dev (git-65420e4cb5edcd02)
     # 250 OK
     
     tor_version = list(version_response)[0][8:]
+    tor_version = list(version_response)[0]
+    tor_version = tor_version[8:tor_version.find(' ', 8)]
     stem.version.Version(tor_version)
 
