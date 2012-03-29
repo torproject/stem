@@ -226,7 +226,8 @@ class DescriptorReader:
     
     absolute path (str) => last modified unix timestamp (int)
     
-    This includes entries set through the set_processed_files() method.
+    This includes entries set through the set_processed_files() method. After
+    each run is reset to only the files that were present during that run.
     
     Returns:
       dict with the absolute paths and unix timestamp for the last modified
@@ -305,6 +306,7 @@ class DescriptorReader:
       self._reader_thread = None
   
   def _read_descriptor_files(self):
+    new_processed_files = {}
     remaining_files = list(self._targets)
     
     while remaining_files and not self._is_stopped.is_set():
@@ -328,12 +330,11 @@ class DescriptorReader:
         
         last_modified = int(os.stat(target).st_mtime)
         last_used = self._processed_files.get(target)
+        new_processed_files[target] = last_modified
         
         if last_used and last_used >= last_modified:
           self._notify_skip_listeners(target, AlreadyRead(last_modified, last_used))
           continue
-        else:
-          self._processed_files[target] = last_modified
         
         # The mimetypes module only checks the file extension. To actually
         # check the content (like the 'file' command) we'd need something like
@@ -350,6 +351,7 @@ class DescriptorReader:
         else:
           self._notify_skip_listeners(target, UnrecognizedType(target_type))
     
+    self._processed_files = new_processed_files
     self._enqueue_descriptor(FINISHED)
     self._iter_notice.set()
   
