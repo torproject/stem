@@ -8,7 +8,6 @@ import stem.util.system
 
 import test.mocking as mocking
 
-
 TOR_VERSION_OUTPUT = """Mar 22 23:09:37.088 [notice] Tor v0.2.2.35 \
 (git-73ff13ab3cc9570d). This is experimental software. Do not rely on it for \
 strong anonymity. (Running on Linux i686)
@@ -23,12 +22,12 @@ class TestVersion(unittest.TestCase):
       if command == "tor --version":
         return TOR_VERSION_OUTPUT.splitlines()
       else:
-        raise ValueError("stem.util.system.call received an unexpected command")
-
+        raise ValueError("stem.util.system.call received an unexpected command: %s" % command)
+    
     mocking.mock(stem.util.system.call, _mock_call)
     version = stem.version.get_system_tor_version()
     self.assert_versions_match(version, 0, 2, 2, 35, None)
-    
+  
   def test_parsing(self):
     """
     Tests parsing by the Version class constructor.
