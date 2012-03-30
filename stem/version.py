@@ -57,7 +57,7 @@ def get_system_tor_version(tor_cmd = "tor"):
       
       if last_line.startswith("Tor version ") and last_line.endswith("."):
         try:
-          version_str = last_line[12:-1]
+          version_str = last_line[12:last_line.find(' ', 12)]
           VERSION_CACHE[tor_cmd] = Version(version_str)
         except ValueError, exc:
           raise IOError(exc)
@@ -92,7 +92,7 @@ class Version:
     """
     
     self.version_str = version_str
-    m = re.match(r'^([0-9]+).([0-9]+).([0-9]+)(.[0-9]+)?(-.*)?$', version_str)
+    m = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?$', version_str)
     
     if m:
       major, minor, micro, patch, status = m.groups()

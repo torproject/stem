@@ -33,7 +33,8 @@ class TestControlSocket(unittest.TestCase):
       
       for i in range(100):
         response = control_socket.recv()
-        self.assertEquals("version=%s\nOK" % tor_version, str(response))
+        self.assertTrue(str(response).startswith("version=%s" % tor_version))
+        self.assertTrue(str(response).endswith("\nOK"))
   
   def test_send_closed(self):
     """

@@ -408,7 +408,8 @@ class Runner:
       version_response = control_socket.recv()
       control_socket.close()
       
-      tor_version = list(version_response)[0][8:]
+      tor_version = list(version_response)[0]
+      tor_version = tor_version[8:tor_version.find(' ', 8)]
       return stem.version.Version(tor_version)
     except TorInaccessable:
       return stem.version.get_system_tor_version(self.get_tor_command())
