@@ -18,6 +18,12 @@ class TestVersion(unittest.TestCase):
     mocking.revert_mocking()
   
   def test_get_system_tor_version(self):
+    # Clear the version cache both before and after the test. Without this
+    # prior results short circuit the system call, and future calls will
+    # provide this mocked value.
+    
+    stem.version.VERSION_CACHE = {}
+    
     def _mock_call(command):
       if command == "tor --version":
         return TOR_VERSION_OUTPUT.splitlines()
@@ -27,6 +33,8 @@ class TestVersion(unittest.TestCase):
     mocking.mock(stem.util.system.call, _mock_call)
     version = stem.version.get_system_tor_version()
     self.assert_versions_match(version, 0, 2, 2, 35, None)
+    
+    stem.version.VERSION_CACHE = {}
   
   def test_parsing(self):
     """
