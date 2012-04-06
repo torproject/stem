@@ -18,6 +18,7 @@ call - runs the given system command and provides back the results
 
 import os
 import time
+import platform
 import subprocess
 
 import stem.util.proc
@@ -78,6 +79,7 @@ def is_available(command, cached=True):
     cmd_exists = False
     for path in os.environ["PATH"].split(os.pathsep):
       cmd_path = os.path.join(path, command)
+      if platform.system() == "Windows": cmd_path += ".exe"
       
       if os.path.exists(cmd_path) and os.access(cmd_path, os.X_OK):
         cmd_exists = True
