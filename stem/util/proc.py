@@ -27,6 +27,7 @@ import sys
 import time
 import socket
 import base64
+import platform
 
 import stem.util.enum
 import stem.util.log as log
@@ -53,7 +54,7 @@ def is_available():
   global IS_PROC_AVAILABLE
   
   if IS_PROC_AVAILABLE == None:
-    if os.uname()[0] != "Linux":
+    if platform.system() != "Linux":
       IS_PROC_AVAILABLE = False
     else:
       # list of process independent proc paths we use

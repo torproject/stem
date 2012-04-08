@@ -54,7 +54,7 @@ def is_bsd():
     bool to indicate if we're a BSD OS
   """
   
-  return os.uname()[0] in ("Darwin", "FreeBSD", "OpenBSD")
+  return platform.system() in ("Darwin", "FreeBSD", "OpenBSD")
 
 def is_available(command, cached=True):
   """
@@ -481,7 +481,7 @@ def get_bsd_jail_id(pid):
     jid = ps_output[1].strip()
     if jid.isdigit(): return int(jid)
   
-  os_name = os.uname()[0]
+  os_name = platform.system()
   if os_name == "FreeBSD":
     log.warn("Unable to get the jail id for process %s." % pid)
   else:
