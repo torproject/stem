@@ -284,17 +284,6 @@ class TestSystem(unittest.TestCase):
       expected_response = 1 if test_input == "1111" else 0
       self.assertEquals(expected_response, system.get_bsd_jail_id(test_input))
   
-  def test_is_relative_path_unix(self):
-    """
-    Tests the is_relative_path function.
-    """
-    
-    mocking.mock(platform.system, mocking.return_value("Linux"))
-    self.assertTrue(system.is_relative_path("hello/world"))
-    self.assertTrue(system.is_relative_path("~/hello/world"))
-    self.assertTrue(system.is_relative_path("~user/hello/world"))
-    self.assertFalse(system.is_relative_path("/tmp/hello/world"))
-  
   def test_expand_path_unix(self):
     """
     Tests the expand_path function. This does not exercise home directory

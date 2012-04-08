@@ -11,7 +11,6 @@ get_pid_by_port - gets the pid for a process listening to a given port
 get_pid_by_open_file - gets the pid for the process with an open file
 get_cwd - provides the current working directory for a given process
 get_bsd_jail_id - provides the BSD jail id a given process is running within
-is_relative_path - checks if a given path can be expanded by expand_path
 expand_path - expands relative paths and ~ entries
 call - runs the given system command and provides back the results
 """
@@ -489,20 +488,6 @@ def get_bsd_jail_id(pid):
   
   return 0
 
-def is_relative_path(path):
-  """
-  Checks if the path can be expanded by the expand_path function.
-  
-  Returns:
-    bool that's True if the path is relative or begins with an expandable home,
-    False otherwise
-  """
-  
-  if platform.system() == "Windows":
-    return False # TODO: implement
-  else:
-    return path and not path.startswith("/")
-
 def expand_path(path, cwd = None):
   """
   Provides an absolute path, expanding tildas with the user's home and
@@ -523,7 +508,7 @@ def expand_path(path, cwd = None):
   else:
     relative_path = path
     
-    if not path or path[0] == "/":
+    if not path or os.path.isabs(path):
       # empty or already absolute - nothing to do
       pass
     elif path.startswith("~"):

@@ -667,7 +667,7 @@ def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg)
   """
   
   cookie_path = protocolinfo_response.cookie_path
-  if cookie_path and stem.util.system.is_relative_path(cookie_path):
+  if cookie_path and not os.path.isabs(cookie_path):
     try:
       tor_pid = pid_resolver(pid_resolution_arg)
       if not tor_pid: raise IOError("pid lookup failed")
