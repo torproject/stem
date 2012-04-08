@@ -498,7 +498,10 @@ def is_relative_path(path):
     False otherwise
   """
   
-  return path and not path.startswith("/")
+  if platform.system() == "Windows":
+    return False # TODO: implement
+  else:
+    return path and not path.startswith("/")
 
 def expand_path(path, cwd = None):
   """
@@ -515,26 +518,29 @@ def expand_path(path, cwd = None):
     str of the path expanded to be an absolute path
   """
   
-  relative_path = path
-  
-  if not path or path[0] == "/":
-    # empty or already absolute - nothing to do
-    pass
-  elif path.startswith("~"):
-    # prefixed with a ~ or ~user entry
-    relative_path = os.path.expanduser(path)
+  if platform.system() == "Windows":
+    return path # TODO: implement
   else:
-    # relative path, expand with the cwd
-    if not cwd: cwd = os.getcwd()
+    relative_path = path
     
-    # we'll be dealing with both "my/path/" and "./my/path" entries, so
-    # cropping the later
-    if path.startswith("./"): path = path[2:]
-    elif path == ".": path = ""
+    if not path or path[0] == "/":
+      # empty or already absolute - nothing to do
+      pass
+    elif path.startswith("~"):
+      # prefixed with a ~ or ~user entry
+      relative_path = os.path.expanduser(path)
+    else:
+      # relative path, expand with the cwd
+      if not cwd: cwd = os.getcwd()
+      
+      # we'll be dealing with both "my/path/" and "./my/path" entries, so
+      # cropping the later
+      if path.startswith("./"): path = path[2:]
+      elif path == ".": path = ""
+      
+      relative_path = os.path.join(cwd, path)
     
-    relative_path = os.path.join(cwd, path)
-  
-  return relative_path.rstrip("/")
+    return relative_path.rstrip("/")
 
 def call(command, suppress_exc = True):
   """

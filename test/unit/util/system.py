@@ -5,6 +5,8 @@ these tests actually make system calls, use proc, or otherwise deal with the
 system running the tests.
 """
 
+import os
+import platform
 import functools
 import unittest
 import stem.util.proc
@@ -282,22 +284,27 @@ class TestSystem(unittest.TestCase):
       expected_response = 1 if test_input == "1111" else 0
       self.assertEquals(expected_response, system.get_bsd_jail_id(test_input))
   
-  def test_is_relative_path(self):
+  def test_is_relative_path_unix(self):
     """
     Tests the is_relative_path function.
     """
     
+    mocking.mock(platform.system, mocking.return_value("Linux"))
     self.assertTrue(system.is_relative_path("hello/world"))
     self.assertTrue(system.is_relative_path("~/hello/world"))
     self.assertTrue(system.is_relative_path("~user/hello/world"))
     self.assertFalse(system.is_relative_path("/tmp/hello/world"))
   
-  def test_expand_path(self):
+  def test_expand_path_unix(self):
     """
     Tests the expand_path function. This does not exercise home directory
     expansions since that deals with our environment (that's left to integ
     tests).
     """
+    
+    mocking.mock(platform.system, mocking.return_value("Linux"))
+    original_path_sep = os.path.sep
+    os.path.sep = "/"
     
     self.assertEquals("", system.expand_path(""))
     self.assertEquals("/tmp", system.expand_path("/tmp"))
@@ -306,4 +313,6 @@ class TestSystem(unittest.TestCase):
     self.assertEquals("/tmp", system.expand_path("./", "/tmp"))
     self.assertEquals("/tmp/foo", system.expand_path("foo", "/tmp"))
     self.assertEquals("/tmp/foo", system.expand_path("./foo", "/tmp"))
+    
+    os.path.sep = original_path_sep
 
