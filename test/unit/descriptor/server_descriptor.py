@@ -7,7 +7,7 @@ import StringIO
 import unittest
 
 import stem.descriptor.server_descriptor
-from stem.descriptor.server_descriptor import ServerDescriptorV3
+from stem.descriptor.server_descriptor import RelayDescriptorV3
 
 CRYPTO_BLOB = """
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
@@ -63,7 +63,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor()
-    desc = ServerDescriptorV3(desc_text)
+    desc = RelayDescriptorV3(desc_text)
     
     self.assertEquals("caerSidi", desc.nickname)
     self.assertEquals("71.35.133.197", desc.address)
@@ -78,7 +78,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor({"opt": "contact www.atagar.com/contact/"})
-    desc = ServerDescriptorV3(desc_text)
+    desc = RelayDescriptorV3(desc_text)
     self.assertEquals("www.atagar.com/contact/", desc.contact)
   
   def test_unrecognized_line(self):
@@ -87,7 +87,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor({"pepperjack": "is oh so tasty!"})
-    desc = ServerDescriptorV3(desc_text)
+    desc = RelayDescriptorV3(desc_text)
     self.assertEquals(["pepperjack is oh so tasty!"], desc.get_unrecognized_lines())
   
   def test_proceeding_line(self):
@@ -168,12 +168,12 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor({"platform": ""})
-    desc = ServerDescriptorV3(desc_text, validate = False)
+    desc = RelayDescriptorV3(desc_text, validate = False)
     self.assertEquals("", desc.platform)
     
     # does the same but with 'platform ' replaced with 'platform'
     desc_text = desc_text.replace("platform ", "platform")
-    desc = ServerDescriptorV3(desc_text, validate = False)
+    desc = RelayDescriptorV3(desc_text, validate = False)
     self.assertEquals("", desc.platform)
   
   def test_protocols_no_circuit_versions(self):
@@ -195,7 +195,7 @@ class TestServerDescriptor(unittest.TestCase):
     
     desc_text = _make_descriptor({"published": "2012-02-29 04:03:19"})
     expected_published = datetime.datetime(2012, 2, 29, 4, 3, 19)
-    self.assertEquals(expected_published, ServerDescriptorV3(desc_text).published)
+    self.assertEquals(expected_published, RelayDescriptorV3(desc_text).published)
   
   def test_published_no_time(self):
     """
@@ -242,10 +242,10 @@ class TestServerDescriptor(unittest.TestCase):
     
     for attr in stem.descriptor.server_descriptor.REQUIRED_FIELDS:
       desc_text = _make_descriptor(exclude = [attr])
-      self.assertRaises(ValueError, ServerDescriptorV3, desc_text)
+      self.assertRaises(ValueError, RelayDescriptorV3, desc_text)
       
       # check that we can still construct it without validation
-      desc = ServerDescriptorV3(desc_text, validate = False)
+      desc = RelayDescriptorV3(desc_text, validate = False)
       
       # for one of them checks that the corresponding values are None
       if attr == "router":
@@ -262,8 +262,8 @@ class TestServerDescriptor(unittest.TestCase):
     value when we're constructed without validation.
     """
     
-    self.assertRaises(ValueError, ServerDescriptorV3, desc_text)
-    desc = ServerDescriptorV3(desc_text, validate = False)
+    self.assertRaises(ValueError, RelayDescriptorV3, desc_text)
+    desc = RelayDescriptorV3(desc_text, validate = False)
     
     if attr:
       # check that the invalid attribute matches the expected value when

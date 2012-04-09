@@ -9,10 +9,14 @@ etc). This information is provided from a few sources...
 
 parse_file_v3 - Iterates over the server descriptors in a file.
 ServerDescriptorV3 - Tor server descriptor, version 3.
+  |  |- RelayDescriptorV3 - Server descriptor for a relay.
+  |  |  +- is_valid - checks the signature against the descriptor content
+  |  |
+  |  +- BridgeDescriptorV3 - Scrubbed server descriptor for a bridge.
+  |
   |- get_unrecognized_lines - lines with unrecognized content
   |- get_annotations - dictionary of content prior to the descriptor entry
-  |- get_annotation_lines - lines that provided the annotations
-  +- is_valid - checks the signature against the descriptor content
+  +- get_annotation_lines - lines that provided the annotations
 """
 
 import re
@@ -24,16 +28,13 @@ import stem.util.connection
 import stem.util.tor_tools
 import stem.util.log as log
 
-ENTRY_START = "router"
-ENTRY_END   = "router-signature"
-
 KEYWORD_CHAR    = "a-zA-Z0-9-"
 WHITESPACE      = " \t"
 KEYWORD_LINE    = re.compile("^([%s]+)[%s]*(.*)$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END   = "-----END %s-----"
 
-# entries must have exactly one of the following
+# relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
   "router",
   "bandwidth",
@@ -71,7 +72,7 @@ def parse_file_v3(descriptor_file, validate = True):
                              True, skips these checks otherwise
   
   Returns:
-    iterator for ServerDescriptorV3 instances in the file
+    iterator for RelayDescriptorV3 instances in the file
   
   Raises:
     ValueError if the contents is malformed and validate is True
@@ -94,17 +95,17 @@ def parse_file_v3(descriptor_file, validate = True):
   # Metrics descriptor files are the same, but lack any annotations. The
   # following simply does the following...
   #
-  #   - parse as annotations until we get to ENTRY_START
-  #   - parse as descriptor content until we get to ENTRY_END followed by the
-  #     end of the signature block
+  #   - parse as annotations until we get to "router"
+  #   - parse as descriptor content until we get to "router-signature" followed
+  #     by the end of the signature block
   #   - construct a descriptor and provide it back to the caller
   #
   # Any annotations after the last server descriptor is ignored (never provided
   # to the caller).
   
   while True:
-    annotations = _read_until_keyword(ENTRY_START, descriptor_file)
-    descriptor_content = _read_until_keyword(ENTRY_END, descriptor_file)
+    annotations = _read_until_keyword("router", descriptor_file)
+    descriptor_content = _read_until_keyword("router-signature", descriptor_file)
     
     # we've reached the 'router-signature', now include the pgp style block
     block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
@@ -115,7 +116,7 @@ def parse_file_v3(descriptor_file, validate = True):
       annotations = map(str.strip, annotations)
       
       descriptor_text = "".join(descriptor_content)
-      descriptor = ServerDescriptorV3(descriptor_text, validate, annotations)
+      descriptor = RelayDescriptorV3(descriptor_text, validate, annotations)
       yield descriptor
     else: break # done parsing descriptors
 
@@ -153,47 +154,9 @@ def _read_until_keyword(keyword, descriptor_file, inclusive = False):
   
   return content
 
-def _get_pseudo_pgp_block(remaining_contents):
-  """
-  Checks if given contents begins with a pseudo-Open-PGP-style block and, if
-  so, pops it off and provides it back to the caller.
-  
-  Arguments:
-    remaining_contents (list) - lines to be checked for a public key block
-  
-  Returns:
-    str with the armor wrapped contents or None if it doesn't exist
-  
-  Raises:
-    ValueError if the contents starts with a key block but it's malformed (for
-    instance, if it lacks an ending line)
-  """
-  
-  if not remaining_contents:
-    return None # nothing left
-  
-  block_match = PGP_BLOCK_START.match(remaining_contents[0])
-  
-  if block_match:
-    block_type = block_match.groups()[0]
-    block_lines = []
-    
-    while True:
-      if not remaining_contents:
-        raise ValueError("Unterminated pgp style block")
-      
-      line = remaining_contents.pop(0)
-      block_lines.append(line)
-      
-      if line == PGP_BLOCK_END % block_type:
-        return "\n".join(block_lines)
-  else:
-    return None
-
 class ServerDescriptorV3(stem.descriptor.Descriptor):
   """
-  Version 3 server descriptor, as specified in...
-  https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt
+  Common parent for version 3 server descriptors.
   
   Attributes:
     nickname (str)           - relay's nickname (*)
@@ -201,7 +164,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     address (str)            - IPv4 address of the relay (*)
     or_port (int)            - port used for relaying (*)
     socks_port (int)         - (deprecated) always zero (*)
-    dir_port (int)           - deprecated port used for descriptor mirroring (*)
+    dir_port (int)           - port used for descriptor mirroring (*)
     platform (str)           - operating system and tor version
     tor_version (stem.version.Version) - version of tor
     operating_system (str)   - relay's operating system
@@ -223,14 +186,11 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     read_history (str)       - (deprecated) always unset
     write_history (str)      - (deprecated) always unset
     eventdns (bool)          - (deprecated) always unset (*)
-    onion_key (str)          - key used to encrypt EXTEND cells (*)
-    signing_key (str)        - relay's long-term identity key (*)
-    signature (str)          - signature for this descriptor (*)
     
     (*) required fields, others are left as None if undefined
   """
   
-  def __init__(self, contents, validate = True, annotations = None):
+  def __init__(self, raw_contents, annotations):
     """
     Version 3 server descriptor constructor, created from an individual relay's
     descriptor content (as provided by "GETINFO desc/*", cached descriptors,
@@ -241,7 +201,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     malformed data.
     
     Arguments:
-      contents (str)     - descriptor content provided by the relay
+      raw_contents (str) - descriptor content provided by the relay
       validate (bool)    - checks the validity of the descriptor's content if
                            True, skips these checks otherwise
       annotations (list) - lines that appeared prior to the descriptor
@@ -250,7 +210,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
       ValueError if the contents is malformed and validate is True
     """
     
-    stem.descriptor.Descriptor.__init__(self, contents)
+    stem.descriptor.Descriptor.__init__(self, raw_contents)
     
     self.nickname = None
     self.fingerprint = None
@@ -278,9 +238,6 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     self.read_history = None
     self.write_history = None
     self.eventdns = True
-    self.onion_key = None
-    self.signing_key = None
-    self.signature = None
     
     # TODO: Until we have a proper ExitPolicy class this is just a list of the
     # exit policy strings...
@@ -301,70 +258,50 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     else:
       self._annotation_lines = []
       self._annotation_dict = {}
+  
+  def get_unrecognized_lines(self):
+    return list(self._unrecognized_lines)
+  
+  def get_annotations(self):
+    """
+    Provides content that appeard prior to the descriptor. If this comes from
+    the cached-descriptors file then this commonly contains content like...
     
-    # A descriptor contains a series of 'keyword lines' which are simply a
-    # keyword followed by an optional value. Lines can also be followed by a
-    # signature block.
-    #
-    # We care about the ordering of 'accept' and 'reject' entries because this
-    # influences the resulting exit policy, but for everything else the order
-    # does not matter so breaking it into key / value pairs.
+      @downloaded-at 2012-03-18 21:18:29
+      @source "173.254.216.66"
     
-    entries = {}
-    remaining_contents = contents.split("\n")
-    first_entry, last_entry = remaining_contents[0], remaining_contents[0]
-    while remaining_contents:
-      line = remaining_contents.pop(0)
-      
-      # last line can be empty
-      if not line and not remaining_contents: continue
-      last_entry = line
-      
-      # Some lines have an 'opt ' for backward compatability. They should be
-      # ignored. This prefix is being removed in...
-      # https://trac.torproject.org/projects/tor/ticket/5124
-      
-      if line.startswith("opt "): line = line[4:]
-      
-      line_match = KEYWORD_LINE.match(line)
-      
-      if not line_match:
-        if not validate: continue
-        raise ValueError("Line contains invalid characters: %s" % line)
-      
-      keyword, value = line_match.groups()
-      
-      try:
-        block_contents = _get_pseudo_pgp_block(remaining_contents)
-      except ValueError, exc:
-        if not validate: continue
-        raise exc
-      
-      if keyword in ("accept", "reject"):
-        self.exit_policy.append("%s %s" % (keyword, value))
-      elif keyword in entries:
-        entries[keyword].append((value, block_contents))
-      else:
-        entries[keyword] = [(value, block_contents)]
+    Returns:
+      dict with the key/value pairs in our annotations
+    """
     
-    # validates restrictions about the entries
-    if validate:
-      for keyword in REQUIRED_FIELDS:
-        if not keyword in entries:
-          raise ValueError("Descriptor must have a '%s' entry" % keyword)
-      
-      for keyword in SINGLE_FIELDS + REQUIRED_FIELDS:
-        if keyword in entries and len(entries[keyword]) > 1:
-          raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
-      
-      if not first_entry.startswith(ENTRY_START):
-        raise ValueError("Descriptor must start with a '%s' entry" % ENTRY_START)
-      elif not last_entry.startswith(ENTRY_END):
-        raise ValueError("Descriptor must end with a '%s' entry" % ENTRY_END)
-      elif not self.exit_policy:
-        raise ValueError("Descriptor must have at least one 'accept' or 'reject' entry")
+    return self._annotation_dict
+  
+  def get_annotation_lines(self):
+    """
+    Provides the lines of content that appeared prior to the descriptor. This
+    is the same as the get_annotations() results, but with the unparsed lines
+    and ordering retained.
     
-    # parse all the entries into our attributes
+    Returns:
+      list with the lines of annotation that came before this descriptor
+    """
+    
+    return self._annotation_lines
+  
+  def _parse(self, entries, validate):
+    """
+    Parses a series of 'keyword => (value, pgp block)' mappings and applies
+    them as attributes.
+    
+    Arguments:
+      entries (dict)  - descriptor contents to be applied
+      validate (bool) - checks the validity of descriptor content if True
+    
+    Raises:
+      ValueError if an error occures in validation
+    """
+    
+    
     for keyword, values in entries.items():
       # most just work with the first (and only) value
       value, block_contents = values[0]
@@ -493,21 +430,6 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
           raise ValueError("Uptime line must have an integer value: %s" % value)
         
         self.uptime = int(value)
-      elif keyword == "onion-key":
-        if validate and not block_contents:
-          raise ValueError("Onion key line must be followed by a public key: %s" % line)
-        
-        self.onion_key = block_contents
-      elif keyword == "signing-key":
-        if validate and not block_contents:
-          raise ValueError("Signing key line must be followed by a public key: %s" % line)
-        
-        self.signing_key = block_contents
-      elif keyword == "router-signature":
-        if validate and not block_contents:
-          raise ValueError("Router signature line must be followed by a signature block: %s" % line)
-        
-        self.signature = block_contents
       elif keyword == "contact":
         self.contact = value
       elif keyword == "protocols":
@@ -533,34 +455,72 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
       else:
         self._unrecognized_lines.append(line)
   
-  def get_unrecognized_lines(self):
-    return list(self._unrecognized_lines)
+  def _check_constraints(self, contents):
+    """
+    Does a basic check that the entries conform to this descriptor type's
+    constraints.
+    
+    Arguments:
+      contents (_DescriptorContents) - contents to be validated
+    
+    Raises:
+      ValueError if an issue arises in validation
+    """
+    
+    required_fields = self._required_fields()
+    if required_fields:
+      for keyword in required_fields:
+        if not keyword in contents.entries:
+          raise ValueError("Descriptor must have a '%s' entry" % keyword)
+    
+    single_fields = self._single_fields()
+    if single_fields:
+      for keyword in self._single_fields():
+        if keyword in contents.entries and len(contents.entries[keyword]) > 1:
+          raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
+    
+    first_keyword = self._first_keyword()
+    if first_keyword and not contents.first_keyword == first_keyword:
+      raise ValueError("Descriptor must start with a '%s' entry" % first_keyword)
+    
+    last_keyword = self._last_keyword()
+    if last_keyword and not contents.last_keyword == self._last_keyword():
+      raise ValueError("Descriptor must end with a '%s' entry" % last_keyword)
+    
+    if not self.exit_policy:
+      raise ValueError("Descriptor must have at least one 'accept' or 'reject' entry")
   
-  def get_annotations(self):
-    """
-    Provides content that appeard prior to the descriptor. If this comes from
-    the cached-descriptors file then this commonly contains content like...
-    
-      @downloaded-at 2012-03-18 21:18:29
-      @source "173.254.216.66"
-    
-    Returns:
-      dict with the key/value pairs in our annotations
-    """
-    
-    return self._annotation_dict
+  # Constraints that the descriptor must meet to be valid. These can be None if
+  # not applicable.
   
-  def get_annotation_lines(self):
-    """
-    Provides the lines of content that appeared prior to the descriptor. This
-    is the same as the get_annotations() results, but with the unparsed lines
-    and ordering retained.
+  def _required_fields(self): return None
+  def _single_fields(self): return None
+  def _first_keyword(self): return None
+  def _last_keyword(self): return None
+
+class RelayDescriptorV3(ServerDescriptorV3):
+  """
+  Version 3 server descriptor, as specified in...
+  https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt
+  
+  Attributes:
+    onion_key (str)   - key used to encrypt EXTEND cells (*)
+    signing_key (str) - relay's long-term identity key (*)
+    signature (str)   - signature for this descriptor (*)
     
-    Returns:
-      list with the lines of annotation that came before this descriptor
-    """
+    (*) required fields, others are left as None if undefined
+  """
+  
+  def __init__(self, raw_contents, validate = True, annotations = None):
+    ServerDescriptorV3.__init__(self, raw_contents, annotations)
+    self.onion_key = None
+    self.signing_key = None
+    self.signature = None
     
-    return self._annotation_lines
+    contents = _DescriptorContents(raw_contents, validate)
+    self.exit_policy = contents.exit_policy
+    self._parse(contents.entries, validate)
+    if validate: self._check_constraints(contents)
   
   def is_valid(self):
     """
@@ -571,4 +531,196 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     """
     
     raise NotImplementedError # TODO: implement
+  
+  def _parse(self, entries, validate):
+    entries = dict(entries) # shallow copy since we're destructive
+    
+    # handles fields only in server descriptors
+    for keyword, values in entries.items():
+      value, block_contents = values[0]
+      
+      if keyword == "onion-key":
+        if validate and not block_contents:
+          raise ValueError("Onion key line must be followed by a public key: %s" % line)
+        
+        self.onion_key = block_contents
+        del entries["onion-key"]
+      elif keyword == "signing-key":
+        if validate and not block_contents:
+          raise ValueError("Signing key line must be followed by a public key: %s" % line)
+        
+        self.signing_key = block_contents
+        del entries["signing-key"]
+      elif keyword == "router-signature":
+        if validate and not block_contents:
+          raise ValueError("Router signature line must be followed by a signature block: %s" % line)
+        
+        self.signature = block_contents
+        del entries["router-signature"]
+    
+    ServerDescriptorV3._parse(self, entries, validate)
+  
+  def _required_fields(self):
+    return REQUIRED_FIELDS
+  
+  def _single_fields(self):
+    return REQUIRED_FIELDS + SINGLE_FIELDS
+  
+  def _first_keyword(self):
+    return "router"
+  
+  def _last_keyword(self):
+    return "router-signature"
+
+class BridgeDescriptorV3(ServerDescriptorV3):
+  """
+  Version 3 bridge descriptor, as specified in...
+  https://metrics.torproject.org/formats.html#bridgedesc
+  """
+  
+  def __init__(self, raw_contents, validate = True, annotations = None):
+    ServerDescriptorV3.__init__(self, raw_contents, annotations)
+    
+    contents = _DescriptorContents(raw_contents, validate)
+    self.exit_policy = contents.exit_policy
+    self._parse(contents.entries, validate)
+    if validate: self._check_constraints(contents)
+  
+  def _parse(self, entries, validate):
+    ServerDescriptorV3._parse(self, entries, validate)
+    
+    if validate:
+      # checks that we properly scrubbed fields
+      if self.nickname != "Unnamed":
+        raise ValueError("Router line's nickname should be scrubbed to be 'Unnamed': %s" % self.nickname)
+      elif not self.address.startswith("10."):
+        raise ValueError("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
+      elif self.contact and self.contact != "somebody":
+        raise ValueError("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
+      
+      for line in self.get_unrecognized_lines():
+        if line.startswith("onion-key "):
+          raise ValueError("Bridge descriptors should have their onion-key scrubbed: %s" % self.onion_key)
+        elif line.startswith("signing-key "):
+          raise ValueError("Bridge descriptors should have their signing-key scrubbed: %s" % self.signing_key)
+        elif line.startswith("router-signature "):
+          raise ValueError("Bridge descriptors should have their signature scrubbed: %s" % self.signature)
+  
+  def _required_fields(self):
+    # bridge required fields are the same as a relay descriptor, minus items
+    # excluded according to the format page
+    
+    excluded_fields = (
+      "onion-key",
+      "signing-key",
+      "router-signature",
+    )
+    
+    return filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
+  
+  def _single_fields(self):
+    return self._required_fields() + SINGLE_FIELDS
+  
+  def _first_keyword(self):
+    return "router"
+
+class _DescriptorContents:
+  """
+  Initial breakup of the server descriptor contents to make parsing easier
+  later.
+  
+  A descriptor contains a series of 'keyword lines' which are simply a keyword
+  followed by an optional value. Lines can also be followed by a signature
+  block.
+  
+  We care about the ordering of 'accept' and 'reject' entries because this
+  influences the resulting exit policy, but for everything else the order does
+  not matter so breaking it into key / value pairs.
+  
+  Attributes:
+    entries (dict)      - keyword => (value, pgp key) entries
+    first_keyword (str) - keyword of the first line
+    last_keyword (str)  - keyword of the last line
+    exit_policy (list)  - lines containing the exit policy
+  """
+  
+  def __init__(self, raw_contents, validate):
+    self.entries = {}
+    self.first_keyword = None
+    self.last_keyword = None
+    self.exit_policy = []
+    remaining_lines = raw_contents.split("\n")
+    
+    while remaining_lines:
+      line = remaining_lines.pop(0)
+      
+      # last line can be empty
+      if not line and not remaining_lines: continue
+      
+      # Some lines have an 'opt ' for backward compatability. They should be
+      # ignored. This prefix is being removed in...
+      # https://trac.torproject.org/projects/tor/ticket/5124
+      
+      if line.startswith("opt "): line = line[4:]
+      
+      line_match = KEYWORD_LINE.match(line)
+      
+      if not line_match:
+        if not validate: continue
+        raise ValueError("Line contains invalid characters: %s" % line)
+      
+      keyword, value = line_match.groups()
+      
+      if not self.first_keyword: self.first_keyword = keyword
+      self.last_keyword = keyword
+      
+      try:
+        block_contents = _get_pseudo_pgp_block(remaining_lines)
+      except ValueError, exc:
+        if not validate: continue
+        raise exc
+      
+      if keyword in ("accept", "reject"):
+        self.exit_policy.append("%s %s" % (keyword, value))
+      elif keyword in self.entries:
+        self.entries[keyword].append((value, block_contents))
+      else:
+        self.entries[keyword] = [(value, block_contents)]
+
+def _get_pseudo_pgp_block(remaining_contents):
+  """
+  Checks if given contents begins with a pseudo-Open-PGP-style block and, if
+  so, pops it off and provides it back to the caller.
+  
+  Arguments:
+    remaining_contents (list) - lines to be checked for a public key block
+  
+  Returns:
+    str with the armor wrapped contents or None if it doesn't exist
+  
+  Raises:
+    ValueError if the contents starts with a key block but it's malformed (for
+    instance, if it lacks an ending line)
+  """
+  
+  if not remaining_contents:
+    return None # nothing left
+  
+  block_match = PGP_BLOCK_START.match(remaining_contents[0])
+  
+  if block_match:
+    block_type = block_match.groups()[0]
+    block_lines = []
+    
+    while True:
+      if not remaining_contents:
+        raise ValueError("Unterminated pgp style block")
+      
+      line = remaining_contents.pop(0)
+      block_lines.append(line)
+      
+      if line == PGP_BLOCK_END % block_type:
+        return "\n".join(block_lines)
+  else:
+    return None
 

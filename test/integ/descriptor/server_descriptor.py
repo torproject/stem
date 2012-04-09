@@ -61,7 +61,7 @@ dskLSPz8beUW7bzwDjR6EVNGpyoZde83Ejvau+5F2c6cGnlu91fiZN3suE88iE6e
 Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 -----END SIGNATURE-----"""
     
-    desc = stem.descriptor.server_descriptor.ServerDescriptorV3(descriptor_contents)
+    desc = stem.descriptor.server_descriptor.RelayDescriptorV3(descriptor_contents)
     self.assertEquals("caerSidi", desc.nickname)
     self.assertEquals("A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB", desc.fingerprint)
     self.assertEquals("71.35.133.197", desc.address)
@@ -145,7 +145,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     expected_published = datetime.datetime(2012, 3, 21, 16, 28, 14)
     expected_contact = "2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf"
     
-    desc = stem.descriptor.server_descriptor.ServerDescriptorV3(descriptor_contents)
+    desc = stem.descriptor.server_descriptor.RelayDescriptorV3(descriptor_contents)
     self.assertEquals("torrelay389752132", desc.nickname)
     self.assertEquals("FEBC7F992AC418BBE42BC13FE94EFCFE6549197E", desc.fingerprint)
     self.assertEquals("130.243.230.116", desc.address)
@@ -169,6 +169,52 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(81920, desc.average_bandwidth)
     self.assertEquals(102400, desc.burst_bandwidth)
     self.assertEquals(84275, desc.observed_bandwidth)
+    self.assertEquals(["reject *:*"], desc.exit_policy)
+    self.assertEquals([], desc.get_unrecognized_lines())
+  
+  def test_bridge_descriptor(self):
+    """
+    Parses a bridge descriptor.
+    """
+    
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "bridge_descriptor")
+    
+    descriptor_file = open(descriptor_path)
+    descriptor_contents = descriptor_file.read()
+    descriptor_file.close()
+    
+    expected_published = datetime.datetime(2012, 3, 22, 17, 34, 38)
+    
+    expected_family = [
+      "$CE396C72A3D0880F74C064FEA79D68C15BD380B9",
+      "$AB8B00C00B1347BA80A88E548FAC9EDF701D7D0E",
+      "$8C8A470D7C23151665A7B84E75E89FCC205A3304",
+    ]
+    
+    desc = stem.descriptor.server_descriptor.BridgeDescriptorV3(descriptor_contents)
+    self.assertEquals("Unnamed", desc.nickname)
+    self.assertEquals("AE54E28ED069CDF45F3009F963EE3B3D6FA26A2E", desc.fingerprint)
+    self.assertEquals("10.45.227.253", desc.address)
+    self.assertEquals(9001, desc.or_port)
+    self.assertEquals(0, desc.socks_port)
+    self.assertEquals(0, desc.dir_port)
+    self.assertEquals("Tor 0.2.3.12-alpha (git-800942b4176ca31c) on Linux x86_64", desc.platform)
+    self.assertEquals(stem.version.Version("0.2.3.12-alpha"), desc.tor_version)
+    self.assertEquals("Linux x86_64", desc.operating_system)
+    self.assertEquals(186, desc.uptime)
+    self.assertEquals(expected_published, desc.published)
+    self.assertEquals("somebody", desc.contact)
+    self.assertEquals(["1", "2"], desc.link_protocols)
+    self.assertEquals(["1"], desc.circuit_protocols)
+    self.assertEquals(False, desc.hibernating)
+    self.assertEquals(False, desc.allow_single_hop_exits)
+    self.assertEquals(False, desc.extra_info_cache)
+    self.assertEquals("134F81F7A0D270B85FCD481DD10CEA34BA7B15C9", desc.extra_info_digest)
+    self.assertEquals(["2"], desc.hidden_service_dir)
+    self.assertEquals(expected_family, desc.family)
+    self.assertEquals(409600, desc.average_bandwidth)
+    self.assertEquals(819200, desc.burst_bandwidth)
+    self.assertEquals(5120, desc.observed_bandwidth)
     self.assertEquals(["reject *:*"], desc.exit_policy)
     self.assertEquals([], desc.get_unrecognized_lines())
 
