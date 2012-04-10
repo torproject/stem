@@ -190,7 +190,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     (*) required fields, others are left as None if undefined
   """
   
-  def __init__(self, raw_contents, annotations):
+  def __init__(self, raw_contents, validate = True, annotations = None):
     """
     Version 3 server descriptor constructor, created from an individual relay's
     descriptor content (as provided by "GETINFO desc/*", cached descriptors,
@@ -258,6 +258,11 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     else:
       self._annotation_lines = []
       self._annotation_dict = {}
+    
+    contents = _DescriptorContents(raw_contents, validate)
+    self.exit_policy = contents.exit_policy
+    self._parse(contents.entries, validate)
+    if validate: self._check_constraints(contents)
   
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
@@ -512,15 +517,11 @@ class RelayDescriptorV3(ServerDescriptorV3):
   """
   
   def __init__(self, raw_contents, validate = True, annotations = None):
-    ServerDescriptorV3.__init__(self, raw_contents, annotations)
     self.onion_key = None
     self.signing_key = None
     self.signature = None
     
-    contents = _DescriptorContents(raw_contents, validate)
-    self.exit_policy = contents.exit_policy
-    self._parse(contents.entries, validate)
-    if validate: self._check_constraints(contents)
+    ServerDescriptorV3.__init__(self, raw_contents, validate, annotations)
   
   def is_valid(self):
     """
@@ -577,14 +578,6 @@ class BridgeDescriptorV3(ServerDescriptorV3):
   Version 3 bridge descriptor, as specified in...
   https://metrics.torproject.org/formats.html#bridgedesc
   """
-  
-  def __init__(self, raw_contents, validate = True, annotations = None):
-    ServerDescriptorV3.__init__(self, raw_contents, annotations)
-    
-    contents = _DescriptorContents(raw_contents, validate)
-    self.exit_policy = contents.exit_policy
-    self._parse(contents.entries, validate)
-    if validate: self._check_constraints(contents)
   
   def _parse(self, entries, validate):
     ServerDescriptorV3._parse(self, entries, validate)
