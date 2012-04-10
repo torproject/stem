@@ -238,31 +238,28 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     self.read_history = None
     self.write_history = None
     self.eventdns = True
+    self._unrecognized_lines = []
+    
+    self._annotation_lines = annotations if annotations else []
+    self._annotation_dict = None # cached breakdown of key/value mappings
     
     # TODO: Until we have a proper ExitPolicy class this is just a list of the
     # exit policy strings...
     
     self.exit_policy = []
     
-    self._unrecognized_lines = []
+    # A descriptor contains a series of 'keyword lines' which are simply a
+    # keyword followed by an optional value. Lines can also be followed by a
+    # signature block.
+    #
+    # We care about the ordering of 'accept' and 'reject' entries because this
+    # influences the resulting exit policy, but for everything else the order
+    # does not matter so breaking it into key / value pairs.
     
-    if annotations:
-      self._annotation_lines = annotations
-      self._annotation_dict = {}
-      
-      for line in annotations:
-        if " " in line:
-          key, value = line.split(" ", 1)
-          self._annotation_dict[key] = value
-        else: self._annotation_dict[line] = None
-    else:
-      self._annotation_lines = []
-      self._annotation_dict = {}
-    
-    contents = _DescriptorContents(raw_contents, validate)
-    self.exit_policy = contents.exit_policy
-    self._parse(contents.entries, validate)
-    if validate: self._check_constraints(contents)
+    entries, first_keyword, last_keyword, self.exit_policy = \
+      _get_descriptor_components(raw_contents, validate)
+    self._parse(entries, validate)
+    if validate: self._check_constraints(entries, first_keyword, last_keyword)
   
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
@@ -278,6 +275,17 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     Returns:
       dict with the key/value pairs in our annotations
     """
+    
+    if self._annotation_dict == None:
+      annotation_dict = {}
+      
+      for line in self._annotation_lines:
+        if " " in line:
+          key, value = line.split(" ", 1)
+          annotation_dict[key] = value
+        else: annotation_dict[line] = None
+      
+      self._annotation_dict = annotation_dict
     
     return self._annotation_dict
   
@@ -305,7 +313,6 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     Raises:
       ValueError if an error occures in validation
     """
-    
     
     for keyword, values in entries.items():
       # most just work with the first (and only) value
@@ -460,13 +467,15 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
       else:
         self._unrecognized_lines.append(line)
   
-  def _check_constraints(self, contents):
+  def _check_constraints(self, entries, first_keyword, last_keyword):
     """
     Does a basic check that the entries conform to this descriptor type's
     constraints.
     
     Arguments:
-      contents (_DescriptorContents) - contents to be validated
+      entries (dict)      - keyword => (value, pgp key) entries
+      first_keyword (str) - keyword of the first line
+      last_keyword (str)  - keyword of the last line
     
     Raises:
       ValueError if an issue arises in validation
@@ -475,21 +484,21 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     required_fields = self._required_fields()
     if required_fields:
       for keyword in required_fields:
-        if not keyword in contents.entries:
+        if not keyword in entries:
           raise ValueError("Descriptor must have a '%s' entry" % keyword)
     
     single_fields = self._single_fields()
     if single_fields:
       for keyword in self._single_fields():
-        if keyword in contents.entries and len(contents.entries[keyword]) > 1:
+        if keyword in entries and len(entries[keyword]) > 1:
           raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
     
-    first_keyword = self._first_keyword()
-    if first_keyword and not contents.first_keyword == first_keyword:
+    expected_first_keyword = self._first_keyword()
+    if expected_first_keyword and not first_keyword == expected_first_keyword:
       raise ValueError("Descriptor must start with a '%s' entry" % first_keyword)
     
-    last_keyword = self._last_keyword()
-    if last_keyword and not contents.last_keyword == self._last_keyword():
+    expected_last_keyword = self._last_keyword()
+    if expected_last_keyword and not last_keyword == expected_last_keyword:
       raise ValueError("Descriptor must end with a '%s' entry" % last_keyword)
     
     if not self.exit_policy:
@@ -581,23 +590,28 @@ class BridgeDescriptorV3(ServerDescriptorV3):
   
   def _parse(self, entries, validate):
     ServerDescriptorV3._parse(self, entries, validate)
+    if validate: self._check_scrubbing()
+  
+  def _check_scrubbing(self):
+    """
+    Checks that our attributes have been scrubbed in accordance with the bridge
+    descriptor specification.
+    """
     
-    if validate:
-      # checks that we properly scrubbed fields
-      if self.nickname != "Unnamed":
-        raise ValueError("Router line's nickname should be scrubbed to be 'Unnamed': %s" % self.nickname)
-      elif not self.address.startswith("10."):
-        raise ValueError("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
-      elif self.contact and self.contact != "somebody":
-        raise ValueError("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
-      
-      for line in self.get_unrecognized_lines():
-        if line.startswith("onion-key "):
-          raise ValueError("Bridge descriptors should have their onion-key scrubbed: %s" % self.onion_key)
-        elif line.startswith("signing-key "):
-          raise ValueError("Bridge descriptors should have their signing-key scrubbed: %s" % self.signing_key)
-        elif line.startswith("router-signature "):
-          raise ValueError("Bridge descriptors should have their signature scrubbed: %s" % self.signature)
+    if self.nickname != "Unnamed":
+      raise ValueError("Router line's nickname should be scrubbed to be 'Unnamed': %s" % self.nickname)
+    elif not self.address.startswith("10."):
+      raise ValueError("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
+    elif self.contact and self.contact != "somebody":
+      raise ValueError("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
+    
+    for line in self.get_unrecognized_lines():
+      if line.startswith("onion-key "):
+        raise ValueError("Bridge descriptors should have their onion-key scrubbed: %s" % line)
+      elif line.startswith("signing-key "):
+        raise ValueError("Bridge descriptors should have their signing-key scrubbed: %s" % line)
+      elif line.startswith("router-signature "):
+        raise ValueError("Bridge descriptors should have their signature scrubbed: %s" % line)
   
   def _required_fields(self):
     # bridge required fields are the same as a relay descriptor, minus items
@@ -617,10 +631,9 @@ class BridgeDescriptorV3(ServerDescriptorV3):
   def _first_keyword(self):
     return "router"
 
-class _DescriptorContents:
+def _get_descriptor_components(raw_contents, validate):
   """
-  Initial breakup of the server descriptor contents to make parsing easier
-  later.
+  Initial breakup of the server descriptor contents to make parsing easier.
   
   A descriptor contains a series of 'keyword lines' which are simply a keyword
   followed by an optional value. Lines can also be followed by a signature
@@ -630,55 +643,62 @@ class _DescriptorContents:
   influences the resulting exit policy, but for everything else the order does
   not matter so breaking it into key / value pairs.
   
-  Attributes:
-    entries (dict)      - keyword => (value, pgp key) entries
-    first_keyword (str) - keyword of the first line
-    last_keyword (str)  - keyword of the last line
-    exit_policy (list)  - lines containing the exit policy
+  Arguments:
+    raw_contents (str) - descriptor content provided by the relay
+    validate (bool)    - checks the validity of the descriptor's content if
+                         True, skips these checks otherwise
+  
+  Returns:
+    tuple with the following attributes...
+      entries (dict)      - keyword => (value, pgp key) entries
+      first_keyword (str) - keyword of the first line
+      last_keyword (str)  - keyword of the last line
+      exit_policy (list)  - lines containing the exit policy
   """
   
-  def __init__(self, raw_contents, validate):
-    self.entries = {}
-    self.first_keyword = None
-    self.last_keyword = None
-    self.exit_policy = []
-    remaining_lines = raw_contents.split("\n")
+  entries = {}
+  first_keyword = None
+  last_keyword = None
+  exit_policy = []
+  remaining_lines = raw_contents.split("\n")
+  
+  while remaining_lines:
+    line = remaining_lines.pop(0)
     
-    while remaining_lines:
-      line = remaining_lines.pop(0)
-      
-      # last line can be empty
-      if not line and not remaining_lines: continue
-      
-      # Some lines have an 'opt ' for backward compatability. They should be
-      # ignored. This prefix is being removed in...
-      # https://trac.torproject.org/projects/tor/ticket/5124
-      
-      if line.startswith("opt "): line = line[4:]
-      
-      line_match = KEYWORD_LINE.match(line)
-      
-      if not line_match:
-        if not validate: continue
-        raise ValueError("Line contains invalid characters: %s" % line)
-      
-      keyword, value = line_match.groups()
-      
-      if not self.first_keyword: self.first_keyword = keyword
-      self.last_keyword = keyword
-      
-      try:
-        block_contents = _get_pseudo_pgp_block(remaining_lines)
-      except ValueError, exc:
-        if not validate: continue
-        raise exc
-      
-      if keyword in ("accept", "reject"):
-        self.exit_policy.append("%s %s" % (keyword, value))
-      elif keyword in self.entries:
-        self.entries[keyword].append((value, block_contents))
-      else:
-        self.entries[keyword] = [(value, block_contents)]
+    # last line can be empty
+    if not line and not remaining_lines: continue
+    
+    # Some lines have an 'opt ' for backward compatability. They should be
+    # ignored. This prefix is being removed in...
+    # https://trac.torproject.org/projects/tor/ticket/5124
+    
+    if line.startswith("opt "): line = line[4:]
+    
+    line_match = KEYWORD_LINE.match(line)
+    
+    if not line_match:
+      if not validate: continue
+      raise ValueError("Line contains invalid characters: %s" % line)
+    
+    keyword, value = line_match.groups()
+    
+    if not first_keyword: first_keyword = keyword
+    last_keyword = keyword
+    
+    try:
+      block_contents = _get_pseudo_pgp_block(remaining_lines)
+    except ValueError, exc:
+      if not validate: continue
+      raise exc
+    
+    if keyword in ("accept", "reject"):
+      exit_policy.append("%s %s" % (keyword, value))
+    elif keyword in entries:
+      entries[keyword].append((value, block_contents))
+    else:
+      entries[keyword] = [(value, block_contents)]
+  
+  return entries, first_keyword, last_keyword, exit_policy
 
 def _get_pseudo_pgp_block(remaining_contents):
   """
