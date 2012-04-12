@@ -40,15 +40,7 @@ def parse_file(path, descriptor_file):
   first_line = descriptor_file.readline()
   descriptor_file.seek(0)
   
-  if first_line.startswith("router Unnamed 10."):
-    # bridge descriptors are scrubbed so their nickname is 'Unnamed' and their
-    # ip address is in the 10.x.x.x space, which is normally reserved for
-    # private networks
-    
-    desc = stem.descriptor.server_descriptor.BridgeDescriptorV3(descriptor_file.read())
-    desc._set_path(path)
-    yield desc
-  elif filename == "cached-descriptors" or first_line.startswith("router "):
+  if filename == "cached-descriptors" or first_line.startswith("router "):
     for desc in stem.descriptor.server_descriptor.parse_file_v3(descriptor_file):
       desc._set_path(path)
       yield desc

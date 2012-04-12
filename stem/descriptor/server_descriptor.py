@@ -64,7 +64,8 @@ SINGLE_FIELDS = (
 
 def parse_file_v3(descriptor_file, validate = True):
   """
-  Iterates over the version 3 server descriptors in a file.
+  Iterates over the version 3 server descriptors in a file. This can read
+  either relay or bridge v3 server descriptors.
   
   Arguments:
     descriptor_file (file) - file with descriptor content
@@ -72,13 +73,29 @@ def parse_file_v3(descriptor_file, validate = True):
                              True, skips these checks otherwise
   
   Returns:
-    iterator for RelayDescriptorV3 instances in the file
+    iterator for ServerDescriptorV3 instances in the file
   
   Raises:
     ValueError if the contents is malformed and validate is True
     IOError if the file can't be read
   """
   
+  # Handler for bridge descriptors
+  #
+  # Bridge descriptors are scrubbed so their nickname is 'Unnamed' and their
+  # ip address is in the 10.x.x.x space, which is normally reserved for
+  # private networks. Bride descriptors only come from metrics so a file only
+  # contains a single descriptor.
+  
+  first_line = descriptor_file.readline()
+  descriptor_file.seek(0)
+  
+  if first_line.startswith("router Unnamed 10."):
+    yield BridgeDescriptorV3(descriptor_file.read())
+    return
+  
+  # Handler for relay descriptors
+  #
   # Cached descriptors consist of annotations followed by the descriptor
   # itself. For instance...
   #
