@@ -29,8 +29,36 @@ class TestConnection(unittest.TestCase):
     
     for address in valid_addresses:
       self.assertTrue(stem.util.connection.is_valid_ip_address(address))
+    
     for address in invalid_addresses:
       self.assertFalse(stem.util.connection.is_valid_ip_address(address))
+  
+  def test_is_valid_ipv6_address(self):
+    """
+    Checks the is_valid_ipv6_address function.
+    """
+    
+    valid_addresses = (
+      "fe80:0000:0000:0000:0202:b3ff:fe1e:8329",
+      "fe80:0:0:0:202:b3ff:fe1e:8329",
+      "fe80::202:b3ff:fe1e:8329",
+      "::",
+    )
+    
+    invalid_addresses = (
+      "fe80:0000:0000:0000:0202:b3ff:fe1e:829g",
+      "fe80:0000:0000:0000:0202:b3ff:fe1e: 8329",
+      "2001:db8::aaaa::1",
+      ":::",
+      ":",
+      "",
+    )
+    
+    for address in valid_addresses:
+      self.assertTrue(stem.util.connection.is_valid_ipv6_address(address))
+    
+    for address in invalid_addresses:
+      self.assertFalse(stem.util.connection.is_valid_ipv6_address(address))
   
   def test_is_valid_port(self):
     """
