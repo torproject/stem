@@ -7,7 +7,7 @@ import StringIO
 import unittest
 
 import stem.descriptor.server_descriptor
-from stem.descriptor.server_descriptor import RelayDescriptorV3
+from stem.descriptor.server_descriptor import RelayDescriptorV3, BridgeDescriptorV3
 
 CRYPTO_BLOB = """
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
@@ -15,7 +15,7 @@ skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
 
-SAMPLE_DESCRIPTOR_ATTR = (
+RELAY_DESCRIPTOR_ATTR = (
   ("router", "caerSidi 71.35.133.197 9001 0 0"),
   ("published", "2012-03-01 17:15:27"),
   ("bandwidth", "153600 256000 104590"),
@@ -25,13 +25,21 @@ SAMPLE_DESCRIPTOR_ATTR = (
   ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
 )
 
-def _make_descriptor(attr = None, exclude = None):
+BRIDGE_DESCRIPTOR_ATTR = (
+  ("router", "Unnamed 10.45.227.253 9001 0 0"),
+  ("published", "2012-03-22 17:34:38"),
+  ("bandwidth", "409600 819200 5120"),
+  ("reject", "*:*"),
+)
+
+def _make_descriptor(attr = None, exclude = None, is_bridge = False):
   """
   Constructs a minimal server descriptor with the given attributes.
   
   Arguments:
-    attr (dict)    - keyword/value mappings to be included in the descriptor
-    exclude (list) - mandatory keywords to exclude from the descriptor
+    attr (dict)     - keyword/value mappings to be included in the descriptor
+    exclude (list)  - mandatory keywords to exclude from the descriptor
+    is_bridge (bool) - minimal descriptor is for a bridge if True, relay otherwise
   
   Returns:
     str with customized descriptor content
@@ -40,26 +48,35 @@ def _make_descriptor(attr = None, exclude = None):
   descriptor_lines = []
   if attr == None: attr = {}
   if exclude == None: exclude = []
+  desc_attr = BRIDGE_DESCRIPTOR_ATTR if is_bridge else RELAY_DESCRIPTOR_ATTR
+  attr = dict(attr) # shallow copy since we're destructive
   
-  for keyword, value in SAMPLE_DESCRIPTOR_ATTR:
+  for keyword, value in desc_attr:
     if keyword in exclude: continue
     elif keyword in attr:
       value = attr[keyword]
       del attr[keyword]
     
     # if this is the last entry then we should dump in any unused attributes
-    if keyword == "router-signature":
+    if not is_bridge and keyword == "router-signature":
       for attr_keyword, attr_value in attr.items():
         descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
     
     descriptor_lines.append("%s %s" % (keyword, value))
   
+  # bridges don't have a router-signature so simply append any extra attributes
+  # to the end
+  if is_bridge:
+    for attr_keyword, attr_value in attr.items():
+      descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
+  
   return "\n".join(descriptor_lines)
 
 class TestServerDescriptor(unittest.TestCase):
-  def test_minimal_descriptor(self):
+  def test_minimal_relay_descriptor(self):
     """
-    Basic sanity check that we can parse a descriptor with minimal attributes.
+    Basic sanity check that we can parse a relay server descriptor with minimal
+    attributes.
     """
     
     desc_text = _make_descriptor()
@@ -254,6 +271,92 @@ class TestServerDescriptor(unittest.TestCase):
         self.assertEquals(None, desc.or_port)
         self.assertEquals(None, desc.socks_port)
         self.assertEquals(None, desc.dir_port)
+  
+  def test_minimal_bridge_descriptor(self):
+    """
+    Basic sanity check that we can parse a descriptor with minimal attributes.
+    """
+    
+    desc_text = _make_descriptor(is_bridge = True)
+    desc = BridgeDescriptorV3(desc_text)
+    
+    self.assertEquals("Unnamed", desc.nickname)
+    self.assertEquals("10.45.227.253", desc.address)
+    self.assertEquals(None, desc.fingerprint)
+    
+    # check that we don't have crypto fields
+    self.assertRaises(AttributeError, getattr, desc, "onion_key")
+    self.assertRaises(AttributeError, getattr, desc, "signing_key")
+    self.assertRaises(AttributeError, getattr, desc, "signature")
+  
+  def test_bridge_unsanitized(self):
+    """
+    Targeted check that individual unsanitized attributes will be detected. 
+    """
+    
+    unsanitized_attr = [
+      {"router": "caerSidi 10.45.227.253 9001 0 0"},
+      {"router": "Unnamed 75.45.227.253 9001 0 0"},
+      {"contact": "Damian"},
+      {"or-address": "71.35.133.197:9001"},
+      {"or-address": "[12ab:2e19:3bcf::02:9970]:9001"},
+      {"onion-key": "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB},
+      {"signing-key": "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB},
+      {"router-signature": "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB},
+    ]
+    
+    for attr in unsanitized_attr:
+      try:
+        desc_text = _make_descriptor(attr, is_bridge = True)
+        BridgeDescriptorV3(desc_text)
+        self.fail("Unsanitized attribute wasn't detected: %s %s" % attr.items()[0])
+      except ValueError: pass
+  
+  def test_bridge_unsanitized_relay(self):
+    """
+    Checks that parsing a normal relay descriptor as a bridge will fail due to
+    its unsanatized content.
+    """
+    
+    desc_text = _make_descriptor()
+    self.assertRaises(ValueError, BridgeDescriptorV3, desc_text)
+  
+  def test_or_address_v4(self):
+    """
+    Constructs a bridge descriptor with a sanatized IPv4 or-address entry.
+    """
+    
+    desc_text = _make_descriptor({"or-address": "10.45.227.253:9001"}, is_bridge = True)
+    desc = BridgeDescriptorV3(desc_text)
+    self.assertEquals([("10.45.227.253", 9001, False)], desc.address_alt)
+  
+  def test_or_address_v6(self):
+    """
+    Constructs a bridge descriptor with a sanatized IPv6 or-address entry.
+    """
+    
+    desc_text = _make_descriptor({"or-address": "[fd9f:2e19:3bcf::02:9970]:9001"}, is_bridge = True)
+    desc = BridgeDescriptorV3(desc_text)
+    self.assertEquals([("fd9f:2e19:3bcf::02:9970", 9001, True)], desc.address_alt)
+  
+  def test_or_address_multiple(self):
+    """
+    Constructs a bridge descriptor with multiple or-address entries and multiple ports.
+    """
+    
+    desc_text = "\n".join((_make_descriptor(is_bridge = True),
+                          "or-address 10.45.227.253:9001,9005,80",
+                          "or-address [fd9f:2e19:3bcf::02:9970]:443"))
+    
+    expected_address_alt = [
+      ("10.45.227.253", 9001, False),
+      ("10.45.227.253", 9005, False),
+      ("10.45.227.253", 80, False),
+      ("fd9f:2e19:3bcf::02:9970", 443, True),
+    ]
+    
+    desc = BridgeDescriptorV3(desc_text)
+    self.assertEquals(expected_address_alt, desc.address_alt)
   
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
     """

@@ -645,7 +645,7 @@ class BridgeDescriptorV3(ServerDescriptorV3):
               if not validate: break
               else: raise ValueError("or-address line has malformed ports: %s" % line)
             
-            self.address_alt.append((address, port, is_ipv6))
+            self.address_alt.append((address, int(port), is_ipv6))
         
         del entries["or-address"]
     
@@ -664,6 +664,14 @@ class BridgeDescriptorV3(ServerDescriptorV3):
       raise ValueError("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
     elif self.contact and self.contact != "somebody":
       raise ValueError("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
+    
+    for address, _, is_ipv6 in self.address_alt:
+      if not is_ipv6 and not address.startswith("10."):
+        raise ValueError("or-address line's address should be scrubbed to be '10.x.x.x': %s" % address)
+      elif is_ipv6 and not address.startswith("fd9f:2e19:3bcf::"):
+        # TODO: this check isn't quite right because we aren't checking that
+        # the next grouping of hex digits contains 1-2 digits
+        raise ValueError("or-address line's address should be scrubbed to be 'fd9f:2e19:3bcf::xx:xxxx': %s" % address)
     
     for line in self.get_unrecognized_lines():
       if line.startswith("onion-key "):
