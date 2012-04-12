@@ -548,6 +548,7 @@ class RelayDescriptorV3(ServerDescriptorV3):
     # handles fields only in server descriptors
     for keyword, values in entries.items():
       value, block_contents = values[0]
+      line = "%s %s" % (keyword, value)
       
       if keyword == "onion-key":
         if validate and not block_contents:
@@ -586,9 +587,51 @@ class BridgeDescriptorV3(ServerDescriptorV3):
   """
   Version 3 bridge descriptor, as specified in...
   https://metrics.torproject.org/formats.html#bridgedesc
+  
+  Attributes:
+    address_alt (list) - alternative for our address/or_port attributes, each
+                         entry is a tuple of the form...
+                         (address (str), port (int), is_ipv6 (bool))
   """
   
+  def __init__(self, raw_contents, validate = True, annotations = None):
+    self.address_alt = []
+    ServerDescriptorV3.__init__(self, raw_contents, validate, annotations)
+  
   def _parse(self, entries, validate):
+    entries = dict(entries)
+    
+    # handles fields only in bridge descriptors
+    for keyword, values in entries.items():
+      if keyword == "or-address":
+        or_address_entries = [value for (value, _) in values]
+        
+        for entry in or_address_entries:
+          line = "%s %s" % (keyword, entry)
+          
+          if not ":" in entry:
+            if not validate: continue
+            else: raise ValueError("or-address line missing a colon: %s" % line)
+          
+          div = entry.rfind(":")
+          address, ports = entry[:div], entry[div+1:]
+          is_ipv6 = address.startswith("[") and address.endswith("]")
+          if is_ipv6: address = address[1:-1] # remove brackets
+          
+          if not ((not is_ipv6 and stem.util.connection.is_valid_ip_address(address)) or
+                 (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
+            if not validate: continue
+            else: raise ValueError("or-address line has a malformed address: %s" % line)
+          
+          for port in ports.split(","):
+            if not stem.util.connection.is_valid_port(port):
+              if not validate: break
+              else: raise ValueError("or-address line has malformed ports: %s" % line)
+            
+            self.address_alt.append((address, port, is_ipv6))
+        
+        del entries["or-address"]
+    
     ServerDescriptorV3._parse(self, entries, validate)
     if validate: self._check_scrubbing()
   
