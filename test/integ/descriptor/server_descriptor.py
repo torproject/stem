@@ -103,6 +103,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(expected_signing_key, desc.signing_key)
     self.assertEquals(expected_signature, desc.signature)
     self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEquals("LHsnvqsEtOJFnYnKbVzRzF+Vpok", desc.digest())
   
   def test_cached_descriptor(self):
     """
@@ -229,44 +230,4 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(5120, desc.observed_bandwidth)
     self.assertEquals(["reject *:*"], desc.exit_policy)
     self.assertEquals([], desc.get_unrecognized_lines())
-  
-  def test_digest(self):
-    """
-    Checks that the digest for a descriptor matches its consensus digest value.
-    """
-    
-    # TODO: Remove manual parsing with proper objects when we have them...
-    # - parsing of consensus_digest with the NetworkStatus class
-    # - low level msg() calls with Controller
-    
-    if not self.is_descriptors_available:
-      self.skipTest("(no cached descriptors)")
-    
-    with test.runner.get_runner().get_tor_socket() as control_socket:
-      controller = stem.control.BaseController(control_socket)
-      
-      # picking one of the directory authorities (gabelmoo) since they're
-      # pretty stable and this is trivial to revise if they change
-      
-      fingerprint = "F2044413DAC2E02E3D6BCF4735A19BCA1DE97281"
-      desc_entry = controller.msg("GETINFO desc/id/%s" % fingerprint)
-      ns_entry = controller.msg("GETINFO ns/id/%s" % fingerprint)
-      
-      # parse the consensus digest from the ns_entry
-      consensus_digest = None
-      for line in str(ns_entry).split("\n"):
-        if line.startswith("r "):
-          consensus_digest = line.split()[3]
-          break
-      
-      if not consensus_digest:
-        self.fail("Malformed network descriptor: %s" % ns_entry)
-      
-      # parse the descriptor content from the desc_entry
-      
-      desc_content = list(desc_entry)[0]
-      desc_content = desc_content[desc_content.find("=\n") + 2:]
-      
-      desc = stem.descriptor.server_descriptor.RelayDescriptorV3(desc_content)
-      self.assertEquals(consensus_digest, desc.digest())
 
