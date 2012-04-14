@@ -129,6 +129,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
         self.assertEquals(None, desc.read_history)
         self.assertEquals(None, desc.write_history)
         self.assertEquals(True, desc.eventdns)
+        self.assertEquals(0, desc.socks_port)
         
         unrecognized_lines = desc.get_unrecognized_lines()
         

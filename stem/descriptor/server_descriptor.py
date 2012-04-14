@@ -355,8 +355,8 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
             raise ValueError("Router line entry isn't a valid IPv4 address: %s" % router_comp[1])
           elif not stem.util.connection.is_valid_port(router_comp[2], allow_zero = True):
             raise ValueError("Router line's ORPort is invalid: %s" % router_comp[2])
-          elif router_comp[3] != "0":
-            raise ValueError("Router line's SocksPort should be zero: %s" % router_comp[3])
+          elif not stem.util.connection.is_valid_port(router_comp[3], allow_zero = True):
+            raise ValueError("Router line's SocksPort is invalid: %s" % router_comp[3])
           elif not stem.util.connection.is_valid_port(router_comp[4], allow_zero = True):
             raise ValueError("Router line's DirPort is invalid: %s" % router_comp[4])
         elif not (router_comp[2].isdigit() and router_comp[3].isdigit() and router_comp[4].isdigit()):
