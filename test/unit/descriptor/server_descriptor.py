@@ -222,6 +222,33 @@ class TestServerDescriptor(unittest.TestCase):
     desc_text = _make_descriptor({"published": "2012-01-01"})
     self._expect_invalid_attr(desc_text, "published")
   
+  def test_read_and_write_history(self):
+    """
+    Parses a read-history and write-history entry. This is now a depricated
+    field for relay server descriptors but is still found in archives and
+    extra-info descriptors.
+    """
+    
+    for field in ("read-history", "write-history"):
+      value = "2005-12-16 18:00:48 (900 s) 81,8848,8927,8927,83,8848"
+      desc_text = _make_descriptor({"opt %s" % field: value})
+      desc = RelayDescriptorV3(desc_text)
+      
+      if field == "read-history":
+        attr = (desc.read_history, desc.read_history_end,
+          desc.read_history_interval, desc.read_history_values)
+      else:
+        attr = (desc.write_history, desc.write_history_end,
+          desc.write_history_interval, desc.write_history_values)
+      
+      expected_end = datetime.datetime(2005, 12, 16, 18, 0, 48)
+      expected_values = [81, 8848, 8927, 8927, 83, 8848]
+      
+      self.assertEquals(value, attr[0])
+      self.assertEquals(expected_end, attr[1])
+      self.assertEquals(900, attr[2])
+      self.assertEquals(expected_values, attr[3])
+  
   def test_annotations(self):
     """
     Checks that content before a descriptor are parsed as annotations.

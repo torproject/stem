@@ -202,9 +202,17 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     average_bandwidth (int)  - rate of traffic relay is willing to relay in bytes/s (*)
     burst_bandwidth (int)    - rate of traffic relay is willing to burst to in bytes/s (*)
     observed_bandwidth (int) - estimated capacity of the relay based on usage in bytes/s (*)
-    read_history (str)       - (deprecated) always unset
-    write_history (str)      - (deprecated) always unset
     eventdns (bool)          - (deprecated) always unset (*)
+    
+    read_history (str)       - (deprecated) read-history line, always unset
+    read_history_end (datetime.datetime) - (deprecated) end of the sampling interval
+    read_history_interval (int) - (deprecated) seconds per interval
+    read_history_values (list) - (deprecated) bytes read during each interval (*)
+    
+    write_history (str)      - (deprecated) write-history line, always unset
+    write_history_end (datetime.datetime) - (deprecated) end of the sampling interval
+    write_history_interval (int) - (deprecated) seconds per interval
+    write_history_values (list) - (deprecated) bytes written during each interval (*)
     
     (*) required fields, others are left as None if undefined
   """
@@ -254,9 +262,18 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
     self.average_bandwidth = None
     self.burst_bandwidth = None
     self.observed_bandwidth = None
-    self.read_history = None
-    self.write_history = None
     self.eventdns = True
+    
+    self.read_history = None
+    self.read_history_end = None
+    self.read_history_interval = None
+    self.read_history_values = []
+    
+    self.write_history = None
+    self.write_history_end = None
+    self.write_history_interval = None
+    self.write_history_values = []
+    
     self._unrecognized_lines = []
     
     self._annotation_lines = annotations if annotations else []
@@ -474,12 +491,45 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
           raise ValueError("Protocols line did not match the expected pattern: %s" % line)
       elif keyword == "family":
         self.family = value.split(" ")
-      elif keyword == "read-history":
-        self.read_history = value
-      elif keyword == "write-history":
-        self.write_history = value
       elif keyword == "eventdns":
         self.eventdns = value == "1"
+      elif keyword in ("read-history", "write-history"):
+        is_read = keyword == "read-history"
+        
+        if is_read: self.read_history = value
+        else: self.write_history = value
+        
+        value_match = re.match("^(.*) \(([0-9]+) s\) (.*)$", value)
+        
+        if not value_match:
+          if not validate: continue
+          raise ValueError("Malformed %s line: %s" % (keyword, line))
+        
+        end_value, interval_value, history_values = value_match.groups()
+        
+        try:
+          end_datetime = datetime.datetime.strptime(end_value, "%Y-%m-%d %H:%M:%S")
+          
+          if is_read: self.read_history_end = end_datetime
+          else: self.write_history_end = end_datetime
+        except ValueError:
+          if validate:
+            raise ValueError("%s line's time wasn't parseable: %s" % (keyword, line))
+        
+        if interval_value.isdigit():
+          if is_read: self.read_history_interval = int(interval_value)
+          else: self.write_history_interval = int(interval_value)
+        elif validate:
+          raise ValueError("%s line's interval wasn't a number: %s" % (keyword, line))
+        
+        for sampling in history_values.split(","):
+          if sampling.isdigit():
+            if is_read: self.read_history_values.append(int(sampling))
+            else: self.write_history_values.append(int(sampling))
+          else:
+            if validate:
+              raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
+            else: break
       else:
         self._unrecognized_lines.append(line)
   
