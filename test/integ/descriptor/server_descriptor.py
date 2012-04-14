@@ -229,7 +229,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(["reject *:*"], desc.exit_policy)
     self.assertEquals([], desc.get_unrecognized_lines())
   
-  def test_calculate_digest(self):
+  def test_digest(self):
     """
     Checks that the digest for a descriptor matches its consensus digest value.
     """
@@ -267,5 +267,5 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       desc_content = desc_content[desc_content.find("=\n") + 2:]
       
       desc = stem.descriptor.server_descriptor.RelayDescriptorV3(desc_content)
-      self.assertEquals(consensus_digest, desc.calculate_digest())
+      self.assertEquals(consensus_digest, desc.digest())
 

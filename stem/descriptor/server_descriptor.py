@@ -10,7 +10,8 @@ etc). This information is provided from a few sources...
 parse_file_v3 - Iterates over the server descriptors in a file.
 ServerDescriptorV3 - Tor server descriptor, version 3.
   |  |- RelayDescriptorV3 - Server descriptor for a relay.
-  |  |  +- is_valid - checks the signature against the descriptor content
+  |  |  |- is_valid - checks the signature against the descriptor content
+  |  |  +- digest - calculates the digest value for our content
   |  |
   |  +- BridgeDescriptorV3 - Scrubbed server descriptor for a bridge.
   |
@@ -558,7 +559,7 @@ class RelayDescriptorV3(ServerDescriptorV3):
     
     raise NotImplementedError # TODO: implement
   
-  def calculate_digest(self):
+  def digest(self):
     """
     Provides the base64 encoded sha1 of our content. This value is part of the
     server descriptor entry for this relay.
