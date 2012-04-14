@@ -20,6 +20,8 @@ ServerDescriptorV3 - Tor server descriptor, version 3.
 """
 
 import re
+import base64
+import hashlib
 import datetime
 
 import stem.descriptor
@@ -542,6 +544,7 @@ class RelayDescriptorV3(ServerDescriptorV3):
     self.onion_key = None
     self.signing_key = None
     self.signature = None
+    self._digest = None
     
     ServerDescriptorV3.__init__(self, raw_contents, validate, annotations)
   
@@ -554,6 +557,31 @@ class RelayDescriptorV3(ServerDescriptorV3):
     """
     
     raise NotImplementedError # TODO: implement
+  
+  def calculate_digest(self):
+    """
+    Provides the base64 encoded sha1 of our content. This value is part of the
+    server descriptor entry for this relay.
+    
+    Returns:
+      str with the digest value for this server descriptor
+    """
+    
+    if self._digest == None:
+      # our digest is calculated from everything except our signature
+      raw_content, ending = str(self), "\nrouter-signature\n"
+      raw_content = raw_content[:raw_content.find(ending) + len(ending)]
+      
+      digest_sha1 = hashlib.sha1(raw_content).digest()
+      digest = base64.b64encode(digest_sha1)
+      
+      # TODO: I'm not sure why but the base64 decodings have an anomalous '='
+      # ending which the network status entries don't have. Tad puzzled, but
+      # for now stripping it so we match.
+      
+      self._digest = digest[:-1]
+    
+    return self._digest
   
   def _parse(self, entries, validate):
     entries = dict(entries) # shallow copy since we're destructive

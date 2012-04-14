@@ -6,6 +6,7 @@ import os
 import datetime
 import unittest
 
+import stem.control
 import stem.version
 import stem.descriptor.server_descriptor
 import test.runner
@@ -19,6 +20,18 @@ DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
 RAN_CACHED_DESCRIPTOR_TEST = False
 
 class TestServerDescriptor(unittest.TestCase):
+  is_descriptors_available = None
+  
+  def setUp(self):
+    # If this is our first time running the integ tests and we didn't wait for
+    # a full tor initialization then the cached descriptors won't exist yet.
+    # Noting if they exist or not since some tests need them.
+    
+    if self.is_descriptors_available == None:
+      test_dir = test.runner.get_runner().get_test_dir()
+      descriptor_path = os.path.join(test_dir, "cached-descriptors")
+      self.is_descriptors_available = os.path.exists(descriptor_path)
+  
   def test_metrics_descriptor(self):
     """
     Parses and checks our results against a server descriptor from metrics.
@@ -100,9 +113,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     
     descriptor_path = os.path.join(test.runner.get_runner().get_test_dir(), "cached-descriptors")
     
-    # if this is our first time running the integ tests and we didn't wait for
-    # a full tor initialization then the cached descriptors won't exist yet
-    if not os.path.exists(descriptor_path):
+    if not self.is_descriptors_available:
       self.skipTest("(no cached descriptors)")
     
     global RAN_CACHED_DESCRIPTOR_TEST
@@ -217,4 +228,44 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(5120, desc.observed_bandwidth)
     self.assertEquals(["reject *:*"], desc.exit_policy)
     self.assertEquals([], desc.get_unrecognized_lines())
+  
+  def test_calculate_digest(self):
+    """
+    Checks that the digest for a descriptor matches its consensus digest value.
+    """
+    
+    # TODO: Remove manual parsing with proper objects when we have them...
+    # - parsing of consensus_digest with the NetworkStatus class
+    # - low level msg() calls with Controller
+    
+    if not self.is_descriptors_available:
+      self.skipTest("(no cached descriptors)")
+    
+    with test.runner.get_runner().get_tor_socket() as control_socket:
+      controller = stem.control.BaseController(control_socket)
+      
+      # picking one of the directory authorities (gabelmoo) since they're
+      # pretty stable and this is trivial to revise if they change
+      
+      fingerprint = "F2044413DAC2E02E3D6BCF4735A19BCA1DE97281"
+      desc_entry = controller.msg("GETINFO desc/id/%s" % fingerprint)
+      ns_entry = controller.msg("GETINFO ns/id/%s" % fingerprint)
+      
+      # parse the consensus digest from the ns_entry
+      consensus_digest = None
+      for line in str(ns_entry).split("\n"):
+        if line.startswith("r "):
+          consensus_digest = line.split()[3]
+          break
+      
+      if not consensus_digest:
+        self.fail("Malformed network descriptor: %s" % ns_entry)
+      
+      # parse the descriptor content from the desc_entry
+      
+      desc_content = list(desc_entry)[0]
+      desc_content = desc_content[desc_content.find("=\n") + 2:]
+      
+      desc = stem.descriptor.server_descriptor.RelayDescriptorV3(desc_content)
+      self.assertEquals(consensus_digest, desc.calculate_digest())
 
