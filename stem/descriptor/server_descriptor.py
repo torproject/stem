@@ -26,7 +26,6 @@ import stem.descriptor
 import stem.version
 import stem.util.connection
 import stem.util.tor_tools
-import stem.util.log as log
 
 KEYWORD_CHAR    = "a-zA-Z0-9-"
 WHITESPACE      = " \t"
@@ -473,13 +472,10 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
       elif keyword == "family":
         self.family = value.split(" ")
       elif keyword == "read-history":
-        log.info("Read an unexpected 'read-history' line in a v3 server descriptor. These should only appear in extra-info. line: %s" % line)
         self.read_history = value
       elif keyword == "write-history":
-        log.info("Read an unexpected 'write-history' line in a v3 server descriptor. These should only appear in extra-info. line: %s" % line)
         self.write_history = value
       elif keyword == "eventdns":
-        log.info("Read an unexpected 'eventdns' line in a v3 server descriptor. These should be deprecated. line: %s" % line)
         self.eventdns = value == "1"
       else:
         self._unrecognized_lines.append(line)
