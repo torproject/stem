@@ -302,6 +302,13 @@ class DescriptorReader:
     with self._reader_thread_lock:
       self._is_stopped.set()
       self._iter_notice.set()
+      
+      # clears our queue to unblock enqueue calls
+      try:
+        while True:
+          self._unreturned_descriptors.get_nowait()
+      except Queue.Empty: pass
+      
       self._reader_thread.join()
       self._reader_thread = None
   
@@ -352,7 +359,10 @@ class DescriptorReader:
           self._notify_skip_listeners(target, UnrecognizedType(target_type))
     
     self._processed_files = new_processed_files
-    self._enqueue_descriptor(FINISHED)
+    
+    if not self._is_stopped.is_set():
+      self._unreturned_descriptors.put(FINISHED)
+    
     self._iter_notice.set()
   
   def __iter__(self):
@@ -371,7 +381,8 @@ class DescriptorReader:
     try:
       with open(target) as target_file:
         for desc in stem.descriptor.parse_file(target, target_file):
-          self._enqueue_descriptor(desc)
+          if self._is_stopped.is_set(): return
+          self._unreturned_descriptors.put(desc)
           self._iter_notice.set()
     except TypeError, exc:
       self._notify_skip_listeners(target, UnrecognizedType(None))
@@ -388,7 +399,8 @@ class DescriptorReader:
             entry = tar_file.extractfile(tar_entry)
             
             for desc in stem.descriptor.parse_file(target, entry):
-              self._enqueue_descriptor(desc)
+              if self._is_stopped.is_set(): return
+              self._unreturned_descriptors.put(desc)
               self._iter_notice.set()
             
             entry.close()
@@ -396,16 +408,6 @@ class DescriptorReader:
       self._notify_skip_listeners(target, ParsingFailure(exc))
     except IOError, exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
-  
-  def _enqueue_descriptor(self, descriptor):
-    # blocks until there is either room for the descriptor or we're stopped
-    
-    while True:
-      try:
-        self._unreturned_descriptors.put(descriptor, timeout = 0.1)
-        return
-      except Queue.Full:
-        if self._is_stopped.is_set(): return
   
   def _notify_skip_listeners(self, path, exception):
     for listener in self._skip_listeners:
