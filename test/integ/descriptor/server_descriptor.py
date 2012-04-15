@@ -105,6 +105,62 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals([], desc.get_unrecognized_lines())
     self.assertEquals("LHsnvqsEtOJFnYnKbVzRzF+Vpok", desc.digest())
   
+  def test_old_descriptor(self):
+    """
+    Parses a relay server descriptor from 2005.
+    """
+    
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "old_descriptor")
+    
+    descriptor_file = open(descriptor_path)
+    descriptor_contents = descriptor_file.read()
+    descriptor_file.close()
+    
+    desc = stem.descriptor.server_descriptor.RelayDescriptorV3(descriptor_contents)
+    self.assertEquals("krypton", desc.nickname)
+    self.assertEquals("3E2F63E2356F52318B536A12B6445373808A5D6C", desc.fingerprint)
+    self.assertEquals("212.37.39.59", desc.address)
+    self.assertEquals(8000, desc.or_port)
+    self.assertEquals(0, desc.socks_port)
+    self.assertEquals(0, desc.dir_port)
+    self.assertEquals("Tor 0.1.0.14 on FreeBSD i386", desc.platform)
+    self.assertEquals(stem.version.Version("0.1.0.14"), desc.tor_version)
+    self.assertEquals("FreeBSD i386", desc.operating_system)
+    self.assertEquals(64820, desc.uptime)
+    self.assertEquals(datetime.datetime(2005, 12, 16, 18, 1, 3), desc.published)
+    self.assertEquals(None, desc.contact)
+    self.assertEquals(None, desc.link_protocols)
+    self.assertEquals(None, desc.circuit_protocols)
+    self.assertEquals(True, desc.hibernating)
+    self.assertEquals(False, desc.allow_single_hop_exits)
+    self.assertEquals(False, desc.extra_info_cache)
+    self.assertEquals(None, desc.extra_info_digest)
+    self.assertEquals(None, desc.hidden_service_dir)
+    self.assertEquals([], desc.family)
+    self.assertEquals(102400, desc.average_bandwidth)
+    self.assertEquals(10485760, desc.burst_bandwidth)
+    self.assertEquals(0, desc.observed_bandwidth)
+    self.assertEquals(datetime.datetime(2005, 12, 16, 18, 0, 48), desc.read_history_end)
+    self.assertEquals(900, desc.read_history_interval)
+    self.assertEquals(datetime.datetime(2005, 12, 16, 18, 0, 48), desc.write_history_end)
+    self.assertEquals(900, desc.write_history_interval)
+    self.assertEquals([], desc.get_unrecognized_lines())
+    
+    # The read-history and write-history lines are pretty long so just checking
+    # the initial contents for the line and parsed values.
+    
+    read_start = "2005-12-16 18:00:48 (900 s) 20774,489973,510022"
+    self.assertTrue(desc.read_history.startswith(read_start))
+    
+    read_values_start = [20774, 489973, 510022, 511163, 20949]
+    self.assertEquals(read_values_start, desc.read_history_values[:5])
+    
+    write_start = "2005-12-16 18:00:48 (900 s) 81,8848,8927,8927"
+    self.assertTrue(desc.write_history.startswith(write_start))
+    
+    write_values_start = [81, 8848, 8927, 8927, 83, 8848, 8931, 8929, 81, 8846]
+    self.assertEquals(write_values_start, desc.write_history_values[:10])
+  
   def test_cached_descriptor(self):
     """
     Parses the cached descriptor file in our data directory, checking that it
