@@ -15,7 +15,8 @@ ControlSocket - Socket wrapper that speaks the tor control protocol.
   |- recv - receives a ControlMessage from the socket
   |- is_alive - reports if the socket is known to be closed
   |- connect - connects a new socket
-  +- close - shuts down the socket
+  |- close - shuts down the socket
+  +- __enter__ / __exit__ - manages socket connection
 
 ControlMessage - Message that's read from the control socket.
   |- content - provides the parsed message content
