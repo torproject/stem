@@ -46,8 +46,8 @@ def _make_descriptor(attr = None, exclude = None, is_bridge = False):
   """
   
   descriptor_lines = []
-  if attr == None: attr = {}
-  if exclude == None: exclude = []
+  if attr is None: attr = {}
+  if exclude is None: exclude = []
   desc_attr = BRIDGE_DESCRIPTOR_ATTR if is_bridge else RELAY_DESCRIPTOR_ATTR
   attr = dict(attr) # shallow copy since we're destructive
   

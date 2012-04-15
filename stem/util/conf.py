@@ -307,7 +307,7 @@ class Config():
                              (min, max)"
     """
     
-    if limits == None: limits = {}
+    if limits is None: limits = {}
     
     for entry in conf_mappings.keys():
       val = self.get(entry, conf_mappings[entry])
@@ -518,7 +518,7 @@ class Config():
     if sub_key: conf_value = self.get(key, {}).get(sub_key)
     else: conf_value = self.get_value(key)
     
-    if conf_value == None: return default
+    if conf_value is None: return default
     elif not conf_value.strip(): return [] # empty string
     else:
       conf_comp = [entry.strip() for entry in conf_value.split(",")]

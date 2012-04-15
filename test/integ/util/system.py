@@ -41,7 +41,7 @@ class TestSystem(unittest.TestCase):
     # isn't the end of the world. It's just used to skip tests if they should
     # legitemately fail.
     
-    if self.is_extra_tor_running == None:
+    if self.is_extra_tor_running is None:
       if not stem.util.system.is_bsd():
         pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % "tor")
         self.is_extra_tor_running = len(pgrep_results) > 1

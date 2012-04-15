@@ -312,7 +312,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
       dict with the key/value pairs in our annotations
     """
     
-    if self._annotation_dict == None:
+    if self._annotation_dict is None:
       annotation_dict = {}
       
       for line in self._annotation_lines:
@@ -619,7 +619,7 @@ class RelayDescriptorV3(ServerDescriptorV3):
       str with the digest value for this server descriptor
     """
     
-    if self._digest == None:
+    if self._digest is None:
       # our digest is calculated from everything except our signature
       raw_content, ending = str(self), "\nrouter-signature\n"
       raw_content = raw_content[:raw_content.find(ending) + len(ending)]

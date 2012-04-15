@@ -259,7 +259,7 @@ def _connect(control_socket, password, controller):
     if controller == Controller.NONE:
       return control_socket
   except MissingPassword:
-    assert password == None, "BUG: authenticate raised MissingPassword despite getting one"
+    assert password is None, "BUG: authenticate raised MissingPassword despite getting one"
     
     try: password = getpass.getpass("Controller password: ")
     except KeyboardInterrupt: return None
@@ -375,11 +375,11 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
     else:
       log.debug("Authenticating to a socket with unrecognized auth method%s, ignoring them: %s" % (plural_label, methods_label))
   
-  if AuthMethod.COOKIE in auth_methods and protocolinfo_response.cookie_path == None:
+  if AuthMethod.COOKIE in auth_methods and protocolinfo_response.cookie_path is None:
     auth_methods.remove(AuthMethod.COOKIE)
     auth_exceptions.append(NoAuthCookie("our PROTOCOLINFO response did not have the location of our authentication cookie"))
   
-  if AuthMethod.PASSWORD in auth_methods and password == None:
+  if AuthMethod.PASSWORD in auth_methods and password is None:
     auth_methods.remove(AuthMethod.PASSWORD)
     auth_exceptions.append(MissingPassword("no passphrase provided"))
   

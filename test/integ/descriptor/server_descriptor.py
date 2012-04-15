@@ -27,7 +27,7 @@ class TestServerDescriptor(unittest.TestCase):
     # a full tor initialization then the cached descriptors won't exist yet.
     # Noting if they exist or not since some tests need them.
     
-    if self.is_descriptors_available == None:
+    if self.is_descriptors_available is None:
       test_dir = test.runner.get_runner().get_test_dir()
       descriptor_path = os.path.join(test_dir, "cached-descriptors")
       self.is_descriptors_available = os.path.exists(descriptor_path)

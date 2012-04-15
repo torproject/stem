@@ -53,7 +53,7 @@ def is_available():
   
   global IS_PROC_AVAILABLE
   
-  if IS_PROC_AVAILABLE == None:
+  if IS_PROC_AVAILABLE is None:
     if platform.system() != "Linux":
       IS_PROC_AVAILABLE = False
     else:
@@ -229,7 +229,7 @@ def get_stats(pid, *stat_types):
     IOError if it can't be determined
   """
   
-  if CLOCK_TICKS == None:
+  if CLOCK_TICKS is None:
     raise IOError("Unable to look up SC_CLK_TCK")
   
   start_time, parameter = time.time(), "process %s" % ", ".join(stat_types)

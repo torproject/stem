@@ -100,7 +100,7 @@ def apply_filters(testing_output, *filters):
     
     for result_filter in filters:
       line = result_filter(line_type, line)
-      if line == None: break
+      if line is None: break
     
     if line != None:
       results.append(line)
