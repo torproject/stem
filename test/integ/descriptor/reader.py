@@ -302,7 +302,11 @@ class TestDescriptorReader(unittest.TestCase):
     self.assertTrue(2, len(skip_listener.results))
     
     for skip_path, skip_exception in skip_listener.results:
-      self.assertTrue(os.path.basename(skip_path) in ("riddle", "tiny.png"))
+      if skip_path.endswith(".swp"): continue # skip vim temp files
+      
+      if not os.path.basename(skip_path) in ("riddle", "tiny.png"):
+        self.fail("Unexpected non-descriptor content: %s" % skip_path)
+      
       self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
   
   def test_skip_listener_already_read(self):
@@ -317,14 +321,14 @@ class TestDescriptorReader(unittest.TestCase):
     initial_processed_files = {test_path: sys.maxint}
     
     skip_listener = SkipListener()
-    reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
+    reader = stem.descriptor.reader.DescriptorReader([test_path])
     reader.register_skip_listener(skip_listener.listener)
     reader.set_processed_files(initial_processed_files)
     
     self.assertEquals(initial_processed_files, reader.get_processed_files())
     with reader: list(reader) # iterates over all of the descriptors
     
-    self.assertTrue(1, len(skip_listener.results))
+    self.assertEquals(1, len(skip_listener.results))
     
     skipped_path, skip_exception = skip_listener.results[0]
     self.assertEqual(test_path, skipped_path)
