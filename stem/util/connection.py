@@ -6,26 +6,58 @@ https://gitweb.torproject.org/arm.git/blob/HEAD:/src/util/connections.py
 but for now just moving the parts we need.
 """
 
-def is_valid_ip_address(entry):
+import re
+
+def is_valid_ip_address(address):
   """
   Checks if a string is a valid IPv4 address.
   
   Arguments:
-    entry (str) - string to be checked
+    address (str) - string to be checked
   
   Returns:
     True if input is a valid IPv4 address, False otherwise.
   """
   
   # checks if theres four period separated values
-  if not entry.count(".") == 3: return False
+  if address.count(".") != 3: return False
   
   # checks that each value in the octet are decimal values between 0-255
-  for entry in entry.split("."):
+  for entry in address.split("."):
     if not entry.isdigit() or int(entry) < 0 or int(entry) > 255:
       return False
     elif entry[0] == "0" and len(entry) > 1:
       return False # leading zeros, for instance in "1.2.3.001"
+  
+  return True
+
+def is_valid_ipv6_address(address):
+  """
+  Checks if a string is a valid IPv6 address.
+  
+  Arguments:
+    address (str) - string to be checked
+  
+  Returns:
+    True if input is a valid IPv6 address, False otherwise.
+  """
+  
+  # addresses are made up of eight colon separated groups of four hex digits
+  # with leading zeros being optional
+  # https://en.wikipedia.org/wiki/IPv6#Address_format
+  
+  colon_count = address.count(":")
+  
+  if colon_count > 7:
+    return False # too many groups
+  elif colon_count != 7 and not "::" in address:
+    return False # not enough groups and none are collapsed
+  elif address.count("::") > 1 or ":::" in address:
+    return False # multiple groupings of zeros can't be collapsed
+  
+  for entry in address.split(":"):
+    if not re.match("^[0-9a-fA-f]{0,4}$", entry):
+      return False
   
   return True
 

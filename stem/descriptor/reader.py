@@ -226,7 +226,8 @@ class DescriptorReader:
     
     absolute path (str) => last modified unix timestamp (int)
     
-    This includes entries set through the set_processed_files() method.
+    This includes entries set through the set_processed_files() method. After
+    each run is reset to only the files that were present during that run.
     
     Returns:
       dict with the absolute paths and unix timestamp for the last modified
@@ -301,10 +302,18 @@ class DescriptorReader:
     with self._reader_thread_lock:
       self._is_stopped.set()
       self._iter_notice.set()
+      
+      # clears our queue to unblock enqueue calls
+      try:
+        while True:
+          self._unreturned_descriptors.get_nowait()
+      except Queue.Empty: pass
+      
       self._reader_thread.join()
       self._reader_thread = None
   
   def _read_descriptor_files(self):
+    new_processed_files = {}
     remaining_files = list(self._targets)
     
     while remaining_files and not self._is_stopped.is_set():
@@ -318,39 +327,18 @@ class DescriptorReader:
         # adds all of the files that it contains
         for root, _, files in os.walk(target, followlinks = self._follow_links):
           for filename in files:
-            remaining_files.append(os.path.join(root, filename))
+            self._handle_file(os.path.join(root, filename), new_processed_files)
           
           # this can take a while if, say, we're including the root directory
           if self._is_stopped.is_set(): break
       else:
-        # This is a file. Register its last modified timestamp and check if
-        # it's a file that we should skip.
-        
-        last_modified = int(os.stat(target).st_mtime)
-        last_used = self._processed_files.get(target)
-        
-        if last_used and last_used >= last_modified:
-          self._notify_skip_listeners(target, AlreadyRead(last_modified, last_used))
-          continue
-        else:
-          self._processed_files[target] = last_modified
-        
-        # The mimetypes module only checks the file extension. To actually
-        # check the content (like the 'file' command) we'd need something like
-        # pymagic (https://github.com/cloudburst/pymagic).
-        
-        target_type = mimetypes.guess_type(target)
-        
-        if target_type[0] in (None, 'text/plain'):
-          # either '.txt' or an unknown type
-          self._handle_descriptor_file(target)
-        elif tarfile.is_tarfile(target):
-          # handles gzip, bz2, and decompressed tarballs among others
-          self._handle_archive(target)
-        else:
-          self._notify_skip_listeners(target, UnrecognizedType(target_type))
+        self._handle_file(target, new_processed_files)
     
-    self._enqueue_descriptor(FINISHED)
+    self._processed_files = new_processed_files
+    
+    if not self._is_stopped.is_set():
+      self._unreturned_descriptors.put(FINISHED)
+    
     self._iter_notice.set()
   
   def __iter__(self):
@@ -365,11 +353,39 @@ class DescriptorReader:
           self._iter_notice.wait()
           self._iter_notice.clear()
   
+  def _handle_file(self, target, new_processed_files):
+    # This is a file. Register its last modified timestamp and check if
+    # it's a file that we should skip.
+    
+    last_modified = int(os.stat(target).st_mtime)
+    last_used = self._processed_files.get(target)
+    new_processed_files[target] = last_modified
+    
+    if last_used and last_used >= last_modified:
+      self._notify_skip_listeners(target, AlreadyRead(last_modified, last_used))
+      return
+    
+    # The mimetypes module only checks the file extension. To actually
+    # check the content (like the 'file' command) we'd need something like
+    # pymagic (https://github.com/cloudburst/pymagic).
+    
+    target_type = mimetypes.guess_type(target)
+    
+    if target_type[0] in (None, 'text/plain'):
+      # either '.txt' or an unknown type
+      self._handle_descriptor_file(target)
+    elif tarfile.is_tarfile(target):
+      # handles gzip, bz2, and decompressed tarballs among others
+      self._handle_archive(target)
+    else:
+      self._notify_skip_listeners(target, UnrecognizedType(target_type))
+  
   def _handle_descriptor_file(self, target):
     try:
       with open(target) as target_file:
         for desc in stem.descriptor.parse_file(target, target_file):
-          self._enqueue_descriptor(desc)
+          if self._is_stopped.is_set(): return
+          self._unreturned_descriptors.put(desc)
           self._iter_notice.set()
     except TypeError, exc:
       self._notify_skip_listeners(target, UnrecognizedType(None))
@@ -386,7 +402,8 @@ class DescriptorReader:
             entry = tar_file.extractfile(tar_entry)
             
             for desc in stem.descriptor.parse_file(target, entry):
-              self._enqueue_descriptor(desc)
+              if self._is_stopped.is_set(): return
+              self._unreturned_descriptors.put(desc)
               self._iter_notice.set()
             
             entry.close()
@@ -394,16 +411,6 @@ class DescriptorReader:
       self._notify_skip_listeners(target, ParsingFailure(exc))
     except IOError, exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
-  
-  def _enqueue_descriptor(self, descriptor):
-    # blocks until there is either room for the descriptor or we're stopped
-    
-    while True:
-      try:
-        self._unreturned_descriptors.put(descriptor, timeout = 0.1)
-        return
-      except Queue.Full:
-        if self._is_stopped.is_set(): return
   
   def _notify_skip_listeners(self, path, exception):
     for listener in self._skip_listeners:
