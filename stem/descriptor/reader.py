@@ -327,36 +327,12 @@ class DescriptorReader:
         # adds all of the files that it contains
         for root, _, files in os.walk(target, followlinks = self._follow_links):
           for filename in files:
-            remaining_files.append(os.path.join(root, filename))
+            self._handle_file(os.path.join(root, filename), new_processed_files)
           
           # this can take a while if, say, we're including the root directory
           if self._is_stopped.is_set(): break
       else:
-        # This is a file. Register its last modified timestamp and check if
-        # it's a file that we should skip.
-        
-        last_modified = int(os.stat(target).st_mtime)
-        last_used = self._processed_files.get(target)
-        new_processed_files[target] = last_modified
-        
-        if last_used and last_used >= last_modified:
-          self._notify_skip_listeners(target, AlreadyRead(last_modified, last_used))
-          continue
-        
-        # The mimetypes module only checks the file extension. To actually
-        # check the content (like the 'file' command) we'd need something like
-        # pymagic (https://github.com/cloudburst/pymagic).
-        
-        target_type = mimetypes.guess_type(target)
-        
-        if target_type[0] in (None, 'text/plain'):
-          # either '.txt' or an unknown type
-          self._handle_descriptor_file(target)
-        elif tarfile.is_tarfile(target):
-          # handles gzip, bz2, and decompressed tarballs among others
-          self._handle_archive(target)
-        else:
-          self._notify_skip_listeners(target, UnrecognizedType(target_type))
+        self._handle_file(target, new_processed_files)
     
     self._processed_files = new_processed_files
     
@@ -376,6 +352,33 @@ class DescriptorReader:
         except Queue.Empty:
           self._iter_notice.wait()
           self._iter_notice.clear()
+  
+  def _handle_file(self, target, new_processed_files):
+    # This is a file. Register its last modified timestamp and check if
+    # it's a file that we should skip.
+    
+    last_modified = int(os.stat(target).st_mtime)
+    last_used = self._processed_files.get(target)
+    new_processed_files[target] = last_modified
+    
+    if last_used and last_used >= last_modified:
+      self._notify_skip_listeners(target, AlreadyRead(last_modified, last_used))
+      return
+    
+    # The mimetypes module only checks the file extension. To actually
+    # check the content (like the 'file' command) we'd need something like
+    # pymagic (https://github.com/cloudburst/pymagic).
+    
+    target_type = mimetypes.guess_type(target)
+    
+    if target_type[0] in (None, 'text/plain'):
+      # either '.txt' or an unknown type
+      self._handle_descriptor_file(target)
+    elif tarfile.is_tarfile(target):
+      # handles gzip, bz2, and decompressed tarballs among others
+      self._handle_archive(target)
+    else:
+      self._notify_skip_listeners(target, UnrecognizedType(target_type))
   
   def _handle_descriptor_file(self, target):
     try:
