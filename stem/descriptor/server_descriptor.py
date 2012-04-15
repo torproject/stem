@@ -522,14 +522,15 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
         elif validate:
           raise ValueError("%s line's interval wasn't a number: %s" % (keyword, line))
         
-        for sampling in history_values.split(","):
-          if sampling.isdigit():
-            if is_read: self.read_history_values.append(int(sampling))
-            else: self.write_history_values.append(int(sampling))
-          else:
-            if validate:
-              raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
-            else: break
+        if history_values != '':
+          for sampling in history_values.split(","):
+            if sampling.isdigit():
+              if is_read: self.read_history_values.append(int(sampling))
+              else: self.write_history_values.append(int(sampling))
+            else:
+              if validate:
+                raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
+              else: break
       else:
         self._unrecognized_lines.append(line)
   

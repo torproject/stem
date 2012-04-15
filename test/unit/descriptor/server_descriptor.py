@@ -249,6 +249,19 @@ class TestServerDescriptor(unittest.TestCase):
       self.assertEquals(900, attr[2])
       self.assertEquals(expected_values, attr[3])
   
+  def test_read_history_empty(self):
+    """
+    Parses a read-history with an empty value.
+    """
+    
+    value = "2005-12-17 01:23:11 (900 s) "
+    desc_text = _make_descriptor({"opt read-history": value})
+    desc = RelayDescriptorV3(desc_text)
+    self.assertEquals(value, desc.read_history)
+    self.assertEquals(datetime.datetime(2005, 12, 17, 1, 23, 11), desc.read_history_end)
+    self.assertEquals(900, desc.read_history_interval)
+    self.assertEquals([], desc.read_history_values)
+  
   def test_annotations(self):
     """
     Checks that content before a descriptor are parsed as annotations.
