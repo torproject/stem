@@ -57,8 +57,7 @@ KEY_ARG = re.compile("^(\S+)=")
 # users are...
 # - 'COOKIEFILE' field of PROTOCOLINFO responses
 # - logged messages about bugs
-# - the 'getinfo_helper_listeners' function of control.c which looks to be dead
-#   code
+# - the 'getinfo_helper_listeners' function of control.c
 
 CONTROL_ESCAPES = {r"\\": "\\",  r"\"": "\"",   r"\'": "'",
                    r"\r": "\r",  r"\n": "\n",   r"\t": "\t"}
