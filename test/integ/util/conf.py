@@ -105,7 +105,7 @@ class TestConf(unittest.TestCase):
     test_config_path = _make_config(MULTILINE_CONF)
     test_config = stem.util.conf.get_config("integ_testing")
     test_config.load(test_config_path)
-        
+    
     for entry in ("simple", "leading_whitespace", "squashed_top", "squashed_bottom"):
       self.assertEquals("la de da\nand a ho hum", test_config.get("multiline.entry.%s" % entry))
     

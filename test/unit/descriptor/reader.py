@@ -71,7 +71,7 @@ class TestDescriptorReader(unittest.TestCase):
     mocking.support_with(test_content)
     mocking.mock(open, mocking.return_value(test_content))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")
-
+  
   def test_load_processed_files_malformed_file(self):
     """
     Tests the load_processed_files() function content that is malformed because
@@ -82,7 +82,7 @@ class TestDescriptorReader(unittest.TestCase):
     mocking.support_with(test_content)
     mocking.mock(open, mocking.return_value(test_content))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")
-
+  
   def test_load_processed_files_malformed_timestamp(self):
     """
     Tests the load_processed_files() function content that is malformed because

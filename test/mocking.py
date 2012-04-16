@@ -220,7 +220,7 @@ def get_protocolinfo_response(**attributes):
   left with the default.
   
   Arguments:
-    attributes (dict) - attributes to customize the the 
+    attributes (dict) - attributes to customize the response with
   
   Returns:
     stem.connection.ProtocolInfoResponse instance

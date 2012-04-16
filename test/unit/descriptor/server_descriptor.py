@@ -331,7 +331,7 @@ class TestServerDescriptor(unittest.TestCase):
   
   def test_bridge_unsanitized(self):
     """
-    Targeted check that individual unsanitized attributes will be detected. 
+    Targeted check that individual unsanitized attributes will be detected.
     """
     
     unsanitized_attr = [
