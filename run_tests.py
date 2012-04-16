@@ -13,6 +13,7 @@ import StringIO
 
 import test.output
 import test.runner
+import test.whitespace_check
 import test.unit.connection.authentication
 import test.unit.connection.protocolinfo
 import test.unit.socket.control_line
@@ -334,6 +335,20 @@ if __name__ == '__main__':
       print
     
     # TODO: note unused config options afterward?
+  
+  whitespace_issues = test.whitespace_check.get_issues()
+  
+  if whitespace_issues:
+    test.output.print_line("WHITESPACE ISSUES", term.Color.BLUE, term.Attr.BOLD)
+    
+    for file_path in whitespace_issues:
+      test.output.print_line("* %s" % file_path, term.Color.BLUE, term.Attr.BOLD)
+      
+      for line_number, msg in whitespace_issues[file_path]:
+        line_count = "%-4s" % line_number
+        test.output.print_line("  line %s - %s" % (line_count, msg))
+      
+      print
   
   runtime = time.time() - start_time
   if runtime < 1: runtime_label = "(%0.1f seconds)" % runtime
