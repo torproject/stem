@@ -44,7 +44,7 @@ import stem.util.log as log
 import stem.util.term as term
 
 OPT = "uic:l:t:h"
-OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "tor=", "no-color", "help"]
+OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "tor=", "help"]
 DIVIDER = "=" * 70
 
 CONFIG = stem.util.conf.config_dict("test", {
@@ -128,6 +128,10 @@ def load_user_configuration(test_config):
     print "%s (for usage provide --help)" % exc
     sys.exit(1)
   
+  # suppress color output if our output is being piped
+  if not sys.stdout.isatty():
+    arg_overrides["argument.no_color"] = "true"
+  
   for opt, arg in opts:
     if opt in ("-u", "--unit"):
       arg_overrides["argument.unit"] = "true"
@@ -154,8 +158,6 @@ def load_user_configuration(test_config):
       arg_overrides["argument.log"] = arg.upper()
     elif opt in ("--tor"):
       arg_overrides["argument.tor"] = arg
-    elif opt in ("--no-color"):
-      arg_overrides["argument.no_color"] = "true"
     elif opt in ("-h", "--help"):
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
