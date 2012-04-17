@@ -2,5 +2,5 @@
 Unit and integration tests for the stem library.
 """
 
-__all__ = ["mocking", "output", "runner", "whitespace_check"]
+__all__ = ["check_whitespace", "mocking", "output", "runner"]
 

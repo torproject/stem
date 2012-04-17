@@ -13,7 +13,7 @@ import StringIO
 
 import test.output
 import test.runner
-import test.whitespace_check
+import test.check_whitespace
 import test.unit.connection.authentication
 import test.unit.connection.protocolinfo
 import test.unit.socket.control_line
@@ -338,7 +338,7 @@ if __name__ == '__main__':
     
     # TODO: note unused config options afterward?
   
-  whitespace_issues = test.whitespace_check.get_issues()
+  whitespace_issues = test.check_whitespace.get_issues()
   
   if whitespace_issues:
     test.output.print_line("WHITESPACE ISSUES", term.Color.BLUE, term.Attr.BOLD)
