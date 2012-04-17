@@ -103,7 +103,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(expected_signing_key, desc.signing_key)
     self.assertEquals(expected_signature, desc.signature)
     self.assertEquals([], desc.get_unrecognized_lines())
-    self.assertEquals("LHsnvqsEtOJFnYnKbVzRzF+Vpok", desc.digest())
+    self.assertEquals("LHsnvqsEtOJFnYnKbVzRzF+Vpok" + "=", desc.digest())
   
   def test_old_descriptor(self):
     """

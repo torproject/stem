@@ -615,6 +615,10 @@ class RelayDescriptorV3(ServerDescriptorV3):
     Provides the base64 encoded sha1 of our content. This value is part of the
     server descriptor entry for this relay.
     
+    Note that network status entries exclude the padding, so you'll need to add
+    a '=' to it so they'll match...
+    https://en.wikipedia.org/wiki/Base64#Padding
+    
     Returns:
       str with the digest value for this server descriptor
     """
@@ -625,13 +629,7 @@ class RelayDescriptorV3(ServerDescriptorV3):
       raw_content = raw_content[:raw_content.find(ending) + len(ending)]
       
       digest_sha1 = hashlib.sha1(raw_content).digest()
-      digest = base64.b64encode(digest_sha1)
-      
-      # TODO: I'm not sure why but the base64 decodings have an anomalous '='
-      # ending which the network status entries don't have. Tad puzzled, but
-      # for now stripping it so we match.
-      
-      self._digest = digest[:-1]
+      self._digest = base64.b64encode(digest_sha1)
     
     return self._digest
   
