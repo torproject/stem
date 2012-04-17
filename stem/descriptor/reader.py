@@ -371,10 +371,19 @@ class DescriptorReader:
     
     target_type = mimetypes.guess_type(target)
     
+    # Checking if it's a tar file may fail due to permissions so failing back
+    # to the mime type...
+    # IOError: [Errno 13] Permission denied: '/vmlinuz.old'
+    
+    try:
+      is_tar = tarfile.is_tarfile(target)
+    except IOError:
+      is_tar = target_type[0] == 'application/x-tar'
+    
     if target_type[0] in (None, 'text/plain'):
       # either '.txt' or an unknown type
       self._handle_descriptor_file(target)
-    elif tarfile.is_tarfile(target):
+    elif is_tar:
       # handles gzip, bz2, and decompressed tarballs among others
       self._handle_archive(target)
     else:
