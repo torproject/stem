@@ -241,6 +241,33 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(["reject *:*"], desc.exit_policy)
     self.assertEquals([], desc.get_unrecognized_lines())
   
+  def test_cr_in_contact_line(self):
+    """
+    Parses a descriptor with a huge contact line containing anomalous carriage
+    returns ('\r' entries).
+    """
+    
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "cr_in_contact_line")
+    
+    descriptor_file = open(descriptor_path)
+    descriptor_contents = descriptor_file.read()
+    descriptor_file.close()
+    
+    desc = stem.descriptor.server_descriptor.RelayDescriptorV3(descriptor_contents)
+    
+    self.assertEquals("pogonip", desc.nickname)
+    self.assertEquals("6DABD62BC65D4E6FE620293157FC76968DAB9C9B", desc.fingerprint)
+    self.assertEquals("75.5.248.48", desc.address)
+    
+    # the contact info block is huge so just checking the start and end,
+    # including some of the embedded carriage returns
+    
+    contact_start = "jie1 at pacbell dot net -----BEGIN PGP PUBLIC KEY BLOCK-----\rVersion:"
+    contact_end = "YFRk3NhCY=\r=Xaw3\r-----END PGP PUBLIC KEY BLOCK-----"
+    
+    self.assertTrue(desc.contact.startswith(contact_start))
+    self.assertTrue(desc.contact.endswith(contact_end))
+  
   def test_bridge_descriptor(self):
     """
     Parses a bridge descriptor.
