@@ -473,11 +473,22 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
         else:
           self.hidden_service_dir = ["2"]
       elif keyword == "uptime":
-        if not value.isdigit():
+        # We need to be tolerant of negative uptimes to accomidate a past tor
+        # bug...
+        # 
+        # Changes in version 0.1.2.7-alpha - 2007-02-06
+        #  - If our system clock jumps back in time, don't publish a negative
+        #    uptime in the descriptor. Also, don't let the global rate limiting
+        #    buckets go absurdly negative.
+        #
+        # After parsing all of the attributes we'll double check that negative
+        # uptimes only occured prior to this fix.
+        
+        try:
+          self.uptime = int(value)
+        except ValueError:
           if not validate: continue
           raise ValueError("Uptime line must have an integer value: %s" % value)
-        
-        self.uptime = int(value)
       elif keyword == "contact":
         self.contact = value
       elif keyword == "protocols":
@@ -533,6 +544,13 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
               else: break
       else:
         self._unrecognized_lines.append(line)
+    
+    # if we have a negative uptime and a tor version that shouldn't exhibit
+    # this bug then fail validation
+    
+    if validate and self.uptime and self.tor_version:
+      if self.uptime < 0 and self.tor_version >= stem.version.Version("0.1.2.7"):
+        raise ValueError("Descriptor for version '%s' had a negative uptime value: %i" % (self.tor_version, self.uptime))
   
   def _check_constraints(self, entries, first_keyword, last_keyword):
     """

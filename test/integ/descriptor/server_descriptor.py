@@ -268,6 +268,30 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertTrue(desc.contact.startswith(contact_start))
     self.assertTrue(desc.contact.endswith(contact_end))
   
+  def test_negative_uptime(self):
+    """
+    Parses a descriptor where we are tolerant of a negative uptime, and another
+    where we shouldn't be.
+    """
+    
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "negative_uptime")
+    
+    descriptor_file = open(descriptor_path)
+    descriptor_contents = descriptor_file.read()
+    descriptor_file.close()
+    
+    desc = stem.descriptor.server_descriptor.RelayDescriptorV3(descriptor_contents)
+    
+    self.assertEquals("TipTor", desc.nickname)
+    self.assertEquals("137962D4931DBF08A24E843288B8A155D6D2AEDD", desc.fingerprint)
+    self.assertEquals("62.99.247.83", desc.address)
+    
+    # modify the relay version so it's after when the negative uptime bug
+    # should appear
+    
+    descriptor_contents = descriptor_contents.replace("Tor 0.1.1.25", "Tor 0.1.2.7")
+    self.assertRaises(ValueError, stem.descriptor.server_descriptor.RelayDescriptorV3, descriptor_contents)
+  
   def test_bridge_descriptor(self):
     """
     Parses a bridge descriptor.
