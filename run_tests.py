@@ -63,6 +63,7 @@ CONFIG = stem.util.conf.config_dict("test", {
 Target = stem.util.enum.UppercaseEnum(
   "ONLINE",
   "RELATIVE",
+  "CHROOT",
   "RUN_NONE",
   "RUN_OPEN",
   "RUN_PASSWORD",

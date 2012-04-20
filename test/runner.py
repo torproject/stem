@@ -49,6 +49,7 @@ CONFIG = stem.util.conf.config_dict("test", {
   "integ.log": "./test/data/log",
   "integ.target.online": False,
   "integ.target.relative_data_dir": False,
+  "integ.target.chroot": False,
 })
 
 STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
@@ -135,6 +136,20 @@ def get_runner():
   if not INTEG_RUNNER: INTEG_RUNNER = Runner()
   return INTEG_RUNNER
 
+class MockChrootFile:
+  """
+  Wrapper around a file object that strips given content from readline()
+  responses. This is used to simulate a chroot setup by removing the restign
+  directory from the paths we report.
+  """
+  
+  def __init__(self, wrapped_file, strip_text):
+    self.wrapped_file = wrapped_file
+    self.strip_text = strip_text
+  
+  def readline(self):
+    return self.wrapped_file.readline().replace(self.strip_text, "")
+
 class Runner:
   def __init__(self):
     self._runner_lock = threading.RLock()
@@ -146,6 +161,10 @@ class Runner:
     self._torrc_contents = ""
     self._custom_opts = None
     self._tor_process = None
+    
+    # set if we monkey patch stem.socket.recv_message()
+    
+    self._original_recv_message = None
   
   def start(self, tor_cmd, extra_torrc_opts):
     """
@@ -198,6 +217,20 @@ class Runner:
         self._run_setup()
         self._start_tor(tor_cmd)
         
+        # strip the testing directory from recv_message responses if we're
+        # simulating a chroot setup
+        
+        if CONFIG["integ.target.chroot"] and not self._original_recv_message:
+          # TODO: when we have a function for telling stem the chroot we'll
+          # need to set that too
+          
+          self._original_recv_message = stem.socket.recv_message
+          
+          def _chroot_recv_message(control_file):
+            return self._original_recv_message(MockChrootFile(control_file, data_dir_path))
+          
+          stem.socket.recv_message = _chroot_recv_message
+        
         # revert our cwd back to normal
         if CONFIG["integ.target.relative_data_dir"]:
           os.chdir(original_cwd)
@@ -225,6 +258,11 @@ class Runner:
       # if we've made a temporary data directory then clean it up
       if self._test_dir and CONFIG["integ.test_directory"] == "":
         shutil.rmtree(self._test_dir, ignore_errors = True)
+      
+      # reverts any mockin of stem.socket.recv_message
+      if self._original_recv_message:
+        stem.socket.recv_message = self._original_recv_message
+        self._original_recv_message = None
       
       self._test_dir = ""
       self._tor_cmd = None

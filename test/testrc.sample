@@ -26,15 +26,7 @@
 # integ.target.relative_data_dir
 #   Uses a relative path for the tor data directory if set.
 #
-# integ.target.run.none
-# integ.target.run.open
-# integ.target.run.password
-# integ.target.run.cookie
-# integ.target.run.multiple
-# integ.target.run.socket
-# integ.target.run.scookie
-# integ.target.run.ptrace
-# integ.target.run.all
+# integ.target.run.*
 #   Runs the integration test suite for all of the given connection and
 #   authentication configurations. If the 'all' option is set then the other
 #   flags are ignored.
@@ -50,6 +42,7 @@ integ.log ./test/data/log
 
 integ.target.online false
 integ.target.relative_data_dir false
+integ.target.chroot false
 integ.target.run.none false
 integ.target.run.open true
 integ.target.run.password false
