@@ -21,6 +21,9 @@ Runner - Runtime context for our integration tests.
   |- get_test_dir - testing directory path
   |- get_torrc_path - path to our tor instance's torrc
   |- get_torrc_contents - contents of our tor instance's torrc
+  |- get_auth_cookie_path - path for our authentication cookie if we have one
+  |- get_tor_cwd - current working directory of our tor process
+  |- get_chroot - provides the path of our emulated chroot if we have one
   |- get_pid - process id of our tor process
   |- get_tor_socket - provides a socket to the tor instance
   |- get_tor_version - provides the version of tor we're running against
@@ -122,7 +125,12 @@ def exercise_socket(test_case, control_socket):
     control_socket (stem.socket.ControlSocket) - socket to be tested
   """
   
-  torrc_path = get_runner().get_torrc_path()
+  runner = get_runner()
+  torrc_path, chroot_path = runner.get_torrc_path(), runner.get_chroot()
+  
+  if chroot_path and torrc_path.startswith(chroot_path):
+    torrc_path = torrc_path[len(chroot_path):]
+  
   control_socket.send("GETINFO config-file")
   config_file_response = control_socket.recv()
   test_case.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
@@ -136,7 +144,7 @@ def get_runner():
   if not INTEG_RUNNER: INTEG_RUNNER = Runner()
   return INTEG_RUNNER
 
-class MockChrootFile:
+class _MockChrootFile:
   """
   Wrapper around a file object that strips given content from readline()
   responses. This is used to simulate a chroot setup by removing the restign
@@ -161,6 +169,7 @@ class Runner:
     self._torrc_contents = ""
     self._custom_opts = None
     self._tor_process = None
+    self._chroot_path = None
     
     # set if we monkey patch stem.socket.recv_message()
     
@@ -225,9 +234,10 @@ class Runner:
           # need to set that too
           
           self._original_recv_message = stem.socket.recv_message
+          self._chroot_path = data_dir_path
           
           def _chroot_recv_message(control_file):
-            return self._original_recv_message(MockChrootFile(control_file, data_dir_path))
+            return self._original_recv_message(_MockChrootFile(control_file, data_dir_path))
           
           stem.socket.recv_message = _chroot_recv_message
         
@@ -356,9 +366,24 @@ class Runner:
     test_dir = self._get("_test_dir")
     return os.path.join(test_dir, "torrc")
   
+  def get_torrc_contents(self):
+    """
+    Provides the contents of our torrc.
+    
+    Returns:
+      str with the contents of our torrc, lines are newline separated
+    
+    Raises:
+      RunnerStopped if we aren't running
+    """
+    
+    return self._get("_torrc_contents")
+  
   def get_auth_cookie_path(self):
     """
     Provides the absolute path for our authentication cookie if we have one.
+    If running with an emulated chroot this is uneffected, still providing the
+    real path.
     
     Returns:
       str with our auth cookie path
@@ -377,18 +402,16 @@ class Runner:
     
     return self._get("_tor_cwd")
   
-  def get_torrc_contents(self):
+  def get_chroot(self):
     """
-    Provides the contents of our torrc.
+    Provides the path we're using to emulate a chroot environment. This is None
+    if we aren't emulating a chroot setup.
     
     Returns:
-      str with the contents of our torrc, lines are newline separated
-    
-    Raises:
-      RunnerStopped if we aren't running
+      str with the path of our emulated chroot
     """
     
-    return self._get("_torrc_contents")
+    return self._chroot_path
   
   def get_pid(self):
     """
@@ -425,7 +448,7 @@ class Runner:
     else: raise TorInaccessable("Unable to connect to tor")
     
     if authenticate:
-      stem.connection.authenticate(control_socket, CONTROL_PASSWORD)
+      stem.connection.authenticate(control_socket, CONTROL_PASSWORD, self.get_chroot())
     
     return control_socket
   

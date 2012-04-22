@@ -85,8 +85,9 @@ class TestAuthenticate(unittest.TestCase):
     Tests that the authenticate function can authenticate to our socket.
     """
     
-    with test.runner.get_runner().get_tor_socket(False) as control_socket:
-      stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD)
+    runner = test.runner.get_runner()
+    with runner.get_tor_socket(False) as control_socket:
+      stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
       test.runner.exercise_socket(self, control_socket)
   
   def test_authenticate_general_example(self):
@@ -94,7 +95,8 @@ class TestAuthenticate(unittest.TestCase):
     Tests the authenticate function with something like its pydoc example.
     """
     
-    tor_options = test.runner.get_runner().get_options()
+    runner = test.runner.get_runner()
+    tor_options = runner.get_options()
     
     try:
       control_socket = stem.socket.ControlPort(control_port = test.runner.CONTROL_PORT)
@@ -105,7 +107,7 @@ class TestAuthenticate(unittest.TestCase):
     
     try:
       # this authenticate call should work for everything but password-only auth
-      stem.connection.authenticate(control_socket)
+      stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
       test.runner.exercise_socket(self, control_socket)
     except stem.connection.IncorrectSocketType:
       self.fail()
@@ -141,7 +143,7 @@ class TestAuthenticate(unittest.TestCase):
       if is_password_only:
         self.assertRaises(stem.connection.MissingPassword, stem.connection.authenticate, control_socket)
       else:
-        stem.connection.authenticate(control_socket)
+        stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
         test.runner.exercise_socket(self, control_socket)
     
     # tests with the incorrect password
@@ -149,12 +151,12 @@ class TestAuthenticate(unittest.TestCase):
       if is_password_only:
         self.assertRaises(stem.connection.IncorrectPassword, stem.connection.authenticate, control_socket, "blarg")
       else:
-        stem.connection.authenticate(control_socket, "blarg")
+        stem.connection.authenticate(control_socket, "blarg", runner.get_chroot())
         test.runner.exercise_socket(self, control_socket)
     
     # tests with the right password
     with runner.get_tor_socket(False) as control_socket:
-      stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD)
+      stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
       test.runner.exercise_socket(self, control_socket)
   
   def test_authenticate_none(self):

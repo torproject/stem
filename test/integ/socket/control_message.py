@@ -86,6 +86,10 @@ class TestControlMessage(unittest.TestCase):
     
     runner = test.runner.get_runner()
     torrc_dst = runner.get_torrc_path()
+    chroot_path = runner.get_chroot()
+    
+    if chroot_path and torrc_dst.startswith(chroot_path):
+      torrc_dst = torrc_dst[len(chroot_path):]
     
     with runner.get_tor_socket() as control_socket:
       control_socket.send("GETINFO config-file")

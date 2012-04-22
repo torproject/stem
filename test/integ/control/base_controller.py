@@ -77,10 +77,10 @@ class TestBaseController(unittest.TestCase):
     runner = test.runner.get_runner()
     with runner.get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
-      response = controller.msg("GETINFO config-file")
+      response = controller.msg("GETINFO version")
       
-      torrc_dst = runner.get_torrc_path()
-      self.assertEquals("config-file=%s\nOK" % torrc_dst, str(response))
+      tor_version = runner.get_tor_version()
+      self.assertEquals("version=%s\nOK" % tor_version, str(response))
   
   def test_msg_invalid(self):
     """

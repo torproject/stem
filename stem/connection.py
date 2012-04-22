@@ -194,7 +194,7 @@ AUTHENTICATE_EXCEPTIONS = (
   AuthenticationFailure,
 )
 
-def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, controller = Controller.NONE):
+def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = Controller.NONE):
   """
   Convenience function for quickly getting a control connection. This is very
   handy for debugging or CLI setup, handling setup and prompting for a password
@@ -205,6 +205,7 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
     control_addr (str)      - ip address of the controller
     control_port (int)      - port number of the controller
     password (str)          - passphrase to authenticate to the socket
+    chroot_path (str)       - path prefix if in a chroot environment
     controller (Controller) - controller type to be returned
   
   Returns:
@@ -220,9 +221,9 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
     print exc
     return None
   
-  return _connect(control_port, password, controller)
+  return _connect(control_port, password, chroot_path, controller)
 
-def connect_socket_file(socket_path = "/var/run/tor/control", password = None, controller = Controller.NONE):
+def connect_socket_file(socket_path = "/var/run/tor/control", password = None, chroot_path = None, controller = Controller.NONE):
   """
   Convenience function for quickly getting a control connection. For more
   information see the connect_port function.
@@ -230,6 +231,7 @@ def connect_socket_file(socket_path = "/var/run/tor/control", password = None, c
   Arguments:
     socket_path (str)       - path where the control socket is located
     password (str)          - passphrase to authenticate to the socket
+    chroot_path (str)       - path prefix if in a chroot environment
     controller (Controller) - controller type to be returned
   
   Returns:
@@ -242,15 +244,16 @@ def connect_socket_file(socket_path = "/var/run/tor/control", password = None, c
     print exc
     return None
   
-  return _connect(control_socket, password, controller)
+  return _connect(control_socket, password, chroot_path, controller)
 
-def _connect(control_socket, password, controller):
+def _connect(control_socket, password, chroot_path, controller):
   """
   Common implementation for the connect_* functions.
   
   Arguments:
     control_socket (stem.socket.ControlSocket) - socket being authenticated to
     password (str)          - passphrase to authenticate to the socket
+    chroot_path (str)       - path prefix if in a chroot environment
     controller (Controller) - controller type to be returned
   
   Returns:
@@ -258,7 +261,7 @@ def _connect(control_socket, password, controller):
   """
   
   try:
-    authenticate(control_socket, password)
+    authenticate(control_socket, password, chroot_path)
     
     if controller == Controller.NONE:
       return control_socket
@@ -274,7 +277,7 @@ def _connect(control_socket, password, controller):
     print "Unable to authenticate: %s" % exc
     return None
 
-def authenticate(control_socket, password = None, protocolinfo_response = None):
+def authenticate(control_socket, password = None, chroot_path = None, protocolinfo_response = None):
   """
   Authenticates to a control socket using the information provided by a
   PROTOCOLINFO response. In practice this will often be all we need to
@@ -288,6 +291,7 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
     control_socket (stem.socket.ControlSocket) - socket to be authenticated
     password (str) - passphrase to present to the socket if it uses password
         authentication (skips password auth if None)
+    chroot_path (str) - path prefix if in a chroot environment
     protocolinfo_response (stem.connection.ProtocolInfoResponse) -
         tor protocolinfo response, this is retrieved on our own if None
   
@@ -397,7 +401,12 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
       elif auth_type == AuthMethod.PASSWORD:
         authenticate_password(control_socket, password, False)
       elif auth_type == AuthMethod.COOKIE:
-        authenticate_cookie(control_socket, protocolinfo_response.cookie_path, False)
+        cookie_path = protocolinfo_response.cookie_path
+        
+        if chroot_path:
+          cookie_path = os.path.join(chroot_path, cookie_path.lstrip(os.path.sep))
+        
+        authenticate_cookie(control_socket, cookie_path, False)
       
       return # success!
     except OpenAuthRejected, exc:

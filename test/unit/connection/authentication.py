@@ -140,9 +140,9 @@ class TestAuthenticate(unittest.TestCase):
                 mocking.mock(auth_function, mocking.raise_exception(raised_exc))
             
             if expect_success:
-              stem.connection.authenticate(None, "blah", protocolinfo_arg)
+              stem.connection.authenticate(None, "blah", None, protocolinfo_arg)
             else:
-              self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, "blah", protocolinfo_arg)
+              self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, "blah", None, protocolinfo_arg)
     
     # revert logging back to normal
     stem_logger.setLevel(log.logging_level(log.TRACE))

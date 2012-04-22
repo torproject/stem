@@ -114,12 +114,17 @@ class TestProtocolInfo(unittest.TestCase):
     the test configuration.
     """
     
-    tor_options = test.runner.get_runner().get_options()
+    runner = test.runner.get_runner()
+    tor_options = runner.get_options()
     auth_methods, auth_cookie_path = [], None
     
     if test.runner.Torrc.COOKIE in tor_options:
       auth_methods.append(stem.connection.AuthMethod.COOKIE)
-      auth_cookie_path = test.runner.get_runner().get_auth_cookie_path()
+      chroot_path = runner.get_chroot()
+      auth_cookie_path = runner.get_auth_cookie_path()
+      
+      if chroot_path and auth_cookie_path.startswith(chroot_path):
+        auth_cookie_path = auth_cookie_path[len(chroot_path):]
     
     if test.runner.Torrc.PASSWORD in tor_options:
       auth_methods.append(stem.connection.AuthMethod.PASSWORD)
