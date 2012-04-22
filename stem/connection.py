@@ -151,6 +151,10 @@ class MissingPassword(PasswordAuthFailed):
 
 class CookieAuthFailed(AuthenticationFailure):
   "Failure to authenticate with an authentication cookie."
+  
+  def __init__(self, message, cookie_path, auth_response = None):
+    AuthenticationFailure.__init__(self, message, auth_response)
+    self.cookie_path = cookie_path
 
 class CookieAuthRejected(CookieAuthFailed):
   "Socket does not support password authentication."
@@ -409,7 +413,7 @@ def authenticate(control_socket, password = None, protocolinfo_response = None):
       auth_exceptions.append(exc)
     except CookieAuthRejected, exc:
       log.debug("The authenticate_cookie method raised a CookieAuthRejected when cookie auth should be available. Stem may need to be corrected to recognize this response: %s" % exc)
-      auth_exceptions.append(IncorrectCookieValue(str(exc)))
+      auth_exceptions.append(IncorrectCookieValue(str(exc), exc.cookie_path))
     except stem.socket.ControllerError, exc:
       auth_exceptions.append(AuthenticationFailure(str(exc)))
   
@@ -561,7 +565,7 @@ def authenticate_cookie(control_socket, cookie_path, suppress_ctl_errors = True)
   """
   
   if not os.path.exists(cookie_path):
-    raise UnreadableCookieFile("Authentication failed: '%s' doesn't exist" % cookie_path)
+    raise UnreadableCookieFile("Authentication failed: '%s' doesn't exist" % cookie_path, cookie_path)
   
   # Abort if the file isn't 32 bytes long. This is to avoid exposing arbitrary
   # file content to the port.
@@ -576,14 +580,14 @@ def authenticate_cookie(control_socket, cookie_path, suppress_ctl_errors = True)
   
   if auth_cookie_size != 32:
     exc_msg = "Authentication failed: authentication cookie '%s' is the wrong size (%i bytes instead of 32)" % (cookie_path, auth_cookie_size)
-    raise IncorrectCookieSize(exc_msg)
+    raise IncorrectCookieSize(exc_msg, cookie_path)
   
   try:
     auth_cookie_file = open(cookie_path, "r")
     auth_cookie_contents = auth_cookie_file.read()
     auth_cookie_file.close()
   except IOError, exc:
-    raise UnreadableCookieFile("Authentication failed: unable to read '%s' (%s)" % (cookie_path, exc)) 
+    raise UnreadableCookieFile("Authentication failed: unable to read '%s' (%s)" % (cookie_path, exc), cookie_path) 
   
   try:
     control_socket.send("AUTHENTICATE %s" % binascii.b2a_hex(auth_cookie_contents))
@@ -600,15 +604,15 @@ def authenticate_cookie(control_socket, cookie_path, suppress_ctl_errors = True)
       
       if "*or* authentication cookie." in str(auth_response) or \
          "Authentication cookie did not match expected value." in str(auth_response):
-        raise IncorrectCookieValue(str(auth_response), auth_response)
+        raise IncorrectCookieValue(str(auth_response), cookie_path, auth_response)
       else:
-        raise CookieAuthRejected(str(auth_response), auth_response)
+        raise CookieAuthRejected(str(auth_response), cookie_path, auth_response)
   except stem.socket.ControllerError, exc:
     try: control_socket.connect()
     except: pass
     
     if not suppress_ctl_errors: raise exc
-    else: raise CookieAuthRejected("Socket failed (%s)" % exc)
+    else: raise CookieAuthRejected("Socket failed (%s)" % exc, cookie_path)
 
 def get_protocolinfo(control_socket):
   """

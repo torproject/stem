@@ -87,10 +87,10 @@ class TestAuthenticate(unittest.TestCase):
       stem.connection.IncorrectPassword(None))
     
     all_auth_cookie_exc = (None,
-      stem.connection.IncorrectCookieSize(None),
-      stem.connection.UnreadableCookieFile(None),
-      stem.connection.CookieAuthRejected(None),
-      stem.connection.IncorrectCookieValue(None))
+      stem.connection.IncorrectCookieSize(None, None),
+      stem.connection.UnreadableCookieFile(None, None),
+      stem.connection.CookieAuthRejected(None, None),
+      stem.connection.IncorrectCookieValue(None, None))
     
     # authentication functions might raise a controller error when
     # 'suppress_ctl_errors' is False, so including those
