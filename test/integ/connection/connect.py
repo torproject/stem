@@ -44,12 +44,15 @@ class TestConnect(unittest.TestCase):
     Basic sanity checks for the connect_socket_file function.
     """
     
+    runner = test.runner.get_runner()
+    
     control_socket = stem.connection.connect_socket_file(
       socket_path = test.runner.CONTROL_SOCKET_PATH,
       password = test.runner.CONTROL_PASSWORD,
+      chroot_path = runner.get_chroot(),
       controller = stem.connection.Controller.NONE)
     
-    if test.runner.Torrc.SOCKET in test.runner.get_runner().get_options():
+    if test.runner.Torrc.SOCKET in runner.get_options():
       test.runner.exercise_socket(self, control_socket)
       control_socket.close()
     else:
