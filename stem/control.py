@@ -15,7 +15,8 @@ BaseController - Base controller class asynchronous message handling.
   |- close - shuts down our connection to the tor process
   |- get_socket - provides the socket used for control communication
   |- add_status_listener - notifies a callback of changes in our status
-  +- remove_status_listener - prevents further notification of status changes
+  |- remove_status_listener - prevents further notification of status changes
+  +- __enter__ / __exit__ - manages socket connection
 """
 
 import time
@@ -268,6 +269,12 @@ class BaseController:
       
       self._status_listeners = new_listeners
       return is_changed
+  
+  def __enter__(self):
+    return self
+  
+  def __exit__(self, exit_type, value, traceback):
+    self.close()
   
   def _handle_event(self, event_message):
     """

@@ -40,8 +40,8 @@ class TestBaseController(unittest.TestCase):
     """
     
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
-      controller = stem.control.BaseController.from_port(control_port = test.runner.CONTROL_PORT)
-      self.assertTrue(isinstance(controller, stem.control.BaseController))
+      with stem.control.BaseController.from_port(control_port = test.runner.CONTROL_PORT) as controller:
+        self.assertTrue(isinstance(controller, stem.control.BaseController))
     else:
       self.assertRaises(stem.socket.SocketError, stem.control.BaseController.from_port, "127.0.0.1", test.runner.CONTROL_PORT)
   
@@ -51,8 +51,8 @@ class TestBaseController(unittest.TestCase):
     """
     
     if test.runner.Torrc.SOCKET in test.runner.get_runner().get_options():
-      controller = stem.control.BaseController.from_socket_file(test.runner.CONTROL_SOCKET_PATH)
-      self.assertTrue(isinstance(controller, stem.control.BaseController))
+      with stem.control.BaseController.from_socket_file(socket_path = test.runner.CONTROL_SOCKET_PATH) as controller:
+        self.assertTrue(isinstance(controller, stem.control.BaseController))
     else:
       self.assertRaises(stem.socket.SocketError, stem.control.BaseController.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
   

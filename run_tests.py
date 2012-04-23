@@ -9,6 +9,7 @@ import sys
 import time
 import getopt
 import unittest
+import threading
 import StringIO
 
 import test.output
@@ -204,6 +205,9 @@ def load_user_configuration(test_config):
 if __name__ == '__main__':
   start_time = time.time()
   
+  # override flag to indicate at the end that testing failed somewhere
+  testing_failed = False
+  
   # loads and validates our various configurations
   test_config = stem.util.conf.get_config("test")
   
@@ -320,6 +324,20 @@ if __name__ == '__main__':
           print
           
           test.output.print_logging(logging_buffer)
+        
+        # We should have joined on all threads. If not then that indicates a
+        # leak that could both likely be a bug and disrupt further targets.
+        
+        active_threads = threading.enumerate()
+        
+        if len(active_threads) > 1:
+          test.output.print_line("Threads lingering after test run:", *ERROR_ATTR)
+          
+          for lingering_thread in active_threads:
+            test.output.print_line("  %s" % lingering_thread, *ERROR_ATTR)
+          
+          testing_failed = True
+          break
       except KeyboardInterrupt:
         test.output.print_line("  aborted starting tor: keyboard interrupt\n", *ERROR_ATTR)
         break
@@ -357,11 +375,11 @@ if __name__ == '__main__':
   if runtime < 1: runtime_label = "(%0.1f seconds)" % runtime
   else: runtime_label = "(%i seconds)" % runtime
   
-  if error_tracker.has_error_occured():
-    test.output.print_line("TESTING FAILED %s" % runtime_label, term.Color.RED, term.Attr.BOLD)
+  if testing_failed or error_tracker.has_error_occured():
+    test.output.print_line("TESTING FAILED %s" % runtime_label, *ERROR_ATTR)
     
     for line in error_tracker:
-      test.output.print_line("  %s" % line, term.Color.RED, term.Attr.BOLD)
+      test.output.print_line("  %s" % line, *ERROR_ATTR)
   else:
     test.output.print_line("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
     print
