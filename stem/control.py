@@ -167,16 +167,25 @@ class BaseController:
           
           break
       
-      self._socket.send(message)
-      response = self._reply_queue.get()
-      
-      # If the message we received back had an exception then re-raise it to the
-      # caller. Otherwise return the response.
-      
-      if isinstance(response, stem.socket.ControllerError):
-        raise response
-      else:
-        return response
+      try:
+        self._socket.send(message)
+        response = self._reply_queue.get()
+        
+        # If the message we received back had an exception then re-raise it to the
+        # caller. Otherwise return the response.
+        
+        if isinstance(response, stem.socket.ControllerError):
+          raise response
+        else:
+          return response
+      except stem.socket.SocketClosed, exc:
+        # If the recv() thread caused the SocketClosed then we could still be
+        # in the process of closing. Calling close() here so that we can
+        # provide an assurance to the caller that when we raise a SocketClosed
+        # exception we are shut down afterward for realz.
+        
+        self.close()
+        raise exc
   
   def is_alive(self):
     """
