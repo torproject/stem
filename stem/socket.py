@@ -89,9 +89,6 @@ class ControlSocket:
     self._socket, self._socket_file = None, None
     self._is_alive = False
     
-    # indicates that we're in the midst of calling close()
-    self._handling_close = False
-    
     # Tracks sending and receiving separately. This should be safe, and doing
     # so prevents deadlock where we block writes because we're waiting to read
     # a message that isn't coming.
@@ -149,10 +146,24 @@ class ControlSocket:
         return recv_message(socket_file)
       except SocketClosed, exc:
         # If recv_message raises a SocketClosed then we should properly shut
-        # everything down. However, if this was caused *from* a close call
-        # and it's joining on our thread then this would risk deadlock.
+        # everything down. However, there's a couple cases where this will
+        # cause deadlock...
+        #
+        # * this socketClosed was *caused by* a close() call, which is joining
+        #   on our thread
+        #
+        # * a send() call that's currently in flight is about to call close(),
+        #   also attempting to join on us
+        #
+        # To resolve this we make a non-blocking call to acquire the send lock.
+        # If we get it then great, we can close safely. If not then one of the
+        # above are in progress and we leave the close to them.
         
-        if self.is_alive() and not self._handling_close: self.close()
+        if self.is_alive():
+          if self._send_lock.acquire(False):
+            self.close()
+            self._send_lock.release()
+        
         raise exc
   
   def is_alive(self):
@@ -202,8 +213,6 @@ class ControlSocket:
     Shuts down the socket. If it's already closed then this is a no-op.
     """
     
-    self._handling_close = True
-    
     with self._send_lock:
       # Function is idempotent with one exception: we notify _close() if this
       # is causing our is_alive() state to change.
@@ -235,8 +244,6 @@ class ControlSocket:
       
       if is_change:
         self._close()
-      
-      self._handling_close = False
   
   def _get_send_lock(self):
     """
