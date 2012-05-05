@@ -346,11 +346,9 @@ class TestServerDescriptor(unittest.TestCase):
     ]
     
     for attr in unsanitized_attr:
-      try:
-        desc_text = _make_descriptor(attr, is_bridge = True)
-        BridgeDescriptorV3(desc_text)
-        self.fail("Unsanitized attribute wasn't detected: %s %s" % attr.items()[0])
-      except ValueError: pass
+      desc_text = _make_descriptor(attr, is_bridge = True)
+      desc = BridgeDescriptorV3(desc_text)
+      self.assertFalse(desc.is_scrubbed())
   
   def test_bridge_unsanitized_relay(self):
     """
@@ -359,7 +357,8 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor()
-    self.assertRaises(ValueError, BridgeDescriptorV3, desc_text)
+    desc = BridgeDescriptorV3(desc_text)
+    self.assertFalse(desc.is_scrubbed())
   
   def test_or_address_v4(self):
     """

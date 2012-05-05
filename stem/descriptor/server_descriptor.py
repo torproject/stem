@@ -14,6 +14,8 @@ ServerDescriptorV3 - Tor server descriptor, version 3.
   |  |  +- digest - calculates the digest value for our content
   |  |
   |  +- BridgeDescriptorV3 - Scrubbed server descriptor for a bridge.
+  |     |- is_scrubbed - checks if our content has been properly scrubbed
+  |     +- get_scrubbing_issues - description of issues with our scrubbing
   |
   |- get_unrecognized_lines - lines with unrecognized content
   |- get_annotations - dictionary of content prior to the descriptor entry
@@ -705,6 +707,7 @@ class BridgeDescriptorV3(ServerDescriptorV3):
   
   def __init__(self, raw_contents, validate = True, annotations = None):
     self.address_alt = []
+    self._scrubbing_issues = None
     ServerDescriptorV3.__init__(self, raw_contents, validate, annotations)
   
   def _parse(self, entries, validate):
@@ -742,36 +745,56 @@ class BridgeDescriptorV3(ServerDescriptorV3):
         del entries["or-address"]
     
     ServerDescriptorV3._parse(self, entries, validate)
-    if validate: self._check_scrubbing()
   
-  def _check_scrubbing(self):
+  def is_scrubbed(self):
     """
-    Checks that our attributes have been scrubbed in accordance with the bridge
-    descriptor specification.
+    Checks if we've been properly scrubbed in accordance with the bridge
+    descriptor specification. Validation is a moving target so this may not
+    be fully up to date.
+    
+    Returns:
+      True if we're scrubbed, False otherwise
     """
     
-    if self.nickname != "Unnamed":
-      raise ValueError("Router line's nickname should be scrubbed to be 'Unnamed': %s" % self.nickname)
-    elif not self.address.startswith("10."):
-      raise ValueError("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
-    elif self.contact and self.contact != "somebody":
-      raise ValueError("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
+    return self.get_scrubbing_issues() == []
+  
+  def get_scrubbing_issues(self):
+    """
+    Provides issues with our scrubbing.
     
-    for address, _, is_ipv6 in self.address_alt:
-      if not is_ipv6 and not address.startswith("10."):
-        raise ValueError("or-address line's address should be scrubbed to be '10.x.x.x': %s" % address)
-      elif is_ipv6 and not address.startswith("fd9f:2e19:3bcf::"):
-        # TODO: this check isn't quite right because we aren't checking that
-        # the next grouping of hex digits contains 1-2 digits
-        raise ValueError("or-address line's address should be scrubbed to be 'fd9f:2e19:3bcf::xx:xxxx': %s" % address)
+    Returns:
+      list of strings which describe issues we have with our scrubbing, this
+      list is empty if we're properly scrubbed
+    """
     
-    for line in self.get_unrecognized_lines():
-      if line.startswith("onion-key "):
-        raise ValueError("Bridge descriptors should have their onion-key scrubbed: %s" % line)
-      elif line.startswith("signing-key "):
-        raise ValueError("Bridge descriptors should have their signing-key scrubbed: %s" % line)
-      elif line.startswith("router-signature "):
-        raise ValueError("Bridge descriptors should have their signature scrubbed: %s" % line)
+    if self._scrubbing_issues == None:
+      issues = []
+      if self.nickname != "Unnamed":
+        issues.append("Router line's nickname should be scrubbed to be 'Unnamed': %s" % self.nickname)
+      elif not self.address.startswith("10."):
+        issues.append("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
+      elif self.contact and self.contact != "somebody":
+        issues.append("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
+      
+      for address, _, is_ipv6 in self.address_alt:
+        if not is_ipv6 and not address.startswith("10."):
+          issues.append("or-address line's address should be scrubbed to be '10.x.x.x': %s" % address)
+        elif is_ipv6 and not address.startswith("fd9f:2e19:3bcf::"):
+          # TODO: this check isn't quite right because we aren't checking that
+          # the next grouping of hex digits contains 1-2 digits
+          issues.append("or-address line's address should be scrubbed to be 'fd9f:2e19:3bcf::xx:xxxx': %s" % address)
+      
+      for line in self.get_unrecognized_lines():
+        if line.startswith("onion-key "):
+          issues.append("Bridge descriptors should have their onion-key scrubbed: %s" % line)
+        elif line.startswith("signing-key "):
+          issues.append("Bridge descriptors should have their signing-key scrubbed: %s" % line)
+        elif line.startswith("router-signature "):
+          issues.append("Bridge descriptors should have their signature scrubbed: %s" % line)
+      
+      self._scrubbing_issues = issues
+    
+    return self._scrubbing_issues
   
   def _required_fields(self):
     # bridge required fields are the same as a relay descriptor, minus items
