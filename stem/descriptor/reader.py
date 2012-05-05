@@ -191,17 +191,25 @@ class DescriptorReader:
   waiting for our caller to fetch some of them. This is included to avoid
   unbounded memory usage.
   
+  Our persistence_path argument is a convenient method to persist the listing
+  of files we have processed between runs, however it doesn't allow for error
+  handling. If you want that then use the load/save_processed_files functions
+  instead.
+  
   Arguments:
     targets (list)      - paths for files or directories to be read from
     follow_links (bool) - determines if we'll follow symlinks when traversing
                           directories
     buffer_size (int)   - descriptors we'll buffer before waiting for some to
                           be read, this is unbounded if zero
+    persistence_path (str) - if set we will load and save processed file
+                          listings from this path, errors are ignored
   """
   
-  def __init__(self, targets, follow_links = False, buffer_size = 100):
+  def __init__(self, targets, follow_links = False, buffer_size = 100, persistence_path = None):
     self._targets = targets
     self._follow_links = follow_links
+    self._persistence_path = persistence_path
     self._skip_listeners = []
     self._processed_files = {}
     
@@ -218,6 +226,12 @@ class DescriptorReader:
     # FINISHED entry is used by the reading thread to indicate the end.
     
     self._unreturned_descriptors = Queue.Queue(buffer_size)
+    
+    if self._persistence_path:
+      try:
+        processed_files = load_processed_files(self._persistence_path)
+        self.set_processed_files(processed_files)
+      except: pass
   
   def get_processed_files(self):
     """
@@ -311,6 +325,12 @@ class DescriptorReader:
       
       self._reader_thread.join()
       self._reader_thread = None
+      
+      if self._persistence_path:
+        try:
+          processed_files = self.get_processed_files()
+          save_processed_files(self._persistence_path, processed_files)
+        except: pass
   
   def _read_descriptor_files(self):
     new_processed_files = {}

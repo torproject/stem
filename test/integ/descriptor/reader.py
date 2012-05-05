@@ -207,6 +207,35 @@ class TestDescriptorReader(unittest.TestCase):
       time.sleep(0.01)
       self.assertTrue(reader.get_buffered_descriptor_count() <= 2)
   
+  def test_persistence_path(self):
+    """
+    Check that the persistence_path argument loads and saves a a processed
+    files listing.
+    """
+    
+    persistence_path = _get_processed_files_path()
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    
+    # First run where the persistence_path doesn't yet exist. This just tests
+    # the saving functionality.
+    
+    reader = stem.descriptor.reader.DescriptorReader([descriptor_path], persistence_path = persistence_path)
+    with reader: self.assertEqual(1, len(list(reader)))
+    
+    # check that we've saved reading example_descriptor
+    self.assertTrue(os.path.exists(persistence_path))
+    
+    with open(persistence_path) as persistence_file:
+      persistance_file_contents = persistence_file.read()
+      self.assertTrue(persistance_file_contents.startswith(descriptor_path))
+    
+    # Try running again with a new reader but the same persistance path, if it
+    # reads and takes the persistence_path into account then it won't read the
+    # descriptor file. This in essence just tests its loading functionality.
+    
+    reader = stem.descriptor.reader.DescriptorReader([descriptor_path], persistence_path = persistence_path)
+    with reader: self.assertEqual(0, len(list(reader)))
+  
   def test_archived_uncompressed(self):
     """
     Checks that we can read descriptors from an uncompressed archive.
