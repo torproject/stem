@@ -87,14 +87,15 @@ def parse_file(descriptor_file, validate = True):
   # Handler for bridge descriptors
   #
   # Bridge descriptors are scrubbed so their nickname is 'Unnamed' and their
-  # ip address is in the 10.x.x.x space, which is normally reserved for
-  # private networks. Bride descriptors only come from metrics so a file only
-  # contains a single descriptor.
+  # ip address is in the 10.x.x.x space (priorly '127.0.0.1'), which is
+  # normally reserved for private networks. Bridge descriptors only come from
+  # metrics so a file only contains a single descriptor.
   
   first_line = descriptor_file.readline()
   descriptor_file.seek(0)
   
-  if first_line.startswith("router Unnamed 10."):
+  if first_line.startswith("router Unnamed 10.") or \
+    first_line.startswith("router Unnamed 127.0.0.1"):
     yield BridgeDescriptor(descriptor_file.read())
     return
   
