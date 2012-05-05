@@ -7,13 +7,13 @@ etc). This information is provided from a few sources...
 - the 'cached-descriptors' file in tor's data directory
 - tor metrics, at https://metrics.torproject.org/data.html
 
-parse_file_v3 - Iterates over the server descriptors in a file.
-ServerDescriptorV3 - Tor server descriptor, version 3.
-  |  |- RelayDescriptorV3 - Server descriptor for a relay.
+parse_file - Iterates over the server descriptors in a file.
+ServerDescriptor - Tor server descriptor.
+  |  |- RelayDescriptor - Server descriptor for a relay.
   |  |  |- is_valid - checks the signature against the descriptor content
   |  |  +- digest - calculates the digest value for our content
   |  |
-  |  +- BridgeDescriptorV3 - Scrubbed server descriptor for a bridge.
+  |  +- BridgeDescriptor - Scrubbed server descriptor for a bridge.
   |     |- is_scrubbed - checks if our content has been properly scrubbed
   |     +- get_scrubbing_issues - description of issues with our scrubbing
   |
@@ -66,10 +66,10 @@ SINGLE_FIELDS = (
   "allow-single-hop-exits",
 )
 
-def parse_file_v3(descriptor_file, validate = True):
+def parse_file(descriptor_file, validate = True):
   """
-  Iterates over the version 3 server descriptors in a file. This can read
-  either relay or bridge v3 server descriptors.
+  Iterates over the server descriptors in a file. This can read either relay or
+  bridge server descriptors.
   
   Arguments:
     descriptor_file (file) - file with descriptor content
@@ -77,7 +77,7 @@ def parse_file_v3(descriptor_file, validate = True):
                              True, skips these checks otherwise
   
   Returns:
-    iterator for ServerDescriptorV3 instances in the file
+    iterator for ServerDescriptor instances in the file
   
   Raises:
     ValueError if the contents is malformed and validate is True
@@ -95,7 +95,7 @@ def parse_file_v3(descriptor_file, validate = True):
   descriptor_file.seek(0)
   
   if first_line.startswith("router Unnamed 10."):
-    yield BridgeDescriptorV3(descriptor_file.read())
+    yield BridgeDescriptor(descriptor_file.read())
     return
   
   # Handler for relay descriptors
@@ -137,7 +137,7 @@ def parse_file_v3(descriptor_file, validate = True):
       annotations = map(str.strip, annotations)
       
       descriptor_text = "".join(descriptor_content)
-      descriptor = RelayDescriptorV3(descriptor_text, validate, annotations)
+      descriptor = RelayDescriptor(descriptor_text, validate, annotations)
       yield descriptor
     else: break # done parsing descriptors
 
@@ -175,9 +175,9 @@ def _read_until_keyword(keyword, descriptor_file, inclusive = False):
   
   return content
 
-class ServerDescriptorV3(stem.descriptor.Descriptor):
+class ServerDescriptor(stem.descriptor.Descriptor):
   """
-  Common parent for version 3 server descriptors.
+  Common parent for server descriptors.
   
   Attributes:
     nickname (str)           - relay's nickname (*)
@@ -599,7 +599,7 @@ class ServerDescriptorV3(stem.descriptor.Descriptor):
   def _first_keyword(self): return None
   def _last_keyword(self): return None
 
-class RelayDescriptorV3(ServerDescriptorV3):
+class RelayDescriptor(ServerDescriptor):
   """
   Version 3 server descriptor, as specified in...
   https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt
@@ -618,7 +618,7 @@ class RelayDescriptorV3(ServerDescriptorV3):
     self.signature = None
     self._digest = None
     
-    ServerDescriptorV3.__init__(self, raw_contents, validate, annotations)
+    ServerDescriptor.__init__(self, raw_contents, validate, annotations)
   
   def is_valid(self):
     """
@@ -680,7 +680,7 @@ class RelayDescriptorV3(ServerDescriptorV3):
         self.signature = block_contents
         del entries["router-signature"]
     
-    ServerDescriptorV3._parse(self, entries, validate)
+    ServerDescriptor._parse(self, entries, validate)
   
   def _required_fields(self):
     return REQUIRED_FIELDS
@@ -694,7 +694,7 @@ class RelayDescriptorV3(ServerDescriptorV3):
   def _last_keyword(self):
     return "router-signature"
 
-class BridgeDescriptorV3(ServerDescriptorV3):
+class BridgeDescriptor(ServerDescriptor):
   """
   Version 3 bridge descriptor, as specified in...
   https://metrics.torproject.org/formats.html#bridgedesc
@@ -708,7 +708,7 @@ class BridgeDescriptorV3(ServerDescriptorV3):
   def __init__(self, raw_contents, validate = True, annotations = None):
     self.address_alt = []
     self._scrubbing_issues = None
-    ServerDescriptorV3.__init__(self, raw_contents, validate, annotations)
+    ServerDescriptor.__init__(self, raw_contents, validate, annotations)
   
   def _parse(self, entries, validate):
     entries = dict(entries)
@@ -744,7 +744,7 @@ class BridgeDescriptorV3(ServerDescriptorV3):
         
         del entries["or-address"]
     
-    ServerDescriptorV3._parse(self, entries, validate)
+    ServerDescriptor._parse(self, entries, validate)
   
   def is_scrubbed(self):
     """

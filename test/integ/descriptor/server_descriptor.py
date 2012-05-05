@@ -74,7 +74,7 @@ dskLSPz8beUW7bzwDjR6EVNGpyoZde83Ejvau+5F2c6cGnlu91fiZN3suE88iE6e
 Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 -----END SIGNATURE-----"""
     
-    desc = stem.descriptor.server_descriptor.RelayDescriptorV3(descriptor_contents)
+    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
     self.assertEquals("caerSidi", desc.nickname)
     self.assertEquals("A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB", desc.fingerprint)
     self.assertEquals("71.35.133.197", desc.address)
@@ -116,7 +116,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
-    desc = stem.descriptor.server_descriptor.RelayDescriptorV3(descriptor_contents)
+    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
     self.assertEquals("krypton", desc.nickname)
     self.assertEquals("3E2F63E2356F52318B536A12B6445373808A5D6C", desc.fingerprint)
     self.assertEquals("212.37.39.59", desc.address)
@@ -181,7 +181,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       RAN_CACHED_DESCRIPTOR_TEST = True
     
     with open(descriptor_path) as descriptor_file:
-      for desc in stem.descriptor.server_descriptor.parse_file_v3(descriptor_file):
+      for desc in stem.descriptor.server_descriptor.parse_file(descriptor_file):
         # the following attributes should be deprecated, and not appear in the wild
         self.assertEquals(None, desc.read_history)
         self.assertEquals(None, desc.write_history)
@@ -214,7 +214,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     expected_published = datetime.datetime(2012, 3, 21, 16, 28, 14)
     expected_contact = "2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf"
     
-    desc = stem.descriptor.server_descriptor.RelayDescriptorV3(descriptor_contents)
+    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
     self.assertEquals("torrelay389752132", desc.nickname)
     self.assertEquals("FEBC7F992AC418BBE42BC13FE94EFCFE6549197E", desc.fingerprint)
     self.assertEquals("130.243.230.116", desc.address)
@@ -253,7 +253,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
-    desc = stem.descriptor.server_descriptor.RelayDescriptorV3(descriptor_contents)
+    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
     
     self.assertEquals("pogonip", desc.nickname)
     self.assertEquals("6DABD62BC65D4E6FE620293157FC76968DAB9C9B", desc.fingerprint)
@@ -280,7 +280,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
-    desc = stem.descriptor.server_descriptor.RelayDescriptorV3(descriptor_contents)
+    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
     
     self.assertEquals("TipTor", desc.nickname)
     self.assertEquals("137962D4931DBF08A24E843288B8A155D6D2AEDD", desc.fingerprint)
@@ -290,7 +290,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     # should appear
     
     descriptor_contents = descriptor_contents.replace("Tor 0.1.1.25", "Tor 0.1.2.7")
-    self.assertRaises(ValueError, stem.descriptor.server_descriptor.RelayDescriptorV3, descriptor_contents)
+    self.assertRaises(ValueError, stem.descriptor.server_descriptor.RelayDescriptor, descriptor_contents)
   
   def test_bridge_descriptor(self):
     """
@@ -311,7 +311,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       "$8C8A470D7C23151665A7B84E75E89FCC205A3304",
     ]
     
-    desc = stem.descriptor.server_descriptor.BridgeDescriptorV3(descriptor_contents)
+    desc = stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_contents)
     self.assertEquals("Unnamed", desc.nickname)
     self.assertEquals("AE54E28ED069CDF45F3009F963EE3B3D6FA26A2E", desc.fingerprint)
     self.assertEquals("10.45.227.253", desc.address)

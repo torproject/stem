@@ -41,7 +41,7 @@ def parse_file(path, descriptor_file):
   descriptor_file.seek(0)
   
   if filename == "cached-descriptors" or first_line.startswith("router "):
-    for desc in stem.descriptor.server_descriptor.parse_file_v3(descriptor_file):
+    for desc in stem.descriptor.server_descriptor.parse_file(descriptor_file):
       desc._set_path(path)
       yield desc
   else:

@@ -7,7 +7,7 @@ import StringIO
 import unittest
 
 import stem.descriptor.server_descriptor
-from stem.descriptor.server_descriptor import RelayDescriptorV3, BridgeDescriptorV3
+from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 
 CRYPTO_BLOB = """
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
@@ -80,7 +80,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor()
-    desc = RelayDescriptorV3(desc_text)
+    desc = RelayDescriptor(desc_text)
     
     self.assertEquals("caerSidi", desc.nickname)
     self.assertEquals("71.35.133.197", desc.address)
@@ -95,7 +95,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor({"opt": "contact www.atagar.com/contact/"})
-    desc = RelayDescriptorV3(desc_text)
+    desc = RelayDescriptor(desc_text)
     self.assertEquals("www.atagar.com/contact/", desc.contact)
   
   def test_unrecognized_line(self):
@@ -104,7 +104,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor({"pepperjack": "is oh so tasty!"})
-    desc = RelayDescriptorV3(desc_text)
+    desc = RelayDescriptor(desc_text)
     self.assertEquals(["pepperjack is oh so tasty!"], desc.get_unrecognized_lines())
   
   def test_proceeding_line(self):
@@ -185,12 +185,12 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor({"platform": ""})
-    desc = RelayDescriptorV3(desc_text, validate = False)
+    desc = RelayDescriptor(desc_text, validate = False)
     self.assertEquals("", desc.platform)
     
     # does the same but with 'platform ' replaced with 'platform'
     desc_text = desc_text.replace("platform ", "platform")
-    desc = RelayDescriptorV3(desc_text, validate = False)
+    desc = RelayDescriptor(desc_text, validate = False)
     self.assertEquals("", desc.platform)
   
   def test_protocols_no_circuit_versions(self):
@@ -212,7 +212,7 @@ class TestServerDescriptor(unittest.TestCase):
     
     desc_text = _make_descriptor({"published": "2012-02-29 04:03:19"})
     expected_published = datetime.datetime(2012, 2, 29, 4, 3, 19)
-    self.assertEquals(expected_published, RelayDescriptorV3(desc_text).published)
+    self.assertEquals(expected_published, RelayDescriptor(desc_text).published)
   
   def test_published_no_time(self):
     """
@@ -232,7 +232,7 @@ class TestServerDescriptor(unittest.TestCase):
     for field in ("read-history", "write-history"):
       value = "2005-12-16 18:00:48 (900 s) 81,8848,8927,8927,83,8848"
       desc_text = _make_descriptor({"opt %s" % field: value})
-      desc = RelayDescriptorV3(desc_text)
+      desc = RelayDescriptor(desc_text)
       
       if field == "read-history":
         attr = (desc.read_history, desc.read_history_end,
@@ -256,7 +256,7 @@ class TestServerDescriptor(unittest.TestCase):
     
     value = "2005-12-17 01:23:11 (900 s) "
     desc_text = _make_descriptor({"opt read-history": value})
-    desc = RelayDescriptorV3(desc_text)
+    desc = RelayDescriptor(desc_text)
     self.assertEquals(value, desc.read_history)
     self.assertEquals(datetime.datetime(2005, 12, 17, 1, 23, 11), desc.read_history_end)
     self.assertEquals(900, desc.read_history_interval)
@@ -271,8 +271,8 @@ class TestServerDescriptor(unittest.TestCase):
     desc_text += _make_descriptor()
     desc_text += "\ntrailing text that should be ignored, ho hum"
     
-    # running parse_file_v3 should provide an iterator with a single descriptor
-    desc_iter = stem.descriptor.server_descriptor.parse_file_v3(StringIO.StringIO(desc_text))
+    # running parse_file should provide an iterator with a single descriptor
+    desc_iter = stem.descriptor.server_descriptor.parse_file(StringIO.StringIO(desc_text))
     desc_entries = list(desc_iter)
     self.assertEquals(1, len(desc_entries))
     desc = desc_entries[0]
@@ -299,10 +299,10 @@ class TestServerDescriptor(unittest.TestCase):
     
     for attr in stem.descriptor.server_descriptor.REQUIRED_FIELDS:
       desc_text = _make_descriptor(exclude = [attr])
-      self.assertRaises(ValueError, RelayDescriptorV3, desc_text)
+      self.assertRaises(ValueError, RelayDescriptor, desc_text)
       
       # check that we can still construct it without validation
-      desc = RelayDescriptorV3(desc_text, validate = False)
+      desc = RelayDescriptor(desc_text, validate = False)
       
       # for one of them checks that the corresponding values are None
       if attr == "router":
@@ -318,7 +318,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor(is_bridge = True)
-    desc = BridgeDescriptorV3(desc_text)
+    desc = BridgeDescriptor(desc_text)
     
     self.assertEquals("Unnamed", desc.nickname)
     self.assertEquals("10.45.227.253", desc.address)
@@ -347,7 +347,7 @@ class TestServerDescriptor(unittest.TestCase):
     
     for attr in unsanitized_attr:
       desc_text = _make_descriptor(attr, is_bridge = True)
-      desc = BridgeDescriptorV3(desc_text)
+      desc = BridgeDescriptor(desc_text)
       self.assertFalse(desc.is_scrubbed())
   
   def test_bridge_unsanitized_relay(self):
@@ -357,7 +357,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor()
-    desc = BridgeDescriptorV3(desc_text)
+    desc = BridgeDescriptor(desc_text)
     self.assertFalse(desc.is_scrubbed())
   
   def test_or_address_v4(self):
@@ -366,7 +366,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor({"or-address": "10.45.227.253:9001"}, is_bridge = True)
-    desc = BridgeDescriptorV3(desc_text)
+    desc = BridgeDescriptor(desc_text)
     self.assertEquals([("10.45.227.253", 9001, False)], desc.address_alt)
   
   def test_or_address_v6(self):
@@ -375,7 +375,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor({"or-address": "[fd9f:2e19:3bcf::02:9970]:9001"}, is_bridge = True)
-    desc = BridgeDescriptorV3(desc_text)
+    desc = BridgeDescriptor(desc_text)
     self.assertEquals([("fd9f:2e19:3bcf::02:9970", 9001, True)], desc.address_alt)
   
   def test_or_address_multiple(self):
@@ -394,7 +394,7 @@ class TestServerDescriptor(unittest.TestCase):
       ("fd9f:2e19:3bcf::02:9970", 443, True),
     ]
     
-    desc = BridgeDescriptorV3(desc_text)
+    desc = BridgeDescriptor(desc_text)
     self.assertEquals(expected_address_alt, desc.address_alt)
   
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
@@ -404,8 +404,8 @@ class TestServerDescriptor(unittest.TestCase):
     value when we're constructed without validation.
     """
     
-    self.assertRaises(ValueError, RelayDescriptorV3, desc_text)
-    desc = RelayDescriptorV3(desc_text, validate = False)
+    self.assertRaises(ValueError, RelayDescriptor, desc_text)
+    desc = RelayDescriptor(desc_text, validate = False)
     
     if attr:
       # check that the invalid attribute matches the expected value when
