@@ -6,6 +6,7 @@ etc). This information is provided from a few sources...
 - control port via 'GETINFO desc/*' queries
 - the 'cached-descriptors' file in tor's data directory
 - tor metrics, at https://metrics.torproject.org/data.html
+- directory authorities and mirrors via their DirPort
 
 parse_file - Iterates over the server descriptors in a file.
 ServerDescriptor - Tor server descriptor.
@@ -222,7 +223,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   
   def __init__(self, raw_contents, validate = True, annotations = None):
     """
-    Version 3 server descriptor constructor, created from an individual relay's
+    Server descriptor constructor, created from an individual relay's
     descriptor content (as provided by "GETINFO desc/*", cached descriptors,
     and metrics).
     
@@ -602,7 +603,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
 
 class RelayDescriptor(ServerDescriptor):
   """
-  Version 3 server descriptor, as specified in...
+  Server descriptor, as specified in...
   https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt
   
   Attributes:
@@ -697,7 +698,7 @@ class RelayDescriptor(ServerDescriptor):
 
 class BridgeDescriptor(ServerDescriptor):
   """
-  Version 3 bridge descriptor, as specified in...
+  Bridge descriptor, as specified in...
   https://metrics.torproject.org/formats.html#bridgedesc
   
   Attributes:
