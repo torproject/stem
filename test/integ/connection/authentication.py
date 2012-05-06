@@ -80,7 +80,7 @@ class TestAuthenticate(unittest.TestCase):
   def setUp(self):
     test.runner.require_control(self)
   
-  def test_authenticate_general(self):
+  def test_authenticate_general_socket(self):
     """
     Tests that the authenticate function can authenticate to our socket.
     """
@@ -88,7 +88,17 @@ class TestAuthenticate(unittest.TestCase):
     runner = test.runner.get_runner()
     with runner.get_tor_socket(False) as control_socket:
       stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
-      test.runner.exercise_socket(self, control_socket)
+      test.runner.exercise_controller(self, control_socket)
+  
+  def test_authenticate_general_controller(self):
+    """
+    Tests that the authenticate function can authenticate via a Controller.
+    """
+    
+    runner = test.runner.get_runner()
+    with runner.get_tor_controller(False) as controller:
+      stem.connection.authenticate(controller, test.runner.CONTROL_PASSWORD, runner.get_chroot())
+      test.runner.exercise_controller(self, controller)
   
   def test_authenticate_general_example(self):
     """
@@ -108,7 +118,7 @@ class TestAuthenticate(unittest.TestCase):
     try:
       # this authenticate call should work for everything but password-only auth
       stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
-      test.runner.exercise_socket(self, control_socket)
+      test.runner.exercise_controller(self, control_socket)
     except stem.connection.IncorrectSocketType:
       self.fail()
     except stem.connection.MissingPassword:
@@ -117,7 +127,7 @@ class TestAuthenticate(unittest.TestCase):
       
       try:
         stem.connection.authenticate_password(control_socket, controller_password)
-        test.runner.exercise_socket(self, control_socket)
+        test.runner.exercise_controller(self, control_socket)
       except stem.connection.PasswordAuthFailed:
         self.fail()
     except stem.connection.AuthenticationFailure:
@@ -144,7 +154,7 @@ class TestAuthenticate(unittest.TestCase):
         self.assertRaises(stem.connection.MissingPassword, stem.connection.authenticate, control_socket)
       else:
         stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
-        test.runner.exercise_socket(self, control_socket)
+        test.runner.exercise_controller(self, control_socket)
     
     # tests with the incorrect password
     with runner.get_tor_socket(False) as control_socket:
@@ -152,12 +162,12 @@ class TestAuthenticate(unittest.TestCase):
         self.assertRaises(stem.connection.IncorrectPassword, stem.connection.authenticate, control_socket, "blarg")
       else:
         stem.connection.authenticate(control_socket, "blarg", runner.get_chroot())
-        test.runner.exercise_socket(self, control_socket)
+        test.runner.exercise_controller(self, control_socket)
     
     # tests with the right password
     with runner.get_tor_socket(False) as control_socket:
       stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
-      test.runner.exercise_socket(self, control_socket)
+      test.runner.exercise_controller(self, control_socket)
   
   def test_authenticate_none(self):
     """
@@ -299,7 +309,7 @@ class TestAuthenticate(unittest.TestCase):
         elif auth_type == stem.connection.AuthMethod.COOKIE:
           stem.connection.authenticate_cookie(control_socket, auth_arg)
         
-        test.runner.exercise_socket(self, control_socket)
+        test.runner.exercise_controller(self, control_socket)
       except stem.connection.AuthenticationFailure, exc:
         # authentication functions should re-attach on failure
         self.assertTrue(control_socket.is_alive())

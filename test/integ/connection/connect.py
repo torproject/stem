@@ -34,7 +34,7 @@ class TestConnect(unittest.TestCase):
       controller = stem.connection.Controller.NONE)
     
     if test.runner.Torrc.PORT in runner.get_options():
-      test.runner.exercise_socket(self, control_socket)
+      test.runner.exercise_controller(self, control_socket)
       control_socket.close()
     else:
       self.assertEquals(control_socket, None)
@@ -53,7 +53,7 @@ class TestConnect(unittest.TestCase):
       controller = stem.connection.Controller.NONE)
     
     if test.runner.Torrc.SOCKET in runner.get_options():
-      test.runner.exercise_socket(self, control_socket)
+      test.runner.exercise_controller(self, control_socket)
       control_socket.close()
     else:
       self.assertEquals(control_socket, None)

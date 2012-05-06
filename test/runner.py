@@ -8,7 +8,7 @@ TorInaccessable - Tor can't be queried for the information
 
 require_control - skips the test unless tor provides a controller endpoint
 require_version - skips the test unless we meet a tor version requirement
-exercise_socket - Does a basic sanity check that a control socket can be used
+exercise_controller - basic sanity check that a controller connection can be used
 
 get_runner - Singleton for fetching our runtime context.
 Runner - Runtime context for our integration tests.
@@ -25,7 +25,8 @@ Runner - Runtime context for our integration tests.
   |- get_tor_cwd - current working directory of our tor process
   |- get_chroot - provides the path of our emulated chroot if we have one
   |- get_pid - process id of our tor process
-  |- get_tor_socket - provides a socket to the tor instance
+  |- get_tor_socket - provides a socket to our test instance
+  |- get_tor_controller - provides a controller for our test instance
   |- get_tor_version - provides the version of tor we're running against
   +- get_tor_command - provides the command used to start tor
 """
@@ -115,14 +116,15 @@ def require_version(test_case, req_version):
   if get_runner().get_tor_version() < req_version:
     test_case.skipTest("(requires %s)" % req_version)
 
-def exercise_socket(test_case, control_socket):
+def exercise_controller(test_case, controller):
   """
   Checks that we can now use the socket by issuing a 'GETINFO config-file'
   query.
   
   Arguments:
     test_case (unittest.TestCase) - test being ran
-    control_socket (stem.socket.ControlSocket) - socket to be tested
+    controller (stem.socket.ControlSocket or stem.control.BaseController) -
+      tor controller connection to be authenticated
   """
   
   runner = get_runner()
@@ -131,8 +133,12 @@ def exercise_socket(test_case, control_socket):
   if chroot_path and torrc_path.startswith(chroot_path):
     torrc_path = torrc_path[len(chroot_path):]
   
-  control_socket.send("GETINFO config-file")
-  config_file_response = control_socket.recv()
+  if isinstance(controller, stem.socket.ControlSocket):
+    controller.send("GETINFO config-file")
+    config_file_response = controller.recv()
+  else:
+    config_file_response = controller.msg("GETINFO config-file")
+  
   test_case.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
 
 def get_runner():
@@ -429,7 +435,7 @@ class Runner:
   
   def get_tor_socket(self, authenticate = True):
     """
-    Provides a socket connected to the tor test instance's control socket.
+    Provides a socket connected to our tor test instance.
     
     Arguments:
       authenticate (bool) - if True then the socket is authenticated
@@ -451,6 +457,24 @@ class Runner:
       stem.connection.authenticate(control_socket, CONTROL_PASSWORD, self.get_chroot())
     
     return control_socket
+  
+  def get_tor_controller(self, authenticate = True):
+    """
+    Provides a controller connected to our tor test instance.
+    
+    Arguments:
+      authenticate (bool) - if True then the socket is authenticated
+    
+    Returns:
+      stem.socket.BaseController connected with our testing instance
+    
+    Raises:
+      TorInaccessable if tor can't be connected to
+    """
+    
+    # TODO: replace with our general controller when we have one
+    control_socket = self.get_tor_socket(authenticate)
+    return stem.control.BaseController(control_socket)
   
   def get_tor_version(self):
     """
