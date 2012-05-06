@@ -414,11 +414,13 @@ class BaseController:
     socket.
     """
     
-    while self.is_alive():
+    while True:
       try:
         event_message = self._event_queue.get_nowait()
         self._handle_event(event_message)
       except Queue.Empty:
+        if not self.is_alive(): break
+        
         self._event_notice.wait()
         self._event_notice.clear()
 

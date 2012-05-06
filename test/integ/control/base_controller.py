@@ -2,6 +2,7 @@
 Integration tests for the stem.control.BaseController class.
 """
 
+import re
 import time
 import unittest
 import threading
@@ -134,6 +135,61 @@ class TestBaseController(unittest.TestCase):
       
       for msg_thread in message_threads:
         msg_thread.join()
+  
+  def test_asynchronous_event_handling(self):
+    """
+    Check that we can both receive asynchronous events while hammering our
+    socket with queries, and checks that when a controller is closed the
+    listeners will still receive all of the enqueued events.
+    """
+    
+    class ControlledListener(stem.control.BaseController):
+      """
+      Controller that blocks event handling until told to do so.
+      """
+      
+      def __init__(self, control_socket):
+        stem.control.BaseController.__init__(self, control_socket)
+        self.received_events = []
+        self.receive_notice = threading.Event()
+      
+      def _handle_event(self, event_message):
+        self.receive_notice.wait()
+        self.received_events.append(event_message)
+    
+    with test.runner.get_runner().get_tor_socket() as control_socket:
+      controller = ControlledListener(control_socket)
+      controller.msg("SETEVENTS BW")
+      
+      # Wait for a couple events for events to be enqueued. Doing a bunch of
+      # GETINFO queries while waiting to better exercise the asynchronous event
+      # handling.
+      
+      start_time = time.time()
+      
+      while (time.time() - start_time) < 2:
+        test.runner.exercise_controller(self, controller)
+      
+      # Concurrently shut down the controller. We need to do this in another
+      # thread because it'll block on the event handling, which in turn is
+      # currently blocking on the reveive_notice.
+      
+      close_thread = threading.Thread(target = controller.close, name = "Closing controller")
+      close_thread.setDaemon(True)
+      close_thread.start()
+      
+      # Finally start handling the BW events that we've received. We should
+      # have at least a couple of them.
+      
+      controller.receive_notice.set()
+      close_thread.join()
+      
+      self.assertTrue(len(controller.received_events) >= 2)
+      
+      for bw_event in controller.received_events:
+        self.assertTrue(re.match("BW [0-9]+ [0-9]+", str(bw_event)))
+        self.assertTrue(re.match("650 BW [0-9]+ [0-9]+\r\n", bw_event.raw_content()))
+        self.assertEquals(("650", " "), bw_event.content()[0][:2])
   
   def test_status_notifications(self):
     """
