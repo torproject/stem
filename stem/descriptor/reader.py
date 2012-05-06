@@ -197,7 +197,8 @@ class DescriptorReader:
   instead.
   
   Arguments:
-    targets (list)      - paths for files or directories to be read from
+    target (str, list)  - path or list of paths for files or directories to be
+                          read from
     follow_links (bool) - determines if we'll follow symlinks when traversing
                           directories
     buffer_size (int)   - descriptors we'll buffer before waiting for some to
@@ -206,8 +207,10 @@ class DescriptorReader:
                           listings from this path, errors are ignored
   """
   
-  def __init__(self, targets, follow_links = False, buffer_size = 100, persistence_path = None):
-    self._targets = targets
+  def __init__(self, target, follow_links = False, buffer_size = 100, persistence_path = None):
+    if isinstance(target, str): self._targets = [target]
+    else: self._targets = target
+    
     self._follow_links = follow_links
     self._persistence_path = persistence_path
     self._skip_listeners = []

@@ -155,7 +155,7 @@ class TestDescriptorReader(unittest.TestCase):
     for i in xrange(15):
       remaining_entries = list(descriptor_entries)
       
-      with stem.descriptor.reader.DescriptorReader([descriptor_path]) as reader:
+      with stem.descriptor.reader.DescriptorReader(descriptor_path) as reader:
         for descriptor in reader:
           descriptor_str = str(descriptor)
           
@@ -175,7 +175,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
     
     descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
-    reader = stem.descriptor.reader.DescriptorReader([descriptor_path])
+    reader = stem.descriptor.reader.DescriptorReader(descriptor_path)
     
     with reader:
       self.assertEquals(1, len(list(reader)))
@@ -200,7 +200,7 @@ class TestDescriptorReader(unittest.TestCase):
     them.
     """
     
-    reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA], buffer_size = 2)
+    reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA, buffer_size = 2)
     
     with reader:
       self.assertTrue(reader.get_buffered_descriptor_count() <= 2)
@@ -219,7 +219,7 @@ class TestDescriptorReader(unittest.TestCase):
     # First run where the persistence_path doesn't yet exist. This just tests
     # the saving functionality.
     
-    reader = stem.descriptor.reader.DescriptorReader([descriptor_path], persistence_path = persistence_path)
+    reader = stem.descriptor.reader.DescriptorReader(descriptor_path, persistence_path = persistence_path)
     with reader: self.assertEqual(1, len(list(reader)))
     
     # check that we've saved reading example_descriptor
@@ -233,7 +233,7 @@ class TestDescriptorReader(unittest.TestCase):
     # reads and takes the persistence_path into account then it won't read the
     # descriptor file. This in essence just tests its loading functionality.
     
-    reader = stem.descriptor.reader.DescriptorReader([descriptor_path], persistence_path = persistence_path)
+    reader = stem.descriptor.reader.DescriptorReader(descriptor_path, persistence_path = persistence_path)
     with reader: self.assertEqual(0, len(list(reader)))
   
   def test_archived_uncompressed(self):
@@ -244,7 +244,7 @@ class TestDescriptorReader(unittest.TestCase):
     expected_results = _get_raw_tar_descriptors()
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar")
     
-    with stem.descriptor.reader.DescriptorReader([test_path]) as reader:
+    with stem.descriptor.reader.DescriptorReader(test_path) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
       self.assertEquals(expected_results, read_descriptors)
   
@@ -256,7 +256,7 @@ class TestDescriptorReader(unittest.TestCase):
     expected_results = _get_raw_tar_descriptors()
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar.gz")
     
-    with stem.descriptor.reader.DescriptorReader([test_path]) as reader:
+    with stem.descriptor.reader.DescriptorReader(test_path) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
       self.assertEquals(expected_results, read_descriptors)
   
@@ -268,7 +268,7 @@ class TestDescriptorReader(unittest.TestCase):
     expected_results = _get_raw_tar_descriptors()
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar.bz2")
     
-    with stem.descriptor.reader.DescriptorReader([test_path]) as reader:
+    with stem.descriptor.reader.DescriptorReader(test_path) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
       self.assertEquals(expected_results, read_descriptors)
   
@@ -279,7 +279,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
     
     is_test_running = True
-    reader = stem.descriptor.reader.DescriptorReader(["/"])
+    reader = stem.descriptor.reader.DescriptorReader("/")
     
     # Fails the test after a couple seconds if we don't finish successfully.
     # Depending on what we're blocked on this might not work when the test
@@ -311,7 +311,7 @@ class TestDescriptorReader(unittest.TestCase):
         last_modified = int(os.stat(path).st_mtime)
         expected_results[path] = last_modified
     
-    reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
+    reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA)
     with reader: list(reader) # iterates over all of the descriptors
     
     self.assertEquals(expected_results, reader.get_processed_files())
@@ -323,7 +323,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
     
     skip_listener = SkipListener()
-    reader = stem.descriptor.reader.DescriptorReader([DESCRIPTOR_TEST_DATA])
+    reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA)
     reader.register_skip_listener(skip_listener.listener)
     
     with reader: list(reader) # iterates over all of the descriptors
@@ -350,7 +350,7 @@ class TestDescriptorReader(unittest.TestCase):
     initial_processed_files = {test_path: sys.maxint}
     
     skip_listener = SkipListener()
-    reader = stem.descriptor.reader.DescriptorReader([test_path])
+    reader = stem.descriptor.reader.DescriptorReader(test_path)
     reader.register_skip_listener(skip_listener.listener)
     reader.set_processed_files(initial_processed_files)
     
@@ -380,7 +380,7 @@ class TestDescriptorReader(unittest.TestCase):
       test_file.close()
       
       skip_listener = SkipListener()
-      reader = stem.descriptor.reader.DescriptorReader([test_path])
+      reader = stem.descriptor.reader.DescriptorReader(test_path)
       reader.register_skip_listener(skip_listener.listener)
       with reader: list(reader) # iterates over all of the descriptors
       
@@ -409,7 +409,7 @@ class TestDescriptorReader(unittest.TestCase):
       os.chmod(test_path, 0077) # remove read permissions
       
       skip_listener = SkipListener()
-      reader = stem.descriptor.reader.DescriptorReader([test_path])
+      reader = stem.descriptor.reader.DescriptorReader(test_path)
       reader.register_skip_listener(skip_listener.listener)
       with reader: list(reader) # iterates over all of the descriptors
       
@@ -431,7 +431,7 @@ class TestDescriptorReader(unittest.TestCase):
     test_path = "/non-existant/path"
     
     skip_listener = SkipListener()
-    reader = stem.descriptor.reader.DescriptorReader([test_path])
+    reader = stem.descriptor.reader.DescriptorReader(test_path)
     reader.register_skip_listener(skip_listener.listener)
     with reader: list(reader) # iterates over all of the descriptors
     
