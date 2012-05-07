@@ -33,12 +33,6 @@ import stem.version
 import stem.util.connection
 import stem.util.tor_tools
 
-KEYWORD_CHAR    = "a-zA-Z0-9-"
-WHITESPACE      = " \t"
-KEYWORD_LINE    = re.compile("^([%s]+)[%s]*(.*)$" % (KEYWORD_CHAR, WHITESPACE))
-PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHITESPACE))
-PGP_BLOCK_END   = "-----END %s-----"
-
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
   "router",
@@ -127,55 +121,20 @@ def parse_file(descriptor_file, validate = True):
   # to the caller).
   
   while True:
-    annotations = _read_until_keyword("router", descriptor_file)
-    descriptor_content = _read_until_keyword("router-signature", descriptor_file)
+    annotations = stem.descriptor._read_until_keyword("router", descriptor_file)
+    descriptor_content = stem.descriptor._read_until_keyword("router-signature", descriptor_file)
     
     # we've reached the 'router-signature', now include the pgp style block
-    block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
-    descriptor_content += _read_until_keyword(block_end_prefix, descriptor_file, True)
+    block_end_prefix = stem.descriptor.PGP_BLOCK_END.split(' ', 1)[0]
+    descriptor_content += stem.descriptor._read_until_keyword(block_end_prefix, descriptor_file, True)
     
     if descriptor_content:
       # strip newlines from annotations
       annotations = map(str.strip, annotations)
       
       descriptor_text = "".join(descriptor_content)
-      descriptor = RelayDescriptor(descriptor_text, validate, annotations)
-      yield descriptor
+      yield RelayDescriptor(descriptor_text, validate, annotations)
     else: break # done parsing descriptors
-
-def _read_until_keyword(keyword, descriptor_file, inclusive = False):
-  """
-  Reads from the descriptor file until we get to the given keyword or reach the
-  end of the file.
-  
-  Arguments:
-    keyword (str)          - keyword we want to read until
-    descriptor_file (file) - file with the descriptor content
-    inclusive (bool)       - includes the line with the keyword if True
-  
-  Returns:
-    list with the lines until we find the keyword
-  """
-  
-  content = []
-  
-  while True:
-    last_position = descriptor_file.tell()
-    line = descriptor_file.readline()
-    if not line: break # EOF
-    
-    if " " in line: line_keyword = line.split(" ", 1)[0]
-    else: line_keyword = line.strip()
-    
-    if line_keyword == keyword:
-      if inclusive: content.append(line)
-      else: descriptor_file.seek(last_position)
-      
-      break
-    else:
-      content.append(line)
-  
-  return content
 
 class ServerDescriptor(stem.descriptor.Descriptor):
   """
@@ -297,7 +256,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     # does not matter so breaking it into key / value pairs.
     
     entries, first_keyword, last_keyword, self.exit_policy = \
-      _get_descriptor_components(raw_contents, validate)
+      stem.descriptor._get_descriptor_components(raw_contents, validate, ("accept", "reject"))
     self._parse(entries, validate)
     if validate: self._check_constraints(entries, first_keyword, last_keyword)
   
@@ -815,110 +774,4 @@ class BridgeDescriptor(ServerDescriptor):
   
   def _first_keyword(self):
     return "router"
-
-def _get_descriptor_components(raw_contents, validate):
-  """
-  Initial breakup of the server descriptor contents to make parsing easier.
-  
-  A descriptor contains a series of 'keyword lines' which are simply a keyword
-  followed by an optional value. Lines can also be followed by a signature
-  block.
-  
-  We care about the ordering of 'accept' and 'reject' entries because this
-  influences the resulting exit policy, but for everything else the order does
-  not matter so breaking it into key / value pairs.
-  
-  Arguments:
-    raw_contents (str) - descriptor content provided by the relay
-    validate (bool)    - checks the validity of the descriptor's content if
-                         True, skips these checks otherwise
-  
-  Returns:
-    tuple with the following attributes...
-      entries (dict)      - keyword => (value, pgp key) entries
-      first_keyword (str) - keyword of the first line
-      last_keyword (str)  - keyword of the last line
-      exit_policy (list)  - lines containing the exit policy
-  """
-  
-  entries = {}
-  first_keyword = None
-  last_keyword = None
-  exit_policy = []
-  remaining_lines = raw_contents.split("\n")
-  
-  while remaining_lines:
-    line = remaining_lines.pop(0)
-    
-    # last line can be empty
-    if not line and not remaining_lines: continue
-    
-    # Some lines have an 'opt ' for backward compatability. They should be
-    # ignored. This prefix is being removed in...
-    # https://trac.torproject.org/projects/tor/ticket/5124
-    
-    if line.startswith("opt "): line = line[4:]
-    
-    line_match = KEYWORD_LINE.match(line)
-    
-    if not line_match:
-      if not validate: continue
-      raise ValueError("Line contains invalid characters: %s" % line)
-    
-    keyword, value = line_match.groups()
-    
-    if not first_keyword: first_keyword = keyword
-    last_keyword = keyword
-    
-    try:
-      block_contents = _get_pseudo_pgp_block(remaining_lines)
-    except ValueError, exc:
-      if not validate: continue
-      raise exc
-    
-    if keyword in ("accept", "reject"):
-      exit_policy.append("%s %s" % (keyword, value))
-    elif keyword in entries:
-      entries[keyword].append((value, block_contents))
-    else:
-      entries[keyword] = [(value, block_contents)]
-  
-  return entries, first_keyword, last_keyword, exit_policy
-
-def _get_pseudo_pgp_block(remaining_contents):
-  """
-  Checks if given contents begins with a pseudo-Open-PGP-style block and, if
-  so, pops it off and provides it back to the caller.
-  
-  Arguments:
-    remaining_contents (list) - lines to be checked for a public key block
-  
-  Returns:
-    str with the armor wrapped contents or None if it doesn't exist
-  
-  Raises:
-    ValueError if the contents starts with a key block but it's malformed (for
-    instance, if it lacks an ending line)
-  """
-  
-  if not remaining_contents:
-    return None # nothing left
-  
-  block_match = PGP_BLOCK_START.match(remaining_contents[0])
-  
-  if block_match:
-    block_type = block_match.groups()[0]
-    block_lines = []
-    
-    while True:
-      if not remaining_contents:
-        raise ValueError("Unterminated pgp style block")
-      
-      line = remaining_contents.pop(0)
-      block_lines.append(line)
-      
-      if line == PGP_BLOCK_END % block_type:
-        return "\n".join(block_lines)
-  else:
-    return None
 
