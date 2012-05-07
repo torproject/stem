@@ -543,11 +543,11 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     
     expected_first_keyword = self._first_keyword()
     if expected_first_keyword and not first_keyword == expected_first_keyword:
-      raise ValueError("Descriptor must start with a '%s' entry" % first_keyword)
+      raise ValueError("Descriptor must start with a '%s' entry" % expected_first_keyword)
     
     expected_last_keyword = self._last_keyword()
     if expected_last_keyword and not last_keyword == expected_last_keyword:
-      raise ValueError("Descriptor must end with a '%s' entry" % last_keyword)
+      raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
     
     if not self.exit_policy:
       raise ValueError("Descriptor must have at least one 'accept' or 'reject' entry")

@@ -22,6 +22,52 @@ ExtraInfoDescriptor - Tor extra-info descriptor.
 
 import stem.descriptor
 
+# relay descriptors must have exactly one of the following
+REQUIRED_FIELDS = (
+  "extra-info",
+  "published",
+  "router-signature",
+)
+
+# optional entries that can appear at most once
+SINGLE_FIELDS = (
+  "read-history",
+  "write-history",
+  "geoip-db-digest",
+  "bridge-stats-end",
+  "bridge-ips",
+  "dirreq-stats-end",
+  "dirreq-v2-ips",
+  "dirreq-v3-ips",
+  "dirreq-v2-reqs",
+  "dirreq-v3-reqs",
+  "dirreq-v2-share",
+  "dirreq-v3-share",
+  "dirreq-v2-resp",
+  "dirreq-v3-resp",
+  "dirreq-v2-direct-dl",
+  "dirreq-v3-direct-dl",
+  "dirreq-v2-tunneled-dl",
+  "dirreq-v3-tunneled-dl",
+  "dirreq-read-history",
+  "dirreq-write-history",
+  "entry-stats-end",
+  "entry-ips",
+  "cell-stats-end",
+  "cell-processed-cells",
+  "cell-queued-cells",
+  "cell-time-in-queue",
+  "cell-circuits-per-decile",
+  "conn-bi-direct",
+  "exit-stats-end",
+  "exit-kibibytes-written",
+  "exit-kibibytes-read",
+  "exit-streams-opened",
+)
+
+FIRST_FIELD = "extra-info"
+LAST_FIELD = "router-signature"
+
 def parse_file(descriptor_file, validate = True):
   """
   Iterates over the extra-info descriptors in a file.
@@ -108,4 +154,60 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.write_history_end = None
     self.write_history_interval = None
     self.write_history_values = []
+    
+    entries, first_keyword, last_keyword, _ = \
+      stem.descriptor._get_descriptor_components(raw_contents, validate, ())
+    
+    if validate:
+      for keyword in REQUIRED_FIELDS:
+        if not keyword in entries:
+          raise ValueError("Extra-info descriptor must have a '%s' entry" % keyword)
+      
+      for keyword in REQUIRED_FIELDS + SINGLE_FIELDS:
+        if keyword in entries and len(entries[keyword]) > 1:
+          raise ValueError("The '%s' entry can only appear once in an extra-info descriptor" % keyword)
+      if not first_keyword == FIRST_FIELD:
+        raise ValueError("Extra-info descriptor must start with a '%s' entry" % FIRST_FIELD)
+      
+      if not last_keyword == LAST_FIELD:
+        raise ValueError("Descriptor must end with a '%s' entry" % LAST_FIELD)
+    
+    self._parse(entries, validate)
+  
+  def _parse(self, entries, validate):
+    """
+    Parses a series of 'keyword => (value, pgp block)' mappings and applies
+    them as attributes.
+    
+    Arguments:
+      entries (dict)  - descriptor contents to be applied
+      validate (bool) - checks the validity of descriptor content if True
+    
+    Raises:
+      ValueError if an error occures in validation
+    """
+    
+    for keyword, values in entries.items():
+      # most just work with the first (and only) value
+      value, block_contents = values[0]
+      
+      line = "%s %s" % (keyword, value) # original line
+      if block_contents: line += "\n%s" % block_contents
+      
+      if keyword == "extra-info":
+        # "extra-info" Nickname Fingerprint
+        extra_info_comp = value.split()
+        
+        if len(extra_info_comp) != 2:
+          if not validate: continue
+          raise ValueError("Extra-info line must have two values: %s" % line)
+        
+        if validate:
+          if not stem.util.tor_tools.is_valid_nickname(extra_info_comp[0]):
+            raise ValueError("Extra-info line entry isn't a valid nickname: %s" % extra_info_comp[0])
+          elif not stem.util.tor_tools.is_valid_fingerprint(extra_info_comp[1]):
+            raise ValueError("Tor relay fingerprints consist of fourty hex digits: %s" % extra_info_comp[1])
+        
+        self.nickname = extra_info_comp[0]
+        self.fingerprint = extra_info_comp[1]
 
