@@ -16,6 +16,10 @@ methods it will accept in response to PROTOCOLINFO queries.
   See tor's CookieAuthentication option. Controllers need to supply the
   contents of the cookie file.
 
+**AuthMethod.SAFECOOKIE**
+  See tor's CookieAuthentication option. Controllers need to reply to a
+  hmac challenge using the contents of the cookie file.
+
 **AuthMethod.UNKNOWN**
   Tor provided one or more authentication methods that we don't recognize. This
   is probably from a new addition to the control protocol.
@@ -27,7 +31,7 @@ import stem.version
 import stem.util.enum
 import stem.util.log as log
 
-AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "UNKNOWN")
+AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "SAFECOOKIE", "UNKNOWN")
 
 class ProtocolInfoResponse(stem.response.ControlMessage):
   """

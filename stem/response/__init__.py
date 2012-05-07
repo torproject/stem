@@ -23,7 +23,7 @@ Parses replies from the control socket.
     +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
 """
 
-__all__ = ["getinfo", "protocolinfo", "convert", "ControlMessage", "ControlLine"]
+__all__ = ["getinfo", "protocolinfo", "authchallenge", "convert", "ControlMessage", "ControlLine"]
 
 import re
 import threading
@@ -48,6 +48,7 @@ def convert(response_type, message):
   
     * GETINFO
     * PROTOCOLINFO
+    * AUTHCHALLENGE
   
   If the response_type isn't recognized then this is leaves it alone.
   
@@ -61,6 +62,7 @@ def convert(response_type, message):
   
   import stem.response.getinfo
   import stem.response.protocolinfo
+  import stem.response.authchallenge
   
   if not isinstance(message, ControlMessage):
     raise TypeError("Only able to convert stem.response.ControlMessage instances")
@@ -69,6 +71,8 @@ def convert(response_type, message):
     response_class = stem.response.getinfo.GetInfoResponse
   elif response_type == "PROTOCOLINFO":
     response_class = stem.response.protocolinfo.ProtocolInfoResponse
+  elif response_type == "AUTHCHALLENGE":
+    response_class = stem.response.authchallenge.AuthChallengeResponse
   else: raise TypeError("Unsupported response type: %s" % response_type)
   
   message.__class__ = response_class
@@ -165,6 +169,20 @@ class ControlMessage:
     
     for _, _, content in self._parsed_content:
       yield ControlLine(content)
+  
+  def __len__(self):
+    """
+    :returns: Number of ControlLines
+    """
+
+    return len(self._parsed_content)
+  
+  def __getitem__(self, index):
+    """
+    :returns: ControlLine at index
+    """
+
+    return ControlLine(self._parsed_content[index][2])
 
 class ControlLine(str):
   """
@@ -302,6 +320,7 @@ class ControlLine(str):
     :returns: tuple of the form (key, value)
     
     :raises: ValueError if this isn't a KEY=VALUE mapping or if quoted is True without the value being quoted
+    :raises: IndexError if there's nothing to parse from the line
     """
     
     with self._remainder_lock:

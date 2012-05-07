@@ -5,7 +5,11 @@ later to have all of `arm's functions
 but for now just moving the parts we need.
 """
 
+import os
 import re
+import hmac
+import random
+import hashlib
 
 def is_valid_ip_address(address):
   """
@@ -77,4 +81,45 @@ def is_valid_port(entry, allow_zero = False):
   if allow_zero and entry == 0: return True
   
   return entry > 0 and entry < 65536
+
+
+def hmac_sha256(key, msg):
+  """
+  Generates a sha256 digest using the given key and message.
+
+  :param str key: starting key for the hash
+  :param str msg: message to be hashed
+
+  :returns; A sha256 digest of msg, hashed using the given key.
+  """
+
+  return hmac.new(key, msg, hashlib.sha256).digest()
+
+def random_bytes(length):
+  """
+  Generates and returns a 'length' byte random string.
+
+  :param int length: length of random string to be returned in bytes.
+
+  :returns: A string of length 'length' bytes.
+  """
+  
+  return os.urandom(length)
+
+CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = random_bytes(32)
+def cryptovariables_equal(x, y):
+  """
+  Compares two strings for equality securely.
+
+  :param str x: string to be compared.
+  :param str y: the other string to be compared.
+
+  :returns: True if both strings are equal, False otherwise.
+  """
+
+  ## Like all too-high-level languages, Python sucks for secure coding.
+  ## I'm not even going to try to compare strings in constant time.
+  ## Fortunately, I have HMAC and a random number generator. -- rransom
+  return (hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
+      hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
 
