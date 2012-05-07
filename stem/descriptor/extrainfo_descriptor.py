@@ -18,6 +18,7 @@ Extra-info descriptors are available from a few sources...
 
 parse_file - Iterates over the extra-info descriptors in a file.
 ExtraInfoDescriptor - Tor extra-info descriptor.
+  +- get_unrecognized_lines - lines with unrecognized content
 """
 
 import datetime
@@ -159,6 +160,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.write_history_interval = None
     self.write_history_values = []
     
+    self._unrecognized_lines = []
+    
     entries, first_keyword, last_keyword, _ = \
       stem.descriptor._get_descriptor_components(raw_contents, validate, ())
     
@@ -177,6 +180,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         raise ValueError("Descriptor must end with a '%s' entry" % LAST_FIELD)
     
     self._parse(entries, validate)
+  
+  def get_unrecognized_lines(self):
+    return list(self._unrecognized_lines)
   
   def _parse(self, entries, validate):
     """
@@ -227,4 +233,6 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           raise ValueError("Router signature line must be followed by a signature block: %s" % line)
         
         self.signature = block_contents
+      else:
+        self._unrecognized_lines.append(line)
 
