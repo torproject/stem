@@ -167,7 +167,7 @@ class TestBaseController(unittest.TestCase):
       
       start_time = time.time()
       
-      while (time.time() - start_time) < 2:
+      while (time.time() - start_time) < 3:
         test.runner.exercise_controller(self, controller)
       
       # Concurrently shut down the controller. We need to do this in another
