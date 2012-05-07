@@ -20,6 +20,8 @@ parse_file - Iterates over the extra-info descriptors in a file.
 ExtraInfoDescriptor - Tor extra-info descriptor.
 """
 
+import datetime
+
 import stem.descriptor
 
 # relay descriptors must have exactly one of the following
@@ -105,6 +107,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     fingerprint (str)        - fourty hex digits that make up the relay's fingerprint (*)
     published (datetime.datetime) - time in GMT when the descriptor was generated (*)
     geoip_db_digest (str)    - sha1 of geoIP database file
+    signature (str)          - signature for this extrainfo descriptor (*)
     
     read_history (str)       - read-history line, always unset
     read_history_end (datetime.datetime) - end of the sampling interval
@@ -144,6 +147,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.fingerprint = None
     self.published = None
     self.geoip_db_digest = None
+    self.signature = None
     
     self.read_history = None
     self.read_history_end = None
@@ -210,4 +214,17 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         
         self.nickname = extra_info_comp[0]
         self.fingerprint = extra_info_comp[1]
+      elif keyword == "published":
+        # "published" YYYY-MM-DD HH:MM:SS
+        
+        try:
+          self.published = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+          if validate:
+            raise ValueError("Published line's time wasn't parseable: %s" % line)
+      elif keyword == "router-signature":
+        if validate and not block_contents:
+          raise ValueError("Router signature line must be followed by a signature block: %s" % line)
+        
+        self.signature = block_contents
 
