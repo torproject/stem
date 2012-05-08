@@ -21,6 +21,7 @@ ExtraInfoDescriptor - Tor extra-info descriptor.
   +- get_unrecognized_lines - lines with unrecognized content
 """
 
+import re
 import datetime
 
 import stem.descriptor
@@ -98,6 +99,40 @@ def parse_file(descriptor_file, validate = True):
     if extrainfo_content:
       yield ExtraInfoDescriptor("".join(extrainfo_content), validate)
     else: break # done parsing file
+
+def _parse_timestamp_and_interval(keyword, content):
+  """
+  Parses a 'YYYY-MM-DD HH:MM:SS (NSEC s) *' entry.
+  
+  Arguments:
+    keyword (str) - line's keyword
+    content (str) - line content to be parsed
+  
+  Returns:
+    tuple of the form...
+    (timestamp (datetime), interval (int), remaining content (str))
+  
+  Raises:
+    ValueError if the content is malformed
+  """
+  
+  line = "%s %s" % (keyword, content)
+  content_match = re.match("^(.*) \(([0-9]+) s\)( .*)?$", content)
+  
+  if not content_match:
+    raise ValueError("Malformed %s line: %s" % (keyword, line))
+  
+  timestamp_str, interval, remainder = content_match.groups()
+  if remainder: remainder = remainder[1:] # remove leading space
+  
+  if not interval.isdigit():
+    raise ValueError("%s line's interval wasn't a number: %s" % (keyword, line))
+  
+  try:
+    timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+    return timestamp, int(interval), remainder
+  except ValueError:
+    raise ValueError("%s line's timestamp wasn't parseable: %s" % (keyword, line))
 
 class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   """

@@ -29,6 +29,7 @@ import hashlib
 import datetime
 
 import stem.descriptor
+import stem.descriptor.extrainfo_descriptor
 import stem.version
 import stem.util.connection
 import stem.util.tor_tools
@@ -467,43 +468,31 @@ class ServerDescriptor(stem.descriptor.Descriptor):
       elif keyword == "eventdns":
         self.eventdns = value == "1"
       elif keyword in ("read-history", "write-history"):
-        is_read = keyword == "read-history"
-        
-        if is_read: self.read_history = value
-        else: self.write_history = value
-        
-        value_match = re.match("^(.*) \(([0-9]+) s\) (.*)$", value)
-        
-        if not value_match:
-          if not validate: continue
-          raise ValueError("Malformed %s line: %s" % (keyword, line))
-        
-        end_value, interval_value, history_values = value_match.groups()
-        
         try:
-          end_datetime = datetime.datetime.strptime(end_value, "%Y-%m-%d %H:%M:%S")
+          timestamp, interval, remainder = \
+            stem.descriptor.extrainfo_descriptor._parse_timestamp_and_interval(keyword, value)
           
-          if is_read: self.read_history_end = end_datetime
-          else: self.write_history_end = end_datetime
-        except ValueError:
-          if validate:
-            raise ValueError("%s line's time wasn't parseable: %s" % (keyword, line))
-        
-        if interval_value.isdigit():
-          if is_read: self.read_history_interval = int(interval_value)
-          else: self.write_history_interval = int(interval_value)
-        elif validate:
-          raise ValueError("%s line's interval wasn't a number: %s" % (keyword, line))
-        
-        if history_values != '':
-          for sampling in history_values.split(","):
-            if sampling.isdigit():
-              if is_read: self.read_history_values.append(int(sampling))
-              else: self.write_history_values.append(int(sampling))
+          try:
+            if remainder:
+              history_values = [int(entry) for entry in remainder.split(",")]
             else:
-              if validate:
-                raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
-              else: break
+              history_values = []
+          except ValueError:
+            raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
+          
+          if keyword == "read-history":
+            self.read_history = value
+            self.read_history_end = timestamp
+            self.read_history_interval = interval
+            self.read_history_values = history_values
+          else:
+            self.write_history = value
+            self.write_history_end = timestamp
+            self.write_history_interval = interval
+            self.write_history_values = history_values
+        except ValueError, exc:
+          if not validate: continue
+          else: raise exc
       else:
         self._unrecognized_lines.append(line)
     
