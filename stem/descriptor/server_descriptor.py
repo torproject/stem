@@ -167,12 +167,12 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     observed_bandwidth (int) - estimated capacity of the relay based on usage in bytes/s (*)
     eventdns (bool)          - (deprecated) always unset (*)
     
-    read_history (str)       - (deprecated) read-history line, always unset
+    read_history_line (str)  - (deprecated) bytes read for relayed traffic
     read_history_end (datetime.datetime) - (deprecated) end of the sampling interval
     read_history_interval (int) - (deprecated) seconds per interval
     read_history_values (list) - (deprecated) bytes read during each interval (*)
     
-    write_history (str)      - (deprecated) write-history line, always unset
+    write_history_line (str) - (deprecated) bytes written for relayed traffic
     write_history_end (datetime.datetime) - (deprecated) end of the sampling interval
     write_history_interval (int) - (deprecated) seconds per interval
     write_history_values (list) - (deprecated) bytes written during each interval (*)
@@ -227,12 +227,12 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     self.observed_bandwidth = None
     self.eventdns = True
     
-    self.read_history = None
+    self.read_history_line = None
     self.read_history_end = None
     self.read_history_interval = None
     self.read_history_values = []
     
-    self.write_history = None
+    self.write_history_line = None
     self.write_history_end = None
     self.write_history_interval = None
     self.write_history_values = []
@@ -481,12 +481,12 @@ class ServerDescriptor(stem.descriptor.Descriptor):
             raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
           
           if keyword == "read-history":
-            self.read_history = value
+            self.read_history_line = value
             self.read_history_end = timestamp
             self.read_history_interval = interval
             self.read_history_values = history_values
           else:
-            self.write_history = value
+            self.write_history_line = value
             self.write_history_end = timestamp
             self.write_history_interval = interval
             self.write_history_values = history_values

@@ -134,13 +134,13 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     # the initial contents for the line and parsed values.
     
     read_start = "2005-12-16 18:00:48 (900 s) 20774,489973,510022"
-    self.assertTrue(desc.read_history.startswith(read_start))
+    self.assertTrue(desc.read_history_line.startswith(read_start))
     
     read_values_start = [20774, 489973, 510022, 511163, 20949]
     self.assertEquals(read_values_start, desc.read_history_values[:5])
     
     write_start = "2005-12-16 18:00:48 (900 s) 81,8848,8927,8927"
-    self.assertTrue(desc.write_history.startswith(write_start))
+    self.assertTrue(desc.write_history_line.startswith(write_start))
     
     write_values_start = [81, 8848, 8927, 8927, 83, 8848, 8931, 8929, 81, 8846]
     self.assertEquals(write_values_start, desc.write_history_values[:10])
@@ -164,8 +164,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.server_descriptor.parse_file(descriptor_file):
         # the following attributes should be deprecated, and not appear in the wild
-        self.assertEquals(None, desc.read_history)
-        self.assertEquals(None, desc.write_history)
+        self.assertEquals(None, desc.read_history_line)
+        self.assertEquals(None, desc.write_history_line)
         self.assertEquals(True, desc.eventdns)
         self.assertEquals(0, desc.socks_port)
         

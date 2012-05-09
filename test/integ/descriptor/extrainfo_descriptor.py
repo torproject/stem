@@ -47,13 +47,13 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     # the initial contents for the line and parsed values.
     
     read_start = "2012-05-05 17:02:45 (900 s) 3309568,9216,41984"
-    self.assertTrue(desc.read_history.startswith(read_start))
+    self.assertTrue(desc.read_history_line.startswith(read_start))
     
     read_values_start = [3309568, 9216, 41984, 27648, 123904]
     self.assertEquals(read_values_start, desc.read_history_values[:5])
     
     write_start = "2012-05-05 17:02:45 (900 s) 1082368,19456,50176,272384"
-    self.assertTrue(desc.write_history.startswith(write_start))
+    self.assertTrue(desc.write_history_line.startswith(write_start))
     
     write_values_start = [1082368, 19456, 50176, 272384, 485376]
     self.assertEquals(write_values_start, desc.write_history_values[:5])

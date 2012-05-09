@@ -145,12 +145,12 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     geoip_db_digest (str)    - sha1 of geoIP database file
     signature (str)          - signature for this extrainfo descriptor (*)
     
-    read_history (str)       - read-history line, always unset
+    read_history_line (str)  - bytes read for relayed traffic
     read_history_end (datetime.datetime) - end of the sampling interval
     read_history_interval (int) - seconds per interval
     read_history_values (list) - bytes read during each interval (*)
     
-    write_history (str)      - write-history line, always unset
+    write_history_line (str) - bytes written for relayed traffic
     write_history_end (datetime.datetime) - end of the sampling interval
     write_history_interval (int) - seconds per interval
     write_history_values (list) - bytes written during each interval (*)
@@ -185,12 +185,12 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.geoip_db_digest = None
     self.signature = None
     
-    self.read_history = None
+    self.read_history_line = None
     self.read_history_end = None
     self.read_history_interval = None
     self.read_history_values = []
     
-    self.write_history = None
+    self.write_history_line = None
     self.write_history_end = None
     self.write_history_interval = None
     self.write_history_values = []
@@ -276,12 +276,12 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
           
           if keyword == "read-history":
-            self.read_history = value
+            self.read_history_line = value
             self.read_history_end = timestamp
             self.read_history_interval = interval
             self.read_history_values = history_values
           else:
-            self.write_history = value
+            self.write_history_line = value
             self.write_history_end = timestamp
             self.write_history_interval = interval
             self.write_history_values = history_values
