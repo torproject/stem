@@ -38,12 +38,15 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     self.assertEquals(900, desc.read_history_interval)
     self.assertEquals(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.write_history_end)
     self.assertEquals(900, desc.write_history_interval)
+    self.assertEquals(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.dir_read_history_end)
+    self.assertEquals(900, desc.dir_read_history_interval)
+    self.assertEquals(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.dir_write_history_end)
+    self.assertEquals(900, desc.dir_write_history_interval)
     self.assertEquals(expected_signature, desc.signature)
+    self.assertEquals([], desc.get_unrecognized_lines())
     
-    # TODO: still missing dirreq-read-history and dirreq-write-history
-    #self.assertEquals([], desc.get_unrecognized_lines())
-    
-    # The read-history and write-history lines are pretty long so just checking
+    # The read-history, write-history, dirreq-read-history, and
+    # dirreq-write-history lines are pretty long so just checking
     # the initial contents for the line and parsed values.
     
     read_start = "2012-05-05 17:02:45 (900 s) 3309568,9216,41984"
@@ -57,6 +60,18 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     
     write_values_start = [1082368, 19456, 50176, 272384, 485376]
     self.assertEquals(write_values_start, desc.write_history_values[:5])
+    
+    dir_read_start = "2012-05-05 17:02:45 (900 s) 0,0,0,0,33792,27648,48128"
+    self.assertTrue(desc.dir_read_history_line.startswith(dir_read_start))
+    
+    dir_read_values_start = [0, 0, 0, 0, 33792, 27648, 48128]
+    self.assertEquals(dir_read_values_start, desc.dir_read_history_values[:7])
+    
+    dir_write_start = "2012-05-05 17:02:45 (900 s) 0,0,0,227328,349184"
+    self.assertTrue(desc.dir_write_history_line.startswith(dir_write_start))
+    
+    dir_write_values_start = [0, 0, 0, 227328, 349184, 382976, 738304]
+    self.assertEquals(dir_write_values_start, desc.dir_write_history_values[:7])
   
   def test_cached_descriptor(self):
     """

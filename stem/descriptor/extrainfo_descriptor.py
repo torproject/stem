@@ -155,6 +155,16 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     write_history_interval (int) - seconds per interval
     write_history_values (list) - bytes written during each interval (*)
     
+    dir_read_history_line (str) - bytes read for directory mirroring
+    dir_read_history_end (datetime.datetime) - end of the sampling interval
+    dir_read_history_interval (int) - seconds per interval
+    dir_read_history_values (list) - bytes read during each interval (*)
+    
+    dir_write_history_line (str) - bytes written for directory mirroring
+    dir_write_history_end (datetime.datetime) - end of the sampling interval
+    dir_write_history_interval (int) - seconds per interval
+    dir_write_history_values (list) - bytes read during each interval (*)
+    
     (*) required fields, others are left as None if undefined
   """
   
@@ -194,6 +204,16 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.write_history_end = None
     self.write_history_interval = None
     self.write_history_values = []
+    
+    self.dir_read_history_line = None
+    self.dir_read_history_end = None
+    self.dir_read_history_interval = None
+    self.dir_read_history_values = []
+    
+    self.dir_write_history_line = None
+    self.dir_write_history_end = None
+    self.dir_write_history_interval = None
+    self.dir_write_history_values = []
     
     self._unrecognized_lines = []
     
@@ -263,7 +283,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         except ValueError:
           if validate:
             raise ValueError("Published line's time wasn't parseable: %s" % line)
-      elif keyword in ("read-history", "write-history"):
+      elif keyword in ("read-history", "write-history", "dirreq-read-history", "dirreq-write-history"):
         try:
           timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
           
@@ -280,11 +300,25 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             self.read_history_end = timestamp
             self.read_history_interval = interval
             self.read_history_values = history_values
-          else:
+          elif keyword == "write-history":
             self.write_history_line = value
             self.write_history_end = timestamp
             self.write_history_interval = interval
             self.write_history_values = history_values
+          elif keyword == "dirreq-read-history":
+            self.dir_read_history_line = value
+            self.dir_read_history_end = timestamp
+            self.dir_read_history_interval = interval
+            self.dir_read_history_values = history_values
+          elif keyword == "dirreq-write-history":
+            self.dir_write_history_line = value
+            self.dir_write_history_end = timestamp
+            self.dir_write_history_interval = interval
+            self.dir_write_history_values = history_values
+          else:
+            # not gonna happen unless we change the main loop's conditional
+            # without fixing this one
+            raise ValueError("BUG: unrecognized keyword '%s'" % keyword)
         except ValueError, exc:
           if not validate: continue
           else: raise exc
