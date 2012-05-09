@@ -18,17 +18,6 @@ import test.integ.descriptor
 RAN_CACHED_DESCRIPTOR_TEST = False
 
 class TestServerDescriptor(unittest.TestCase):
-  is_cached_descriptors_available = None
-  
-  def setUp(self):
-    # If this is our first time running the integ tests and we didn't wait for
-    # a full tor initialization then the cached descriptors won't exist yet.
-    # Noting if they exist or not since some tests need them.
-    
-    if self.is_cached_descriptors_available is None:
-      descriptor_path = test.runner.get_runner().get_test_dir("cached-descriptors")
-      self.is_cached_descriptors_available = os.path.exists(descriptor_path)
-  
   def test_metrics_descriptor(self):
     """
     Parses and checks our results against a server descriptor from metrics.
@@ -163,18 +152,15 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     additions.
     """
     
-    descriptor_path = test.runner.get_runner().get_test_dir("cached-descriptors")
-    
-    if not self.is_cached_descriptors_available:
-      self.skipTest("(no cached descriptors)")
-    
     global RAN_CACHED_DESCRIPTOR_TEST
+    descriptor_path = test.runner.get_runner().get_test_dir("cached-descriptors")
     
     if RAN_CACHED_DESCRIPTOR_TEST:
       self.skipTest("(already ran)")
-    else:
-      RAN_CACHED_DESCRIPTOR_TEST = True
+    elif not os.path.exists(descriptor_path):
+      self.skipTest("(no cached descriptors)")
     
+    RAN_CACHED_DESCRIPTOR_TEST = True
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.server_descriptor.parse_file(descriptor_file):
         # the following attributes should be deprecated, and not appear in the wild

@@ -10,19 +10,9 @@ import stem.descriptor.extrainfo_descriptor
 import test.runner
 import test.integ.descriptor
 
-# 'test_cached_descriptor' is a lengthy test and uneffected by testing targets,
-# so including a flag to prevent it from being ran multiple times
-
 RAN_CACHED_DESCRIPTOR_TEST = False
 
 class TestExtraInfoDescriptor(unittest.TestCase):
-  is_cached_descriptors_available = None
-  
-  def setUp(self):
-    if self.is_cached_descriptors_available is None:
-      descriptor_path = test.runner.get_runner().get_test_dir("cached-extrainfo")
-      self.is_cached_descriptors_available = os.path.exists(descriptor_path)
-  
   def test_metrics_descriptor(self):
     """
     Parses and checks our results against an extrainfo descriptor from metrics.
@@ -75,18 +65,15 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     additions.
     """
     
-    descriptor_path = test.runner.get_runner().get_test_dir("cached-extrainfo")
-    
-    if not self.is_cached_descriptors_available:
-      self.skipTest("(no cached descriptors)")
-    
     global RAN_CACHED_DESCRIPTOR_TEST
+    descriptor_path = test.runner.get_runner().get_test_dir("cached-extrainfo")
     
     if RAN_CACHED_DESCRIPTOR_TEST:
       self.skipTest("(already ran)")
-    else:
-      RAN_CACHED_DESCRIPTOR_TEST = True
+    elif not os.path.exists(descriptor_path):
+      self.skipTest("(no cached descriptors)")
     
+    RAN_CACHED_DESCRIPTOR_TEST = True
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.extrainfo_descriptor.parse_file(descriptor_file):
         # TODO: uncomment when we're done implementing the ExtraInfoDescriptor class
