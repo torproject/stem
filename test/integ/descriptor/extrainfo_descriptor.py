@@ -22,8 +22,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
   
   def setUp(self):
     if self.is_cached_descriptors_available is None:
-      test_dir = test.runner.get_runner().get_test_dir()
-      descriptor_path = os.path.join(test_dir, "cached-extrainfo")
+      descriptor_path = test.runner.get_runner().get_test_dir("cached-extrainfo")
       self.is_cached_descriptors_available = os.path.exists(descriptor_path)
   
   def test_metrics_descriptor(self):
@@ -78,7 +77,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     additions.
     """
     
-    descriptor_path = os.path.join(test.runner.get_runner().get_test_dir(), "cached-extrainfo")
+    descriptor_path = test.runner.get_runner().get_test_dir("cached-extrainfo")
     
     if not self.is_cached_descriptors_available:
       self.skipTest("(no cached descriptors)")

@@ -28,8 +28,7 @@ class TestServerDescriptor(unittest.TestCase):
     # Noting if they exist or not since some tests need them.
     
     if self.is_cached_descriptors_available is None:
-      test_dir = test.runner.get_runner().get_test_dir()
-      descriptor_path = os.path.join(test_dir, "cached-descriptors")
+      descriptor_path = test.runner.get_runner().get_test_dir("cached-descriptors")
       self.is_cached_descriptors_available = os.path.exists(descriptor_path)
   
   def test_metrics_descriptor(self):
@@ -166,7 +165,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     additions.
     """
     
-    descriptor_path = os.path.join(test.runner.get_runner().get_test_dir(), "cached-descriptors")
+    descriptor_path = test.runner.get_runner().get_test_dir("cached-descriptors")
     
     if not self.is_cached_descriptors_available:
       self.skipTest("(no cached descriptors)")

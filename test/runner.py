@@ -346,18 +346,24 @@ class Runner:
     
     return self._custom_opts
   
-  def get_test_dir(self):
+  def get_test_dir(self, resource = None):
     """
-    Provides the absolute path for our testing directory.
+    Provides the absolute path for our testing directory or a file within it.
+    
+    Arguments:
+      resource (str) - file within our test directory to provide the path for
     
     Returns:
-      str with our test direcectory path
+      str with our test direcectory's absolute path or that of a file within it
     
     Raises:
       RunnerStopped if we aren't running
     """
     
-    return self._get("_test_dir")
+    if resource:
+      return os.path.join(self._get("_test_dir"), resource)
+    else:
+      return self._get("_test_dir")
   
   def get_torrc_path(self):
     """
