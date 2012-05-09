@@ -63,6 +63,7 @@ ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
 BASE_TORRC = """# configuration for stem integration tests
 DataDirectory %s
 SocksPort 0
+DownloadExtraInfo 1
 """
 
 # We make some paths relative to stem's base directory (the one above us)

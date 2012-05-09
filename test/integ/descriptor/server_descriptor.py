@@ -20,17 +20,17 @@ DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
 RAN_CACHED_DESCRIPTOR_TEST = False
 
 class TestServerDescriptor(unittest.TestCase):
-  is_descriptors_available = None
+  is_cached_descriptors_available = None
   
   def setUp(self):
     # If this is our first time running the integ tests and we didn't wait for
     # a full tor initialization then the cached descriptors won't exist yet.
     # Noting if they exist or not since some tests need them.
     
-    if self.is_descriptors_available is None:
+    if self.is_cached_descriptors_available is None:
       test_dir = test.runner.get_runner().get_test_dir()
       descriptor_path = os.path.join(test_dir, "cached-descriptors")
-      self.is_descriptors_available = os.path.exists(descriptor_path)
+      self.is_cached_descriptors_available = os.path.exists(descriptor_path)
   
   def test_metrics_descriptor(self):
     """
@@ -42,8 +42,6 @@ class TestServerDescriptor(unittest.TestCase):
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
-    
-    expected_published = datetime.datetime(2012, 3, 1, 17, 15, 27)
     
     expected_family = [
       "$0CE3CFB1E9CC47B63EA8869813BF6FAB7D4540C1",
@@ -85,7 +83,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(stem.version.Version("0.2.1.30"), desc.tor_version)
     self.assertEquals("Linux x86_64", desc.operating_system)
     self.assertEquals(588217, desc.uptime)
-    self.assertEquals(expected_published, desc.published)
+    self.assertEquals(datetime.datetime(2012, 3, 1, 17, 15, 27), desc.published)
     self.assertEquals("www.atagar.com/contact", desc.contact)
     self.assertEquals(["1", "2"], desc.link_protocols)
     self.assertEquals(["1"], desc.circuit_protocols)
@@ -170,7 +168,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     
     descriptor_path = os.path.join(test.runner.get_runner().get_test_dir(), "cached-descriptors")
     
-    if not self.is_descriptors_available:
+    if not self.is_cached_descriptors_available:
       self.skipTest("(no cached descriptors)")
     
     global RAN_CACHED_DESCRIPTOR_TEST
@@ -211,7 +209,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
-    expected_published = datetime.datetime(2012, 3, 21, 16, 28, 14)
     expected_contact = "2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf"
     
     desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
@@ -225,7 +222,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(stem.version.Version("0.2.2.35"), desc.tor_version)
     self.assertEquals("Linux x86_64", desc.operating_system)
     self.assertEquals(3103848, desc.uptime)
-    self.assertEquals(expected_published, desc.published)
+    self.assertEquals(datetime.datetime(2012, 3, 21, 16, 28, 14), desc.published)
     self.assertEquals(expected_contact, desc.contact)
     self.assertEquals(["1", "2"], desc.link_protocols)
     self.assertEquals(["1"], desc.circuit_protocols)
@@ -303,8 +300,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
-    expected_published = datetime.datetime(2012, 3, 22, 17, 34, 38)
-    
     expected_family = [
       "$CE396C72A3D0880F74C064FEA79D68C15BD380B9",
       "$AB8B00C00B1347BA80A88E548FAC9EDF701D7D0E",
@@ -322,7 +317,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(stem.version.Version("0.2.3.12-alpha"), desc.tor_version)
     self.assertEquals("Linux x86_64", desc.operating_system)
     self.assertEquals(186, desc.uptime)
-    self.assertEquals(expected_published, desc.published)
+    self.assertEquals(datetime.datetime(2012, 3, 22, 17, 34, 38), desc.published)
     self.assertEquals("somebody", desc.contact)
     self.assertEquals(["1", "2"], desc.link_protocols)
     self.assertEquals(["1"], desc.circuit_protocols)
