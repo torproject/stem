@@ -263,6 +263,31 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         except ValueError:
           if validate:
             raise ValueError("Published line's time wasn't parseable: %s" % line)
+      elif keyword in ("read-history", "write-history"):
+        try:
+          timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
+          
+          try:
+            if remainder:
+              history_values = [int(entry) for entry in remainder.split(",")]
+            else:
+              history_values = []
+          except ValueError:
+            raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
+          
+          if keyword == "read-history":
+            self.read_history = value
+            self.read_history_end = timestamp
+            self.read_history_interval = interval
+            self.read_history_values = history_values
+          else:
+            self.write_history = value
+            self.write_history_end = timestamp
+            self.write_history_interval = interval
+            self.write_history_values = history_values
+        except ValueError, exc:
+          if not validate: continue
+          else: raise exc
       elif keyword == "router-signature":
         if validate and not block_contents:
           raise ValueError("Router signature line must be followed by a signature block: %s" % line)
