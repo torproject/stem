@@ -8,9 +8,7 @@ import unittest
 
 import stem.descriptor.extrainfo_descriptor
 import test.runner
-
-my_dir = os.path.dirname(__file__)
-DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
+import test.integ.descriptor
 
 # 'test_cached_descriptor' is a lengthy test and uneffected by testing targets,
 # so including a flag to prevent it from being ran multiple times
@@ -30,7 +28,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     Parses and checks our results against an extrainfo descriptor from metrics.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "extrainfo_descriptor")
+    descriptor_path = test.integ.descriptor.get_resource("extrainfo_descriptor")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()

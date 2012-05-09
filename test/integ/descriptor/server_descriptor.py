@@ -10,9 +10,7 @@ import stem.control
 import stem.version
 import stem.descriptor.server_descriptor
 import test.runner
-
-my_dir = os.path.dirname(__file__)
-DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
+import test.integ.descriptor
 
 # 'test_cached_descriptor' is a lengthy test and uneffected by testing targets,
 # so including a flag to prevent it from being ran multiple times
@@ -36,7 +34,7 @@ class TestServerDescriptor(unittest.TestCase):
     Parses and checks our results against a server descriptor from metrics.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    descriptor_path = test.integ.descriptor.get_resource("example_descriptor")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
@@ -107,7 +105,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a relay server descriptor from 2005.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "old_descriptor")
+    descriptor_path = test.integ.descriptor.get_resource("old_descriptor")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
@@ -202,7 +200,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a descriptor with non-ascii content.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "non-ascii_descriptor")
+    descriptor_path = test.integ.descriptor.get_resource("non-ascii_descriptor")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
@@ -243,7 +241,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     returns ('\r' entries).
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "cr_in_contact_line")
+    descriptor_path = test.integ.descriptor.get_resource("cr_in_contact_line")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
@@ -270,7 +268,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     where we shouldn't be.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "negative_uptime")
+    descriptor_path = test.integ.descriptor.get_resource("negative_uptime")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
@@ -293,7 +291,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a bridge descriptor.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "bridge_descriptor")
+    descriptor_path = test.integ.descriptor.get_resource("bridge_descriptor")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
