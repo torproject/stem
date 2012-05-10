@@ -491,8 +491,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
             self.write_history_interval = interval
             self.write_history_values = history_values
         except ValueError, exc:
-          if not validate: continue
-          else: raise exc
+          if validate: raise exc
       else:
         self._unrecognized_lines.append(line)
     

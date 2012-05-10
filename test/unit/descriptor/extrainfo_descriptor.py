@@ -2,6 +2,7 @@
 Unit tests for stem.descriptor.extrainfo_descriptor.
 """
 
+import datetime
 import unittest
 from stem.descriptor.extrainfo_descriptor import ExtraInfoDescriptor
 
@@ -110,18 +111,13 @@ class TestExtraInfoDescriptor(unittest.TestCase):
   
   def test_geoip_db_digest(self):
     """
-    Parses a geoip-db-digest line with valid data.
+    Parses the geoip-db-digest line with valid and invalid data.
     """
     
     geoip_db_digest = "916A3CA8B7DF61473D5AE5B21711F35F301CE9E8"
     desc_text = _make_descriptor({"geoip-db-digest": geoip_db_digest})
     desc = ExtraInfoDescriptor(desc_text)
     self.assertEquals(geoip_db_digest, desc.geoip_db_digest)
-  
-  def test_geoip_db_digest_invalid(self):
-    """
-    Parses the geoip-db-digest line with a variety of bad input.
-    """
     
     test_entry = (
       "",
@@ -134,6 +130,79 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     for entry in test_entry:
       desc_text = _make_descriptor({"geoip-db-digest": entry})
       desc = self._expect_invalid_attr(desc_text, "geoip_db_digest", entry)
+  
+  def test_geoip_start_time(self):
+    """
+    Parses the geoip-start-time line with valid and invalid data.
+    """
+    
+    desc_text = _make_descriptor({"geoip-start-time": "2012-05-03 12:07:50"})
+    desc = ExtraInfoDescriptor(desc_text)
+    self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.geoip_start_time)
+    
+    test_entry = (
+      "",
+      "2012-05-03 12:07:60",
+      "2012-05-03 ",
+      "2012-05-03",
+    )
+    
+    for entry in test_entry:
+      desc_text = _make_descriptor({"geoip-start-time": entry})
+      desc = self._expect_invalid_attr(desc_text, "geoip_start_time")
+  
+  def test_bridge_stats_end(self):
+    """
+    Parses the bridge-stats-end line with valid and invalid data.
+    """
+    
+    desc_text = _make_descriptor({"bridge-stats-end": "2012-05-03 12:07:50 (500 s)"})
+    desc = ExtraInfoDescriptor(desc_text)
+    self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.bridge_stats_end)
+    self.assertEquals(500, desc.bridge_stats_end_interval)
+    
+    test_entry = (
+      "",
+      "2012-05-03 12:07:60 (500 s)",
+      "2012-05-03 12:07:50 (500s)",
+      "2012-05-03 12:07:50 (500 s",
+      "2012-05-03 12:07:50 (500 )",
+      "2012-05-03 ",
+      "2012-05-03",
+    )
+    
+    for entry in test_entry:
+      desc_text = _make_descriptor({"bridge-stats-end": entry})
+      desc = self._expect_invalid_attr(desc_text, "bridge_stats_end")
+  
+  def test_bridge_ips(self):
+    """
+    Parses both the bridge-ips and geoip-client-origins lines with valid and
+    invalid data.
+    """
+    
+    # Testing both attributes since they contain the exact same data,
+    # geoip-client-origins was simply replaced by bridge-ips while adding an
+    # interval value for the period.
+    
+    for keyword in ('bridge-ips', 'geoip-client-origins'):
+      attr = keyword.replace('-', '_')
+      
+      desc_text = _make_descriptor({keyword: "uk=5,de=3,jp=2"})
+      desc = ExtraInfoDescriptor(desc_text)
+      self.assertEquals({'uk': 5, 'de': 3, 'jp': 2}, getattr(desc, attr))
+      
+      test_entry = (
+        "",
+        "uk=-4",
+        "uki=4",
+        "uk:4",
+        "uk=4.de=3",
+      )
+      
+      for entry in test_entry:
+        desc_text = _make_descriptor({keyword: entry})
+        desc = self._expect_invalid_attr(desc_text, attr, {})
   
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
     """

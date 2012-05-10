@@ -165,6 +165,16 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     dir_write_history_interval (int) - seconds per interval
     dir_write_history_values (list) - bytes read during each interval (*)
     
+  Bridge-only Attributes:
+    bridge_stats_end (datetime.datetime) - end of the period when geoip
+        statistics were gathered
+    bridge_stats_end_interval (int) - length in seconds of th interval where
+        stats were gathered
+    bridge_ips (dict) - mapping of country codes to a rounded number of unique
+        ips from that region
+    geoip_start_time (datetime.datetime) - replaced by bridge_stats_end
+    geoip_client_origins (dict) - replaced by bridge_ips
+    
     (*) required fields, others are left as None if undefined
   """
   
@@ -214,6 +224,12 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.dir_write_history_end = None
     self.dir_write_history_interval = None
     self.dir_write_history_values = []
+    
+    self.bridge_stats_end = None
+    self.bridge_stats_end_interval = None
+    self.bridge_ips = None
+    self.geoip_start_time = None
+    self.geoip_client_origins = None
     
     self._unrecognized_lines = []
     
@@ -290,6 +306,45 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           raise ValueError("Geoip digest line had an invalid sha1 digest: %s" % line)
         
         self.geoip_db_digest = value
+      elif keyword == "geoip-start-time":
+        # "geoip-start-time" YYYY-MM-DD HH:MM:SS
+        
+        try:
+          self.geoip_start_time = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+          if validate:
+            raise ValueError("Geoip start time line's time wasn't parseable: %s" % line)
+      elif keyword == "bridge-stats-end":
+        # "bridge-stats-end" YYYY-MM-DD HH:MM:SS (NSEC s)
+        
+        try:
+          timestamp, interval, _ = _parse_timestamp_and_interval(keyword, value)
+          self.bridge_stats_end = timestamp
+          self.bridge_stats_end_interval = interval
+        except ValueError, exc:
+          if validate: raise exc
+      elif keyword in ("geoip-client-origins", "bridge-ips"):
+        # "geoip-client-origins" CC=N,CC=N,...
+        
+        locale_usage = {}
+        error_msg = "Entries in %s line should only be CC=N entries: %s" % (keyword, line)
+        
+        for entry in value.split(","):
+          if not "=" in entry:
+            if validate: raise ValueError(error_msg)
+            else: continue
+          
+          locale, count = entry.split("=", 1)
+          
+          if re.match("^[a-zA-Z]{2}$", locale) and count.isdigit():
+            locale_usage[locale] = int(count)
+          elif validate:
+            raise ValueError(error_msg)
+        
+        if keyword == "geoip-client-origins":
+          self.geoip_client_origins = locale_usage
+        elif keyword == "bridge-ips":
+          self.bridge_ips = locale_usage
       elif keyword in ("read-history", "write-history", "dirreq-read-history", "dirreq-write-history"):
         try:
           timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
@@ -327,8 +382,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             # without fixing this one
             raise ValueError("BUG: unrecognized keyword '%s'" % keyword)
         except ValueError, exc:
-          if not validate: continue
-          else: raise exc
+          if validate: raise exc
       elif keyword == "router-signature":
         if validate and not block_contents:
           raise ValueError("Router signature line must be followed by a signature block: %s" % line)
