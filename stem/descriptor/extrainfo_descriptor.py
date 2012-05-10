@@ -283,6 +283,13 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         except ValueError:
           if validate:
             raise ValueError("Published line's time wasn't parseable: %s" % line)
+      elif keyword == "geoip-db-digest":
+        # "geoip-db-digest" Digest
+        
+        if validate and not re.match("^[0-9a-fA-F]{40}$", value):
+          raise ValueError("Geoip digest line had an invalid sha1 digest: %s" % line)
+        
+        self.geoip_db_digest = value
       elif keyword in ("read-history", "write-history", "dirreq-read-history", "dirreq-write-history"):
         try:
           timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)

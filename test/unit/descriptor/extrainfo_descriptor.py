@@ -108,6 +108,33 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       self.assertEquals(None, desc.nickname)
       self.assertEquals(None, desc.fingerprint)
   
+  def test_geoip_db_digest(self):
+    """
+    Parses a geoip-db-digest line with valid data.
+    """
+    
+    geoip_db_digest = "916A3CA8B7DF61473D5AE5B21711F35F301CE9E8"
+    desc_text = _make_descriptor({"geoip-db-digest": geoip_db_digest})
+    desc = ExtraInfoDescriptor(desc_text)
+    self.assertEquals(geoip_db_digest, desc.geoip_db_digest)
+  
+  def test_geoip_db_digest_invalid(self):
+    """
+    Parses the geoip-db-digest line with a variety of bad input.
+    """
+    
+    test_entry = (
+      "",
+      "916A3CA8B7DF61473D5AE5B21711F35F301CE9E",
+      "916A3CA8B7DF61473D5AE5B21711F35F301CE9E88",
+      "916A3CA8B7DF61473D5AE5B21711F35F301CE9EG",
+      "916A3CA8B7DF61473D5AE5B21711F35F301CE9E-",
+    )
+    
+    for entry in test_entry:
+      desc_text = _make_descriptor({"geoip-db-digest": entry})
+      desc = self._expect_invalid_attr(desc_text, "geoip_db_digest", entry)
+  
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
     """
     Asserts that construction will fail due to desc_text having a malformed
