@@ -263,7 +263,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         # "extra-info" Nickname Fingerprint
         extra_info_comp = value.split()
         
-        if len(extra_info_comp) != 2:
+        if len(extra_info_comp) < 2:
           if not validate: continue
           raise ValueError("Extra-info line must have two values: %s" % line)
         
