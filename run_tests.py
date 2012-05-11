@@ -37,6 +37,7 @@ import test.integ.descriptor.reader
 import test.integ.descriptor.server_descriptor
 import test.integ.util.conf
 import test.integ.util.system
+import test.integ.process
 import test.integ.version
 
 import stem.util.conf
@@ -106,6 +107,7 @@ INTEG_TESTS = (
   test.integ.descriptor.reader.TestDescriptorReader,
   test.integ.descriptor.server_descriptor.TestServerDescriptor,
   test.integ.version.TestVersion,
+  test.integ.process.TestProcess,
   test.integ.socket.control_socket.TestControlSocket,
   test.integ.socket.control_message.TestControlMessage,
   test.integ.connection.protocolinfo.TestProtocolInfo,
