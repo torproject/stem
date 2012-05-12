@@ -151,29 +151,36 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       desc_text = _make_descriptor({"geoip-start-time": entry})
       desc = self._expect_invalid_attr(desc_text, "geoip_start_time")
   
-  def test_bridge_stats_end(self):
+  def test_stats_end(self):
     """
-    Parses the bridge-stats-end line with valid and invalid data.
+    Parses the bridge-stats-end and dirreq-stats-end lines with valid and
+    invalid data.
     """
     
-    desc_text = _make_descriptor({"bridge-stats-end": "2012-05-03 12:07:50 (500 s)"})
-    desc = ExtraInfoDescriptor(desc_text)
-    self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.bridge_stats_end)
-    self.assertEquals(500, desc.bridge_stats_end_interval)
-    
-    test_entry = (
-      "",
-      "2012-05-03 12:07:60 (500 s)",
-      "2012-05-03 12:07:50 (500s)",
-      "2012-05-03 12:07:50 (500 s",
-      "2012-05-03 12:07:50 (500 )",
-      "2012-05-03 ",
-      "2012-05-03",
-    )
-    
-    for entry in test_entry:
-      desc_text = _make_descriptor({"bridge-stats-end": entry})
-      desc = self._expect_invalid_attr(desc_text, "bridge_stats_end")
+    for keyword in ('bridge-stats-end', 'dirreq-stats-end'):
+      end_attr = keyword.replace('-', '_')
+      interval_attr = end_attr[:-4] + "_interval"
+      
+      desc_text = _make_descriptor({keyword: "2012-05-03 12:07:50 (500 s)"})
+      desc = ExtraInfoDescriptor(desc_text)
+      self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
+      self.assertEquals(500, getattr(desc, interval_attr))
+      
+      test_entry = (
+        "",
+        "2012-05-03 12:07:60 (500 s)",
+        "2012-05-03 12:07:50 (500s)",
+        "2012-05-03 12:07:50 (500 s",
+        "2012-05-03 12:07:50 (500 )",
+        "2012-05-03 ",
+        "2012-05-03",
+      )
+      
+      for entry in test_entry:
+        desc_text = _make_descriptor({keyword: entry})
+        desc = self._expect_invalid_attr(desc_text)
+        self.assertEquals(None, getattr(desc, end_attr))
+        self.assertEquals(None, getattr(desc, interval_attr))
   
   def test_bridge_ips(self):
     """

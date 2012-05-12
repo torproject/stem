@@ -154,6 +154,12 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     write_history_end (datetime.datetime) - end of the sampling interval
     write_history_interval (int) - seconds per interval
     write_history_values (list) - bytes written during each interval (*)
+  
+  Directory Mirror Attributes:
+    dirreq_stats_end (datetime.datetime) - end of the period where directory
+        mirroring stats were gathered
+    dirreq_stats_interval (int) - length in seconds of the interval where
+        directory stats were gathered
     
     dir_read_history_line (str) - bytes read for directory mirroring
     dir_read_history_end (datetime.datetime) - end of the sampling interval
@@ -164,18 +170,18 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     dir_write_history_end (datetime.datetime) - end of the sampling interval
     dir_write_history_interval (int) - seconds per interval
     dir_write_history_values (list) - bytes read during each interval (*)
-    
-  Bridge-only Attributes:
+  
+  Bridge Attributes:
     bridge_stats_end (datetime.datetime) - end of the period when geoip
         statistics were gathered
-    bridge_stats_end_interval (int) - length in seconds of th interval where
+    bridge_stats_interval (int) - length in seconds of the interval where
         stats were gathered
     bridge_ips (dict) - mapping of country codes to a rounded number of unique
         ips from that region
     geoip_start_time (datetime.datetime) - replaced by bridge_stats_end
     geoip_client_origins (dict) - replaced by bridge_ips
-    
-    (*) required fields, others are left as None if undefined
+  
+  (*) required fields, others are left as None if undefined
   """
   
   def __init__(self, raw_contents, validate = True, annotations = None):
@@ -215,6 +221,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.write_history_interval = None
     self.write_history_values = []
     
+    self.dirreq_stats_end = None
+    self.dirreq_stats_interval = None
+    
     self.dir_read_history_line = None
     self.dir_read_history_end = None
     self.dir_read_history_interval = None
@@ -226,7 +235,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.dir_write_history_values = []
     
     self.bridge_stats_end = None
-    self.bridge_stats_end_interval = None
+    self.bridge_stats_interval = None
     self.bridge_ips = None
     self.geoip_start_time = None
     self.geoip_client_origins = None
@@ -320,7 +329,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         try:
           timestamp, interval, _ = _parse_timestamp_and_interval(keyword, value)
           self.bridge_stats_end = timestamp
-          self.bridge_stats_end_interval = interval
+          self.bridge_stats_interval = interval
         except ValueError, exc:
           if validate: raise exc
       elif keyword in ("geoip-client-origins", "bridge-ips"):
@@ -345,6 +354,15 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           self.geoip_client_origins = locale_usage
         elif keyword == "bridge-ips":
           self.bridge_ips = locale_usage
+      elif keyword == "dirreq-stats-end":
+        # "dirreq-stats-end" YYYY-MM-DD HH:MM:SS (NSEC s)
+        
+        try:
+          timestamp, interval, _ = _parse_timestamp_and_interval(keyword, value)
+          self.dirreq_stats_end = timestamp
+          self.dirreq_stats_interval = interval
+        except ValueError, exc:
+          if validate: raise exc
       elif keyword in ("read-history", "write-history", "dirreq-read-history", "dirreq-write-history"):
         try:
           timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
