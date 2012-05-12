@@ -235,19 +235,16 @@ class TestServerDescriptor(unittest.TestCase):
       desc = RelayDescriptor(desc_text)
       
       if field == "read-history":
-        attr = (desc.read_history_line, desc.read_history_end,
-          desc.read_history_interval, desc.read_history_values)
+        attr = (desc.read_history_end, desc.read_history_interval, desc.read_history_values)
       else:
-        attr = (desc.write_history_line, desc.write_history_end,
-          desc.write_history_interval, desc.write_history_values)
+        attr = (desc.write_history_end, desc.write_history_interval, desc.write_history_values)
       
       expected_end = datetime.datetime(2005, 12, 16, 18, 0, 48)
       expected_values = [81, 8848, 8927, 8927, 83, 8848]
       
-      self.assertEquals(value, attr[0])
-      self.assertEquals(expected_end, attr[1])
-      self.assertEquals(900, attr[2])
-      self.assertEquals(expected_values, attr[3])
+      self.assertEquals(expected_end, attr[0])
+      self.assertEquals(900, attr[1])
+      self.assertEquals(expected_values, attr[2])
   
   def test_read_history_empty(self):
     """
@@ -257,7 +254,6 @@ class TestServerDescriptor(unittest.TestCase):
     value = "2005-12-17 01:23:11 (900 s) "
     desc_text = _make_descriptor({"opt read-history": value})
     desc = RelayDescriptor(desc_text)
-    self.assertEquals(value, desc.read_history_line)
     self.assertEquals(datetime.datetime(2005, 12, 17, 1, 23, 11), desc.read_history_end)
     self.assertEquals(900, desc.read_history_interval)
     self.assertEquals([], desc.read_history_values)

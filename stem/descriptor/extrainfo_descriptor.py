@@ -145,15 +145,14 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     geoip_db_digest (str)    - sha1 of geoIP database file
     signature (str)          - signature for this extrainfo descriptor (*)
     
-    read_history_line (str)  - bytes read for relayed traffic
-    read_history_end (datetime.datetime) - end of the sampling interval
-    read_history_interval (int) - seconds per interval
-    read_history_values (list) - bytes read during each interval (*)
-    
-    write_history_line (str) - bytes written for relayed traffic
-    write_history_end (datetime.datetime) - end of the sampling interval
-    write_history_interval (int) - seconds per interval
-    write_history_values (list) - bytes written during each interval (*)
+    Bytes read/written for relayed traffic
+      read_history_end (datetime.datetime) - end of the sampling interval
+      read_history_interval (int) - seconds per interval
+      read_history_values (list) - bytes read during each interval (*)
+      
+      write_history_end (datetime.datetime) - end of the sampling interval
+      write_history_interval (int) - seconds per interval
+      write_history_values (list) - bytes written during each interval (*)
   
   Directory Mirror Attributes:
     dirreq_stats_end (datetime.datetime) - end of the period where directory
@@ -161,12 +160,11 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     dirreq_stats_interval (int) - length in seconds of the interval where
         directory stats were gathered
     
-    dir_read_history_line (str) - bytes read for directory mirroring
-    dir_read_history_end (datetime.datetime) - end of the sampling interval
-    dir_read_history_interval (int) - seconds per interval
-    dir_read_history_values (list) - bytes read during each interval (*)
-    
-    dir_write_history_line (str) - bytes written for directory mirroring
+    Bytes read/written for directory mirroring
+      dir_read_history_end (datetime.datetime) - end of the sampling interval
+      dir_read_history_interval (int) - seconds per interval
+      dir_read_history_values (list) - bytes read during each interval (*)
+      
     dir_write_history_end (datetime.datetime) - end of the sampling interval
     dir_write_history_interval (int) - seconds per interval
     dir_write_history_values (list) - bytes read during each interval (*)
@@ -211,12 +209,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.geoip_db_digest = None
     self.signature = None
     
-    self.read_history_line = None
     self.read_history_end = None
     self.read_history_interval = None
     self.read_history_values = []
     
-    self.write_history_line = None
     self.write_history_end = None
     self.write_history_interval = None
     self.write_history_values = []
@@ -224,12 +220,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.dirreq_stats_end = None
     self.dirreq_stats_interval = None
     
-    self.dir_read_history_line = None
     self.dir_read_history_end = None
     self.dir_read_history_interval = None
     self.dir_read_history_values = []
     
-    self.dir_write_history_line = None
     self.dir_write_history_end = None
     self.dir_write_history_interval = None
     self.dir_write_history_values = []
@@ -376,22 +370,18 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
           
           if keyword == "read-history":
-            self.read_history_line = value
             self.read_history_end = timestamp
             self.read_history_interval = interval
             self.read_history_values = history_values
           elif keyword == "write-history":
-            self.write_history_line = value
             self.write_history_end = timestamp
             self.write_history_interval = interval
             self.write_history_values = history_values
           elif keyword == "dirreq-read-history":
-            self.dir_read_history_line = value
             self.dir_read_history_end = timestamp
             self.dir_read_history_interval = interval
             self.dir_read_history_values = history_values
           elif keyword == "dirreq-write-history":
-            self.dir_write_history_line = value
             self.dir_write_history_end = timestamp
             self.dir_write_history_interval = interval
             self.dir_write_history_values = history_values
