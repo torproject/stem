@@ -159,6 +159,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       dir_stats_interval (int) - length in seconds of the interval
       dir_v2_ips (dict) - mapping of locales to rounded count of requester ips
       dir_v3_ips (dict) - mapping of locales to rounded count of requester ips
+      dir_v2_reqs (dict) - mapping of locales to rounded count of requests
+      dir_v3_reqs (dict) - mapping of locales to rounded count of requests
       
       Bytes read/written for directory mirroring
         dir_read_history_end (datetime) - end of the sampling interval
@@ -219,6 +221,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.dir_stats_interval = None
     self.dir_v2_ips = None
     self.dir_v3_ips = None
+    self.dir_v2_reqs = None
+    self.dir_v3_reqs = None
     
     self.dir_read_history_end = None
     self.dir_read_history_interval = None
@@ -358,7 +362,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             self.dir_write_history_values = history_values
         except ValueError, exc:
           if validate: raise exc
-      elif keyword in ("dirreq-v2-ips", "dirreq-v3-ips", "geoip-client-origins", "bridge-ips"):
+      elif keyword in ("dirreq-v2-ips", "dirreq-v3-ips", "dirreq-v2-reqs", "dirreq-v3-reqs", "geoip-client-origins", "bridge-ips"):
         # "<keyword>" CC=N,CC=N,...
         
         locale_usage = {}
@@ -391,6 +395,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           self.dir_v2_ips = locale_usage
         elif keyword == "dirreq-v3-ips":
           self.dir_v3_ips = locale_usage
+        elif keyword == "dirreq-v2-reqs":
+          self.dir_v2_reqs = locale_usage
+        elif keyword == "dirreq-v3-reqs":
+          self.dir_v3_reqs = locale_usage
         elif keyword == "geoip-client-origins":
           self.geoip_client_origins = locale_usage
         elif keyword == "bridge-ips":

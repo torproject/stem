@@ -235,7 +235,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     "<keyword>" CC=N,CC=N,...
     """
     
-    for keyword in ('dirreq-v2-ips', 'dirreq-v3-ips', 'geoip-client-origins', 'bridge-ips'):
+    for keyword in ('dirreq-v2-ips', 'dirreq-v3-ips', 'dirreq-v2-reqs', 'dirreq-v3-reqs', 'geoip-client-origins', 'bridge-ips'):
       attr = keyword.replace('-', '_').replace('dirreq', 'dir')
       
       test_entries = (
