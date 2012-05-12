@@ -96,14 +96,14 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     None.
     """
     
-    test_entry = (
+    test_entries = (
       "ninja",
       "ninja ",
       "B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48",
       " B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48",
     )
     
-    for entry in test_entry:
+    for entry in test_entries:
       desc_text = _make_descriptor({"extra-info": entry})
       desc = self._expect_invalid_attr(desc_text, "nickname")
       self.assertEquals(None, desc.nickname)
@@ -119,7 +119,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     desc = ExtraInfoDescriptor(desc_text)
     self.assertEquals(geoip_db_digest, desc.geoip_db_digest)
     
-    test_entry = (
+    test_entries = (
       "",
       "916A3CA8B7DF61473D5AE5B21711F35F301CE9E",
       "916A3CA8B7DF61473D5AE5B21711F35F301CE9E88",
@@ -127,38 +127,42 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       "916A3CA8B7DF61473D5AE5B21711F35F301CE9E-",
     )
     
-    for entry in test_entry:
+    for entry in test_entries:
       desc_text = _make_descriptor({"geoip-db-digest": entry})
       desc = self._expect_invalid_attr(desc_text, "geoip_db_digest", entry)
   
-  def test_geoip_start_time(self):
+  def test_timestamp_lines(self):
     """
-    Parses the geoip-start-time line with valid and invalid data.
+    Uses valid and invalid data to tests lines of the form...
+    "<keyword>" YYYY-MM-DD HH:MM:SS
     """
     
-    desc_text = _make_descriptor({"geoip-start-time": "2012-05-03 12:07:50"})
-    desc = ExtraInfoDescriptor(desc_text)
-    self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.geoip_start_time)
-    
-    test_entry = (
-      "",
-      "2012-05-03 12:07:60",
-      "2012-05-03 ",
-      "2012-05-03",
-    )
-    
-    for entry in test_entry:
-      desc_text = _make_descriptor({"geoip-start-time": entry})
-      desc = self._expect_invalid_attr(desc_text, "geoip_start_time")
+    for keyword in ('published', 'geoip-start-time'):
+      attr = keyword.replace('-', '_')
+      
+      desc_text = _make_descriptor({keyword: "2012-05-03 12:07:50"})
+      desc = ExtraInfoDescriptor(desc_text)
+      self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, attr))
+      
+      test_entries = (
+        "",
+        "2012-05-03 12:07:60",
+        "2012-05-03 ",
+        "2012-05-03",
+      )
+      
+      for entry in test_entries:
+        desc_text = _make_descriptor({keyword: entry})
+        self._expect_invalid_attr(desc_text, attr)
   
-  def test_stats_end(self):
+  def test_timestamp_and_interval_lines(self):
     """
-    Parses the bridge-stats-end and dirreq-stats-end lines with valid and
-    invalid data.
+    Uses valid and invalid data to tests lines of the form...
+    "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
     """
     
     for keyword in ('bridge-stats-end', 'dirreq-stats-end'):
-      end_attr = keyword.replace('-', '_')
+      end_attr = keyword.replace('-', '_').replace('dirreq', 'dir')
       interval_attr = end_attr[:-4] + "_interval"
       
       desc_text = _make_descriptor({keyword: "2012-05-03 12:07:50 (500 s)"})
@@ -166,48 +170,92 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
       self.assertEquals(500, getattr(desc, interval_attr))
       
-      test_entry = (
+      test_entries = (
         "",
+        "2012-05-03 ",
+        "2012-05-03",
         "2012-05-03 12:07:60 (500 s)",
         "2012-05-03 12:07:50 (500s)",
         "2012-05-03 12:07:50 (500 s",
         "2012-05-03 12:07:50 (500 )",
-        "2012-05-03 ",
-        "2012-05-03",
       )
       
-      for entry in test_entry:
+      for entry in test_entries:
         desc_text = _make_descriptor({keyword: entry})
         desc = self._expect_invalid_attr(desc_text)
         self.assertEquals(None, getattr(desc, end_attr))
         self.assertEquals(None, getattr(desc, interval_attr))
   
-  def test_bridge_ips(self):
+  def test_timestamp_interval_and_value_lines(self):
     """
-    Parses both the bridge-ips and geoip-client-origins lines with valid and
-    invalid data.
+    Uses valid and invalid data to tests lines of the form...
+    "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s) NUM,NUM,NUM,NUM,NUM...
     """
     
-    # Testing both attributes since they contain the exact same data,
-    # geoip-client-origins was simply replaced by bridge-ips while adding an
-    # interval value for the period.
-    
-    for keyword in ('bridge-ips', 'geoip-client-origins'):
-      attr = keyword.replace('-', '_')
+    for keyword in ('read-history', 'write-history', 'dirreq-read-history', 'dirreq-write-history'):
+      base_attr = keyword.replace('-', '_').replace('dirreq', 'dir')
+      end_attr = base_attr + "_end"
+      interval_attr = base_attr + "_interval"
+      values_attr = base_attr + "_values"
       
-      desc_text = _make_descriptor({keyword: "uk=5,de=3,jp=2"})
-      desc = ExtraInfoDescriptor(desc_text)
-      self.assertEquals({'uk': 5, 'de': 3, 'jp': 2}, getattr(desc, attr))
+      test_entries = (
+        ("", []),
+        (" ", []),
+        (" 50,11,5", [50, 11, 5]),
+      )
       
-      test_entry = (
+      for test_values, expected_values in test_entries:
+        desc_text = _make_descriptor({keyword: "2012-05-03 12:07:50 (500 s)%s" % test_values})
+        desc = ExtraInfoDescriptor(desc_text)
+        self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
+        self.assertEquals(500, getattr(desc, interval_attr))
+        self.assertEquals(expected_values, getattr(desc, values_attr))
+      
+      test_entries = (
         "",
+        "2012-05-03 ",
+        "2012-05-03",
+        "2012-05-03 12:07:60 (500 s)",
+        "2012-05-03 12:07:50 (500s)",
+        "2012-05-03 12:07:50 (500 s",
+        "2012-05-03 12:07:50 (500 )",
+        "2012-05-03 12:07:50 (500 s)11",
+      )
+      
+      for entry in test_entries:
+        desc_text = _make_descriptor({keyword: entry})
+        desc = self._expect_invalid_attr(desc_text)
+        self.assertEquals(None, getattr(desc, end_attr))
+        self.assertEquals(None, getattr(desc, interval_attr))
+        self.assertEquals(None, getattr(desc, values_attr))
+  
+  def test_locale_mapping_lines(self):
+    """
+    Uses valid and invalid data to tests lines of the form...
+    "<keyword>" CC=N,CC=N,...
+    """
+    
+    for keyword in ('dirreq-v2-ips', 'dirreq-v3-ips', 'geoip-client-origins', 'bridge-ips'):
+      attr = keyword.replace('-', '_').replace('dirreq', 'dir')
+      
+      test_entries = (
+        ("", {}),
+        ("uk=5,de=3,jp=2", {'uk': 5, 'de': 3, 'jp': 2}),
+      )
+      
+      for test_value, expected_value in test_entries:
+        desc_text = _make_descriptor({keyword: test_value})
+        desc = ExtraInfoDescriptor(desc_text)
+        self.assertEquals(expected_value, getattr(desc, attr))
+      
+      test_entries = (
         "uk=-4",
         "uki=4",
         "uk:4",
         "uk=4.de=3",
       )
       
-      for entry in test_entry:
+      for entry in test_entries:
         desc_text = _make_descriptor({keyword: entry})
         desc = self._expect_invalid_attr(desc_text, attr, {})
   

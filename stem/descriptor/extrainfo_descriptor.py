@@ -155,8 +155,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       write_history_values (list)  - bytes written during each interval
     
     Directory Mirror Attributes:
-      dirreq_stats_end (datetime) - end of the period when stats were gathered
-      dirreq_stats_interval (int) - length in seconds of the interval
+      dir_stats_end (datetime) - end of the period when stats were gathered
+      dir_stats_interval (int) - length in seconds of the interval
+      dir_v2_ips (dict) - mapping of locales to rounded count of requester ips
+      dir_v3_ips (dict) - mapping of locales to rounded count of requester ips
       
       Bytes read/written for directory mirroring
         dir_read_history_end (datetime) - end of the sampling interval
@@ -213,8 +215,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.write_history_interval = None
     self.write_history_values = None
     
-    self.dirreq_stats_end = None
-    self.dirreq_stats_interval = None
+    self.dir_stats_end = None
+    self.dir_stats_interval = None
+    self.dir_v2_ips = None
+    self.dir_v3_ips = None
     
     self.dir_read_history_end = None
     self.dir_read_history_interval = None
@@ -290,14 +294,6 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         
         self.nickname = extra_info_comp[0]
         self.fingerprint = extra_info_comp[1]
-      elif keyword == "published":
-        # "published" YYYY-MM-DD HH:MM:SS
-        
-        try:
-          self.published = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-        except ValueError:
-          if validate:
-            raise ValueError("Published line's time wasn't parseable: %s" % line)
       elif keyword == "geoip-db-digest":
         # "geoip-db-digest" Digest
         
@@ -305,65 +301,44 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           raise ValueError("Geoip digest line had an invalid sha1 digest: %s" % line)
         
         self.geoip_db_digest = value
-      elif keyword == "geoip-start-time":
-        # "geoip-start-time" YYYY-MM-DD HH:MM:SS
+      elif keyword in ("published", "geoip-start-time"):
+        # "<keyword>" YYYY-MM-DD HH:MM:SS
         
         try:
-          self.geoip_start_time = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+          timestamp = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+          
+          if keyword == "published":
+            self.published = timestamp
+          elif keyword == "geoip-start-time":
+            self.geoip_start_time = timestamp
         except ValueError:
           if validate:
-            raise ValueError("Geoip start time line's time wasn't parseable: %s" % line)
-      elif keyword == "bridge-stats-end":
-        # "bridge-stats-end" YYYY-MM-DD HH:MM:SS (NSEC s)
+            raise ValueError("Timestamp on %s line wasn't parseable: %s" % (keyword, line))
+      elif keyword in ("bridge-stats-end", "dirreq-stats-end"):
+        # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
         
         try:
           timestamp, interval, _ = _parse_timestamp_and_interval(keyword, value)
-          self.bridge_stats_end = timestamp
-          self.bridge_stats_interval = interval
-        except ValueError, exc:
-          if validate: raise exc
-      elif keyword in ("geoip-client-origins", "bridge-ips"):
-        # "geoip-client-origins" CC=N,CC=N,...
-        
-        locale_usage = {}
-        error_msg = "Entries in %s line should only be CC=N entries: %s" % (keyword, line)
-        
-        for entry in value.split(","):
-          if not "=" in entry:
-            if validate: raise ValueError(error_msg)
-            else: continue
           
-          locale, count = entry.split("=", 1)
-          
-          if re.match("^[a-zA-Z]{2}$", locale) and count.isdigit():
-            locale_usage[locale] = int(count)
-          elif validate:
-            raise ValueError(error_msg)
-        
-        if keyword == "geoip-client-origins":
-          self.geoip_client_origins = locale_usage
-        elif keyword == "bridge-ips":
-          self.bridge_ips = locale_usage
-      elif keyword == "dirreq-stats-end":
-        # "dirreq-stats-end" YYYY-MM-DD HH:MM:SS (NSEC s)
-        
-        try:
-          timestamp, interval, _ = _parse_timestamp_and_interval(keyword, value)
-          self.dirreq_stats_end = timestamp
-          self.dirreq_stats_interval = interval
+          if keyword == "bridge-stats-end":
+            self.bridge_stats_end = timestamp
+            self.bridge_stats_interval = interval
+          elif keyword == "dirreq-stats-end":
+            self.dir_stats_end = timestamp
+            self.dir_stats_interval = interval
         except ValueError, exc:
           if validate: raise exc
       elif keyword in ("read-history", "write-history", "dirreq-read-history", "dirreq-write-history"):
+        # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s) NUM,NUM,NUM,NUM,NUM...
         try:
           timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
+          history_values = []
           
-          try:
-            if remainder:
+          if remainder:
+            try:
               history_values = [int(entry) for entry in remainder.split(",")]
-            else:
-              history_values = []
-          except ValueError:
-            raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
+            except ValueError:
+              raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
           
           if keyword == "read-history":
             self.read_history_end = timestamp
@@ -381,12 +356,45 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             self.dir_write_history_end = timestamp
             self.dir_write_history_interval = interval
             self.dir_write_history_values = history_values
-          else:
-            # not gonna happen unless we change the main loop's conditional
-            # without fixing this one
-            raise ValueError("BUG: unrecognized keyword '%s'" % keyword)
         except ValueError, exc:
           if validate: raise exc
+      elif keyword in ("dirreq-v2-ips", "dirreq-v3-ips", "geoip-client-origins", "bridge-ips"):
+        # "<keyword>" CC=N,CC=N,...
+        
+        locale_usage = {}
+        error_msg = "Entries in %s line should only be CC=N entries: %s" % (keyword, line)
+        
+        if value:
+          for entry in value.split(","):
+            if not "=" in entry:
+              if validate: raise ValueError(error_msg)
+              else: continue
+            
+            # The maxmind geoip has numeric locale codes for some special
+            # values, for instance...
+            #
+            #   A1,"Anonymous Proxy"
+            #   A2,"Satellite Provider"
+            #   ??,"Unknown"
+            #
+            # https://www.maxmind.com/app/iso3166
+            
+            
+            locale, count = entry.split("=", 1)
+            
+            if re.match("^[a-zA-Z0-9\?]{2}$", locale) and count.isdigit():
+              locale_usage[locale] = int(count)
+            elif validate:
+              raise ValueError(error_msg)
+        
+        if keyword == "dirreq-v2-ips":
+          self.dir_v2_ips = locale_usage
+        elif keyword == "dirreq-v3-ips":
+          self.dir_v3_ips = locale_usage
+        elif keyword == "geoip-client-origins":
+          self.geoip_client_origins = locale_usage
+        elif keyword == "bridge-ips":
+          self.bridge_ips = locale_usage
       elif keyword == "router-signature":
         if validate and not block_contents:
           raise ValueError("Router signature line must be followed by a signature block: %s" % line)
