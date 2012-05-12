@@ -161,6 +161,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       dir_v3_ips (dict) - mapping of locales to rounded count of requester ips
       dir_v2_reqs (dict) - mapping of locales to rounded count of requests
       dir_v3_reqs (dict) - mapping of locales to rounded count of requests
+      dir_v2_share (float) - percent of total directory traffic it expects to serve
+      dir_v3_share (float) - percent of total directory traffic it expects to serve
       
       Bytes read/written for directory mirroring
         dir_read_history_end (datetime) - end of the sampling interval
@@ -223,6 +225,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.dir_v3_ips = None
     self.dir_v2_reqs = None
     self.dir_v3_reqs = None
+    self.dir_v2_share = None
+    self.dir_v3_share = None
     
     self.dir_read_history_end = None
     self.dir_read_history_interval = None
@@ -305,6 +309,23 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           raise ValueError("Geoip digest line had an invalid sha1 digest: %s" % line)
         
         self.geoip_db_digest = value
+      elif keyword in ("dirreq-v2-share", "dirreq-v3-share"):
+        # "<keyword>" num%
+        
+        try:
+          if not value.endswith("%"): raise ValueError()
+          percentage = float(value[:-1]) / 100
+          
+          if validate and (percentage > 1 or percentage < 0):
+            raise ValueError()
+          
+          if keyword == "dirreq-v2-share":
+            self.dir_v2_share = percentage
+          elif keyword == "dirreq-v3-share":
+            self.dir_v3_share = percentage
+        except ValueError, exc:
+          if validate:
+            raise ValueError("Value can't be parsed as a percentage: %s" % line)
       elif keyword in ("published", "geoip-start-time"):
         # "<keyword>" YYYY-MM-DD HH:MM:SS
         

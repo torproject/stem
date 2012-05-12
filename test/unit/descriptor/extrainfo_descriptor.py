@@ -131,6 +131,39 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       desc_text = _make_descriptor({"geoip-db-digest": entry})
       desc = self._expect_invalid_attr(desc_text, "geoip_db_digest", entry)
   
+  def test_percentage_lines(self):
+    """
+    Uses valid and invalid data to tests lines of the form...
+    "<keyword>" num%
+    """
+    
+    for keyword in ('dirreq-v2-share', 'dirreq-v3-share'):
+      attr = keyword.replace('-', '_').replace('dirreq', 'dir')
+      
+      test_entries = (
+        ("0.00%", 0.0),
+        ("0.01%", 0.0001),
+        ("50%", 0.5),
+        ("100.0%", 1.0),
+      )
+      
+      for test_value, expected_value in test_entries:
+        desc_text = _make_descriptor({keyword: test_value})
+        desc = ExtraInfoDescriptor(desc_text)
+        self.assertEquals(expected_value, getattr(desc, attr))
+      
+      test_entries = (
+        ("", None),
+        (" ", None),
+        ("100", None),
+        ("100.1%", 1.001),
+        ("-5%", -0.05),
+      )
+      
+      for entry, expected in test_entries:
+        desc_text = _make_descriptor({keyword: entry})
+        self._expect_invalid_attr(desc_text, attr, expected)
+  
   def test_timestamp_lines(self):
     """
     Uses valid and invalid data to tests lines of the form...
