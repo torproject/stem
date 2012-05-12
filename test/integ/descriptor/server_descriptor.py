@@ -160,7 +160,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
         # the following attributes should be deprecated, and not appear in the wild
         self.assertEquals(None, desc.read_history_end)
         self.assertEquals(None, desc.write_history_end)
-        self.assertEquals(True, desc.eventdns)
+        self.assertEquals(None, desc.eventdns)
         self.assertEquals(0, desc.socks_port)
         
         unrecognized_lines = desc.get_unrecognized_lines()

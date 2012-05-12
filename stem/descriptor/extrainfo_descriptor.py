@@ -139,47 +139,43 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   Extra-info descriptor document.
   
   Attributes:
-    nickname (str)           - relay's nickname (*)
-    fingerprint (str)        - fourty hex digits that make up the relay's fingerprint (*)
-    published (datetime.datetime) - time in GMT when the descriptor was generated (*)
-    geoip_db_digest (str)    - sha1 of geoIP database file
-    signature (str)          - signature for this extrainfo descriptor (*)
+    nickname (str)        - relay's nickname (*)
+    fingerprint (str)     - identity key fingerprint (*)
+    published (datetime)  - time in GMT when this descriptor was made (*)
+    geoip_db_digest (str) - sha1 of geoIP database file
+    signature (str)       - signature for this extrainfo descriptor (*)
     
     Bytes read/written for relayed traffic
-      read_history_end (datetime.datetime) - end of the sampling interval
+      read_history_end (datetime) - end of the sampling interval
       read_history_interval (int) - seconds per interval
-      read_history_values (list) - bytes read during each interval (*)
+      read_history_values (list)  - bytes read during each interval
       
-      write_history_end (datetime.datetime) - end of the sampling interval
+      write_history_end (datetime) - end of the sampling interval
       write_history_interval (int) - seconds per interval
-      write_history_values (list) - bytes written during each interval (*)
-  
-  Directory Mirror Attributes:
-    dirreq_stats_end (datetime.datetime) - end of the period where directory
-        mirroring stats were gathered
-    dirreq_stats_interval (int) - length in seconds of the interval where
-        directory stats were gathered
+      write_history_values (list)  - bytes written during each interval
     
-    Bytes read/written for directory mirroring
-      dir_read_history_end (datetime.datetime) - end of the sampling interval
-      dir_read_history_interval (int) - seconds per interval
-      dir_read_history_values (list) - bytes read during each interval (*)
+    Directory Mirror Attributes:
+      dirreq_stats_end (datetime) - end of the period when stats were gathered
+      dirreq_stats_interval (int) - length in seconds of the interval
       
-    dir_write_history_end (datetime.datetime) - end of the sampling interval
-    dir_write_history_interval (int) - seconds per interval
-    dir_write_history_values (list) - bytes read during each interval (*)
+      Bytes read/written for directory mirroring
+        dir_read_history_end (datetime) - end of the sampling interval
+        dir_read_history_interval (int) - seconds per interval
+        dir_read_history_values (list)  - bytes read during each interval
+        
+        dir_write_history_end (datetime) - end of the sampling interval
+        dir_write_history_interval (int) - seconds per interval
+        dir_write_history_values (list)  - bytes read during each interval
+    
+    Bridge Attributes:
+      bridge_stats_end (datetime) - end of the period when stats were gathered
+      bridge_stats_interval (int) - length in seconds of the interval
+      bridge_ips (dict) - mapping of locales to rounded count of unique user ips
+      geoip_start_time (datetime) - (deprecated) replaced by bridge_stats_end
+      geoip_client_origins (dict) - (deprecated) replaced by bridge_ips
   
-  Bridge Attributes:
-    bridge_stats_end (datetime.datetime) - end of the period when geoip
-        statistics were gathered
-    bridge_stats_interval (int) - length in seconds of the interval where
-        stats were gathered
-    bridge_ips (dict) - mapping of country codes to a rounded number of unique
-        ips from that region
-    geoip_start_time (datetime.datetime) - replaced by bridge_stats_end
-    geoip_client_origins (dict) - replaced by bridge_ips
-  
-  (*) required fields, others are left as None if undefined
+  (*) attribute is either required when we're parsed with validation or has a
+      default value, others are left as None if undefined
   """
   
   def __init__(self, raw_contents, validate = True, annotations = None):
@@ -211,22 +207,22 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     
     self.read_history_end = None
     self.read_history_interval = None
-    self.read_history_values = []
+    self.read_history_values = None
     
     self.write_history_end = None
     self.write_history_interval = None
-    self.write_history_values = []
+    self.write_history_values = None
     
     self.dirreq_stats_end = None
     self.dirreq_stats_interval = None
     
     self.dir_read_history_end = None
     self.dir_read_history_interval = None
-    self.dir_read_history_values = []
+    self.dir_read_history_values = None
     
     self.dir_write_history_end = None
     self.dir_write_history_interval = None
-    self.dir_write_history_values = []
+    self.dir_write_history_values = None
     
     self.bridge_stats_end = None
     self.bridge_stats_interval = None

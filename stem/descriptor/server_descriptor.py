@@ -141,42 +141,47 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   Common parent for server descriptors.
   
   Attributes:
-    nickname (str)           - relay's nickname (*)
-    fingerprint (str)        - fourty hex digits that make up the relay's fingerprint
-    address (str)            - IPv4 address of the relay (*)
-    or_port (int)            - port used for relaying (*)
-    socks_port (int)         - (deprecated) always zero (*)
-    dir_port (int)           - port used for descriptor mirroring (*)
-    platform (str)           - operating system and tor version
+    nickname (str)       - relay's nickname (*)
+    fingerprint (str)    - identity key fingerprint
+    published (datetime) - time in GMT when this descriptor was made (*)
+    
+    address (str)        - IPv4 address of the relay (*)
+    or_port (int)        - port used for relaying (*)
+    socks_port (int)     - (deprecated, always zero) port used as client (*)
+    dir_port (int)       - port used for descriptor mirroring (*)
+    
+    platform (str)         - line with operating system and tor version
     tor_version (stem.version.Version) - version of tor
-    operating_system (str)   - relay's operating system
-    uptime (int)             - relay's uptime when published in seconds
-    published (datetime.datetime) - time in GMT when the descriptor was generated (*)
-    contact (str)            - relay's contact information
-    link_protocols (list)    - link protocols supported by the relay
-    circuit_protocols (list) - circuit protocols supported by the relay
-    hibernating (bool)       - flag to indicate if the relay was hibernating when published (*)
-    allow_single_hop_exits (bool) - flag to indicate if single hop exiting is allowed from it (*)
-    extra_info_cache (bool)  - flag to indicate if it's a mirror for extra-info documents (*)
-    extra_info_digest (str)  - hex encoded digest of our extra-info document
-    hidden_service_dir (list) - hidden service descriptor versions that it stores
-    exit_policy (stem.exit_policy.ExitPolicy) - relay's stated exit policy
-    family (list)            - nicknames or fingerprints of relays it has a declared family with (*)
-    average_bandwidth (int)  - rate of traffic relay is willing to relay in bytes/s (*)
-    burst_bandwidth (int)    - rate of traffic relay is willing to burst to in bytes/s (*)
-    observed_bandwidth (int) - estimated capacity of the relay based on usage in bytes/s (*)
-    eventdns (bool)          - (deprecated) always unset (*)
+    operating_system (str) - operating system
+    uptime (int)           - uptime when published in seconds
+    contact (str)          - contact information
+    exit_policy (stem.exit_policy.ExitPolicy) - stated exit policy (*)
+    family (list)          - nicknames or fingerprints of declared family (*)
+    
+    average_bandwidth (int)  - averate rate it's willing to relay in bytes/s (*)
+    burst_bandwidth (int)    - burst rate it's willing to relay in bytes/s (*)
+    observed_bandwidth (int) - estimated capacity based on usage in bytes/s (*)
+    
+    link_protocols (list)     - link protocols supported by the relay
+    circuit_protocols (list)  - circuit protocols supported by the relay
+    hibernating (bool)        - hibernating when published (*)
+    allow_single_hop_exits (bool) - flag if single hop exiting is allowed (*)
+    extra_info_cache (bool)   - flag if a mirror for extra-info documents (*)
+    extra_info_digest (str)   - hex encoded digest of our extra-info document
+    hidden_service_dir (list) - hidden service descriptor versions it stores
+    eventdns (bool)           - (deprecated, always unset) flag for evdns backend
     
     Deprecated, moved to extra-info descriptor...
-      read_history_end (datetime.datetime) - end of the sampling interval
+      read_history_end (datetime) - end of the sampling interval
       read_history_interval (int) - seconds per interval
-      read_history_values (list) - bytes read during each interval (*)
+      read_history_values (list)  - bytes read during each interval
       
-      write_history_end (datetime.datetime) - end of the sampling interval
+      write_history_end (datetime) - end of the sampling interval
       write_history_interval (int) - seconds per interval
-      write_history_values (list) - bytes written during each interval (*)
-    
-    (*) required fields, others are left as None if undefined
+      write_history_values (list)  - bytes written during each interval
+  
+  (*) attribute is either required when we're parsed with validation or has a
+      default value, others are left as None if undefined
   """
   
   def __init__(self, raw_contents, validate = True, annotations = None):
@@ -203,16 +208,25 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     
     self.nickname = None
     self.fingerprint = None
+    self.published = None
+    
     self.address = None
     self.or_port = None
     self.socks_port = None
     self.dir_port = None
+    
     self.platform = None
     self.tor_version = None
     self.operating_system = None
     self.uptime = None
-    self.published = None
     self.contact = None
+    self.exit_policy = [] # should be an ExitPolicy instance when we have the class...
+    self.family = []
+    
+    self.average_bandwidth = None
+    self.burst_bandwidth = None
+    self.observed_bandwidth = None
+    
     self.link_protocols = None
     self.circuit_protocols = None
     self.hibernating = False
@@ -220,29 +234,20 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     self.extra_info_cache = False
     self.extra_info_digest = None
     self.hidden_service_dir = None
-    self.family = []
-    self.average_bandwidth = None
-    self.burst_bandwidth = None
-    self.observed_bandwidth = None
-    self.eventdns = True
+    self.eventdns = None
     
     self.read_history_end = None
     self.read_history_interval = None
-    self.read_history_values = []
+    self.read_history_values = None
     
     self.write_history_end = None
     self.write_history_interval = None
-    self.write_history_values = []
+    self.write_history_values = None
     
     self._unrecognized_lines = []
     
     self._annotation_lines = annotations if annotations else []
     self._annotation_dict = None # cached breakdown of key/value mappings
-    
-    # TODO: Until we have a proper ExitPolicy class this is just a list of the
-    # exit policy strings...
-    
-    self.exit_policy = []
     
     # A descriptor contains a series of 'keyword lines' which are simply a
     # keyword followed by an optional value. Lines can also be followed by a
@@ -551,8 +556,9 @@ class RelayDescriptor(ServerDescriptor):
     onion_key (str)   - key used to encrypt EXTEND cells (*)
     signing_key (str) - relay's long-term identity key (*)
     signature (str)   - signature for this descriptor (*)
-    
-    (*) required fields, others are left as None if undefined
+  
+  (*) attribute is either required when we're parsed with validation or has a
+      default value, others are left as None if undefined
   """
   
   def __init__(self, raw_contents, validate = True, annotations = None):
