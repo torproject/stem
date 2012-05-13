@@ -24,6 +24,16 @@ DirResponses - known statuses for ExtraInfoDescriptor's dir_*_responses
   |- NOT_MODIFIED - network status unmodified since If-Modified-Since time
   +- BUSY - directory was busy
 
+DirStats - known stats for ExtraInfoDescriptor's dir_*_direct_dl and dir_*_tunneled_dl
+  |- COMPLETE - requests that completed successfully
+  |- TIMEOUT - requests that didn't complete within a ten minute timeout
+  |- RUNNING - requests still in procress when measurement's taken
+  |- MIN - smallest rate at which a descriptor was downloaded in B/s
+  |- MAX - largest rate at which a descriptor was downloaded in B/s
+  |- D1-4 and D6-9 - rate of the slowest x/10 download rates in B/s
+  |- Q1 and Q3 - rate of the slowest and fastest querter download rates in B/s
+  +- MD - median download rate in B/s
+
 parse_file - Iterates over the extra-info descriptors in a file.
 ExtraInfoDescriptor - Tor extra-info descriptor.
   +- get_unrecognized_lines - lines with unrecognized content
@@ -44,6 +54,12 @@ DirResponses = stem.util.enum.Enum(
   ("NOT_MODIFIED", "not-modified"),
   ("BUSY", "busy"),
 )
+
+# known stats for dirreq-v2/3-direct-dl and dirreq-v2/3-tunneled-dl...
+dir_stats = ['complete', 'timeout', 'running', 'min', 'max', 'q1', 'q3', 'md']
+dir_stats += ['d%i' % i for i in range(1, 5)]
+dir_stats += ['d%i' % i for i in range(6, 10)]
+DirStats = stem.util.enum.Enum(*[(stat.upper(), stat) for stat in dir_stats])
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -178,14 +194,25 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       dir_stats_interval (int) - length in seconds of the interval
       dir_v2_ips (dict) - mapping of locales to rounded count of requester ips
       dir_v3_ips (dict) - mapping of locales to rounded count of requester ips
+      dir_v2_share (float) - percent of total directory traffic it expects to serve
+      dir_v3_share (float) - percent of total directory traffic it expects to serve
       dir_v2_requests (dict) - mapping of locales to rounded count of requests
       dir_v3_requests (dict) - mapping of locales to rounded count of requests
+      
       dir_v2_responses (dict) - mapping of DirResponses to their rounded count
       dir_v3_responses (dict) - mapping of DirResponses to their rounded count
       dir_v2_responses_unknown (dict) - mapping of unrecognized statuses to their count
       dir_v3_responses_unknown (dict) - mapping of unrecognized statuses to their count
-      dir_v2_share (float) - percent of total directory traffic it expects to serve
-      dir_v3_share (float) - percent of total directory traffic it expects to serve
+      
+      dir_v2_direct_dl (dict) - mapping of DirStats to measurement over DirPort
+      dir_v3_direct_dl (dict) - mapping of DirStats to measurement over DirPort
+      dir_v2_direct_dl_unknown (dict) - mapping of unrecognized stats to their measurement
+      dir_v3_direct_dl_unknown (dict) - mapping of unrecognized stats to their measurement
+      
+      dir_v2_tunneled_dl (dict) - mapping of DirStats to measurement over ORPort
+      dir_v3_tunneled_dl (dict) - mapping of DirStats to measurement over ORPort
+      dir_v2_tunneled_dl_unknown (dict) - mapping of unrecognized stats to their measurement
+      dir_v3_tunneled_dl_unknown (dict) - mapping of unrecognized stats to their measurement
       
       Bytes read/written for directory mirroring
         dir_read_history_end (datetime) - end of the sampling interval
@@ -246,14 +273,22 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.dir_stats_interval = None
     self.dir_v2_ips = None
     self.dir_v3_ips = None
+    self.dir_v2_share = None
+    self.dir_v3_share = None
     self.dir_v2_requests = None
     self.dir_v3_requests = None
     self.dir_v2_responses = None
     self.dir_v3_responses = None
     self.dir_v2_responses_unknown = None
     self.dir_v3_responses_unknown = None
-    self.dir_v2_share = None
-    self.dir_v3_share = None
+    self.dir_v2_direct_dl = None
+    self.dir_v3_direct_dl = None
+    self.dir_v2_direct_dl_unknown = None
+    self.dir_v3_direct_dl_unknown = None
+    self.dir_v2_tunneled_dl = None
+    self.dir_v3_tunneled_dl = None
+    self.dir_v2_tunneled_dl_unknown = None
+    self.dir_v3_tunneled_dl_unknown = None
     
     self.dir_read_history_end = None
     self.dir_read_history_interval = None
@@ -336,10 +371,16 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           raise ValueError("Geoip digest line had an invalid sha1 digest: %s" % line)
         
         self.geoip_db_digest = value
-      elif keyword in ("dirreq-v2-resp", "dirreq-v3-resp"):
+      elif keyword in ("dirreq-v2-resp", "dirreq-v3-resp", "dirreq-v2-direct-dl", "dirreq-v3-direct-dl", "dirreq-v2-tunneled-dl", "dirreq-v3-tunneled-dl"):
         recognized_counts = {}
         unrecognized_counts = {}
-        error_msg = "%s lines should contain STATUS=COUNT mappings: %s" % (keyword, line)
+        
+        is_response_stats = keyword in ("dirreq-v2-resp", "dirreq-v3-resp")
+        key_set = DirResponses if is_response_stats else DirStats
+        
+        key_type = "STATUS" if is_response_stats else "STAT"
+        error_msg = "%s lines should contain %s=COUNT mappings: %s" % (keyword, key_type, line)
+        
         
         if value:
           for entry in value.split(","):
@@ -350,7 +391,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             status, count = entry.split("=", 1)
             
             if count.isdigit():
-              if status in DirResponses:
+              if status in key_set:
                 recognized_counts[status] = int(count)
               else:
                 unrecognized_counts[status] = int(count)
@@ -360,9 +401,21 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         if keyword == "dirreq-v2-resp":
           self.dir_v2_responses = recognized_counts
           self.dir_v2_responses_unknown = unrecognized_counts
-        else:
+        elif keyword == "dirreq-v3-resp":
           self.dir_v3_responses = recognized_counts
           self.dir_v3_responses_unknown = unrecognized_counts
+        elif keyword == "dirreq-v2-direct-dl":
+          self.dir_v2_direct_dl = recognized_counts
+          self.dir_v2_direct_dl_unknown = unrecognized_counts
+        elif keyword == "dirreq-v3-direct-dl":
+          self.dir_v3_direct_dl = recognized_counts
+          self.dir_v3_direct_dl_unknown = unrecognized_counts
+        elif keyword == "dirreq-v2-tunneled-dl":
+          self.dir_v2_tunneled_dl = recognized_counts
+          self.dir_v2_tunneled_dl_unknown = unrecognized_counts
+        elif keyword == "dirreq-v3-tunneled-dl":
+          self.dir_v3_tunneled_dl = recognized_counts
+          self.dir_v3_tunneled_dl_unknown = unrecognized_counts
       elif keyword in ("dirreq-v2-share", "dirreq-v3-share"):
         # "<keyword>" num%
         

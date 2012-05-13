@@ -87,6 +87,12 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
           self.fail("Unrecognized statuses on dirreq-v2-resp lines: %s" % desc.dir_v2_responses_unknown)
         elif desc.dir_v3_responses_unknown:
           self.fail("Unrecognized statuses on dirreq-v3-resp lines: %s" % desc.dir_v3_responses_unknown)
+        elif desc.dir_v2_direct_dl_unknown:
+          self.fail("Unrecognized stats on dirreq-v2-direct-dl lines: %s" % desc.dir_v2_direct_dl_unknown)
+        elif desc.dir_v3_direct_dl_unknown:
+          self.fail("Unrecognized stats on dirreq-v3-direct-dl lines: %s" % desc.dir_v2_direct_dl_unknown)
+        elif desc.dir_v2_tunneled_dl_unknown:
+          self.fail("Unrecognized stats on dirreq-v2-tunneled-dl lines: %s" % desc.dir_v2_tunneled_dl_unknown)
         elif unrecognized_lines:
           # TODO: This isn't actually a problem, and rather than failing we
           # should alert the user about these entries at the end of the tests

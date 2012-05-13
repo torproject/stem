@@ -4,7 +4,7 @@ Unit tests for stem.descriptor.extrainfo_descriptor.
 
 import datetime
 import unittest
-from stem.descriptor.extrainfo_descriptor import ExtraInfoDescriptor, DirResponses
+from stem.descriptor.extrainfo_descriptor import ExtraInfoDescriptor, DirResponses, DirStats
 
 CRYPTO_BLOB = """
 K5FSywk7qvw/boA4DQcqkls6Ize5vcBYfhQ8JnOeRQC9+uDxbnpm3qaYN9jZ8myj
@@ -154,6 +154,49 @@ class TestExtraInfoDescriptor(unittest.TestCase):
         "ok=-4",
         "ok:4",
         "ok=4.not-found=3",
+      )
+      
+      for entry in test_entries:
+        desc_text = _make_descriptor({keyword: entry})
+        desc = self._expect_invalid_attr(desc_text)
+        self.assertEqual({}, getattr(desc, attr))
+        self.assertEqual({}, getattr(desc, unknown_attr))
+  
+  def test_dir_stat_lines(self):
+    """
+    Parses the dirreq-v2-direct-dl, dirreq-v3-direct-dl, dirreq-v2-tunneled-dl,
+    and dirreq-v3-tunneled-dl lines with valid and invalid data.
+    """
+    
+    for keyword in ("dirreq-v2-direct-dl", "dirreq-v2-direct-dl", "dirreq-v2-tunneled-dl", "dirreq-v2-tunneled-dl"):
+      attr = keyword.replace('-', '_').replace('dirreq', 'dir')
+      unknown_attr = attr + "_unknown"
+      
+      test_value = "complete=2712,timeout=32,running=4,min=741,d1=14507,d2=22702,q1=28881,d3=38277,d4=73729,md=111455,d6=168231,d7=257218,q3=319833,d8=390507,d9=616301,something-new=11,max=29917857"
+      desc_text = _make_descriptor({keyword: test_value})
+      desc = ExtraInfoDescriptor(desc_text)
+      self.assertEquals(2712, getattr(desc, attr)[DirStats.COMPLETE])
+      self.assertEquals(32, getattr(desc, attr)[DirStats.TIMEOUT])
+      self.assertEquals(4, getattr(desc, attr)[DirStats.RUNNING])
+      self.assertEquals(741, getattr(desc, attr)[DirStats.MIN])
+      self.assertEquals(14507, getattr(desc, attr)[DirStats.D1])
+      self.assertEquals(22702, getattr(desc, attr)[DirStats.D2])
+      self.assertEquals(28881, getattr(desc, attr)[DirStats.Q1])
+      self.assertEquals(38277, getattr(desc, attr)[DirStats.D3])
+      self.assertEquals(73729, getattr(desc, attr)[DirStats.D4])
+      self.assertEquals(111455, getattr(desc, attr)[DirStats.MD])
+      self.assertEquals(168231, getattr(desc, attr)[DirStats.D6])
+      self.assertEquals(257218, getattr(desc, attr)[DirStats.D7])
+      self.assertEquals(319833, getattr(desc, attr)[DirStats.Q3])
+      self.assertEquals(390507, getattr(desc, attr)[DirStats.D8])
+      self.assertEquals(616301, getattr(desc, attr)[DirStats.D9])
+      self.assertEquals(29917857, getattr(desc, attr)[DirStats.MAX])
+      self.assertEquals(11, getattr(desc, unknown_attr)["something-new"])
+      
+      test_entries = (
+        "complete=-4",
+        "complete:4",
+        "complete=4.timeout=3",
       )
       
       for entry in test_entries:
