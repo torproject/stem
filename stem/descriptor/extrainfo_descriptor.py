@@ -44,6 +44,7 @@ import datetime
 
 import stem.descriptor
 import stem.util.enum
+import stem.util.connection
 
 # known statuses for dirreq-v2-resp and dirreq-v3-resp...
 DirResponses = stem.util.enum.Enum(
