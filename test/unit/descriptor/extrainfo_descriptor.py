@@ -238,6 +238,37 @@ class TestExtraInfoDescriptor(unittest.TestCase):
         desc_text = _make_descriptor({keyword: entry})
         self._expect_invalid_attr(desc_text, attr, expected)
   
+  def test_number_list_lines(self):
+    """
+    Uses valid and invalid data to tests lines of the form...
+    "<keyword>" num,...,num
+    """
+    
+    for keyword in ('cell-processed-cells', 'cell-queued-cells', 'cell-time-in-queue'):
+      attr = keyword.replace('-', '_')
+      
+      test_entries = (
+        ("", []),
+        (" ", []),
+        ("0,0,0", [0.0, 0.0, 0.0]),
+        ("2.3,-4.6,8.9,16.12,32.15", [2.3, -4.6, 8.9, 16.12, 32.15]),
+      )
+      
+      for test_value, expected_value in test_entries:
+        desc_text = _make_descriptor({keyword: test_value})
+        desc = ExtraInfoDescriptor(desc_text)
+        self.assertEquals(expected_value, getattr(desc, attr))
+      
+      test_entries = (
+        (",,11", [11.0]),
+        ("abc,5.7,def", [5.7]),
+        ("blarg", []),
+      )
+      
+      for entry, expected in test_entries:
+        desc_text = _make_descriptor({keyword: entry})
+        self._expect_invalid_attr(desc_text, attr, expected)
+  
   def test_timestamp_lines(self):
     """
     Uses valid and invalid data to tests lines of the form...
@@ -364,7 +395,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       
       for entry in test_entries:
         desc_text = _make_descriptor({keyword: entry})
-        desc = self._expect_invalid_attr(desc_text, attr, {})
+        self._expect_invalid_attr(desc_text, attr, {})
   
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
     """

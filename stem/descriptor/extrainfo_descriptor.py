@@ -192,6 +192,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     Cell relaying statistics:
       cell_stats_end (datetime) - end of the period when stats were gathered
       cell_stats_interval (int) - length in seconds of the interval
+      cell_processed_cells (list) - measurement of processed cells per circuit
+      cell_queued_cells (list) - measurement of queued cells per circuit
+      cell_time_in_queue (list) - mean enqueued time in milliseconds for cells
     
     Directory Mirror Attributes:
       dir_stats_end (datetime) - end of the period when stats were gathered
@@ -280,6 +283,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     
     self.cell_stats_end = None
     self.cell_stats_interval = None
+    self.cell_processed_cells = None
+    self.cell_queued_cells = None
+    self.cell_time_in_queue = None
     
     self.dir_stats_end = None
     self.dir_stats_interval = None
@@ -449,6 +455,24 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         except ValueError, exc:
           if validate:
             raise ValueError("Value can't be parsed as a percentage: %s" % line)
+      elif keyword in ("cell-processed-cells", "cell-queued-cells", "cell-time-in-queue"):
+        # "<keyword>" num,...,num
+        
+        entries = []
+        
+        if value:
+          for entry in value.split(","):
+            try:
+              entries.append(float(entry))
+            except ValueError:
+              if validate: raise ValueError("Non-numeric entry in %s listing: %s" % (keyword, line))
+        
+        if keyword == "cell-processed-cells":
+          self.cell_processed_cells = entries
+        elif keyword == "cell-queued-cells":
+          self.cell_queued_cells = entries
+        elif keyword == "cell-time-in-queue":
+          self.cell_time_in_queue = entries
       elif keyword in ("published", "geoip-start-time"):
         # "<keyword>" YYYY-MM-DD HH:MM:SS
         
