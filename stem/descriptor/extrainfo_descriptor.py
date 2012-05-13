@@ -223,6 +223,11 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         dir_write_history_interval (int) - seconds per interval
         dir_write_history_values (list)  - bytes read during each interval
     
+    Guard Attributes:
+      entry_stats_end (datetime) - end of the period when stats were gathered
+      entry_stats_interval (int) - length in seconds of the interval
+      entry_ips (dict) - mapping of locales to rounded count of unique user ips
+    
     Bridge Attributes:
       bridge_stats_end (datetime) - end of the period when stats were gathered
       bridge_stats_interval (int) - length in seconds of the interval
@@ -297,6 +302,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.dir_write_history_end = None
     self.dir_write_history_interval = None
     self.dir_write_history_values = None
+    
+    self.entry_stats_end = None
+    self.entry_stats_interval = None
+    self.entry_ips = None
     
     self.bridge_stats_end = None
     self.bridge_stats_interval = None
@@ -446,13 +455,16 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         except ValueError:
           if validate:
             raise ValueError("Timestamp on %s line wasn't parseable: %s" % (keyword, line))
-      elif keyword in ("bridge-stats-end", "dirreq-stats-end"):
+      elif keyword in ("entry-stats-end", "bridge-stats-end", "dirreq-stats-end"):
         # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
         
         try:
           timestamp, interval, _ = _parse_timestamp_and_interval(keyword, value)
           
-          if keyword == "bridge-stats-end":
+          if keyword == "entry-stats-end":
+            self.entry_stats_end = timestamp
+            self.entry_stats_interval = interval
+          elif keyword == "bridge-stats-end":
             self.bridge_stats_end = timestamp
             self.bridge_stats_interval = interval
           elif keyword == "dirreq-stats-end":
@@ -490,7 +502,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             self.dir_write_history_values = history_values
         except ValueError, exc:
           if validate: raise exc
-      elif keyword in ("dirreq-v2-ips", "dirreq-v3-ips", "dirreq-v2-reqs", "dirreq-v3-reqs", "geoip-client-origins", "bridge-ips"):
+      elif keyword in ("dirreq-v2-ips", "dirreq-v3-ips", "dirreq-v2-reqs", "dirreq-v3-reqs", "geoip-client-origins", "entry-ips", "bridge-ips"):
         # "<keyword>" CC=N,CC=N,...
         #
         # The maxmind geoip (https://www.maxmind.com/app/iso3166) has numeric
@@ -524,6 +536,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           self.dir_v3_requests = locale_usage
         elif keyword == "geoip-client-origins":
           self.geoip_client_origins = locale_usage
+        elif keyword == "entry-ips":
+          self.entry_ips = locale_usage
         elif keyword == "bridge-ips":
           self.bridge_ips = locale_usage
       elif keyword == "router-signature":

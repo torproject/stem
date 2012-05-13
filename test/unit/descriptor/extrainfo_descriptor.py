@@ -268,7 +268,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
     """
     
-    for keyword in ('bridge-stats-end', 'dirreq-stats-end'):
+    for keyword in ('entry-stats-end', 'bridge-stats-end', 'dirreq-stats-end'):
       end_attr = keyword.replace('-', '_').replace('dirreq', 'dir')
       interval_attr = end_attr[:-4] + "_interval"
       
@@ -342,7 +342,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     "<keyword>" CC=N,CC=N,...
     """
     
-    for keyword in ('dirreq-v2-ips', 'dirreq-v3-ips', 'dirreq-v2-reqs', 'dirreq-v3-reqs', 'geoip-client-origins', 'bridge-ips'):
+    for keyword in ('dirreq-v2-ips', 'dirreq-v3-ips', 'dirreq-v2-reqs', 'dirreq-v3-reqs', 'geoip-client-origins', 'entry-ips', 'bridge-ips'):
       attr = keyword.replace('-', '_').replace('dirreq', 'dir').replace('reqs', 'requests')
       
       test_entries = (
