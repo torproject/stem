@@ -180,7 +180,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     geoip_db_digest (str) - sha1 of geoIP database file
     signature (str)       - signature for this extrainfo descriptor (*)
     
-    Bytes read/written for relayed traffic
+    Bytes read/written for relayed traffic:
       read_history_end (datetime) - end of the sampling interval
       read_history_interval (int) - seconds per interval
       read_history_values (list)  - bytes read during each interval
@@ -188,6 +188,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       write_history_end (datetime) - end of the sampling interval
       write_history_interval (int) - seconds per interval
       write_history_values (list)  - bytes written during each interval
+    
+    Cell relaying statistics:
+      cell_stats_end (datetime) - end of the period when stats were gathered
+      cell_stats_interval (int) - length in seconds of the interval
     
     Directory Mirror Attributes:
       dir_stats_end (datetime) - end of the period when stats were gathered
@@ -214,7 +218,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       dir_v2_tunneled_dl_unknown (dict) - mapping of unrecognized stats to their measurement
       dir_v3_tunneled_dl_unknown (dict) - mapping of unrecognized stats to their measurement
       
-      Bytes read/written for directory mirroring
+      Bytes read/written for directory mirroring:
         dir_read_history_end (datetime) - end of the sampling interval
         dir_read_history_interval (int) - seconds per interval
         dir_read_history_values (list)  - bytes read during each interval
@@ -273,6 +277,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.write_history_end = None
     self.write_history_interval = None
     self.write_history_values = None
+    
+    self.cell_stats_end = None
+    self.cell_stats_interval = None
     
     self.dir_stats_end = None
     self.dir_stats_interval = None
@@ -455,13 +462,16 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         except ValueError:
           if validate:
             raise ValueError("Timestamp on %s line wasn't parseable: %s" % (keyword, line))
-      elif keyword in ("entry-stats-end", "bridge-stats-end", "dirreq-stats-end"):
+      elif keyword in ("cell-stats-end", "entry-stats-end", "bridge-stats-end", "dirreq-stats-end"):
         # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
         
         try:
           timestamp, interval, _ = _parse_timestamp_and_interval(keyword, value)
           
-          if keyword == "entry-stats-end":
+          if keyword == "cell-stats-end":
+            self.cell_stats_end = timestamp
+            self.cell_stats_interval = interval
+          elif keyword == "entry-stats-end":
             self.entry_stats_end = timestamp
             self.entry_stats_interval = interval
           elif keyword == "bridge-stats-end":

@@ -268,7 +268,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
     """
     
-    for keyword in ('entry-stats-end', 'bridge-stats-end', 'dirreq-stats-end'):
+    for keyword in ('cell-stats-end', 'entry-stats-end', 'bridge-stats-end', 'dirreq-stats-end'):
       end_attr = keyword.replace('-', '_').replace('dirreq', 'dir')
       interval_attr = end_attr[:-4] + "_interval"
       
