@@ -180,6 +180,13 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     geoip_db_digest (str) - sha1 of geoIP database file
     signature (str)       - signature for this extrainfo descriptor (*)
     
+    conn_bi_direct_end (datetime) - end of the sampling interval
+    conn_bi_direct_interval (int) - seconds per interval
+    conn_bi_direct_below (int)    - connections that read/wrote less than 20 KiB
+    conn_bi_direct_read (int)     - connections that read at least 10x more than wrote
+    conn_bi_direct_write (int)    - connections that wrote at least 10x more than read
+    conn_bi_direct_both (int)     - remaining connections
+    
     Bytes read/written for relayed traffic:
       read_history_end (datetime) - end of the sampling interval
       read_history_interval (int) - seconds per interval
@@ -273,6 +280,13 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.published = None
     self.geoip_db_digest = None
     self.signature = None
+    
+    self.conn_bi_direct_end = None
+    self.conn_bi_direct_interval = None
+    self.conn_bi_direct_below = None
+    self.conn_bi_direct_read = None
+    self.conn_bi_direct_write = None
+    self.conn_bi_direct_both = None
     
     self.read_history_end = None
     self.read_history_interval = None
@@ -526,6 +540,26 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           elif keyword == "dirreq-stats-end":
             self.dir_stats_end = timestamp
             self.dir_stats_interval = interval
+        except ValueError, exc:
+          if validate: raise exc
+      elif keyword == "conn-bi-direct":
+        # "conn-bi-direct" YYYY-MM-DD HH:MM:SS (NSEC s) BELOW,READ,WRITE,BOTH
+        
+        try:
+          timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
+          stats = remainder.split(",")
+          
+          if len(stats) != 4 or not \
+            (stats[0].isdigit() and stats[1].isdigit() and \
+             stats[2].isdigit() and stats[3].isdigit()):
+            raise ValueError("conn-bi-direct line should end with four numeric values: %s" % line)
+          
+          self.conn_bi_direct_end = timestamp
+          self.conn_bi_direct_interval = interval
+          self.conn_bi_direct_below = int(stats[0])
+          self.conn_bi_direct_read = int(stats[1])
+          self.conn_bi_direct_write = int(stats[2])
+          self.conn_bi_direct_both = int(stats[3])
         except ValueError, exc:
           if validate: raise exc
       elif keyword in ("read-history", "write-history", "dirreq-read-history", "dirreq-write-history"):

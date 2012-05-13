@@ -231,6 +231,44 @@ class TestExtraInfoDescriptor(unittest.TestCase):
         self.assertEqual({}, getattr(desc, attr))
         self.assertEqual({}, getattr(desc, unknown_attr))
   
+  def test_conn_bi_direct(self):
+    """
+    Parses the conn-bi-direct line with valid and invalid data.
+    """
+    
+    desc_text = _make_descriptor({"conn-bi-direct": "2012-05-03 12:07:50 (500 s) 277431,12089,0,2134"})
+    desc = ExtraInfoDescriptor(desc_text)
+    self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.conn_bi_direct_end)
+    self.assertEquals(500, desc.conn_bi_direct_interval)
+    self.assertEquals(277431, desc.conn_bi_direct_below)
+    self.assertEquals(12089, desc.conn_bi_direct_read)
+    self.assertEquals(0, desc.conn_bi_direct_write)
+    self.assertEquals(2134, desc.conn_bi_direct_both)
+    
+    test_entries = (
+      "",
+      "2012-05-03 ",
+      "2012-05-03",
+      "2012-05-03 12:07:60 (500 s)",
+      "2012-05-03 12:07:50 (500s)",
+      "2012-05-03 12:07:50 (500 s",
+      "2012-05-03 12:07:50 (500 )",
+      "2012-05-03 12:07:50 (500 s)11",
+      "2012-05-03 12:07:50 (500 s) 277431,12089,0",
+      "2012-05-03 12:07:50 (500 s) 277431,12089,0a,2134",
+      "2012-05-03 12:07:50 (500 s) -277431,12089,0,2134",
+    )
+    
+    for entry in test_entries:
+      desc_text = _make_descriptor({"conn-bi-direct": entry})
+      desc = self._expect_invalid_attr(desc_text)
+      self.assertEquals(None, desc.conn_bi_direct_end)
+      self.assertEquals(None, desc.conn_bi_direct_interval)
+      self.assertEquals(None, desc.conn_bi_direct_below)
+      self.assertEquals(None, desc.conn_bi_direct_read)
+      self.assertEquals(None, desc.conn_bi_direct_write)
+      self.assertEquals(None, desc.conn_bi_direct_both)
+  
   def test_percentage_lines(self):
     """
     Uses valid and invalid data to tests lines of the form...
