@@ -129,7 +129,33 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     
     for entry in test_entries:
       desc_text = _make_descriptor({"geoip-db-digest": entry})
-      desc = self._expect_invalid_attr(desc_text, "geoip_db_digest", entry)
+      self._expect_invalid_attr(desc_text, "geoip_db_digest", entry)
+  
+  def test_cell_circuits_per_decile(self):
+    """
+    Parses the cell-circuits-per-decile line with valid and invalid data.
+    """
+    
+    test_entries = (
+      ("0", 0),
+      ("11", 11),
+    )
+    
+    for entry in ("0", "11", "25"):
+      desc_text = _make_descriptor({"cell-circuits-per-decile": entry})
+      desc = ExtraInfoDescriptor(desc_text)
+      self.assertEquals(int(entry), desc.cell_circuits_per_decile)
+    
+    test_entries = (
+      "",
+      " ",
+      "-5",
+      "blarg",
+    )
+    
+    for entry in test_entries:
+      desc_text = _make_descriptor({"cell-circuits-per-decile": entry})
+      self._expect_invalid_attr(desc_text, "cell_circuits_per_decile")
   
   def test_dir_response_lines(self):
     """

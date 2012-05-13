@@ -195,6 +195,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       cell_processed_cells (list) - measurement of processed cells per circuit
       cell_queued_cells (list) - measurement of queued cells per circuit
       cell_time_in_queue (list) - mean enqueued time in milliseconds for cells
+      cell_circuits_per_decile (int) - mean number of circuits in a deciles
     
     Directory Mirror Attributes:
       dir_stats_end (datetime) - end of the period when stats were gathered
@@ -286,6 +287,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.cell_processed_cells = None
     self.cell_queued_cells = None
     self.cell_time_in_queue = None
+    self.cell_circuits_per_decile = None
     
     self.dir_stats_end = None
     self.dir_stats_interval = None
@@ -393,6 +395,21 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           raise ValueError("Geoip digest line had an invalid sha1 digest: %s" % line)
         
         self.geoip_db_digest = value
+      elif keyword == "cell-circuits-per-decile":
+        # "cell-circuits-per-decile" num
+        
+        if not value.isdigit():
+          if validate:
+            raise ValueError("Non-numeric cell-circuits-per-decile value: %s" % line)
+          else:
+            continue
+        
+        stat = int(value)
+        
+        if validate and stat < 0:
+          raise ValueError("Negative cell-circuits-per-decile value: %s" % line)
+        
+        self.cell_circuits_per_decile = stat
       elif keyword in ("dirreq-v2-resp", "dirreq-v3-resp", "dirreq-v2-direct-dl", "dirreq-v3-direct-dl", "dirreq-v2-tunneled-dl", "dirreq-v3-tunneled-dl"):
         recognized_counts = {}
         unrecognized_counts = {}
