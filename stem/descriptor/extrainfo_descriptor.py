@@ -480,6 +480,11 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         if value:
           for entry in value.split(","):
             try:
+              # TODO: The description of the values sound like they should
+              # always be positive, but this is not always the case in
+              # practice...
+              # https://trac.torproject.org/projects/tor/ticket/5849
+              
               entries.append(float(entry))
             except ValueError:
               if validate: raise ValueError("Non-numeric entry in %s listing: %s" % (keyword, line))
