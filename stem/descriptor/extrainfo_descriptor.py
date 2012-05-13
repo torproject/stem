@@ -16,6 +16,14 @@ Extra-info descriptors are available from a few sources...
 - tor metrics, at https://metrics.torproject.org/data.html
 - directory authorities and mirrors via their DirPort
 
+DirResponses - known statuses for ExtraInfoDescriptor's dir_*_responses
+  |- OK - network status requests that were answered
+  |- NOT_ENOUGH_SIGS - network status wasn't signed by enough authorities
+  |- UNAVAILABLE - requested network status was unavailable
+  |- NOT_FOUND - requested network status was not found
+  |- NOT_MODIFIED - network status unmodified since If-Modified-Since time
+  +- BUSY - directory was busy
+
 parse_file - Iterates over the extra-info descriptors in a file.
 ExtraInfoDescriptor - Tor extra-info descriptor.
   +- get_unrecognized_lines - lines with unrecognized content
@@ -25,6 +33,17 @@ import re
 import datetime
 
 import stem.descriptor
+import stem.util.enum
+
+# known statuses for dirreq-v2-resp and dirreq-v3-resp...
+DirResponses = stem.util.enum.Enum(
+  ("OK", "ok"),
+  ("NOT_ENOUGH_SIGS", "not-enough-sigs"),
+  ("UNAVAILABLE", "unavailable"),
+  ("NOT_FOUND", "not-found"),
+  ("NOT_MODIFIED", "not-modified"),
+  ("BUSY", "busy"),
+)
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -161,6 +180,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       dir_v3_ips (dict) - mapping of locales to rounded count of requester ips
       dir_v2_requests (dict) - mapping of locales to rounded count of requests
       dir_v3_requests (dict) - mapping of locales to rounded count of requests
+      dir_v2_responses (dict) - mapping of DirResponses to their rounded count
+      dir_v3_responses (dict) - mapping of DirResponses to their rounded count
+      dir_v2_responses_unknown (dict) - mapping of unrecognized statuses to their count
+      dir_v3_responses_unknown (dict) - mapping of unrecognized statuses to their count
       dir_v2_share (float) - percent of total directory traffic it expects to serve
       dir_v3_share (float) - percent of total directory traffic it expects to serve
       
@@ -225,6 +248,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.dir_v3_ips = None
     self.dir_v2_requests = None
     self.dir_v3_requests = None
+    self.dir_v2_responses = None
+    self.dir_v3_responses = None
+    self.dir_v2_responses_unknown = None
+    self.dir_v3_responses_unknown = None
     self.dir_v2_share = None
     self.dir_v3_share = None
     
@@ -309,6 +336,33 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           raise ValueError("Geoip digest line had an invalid sha1 digest: %s" % line)
         
         self.geoip_db_digest = value
+      elif keyword in ("dirreq-v2-resp", "dirreq-v3-resp"):
+        recognized_counts = {}
+        unrecognized_counts = {}
+        error_msg = "%s lines should contain STATUS=COUNT mappings: %s" % (keyword, line)
+        
+        if value:
+          for entry in value.split(","):
+            if not "=" in entry:
+              if validate: raise ValueError(error_msg)
+              else: continue
+            
+            status, count = entry.split("=", 1)
+            
+            if count.isdigit():
+              if status in DirResponses:
+                recognized_counts[status] = int(count)
+              else:
+                unrecognized_counts[status] = int(count)
+            elif validate:
+              raise ValueError(error_msg)
+        
+        if keyword == "dirreq-v2-resp":
+          self.dir_v2_responses = recognized_counts
+          self.dir_v2_responses_unknown = unrecognized_counts
+        else:
+          self.dir_v3_responses = recognized_counts
+          self.dir_v3_responses_unknown = unrecognized_counts
       elif keyword in ("dirreq-v2-share", "dirreq-v3-share"):
         # "<keyword>" num%
         
@@ -385,6 +439,12 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           if validate: raise exc
       elif keyword in ("dirreq-v2-ips", "dirreq-v3-ips", "dirreq-v2-reqs", "dirreq-v3-reqs", "geoip-client-origins", "bridge-ips"):
         # "<keyword>" CC=N,CC=N,...
+        #
+        # The maxmind geoip (https://www.maxmind.com/app/iso3166) has numeric
+        # locale codes for some special values, for instance...
+        #   A1,"Anonymous Proxy"
+        #   A2,"Satellite Provider"
+        #   ??,"Unknown"
         
         locale_usage = {}
         error_msg = "Entries in %s line should only be CC=N entries: %s" % (keyword, line)
@@ -395,23 +455,12 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
               if validate: raise ValueError(error_msg)
               else: continue
             
-            # The maxmind geoip has numeric locale codes for some special
-            # values, for instance...
-            #
-            #   A1,"Anonymous Proxy"
-            #   A2,"Satellite Provider"
-            #   ??,"Unknown"
-            #
-            # https://www.maxmind.com/app/iso3166
-            
-            
             locale, count = entry.split("=", 1)
             
             if re.match("^[a-zA-Z0-9\?]{2}$", locale) and count.isdigit():
               locale_usage[locale] = int(count)
             elif validate:
               raise ValueError(error_msg)
-        
         if keyword == "dirreq-v2-ips":
           self.dir_v2_ips = locale_usage
         elif keyword == "dirreq-v3-ips":

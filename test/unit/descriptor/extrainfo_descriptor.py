@@ -4,7 +4,7 @@ Unit tests for stem.descriptor.extrainfo_descriptor.
 
 import datetime
 import unittest
-from stem.descriptor.extrainfo_descriptor import ExtraInfoDescriptor
+from stem.descriptor.extrainfo_descriptor import ExtraInfoDescriptor, DirResponses
 
 CRYPTO_BLOB = """
 K5FSywk7qvw/boA4DQcqkls6Ize5vcBYfhQ8JnOeRQC9+uDxbnpm3qaYN9jZ8myj
@@ -130,6 +130,37 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     for entry in test_entries:
       desc_text = _make_descriptor({"geoip-db-digest": entry})
       desc = self._expect_invalid_attr(desc_text, "geoip_db_digest", entry)
+  
+  def test_dir_response_lines(self):
+    """
+    Parses the dirreq-v2-resp and dirreq-v3-resp lines with valid and invalid
+    data.
+    """
+    
+    for keyword in ("dirreq-v2-resp", "dirreq-v3-resp"):
+      attr = keyword.replace('-', '_').replace('dirreq', 'dir').replace('resp', 'responses')
+      unknown_attr = attr + "_unknown"
+      
+      test_value = "ok=0,unavailable=0,not-found=984,not-modified=0,something-new=7"
+      desc_text = _make_descriptor({keyword: test_value})
+      desc = ExtraInfoDescriptor(desc_text)
+      self.assertEquals(0, getattr(desc, attr)[DirResponses.OK])
+      self.assertEquals(0, getattr(desc, attr)[DirResponses.UNAVAILABLE])
+      self.assertEquals(984, getattr(desc, attr)[DirResponses.NOT_FOUND])
+      self.assertEquals(0, getattr(desc, attr)[DirResponses.NOT_MODIFIED])
+      self.assertEquals(7, getattr(desc, unknown_attr)["something-new"])
+      
+      test_entries = (
+        "ok=-4",
+        "ok:4",
+        "ok=4.not-found=3",
+      )
+      
+      for entry in test_entries:
+        desc_text = _make_descriptor({keyword: entry})
+        desc = self._expect_invalid_attr(desc_text)
+        self.assertEqual({}, getattr(desc, attr))
+        self.assertEqual({}, getattr(desc, unknown_attr))
   
   def test_percentage_lines(self):
     """

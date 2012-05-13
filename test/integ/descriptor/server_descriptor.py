@@ -172,8 +172,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
           # there doesn't seem to be anything in practice to trigger this so
           # failing to get our attention if it does.
           
-          print "Unrecognized descriptor content: %s" % unrecognized_lines
-          self.fail()
+          self.fail("Unrecognized descriptor content: %s" % unrecognized_lines)
   
   def test_non_ascii_descriptor(self):
     """

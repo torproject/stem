@@ -83,13 +83,16 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
         #unrecognized_lines = desc.get_unrecognized_lines()
         unrecognized_lines = []
         
-        if unrecognized_lines:
+        if desc.dir_v2_responses_unknown:
+          self.fail("Unrecognized statuses on dirreq-v2-resp lines: %s" % desc.dir_v2_responses_unknown)
+        elif desc.dir_v3_responses_unknown:
+          self.fail("Unrecognized statuses on dirreq-v3-resp lines: %s" % desc.dir_v3_responses_unknown)
+        elif unrecognized_lines:
           # TODO: This isn't actually a problem, and rather than failing we
           # should alert the user about these entries at the end of the tests
           # (along with new events, getinfo options, and such). For now though
           # there doesn't seem to be anything in practice to trigger this so
           # failing to get our attention if it does.
           
-          print "Unrecognized descriptor content: %s" % unrecognized_lines
-          self.fail()
+          self.fail("Unrecognized descriptor content: %s" % unrecognized_lines)
 
