@@ -159,8 +159,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       dir_stats_interval (int) - length in seconds of the interval
       dir_v2_ips (dict) - mapping of locales to rounded count of requester ips
       dir_v3_ips (dict) - mapping of locales to rounded count of requester ips
-      dir_v2_reqs (dict) - mapping of locales to rounded count of requests
-      dir_v3_reqs (dict) - mapping of locales to rounded count of requests
+      dir_v2_requests (dict) - mapping of locales to rounded count of requests
+      dir_v3_requests (dict) - mapping of locales to rounded count of requests
       dir_v2_share (float) - percent of total directory traffic it expects to serve
       dir_v3_share (float) - percent of total directory traffic it expects to serve
       
@@ -223,8 +223,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.dir_stats_interval = None
     self.dir_v2_ips = None
     self.dir_v3_ips = None
-    self.dir_v2_reqs = None
-    self.dir_v3_reqs = None
+    self.dir_v2_requests = None
+    self.dir_v3_requests = None
     self.dir_v2_share = None
     self.dir_v3_share = None
     
@@ -417,9 +417,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         elif keyword == "dirreq-v3-ips":
           self.dir_v3_ips = locale_usage
         elif keyword == "dirreq-v2-reqs":
-          self.dir_v2_reqs = locale_usage
+          self.dir_v2_requests = locale_usage
         elif keyword == "dirreq-v3-reqs":
-          self.dir_v3_reqs = locale_usage
+          self.dir_v3_requests = locale_usage
         elif keyword == "geoip-client-origins":
           self.geoip_client_origins = locale_usage
         elif keyword == "bridge-ips":
