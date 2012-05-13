@@ -79,9 +79,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     RAN_CACHED_DESCRIPTOR_TEST = True
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.extrainfo_descriptor.parse_file(descriptor_file):
-        # TODO: uncomment when we're done implementing the ExtraInfoDescriptor class
-        #unrecognized_lines = desc.get_unrecognized_lines()
-        unrecognized_lines = []
+        unrecognized_lines = desc.get_unrecognized_lines()
         
         if desc.dir_v2_responses_unknown:
           self.fail("Unrecognized statuses on dirreq-v2-resp lines: %s" % desc.dir_v2_responses_unknown)
