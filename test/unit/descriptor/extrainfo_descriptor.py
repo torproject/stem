@@ -363,7 +363,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
     """
     
-    for keyword in ('cell-stats-end', 'entry-stats-end', 'bridge-stats-end', 'dirreq-stats-end'):
+    for keyword in ('cell-stats-end', 'entry-stats-end', 'exit-stats-end', 'bridge-stats-end', 'dirreq-stats-end'):
       end_attr = keyword.replace('-', '_').replace('dirreq', 'dir')
       interval_attr = end_attr[:-4] + "_interval"
       
@@ -430,6 +430,39 @@ class TestExtraInfoDescriptor(unittest.TestCase):
         self.assertEquals(None, getattr(desc, end_attr))
         self.assertEquals(None, getattr(desc, interval_attr))
         self.assertEquals(None, getattr(desc, values_attr))
+  
+  def test_port_mapping_lines(self):
+    """
+    Uses valid and invalid data to tests lines of the form...
+    "<keyword>" port=N,port=N,...
+    """
+    
+    for keyword in ('exit-kibibytes-written', 'exit-kibibytes-read', 'exit-streams-opened'):
+      attr = keyword.replace('-', '_')
+      
+      test_entries = (
+        ("", {}),
+        ("443=100,other=111", {443: 100, 'other': 111}),
+        ("80=115533759,443=1777,995=690", {80: 115533759, 443: 1777, 995: 690}),
+      )
+      
+      for test_value, expected_value in test_entries:
+        desc_text = _make_descriptor({keyword: test_value})
+        desc = ExtraInfoDescriptor(desc_text)
+        self.assertEquals(expected_value, getattr(desc, attr))
+      
+      test_entries = (
+        "8000000=115533759",
+        "-80=115533759",
+        "80=-115533759",
+        "=115533759",
+        "80=",
+        "80,115533759",
+      )
+      
+      for entry in test_entries:
+        desc_text = _make_descriptor({keyword: entry})
+        self._expect_invalid_attr(desc_text, attr, {})
   
   def test_locale_mapping_lines(self):
     """

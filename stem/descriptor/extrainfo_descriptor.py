@@ -243,6 +243,13 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       entry_stats_interval (int) - length in seconds of the interval
       entry_ips (dict) - mapping of locales to rounded count of unique user ips
     
+    Exit Attributes:
+      exit_stats_end (datetime) - end of the period when stats were gathered
+      exit_stats_interval (int) - length in seconds of the interval
+      exit_kibibytes_written (dict) - traffic per port (keys are ints or 'other')
+      exit_kibibytes_read (dict) - traffic per port (keys are ints or 'other')
+      exit_streams_opened (dict) - streams per port (keys are ints or 'other')
+    
     Bridge Attributes:
       bridge_stats_end (datetime) - end of the period when stats were gathered
       bridge_stats_interval (int) - length in seconds of the interval
@@ -335,6 +342,12 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.entry_stats_end = None
     self.entry_stats_interval = None
     self.entry_ips = None
+    
+    self.exit_stats_end = None
+    self.exit_stats_interval = None
+    self.exit_kibibytes_written = None
+    self.exit_kibibytes_read = None
+    self.exit_streams_opened = None
     
     self.bridge_stats_end = None
     self.bridge_stats_interval = None
@@ -522,7 +535,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         except ValueError:
           if validate:
             raise ValueError("Timestamp on %s line wasn't parseable: %s" % (keyword, line))
-      elif keyword in ("cell-stats-end", "entry-stats-end", "bridge-stats-end", "dirreq-stats-end"):
+      elif keyword in ("cell-stats-end", "entry-stats-end", "exit-stats-end", "bridge-stats-end", "dirreq-stats-end"):
         # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
         
         try:
@@ -534,6 +547,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           elif keyword == "entry-stats-end":
             self.entry_stats_end = timestamp
             self.entry_stats_interval = interval
+          elif keyword == "exit-stats-end":
+            self.exit_stats_end = timestamp
+            self.exit_stats_interval = interval
           elif keyword == "bridge-stats-end":
             self.bridge_stats_end = timestamp
             self.bridge_stats_interval = interval
@@ -592,6 +608,32 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             self.dir_write_history_values = history_values
         except ValueError, exc:
           if validate: raise exc
+      elif keyword in ("exit-kibibytes-written", "exit-kibibytes-read", "exit-streams-opened"):
+        # "<keyword>" port=N,port=N,...
+        
+        port_mappings = {}
+        error_msg = "Entries in %s line should only be PORT=N entries: %s" % (keyword, line)
+        
+        if value:
+          for entry in value.split(","):
+            if not "=" in entry:
+              if validate: raise ValueError(error_msg)
+              else: continue
+            
+            port, stat = entry.split("=", 1)
+            
+            if (port == 'other' or stem.util.connection.is_valid_port(port)) and stat.isdigit():
+              if port != 'other': port = int(port)
+              port_mappings[port] = int(stat)
+            elif validate:
+              raise ValueError(error_msg)
+        
+        if keyword == "exit-kibibytes-written":
+          self.exit_kibibytes_written = port_mappings
+        elif keyword == "exit-kibibytes-read":
+          self.exit_kibibytes_read = port_mappings
+        elif keyword == "exit-streams-opened":
+          self.exit_streams_opened = port_mappings
       elif keyword in ("dirreq-v2-ips", "dirreq-v3-ips", "dirreq-v2-reqs", "dirreq-v3-reqs", "geoip-client-origins", "entry-ips", "bridge-ips"):
         # "<keyword>" CC=N,CC=N,...
         #
@@ -616,6 +658,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
               locale_usage[locale] = int(count)
             elif validate:
               raise ValueError(error_msg)
+        
         if keyword == "dirreq-v2-ips":
           self.dir_v2_ips = locale_usage
         elif keyword == "dirreq-v3-ips":
