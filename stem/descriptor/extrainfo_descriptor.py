@@ -262,7 +262,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       default value, others are left as None if undefined
   """
   
-  def __init__(self, raw_contents, validate = True, annotations = None):
+  def __init__(self, raw_contents, validate = True):
     """
     Extra-info descriptor constructor, created from a relay's extra-info
     content (as provided by "GETINFO extra-info/digest/*", cached contents, and
