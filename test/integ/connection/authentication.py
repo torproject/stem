@@ -236,7 +236,7 @@ class TestAuthenticate(unittest.TestCase):
     """
     
     auth_type = stem.connection.AuthMethod.COOKIE
-    auth_value = os.path.join(test.runner.get_runner().get_test_dir(), "fake_cookie")
+    auth_value = test.runner.get_runner().get_test_dir("fake_cookie")
     
     # we need to create a 32 byte cookie file to load from
     fake_cookie = open(auth_value, "w")

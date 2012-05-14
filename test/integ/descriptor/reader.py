@@ -24,7 +24,7 @@ DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
 TAR_DESCRIPTORS = None
 
 def _get_processed_files_path():
-  return os.path.join(test.runner.get_runner().get_test_dir(), "descriptor_processed_files")
+  return test.runner.get_runner().get_test_dir("descriptor_processed_files")
 
 def _make_processed_files_listing(contents):
   """
@@ -372,7 +372,7 @@ class TestDescriptorReader(unittest.TestCase):
     # types are solely based on file extensions so making something that looks
     # like an png image
     
-    test_path = os.path.join(test.runner.get_runner().get_test_dir(), "test.png")
+    test_path = test.runner.get_runner().get_test_dir("test.png")
     
     try:
       test_file = open(test_path, "w")
@@ -399,7 +399,7 @@ class TestDescriptorReader(unittest.TestCase):
     Listens for a file that's skipped because we lack read permissions.
     """
     
-    test_path = os.path.join(test.runner.get_runner().get_test_dir(), "secret_file")
+    test_path = test.runner.get_runner().get_test_dir("secret_file")
     
     try:
       test_file = open(test_path, "w")

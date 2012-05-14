@@ -21,6 +21,7 @@ import test.unit.socket.control_line
 import test.unit.socket.control_message
 import test.unit.descriptor.reader
 import test.unit.descriptor.server_descriptor
+import test.unit.descriptor.extrainfo_descriptor
 import test.unit.util.conf
 import test.unit.util.connection
 import test.unit.util.enum
@@ -35,6 +36,7 @@ import test.integ.socket.control_message
 import test.integ.socket.control_socket
 import test.integ.descriptor.reader
 import test.integ.descriptor.server_descriptor
+import test.integ.descriptor.extrainfo_descriptor
 import test.integ.util.conf
 import test.integ.util.system
 import test.integ.process
@@ -94,6 +96,7 @@ UNIT_TESTS = (
   test.unit.util.tor_tools.TestTorTools,
   test.unit.descriptor.reader.TestDescriptorReader,
   test.unit.descriptor.server_descriptor.TestServerDescriptor,
+  test.unit.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
   test.unit.version.TestVersion,
   test.unit.socket.control_message.TestControlMessage,
   test.unit.socket.control_line.TestControlLine,
@@ -106,6 +109,7 @@ INTEG_TESTS = (
   test.integ.util.system.TestSystem,
   test.integ.descriptor.reader.TestDescriptorReader,
   test.integ.descriptor.server_descriptor.TestServerDescriptor,
+  test.integ.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
   test.integ.version.TestVersion,
   test.integ.process.TestProcess,
   test.integ.socket.control_socket.TestControlSocket,

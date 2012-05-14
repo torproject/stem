@@ -10,9 +10,7 @@ import stem.control
 import stem.version
 import stem.descriptor.server_descriptor
 import test.runner
-
-my_dir = os.path.dirname(__file__)
-DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
+import test.integ.descriptor
 
 # 'test_cached_descriptor' is a lengthy test and uneffected by testing targets,
 # so including a flag to prevent it from being ran multiple times
@@ -20,30 +18,16 @@ DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
 RAN_CACHED_DESCRIPTOR_TEST = False
 
 class TestServerDescriptor(unittest.TestCase):
-  is_descriptors_available = None
-  
-  def setUp(self):
-    # If this is our first time running the integ tests and we didn't wait for
-    # a full tor initialization then the cached descriptors won't exist yet.
-    # Noting if they exist or not since some tests need them.
-    
-    if self.is_descriptors_available is None:
-      test_dir = test.runner.get_runner().get_test_dir()
-      descriptor_path = os.path.join(test_dir, "cached-descriptors")
-      self.is_descriptors_available = os.path.exists(descriptor_path)
-  
   def test_metrics_descriptor(self):
     """
     Parses and checks our results against a server descriptor from metrics.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    descriptor_path = test.integ.descriptor.get_resource("example_descriptor")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
-    
-    expected_published = datetime.datetime(2012, 3, 1, 17, 15, 27)
     
     expected_family = [
       "$0CE3CFB1E9CC47B63EA8869813BF6FAB7D4540C1",
@@ -85,7 +69,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(stem.version.Version("0.2.1.30"), desc.tor_version)
     self.assertEquals("Linux x86_64", desc.operating_system)
     self.assertEquals(588217, desc.uptime)
-    self.assertEquals(expected_published, desc.published)
+    self.assertEquals(datetime.datetime(2012, 3, 1, 17, 15, 27), desc.published)
     self.assertEquals("www.atagar.com/contact", desc.contact)
     self.assertEquals(["1", "2"], desc.link_protocols)
     self.assertEquals(["1"], desc.circuit_protocols)
@@ -110,7 +94,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a relay server descriptor from 2005.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "old_descriptor")
+    descriptor_path = test.integ.descriptor.get_resource("old_descriptor")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
@@ -149,14 +133,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     # The read-history and write-history lines are pretty long so just checking
     # the initial contents for the line and parsed values.
     
-    read_start = "2005-12-16 18:00:48 (900 s) 20774,489973,510022"
-    self.assertTrue(desc.read_history.startswith(read_start))
-    
     read_values_start = [20774, 489973, 510022, 511163, 20949]
     self.assertEquals(read_values_start, desc.read_history_values[:5])
-    
-    write_start = "2005-12-16 18:00:48 (900 s) 81,8848,8927,8927"
-    self.assertTrue(desc.write_history.startswith(write_start))
     
     write_values_start = [81, 8848, 8927, 8927, 83, 8848, 8931, 8929, 81, 8846]
     self.assertEquals(write_values_start, desc.write_history_values[:10])
@@ -168,24 +146,21 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     additions.
     """
     
-    descriptor_path = os.path.join(test.runner.get_runner().get_test_dir(), "cached-descriptors")
-    
-    if not self.is_descriptors_available:
-      self.skipTest("(no cached descriptors)")
-    
     global RAN_CACHED_DESCRIPTOR_TEST
+    descriptor_path = test.runner.get_runner().get_test_dir("cached-descriptors")
     
     if RAN_CACHED_DESCRIPTOR_TEST:
       self.skipTest("(already ran)")
-    else:
-      RAN_CACHED_DESCRIPTOR_TEST = True
+    elif not os.path.exists(descriptor_path):
+      self.skipTest("(no cached descriptors)")
     
+    RAN_CACHED_DESCRIPTOR_TEST = True
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.server_descriptor.parse_file(descriptor_file):
         # the following attributes should be deprecated, and not appear in the wild
-        self.assertEquals(None, desc.read_history)
-        self.assertEquals(None, desc.write_history)
-        self.assertEquals(True, desc.eventdns)
+        self.assertEquals(None, desc.read_history_end)
+        self.assertEquals(None, desc.write_history_end)
+        self.assertEquals(None, desc.eventdns)
         self.assertEquals(0, desc.socks_port)
         
         unrecognized_lines = desc.get_unrecognized_lines()
@@ -197,21 +172,19 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
           # there doesn't seem to be anything in practice to trigger this so
           # failing to get our attention if it does.
           
-          print "Unrecognized descriptor content: %s" % unrecognized_lines
-          self.fail()
+          self.fail("Unrecognized descriptor content: %s" % unrecognized_lines)
   
   def test_non_ascii_descriptor(self):
     """
     Parses a descriptor with non-ascii content.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "non-ascii_descriptor")
+    descriptor_path = test.integ.descriptor.get_resource("non-ascii_descriptor")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
-    expected_published = datetime.datetime(2012, 3, 21, 16, 28, 14)
     expected_contact = "2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf"
     
     desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
@@ -225,7 +198,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(stem.version.Version("0.2.2.35"), desc.tor_version)
     self.assertEquals("Linux x86_64", desc.operating_system)
     self.assertEquals(3103848, desc.uptime)
-    self.assertEquals(expected_published, desc.published)
+    self.assertEquals(datetime.datetime(2012, 3, 21, 16, 28, 14), desc.published)
     self.assertEquals(expected_contact, desc.contact)
     self.assertEquals(["1", "2"], desc.link_protocols)
     self.assertEquals(["1"], desc.circuit_protocols)
@@ -247,7 +220,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     returns ('\r' entries).
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "cr_in_contact_line")
+    descriptor_path = test.integ.descriptor.get_resource("cr_in_contact_line")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
@@ -274,7 +247,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     where we shouldn't be.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "negative_uptime")
+    descriptor_path = test.integ.descriptor.get_resource("negative_uptime")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
@@ -297,13 +270,11 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a bridge descriptor.
     """
     
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "bridge_descriptor")
+    descriptor_path = test.integ.descriptor.get_resource("bridge_descriptor")
     
     descriptor_file = open(descriptor_path)
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
-    
-    expected_published = datetime.datetime(2012, 3, 22, 17, 34, 38)
     
     expected_family = [
       "$CE396C72A3D0880F74C064FEA79D68C15BD380B9",
@@ -322,7 +293,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(stem.version.Version("0.2.3.12-alpha"), desc.tor_version)
     self.assertEquals("Linux x86_64", desc.operating_system)
     self.assertEquals(186, desc.uptime)
-    self.assertEquals(expected_published, desc.published)
+    self.assertEquals(datetime.datetime(2012, 3, 22, 17, 34, 38), desc.published)
     self.assertEquals("somebody", desc.contact)
     self.assertEquals(["1", "2"], desc.link_protocols)
     self.assertEquals(["1"], desc.circuit_protocols)

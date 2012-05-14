@@ -46,7 +46,7 @@ Why are those arrows",
 coming my way?!?"""
 
 def _get_test_config_path():
-  return os.path.join(test.runner.get_runner().get_test_dir(), "integ_test_cfg")
+  return test.runner.get_runner().get_test_dir("integ_test_cfg")
 
 def _make_config(contents):
   """
