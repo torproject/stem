@@ -1,6 +1,5 @@
 """
-Helper functions for working with tor as a process. These are mostly os
-dependent, only working on linux, osx, and bsd.
+Helper functions for working with tor as a process.
 
 launch_tor - starts up a tor process
 """
