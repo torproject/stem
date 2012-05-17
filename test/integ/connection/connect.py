@@ -31,7 +31,7 @@ class TestConnect(unittest.TestCase):
       control_port = test.runner.CONTROL_PORT,
       password = test.runner.CONTROL_PASSWORD,
       chroot_path = runner.get_chroot(),
-      controller = stem.connection.Controller.NONE)
+      controller = None)
     
     if test.runner.Torrc.PORT in runner.get_options():
       test.runner.exercise_controller(self, control_socket)
@@ -50,7 +50,7 @@ class TestConnect(unittest.TestCase):
       socket_path = test.runner.CONTROL_SOCKET_PATH,
       password = test.runner.CONTROL_PASSWORD,
       chroot_path = runner.get_chroot(),
-      controller = stem.connection.Controller.NONE)
+      controller = None)
     
     if test.runner.Torrc.SOCKET in runner.get_options():
       test.runner.exercise_controller(self, control_socket)

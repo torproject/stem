@@ -90,9 +90,6 @@ import stem.util.enum
 import stem.util.system
 import stem.util.log as log
 
-# enums representing classes that the connect_* methods can return
-Controller = stem.util.enum.Enum("NONE")
-
 # Methods by which a controller can authenticate to the control port. Tor gives
 # a list of all the authentication methods it will accept in response to
 # PROTOCOLINFO queries.
@@ -194,7 +191,7 @@ AUTHENTICATE_EXCEPTIONS = (
   AuthenticationFailure,
 )
 
-def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = Controller.NONE):
+def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = None):
   """
   Convenience function for quickly getting a control connection. This is very
   handy for debugging or CLI setup, handling setup and prompting for a password
@@ -202,15 +199,16 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
   description of the problem and returns None.
   
   Arguments:
-    control_addr (str)      - ip address of the controller
-    control_port (int)      - port number of the controller
-    password (str)          - passphrase to authenticate to the socket
-    chroot_path (str)       - path prefix if in a chroot environment
-    controller (Controller) - controller type to be returned
+    control_addr (str) - ip address of the controller
+    control_port (int) - port number of the controller
+    password (str)     - passphrase to authenticate to the socket
+    chroot_path (str)  - path prefix if in a chroot environment
+    controller (Class) - BaseController subclass to be returned, this provides
+                         a ControlSocket if None
   
   Returns:
-    Authenticated control connection, the type based on the controller enum...
-      Controller.NONE => stem.socket.ControlPort
+    Authenticated control connection, the type based on the controller
+    argument.
   """
   
   # TODO: replace the controller arg's default when we have something better
@@ -223,16 +221,17 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
   
   return _connect(control_port, password, chroot_path, controller)
 
-def connect_socket_file(socket_path = "/var/run/tor/control", password = None, chroot_path = None, controller = Controller.NONE):
+def connect_socket_file(socket_path = "/var/run/tor/control", password = None, chroot_path = None, controller = None):
   """
   Convenience function for quickly getting a control connection. For more
   information see the connect_port function.
   
   Arguments:
-    socket_path (str)       - path where the control socket is located
-    password (str)          - passphrase to authenticate to the socket
-    chroot_path (str)       - path prefix if in a chroot environment
-    controller (Controller) - controller type to be returned
+    socket_path (str)  - path where the control socket is located
+    password (str)     - passphrase to authenticate to the socket
+    chroot_path (str)  - path prefix if in a chroot environment
+    controller (Class) - BaseController subclass to be returned, this provides
+                         a ControlSocket if None
   
   Returns:
     Authenticated control connection, the type based on the controller enum.
@@ -252,9 +251,10 @@ def _connect(control_socket, password, chroot_path, controller):
   
   Arguments:
     control_socket (stem.socket.ControlSocket) - socket being authenticated to
-    password (str)          - passphrase to authenticate to the socket
-    chroot_path (str)       - path prefix if in a chroot environment
-    controller (Controller) - controller type to be returned
+    password (str)     - passphrase to authenticate to the socket
+    chroot_path (str)  - path prefix if in a chroot environment
+    controller (Class) - BaseController subclass to be returned, this provides
+                         a ControlSocket if None
   
   Returns:
     Authenticated control connection with a type based on the controller enum.
@@ -263,8 +263,10 @@ def _connect(control_socket, password, chroot_path, controller):
   try:
     authenticate(control_socket, password, chroot_path)
     
-    if controller == Controller.NONE:
+    if controller == None:
       return control_socket
+    else:
+      return controller(control_socket)
   except MissingPassword:
     assert password is None, "BUG: authenticate raised MissingPassword despite getting one"
     
