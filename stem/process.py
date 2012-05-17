@@ -81,6 +81,8 @@ def launch_tor(tor_cmd = "tor", options = None, torrc_path = None, completion_pe
     signal.alarm(timeout)
   
   bootstrap_line = re.compile("Bootstrapped ([0-9]+)%: ")
+  problem_line = re.compile("\[(warn|err)\] (.*)$")
+  last_problem = "Timed out"
   
   while True:
     init_line = tor_process.stdout.readline().strip()
@@ -88,13 +90,14 @@ def launch_tor(tor_cmd = "tor", options = None, torrc_path = None, completion_pe
     # this will provide empty results if the process is terminated
     if not init_line:
       tor_process.kill() # ... but best make sure
-      raise OSError("process terminated")
+      raise OSError("Process terminated: %s" % last_problem)
     
     # provide the caller with the initialization message if they want it
     if init_msg_handler: init_msg_handler(init_line)
     
     # return the process if we're done with bootstrapping
     bootstrap_match = bootstrap_line.search(init_line)
+    problem_match = problem_line.search(init_line)
     
     if bootstrap_match and int(bootstrap_match.groups()[0]) >= completion_percent:
       if temp_file:
@@ -102,4 +105,10 @@ def launch_tor(tor_cmd = "tor", options = None, torrc_path = None, completion_pe
         except: pass
       
       return tor_process
+    elif problem_match:
+      runlevel, msg = problem_match.groups()
+      
+      if not "see warnings above" in msg:
+        if ": " in msg: msg = msg.split(": ")[-1].strip()
+        last_problem = msg
 
