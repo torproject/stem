@@ -3,9 +3,13 @@ Tor Exit Policy information and requirements for its features. These can be
 easily parsed and compared, for instance...
 
 >>> exit_policies = stem.exit_policy.ExitPolicy()
+>>> exit_policies.add("accept *:80")
+>>> exit_policies.add("accept *:443")
 >>> exit_policies.add("reject *:*")
 >>> print exit_policies
-reject *:*
+accept *:80 , accept *:443, reject *:*
+>>> print exit_policies.get_summary()
+accept 80, 443
 
 ExitPolicyLine - Single rule from the exit policy
   |- __str__ - string representation
@@ -16,7 +20,9 @@ ExitPolicy - List of ExitPolicyLine objects
   |- __iter__ - ExitPolicyLine entries for the exit policy
   |- check    - check if exiting to this ip is allowed
   |- add      - add new rule to the exit policy
-  +- isExitingAllowed - check if exit node
+  |- get_summary - provides a summary description of the policy chain
+  +- is_exiting_allowed - check if exit node
+
 """
 
 # ip address ranges substituted by the 'private' keyword
@@ -140,6 +146,7 @@ class ExitPolicy:
     ExitPolicy constructor
     """
     self._policies = []
+    self.summary = ""
 
   def add(self, rule_entry):
     """
@@ -156,7 +163,76 @@ class ExitPolicy:
         self._policies.append(ExitPolicyLine(new_entry))
     else:
       self._policies.append(ExitPolicyLine(rule_entry))
-    
+
+  def get_summary(self):
+    """
+    Provides a summary description of the policy chain similar to the
+    consensus. This excludes entries that don't cover all ips, and is either
+    a whitelist or blacklist policy based on the final entry. 
+    """
+
+    if not self.summary:
+      # determines if we're a whitelist or blacklist
+      is_whitelist = False # default in case we don't have a catch-all policy at the end
+
+      for policy in self._policies:
+        if policy.is_ip_wildcard and policy.is_port_wildcard:
+          is_whitelist = not policy.is_accept
+          break
+
+      # Iterates over the policys and adds the the ports we'll return (ie, allows
+      # if a whitelist and rejects if a blacklist). Reguardless of a port's
+      # allow/reject policy, all further entries with that port are ignored since
+      # policies respect the first matching policy.
+
+      display_ports, skip_ports = [], []
+
+      for policy in self._policies:
+        if not policy.is_ip_wildcard: continue
+
+        if policy.min_port == policy.max_port:
+          port_range = [policy.min_port]
+        else:
+          port_range = range(policy.min_port, policy.max_port + 1)
+
+        for port in port_range:
+          if port in skip_ports: continue
+
+          # if accept + whitelist or reject + blacklist then add
+          if policy.is_accept == is_whitelist:
+            display_ports.append(port)
+
+          # all further entries with this port are to be ignored
+          skip_ports.append(port)
+          
+      # gets a list of the port ranges
+      if display_ports:
+        display_ranges, temp_range = [], []
+        display_ports.sort()
+        display_ports.append(None) # ending item to include last range in loop
+
+        for port in display_ports:
+          if not temp_range or temp_range[-1] + 1 == port:
+            temp_range.append(port)
+          else:
+            if len(temp_range) > 1:
+              display_ranges.append("%i-%i" % (temp_range[0], temp_range[-1]))
+            else:
+              display_ranges.append(str(temp_range[0]))
+
+            temp_range = [port]
+      else:
+        # everything for the inverse
+        is_whitelist = not is_whitelist
+        display_ranges = ["1-65535"]
+
+      # constructs the summary string
+      label_prefix = "accept " if is_whitelist else "reject "
+
+      self.summary = (label_prefix + ", ".join(display_ranges)).strip()
+
+    return self.summary
+
   def is_exiting_allowed(self):
     """
     Provides true if the policy allows exiting whatsoever, false otherwise.
@@ -188,4 +264,4 @@ class ExitPolicy:
     Provides the string used to construct the Exit Policy      
     """
     return ' , '.join([str(policy) for policy in self._policies])
-  
+ 
