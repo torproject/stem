@@ -10,8 +10,6 @@ import stem.descriptor.extrainfo_descriptor
 import test.runner
 import test.integ.descriptor
 
-RAN_CACHED_DESCRIPTOR_TEST = False
-
 class TestExtraInfoDescriptor(unittest.TestCase):
   def test_metrics_descriptor(self):
     """
@@ -68,15 +66,14 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     additions.
     """
     
-    global RAN_CACHED_DESCRIPTOR_TEST
+    # lengthy test and uneffected by targets, so only run once
+    test.runner.only_run_once(self, "test_cached_descriptor")
+    
     descriptor_path = test.runner.get_runner().get_test_dir("cached-extrainfo")
     
-    if RAN_CACHED_DESCRIPTOR_TEST:
-      self.skipTest("(already ran)")
-    elif not os.path.exists(descriptor_path):
+    if not os.path.exists(descriptor_path):
       self.skipTest("(no cached descriptors)")
     
-    RAN_CACHED_DESCRIPTOR_TEST = True
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.extrainfo_descriptor.parse_file(descriptor_file):
         unrecognized_lines = desc.get_unrecognized_lines()

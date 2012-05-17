@@ -12,11 +12,6 @@ import stem.descriptor.server_descriptor
 import test.runner
 import test.integ.descriptor
 
-# 'test_cached_descriptor' is a lengthy test and uneffected by testing targets,
-# so including a flag to prevent it from being ran multiple times
-
-RAN_CACHED_DESCRIPTOR_TEST = False
-
 class TestServerDescriptor(unittest.TestCase):
   def test_metrics_descriptor(self):
     """
@@ -146,15 +141,14 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     additions.
     """
     
-    global RAN_CACHED_DESCRIPTOR_TEST
+    # lengthy test and uneffected by targets, so only run once
+    test.runner.only_run_once(self, "test_cached_descriptor")
+    
     descriptor_path = test.runner.get_runner().get_test_dir("cached-descriptors")
     
-    if RAN_CACHED_DESCRIPTOR_TEST:
-      self.skipTest("(already ran)")
-    elif not os.path.exists(descriptor_path):
+    if not os.path.exists(descriptor_path):
       self.skipTest("(no cached descriptors)")
     
-    RAN_CACHED_DESCRIPTOR_TEST = True
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.server_descriptor.parse_file(descriptor_file):
         # the following attributes should be deprecated, and not appear in the wild

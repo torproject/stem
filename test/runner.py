@@ -86,6 +86,9 @@ Torrc = stem.util.enum.Enum(
   ("PTRACE", "DisableDebuggerAttachment 0"),
 )
 
+# (test_instance, test_name) tuples that we've registered as having been ran
+RAN_TESTS = []
+
 class RunnerStopped(Exception):
   "Raised when we try to use a Runner that doesn't have an active tor instance"
   pass
@@ -116,6 +119,20 @@ def require_version(test_case, req_version):
   
   if get_runner().get_tor_version() < req_version:
     test_case.skipTest("(requires %s)" % req_version)
+
+def only_run_once(test_case, test_name):
+  """
+  Skips the test if it has ran before. If it hasn't then flags it as being ran.
+  
+  Arguments:
+    test_case (unittest.TestCase) - test being ran
+    test_name (str) - name of the test being ran
+  """
+  
+  if (test_case, test_name) in RAN_TESTS:
+    test_case.skipTest("(already ran)")
+  else:
+    RAN_TESTS.append((test_case, test_name))
 
 def exercise_controller(test_case, controller):
   """
