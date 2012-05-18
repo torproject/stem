@@ -35,30 +35,50 @@ def parse_file(path, descriptor_file):
     IOError if unable to read from the descriptor_file
   """
   
-  import stem.descriptor.extrainfo_descriptor
   import stem.descriptor.server_descriptor
+  import stem.descriptor.extrainfo_descriptor
   
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
-  # based on...
-  # - its filename for resources from the tor data directory
-  # - first line of our contents for files provided by metrics
+  # based on its filename. Metrics descriptors, however, can be identified
+  # by an annotation on their first line...
+  # https://trac.torproject.org/5651
   
-  filename = os.path.basename(path)
-  first_line = descriptor_file.readline()
-  descriptor_file.seek(0)
+  # Cached descriptor handling. These contain mulitple descriptors per file.
   
-  if filename == "cached-descriptors" or first_line.startswith("router "):
-    for desc in stem.descriptor.server_descriptor.parse_file(descriptor_file):
+  filename, file_parser = os.path.basename(path), None
+  
+  if filename == "cached-descriptors":
+    file_parser = stem.descriptor.server_descriptor.parse_file
+  elif filename == "cached-extrainfo":
+    file_parser = stem.descriptor.extrainfo_descriptor.parse_file
+  
+  if file_parser:
+    for desc in file_parser(descriptor_file):
       desc._set_path(path)
       yield desc
-  elif filename == "cached-extrainfo" or first_line.startswith("extra-info "):
-    for desc in stem.descriptor.extrainfo_descriptor.parse_file(descriptor_file):
-      desc._set_path(path)
-      yield desc
-  else:
-    # unrecognized descriptor type
-    raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
+    
+    return
+  
+  # Metrics descriptor handling. These contain a single descriptor per file.
+  
+  first_line, desc = descriptor_file.readline().strip(), None
+  
+  if first_line == "@type server-descriptor 1.0":
+    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_file.read())
+  elif first_line == "@type bridge-server-descriptor 1.0":
+    desc = stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_file.read())
+  elif first_line in ("@type extra-info 1.0", "@type bridge-extra-info 1.0"):
+    desc = stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor(descriptor_file.read())
+  
+  if desc:
+    desc._set_path(path)
+    yield desc
+    return
+  
+  # Not recognized as a descriptor file.
+  
+  raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
 
 class Descriptor:
   """

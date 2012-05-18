@@ -51,6 +51,7 @@ def _get_raw_tar_descriptors():
       for tar_entry in tar_file:
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
+          entry.readline() # strip header
           raw_descriptors.append(entry.read())
           entry.close()
     
@@ -149,6 +150,7 @@ class TestDescriptorReader(unittest.TestCase):
     
     descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
     with open(descriptor_path) as descriptor_file:
+      descriptor_file.readline() # strip header
       descriptor_entries.append(descriptor_file.read())
     
     # running this test multiple times to flush out concurrency issues

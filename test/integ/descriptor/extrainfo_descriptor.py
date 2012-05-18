@@ -19,6 +19,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     descriptor_path = test.integ.descriptor.get_resource("extrainfo_descriptor")
     
     descriptor_file = open(descriptor_path)
+    descriptor_file.readline() # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     

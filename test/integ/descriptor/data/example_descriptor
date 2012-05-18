@@ -1,3 +1,4 @@
+@type server-descriptor 1.0
 router caerSidi 71.35.133.197 9001 0 0
 platform Tor 0.2.1.30 on Linux x86_64
 opt protocols Link 1 2 Circuit 1

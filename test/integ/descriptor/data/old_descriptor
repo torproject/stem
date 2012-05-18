@@ -1,3 +1,4 @@
+@type server-descriptor 1.0
 router krypton 212.37.39.59 8000 0 0
 platform Tor 0.1.0.14 on FreeBSD i386
 published 2005-12-16 18:01:03

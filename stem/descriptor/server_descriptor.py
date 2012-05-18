@@ -80,20 +80,6 @@ def parse_file(descriptor_file, validate = True):
     IOError if the file can't be read
   """
   
-  # Handler for bridge descriptors
-  #
-  # Bridge descriptors are scrubbed so their nickname is 'Unnamed' and their
-  # ip address is in the 10.x.x.x space, which is normally reserved for private
-  # networks. Bridge descriptors only come from metrics so a file only contains
-  # a single descriptor.
-  
-  first_line = descriptor_file.readline()
-  descriptor_file.seek(0)
-  
-  if first_line.startswith("router Unnamed 10."):
-    yield BridgeDescriptor(descriptor_file.read())
-    return
-  
   # Handler for relay descriptors
   #
   # Cached descriptors consist of annotations followed by the descriptor

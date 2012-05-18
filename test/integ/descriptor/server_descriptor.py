@@ -21,6 +21,7 @@ class TestServerDescriptor(unittest.TestCase):
     descriptor_path = test.integ.descriptor.get_resource("example_descriptor")
     
     descriptor_file = open(descriptor_path)
+    descriptor_file.readline() # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
@@ -92,6 +93,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_path = test.integ.descriptor.get_resource("old_descriptor")
     
     descriptor_file = open(descriptor_path)
+    descriptor_file.readline() # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
@@ -176,6 +178,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_path = test.integ.descriptor.get_resource("non-ascii_descriptor")
     
     descriptor_file = open(descriptor_path)
+    descriptor_file.readline() # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
@@ -217,6 +220,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_path = test.integ.descriptor.get_resource("cr_in_contact_line")
     
     descriptor_file = open(descriptor_path)
+    descriptor_file.readline() # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
@@ -244,6 +248,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_path = test.integ.descriptor.get_resource("negative_uptime")
     
     descriptor_file = open(descriptor_path)
+    descriptor_file.readline() # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
@@ -267,6 +272,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_path = test.integ.descriptor.get_resource("bridge_descriptor")
     
     descriptor_file = open(descriptor_path)
+    descriptor_file.readline() # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     

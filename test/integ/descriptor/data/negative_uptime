@@ -1,3 +1,4 @@
+@type server-descriptor 1.0
 router TipTor 62.99.247.83 9001 0 9030
 platform Tor 0.1.1.25 on Darwin Power Macintosh
 published 2006-12-18 22:42:40

@@ -1,3 +1,4 @@
+@type server-descriptor 1.0
 router torrelay389752132 130.243.230.116 9001 0 0
 platform Tor 0.2.2.35 (git-4f42b0a93422f70e) on Linux x86_64
 opt protocols Link 1 2 Circuit 1
