@@ -39,9 +39,9 @@ class TestProcess(unittest.TestCase):
       stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
       
       # exercises the socket
-      control_socket.send("GETINFO version")
-      version_response = control_socket.recv()
-      self.assertEquals("version=%s\nOK" % runner.get_tor_version(), str(version_response))
+      control_socket.send("GETCONF ControlPort")
+      getconf_response = control_socket.recv()
+      self.assertEquals("ControlPort=2778", str(getconf_response))
     finally:
       if control_socket: control_socket.close()
       tor_process.kill()

@@ -75,13 +75,9 @@ class TestBaseController(unittest.TestCase):
     Tests a basic query with the msg() method.
     """
     
-    runner = test.runner.get_runner()
-    with runner.get_tor_socket() as control_socket:
+    with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
-      response = controller.msg("GETINFO version")
-      
-      tor_version = runner.get_tor_version()
-      self.assertEquals("version=%s\nOK" % tor_version, str(response))
+      test.runner.exercise_controller(self, controller)
   
   def test_msg_invalid(self):
     """
