@@ -123,6 +123,8 @@ def require_version(test_case, req_version):
 def only_run_once(test_case, test_name):
   """
   Skips the test if it has ran before. If it hasn't then flags it as being ran.
+  This is useful to prevent lengthy tests that are independent of integ targets
+  from being run repeatedly with RUN_ALL.
   
   Arguments:
     test_case (unittest.TestCase) - test being ran

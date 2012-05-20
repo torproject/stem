@@ -1,7 +1,8 @@
 """
 Helper functions for working with tor as a process.
 
-launch_tor - starts up a tor process
+launch_tor             - starts up a tor process
+launch_tor_with_config - starts a tor process with a custom torrc
 """
 
 import re
@@ -18,7 +19,7 @@ DEFAULT_INIT_TIMEOUT = 90
 
 NO_TORRC = "<no torrc>"
 
-def launch_tor(tor_cmd = "tor", options = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
+def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
   """
   Initializes a tor process. This blocks until initialization completes or we
   error out.
@@ -30,7 +31,7 @@ def launch_tor(tor_cmd = "tor", options = None, torrc_path = None, completion_pe
   
   Arguments:
     tor_cmd (str)              - command for starting tor
-    options (dict)             - configuration options, such as ("ControlPort": "9051")
+    args (list)                - additional arguments for tor
     torrc_path (str)           - location of the torrc for us to use
     completion_percent (int)   - percent of bootstrap completion at which
                                  this'll return
@@ -53,17 +54,14 @@ def launch_tor(tor_cmd = "tor", options = None, torrc_path = None, completion_pe
   
   # starts a tor subprocess, raising an OSError if it fails
   runtime_args, temp_file = [tor_cmd], None
+  if args: runtime_args += args
+  
   if torrc_path:
     if torrc_path == NO_TORRC:
-      temp_file = tempfile.mkstemp("-empty-torrc", text = True)[1]
+      temp_file = tempfile.mkstemp(prefix = "empty-torrc-", text = True)[1]
       runtime_args += ["-f", temp_file]
     else:
       runtime_args += ["-f", torrc_path]
-  
-  if options:
-    for key, value in options.items():
-      value = value.replace('"', '\\"')
-      runtime_args += ["--%s" % key.lower(), value]
   
   tor_process = subprocess.Popen(runtime_args, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
   
@@ -111,4 +109,40 @@ def launch_tor(tor_cmd = "tor", options = None, torrc_path = None, completion_pe
       if not "see warnings above" in msg:
         if ": " in msg: msg = msg.split(": ")[-1].strip()
         last_problem = msg
+
+def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
+  """
+  Initializes a tor process, like launch_tor(), but with a customized
+  configuration. This writes a temporary torrc to disk, launches tor, then
+  deletes the torrc.
+  
+  Arguments:
+    config (dict)              - configuration options, such as ("ControlPort": "9051")
+    tor_cmd (str)              - command for starting tor
+    completion_percent (int)   - percent of bootstrap completion at which
+                                 this'll return
+    init_msg_handler (functor) - optional functor that will be provided with
+                                 tor's initialization stdout as we get it
+    timeout (int)              - time after which the attempt to start tor is
+                                 aborted, no timeouts are applied if None
+  
+  Returns:
+    subprocess.Popen instance for the tor subprocess
+  
+  Raises:
+    OSError if we either fail to create the tor process or reached a timeout
+    without success
+  """
+  
+  torrc_path = tempfile.mkstemp(prefix = "torrc-", text = True)[1]
+  
+  try:
+    with open(torrc_path, "w") as torrc_file:
+      for key, value in config.items():
+        torrc_file.write("%s %s\n" % (key, value))
+    
+    return launch_tor(tor_cmd, None, torrc_path, completion_percent, init_msg_handler, timeout)
+  finally:
+    try: os.remove(torrc_path)
+    except: pass
 
