@@ -495,7 +495,8 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
   note: If you use this function directly, rather than authenticate(), we may
   mistakenly raise a PasswordAuthRejected rather than IncorrectPassword. This
   is because we rely on tor's error messaging which is liable to change in
-  future versions.
+  future versions...
+  https://trac.torproject.org/4817
   
   Arguments:
     controller (stem.socket.ControlSocket or stem.control.BaseController) -
@@ -559,7 +560,8 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
   note: If you use this function directly, rather than authenticate(), we may
   mistakenly raise a CookieAuthRejected rather than IncorrectCookieValue. This
   is because we rely on tor's error messaging which is liable to change in
-  future versions.
+  future versions...
+  https://trac.torproject.org/4817
   
   Arguments:
     controller (stem.socket.ControlSocket or stem.control.BaseController) -
