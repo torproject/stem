@@ -11,6 +11,8 @@ import signal
 import tempfile
 import subprocess
 
+import stem.util.system
+
 # number of seconds before we time out our attempt to start a tor instance
 DEFAULT_INIT_TIMEOUT = 90
 
@@ -28,6 +30,9 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
   making several requests to the directory authorities which can take a little
   while. Usually this is done in 50 seconds or so, but occasionally calls seem
   to get stuck, taking well over the default timeout.
+  
+  Our timeout argument does not work on Windows...
+  https://trac.torproject.org/projects/tor/ticket/5783
   
   Arguments:
     tor_cmd (str)              - command for starting tor
@@ -47,6 +52,9 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
     OSError if we either fail to create the tor process or reached a timeout
     without success
   """
+  
+  if stem.util.system.is_windows():
+    timeout = None
   
   # double check that we have a torrc to work with
   if not torrc_path in (None, NO_TORRC) and not os.path.exists(torrc_path):

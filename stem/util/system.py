@@ -44,13 +44,23 @@ GET_CWD_PWDX             = "pwdx %s"
 GET_CWD_LSOF             = "lsof -a -p %s -d cwd -Fn"
 GET_BSD_JAIL_ID_PS       = "ps -p %s -o jid"
 
+def is_windows():
+  """
+  Checks if we are running on Windows.
+  
+  Returns:
+    bool to indicate if we're on Windows
+  """
+  
+  return platform.system() == "Windows"
+
 def is_bsd():
   """
   Checks if we are within the BSD family of operating systems. This presently
   recognizes Macs, FreeBSD, and OpenBSD but may be expanded later.
   
   Returns:
-    bool to indicate if we're a BSD OS
+    bool to indicate if we're on a BSD OS
   """
   
   return platform.system() in ("Darwin", "FreeBSD", "OpenBSD")
@@ -78,7 +88,7 @@ def is_available(command, cached=True):
     cmd_exists = False
     for path in os.environ["PATH"].split(os.pathsep):
       cmd_path = os.path.join(path, command)
-      if platform.system() == "Windows": cmd_path += ".exe"
+      if is_windows(): cmd_path += ".exe"
       
       if os.path.exists(cmd_path) and os.access(cmd_path, os.X_OK):
         cmd_exists = True
