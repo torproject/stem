@@ -49,5 +49,7 @@ class TestProcess(unittest.TestCase):
     start_time = time.time()
     self.assertRaises(OSError, stem.process.launch_tor_with_config, {'SocksPort': '2777'}, "tor", 100, None, 2)
     runtime = time.time() - start_time
-    self.assertTrue(runtime > 2 and runtime < 3)
+    
+    if not (runtime > 2 and runtime < 3):
+      self.fail("Test should have taken 2-3 seconds, took %i instead" % timeout)
 
