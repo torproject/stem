@@ -333,7 +333,6 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     unsanitized_attr = [
-      {"router": "caerSidi 10.45.227.253 9001 0 0"},
       {"router": "Unnamed 75.45.227.253 9001 0 0"},
       {"contact": "Damian"},
       {"or-address": "71.35.133.197:9001"},

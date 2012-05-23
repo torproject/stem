@@ -720,11 +720,11 @@ class BridgeDescriptor(ServerDescriptor):
     
     if self._scrubbing_issues == None:
       issues = []
-      if self.nickname != "Unnamed":
-        issues.append("Router line's nickname should be scrubbed to be 'Unnamed': %s" % self.nickname)
-      elif not self.address.startswith("10."):
+      
+      if not self.address.startswith("10."):
         issues.append("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
-      elif self.contact and self.contact != "somebody":
+      
+      if self.contact and self.contact != "somebody":
         issues.append("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
       
       for address, _, is_ipv6 in self.address_alt:
