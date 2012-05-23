@@ -27,6 +27,7 @@ RELAY_DESCRIPTOR_ATTR = (
 
 BRIDGE_DESCRIPTOR_ATTR = (
   ("router", "Unnamed 10.45.227.253 9001 0 0"),
+  ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
   ("published", "2012-03-22 17:34:38"),
   ("bandwidth", "409600 819200 5120"),
   ("reject", "*:*"),
@@ -319,6 +320,7 @@ class TestServerDescriptor(unittest.TestCase):
     self.assertEquals("Unnamed", desc.nickname)
     self.assertEquals("10.45.227.253", desc.address)
     self.assertEquals(None, desc.fingerprint)
+    self.assertEquals("006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4", desc.digest())
     
     # check that we don't have crypto fields
     self.assertRaises(AttributeError, getattr, desc, "onion_key")
@@ -352,9 +354,46 @@ class TestServerDescriptor(unittest.TestCase):
     its unsanatized content.
     """
     
-    desc_text = _make_descriptor()
+    desc_text = _make_descriptor({"router-digest": "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"})
     desc = BridgeDescriptor(desc_text)
     self.assertFalse(desc.is_scrubbed())
+  
+  def test_router_digest(self):
+    """
+    Constructs with a router-digest line with both valid and invalid contents.
+    """
+    
+    # checks with valid content
+    
+    router_digest = "068A2E28D4C934D9490303B7A645BA068DCA0504"
+    desc_text = _make_descriptor({"router-digest": router_digest}, is_bridge = True)
+    desc = BridgeDescriptor(desc_text)
+    self.assertEquals(router_digest, desc.digest())
+    
+    # checks when missing
+    
+    desc_text = _make_descriptor(exclude = ["router-digest"], is_bridge = True)
+    self.assertRaises(ValueError, BridgeDescriptor, desc_text)
+    
+    # check that we can still construct it without validation
+    desc = BridgeDescriptor(desc_text, validate = False)
+    self.assertEquals(None, desc.digest())
+    
+    # checks with invalid content
+    
+    test_values = (
+      "",
+      "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB44",
+      "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB",
+      "006FD96BA35E7785A6A3B8B75FE2E2435A13BDBH",
+    )
+    
+    for value in test_values:
+      desc_text = _make_descriptor({"router-digest": value}, is_bridge = True)
+      self.assertRaises(ValueError, BridgeDescriptor, desc_text)
+      
+      desc = BridgeDescriptor(desc_text, validate = False)
+      self.assertEquals(value, desc.digest())
   
   def test_or_address_v4(self):
     """

@@ -11,13 +11,13 @@ etc). This information is provided from a few sources...
 parse_file - Iterates over the server descriptors in a file.
 ServerDescriptor - Tor server descriptor.
   |  |- RelayDescriptor - Server descriptor for a relay.
-  |  |  |- is_valid - checks the signature against the descriptor content
-  |  |  +- digest - calculates the digest value for our content
+  |  |  +- is_valid - checks the signature against the descriptor content
   |  |
   |  +- BridgeDescriptor - Scrubbed server descriptor for a bridge.
   |     |- is_scrubbed - checks if our content has been properly scrubbed
   |     +- get_scrubbing_issues - description of issues with our scrubbing
   |
+  |- digest - calculates the digest value for our content
   |- get_unrecognized_lines - lines with unrecognized content
   |- get_annotations - dictionary of content prior to the descriptor entry
   +- get_annotation_lines - lines that provided the annotations
@@ -247,6 +247,21 @@ class ServerDescriptor(stem.descriptor.Descriptor):
       stem.descriptor._get_descriptor_components(raw_contents, validate, ("accept", "reject"))
     self._parse(entries, validate)
     if validate: self._check_constraints(entries, first_keyword, last_keyword)
+  
+  def digest(self):
+    """
+    Provides the base64 encoded sha1 of our content. This value is part of the
+    server descriptor entry for this relay.
+    
+    Note that network status entries exclude the padding, so you'll need to add
+    a '=' to it so they'll match...
+    https://en.wikipedia.org/wiki/Base64#Padding
+    
+    Returns:
+      str with the digest value for this server descriptor
+    """
+    
+    raise NotImplementedError("Unsupported Operation: this should be implemented by the ServerDescriptor subclass")
   
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
@@ -566,18 +581,6 @@ class RelayDescriptor(ServerDescriptor):
     raise NotImplementedError # TODO: implement
   
   def digest(self):
-    """
-    Provides the base64 encoded sha1 of our content. This value is part of the
-    server descriptor entry for this relay.
-    
-    Note that network status entries exclude the padding, so you'll need to add
-    a '=' to it so they'll match...
-    https://en.wikipedia.org/wiki/Base64#Padding
-    
-    Returns:
-      str with the digest value for this server descriptor
-    """
-    
     if self._digest is None:
       # our digest is calculated from everything except our signature
       raw_content, ending = str(self), "\nrouter-signature\n"
@@ -642,15 +645,28 @@ class BridgeDescriptor(ServerDescriptor):
   
   def __init__(self, raw_contents, validate = True, annotations = None):
     self.address_alt = []
+    self._digest = None
     self._scrubbing_issues = None
     ServerDescriptor.__init__(self, raw_contents, validate, annotations)
+  
+  def digest(self):
+    return self._digest
   
   def _parse(self, entries, validate):
     entries = dict(entries)
     
     # handles fields only in bridge descriptors
     for keyword, values in entries.items():
-      if keyword == "or-address":
+      value, block_contents = values[0]
+      line = "%s %s" % (keyword, value)
+      
+      if keyword == "router-digest":
+        if validate and not re.match("^[0-9a-fA-F]{40}$", value):
+          raise ValueError("Router digest line had an invalid sha1 digest: %s" % line)
+        
+        self._digest = value
+        del entries["router-digest"]
+      elif keyword == "or-address":
         or_address_entries = [value for (value, _) in values]
         
         for entry in or_address_entries:
@@ -741,7 +757,11 @@ class BridgeDescriptor(ServerDescriptor):
       "router-signature",
     )
     
-    return filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
+    included_fields = (
+      "router-digest",
+    )
+    
+    return included_fields + filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
   
   def _single_fields(self):
     return self._required_fields() + SINGLE_FIELDS
