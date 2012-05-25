@@ -39,7 +39,7 @@ try:
   import rsa
   IS_RSA_AVAILABLE = True
 except ImportError:
-  log.info("Unable to import the rsa module. Because of this we'll be unable to verify server integrity.")
+  log.info("Unable to import the rsa module. Because of this we'll be unable to verify descriptor integrity.")
   IS_RSA_AVAILABLE = False
 
 # relay descriptors must have exactly one of the following
