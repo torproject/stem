@@ -309,6 +309,32 @@ class TestServerDescriptor(unittest.TestCase):
         self.assertEquals(None, desc.socks_port)
         self.assertEquals(None, desc.dir_port)
   
+  def test_fingerprint_valid(self):
+    """
+    Checks that a fingerprint matching the hash of our signing key will validate.
+    """
+    
+    if not stem.descriptor.server_descriptor.IS_RSA_AVAILABLE:
+      self.skipTest("(rsa module unavailable)")
+    
+    fingerprint = "4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44"
+    desc_text = _make_descriptor({"opt fingerprint": fingerprint})
+    desc = RelayDescriptor(desc_text)
+    self.assertEquals(fingerprint.replace(" ", ""), desc.fingerprint)
+  
+  def test_fingerprint_invalid(self):
+    """
+    Checks that, with a correctly formed fingerprint, we'll fail validation if
+    it doesn't match the hash of our signing key.
+    """
+    
+    if not stem.descriptor.server_descriptor.IS_RSA_AVAILABLE:
+      self.skipTest("(rsa module unavailable)")
+    
+    fingerprint = "4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE45"
+    desc_text = _make_descriptor({"opt fingerprint": fingerprint})
+    self._expect_invalid_attr(desc_text, "fingerprint", fingerprint.replace(" ", ""))
+  
   def test_minimal_bridge_descriptor(self):
     """
     Basic sanity check that we can parse a descriptor with minimal attributes.

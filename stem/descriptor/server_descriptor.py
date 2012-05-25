@@ -31,8 +31,16 @@ import datetime
 import stem.descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.version
+import stem.util.log as log
 import stem.util.connection
 import stem.util.tor_tools
+
+try:
+  import rsa
+  IS_RSA_AVAILABLE = True
+except ImportError:
+  log.info("Unable to import the rsa module. Because of this we'll be unable to verify server integrity.")
+  IS_RSA_AVAILABLE = False
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -569,6 +577,17 @@ class RelayDescriptor(ServerDescriptor):
     self._digest = None
     
     ServerDescriptor.__init__(self, raw_contents, validate, annotations)
+    
+    # if we have a fingerprint then checks that our fingerprint is a hash of
+    # our signing key
+    
+    if IS_RSA_AVAILABLE and validate and self.fingerprint:
+      pubkey = rsa.PublicKey.load_pkcs1(self.signing_key)
+      der_encoded = pubkey.save_pkcs1(format = "DER")
+      key_hash = hashlib.sha1(der_encoded).hexdigest()
+      
+      if key_hash != self.fingerprint.lower():
+        raise ValueError("Hash of our signing key doesn't match our fingerprint. Signing key hash: %s, fingerprint: %s" % (key_hash, self.fingerprint.lower()))
   
   def is_valid(self):
     """
@@ -578,7 +597,22 @@ class RelayDescriptor(ServerDescriptor):
       True if our signature matches our content, False otherwise
     """
     
-    raise NotImplementedError # TODO: implement
+    raise NotImplementedError # TODO: finish implementing
+    
+    # without validation we may be missing our signature
+    if not self.signature: return False
+    
+    # gets base64 encoded bytes of our signature without newlines nor the
+    # "-----[BEGIN|END] SIGNATURE-----" header/footer
+    
+    sig_content = self.signature.replace("\n", "")[25:-23]
+    sig_bytes = base64.b64decode(sig_content)
+    
+    # TODO: Decrypt the signature bytes with the signing key and remove
+    # the PKCS1 padding to get the original message, and encode the message
+    # in hex and compare it to the digest of the descriptor.
+    
+    return True
   
   def digest(self):
     if self._digest is None:
