@@ -8,6 +8,9 @@ a higher level.
 from_port - Provides a Controller based on a port connection.
 from_socket_file - Provides a Controller based on a socket file connection.
 
+Controller - General controller class intended for direct use.
+  +- get_info - issues a GETINFO query
+
 BaseController - Base controller class asynchronous message handling.
   |- msg - communicates with the tor process
   |- is_alive - reports if our connection to tor is open or closed
@@ -37,53 +40,12 @@ class BaseController:
   """
   Controller for the tor process. This is a minimal base class for other
   controllers, providing basic process communication and event listing. Don't
-  use this directly - subclasses provide higher level functionality.
+  use this directly - subclasses like the Controller provide higher level
+  functionality.
   
   Do not continue to directly interacte with the ControlSocket we're
   constructed from - use our wrapper methods instead.
   """
-  
-  # TODO: Convenience methods for the BaseController are pointless since
-  # callers generally won't want to make instances of this directly. Move
-  # these to the Controller class once we have one.
-  
-  def from_port(control_addr = "127.0.0.1", control_port = 9051):
-    """
-    Constructs a ControlPort based Controller.
-    
-    Arguments:
-      control_addr (str) - ip address of the controller
-      control_port (int) - port number of the controller
-    
-    Returns:
-      stem.control.Controller attached to the given port
-    
-    Raises:
-      stem.socket.SocketError if we're unable to establish a connection
-    """
-    
-    control_port = stem.socket.ControlPort(control_addr, control_port)
-    return BaseController(control_port)
-  
-  def from_socket_file(socket_path = "/var/run/tor/control"):
-    """
-    Constructs a ControlSocketFile based Controller.
-    
-    Arguments:
-      socket_path (str) - path where the control socket is located
-    
-    Returns:
-      stem.control.Controller attached to the given socket file
-    
-    Raises:
-      stem.socket.SocketError if we're unable to establish a connection
-    """
-    
-    control_socket = stem.socket.ControlSocketFile(socket_path)
-    return BaseController(control_socket)
-  
-  from_port = staticmethod(from_port)
-  from_socket_file = staticmethod(from_socket_file)
   
   def __init__(self, control_socket):
     self._socket = control_socket
@@ -423,4 +385,48 @@ class BaseController:
         
         self._event_notice.wait()
         self._event_notice.clear()
+
+class Controller(BaseController):
+  """
+  Communicates with a control socket. This is built on top of the
+  BaseController and provides a more user friendly API for library users.
+  """
+  
+  def from_port(control_addr = "127.0.0.1", control_port = 9051):
+    """
+    Constructs a ControlPort based Controller.
+    
+    Arguments:
+      control_addr (str) - ip address of the controller
+      control_port (int) - port number of the controller
+    
+    Returns:
+      stem.control.Controller attached to the given port
+    
+    Raises:
+      stem.socket.SocketError if we're unable to establish a connection
+    """
+    
+    control_port = stem.socket.ControlPort(control_addr, control_port)
+    return Controller(control_port)
+  
+  def from_socket_file(socket_path = "/var/run/tor/control"):
+    """
+    Constructs a ControlSocketFile based Controller.
+    
+    Arguments:
+      socket_path (str) - path where the control socket is located
+    
+    Returns:
+      stem.control.Controller attached to the given socket file
+    
+    Raises:
+      stem.socket.SocketError if we're unable to establish a connection
+    """
+    
+    control_socket = stem.socket.ControlSocketFile(socket_path)
+    return Controller(control_socket)
+  
+  from_port = staticmethod(from_port)
+  from_socket_file = staticmethod(from_socket_file)
 

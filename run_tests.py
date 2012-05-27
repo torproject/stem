@@ -32,6 +32,7 @@ import test.integ.connection.authentication
 import test.integ.connection.connect
 import test.integ.connection.protocolinfo
 import test.integ.control.base_controller
+import test.integ.control.controller
 import test.integ.socket.control_message
 import test.integ.socket.control_socket
 import test.integ.descriptor.reader
@@ -118,6 +119,7 @@ INTEG_TESTS = (
   test.integ.connection.authentication.TestAuthenticate,
   test.integ.connection.connect.TestConnect,
   test.integ.control.base_controller.TestBaseController,
+  test.integ.control.controller.TestController,
 )
 
 def load_user_configuration(test_config):

@@ -35,28 +35,6 @@ class TestBaseController(unittest.TestCase):
   def setUp(self):
     test.runner.require_control(self)
   
-  def test_from_port(self):
-    """
-    Basic sanity check for the from_port constructor.
-    """
-    
-    if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
-      with stem.control.BaseController.from_port(control_port = test.runner.CONTROL_PORT) as controller:
-        self.assertTrue(isinstance(controller, stem.control.BaseController))
-    else:
-      self.assertRaises(stem.socket.SocketError, stem.control.BaseController.from_port, "127.0.0.1", test.runner.CONTROL_PORT)
-  
-  def test_from_socket_file(self):
-    """
-    Basic sanity check for the from_socket_file constructor.
-    """
-    
-    if test.runner.Torrc.SOCKET in test.runner.get_runner().get_options():
-      with stem.control.BaseController.from_socket_file(socket_path = test.runner.CONTROL_SOCKET_PATH) as controller:
-        self.assertTrue(isinstance(controller, stem.control.BaseController))
-    else:
-      self.assertRaises(stem.socket.SocketError, stem.control.BaseController.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
-  
   def test_connect_repeatedly(self):
     """
     Connects and closes the socket repeatedly. This is a simple attempt to
