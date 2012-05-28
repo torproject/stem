@@ -119,7 +119,7 @@ class TestProtocolInfo(unittest.TestCase):
     auth_methods, auth_cookie_path = [], None
     
     if test.runner.Torrc.COOKIE in tor_options:
-      auth_methods.append(stem.connection.AuthMethod.COOKIE)
+      auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
       chroot_path = runner.get_chroot()
       auth_cookie_path = runner.get_auth_cookie_path()
       
@@ -127,10 +127,10 @@ class TestProtocolInfo(unittest.TestCase):
         auth_cookie_path = auth_cookie_path[len(chroot_path):]
     
     if test.runner.Torrc.PASSWORD in tor_options:
-      auth_methods.append(stem.connection.AuthMethod.PASSWORD)
+      auth_methods.append(stem.response.protocolinfo.AuthMethod.PASSWORD)
     
     if not auth_methods:
-      auth_methods.append(stem.connection.AuthMethod.NONE)
+      auth_methods.append(stem.response.protocolinfo.AuthMethod.NONE)
     
     self.assertEqual((), protocolinfo_response.unknown_auth_methods)
     self.assertEqual(tuple(auth_methods), protocolinfo_response.auth_methods)

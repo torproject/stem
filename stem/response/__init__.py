@@ -1,7 +1,7 @@
 """
 Parses replies from the control socket.
 
-converts - translates a ControlMessage into a particular response subclass
+convert - translates a ControlMessage into a particular response subclass
 """
 
 __all__ = ["getinfo", "protocolinfo"]

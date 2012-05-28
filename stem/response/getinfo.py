@@ -22,26 +22,25 @@ class GetInfoResponse(stem.socket.ControlMessage):
     # 250 OK
     
     self.entries = {}
+    remaining_lines = list(self)
     
-    lines = list(self)
-    
-    if not self.is_ok() or not lines.pop() == "OK":
+    if not self.is_ok() or not remaining_lines.pop() == "OK":
       raise stem.socket.ProtocolError("GETINFO response didn't have an OK status:\n%s" % self)
     
-    for line in lines:
-      if not "=" in line:
+    while remaining_lines:
+      try:
+        key, value = remaining_lines.pop(0).split("=", 1)
+      except ValueError:
         raise stem.socket.ProtocolError("GETINFO replies should only contain parameter=value mappings:\n%s" % self)
-      
-      key, value = line.split("=", 1)
       
       # if the value is a multiline value then it *must* be of the form
       # '<key>=\n<value>'
       
       if "\n" in value:
-        if value.startswith("\n"):
-          value = value[1:]
-        else:
+        if not value.startswith("\n"):
           raise stem.socket.ProtocolError("GETINFO response contained a multiline value that didn't start with a newline:\n%s" % self)
+        
+        value = value[1:]
       
       self.entries[key] = value
 

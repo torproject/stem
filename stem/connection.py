@@ -82,21 +82,7 @@ import stem.version
 import stem.util.enum
 import stem.util.system
 import stem.util.log as log
-
-# Methods by which a controller can authenticate to the control port. Tor gives
-# a list of all the authentication methods it will accept in response to
-# PROTOCOLINFO queries.
-#
-# NONE     - No authentication required
-# PASSWORD - See tor's HashedControlPassword option. Controllers must provide
-#            the password used to generate the hash.
-# COOKIE   - See tor's CookieAuthentication option. Controllers need to supply
-#            the contents of the cookie file.
-# UNKNOWN  - Tor provided one or more authentication methods that we don't
-#            recognize. This is probably from a new addition to the control
-#            protocol.
-
-AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "UNKNOWN")
+from stem.response.protocolinfo import AuthMethod
 
 class AuthenticationFailure(Exception):
   """
@@ -628,6 +614,13 @@ def get_protocolinfo(controller):
   the tor process running on it. If the socket is already closed then it is
   first reconnected.
   
+  According to the control spec the cookie_file is an absolute path. However,
+  this often is not the case (especially for the Tor Browser Bundle)...
+  https://trac.torproject.org/projects/tor/ticket/1101
+  
+  If the path is relative then we'll make an attempt (which may not work) to
+  correct this.
+  
   Arguments:
     controller (stem.socket.ControlSocket or stem.control.BaseController) -
       tor controller connection
@@ -658,6 +651,11 @@ def get_protocolinfo(controller):
       raise stem.socket.SocketError(exc)
   
   stem.response.convert("PROTOCOLINFO", protocolinfo_response)
+  
+  # attempt to expand relative cookie paths
+  
+  if protocolinfo_response.cookie_path:
+    stem.connection._expand_cookie_path(protocolinfo_response, stem.util.system.get_pid_by_name, "tor")
   
   # attempt to expand relative cookie paths via the control port or socket file
   

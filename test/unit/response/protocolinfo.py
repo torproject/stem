@@ -4,7 +4,6 @@ Unit tests for the stem.response.protocolinfo.ProtocolInfoResponse class.
 
 import unittest
 
-from stem.connection import AuthMethod
 import stem.socket
 import stem.version
 import stem.util.proc
@@ -12,6 +11,7 @@ import stem.util.system
 import stem.response
 import stem.response.protocolinfo
 import test.mocking as mocking
+from stem.response.protocolinfo import AuthMethod
 
 NO_AUTH = """250-PROTOCOLINFO 1
 250-AUTH METHODS=NULL
@@ -148,6 +148,8 @@ class TestProtocolInfoResponse(unittest.TestCase):
     succeeds and fails.
     """
     
+    # TODO: move into stem.connection unit tests?
+    
     # we need to mock both pid and cwd lookups since the general cookie
     # expanion works by...
     # - resolving the pid of the "tor" process
@@ -165,6 +167,9 @@ class TestProtocolInfoResponse(unittest.TestCase):
     
     control_message = mocking.get_message(RELATIVE_COOKIE_PATH)
     stem.response.convert("PROTOCOLINFO", control_message)
+    
+    stem.connection._expand_cookie_path(control_message, stem.util.system.get_pid_by_name, "tor")
+    
     self.assertEquals("/tmp/foo/tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_path)
     
     # exercise cookie expansion where both calls fail (should work, just
