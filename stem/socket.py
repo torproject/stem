@@ -408,6 +408,19 @@ class ControlMessage:
     self._parsed_content = parsed_content
     self._raw_content = raw_content
   
+  def is_ok(self):
+    """
+    Checks if all of our lines have a 250 response.
+    
+    Returns:
+      True if all lines have a 250 response code, False otherwise
+    """
+    
+    for code, _, _ in self._parsed_content:
+      if code != "250": return False
+    
+    return True
+  
   def content(self):
     """
     Provides the parsed message content. These are entries of the form...
