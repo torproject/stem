@@ -274,7 +274,7 @@ class TestAuthenticate(unittest.TestCase):
     """
     
     auth_type = stem.connection.AuthMethod.COOKIE
-    auth_value = test.runner.get_runner().get_torrc_path()
+    auth_value = test.runner.get_runner().get_torrc_path(True)
     
     if os.path.getsize(auth_value) == 32:
       # Weird coincidence? Fail so we can pick another file to check against.

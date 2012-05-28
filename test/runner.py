@@ -148,10 +148,7 @@ def exercise_controller(test_case, controller):
   """
   
   runner = get_runner()
-  torrc_path, chroot_path = runner.get_torrc_path(), runner.get_chroot()
-  
-  if chroot_path and torrc_path.startswith(chroot_path):
-    torrc_path = torrc_path[len(chroot_path):]
+  torrc_path = runner.get_torrc_path()
   
   if isinstance(controller, stem.socket.ControlSocket):
     controller.send("GETINFO config-file")
@@ -384,9 +381,13 @@ class Runner:
     else:
       return self._get("_test_dir")
   
-  def get_torrc_path(self):
+  def get_torrc_path(self, ignore_chroot = False):
     """
     Provides the absolute path for where our testing torrc resides.
+    
+    Arguments:
+      ignore_chroot (bool) - provides the real path, rather than the one that
+                             tor expects if True
     
     Returns:
       str with our torrc path
@@ -396,7 +397,12 @@ class Runner:
     """
     
     test_dir = self._get("_test_dir")
-    return os.path.join(test_dir, "torrc")
+    torrc_path = os.path.join(test_dir, "torrc")
+    
+    if not ignore_chroot and self._chroot_path and torrc_path.startswith(self._chroot_path):
+      torrc_path = torrc_path[len(self._chroot_path):]
+    
+    return torrc_path
   
   def get_torrc_contents(self):
     """
@@ -492,15 +498,14 @@ class Runner:
       authenticate (bool) - if True then the socket is authenticated
     
     Returns:
-      stem.socket.BaseController connected with our testing instance
+      stem.socket.Controller connected with our testing instance
     
     Raises:
       TorInaccessable if tor can't be connected to
     """
     
-    # TODO: replace with our general controller when we have one
     control_socket = self.get_tor_socket(authenticate)
-    return stem.control.BaseController(control_socket)
+    return stem.control.Controller(control_socket)
   
   def get_tor_version(self):
     """

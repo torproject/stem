@@ -17,6 +17,7 @@ import test.runner
 import test.check_whitespace
 import test.unit.connection.authentication
 import test.unit.connection.protocolinfo
+import test.unit.control.getinfo
 import test.unit.socket.control_line
 import test.unit.socket.control_message
 import test.unit.descriptor.reader
@@ -103,6 +104,7 @@ UNIT_TESTS = (
   test.unit.socket.control_line.TestControlLine,
   test.unit.connection.authentication.TestAuthenticate,
   test.unit.connection.protocolinfo.TestProtocolInfoResponse,
+  test.unit.control.getinfo.TestGetInfoResponse,
 )
 
 INTEG_TESTS = (
