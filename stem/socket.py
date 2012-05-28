@@ -206,7 +206,15 @@ class ControlSocket:
         self._socket_file = self._socket.makefile()
         self._is_alive = True
         
-        self._connect()
+        # It's possable for this to have a transient failure...
+        # SocketError: [Errno 4] Interrupted system call
+        #
+        # It's safe to retry, so give it another try if it fails.
+        
+        try:
+          self._connect()
+        except SocketError:
+          self._connect() # single retry
   
   def close(self):
     """
