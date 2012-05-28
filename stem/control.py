@@ -26,6 +26,7 @@ import time
 import Queue
 import threading
 
+import stem.response
 import stem.socket
 import stem.util.log as log
 
@@ -475,7 +476,7 @@ class Controller(BaseController):
       if response.content()[0][0] != "250":
         raise stem.socket.ControllerError(str(response))
       
-      GetInfoResponse.convert(response)
+      stem.response.convert("GETINFO", response)
       
       # error if we got back different parameters than we requested
       requested_params = set(param)
@@ -494,68 +495,4 @@ class Controller(BaseController):
     except stem.socket.ControllerError, exc:
       if default == UNDEFINED: raise exc
       else: return default
-
-class GetInfoResponse(stem.socket.ControlMessage):
-  """
-  Reply for a GETINFO query.
-  
-  Attributes:
-    values (dict) - mapping between the queried options and their values
-  """
-  
-  def convert(control_message):
-    """
-    Parses a ControlMessage, performing an in-place conversion of it into a
-    GetInfoResponse.
-    
-    Arguments:
-      control_message (stem.socket.ControlMessage) -
-        message to be parsed as a GETINFO reply
-    
-    Raises:
-      stem.socket.ProtocolError the message isn't a proper GETINFO response
-      TypeError if argument isn't a ControlMessage
-    """
-    
-    if isinstance(control_message, stem.socket.ControlMessage):
-      control_message.__class__ = GetInfoResponse
-      control_message._parse_message()
-      return control_message
-    else:
-      raise TypeError("Only able to convert stem.socket.ControlMessage instances")
-  
-  convert = staticmethod(convert)
-  
-  def _parse_message(self):
-    # Example:
-    # 250-version=0.2.3.11-alpha-dev (git-ef0bc7f8f26a917c)
-    # 250+config-text=
-    # ControlPort 9051
-    # DataDirectory /home/atagar/.tor
-    # ExitPolicy reject *:*
-    # Log notice stdout
-    # Nickname Unnamed
-    # ORPort 9050
-    # .
-    # 250 OK
-    
-    self.values = {}
-    
-    for line in self:
-      if line == "OK": break
-      elif not "=" in line:
-        raise stem.socket.ProtocolError("GETINFO replies should only contain parameter=value mappings: %s" % line)
-      
-      key, value = line.split("=", 1)
-      
-      # if the value is a multiline value then it *must* be of the form
-      # '<key>=\n<value>'
-      
-      if "\n" in value:
-        if value.startswith("\n"):
-          value = value[1:]
-        else:
-          raise stem.socket.ProtocolError("GETINFO response contained a multiline value that didn't start with a newline: %s" % line)
-      
-      self.values[key] = value
 

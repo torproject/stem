@@ -1,10 +1,11 @@
 """
-Unit tests for the stem.control.GetInfoResponse class.
+Unit tests for the stem.response.getinfo.GetInfoResponse class.
 """
 
 import unittest
 
-import stem.connection
+import stem.response
+import stem.response.getinfo
 import test.mocking as mocking
 
 EMPTY_RESPONSE = "250 OK"
@@ -49,11 +50,11 @@ class TestGetInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(EMPTY_RESPONSE)
-    stem.control.GetInfoResponse.convert(control_message)
+    stem.response.convert("GETINFO", control_message)
     
     # now this should be a GetInfoResponse (ControlMessage subclass)
     self.assertTrue(isinstance(control_message, stem.socket.ControlMessage))
-    self.assertTrue(isinstance(control_message, stem.control.GetInfoResponse))
+    self.assertTrue(isinstance(control_message, stem.response.getinfo.GetInfoResponse))
     
     self.assertEqual({}, control_message.values)
   
@@ -63,7 +64,7 @@ class TestGetInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(SINGLE_RESPONSE)
-    stem.control.GetInfoResponse.convert(control_message)
+    stem.response.convert("GETINFO", control_message)
     self.assertEqual({"version": "0.2.3.11-alpha-dev"}, control_message.values)
   
   def test_batch_response(self):
@@ -72,7 +73,7 @@ class TestGetInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(BATCH_RESPONSE)
-    stem.control.GetInfoResponse.convert(control_message)
+    stem.response.convert("GETINFO", control_message)
     
     expected = {
       "version": "0.2.3.11-alpha-dev",
@@ -89,7 +90,7 @@ class TestGetInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(MULTILINE_RESPONSE)
-    stem.control.GetInfoResponse.convert(control_message)
+    stem.response.convert("GETINFO", control_message)
     
     expected = {
       "version": "0.2.3.11-alpha-dev (git-ef0bc7f8f26a917c)",
@@ -105,7 +106,7 @@ class TestGetInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(NON_KEY_VALUE_ENTRY)
-    self.assertRaises(stem.socket.ProtocolError, stem.control.GetInfoResponse.convert, control_message)
+    self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "GETINFO", control_message)
   
   def test_invalid_multiline_content(self):
     """
@@ -115,5 +116,5 @@ class TestGetInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(MISSING_MULTILINE_NEWLINE)
-    self.assertRaises(stem.socket.ProtocolError, stem.control.GetInfoResponse.convert, control_message)
+    self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "GETINFO", control_message)
 

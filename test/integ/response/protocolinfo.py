@@ -1,6 +1,6 @@
 """
-Integration tests for the stem.connection.ProtocolInfoResponse class and
-related functions.
+Integration tests for the stem.response.protocolinfo.ProtocolInfoResponse class
+and related functions.
 """
 
 import unittest
@@ -30,7 +30,7 @@ class TestProtocolInfo(unittest.TestCase):
     control_socket = test.runner.get_runner().get_tor_socket(False)
     control_socket.send("PROTOCOLINFO 1")
     protocolinfo_response = control_socket.recv()
-    stem.connection.ProtocolInfoResponse.convert(protocolinfo_response)
+    stem.response.convert("PROTOCOLINFO", protocolinfo_response)
     control_socket.close()
     
     # according to the control spec the following _could_ differ or be

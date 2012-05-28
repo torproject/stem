@@ -48,14 +48,6 @@ authenticate_password - Authenticates to a socket supporting password auth.
 authenticate_cookie - Authenticates to a socket supporting cookie auth.
 
 get_protocolinfo - Issues a PROTOCOLINFO query.
-ProtocolInfoResponse - Reply from a PROTOCOLINFO query.
-  |- Attributes:
-  |  |- protocol_version
-  |  |- tor_version
-  |  |- auth_methods
-  |  |- unknown_auth_methods
-  |  +- cookie_path
-  +- convert - parses a ControlMessage, turning it into a ProtocolInfoResponse
 
 AuthenticationFailure - Base exception raised for authentication failures.
   |- UnrecognizedAuthMethods - Authentication methods are unsupported.
@@ -84,6 +76,7 @@ import os
 import getpass
 import binascii
 
+import stem.response
 import stem.socket
 import stem.version
 import stem.util.enum
@@ -295,7 +288,7 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
     password (str) - passphrase to present to the socket if it uses password
         authentication (skips password auth if None)
     chroot_path (str) - path prefix if in a chroot environment
-    protocolinfo_response (stem.connection.ProtocolInfoResponse) -
+    protocolinfo_response (stem.response.protocolinfo.ProtocolInfoResponse) -
         tor protocolinfo response, this is retrieved on our own if None
   
   Raises:
@@ -640,7 +633,7 @@ def get_protocolinfo(controller):
       tor controller connection
   
   Returns:
-    stem.connection.ProtocolInfoResponse provided by tor
+    stem.response.protocolinfo.ProtocolInfoResponse provided by tor
   
   Raises:
     stem.socket.ProtocolError if the PROTOCOLINFO response is malformed
@@ -664,7 +657,7 @@ def get_protocolinfo(controller):
     except stem.socket.SocketClosed, exc:
       raise stem.socket.SocketError(exc)
   
-  ProtocolInfoResponse.convert(protocolinfo_response)
+  stem.response.convert("PROTOCOLINFO", protocolinfo_response)
   
   # attempt to expand relative cookie paths via the control port or socket file
   
@@ -722,153 +715,4 @@ def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg)
       log.debug("unable to expand relative tor cookie path%s: %s" % (pid_resolver_label, exc))
   
   protocolinfo_response.cookie_path = cookie_path
-
-class ProtocolInfoResponse(stem.socket.ControlMessage):
-  """
-  Version one PROTOCOLINFO query response.
-  
-  According to the control spec the cookie_file is an absolute path. However,
-  this often is not the case (especially for the Tor Browser Bundle)...
-  https://trac.torproject.org/projects/tor/ticket/1101
-  
-  If the path is relative then we'll make an attempt (which may not work) to
-  correct this.
-  
-  The protocol_version is the only mandatory data for a valid PROTOCOLINFO
-  response, so all other values are None if undefined or empty if a collection.
-  
-  Attributes:
-    protocol_version (int)             - protocol version of the response
-    tor_version (stem.version.Version) - version of the tor process
-    auth_methods (tuple)               - AuthMethod types that tor will accept
-    unknown_auth_methods (tuple)       - strings of unrecognized auth methods
-    cookie_path (str)                  - path of tor's authentication cookie
-  """
-  
-  def convert(control_message):
-    """
-    Parses a ControlMessage, performing an in-place conversion of it into a
-    ProtocolInfoResponse.
-    
-    Arguments:
-      control_message (stem.socket.ControlMessage) -
-        message to be parsed as a PROTOCOLINFO reply
-    
-    Raises:
-      stem.socket.ProtocolError the message isn't a proper PROTOCOLINFO response
-      TypeError if argument isn't a ControlMessage
-    """
-    
-    if isinstance(control_message, stem.socket.ControlMessage):
-      control_message.__class__ = ProtocolInfoResponse
-      control_message._parse_message()
-      return control_message
-    else:
-      raise TypeError("Only able to convert stem.socket.ControlMessage instances")
-  
-  convert = staticmethod(convert)
-  
-  def _parse_message(self):
-    # Example:
-    #   250-PROTOCOLINFO 1
-    #   250-AUTH METHODS=COOKIE COOKIEFILE="/home/atagar/.tor/control_auth_cookie"
-    #   250-VERSION Tor="0.2.1.30"
-    #   250 OK
-    
-    self.protocol_version = None
-    self.tor_version = None
-    self.cookie_path = None
-    
-    auth_methods, unknown_auth_methods = [], []
-    
-    # sanity check that we're a PROTOCOLINFO response
-    if not list(self)[0].startswith("PROTOCOLINFO"):
-      msg = "Message is not a PROTOCOLINFO response (%s)" % self
-      raise stem.socket.ProtocolError(msg)
-    
-    for line in self:
-      if line == "OK": break
-      elif line.is_empty(): continue # blank line
-      
-      line_type = line.pop()
-      
-      if line_type == "PROTOCOLINFO":
-        # Line format:
-        #   FirstLine = "PROTOCOLINFO" SP PIVERSION CRLF
-        #   PIVERSION = 1*DIGIT
-        
-        if line.is_empty():
-          msg = "PROTOCOLINFO response's initial line is missing the protocol version: %s" % line
-          raise stem.socket.ProtocolError(msg)
-        
-        piversion = line.pop()
-        
-        if not piversion.isdigit():
-          msg = "PROTOCOLINFO response version is non-numeric: %s" % line
-          raise stem.socket.ProtocolError(msg)
-        
-        self.protocol_version = int(piversion)
-        
-        # The piversion really should be "1" but, according to the spec, tor
-        # does not necessarily need to provide the PROTOCOLINFO version that we
-        # requested. Log if it's something we aren't expecting but still make
-        # an effort to parse like a v1 response.
-        
-        if self.protocol_version != 1:
-          log.info("We made a PROTOCOLINFO version 1 query but got a version %i response instead. We'll still try to use it, but this may cause problems." % self.protocol_version)
-      elif line_type == "AUTH":
-        # Line format:
-        #   AuthLine = "250-AUTH" SP "METHODS=" AuthMethod *("," AuthMethod)
-        #              *(SP "COOKIEFILE=" AuthCookieFile) CRLF
-        #   AuthMethod = "NULL" / "HASHEDPASSWORD" / "COOKIE"
-        #   AuthCookieFile = QuotedString
-        
-        # parse AuthMethod mapping
-        if not line.is_next_mapping("METHODS"):
-          msg = "PROTOCOLINFO response's AUTH line is missing its mandatory 'METHODS' mapping: %s" % line
-          raise stem.socket.ProtocolError(msg)
-        
-        for method in line.pop_mapping()[1].split(","):
-          if method == "NULL":
-            auth_methods.append(AuthMethod.NONE)
-          elif method == "HASHEDPASSWORD":
-            auth_methods.append(AuthMethod.PASSWORD)
-          elif method == "COOKIE":
-            auth_methods.append(AuthMethod.COOKIE)
-          else:
-            unknown_auth_methods.append(method)
-            message_id = "stem.connection.unknown_auth_%s" % method
-            log.log_once(message_id, log.INFO, "PROTOCOLINFO response included a type of authentication that we don't recognize: %s" % method)
-            
-            # our auth_methods should have a single AuthMethod.UNKNOWN entry if
-            # any unknown authentication methods exist
-            if not AuthMethod.UNKNOWN in auth_methods:
-              auth_methods.append(AuthMethod.UNKNOWN)
-        
-        # parse optional COOKIEFILE mapping (quoted and can have escapes)
-        if line.is_next_mapping("COOKIEFILE", True, True):
-          self.cookie_path = line.pop_mapping(True, True)[1]
-          
-          # attempt to expand relative cookie paths
-          _expand_cookie_path(self, stem.util.system.get_pid_by_name, "tor")
-      elif line_type == "VERSION":
-        # Line format:
-        #   VersionLine = "250-VERSION" SP "Tor=" TorVersion OptArguments CRLF
-        #   TorVersion = QuotedString
-        
-        if not line.is_next_mapping("Tor", True):
-          msg = "PROTOCOLINFO response's VERSION line is missing its mandatory tor version mapping: %s" % line
-          raise stem.socket.ProtocolError(msg)
-        
-        torversion = line.pop_mapping(True)[1]
-        
-        try:
-          self.tor_version = stem.version.Version(torversion)
-        except ValueError, exc:
-          raise stem.socket.ProtocolError(exc)
-      else:
-        log.debug("unrecognized PROTOCOLINFO line type '%s', ignoring entry: %s" % (line_type, line))
-    
-    self.auth_methods = tuple(auth_methods)
-    self.unknown_auth_methods = tuple(unknown_auth_methods)
 

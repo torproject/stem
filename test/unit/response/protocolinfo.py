@@ -1,14 +1,16 @@
 """
-Unit tests for the stem.connection.ProtocolInfoResponse class.
+Unit tests for the stem.response.protocolinfo.ProtocolInfoResponse class.
 """
 
 import unittest
 
-import stem.connection
+from stem.connection import AuthMethod
 import stem.socket
 import stem.version
 import stem.util.proc
 import stem.util.system
+import stem.response
+import stem.response.protocolinfo
 import test.mocking as mocking
 
 NO_AUTH = """250-PROTOCOLINFO 1
@@ -53,11 +55,11 @@ class TestProtocolInfoResponse(unittest.TestCase):
     
     # working case
     control_message = mocking.get_message(NO_AUTH)
-    stem.connection.ProtocolInfoResponse.convert(control_message)
+    stem.response.convert("PROTOCOLINFO", control_message)
     
     # now this should be a ProtocolInfoResponse (ControlMessage subclass)
     self.assertTrue(isinstance(control_message, stem.socket.ControlMessage))
-    self.assertTrue(isinstance(control_message, stem.connection.ProtocolInfoResponse))
+    self.assertTrue(isinstance(control_message, stem.response.protocolinfo.ProtocolInfoResponse))
     
     # exercise some of the ControlMessage functionality
     raw_content = (NO_AUTH + "\n").replace("\n", "\r\n")
@@ -65,11 +67,11 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertTrue(str(control_message).startswith("PROTOCOLINFO 1"))
     
     # attempt to convert the wrong type
-    self.assertRaises(TypeError, stem.connection.ProtocolInfoResponse.convert, "hello world")
+    self.assertRaises(TypeError, stem.response.convert, "PROTOCOLINFO", "hello world")
     
     # attempt to convert a different message type
     bw_event_control_message = mocking.get_message("650 BW 32326 2856")
-    self.assertRaises(stem.socket.ProtocolError, stem.connection.ProtocolInfoResponse.convert, bw_event_control_message)
+    self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "PROTOCOLINFO", bw_event_control_message)
   
   def test_no_auth(self):
     """
@@ -77,11 +79,11 @@ class TestProtocolInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(NO_AUTH)
-    stem.connection.ProtocolInfoResponse.convert(control_message)
+    stem.response.convert("PROTOCOLINFO", control_message)
     
     self.assertEquals(1, control_message.protocol_version)
     self.assertEquals(stem.version.Version("0.2.1.30"), control_message.tor_version)
-    self.assertEquals((stem.connection.AuthMethod.NONE, ), control_message.auth_methods)
+    self.assertEquals((AuthMethod.NONE, ), control_message.auth_methods)
     self.assertEquals((), control_message.unknown_auth_methods)
     self.assertEquals(None, control_message.cookie_path)
   
@@ -91,8 +93,8 @@ class TestProtocolInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(PASSWORD_AUTH)
-    stem.connection.ProtocolInfoResponse.convert(control_message)
-    self.assertEquals((stem.connection.AuthMethod.PASSWORD, ), control_message.auth_methods)
+    stem.response.convert("PROTOCOLINFO", control_message)
+    self.assertEquals((AuthMethod.PASSWORD, ), control_message.auth_methods)
   
   def test_cookie_auth(self):
     """
@@ -101,8 +103,8 @@ class TestProtocolInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(COOKIE_AUTH)
-    stem.connection.ProtocolInfoResponse.convert(control_message)
-    self.assertEquals((stem.connection.AuthMethod.COOKIE, ), control_message.auth_methods)
+    stem.response.convert("PROTOCOLINFO", control_message)
+    self.assertEquals((AuthMethod.COOKIE, ), control_message.auth_methods)
     self.assertEquals("/tmp/my data\\\"dir//control_auth_cookie", control_message.cookie_path)
   
   def test_multiple_auth(self):
@@ -111,8 +113,8 @@ class TestProtocolInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(MULTIPLE_AUTH)
-    stem.connection.ProtocolInfoResponse.convert(control_message)
-    self.assertEquals((stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.PASSWORD), control_message.auth_methods)
+    stem.response.convert("PROTOCOLINFO", control_message)
+    self.assertEquals((AuthMethod.COOKIE, AuthMethod.PASSWORD), control_message.auth_methods)
     self.assertEquals("/home/atagar/.tor/control_auth_cookie", control_message.cookie_path)
   
   def test_unknown_auth(self):
@@ -121,8 +123,8 @@ class TestProtocolInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(UNKNOWN_AUTH)
-    stem.connection.ProtocolInfoResponse.convert(control_message)
-    self.assertEquals((stem.connection.AuthMethod.UNKNOWN, stem.connection.AuthMethod.PASSWORD), control_message.auth_methods)
+    stem.response.convert("PROTOCOLINFO", control_message)
+    self.assertEquals((AuthMethod.UNKNOWN, AuthMethod.PASSWORD), control_message.auth_methods)
     self.assertEquals(("MAGIC", "PIXIE_DUST"), control_message.unknown_auth_methods)
   
   def test_minimum_response(self):
@@ -132,7 +134,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(MINIMUM_RESPONSE)
-    stem.connection.ProtocolInfoResponse.convert(control_message)
+    stem.response.convert("PROTOCOLINFO", control_message)
     
     self.assertEquals(5, control_message.protocol_version)
     self.assertEquals(None , control_message.tor_version)
@@ -162,7 +164,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     mocking.mock(stem.util.system.call, call_mocking)
     
     control_message = mocking.get_message(RELATIVE_COOKIE_PATH)
-    stem.connection.ProtocolInfoResponse.convert(control_message)
+    stem.response.convert("PROTOCOLINFO", control_message)
     self.assertEquals("/tmp/foo/tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_path)
     
     # exercise cookie expansion where both calls fail (should work, just
@@ -170,7 +172,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     
     mocking.mock(stem.util.system.call, mocking.return_none())
     control_message = mocking.get_message(RELATIVE_COOKIE_PATH)
-    stem.connection.ProtocolInfoResponse.convert(control_message)
+    stem.response.convert("PROTOCOLINFO", control_message)
     self.assertEquals("./tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_path)
     
     # reset system call mocking

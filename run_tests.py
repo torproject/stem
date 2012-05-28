@@ -16,13 +16,13 @@ import test.output
 import test.runner
 import test.check_whitespace
 import test.unit.connection.authentication
-import test.unit.connection.protocolinfo
-import test.unit.control.getinfo
 import test.unit.socket.control_line
 import test.unit.socket.control_message
 import test.unit.descriptor.reader
 import test.unit.descriptor.server_descriptor
 import test.unit.descriptor.extrainfo_descriptor
+import test.unit.response.getinfo
+import test.unit.response.protocolinfo
 import test.unit.util.conf
 import test.unit.util.connection
 import test.unit.util.enum
@@ -31,7 +31,6 @@ import test.unit.util.tor_tools
 import test.unit.version
 import test.integ.connection.authentication
 import test.integ.connection.connect
-import test.integ.connection.protocolinfo
 import test.integ.control.base_controller
 import test.integ.control.controller
 import test.integ.socket.control_message
@@ -39,6 +38,7 @@ import test.integ.socket.control_socket
 import test.integ.descriptor.reader
 import test.integ.descriptor.server_descriptor
 import test.integ.descriptor.extrainfo_descriptor
+import test.integ.response.protocolinfo
 import test.integ.util.conf
 import test.integ.util.system
 import test.integ.process
@@ -100,11 +100,11 @@ UNIT_TESTS = (
   test.unit.descriptor.server_descriptor.TestServerDescriptor,
   test.unit.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
   test.unit.version.TestVersion,
+  test.unit.response.getinfo.TestGetInfoResponse,
+  test.unit.response.protocolinfo.TestProtocolInfoResponse,
   test.unit.socket.control_message.TestControlMessage,
   test.unit.socket.control_line.TestControlLine,
   test.unit.connection.authentication.TestAuthenticate,
-  test.unit.connection.protocolinfo.TestProtocolInfoResponse,
-  test.unit.control.getinfo.TestGetInfoResponse,
 )
 
 INTEG_TESTS = (
@@ -114,10 +114,10 @@ INTEG_TESTS = (
   test.integ.descriptor.server_descriptor.TestServerDescriptor,
   test.integ.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
   test.integ.version.TestVersion,
+  test.integ.response.protocolinfo.TestProtocolInfo,
   test.integ.process.TestProcess,
   test.integ.socket.control_socket.TestControlSocket,
   test.integ.socket.control_message.TestControlMessage,
-  test.integ.connection.protocolinfo.TestProtocolInfo,
   test.integ.connection.authentication.TestAuthenticate,
   test.integ.connection.connect.TestConnect,
   test.integ.control.base_controller.TestBaseController,

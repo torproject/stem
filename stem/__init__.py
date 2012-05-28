@@ -2,5 +2,5 @@
 Library for working with the tor process.
 """
 
-__all__ = ["descriptor", "util", "connection", "control", "process", "socket", "version"]
+__all__ = ["descriptor", "response", "util", "connection", "control", "process", "socket", "version"]
 

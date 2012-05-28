@@ -18,7 +18,7 @@ Mocking Functions
 
 Instance Constructors
   get_message               - stem.socket.ControlMessage
-  get_protocolinfo_response - stem.connection.ProtocolInfoResponse
+  get_protocolinfo_response - stem.response.protocolinfo.ProtocolInfoResponse
 """
 
 import inspect
@@ -26,7 +26,7 @@ import itertools
 import StringIO
 import __builtin__
 
-import stem.connection
+import stem.response
 import stem.socket
 
 # Once we've mocked a function we can't rely on its __module__ or __name__
@@ -223,11 +223,11 @@ def get_protocolinfo_response(**attributes):
     attributes (dict) - attributes to customize the response with
   
   Returns:
-    stem.connection.ProtocolInfoResponse instance
+    stem.response.protocolinfo.ProtocolInfoResponse instance
   """
   
   protocolinfo_response = get_message("250-PROTOCOLINFO 1\n250 OK")
-  stem.connection.ProtocolInfoResponse.convert(protocolinfo_response)
+  stem.response.convert("PROTOCOLINFO", protocolinfo_response)
   
   for attr in attributes:
     protocolinfo_response.__dict__[attr] = attributes[attr]
