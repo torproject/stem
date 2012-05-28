@@ -480,7 +480,7 @@ class Controller(BaseController):
       
       # error if we got back different parameters than we requested
       requested_params = set(param)
-      reply_params = set(response.values.keys())
+      reply_params = set(response.entries.keys())
       
       if requested_params != reply_params:
         requested_label = ", ".join(requested_params)
@@ -489,9 +489,9 @@ class Controller(BaseController):
         raise stem.socket.ProtocolError("GETINFO reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (requested_label, reply_label))
       
       if is_multiple:
-        return response.values
+        return response.entries
       else:
-        return response.values[param[0]]
+        return response.entries[param[0]]
     except stem.socket.ControllerError, exc:
       if default == UNDEFINED: raise exc
       else: return default

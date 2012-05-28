@@ -5,7 +5,7 @@ class GetInfoResponse(stem.socket.ControlMessage):
   Reply for a GETINFO query.
   
   Attributes:
-    values (dict) - mapping between the queried options and their values
+    entries (dict) - mapping between the queried options and their values
   """
   
   def _parse_message(self):
@@ -21,7 +21,7 @@ class GetInfoResponse(stem.socket.ControlMessage):
     # .
     # 250 OK
     
-    self.values = {}
+    self.entries = {}
     
     lines = list(self)
     
@@ -30,7 +30,7 @@ class GetInfoResponse(stem.socket.ControlMessage):
     
     for line in lines:
       if not "=" in line:
-        raise stem.socket.ProtocolError("GETINFO replies should only contain parameter=value mappings: %s" % line)
+        raise stem.socket.ProtocolError("GETINFO replies should only contain parameter=value mappings:\n%s" % self)
       
       key, value = line.split("=", 1)
       
@@ -41,7 +41,7 @@ class GetInfoResponse(stem.socket.ControlMessage):
         if value.startswith("\n"):
           value = value[1:]
         else:
-          raise stem.socket.ProtocolError("GETINFO response contained a multiline value that didn't start with a newline: %s" % line)
+          raise stem.socket.ProtocolError("GETINFO response contained a multiline value that didn't start with a newline:\n%s" % self)
       
-      self.values[key] = value
+      self.entries[key] = value
 

@@ -56,7 +56,7 @@ class TestGetInfoResponse(unittest.TestCase):
     self.assertTrue(isinstance(control_message, stem.socket.ControlMessage))
     self.assertTrue(isinstance(control_message, stem.response.getinfo.GetInfoResponse))
     
-    self.assertEqual({}, control_message.values)
+    self.assertEqual({}, control_message.entries)
   
   def test_single_response(self):
     """
@@ -65,7 +65,7 @@ class TestGetInfoResponse(unittest.TestCase):
     
     control_message = mocking.get_message(SINGLE_RESPONSE)
     stem.response.convert("GETINFO", control_message)
-    self.assertEqual({"version": "0.2.3.11-alpha-dev"}, control_message.values)
+    self.assertEqual({"version": "0.2.3.11-alpha-dev"}, control_message.entries)
   
   def test_batch_response(self):
     """
@@ -81,7 +81,7 @@ class TestGetInfoResponse(unittest.TestCase):
       "fingerprint": "5FDE0422045DF0E1879A3738D09099EB4A0C5BA0",
     }
     
-    self.assertEqual(expected, control_message.values)
+    self.assertEqual(expected, control_message.entries)
   
   def test_multiline_response(self):
     """
@@ -97,7 +97,7 @@ class TestGetInfoResponse(unittest.TestCase):
       "config-text": "\n".join(MULTILINE_RESPONSE.splitlines()[2:8]),
     }
     
-    self.assertEqual(expected, control_message.values)
+    self.assertEqual(expected, control_message.entries)
   
   def test_invalid_non_mapping_content(self):
     """
