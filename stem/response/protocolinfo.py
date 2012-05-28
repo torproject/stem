@@ -37,16 +37,17 @@ class ProtocolInfoResponse(stem.socket.ControlMessage):
     self.cookie_path = None
     
     auth_methods, unknown_auth_methods = [], []
+    lines = list(self)
+    
+    if not self.is_ok() or not lines.pop() == "OK":
+      raise stem.socket.ProtocolError("GETINFO response didn't have an OK status:\n%s" % self)
     
     # sanity check that we're a PROTOCOLINFO response
-    if not list(self)[0].startswith("PROTOCOLINFO"):
+    if not lines[0].startswith("PROTOCOLINFO"):
       msg = "Message is not a PROTOCOLINFO response (%s)" % self
       raise stem.socket.ProtocolError(msg)
     
-    for line in self:
-      if line == "OK": break
-      elif line.is_empty(): continue # blank line
-      
+    for line in lines:
       line_type = line.pop()
       
       if line_type == "PROTOCOLINFO":

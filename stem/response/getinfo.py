@@ -23,9 +23,13 @@ class GetInfoResponse(stem.socket.ControlMessage):
     
     self.values = {}
     
-    for line in self:
-      if line == "OK": break
-      elif not "=" in line:
+    lines = list(self)
+    
+    if not self.is_ok() or not lines.pop() == "OK":
+      raise stem.socket.ProtocolError("GETINFO response didn't have an OK status:\n%s" % self)
+    
+    for line in lines:
+      if not "=" in line:
         raise stem.socket.ProtocolError("GETINFO replies should only contain parameter=value mappings: %s" % line)
       
       key, value = line.split("=", 1)
