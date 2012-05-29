@@ -1,4 +1,5 @@
 import stem.socket
+import stem.response
 import stem.version
 import stem.util.enum
 import stem.util.log as log
@@ -18,7 +19,7 @@ import stem.util.log as log
 
 AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "UNKNOWN")
 
-class ProtocolInfoResponse(stem.socket.ControlMessage):
+class ProtocolInfoResponse(stem.response.ControlMessage):
   """
   Version one PROTOCOLINFO query response.
   

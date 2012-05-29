@@ -1,5 +1,5 @@
 """
-Unit tests for the stem.socket.ControlMessage parsing and class.
+Unit tests for the stem.response.ControlMessage parsing and class.
 """
 
 import socket
@@ -158,7 +158,7 @@ class TestControlMessage(unittest.TestCase):
     Performs some basic sanity checks that a reply mirrors its parsed result.
     
     Returns:
-      stem.socket.ControlMessage for the given input
+      stem.response.ControlMessage for the given input
     """
     
     message = stem.socket.recv_message(StringIO.StringIO(controller_reply))

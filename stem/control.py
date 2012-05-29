@@ -92,7 +92,7 @@ class BaseController:
       message (str) - message to be formatted and sent to tor
     
     Returns:
-      stem.socket.ControlMessage with the response
+      stem.response.ControlMessage with the response
     
     Raises:
       stem.socket.ProtocolError the content from the socket is malformed
@@ -128,7 +128,7 @@ class BaseController:
             log.info("Tor provided a malformed message (%s)" % response)
           elif isinstance(response, stem.socket.ControllerError):
             log.info("Socket experienced a problem (%s)" % response)
-          elif isinstance(response, stem.socket.ControlMessage):
+          elif isinstance(response, stem.response.ControlMessage):
             log.notice("BUG: the msg() function failed to deliver a response: %s" % response)
         except Queue.Empty:
           # the empty() method is documented to not be fully reliable so this
@@ -260,7 +260,7 @@ class BaseController:
     notified whenever we receive an event from the control socket.
     
     Arguments:
-      event_message (stem.socket.ControlMessage) - message received from the
+      event_message (stem.response.ControlMessage) - message received from the
           control socket
     """
     
@@ -471,11 +471,6 @@ class Controller(BaseController):
     
     try:
       response = self.msg("GETINFO %s" % " ".join(param))
-      
-      # TODO: replace with is_ok() check when we've merged it in
-      if response.content()[0][0] != "250":
-        raise stem.socket.ControllerError(str(response))
-      
       stem.response.convert("GETINFO", response)
       
       # error if we got back different parameters than we requested

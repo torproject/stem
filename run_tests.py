@@ -16,11 +16,11 @@ import test.output
 import test.runner
 import test.check_whitespace
 import test.unit.connection.authentication
-import test.unit.socket.control_line
-import test.unit.socket.control_message
 import test.unit.descriptor.reader
 import test.unit.descriptor.server_descriptor
 import test.unit.descriptor.extrainfo_descriptor
+import test.unit.response.control_line
+import test.unit.response.control_message
 import test.unit.response.getinfo
 import test.unit.response.protocolinfo
 import test.unit.util.conf
@@ -100,10 +100,10 @@ UNIT_TESTS = (
   test.unit.descriptor.server_descriptor.TestServerDescriptor,
   test.unit.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
   test.unit.version.TestVersion,
+  test.unit.response.control_message.TestControlMessage,
+  test.unit.response.control_line.TestControlLine,
   test.unit.response.getinfo.TestGetInfoResponse,
   test.unit.response.protocolinfo.TestProtocolInfoResponse,
-  test.unit.socket.control_message.TestControlMessage,
-  test.unit.socket.control_line.TestControlLine,
   test.unit.connection.authentication.TestAuthenticate,
 )
 

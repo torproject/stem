@@ -58,7 +58,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     stem.response.convert("PROTOCOLINFO", control_message)
     
     # now this should be a ProtocolInfoResponse (ControlMessage subclass)
-    self.assertTrue(isinstance(control_message, stem.socket.ControlMessage))
+    self.assertTrue(isinstance(control_message, stem.response.ControlMessage))
     self.assertTrue(isinstance(control_message, stem.response.protocolinfo.ProtocolInfoResponse))
     
     # exercise some of the ControlMessage functionality

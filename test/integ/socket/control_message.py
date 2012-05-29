@@ -1,5 +1,5 @@
 """
-Integration tests for the stem.socket.ControlMessage class.
+Integration tests for the stem.response.ControlMessage class.
 """
 
 import re

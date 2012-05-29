@@ -4,6 +4,7 @@ Unit tests for the stem.response.getinfo.GetInfoResponse class.
 
 import unittest
 
+import stem.socket
 import stem.response
 import stem.response.getinfo
 import test.mocking as mocking
@@ -53,7 +54,7 @@ class TestGetInfoResponse(unittest.TestCase):
     stem.response.convert("GETINFO", control_message)
     
     # now this should be a GetInfoResponse (ControlMessage subclass)
-    self.assertTrue(isinstance(control_message, stem.socket.ControlMessage))
+    self.assertTrue(isinstance(control_message, stem.response.ControlMessage))
     self.assertTrue(isinstance(control_message, stem.response.getinfo.GetInfoResponse))
     
     self.assertEqual({}, control_message.entries)
