@@ -1,4 +1,5 @@
 *.pyc
 *.swp
 test/data/
+docs/_build/
 
