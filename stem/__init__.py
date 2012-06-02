@@ -10,5 +10,3 @@ __license__ = 'LGPLv3'
 
 __all__ = ["descriptor", "response", "util", "connection", "control", "process", "socket", "version"]
 
-
-
