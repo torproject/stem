@@ -13,6 +13,11 @@ Stem is a python controller library for `Tor <https://www.torproject.org/>`_. Li
 
 Used for launching Tor and managing the process.
 
+:mod:`stem.version`
+-------------------
+
+Parsed versions that can be compared to the requirement for various features.
+
 .. toctree::
    :maxdepth: 2
 

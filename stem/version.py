@@ -8,14 +8,13 @@ easily parsed and compared, for instance...
 >>> my_version > stem.version.Requirement.CONTROL_SOCKET
 True
 
-get_system_tor_version - gets the version of our system's tor installation
-Version - Tor versioning information.
-  |- __str__ - string representation
-  +- __cmp__ - compares with another Version
-
-Requirement - Enumerations for the version requirements of features.
-  |- GETINFO_CONFIG_TEXT - 'GETINFO config-text' query
-  +- CONTROL_SOCKET      - 'ControlSocket <path>' config option
++----------------------------------------------------------+
+|Requirement                                               |
++=====================+====================================+
+|GETINFO_CONFIG_TEXT  |'GETINFO config-text' query         |
++---------------------+------------------------------------+
+|CONTROL_SOCKET       |'ControlSocket <path>' config option|
++---------------------+------------------------------------+
 """
 
 import re
@@ -31,14 +30,11 @@ def get_system_tor_version(tor_cmd = "tor"):
   Queries tor for its version. This is os dependent, only working on linux,
   osx, and bsd.
   
-  Arguments:
-    tor_cmd (str) - command used to run tor
+  :param str tor_cmd: command used to run tor
   
-  Returns:
-    stem.version.Version provided by the tor command
+  :returns: :class:`stem.version.Version` provided by the tor command
   
-  Raises:
-    IOError if unable to query or parse the version
+  :raises: IOError if unable to query or parse the version
   """
   
   if not tor_cmd in VERSION_CACHE:
@@ -70,27 +66,23 @@ def get_system_tor_version(tor_cmd = "tor"):
 
 class Version:
   """
-  Comparable tor version, as per the 'new version' of the version-spec...
-  https://gitweb.torproject.org/torspec.git/blob/HEAD:/version-spec.txt
+  Comparable tor version. These are constructed from strings that conform to
+  the 'new' style in the `tor version-spec
+  <https://gitweb.torproject.org/torspec.git/blob/HEAD:/version-spec.txt>`_,
+  such as "0.1.4" or "0.2.2.23-alpha (git-7dcd105be34a4f44)".
   
-  Attributes:
-    major (int)  - major version
-    minor (int)  - minor version
-    micro (int)  - micro version
-    patch (int)  - optional patch level (None if undefined)
-    status (str) - optional status tag without the preceding dash such as
-                   'alpha', 'beta-dev', etc (None if undefined)
+  :var int major: major version
+  :var int minor: minor version
+  :var int micro: micro version
+  :var int patch: optional patch level (None if undefined)
+  :var str status: optional status tag without the preceding dash such as 'alpha', 'beta-dev', etc (None if undefined)
+  
+  :param str version_str: version to be parsed
+  
+  :raises: ValueError if input isn't a valid tor version
   """
   
   def __init__(self, version_str):
-    """
-    Parses a valid tor version string, for instance "0.1.4" or
-    "0.2.2.23-alpha (git-7dcd105be34a4f44)".
-    
-    Raises:
-      ValueError if input isn't a valid tor version
-    """
-    
     self.version_str = version_str
     m = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?$', version_str)
     
