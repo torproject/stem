@@ -35,10 +35,10 @@ help:
 
 clean:
 	-rm -rf $(BUILDDIR)/*
+	@rm -f ./stem.* ./modules.rst
 
 html:
-	@rm -rf /tmp/stem_docs
-	@sphinx-apidoc -o /tmp/stem_docs ../stem
+	@sphinx-apidoc -f -o /tmp/stem_docs ../stem
 	@rsync --size-only /tmp/stem_docs/* .
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
