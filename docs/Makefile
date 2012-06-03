@@ -37,6 +37,8 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 
 html:
+	@rm -f ./stem.* ./modules.rst
+	@sphinx-apidoc -o . ../stem
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
