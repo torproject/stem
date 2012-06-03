@@ -1,8 +1,11 @@
 """
 Helper functions for working with tor as a process.
 
-launch_tor             - starts up a tor process
-launch_tor_with_config - starts a tor process with a custom torrc
+:NO_TORRC:
+  when provided as a torrc_path tor is ran with a blank configuration
+
+:DEFAULT_INIT_TIMEOUT:
+  number of seconds before we time out our attempt to start a tor instance
 """
 
 import re
@@ -13,13 +16,8 @@ import subprocess
 
 import stem.util.system
 
-# number of seconds before we time out our attempt to start a tor instance
-DEFAULT_INIT_TIMEOUT = 90
-
-# special parameter that can be set for the torrc_path to run with a blank
-# configuration
-
 NO_TORRC = "<no torrc>"
+DEFAULT_INIT_TIMEOUT = 90
 
 def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
   """
@@ -31,26 +29,19 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
   while. Usually this is done in 50 seconds or so, but occasionally calls seem
   to get stuck, taking well over the default timeout.
   
-  Our timeout argument does not work on Windows...
-  https://trac.torproject.org/projects/tor/ticket/5783
+  Note: Timeout argument does not work on Windows (`ticket
+  <https://trac.torproject.org/5783>`_)
   
-  Arguments:
-    tor_cmd (str)              - command for starting tor
-    args (list)                - additional arguments for tor
-    torrc_path (str)           - location of the torrc for us to use
-    completion_percent (int)   - percent of bootstrap completion at which
-                                 this'll return
-    init_msg_handler (functor) - optional functor that will be provided with
-                                 tor's initialization stdout as we get it
-    timeout (int)              - time after which the attempt to start tor is
-                                 aborted, no timeouts are applied if None
+  :param str tor_cmd: command for starting tor
+  :param list args: additional arguments for tor
+  :param str torrc_path: location of the torrc for us to use
+  :param int completion_percent: percent of bootstrap completion at which this'll return
+  :param functor init_msg_handler: optional functor that will be provided with tor's initialization stdout as we get it
+  :param int timeout: time after which the attempt to start tor is aborted, no timeouts are applied if None
   
-  Returns:
-    subprocess.Popen instance for the tor subprocess
+  :returns: subprocess.Popen instance for the tor subprocess
   
-  Raises:
-    OSError if we either fail to create the tor process or reached a timeout
-    without success
+  :raises: OSError if we either fail to create the tor process or reached a timeout without success
   """
   
   if stem.util.system.is_windows():
@@ -124,22 +115,15 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
   configuration. This writes a temporary torrc to disk, launches tor, then
   deletes the torrc.
   
-  Arguments:
-    config (dict)              - configuration options, such as ("ControlPort": "9051")
-    tor_cmd (str)              - command for starting tor
-    completion_percent (int)   - percent of bootstrap completion at which
-                                 this'll return
-    init_msg_handler (functor) - optional functor that will be provided with
-                                 tor's initialization stdout as we get it
-    timeout (int)              - time after which the attempt to start tor is
-                                 aborted, no timeouts are applied if None
+  :param dict config: configuration options, such as ``{"ControlPort": "9051"}``
+  :param str tor_cmd: command for starting tor
+  :param int completion_percent: percent of bootstrap completion at which this'll return
+  :param functor init_msg_handler: optional functor that will be provided with tor's initialization stdout as we get it
+  :param int timeout: time after which the attempt to start tor is aborted, no timeouts are applied if None
   
-  Returns:
-    subprocess.Popen instance for the tor subprocess
+  :returns: subprocess.Popen instance for the tor subprocess
   
-  Raises:
-    OSError if we either fail to create the tor process or reached a timeout
-    without success
+  :raises: OSError if we either fail to create the tor process or reached a timeout without success
   """
   
   torrc_path = tempfile.mkstemp(prefix = "torrc-", text = True)[1]
