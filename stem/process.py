@@ -111,9 +111,9 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
 
 def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
   """
-  Initializes a tor process, like launch_tor(), but with a customized
-  configuration. This writes a temporary torrc to disk, launches tor, then
-  deletes the torrc.
+  Initializes a tor process, like :func:`stem.process.launch_tor`, but with a
+  customized configuration. This writes a temporary torrc to disk, launches
+  tor, then deletes the torrc.
   
   :param dict config: configuration options, such as ``{"ControlPort": "9051"}``
   :param str tor_cmd: command for starting tor
