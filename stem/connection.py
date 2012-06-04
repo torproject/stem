@@ -72,13 +72,14 @@ import binascii
 
 import stem.response
 import stem.socket
+import stem.control
 import stem.version
 import stem.util.enum
 import stem.util.system
 import stem.util.log as log
 from stem.response.protocolinfo import AuthMethod
 
-def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = None):
+def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. This is very
   handy for debugging or CLI setup, handling setup and prompting for a password
@@ -94,8 +95,6 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
   :returns: authenticated control connection, the type based on the controller argument
   """
   
-  # TODO: replace the controller arg's default when we have something better
-  
   try:
     control_port = stem.socket.ControlPort(control_addr, control_port)
   except stem.socket.SocketError, exc:
@@ -104,7 +103,7 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
   
   return _connect(control_port, password, chroot_path, controller)
 
-def connect_socket_file(socket_path = "/var/run/tor/control", password = None, chroot_path = None, controller = None):
+def connect_socket_file(socket_path = "/var/run/tor/control", password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. For more
   information see the connect_port function.
