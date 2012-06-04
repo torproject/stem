@@ -2,19 +2,26 @@
 Tor versioning information and requirements for its features. These can be
 easily parsed and compared, for instance...
 
->>> my_version = stem.version.get_system_tor_version()
->>> print my_version
-0.2.1.30
->>> my_version > stem.version.Requirement.CONTROL_SOCKET
-True
+::
 
-+----------------------------------------------------------+
-|Requirement                                               |
-+=====================+====================================+
-|GETINFO_CONFIG_TEXT  |'GETINFO config-text' query         |
-+---------------------+------------------------------------+
-|CONTROL_SOCKET       |'ControlSocket <path>' config option|
-+---------------------+------------------------------------+
+  >>> my_version = stem.version.get_system_tor_version()
+  >>> print my_version
+  0.2.1.30
+  >>> my_version > stem.version.Requirement.CONTROL_SOCKET
+  True
+
+**Module Overview:**
+
+::
+
+  get_system_tor_version - gets the version of our system's tor installation
+  Version - Tor versioning information.
+    |- __str__ - string representation
+    +- __cmp__ - compares with another Version
+  
+  Requirement - Enumerations for the version requirements of features.
+    |- GETINFO_CONFIG_TEXT - 'GETINFO config-text' query
+    +- CONTROL_SOCKET      - 'ControlSocket <path>' config option
 """
 
 import re

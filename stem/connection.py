@@ -41,8 +41,20 @@ the authentication process. For instance...
     print "Unable to authenticate: %s" % exc
     sys.exit(1)
 
-Authentication failure exception hierchy::
+**Module Overview:**
 
+::
+
+  connect_port - Convenience method to get an authenticated control connection.
+  connect_socket_file - Similar to connect_port, but for control socket files.
+  
+  authenticate - Main method for authenticating to a control socket.
+  authenticate_none - Authenticates to an open control socket.
+  authenticate_password - Authenticates to a socket supporting password auth.
+  authenticate_cookie - Authenticates to a socket supporting cookie auth.
+  
+  get_protocolinfo - Issues a PROTOCOLINFO query.
+  
   AuthenticationFailure - Base exception raised for authentication failures.
     |- UnrecognizedAuthMethods - Authentication methods are unsupported.
     |- IncorrectSocketType - Socket does not speak the tor control protocol.

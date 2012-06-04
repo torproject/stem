@@ -6,6 +6,13 @@ Helper functions for working with tor as a process.
 
 :DEFAULT_INIT_TIMEOUT:
   number of seconds before we time out our attempt to start a tor instance
+
+**Module Overview:**
+
+::
+
+  launch_tor             - starts up a tor process
+  launch_tor_with_config - starts a tor process with a custom torrc
 """
 
 import re
