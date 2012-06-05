@@ -1,22 +1,26 @@
 """
 Parses replies from the control socket.
 
-convert - translates a ControlMessage into a particular response subclass
+**Module Overview:**
 
-ControlMessage - Message that's read from the control socket.
-  |- content - provides the parsed message content
-  |- raw_content - unparsed socket data
-  |- __str__ - content stripped of protocol formatting
-  +- __iter__ - ControlLine entries for the content of the message
+::
 
-ControlLine - String subclass with methods for parsing controller responses.
-  |- remainder - provides the unparsed content
-  |- is_empty - checks if the remaining content is empty
-  |- is_next_quoted - checks if the next entry is a quoted value
-  |- is_next_mapping - checks if the next entry is a KEY=VALUE mapping
-  |- peek_key - provides the key of the next entry
-  |- pop - removes and returns the next entry
-  +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
+  convert - translates a ControlMessage into a particular response subclass
+  
+  ControlMessage - Message that's read from the control socket.
+    |- content - provides the parsed message content
+    |- raw_content - unparsed socket data
+    |- __str__ - content stripped of protocol formatting
+    +- __iter__ - ControlLine entries for the content of the message
+  
+  ControlLine - String subclass with methods for parsing controller responses.
+    |- remainder - provides the unparsed content
+    |- is_empty - checks if the remaining content is empty
+    |- is_next_quoted - checks if the next entry is a quoted value
+    |- is_next_mapping - checks if the next entry is a KEY=VALUE mapping
+    |- peek_key - provides the key of the next entry
+    |- pop - removes and returns the next entry
+    +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
 """
 
 __all__ = ["getinfo", "protocolinfo", "convert", "ControlMessage", "ControlLine"]
@@ -47,14 +51,12 @@ def convert(response_type, message):
   
   If the response_type isn't recognized then this is leaves it alone.
   
-  Arguments:
-    response_type (str) - type of tor response to convert to
-    message (stem.response.ControlMessage) - message to be converted
+  :param str response_type: type of tor response to convert to
+  :param stem.response.ControlMessage message: message to be converted
   
-  Raises:
-    stem.socket.ProtocolError the message isn't a proper response of that type
-    TypeError if argument isn't a ControlMessage or response_type isn't
-      supported
+  :raises:
+    * :class:`stem.socket.ProtocolError` the message isn't a proper response of that type
+    * TypeError if argument isn't a :class:`stem.response.ControlMessage` or response_type isn't supported
   """
   
   import stem.response.getinfo
@@ -86,8 +88,7 @@ class ControlMessage:
     """
     Checks if all of our lines have a 250 response.
     
-    Returns:
-      True if all lines have a 250 response code, False otherwise
+    :returns: True if all lines have a 250 response code, False otherwise
     """
     
     for code, _, _ in self._parsed_content:
@@ -98,20 +99,26 @@ class ControlMessage:
   def content(self):
     """
     Provides the parsed message content. These are entries of the form...
-    (status_code, divider, content)
     
-    * status_code - Three character code for the type of response (defined in
-                    section 4 of the control-spec).
-    * divider     - Single character to indicate if this is mid-reply, data, or
-                    an end to the message (defined in section 2.3 of the
-                    control-spec).
-    * content     - The following content is the actual payload of the line.
+    ::
+    
+      (status_code, divider, content)
+    
+    **status_code**
+      Three character code for the type of response (defined in section 4 of
+      the control-spec).
+    
+    **divider**
+      Single character to indicate if this is mid-reply, data, or an end to the
+      message (defined in section 2.3 of the control-spec).
+    
+    **content**
+      The following content is the actual payload of the line.
     
     For data entries the content is the full multi-line payload with newline
     linebreaks and leading periods unescaped.
     
-    Returns:
-      list of (str, str, str) tuples for the components of this message
+    :returns: list of (str, str, str) tuples for the components of this message
     """
     
     return list(self._parsed_content)
@@ -120,8 +127,7 @@ class ControlMessage:
     """
     Provides the unparsed content read from the control socket.
     
-    Returns:
-      string of the socket data used to generate this message
+    :returns: string of the socket data used to generate this message
     """
     
     return self._raw_content
@@ -139,17 +145,22 @@ class ControlMessage:
     Provides ControlLine instances for the content of the message. This is
     stripped of status codes and dividers, for instance...
     
-    250+info/names=
-    desc/id/* -- Router descriptors by ID.
-    desc/name/* -- Router descriptors by nickname.
-    .
-    250 OK
+    ::
+    
+      250+info/names=
+      desc/id/* -- Router descriptors by ID.
+      desc/name/* -- Router descriptors by nickname.
+      .
+      250 OK
     
     Would provide two entries...
-    1st - "info/names=
-           desc/id/* -- Router descriptors by ID.
-           desc/name/* -- Router descriptors by nickname."
-    2nd - "OK"
+    
+    ::
+    
+      1st - "info/names=
+             desc/id/* -- Router descriptors by ID.
+             desc/name/* -- Router descriptors by nickname."
+      2nd - "OK"
     """
     
     for _, _, content in self._parsed_content:
@@ -177,8 +188,7 @@ class ControlLine(str):
     Provides our unparsed content. This is an empty string after we've popped
     all entries.
     
-    Returns:
-      str of the unparsed content
+    :returns: str of the unparsed content
     """
     
     return self._remainder
@@ -187,8 +197,7 @@ class ControlLine(str):
     """
     Checks if we have further content to pop or not.
     
-    Returns:
-      True if we have additional content, False otherwise
+    :returns: True if we have additional content, False otherwise
     """
     
     return self._remainder == ""
@@ -197,11 +206,9 @@ class ControlLine(str):
     """
     Checks if our next entry is a quoted value or not.
     
-    Arguments:
-      escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+    :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
     
-    Returns:
-      True if the next entry can be parsed as a quoted value, False otherwise
+    :returns: True if the next entry can be parsed as a quoted value, False otherwise
     """
     
     start_quote, end_quote = _get_quote_indeces(self._remainder, escaped)
@@ -211,15 +218,11 @@ class ControlLine(str):
     """
     Checks if our next entry is a KEY=VALUE mapping or not.
     
-    Arguments:
-      key (str)      - checks that the key matches this value, skipping the
-                       check if None
-      quoted (bool)  - checks that the mapping is to a quoted value
-      escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+    :param str key: checks that the key matches this value, skipping the check if ``None``
+    :param bool quoted: checks that the mapping is to a quoted value
+    :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
     
-    Returns:
-      True if the next entry can be parsed as a key=value mapping, False
-      otherwise
+    :returns: True if the next entry can be parsed as a key=value mapping, False otherwise
     """
     
     remainder = self._remainder # temp copy to avoid locking
@@ -243,8 +246,7 @@ class ControlLine(str):
     Provides the key of the next entry, providing None if it isn't a key/value
     mapping.
     
-    Returns:
-      str with the next entry's key
+    :returns: str with the next entry's key
     """
     
     remainder = self._remainder
@@ -260,29 +262,28 @@ class ControlLine(str):
     Parses the next space separated entry, removing it and the space from our
     remaining content. Examples...
     
-    >>> line = ControlLine("\"We're all mad here.\" says the grinning cat.")
-    >>> print line.pop(True)
-      "We're all mad here."
-    >>> print line.pop()
-      "says"
-    >>> print line.remainder()
-      "the grinning cat."
+    ::
     
-    >>> line = ControlLine("\"this has a \\\" and \\\\ in it\" foo=bar more_data")
-    >>> print line.pop(True, True)
-      "this has a \" and \\ in it"
+      >>> line = ControlLine("\\"We're all mad here.\\" says the grinning cat.")
+      >>> print line.pop(True)
+        "We're all mad here."
+      >>> print line.pop()
+        "says"
+      >>> print line.remainder()
+        "the grinning cat."
+      
+      >>> line = ControlLine("\\"this has a \\\\\\" and \\\\\\\\ in it\\" foo=bar more_data")
+      >>> print line.pop(True, True)
+        "this has a \\" and \\\\ in it"
     
-    Arguments:
-      quoted (bool)  - parses the next entry as a quoted value, removing the
-                       quotes
-      escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+    :param bool quoted: parses the next entry as a quoted value, removing the quotes
+    :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
     
-    Returns:
-      str of the next space separated entry
+    :returns: str of the next space separated entry
     
-    Raises:
-      ValueError if quoted is True without the value being quoted
-      IndexError if we don't have any remaining content left to parse
+    :raises:
+      * ValueError if quoted is True without the value being quoted
+      * IndexError if we don't have any remaining content left to parse
     """
     
     with self._remainder_lock:
@@ -295,16 +296,12 @@ class ControlLine(str):
     Parses the next space separated entry as a KEY=VALUE mapping, removing it
     and the space from our remaining content.
     
-    Arguments:
-      quoted (bool)  - parses the value as being quoted, removing the quotes
-      escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+    :param bool quoted: parses the value as being quoted, removing the quotes
+    :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
     
-    Returns:
-      tuple of the form (key, value)
+    :returns: tuple of the form (key, value)
     
-    Raises:
-      ValueError if this isn't a KEY=VALUE mapping or if quoted is True without
-        the value being quoted
+    :raises: ValueError if this isn't a KEY=VALUE mapping or if quoted is True without the value being quoted
     """
     
     with self._remainder_lock:
@@ -326,18 +323,15 @@ def _parse_entry(line, quoted, escaped):
   """
   Parses the next entry from the given space separated content.
   
-  Arguments:
-    line (str)     - content to be parsed
-    quoted (bool)  - parses the next entry as a quoted value, removing the
-                     quotes
-    escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+  :param str line: content to be parsed
+  :param bool quoted: parses the next entry as a quoted value, removing the quotes
+  :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
   
-  Returns:
-    tuple of the form (entry, remainder)
+  :returns: tuple of the form (entry, remainder)
   
-  Raises:
-    ValueError if quoted is True without the next value being quoted
-    IndexError if there's nothing to parse from the line
+  :raises:
+    * ValueError if quoted is True without the next value being quoted
+    * IndexError if there's nothing to parse from the line
   """
   
   if line == "":
@@ -368,12 +362,10 @@ def _get_quote_indeces(line, escaped):
   """
   Provides the indices of the next two quotes in the given content.
   
-  Arguments:
-    line (str)     - content to be parsed
-    escaped (bool) - unescapes the CONTROL_ESCAPES escape sequences
+  :param str line: content to be parsed
+  :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
   
-  Returns:
-    tuple of two ints, indices being -1 if a quote doesn't exist
+  :returns: tuple of two ints, indices being -1 if a quote doesn't exist
   """
   
   indices, quote_index = [], -1

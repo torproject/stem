@@ -5,8 +5,7 @@ class GetInfoResponse(stem.response.ControlMessage):
   """
   Reply for a GETINFO query.
   
-  Attributes:
-    entries (dict) - mapping between the queried options and their values
+  :var dict entries: mapping between the queried options and their values
   """
   
   def _parse_message(self):

@@ -21,7 +21,7 @@ Provides the :class:`stem.control.Controller` class which, as the name implies, 
 :mod:`stem.socket`
 ------------------
 
-Base classes for communicating with a tor control socket.
+Base classes for communicating with a Tor control socket.
 
 :mod:`stem.process`
 -------------------
@@ -32,6 +32,11 @@ Used for launching Tor and managing the process.
 -------------------
 
 Parsed versions that can be compared to the requirement for various features.
+
+:mod:`stem.response`
+--------------------
+
+Parsed replies that we receive from the Tor control socket.
 
 .. toctree::
    :maxdepth: 2

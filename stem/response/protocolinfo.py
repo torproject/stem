@@ -1,21 +1,31 @@
+"""
+Parses replies to a tor PROTOCOLINFO queries.
+
+The AuthMethod enumeration includes methods by which a controller can
+authenticate to the control port. Tor gives a list of all the authentication
+methods it will accept in response to PROTOCOLINFO queries.
+
+**AuthMethod.NONE**
+  No authentication required
+
+**AuthMethod.PASSWORD**
+  See tor's HashedControlPassword option. Controllers must provide the password
+  used to generate the hash.
+
+**AuthMethod.COOKIE**
+  See tor's CookieAuthentication option. Controllers need to supply the
+  contents of the cookie file.
+
+**AuthMethod.UNKNOWN**
+  Tor provided one or more authentication methods that we don't recognize. This
+  is probably from a new addition to the control protocol.
+"""
+
 import stem.socket
 import stem.response
 import stem.version
 import stem.util.enum
 import stem.util.log as log
-
-# Methods by which a controller can authenticate to the control port. Tor gives
-# a list of all the authentication methods it will accept in response to
-# PROTOCOLINFO queries.
-#
-# NONE     - No authentication required
-# PASSWORD - See tor's HashedControlPassword option. Controllers must provide
-#            the password used to generate the hash.
-# COOKIE   - See tor's CookieAuthentication option. Controllers need to supply
-#            the contents of the cookie file.
-# UNKNOWN  - Tor provided one or more authentication methods that we don't
-#            recognize. This is probably from a new addition to the control
-#            protocol.
 
 AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "UNKNOWN")
 
@@ -24,14 +34,14 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
   Version one PROTOCOLINFO query response.
   
   The protocol_version is the only mandatory data for a valid PROTOCOLINFO
-  response, so all other values are None if undefined or empty if a collection.
+  response, so all other values are ``None`` if undefined or empty if a
+  collection.
   
-  Attributes:
-    protocol_version (int)             - protocol version of the response
-    tor_version (stem.version.Version) - version of the tor process
-    auth_methods (tuple)               - AuthMethod types that tor will accept
-    unknown_auth_methods (tuple)       - strings of unrecognized auth methods
-    cookie_path (str)                  - path of tor's authentication cookie
+  :var int protocol_version: protocol version of the response
+  :var stem.version.Version tor_version: version of the tor process
+  :var tuple auth_methods: AuthMethod types that tor will accept
+  :var tuple unknown_auth_methods: strings of unrecognized auth methods
+  :var str cookie_path: path of tor's authentication cookie
   """
   
   def _parse_message(self):
