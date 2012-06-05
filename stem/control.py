@@ -2,24 +2,26 @@
 Classes for interacting with the tor control socket.
 
 Controllers are a wrapper around a ControlSocket, retaining many of its methods
-(send, recv, is_alive, etc) in addition to providing its own for interacting at
-a higher level.
+(connect, close, is_alive, etc) in addition to providing its own for
+interacting at a higher level.
 
-from_port - Provides a Controller based on a port connection.
-from_socket_file - Provides a Controller based on a socket file connection.
+::
 
-Controller - General controller class intended for direct use.
-  +- get_info - issues a GETINFO query
-
-BaseController - Base controller class asynchronous message handling.
-  |- msg - communicates with the tor process
-  |- is_alive - reports if our connection to tor is open or closed
-  |- connect - connects or reconnects to tor
-  |- close - shuts down our connection to the tor process
-  |- get_socket - provides the socket used for control communication
-  |- add_status_listener - notifies a callback of changes in our status
-  |- remove_status_listener - prevents further notification of status changes
-  +- __enter__ / __exit__ - manages socket connection
+  from_port - Provides a Controller based on a port connection.
+  from_socket_file - Provides a Controller based on a socket file connection.
+  
+  Controller - General controller class intended for direct use.
+    +- get_info - issues a GETINFO query
+  
+  BaseController - Base controller class asynchronous message handling.
+    |- msg - communicates with the tor process
+    |- is_alive - reports if our connection to tor is open or closed
+    |- connect - connects or reconnects to tor
+    |- close - shuts down our connection to the tor process
+    |- get_socket - provides the socket used for control communication
+    |- add_status_listener - notifies a callback of changes in our status
+    |- remove_status_listener - prevents further notification of status changes
+    +- __enter__ / __exit__ - manages socket connection
 """
 
 import time
@@ -39,9 +41,9 @@ State = stem.util.enum.Enum("INIT", "RESET", "CLOSED")
 
 # Constant to indicate an undefined argument default. Usually we'd use None for
 # this, but users will commonly provide None as the argument so need something
-# else very, very unique...
+# else fairly unique...
 
-UNDEFINED = "<Undefined>" * 10
+UNDEFINED = "<Undefined_ >"
 
 class BaseController:
   """
@@ -88,16 +90,14 @@ class BaseController:
     """
     Sends a message to our control socket and provides back its reply.
     
-    Arguments:
-      message (str) - message to be formatted and sent to tor
+    :param str message: message to be formatted and sent to tor
     
-    Returns:
-      stem.response.ControlMessage with the response
+    :returns: :class:`stem.response.ControlMessage` with the response
     
-    Raises:
-      stem.socket.ProtocolError the content from the socket is malformed
-      stem.socket.SocketError if a problem arises in using the socket
-      stem.socket.SocketClosed if the socket is shut down
+    :raises:
+      * :class:`stem.socket.ProtocolError` the content from the socket is malformed
+      * :class:`stem.socket.SocketError` if a problem arises in using the socket
+      * :class:`stem.socket.SocketClosed` if the socket is shut down
     """
     
     with self._msg_lock:
@@ -161,8 +161,7 @@ class BaseController:
     Checks if our socket is currently connected. This is a passthrough for our
     socket's is_alive() method.
     
-    Returns:
-      bool that's True if we're shut down and False otherwise
+    :returns: bool that's True if we're shut down and False otherwise
     """
     
     return self._socket.is_alive()
@@ -172,8 +171,7 @@ class BaseController:
     Reconnects our control socket. This is a passthrough for our socket's
     connect() method.
     
-    Raises:
-      stem.socket.SocketError if unable to make a socket
+    :raises: :class:`stem.socket.SocketError` if unable to make a socket
     """
     
     self._socket.connect()
@@ -181,7 +179,7 @@ class BaseController:
   def close(self):
     """
     Closes our socket connection. This is a passthrough for our socket's
-    close() method.
+    :func:`stem.socket.ControlSocket.close` method.
     """
     
     self._socket.close()
@@ -191,8 +189,7 @@ class BaseController:
     Provides the socket used to speak with the tor process. Communicating with
     the socket directly isn't advised since it may confuse the controller.
     
-    Returns:
-      ControlSocket for process communications
+    :returns: :class:`stem.socket.ControlSocket` we're communicating with
     """
     
     return self._socket
@@ -202,13 +199,15 @@ class BaseController:
     Notifies a given function when the state of our socket changes. Functions
     are expected to be of the form...
     
+    ::
+    
       my_function(controller, state, timestamp)
     
-    The state is a value from stem.socket.State, functions *must* allow for
+    The state is a value from stem.socket.State, functions **must** allow for
     new values in this field. The timestamp is a float for the unix time when
     the change occured.
     
-    This class only provides State.INIT and State.CLOSED notifications.
+    This class only provides ``State.INIT`` and ``State.CLOSED`` notifications.
     Subclasses may provide others.
     
     If spawn is True then the callback is notified via a new daemon thread. If
@@ -216,10 +215,8 @@ class BaseController:
     change occured. In general this isn't advised, especially if your callback
     could block for a while.
     
-    Arguments:
-      callback (function) - function to be notified when our state changes
-      spawn (bool)        - calls function via a new thread if True, otherwise
-                            it's part of the connect/close method call
+    :param function callback: function to be notified when our state changes
+    :param bool spawn: calls function via a new thread if True, otherwise it's part of the connect/close method call
     """
     
     with self._status_listeners_lock:
@@ -229,12 +226,9 @@ class BaseController:
     """
     Stops listener from being notified of further events.
     
-    Arguments:
-      callback (function) - function to be removed from our listeners
+    :param function callback: function to be removed from our listeners
     
-    Returns:
-      bool that's True if we removed one or more occurances of the callback,
-      False otherwise
+    :returns: bool that's True if we removed one or more occurances of the callback, False otherwise
     """
     
     with self._status_listeners_lock:
@@ -259,9 +253,7 @@ class BaseController:
     Callback to be overwritten by subclasses for event listening. This is
     notified whenever we receive an event from the control socket.
     
-    Arguments:
-      event_message (stem.response.ControlMessage) - message received from the
-          control socket
+    :param stem.response.ControlMessage event_message: message received from the control socket
     """
     
     pass
@@ -293,18 +285,16 @@ class BaseController:
     
     States imply that our socket is either alive or not, which may not hold
     true when multiple events occure in quick succession. For instance, a
-    sighup could cause two events (State.RESET for the sighup and State.CLOSE
-    if it causes tor to crash). However, there's no guarentee of the order in
-    which they occure, and it would be bad if listeners got the State.RESET
-    last, implying that we were alive.
+    sighup could cause two events (``State.RESET`` for the sighup and
+    ``State.CLOSE`` if it causes tor to crash). However, there's no guarentee
+    of the order in which they occure, and it would be bad if listeners got the
+    ``State.RESET`` last, implying that we were alive.
     
     If set, the expect_alive flag will discard our event if it conflicts with
-    our current is_alive() state.
+    our current :func:`stem.control.BaseController.is_alive` state.
     
-    Arguments:
-      state (stem.socket.State) - state change that has occured
-      expect_alive (bool)       - discard event if it conflicts with our
-                                  is_alive() state
+    :param stem.socket.State state: state change that has occured
+    :param bool expect_alive: discard event if it conflicts with our :func:`stem.control.BaseController.is_alive` state
     """
     
     # Any changes to our is_alive() state happen under the send lock, so we
@@ -352,8 +342,8 @@ class BaseController:
     Continually pulls from the control socket, directing the messages into
     queues based on their type. Controller messages come in two varieties...
     
-    - Responses to messages we've sent (GETINFO, SETCONF, etc).
-    - Asynchronous events, identified by a status code of 650.
+    * Responses to messages we've sent (GETINFO, SETCONF, etc).
+    * Asynchronous events, identified by a status code of 650.
     """
     
     while self.is_alive():
@@ -403,15 +393,12 @@ class Controller(BaseController):
     """
     Constructs a ControlPort based Controller.
     
-    Arguments:
-      control_addr (str) - ip address of the controller
-      control_port (int) - port number of the controller
+    :param str control_addr: ip address of the controller
+    :param int control_port: port number of the controller
     
-    Returns:
-      stem.control.Controller attached to the given port
+    :returns: :class:`stem.control.Controller` attached to the given port
     
-    Raises:
-      stem.socket.SocketError if we're unable to establish a connection
+    :raises: :class:`stem.socket.SocketError` if we're unable to establish a connection
     """
     
     control_port = stem.socket.ControlPort(control_addr, control_port)
@@ -421,14 +408,11 @@ class Controller(BaseController):
     """
     Constructs a ControlSocketFile based Controller.
     
-    Arguments:
-      socket_path (str) - path where the control socket is located
+    :param str socket_path: path where the control socket is located
     
-    Returns:
-      stem.control.Controller attached to the given socket file
+    :returns: :class:`stem.control.Controller` attached to the given socket file
     
-    Raises:
-      stem.socket.SocketError if we're unable to establish a connection
+    :raises: :class:`stem.socket.SocketError` if we're unable to establish a connection
     """
     
     control_socket = stem.socket.ControlSocketFile(socket_path)
@@ -444,19 +428,17 @@ class Controller(BaseController):
     call fails for any reason (error response, control port closed, initiated,
     etc).
     
-    Arguments:
-      param (str, list) - GETINFO option or options to be queried
-      default (object)  - response if the query fails
+    :param str,list param: GETINFO option or options to be queried
+    :param object default: response if the query fails
     
-    Returns:
+    :returns:
       Response depends upon how we were called as follows...
-      - str with the response if our param was a str
-      - dict with the param => response mapping if our param was a list
-      - default if one was provided and our call failed
+      
+      * str with the response if our param was a str
+      * dict with the param => response mapping if our param was a list
+      * default if one was provided and our call failed
     
-    Raises:
-      stem.socket.ControllerError if the call fails, and we weren't provided a
-      default response
+    :raises: :class:`stem.socket.ControllerError` if the call fails, and we weren't provided a default response
     """
     
     # TODO: add caching?
