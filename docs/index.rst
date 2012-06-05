@@ -18,6 +18,11 @@ Connecting and authenticating to a Tor process.
 
 Provides the :class:`stem.control.Controller` class which, as the name implies, is used for talking with and controlling a Tor instance. As a user this is the primary class that you'll need.
 
+:mod:`stem.socket`
+------------------
+
+Base classes for communicating with a tor control socket.
+
 :mod:`stem.process`
 -------------------
 

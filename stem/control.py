@@ -5,6 +5,8 @@ Controllers are a wrapper around a ControlSocket, retaining many of its methods
 (connect, close, is_alive, etc) in addition to providing its own for
 interacting at a higher level.
 
+**Module Overview:**
+
 ::
 
   from_port - Provides a Controller based on a port connection.
