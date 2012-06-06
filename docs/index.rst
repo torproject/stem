@@ -38,6 +38,11 @@ Parsed versions that can be compared to the requirement for various features.
 
 Parsed replies that we receive from the Tor control socket.
 
+:mod:`stem.util`
+--------------------
+
+Utility functions available to stem and its users.
+
 .. toctree::
    :maxdepth: 2
 
