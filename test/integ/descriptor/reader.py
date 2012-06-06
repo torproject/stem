@@ -281,7 +281,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
     
     is_test_running = True
-    reader = stem.descriptor.reader.DescriptorReader("/")
+    reader = stem.descriptor.reader.DescriptorReader("/usr")
     
     # Fails the test after a couple seconds if we don't finish successfully.
     # Depending on what we're blocked on this might not work when the test
