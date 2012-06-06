@@ -386,6 +386,11 @@ class DescriptorReader:
       self._notify_skip_listeners(target, AlreadyRead(last_modified, last_used))
       return
     
+    # Block devices and such are never descriptors, and can cause us to block
+    # for quite a while so skipping anything that isn't a regular file.
+    
+    if not os.path.isfile(target): return
+    
     # The mimetypes module only checks the file extension. To actually
     # check the content (like the 'file' command) we'd need something like
     # pymagic (https://github.com/cloudburst/pymagic).
