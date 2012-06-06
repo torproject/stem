@@ -34,8 +34,7 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
   Version one PROTOCOLINFO query response.
   
   The protocol_version is the only mandatory data for a valid PROTOCOLINFO
-  response, so all other values are ``None`` if undefined or empty if a
-  collection.
+  response, so all other values are None if undefined or empty if a collection.
   
   :var int protocol_version: protocol version of the response
   :var stem.version.Version tor_version: version of the tor process

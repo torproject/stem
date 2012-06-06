@@ -88,7 +88,7 @@ def logging_level(runlevel):
   """
   Translates a runlevel into the value expected by the logging module.
   
-  :param Runlevel runlevel: runlevel to be returned, no logging if ``None``
+  :param Runlevel runlevel: runlevel to be returned, no logging if None
   """
   
   if runlevel: return LOG_VALUES[runlevel]
@@ -112,7 +112,7 @@ def log(runlevel, message):
   """
   Logs a message at the given runlevel.
   
-  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if ``None``
+  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if None
   :param str message: message to be logged
   """
   
@@ -125,7 +125,7 @@ def log_once(message_id, runlevel, message):
   been logged then this is a no-op.
   
   :param str message_id: unique message identifier to deduplicate on
-  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if ``None``
+  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if None
   :param str message: message to be logged
   
   :returns: True if we log the message, False otherwise

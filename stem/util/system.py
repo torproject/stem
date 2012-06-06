@@ -1,7 +1,7 @@
 """
 Helper functions for working with the underlying system. These are mostly os
 dependent, only working on linux, osx, and bsd. In almost all cases they're
-best-effort, providing ``None`` if the lookup fails.
+best-effort, providing None if the lookup fails.
 
 **Module Overview:**
 
@@ -102,7 +102,7 @@ def is_running(command):
   
   :param str command: process name to be checked
   
-  :returns: True if the process is running, False if it's not among ps results, and ``None`` if ps can't be queried
+  :returns: True if the process is running, False if it's not among ps results, and None if ps can't be queried
   """
   
   # Linux and the BSD families have different variants of ps. Guess based on
@@ -398,7 +398,7 @@ def get_cwd(pid):
   Provices the working directory of the given process.
   
   :param int pid: process id of the process to be queried
-  :returns: str with the absolute path for the process' present working directory, ``None`` if it can't be determined
+  :returns: str with the absolute path for the process' present working directory, None if it can't be determined
   """
   
   # try fetching via the proc contents if it's available
@@ -495,7 +495,7 @@ def expand_path(path, cwd = None):
   unix-specific and paths never have an ending slash.
   
   :param str path: path to be expanded
-  :param str cwd: current working directory to expand relative paths with, our process' if this is ``None``
+  :param str cwd: current working directory to expand relative paths with, our process' if this is None
   
   :returns: str of the path expanded to be an absolute path
   """
@@ -533,7 +533,7 @@ def call(command, suppress_exc = True):
   :param str command: command to be issued
   :param bool suppress_exc: if True then None is returned on failure, otherwise this raises the exception
   
-  :returns: list with the lines of output from the command, ``None`` in case of failure if suppress_exc is True
+  :returns: list with the lines of output from the command, None in case of failure if suppress_exc is True
   
   :raises: OSError if this fails and suppress_exc is False
   """

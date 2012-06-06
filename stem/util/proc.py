@@ -173,7 +173,7 @@ def get_memory_usage(pid):
   
   :param int pid: process id of the process to be queried
   
-  :returns: tuple of two ints with the memory usage of the process, of the form ``(residentSize, virtualSize)``
+  :returns: tuple of two ints with the memory usage of the process, of the form ``(resident_size, virtual_size)``
   
   :raises: IOError if it can't be determined
   """
