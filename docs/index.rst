@@ -33,13 +33,18 @@ Used for launching Tor and managing the process.
 
 Parsed versions that can be compared to the requirement for various features.
 
-:mod:`stem.response`
---------------------
+`stem.descriptor <stem.descriptor.html>`_
+-------------------------------------
+
+Utilities for working with the Tor consensus and descriptors.
+
+`stem.response <stem.response.html>`_
+-------------------------------------
 
 Parsed replies that we receive from the Tor control socket.
 
-:mod:`stem.util`
---------------------
+`stem.util <stem.util.html>`_
+-----------------------------
 
 Utility functions available to stem and its users.
 
