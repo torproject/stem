@@ -1,39 +1,51 @@
 """
 Basic enumeration, providing ordered types for collections. These can be
 constructed as simple type listings, ie:
->>> insects = Enum("ANT", "WASP", "LADYBUG", "FIREFLY")
->>> insects.ANT
-'Ant'
->>> tuple(insects)
-('Ant', 'Wasp', 'Ladybug', 'Firefly')
+
+::
+
+  >>> insects = Enum("ANT", "WASP", "LADYBUG", "FIREFLY")
+  >>> insects.ANT
+  'Ant'
+  >>> tuple(insects)
+  ('Ant', 'Wasp', 'Ladybug', 'Firefly')
 
 with overwritten string counterparts:
->>> pets = Enum(("DOG", "Skippy"), "CAT", ("FISH", "Nemo"))
->>> pets.DOG
-'Skippy'
->>> pets.CAT
-'Cat'
 
-to_camel_case - converts a string to camel case
-UppercaseEnum - Provides an enum instance with capitalized values.
-Enum - Provides a basic, ordered  enumeration.
-  |- keys - string representation of our enum keys
-  |- index_of - indice of an enum value
-  |- next - provides the enum after a given enum value
-  |- previous - provides the enum before a given value
-  |- __getitem__ - provides the value for an enum key
-  +- __iter__ - iterator over our enum keys
+::
+
+  >>> pets = Enum(("DOG", "Skippy"), "CAT", ("FISH", "Nemo"))
+  >>> pets.DOG
+  'Skippy'
+  >>> pets.CAT
+  'Cat'
+
+**Module Overview:**
+
+::
+
+  to_camel_case - converts a string to camel case
+  UppercaseEnum - Provides an enum instance with capitalized values.
+  Enum - Provides a basic, ordered  enumeration.
+    |- keys - string representation of our enum keys
+    |- index_of - indice of an enum value
+    |- next - provides the enum after a given enum value
+    |- previous - provides the enum before a given value
+    |- __getitem__ - provides the value for an enum key
+    +- __iter__ - iterator over our enum keys
 """
 
 def to_camel_case(label, word_divider = " "):
   """
   Converts the given string to camel case, ie:
-  >>> to_camel_case("I_LIKE_PEPPERJACK!")
-  'I Like Pepperjack!'
   
-  Arguments:
-    label (str)        - input string to be converted
-    word_divider (str) - string used to replace underscores
+  ::
+  
+    >>> to_camel_case("I_LIKE_PEPPERJACK!")
+    'I Like Pepperjack!'
+  
+  :param str label: input string to be converted
+  :param str word_divider: string used to replace underscores
   """
   
   words = []
@@ -50,15 +62,15 @@ def UppercaseEnum(*args):
   the keys are uppercase by convention this means the values are too. For
   instance...
   
-  >>> runlevels = UppercaseEnum("DEBUG", "INFO", "NOTICE", "WARN", "ERROR")
-  >>> runlevels.DEBUG
-  'DEBUG'
+  ::
   
-  Arguments:
-    args (str) - list of enum keys to initialize with
+    >>> runlevels = UppercaseEnum("DEBUG", "INFO", "NOTICE", "WARN", "ERROR")
+    >>> runlevels.DEBUG
+    'DEBUG'
   
-  Returns:
-    stem.util.Enum instance with the given keys
+  :param list args: enum keys to initialize with
+  
+  :returns: :class:`stem.util.Enum` instance with the given keys
   """
   
   return Enum(*[(v, v) for v in args])
@@ -90,8 +102,7 @@ class Enum:
     """
     Provides an ordered listing of the enumeration keys in this set.
     
-    Returns:
-      tuple with our enum keys
+    :returns: tuple with our enum keys
     """
     
     return self._keys
@@ -100,14 +111,11 @@ class Enum:
     """
     Provides the index of the given value in the collection.
     
-    Arguments:
-      value (str) - entry to be looked up
+    :param str value: entry to be looked up
     
-    Returns:
-      integer index of the given entry
+    :returns: integer index of the given entry
     
-    Raises:
-      ValueError if no such element exists
+    :raises: ValueError if no such element exists
     """
     
     return self._values.index(value)
@@ -116,14 +124,11 @@ class Enum:
     """
     Provides the next enumeration after the given value.
     
-    Arguments:
-      value (str) - enumeration for which to get the next entry
+    :param str value: enumeration for which to get the next entry
     
-    Returns:
-      enum value following the given entry
+    :returns: enum value following the given entry
     
-    Raises:
-      ValueError if no such element exists
+    :raises: ValueError if no such element exists
     """
     
     if not value in self._values:
@@ -136,14 +141,11 @@ class Enum:
     """
     Provides the previous enumeration before the given value.
     
-    Arguments:
-      value (str) - enumeration for which to get the previous entry
+    :param str value: enumeration for which to get the previous entry
     
-    Returns:
-      enum value proceeding the given entry
+    :returns: enum value proceeding the given entry
     
-    Raises:
-      ValueError if no such element exists
+    :raises: ValueError if no such element exists
     """
     
     if not value in self._values:
@@ -156,14 +158,11 @@ class Enum:
     """
     Provides the values for the given key.
     
-    Arguments:
-      item (str) - key to be looked up
+    :param str item: key to be looked up
     
-    Returns:
-      str with the value for the given key
+    :returns: str with the value for the given key
     
-    Raises:
-      ValueError if the key doesn't exist
+    :raises: ValueError if the key doesn't exist
     """
     
     if item in self.__dict__:
