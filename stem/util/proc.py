@@ -6,20 +6,21 @@ connections this way cuts the runtime by around 90% verses the alternatives.
 These functions may not work on all platforms (only Linux?).
 
 The method for reading these files (and a little code) are borrowed from
-psutil:
-https://code.google.com/p/psutil/
+`psutil <https://code.google.com/p/psutil/>`_, which was written by Jay Loden,
+Dave Daeschler, Giampaolo Rodola' and is under the BSD license.
 
-which was written by Jay Loden, Dave Daeschler, Giampaolo Rodola' and is under
-the BSD license.
+**Module Overview:**
 
-is_available - checks if proc utilities can be used on this system
-get_system_start_time - unix timestamp for when the system started
-get_physical_memory - memory available on this system
-get_cwd - provides the current working directory for a process
-get_uid - provides the user id a process is running under
-get_memory_usage - provides the memory usage of a process
-get_stats - queries statistics about a process
-get_connections - provides the connections made by a process
+::
+
+  is_available - checks if proc utilities can be used on this system
+  get_system_start_time - unix timestamp for when the system started
+  get_physical_memory - memory available on this system
+  get_cwd - provides the current working directory for a process
+  get_uid - provides the user id a process is running under
+  get_memory_usage - provides the memory usage of a process
+  get_stats - queries statistics about a process
+  get_connections - provides the connections made by a process
 """
 
 import os
@@ -47,8 +48,7 @@ def is_available():
   """
   Checks if proc information is available on this platform.
   
-  Returns:
-    bool that's True if proc contents exist on this platform, False otherwise
+  :returns: bool that's True if proc contents exist on this platform, False otherwise
   """
   
   global IS_PROC_AVAILABLE
@@ -74,11 +74,9 @@ def get_system_start_time():
   """
   Provides the unix time (seconds since epoch) when the system started.
   
-  Returns:
-    float for the unix time of when the system started
+  :returns: float for the unix time of when the system started
   
-  Raises:
-    IOError if it can't be determined
+  :raises: IOError if it can't be determined
   """
   
   global SYS_START_TIME
@@ -100,11 +98,9 @@ def get_physical_memory():
   """
   Provides the total physical memory on the system in bytes.
   
-  Returns:
-    int for the bytes of physical memory this system has
+  :returns: int for the bytes of physical memory this system has
   
-  Raises:
-    IOError if it can't be determined
+  :raises: IOError if it can't be determined
   """
   
   global SYS_PHYSICAL_MEMORY
@@ -126,14 +122,11 @@ def get_cwd(pid):
   """
   Provides the current working directory for the given process.
   
-  Arguments:
-    pid (int) - process id of the process to be queried
+  :param int pid: process id of the process to be queried
   
-  Returns:
-    str with the path of the workign direcctory for the process
+  :returns: str with the path of the workign direcctory for the process
   
-  Raises:
-    IOError if it can't be determined
+  :raises: IOError if it can't be determined
   """
   
   start_time, parameter = time.time(), "cwd"
@@ -154,14 +147,11 @@ def get_uid(pid):
   """
   Provides the user ID the given process is running under.
   
-  Arguments:
-    pid (int) - process id of the process to be queried
+  :param int pid: process id of the process to be queried
   
-  Returns:
-    int with the user id for the owner of the process
+  :returns: int with the user id for the owner of the process
   
-  Raises:
-    IOError if it can't be determined
+  :raises: IOError if it can't be determined
   """
   
   start_time, parameter = time.time(), "uid"
@@ -181,15 +171,11 @@ def get_memory_usage(pid):
   """
   Provides the memory usage in bytes for the given process.
   
-  Arguments:
-    pid (int) - process id of the process to be queried
+  :param int pid: process id of the process to be queried
   
-  Returns:
-    tuple of two ints with the memory usage of the process, of the form:
-      (residentSize, virtualSize)
+  :returns: tuple of two ints with the memory usage of the process, of the form ``(residentSize, virtualSize)``
   
-  Raises:
-    IOError if it can't be determined
+  :raises: IOError if it can't be determined
   """
   
   # checks if this is the kernel process
@@ -213,20 +199,18 @@ def get_memory_usage(pid):
 def get_stats(pid, *stat_types):
   """
   Provides process specific information. Options are:
-  Stat.COMMAND      command name under which the process is running
-  Stat.CPU_UTIME    total user time spent on the process
-  Stat.CPU_STIME    total system time spent on the process
-  Stat.START_TIME   when this process began, in unix time
   
-  Arguments:
-    pid (int)         - process id of the process to be queried
-    stat_types (Stat) - information to be provided back
+  * **Stat.COMMAND** - command name under which the process is running
+  * **Stat.CPU_UTIME** - total user time spent on the process
+  * **Stat.CPU_STIME** - total system time spent on the process
+  * **Stat.START_TIME** - when this process began, in unix time
   
-  Returns:
-    tuple with all of the requested statistics as strings
+  :param int pid: process id of the process to be queried
+  :param Stat stat_types: information to be provided back
   
-  Raises:
-    IOError if it can't be determined
+  :returns: tuple with all of the requested statistics as strings
+  
+  :raises: IOError if it can't be determined
   """
   
   if CLOCK_TICKS is None:
@@ -282,17 +266,11 @@ def get_connections(pid):
   similar results to netstat, lsof, sockstat, and other connection resolution
   utilities (though the lookup is far quicker).
   
-  Arguments:
-    pid (int) - process id of the process to be queried
+  :param int pid: process id of the process to be queried
   
-  Returns:
-    A listing of connection tuples of the form:
-    [(local_ipAddr1, local_port1, foreign_ipAddr1, foreign_port1), ...]
-    
-    IP addresses are strings and ports are ints.
+  :returns: A listing of connection tuples of the form ``[(local_ipAddr1, local_port1, foreign_ipAddr1, foreign_port1), ...]`` (IP addresses are strings and ports are ints)
   
-  Raises:
-    IOError if it can't be determined
+  :raises: IOError if it can't be determined
   """
   
   if pid == 0: return []
@@ -354,17 +332,16 @@ def get_connections(pid):
 def _decode_proc_address_encoding(addr):
   """
   Translates an address entry in the /proc/net/* contents to a human readable
-  form, for instance:
-  "0500000A:0016" -> ("10.0.0.5", 22)
+  form (`reference <http://linuxdevcenter.com/pub/a/linux/2000/11/16/LinuxAdmin.html>`_,
+  for instance:
   
-  Reference:
-  http://linuxdevcenter.com/pub/a/linux/2000/11/16/LinuxAdmin.html
+  ::
   
-  Arguments:
-    addr (str) - proc address entry to be decoded
+    "0500000A:0016" -> ("10.0.0.5", 22)
   
-  Returns:
-    tuple of the form (addr, port), with addr as a string and port an int
+  :param str addr: proc address entry to be decoded
+  
+  :returns: tuple of the form ``(addr, port)``, with addr as a string and port an int
   """
   
   ip, port = addr.split(':')
@@ -405,16 +382,13 @@ def _get_lines(file_path, line_prefixes, parameter):
   Fetches lines with the given prefixes from a file. This only provides back
   the first instance of each prefix.
   
-  Arguments:
-    file_path (str)       - path of the file to read
-    line_prefixes (tuple) - string prefixes of the lines to return
-    parameter (str)       - description of the proc attribute being fetch
+  :param str file_path: path of the file to read
+  :param tuple line_prefixes: string prefixes of the lines to return
+  :param str parameter: description of the proc attribute being fetch
   
-  Returns:
-    mapping of prefixes to the matching line
+  :returns: mapping of prefixes to the matching line
   
-  Raises:
-    IOError if unable to read the file or can't find all of the prefixes
+  :raises: IOError if unable to read the file or can't find all of the prefixes
   """
   
   try:
@@ -449,10 +423,9 @@ def _log_runtime(parameter, proc_location, start_time):
   """
   Logs a message indicating a successful proc query.
   
-  Arguments:
-    parameter (str)     - description of the proc attribute being fetch
-    proc_location (str) - proc files we were querying
-    start_time (int)    - unix time for when this query was started
+  :param str parameter: description of the proc attribute being fetch
+  :param str proc_location: proc files we were querying
+  :param int start_time: unix time for when this query was started
   """
   
   runtime = time.time() - start_time
@@ -462,9 +435,8 @@ def _log_failure(parameter, exc):
   """
   Logs a message indicating that the proc query failed.
   
-  Arguments:
-    parameter (str) - description of the proc attribute being fetch
-    exc (Exception) - exception that we're raising
+  :param str parameter: description of the proc attribute being fetch
+  :param Exception exc: exception that we're raising
   """
   
   log.debug("proc call failed (%s): %s" % (parameter, exc))
