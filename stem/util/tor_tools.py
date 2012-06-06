@@ -22,12 +22,10 @@ def is_valid_fingerprint(entry, check_prefix = False):
   a '$' prefix if check_prefix is true, otherwise this only validates the hex
   digits.
   
-  Arguments:
-    entry (str)         - string to be checked
-    check_prefix (bool) - checks for a '$' prefix
+  :param str entry: string to be checked
+  :param bool check_prefix: checks for a '$' prefix
   
-  Returns:
-    True if the string could be a relay fingerprint, False otherwise.
+  :returns: True if the string could be a relay fingerprint, False otherwise.
   """
   
   if check_prefix:
@@ -40,11 +38,9 @@ def is_valid_nickname(entry):
   """
   Checks if a string is a valid format for being a nickname.
   
-  Arguments:
-    entry (str) - string to be checked
+  :param str entry: string to be checked
   
-  Returns:
-    True if the string could be a nickname, False otherwise.
+  :returns: True if the string could be a nickname, False otherwise.
   """
   
   return bool(NICKNAME_PATTERN.match(entry))

@@ -20,27 +20,18 @@ RESET = CSI % "0"
 
 def format(msg, *attr):
   """
-  Simple terminal text formatting, using ANSI escape sequences from:
-  https://secure.wikimedia.org/wikipedia/en/wiki/ANSI_escape_code#CSI_codes
+  Simple terminal text formatting using `ANSI escape sequences
+  <https://secure.wikimedia.org/wikipedia/en/wiki/ANSI_escape_code#CSI_codes>`_.
+  The following are some toolkits providing similar capabilities:
   
-  toolkits providing similar capabilities:
-  * django.utils.termcolors
-    https://code.djangoproject.com/browser/django/trunk/django/utils/termcolors.py
+  * `django.utils.termcolors <https://code.djangoproject.com/browser/django/trunk/django/utils/termcolors.py>`_
+  * `termcolor <http://pypi.python.org/pypi/termcolor>`_
+  * `colorama <http://pypi.python.org/pypi/colorama>`_
   
-  * termcolor
-    http://pypi.python.org/pypi/termcolor
+  :param str msg: string to be formatted
+  :param str attr: text attributes, this can be Color, BgColor, or Attr enums and are case insensitive (so strings like "red" are fine)
   
-  * colorama
-    http://pypi.python.org/pypi/colorama
-  
-  Arguments:
-    msg (str)  - string to be formatted
-    attr (str) - text attributes, this can be Color, BgColor, or Attr enums and
-                 are case insensitive (so strings like "red" are fine)
-  
-  Returns:
-    string wrapped with ANSI escape encodings, starting with the given
-    attributes and ending with a reset
+  :returns: string wrapped with ANSI escape encodings, starting with the given attributes and ending with a reset
   """
   
   # if we have reset sequences in the message then apply our attributes

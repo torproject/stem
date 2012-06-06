@@ -4,6 +4,8 @@ expected to consist of simple key/value pairs, and anything after "#" is
 stripped as a comment. Excess whitespace is trimmed and empty lines are
 ignored. For instance:
 
+::
+
   # This is my sample config
   user.name Galen
   user.password yabba1234 # here's an inline comment
@@ -13,6 +15,8 @@ ignored. For instance:
 would be loaded as four entries, the last one's value being an empty string.
 Mulit-line entries can be defined my providing an entry followed by lines with
 a '|' prefix. For instance...
+
+::
 
   msg.greeting
   |This is a multi-line message
@@ -30,30 +34,34 @@ three things...
 
 There are many ways of using the Config class but the most common ones are...
 
-- Call config_dict to get a dictionary that's always synced with a Config.
+* Call config_dict to get a dictionary that's always synced with a Config.
 
-- Make a dictionary and call synchronize() to bring it into sync with the
+* Make a dictionary and call synchronize() to bring it into sync with the
   Config. This does not keep it in sync as the Config changes. See the Config
   class' pydocs for an example.
 
-- Just call the Config's get() or get_value() methods directly.
+* Just call the Config's get() or get_value() methods directly.
 
-config_dict - provides a dictionary that's kept synchronized with a config
-get_config - Singleton for getting configurations
-Config - Custom configuration.
-  |- load - reads a configuration file
-  |- save - writes the current configuration to a file
-  |- clear - empties our loaded configuration contents
-  |- synchronize - replaces mappings in a dictionary with the config's values
-  |- add_listener - notifies the given listener when an update occures
-  |- clear_listeners - removes any attached listeners
-  |- keys - provides keys in the loaded configuration
-  |- set - sets the given key/value pair
-  |- unused_keys - provides keys that have never been requested
-  |- get - provides the value for a given key, with type inference
-  |- get_value - provides the value for a given key as a string
-  |- get_str_csv - gets a value as a comma separated list of strings
-  +- get_int_csv - gets a value as a comma separated list of integers
+**Module Overview:**
+
+::
+
+  config_dict - provides a dictionary that's kept synchronized with a config
+  get_config - Singleton for getting configurations
+  Config - Custom configuration.
+    |- load - reads a configuration file
+    |- save - writes the current configuration to a file
+    |- clear - empties our loaded configuration contents
+    |- synchronize - replaces mappings in a dictionary with the config's values
+    |- add_listener - notifies the given listener when an update occures
+    |- clear_listeners - removes any attached listeners
+    |- keys - provides keys in the loaded configuration
+    |- set - sets the given key/value pair
+    |- unused_keys - provides keys that have never been requested
+    |- get - provides the value for a given key, with type inference
+    |- get_value - provides the value for a given key as a string
+    |- get_str_csv - gets a value as a comma separated list of strings
+    +- get_int_csv - gets a value as a comma separated list of integers
 """
 
 import threading
@@ -90,10 +98,9 @@ def config_dict(handle, conf_mappings, handler = None):
   into the dictionary. If this returns None then the value is updated as
   normal.
   
-  Arguments:
-    handle (str)         - unique identifier for a config instance
-    conf_mappings (dict) - config key/value mappings used as our defaults
-    handler (functor)    - function referred to prior to assigning values
+  :param str handle: unique identifier for a config instance
+  :param dict conf_mappings: config key/value mappings used as our defaults
+  :param functor handler: function referred to prior to assigning values
   """
   
   selected_config = get_config(handle)
@@ -106,8 +113,7 @@ def get_config(handle):
   already exists for the handle then it's returned. Otherwise a fresh instance
   is constructed.
   
-  Arguments:
-    handle (str) - unique identifier used to access this config instance
+  :param str handle: unique identifier used to access this config instance
   """
   
   if not handle in CONFS: CONFS[handle] = Config()
@@ -118,64 +124,71 @@ class Config():
   Handler for easily working with custom configurations, providing persistence
   to and from files. All operations are thread safe.
   
-  Example usage:
-    User has a file at '/home/atagar/myConfig' with...
-      destination.ip 1.2.3.4
-      destination.port blarg
-      
-      startup.run export PATH=$PATH:~/bin
-      startup.run alias l=ls
+  **Example usage:**
+  
+  User has a file at '/home/atagar/myConfig' with...
+  
+  ::
+  
+    destination.ip 1.2.3.4
+    destination.port blarg
     
-    And they have a script with...
-      import stem.util.conf
-      
-      # Configuration values we'll use in this file. These are mappings of
-      # configuration keys to the default values we'll use if the user doesn't
-      # have something different in their config file (or it doesn't match this
-      # type).
-      
-      ssh_config = {"login.user": "atagar",
-                    "login.password": "pepperjack_is_awesome!",
-                    "destination.ip": "127.0.0.1",
-                    "destination.port": 22,
-                    "startup.run": []}
-      
-      # Makes an empty config instance with the handle of 'ssh_login'. This is
-      # a singleton so other classes can fetch this same configuration from
-      # this handle.
-      
-      user_config = stem.util.conf.get_config("ssh_login")
-      
-      # Loads the user's configuration file, warning if this fails.
-      
-      try:
-        user_config.load("/home/atagar/myConfig")
-      except IOError, exc:
-        print "Unable to load the user's config: %s" % exc
-      
-      # Replaces the contents of ssh_config with the values from the user's
-      # config file if...
-      # - the key is present in the config file
-      # - we're able to convert the configuration file's value to the same type
-      #   as what's in the mapping (see the Config.get() method for how these
-      #   type inferences work)
-      #
-      # For instance in this case the login values are left alone (because they
-      # aren't in the user's config file), and the 'destination.port' is also
-      # left with the value of 22 because we can't turn "blarg" into an
-      # integer.
-      #
-      # The other values are replaced, so ssh_config now becomes...
-      # {"login.user": "atagar",
-      #  "login.password": "pepperjack_is_awesome!",
-      #  "destination.ip": "1.2.3.4",
-      #  "destination.port": 22,
-      #  "startup.run": ["export PATH=$PATH:~/bin", "alias l=ls"]}
-      #
-      # Information for what values fail to load and why are reported to
-      # 'stem.util.log'.
-      
-      user_config.synchronize(ssh_config)
+    startup.run export PATH=$PATH:~/bin
+    startup.run alias l=ls
+  
+  And they have a script with...
+  
+  ::
+  
+    import stem.util.conf
+    
+    # Configuration values we'll use in this file. These are mappings of
+    # configuration keys to the default values we'll use if the user doesn't
+    # have something different in their config file (or it doesn't match this
+    # type).
+    
+    ssh_config = {"login.user": "atagar",
+                  "login.password": "pepperjack_is_awesome!",
+                  "destination.ip": "127.0.0.1",
+                  "destination.port": 22,
+                  "startup.run": []}
+    
+    # Makes an empty config instance with the handle of 'ssh_login'. This is
+    # a singleton so other classes can fetch this same configuration from
+    # this handle.
+    
+    user_config = stem.util.conf.get_config("ssh_login")
+    
+    # Loads the user's configuration file, warning if this fails.
+    
+    try:
+      user_config.load("/home/atagar/myConfig")
+    except IOError, exc:
+      print "Unable to load the user's config: %s" % exc
+    
+    # Replaces the contents of ssh_config with the values from the user's
+    # config file if...
+    # - the key is present in the config file
+    # - we're able to convert the configuration file's value to the same type
+    #   as what's in the mapping (see the Config.get() method for how these
+    #   type inferences work)
+    #
+    # For instance in this case the login values are left alone (because they
+    # aren't in the user's config file), and the 'destination.port' is also
+    # left with the value of 22 because we can't turn "blarg" into an
+    # integer.
+    #
+    # The other values are replaced, so ssh_config now becomes...
+    # {"login.user": "atagar",
+    #  "login.password": "pepperjack_is_awesome!",
+    #  "destination.ip": "1.2.3.4",
+    #  "destination.port": 22,
+    #  "startup.run": ["export PATH=$PATH:~/bin", "alias l=ls"]}
+    #
+    # Information for what values fail to load and why are reported to
+    # 'stem.util.log'.
+    
+    user_config.synchronize(ssh_config)
   """
   
   def __init__(self):
@@ -199,13 +212,11 @@ class Config():
     Reads in the contents of the given path, adding its configuration values
     to our current contents.
     
-    Arguments:
-      path (str) - file path to be loaded
+    :param str path: file path to be loaded
     
-    Raises:
-      IOError if we fail to read the file (it doesn't exist, insufficient
-        permissions, etc)
-      ValueError if we don't have a default path and none was provided
+    :raises:
+      * IOError if we fail to read the file (it doesn't exist, insufficient permissions, etc)
+      * ValueError if we don't have a default path and none was provided
     """
     
     if path:
@@ -258,11 +269,8 @@ class Config():
     specified. If a path is provided then it replaces the configuration
     location that we track.
     
-    Arguments:
-      path (str) - location to be saved to
-    
-    Raises:
-      ValueError if we don't have a default path and none was provided
+    :param str path: location to be saved to
+    :raises: ValueError if we don't have a default path and none was provided
     """
     
     if path:
@@ -295,16 +303,14 @@ class Config():
     changes the values to reflect our current configuration. This will leave
     the previous values alone if...
     
-    a. we don't have a value for that config_key
-    b. we can't convert our value to be the same type as the default_value
+    * we don't have a value for that config_key
+    * we can't convert our value to be the same type as the default_value
     
-    For more information about how we convert types see our get() method.
+    For more information about how we convert types see our
+    :func:`stem.util.conf.Config.get` method.
     
-    Arguments:
-      conf_mappings (dict) - configuration key/value mappings to be revised
-      limits (dict)        - mappings of limits on numeric values, expected to
-                             be of the form "configKey -> min" or "configKey ->
-                             (min, max)"
+    :param dict conf_mappings: configuration key/value mappings to be revised
+    :param dict limits: mappings of limits on numeric values, expected to be of the form "configKey -> min" or "configKey -> (min, max)"
     """
     
     if limits is None: limits = {}
@@ -331,10 +337,8 @@ class Config():
     Registers the given function to be notified of configuration updates.
     Listeners are expected to be functors which accept (config, key).
     
-    Arguments:
-      listener (functor) - function to be notified when our configuration is
-                           changed
-      backfill (bool)    - calls the function with our current values if true
+    :param functor listener: function to be notified when our configuration is changed
+    :param bool backfill: calls the function with our current values if true
     """
     
     with self._contents_lock:
@@ -355,8 +359,7 @@ class Config():
     """
     Provides all keys in the currently loaded configuration.
     
-    Returns:
-      list if strings for the configuration keys we've loaded
+    :returns: list if strings for the configuration keys we've loaded
     """
     
     return self._contents.keys()
@@ -366,8 +369,7 @@ class Config():
     Provides the configuration keys that have never been provided to a caller
     via the get, get_value, or synchronize methods.
     
-    Returns:
-      set of configuration keys we've loaded but have never been requested
+    :returns: set of configuration keys we've loaded but have never been requested
     """
     
     return set(self.keys()).difference(self._requested_keys)
@@ -377,11 +379,9 @@ class Config():
     Appends the given key/value configuration mapping, behaving the same as if
     we'd loaded this from a configuration file.
     
-    Arguments:
-      key (str)           - key for the configuration mapping
-      value (str or list) - value we're setting the mapping to
-      overwrite (bool)    - replaces the previous value if true, otherwise
-                            the values are appended
+    :param str key: key for the configuration mapping
+    :param str,list value: value we're setting the mapping to
+    :param bool overwrite: replaces the previous value if true, otherwise the values are appended
     """
     
     with self._contents_lock:
@@ -404,34 +404,37 @@ class Config():
     Fetches the given configuration, using the key and default value to
     determine the type it should be. Recognized inferences are:
     
-    - default is a boolean => boolean
+    * **default is a boolean => boolean**
+    
       * values are case insensitive
       * provides the default if the value isn't "true" or "false"
     
-    - default is an integer => int
+    * **default is an integer => int**
+    
       * provides the default if the value can't be converted to an int
     
-    - default is a float => float
+    * **default is a float => float**
+    
       * provides the default if the value can't be converted to a float
     
-    - default is a list => list
+    * **default is a list => list**
+    
       * string contents for all configuration values with this key
     
-    - default is a tuple => tuple
+    * **default is a tuple => tuple**
+    
       * string contents for all configuration values with this key
     
-    - default is a dictionary => dict
+    * **default is a dictionary => dict**
+    
       * values without "=>" in them are ignored
       * values are split into key/value pairs on "=>" with extra whitespace
         stripped
     
-    Arguments:
-      key (str)        - config setting to be fetched
-      default (object) - value provided if no such key exists or fails to be
-                         converted
+    :param str key: config setting to be fetched
+    :param default object: value provided if no such key exists or fails to be converted
     
-    Returns:
-      given configuration value with its type inferred with the above rules
+    :returns: given configuration value with its type inferred with the above rules
     """
     
     is_multivalue = type(default) in (list, tuple, dict)
@@ -474,15 +477,11 @@ class Config():
     """
     This provides the current value associated with a given key.
     
-    Arguments:
-      key (str)        - config setting to be fetched
-      default (object) - value provided if no such key exists
-      multiple (bool)  - provides back a list of all values if true, otherwise
-                         this returns the last loaded configuration value
+    :param str key: config setting to be fetched
+    :param object default: value provided if no such key exists
+    :param bool multiple: provides back a list of all values if true, otherwise this returns the last loaded configuration value
     
-    Returns:
-      string or list of string configuration values associated with the given
-      key, providing the default if no such key exists
+    :returns: string or list of string configuration values associated with the given key, providing the default if no such key exists
     """
     
     with self._contents_lock:
@@ -502,17 +501,12 @@ class Config():
     """
     Fetches the given key as a comma separated value.
     
-    Arguments:
-      key (str)        - config setting to be fetched, last if multiple exists
-      default (object) - value provided if no such key exists or doesn't match
-                         the count
-      count (int)      - if set then the default is returned when the number of
-                         elements doesn't match this value
-      sub_key (str)    - handle the configuration entry as a dictionary and use
-                         this key within it
+    :param str key: config setting to be fetched, last if multiple exists
+    :param object default: value provided if no such key exists or doesn't match the count
+    :param int count: if set then the default is returned when the number of elements doesn't match this value
+    :param str sub_key: handle the configuration entry as a dictionary and use this key within it
     
-    Returns:
-      list with the stripped values
+    :returns: list with the stripped values
     """
     
     if sub_key: conf_value = self.get(key, {}).get(sub_key)
@@ -540,18 +534,14 @@ class Config():
     Fetches the given comma separated value, returning the default if the
     values aren't integers or don't follow the given constraints.
     
-    Arguments:
-      key (str)        - config setting to be fetched, last if multiple exists
-      default (object) - value provided if no such key exists, doesn't match the count,
-                         values aren't all integers, or doesn't match the bounds
-      count (int)      - checks that the number of values matches this if set
-      min_value (int)  - checks that all values are over this if set
-      max_value (int)  - checks that all values are under this if set
-      sub_key (str)    - handle the configuration entry as a dictionary and use
-                         this key within it
+    :param str key: config setting to be fetched, last if multiple exists
+    :param object default: value provided if no such key exists, doesn't match the count, values aren't all integers, or doesn't match the bounds
+    :param int count: checks that the number of values matches this if set
+    :param int min_value: checks that all values are over this if set
+    :param int max_value: checks that all values are under this if set
+    :param str sub_key: handle the configuration entry as a dictionary and use this key within it
     
-    Returns:
-      list with the stripped values
+    :returns: list with the stripped values
     """
     
     conf_comp = self.get_str_csv(key, default, count, sub_key)

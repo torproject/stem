@@ -1,8 +1,7 @@
 """
 Connection and networking based utility functions. This will likely be expanded
-later to have all of arm's functions...
-https://gitweb.torproject.org/arm.git/blob/HEAD:/src/util/connections.py
-
+later to have all of `arm's functions
+<https://gitweb.torproject.org/arm.git/blob/HEAD:/src/util/connections.py>`_,
 but for now just moving the parts we need.
 """
 
@@ -12,11 +11,9 @@ def is_valid_ip_address(address):
   """
   Checks if a string is a valid IPv4 address.
   
-  Arguments:
-    address (str) - string to be checked
+  :param str address: string to be checked
   
-  Returns:
-    True if input is a valid IPv4 address, False otherwise.
+  :returns: True if input is a valid IPv4 address, False otherwise
   """
   
   # checks if theres four period separated values
@@ -35,11 +32,9 @@ def is_valid_ipv6_address(address):
   """
   Checks if a string is a valid IPv6 address.
   
-  Arguments:
-    address (str) - string to be checked
+  :param str address: string to be checked
   
-  Returns:
-    True if input is a valid IPv6 address, False otherwise.
+  :returns: True if input is a valid IPv6 address, False otherwise
   """
   
   # addresses are made up of eight colon separated groups of four hex digits
@@ -65,13 +60,10 @@ def is_valid_port(entry, allow_zero = False):
   """
   Checks if a string or int is a valid port number.
   
-  Arguments:
-    entry (str or int) - string or integer to be checked
-    allow_zero (bool)  - accept port number of zero (reserved by defintion)
+  :param str,int entry: string or integer to be checked
+  :param bool allow_zero: accept port number of zero (reserved by defintion)
   
-  Returns:
-    True if input is an integer and within the valid port range, False
-    otherwise.
+  :returns: True if input is an integer and within the valid port range, False otherwise
   """
   
   if isinstance(entry, str):

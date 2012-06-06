@@ -10,6 +10,8 @@ undesirable for applications (uses stdin/stdout, suppresses exceptions, etc).
 The 'authenticate' function, however, gives easy but fine-grained control over
 the authentication process. For instance...
 
+::
+
   import sys
   import getpass
   import stem.connection
@@ -39,37 +41,41 @@ the authentication process. For instance...
     print "Unable to authenticate: %s" % exc
     sys.exit(1)
 
-connect_port - Convenience method to get an authenticated control connection.
-connect_socket_file - Similar to connect_port, but for control socket files.
+**Module Overview:**
 
-authenticate - Main method for authenticating to a control socket.
-authenticate_none - Authenticates to an open control socket.
-authenticate_password - Authenticates to a socket supporting password auth.
-authenticate_cookie - Authenticates to a socket supporting cookie auth.
+::
 
-get_protocolinfo - Issues a PROTOCOLINFO query.
-
-AuthenticationFailure - Base exception raised for authentication failures.
-  |- UnrecognizedAuthMethods - Authentication methods are unsupported.
-  |- IncorrectSocketType - Socket does not speak the tor control protocol.
-  |
-  |- OpenAuthFailed - Failure when authenticating by an open socket.
-  |  +- OpenAuthRejected - Tor rejected this method of authentication.
-  |
-  |- PasswordAuthFailed - Failure when authenticating by a password.
-  |  |- PasswordAuthRejected - Tor rejected this method of authentication.
-  |  |- IncorrectPassword - Password was rejected.
-  |  +- MissingPassword - Socket supports password auth but wasn't attempted.
-  |
-  |- CookieAuthFailed - Failure when authenticating by a cookie.
-  |  |- CookieAuthRejected - Tor rejected this method of authentication.
-  |  |- IncorrectCookieValue - Authentication cookie was rejected.
-  |  |- IncorrectCookieSize - Size of the cookie file is incorrect.
-  |  +- UnreadableCookieFile - Unable to read the contents of the auth cookie.
-  |
-  +- MissingAuthInfo - Unexpected PROTOCOLINFO response, missing auth info.
-     |- NoAuthMethods - Missing any methods for authenticating.
-     +- NoAuthCookie - Supports cookie auth but doesn't have its path.
+  connect_port - Convenience method to get an authenticated control connection.
+  connect_socket_file - Similar to connect_port, but for control socket files.
+  
+  authenticate - Main method for authenticating to a control socket.
+  authenticate_none - Authenticates to an open control socket.
+  authenticate_password - Authenticates to a socket supporting password auth.
+  authenticate_cookie - Authenticates to a socket supporting cookie auth.
+  
+  get_protocolinfo - Issues a PROTOCOLINFO query.
+  
+  AuthenticationFailure - Base exception raised for authentication failures.
+    |- UnrecognizedAuthMethods - Authentication methods are unsupported.
+    |- IncorrectSocketType - Socket does not speak the tor control protocol.
+    |
+    |- OpenAuthFailed - Failure when authenticating by an open socket.
+    |  +- OpenAuthRejected - Tor rejected this method of authentication.
+    |
+    |- PasswordAuthFailed - Failure when authenticating by a password.
+    |  |- PasswordAuthRejected - Tor rejected this method of authentication.
+    |  |- IncorrectPassword - Password was rejected.
+    |  +- MissingPassword - Socket supports password auth but wasn't attempted.
+    |
+    |- CookieAuthFailed - Failure when authenticating by a cookie.
+    |  |- CookieAuthRejected - Tor rejected this method of authentication.
+    |  |- IncorrectCookieValue - Authentication cookie was rejected.
+    |  |- IncorrectCookieSize - Size of the cookie file is incorrect.
+    |  +- UnreadableCookieFile - Unable to read the contents of the auth cookie.
+    |
+    +- MissingAuthInfo - Unexpected PROTOCOLINFO response, missing auth info.
+       |- NoAuthMethods - Missing any methods for authenticating.
+       +- NoAuthCookie - Supports cookie auth but doesn't have its path.
 """
 
 import os
@@ -78,119 +84,28 @@ import binascii
 
 import stem.response
 import stem.socket
+import stem.control
 import stem.version
 import stem.util.enum
 import stem.util.system
 import stem.util.log as log
 from stem.response.protocolinfo import AuthMethod
 
-class AuthenticationFailure(Exception):
-  """
-  Base error for authentication failures.
-  
-  Attributes:
-    auth_response (stem.socket.ControlMessage) - AUTHENTICATE response from
-      the control socket, None if one wasn't received
-  """
-  
-  def __init__(self, message, auth_response = None):
-    Exception.__init__(self, message)
-    self.auth_response = auth_response
-
-class UnrecognizedAuthMethods(AuthenticationFailure):
-  "All methods for authenticating aren't recognized."
-  
-  def __init__(self, message, unknown_auth_methods):
-    AuthenticationFailure.__init__(self, message)
-    self.unknown_auth_methods = unknown_auth_methods
-
-class IncorrectSocketType(AuthenticationFailure):
-  "Socket does not speak the control protocol."
-
-class OpenAuthFailed(AuthenticationFailure):
-  "Failure to authenticate to an open socket."
-
-class OpenAuthRejected(OpenAuthFailed):
-  "Attempt to connect to an open control socket was rejected."
-
-class PasswordAuthFailed(AuthenticationFailure):
-  "Failure to authenticate with a password."
-
-class PasswordAuthRejected(PasswordAuthFailed):
-  "Socket does not support password authentication."
-
-class IncorrectPassword(PasswordAuthFailed):
-  "Authentication password incorrect."
-
-class MissingPassword(PasswordAuthFailed):
-  "Password authentication is supported but we weren't provided with one."
-
-class CookieAuthFailed(AuthenticationFailure):
-  "Failure to authenticate with an authentication cookie."
-  
-  def __init__(self, message, cookie_path, auth_response = None):
-    AuthenticationFailure.__init__(self, message, auth_response)
-    self.cookie_path = cookie_path
-
-class CookieAuthRejected(CookieAuthFailed):
-  "Socket does not support password authentication."
-
-class IncorrectCookieValue(CookieAuthFailed):
-  "Authentication cookie value was rejected."
-
-class IncorrectCookieSize(CookieAuthFailed):
-  "Aborted because the cookie file is the wrong size."
-
-class UnreadableCookieFile(CookieAuthFailed):
-  "Error arose in reading the authentication cookie."
-
-class MissingAuthInfo(AuthenticationFailure):
-  """
-  The PROTOCOLINFO response didn't have enough information to authenticate.
-  These are valid control responses but really shouldn't happen in practice.
-  """
-
-class NoAuthMethods(MissingAuthInfo):
-  "PROTOCOLINFO response didn't have any methods for authenticating."
-
-class NoAuthCookie(MissingAuthInfo):
-  "PROTOCOLINFO response supports cookie auth but doesn't have its path."
-
-# authentication exceptions ordered as per the authenticate function's pydocs
-AUTHENTICATE_EXCEPTIONS = (
-  IncorrectSocketType,
-  UnrecognizedAuthMethods,
-  MissingPassword,
-  IncorrectPassword,
-  IncorrectCookieSize,
-  UnreadableCookieFile,
-  IncorrectCookieValue,
-  OpenAuthRejected,
-  MissingAuthInfo,
-  AuthenticationFailure,
-)
-
-def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = None):
+def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. This is very
   handy for debugging or CLI setup, handling setup and prompting for a password
   if necessary (and none is provided). If any issues arise this prints a
   description of the problem and returns None.
   
-  Arguments:
-    control_addr (str) - ip address of the controller
-    control_port (int) - port number of the controller
-    password (str)     - passphrase to authenticate to the socket
-    chroot_path (str)  - path prefix if in a chroot environment
-    controller (Class) - BaseController subclass to be returned, this provides
-                         a ControlSocket if None
+  :param str control_addr: ip address of the controller
+  :param int control_port: port number of the controller
+  :param str password: passphrase to authenticate to the socket
+  :param str chroot_path: path prefix if in a chroot environment
+  :param Class controller: BaseController subclass to be returned, this provides a ControlSocket if None
   
-  Returns:
-    Authenticated control connection, the type based on the controller
-    argument.
+  :returns: authenticated control connection, the type based on the controller argument
   """
-  
-  # TODO: replace the controller arg's default when we have something better
   
   try:
     control_port = stem.socket.ControlPort(control_addr, control_port)
@@ -200,20 +115,17 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
   
   return _connect(control_port, password, chroot_path, controller)
 
-def connect_socket_file(socket_path = "/var/run/tor/control", password = None, chroot_path = None, controller = None):
+def connect_socket_file(socket_path = "/var/run/tor/control", password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. For more
   information see the connect_port function.
   
-  Arguments:
-    socket_path (str)  - path where the control socket is located
-    password (str)     - passphrase to authenticate to the socket
-    chroot_path (str)  - path prefix if in a chroot environment
-    controller (Class) - BaseController subclass to be returned, this provides
-                         a ControlSocket if None
+  :param str socket_path: path where the control socket is located
+  :param str password: passphrase to authenticate to the socket
+  :param str chroot_path: path prefix if in a chroot environment
+  :param Class controller: BaseController subclass to be returned, this provides a ControlSocket if None
   
-  Returns:
-    Authenticated control connection, the type based on the controller enum.
+  :returns: authenticated control connection, the type based on the controller argument
   """
   
   try:
@@ -228,15 +140,12 @@ def _connect(control_socket, password, chroot_path, controller):
   """
   Common implementation for the connect_* functions.
   
-  Arguments:
-    control_socket (stem.socket.ControlSocket) - socket being authenticated to
-    password (str)     - passphrase to authenticate to the socket
-    chroot_path (str)  - path prefix if in a chroot environment
-    controller (Class) - BaseController subclass to be returned, this provides
-                         a ControlSocket if None
+  :param stem.socket.ControlSocket control_socket: socket being authenticated to
+  :param str password: passphrase to authenticate to the socket
+  :param str chroot_path: path prefix if in a chroot environment
+  :param Class controller: BaseController subclass to be returned, this provides a ControlSocket if None
   
-  Returns:
-    Authenticated control connection with a type based on the controller enum.
+  :returns: authenticated control connection, the type based on the controller argument
   """
   
   try:
@@ -268,71 +177,76 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
   callers should catch the types of authentication failure that they care
   about, then have a AuthenticationFailure catch-all at the end.
   
-  Arguments:
-    controller (stem.socket.ControlSocket or stem.control.BaseController) -
-      tor controller connection to be authenticated
-    password (str) - passphrase to present to the socket if it uses password
-        authentication (skips password auth if None)
-    chroot_path (str) - path prefix if in a chroot environment
-    protocolinfo_response (stem.response.protocolinfo.ProtocolInfoResponse) -
-        tor protocolinfo response, this is retrieved on our own if None
+  This can authenticate to either a :class:`stem.control.BaseController` or
+  :class:`stem.socket.ControlSocket`.
   
-  Raises:
-    AuthenticationFailed subclass if all attempts to authenticate fail. Since
-    this may try multiple authentication methods it may encounter multiple
-    exceptions. If so then the exception this raises is prioritized as
-    follows...
+  :param controller: tor controller or socket to be authenticated
+  :param str password: passphrase to present to the socket if it uses password authentication (skips password auth if None)
+  :param str chroot_path: path prefix if in a chroot environment
+  :param stem.response.protocolinfo.ProtocolInfoResponse protocolinfo_response: tor protocolinfo response, this is retrieved on our own if None
+  
+  :raises: If all attempts to authenticate fails then this will raise a :class:`stem.connection.AuthenticationFailure` subclass. Since this may try multiple authentication methods it may encounter multiple exceptions. If so then the exception this raises is prioritized as follows...
     
-    stem.connection.IncorrectSocketType
+    * :class:`stem.connection.IncorrectSocketType`
+    
       The controller does not speak the tor control protocol. Most often this
       happened because the user confused the SocksPort or ORPort with the
       ControlPort.
     
-    stem.connection.UnrecognizedAuthMethods
+    * :class:`stem.connection.UnrecognizedAuthMethods`
+    
       All of the authentication methods tor will accept are new and
       unrecognized. Please upgrade stem and, if that doesn't work, file a
       ticket on 'trac.torproject.org' and I'd be happy to add support.
     
-    stem.connection.MissingPassword
+    * :class:`stem.connection.MissingPassword`
+    
       We were unable to authenticate but didn't attempt password authentication
       because none was provided. You should prompt the user for a password and
       try again via 'authenticate_password'.
     
-    stem.connection.IncorrectPassword
+    * :class:`stem.connection.IncorrectPassword`
+    
       We were provided with a password but it was incorrect.
     
-    stem.connection.IncorrectCookieSize
+    * :class:`stem.connection.IncorrectCookieSize`
+    
       Tor allows for authentication by reading it a cookie file, but that file
       is the wrong size to be an authentication cookie.
     
-    stem.connection.UnreadableCookieFile
+    * :class:`stem.connection.UnreadableCookieFile`
+    
       Tor allows for authentication by reading it a cookie file, but we can't
       read that file (probably due to permissions).
     
-    stem.connection.IncorrectCookieValue (*)
+    * **\***:class:`stem.connection.IncorrectCookieValue`
+    
       Tor allows for authentication by reading it a cookie file, but rejected
       the contents of that file.
     
-    stem.connection.OpenAuthRejected (*)
+    * **\***:class:`stem.connection.OpenAuthRejected`
+    
       Tor says that it allows for authentication without any credentials, but
       then rejected our authentication attempt.
     
-    stem.connection.MissingAuthInfo (*)
+    * **\***:class:`stem.connection.MissingAuthInfo`
+    
       Tor provided us with a PROTOCOLINFO reply that is technically valid, but
       missing the information we need to authenticate.
     
-    stem.connection.AuthenticationFailure (*)
+    * **\***:class:`stem.connection.AuthenticationFailure`
+    
       There are numerous other ways that authentication could have failed
       including socket failures, malformed controller responses, etc. These
       mostly constitute transient failures or bugs.
     
-    * In practice it is highly unusual for this to occur, being more of a
-      theoretical possibility rather than something you should expect. It's
-      fine to treat these as errors. If you have a use case where this commonly
-      happens, please file a ticket on 'trac.torproject.org'.
-      
-      In the future new AuthenticationFailure subclasses may be added to allow
-      for better error handling.
+    **\*** In practice it is highly unusual for this to occur, being more of a
+    theoretical possibility rather than something you should expect. It's fine
+    to treat these as errors. If you have a use case where this commonly
+    happens, please file a ticket on 'trac.torproject.org'.
+    
+    In the future new :class:`stem.connection.AuthenticationFailure` subclasses
+    may be added to allow for better error handling.
   """
   
   if not protocolinfo_response:
@@ -431,17 +345,15 @@ def authenticate_none(controller, suppress_ctl_errors = True):
   attempt to re-establish the connection. This may not succeed, so check
   is_alive() before using the socket further.
   
-  For general usage use the authenticate() function instead.
+  This can authenticate to either a :class:`stem.control.BaseController` or
+  :class:`stem.socket.ControlSocket`.
   
-  Arguments:
-    controller (stem.socket.ControlSocket or stem.control.BaseController) -
-      tor controller connection
-    suppress_ctl_errors (bool) - reports raised stem.socket.ControllerError as
-      authentication rejection if True, otherwise they're re-raised
+  *For general usage use the authenticate() function instead.*
   
-  Raises:
-    stem.connection.OpenAuthRejected if the empty authentication credentials
-      aren't accepted
+  :param controller: tor controller or socket to be authenticated
+  :param bool suppress_ctl_errors: reports raised :class:`stem.socket.ControllerError` as authentication rejection if True, otherwise they're re-raised
+  
+  :raises: :class:`stem.connection.OpenAuthRejected` if the empty authentication credentials aren't accepted
   """
   
   try:
@@ -469,26 +381,23 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
   attempt to re-establish the connection. This may not succeed, so check
   is_alive() before using the socket further.
   
-  For general usage use the authenticate() function instead.
-  
-  note: If you use this function directly, rather than authenticate(), we may
+  If you use this function directly, rather than authenticate(), we may
   mistakenly raise a PasswordAuthRejected rather than IncorrectPassword. This
   is because we rely on tor's error messaging which is liable to change in
-  future versions...
-  https://trac.torproject.org/4817
+  future versions (`ticket <https://trac.torproject.org/4817>`_).
   
-  Arguments:
-    controller (stem.socket.ControlSocket or stem.control.BaseController) -
-      tor controller connection
-    password (str) - passphrase to present to the socket
-    suppress_ctl_errors (bool) - reports raised stem.socket.ControllerError as
-      authentication rejection if True, otherwise they're re-raised
+  This can authenticate to either a :class:`stem.control.BaseController` or
+  :class:`stem.socket.ControlSocket`.
   
-  Raises:
-    stem.connection.PasswordAuthRejected if the socket doesn't accept password
-      authentication
-    stem.connection.IncorrectPassword if the authentication credentials aren't
-      accepted
+  *For general usage use the authenticate() function instead.*
+  
+  :param controller: tor controller or socket to be authenticated
+  :param str password: passphrase to present to the socket
+  :param bool suppress_ctl_errors: reports raised :class:`stem.socket.ControllerError` as authentication rejection if True, otherwise they're re-raised
+  
+  :raises:
+    * :class:`stem.connection.PasswordAuthRejected` if the socket doesn't accept password authentication
+    * :class:`stem.connection.IncorrectPassword` if the authentication credentials aren't accepted
   """
   
   # Escapes quotes. Tor can include those in the password hash, in which case
@@ -534,28 +443,25 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
   attempt to re-establish the connection. This may not succeed, so check
   is_alive() before using the socket further.
   
-  For general usage use the authenticate() function instead.
-  
-  note: If you use this function directly, rather than authenticate(), we may
+  If you use this function directly, rather than authenticate(), we may
   mistakenly raise a CookieAuthRejected rather than IncorrectCookieValue. This
   is because we rely on tor's error messaging which is liable to change in
-  future versions...
-  https://trac.torproject.org/4817
+  future versions (`ticket <https://trac.torproject.org/4817>`_).
   
-  Arguments:
-    controller (stem.socket.ControlSocket or stem.control.BaseController) -
-      tor controller connection
-    cookie_path (str) - path of the authentication cookie to send to tor
-    suppress_ctl_errors (bool) - reports raised stem.socket.ControllerError as
-      authentication rejection if True, otherwise they're re-raised
+  This can authenticate to either a :class:`stem.control.BaseController` or
+  :class:`stem.socket.ControlSocket`.
   
-  Raises:
-    stem.connection.IncorrectCookieSize if the cookie file's size is wrong
-    stem.connection.UnreadableCookieFile if the cookie file doesn't exist or
-      we're unable to read it
-    stem.connection.CookieAuthRejected if cookie authentication is attempted
-      but the socket doesn't accept it
-    stem.connection.IncorrectCookieValue if the cookie file's value is rejected
+  *For general usage use the authenticate() function instead.*
+  
+  :param controller: tor controller or socket to be authenticated
+  :param str cookie_path: path of the authentication cookie to send to tor
+  :param bool suppress_ctl_errors: reports raised :class:`stem.socket.ControllerError` as authentication rejection if True, otherwise they're re-raised
+  
+  :raises:
+    * :class:`stem.connection.IncorrectCookieSize` if the cookie file's size is wrong
+    * :class:`stem.connection.UnreadableCookieFile` if the cookie file doesn't exist or we're unable to read it
+    * :class:`stem.connection.CookieAuthRejected` if cookie authentication is attempted but the socket doesn't accept it
+    * :class:`stem.connection.IncorrectCookieValue` if the cookie file's value is rejected
   """
   
   if not os.path.exists(cookie_path):
@@ -615,23 +521,20 @@ def get_protocolinfo(controller):
   first reconnected.
   
   According to the control spec the cookie_file is an absolute path. However,
-  this often is not the case (especially for the Tor Browser Bundle)...
-  https://trac.torproject.org/projects/tor/ticket/1101
+  this often is not the case (especially for the Tor Browser Bundle). If the
+  path is relative then we'll make an attempt (which may not work) to correct
+  this (`ticket <https://trac.torproject.org/1101>`_).
   
-  If the path is relative then we'll make an attempt (which may not work) to
-  correct this.
+  This can authenticate to either a :class:`stem.control.BaseController` or
+  :class:`stem.socket.ControlSocket`.
   
-  Arguments:
-    controller (stem.socket.ControlSocket or stem.control.BaseController) -
-      tor controller connection
+  :param controller: tor controller or socket to be queried
   
-  Returns:
-    stem.response.protocolinfo.ProtocolInfoResponse provided by tor
+  :returns: :class:`stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
   
-  Raises:
-    stem.socket.ProtocolError if the PROTOCOLINFO response is malformed
-    stem.socket.SocketError if problems arise in establishing or using the
-      socket
+  :raises:
+    * :class:`stem.socket.ProtocolError` if the PROTOCOLINFO response is malformed
+    * :class:`stem.socket.SocketError` if problems arise in establishing or using the socket
   """
   
   try:
@@ -713,4 +616,96 @@ def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg)
       log.debug("unable to expand relative tor cookie path%s: %s" % (pid_resolver_label, exc))
   
   protocolinfo_response.cookie_path = cookie_path
+
+class AuthenticationFailure(Exception):
+  """
+  Base error for authentication failures.
+  
+  :var stem.socket.ControlMessage auth_response: AUTHENTICATE response from the control socket, None if one wasn't received
+  """
+  
+  def __init__(self, message, auth_response = None):
+    Exception.__init__(self, message)
+    self.auth_response = auth_response
+
+class UnrecognizedAuthMethods(AuthenticationFailure):
+  """
+  All methods for authenticating aren't recognized.
+  
+  :var list unknown_auth_methods: authentication methods that weren't recognized
+  """
+  
+  def __init__(self, message, unknown_auth_methods):
+    AuthenticationFailure.__init__(self, message)
+    self.unknown_auth_methods = unknown_auth_methods
+
+class IncorrectSocketType(AuthenticationFailure):
+  "Socket does not speak the control protocol."
+
+class OpenAuthFailed(AuthenticationFailure):
+  "Failure to authenticate to an open socket."
+
+class OpenAuthRejected(OpenAuthFailed):
+  "Attempt to connect to an open control socket was rejected."
+
+class PasswordAuthFailed(AuthenticationFailure):
+  "Failure to authenticate with a password."
+
+class PasswordAuthRejected(PasswordAuthFailed):
+  "Socket does not support password authentication."
+
+class IncorrectPassword(PasswordAuthFailed):
+  "Authentication password incorrect."
+
+class MissingPassword(PasswordAuthFailed):
+  "Password authentication is supported but we weren't provided with one."
+
+class CookieAuthFailed(AuthenticationFailure):
+  """
+  Failure to authenticate with an authentication cookie.
+  
+  :param str cookie_path: location of the authentication cookie we attempted
+  """
+  
+  def __init__(self, message, cookie_path, auth_response = None):
+    AuthenticationFailure.__init__(self, message, auth_response)
+    self.cookie_path = cookie_path
+
+class CookieAuthRejected(CookieAuthFailed):
+  "Socket does not support password authentication."
+
+class IncorrectCookieValue(CookieAuthFailed):
+  "Authentication cookie value was rejected."
+
+class IncorrectCookieSize(CookieAuthFailed):
+  "Aborted because the cookie file is the wrong size."
+
+class UnreadableCookieFile(CookieAuthFailed):
+  "Error arose in reading the authentication cookie."
+
+class MissingAuthInfo(AuthenticationFailure):
+  """
+  The PROTOCOLINFO response didn't have enough information to authenticate.
+  These are valid control responses but really shouldn't happen in practice.
+  """
+
+class NoAuthMethods(MissingAuthInfo):
+  "PROTOCOLINFO response didn't have any methods for authenticating."
+
+class NoAuthCookie(MissingAuthInfo):
+  "PROTOCOLINFO response supports cookie auth but doesn't have its path."
+
+# authentication exceptions ordered as per the authenticate function's pydocs
+AUTHENTICATE_EXCEPTIONS = (
+  IncorrectSocketType,
+  UnrecognizedAuthMethods,
+  MissingPassword,
+  IncorrectPassword,
+  IncorrectCookieSize,
+  UnreadableCookieFile,
+  IncorrectCookieValue,
+  OpenAuthRejected,
+  MissingAuthInfo,
+  AuthenticationFailure,
+)
 

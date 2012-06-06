@@ -2,31 +2,35 @@
 Functions to aid library logging. Default logging is usually NOTICE and above,
 runlevels being used as follows...
 
-  ERROR  - critical issue occured, the user needs to be notified
-  WARN   - non-critical issue occured that the user should be aware of
-  NOTICE - information that is helpful to the user
-  INFO   - high level library activity
-  DEBUG  - low level library activity
-  TRACE  - request/reply logging
+* **ERROR** - critical issue occured, the user needs to be notified
+* **WARN** - non-critical issue occured that the user should be aware of
+* **NOTICE** - information that is helpful to the user
+* **INFO** - high level library activity
+* **DEBUG** - low level library activity
+* **TRACE** - request/reply logging
 
-get_logger - provides the stem's Logger instance
-logging_level - converts a runlevel to its logging number
-escape - escapes special characters in a message in preparation for logging
+**Module Overview:**
 
-log - logs a message at the given runlevel
-log_once - logs a message, deduplicating if it has already been logged
-trace - logs a message at the TRACE runlevel
-debug - logs a message at the DEBUG runlevel
-info - logs a message at the INFO runlevel
-notice - logs a message at the NOTICE runlevel
-warn - logs a message at the WARN runlevel
-error - logs a message at the ERROR runlevel
+::
 
-LogBuffer - Buffers logged events so they can be iterated over.
-  |- is_empty - checks if there's events in our buffer
-  +- __iter__ - iterates over and removes the buffered events
-
-log_to_stdout - reports further logged events to stdout
+  get_logger - provides the stem's Logger instance
+  logging_level - converts a runlevel to its logging number
+  escape - escapes special characters in a message in preparation for logging
+  
+  log - logs a message at the given runlevel
+  log_once - logs a message, deduplicating if it has already been logged
+  trace - logs a message at the TRACE runlevel
+  debug - logs a message at the DEBUG runlevel
+  info - logs a message at the INFO runlevel
+  notice - logs a message at the NOTICE runlevel
+  warn - logs a message at the WARN runlevel
+  error - logs a message at the ERROR runlevel
+  
+  LogBuffer - Buffers logged events so they can be iterated over.
+    |- is_empty - checks if there's events in our buffer
+    +- __iter__ - iterates over and removes the buffered events
+  
+  log_to_stdout - reports further logged events to stdout
 """
 
 import logging
@@ -75,8 +79,7 @@ def get_logger():
   """
   Provides the stem logger.
   
-  Returns:
-    logging.Logger for stem
+  :return: logging.Logger for stem
   """
   
   return LOGGER
@@ -85,8 +88,7 @@ def logging_level(runlevel):
   """
   Translates a runlevel into the value expected by the logging module.
   
-  Arguments:
-    runlevel (Runlevel) - runlevel to be returned, no logging if None
+  :param Runlevel runlevel: runlevel to be returned, no logging if None
   """
   
   if runlevel: return LOG_VALUES[runlevel]
@@ -96,11 +98,9 @@ def escape(message):
   """
   Escapes specific sequences for logging (newlines, tabs, carrage returns).
   
-  Arguments:
-    message (str) - string to be escaped
+  :param str message: string to be escaped
   
-  Returns:
-    str that is escaped
+  :returns: str that is escaped
   """
   
   for pattern, replacement in (("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")):
@@ -112,10 +112,8 @@ def log(runlevel, message):
   """
   Logs a message at the given runlevel.
   
-  Arguments:
-    runlevel (Runlevel) - runlevel to log the message at, logging is skipped if
-                          None
-    message (str)       - message to be logged
+  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if None
+  :param str message: message to be logged
   """
   
   if runlevel:
@@ -126,14 +124,11 @@ def log_once(message_id, runlevel, message):
   Logs a message at the given runlevel. If a message with this ID has already
   been logged then this is a no-op.
   
-  Arguments:
-    message_id (str)    - unique message identifier to deduplicate on
-    runlevel (Runlevel) - runlevel to log the message at, logging is skipped if
-                          None
-    message (str)       - message to be logged
+  :param str message_id: unique message identifier to deduplicate on
+  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if None
+  :param str message: message to be logged
   
-  Returns:
-    True if we log the message, False otherwise
+  :returns: True if we log the message, False otherwise
   """
   
   if not runlevel or message_id in DEDUPLICATION_MESSAGE_IDS:
@@ -178,8 +173,7 @@ def log_to_stdout(runlevel):
   """
   Logs further events to stdout.
   
-  Arguments:
-    runlevel (Runlevel) - minimum runlevel a message needs to be to be logged
+  :param Runlevel runlevel: minimum runlevel a message needs to be to be logged
   """
   
   logging.basicConfig(

@@ -10,33 +10,39 @@ cannot be requested of bridges.
 
 Extra-info descriptors are available from a few sources...
 
-- if you have 'DownloadExtraInfo 1' in your torrc...
-  - control port via 'GETINFO extra-info/digest/*' queries
-  - the 'cached-extrainfo' file in tor's data directory
-- tor metrics, at https://metrics.torproject.org/data.html
-- directory authorities and mirrors via their DirPort
+* if you have 'DownloadExtraInfo 1' in your torrc...
 
-DirResponses - known statuses for ExtraInfoDescriptor's dir_*_responses
-  |- OK - network status requests that were answered
-  |- NOT_ENOUGH_SIGS - network status wasn't signed by enough authorities
-  |- UNAVAILABLE - requested network status was unavailable
-  |- NOT_FOUND - requested network status was not found
-  |- NOT_MODIFIED - network status unmodified since If-Modified-Since time
-  +- BUSY - directory was busy
+  * control port via 'GETINFO extra-info/digest/*' queries
+  * the 'cached-extrainfo' file in tor's data directory
 
-DirStats - known stats for ExtraInfoDescriptor's dir_*_direct_dl and dir_*_tunneled_dl
-  |- COMPLETE - requests that completed successfully
-  |- TIMEOUT - requests that didn't complete within a ten minute timeout
-  |- RUNNING - requests still in procress when measurement's taken
-  |- MIN - smallest rate at which a descriptor was downloaded in B/s
-  |- MAX - largest rate at which a descriptor was downloaded in B/s
-  |- D1-4 and D6-9 - rate of the slowest x/10 download rates in B/s
-  |- Q1 and Q3 - rate of the slowest and fastest querter download rates in B/s
-  +- MD - median download rate in B/s
+* tor metrics, at https://metrics.torproject.org/data.html
+* directory authorities and mirrors via their DirPort
 
-parse_file - Iterates over the extra-info descriptors in a file.
-ExtraInfoDescriptor - Tor extra-info descriptor.
-  +- get_unrecognized_lines - lines with unrecognized content
+**Module Overview:**
+
+::
+
+  DirResponses - known statuses for ExtraInfoDescriptor's dir_*_responses
+    |- OK - network status requests that were answered
+    |- NOT_ENOUGH_SIGS - network status wasn't signed by enough authorities
+    |- UNAVAILABLE - requested network status was unavailable
+    |- NOT_FOUND - requested network status was not found
+    |- NOT_MODIFIED - network status unmodified since If-Modified-Since time
+    +- BUSY - directory was busy
+  
+  DirStats - known stats for ExtraInfoDescriptor's dir_*_direct_dl and dir_*_tunneled_dl
+    |- COMPLETE - requests that completed successfully
+    |- TIMEOUT - requests that didn't complete within a ten minute timeout
+    |- RUNNING - requests still in procress when measurement's taken
+    |- MIN - smallest rate at which a descriptor was downloaded in B/s
+    |- MAX - largest rate at which a descriptor was downloaded in B/s
+    |- D1-4 and D6-9 - rate of the slowest x/10 download rates in B/s
+    |- Q1 and Q3 - rate of the slowest and fastest querter download rates in B/s
+    +- MD - median download rate in B/s
+  
+  parse_file - Iterates over the extra-info descriptors in a file.
+  ExtraInfoDescriptor - Tor extra-info descriptor.
+    +- get_unrecognized_lines - lines with unrecognized content
 """
 
 import re
@@ -112,17 +118,14 @@ def parse_file(descriptor_file, validate = True):
   """
   Iterates over the extra-info descriptors in a file.
   
-  Arguments:
-    descriptor_file (file) - file with descriptor content
-    validate (bool)        - checks the validity of the descriptor's content if
-                             True, skips these checks otherwise
+  :param file descriptor_file: file with descriptor content
+  :param bool validate: checks the validity of the descriptor's content if True, skips these checks otherwise
   
-  Returns:
-    iterator for ExtraInfoDescriptor instances in the file
+  :returns: iterator for ExtraInfoDescriptor instances in the file
   
-  Raises:
-    ValueError if the contents is malformed and validate is True
-    IOError if the file can't be read
+  :raises:
+    * ValueError if the contents is malformed and validate is True
+    * IOError if the file can't be read
   """
   
   while True:
@@ -140,16 +143,12 @@ def _parse_timestamp_and_interval(keyword, content):
   """
   Parses a 'YYYY-MM-DD HH:MM:SS (NSEC s) *' entry.
   
-  Arguments:
-    keyword (str) - line's keyword
-    content (str) - line content to be parsed
+  :param str keyword: line's keyword
+  :param str content: line content to be parsed
   
-  Returns:
-    tuple of the form...
-    (timestamp (datetime), interval (int), remaining content (str))
+  :returns: tuple of the form ``(timestamp (datetime), interval (int), remaining content (str))``
   
-  Raises:
-    ValueError if the content is malformed
+  :raises: ValueError if the content is malformed
   """
   
   line = "%s %s" % (keyword, content)
@@ -174,92 +173,97 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   """
   Extra-info descriptor document.
   
-  Attributes:
-    nickname (str)        - relay's nickname (*)
-    fingerprint (str)     - identity key fingerprint (*)
-    published (datetime)  - time in GMT when this descriptor was made (*)
-    geoip_db_digest (str) - sha1 of geoIP database file
-    signature (str)       - signature for this extrainfo descriptor (*)
-    
-    conn_bi_direct_end (datetime) - end of the sampling interval
-    conn_bi_direct_interval (int) - seconds per interval
-    conn_bi_direct_below (int)    - connections that read/wrote less than 20 KiB
-    conn_bi_direct_read (int)     - connections that read at least 10x more than wrote
-    conn_bi_direct_write (int)    - connections that wrote at least 10x more than read
-    conn_bi_direct_both (int)     - remaining connections
-    
-    Bytes read/written for relayed traffic:
-      read_history_end (datetime) - end of the sampling interval
-      read_history_interval (int) - seconds per interval
-      read_history_values (list)  - bytes read during each interval
-      
-      write_history_end (datetime) - end of the sampling interval
-      write_history_interval (int) - seconds per interval
-      write_history_values (list)  - bytes written during each interval
-    
-    Cell relaying statistics:
-      cell_stats_end (datetime) - end of the period when stats were gathered
-      cell_stats_interval (int) - length in seconds of the interval
-      cell_processed_cells (list) - measurement of processed cells per circuit
-      cell_queued_cells (list) - measurement of queued cells per circuit
-      cell_time_in_queue (list) - mean enqueued time in milliseconds for cells
-      cell_circuits_per_decile (int) - mean number of circuits in a deciles
-    
-    Directory Mirror Attributes:
-      dir_stats_end (datetime) - end of the period when stats were gathered
-      dir_stats_interval (int) - length in seconds of the interval
-      dir_v2_ips (dict) - mapping of locales to rounded count of requester ips
-      dir_v3_ips (dict) - mapping of locales to rounded count of requester ips
-      dir_v2_share (float) - percent of total directory traffic it expects to serve
-      dir_v3_share (float) - percent of total directory traffic it expects to serve
-      dir_v2_requests (dict) - mapping of locales to rounded count of requests
-      dir_v3_requests (dict) - mapping of locales to rounded count of requests
-      
-      dir_v2_responses (dict) - mapping of DirResponses to their rounded count
-      dir_v3_responses (dict) - mapping of DirResponses to their rounded count
-      dir_v2_responses_unknown (dict) - mapping of unrecognized statuses to their count
-      dir_v3_responses_unknown (dict) - mapping of unrecognized statuses to their count
-      
-      dir_v2_direct_dl (dict) - mapping of DirStats to measurement over DirPort
-      dir_v3_direct_dl (dict) - mapping of DirStats to measurement over DirPort
-      dir_v2_direct_dl_unknown (dict) - mapping of unrecognized stats to their measurement
-      dir_v3_direct_dl_unknown (dict) - mapping of unrecognized stats to their measurement
-      
-      dir_v2_tunneled_dl (dict) - mapping of DirStats to measurement over ORPort
-      dir_v3_tunneled_dl (dict) - mapping of DirStats to measurement over ORPort
-      dir_v2_tunneled_dl_unknown (dict) - mapping of unrecognized stats to their measurement
-      dir_v3_tunneled_dl_unknown (dict) - mapping of unrecognized stats to their measurement
-      
-      Bytes read/written for directory mirroring:
-        dir_read_history_end (datetime) - end of the sampling interval
-        dir_read_history_interval (int) - seconds per interval
-        dir_read_history_values (list)  - bytes read during each interval
-        
-        dir_write_history_end (datetime) - end of the sampling interval
-        dir_write_history_interval (int) - seconds per interval
-        dir_write_history_values (list)  - bytes read during each interval
-    
-    Guard Attributes:
-      entry_stats_end (datetime) - end of the period when stats were gathered
-      entry_stats_interval (int) - length in seconds of the interval
-      entry_ips (dict) - mapping of locales to rounded count of unique user ips
-    
-    Exit Attributes:
-      exit_stats_end (datetime) - end of the period when stats were gathered
-      exit_stats_interval (int) - length in seconds of the interval
-      exit_kibibytes_written (dict) - traffic per port (keys are ints or 'other')
-      exit_kibibytes_read (dict) - traffic per port (keys are ints or 'other')
-      exit_streams_opened (dict) - streams per port (keys are ints or 'other')
-    
-    Bridge Attributes:
-      bridge_stats_end (datetime) - end of the period when stats were gathered
-      bridge_stats_interval (int) - length in seconds of the interval
-      bridge_ips (dict) - mapping of locales to rounded count of unique user ips
-      geoip_start_time (datetime) - (deprecated) replaced by bridge_stats_end
-      geoip_client_origins (dict) - (deprecated) replaced by bridge_ips
+  :var str nickname: **\*** relay's nickname
+  :var str fingerprint: **\*** identity key fingerprint
+  :var datetime published: **\*** time in GMT when this descriptor was made
+  :var str geoip_db_digest: sha1 of geoIP database file
+  :var str signature: **\*** signature for this extrainfo descriptor
   
-  (*) attribute is either required when we're parsed with validation or has a
-      default value, others are left as None if undefined
+  :var datetime conn_bi_direct_end: end of the sampling interval
+  :var int conn_bi_direct_interval: seconds per interval
+  :var int conn_bi_direct_below: connections that read/wrote less than 20 KiB
+  :var int conn_bi_direct_read: connections that read at least 10x more than wrote
+  :var int conn_bi_direct_write: connections that wrote at least 10x more than read
+  :var int conn_bi_direct_both: remaining connections
+  
+  **Bytes read/written for relayed traffic:**
+  
+  :var datetime read_history_end: end of the sampling interval
+  :var int read_history_interval: seconds per interval
+  :var list read_history_values: bytes read during each interval
+  
+  :var datetime write_history_end: end of the sampling interval
+  :var int write_history_interval: seconds per interval
+  :var list write_history_values: bytes written during each interval
+  
+  **Cell relaying statistics:**
+  
+  :var datetime cell_stats_end: end of the period when stats were gathered
+  :var int cell_stats_interval: length in seconds of the interval
+  :var list cell_processed_cells: measurement of processed cells per circuit
+  :var list cell_queued_cells: measurement of queued cells per circuit
+  :var list cell_time_in_queue: mean enqueued time in milliseconds for cells
+  :var int cell_circuits_per_decile: mean number of circuits in a deciles
+  
+  **Directory Mirror Attributes:**
+  
+  :var datetime dir_stats_end: end of the period when stats were gathered
+  :var int dir_stats_interval: length in seconds of the interval
+  :var dict dir_v2_ips: mapping of locales to rounded count of requester ips
+  :var dict dir_v3_ips: mapping of locales to rounded count of requester ips
+  :var float dir_v2_share: percent of total directory traffic it expects to serve
+  :var float dir_v3_share: percent of total directory traffic it expects to serve
+  :var dict dir_v2_requests: mapping of locales to rounded count of requests
+  :var dict dir_v3_requests: mapping of locales to rounded count of requests
+  
+  :var dict dir_v2_responses: mapping of DirResponses to their rounded count
+  :var dict dir_v3_responses: mapping of DirResponses to their rounded count
+  :var dict dir_v2_responses_unknown: mapping of unrecognized statuses to their count
+  :var dict dir_v3_responses_unknown: mapping of unrecognized statuses to their count
+  
+  :var dict dir_v2_direct_dl: mapping of DirStats to measurement over DirPort
+  :var dict dir_v3_direct_dl: mapping of DirStats to measurement over DirPort
+  :var dict dir_v2_direct_dl_unknown: mapping of unrecognized stats to their measurement
+  :var dict dir_v3_direct_dl_unknown: mapping of unrecognized stats to their measurement
+  
+  :var dict dir_v2_tunneled_dl: mapping of DirStats to measurement over ORPort
+  :var dict dir_v3_tunneled_dl: mapping of DirStats to measurement over ORPort
+  :var dict dir_v2_tunneled_dl_unknown: mapping of unrecognized stats to their measurement
+  :var dict dir_v3_tunneled_dl_unknown: mapping of unrecognized stats to their measurement
+  
+  **Bytes read/written for directory mirroring:**
+  
+  :var datetime dir_read_history_end: end of the sampling interval
+  :var int dir_read_history_interval: seconds per interval
+  :var list dir_read_history_values: bytes read during each interval
+  
+  :var datetime dir_write_history_end: end of the sampling interval
+  :var int dir_write_history_interval: seconds per interval
+  :var list dir_write_history_values: bytes read during each interval
+  
+  **Guard Attributes:**
+  
+  :var datetime entry_stats_end: end of the period when stats were gathered
+  :var int entry_stats_interval: length in seconds of the interval
+  :var dict entry_ips: mapping of locales to rounded count of unique user ips
+  
+  **Exit Attributes:**
+  
+  :var datetime exit_stats_end: end of the period when stats were gathered
+  :var int exit_stats_interval: length in seconds of the interval
+  :var dict exit_kibibytes_written: traffic per port (keys are ints or 'other')
+  :var dict exit_kibibytes_read: traffic per port (keys are ints or 'other')
+  :var dict exit_streams_opened: streams per port (keys are ints or 'other')
+  
+  **Bridge Attributes:**
+  
+  :var datetime bridge_stats_end: end of the period when stats were gathered
+  :var int bridge_stats_interval: length in seconds of the interval
+  :var dict bridge_ips: mapping of locales to rounded count of unique user ips
+  :var datetime geoip_start_time: replaced by bridge_stats_end (deprecated)
+  :var dict geoip_client_origins: replaced by bridge_ips (deprecated)
+  
+  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   """
   
   def __init__(self, raw_contents, validate = True):
@@ -272,13 +276,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     validation can be disables to either improve performance or be accepting of
     malformed data.
     
-    Arguments:
-      raw_contents (str) - extra-info content provided by the relay
-      validate (bool)    - checks the validity of the extra-info descriptor if
-                           True, skips these checks otherwise
+    :param str raw_contents: extra-info content provided by the relay
+    :param bool validate: checks the validity of the extra-info descriptor if True, skips these checks otherwise
     
-    Raises:
-      ValueError if the contents is malformed and validate is True
+    :raises: ValueError if the contents is malformed and validate is True
     """
     
     stem.descriptor.Descriptor.__init__(self, raw_contents)
@@ -385,12 +386,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     Parses a series of 'keyword => (value, pgp block)' mappings and applies
     them as attributes.
     
-    Arguments:
-      entries (dict)  - descriptor contents to be applied
-      validate (bool) - checks the validity of descriptor content if True
+    :param dict entries: descriptor contents to be applied
+    :param bool validate: checks the validity of descriptor content if True
     
-    Raises:
-      ValueError if an error occures in validation
+    :raises: ValueError if an error occures in validation
     """
     
     for keyword, values in entries.items():

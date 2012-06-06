@@ -1,31 +1,35 @@
 """
 Supports message based communication with sockets speaking the tor control
 protocol. This lets users send messages as basic strings and receive responses
-as instances of the ControlMessage class.
+as instances of the :class:`stem.response.ControlMessage` class.
 
-ControlSocket - Socket wrapper that speaks the tor control protocol.
-  |- ControlPort - Control connection via a port.
-  |  |- get_address - provides the ip address of our socket
-  |  +- get_port - provides the port of our socket
-  |
-  |- ControlSocketFile - Control connection via a local file socket.
-  |  +- get_socket_path - provides the path of the socket we connect to
-  |
-  |- send - sends a message to the socket
-  |- recv - receives a ControlMessage from the socket
-  |- is_alive - reports if the socket is known to be closed
-  |- connect - connects a new socket
-  |- close - shuts down the socket
-  +- __enter__ / __exit__ - manages socket connection
+**Module Overview:**
 
-send_message - Writes a message to a control socket.
-recv_message - Reads a ControlMessage from a control socket.
-send_formatting - Performs the formatting expected from sent messages.
+::
 
-ControllerError - Base exception raised when using the controller.
-  |- ProtocolError - Malformed socket data.
-  +- SocketError - Communication with the socket failed.
-     +- SocketClosed - Socket has been shut down.
+  ControlSocket - Socket wrapper that speaks the tor control protocol.
+    |- ControlPort - Control connection via a port.
+    |  |- get_address - provides the ip address of our socket
+    |  +- get_port - provides the port of our socket
+    |
+    |- ControlSocketFile - Control connection via a local file socket.
+    |  +- get_socket_path - provides the path of the socket we connect to
+    |
+    |- send - sends a message to the socket
+    |- recv - receives a ControlMessage from the socket
+    |- is_alive - reports if the socket is known to be closed
+    |- connect - connects a new socket
+    |- close - shuts down the socket
+    +- __enter__ / __exit__ - manages socket connection
+  
+  send_message - Writes a message to a control socket.
+  recv_message - Reads a ControlMessage from a control socket.
+  send_formatting - Performs the formatting expected from sent messages.
+  
+  ControllerError - Base exception raised when using the controller.
+    |- ProtocolError - Malformed socket data.
+    +- SocketError - Communication with the socket failed.
+       +- SocketClosed - Socket has been shut down.
 """
 
 from __future__ import absolute_import
@@ -37,18 +41,6 @@ import stem.response
 import stem.util.enum
 import stem.util.log as log
 
-class ControllerError(Exception):
-  "Base error for controller communication issues."
-
-class ProtocolError(ControllerError):
-  "Malformed content from the control socket."
-
-class SocketError(ControllerError):
-  "Error arose while communicating with the control socket."
-
-class SocketClosed(SocketError):
-  "Control socket was closed before completing the message."
-
 class ControlSocket:
   """
   Wrapper for a socket connection that speaks the Tor control protocol. To the
@@ -56,7 +48,7 @@ class ControlSocket:
   receiving complete messages. All methods are thread safe.
   
   Callers should not instantiate this class directly, but rather use subclasses
-  which are expected to implement the _make_socket method.
+  which are expected to implement the ``_make_socket()`` method.
   """
   
   def __init__(self):
@@ -73,16 +65,14 @@ class ControlSocket:
   def send(self, message, raw = False):
     """
     Formats and sends a message to the control socket. For more information see
-    the stem.socket.send_message function.
+    the :func:`stem.socket.send_message` function.
     
-    Arguments:
-      message (str) - message to be formatted and sent to the socket
-      raw (bool)    - leaves the message formatting untouched, passing it to
-                      the socket as-is
+    :param str message: message to be formatted and sent to the socket
+    :param bool raw: leaves the message formatting untouched, passing it to the socket as-is
     
-    Raises:
-      stem.socket.SocketError if a problem arises in using the socket
-      stem.socket.SocketClosed if the socket is known to be shut down
+    :raises:
+      * :class:`stem.socket.SocketError` if a problem arises in using the socket
+      * :class:`stem.socket.SocketClosed` if the socket is known to be shut down
     """
     
     with self._send_lock:
@@ -98,15 +88,13 @@ class ControlSocket:
   def recv(self):
     """
     Receives a message from the control socket, blocking until we've received
-    one. For more information see the stem.socket.recv_message function.
+    one. For more information see the :func:`stem.socket.recv_message` function.
     
-    Returns:
-      stem.response.ControlMessage for the message received
+    :returns: :class:`stem.response.ControlMessage` for the message received
     
-    Raises:
-      stem.socket.ProtocolError the content from the socket is malformed
-      stem.socket.SocketClosed if the socket closes before we receive a
-        complete message
+    :raises:
+      * :class:`stem.socket.ProtocolError` the content from the socket is malformed
+      * :class:`stem.socket.SocketClosed` if the socket closes before we receive a complete message
     """
     
     with self._recv_lock:
@@ -146,15 +134,14 @@ class ControlSocket:
     until we either use it or have explicitily shut it down.
     
     In practice a socket derived from a port knows about its disconnection
-    after a failed recv() call. Socket file derived connections know after
-    either a send() or recv().
+    after a failed ``recv()`` call. Socket file derived connections know after
+    either a ``send()`` or ``recv()``.
     
     This means that to have reliable detection for when we're disconnected
     you need to continually pull from the socket (which is part of what the
-    BaseController does).
+    :class:`stem.control.BaseController` does).
     
-    Returns:
-      bool that's True if we're known to be shut down and False otherwise
+    :returns: bool that's True if we're known to be shut down and False otherwise
     """
     
     return self._is_alive
@@ -164,8 +151,7 @@ class ControlSocket:
     Connects to a new socket, closing our previous one if we're already
     attached.
     
-    Raises:
-      stem.socket.SocketError if unable to make a socket
+    :raises: :class:`stem.socket.SocketError` if unable to make a socket
     """
     
     with self._send_lock:
@@ -233,9 +219,7 @@ class ControlSocket:
     because it's used to lock connect() / close(), and by extension our
     is_alive() state changes.
     
-    Returns:
-      threading.RLock that governs sending messages to our socket and state
-      changes
+    :returns: threading.RLock that governs sending messages to our socket and state changes
     """
     
     return self._send_lock
@@ -264,12 +248,11 @@ class ControlSocket:
     """
     Constructs and connects new socket. This is implemented by subclasses.
     
-    Returns:
-      socket.socket for our configuration
+    :returns: socket.socket for our configuration
     
-    Raises:
-      stem.socket.SocketError if unable to make a socket
-      NotImplementedError if not implemented by a subclass
+    :raises:
+      * :class:`stem.socket.SocketError` if unable to make a socket
+      * NotImplementedError if not implemented by a subclass
     """
     
     raise NotImplementedError("Unsupported Operation: this should be implemented by the ControlSocket subclass")
@@ -284,15 +267,11 @@ class ControlPort(ControlSocket):
     """
     ControlPort constructor.
     
-    Arguments:
-      control_addr (str) - ip address of the controller
-      control_port (int) - port number of the controller
-      connect (bool)     - connects to the socket if True, leaves it
-                           unconnected otherwise
+    :param str control_addr: ip address of the controller
+    :param int control_port: port number of the controller
+    :param bool connect: connects to the socket if True, leaves it unconnected otherwise
     
-    Raises:
-      stem.socket.SocketError if connect is True and we're unable to establish
-        a connection
+    :raises: :class:`stem.socket.SocketError` if connect is True and we're unable to establish a connection
     """
     
     ControlSocket.__init__(self)
@@ -305,8 +284,7 @@ class ControlPort(ControlSocket):
     """
     Provides the ip address our socket connects to.
     
-    Returns:
-      str with the ip address of our socket
+    :returns: str with the ip address of our socket
     """
     
     return self._control_addr
@@ -315,8 +293,7 @@ class ControlPort(ControlSocket):
     """
     Provides the port our socket connects to.
     
-    Returns:
-      int with the port of our socket
+    :returns: int with the port of our socket
     """
     
     return self._control_port
@@ -339,14 +316,10 @@ class ControlSocketFile(ControlSocket):
     """
     ControlSocketFile constructor.
     
-    Arguments:
-      socket_path (str) - path where the control socket is located
-      connect (bool)     - connects to the socket if True, leaves it
-                           unconnected otherwise
+    :param str socket_path: path where the control socket is located
+    :param bool connect: connects to the socket if True, leaves it unconnected otherwise
     
-    Raises:
-      stem.socket.SocketError if connect is True and we're unable to establish
-        a connection
+    :raises: :class:`stem.socket.SocketError` if connect is True and we're unable to establish a connection
     """
     
     ControlSocket.__init__(self)
@@ -358,8 +331,7 @@ class ControlSocketFile(ControlSocket):
     """
     Provides the path our socket connects to.
     
-    Returns:
-      str with the path for our control socket
+    :returns: str with the path for our control socket
     """
     
     return self._socket_path
@@ -380,25 +352,26 @@ def send_message(control_file, message, raw = False):
   line at the end). If the message doesn't contain a newline then it's sent
   as...
   
-  <message>\r\n
+  ::
   
-  and if it does contain newlines then it's split on \n and sent as...
+    <message>\\r\\n
+    
+  and if it does contain newlines then it's split on ``\\n`` and sent as...
   
-  +<line 1>\r\n
-  <line 2>\r\n
-  <line 3>\r\n
-  .\r\n
+  ::
   
-  Arguments:
-    control_file (file) - file derived from the control socket (see the
-                          socket's makefile() method for more information)
-    message (str)       - message to be sent on the control socket
-    raw (bool)          - leaves the message formatting untouched, passing it
-                          to the socket as-is
+    +<line 1>\\r\\n
+    <line 2>\\r\\n
+    <line 3>\\r\\n
+    .\\r\\n
   
-  Raises:
-    stem.socket.SocketError if a problem arises in using the socket
-    stem.socket.SocketClosed if the socket is known to be shut down
+  :param file control_file: file derived from the control socket (see the socket's makefile() method for more information)
+  :param str message: message to be sent on the control socket
+  :param bool raw: leaves the message formatting untouched, passing it to the socket as-is
+  
+  :raises:
+    * :class:`stem.socket.SocketError` if a problem arises in using the socket
+    * :class:`stem.socket.SocketClosed` if the socket is known to be shut down
   """
   
   if not raw: message = send_formatting(message)
@@ -432,17 +405,13 @@ def recv_message(control_file):
   Pulls from a control socket until we either have a complete message or
   encounter a problem.
   
-  Arguments:
-    control_file (file) - file derived from the control socket (see the
-                          socket's makefile() method for more information)
+  :param file control_file: file derived from the control socket (see the socket's makefile() method for more information)
   
-  Returns:
-    stem.response.ControlMessage read from the socket
+  :returns: :class:`stem.response.ControlMessage` read from the socket
   
-  Raises:
-    stem.socket.ProtocolError the content from the socket is malformed
-    stem.socket.SocketClosed if the socket closes before we receive a complete
-      message
+  :raises:
+    * :class:`stem.socket.ProtocolError` the content from the socket is malformed
+    * :class:`stem.socket.SocketClosed` if the socket closes before we receive a complete message
   """
   
   parsed_content, raw_content = [], ""
@@ -547,13 +516,11 @@ def recv_message(control_file):
 def send_formatting(message):
   """
   Performs the formatting expected from sent control messages. For more
-  information see the stem.socket.send_message function.
+  information see the :func:`stem.socket.send_message` function.
   
-  Arguments:
-    message (str) - message to be formatted
+  :param str message: message to be formatted
   
-  Returns:
-    str of the message wrapped by the formatting expected from controllers
+  :returns: str of the message wrapped by the formatting expected from controllers
   """
   
   # From control-spec section 2.2...
@@ -572,4 +539,16 @@ def send_formatting(message):
     return "+%s\r\n.\r\n" % message.replace("\n", "\r\n")
   else:
     return message + "\r\n"
+
+class ControllerError(Exception):
+  "Base error for controller communication issues."
+
+class ProtocolError(ControllerError):
+  "Malformed content from the control socket."
+
+class SocketError(ControllerError):
+  "Error arose while communicating with the control socket."
+
+class SocketClosed(SocketError):
+  "Control socket was closed before completing the message."
 
