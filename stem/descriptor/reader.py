@@ -103,7 +103,7 @@ class ParsingFailure(FileSkipped):
 class UnrecognizedType(FileSkipped):
   """
   File doesn't contain descriptor data. This could either be due to its file
-  type or because it doens't conform to a recognizable descriptor type.
+  type or because it doesn't conform to a recognizable descriptor type.
   """
   
   def __init__(self, mime_type):

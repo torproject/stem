@@ -37,7 +37,7 @@ Extra-info descriptors are available from a few sources...
     |- MIN - smallest rate at which a descriptor was downloaded in B/s
     |- MAX - largest rate at which a descriptor was downloaded in B/s
     |- D1-4 and D6-9 - rate of the slowest x/10 download rates in B/s
-    |- Q1 and Q3 - rate of the slowest and fastest querter download rates in B/s
+    |- Q1 and Q3 - rate of the slowest and fastest quarter download rates in B/s
     +- MD - median download rate in B/s
   
   parse_file - Iterates over the extra-info descriptors in a file.
@@ -179,6 +179,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var str geoip_db_digest: sha1 of geoIP database file
   :var str signature: **\*** signature for this extrainfo descriptor
   
+  **Bi-directional connection usage:**
+  
   :var datetime conn_bi_direct_end: end of the sampling interval
   :var int conn_bi_direct_interval: seconds per interval
   :var int conn_bi_direct_below: connections that read/wrote less than 20 KiB
@@ -203,7 +205,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var list cell_processed_cells: measurement of processed cells per circuit
   :var list cell_queued_cells: measurement of queued cells per circuit
   :var list cell_time_in_queue: mean enqueued time in milliseconds for cells
-  :var int cell_circuits_per_decile: mean number of circuits in a deciles
+  :var int cell_circuits_per_decile: mean number of circuits in a decile
   
   **Directory Mirror Attributes:**
   

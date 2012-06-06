@@ -152,7 +152,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   :var stem.exit_policy.ExitPolicy exit_policy: **\*** stated exit policy
   :var list family: **\*** nicknames or fingerprints of declared family
   
-  :var int average_bandwidth: **\*** averate rate it's willing to relay in bytes/s
+  :var int average_bandwidth: **\*** average rate it's willing to relay in bytes/s
   :var int burst_bandwidth: **\*** burst rate it's willing to relay in bytes/s
   :var int observed_bandwidth: **\*** estimated capacity based on usage in bytes/s
   
@@ -271,7 +271,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   
   def get_annotations(self):
     """
-    Provides content that appeard prior to the descriptor. If this comes from
+    Provides content that appeared prior to the descriptor. If this comes from
     the cached-descriptors file then this commonly contains content like...
     
     ::
