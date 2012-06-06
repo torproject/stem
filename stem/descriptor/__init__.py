@@ -1,11 +1,15 @@
 """
 Package for parsing and processing descriptor data.
 
-parse_file - Iterates over the descriptors in a file.
-Descriptor - Common parent for all descriptor file types.
-  |- get_path - location of the descriptor on disk if it came from a file
-  |- get_unrecognized_lines - unparsed descriptor content
-  +- __str__ - string that the descriptor was made from
+**Module Overview:**
+
+::
+
+  parse_file - Iterates over the descriptors in a file.
+  Descriptor - Common parent for all descriptor file types.
+    |- get_path - location of the descriptor on disk if it came from a file
+    |- get_unrecognized_lines - unparsed descriptor content
+    +- __str__ - string that the descriptor was made from
 """
 
 __all__ = ["descriptor", "reader", "extrainfo_descriptor", "server_descriptor", "parse_file", "Descriptor"]
@@ -23,16 +27,14 @@ def parse_file(path, descriptor_file):
   """
   Provides an iterator for the descriptors within a given file.
   
-  Arguments:
-    path (str)             - absolute path to the file's location on disk
-    descriptor_file (file) - opened file with the descriptor contents
+  :param str path: absolute path to the file's location on disk
+  :param file descriptor_file: opened file with the descriptor contents
   
-  Returns:
-    iterator for Descriptor instances in the file
+  :returns: iterator for :class:`stem.descriptor.Descriptor` instances in the file
   
-  Raises:
-    TypeError if we can't match the contents of the file to a descriptor type
-    IOError if unable to read from the descriptor_file
+  :raises:
+    * TypeError if we can't match the contents of the file to a descriptor type
+    * IOError if unable to read from the descriptor_file
   """
   
   import stem.descriptor.server_descriptor
@@ -93,8 +95,7 @@ class Descriptor:
     """
     Provides the absolute path that we loaded this descriptor from.
     
-    Returns:
-      str with the absolute path of the descriptor source
+    :returns: str with the absolute path of the descriptor source
     """
     
     return self._path
@@ -105,8 +106,7 @@ class Descriptor:
     not know how to process. This is most common due to new descriptor fields
     that this library does not yet know how to process. Patches welcome!
     
-    Returns:
-      list of lines of unrecognized content
+    :returns: list of lines of unrecognized content
     """
     
     raise NotImplementedError
@@ -122,13 +122,11 @@ def _read_until_keyword(keyword, descriptor_file, inclusive = False):
   Reads from the descriptor file until we get to the given keyword or reach the
   end of the file.
   
-  Arguments:
-    keyword (str)          - keyword we want to read until
-    descriptor_file (file) - file with the descriptor content
-    inclusive (bool)       - includes the line with the keyword if True
+  :param str keyword: keyword we want to read until
+  :param file descriptor_file: file with the descriptor content
+  :param bool inclusive: includes the line with the keyword if True
   
-  Returns:
-    list with the lines until we find the keyword
+  :returns: list with the lines until we find the keyword
   """
   
   content = []
@@ -156,15 +154,11 @@ def _get_pseudo_pgp_block(remaining_contents):
   Checks if given contents begins with a pseudo-Open-PGP-style block and, if
   so, pops it off and provides it back to the caller.
   
-  Arguments:
-    remaining_contents (list) - lines to be checked for a public key block
+  :param list remaining_contents: lines to be checked for a public key block
   
-  Returns:
-    str with the armor wrapped contents or None if it doesn't exist
+  :returns: str with the armor wrapped contents or None if it doesn't exist
   
-  Raises:
-    ValueError if the contents starts with a key block but it's malformed (for
-    instance, if it lacks an ending line)
+  :raises: ValueError if the contents starts with a key block but it's malformed (for instance, if it lacks an ending line)
   """
   
   if not remaining_contents:
@@ -202,19 +196,17 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords):
   entries because this influences the resulting exit policy, but for everything
   else in server descriptors the order does not matter.
   
-  Arguments:
-    raw_contents (str) - descriptor content provided by the relay
-    validate (bool)    - checks the validity of the descriptor's content if
-                         True, skips these checks otherwise
-    extra_keywords (list) - entity keywords to put into a separate listing with
-                         ordering intact
+  :param str raw_contents: descriptor content provided by the relay
+  :param bool validate: checks the validity of the descriptor's content if True, skips these checks otherwise
+  :param list extra_keywords: entity keywords to put into a separate listing with ordering intact
   
-  Returns:
+  :returns:
     tuple with the following attributes...
-      entries (dict)      - keyword => (value, pgp key) entries
-      first_keyword (str) - keyword of the first line
-      last_keyword (str)  - keyword of the last line
-      extra_entries (list) - lines containing entries matching extra_keywords
+    
+    * **entries (dict)** - keyword => (value, pgp key) entries
+    * **first_keyword (str)** - keyword of the first line
+    * **last_keyword (str)**  - keyword of the last line
+    * **extra_entries (list)** - lines containing entries matching extra_keywords
   """
   
   entries = {}

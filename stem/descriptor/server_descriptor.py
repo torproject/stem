@@ -3,24 +3,28 @@ Parsing for Tor server descriptors, which contains the infrequently changing
 information about a Tor relay (contact information, exit policy, public keys,
 etc). This information is provided from a few sources...
 
-- control port via 'GETINFO desc/*' queries
-- the 'cached-descriptors' file in tor's data directory
-- tor metrics, at https://metrics.torproject.org/data.html
-- directory authorities and mirrors via their DirPort
+* control port via 'GETINFO desc/*' queries
+* the 'cached-descriptors' file in tor's data directory
+* tor metrics, at https://metrics.torproject.org/data.html
+* directory authorities and mirrors via their DirPort
 
-parse_file - Iterates over the server descriptors in a file.
-ServerDescriptor - Tor server descriptor.
-  |  |- RelayDescriptor - Server descriptor for a relay.
-  |  |  +- is_valid - checks the signature against the descriptor content
-  |  |
-  |  +- BridgeDescriptor - Scrubbed server descriptor for a bridge.
-  |     |- is_scrubbed - checks if our content has been properly scrubbed
-  |     +- get_scrubbing_issues - description of issues with our scrubbing
-  |
-  |- digest - calculates the digest value for our content
-  |- get_unrecognized_lines - lines with unrecognized content
-  |- get_annotations - dictionary of content prior to the descriptor entry
-  +- get_annotation_lines - lines that provided the annotations
+**Module Overview:**
+
+::
+
+  parse_file - Iterates over the server descriptors in a file.
+  ServerDescriptor - Tor server descriptor.
+    |  |- RelayDescriptor - Server descriptor for a relay.
+    |  |  +- is_valid - checks the signature against the descriptor content
+    |  |
+    |  +- BridgeDescriptor - Scrubbed server descriptor for a bridge.
+    |     |- is_scrubbed - checks if our content has been properly scrubbed
+    |     +- get_scrubbing_issues - description of issues with our scrubbing
+    |
+    |- digest - calculates the digest value for our content
+    |- get_unrecognized_lines - lines with unrecognized content
+    |- get_annotations - dictionary of content prior to the descriptor entry
+    +- get_annotation_lines - lines that provided the annotations
 """
 
 import re
@@ -39,7 +43,7 @@ try:
   import rsa
   IS_RSA_AVAILABLE = True
 except ImportError:
-  log.info("Unable to import the rsa module. Because of this we'll be unable to verify descriptor integrity.")
+  log.info("Unable to import the rsa module. Because of this we'll be unable to verify descriptor signature integrity.")
   IS_RSA_AVAILABLE = False
 
 # relay descriptors must have exactly one of the following
@@ -75,17 +79,14 @@ def parse_file(descriptor_file, validate = True):
   Iterates over the server descriptors in a file. This can read either relay or
   bridge server descriptors.
   
-  Arguments:
-    descriptor_file (file) - file with descriptor content
-    validate (bool)        - checks the validity of the descriptor's content if
-                             True, skips these checks otherwise
+  :param file descriptor_file: file with descriptor content
+  :param bool validate: checks the validity of the descriptor's content if True, skips these checks otherwise
   
-  Returns:
-    iterator for ServerDescriptor instances in the file
+  :returns: iterator for ServerDescriptor instances in the file
   
-  Raises:
-    ValueError if the contents is malformed and validate is True
-    IOError if the file can't be read
+  :raises:
+    * ValueError if the contents is malformed and validate is True
+    * IOError if the file can't be read
   """
   
   # Handler for relay descriptors
@@ -134,48 +135,46 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   """
   Common parent for server descriptors.
   
-  Attributes:
-    nickname (str)       - relay's nickname (*)
-    fingerprint (str)    - identity key fingerprint
-    published (datetime) - time in GMT when this descriptor was made (*)
-    
-    address (str)        - IPv4 address of the relay (*)
-    or_port (int)        - port used for relaying (*)
-    socks_port (int)     - (deprecated, always zero) port used as client (*)
-    dir_port (int)       - port used for descriptor mirroring (*)
-    
-    platform (str)         - line with operating system and tor version
-    tor_version (stem.version.Version) - version of tor
-    operating_system (str) - operating system
-    uptime (int)           - uptime when published in seconds
-    contact (str)          - contact information
-    exit_policy (stem.exit_policy.ExitPolicy) - stated exit policy (*)
-    family (list)          - nicknames or fingerprints of declared family (*)
-    
-    average_bandwidth (int)  - averate rate it's willing to relay in bytes/s (*)
-    burst_bandwidth (int)    - burst rate it's willing to relay in bytes/s (*)
-    observed_bandwidth (int) - estimated capacity based on usage in bytes/s (*)
-    
-    link_protocols (list)     - link protocols supported by the relay
-    circuit_protocols (list)  - circuit protocols supported by the relay
-    hibernating (bool)        - hibernating when published (*)
-    allow_single_hop_exits (bool) - flag if single hop exiting is allowed (*)
-    extra_info_cache (bool)   - flag if a mirror for extra-info documents (*)
-    extra_info_digest (str)   - hex encoded digest of our extra-info document
-    hidden_service_dir (list) - hidden service descriptor versions it stores
-    eventdns (bool)           - (deprecated, always unset) flag for evdns backend
-    
-    Deprecated, moved to extra-info descriptor...
-      read_history_end (datetime) - end of the sampling interval
-      read_history_interval (int) - seconds per interval
-      read_history_values (list)  - bytes read during each interval
-      
-      write_history_end (datetime) - end of the sampling interval
-      write_history_interval (int) - seconds per interval
-      write_history_values (list)  - bytes written during each interval
+  :var str nickname: **\*** relay's nickname
+  :var str fingerprint: identity key fingerprint
+  :var datetime published: **\*** time in GMT when this descriptor was made
   
-  (*) attribute is either required when we're parsed with validation or has a
-      default value, others are left as None if undefined
+  :var str address: **\*** IPv4 address of the relay
+  :var int or_port: **\*** port used for relaying
+  :var int socks_port: **\*** port used as client (deprecated, always zero)
+  :var int dir_port: **\*** port used for descriptor mirroring
+  
+  :var str platform: line with operating system and tor version
+  :var stem.version.Version tor_version: version of tor
+  :var str operating_system: operating system
+  :var int uptime: uptime when published in seconds
+  :var str contact: contact information
+  :var stem.exit_policy.ExitPolicy exit_policy: **\*** stated exit policy
+  :var list family: **\*** nicknames or fingerprints of declared family
+  
+  :var int average_bandwidth: **\*** averate rate it's willing to relay in bytes/s
+  :var int burst_bandwidth: **\*** burst rate it's willing to relay in bytes/s
+  :var int observed_bandwidth: **\*** estimated capacity based on usage in bytes/s
+  
+  :var list link_protocols: link protocols supported by the relay
+  :var list circuit_protocols: circuit protocols supported by the relay
+  :var bool hibernating: **\*** hibernating when published
+  :var bool allow_single_hop_exits: **\*** flag if single hop exiting is allowed
+  :var bool extra_info_cache: **\*** flag if a mirror for extra-info documents
+  :var str extra_info_digest: hex encoded digest of our extra-info document
+  :var bool eventdns: flag for evdns backend (deprecated, always unset)
+  
+  Deprecated, moved to extra-info descriptor...
+  
+  :var datetime read_history_end: end of the sampling interval
+  :var int read_history_interval: seconds per interval
+  :var list read_history_values: bytes read during each interval
+  
+  :var datetime write_history_end: end of the sampling interval
+  :var int write_history_interval: seconds per interval
+  :var list write_history_values: bytes written during each interval
+  
+  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   """
   
   def __init__(self, raw_contents, validate = True, annotations = None):
@@ -188,14 +187,11 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     validation can be disables to either improve performance or be accepting of
     malformed data.
     
-    Arguments:
-      raw_contents (str) - descriptor content provided by the relay
-      validate (bool)    - checks the validity of the descriptor's content if
-                           True, skips these checks otherwise
-      annotations (list) - lines that appeared prior to the descriptor
+    :param str raw_contents: descriptor content provided by the relay
+    :param bool validate: checks the validity of the descriptor's content if True, skips these checks otherwise
+    :param list annotations: lines that appeared prior to the descriptor
     
-    Raises:
-      ValueError if the contents is malformed and validate is True
+    :raises: ValueError if the contents is malformed and validate is True
     """
     
     stem.descriptor.Descriptor.__init__(self, raw_contents)
@@ -262,11 +258,10 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     server descriptor entry for this relay.
     
     Note that network status entries exclude the padding, so you'll need to add
-    a '=' to it so they'll match...
-    https://en.wikipedia.org/wiki/Base64#Padding
+    a '=' to it so they'll match (`explanation
+    <https://en.wikipedia.org/wiki/Base64#Padding>`_).
     
-    Returns:
-      str with the digest value for this server descriptor
+    :returns: str with the digest value for this server descriptor
     """
     
     raise NotImplementedError("Unsupported Operation: this should be implemented by the ServerDescriptor subclass")
@@ -279,11 +274,12 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     Provides content that appeard prior to the descriptor. If this comes from
     the cached-descriptors file then this commonly contains content like...
     
+    ::
+    
       @downloaded-at 2012-03-18 21:18:29
       @source "173.254.216.66"
     
-    Returns:
-      dict with the key/value pairs in our annotations
+    :returns: dict with the key/value pairs in our annotations
     """
     
     if self._annotation_dict is None:
@@ -305,8 +301,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     is the same as the get_annotations() results, but with the unparsed lines
     and ordering retained.
     
-    Returns:
-      list with the lines of annotation that came before this descriptor
+    :returns: list with the lines of annotation that came before this descriptor
     """
     
     return self._annotation_lines
@@ -316,12 +311,10 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     Parses a series of 'keyword => (value, pgp block)' mappings and applies
     them as attributes.
     
-    Arguments:
-      entries (dict)  - descriptor contents to be applied
-      validate (bool) - checks the validity of descriptor content if True
+    :param dict entries: descriptor contents to be applied
+    :param bool validate: checks the validity of descriptor content if True
     
-    Raises:
-      ValueError if an error occures in validation
+    :raises: ValueError if an error occures in validation
     """
     
     for keyword, values in entries.items():
@@ -516,13 +509,11 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     Does a basic check that the entries conform to this descriptor type's
     constraints.
     
-    Arguments:
-      entries (dict)      - keyword => (value, pgp key) entries
-      first_keyword (str) - keyword of the first line
-      last_keyword (str)  - keyword of the last line
+    :param dict entries: keyword => (value, pgp key) entries
+    :param str first_keyword: keyword of the first line
+    :param str last_keyword: keyword of the last line
     
-    Raises:
-      ValueError if an issue arises in validation
+    :raises: ValueError if an issue arises in validation
     """
     
     required_fields = self._required_fields()
@@ -558,16 +549,13 @@ class ServerDescriptor(stem.descriptor.Descriptor):
 
 class RelayDescriptor(ServerDescriptor):
   """
-  Server descriptor, as specified in...
-  https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt
+  Server descriptor (`specification <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_)
   
-  Attributes:
-    onion_key (str)   - key used to encrypt EXTEND cells (*)
-    signing_key (str) - relay's long-term identity key (*)
-    signature (str)   - signature for this descriptor (*)
+  :var str onion_key: **\*** key used to encrypt EXTEND cells
+  :var str signing_key: **\*** relay's long-term identity key
+  :var str signature: **\*** signature for this descriptor
   
-  (*) attribute is either required when we're parsed with validation or has a
-      default value, others are left as None if undefined
+  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   """
   
   def __init__(self, raw_contents, validate = True, annotations = None):
@@ -593,8 +581,7 @@ class RelayDescriptor(ServerDescriptor):
     """
     Validates that our content matches our signature.
     
-    Returns:
-      True if our signature matches our content, False otherwise
+    :returns: True if our signature matches our content, False otherwise
     """
     
     raise NotImplementedError # TODO: finish implementing
@@ -668,13 +655,9 @@ class RelayDescriptor(ServerDescriptor):
 
 class BridgeDescriptor(ServerDescriptor):
   """
-  Bridge descriptor, as specified in...
-  https://metrics.torproject.org/formats.html#bridgedesc
+  Bridge descriptor (`specification <https://metrics.torproject.org/formats.html#bridgedesc>`_)
   
-  Attributes:
-    address_alt (list) - alternative for our address/or_port attributes, each
-                         entry is a tuple of the form...
-                         (address (str), port (int), is_ipv6 (bool))
+  :var list address_alt: alternative for our address/or_port attributes, each entry is a tuple of the form ``(address (str), port (int), is_ipv6 (bool))``
   """
   
   def __init__(self, raw_contents, validate = True, annotations = None):
@@ -737,8 +720,7 @@ class BridgeDescriptor(ServerDescriptor):
     descriptor specification. Validation is a moving target so this may not
     be fully up to date.
     
-    Returns:
-      True if we're scrubbed, False otherwise
+    :returns: True if we're scrubbed, False otherwise
     """
     
     return self.get_scrubbing_issues() == []
@@ -747,9 +729,7 @@ class BridgeDescriptor(ServerDescriptor):
     """
     Provides issues with our scrubbing.
     
-    Returns:
-      list of strings which describe issues we have with our scrubbing, this
-      list is empty if we're properly scrubbed
+    :returns: list of strings which describe issues we have with our scrubbing, this list is empty if we're properly scrubbed
     """
     
     if self._scrubbing_issues == None:
