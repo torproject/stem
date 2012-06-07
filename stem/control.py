@@ -200,8 +200,6 @@ class BaseController:
     """
     
     return self._socket
-
-  
   
   def add_status_listener(self, callback, spawn = True):
     """
@@ -481,46 +479,46 @@ class Controller(BaseController):
     except stem.socket.ControllerError, exc:
       if default == UNDEFINED: raise exc
       else: return default
-
+  
   def get_version(self):
     """
     A convenience method to get tor version that current controller is
     connected to.
-
+    
     :returns: :class:`stem.version.Version`
-
+    
     :raises:
       * :class:`stem.socket.ControllerError` if unable to query the version
       * ValueError if unable to parse the version
     """
-
+    
     import stem.version
     raw_str = self.get_info("version")
     version_str = raw_str[:raw_str.find(' ')]
     return stem.version.Version(version_str)
-
+  
   def authenticate(self, *args, **kwargs):
     """
     A convenience method to authenticate the controller.
-
+    
     :param: see :func:`stem.connection.authenticate`
-
+    
     :raises: see :func:`stem.connection.authenticate`
     """
-
+    
     import stem.connection
     stem.connection.authenticate(self, *args, **kwargs)
-
+  
   def protocolinfo(self):
     """
     A convenience method to get the protocol info of the controller.
-  
+    
     :returns: :class:`stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
-  
+    
     :raises:
       * :class:`stem.socket.ProtocolError` if the PROTOCOLINFO response is malformed
       * :class:`stem.socket.SocketError` if problems arise in establishing or using the socket
     """
-
+    
     import stem.connection
     return stem.connection.get_protocolinfo(self)
