@@ -14,12 +14,15 @@ interacting at a higher level.
   
   Controller - General controller class intended for direct use.
     +- get_info - issues a GETINFO query
+    +- get_version - convenient method to get tor version
   
   BaseController - Base controller class asynchronous message handling.
     |- msg - communicates with the tor process
     |- is_alive - reports if our connection to tor is open or closed
     |- connect - connects or reconnects to tor
     |- close - shuts down our connection to the tor process
+    |- authenticate - convenient method to authenticate the controller
+    |- protocolinfo - convenient method to get the protocol info
     |- get_socket - provides the socket used for control communication
     |- add_status_listener - notifies a callback of changes in our status
     |- remove_status_listener - prevents further notification of status changes
@@ -197,6 +200,26 @@ class BaseController:
     """
     
     return self._socket
+
+  def authenticate(self, *args, **kwargs):
+    """
+    A convenient method to authenticate the controller. See the docstring of 
+    :func:`stem.connection.authenticate` for details about parameters and 
+    exceptions.
+    """
+
+    import stem.connection
+    stem.connection.authenticate(self, *args, **kwargs)
+
+  def protocolinfo(self):
+    """
+    A convenient method to get the protocol info of the controller. See the
+    docstring of :func:`stem.connection.get_protocolinfo()` for details about 
+    params, return value, and exceptions.
+    """
+
+    import stem.connection
+    return stem.connection.get_protocolinfo(self)
   
   def add_status_listener(self, callback, spawn = True):
     """
@@ -476,4 +499,13 @@ class Controller(BaseController):
     except stem.socket.ControllerError, exc:
       if default == UNDEFINED: raise exc
       else: return default
+
+  def get_version(self):
+    """
+    A convenient method to get tor version from controller. See the docstring
+    of :func:`get_info` for details about parameters, return value and 
+    exceptions.
+    """
+
+    return self.get_info("version")
 
