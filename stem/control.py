@@ -484,9 +484,9 @@ class Controller(BaseController):
     """
     A convenience method to get tor version that current controller is
     connected to.
-    
+	
     :returns: :class:`stem.version.Version`
-    
+	
     :raises:
       * :class:`stem.socket.ControllerError` if unable to query the version
       * ValueError if unable to parse the version
