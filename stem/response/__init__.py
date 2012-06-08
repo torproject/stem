@@ -25,7 +25,7 @@ Parses replies from the control socket.
 
 from __future__ import with_statement
 
-__all__ = ["getinfo", "protocolinfo", "authchallenge", "convert", "ControlMessage", "ControlLine"]
+__all__ = ["getinfo", "getconf", "protocolinfo", "authchallenge", "convert", "ControlMessage", "ControlLine"]
 
 import re
 import threading
@@ -49,6 +49,7 @@ def convert(response_type, message):
   subclass for its response type. Recognized types include...
   
     * GETINFO
+    * GETCONF
     * PROTOCOLINFO
     * AUTHCHALLENGE
   
@@ -59,10 +60,12 @@ def convert(response_type, message):
   
   :raises:
     * :class:`stem.socket.ProtocolError` the message isn't a proper response of that type
+    * :class:`stem.response.InvalidRequest` the request was invalid
     * TypeError if argument isn't a :class:`stem.response.ControlMessage` or response_type isn't supported
   """
   
   import stem.response.getinfo
+  import stem.response.getconf
   import stem.response.protocolinfo
   import stem.response.authchallenge
   
@@ -71,6 +74,8 @@ def convert(response_type, message):
   
   if response_type == "GETINFO":
     response_class = stem.response.getinfo.GetInfoResponse
+  elif response_type == "GETCONF":
+    response_class = stem.response.getconf.GetConfResponse
   elif response_type == "PROTOCOLINFO":
     response_class = stem.response.protocolinfo.ProtocolInfoResponse
   elif response_type == "AUTHCHALLENGE":
@@ -408,3 +413,8 @@ def _get_quote_indeces(line, escaped):
   
   return tuple(indices)
 
+class InvalidRequest(Exception):
+  """
+  Base Exception class for invalid requests
+  """
+  pass
