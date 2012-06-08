@@ -6,7 +6,7 @@ import unittest
 
 import stem.socket
 import stem.response
-import stem.response.getinfo
+import stem.response.getconf
 import test.mocking as mocking
 
 EMPTY_RESPONSE = "250 OK"
