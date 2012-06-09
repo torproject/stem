@@ -134,4 +134,42 @@ class TestController(unittest.TestCase):
         auth_methods.append(stem.response.protocolinfo.AuthMethod.NONE)
       
       self.assertEqual(tuple(auth_methods), protocolinfo.auth_methods)
+  
+  def test_getconf(self):
+    """
+    Exercises GETCONF with valid and invalid queries.
+    """
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      # successful single query
+      
+      control_port = str(runner.get_tor_socket().get_port())
+      torrc_path = runner.get_torrc_path()
+      self.assertEqual(control_port, controller.get_conf("ControlPort"))
+      self.assertEqual(control_port, controller.get_conf("ControlPort", "la-di-dah"))
+      
+      # succeessful batch query
+      
+      expected = {"ControlPort": control_port}
+      self.assertEqual(expected, controller.get_conf(["ControlPort"]))
+      self.assertEqual(expected, controller.get_conf(["ControlPort"], "la-di-dah"))
+      
+      getconf_params = set(["ControlPort", "DirPort", "DataDirectory"])
+      self.assertEqual(getconf_params, set(controller.get_conf(["ControlPort",
+        "DirPort", "DataDirectory"])))
+      
+      # non-existant option
+      
+      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "blarg")
+      self.assertEqual("la-di-dah", controller.get_conf("blarg", "la-di-dah"))
+      
+      # empty input
+      
+      self.assertRaises(stem.socket.ControllerError, controller.get_conf, "")
+      self.assertEqual("la-di-dah", controller.get_conf("", "la-di-dah"))
+      
+      self.assertEqual({}, controller.get_conf([]))
+      self.assertEqual({}, controller.get_conf([], {}))
 
