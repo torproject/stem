@@ -531,3 +531,53 @@ class Controller(BaseController):
     
     return stem.connection.get_protocolinfo(self)
 
+  def get_conf(self, param, default = None):
+    """
+    Queries the control socket for the values of given configuration options. If
+    provided a default then that's returned as the if the GETCONF option is undefined
+    or if the call fails for any reason (invalid configuration option, error
+    response, control port closed, initiated, etc).
+    
+    :param str,list param: GETCONF option or options to be queried
+    :param object default: response if the query fails
+    
+    :returns:
+      Response depends upon how we were called as follows...
+      
+      * str with the response if our param was a str
+      * dict with the param => response mapping if our param was a list
+      * default if one was provided and our call failed
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails, and we weren't provided a default response
+      :class:`stem.socket.InvalidRequest` if configuration option requested was invalid.
+    """
+    
+    if isinstance(param, str):
+      is_multiple = False
+      param = [param]
+    else:
+      is_multiple = True
+    
+    try:
+      response = self.msg("GETCONF %s" % " ".join(param))
+      stem.response.convert("GETCONF", response)
+      
+      # error if we got back different parameters than we requested
+      requested_params = set(param)
+      reply_params = set(response.entries.keys())
+      
+      if requested_params != reply_params:
+        requested_label = ", ".join(requested_params)
+        reply_label = ", ".join(reply_params)
+        
+        raise stem.socket.ProtocolError("GETCONF reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (requested_label, reply_label))
+      
+      if is_multiple:
+        return response.entries
+      else:
+        return response.entries[param[0]]
+    except stem.socket.ControllerError, exc:
+      if default is None: raise exc
+      else: return default
+
