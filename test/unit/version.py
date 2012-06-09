@@ -4,6 +4,7 @@ Unit tests for the stem.version.Version parsing and class.
 
 import unittest
 import stem.version
+from stem.version import Version
 import stem.util.system
 
 import test.mocking as mocking
@@ -43,23 +44,23 @@ class TestVersion(unittest.TestCase):
     
     # valid versions with various number of compontents to the version
     
-    version = stem.version.Version("0.1.2.3-tag")
+    version = Version("0.1.2.3-tag")
     self.assert_versions_match(version, 0, 1, 2, 3, "tag")
     
-    version = stem.version.Version("0.1.2.3")
+    version = Version("0.1.2.3")
     self.assert_versions_match(version, 0, 1, 2, 3, None)
     
-    version = stem.version.Version("0.1.2-tag")
+    version = Version("0.1.2-tag")
     self.assert_versions_match(version, 0, 1, 2, None, "tag")
     
-    version = stem.version.Version("0.1.2")
+    version = Version("0.1.2")
     self.assert_versions_match(version, 0, 1, 2, None, None)
     
     # checks an empty tag
-    version = stem.version.Version("0.1.2.3-")
+    version = Version("0.1.2.3-")
     self.assert_versions_match(version, 0, 1, 2, 3, "")
     
-    version = stem.version.Version("0.1.2-")
+    version = Version("0.1.2-")
     self.assert_versions_match(version, 0, 1, 2, None, "")
     
     # checks invalid version strings
@@ -101,7 +102,7 @@ class TestVersion(unittest.TestCase):
     Checks that we can be compared with other types.
     """
     
-    test_version = stem.version.Version("0.1.2.3")
+    test_version = Version("0.1.2.3")
     self.assertNotEqual(test_version, None)
     self.assertTrue(test_version > None)
     
@@ -117,6 +118,84 @@ class TestVersion(unittest.TestCase):
     self.assert_string_matches("0.1.2.3-tag")
     self.assert_string_matches("0.1.2.3")
     self.assert_string_matches("0.1.2")
+  
+  def test_requirements_greater_than(self):
+    """
+    Checks a VersionRequirements with a single greater_than rule.
+    """
+    
+    requirements = stem.version.VersionRequirements()
+    requirements.greater_than(Version("0.2.2.36"))
+    
+    self.assertTrue(Version("0.2.2.36").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.2.37").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.3.36").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.2.35").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.1.38").meets_requirements(requirements))
+    
+    requirements = stem.version.VersionRequirements()
+    requirements.greater_than(Version("0.2.2.36"), False)
+    
+    self.assertFalse(Version("0.2.2.35").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.2.36").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.2.37").meets_requirements(requirements))
+  
+  def test_requirements_less_than(self):
+    """
+    Checks a VersionRequirements with a single less_than rule.
+    """
+    
+    requirements = stem.version.VersionRequirements()
+    requirements.less_than(Version("0.2.2.36"))
+    
+    self.assertTrue(Version("0.2.2.36").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.2.35").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.1.38").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.2.37").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.3.36").meets_requirements(requirements))
+    
+    requirements = stem.version.VersionRequirements()
+    requirements.less_than(Version("0.2.2.36"), False)
+    
+    self.assertFalse(Version("0.2.2.37").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.2.36").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.2.35").meets_requirements(requirements))
+  
+  def test_requirements_in_range(self):
+    """
+    Checks a VersionRequirements with a single in_range rule.
+    """
+    
+    requirements = stem.version.VersionRequirements()
+    requirements.in_range(Version("0.2.2.36"), Version("0.2.2.38"))
+    
+    self.assertFalse(Version("0.2.2.35").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.2.36").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.2.37").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.2.38").meets_requirements(requirements))
+    
+    # rule for 'anything in the 0.2.2.x series'
+    requirements = stem.version.VersionRequirements()
+    requirements.in_range(Version("0.2.2.0"), Version("0.2.3.0"))
+    
+    for i in xrange(0, 100):
+      self.assertTrue(Version("0.2.2.%i" % i).meets_requirements(requirements))
+  
+  def test_requirements_multiple_rules(self):
+    """
+    Checks a VersionRequirements is the logical 'or' when it has multiple rules.
+    """
+    
+    # rule to say 'anything but the 0.2.2.x series'
+    requirements = stem.version.VersionRequirements()
+    requirements.greater_than(Version("0.2.3.0"))
+    requirements.less_than(Version("0.2.2.0"), False)
+    
+    self.assertTrue(Version("0.2.3.0").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.2.0").meets_requirements(requirements))
+    
+    for i in xrange(0, 100):
+      self.assertFalse(Version("0.2.2.%i" % i).meets_requirements(requirements))
   
   def assert_versions_match(self, version, major, minor, micro, patch, status):
     """
@@ -136,8 +215,8 @@ class TestVersion(unittest.TestCase):
     second (also checking the inverse).
     """
     
-    version1 = stem.version.Version(first_version)
-    version2 = stem.version.Version(second_version)
+    version1 = Version(first_version)
+    version2 = Version(second_version)
     self.assertEqual(version1 > version2, True)
     self.assertEqual(version1 < version2, False)
   
@@ -146,8 +225,8 @@ class TestVersion(unittest.TestCase):
     Asserts that the parsed version of the first version equals the second.
     """
     
-    version1 = stem.version.Version(first_version)
-    version2 = stem.version.Version(second_version)
+    version1 = Version(first_version)
+    version2 = Version(second_version)
     self.assertEqual(version1, version2)
   
   def assert_string_matches(self, version):
@@ -156,5 +235,5 @@ class TestVersion(unittest.TestCase):
     matches the input.
     """
     
-    self.assertEqual(version, str(stem.version.Version(version)))
+    self.assertEqual(version, str(Version(version)))
 

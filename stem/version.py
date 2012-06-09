@@ -7,7 +7,7 @@ easily parsed and compared, for instance...
   >>> my_version = stem.version.get_system_tor_version()
   >>> print my_version
   0.2.1.30
-  >>> my_version > stem.version.Requirement.CONTROL_SOCKET
+  >>> my_version.meets_requirements(stem.version.Requirement.CONTROL_SOCKET)
   True
 
 **Module Overview:**
@@ -15,13 +15,22 @@ easily parsed and compared, for instance...
 ::
 
   get_system_tor_version - gets the version of our system's tor installation
+  
   Version - Tor versioning information.
+    |- meets_requirements - checks if this version meets the given requirements
     |- __str__ - string representation
     +- __cmp__ - compares with another Version
   
+  VersionRequirements - Series of version requirements
+    |- greater_than - adds rule that matches if we're greater than a version
+    |- less_than    - adds rule that matches if we're less than a version
+    +- in_range     - adds rule that matches if we're within a given version range
+  
   Requirement - Enumerations for the version requirements of features.
-    |- GETINFO_CONFIG_TEXT - 'GETINFO config-text' query
-    +- CONTROL_SOCKET      - 'ControlSocket <path>' config option
+    |- AUTH_SAFECOOKIE      - 'SAFECOOKIE' authentication method
+    |- GETINFO_CONFIG_TEXT  - 'GETINFO config-text' query
+    |- TORRC_CONTROL_SOCKET - 'ControlSocket <path>' config option
+    +- TORRC_DISABLE_DEBUGGER_ATTACHMENT - 'DisableDebuggerAttachment' config option
 """
 
 import re
@@ -109,6 +118,24 @@ class Version:
       self.status = status
     else: raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
   
+  def meets_requirements(self, requirements):
+    """
+    Checks if this version meets the requirements for a given feature.
+    
+    Requirements can be either a :class:`stem.version.Version` or
+    :class:`stem.version.VersionRequirements`.
+    
+    :param requirements: requrirements to be checked for
+    """
+    
+    if isinstance(requirements, Version):
+      return self >= requirements
+    else:
+      for rule in requirements.rules:
+        if rule(self): return True
+      
+      return False
+  
   def __str__(self):
     """
     Provides the string used to construct the Version.
@@ -139,7 +166,71 @@ class Version:
     # 'purely informational'
     return 0
 
+class VersionRequirements:
+  """
+  Series of version constraints that can be compared to. For instance, it
+  allows for comparisons like 'if I'm greater than version X in the 0.2.2
+  series, or greater than version Y in the 0.2.3 series'.
+  
+  This is a logical 'or' of the series of rules.
+  """
+  
+  def __init__(self, rule = None):
+    self.rules = []
+    
+    if rule: self.greater_than(rule)
+  
+  def greater_than(self, version, inclusive = True):
+    """
+    Adds a constraint that we're greater than the given version.
+    
+    :param stem.version.Version verison: version we're checking against
+    :param bool inclusive: if comparison is inclusive or not
+    """
+    
+    if inclusive:
+      self.rules.append(lambda v: version <= v)
+    else:
+      self.rules.append(lambda v: version < v)
+  
+  def less_than(self, version, inclusive = True):
+    """
+    Adds a constraint that we're less than the given version.
+    
+    :param stem.version.Version verison: version we're checking against
+    :param bool inclusive: if comparison is inclusive or not
+    """
+    
+    if inclusive:
+      self.rules.append(lambda v: version >= v)
+    else:
+      self.rules.append(lambda v: version > v)
+  
+  def in_range(self, from_version, to_version, from_inclusive = True, to_inclusive = False):
+    """
+    Adds constraint that we're within the range from one version to another.
+    
+    :param stem.version.Version from_verison: beginning of the comparison range
+    :param stem.version.Version to_verison: end of the comparison range
+    :param bool from_inclusive: if comparison is inclusive with the starting version
+    :param bool to_inclusive: if comparison is inclusive with the ending version
+    """
+    
+    if from_inclusive and to_inclusive:
+      new_rule = lambda v: from_version <= v <= to_version
+    elif from_inclusive:
+      new_rule = lambda v: from_version <= v < to_version
+    else:
+      new_rule = lambda v: from_version < v < to_version
+    
+    self.rules.append(new_rule)
+
+safecookie_req = VersionRequirements()
+safecookie_req.in_range(Version("0.2.2.36"), Version("0.2.3.0"))
+safecookie_req.greater_than(Version("0.2.3.13"))
+
 Requirement = stem.util.enum.Enum(
+  ("AUTH_SAFECOOKIE", safecookie_req),
   ("GETINFO_CONFIG_TEXT", Version("0.2.2.7")),
   ("TORRC_CONTROL_SOCKET", Version("0.2.0.30")),
   ("TORRC_DISABLE_DEBUGGER_ATTACHMENT", Version("0.2.3.9")),
