@@ -33,7 +33,7 @@ class GetConfResponse(stem.response.ControlMessage):
             pass
 
       if unrecognized_keywords:
-        raise stem.response.InvalidRequest("GETCONF request contained unrecognized keywords: %s\n" \
+        raise stem.socket.InvalidRequest("GETCONF request contained unrecognized keywords: %s\n" \
             % ', '.join(unrecognized_keywords))
       else:
         raise stem.socket.ProtocolError("GETCONF response contained a non-OK status code:\n%s" % self)

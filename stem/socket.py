@@ -28,6 +28,7 @@ as instances of the :class:`stem.response.ControlMessage` class.
   
   ControllerError - Base exception raised when using the controller.
     |- ProtocolError - Malformed socket data.
+    |- InvalidRequest - Invalid request parameters.
     +- SocketError - Communication with the socket failed.
        +- SocketClosed - Socket has been shut down.
 """
@@ -547,6 +548,9 @@ class ControllerError(Exception):
 
 class ProtocolError(ControllerError):
   "Malformed content from the control socket."
+
+class InvalidRequest(ControllerError):
+  "Base Exception class for invalid requests"
 
 class SocketError(ControllerError):
   "Error arose while communicating with the control socket."

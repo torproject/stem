@@ -73,7 +73,7 @@ class TestGetConfResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(UNRECOGNIZED_KEY_RESPONSE)
-    self.assertRaises(stem.response.InvalidRequest, stem.response.convert, "GETCONF", control_message)
+    self.assertRaises(stem.socket.InvalidRequest, stem.response.convert, "GETCONF", control_message)
   
   def test_invalid_multiline_content(self):
     """
