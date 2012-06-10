@@ -52,6 +52,7 @@ the authentication process. For instance...
   authenticate_none - Authenticates to an open control socket.
   authenticate_password - Authenticates to a socket supporting password auth.
   authenticate_cookie - Authenticates to a socket supporting cookie auth.
+  authenticate_safecookie - Authenticates to a socket supporting safecookie auth.
   
   get_protocolinfo - Issues a PROTOCOLINFO query.
   
@@ -72,8 +73,9 @@ the authentication process. For instance...
     |  |- IncorrectCookieValue - Authentication cookie was rejected.
     |  |- IncorrectCookieSize - Size of the cookie file is incorrect.
     |  |- UnreadableCookieFile - Unable to read the contents of the auth cookie.
-    |  +- AuthChallengeFailed - Failure completing the authchallenge request
-    |     |- AuthSecurityFailure - The computer/network may be compromised.
+    |  +- AuthChallengeFailed - Failure completing the authchallenge request.
+    |     |- AuthChallengeUnsupported - Tor doesn't recognize the AUTHCHALLENGE command.
+    |     |- AuthSecurityFailure - Server provided the wrong nonce credentials.
     |     |- InvalidClientNonce - The client nonce is invalid.
     |     +- UnrecognizedAuthChallengeMethod - AUTHCHALLENGE does not support the given methods.
     |
@@ -83,7 +85,6 @@ the authentication process. For instance...
 """
 
 import os
-import re
 import getpass
 import binascii
 
@@ -97,7 +98,10 @@ import stem.util.connection
 import stem.util.log as log
 from stem.response.protocolinfo import AuthMethod
 
-def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = None):
+CLIENT_HASH_CONSTANT = "Tor safe cookie authentication controller-to-server hash"
+SERVER_HASH_CONSTANT = "Tor safe cookie authentication server-to-controller hash"
+
+def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. This is very
   handy for debugging or CLI setup, handling setup and prompting for a password
@@ -230,28 +234,29 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
       Tor allows for authentication by reading it a cookie file, but rejected
       the contents of that file.
     
+    * **\***:class:`stem.connection.AuthChallengeUnsupported`
+    
+      Tor doesn't recognize the AUTHCHALLENGE command. This is probably a Tor
+      version prior to SAFECOOKIE being implement, but this exception shouldn't
+      arise because we won't attempt SAFECOOKIE auth unless Tor claims to
+      support it.
+    
     * **\***:class:`stem.connection.UnrecognizedAuthChallengeMethod`
-
+    
       Tor couldn't recognize the AUTHCHALLENGE method Stem sent to it. This
       shouldn't happen at all.
-
+    
     * **\***:class:`stem.connection.InvalidClientNonce`
-
+    
       Tor says that the client nonce provided by Stem during the AUTHCHALLENGE
       process is invalid.
-
-    * **\***:class:`stem.connection.AuthSecurityFailure`
-
-      Raised when self is a possibility self security having been compromised.
     
-    * **\***:class:`stem.connection.AuthChallengeFailed`
-
-      The AUTHCHALLENGE command has failed (probably because Stem is connecting
-      to an old version of Tor which doesn't support Safe cookie authentication,
-      could also be because of other reasons).
+    * **\***:class:`stem.connection.AuthSecurityFailure`
+    
+      Nonce value provided by the server was invalid.
     
     * **\***:class:`stem.connection.OpenAuthRejected`
-
+    
       Tor says that it allows for authentication without any credentials, but
       then rejected our authentication attempt.
     
@@ -308,19 +313,17 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
   if protocolinfo_response.cookie_path is None:
     for cookie_auth_method in (AuthMethod.COOKIE, AuthMethod.SAFECOOKIE):
       if cookie_auth_method in auth_methods:
-        try:
-          auth_methods.remove(AuthMethod.COOKIE)
-        except ValueError:
-          pass
-        auth_exceptions.append(NoAuthCookie("our PROTOCOLINFO response did not have the location of our authentication cookie"))
+        auth_methods.remove(cookie_auth_method)
+        
+        exc_msg = "our PROTOCOLINFO response did not have the location of our authentication cookie"
+        auth_exceptions.append(NoAuthCookie(exc_msg, cookie_auth_method == AuthMethod.SAFECOOKIE))
   
   if AuthMethod.PASSWORD in auth_methods and password is None:
     auth_methods.remove(AuthMethod.PASSWORD)
     auth_exceptions.append(MissingPassword("no passphrase provided"))
   
   # iterating over AuthMethods so we can try them in this order
-  for auth_type in (AuthMethod.NONE, AuthMethod.PASSWORD, AuthMethod.SAFECOOKIE,
-      AuthMethod.COOKIE):
+  for auth_type in (AuthMethod.NONE, AuthMethod.PASSWORD, AuthMethod.SAFECOOKIE, AuthMethod.COOKIE):
     if not auth_type in auth_methods: continue
     
     try:
@@ -328,7 +331,7 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
         authenticate_none(controller, False)
       elif auth_type == AuthMethod.PASSWORD:
         authenticate_password(controller, password, False)
-      elif auth_type == AuthMethod.COOKIE or auth_type == AuthMethod.SAFECOOKIE:
+      elif auth_type in (AuthMethod.COOKIE, AuthMethod.SAFECOOKIE):
         cookie_path = protocolinfo_response.cookie_path
         
         if chroot_path:
@@ -350,19 +353,17 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
       log.debug("The authenticate_password method raised a PasswordAuthRejected when password auth should be available. Stem may need to be corrected to recognize this response: %s" % exc)
       auth_exceptions.append(IncorrectPassword(str(exc)))
     except AuthSecurityFailure, exc:
-      log.info("The authenticate_safecookie method raised an AuthSecurityFailure. Security might have been compromised - attack? (%s)" % exc)
+      log.info("Tor failed to provide the nonce expected for safecookie authentication. (%s)" % exc)
       auth_exceptions.append(exc)
-    except (InvalidClientNonce, UnrecognizedAuthChallengeMethod,
-        AuthChallengeFailed), exc:
+    except (InvalidClientNonce, UnrecognizedAuthChallengeMethod, AuthChallengeFailed), exc:
       auth_exceptions.append(exc)
     except (IncorrectCookieSize, UnreadableCookieFile, IncorrectCookieValue), exc:
       auth_exceptions.append(exc)
     except CookieAuthRejected, exc:
-      auth_func = "authenticate_cookie"
-      if exc.auth_type == AuthMethod.SAFECOOKIE:
-        auth_func = "authenticate_safecookie"
+      auth_func = "authenticate_safecookie" if exc.is_safecookie else "authenticate_cookie"
+      
       log.debug("The %s method raised a CookieAuthRejected when cookie auth should be available. Stem may need to be corrected to recognize this response: %s" % (auth_func, exc))
-      auth_exceptions.append(IncorrectCookieValue(str(exc), exc.cookie_path))
+      auth_exceptions.append(IncorrectCookieValue(str(exc), exc.cookie_path, exc.is_safecookie))
     except stem.socket.ControllerError, exc:
       auth_exceptions.append(AuthenticationFailure(str(exc)))
   
@@ -473,47 +474,6 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
     if not suppress_ctl_errors: raise exc
     else: raise PasswordAuthRejected("Socket failed (%s)" % exc)
 
-def _read_cookie(cookie_path, auth_type):
-  """
-  Provides the contents of a given cookie file. If unable to do so this raises
-  an exception of a given type.
-  
-  :param str cookie_path: absolute path of the cookie file
-  :param str auth_type: cookie authentication type (from the AuthMethod Enum)
-  
-  :raises:
-    * :class:`stem.connection.UnreadableCookieFile` if the cookie file is unreadable
-    * :class:`stem.connection.IncorrectCookieSize` if the cookie size is incorrect (not 32 bytes)
-  """
-
-  if not os.path.exists(cookie_path):
-    raise UnreadableCookieFile("Authentication failed: '%s' doesn't exist" % 
-        cookie_path, cookie_path, auth_type = auth_type)
-  
-  # Abort if the file isn't 32 bytes long. This is to avoid exposing arbitrary
-  # file content to the port.
-  #
-  # Without this a malicious socket could, for instance, claim that
-  # '~/.bash_history' or '~/.ssh/id_rsa' was its authentication cookie to trick
-  # us into reading it for them with our current permissions.
-  #
-  # https://trac.torproject.org/projects/tor/ticket/4303
-  
-  auth_cookie_size = os.path.getsize(cookie_path)
-  
-  if auth_cookie_size != 32:
-    exc_msg = "Authentication failed: authentication cookie '%s' is the wrong \
-size (%i bytes instead of 32)" % (cookie_path, auth_cookie_size)
-    raise IncorrectCookieSize(exc_msg, cookie_path, auth_type = auth_type)
-  
-  try:
-    with file(cookie_path, 'rb', 0) as f:
-      cookie_data = f.read()
-      return cookie_data
-  except IOError, exc:
-    raise UnreadableCookieFile("Authentication failed: unable to read '%s' (%s)"
-        % (cookie_path, exc), cookie_path, auth_type = auth_type)
-
 def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
   """
   Authenticates to a control socket that uses the contents of an authentication
@@ -549,7 +509,7 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
     * :class:`stem.connection.IncorrectCookieValue` if the cookie file's value is rejected
   """
   
-  cookie_data = _read_cookie(cookie_path, AuthMethod.COOKIE)
+  cookie_data = _read_cookie(cookie_path, False)
   
   try:
     msg = "AUTHENTICATE %s" % binascii.b2a_hex(cookie_data)
@@ -566,33 +526,37 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
       
       if "*or* authentication cookie." in str(auth_response) or \
          "Authentication cookie did not match expected value." in str(auth_response):
-        raise IncorrectCookieValue(str(auth_response), cookie_path, auth_response)
+        raise IncorrectCookieValue(str(auth_response), cookie_path, False, auth_response)
       else:
-        raise CookieAuthRejected(str(auth_response), cookie_path, auth_response)
+        raise CookieAuthRejected(str(auth_response), cookie_path, False, auth_response)
   except stem.socket.ControllerError, exc:
     try: controller.connect()
     except: pass
     
     if not suppress_ctl_errors: raise exc
-    else: raise CookieAuthRejected("Socket failed (%s)" % exc, cookie_path)
+    else: raise CookieAuthRejected("Socket failed (%s)" % exc, cookie_path, False)
 
 def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True):
   """
   Authenticates to a control socket using the safe cookie method, which is
   enabled by setting the CookieAuthentication torrc option on Tor client's which
-  support it. This uses a two-step process - first, it sends a nonce to the
-  server and receives a challenge from the server of the cookie's contents.
-  Next, it generates a hash digest using the challenge received in the first
-  step and uses it to authenticate to 'controller'.
+  support it.
+  
+  Authentication with this is a two-step process...
+  
+  1. send a nonce to the server and receives a challenge from the server for
+     the cookie's contents
+  2. generate a hash digest using the challenge received in the first step, and
+     use it to authenticate the controller
   
   The IncorrectCookieSize and UnreadableCookieFile exceptions take 
   precedence over the other exception types.
-
-  The UnrecognizedAuthChallengeMethod, AuthChallengeFailed, InvalidClientNonce
-  and CookieAuthRejected exceptions are next in the order of precedence.
-  Depending on the reason, one of these is raised if the first (AUTHCHALLENGE) step
-  fails.
-
+  
+  The AuthChallengeUnsupported, UnrecognizedAuthChallengeMethod,
+  InvalidClientNonce and CookieAuthRejected exceptions are next in the order of
+  precedence. Depending on the reason, one of these is raised if the first
+  (AUTHCHALLENGE) step fails.
+  
   In the second (AUTHENTICATE) step, IncorrectCookieValue or
   CookieAuthRejected maybe raised.
   
@@ -612,74 +576,77 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
     * :class:`stem.connection.CookieAuthRejected` if cookie authentication is attempted but the socket doesn't accept it
     * :class:`stem.connection.IncorrectCookieValue` if the cookie file's value is rejected
     * :class:`stem.connection.UnrecognizedAuthChallengeMethod` if the Tor client fails to recognize the AuthChallenge method
-    * :class:`stem.connection.AuthChallengeFailed` if AUTHCHALLENGE is unimplemented, or if unable to parse AUTHCHALLENGE response
+    * :class:`stem.connection.AuthChallengeUnsupported` if AUTHCHALLENGE is unimplemented, or if unable to parse AUTHCHALLENGE response
     * :class:`stem.connection.AuthSecurityFailure` if AUTHCHALLENGE's response looks like a security attack
     * :class:`stem.connection.InvalidClientNonce` if stem's AUTHCHALLENGE client nonce is rejected for being invalid
   """
   
-  cookie_data = _read_cookie(cookie_path, AuthMethod.SAFECOOKIE)
-  client_nonce =  stem.util.connection.random_bytes(32)
-  client_hash_const = "Tor safe cookie authentication controller-to-server hash"
-  server_hash_const = "Tor safe cookie authentication server-to-controller hash"
-
-  try:
-    challenge_response = _msg(controller, "AUTHCHALLENGE SAFECOOKIE %s" %
-        binascii.b2a_hex(client_nonce))
+  cookie_data = _read_cookie(cookie_path, True)
+  client_nonce = os.urandom(32)
   
-    if not challenge_response.is_ok():
+  try:
+    client_nonce_hex = binascii.b2a_hex(client_nonce)
+    authchallenge_response = _msg(controller, "AUTHCHALLENGE SAFECOOKIE %s" % client_nonce_hex)
+    
+    if not authchallenge_response.is_ok():
       try: controller.connect()
       except: pass
       
-      challenge_response_str = str(challenge_response)
-      if "AUTHCHALLENGE only supports" in challenge_response_str:
-        raise UnrecognizedAuthChallengeMethod(challenge_response_str, cookie_path, AuthMethod.SAFECOOKIE)
-      elif "Invalid base16 client nonce" in challenge_response_str:
-        raise InvalidClientNonce(challenge_response_str, cookie_path)
-      elif "Authentication required." in challenge_response_str:
-        raise AuthChallengeFailed("SAFECOOKIE Authentication unimplemented", cookie_path)
-      elif "Cookie authentication is disabled." in challenge_response_str:
-        raise CookieAuthRejected(challenge_response_str, cookie_path, auth_type = AuthMethod.SAFECOOKIE)
+      authchallenge_response_str = str(authchallenge_response)
+      if "Authentication required." in authchallenge_response_str:
+        raise AuthChallengeUnsupported("SAFECOOKIE authentication isn't supported", cookie_path)
+      elif "AUTHCHALLENGE only supports" in authchallenge_response_str:
+        raise UnrecognizedAuthChallengeMethod(authchallenge_response_str, cookie_path)
+      elif "Invalid base16 client nonce" in authchallenge_response_str:
+        raise InvalidClientNonce(authchallenge_response_str, cookie_path)
+      elif "Cookie authentication is disabled" in authchallenge_response_str:
+        raise CookieAuthRejected(authchallenge_response_str, cookie_path, True)
       else:
-        raise AuthChallengeFailed(challenge_response, cookie_path)
+        raise AuthChallengeFailed(authchallenge_response, cookie_path)
   except stem.socket.ControllerError, exc:
     try: controller.connect()
     except: pass
     
     if not suppress_ctl_errors: raise exc
-    else: raise AuthChallengeFailed("Socket failed (%s)" % exc, cookie_path)
-
+    else: raise AuthChallengeFailed("Socket failed (%s)" % exc, cookie_path, True)
+  
   try:
-    stem.response.convert("AUTHCHALLENGE", challenge_response)
+    stem.response.convert("AUTHCHALLENGE", authchallenge_response)
   except stem.socket.ProtocolError, exc:
     if not suppress_ctl_errors: raise exc
     else: raise AuthChallengeFailed("Unable to parse AUTHCHALLENGE response: %s" % exc, cookie_path)
-
-  expected_server_hash = stem.util.connection.hmac_sha256(server_hash_const,
-      cookie_data + client_nonce + challenge_response.server_nonce)
-  if not stem.util.connection.cryptovariables_equal(challenge_response.server_hash, expected_server_hash):
-    raise AuthSecurityFailure("Server hash is wrong -- attack?", cookie_path)
-
+  
+  expected_server_hash = stem.util.connection.hmac_sha256(SERVER_HASH_CONSTANT,
+      cookie_data + client_nonce + authchallenge_response.server_nonce)
+  
+  if not stem.util.connection.cryptovariables_equal(authchallenge_response.server_hash, expected_server_hash):
+    raise AuthSecurityFailure("Tor provided the wrong server nonce", cookie_path)
+  
   try:
-    client_hash = stem.util.connection.hmac_sha256(client_hash_const,
-        cookie_data + client_nonce + challenge_response.server_nonce)
-    controller.send("AUTHENTICATE %s" % (binascii.b2a_hex(client_hash)))
-    auth_response = controller.recv()
+    client_hash = stem.util.connection.hmac_sha256(CLIENT_HASH_CONSTANT,
+        cookie_data + client_nonce + authchallenge_response.server_nonce)
+    auth_response = _msg(controller, "AUTHENTICATE %s" % (binascii.b2a_hex(client_hash)))
   except stem.socket.ControllerError, exc:
     try: controller.connect()
     except: pass
     
     if not suppress_ctl_errors: raise exc
-    else: raise CookieAuthRejected("Socket failed (%s)" % exc, cookie_path, auth_response, AuthMethod.SAFECOOKIE)
-
+    else: raise CookieAuthRejected("Socket failed (%s)" % exc, cookie_path, True, auth_response)
+  
   # if we got anything but an OK response then err
   if not auth_response.is_ok():
     try: controller.connect()
     except: pass
     
-    if 'Safe cookie response did not match expected value' in auth_response[0]: #Cookie doesn't match
-      raise IncorrectCookieValue(str(auth_response), cookie_path, auth_response, AuthMethod.SAFECOOKIE)
+    # all we have to go on is the error message from tor...
+    # ... Safe cookie response did not match expected value
+    # ... *or* authentication cookie.
+    
+    if "*or* authentication cookie." in str(auth_response) or \
+       "Safe cookie response did not match expected value" in str(auth_response):
+      raise IncorrectCookieValue(str(auth_response), cookie_path, True, auth_response)
     else:
-      raise CookieAuthRejected(str(auth_response), cookie_path, auth_response, AuthMethod.SAFECOOKIE)
+      raise CookieAuthRejected(str(auth_response), cookie_path, True, auth_response)
 
 def get_protocolinfo(controller):
   """
@@ -754,6 +721,44 @@ def _msg(controller, message):
     return controller.recv()
   else:
     return controller.msg(message)
+
+def _read_cookie(cookie_path, is_safecookie):
+  """
+  Provides the contents of a given cookie file.
+  
+  :param str cookie_path: absolute path of the cookie file
+  :param bool is_safecookie: True if this was for SAFECOOKIE authentication, False if for COOKIE
+  
+  :raises:
+    * :class:`stem.connection.UnreadableCookieFile` if the cookie file is unreadable
+    * :class:`stem.connection.IncorrectCookieSize` if the cookie size is incorrect (not 32 bytes)
+  """
+  
+  if not os.path.exists(cookie_path):
+    exc_msg = "Authentication failed: '%s' doesn't exist" % cookie_path
+    raise UnreadableCookieFile(exc_msg, cookie_path, is_safecookie)
+  
+  # Abort if the file isn't 32 bytes long. This is to avoid exposing arbitrary
+  # file content to the port.
+  #
+  # Without this a malicious socket could, for instance, claim that
+  # '~/.bash_history' or '~/.ssh/id_rsa' was its authentication cookie to trick
+  # us into reading it for them with our current permissions.
+  #
+  # https://trac.torproject.org/projects/tor/ticket/4303
+  
+  auth_cookie_size = os.path.getsize(cookie_path)
+  
+  if auth_cookie_size != 32:
+    exc_msg = "Authentication failed: authentication cookie '%s' is the wrong size (%i bytes instead of 32)" % (cookie_path, auth_cookie_size)
+    raise IncorrectCookieSize(exc_msg, cookie_path, is_safecookie)
+  
+  try:
+    with file(cookie_path, 'rb', 0) as f:
+      return f.read()
+  except IOError, exc:
+    exc_msg = "Authentication failed: unable to read '%s' (%s)" % (cookie_path, exc)
+    raise UnreadableCookieFile(exc_msg, cookie_path, is_safecookie)
 
 def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg):
   """
@@ -832,15 +837,14 @@ class CookieAuthFailed(AuthenticationFailure):
   Failure to authenticate with an authentication cookie.
   
   :param str cookie_path: location of the authentication cookie we attempted
-  :param str auth_type:  cookie authentication type (from the AuthMethod Enum)
+  :param bool is_safecookie: True if this was for SAFECOOKIE authentication, False if for COOKIE
+  :param stem.response.ControlMessage auth_response: reply to our authentication attempt
   """
   
-  def __init__(self, message, cookie_path, auth_response = None, auth_type = AuthMethod.COOKIE):
-    """
-    """
+  def __init__(self, message, cookie_path, is_safecookie, auth_response = None):
     AuthenticationFailure.__init__(self, message, auth_response)
+    self.is_safecookie = is_safecookie
     self.cookie_path = cookie_path
-    self.auth_type = auth_type
 
 class CookieAuthRejected(CookieAuthFailed):
   "Socket does not support password authentication."
@@ -857,29 +861,26 @@ class UnreadableCookieFile(CookieAuthFailed):
 class AuthChallengeFailed(CookieAuthFailed):
   """
   AUTHCHALLENGE command has failed.
-
-  :param str cookie_path: path to the cookie file
-  :param str auth_type: cookie authentication type (from the AuthMethod Enum)
   """
   
-  def __init__(self, message, cookie_path, auth_type = AuthMethod.SAFECOOKIE):
-    CookieAuthFailed.__init__(self, message, cookie_path)
-    self.auth_type = auth_type
+  def __init__(self, message, cookie_path):
+    CookieAuthFailed.__init__(self, message, cookie_path, True)
 
+class AuthChallengeUnsupported(AuthChallengeFailed):
+  """
+  AUTHCHALLENGE isn't implemented.
+  """
 
 class UnrecognizedAuthChallengeMethod(AuthChallengeFailed):
   """
   Tor couldn't recognize our AUTHCHALLENGE method.
   
   :var str authchallenge_method: AUTHCHALLENGE method that Tor couldn't recognize
-  :var str cookie_path: path to the cookie file
-  :var str auth_type: cookie authentication type (from the AuthMethod Enum)
   """
   
-  def __init__(self, message, cookie_path, authchallenge_method, auth_type = AuthMethod.SAFECOOKIE):
-    CookieAuthFailed.__init__(self, message, cookie_path)
+  def __init__(self, message, cookie_path, authchallenge_method):
+    AuthChallengeFailed.__init__(self, message, cookie_path)
     self.authchallenge_method = authchallenge_method
-    self.auth_type = auth_type
 
 class AuthSecurityFailure(AuthChallengeFailed):
   "AUTHCHALLENGE response is invalid."
@@ -897,7 +898,15 @@ class NoAuthMethods(MissingAuthInfo):
   "PROTOCOLINFO response didn't have any methods for authenticating."
 
 class NoAuthCookie(MissingAuthInfo):
-  "PROTOCOLINFO response supports cookie auth but doesn't have its path."
+  """
+  PROTOCOLINFO response supports cookie auth but doesn't have its path.
+  
+  :param bool is_safecookie: True if this was for SAFECOOKIE authentication, False if for COOKIE
+  """
+  
+  def __init__(self, message, is_safecookie):
+    AuthenticationFailure.__init__(self, message)
+    self.is_safecookie = is_safecookie
 
 # authentication exceptions ordered as per the authenticate function's pydocs
 AUTHENTICATE_EXCEPTIONS = (
@@ -908,10 +917,10 @@ AUTHENTICATE_EXCEPTIONS = (
   IncorrectCookieSize,
   UnreadableCookieFile,
   IncorrectCookieValue,
+  AuthChallengeUnsupported,
   UnrecognizedAuthChallengeMethod,
   InvalidClientNonce,
   AuthSecurityFailure,
-  AuthChallengeFailed,
   OpenAuthRejected,
   MissingAuthInfo,
   AuthenticationFailure

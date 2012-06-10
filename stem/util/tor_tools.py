@@ -13,7 +13,8 @@ import re
 # case insensitive. Tor doesn't define this in the spec so flipping a coin
 # and going with case insensitive.
 
-FINGERPRINT_PATTERN = re.compile("^[0-9a-fA-F]{40}$")
+HEX_DIGIT = "[0-9a-fA-F]"
+FINGERPRINT_PATTERN = re.compile("^%s{40}$" % HEX_DIGIT)
 NICKNAME_PATTERN = re.compile("^[a-zA-Z0-9]{1,19}$")
 
 def is_valid_fingerprint(entry, check_prefix = False):
@@ -44,4 +45,17 @@ def is_valid_nickname(entry):
   """
   
   return bool(NICKNAME_PATTERN.match(entry))
+
+def is_hex_digits(entry, count):
+  """
+  Checks if a string is the given number of hex digits. Digits represented by
+  letters are case insensitive.
+  
+  :param str entry: string to be checked
+  :param int count: number of hex digits to be checked for
+  
+  :returns: True if the string matches this number
+  """
+  
+  return bool(re.match("^%s{%i}$" % (HEX_DIGIT, count), entry))
 

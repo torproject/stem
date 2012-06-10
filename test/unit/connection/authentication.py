@@ -12,8 +12,6 @@ various error conditions, and make sure that the right exception is raised.
 import unittest
 
 import stem.connection
-import stem.response
-import stem.response.authchallenge
 import stem.util.log as log
 import test.mocking as mocking
 
@@ -92,12 +90,10 @@ class TestAuthenticate(unittest.TestCase):
       stem.connection.IncorrectPassword(None))
     
     all_auth_cookie_exc = (None,
-      stem.connection.IncorrectCookieSize(None, None),
-      stem.connection.UnreadableCookieFile(None, None),
-      stem.connection.CookieAuthRejected(None, None),
-      stem.connection.IncorrectCookieValue(None, None))
-    
-    all_auth_safecookie_exc = all_auth_cookie_exc + (
+      stem.connection.IncorrectCookieSize(None, False, None),
+      stem.connection.UnreadableCookieFile(None, False, None),
+      stem.connection.CookieAuthRejected(None, False, None),
+      stem.connection.IncorrectCookieValue(None, False, None),
       stem.connection.UnrecognizedAuthChallengeMethod(None, None, None),
       stem.connection.AuthChallengeFailed(None, None),
       stem.connection.AuthSecurityFailure(None, None),
@@ -114,7 +110,6 @@ class TestAuthenticate(unittest.TestCase):
     all_auth_none_exc += control_exc
     all_auth_password_exc += control_exc
     all_auth_cookie_exc += control_exc
-    all_auth_safecookie_exc += control_exc
     
     for protocolinfo_auth_methods in _get_all_auth_method_combinations():
       # protocolinfo input for the authenticate() call we'll be making
@@ -126,38 +121,46 @@ class TestAuthenticate(unittest.TestCase):
       for auth_none_exc in all_auth_none_exc:
         for auth_password_exc in all_auth_password_exc:
           for auth_cookie_exc in all_auth_cookie_exc:
-            for auth_safecookie_exc in all_auth_cookie_exc:
-              # determine if the authenticate() call will succeed and mock each
-              # of the authenticate_* function to raise its given exception
+            # Determine if the authenticate() call will succeed and mock each
+            # of the authenticate_* function to raise its given exception.
+            #
+            # This implementation is slightly inaccurate in a couple regards...
+            # a. it raises safecookie exceptions from authenticate_cookie()
+            # b. exceptions raised by authenticate_cookie() and
+            #    authenticate_safecookie() are always the same
+            #
+            # However, adding another loop for safe_cookie exceptions means
+            # multiplying our runtime many fold. This exercises everything that
+            # matters so the above inaccuracies seem fine.
+            
+            expect_success = False
+            auth_mocks = {
+              stem.connection.AuthMethod.NONE:
+                (stem.connection.authenticate_none, auth_none_exc),
+              stem.connection.AuthMethod.PASSWORD:
+                (stem.connection.authenticate_password, auth_password_exc),
+              stem.connection.AuthMethod.COOKIE:
+                (stem.connection.authenticate_cookie, auth_cookie_exc),
+              stem.connection.AuthMethod.SAFECOOKIE:
+                (stem.connection.authenticate_safecookie, auth_cookie_exc),
+            }
+            
+            for auth_method in auth_mocks:
+              auth_function, raised_exc = auth_mocks[auth_method]
               
-              expect_success = False
-              auth_mocks = {
-                stem.connection.AuthMethod.NONE:
-                  (stem.connection.authenticate_none, auth_none_exc),
-                stem.connection.AuthMethod.PASSWORD:
-                  (stem.connection.authenticate_password, auth_password_exc),
-                stem.connection.AuthMethod.COOKIE:
-                  (stem.connection.authenticate_cookie, auth_cookie_exc),
-                stem.connection.AuthMethod.SAFECOOKIE:
-                  (stem.connection.authenticate_safecookie, auth_safecookie_exc),
-              }
-              
-              for auth_method in auth_mocks:
-                auth_function, raised_exc = auth_mocks[auth_method]
+              if not raised_exc:
+                # Mocking this authentication method so it will succeed. If
+                # it's among the protocolinfo methods then expect success.
                 
-                if not raised_exc:
-                  # Mocking this authentication method so it will succeed. If
-                  # it's among the protocolinfo methods then expect success.
-                  
-                  mocking.mock(auth_function, mocking.no_op())
-                  expect_success |= auth_method in protocolinfo_auth_methods
-                else:
-                  mocking.mock(auth_function, mocking.raise_exception(raised_exc))
-              
-              if expect_success:
-                stem.connection.authenticate(None, "blah", None, protocolinfo_arg)
+                mocking.mock(auth_function, mocking.no_op())
+                expect_success |= auth_method in protocolinfo_auth_methods
               else:
-                self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, "blah", None, protocolinfo_arg)
+                mocking.mock(auth_function, mocking.raise_exception(raised_exc))
+            
+            if expect_success:
+              stem.connection.authenticate(None, "blah", None, protocolinfo_arg)
+            else:
+              self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, "blah", None, protocolinfo_arg)
     
     # revert logging back to normal
     stem_logger.setLevel(log.logging_level(log.TRACE))

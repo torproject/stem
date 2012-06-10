@@ -81,10 +81,14 @@ def convert(response_type, message):
 class ControlMessage:
   """
   Message from the control socket. This is iterable and can be stringified for
-  individual message components stripped of protocol formatting.
+  individual message components stripped of protocol formatting. Messages are
+  never empty.
   """
   
   def __init__(self, parsed_content, raw_content):
+    if not parsed_content:
+      raise ValueError("ControlMessages can't be empty")
+    
     self._parsed_content = parsed_content
     self._raw_content = raw_content
   
@@ -174,14 +178,14 @@ class ControlMessage:
     """
     :returns: Number of ControlLines
     """
-
+    
     return len(self._parsed_content)
   
   def __getitem__(self, index):
     """
     :returns: ControlLine at index
     """
-
+    
     return ControlLine(self._parsed_content[index][2])
 
 class ControlLine(str):

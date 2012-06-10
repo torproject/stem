@@ -112,6 +112,8 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
             auth_methods.append(AuthMethod.PASSWORD)
           elif method == "COOKIE":
             auth_methods.append(AuthMethod.COOKIE)
+          elif method == "SAFECOOKIE":
+            auth_methods.append(AuthMethod.SAFECOOKIE)
           else:
             unknown_auth_methods.append(method)
             message_id = "stem.response.protocolinfo.unknown_auth_%s" % method

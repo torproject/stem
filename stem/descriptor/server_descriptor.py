@@ -678,7 +678,7 @@ class BridgeDescriptor(ServerDescriptor):
       line = "%s %s" % (keyword, value)
       
       if keyword == "router-digest":
-        if validate and not re.match("^[0-9a-fA-F]{40}$", value):
+        if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
           raise ValueError("Router digest line had an invalid sha1 digest: %s" % line)
         
         self._digest = value

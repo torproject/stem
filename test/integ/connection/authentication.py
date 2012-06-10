@@ -9,7 +9,7 @@ import unittest
 import test.runner
 import stem.connection
 import stem.socket
-from stem.version import Version
+import stem.version
 from stem.response.protocolinfo import AuthMethod
 
 # Responses given by tor for various authentication failures. These may change
@@ -39,11 +39,15 @@ def _can_authenticate(auth_type):
     bool that's True if we should be able to authenticate and False otherwise
   """
   
-  tor_options = test.runner.get_runner().get_options()
+  runner = test.runner.get_runner()
+  tor_options = runner.get_options()
   password_auth = test.runner.Torrc.PASSWORD in tor_options
-  safecookie_auth = cookie_auth = test.runner.Torrc.COOKIE in tor_options
+  cookie_auth = test.runner.Torrc.COOKIE in tor_options
+  safecookie_auth = cookie_auth and runner.get_tor_version().meets_requirements(stem.version.Requirement.AUTH_SAFECOOKIE)
   
-  if not password_auth and not cookie_auth: return True # open socket
+  if not password_auth and not cookie_auth:
+    # open socket, anything but safecookie will work
+    return auth_type != stem.connection.AuthMethod.SAFECOOKIE
   elif auth_type == stem.connection.AuthMethod.PASSWORD: return password_auth
   elif auth_type == stem.connection.AuthMethod.COOKIE: return cookie_auth
   elif auth_type == stem.connection.AuthMethod.SAFECOOKIE: return safecookie_auth
@@ -64,26 +68,31 @@ def _get_auth_failure_message(auth_type):
   
   tor_options = test.runner.get_runner().get_options()
   password_auth = test.runner.Torrc.PASSWORD in tor_options
-  safecookie_auth = cookie_auth = test.runner.Torrc.COOKIE in tor_options
+  cookie_auth = test.runner.Torrc.COOKIE in tor_options
   
   if cookie_auth and password_auth:
     return MULTIPLE_AUTH_FAIL
   elif cookie_auth:
     if auth_type == stem.connection.AuthMethod.COOKIE:
-        return INCORRECT_COOKIE_FAIL
+      return INCORRECT_COOKIE_FAIL
     elif auth_type == stem.connection.AuthMethod.SAFECOOKIE:
-        return INCORRECT_SAFECOOKIE_FAIL
+      return INCORRECT_SAFECOOKIE_FAIL
     else:
-        return COOKIE_AUTH_FAIL
+      return COOKIE_AUTH_FAIL
   elif password_auth:
     if auth_type == stem.connection.AuthMethod.PASSWORD:
       return INCORRECT_PASSWORD_FAIL
     else:
       return PASSWORD_AUTH_FAIL
   else:
-    # shouldn't happen unless safecookie, if so then the test has a bug
+    # The only way that we should fail to authenticate to an open control
+    # socket is if we attempt via safecookie (since we get an 'unsupported'
+    # response via the AUTHCHALLENGE call rather than AUTHENTICATE). For
+    # anything else if we get here it indicates that this test has a bug.
+    
     if auth_type == stem.connection.AuthMethod.SAFECOOKIE:
       return SAFECOOKIE_AUTHCHALLENGE_FAIL
+    
     raise ValueError("No methods of authentication. If this is an open socket then auth shouldn't fail.")
 
 class TestAuthenticate(unittest.TestCase):
@@ -92,8 +101,7 @@ class TestAuthenticate(unittest.TestCase):
     self.cookie_auth_methods = [AuthMethod.COOKIE]
     
     tor_version = test.runner.get_runner().get_tor_version()
-    if tor_version >= Version("0.2.2.36") and tor_version < Version("0.2.3.0") \
-        or tor_version >= Version("0.2.3.13-alpha"):
+    if tor_version.meets_requirements(stem.version.Requirement.AUTH_SAFECOOKIE):
       self.cookie_auth_methods.append(AuthMethod.SAFECOOKIE)
   
   def test_authenticate_general_socket(self):
@@ -187,8 +195,13 @@ class TestAuthenticate(unittest.TestCase):
   
   def test_authenticate_general_cookie(self):
     """
-    Tests the authenticate function's password argument.
+    Tests the authenticate function with only cookie authentication methods.
+    This manipulates our PROTOCOLINFO response to test each method
+    individually.
     """
+    
+    
+    
     
     runner = test.runner.get_runner()
     tor_options = runner.get_options()
@@ -197,10 +210,15 @@ class TestAuthenticate(unittest.TestCase):
     # test both cookie authentication mechanisms
     with runner.get_tor_socket(False) as control_socket:
       if is_cookie_only:
-        for method in self.cookie_auth_methods:
+        for method in (AuthMethod.COOKIE, AuthMethod.SAFECOOKIE):
           protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
-          protocolinfo_response.auth_methods.remove(method)
-          stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot(), protocolinfo_response = protocolinfo_response)
+          
+          if method in protocolinfo_response.auth_methods:
+            # narrow to *only* use cookie auth or safecooke, so we exercise
+            # both independently
+            
+            protocolinfo_response.auth_methods = (method, )
+            stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot(), protocolinfo_response = protocolinfo_response)
   
   def test_authenticate_none(self):
     """
@@ -246,9 +264,9 @@ class TestAuthenticate(unittest.TestCase):
     Tests the authenticate_cookie function.
     """
     
+    auth_value = test.runner.get_runner().get_auth_cookie_path()
+    
     for auth_type in self.cookie_auth_methods:
-      auth_value = test.runner.get_runner().get_auth_cookie_path()
-      
       if not os.path.exists(auth_value):
         # If the authentication cookie doesn't exist then we'll be getting an
         # error for that rather than rejection. This will even fail if
@@ -260,7 +278,7 @@ class TestAuthenticate(unittest.TestCase):
       elif _can_authenticate(auth_type):
         self._check_auth(auth_type, auth_value)
       else:
-        self.assertRaises(stem.connection.CookieAuthRejected, self._check_auth, auth_type, auth_value)
+        self.assertRaises(stem.connection.CookieAuthRejected, self._check_auth, auth_type, auth_value, False)
   
   def test_authenticate_cookie_invalid(self):
     """
@@ -268,34 +286,35 @@ class TestAuthenticate(unittest.TestCase):
     value.
     """
     
+    auth_value = test.runner.get_runner().get_test_dir("fake_cookie")
+    
+    # we need to create a 32 byte cookie file to load from
+    fake_cookie = open(auth_value, "w")
+    fake_cookie.write("0" * 32)
+    fake_cookie.close()
+    
     for auth_type in self.cookie_auth_methods:
-      auth_value = test.runner.get_runner().get_test_dir("fake_cookie")
-      
-      # we need to create a 32 byte cookie file to load from
-      fake_cookie = open(auth_value, "w")
-      fake_cookie.write("0" * 32)
-      fake_cookie.close()
-      
       if _can_authenticate(stem.connection.AuthMethod.NONE):
-        # authentication will work anyway
+        # authentication will work anyway unless this is safecookie
         if auth_type == AuthMethod.COOKIE:
           self._check_auth(auth_type, auth_value)
-        #unless you're trying the safe cookie method
         elif auth_type == AuthMethod.SAFECOOKIE:
-          exc_type = stem.connection.AuthChallengeFailed
+          exc_type = stem.connection.CookieAuthRejected
           self.assertRaises(exc_type, self._check_auth, auth_type, auth_value)
-      
       else:
-        if _can_authenticate(auth_type):
+        if auth_type == AuthMethod.SAFECOOKIE:
+          if _can_authenticate(auth_type):
+            exc_type = stem.connection.AuthSecurityFailure
+          else:
+            exc_type = stem.connection.CookieAuthRejected
+        elif _can_authenticate(auth_type):
           exc_type = stem.connection.IncorrectCookieValue
         else:
           exc_type = stem.connection.CookieAuthRejected
-          if auth_type == AuthMethod.SAFECOOKIE:
-            exc_type = stem.connection.AuthChallengeFailed
         
-        self.assertRaises(exc_type, self._check_auth, auth_type, auth_value)
-      
-      os.remove(auth_value)
+        self.assertRaises(exc_type, self._check_auth, auth_type, auth_value, False)
+    
+    os.remove(auth_value)
   
   def test_authenticate_cookie_missing(self):
     """
@@ -314,33 +333,14 @@ class TestAuthenticate(unittest.TestCase):
     socket.
     """
     
-    auth_type = AuthMethod.COOKIE
     auth_value = test.runner.get_runner().get_torrc_path(True)
     
-    if os.path.getsize(auth_value) == 32:
-      # Weird coincidence? Fail so we can pick another file to check against.
-      self.fail("Our torrc is 32 bytes, preventing the test_authenticate_cookie_wrong_size test from running.")
-    else:
-      self.assertRaises(stem.connection.IncorrectCookieSize, self._check_auth, auth_type, auth_value, False)
-  
-  def test_authenticate_safecookie_wrong_size(self):
-    """
-    Tests the authenticate_safecookie function with our torrc as an auth cookie.
-    This is to confirm that we won't read arbitrary files to the control
-    socket.
-    """
-    
-    auth_type = AuthMethod.SAFECOOKIE
-    auth_value = test.runner.get_runner().get_torrc_path(True)
-    
-    auth_value = test.runner.get_runner().get_test_dir("fake_cookie")
-    
-    # we need to create a 32 byte cookie file to load from
-    fake_cookie = open(auth_value, "w")
-    fake_cookie.write("0" * 48)
-    fake_cookie.close()
-    self.assertRaises(stem.connection.IncorrectCookieSize,
-        stem.connection.authenticate_safecookie, auth_type, auth_value, False)
+    for auth_type in self.cookie_auth_methods:
+      if os.path.getsize(auth_value) == 32:
+        # Weird coincidence? Fail so we can pick another file to check against.
+        self.fail("Our torrc is 32 bytes, preventing the test_authenticate_cookie_wrong_size test from running.")
+      else:
+        self.assertRaises(stem.connection.IncorrectCookieSize, self._check_auth, auth_type, auth_value, False)
   
   def _check_auth(self, auth_type, auth_arg = None, check_message = True):
     """
@@ -378,10 +378,7 @@ class TestAuthenticate(unittest.TestCase):
         
         # check that we got the failure message that we'd expect
         if check_message:
-          if auth_type != AuthMethod.SAFECOOKIE:
-            failure_msg = _get_auth_failure_message(auth_type)
-          else:
-            failure_msg = _get_auth_failure_message(auth_type)
+          failure_msg = _get_auth_failure_message(auth_type)
           self.assertEqual(failure_msg, str(exc))
         
         raise exc

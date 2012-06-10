@@ -8,6 +8,7 @@ import unittest
 import test.runner
 import stem.socket
 import stem.connection
+import stem.version
 import stem.util.system
 import test.mocking as mocking
 from test.integ.util.system import filter_system_call
@@ -116,11 +117,15 @@ class TestProtocolInfo(unittest.TestCase):
     
     runner = test.runner.get_runner()
     tor_options = runner.get_options()
+    tor_version = runner.get_tor_version()
     auth_methods, auth_cookie_path = [], None
     
     if test.runner.Torrc.COOKIE in tor_options:
       auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
-      auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
+      
+      if tor_version.meets_requirements(stem.version.Requirement.AUTH_SAFECOOKIE):
+        auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
+      
       chroot_path = runner.get_chroot()
       auth_cookie_path = runner.get_auth_cookie_path()
       
