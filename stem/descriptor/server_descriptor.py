@@ -254,12 +254,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   
   def digest(self):
     """
-    Provides the base64 encoded sha1 of our content. This value is part of the
-    server descriptor entry for this relay.
-    
-    Note that network status entries exclude the padding, so you'll need to add
-    a '=' to it so they'll match (`explanation
-    <https://en.wikipedia.org/wiki/Base64#Padding>`_).
+    Provides the hex encoded sha1 of our content. This value is part of the
+    network status entry for this relay.
     
     :returns: str with the digest value for this server descriptor
     """
@@ -613,9 +609,7 @@ class RelayDescriptor(ServerDescriptor):
       # our digest is calculated from everything except our signature
       raw_content, ending = str(self), "\nrouter-signature\n"
       raw_content = raw_content[:raw_content.find(ending) + len(ending)]
-      
-      digest_sha1 = hashlib.sha1(raw_content).digest()
-      self._digest = base64.b64encode(digest_sha1)
+      self._digest = hashlib.sha1(raw_content).hexdigest().upper()
     
     return self._digest
   

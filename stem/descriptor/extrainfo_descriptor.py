@@ -45,10 +45,12 @@ Extra-info descriptors are available from a few sources...
     |  |- RelayExtraInfoDescriptor - Extra-info descriptor for a relay.
     |  +- BridgeExtraInfoDescriptor - Extra-info descriptor for a bridge.
     |
+    |- digest - calculates the digest value for our content
     +- get_unrecognized_lines - lines with unrecognized content
 """
 
 import re
+import hashlib
 import datetime
 
 import stem.descriptor
@@ -673,6 +675,16 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       else:
         self._unrecognized_lines.append(line)
   
+  def digest(self):
+    """
+    Provides the hex encoded sha1 of our content. This value is part of the
+    server descriptor entry for this relay.
+    
+    :returns: str with the digest value for this server descriptor
+    """
+    
+    raise NotImplementedError("Unsupported Operation: this should be implemented by the ExtraInfoDescriptor subclass")
+  
   def _required_fields(self):
     return REQUIRED_FIELDS
   
@@ -695,8 +707,18 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   
   def __init__(self, raw_contents, validate = True):
     self.signature = None
+    self._digest = None
     
     ExtraInfoDescriptor.__init__(self, raw_contents, validate)
+  
+  def digest(self):
+    if self._digest is None:
+      # our digest is calculated from everything except our signature
+      raw_content, ending = str(self), "\nrouter-signature\n"
+      raw_content = raw_content[:raw_content.find(ending) + len(ending)]
+      self._digest = hashlib.sha1(raw_content).hexdigest().upper()
+    
+    return self._digest
   
   def _parse(self, entries, validate):
     entries = dict(entries) # shallow copy since we're destructive
@@ -722,12 +744,41 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   Bridge extra-info descriptor (`specification <https://metrics.torproject.org/formats.html#bridgedesc>`_)
   """
   
+  def __init__(self, raw_contents, validate = True):
+    self._digest = None
+    
+    ExtraInfoDescriptor.__init__(self, raw_contents, validate)
+  
+  def digest(self):
+    return self._digest
+  
+  def _parse(self, entries, validate):
+    entries = dict(entries) # shallow copy since we're destructive
+    
+    # handles fields only in server descriptors
+    for keyword, values in entries.items():
+      value, _ = values[0]
+      line = "%s %s" % (keyword, value) # original line
+      
+      if keyword == "router-digest":
+        if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
+          raise ValueError("Router digest line had an invalid sha1 digest: %s" % line)
+        
+        self._digest = value
+        del entries["router-digest"]
+    
+    ExtraInfoDescriptor._parse(self, entries, validate)
+  
   def _required_fields(self):
     excluded_fields = (
       "router-signature",
     )
     
-    return filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
+    included_fields = (
+      "router-digest",
+    )
+    
+    return included_fields + filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
   
   def _last_keyword(self):
     return None

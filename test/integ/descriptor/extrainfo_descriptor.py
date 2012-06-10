@@ -43,6 +43,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     self.assertEquals(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.dir_write_history_end)
     self.assertEquals(900, desc.dir_write_history_interval)
     self.assertEquals(expected_signature, desc.signature)
+    self.assertEquals("00A57A9AAB5EA113898E2DD02A755E31AFC27227", desc.digest())
     self.assertEquals([], desc.get_unrecognized_lines())
     
     # The read-history, write-history, dirreq-read-history, and
@@ -109,9 +110,8 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     self.assertEquals(900, desc.dir_read_history_interval)
     self.assertEquals(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.dir_write_history_end)
     self.assertEquals(900, desc.dir_write_history_interval)
-    
-    # TODO: uncomment when we handle router-digest entries
-    #self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEquals("00A2AECCEAD3FEE033CFE29893387143146728EC", desc.digest())
+    self.assertEquals([], desc.get_unrecognized_lines())
     
     read_values_start = [337920, 437248, 3995648, 48726016]
     self.assertEquals(read_values_start, desc.read_history_values[:4])
