@@ -42,6 +42,9 @@ Extra-info descriptors are available from a few sources...
   
   parse_file - Iterates over the extra-info descriptors in a file.
   ExtraInfoDescriptor - Tor extra-info descriptor.
+    |  |- RelayExtraInfoDescriptor - Extra-info descriptor for a relay.
+    |  +- BridgeExtraInfoDescriptor - Extra-info descriptor for a bridge.
+    |
     +- get_unrecognized_lines - lines with unrecognized content
 """
 
@@ -270,13 +273,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   
   def __init__(self, raw_contents, validate = True):
     """
-    Extra-info descriptor constructor, created from a relay's extra-info
-    content (as provided by "GETINFO extra-info/digest/*", cached contents, and
-    metrics).
-    
-    By default this validates the descriptor's content as it's parsed. This
-    validation can be disables to either improve performance or be accepting of
-    malformed data.
+    Extra-info descriptor constructor. By default this validates the
+    descriptor's content as it's parsed. This validation can be disables to
+    either improve performance or be accepting of malformed data.
     
     :param str raw_contents: extra-info content provided by the relay
     :param bool validate: checks the validity of the extra-info descriptor if True, skips these checks otherwise
@@ -682,4 +681,16 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         self.signature = block_contents
       else:
         self._unrecognized_lines.append(line)
+
+class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
+  """
+  Relay extra-info descriptor, constructed from data such as that provided by
+  "GETINFO extra-info/digest/*", cached descriptors, and metrics
+  (`specification <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_).
+  """
+
+class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
+  """
+  Bridge extra-info descriptor (`specification <https://metrics.torproject.org/formats.html#bridgedesc>`_)
+  """
 
