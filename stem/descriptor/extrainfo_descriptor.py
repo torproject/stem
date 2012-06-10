@@ -727,7 +727,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
       "router-signature",
     )
     
-    filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
+    return filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
   
   def _last_keyword(self):
     return None

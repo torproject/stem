@@ -9,14 +9,15 @@ import unittest
 import stem.descriptor.extrainfo_descriptor
 import test.runner
 import test.integ.descriptor
+from stem.descriptor.extrainfo_descriptor import DirResponses
 
 class TestExtraInfoDescriptor(unittest.TestCase):
-  def test_metrics_descriptor(self):
+  def test_metrics_relay_descriptor(self):
     """
     Parses and checks our results against an extrainfo descriptor from metrics.
     """
     
-    descriptor_path = test.integ.descriptor.get_resource("extrainfo_descriptor")
+    descriptor_path = test.integ.descriptor.get_resource("extrainfo_relay_descriptor")
     
     descriptor_file = open(descriptor_path)
     descriptor_file.readline() # strip header
@@ -59,6 +60,79 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     
     dir_write_values_start = [0, 0, 0, 227328, 349184, 382976, 738304]
     self.assertEquals(dir_write_values_start, desc.dir_write_history_values[:7])
+  
+  def test_metrics_bridge_descriptor(self):
+    """
+    Parses and checks our results against an extrainfo bridge descriptor from
+    metrics.
+    """
+    
+    descriptor_path = test.integ.descriptor.get_resource("extrainfo_bridge_descriptor")
+    
+    descriptor_file = open(descriptor_path)
+    descriptor_file.readline() # strip header
+    descriptor_contents = descriptor_file.read()
+    descriptor_file.close()
+    
+    expected_dir_v2_responses = {
+      DirResponses.OK: 0,
+      DirResponses.UNAVAILABLE: 0,
+      DirResponses.NOT_FOUND: 0,
+      DirResponses.NOT_MODIFIED: 0,
+      DirResponses.BUSY: 0,
+    }
+    
+    expected_dir_v3_responses = {
+      DirResponses.OK: 72,
+      DirResponses.NOT_ENOUGH_SIGS: 0,
+      DirResponses.UNAVAILABLE: 0,
+      DirResponses.NOT_FOUND: 0,
+      DirResponses.NOT_MODIFIED: 0,
+      DirResponses.BUSY: 0,
+    }
+    
+    expected_signature = """-----BEGIN SIGNATURE-----
+K5FSywk7qvw/boA4DQcqkls6Ize5vcBYfhQ8JnOeRQC9+uDxbnpm3qaYN9jZ8myj
+k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
+7LZqklu+gVvhMKREpchVqlAwXkWR44VENm24Hs+mT3M=
+-----END SIGNATURE-----"""
+    
+    desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_contents)
+    self.assertEquals("ec2bridgereaac65a3", desc.nickname)
+    self.assertEquals("1EC248422B57D9C0BD751892FE787585407479A4", desc.fingerprint)
+    self.assertEquals(datetime.datetime(2012, 6, 8, 2, 21, 27), desc.published)
+    self.assertEquals(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.read_history_end)
+    self.assertEquals(900, desc.read_history_interval)
+    self.assertEquals(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.write_history_end)
+    self.assertEquals(900, desc.write_history_interval)
+    self.assertEquals(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.dir_read_history_end)
+    self.assertEquals(900, desc.dir_read_history_interval)
+    self.assertEquals(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.dir_write_history_end)
+    self.assertEquals(900, desc.dir_write_history_interval)
+    
+    # TODO: uncomment when we handle router-digest entries
+    #self.assertEquals([], desc.get_unrecognized_lines())
+    
+    read_values_start = [337920, 437248, 3995648, 48726016]
+    self.assertEquals(read_values_start, desc.read_history_values[:4])
+    
+    write_values_start = [343040, 991232, 5649408, 49548288]
+    self.assertEquals(write_values_start, desc.write_history_values[:4])
+    
+    dir_read_values_start = [0, 71680, 99328, 25600]
+    self.assertEquals(dir_read_values_start, desc.dir_read_history_values[:4])
+    
+    dir_write_values_start = [5120, 664576, 2419712, 578560]
+    self.assertEquals(dir_write_values_start, desc.dir_write_history_values[:4])
+    
+    self.assertEquals({}, desc.dir_v2_requests)
+    self.assertEquals({}, desc.dir_v3_requests)
+    
+    self.assertEquals(expected_dir_v2_responses, desc.dir_v2_responses)
+    self.assertEquals(expected_dir_v3_responses, desc.dir_v3_responses)
+    
+    self.assertEquals({}, desc.dir_v2_responses_unknown)
+    self.assertEquals({}, desc.dir_v2_responses_unknown)
   
   def test_cached_descriptor(self):
     """
