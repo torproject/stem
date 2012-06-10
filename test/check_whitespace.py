@@ -18,12 +18,9 @@ def get_issues(base_path = DEFAULT_TARGET):
   """
   Checks python source code in the given directory for whitespace issues.
   
-  Arguments:
-    base_path (str) - directory to be iterated over
+  :param str base_path: directory to be iterated over
   
-  Returns:
-    dict of the form...
-    path => [(line_number, message)...]
+  :returns: dict of the form ``path => [(line_number, message)...]``
   """
   
   # TODO: This does not check that block indentations are two spaces because
@@ -80,11 +77,9 @@ def _get_python_files(base_path):
   """
   Iterates over all of the python files within a directory.
   
-  Arguments:
-    base_path (str) - directory to be iterated over
+  :param str base_path: directory to be iterated over
   
-  Returns:
-    iterator that yields the absolute path for python source code
+  :returns: iterator that yields the absolute path for python source code
   """
   
   for root, _, files in os.walk(base_path, followlinks = True):

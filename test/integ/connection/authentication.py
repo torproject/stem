@@ -32,11 +32,9 @@ def _can_authenticate(auth_type):
   Checks if a given authentication method can authenticate to our control
   socket.
   
-  Arguments:
-    auth_type (stem.connection.AuthMethod) - authentication method to check
+  :param stem.connection.AuthMethod auth_type: authentication method to check
   
-  Returns:
-    bool that's True if we should be able to authenticate and False otherwise
+  :returns: bool that's True if we should be able to authenticate and False otherwise
   """
   
   runner = test.runner.get_runner()
@@ -59,11 +57,9 @@ def _get_auth_failure_message(auth_type):
   authentication fails. Note that this test will need to be updated if tor
   changes its rejection reponse.
   
-  Arguments:
-    auth_type (stem.connection.AuthMethod) - authentication method to check
+  :param stem.connection.AuthMethod auth_type: authentication method to check
   
-  Returns:
-    string with the rejection message that tor would provide
+  :returns: string with the rejection message that tor would provide
   """
   
   tor_options = test.runner.get_runner().get_options()
@@ -199,9 +195,6 @@ class TestAuthenticate(unittest.TestCase):
     This manipulates our PROTOCOLINFO response to test each method
     individually.
     """
-    
-    
-    
     
     runner = test.runner.get_runner()
     tor_options = runner.get_options()
@@ -349,14 +342,11 @@ class TestAuthenticate(unittest.TestCase):
     not then we check that this gives a message that we'd expect then raises
     the exception.
     
-    Arguments:
-      auth_type (stem.connection.AuthMethod) - method by which we should
-          authentiate to the control socket
-      auth_arg (str) - argument to be passed to the authentication function
-      check_message (bool) - checks that failure messages are what we'd expect
+    :param stem.connection.AuthMethod auth_type: method by which we should authentiate to the control socket
+    :param str auth_arg: argument to be passed to the authentication function
+    :param bool check_message: checks that failure messages are what we'd expect
     
-    Raises:
-      stem.connection.AuthenticationFailure if the authentication fails
+    :raises: :class:`stem.connection.AuthenticationFailure` if the authentication fails
     """
     
     with test.runner.get_runner().get_tor_socket(False) as control_socket:

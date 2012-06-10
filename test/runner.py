@@ -3,32 +3,34 @@ Runtime context for the integration tests. This is used both by the test runner
 to start and stop tor, and by the integration tests themselves for information
 about the tor test instance they're running against.
 
-RunnerStopped - Runner doesn't have an active tor instance
-TorInaccessable - Tor can't be queried for the information
+::
 
-require_control - skips the test unless tor provides a controller endpoint
-require_version - skips the test unless we meet a tor version requirement
-exercise_controller - basic sanity check that a controller connection can be used
-
-get_runner - Singleton for fetching our runtime context.
-Runner - Runtime context for our integration tests.
-  |- start - prepares and starts a tor instance for our tests to run against
-  |- stop - stops our tor instance and cleans up any temporary files
-  |- is_running - checks if our tor test instance is running
-  |- is_accessible - checks if our tor instance can be connected to
-  |- is_ptraceable - checks if DisableDebuggerAttachment is set
-  |- get_options - custom torrc options used for our test instance
-  |- get_test_dir - testing directory path
-  |- get_torrc_path - path to our tor instance's torrc
-  |- get_torrc_contents - contents of our tor instance's torrc
-  |- get_auth_cookie_path - path for our authentication cookie if we have one
-  |- get_tor_cwd - current working directory of our tor process
-  |- get_chroot - provides the path of our emulated chroot if we have one
-  |- get_pid - process id of our tor process
-  |- get_tor_socket - provides a socket to our test instance
-  |- get_tor_controller - provides a controller for our test instance
-  |- get_tor_version - provides the version of tor we're running against
-  +- get_tor_command - provides the command used to start tor
+  RunnerStopped - Runner doesn't have an active tor instance
+  TorInaccessable - Tor can't be queried for the information
+  
+  require_control - skips the test unless tor provides a controller endpoint
+  require_version - skips the test unless we meet a tor version requirement
+  exercise_controller - basic sanity check that a controller connection can be used
+  
+  get_runner - Singleton for fetching our runtime context.
+  Runner - Runtime context for our integration tests.
+    |- start - prepares and starts a tor instance for our tests to run against
+    |- stop - stops our tor instance and cleans up any temporary files
+    |- is_running - checks if our tor test instance is running
+    |- is_accessible - checks if our tor instance can be connected to
+    |- is_ptraceable - checks if DisableDebuggerAttachment is set
+    |- get_options - custom torrc options used for our test instance
+    |- get_test_dir - testing directory path
+    |- get_torrc_path - path to our tor instance's torrc
+    |- get_torrc_contents - contents of our tor instance's torrc
+    |- get_auth_cookie_path - path for our authentication cookie if we have one
+    |- get_tor_cwd - current working directory of our tor process
+    |- get_chroot - provides the path of our emulated chroot if we have one
+    |- get_pid - process id of our tor process
+    |- get_tor_socket - provides a socket to our test instance
+    |- get_tor_controller - provides a controller for our test instance
+    |- get_tor_version - provides the version of tor we're running against
+    +- get_tor_command - provides the command used to start tor
 """
 
 import os
@@ -91,18 +93,15 @@ RAN_TESTS = []
 
 class RunnerStopped(Exception):
   "Raised when we try to use a Runner that doesn't have an active tor instance"
-  pass
 
 class TorInaccessable(Exception):
   "Raised when information is needed from tor but the instance we have is inaccessable"
-  pass
 
 def require_control(test_case):
   """
   Skips the test unless tor provides an endpoint for controllers to attach to.
   
-  Arguments:
-    test_case (unittest.TestCase) - test being ran
+  :param unittest.TestCase test_case: test being ran
   """
   
   if not test.runner.get_runner().is_accessible():
@@ -112,9 +111,8 @@ def require_version(test_case, req_version):
   """
   Skips the test unless we meet the required version.
   
-  Arguments:
-    test_case (unittest.TestCase) - test being ran
-    req_version (stem.version.Version) - required tor version for the test
+  :param unittest.TestCase test_case: test being ran
+  :param stem.version.Version req_version: required tor version for the test
   """
   
   if get_runner().get_tor_version() < req_version:
@@ -124,11 +122,10 @@ def only_run_once(test_case, test_name):
   """
   Skips the test if it has ran before. If it hasn't then flags it as being ran.
   This is useful to prevent lengthy tests that are independent of integ targets
-  from being run repeatedly with RUN_ALL.
+  from being run repeatedly with ``RUN_ALL``.
   
-  Arguments:
-    test_case (unittest.TestCase) - test being ran
-    test_name (str) - name of the test being ran
+  :param unittest.TestCase test_case: test being ran
+  :param str test_name: name of the test being ran
   """
   
   if (test_case, test_name) in RAN_TESTS:
@@ -139,12 +136,11 @@ def only_run_once(test_case, test_name):
 def exercise_controller(test_case, controller):
   """
   Checks that we can now use the socket by issuing a 'GETINFO config-file'
-  query.
+  query. Controller can be either a :class:`stem.socket.ControlSocket` or
+  :class:`stem.control.BaseController`.
   
-  Arguments:
-    test_case (unittest.TestCase) - test being ran
-    controller (stem.socket.ControlSocket or stem.control.BaseController) -
-      tor controller connection to be authenticated
+  :param unittest.TestCase test_case: test being ran
+  :param controller: tor controller connection to be authenticated
   """
   
   runner = get_runner()
@@ -161,6 +157,8 @@ def exercise_controller(test_case, controller):
 def get_runner():
   """
   Singleton for the runtime context of integration tests.
+  
+  :returns: :class:`test.runner.Runner` with context for our integration tests
   """
   
   global INTEG_RUNNER
@@ -203,12 +201,10 @@ class Runner:
     Makes temporary testing resources and starts tor, blocking until it
     completes.
     
-    Arguments:
-      tor_cmd (str) - command to start tor with
-      extra_torrc_opts (list) - additional torrc options for our test instance
+    :param str tor_cmd: command to start tor with
+    :param list extra_torrc_opts: additional torrc options for our test instance
     
-    Raises:
-      OSError if unable to run test preparations or start tor
+    :raises: OSError if unable to run test preparations or start tor
     """
     
     with self._runner_lock:
@@ -310,8 +306,7 @@ class Runner:
     """
     Checks if we're running a tor test instance and that it's alive.
     
-    Returns:
-      True if we have a running tor test instance, False otherwise
+    :returns: True if we have a running tor test instance, False otherwise
     """
     
     with self._runner_lock:
@@ -329,8 +324,7 @@ class Runner:
     """
     Checks if our tor instance has a method of being connected to or not.
     
-    Returns:
-      True if tor has a control socket or port, False otherwise
+    :returns: True if tor has a control socket or port, False otherwise
     """
     
     return Torrc.PORT in self._custom_opts or Torrc.SOCKET in self._custom_opts
@@ -338,11 +332,10 @@ class Runner:
   def is_ptraceable(self):
     """
     Checks if tor's 'DisableDebuggerAttachment' option is set. This feature has
-    a lot of adverse side effects as per...
-    https://trac.torproject.org/projects/tor/ticket/3313
+    a lot of adverse side effects
+    (`ticket <https://trac.torproject.org/projects/tor/ticket/3313>`_).
     
-    Returns:
-      True if debugger attachment is disallowd, False otherwise
+    :returns: True if debugger attachment is disallowd, False otherwise
     """
     
     # If we're running a tor version where ptrace is disabled and we didn't
@@ -356,8 +349,7 @@ class Runner:
     """
     Provides the custom torrc options our tor instance is running with.
     
-    Returns:
-      list of Torrc enumerations being used by our test instance
+    :returns: list of Torrc enumerations being used by our test instance
     """
     
     return self._custom_opts
@@ -366,14 +358,11 @@ class Runner:
     """
     Provides the absolute path for our testing directory or a file within it.
     
-    Arguments:
-      resource (str) - file within our test directory to provide the path for
+    :param str resource: file within our test directory to provide the path for
     
-    Returns:
-      str with our test direcectory's absolute path or that of a file within it
+    :returns: str with our test direcectory's absolute path or that of a file within it
     
-    Raises:
-      RunnerStopped if we aren't running
+    :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
     
     if resource:
@@ -385,15 +374,11 @@ class Runner:
     """
     Provides the absolute path for where our testing torrc resides.
     
-    Arguments:
-      ignore_chroot (bool) - provides the real path, rather than the one that
-                             tor expects if True
+    :param bool ignore_chroot: provides the real path, rather than the one that tor expects if True
     
-    Returns:
-      str with our torrc path
+    :returns: str with our torrc path
     
-    Raises:
-      RunnerStopped if we aren't running
+    :raises: RunnerStopped if we aren't running
     """
     
     test_dir = self._get("_test_dir")
@@ -408,11 +393,9 @@ class Runner:
     """
     Provides the contents of our torrc.
     
-    Returns:
-      str with the contents of our torrc, lines are newline separated
+    :returns: str with the contents of our torrc, lines are newline separated
     
-    Raises:
-      RunnerStopped if we aren't running
+    :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
     
     return self._get("_torrc_contents")
@@ -423,11 +406,9 @@ class Runner:
     If running with an emulated chroot this is uneffected, still providing the
     real path.
     
-    Returns:
-      str with our auth cookie path
+    :returns: str with our auth cookie path
     
-    Raises:
-      RunnerStopped if we aren't running
+    :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
     
     test_dir = self._get("_test_dir")
@@ -445,8 +426,7 @@ class Runner:
     Provides the path we're using to emulate a chroot environment. This is None
     if we aren't emulating a chroot setup.
     
-    Returns:
-      str with the path of our emulated chroot
+    :returns: str with the path of our emulated chroot
     """
     
     return self._chroot_path
@@ -455,11 +435,9 @@ class Runner:
     """
     Provides the process id of the tor process.
     
-    Returns:
-      int pid for the tor process
+    :returns: int pid for the tor process
     
-    Raises:
-      RunnerStopped if we aren't running
+    :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
     
     tor_process = self._get("_tor_process")
@@ -469,14 +447,11 @@ class Runner:
     """
     Provides a socket connected to our tor test instance.
     
-    Arguments:
-      authenticate (bool) - if True then the socket is authenticated
+    :param bool authenticate: if True then the socket is authenticated
     
-    Returns:
-      stem.socket.ControlSocket connected with our testing instance
+    :returns: :class:`stem.socket.ControlSocket` connected with our testing instance
     
-    Raises:
-      TorInaccessable if tor can't be connected to
+    :raises: :class:`test.runner.TorInaccessable` if tor can't be connected to
     """
     
     if Torrc.PORT in self._custom_opts:
@@ -494,14 +469,11 @@ class Runner:
     """
     Provides a controller connected to our tor test instance.
     
-    Arguments:
-      authenticate (bool) - if True then the socket is authenticated
+    :param bool authenticate: if True then the socket is authenticated
     
-    Returns:
-      stem.socket.Controller connected with our testing instance
+    :returns: :class:`stem.socket.Controller` connected with our testing instance
     
-    Raises:
-      TorInaccessable if tor can't be connected to
+    :raises: :class: `test.runner.TorInaccessable` if tor can't be connected to
     """
     
     control_socket = self.get_tor_socket(authenticate)
@@ -511,8 +483,7 @@ class Runner:
     """
     Queries our test instance for tor's version.
     
-    Returns:
-      stem.version.Version for our test instance
+    :returns: :class:`stem.version.Version` for our test instance
     """
     
     try:
@@ -544,14 +515,11 @@ class Runner:
     Fetches one of our attributes in a thread safe manner, raising if we aren't
     running.
     
-    Arguments:
-      attr (str) - class variable that we want to fetch
+    :param str attr: class variable that we want to fetch
     
-    Returns:
-      value of the fetched variable
+    :returns: value of the fetched variable
     
-    Raises:
-      RunnerStopped if we aren't running
+    :returns: :class:`test.runner.RunnerStopped` if we aren't running
     """
     
     with self._runner_lock:
@@ -563,8 +531,7 @@ class Runner:
     """
     Makes a temporary runtime resources of our integration test instance.
     
-    Raises:
-      OSError if unsuccessful
+    :raises: OSError if unsuccessful
     """
     
     # makes a temporary data directory if needed
@@ -648,12 +615,9 @@ class Runner:
     Initializes a tor process. This blocks until initialization completes or we
     error out.
     
-    Arguments:
-      tor_cmd (str) - command to start tor with
+    :param str tor_cmd: command to start tor with
     
-    Raises:
-      OSError if we either fail to create the tor process or reached a timeout
-      without success
+    :raises: OSError if we either fail to create the tor process or reached a timeout without success
     """
     
     test.output.print_line("Starting tor...\n", *STATUS_ATTR)

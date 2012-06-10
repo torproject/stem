@@ -22,12 +22,10 @@ def _make_descriptor(attr = None, exclude = None):
   """
   Constructs a minimal extrainfo descriptor with the given attributes.
   
-  Arguments:
-    attr (dict)     - keyword/value mappings to be included in the descriptor
-    exclude (list)  - mandatory keywords to exclude from the descriptor
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
   
-  Returns:
-    str with customized descriptor content
+  :returns: str with customized descriptor content
   """
   
   descriptor_lines = []

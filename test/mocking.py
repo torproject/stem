@@ -2,23 +2,25 @@
 Helper functions for creating mock objects and monkey patching to help with
 testing. With python's builtin unit testing framework the setUp and test
 functions set up mocking, which is then reverted in the tearDown method by
-calling 'revert_mocking'.
+calling :func:`test.mocking.revert_mocking`.
 
-mock - replaces a function with an alternative implementation
-revert_mocking - reverts any changes made by the mock function
-get_real_function - provides the non-mocked version of a function
+::
 
-Mocking Functions
-  no_op           - does nothing
-  return_value    - returns a given value
-  return_true     - returns True
-  return_false    - returns False
-  return_none     - returns None
-  raise_exception - raises an exception when called
-
-Instance Constructors
-  get_message               - stem.socket.ControlMessage
-  get_protocolinfo_response - stem.response.protocolinfo.ProtocolInfoResponse
+  mock - replaces a function with an alternative implementation
+  revert_mocking - reverts any changes made by the mock function
+  get_real_function - provides the non-mocked version of a function
+  
+  Mocking Functions
+    no_op           - does nothing
+    return_value    - returns a given value
+    return_true     - returns True
+    return_false    - returns False
+    return_none     - returns None
+    raise_exception - raises an exception when called
+  
+  Instance Constructors
+    get_message               - stem.socket.ControlMessage
+    get_protocolinfo_response - stem.response.protocolinfo.ProtocolInfoResponse
 """
 
 import inspect
@@ -63,8 +65,7 @@ def support_with(obj):
   methods to the object. The __enter__ provides the object itself and __exit__
   does nothing.
   
-  Arguments:
-    obj (object) - object to support the 'with' keyword
+  :param object obj: object to support the 'with' keyword
   """
   
   obj.__dict__["__enter__"] = return_value(obj)
@@ -75,9 +76,8 @@ def mock(target, mock_call):
   Mocks the given function, saving the initial implementation so it can be
   reverted later.
   
-  Arguments:
-    target (function)   - function to be mocked
-    mock_call (functor) - mocking to replace the function with
+  :param function target: function to be mocked
+  :param functor mock_call: mocking to replace the function with
   """
   
   # Builtin functions need special care because the builtin_function_or_method
@@ -120,10 +120,9 @@ def mock_method(target_class, method_name, mock_call):
   Mocks the given class method in a similar fasion as what mock() does for
   functions.
   
-  Arguments:
-    target_class (class) - class with the method we want to mock
-    method_name (str)    - name of the method to be mocked
-    mock_call (functor)  - mocking to replace the method with
+  :param class target_class: class with the method we want to mock
+  :param str method_name: name of the method to be mocked
+  :param functor mock_call: mocking to replace the method with
   """
   
   # Ideally callers could call us with just the method, for instance like...
@@ -179,11 +178,9 @@ def get_real_function(function):
   Provides the original, non-mocked implementation for a function or method.
   This simply returns the current implementation if it isn't being mocked.
   
-  Arguments:
-    function (function) - function to look up the original implementation of
+  :param function function: function to look up the original implementation of
   
-  Returns:
-    original implementation of the function
+  :returns: original implementation of the function
   """
   
   if "mock_id" in function.__dict__:
@@ -196,15 +193,14 @@ def get_message(content, reformat = True):
   """
   Provides a ControlMessage with content modified to be parsable. This makes
   the following changes unless 'reformat' is false...
-  - ensures the content ends with a newline
-  - newlines are replaced with a carrage return and newline pair
   
-  Arguments:
-    content (str)  - base content for the controller message
-    reformat (str) - modifies content to be more accomidateing to being parsed
+  * ensures the content ends with a newline
+  * newlines are replaced with a carrage return and newline pair
   
-  Returns:
-    stem.socket.ControlMessage instance
+  :param str content: base content for the controller message
+  :param str reformat: modifies content to be more accomidateing to being parsed
+  
+  :returns: stem.socket.ControlMessage instance
   """
   
   if reformat:
@@ -219,11 +215,9 @@ def get_protocolinfo_response(**attributes):
   base instance is minimal, with its version set to one and everything else
   left with the default.
   
-  Arguments:
-    attributes (dict) - attributes to customize the response with
+  :param dict attributes: attributes to customize the response with
   
-  Returns:
-    stem.response.protocolinfo.ProtocolInfoResponse instance
+  :returns: stem.response.protocolinfo.ProtocolInfoResponse instance
   """
   
   protocolinfo_response = get_message("250-PROTOCOLINFO 1\n250 OK")

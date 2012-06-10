@@ -79,12 +79,10 @@ def apply_filters(testing_output, *filters):
   output is either a string with the new content or None if the line should be
   omitted.
   
-  Arguments:
-    testing_output (str) - output from the unit testing
-    filters (list) - functors to be applied to each line of the results
+  :param str testing_output: output from the unit testing
+  :param list filters: functors to be applied to each line of the results
   
-  Returns:
-    str with the processed test results
+  :returns: str with the processed test results
   """
   
   results = []
@@ -176,8 +174,7 @@ class ErrorTracker:
     in which the user needs to look for failures. In practice this is mostly
     used to specify the integ target we're running under.
     
-    Arguments:
-      category (str) - category to label errors as being under
+    :param str category: category to label errors as being under
     """
     
     self._category = category
