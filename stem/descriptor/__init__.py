@@ -70,9 +70,9 @@ def parse_file(path, descriptor_file):
     desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_file.read())
   elif first_line == "@type bridge-server-descriptor 1.0":
     desc = stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_file.read())
-  elif first_line in ("@type bridge-extra-info 1.0"):
-    desc = stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_file.read())
   elif first_line in ("@type extra-info 1.0"):
+    desc = stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_file.read())
+  elif first_line in ("@type bridge-extra-info 1.0"):
     desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
   
   if desc:

@@ -29,7 +29,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 7LZqklu+gVvhMKREpchVqlAwXkWR44VENm24Hs+mT3M=
 -----END SIGNATURE-----"""
     
-    desc = stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor(descriptor_contents)
+    desc = stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_contents)
     self.assertEquals("NINJA", desc.nickname)
     self.assertEquals("B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48", desc.fingerprint)
     self.assertEquals(datetime.datetime(2012, 5, 5, 17, 3, 50), desc.published)

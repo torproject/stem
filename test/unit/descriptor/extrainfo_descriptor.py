@@ -4,7 +4,7 @@ Unit tests for stem.descriptor.extrainfo_descriptor.
 
 import datetime
 import unittest
-from stem.descriptor.extrainfo_descriptor import ExtraInfoDescriptor, DirResponses, DirStats
+from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor, DirResponses, DirStats
 
 CRYPTO_BLOB = """
 K5FSywk7qvw/boA4DQcqkls6Ize5vcBYfhQ8JnOeRQC9+uDxbnpm3qaYN9jZ8myj
@@ -58,7 +58,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor()
-    desc = ExtraInfoDescriptor(desc_text)
+    desc = RelayExtraInfoDescriptor(desc_text)
     
     self.assertEquals("ninja", desc.nickname)
     self.assertEquals("B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48", desc.fingerprint)
@@ -70,7 +70,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor({"pepperjack": "is oh so tasty!"})
-    desc = ExtraInfoDescriptor(desc_text)
+    desc = RelayExtraInfoDescriptor(desc_text)
     self.assertEquals(["pepperjack is oh so tasty!"], desc.get_unrecognized_lines())
   
   def test_proceeding_line(self):
@@ -116,7 +116,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     
     geoip_db_digest = "916A3CA8B7DF61473D5AE5B21711F35F301CE9E8"
     desc_text = _make_descriptor({"geoip-db-digest": geoip_db_digest})
-    desc = ExtraInfoDescriptor(desc_text)
+    desc = RelayExtraInfoDescriptor(desc_text)
     self.assertEquals(geoip_db_digest, desc.geoip_db_digest)
     
     test_entries = (
@@ -143,7 +143,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     
     for entry in ("0", "11", "25"):
       desc_text = _make_descriptor({"cell-circuits-per-decile": entry})
-      desc = ExtraInfoDescriptor(desc_text)
+      desc = RelayExtraInfoDescriptor(desc_text)
       self.assertEquals(int(entry), desc.cell_circuits_per_decile)
     
     test_entries = (
@@ -169,7 +169,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       
       test_value = "ok=0,unavailable=0,not-found=984,not-modified=0,something-new=7"
       desc_text = _make_descriptor({keyword: test_value})
-      desc = ExtraInfoDescriptor(desc_text)
+      desc = RelayExtraInfoDescriptor(desc_text)
       self.assertEquals(0, getattr(desc, attr)[DirResponses.OK])
       self.assertEquals(0, getattr(desc, attr)[DirResponses.UNAVAILABLE])
       self.assertEquals(984, getattr(desc, attr)[DirResponses.NOT_FOUND])
@@ -200,7 +200,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       
       test_value = "complete=2712,timeout=32,running=4,min=741,d1=14507,d2=22702,q1=28881,d3=38277,d4=73729,md=111455,d6=168231,d7=257218,q3=319833,d8=390507,d9=616301,something-new=11,max=29917857"
       desc_text = _make_descriptor({keyword: test_value})
-      desc = ExtraInfoDescriptor(desc_text)
+      desc = RelayExtraInfoDescriptor(desc_text)
       self.assertEquals(2712, getattr(desc, attr)[DirStats.COMPLETE])
       self.assertEquals(32, getattr(desc, attr)[DirStats.TIMEOUT])
       self.assertEquals(4, getattr(desc, attr)[DirStats.RUNNING])
@@ -237,7 +237,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     """
     
     desc_text = _make_descriptor({"conn-bi-direct": "2012-05-03 12:07:50 (500 s) 277431,12089,0,2134"})
-    desc = ExtraInfoDescriptor(desc_text)
+    desc = RelayExtraInfoDescriptor(desc_text)
     self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.conn_bi_direct_end)
     self.assertEquals(500, desc.conn_bi_direct_interval)
     self.assertEquals(277431, desc.conn_bi_direct_below)
@@ -287,7 +287,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       
       for test_value, expected_value in test_entries:
         desc_text = _make_descriptor({keyword: test_value})
-        desc = ExtraInfoDescriptor(desc_text)
+        desc = RelayExtraInfoDescriptor(desc_text)
         self.assertEquals(expected_value, getattr(desc, attr))
       
       test_entries = (
@@ -320,7 +320,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       
       for test_value, expected_value in test_entries:
         desc_text = _make_descriptor({keyword: test_value})
-        desc = ExtraInfoDescriptor(desc_text)
+        desc = RelayExtraInfoDescriptor(desc_text)
         self.assertEquals(expected_value, getattr(desc, attr))
       
       test_entries = (
@@ -343,7 +343,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       attr = keyword.replace('-', '_')
       
       desc_text = _make_descriptor({keyword: "2012-05-03 12:07:50"})
-      desc = ExtraInfoDescriptor(desc_text)
+      desc = RelayExtraInfoDescriptor(desc_text)
       self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, attr))
       
       test_entries = (
@@ -368,7 +368,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       interval_attr = end_attr[:-4] + "_interval"
       
       desc_text = _make_descriptor({keyword: "2012-05-03 12:07:50 (500 s)"})
-      desc = ExtraInfoDescriptor(desc_text)
+      desc = RelayExtraInfoDescriptor(desc_text)
       self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
       self.assertEquals(500, getattr(desc, interval_attr))
       
@@ -408,7 +408,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       
       for test_values, expected_values in test_entries:
         desc_text = _make_descriptor({keyword: "2012-05-03 12:07:50 (500 s)%s" % test_values})
-        desc = ExtraInfoDescriptor(desc_text)
+        desc = RelayExtraInfoDescriptor(desc_text)
         self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
         self.assertEquals(500, getattr(desc, interval_attr))
         self.assertEquals(expected_values, getattr(desc, values_attr))
@@ -448,7 +448,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       
       for test_value, expected_value in test_entries:
         desc_text = _make_descriptor({keyword: test_value})
-        desc = ExtraInfoDescriptor(desc_text)
+        desc = RelayExtraInfoDescriptor(desc_text)
         self.assertEquals(expected_value, getattr(desc, attr))
       
       test_entries = (
@@ -480,7 +480,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       
       for test_value, expected_value in test_entries:
         desc_text = _make_descriptor({keyword: test_value})
-        desc = ExtraInfoDescriptor(desc_text)
+        desc = RelayExtraInfoDescriptor(desc_text)
         self.assertEquals(expected_value, getattr(desc, attr))
       
       test_entries = (
@@ -501,8 +501,8 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     value when we're constructed without validation.
     """
     
-    self.assertRaises(ValueError, ExtraInfoDescriptor, desc_text)
-    desc = ExtraInfoDescriptor(desc_text, validate = False)
+    self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text)
+    desc = RelayExtraInfoDescriptor(desc_text, validate = False)
     
     if attr:
       # check that the invalid attribute matches the expected value when

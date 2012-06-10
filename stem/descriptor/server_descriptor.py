@@ -542,10 +542,17 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   # Constraints that the descriptor must meet to be valid. These can be None if
   # not applicable.
   
-  def _required_fields(self): return None
-  def _single_fields(self): return None
-  def _first_keyword(self): return None
-  def _last_keyword(self): return None
+  def _required_fields(self):
+    return REQUIRED_FIELDS
+  
+  def _single_fields(self):
+    return REQUIRED_FIELDS + SINGLE_FIELDS
+  
+  def _first_keyword(self):
+    return "router"
+  
+  def _last_keyword(self):
+    return "router-signature"
 
 class RelayDescriptor(ServerDescriptor):
   """
@@ -640,18 +647,6 @@ class RelayDescriptor(ServerDescriptor):
         del entries["router-signature"]
     
     ServerDescriptor._parse(self, entries, validate)
-  
-  def _required_fields(self):
-    return REQUIRED_FIELDS
-  
-  def _single_fields(self):
-    return REQUIRED_FIELDS + SINGLE_FIELDS
-  
-  def _first_keyword(self):
-    return "router"
-  
-  def _last_keyword(self):
-    return "router-signature"
 
 class BridgeDescriptor(ServerDescriptor):
   """
@@ -780,6 +775,6 @@ class BridgeDescriptor(ServerDescriptor):
   def _single_fields(self):
     return self._required_fields() + SINGLE_FIELDS
   
-  def _first_keyword(self):
-    return "router"
+  def _last_keyword(self):
+    return None
 

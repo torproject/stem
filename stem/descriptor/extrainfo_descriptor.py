@@ -114,9 +114,6 @@ SINGLE_FIELDS = (
   "exit-streams-opened",
 )
 
-FIRST_FIELD = "extra-info"
-LAST_FIELD = "router-signature"
-
 def parse_file(descriptor_file, validate = True):
   """
   Iterates over the extra-info descriptors in a file.
@@ -139,7 +136,7 @@ def parse_file(descriptor_file, validate = True):
     extrainfo_content += stem.descriptor._read_until_keyword(block_end_prefix, descriptor_file, True)
     
     if extrainfo_content:
-      yield ExtraInfoDescriptor("".join(extrainfo_content), validate)
+      yield RelayExtraInfoDescriptor("".join(extrainfo_content), validate)
     else: break # done parsing file
 
 def _parse_timestamp_and_interval(keyword, content):
@@ -180,7 +177,6 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var str fingerprint: **\*** identity key fingerprint
   :var datetime published: **\*** time in GMT when this descriptor was made
   :var str geoip_db_digest: sha1 of geoIP database file
-  :var str signature: **\*** signature for this extrainfo descriptor
   
   **Bi-directional connection usage:**
   
@@ -289,7 +285,6 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.fingerprint = None
     self.published = None
     self.geoip_db_digest = None
-    self.signature = None
     
     self.conn_bi_direct_end = None
     self.conn_bi_direct_interval = None
@@ -364,18 +359,21 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
       stem.descriptor._get_descriptor_components(raw_contents, validate, ())
     
     if validate:
-      for keyword in REQUIRED_FIELDS:
+      for keyword in self._required_fields():
         if not keyword in entries:
           raise ValueError("Extra-info descriptor must have a '%s' entry" % keyword)
       
-      for keyword in REQUIRED_FIELDS + SINGLE_FIELDS:
+      for keyword in self._required_fields() + SINGLE_FIELDS:
         if keyword in entries and len(entries[keyword]) > 1:
           raise ValueError("The '%s' entry can only appear once in an extra-info descriptor" % keyword)
-      if not first_keyword == FIRST_FIELD:
-        raise ValueError("Extra-info descriptor must start with a '%s' entry" % FIRST_FIELD)
       
-      if not last_keyword == LAST_FIELD:
-        raise ValueError("Descriptor must end with a '%s' entry" % LAST_FIELD)
+      expected_first_keyword = self._first_keyword()
+      if expected_first_keyword and not first_keyword == expected_first_keyword:
+        raise ValueError("Extra-info descriptor must start with a '%s' entry" % expected_first_keyword)
+      
+      expected_last_keyword = self._last_keyword()
+      if expected_last_keyword and not last_keyword == expected_last_keyword:
+        raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
     
     self._parse(entries, validate)
   
@@ -395,10 +393,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     
     for keyword, values in entries.items():
       # most just work with the first (and only) value
-      value, block_contents = values[0]
-      
+      value, _ = values[0]
       line = "%s %s" % (keyword, value) # original line
-      if block_contents: line += "\n%s" % block_contents
       
       if keyword == "extra-info":
         # "extra-info" Nickname Fingerprint
@@ -674,23 +670,65 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           self.entry_ips = locale_usage
         elif keyword == "bridge-ips":
           self.bridge_ips = locale_usage
-      elif keyword == "router-signature":
-        if validate and not block_contents:
-          raise ValueError("Router signature line must be followed by a signature block: %s" % line)
-        
-        self.signature = block_contents
       else:
         self._unrecognized_lines.append(line)
+  
+  def _required_fields(self):
+    return REQUIRED_FIELDS
+  
+  def _first_keyword(self):
+    return "extra-info"
+  
+  def _last_keyword(self):
+    return "router-signature"
 
 class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Relay extra-info descriptor, constructed from data such as that provided by
   "GETINFO extra-info/digest/*", cached descriptors, and metrics
   (`specification <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_).
+  
+  :var str signature: **\*** signature for this extrainfo descriptor
+  
+  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   """
+  
+  def __init__(self, raw_contents, validate = True):
+    self.signature = None
+    
+    ExtraInfoDescriptor.__init__(self, raw_contents, validate)
+  
+  def _parse(self, entries, validate):
+    entries = dict(entries) # shallow copy since we're destructive
+    
+    # handles fields only in server descriptors
+    for keyword, values in entries.items():
+      value, block_contents = values[0]
+      
+      line = "%s %s" % (keyword, value) # original line
+      if block_contents: line += "\n%s" % block_contents
+      
+      if keyword == "router-signature":
+        if validate and not block_contents:
+          raise ValueError("Router signature line must be followed by a signature block: %s" % line)
+        
+        self.signature = block_contents
+        del entries["router-signature"]
+    
+    ExtraInfoDescriptor._parse(self, entries, validate)
 
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Bridge extra-info descriptor (`specification <https://metrics.torproject.org/formats.html#bridgedesc>`_)
   """
+  
+  def _required_fields(self):
+    excluded_fields = (
+      "router-signature",
+    )
+    
+    filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
+  
+  def _last_keyword(self):
+    return None
 
