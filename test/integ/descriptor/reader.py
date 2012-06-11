@@ -2,6 +2,8 @@
 Integration tests for stem.descriptor.reader.
 """
 
+from __future__ import with_statement
+
 import os
 import sys
 import time

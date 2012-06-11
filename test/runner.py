@@ -33,6 +33,8 @@ about the tor test instance they're running against.
     +- get_tor_command - provides the command used to start tor
 """
 
+from __future__ import with_statement
+
 import os
 import sys
 import time

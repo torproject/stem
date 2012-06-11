@@ -6,6 +6,12 @@ which are...
 * tabs are the root of all evil and should be shot on sight
 * no trailing whitespace unless the line is empty, in which case it should have
   the same indentation as the surrounding code
+
+This also checks for 2.5 compatability issues (yea, they're not whitespace but
+it's so much easier to do here...):
+
+* checks that anything using the 'with' keyword has...
+  from __future__ import with_statement
 """
 
 import re
@@ -32,9 +38,17 @@ def get_issues(base_path = DEFAULT_TARGET):
   for file_path in _get_python_files(base_path):
     with open(file_path) as f: file_contents = f.read()
     lines, file_issues, prev_indent = file_contents.splitlines(), [], 0
+    has_with_import, given_with_warning = False, False
     
     for i in xrange(len(lines)):
       whitespace, content = re.match("^(\s*)(.*)$", lines[i]).groups()
+      
+      if content == "from __future__ import with_statement":
+        has_with_import = True
+      elif content.startswith("with ") and content.endswith(":") \
+        and not has_with_import and not given_with_warning:
+        file_issues.append((i + 1, "missing 'with' import (from __future__ import with_statement)"))
+        given_with_warning = True
       
       if "\t" in whitespace:
         file_issues.append((i + 1, "indentation has a tab"))

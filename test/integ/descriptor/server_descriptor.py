@@ -2,6 +2,8 @@
 Integration tests for stem.descriptor.server_descriptor.
 """
 
+from __future__ import with_statement
+
 import os
 import datetime
 import unittest

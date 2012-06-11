@@ -2,6 +2,8 @@
 Integration tests for the stem.control.Controller class.
 """
 
+from __future__ import with_statement
+
 import unittest
 
 import stem.control

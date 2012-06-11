@@ -3,6 +3,8 @@ Integration tests for the stem.response.protocolinfo.ProtocolInfoResponse class
 and related functions.
 """
 
+from __future__ import with_statement
+
 import unittest
 
 import test.runner
