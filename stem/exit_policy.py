@@ -170,69 +170,66 @@ class ExitPolicy:
     consensus. This excludes entries that don't cover all ips, and is either
     a whitelist or blacklist policy based on the final entry. 
     """
-
-    if not self.summary:
-      # determines if we're a whitelist or blacklist
-      is_whitelist = False # default in case we don't have a catch-all policy at the end
-
-      for policy in self._policies:
-        if policy.is_ip_wildcard and policy.is_port_wildcard:
-          is_whitelist = not policy.is_accept
-          break
-
-      # Iterates over the policys and adds the the ports we'll return (ie, allows
-      # if a whitelist and rejects if a blacklist). Reguardless of a port's
-      # allow/reject policy, all further entries with that port are ignored since
-      # policies respect the first matching policy.
-
-      display_ports, skip_ports = [], []
-
-      for policy in self._policies:
-        if not policy.is_ip_wildcard: continue
-
-        if policy.min_port == policy.max_port:
-          port_range = [policy.min_port]
-        else:
-          port_range = range(policy.min_port, policy.max_port + 1)
-
-        for port in port_range:
-          if port in skip_ports: continue
-
-          # if accept + whitelist or reject + blacklist then add
-          if policy.is_accept == is_whitelist:
-            display_ports.append(port)
-
-          # all further entries with this port are to be ignored
-          skip_ports.append(port)
-          
-      # gets a list of the port ranges
-      if display_ports:
-        display_ranges, temp_range = [], []
-        display_ports.sort()
-        display_ports.append(None) # ending item to include last range in loop
-
-        for port in display_ports:
-          if not temp_range or temp_range[-1] + 1 == port:
-            temp_range.append(port)
-          else:
-            if len(temp_range) > 1:
-              display_ranges.append("%i-%i" % (temp_range[0], temp_range[-1]))
-            else:
-              display_ranges.append(str(temp_range[0]))
-
-            temp_range = [port]
+    
+    # determines if we're a whitelist or blacklist
+    is_whitelist = False # default in case we don't have a catch-all policy at the end
+    
+    for policy in self._policies:
+      if policy.is_ip_wildcard and policy.is_port_wildcard:
+        is_whitelist = not policy.is_accept
+        break
+      
+    # Iterates over the policys and adds the the ports we'll return (ie, allows
+    # if a whitelist and rejects if a blacklist). Reguardless of a port's
+    # allow/reject policy, all further entries with that port are ignored since
+    # policies respect the first matching policy.
+    
+    display_ports, skip_ports = [], []
+    
+    for policy in self._policies:
+      if not policy.is_ip_wildcard: continue
+      
+      if policy.min_port == policy.max_port:
+        port_range = [policy.min_port]
       else:
-        # everything for the inverse
-        is_whitelist = not is_whitelist
-        display_ranges = ["1-65535"]
-
-      # constructs the summary string
-      label_prefix = "accept " if is_whitelist else "reject "
-
-      self.summary = (label_prefix + ", ".join(display_ranges)).strip()
-
-    return self.summary
-
+        port_range = range(policy.min_port, policy.max_port + 1)
+        
+      for port in port_range:
+        if port in skip_ports: continue
+        
+        # if accept + whitelist or reject + blacklist then add
+        if policy.is_accept == is_whitelist:
+          display_ports.append(port)
+          
+        # all further entries with this port are to be ignored
+        skip_ports.append(port)
+        
+    # gets a list of the port ranges
+    if display_ports:
+      display_ranges, temp_range = [], []
+      display_ports.sort()
+      display_ports.append(None) # ending item to include last range in loop
+      
+      for port in display_ports:
+        if not temp_range or temp_range[-1] + 1 == port:
+          temp_range.append(port)
+        else:
+          if len(temp_range) > 1:
+            display_ranges.append("%i-%i" % (temp_range[0], temp_range[-1]))
+          else:
+            display_ranges.append(str(temp_range[0]))
+            
+          temp_range = [port]
+    else:
+      # everything for the inverse
+      is_whitelist = not is_whitelist
+      display_ranges = ["1-65535"]
+      
+    # constructs the summary string
+    label_prefix = "accept " if is_whitelist else "reject "
+    
+    self.summary = (label_prefix + ", ".join(display_ranges)).strip()
+    
   def is_exiting_allowed(self):
     """
     Provides true if the policy allows exiting whatsoever, false otherwise.
@@ -264,4 +261,100 @@ class ExitPolicy:
     Provides the string used to construct the Exit Policy      
     """
     return ' , '.join([str(policy) for policy in self._policies])
- 
+  
+
+class MicrodescriptorExitPolicy:
+  def __init__(self):
+    self.ports = []
+    self.policy = None
+    # assume it's an accepted list of ports
+    self.is_accept = True
+    self.is_policy = False
+
+  def __str__(self):
+    
+    if self.policy:
+      return self.policy
+    
+    self.ports.sort()
+    
+    port_range = []
+    start_port = self.ports[0]
+    
+    for id, port in enumerate(self.ports):
+      if port+1 == self.ports[id+1]:
+        end_port = port
+      else:
+        if start_port == end_port:
+          port_range.append(start_port)
+        else:
+          port_range.append("%d-%d" % start_port, end_port)
+        start_port = port+1
+        
+    ports = ','.join(port_range)
+    
+    if self.is_accept: policy = 'accept %s' % ports
+    else: policy = 'reject %s' % ports
+    
+    if len(policy) > 1000:
+      #raise PolicyLengthException
+      pass
+  
+    # it's a policy, no more changes to the rules
+    if self.is_policy:
+      self.policy = policy
+      
+    return policy
+  
+  def add(self, rule):
+    # it's a polciy, we can't add more rules
+    if self.is_policy:
+      #raise PolicyException
+      pass
+    
+    # sanitize the input a bit, cleaning up tabs and stripping quotes
+    rule = rule.replace("\\t", " ").replace("\"", "")
+    
+    if ',' in rule:
+      self.add_policy(rule)
+    else:
+      self.add_rule(rule)
+    
+  def add_policy(self):
+    self.is_policy = True
+    self.is_accept = rule.startswith("accept")    
+    
+    # remove "accept " or "reject "
+    ports = rule[7:]
+    
+    for ports in rule.split(','):
+      if '-' in port: 
+        start_port, end_port = ports.split('-', 1)
+        for port in range(int(start_port), int(end_port)):
+          self.ports.append(int(port))
+      else:
+          self.ports.append(int(ports))
+          
+  def add_rule(self):
+    is_accept = rule.startswith("accept")
+    # remove "accept " or "reject "
+    rule = rule[7:]
+    
+    # parse 'ip:port' and 'port'
+    if ':' in rule: ports = rule.split(":", 1)[1]
+    else: ports = rule
+    
+    # last entry
+    if ports is "*":
+      if self.is_accept is not is_accept:
+        self.is_accept = not is_accept
+        self.policy = True
+      else:
+        # we can't have accept 80 and then accept *
+        # raise PolicyException
+        pass
+    # it's a rule
+    else:
+      self.is_accept = is_accept
+      self.ports.append(int(ports))
+        
