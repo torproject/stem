@@ -11,6 +11,7 @@ import getopt
 import unittest
 import threading
 import StringIO
+import platform
 
 import test.output
 import test.runner
@@ -145,7 +146,7 @@ def load_user_configuration(test_config):
     sys.exit(1)
   
   # suppress color output if our output is being piped
-  if not sys.stdout.isatty():
+  if (not sys.stdout.isatty()) or (platform.system() == "Windows"):
     arg_overrides["argument.no_color"] = "true"
   
   for opt, arg in opts:
