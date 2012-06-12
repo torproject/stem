@@ -438,7 +438,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
       elif keyword == "uptime":
         # We need to be tolerant of negative uptimes to accomidate a past tor
         # bug...
-        # 
+        #
         # Changes in version 0.1.2.7-alpha - 2007-02-06
         #  - If our system clock jumps back in time, don't publish a negative
         #    uptime in the descriptor. Also, don't let the global rate limiting

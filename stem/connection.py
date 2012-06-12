@@ -84,6 +84,8 @@ the authentication process. For instance...
        +- NoAuthCookie - Supports cookie auth but doesn't have its path.
 """
 
+from __future__ import with_statement
+
 import os
 import getpass
 import binascii
@@ -549,7 +551,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
   2. generate a hash digest using the challenge received in the first step, and
      use it to authenticate the controller
   
-  The IncorrectCookieSize and UnreadableCookieFile exceptions take 
+  The IncorrectCookieSize and UnreadableCookieFile exceptions take
   precedence over the other exception types.
   
   The AuthChallengeUnsupported, UnrecognizedAuthChallengeMethod,

@@ -192,7 +192,7 @@ def get_pid_by_name(process_name):
   #     PID
   #    3283
   #    3392
-  #   
+  #
   #   atagar$ ps axc
   #     PID   TT  STAT      TIME COMMAND
   #       1   ??  Ss     9:00.22 launchd
@@ -309,7 +309,7 @@ def get_pid_by_port(port):
   #   # TODO: We need an example for the actual command we're using. I'm
   #   # suspecting that replacing the grep with checking the local port works,
   #   # but should double check.
-  #   
+  #
   #   # sockstat -4 | grep tor
   #   _tor     tor        4397  7  tcp4   51.64.7.84:9050    *:*
   #   _tor     tor        4397  8  udp4   51.64.7.84:53      *:*
@@ -469,7 +469,7 @@ def get_bsd_jail_id(pid):
   # Output when called from a FreeBSD jail or when Tor isn't jailed:
   #   JID
   #    0
-  # 
+  #
   # Otherwise it's something like:
   #   JID
   #    1

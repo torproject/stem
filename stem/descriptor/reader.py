@@ -71,6 +71,8 @@ again...
        +- FileMissing - File does not exist.
 """
 
+from __future__ import with_statement
+
 import os
 import tarfile
 import threading

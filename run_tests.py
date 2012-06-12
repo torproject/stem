@@ -369,7 +369,9 @@ if __name__ == '__main__':
     
     # TODO: note unused config options afterward?
   
-  whitespace_issues = test.check_whitespace.get_issues()
+  whitespace_issues = test.check_whitespace.get_issues("stem")
+  whitespace_issues.update(test.check_whitespace.get_issues("test"))
+  whitespace_issues.update(test.check_whitespace.get_issues("run_tests.py"))
   
   if whitespace_issues:
     test.output.print_line("WHITESPACE ISSUES", term.Color.BLUE, term.Attr.BOLD)

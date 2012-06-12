@@ -64,6 +64,8 @@ There are many ways of using the Config class but the most common ones are...
     +- get_int_csv - gets a value as a comma separated list of integers
 """
 
+from __future__ import with_statement
+
 import threading
 
 import stem.util.log as log

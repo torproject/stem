@@ -26,6 +26,8 @@ interacting at a higher level.
     +- __enter__ / __exit__ - manages socket connection
 """
 
+from __future__ import with_statement
+
 import time
 import Queue
 import threading

@@ -23,6 +23,8 @@ Parses replies from the control socket.
     +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
 """
 
+from __future__ import with_statement
+
 __all__ = ["getinfo", "protocolinfo", "authchallenge", "convert", "ControlMessage", "ControlLine"]
 
 import re

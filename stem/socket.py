@@ -32,7 +32,9 @@ as instances of the :class:`stem.response.ControlMessage` class.
        +- SocketClosed - Socket has been shut down.
 """
 
+from __future__ import with_statement
 from __future__ import absolute_import
+
 import re
 import socket
 import threading

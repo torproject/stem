@@ -39,14 +39,18 @@ def get_issues(base_path = DEFAULT_TARGET):
     with open(file_path) as f: file_contents = f.read()
     lines, file_issues, prev_indent = file_contents.splitlines(), [], 0
     has_with_import, given_with_warning = False, False
+    is_block_comment = False
     
     for i in xrange(len(lines)):
       whitespace, content = re.match("^(\s*)(.*)$", lines[i]).groups()
       
+      if '"""' in content:
+        is_block_comment = not is_block_comment
+      
       if content == "from __future__ import with_statement":
         has_with_import = True
       elif content.startswith("with ") and content.endswith(":") \
-        and not has_with_import and not given_with_warning:
+        and not has_with_import and not given_with_warning and not is_block_comment:
         file_issues.append((i + 1, "missing 'with' import (from __future__ import with_statement)"))
         given_with_warning = True
       
