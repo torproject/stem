@@ -50,13 +50,14 @@ import stem.util.enum
 import stem.util.log as log
 import stem.util.term as term
 
-OPT = "uic:l:t:h"
-OPT_EXPANDED = ["unit", "integ", "config=", "targets=", "log=", "tor=", "help"]
+OPT = "uit:l:c:h"
+OPT_EXPANDED = ["unit", "integ", "targets=", "test=", "log=", "tor=", "config=", "help"]
 DIVIDER = "=" * 70
 
 CONFIG = stem.util.conf.config_dict("test", {
   "argument.unit": False,
   "argument.integ": False,
+  "argument.test": "",
   "argument.log": None,
   "argument.tor": "tor",
   "argument.no_color": False,
@@ -168,6 +169,8 @@ def load_user_configuration(test_config):
         else:
           target_config = test_config.get("target.config", {}).get(target)
           if target_config: arg_overrides[target_config] = "true"
+    elif opt in ("-l", "--test"):
+      arg_overrides["argument.test"] = arg
     elif opt in ("-l", "--log"):
       arg_overrides["argument.log"] = arg.upper()
     elif opt in ("--tor"):
@@ -255,6 +258,10 @@ if __name__ == '__main__':
     error_tracker.set_category("UNIT TEST")
     
     for test_class in UNIT_TESTS:
+      if CONFIG["argument.test"] and \
+        not test_class.__module__.startswith(CONFIG["argument.test"]):
+        continue
+      
       test.output.print_divider(test_class.__module__)
       suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
       test_results = StringIO.StringIO()
@@ -327,6 +334,10 @@ if __name__ == '__main__':
         print
         
         for test_class in INTEG_TESTS:
+          if CONFIG["argument.test"] and \
+            not test_class.__module__.startswith(CONFIG["argument.test"]):
+            continue
+          
           test.output.print_divider(test_class.__module__)
           suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
           test_results = StringIO.StringIO()
