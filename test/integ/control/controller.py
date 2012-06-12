@@ -8,6 +8,8 @@ import unittest
 
 import stem.control
 import stem.socket
+import stem.version
+import stem.response.protocolinfo
 import test.runner
 
 class TestController(unittest.TestCase):
@@ -72,4 +74,54 @@ class TestController(unittest.TestCase):
       
       self.assertEqual({}, controller.get_info([]))
       self.assertEqual({}, controller.get_info([], {}))
-
+      
+  def test_get_version(self):
+    """
+    Test that the convenient method get_version() works.
+    """
+    
+    runner = test.runner.get_runner()
+    with runner.get_tor_controller() as controller:
+      version = controller.get_version()
+      self.assertTrue(isinstance(version, stem.version.Version))
+      self.assertEqual(version, runner.get_tor_version())
+      
+  def test_authenticate(self):
+    """
+    Test that the convenient method authenticate() works.
+    """
+    
+    runner = test.runner.get_runner()
+    with runner.get_tor_controller(False) as controller:
+      controller.authenticate("test.runner.CONTROL_PASSWORD")
+      test.runner.exercise_controller(self, controller)
+      
+  def test_protocolinfo(self):
+    """
+    Test that the convenient method protocolinfo() works.
+    """
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller(False) as controller:
+      
+      protocolinfo = controller.protocolinfo()
+      self.assertTrue(isinstance(protocolinfo, stem.response.protocolinfo.ProtocolInfoResponse))
+      
+      # Doing a sanity test on the ProtocolInfoResponse instance returned.
+      tor_options = runner.get_options()
+      tor_version = runner.get_tor_version()
+      auth_methods = []
+      
+      if test.runner.Torrc.COOKIE in tor_options:
+        auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
+        if tor_version.meets_requirements(stem.version.Requirement.AUTH_SAFECOOKIE):
+          auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
+          
+      if test.runner.Torrc.PASSWORD in tor_options:
+        auth_methods.append(stem.response.protocolinfo.AuthMethod.PASSWORD)
+        
+      if not auth_methods:
+        auth_methods.append(stem.response.protocolinfo.AuthMethod.NONE)
+        
+      self.assertEqual(tuple(auth_methods), protocolinfo.auth_methods)
