@@ -35,8 +35,10 @@ import time
 import Queue
 import threading
 
+import stem.connection
 import stem.response
 import stem.socket
+import stem.version
 import stem.util.log as log
 
 # state changes a control socket can have
@@ -492,9 +494,11 @@ class Controller(BaseController):
       * ValueError if unable to parse the version
     """
     
-    import stem.version
-    raw_str = self.get_info("version")
-    version_str = raw_str[:raw_str.find(' ')]
+    version_str = self.get_info("version")
+    
+    if " " in version_str:
+      version_str = version_str[:version_str.find(' ')]
+    
     return stem.version.Version(version_str)
   
   def authenticate(self, *args, **kwargs):
@@ -506,7 +510,6 @@ class Controller(BaseController):
     :raises: see :func:`stem.connection.authenticate`
     """
     
-    import stem.connection
     stem.connection.authenticate(self, *args, **kwargs)
   
   def protocolinfo(self):
@@ -520,5 +523,5 @@ class Controller(BaseController):
       * :class:`stem.socket.SocketError` if problems arise in establishing or using the socket
     """
     
-    import stem.connection
     return stem.connection.get_protocolinfo(self)
+
