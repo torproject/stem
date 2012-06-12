@@ -1,29 +1,21 @@
 import stem.socket
 import stem.response
 
-def _getval(dictionary, key):
-  try:
-    return dictionary[key]
-  except KeyError:
-    pass
-
 def _split_line(line):
-  try:
-    if '=' in line:
-      if line[line.find("=") + 1] == "\"":
-        return line.pop_mapping(True)
-      else:
-        return line.split("=", 1)
-    else:
-      return (line, None)
-  except IndexError:
-    return (line[:-1], None)
+  if line.is_next_mapping(quoted = False):
+    return line.split("=", 1) # TODO: make this part of the ControlLine?
+  elif line.is_next_mapping(quoted = True):
+    return line.pop_mapping(True).items()[0]
+  else:
+    return (line.pop(), None)
 
 class GetConfResponse(stem.response.ControlMessage):
   """
   Reply for a GETCONF query.
   
-  :var dict entries: mapping between the queried options and their values
+  :var dict entries:
+    mapping between the queried options (string) and their values (string/list
+    of strings)
   """
   
   def _parse_message(self):
@@ -54,7 +46,7 @@ class GetConfResponse(stem.response.ControlMessage):
       line = remaining_lines.pop(0)
 
       key, value = _split_line(line)
-      entry = _getval(self.entries, key)
+      entry = self.entries.get(key, None)
 
       if type(entry) == str and entry != value:
         self.entries[key] = [entry]

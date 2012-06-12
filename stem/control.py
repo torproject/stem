@@ -534,7 +534,7 @@ class Controller(BaseController):
   def get_conf(self, param, default = None):
     """
     Queries the control socket for the values of given configuration options. If
-    provided a default then that's returned as the if the GETCONF option is undefined
+    provided a default then that's returned as if the GETCONF option is undefined
     or if the call fails for any reason (invalid configuration option, error
     response, control port closed, initiated, etc).
     
