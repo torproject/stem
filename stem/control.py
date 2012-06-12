@@ -550,7 +550,7 @@ class Controller(BaseController):
     
     :raises:
       :class:`stem.socket.ControllerError` if the call fails, and we weren't provided a default response
-      :class:`stem.socket.InvalidRequest` if configuration option requested was invalid.
+      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
     """
     
     if isinstance(param, str):

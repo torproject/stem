@@ -20,6 +20,15 @@ BATCH_RESPONSE = """\
 250-DataDirectory=/tmp/fake dir
 250 DirPort"""
 
+MULTIVALUE_RESPONSE = """\
+250-ControlPort=9100
+250-ExitPolicy=accept 34.3.4.5
+250-ExitPolicy=accept 3.4.53.3
+250-ExitPolicy=reject 23.245.54.3
+250-ExitPolicy=accept 34.3.4.5
+250-ExitPolicy=accept 3.4.53.3
+250 ExitPolicy=reject 23.245.54.3"""
+
 UNRECOGNIZED_KEY_RESPONSE = "552 Unrecognized configuration key \"yellowbrickroad\""
 
 INVALID_RESPONSE = """\
@@ -67,15 +76,35 @@ class TestGetConfResponse(unittest.TestCase):
     
     self.assertEqual(expected, control_message.entries)
   
+  def test_multivalue_response(self):
+    """
+    Parses a GETCONF reply containing a single key with multiple parameters.
+    """
+    
+    control_message = mocking.get_message(MULTIVALUE_RESPONSE)
+    stem.response.convert("GETCONF", control_message)
+    
+    expected = {
+      "ControlPort": "9100",
+      "ExitPolicy": ["accept 34.3.4.5", "accept 3.4.53.3", "reject 23.245.54.3"]
+    }
+    
+    self.assertEqual(expected, control_message.entries)
+  
   def test_unrecognized_key_response(self):
     """
     Parses a GETCONF reply that contains an error code with an unrecognized key.
     """
     
     control_message = mocking.get_message(UNRECOGNIZED_KEY_RESPONSE)
-    self.assertRaises(stem.socket.InvalidRequest, stem.response.convert, "GETCONF", control_message)
+    self.assertRaises(stem.socket.InvalidArguments, stem.response.convert, "GETCONF", control_message)
+    
+    try:
+      stem.response.convert("GETCONF", control_message)
+    except stem.socket.InvalidArguments, exc:
+      self.assertEqual(exc.arguments, ["yellowbrickroad"])
   
-  def test_invalid_multiline_content(self):
+  def test_invalid_content(self):
     """
     Parses a malformed GETCONF reply that contains an invalid response code.
     This is a proper controller message, but malformed according to the

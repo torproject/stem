@@ -28,7 +28,8 @@ as instances of the :class:`stem.response.ControlMessage` class.
   
   ControllerError - Base exception raised when using the controller.
     |- ProtocolError - Malformed socket data.
-    |- InvalidRequest - Invalid request parameters.
+    |- InvalidRequest - Invalid request.
+       +- InvalidArguments - Invalid request parameters.
     +- SocketError - Communication with the socket failed.
        +- SocketClosed - Socket has been shut down.
 """
@@ -551,6 +552,24 @@ class ProtocolError(ControllerError):
 
 class InvalidRequest(ControllerError):
   "Base Exception class for invalid requests"
+
+class InvalidArguments(InvalidRequest):
+  """
+  Exception class for invalid requests which contain invalid arguments.
+
+  :var list arguments: a list of parameters which were invalid
+  """
+
+  def __init__(self, message, arguments):
+    """
+    Initializes an InvalidArguments object.
+
+    :param str message: error message
+    :param list arguments: a list of parameters which were invalid
+
+    :returns: object of InvalidArguments class
+    """
+    self.arguments = arguments
 
 class SocketError(ControllerError):
   "Error arose while communicating with the control socket."

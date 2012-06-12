@@ -60,7 +60,7 @@ def convert(response_type, message):
   
   :raises:
     * :class:`stem.socket.ProtocolError` the message isn't a proper response of that type
-    * :class:`stem.socket.InvalidRequest` the request was invalid
+    * :class:`stem.socket.InvalidArguments` the request's arguments are invalid
     * TypeError if argument isn't a :class:`stem.response.ControlMessage` or response_type isn't supported
   """
   

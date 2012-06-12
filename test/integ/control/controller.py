@@ -145,16 +145,22 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       # successful single query
       
-      control_port = str(runner.get_tor_socket().get_port())
-      torrc_path = runner.get_torrc_path()
-      self.assertEqual(control_port, controller.get_conf("ControlPort"))
-      self.assertEqual(control_port, controller.get_conf("ControlPort", "la-di-dah"))
+      socket = runner.get_tor_socket()
+      if isinstance(socket, stem.socket.ControlPort):
+        socket = str(socket.get_port())
+        config_key = "ControlPort"
+      elif isinstance(socket, stem.socket.ControlSocketFile):
+        socket = str(socket.get_socket_path())
+        config_key = "ControlSocket"
+      
+      self.assertEqual(socket, controller.get_conf(config_key))
+      self.assertEqual(socket, controller.get_conf(config_key, "la-di-dah"))
       
       # succeessful batch query
       
-      expected = {"ControlPort": control_port}
-      self.assertEqual(expected, controller.get_conf(["ControlPort"]))
-      self.assertEqual(expected, controller.get_conf(["ControlPort"], "la-di-dah"))
+      expected = {config_key: socket}
+      self.assertEqual(expected, controller.get_conf([config_key]))
+      self.assertEqual(expected, controller.get_conf([config_key], "la-di-dah"))
       
       getconf_params = set(["ControlPort", "DirPort", "DataDirectory"])
       self.assertEqual(getconf_params, set(controller.get_conf(["ControlPort",

@@ -1,7 +1,23 @@
-import re
-
 import stem.socket
 import stem.response
+
+def _getval(dictionary, key):
+  try:
+    return dictionary[key]
+  except KeyError:
+    pass
+
+def _split_line(line):
+  try:
+    if '=' in line:
+      if line[line.find("=") + 1] == "\"":
+        return line.pop_mapping(True)
+      else:
+        return line.split("=", 1)
+    else:
+      return (line, None)
+  except IndexError:
+    return (line[:-1], None)
 
 class GetConfResponse(stem.response.ControlMessage):
   """
@@ -25,29 +41,26 @@ class GetConfResponse(stem.response.ControlMessage):
     if not self.is_ok():
       unrecognized_keywords = []
       for code, _, line in self.content():
-        if code == '552':
-          try:
-            # to parse: 552 Unrecognized configuration key "zinc"
-            unrecognized_keywords.append(re.search('"([^"]+)"', line).groups()[0])
-          except:
-            pass
+        if code == '552' and line.startswith("Unrecognized configuration key \"") and line.endswith("\""):
+          unrecognized_keywords.append(line[32:-1])
 
       if unrecognized_keywords:
-        raise stem.socket.InvalidRequest("GETCONF request contained unrecognized keywords: %s\n" \
-            % ', '.join(unrecognized_keywords))
+        raise stem.socket.InvalidArguments("GETCONF request contained unrecognized keywords: %s\n" \
+            % ', '.join(unrecognized_keywords), unrecognized_keywords)
       else:
         raise stem.socket.ProtocolError("GETCONF response contained a non-OK status code:\n%s" % self)
     
     while remaining_lines:
       line = remaining_lines.pop(0)
 
-      if '=' in line:
-        if line[line.find("=") + 1] == "\"":
-          key, value = line.pop_mapping(True)
-        else:
-          key, value = line.split("=", 1)
+      key, value = _split_line(line)
+      entry = _getval(self.entries, key)
+
+      if type(entry) == str and entry != value:
+        self.entries[key] = [entry]
+        self.entries[key].append(value)
+      elif type(entry) == list and not value in entry:
+        self.entries[key].append(value)
       else:
-        key, value = (line, None)
-      
-      self.entries[key] = value
+        self.entries[key] = value
 
