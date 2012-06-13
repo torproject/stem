@@ -309,6 +309,7 @@ class BaseController:
     # Any changes to our is_alive() state happen under the send lock, so we
     # need to have it to ensure it doesn't change beneath us.
     
+    # TODO: when we drop python 2.5 compatability we can simplify this
     with self._socket._get_send_lock():
       with self._status_listeners_lock:
         change_timestamp = time.time()

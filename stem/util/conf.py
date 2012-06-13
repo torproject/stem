@@ -280,6 +280,7 @@ class Config():
     elif not self._path:
       raise ValueError("Unable to save configuration: no path provided")
     
+    # TODO: when we drop python 2.5 compatability we can simplify this
     with self._contents_lock:
       with open(self._path, 'w') as output_file:
         for entry_key in sorted(self.keys()):
