@@ -38,6 +38,10 @@ NON_KEY_VALUE_ENTRY = """\
 250-address 67.137.76.214
 250 OK"""
 
+UNRECOGNIZED_KEY_ENTRY = """\
+552 Unrecognized key "blackhole"
+"""
+
 MISSING_MULTILINE_NEWLINE = """\
 250+config-text=ControlPort 9051
 DataDirectory /home/atagar/.tor
@@ -108,6 +112,19 @@ class TestGetInfoResponse(unittest.TestCase):
     
     control_message = mocking.get_message(NON_KEY_VALUE_ENTRY)
     self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "GETINFO", control_message)
+  
+  def test_unrecognized_key_response(self):
+    """
+    Parses a GETCONF reply that contains an error code with an unrecognized key.
+    """
+    
+    control_message = mocking.get_message(UNRECOGNIZED_KEY_ENTRY)
+    self.assertRaises(stem.socket.InvalidArguments, stem.response.convert, "GETINFO", control_message)
+    
+    try:
+      stem.response.convert("GETINFO", control_message)
+    except stem.socket.InvalidArguments, exc:
+      self.assertEqual(exc.arguments, ["blackhole"])
   
   def test_invalid_multiline_content(self):
     """

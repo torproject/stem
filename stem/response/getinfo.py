@@ -25,7 +25,16 @@ class GetInfoResponse(stem.response.ControlMessage):
     remaining_lines = list(self)
     
     if not self.is_ok() or not remaining_lines.pop() == "OK":
-      raise stem.socket.ProtocolError("GETINFO response didn't have an OK status:\n%s" % self)
+      unrecognized_keywords = []
+      for code, _, line in self.content():
+        if code == '552' and line.startswith("Unrecognized key \"") and line.endswith("\""):
+          unrecognized_keywords.append(line[18:-1])
+
+      if unrecognized_keywords:
+        raise stem.socket.InvalidArguments("GETCONF request contained unrecognized keywords: %s\n" \
+            % ', '.join(unrecognized_keywords), unrecognized_keywords)
+      else:
+        raise stem.socket.ProtocolError("GETINFO response didn't have an OK status:\n%s" % self)
     
     while remaining_lines:
       try:
