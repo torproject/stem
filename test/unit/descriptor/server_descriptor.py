@@ -6,6 +6,7 @@ import datetime
 import StringIO
 import unittest
 
+import stem.prereq
 import stem.descriptor.server_descriptor
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 
@@ -312,7 +313,7 @@ class TestServerDescriptor(unittest.TestCase):
     Checks that a fingerprint matching the hash of our signing key will validate.
     """
     
-    if not stem.descriptor.server_descriptor.IS_RSA_AVAILABLE:
+    if not stem.prereq.is_rsa_available():
       self.skipTest("(rsa module unavailable)")
     
     fingerprint = "4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44"
@@ -326,7 +327,7 @@ class TestServerDescriptor(unittest.TestCase):
     it doesn't match the hash of our signing key.
     """
     
-    if not stem.descriptor.server_descriptor.IS_RSA_AVAILABLE:
+    if not stem.prereq.is_rsa_available():
       self.skipTest("(rsa module unavailable)")
     
     fingerprint = "4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE45"

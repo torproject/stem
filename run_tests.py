@@ -45,6 +45,7 @@ import test.integ.util.system
 import test.integ.process
 import test.integ.version
 
+import stem.prereq
 import stem.util.conf
 import stem.util.enum
 import stem.util.log as log
@@ -218,6 +219,14 @@ def load_user_configuration(test_config):
     sys.exit(1)
 
 if __name__ == '__main__':
+  try:
+    stem.prereq.check_requriements()
+  except ImportError, exc:
+    print exc
+    print
+    
+    sys.exit(1)
+  
   start_time = time.time()
   
   # override flag to indicate at the end that testing failed somewhere

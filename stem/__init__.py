@@ -8,5 +8,5 @@ __contact__ = 'atagar@torproject.org'
 __url__ = 'http://www.atagar.com/stem/'
 __license__ = 'LGPLv3'
 
-__all__ = ["descriptor", "response", "util", "connection", "control", "process", "socket", "version"]
+__all__ = ["descriptor", "response", "util", "connection", "control", "prereq", "process", "socket", "version"]
 

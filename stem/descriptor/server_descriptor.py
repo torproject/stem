@@ -32,19 +32,13 @@ import base64
 import hashlib
 import datetime
 
+import stem.prereq
 import stem.descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.version
 import stem.util.log as log
 import stem.util.connection
 import stem.util.tor_tools
-
-try:
-  import rsa
-  IS_RSA_AVAILABLE = True
-except ImportError:
-  log.info("Unable to import the rsa module. Because of this we'll be unable to verify descriptor signature integrity.")
-  IS_RSA_AVAILABLE = False
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -572,7 +566,8 @@ class RelayDescriptor(ServerDescriptor):
     # if we have a fingerprint then checks that our fingerprint is a hash of
     # our signing key
     
-    if IS_RSA_AVAILABLE and validate and self.fingerprint:
+    if validate and self.fingerprint and stem.prereq.is_rsa_available():
+      import rsa
       pubkey = rsa.PublicKey.load_pkcs1(self.signing_key)
       der_encoded = pubkey.save_pkcs1(format = "DER")
       key_hash = hashlib.sha1(der_encoded).hexdigest()
