@@ -213,7 +213,7 @@ def load_user_configuration(test_config):
     sys.exit(1)
   
   tor_config = CONFIG["argument.tor"]
-  if not os.path.exists(tor_config) and not stem.util.system.is_available(tor_config):
+  if CONFIG["argument.integ"] and not os.path.exists(tor_config) and not stem.util.system.is_available(tor_config):
     print "Unable to start tor, '%s' does not exists." % tor_config
     sys.exit(1)
 
