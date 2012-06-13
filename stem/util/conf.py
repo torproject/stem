@@ -280,13 +280,14 @@ class Config():
     elif not self._path:
       raise ValueError("Unable to save configuration: no path provided")
     
-    with self._contents_lock, open(self._path, 'w') as output_file:
-      for entry_key in sorted(self.keys()):
-        for entry_value in self.get_value(entry_key, multiple = True):
-          # check for multi line entries
-          if "\n" in entry_value: entry_value = "\n|" + entry_value.replace("\n", "\n|")
-          
-          output_file.write('%s %s\n' % (entry_key, entry_value))
+    with self._contents_lock:
+      with open(self._path, 'w') as output_file:
+        for entry_key in sorted(self.keys()):
+          for entry_value in self.get_value(entry_key, multiple = True):
+            # check for multi line entries
+            if "\n" in entry_value: entry_value = "\n|" + entry_value.replace("\n", "\n|")
+            
+            output_file.write('%s %s\n' % (entry_key, entry_value))
   
   def clear(self):
     """

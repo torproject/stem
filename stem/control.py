@@ -309,22 +309,23 @@ class BaseController:
     # Any changes to our is_alive() state happen under the send lock, so we
     # need to have it to ensure it doesn't change beneath us.
     
-    with self._socket._get_send_lock(), self._status_listeners_lock:
-      change_timestamp = time.time()
-      
-      if expect_alive != None and expect_alive != self.is_alive():
-        return
-      
-      for listener, spawn in self._status_listeners:
-        if spawn:
-          name = "%s notification" % state
-          args = (self, state, change_timestamp)
-          
-          notice_thread = threading.Thread(target = listener, args = args, name = name)
-          notice_thread.setDaemon(True)
-          notice_thread.start()
-        else:
-          listener(self, state, change_timestamp)
+    with self._socket._get_send_lock():
+      with self._status_listeners_lock:
+        change_timestamp = time.time()
+        
+        if expect_alive != None and expect_alive != self.is_alive():
+          return
+        
+        for listener, spawn in self._status_listeners:
+          if spawn:
+            name = "%s notification" % state
+            args = (self, state, change_timestamp)
+            
+            notice_thread = threading.Thread(target = listener, args = args, name = name)
+            notice_thread.setDaemon(True)
+            notice_thread.start()
+          else:
+            listener(self, state, change_timestamp)
   
   def _launch_threads(self):
     """
