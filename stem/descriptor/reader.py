@@ -79,6 +79,7 @@ import threading
 import mimetypes
 import Queue
 
+import stem.prereq
 import stem.descriptor
 
 # flag to indicate when the reader thread is out of descriptor files to read
@@ -204,7 +205,7 @@ class DescriptorReader:
   instead.
   
   :param str,list target: path or list of paths for files or directories to be read from
-  :param bool follow_links: determines if we'll follow symlinks when traversing directories
+  :param bool follow_links: determines if we'll follow symlinks when traversing directories (requires python 2.6)
   :param int buffer_size: descriptors we'll buffer before waiting for some to be read, this is unbounded if zero
   :param str persistence_path: if set we will load and save processed file listings from this path, errors are ignored
   """
@@ -343,8 +344,13 @@ class DescriptorReader:
         continue
       
       if os.path.isdir(target):
+        if stem.prereq.is_python_26():
+          walker = os.walk(target, followlinks = self._follow_links)
+        else:
+          walker = os.walk(target)
+        
         # adds all of the files that it contains
-        for root, _, files in os.walk(target, followlinks = self._follow_links):
+        for root, _, files in walker:
           for filename in files:
             self._handle_file(os.path.join(root, filename), new_processed_files)
           

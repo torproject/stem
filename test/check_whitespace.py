@@ -102,7 +102,7 @@ def _get_python_files(base_path):
   :returns: iterator that yields the absolute path for python source code
   """
   
-  for root, _, files in os.walk(base_path, followlinks = True):
+  for root, _, files in os.walk(base_path):
     for filename in files:
       if filename.endswith(".py"):
         yield os.path.join(root, filename)
