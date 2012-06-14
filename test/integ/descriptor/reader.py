@@ -12,6 +12,7 @@ import tarfile
 import unittest
 
 import stem.descriptor.reader
+import stem.util.system as system
 import test.runner
 
 BASIC_LISTING = """
@@ -281,6 +282,9 @@ class TestDescriptorReader(unittest.TestCase):
     Runs a DescriptorReader over the root directory, then checks that calling
     stop() makes it terminate in a timely fashion.
     """
+    
+    # Skip on windows since SIGALRM is unavailable
+    if system.is_windows(): self.skipTest("(SIGALRM unavailable)")
     
     is_test_running = True
     reader = stem.descriptor.reader.DescriptorReader("/usr")
