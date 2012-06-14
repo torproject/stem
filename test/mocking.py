@@ -80,25 +80,7 @@ def mock(target, mock_call):
   :param functor mock_call: mocking to replace the function with
   """
   
-  # Builtin functions need special care because the builtin_function_or_method
-  # type lacks the normal '__dict__'.
-  
-  if isinstance(target, BUILTIN_TYPE):
-    # check if we have already mocked this function
-    target_function = target.__name__
-    is_mocked = False
-    
-    for module, function_name, _ in MOCK_STATE.values():
-      if module == __builtin__ and function_name == target_function:
-        is_mocked = True
-    
-    if not is_mocked:
-      MOCK_STATE[MOCK_ID.next()] = (__builtin__, target_function, target)
-    
-    setattr(__builtin__, target.__name__, mock_call)
-    return
-  
-  if "mock_id" in target.__dict__:
+  if hasattr(target, "__dict__") and "mock_id" in target.__dict__:
     # we're overriding an already mocked function
     mocking_id = target.__dict__["mock_id"]
     target_module, target_function, _ = MOCK_STATE[mocking_id]
@@ -113,7 +95,10 @@ def mock(target, mock_call):
   mock_wrapper.__dict__["mock_id"] = mocking_id
   
   # mocks the function with this wrapper
-  target_module.__dict__[target_function] = mock_wrapper
+  if hasattr(target, "__dict__"):
+    target_module.__dict__[target_function] = mock_wrapper
+  else:
+    setattr(target_module, target.__name__, mock_call)
 
 def mock_method(target_class, method_name, mock_call):
   """
