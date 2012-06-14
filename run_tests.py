@@ -44,6 +44,7 @@ import test.integ.util.conf
 import test.integ.util.system
 import test.integ.process
 import test.integ.version
+import test.unit.util.proc
 
 import stem.prereq
 import stem.util.conf
@@ -110,6 +111,7 @@ UNIT_TESTS = (
   test.unit.response.protocolinfo.TestProtocolInfoResponse,
   test.unit.response.authchallenge.TestAuthChallengeResponse,
   test.unit.connection.authentication.TestAuthenticate,
+  test.unit.util.proc.TestProc,
 )
 
 INTEG_TESTS = (
