@@ -51,6 +51,7 @@ import stem.util.conf
 import stem.util.enum
 import stem.util.log as log
 import stem.util.term as term
+import stem.util.system as system
 
 OPT = "uit:l:c:h"
 OPT_EXPANDED = ["unit", "integ", "targets=", "test=", "log=", "tor=", "config=", "help"]
@@ -146,7 +147,7 @@ def load_user_configuration(test_config):
     sys.exit(1)
   
   # suppress color output if our output is being piped
-  if (not sys.stdout.isatty()) or (platform.system() == "Windows"):
+  if (not sys.stdout.isatty()) or system.is_windows():
     arg_overrides["argument.no_color"] = "true"
   
   for opt, arg in opts:

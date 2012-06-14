@@ -7,6 +7,7 @@ best-effort, providing None if the lookup fails.
 
 ::
 
+  is_windows - checks if we're running on windows
   is_bsd - checks if we're running on the bsd family of operating systems
   is_available - determines if a command is availabe on this system
   is_running - determines if a given process is running
