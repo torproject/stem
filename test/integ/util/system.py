@@ -44,6 +44,8 @@ class TestSystem(unittest.TestCase):
     if self.is_extra_tor_running is None:
       if not stem.util.system.is_bsd():
         pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % "tor")
+        if pgrep_results is None:
+          self.skipTest("(pgrep unavailable)")
         self.is_extra_tor_running = len(pgrep_results) > 1
       else:
         ps_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PS_BSD)
