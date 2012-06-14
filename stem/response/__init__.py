@@ -60,7 +60,8 @@ def convert(response_type, message):
   
   :raises:
     * :class:`stem.socket.ProtocolError` the message isn't a proper response of that type
-    * :class:`stem.socket.InvalidArguments` Raised if the request's arguments when converting GETCONF or GETINFO responses are invalid
+    * :class:`stem.socket.InvalidArguments` raised if the arguments given as
+        input are invalid. Raised whenj converting GETINFO or GETCONF requests
     * TypeError if argument isn't a :class:`stem.response.ControlMessage` or response_type isn't supported
   """
   

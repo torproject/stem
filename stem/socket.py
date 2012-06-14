@@ -551,24 +551,52 @@ class ProtocolError(ControllerError):
   "Malformed content from the control socket."
 
 class InvalidRequest(ControllerError):
-  "Base Exception class for invalid requests"
+  """
+  Base Exception class for invalid requests
+
+  :var str code: The error code returned by Tor (if applicable)
+  :var str message: The error message returned by Tor (if applicable) or a human
+    readable error message
+  """
+  
+  def __init__(self, code = None, message = None):
+    """
+    Initializes an InvalidRequest object.
+
+    :param str code: The error code returned by Tor (if applicable)
+    :param str message: The error message returned by Tor (if applicable) or a
+      human readable error message
+
+    :returns: object of InvalidRequest class
+    """
+    
+    self.code = code
+    self.message = message
 
 class InvalidArguments(InvalidRequest):
   """
   Exception class for invalid requests which contain invalid arguments.
 
-  :var list arguments: a list of parameters which were invalid
+  :var str code: The error code returned by Tor (if applicable)
+  :var str message: The error message returned by Tor (if applicable) or a human
+    readable error message
+  :var list arguments: a list of arguments which were invalid
   """
 
-  def __init__(self, message, arguments):
+  def __init__(self, code = None, message = None, arguments = None):
     """
     Initializes an InvalidArguments object.
 
-    :param str message: error message
-    :param list arguments: a list of parameters which were invalid
+    :param str code: The error code returned by Tor (if applicable)
+    :param str message: The error message returned by Tor (if applicable) or a
+      human readable error message
+    :param list arguments: a list of arguments which were invalid
 
     :returns: object of InvalidArguments class
     """
+    
+    self.code = code
+    self.message = message
     self.arguments = arguments
 
 class SocketError(ControllerError):

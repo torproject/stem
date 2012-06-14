@@ -33,11 +33,11 @@ class GetConfResponse(stem.response.ControlMessage):
     if not self.is_ok():
       unrecognized_keywords = []
       for code, _, line in self.content():
-        if code == '552' and line.startswith("Unrecognized configuration key \"") and line.endswith("\""):
+        if code == "552" and line.startswith("Unrecognized configuration key \"") and line.endswith("\""):
           unrecognized_keywords.append(line[32:-1])
 
       if unrecognized_keywords:
-        raise stem.socket.InvalidArguments("GETCONF request contained unrecognized keywords: %s\n" \
+        raise stem.socket.InvalidArguments("552", "GETCONF request contained unrecognized keywords: %s\n" \
             % ', '.join(unrecognized_keywords), unrecognized_keywords)
       else:
         raise stem.socket.ProtocolError("GETCONF response contained a non-OK status code:\n%s" % self)
