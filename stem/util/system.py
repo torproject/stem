@@ -502,28 +502,29 @@ def expand_path(path, cwd = None):
   """
   
   if platform.system() == "Windows":
-    return path # TODO: implement
+    path = path.replace("/", "\\").rstrip("\\")
   else:
-    relative_path = path
+    path = path.replace("\\", "/").rstrip("/")
+  relative_path = path
+  
+  if not path or os.path.isabs(path):
+    # empty or already absolute - nothing to do
+    pass
+  elif path.startswith("~"):
+    # prefixed with a ~ or ~user entry
+    relative_path = os.path.expanduser(path)
+  else:
+    # relative path, expand with the cwd
+    if not cwd: cwd = os.getcwd()
     
-    if not path or os.path.isabs(path):
-      # empty or already absolute - nothing to do
-      pass
-    elif path.startswith("~"):
-      # prefixed with a ~ or ~user entry
-      relative_path = os.path.expanduser(path)
-    else:
-      # relative path, expand with the cwd
-      if not cwd: cwd = os.getcwd()
-      
-      # we'll be dealing with both "my/path/" and "./my/path" entries, so
-      # cropping the later
-      if path.startswith("./"): path = path[2:]
-      elif path == ".": path = ""
-      
-      relative_path = os.path.join(cwd, path)
+    # we'll be dealing with both "my/path/" and "./my/path" entries, so
+    # cropping the later
+    if path.startswith("./") or path.startswith(".\\"): path = path[2:]
+    elif path == ".": path = ""
     
-    return relative_path.rstrip("/")
+    relative_path = os.path.join(cwd, path)
+  
+  return relative_path
 
 def call(command, suppress_exc = True):
   """
