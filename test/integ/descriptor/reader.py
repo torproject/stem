@@ -106,6 +106,12 @@ class TestDescriptorReader(unittest.TestCase):
     due to permissions.
     """
     
+    # Skip the test on windows, since you can only set the file's
+    # read-only flag with os.chmod(). See
+    # http://docs.python.org/library/os.html#os.chmod
+    if system.is_windows():
+      self.skipTest("(chmod not functional)")
+    
     test_listing_path = _make_processed_files_listing(BASIC_LISTING)
     os.chmod(test_listing_path, 0077) # remove read permissions
     self.assertRaises(IOError, stem.descriptor.reader.load_processed_files, test_listing_path)
@@ -406,6 +412,12 @@ class TestDescriptorReader(unittest.TestCase):
     """
     Listens for a file that's skipped because we lack read permissions.
     """
+    
+    # Skip the test on windows, since you can only set the file's
+    # read-only flag with os.chmod(). See
+    # http://docs.python.org/library/os.html#os.chmod
+    if system.is_windows():
+      self.skipTest("(chmod not functional)")
     
     test_path = test.runner.get_runner().get_test_dir("secret_file")
     
