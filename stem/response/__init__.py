@@ -52,6 +52,7 @@ def convert(response_type, message, **kwargs):
     * **\*** GETCONF
     * PROTOCOLINFO
     * AUTHCHALLENGE
+    * SINGLELINE
   
   **\*** can raise a :class:`stem.socket.InvalidArguments` exception
   
@@ -77,6 +78,8 @@ def convert(response_type, message, **kwargs):
     response_class = stem.response.getinfo.GetInfoResponse
   elif response_type == "GETCONF":
     response_class = stem.response.getconf.GetConfResponse
+  elif response_type == "SINGLELINE":
+    response_class = SingleLineResponse
   elif response_type == "PROTOCOLINFO":
     response_class = stem.response.protocolinfo.ProtocolInfoResponse
   elif response_type == "AUTHCHALLENGE":
@@ -413,4 +416,39 @@ def _get_quote_indeces(line, escaped):
     indices.append(quote_index)
   
   return tuple(indices)
+
+class SingleLineResponse(ControlMessage):
+  """
+  A reply that contains only a single line
+  
+  :var dict entries:
+    mapping between the queried options (string) and their values (string/list
+    of strings)
+  """
+  
+  def is_ok(self, strict = False):
+    """
+    Checks if the response code is "250". If strict is True, checks if the
+    response is "250 OK"
+    
+    :param bool strict: If True, check if the message is "250 OK"
+    
+    :returns:
+      * If strict is False: True if the response code is "250", False otherwise
+      * If strict is True: True if the response is "250 OK", False otherwise
+    """
+    
+    if strict:
+      return self.content()[0] == ("250", " ", "OK")
+    return self.content()[0][0] == "250"
+  
+  def _parse_message(self):
+    content = self.content()
+    
+    if len(content) > 1:
+      raise ProtocolError("Received multiline response")
+    elif len(content) == 0:
+      raise ProtocolError("Received empty response")
+    else:
+      self.code, self.delimiter, self.message = content[0]
 
