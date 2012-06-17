@@ -576,5 +576,11 @@ class Controller(BaseController):
         except KeyError: raise stem.socket.InvalidRequest("Received empty string")
     except stem.socket.ControllerError, exc:
       if default is UNDEFINED: raise exc
-      else: return default
+      elif is_multiple:
+        if default != UNDEFINED:
+          return dict([(p, default) for p in param])
+        else:
+          return dict([(p, None) for p in param])
+      else:
+        return default
 

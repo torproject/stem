@@ -166,13 +166,20 @@ class TestController(unittest.TestCase):
       self.assertEqual(getconf_params, set(controller.get_conf(["ControlPort",
         "DirPort", "DataDirectory"])))
       
-      # non-existant option
+      # non-existant option(s)
       
       self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "blarg")
       self.assertEqual("la-di-dah", controller.get_conf("blarg", "la-di-dah"))
+      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "blarg")
+      self.assertEqual("la-di-dah", controller.get_conf("blarg", "la-di-dah"))
+      
+      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf,
+          ["blarg", "huadf"], multiple = True)
+      self.assertEqual({"erfusdj": "la-di-dah", "afiafj": "la-di-dah"},
+          controller.get_conf(["erfusdj", "afiafj"], "la-di-dah", multiple = True))
       
       # multivalue configuration keys
-
+      
       nodefamilies = [node_family[11:].strip() for node_family in
           runner.get_torrc_contents().split("\n") if node_family.startswith("NodeFamily ")]
       self.assertEqual(nodefamilies, controller.get_conf("NodeFamily", multiple = True))
