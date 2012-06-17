@@ -171,6 +171,12 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "blarg")
       self.assertEqual("la-di-dah", controller.get_conf("blarg", "la-di-dah"))
       
+      # multivalue configuration keys
+
+      nodefamilies = [node_family[11:].strip() for node_family in
+          runner.get_torrc_contents().split("\n") if node_family.startswith("NodeFamily ")]
+      self.assertEqual(nodefamilies, controller.get_conf("NodeFamily", multiple = True))
+      
       # empty input
       
       self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "")

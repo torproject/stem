@@ -71,6 +71,8 @@ BASE_TORRC = """# configuration for stem integration tests
 DataDirectory %s
 SocksPort 0
 DownloadExtraInfo 1
+NodeFamily dummystemnodexyz1x1,dummystemnodexyz1x2,dummystemnodexyz1x3
+NodeFamily dummystemnodexyz2x1,dummystemnodexyz2x2,dummystemnodexyz2x3
 """
 
 # We make some paths relative to stem's base directory (the one above us)
