@@ -147,18 +147,18 @@ class TestController(unittest.TestCase):
       
       socket = runner.get_tor_socket()
       if isinstance(socket, stem.socket.ControlPort):
-        socket = str(socket.get_port())
+        connection_value = str(socket.get_port())
         config_key = "ControlPort"
       elif isinstance(socket, stem.socket.ControlSocketFile):
-        socket = str(socket.get_socket_path())
+        connection_value = str(socket.get_socket_path())
         config_key = "ControlSocket"
       
-      self.assertEqual(socket, controller.get_conf(config_key))
-      self.assertEqual(socket, controller.get_conf(config_key, "la-di-dah"))
+      self.assertEqual(connection_value, controller.get_conf(config_key))
+      self.assertEqual(connection_value, controller.get_conf(config_key, "la-di-dah"))
       
       # succeessful batch query
       
-      expected = {config_key: socket}
+      expected = {config_key: connection_value}
       self.assertEqual(expected, controller.get_conf([config_key]))
       self.assertEqual(expected, controller.get_conf([config_key], "la-di-dah"))
       
@@ -173,7 +173,7 @@ class TestController(unittest.TestCase):
       
       # empty input
       
-      self.assertRaises(stem.socket.ControllerError, controller.get_conf, "")
+      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "")
       self.assertEqual("la-di-dah", controller.get_conf("", "la-di-dah"))
       
       self.assertEqual({}, controller.get_conf([]))

@@ -29,7 +29,7 @@ as instances of the :class:`stem.response.ControlMessage` class.
   ControllerError - Base exception raised when using the controller.
     |- ProtocolError - Malformed socket data.
     |- InvalidRequest - Invalid request.
-       +- InvalidArguments - Invalid request parameters.
+    |  +- InvalidArguments - Invalid request parameters.
     +- SocketError - Communication with the socket failed.
        +- SocketClosed - Socket has been shut down.
 """
@@ -553,7 +553,7 @@ class ProtocolError(ControllerError):
 class InvalidRequest(ControllerError):
   """
   Base Exception class for invalid requests
-
+  
   :var str code: The error code returned by Tor (if applicable)
   :var str message: The error message returned by Tor (if applicable) or a human
     readable error message
@@ -562,11 +562,11 @@ class InvalidRequest(ControllerError):
   def __init__(self, code = None, message = None):
     """
     Initializes an InvalidRequest object.
-
+    
     :param str code: The error code returned by Tor (if applicable)
     :param str message: The error message returned by Tor (if applicable) or a
       human readable error message
-
+    
     :returns: object of InvalidRequest class
     """
     
@@ -576,22 +576,22 @@ class InvalidRequest(ControllerError):
 class InvalidArguments(InvalidRequest):
   """
   Exception class for invalid requests which contain invalid arguments.
-
+  
   :var str code: The error code returned by Tor (if applicable)
   :var str message: The error message returned by Tor (if applicable) or a human
     readable error message
   :var list arguments: a list of arguments which were invalid
   """
-
+  
   def __init__(self, code = None, message = None, arguments = None):
     """
     Initializes an InvalidArguments object.
-
+    
     :param str code: The error code returned by Tor (if applicable)
     :param str message: The error message returned by Tor (if applicable) or a
       human readable error message
     :param list arguments: a list of arguments which were invalid
-
+    
     :returns: object of InvalidArguments class
     """
     

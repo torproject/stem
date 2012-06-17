@@ -453,7 +453,9 @@ class Controller(BaseController):
       * dict with the param => response mapping if our param was a list
       * default if one was provided and our call failed
     
-    :raises: :class:`stem.socket.ControllerError` if the call fails, and we weren't provided a default response
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails, and we weren't provided a default response
+      :class:`stem.socket.InvalidArguments` if the 'param' requested was invalid
     """
     
     # TODO: add caching?
@@ -530,8 +532,8 @@ class Controller(BaseController):
     """
     
     return stem.connection.get_protocolinfo(self)
-
-  def get_conf(self, param, default = None):
+  
+  def get_conf(self, param, default = UNDEFINED, multiple = False):
     """
     Queries the control socket for the values of given configuration options. If
     provided a default then that's returned as if the GETCONF option is undefined
@@ -540,17 +542,21 @@ class Controller(BaseController):
     
     :param str,list param: GETCONF option or options to be queried
     :param object default: response if the query fails
+    :param bool multiple: if True, the value(s) provided are lists of all returned values,
+                          otherwise this just provides the first value
     
     :returns:
       Response depends upon how we were called as follows...
       
-      * str with the response if our param was a str
-      * dict with the param => response mapping if our param was a list
+      * str with the response if our param was a str and multiple was False
+      * dict with the param (str) => response (str) mapping if our param was a list and multiple was False
+      * list with the response strings if our param was a str and multiple was True
+      * dict with the param (str) => response (list) mapping if our param was a list and multiple was True
       * default if one was provided and our call failed
     
     :raises:
       :class:`stem.socket.ControllerError` if the call fails, and we weren't provided a default response
-      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      :class:`stem.socket.InvalidArguments` if the configuration options requested were invalid
     """
     
     if isinstance(param, str):
@@ -561,23 +567,14 @@ class Controller(BaseController):
     
     try:
       response = self.msg("GETCONF %s" % " ".join(param))
-      stem.response.convert("GETCONF", response)
-      
-      # error if we got back different parameters than we requested
-      requested_params = set(param)
-      reply_params = set(response.entries.keys())
-      
-      if requested_params != reply_params:
-        requested_label = ", ".join(requested_params)
-        reply_label = ", ".join(reply_params)
-        
-        raise stem.socket.ProtocolError("GETCONF reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (requested_label, reply_label))
+      stem.response.convert("GETCONF", response, multiple = multiple)
       
       if is_multiple:
         return response.entries
       else:
-        return response.entries[param[0]]
+        try: return response.entries[param[0]]
+        except KeyError: raise stem.socket.InvalidRequest("Received empty string")
     except stem.socket.ControllerError, exc:
-      if default is None: raise exc
+      if default is UNDEFINED: raise exc
       else: return default
 

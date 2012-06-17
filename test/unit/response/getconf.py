@@ -24,12 +24,11 @@ MULTIVALUE_RESPONSE = """\
 250-ControlPort=9100
 250-ExitPolicy=accept 34.3.4.5
 250-ExitPolicy=accept 3.4.53.3
-250-ExitPolicy=reject 23.245.54.3
-250-ExitPolicy=accept 34.3.4.5
 250-ExitPolicy=accept 3.4.53.3
 250 ExitPolicy=reject 23.245.54.3"""
 
-UNRECOGNIZED_KEY_RESPONSE = "552 Unrecognized configuration key \"yellowbrickroad\""
+UNRECOGNIZED_KEY_RESPONSE = '''552-Unrecognized configuration key "brickroad"
+552 Unrecognized configuration key "submarine"'''
 
 INVALID_RESPONSE = """\
 123-FOO
@@ -82,11 +81,11 @@ class TestGetConfResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(MULTIVALUE_RESPONSE)
-    stem.response.convert("GETCONF", control_message)
+    stem.response.convert("GETCONF", control_message, multiple = True)
     
     expected = {
-      "ControlPort": "9100",
-      "ExitPolicy": ["accept 34.3.4.5", "accept 3.4.53.3", "reject 23.245.54.3"]
+      "ControlPort": ["9100"],
+      "ExitPolicy": ["accept 34.3.4.5", "accept 3.4.53.3", "accept 3.4.53.3", "reject 23.245.54.3"]
     }
     
     self.assertEqual(expected, control_message.entries)
@@ -100,9 +99,9 @@ class TestGetConfResponse(unittest.TestCase):
     self.assertRaises(stem.socket.InvalidArguments, stem.response.convert, "GETCONF", control_message)
     
     try:
-      stem.response.convert("GETCONF", control_message)
+      stem.response.convert("GETCONF", control_message, multiple = True)
     except stem.socket.InvalidArguments, exc:
-      self.assertEqual(exc.arguments, ["yellowbrickroad"])
+      self.assertEqual(exc.arguments, ["brickroad", "submarine"])
   
   def test_invalid_content(self):
     """

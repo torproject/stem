@@ -42,7 +42,7 @@ KEY_ARG = re.compile("^(\S+)=")
 CONTROL_ESCAPES = {r"\\": "\\",  r"\"": "\"",   r"\'": "'",
                    r"\r": "\r",  r"\n": "\n",   r"\t": "\t"}
 
-def convert(response_type, message):
+def convert(response_type, message, **kwargs):
   """
   Converts a ControlMessage into a particular kind of tor response. This does
   an in-place conversion of the message from being a ControlMessage to a
@@ -57,6 +57,7 @@ def convert(response_type, message):
   
   :param str response_type: type of tor response to convert to
   :param stem.response.ControlMessage message: message to be converted
+  :param kwargs: optional keyword arguments to be passed to the parser method
   
   :raises:
     * :class:`stem.socket.ProtocolError` the message isn't a proper response of that type
@@ -84,7 +85,7 @@ def convert(response_type, message):
   else: raise TypeError("Unsupported response type: %s" % response_type)
   
   message.__class__ = response_class
-  message._parse_message()
+  message._parse_message(**kwargs)
 
 class ControlMessage:
   """
