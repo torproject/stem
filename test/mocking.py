@@ -71,7 +71,7 @@ def support_with(obj):
   obj.__dict__["__enter__"] = return_value(obj)
   obj.__dict__["__exit__"] = no_op()
 
-def mock(target, mock_call):
+def mock(target, mock_call, target_module=None):
   """
   Mocks the given function, saving the initial implementation so it can be
   reverted later.
@@ -87,7 +87,7 @@ def mock(target, mock_call):
   else:
     # this is a new mocking, save the original state
     mocking_id = MOCK_ID.next()
-    target_module = inspect.getmodule(target)
+    target_module = target_module or inspect.getmodule(target)
     target_function = target.__name__
     MOCK_STATE[mocking_id] = (target_module, target_function, target)
   
