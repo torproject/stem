@@ -12,13 +12,12 @@ import stem.version
 import test.runner
 
 class TestControlMessage(unittest.TestCase):
-  def setUp(self):
-    test.runner.require_control(self)
-  
   def test_unestablished_socket(self):
     """
     Checks message parsing when we have a valid but unauthenticated socket.
     """
+    
+    if test.runner.require_control(self): return
     
     # If an unauthenticated connection gets a message besides AUTHENTICATE or
     # PROTOCOLINFO then tor will give an 'Authentication required.' message and
@@ -60,6 +59,8 @@ class TestControlMessage(unittest.TestCase):
     Parses the response for a command which doesn't exist.
     """
     
+    if test.runner.require_control(self): return
+    
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send("blarg")
       unrecognized_command_response = control_socket.recv()
@@ -73,6 +74,8 @@ class TestControlMessage(unittest.TestCase):
     Parses the response for a GETINFO query which doesn't exist.
     """
     
+    if test.runner.require_control(self): return
+    
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send("GETINFO blarg")
       unrecognized_key_response = control_socket.recv()
@@ -85,6 +88,8 @@ class TestControlMessage(unittest.TestCase):
     """
     Parses the 'GETINFO config-file' response.
     """
+    
+    if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
     torrc_dst = runner.get_torrc_path()
@@ -102,7 +107,11 @@ class TestControlMessage(unittest.TestCase):
     Parses the 'GETINFO config-text' response.
     """
     
-    test.runner.require_version(self, stem.version.Requirement.GETINFO_CONFIG_TEXT)
+    if test.runner.require_control(self):
+      return
+    elif test.runner.require_version(self, stem.version.Requirement.GETINFO_CONFIG_TEXT):
+      return
+    
     runner = test.runner.get_runner()
     
     # We can't be certain of the order, and there may be extra config-text
@@ -142,6 +151,8 @@ class TestControlMessage(unittest.TestCase):
     """
     Issues 'SETEVENTS BW' and parses a couple events.
     """
+    
+    if test.runner.require_control(self): return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send("SETEVENTS BW")

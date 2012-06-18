@@ -9,6 +9,7 @@ import unittest
 import stem.prereq
 import stem.descriptor.server_descriptor
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
+import test.runner
 
 CRYPTO_BLOB = """
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
@@ -314,7 +315,8 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     if not stem.prereq.is_rsa_available():
-      self.skipTest("(rsa module unavailable)")
+      test.runner.skip(self, "(rsa module unavailable)")
+      return
     
     fingerprint = "4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44"
     desc_text = _make_descriptor({"opt fingerprint": fingerprint})
@@ -328,7 +330,8 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     if not stem.prereq.is_rsa_available():
-      self.skipTest("(rsa module unavailable)")
+      test.runner.skip(self, "(rsa module unavailable)")
+      return
     
     fingerprint = "4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE45"
     desc_text = _make_descriptor({"opt fingerprint": fingerprint})

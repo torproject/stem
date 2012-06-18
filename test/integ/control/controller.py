@@ -13,13 +13,12 @@ import stem.response.protocolinfo
 import test.runner
 
 class TestController(unittest.TestCase):
-  def setUp(self):
-    test.runner.require_control(self)
-  
   def test_from_port(self):
     """
     Basic sanity check for the from_port constructor.
     """
+    
+    if test.runner.require_control(self): return
     
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
       with stem.control.Controller.from_port(control_port = test.runner.CONTROL_PORT) as controller:
@@ -32,6 +31,8 @@ class TestController(unittest.TestCase):
     Basic sanity check for the from_socket_file constructor.
     """
     
+    if test.runner.require_control(self): return
+    
     if test.runner.Torrc.SOCKET in test.runner.get_runner().get_options():
       with stem.control.Controller.from_socket_file(socket_path = test.runner.CONTROL_SOCKET_PATH) as controller:
         self.assertTrue(isinstance(controller, stem.control.Controller))
@@ -42,6 +43,8 @@ class TestController(unittest.TestCase):
     """
     Exercises GETINFO with valid and invalid queries.
     """
+    
+    if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
     
@@ -80,6 +83,8 @@ class TestController(unittest.TestCase):
     Test that the convenient method get_version() works.
     """
     
+    if test.runner.require_control(self): return
+    
     runner = test.runner.get_runner()
     with runner.get_tor_controller() as controller:
       version = controller.get_version()
@@ -91,6 +96,8 @@ class TestController(unittest.TestCase):
     Test that the convenient method authenticate() works.
     """
     
+    if test.runner.require_control(self): return
+    
     runner = test.runner.get_runner()
     with runner.get_tor_controller(False) as controller:
       controller.authenticate(test.runner.CONTROL_PASSWORD)
@@ -100,6 +107,8 @@ class TestController(unittest.TestCase):
     """
     Test that the convenient method protocolinfo() works.
     """
+    
+    if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
     

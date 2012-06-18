@@ -8,6 +8,7 @@ about the tor test instance they're running against.
   RunnerStopped - Runner doesn't have an active tor instance
   TorInaccessable - Tor can't be queried for the information
   
+  skip - skips the current test if we can
   require_control - skips the test unless tor provides a controller endpoint
   require_version - skips the test unless we meet a tor version requirement
   exercise_controller - basic sanity check that a controller connection can be used
@@ -44,6 +45,7 @@ import logging
 import tempfile
 import threading
 
+import stem.prereq
 import stem.socket
 import stem.process
 import stem.version
@@ -99,15 +101,31 @@ class RunnerStopped(Exception):
 class TorInaccessable(Exception):
   "Raised when information is needed from tor but the instance we have is inaccessable"
 
+def skip(test_case, message):
+  """
+  Skips the test if we can. The capability for skipping tests was added in
+  python 2.7 so callers should return after this, so they report 'success' if
+  this method is unavailable.
+  
+  :param unittest.TestCase test_case: test being ran
+  :param str message: message to skip the test with
+  """
+  
+  if stem.prereq.is_python_27():
+    test_case.skipTest(message)
+
 def require_control(test_case):
   """
   Skips the test unless tor provides an endpoint for controllers to attach to.
   
   :param unittest.TestCase test_case: test being ran
+  
+  :returns: True if test should be skipped, False otherwise
   """
   
   if not test.runner.get_runner().is_accessible():
-    test_case.skipTest("(no connection)")
+    skip(test_case, "(no connection)")
+    return True
 
 def require_version(test_case, req_version):
   """
@@ -115,10 +133,13 @@ def require_version(test_case, req_version):
   
   :param unittest.TestCase test_case: test being ran
   :param stem.version.Version req_version: required tor version for the test
+  
+  :returns: True if test should be skipped, False otherwise
   """
   
   if get_runner().get_tor_version() < req_version:
-    test_case.skipTest("(requires %s)" % req_version)
+    skip(test_case, "(requires %s)" % req_version)
+    return True
 
 def only_run_once(test_case, test_name):
   """
@@ -128,10 +149,13 @@ def only_run_once(test_case, test_name):
   
   :param unittest.TestCase test_case: test being ran
   :param str test_name: name of the test being ran
+  
+  :returns: True if test should be skipped, False otherwise
   """
   
   if (test_case, test_name) in RAN_TESTS:
-    test_case.skipTest("(already ran)")
+    skip(test_case, "(already ran)")
+    return True
   else:
     RAN_TESTS.append((test_case, test_name))
 

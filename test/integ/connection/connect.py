@@ -11,8 +11,6 @@ import test.runner
 
 class TestConnect(unittest.TestCase):
   def setUp(self):
-    test.runner.require_control(self)
-    
     # prevents the function from printing to the real stdout
     self.original_stdout = sys.stdout
     sys.stdout = StringIO.StringIO()
@@ -24,6 +22,8 @@ class TestConnect(unittest.TestCase):
     """
     Basic sanity checks for the connect_port function.
     """
+    
+    if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
     
@@ -43,6 +43,8 @@ class TestConnect(unittest.TestCase):
     """
     Basic sanity checks for the connect_socket_file function.
     """
+    
+    if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
     

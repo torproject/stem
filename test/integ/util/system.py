@@ -79,7 +79,8 @@ class TestSystem(unittest.TestCase):
     """
     
     if self.is_extra_tor_running:
-      self.skipTest("(multiple tor instances)")
+      test.runner.skip(self, "(multiple tor instances)")
+      return
     
     tor_pid = test.runner.get_runner().get_pid()
     self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
@@ -91,9 +92,11 @@ class TestSystem(unittest.TestCase):
     """
     
     if self.is_extra_tor_running:
-      self.skipTest("(multiple tor instances)")
+      test.runner.skip(self, "(multiple tor instances)")
+      return
     elif not stem.util.system.is_available("pgrep"):
-      self.skipTest("(pgrep unavailable)")
+      test.runner.skip(self, "(pgrep unavailable)")
+      return
     
     pgrep_prefix = stem.util.system.GET_PID_BY_NAME_PGREP % ""
     mocking.mock(stem.util.system.call, filter_system_call([pgrep_prefix]))
@@ -107,9 +110,11 @@ class TestSystem(unittest.TestCase):
     """
     
     if self.is_extra_tor_running:
-      self.skipTest("(multiple tor instances)")
+      test.runner.skip(self, "(multiple tor instances)")
+      return
     elif not stem.util.system.is_available("pidof"):
-      self.skipTest("(pidof unavailable)")
+      test.runner.skip(self, "(pidof unavailable)")
+      return
     
     pidof_prefix = stem.util.system.GET_PID_BY_NAME_PIDOF % ""
     mocking.mock(stem.util.system.call, filter_system_call([pidof_prefix]))
@@ -123,11 +128,14 @@ class TestSystem(unittest.TestCase):
     """
     
     if self.is_extra_tor_running:
-      self.skipTest("(multiple tor instances)")
+      test.runner.skip(self, "(multiple tor instances)")
+      return
     elif not stem.util.system.is_available("ps"):
-      self.skipTest("(ps unavailable)")
+      test.runner.skip(self, "(ps unavailable)")
+      return
     elif stem.util.system.is_bsd():
-      self.skipTest("(linux only)")
+      test.runner.skip(self, "(linux only)")
+      return
     
     ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_LINUX % ""
     mocking.mock(stem.util.system.call, filter_system_call([ps_prefix]))
@@ -141,11 +149,14 @@ class TestSystem(unittest.TestCase):
     """
     
     if self.is_extra_tor_running:
-      self.skipTest("(multiple tor instances)")
+      test.runner.skip(self, "(multiple tor instances)")
+      return
     elif not stem.util.system.is_available("ps"):
-      self.skipTest("(ps unavailable)")
+      test.runner.skip(self, "(ps unavailable)")
+      return
     elif not stem.util.system.is_bsd():
-      self.skipTest("(bsd only)")
+      test.runner.skip(self, "(bsd only)")
+      return
     
     ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_BSD
     mocking.mock(stem.util.system.call, filter_system_call([ps_prefix]))
@@ -160,11 +171,14 @@ class TestSystem(unittest.TestCase):
     
     runner = test.runner.get_runner()
     if self.is_extra_tor_running:
-      self.skipTest("(multiple tor instances)")
+      test.runner.skip(self, "(multiple tor instances)")
+      return
     elif not stem.util.system.is_available("lsof"):
-      self.skipTest("(lsof unavailable)")
+      test.runner.skip(self, "(lsof unavailable)")
+      return
     elif not runner.is_ptraceable():
-      self.skipTest("(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      return
     
     lsof_prefix = stem.util.system.GET_PID_BY_NAME_LSOF % ""
     mocking.mock(stem.util.system.call, filter_system_call([lsof_prefix]))
@@ -179,9 +193,11 @@ class TestSystem(unittest.TestCase):
     
     runner = test.runner.get_runner()
     if not _has_port():
-      self.skipTest("(test instance has no port)")
+      test.runner.skip(self, "(test instance has no port)")
+      return
     elif not runner.is_ptraceable():
-      self.skipTest("(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      return
     
     tor_pid, tor_port = runner.get_pid(), test.runner.CONTROL_PORT
     self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(tor_port))
@@ -194,13 +210,17 @@ class TestSystem(unittest.TestCase):
     
     runner = test.runner.get_runner()
     if not _has_port():
-      self.skipTest("(test instance has no port)")
+      test.runner.skip(self, "(test instance has no port)")
+      return
     elif not stem.util.system.is_available("netstat"):
-      self.skipTest("(netstat unavailable)")
+      test.runner.skip(self, "(netstat unavailable)")
+      return
     elif stem.util.system.is_bsd():
-      self.skipTest("(linux only)")
+      test.runner.skip(self, "(linux only)")
+      return
     elif not runner.is_ptraceable():
-      self.skipTest("(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      return
     
     netstat_prefix = stem.util.system.GET_PID_BY_PORT_NETSTAT
     mocking.mock(stem.util.system.call, filter_system_call([netstat_prefix]))
@@ -215,13 +235,17 @@ class TestSystem(unittest.TestCase):
     
     runner = test.runner.get_runner()
     if not _has_port():
-      self.skipTest("(test instance has no port)")
+      test.runner.skip(self, "(test instance has no port)")
+      return
     elif not stem.util.system.is_available("sockstat"):
-      self.skipTest("(sockstat unavailable)")
+      test.runner.skip(self, "(sockstat unavailable)")
+      return
     elif not stem.util.system.is_bsd():
-      self.skipTest("(bsd only)")
+      test.runner.skip(self, "(bsd only)")
+      return
     elif not runner.is_ptraceable():
-      self.skipTest("(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      return
     
     sockstat_prefix = stem.util.system.GET_PID_BY_PORT_SOCKSTAT % ""
     mocking.mock(stem.util.system.call, filter_system_call([sockstat_prefix]))
@@ -236,11 +260,14 @@ class TestSystem(unittest.TestCase):
     
     runner = test.runner.get_runner()
     if not _has_port():
-      self.skipTest("(test instance has no port)")
+      test.runner.skip(self, "(test instance has no port)")
+      return
     elif not stem.util.system.is_available("lsof"):
-      self.skipTest("(lsof unavailable)")
+      test.runner.skip(self, "(lsof unavailable)")
+      return
     elif not runner.is_ptraceable():
-      self.skipTest("(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      return
     
     lsof_prefix = stem.util.system.GET_PID_BY_PORT_LSOF
     mocking.mock(stem.util.system.call, filter_system_call([lsof_prefix]))
@@ -254,7 +281,9 @@ class TestSystem(unittest.TestCase):
     """
     
     # on macs this test is unreliable because Quicklook sometimes claims '/tmp'
-    if os.uname()[0] == "Darwin": self.skipTest("(unreliable due to Quicklook)")
+    if os.uname()[0] == "Darwin":
+      test.runner.skip(self, "(unreliable due to Quicklook)")
+      return
     
     # we're not running with a control socket so this just exercises the
     # failure case
@@ -270,7 +299,8 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
     
     if not runner.is_ptraceable():
-      self.skipTest("(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      return
     
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
     self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
@@ -283,9 +313,11 @@ class TestSystem(unittest.TestCase):
     
     runner = test.runner.get_runner()
     if not stem.util.system.is_available("pwdx"):
-      self.skipTest("(pwdx unavailable)")
+      test.runner.skip(self, "(pwdx unavailable)")
+      return
     elif not runner.is_ptraceable():
-      self.skipTest("(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      return
     
     # filter the call function to only allow this command
     pwdx_prefix = stem.util.system.GET_CWD_PWDX % ""
@@ -301,9 +333,11 @@ class TestSystem(unittest.TestCase):
     
     runner = test.runner.get_runner()
     if not stem.util.system.is_available("lsof"):
-      self.skipTest("(lsof unavailable)")
+      test.runner.skip(self, "(lsof unavailable)")
+      return
     elif not runner.is_ptraceable():
-      self.skipTest("(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      return
     
     # filter the call function to only allow this command
     lsof_prefix = "lsof -a -p "

@@ -17,7 +17,6 @@ from test.integ.util.system import filter_system_call
 
 class TestProtocolInfo(unittest.TestCase):
   def setUp(self):
-    test.runner.require_control(self)
     mocking.mock(stem.util.proc.is_available, mocking.return_false())
     mocking.mock(stem.util.system.is_available, mocking.return_true())
   
@@ -29,6 +28,8 @@ class TestProtocolInfo(unittest.TestCase):
     Makes a PROTOCOLINFO query and processes the response for our control
     connection.
     """
+    
+    if test.runner.require_control(self): return
     
     control_socket = test.runner.get_runner().get_tor_socket(False)
     control_socket.send("PROTOCOLINFO 1")
@@ -55,6 +56,8 @@ class TestProtocolInfo(unittest.TestCase):
     This test is largely redundant with test_parsing() if we aren't running
     with the 'RELATIVE' target.
     """
+    
+    if test.runner.require_control(self): return
     
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
       cwd_by_port_lookup_prefixes = (
@@ -89,6 +92,8 @@ class TestProtocolInfo(unittest.TestCase):
     re-establish it.
     """
     
+    if test.runner.require_control(self): return
+    
     with test.runner.get_runner().get_tor_socket(False) as control_socket:
       for i in range(5):
         protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
@@ -99,6 +104,8 @@ class TestProtocolInfo(unittest.TestCase):
     Tests making a PROTOCOLINFO query when previous use of the socket had
     already disconnected it.
     """
+    
+    if test.runner.require_control(self): return
     
     with test.runner.get_runner().get_tor_socket(False) as control_socket:
       # makes a couple protocolinfo queries outside of get_protocolinfo first

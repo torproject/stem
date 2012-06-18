@@ -5,6 +5,7 @@ running with.
 
 import unittest
 
+import stem.prereq
 import test.runner
 import stem.version
 
@@ -15,7 +16,8 @@ class TestVersion(unittest.TestCase):
     """
     
     if not stem.util.system.is_available("tor"):
-      self.skipTest("(tor isn't in our path)")
+      test.runner.skip(self, "(tor isn't in our path)")
+      return
     
     # Since tor is in our path we should expect to be able to get the version
     # that way, though this might not belong to our test instance (if we're
@@ -35,7 +37,7 @@ class TestVersion(unittest.TestCase):
     test instance provides.
     """
     
-    test.runner.require_control(self)
+    if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
     system_tor_version = stem.version.get_system_tor_version(runner.get_tor_command())
@@ -47,7 +49,7 @@ class TestVersion(unittest.TestCase):
     we can parse it.
     """
     
-    test.runner.require_control(self)
+    if test.runner.require_control(self): return
     
     control_socket = test.runner.get_runner().get_tor_socket()
     control_socket.send("GETINFO version")

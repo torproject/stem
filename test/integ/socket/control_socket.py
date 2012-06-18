@@ -18,13 +18,12 @@ import stem.socket
 import test.runner
 
 class TestControlSocket(unittest.TestCase):
-  def setUp(self):
-    test.runner.require_control(self)
-  
   def test_send_buffered(self):
     """
     Sends multiple requests before receiving back any of the replies.
     """
+    
+    if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
     tor_version = runner.get_tor_version()
@@ -43,6 +42,8 @@ class TestControlSocket(unittest.TestCase):
     Sends a message after we've closed the connection.
     """
     
+    if test.runner.require_control(self): return
+    
     with test.runner.get_runner().get_tor_socket() as control_socket:
       self.assertTrue(control_socket.is_alive())
       control_socket.close()
@@ -59,6 +60,8 @@ class TestControlSocket(unittest.TestCase):
     disconnect (is_alive() will return True) until we've made a failed recv()
     call. With a file socket, however, we'll also fail when calling send().
     """
+    
+    if test.runner.require_control(self): return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send("QUIT")
@@ -80,6 +83,8 @@ class TestControlSocket(unittest.TestCase):
     Receives a message after we've closed the connection.
     """
     
+    if test.runner.require_control(self): return
+    
     with test.runner.get_runner().get_tor_socket() as control_socket:
       self.assertTrue(control_socket.is_alive())
       control_socket.close()
@@ -92,6 +97,8 @@ class TestControlSocket(unittest.TestCase):
     Receives a message from a socket that has been disconnected by the other
     end.
     """
+    
+    if test.runner.require_control(self): return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send("QUIT")
@@ -109,6 +116,8 @@ class TestControlSocket(unittest.TestCase):
     """
     Checks that we can reconnect, use, and disconnect a socket repeatedly.
     """
+    
+    if test.runner.require_control(self): return
     
     with test.runner.get_runner().get_tor_socket(False) as control_socket:
       for i in range(10):

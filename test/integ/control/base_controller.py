@@ -34,14 +34,13 @@ class StateObserver:
     self.timestamp = timestamp
 
 class TestBaseController(unittest.TestCase):
-  def setUp(self):
-    test.runner.require_control(self)
-  
   def test_connect_repeatedly(self):
     """
     Connects and closes the socket repeatedly. This is a simple attempt to
     trigger concurrency issues.
     """
+    
+    if test.runner.require_control(self): return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
@@ -55,6 +54,8 @@ class TestBaseController(unittest.TestCase):
     Tests a basic query with the msg() method.
     """
     
+    if test.runner.require_control(self): return
+    
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
       test.runner.exercise_controller(self, controller)
@@ -63,6 +64,8 @@ class TestBaseController(unittest.TestCase):
     """
     Tests the msg() method against an invalid controller command.
     """
+    
+    if test.runner.require_control(self): return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
@@ -74,6 +77,8 @@ class TestBaseController(unittest.TestCase):
     Tests the msg() method against a non-existant GETINFO option.
     """
     
+    if test.runner.require_control(self): return
+    
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
       response = controller.msg("GETINFO blarg")
@@ -84,6 +89,8 @@ class TestBaseController(unittest.TestCase):
     Connects, sends a burst of messages, and closes the socket repeatedly. This
     is a simple attempt to trigger concurrency issues.
     """
+    
+    if test.runner.require_control(self): return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
@@ -118,6 +125,8 @@ class TestBaseController(unittest.TestCase):
     socket with queries, and checks that when a controller is closed the
     listeners will still receive all of the enqueued events.
     """
+    
+    if test.runner.require_control(self): return
     
     class ControlledListener(stem.control.BaseController):
       """
@@ -172,6 +181,8 @@ class TestBaseController(unittest.TestCase):
     Checks basic functionality of the add_status_listener() and
     remove_status_listener() methods.
     """
+    
+    if test.runner.require_control(self): return
     
     state_observer = StateObserver()
     

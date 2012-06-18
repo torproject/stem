@@ -95,7 +95,6 @@ def _get_auth_failure_message(auth_type):
 
 class TestAuthenticate(unittest.TestCase):
   def setUp(self):
-    test.runner.require_control(self)
     self.cookie_auth_methods = [AuthMethod.COOKIE]
     
     tor_version = test.runner.get_runner().get_tor_version()
@@ -107,6 +106,8 @@ class TestAuthenticate(unittest.TestCase):
     Tests that the authenticate function can authenticate to our socket.
     """
     
+    if test.runner.require_control(self): return
+    
     runner = test.runner.get_runner()
     with runner.get_tor_socket(False) as control_socket:
       stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
@@ -117,6 +118,8 @@ class TestAuthenticate(unittest.TestCase):
     Tests that the authenticate function can authenticate via a Controller.
     """
     
+    if test.runner.require_control(self): return
+    
     runner = test.runner.get_runner()
     with runner.get_tor_controller(False) as controller:
       stem.connection.authenticate(controller, test.runner.CONTROL_PASSWORD, runner.get_chroot())
@@ -126,6 +129,8 @@ class TestAuthenticate(unittest.TestCase):
     """
     Tests the authenticate function with something like its pydoc example.
     """
+    
+    if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
     tor_options = runner.get_options()
@@ -161,6 +166,8 @@ class TestAuthenticate(unittest.TestCase):
     """
     Tests the authenticate function's password argument.
     """
+    
+    if test.runner.require_control(self): return
     
     # this is a much better test if we're just using password auth, since
     # authenticate will work reguardless if there's something else to
@@ -198,6 +205,8 @@ class TestAuthenticate(unittest.TestCase):
     individually.
     """
     
+    if test.runner.require_control(self): return
+    
     runner = test.runner.get_runner()
     tor_options = runner.get_options()
     is_cookie_only = test.runner.Torrc.COOKIE in tor_options and not test.runner.Torrc.PASSWORD in tor_options
@@ -220,6 +229,8 @@ class TestAuthenticate(unittest.TestCase):
     Tests the authenticate_none function.
     """
     
+    if test.runner.require_control(self): return
+    
     auth_type = stem.connection.AuthMethod.NONE
     
     if _can_authenticate(auth_type):
@@ -231,6 +242,8 @@ class TestAuthenticate(unittest.TestCase):
     """
     Tests the authenticate_password function.
     """
+    
+    if test.runner.require_control(self): return
     
     auth_type = stem.connection.AuthMethod.PASSWORD
     auth_value = test.runner.CONTROL_PASSWORD
@@ -259,6 +272,8 @@ class TestAuthenticate(unittest.TestCase):
     Tests the authenticate_cookie function.
     """
     
+    if test.runner.require_control(self): return
+    
     auth_value = test.runner.get_runner().get_auth_cookie_path()
     
     for auth_type in self.cookie_auth_methods:
@@ -280,6 +295,8 @@ class TestAuthenticate(unittest.TestCase):
     Tests the authenticate_cookie function with a properly sized but incorrect
     value.
     """
+    
+    if test.runner.require_control(self): return
     
     auth_value = test.runner.get_runner().get_test_dir("fake_cookie")
     
@@ -317,6 +334,8 @@ class TestAuthenticate(unittest.TestCase):
     shouldn't exist.
     """
     
+    if test.runner.require_control(self): return
+    
     for auth_type in self.cookie_auth_methods:
       auth_value = "/if/this/exists/then/they're/asking/for/a/failure"
       self.assertRaises(stem.connection.UnreadableCookieFile, self._check_auth, auth_type, auth_value, False)
@@ -327,6 +346,8 @@ class TestAuthenticate(unittest.TestCase):
     This is to confirm that we won't read arbitrary files to the control
     socket.
     """
+    
+    if test.runner.require_control(self): return
     
     auth_value = test.runner.get_runner().get_torrc_path(True)
     
