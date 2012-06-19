@@ -403,7 +403,7 @@ class TestDescriptorReader(unittest.TestCase):
       skipped_path, skip_exception = skip_listener.results[0]
       self.assertEqual(test_path, skipped_path)
       self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
-      self.assertEqual(("image/png", None), skip_exception.mime_type)
+      self.assertTrue(skip_exception.mime_type in (("image/png", None), ("image/x-png", None)))
     finally:
       if os.path.exists(test_path):
         os.remove(test_path)
