@@ -74,6 +74,9 @@ def is_available(command, cached=True):
   than one command is present (for instance "ls -a | grep foo") then this
   just checks the first.
   
+  Note that many builtin common commands (like cd and ulimit) aren't in the
+  PATH so this lookup will fail for them.
+  
   :param str command: command to search for
   :param bool cached: makes use of available cached results if True
   
