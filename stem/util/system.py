@@ -522,7 +522,10 @@ def expand_path(path, cwd = None):
     if path.startswith("./") or path.startswith(".\\"): path = path[2:]
     elif path == ".": path = ""
     
-    relative_path = os.path.join(cwd, path)
+    if path == "":
+        relative_path = cwd
+    else:
+        relative_path = os.path.join(cwd, path)
   
   return relative_path
 
