@@ -159,24 +159,23 @@ class TestController(unittest.TestCase):
       # succeessful batch query
       
       expected = {config_key: connection_value}
-      self.assertEqual(expected, controller.get_conf([config_key]))
-      self.assertEqual(expected, controller.get_conf([config_key], "la-di-dah"))
+      self.assertEqual(expected, controller.get_conf_map([config_key]))
+      self.assertEqual(expected, controller.get_conf_map([config_key], "la-di-dah"))
       
       getconf_params = set(["ControlPort", "DirPort", "DataDirectory"])
-      self.assertEqual(getconf_params, set(controller.get_conf(["ControlPort",
+      self.assertEqual(getconf_params, set(controller.get_conf_map(["ControlPort",
         "DirPort", "DataDirectory"])))
       
       # non-existant option(s)
       
-      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "blarg")
+      self.assertRaises(stem.socket.InvalidArguments, controller.get_conf, "blarg")
       self.assertEqual("la-di-dah", controller.get_conf("blarg", "la-di-dah"))
-      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "blarg")
-      self.assertEqual("la-di-dah", controller.get_conf("blarg", "la-di-dah"))
+      self.assertRaises(stem.socket.InvalidArguments, controller.get_conf_map, "blarg")
+      self.assertEqual({"blarg": "la-di-dah"}, controller.get_conf_map("blarg", "la-di-dah"))
       
-      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf,
-          ["blarg", "huadf"], multiple = True)
+      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf_map, ["blarg", "huadf"], multiple = True)
       self.assertEqual({"erfusdj": "la-di-dah", "afiafj": "la-di-dah"},
-          controller.get_conf(["erfusdj", "afiafj"], "la-di-dah", multiple = True))
+          controller.get_conf_map(["erfusdj", "afiafj"], "la-di-dah", multiple = True))
       
       # multivalue configuration keys
       
@@ -187,8 +186,10 @@ class TestController(unittest.TestCase):
       # empty input
       
       self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "")
-      self.assertEqual("la-di-dah", controller.get_conf("", "la-di-dah"))
+      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf_map, [])
+      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf_map, "")
       
-      self.assertEqual({}, controller.get_conf([]))
-      self.assertEqual({}, controller.get_conf([], {}))
+      self.assertEqual("la-di-dah", controller.get_conf("", "la-di-dah"))
+      self.assertEqual({"": "la-di-dah"}, controller.get_conf_map("", "la-di-dah"))
+      self.assertEqual({}, controller.get_conf_map([], "la-di-dah"))
 

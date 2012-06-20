@@ -5,17 +5,10 @@ class GetConfResponse(stem.response.ControlMessage):
   """
   Reply for a GETCONF query.
   
-  :var dict entries:
-    mapping between the queried options (string) and their values (string/list
-    of strings)
+  :var dict entries: mapping between the queried options (string) and their values (list of strings)
   """
   
-  def _parse_message(self, multiple = False):
-    """
-    :param bool multiple:
-      if True stores each value in a list, otherwise stores only the first
-      values as a sting
-    """
+  def _parse_message(self):
     # Example:
     # 250-CookieAuthentication=0
     # 250-ControlPort=9100
@@ -34,8 +27,9 @@ class GetConfResponse(stem.response.ControlMessage):
           unrecognized_keywords.append(line[32:-1])
       
       if unrecognized_keywords:
-        raise stem.socket.InvalidArguments("552", "GETCONF request contained unrecognized keywords: %s\n" \
+        exc = stem.socket.InvalidArguments("552", "GETCONF request contained unrecognized keywords: %s" \
             % ', '.join(unrecognized_keywords), unrecognized_keywords)
+        raise exc
       else:
         raise stem.socket.ProtocolError("GETCONF response contained a non-OK status code:\n%s" % self)
     
@@ -51,8 +45,5 @@ class GetConfResponse(stem.response.ControlMessage):
       
       entry = self.entries.get(key, None)
       
-      if multiple:
-        self.entries.setdefault(key, []).append(value)
-      else:
-        self.entries.setdefault(key, value)
+      self.entries.setdefault(key, []).append(value)
 

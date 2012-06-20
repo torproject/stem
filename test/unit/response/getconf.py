@@ -56,7 +56,7 @@ class TestGetConfResponse(unittest.TestCase):
     
     control_message = mocking.get_message(SINGLE_RESPONSE)
     stem.response.convert("GETCONF", control_message)
-    self.assertEqual({"DataDirectory": "/home/neena/.tor"}, control_message.entries)
+    self.assertEqual({"DataDirectory": ["/home/neena/.tor"]}, control_message.entries)
   
   def test_batch_response(self):
     """
@@ -67,10 +67,10 @@ class TestGetConfResponse(unittest.TestCase):
     stem.response.convert("GETCONF", control_message)
     
     expected = {
-      "CookieAuthentication": "0",
-      "ControlPort": "9100",
-      "DataDirectory": "/tmp/fake dir",
-      "DirPort": None,
+      "CookieAuthentication": ["0"],
+      "ControlPort": ["9100"],
+      "DataDirectory": ["/tmp/fake dir"],
+      "DirPort": [None],
     }
     
     self.assertEqual(expected, control_message.entries)
@@ -81,7 +81,7 @@ class TestGetConfResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(MULTIVALUE_RESPONSE)
-    stem.response.convert("GETCONF", control_message, multiple = True)
+    stem.response.convert("GETCONF", control_message)
     
     expected = {
       "ControlPort": ["9100"],
@@ -99,7 +99,7 @@ class TestGetConfResponse(unittest.TestCase):
     self.assertRaises(stem.socket.InvalidArguments, stem.response.convert, "GETCONF", control_message)
     
     try:
-      stem.response.convert("GETCONF", control_message, multiple = True)
+      stem.response.convert("GETCONF", control_message)
     except stem.socket.InvalidArguments, exc:
       self.assertEqual(exc.arguments, ["brickroad", "submarine"])
   

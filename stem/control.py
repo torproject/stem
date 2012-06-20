@@ -404,6 +404,14 @@ class Controller(BaseController):
   BaseController and provides a more user friendly API for library users.
   """
   
+  _mapped_config_keys = {
+      "HiddenServiceDir": "HiddenServiceOptions",
+      "HiddenServicePort": "HiddenServiceOptions",
+      "HiddenServiceVersion": "HiddenServiceOptions",
+      "HiddenServiceAuthorizeClient": "HiddenServiceOptions",
+      "HiddenServiceOptions": "HiddenServiceOptions"
+      }
+  
   def from_port(control_addr = "127.0.0.1", control_port = 9051):
     """
     Constructs a ControlPort based Controller.
@@ -535,12 +543,12 @@ class Controller(BaseController):
   
   def get_conf(self, param, default = UNDEFINED, multiple = False):
     """
-    Queries the control socket for the values of given configuration options. If
+    Queries the control socket for the value of a given configuration option. If
     provided a default then that's returned as if the GETCONF option is undefined
     or if the call fails for any reason (invalid configuration option, error
     response, control port closed, initiated, etc).
     
-    :param str,list param: GETCONF option or options to be queried
+    :param str param: GETCONF option to be queried
     :param object default: response if the query fails
     :param bool multiple: if True, the value(s) provided are lists of all returned values,
                           otherwise this just provides the first value
@@ -548,39 +556,89 @@ class Controller(BaseController):
     :returns:
       Response depends upon how we were called as follows...
       
-      * str with the response if our param was a str and multiple was False
-      * dict with the param (str) => response (str) mapping if our param was a list and multiple was False
-      * list with the response strings if our param was a str and multiple was True
-      * dict with the param (str) => response (list) mapping if our param was a list and multiple was True
+      * str with the response if multiple was False
+      * list with the response strings multiple was True
       * default if one was provided and our call failed
     
     :raises:
       :class:`stem.socket.ControllerError` if the call fails, and we weren't provided a default response
-      :class:`stem.socket.InvalidArguments` if the configuration options requested were invalid
+      :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
+    """
+    
+    try:
+      if param == "":  raise stem.socket.InvalidRequest("Received empty parameter")
+      
+      # automagically change the requested parameter if it's context sensitive
+      # and cannot be returned on it's own.
+      if param.lower() in self._mapped_config_keys.keys():
+        return self.get_conf_map(self._mapped_config_keys[param], default, multiple)[param]
+      
+      response = self.msg("GETCONF %s" % param)
+      stem.response.convert("GETCONF", response)
+      
+      # error if we got back different parameters than we requested
+      if response.entries.keys()[0].lower() != param.lower():
+        raise stem.socket.ProtocolError("GETCONF reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (param, response.entries.keys()[0]))
+      
+      if not multiple:
+        return response.entries[param][0]
+      return response.entries[param]
+      
+    except stem.socket.ControllerError, exc:
+      if default is UNDEFINED: raise exc
+      else: return default
+  
+  def get_conf_map(self, param, default = UNDEFINED, multiple = False):
+    """
+    Queries the control socket for the values of given configuration options and
+    provides a mapping of the keys to the values. If provided a default then
+    that's returned as if the GETCONF option is undefined or if the call fails
+    for any reason (invalid configuration option, error response, control port
+    closed, initiated, etc).
+    
+    :param str,list param: GETCONF option(s) to be queried
+    :param object default: response if the query fails
+    :param bool multiple: if True, the value(s) provided are lists of all returned values,
+                          otherwise this just provides the first value
+    
+    :returns:
+      Response depends upon how we were called as follows...
+      
+      * dict with param (str) => response mappings (str) if multiple was False
+      * dict with param (str) => response mappings (list) if multiple was True
+      * dict with param (str) => default mappings if a default value was provided and our call failed
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails, and we weren't provided a default response
+      :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
     """
     
     if isinstance(param, str):
-      is_multiple = False
       param = [param]
-    else:
-      is_multiple = True
     
     try:
-      response = self.msg("GETCONF %s" % " ".join(param))
-      stem.response.convert("GETCONF", response, multiple = multiple)
+      if param == [""] or param == []:
+        raise stem.socket.InvalidRequest("Received empty parameter")
       
-      if is_multiple:
-        return response.entries
-      else:
-        try: return response.entries[param[0]]
-        except KeyError: raise stem.socket.InvalidRequest("Received empty string")
+      response = self.msg("GETCONF %s" % ' '.join(param))
+      stem.response.convert("GETCONF", response)
+      
+      requested_params = set(map(lambda x: x.lower(), param))
+      reply_params = set(map(lambda x: x.lower(), response.entries.keys()))
+
+      # if none of the requested parameters are context sensitive and if the
+      # parameters received don't match the parameters requested
+      if not set(self._mapped_config_keys.values()) & requested_params and requested_params != reply_params:
+        requested_label = ", ".join(requested_params)
+        reply_label = ", ".join(reply_params)
+        
+        raise stem.socket.ProtocolError("GETCONF reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (requested_label, reply_label))
+      
+      if not multiple:
+        return dict([(entry[0], entry[1][0]) for entry in response.entries.items()])
+      return response.entries
+    
     except stem.socket.ControllerError, exc:
-      if default is UNDEFINED: raise exc
-      elif is_multiple:
-        if default != UNDEFINED:
-          return dict([(p, default) for p in param])
-        else:
-          return dict([(p, None) for p in param])
-      else:
-        return default
+      if default != UNDEFINED: return dict([(p, default) for p in param])
+      else: raise exc
 
