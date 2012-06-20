@@ -85,6 +85,11 @@ import stem.descriptor
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = "DONE"
 
+# TODO: The threading.Event's isSet() method was changed to the more
+# conventional is_set() in python 2.6 and above. We should use that when
+# dropping python 2.5 compatability...
+# http://docs.python.org/library/threading.html#threading.Event.is_set
+
 class FileSkipped(Exception):
   "Base error when we can't provide descriptor data from a file."
 
@@ -336,7 +341,7 @@ class DescriptorReader:
     new_processed_files = {}
     remaining_files = list(self._targets)
     
-    while remaining_files and not self._is_stopped.is_set():
+    while remaining_files and not self._is_stopped.isSet():
       target = remaining_files.pop(0)
       
       if not os.path.exists(target):
@@ -355,20 +360,20 @@ class DescriptorReader:
             self._handle_file(os.path.join(root, filename), new_processed_files)
           
           # this can take a while if, say, we're including the root directory
-          if self._is_stopped.is_set(): break
+          if self._is_stopped.isSet(): break
       else:
         self._handle_file(target, new_processed_files)
     
     self._processed_files = new_processed_files
     
-    if not self._is_stopped.is_set():
+    if not self._is_stopped.isSet():
       self._unreturned_descriptors.put(FINISHED)
     
     self._iter_notice.set()
   
   def __iter__(self):
     with self._iter_lock:
-      while not self._is_stopped.is_set():
+      while not self._is_stopped.isSet():
         try:
           descriptor = self._unreturned_descriptors.get_nowait()
           
@@ -427,7 +432,7 @@ class DescriptorReader:
     try:
       with open(target) as target_file:
         for desc in stem.descriptor.parse_file(target, target_file):
-          if self._is_stopped.is_set(): return
+          if self._is_stopped.isSet(): return
           self._unreturned_descriptors.put(desc)
           self._iter_notice.set()
     except TypeError, exc:
@@ -445,7 +450,7 @@ class DescriptorReader:
             entry = tar_file.extractfile(tar_entry)
             
             for desc in stem.descriptor.parse_file(target, entry):
-              if self._is_stopped.is_set(): return
+              if self._is_stopped.isSet(): return
               self._unreturned_descriptors.put(desc)
               self._iter_notice.set()
             
