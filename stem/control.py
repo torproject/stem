@@ -565,28 +565,12 @@ class Controller(BaseController):
       :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
     """
     
-    try:
-      if param == "":  raise stem.socket.InvalidRequest("Received empty parameter")
-      
-      # automagically change the requested parameter if it's context sensitive
-      # and cannot be returned on it's own.
-      if param.lower() in self._mapped_config_keys.keys():
-        return self.get_conf_map(self._mapped_config_keys[param], default, multiple)[param]
-      
-      response = self.msg("GETCONF %s" % param)
-      stem.response.convert("GETCONF", response)
-      
-      # error if we got back different parameters than we requested
-      if response.entries.keys()[0].lower() != param.lower():
-        raise stem.socket.ProtocolError("GETCONF reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (param, response.entries.keys()[0]))
-      
-      if not multiple:
-        return response.entries[param][0]
-      return response.entries[param]
-      
-    except stem.socket.ControllerError, exc:
-      if default is UNDEFINED: raise exc
-      else: return default
+    # automagically change the requested parameter if it's context sensitive
+    # and cannot be returned on it's own.
+    if param.lower() in self._mapped_config_keys.keys():
+      return self.get_conf_map(self._mapped_config_keys[param], default, multiple)[param]
+    else:
+      return self.get_conf_map(param, default, multiple)[param]
   
   def get_conf_map(self, param, default = UNDEFINED, multiple = False):
     """
@@ -625,7 +609,7 @@ class Controller(BaseController):
       
       requested_params = set(map(lambda x: x.lower(), param))
       reply_params = set(map(lambda x: x.lower(), response.entries.keys()))
-
+      
       # if none of the requested parameters are context sensitive and if the
       # parameters received don't match the parameters requested
       if not set(self._mapped_config_keys.values()) & requested_params and requested_params != reply_params:

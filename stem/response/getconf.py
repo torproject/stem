@@ -27,9 +27,8 @@ class GetConfResponse(stem.response.ControlMessage):
           unrecognized_keywords.append(line[32:-1])
       
       if unrecognized_keywords:
-        exc = stem.socket.InvalidArguments("552", "GETCONF request contained unrecognized keywords: %s" \
+        raise stem.socket.InvalidArguments("552", "GETCONF request contained unrecognized keywords: %s" \
             % ', '.join(unrecognized_keywords), unrecognized_keywords)
-        raise exc
       else:
         raise stem.socket.ProtocolError("GETCONF response contained a non-OK status code:\n%s" % self)
     

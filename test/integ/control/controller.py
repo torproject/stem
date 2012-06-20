@@ -144,7 +144,6 @@ class TestController(unittest.TestCase):
     
     with runner.get_tor_controller() as controller:
       # successful single query
-      
       socket = runner.get_tor_socket()
       if isinstance(socket, stem.socket.ControlPort):
         connection_value = str(socket.get_port())
@@ -157,7 +156,6 @@ class TestController(unittest.TestCase):
       self.assertEqual(connection_value, controller.get_conf(config_key, "la-di-dah"))
       
       # succeessful batch query
-      
       expected = {config_key: connection_value}
       self.assertEqual(expected, controller.get_conf_map([config_key]))
       self.assertEqual(expected, controller.get_conf_map([config_key], "la-di-dah"))
@@ -167,7 +165,6 @@ class TestController(unittest.TestCase):
         "DirPort", "DataDirectory"])))
       
       # non-existant option(s)
-      
       self.assertRaises(stem.socket.InvalidArguments, controller.get_conf, "blarg")
       self.assertEqual("la-di-dah", controller.get_conf("blarg", "la-di-dah"))
       self.assertRaises(stem.socket.InvalidArguments, controller.get_conf_map, "blarg")
@@ -178,13 +175,11 @@ class TestController(unittest.TestCase):
           controller.get_conf_map(["erfusdj", "afiafj"], "la-di-dah", multiple = True))
       
       # multivalue configuration keys
-      
       nodefamilies = [node_family[11:].strip() for node_family in
           runner.get_torrc_contents().split("\n") if node_family.startswith("NodeFamily ")]
       self.assertEqual(nodefamilies, controller.get_conf("NodeFamily", multiple = True))
       
       # empty input
-      
       self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "")
       self.assertRaises(stem.socket.InvalidRequest, controller.get_conf_map, [])
       self.assertRaises(stem.socket.InvalidRequest, controller.get_conf_map, "")

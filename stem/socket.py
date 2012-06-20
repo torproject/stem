@@ -563,9 +563,8 @@ class InvalidRequest(ControllerError):
     """
     Initializes an InvalidRequest object.
     
-    :param str code: The error code returned by Tor (if applicable)
-    :param str message: The error message returned by Tor (if applicable) or a
-      human readable error message
+    :param str code: The error code returned by Tor
+    :param str message: The error message returned by Tor
     
     :returns: object of InvalidRequest class
     """
