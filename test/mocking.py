@@ -76,8 +76,14 @@ def mock(target, mock_call, target_module=None):
   Mocks the given function, saving the initial implementation so it can be
   reverted later.
   
+  The target_module only needs to be set if the results of
+  'inspect.getmodule(target)' doesn't match the module that we want to mock
+  (for instance, the 'os' module provies the platform module that it wraps like
+  'postix', which won't work).
+  
   :param function target: function to be mocked
   :param functor mock_call: mocking to replace the function with
+  :param module target_module: module that this is mocking, this defaults to the inspected value
   """
   
   if hasattr(target, "__dict__") and "mock_id" in target.__dict__:
