@@ -443,22 +443,31 @@ class DescriptorReader:
       self._notify_skip_listeners(target, ReadFailed(exc))
   
   def _handle_archive(self, target):
+    # TODO: This would be nicer via the 'with' keyword, but tarfile's __exit__
+    # method was added sometime after python 2.5. We should change this when
+    # we drop python 2.5 support.
+    
+    tar_file = None
+    
     try:
-      with tarfile.open(target) as tar_file:
-        for tar_entry in tar_file:
-          if tar_entry.isfile():
-            entry = tar_file.extractfile(tar_entry)
-            
-            for desc in stem.descriptor.parse_file(target, entry):
-              if self._is_stopped.isSet(): return
-              self._unreturned_descriptors.put(desc)
-              self._iter_notice.set()
-            
-            entry.close()
+      tar_file = tarfile.open(target)
+      
+      for tar_entry in tar_file:
+        if tar_entry.isfile():
+          entry = tar_file.extractfile(tar_entry)
+          
+          for desc in stem.descriptor.parse_file(target, entry):
+            if self._is_stopped.isSet(): return
+            self._unreturned_descriptors.put(desc)
+            self._iter_notice.set()
+          
+          entry.close()
     except TypeError, exc:
       self._notify_skip_listeners(target, ParsingFailure(exc))
     except IOError, exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
+    finally:
+      if tar_file: tar_file.close()
   
   def _notify_skip_listeners(self, path, exception):
     for listener in self._skip_listeners:
