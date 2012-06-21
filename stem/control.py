@@ -685,21 +685,30 @@ class Controller(BaseController):
     """
     
     if len(args) == 2:
-      options = {args[0]: args[1]}
+      args = {args[0]: args[1]}
     elif len(args) == 1:
-      options = args[0]
+      args = args[0]
     else:
       raise TypeError("set_conf expected 1 or 2 arguments, got %d", len(args))
     
-    response = self.msg("SETCONF %s" % " ".join(["=".join(opts) for opts in args.items()]))
+    options = []
+    for key, value in args.iteritems():
+      options.append(key + "=\"" + value + "\"")
+      
+    response = self.msg("SETCONF %s" % " ".join(options))
     stem.response.convert("SINGLELINE", response)
     
     if response.is_ok():
       return True
-    elif response.code in ("513", "552", "553"):
-      raise InvalidRequest(response.code, response.message)
+    elif response.code == "552":
+      if response.message.startswith("Unrecognized option: Unknown option '"):
+        key = response.message[37:response.message.find("\'", 37)]
+        raise stem.socket.InvalidArguments(response.code, response.message, [key])
+      raise stem.socket.InvalidRequest(response.code, response.message)
+    elif response.code in ("513", "553"):
+      raise stem.socket.InvalidRequest(response.code, response.message)
     else:
-      raise ProtocolError("SETCONF returned unexpected status code")
+      raise stem.socket.ProtocolError("SETCONF returned unexpected status code")
 
 def _case_insensitive_lookup(entries, key):
   """

@@ -191,4 +191,53 @@ class TestController(unittest.TestCase):
       self.assertEqual("la-di-dah", controller.get_conf("", "la-di-dah"))
       self.assertEqual({}, controller.get_conf_map("", "la-di-dah"))
       self.assertEqual({}, controller.get_conf_map([], "la-di-dah"))
+      
+      # context-sensitive keys
+      
+      keys = {
+          "HiddenServiceDir": "/tmp/stemtestdir",
+          "HiddenServicePort": "17234 127.0.0.1:17235"
+          }
+      controller.set_conf(keys)
+      self.assertEqual("/tmp/stemtestdir", controller.get_conf("HiddenServiceDir"))
+      self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("HiddenServiceDir"))
+  
+  def test_setconf(self):
+    """
+    Exercises SETCONF with valid and invalid requests.
+    """
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      # Single key, valid and invalid
+      connlimit = int(controller.get_conf("ConnLimit"))
+      controller.set_conf("connlimit", str(connlimit - 1))
+      self.assertEqual(connlimit - 1, int(controller.get_conf("ConnLimit")))
+      try:
+        controller.set_conf("invalidkeyboo", "abcde")
+      except stem.socket.InvalidArguments, exc:
+        self.assertEqual(["invalidkeyboo"], exc.arguments)
+      
+      settings = {
+          "connlimit": str(connlimit - 2),
+          "contactinfo": "stem@testing"
+          }
+      controller.set_conf(settings)
+      self.assertEqual(connlimit - 2, int(controller.get_conf("ConnLimit")))
+      self.assertEqual("stem@testing", controller.get_conf("contactinfo"))
+      
+      settings["bombay"] = "vadapav"
+      try:
+        controller.set_conf(settings)
+      except stem.socket.InvalidArguments, exc:
+        self.assertEqual(["bombay"], exc.arguments)
+      
+      settings = {
+          "HiddenServiceDir": "/tmp/stemtestdir",
+          "HiddenServicePort": "17234 127.0.0.1:17235"
+          }
+      controller.set_conf(settings)
+      self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("hiddenserviceport"))
+      self.assertEqual("/tmp/stemtestdir", controller.get_conf("hiddenservicedir"))
 
