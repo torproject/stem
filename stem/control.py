@@ -661,6 +661,45 @@ class Controller(BaseController):
     except stem.socket.ControllerError, exc:
       if default != UNDEFINED: return default
       else: raise exc
+  
+  def set_conf(self, *args):
+    """
+    Changes the configuration of one or more configuration variables using the
+    control socket.
+
+    :param dict options: a dictionary containing a mapping of configuration keys (string)
+      to the corresponding values (string or list of strings)
+
+    Or
+
+    :param str key: configuration key
+    :param str value: configuration value
+
+    :returns: True on successfully setting the values
+
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails
+      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      :class:`stem.socket.InvalidRequest` if the configuration setting is
+        impossible or if there's a syntax error in the configuration values
+    """
+
+    if len(args) == 2:
+      options = {args[0]: args[1]}
+    elif len(args) == 1:
+      options = args[0]
+    else:
+      raise TypeError("set_conf expected 1 or 2 arguments, got %d", len(args))
+
+    response = self.msg("SETCONF %s" % " ".join(["=".join(opts) for opts in args.items()]))
+    stem.response.convert("SINGLELINE", response)
+
+    if response.is_ok():
+      return True
+    elif response.code in ("513", "552", "553"):
+      raise InvalidRequest(response.code, response.message)
+    else:
+      raise ProtocolError("SETCONF returned unexpected status code")
 
 def _case_insensitive_lookup(entries, key):
   """
