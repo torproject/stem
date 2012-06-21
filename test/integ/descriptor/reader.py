@@ -107,10 +107,11 @@ class TestDescriptorReader(unittest.TestCase):
     """
     
     # Skip the test on windows, since you can only set the file's
-    # read-only flag with os.chmod(). See
+    # read-only flag with os.chmod(). For more information see...
     # http://docs.python.org/library/os.html#os.chmod
+    
     if system.is_windows():
-      self.skipTest("(chmod not functional)")
+      test.runner.skip("(chmod not functional)")
     
     test_listing_path = _make_processed_files_listing(BASIC_LISTING)
     os.chmod(test_listing_path, 0077) # remove read permissions
@@ -290,7 +291,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
     
     # Skip on windows since SIGALRM is unavailable
-    if system.is_windows(): self.skipTest("(SIGALRM unavailable)")
+    if system.is_windows(): test.runner.skip("(SIGALRM unavailable)")
     
     is_test_running = True
     reader = stem.descriptor.reader.DescriptorReader("/usr")
@@ -413,11 +414,8 @@ class TestDescriptorReader(unittest.TestCase):
     Listens for a file that's skipped because we lack read permissions.
     """
     
-    # Skip the test on windows, since you can only set the file's
-    # read-only flag with os.chmod(). See
-    # http://docs.python.org/library/os.html#os.chmod
     if system.is_windows():
-      self.skipTest("(chmod not functional)")
+      test.runner.skip("(chmod not functional)")
     
     test_path = test.runner.get_runner().get_test_dir("secret_file")
     

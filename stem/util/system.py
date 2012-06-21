@@ -501,31 +501,32 @@ def expand_path(path, cwd = None):
   :returns: str of the path expanded to be an absolute path
   """
   
-  if platform.system() == "Windows":
-    path = path.replace("/", "\\").rstrip("\\")
+  if is_windows():
+    relative_path = path.replace("/", "\\").rstrip("\\")
   else:
-    path = path.replace("\\", "/").rstrip("/")
-  relative_path = path
+    relative_path = path.rstrip("/")
   
-  if not path or os.path.isabs(path):
+  if not relative_path or os.path.isabs(relative_path):
     # empty or already absolute - nothing to do
     pass
-  elif path.startswith("~"):
+  elif not is_windows() and relative_path.startswith("~"):
     # prefixed with a ~ or ~user entry
-    relative_path = os.path.expanduser(path)
+    relative_path = os.path.expanduser(relative_path)
   else:
     # relative path, expand with the cwd
     if not cwd: cwd = os.getcwd()
     
     # we'll be dealing with both "my/path/" and "./my/path" entries, so
     # cropping the later
-    if path.startswith("./") or path.startswith(".\\"): path = path[2:]
-    elif path == ".": path = ""
+    if relative_path.startswith("./") or relative_path.startswith(".\\"):
+      relative_path = relative_path[2:]
+    elif relative_path == ".":
+      relative_path = ""
     
-    if path == "":
+    if relative_path == "":
         relative_path = cwd
     else:
-        relative_path = os.path.join(cwd, path)
+        relative_path = os.path.join(cwd, relative_path)
   
   return relative_path
 

@@ -11,7 +11,6 @@ import getopt
 import unittest
 import threading
 import StringIO
-import platform
 
 import test.output
 import test.runner
