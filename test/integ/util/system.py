@@ -42,7 +42,10 @@ class TestSystem(unittest.TestCase):
     # legitemately fail.
     
     if self.is_extra_tor_running is None:
-      if not stem.util.system.is_bsd():
+      if stem.util.system.is_windows():
+        # TODO: not sure how to check for this on windows
+        self.is_extra_tor_running = False
+      elif not stem.util.system.is_bsd():
         pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % "tor")
         self.is_extra_tor_running = len(pgrep_results) > 1
       else:

@@ -12,6 +12,7 @@ import tarfile
 import unittest
 
 import stem.descriptor.reader
+import stem.util.system as system
 import test.runner
 
 BASIC_LISTING = """
@@ -104,6 +105,13 @@ class TestDescriptorReader(unittest.TestCase):
     Tests the load_processed_files() function with a file that can't be read
     due to permissions.
     """
+    
+    # Skip the test on windows, since you can only set the file's
+    # read-only flag with os.chmod(). For more information see...
+    # http://docs.python.org/library/os.html#os.chmod
+    
+    if system.is_windows():
+      test.runner.skip("(chmod not functional)")
     
     test_listing_path = _make_processed_files_listing(BASIC_LISTING)
     os.chmod(test_listing_path, 0077) # remove read permissions
@@ -282,6 +290,9 @@ class TestDescriptorReader(unittest.TestCase):
     stop() makes it terminate in a timely fashion.
     """
     
+    # Skip on windows since SIGALRM is unavailable
+    if system.is_windows(): test.runner.skip("(SIGALRM unavailable)")
+    
     is_test_running = True
     reader = stem.descriptor.reader.DescriptorReader("/usr")
     
@@ -393,7 +404,7 @@ class TestDescriptorReader(unittest.TestCase):
       skipped_path, skip_exception = skip_listener.results[0]
       self.assertEqual(test_path, skipped_path)
       self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
-      self.assertEqual(("image/png", None), skip_exception.mime_type)
+      self.assertTrue(skip_exception.mime_type in (("image/png", None), ("image/x-png", None)))
     finally:
       if os.path.exists(test_path):
         os.remove(test_path)
@@ -402,6 +413,9 @@ class TestDescriptorReader(unittest.TestCase):
     """
     Listens for a file that's skipped because we lack read permissions.
     """
+    
+    if system.is_windows():
+      test.runner.skip("(chmod not functional)")
     
     test_path = test.runner.get_runner().get_test_dir("secret_file")
     

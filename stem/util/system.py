@@ -7,6 +7,7 @@ best-effort, providing None if the lookup fails.
 
 ::
 
+  is_windows - checks if we're running on windows
   is_bsd - checks if we're running on the bsd family of operating systems
   is_available - determines if a command is availabe on this system
   is_running - determines if a given process is running
@@ -500,29 +501,34 @@ def expand_path(path, cwd = None):
   :returns: str of the path expanded to be an absolute path
   """
   
-  if platform.system() == "Windows":
-    return path # TODO: implement
+  if is_windows():
+    relative_path = path.replace("/", "\\").rstrip("\\")
   else:
-    relative_path = path
+    relative_path = path.rstrip("/")
+  
+  if not relative_path or os.path.isabs(relative_path):
+    # empty or already absolute - nothing to do
+    pass
+  elif not is_windows() and relative_path.startswith("~"):
+    # prefixed with a ~ or ~user entry
+    relative_path = os.path.expanduser(relative_path)
+  else:
+    # relative path, expand with the cwd
+    if not cwd: cwd = os.getcwd()
     
-    if not path or os.path.isabs(path):
-      # empty or already absolute - nothing to do
-      pass
-    elif path.startswith("~"):
-      # prefixed with a ~ or ~user entry
-      relative_path = os.path.expanduser(path)
+    # we'll be dealing with both "my/path/" and "./my/path" entries, so
+    # cropping the later
+    if relative_path.startswith("./") or relative_path.startswith(".\\"):
+      relative_path = relative_path[2:]
+    elif relative_path == ".":
+      relative_path = ""
+    
+    if relative_path == "":
+        relative_path = cwd
     else:
-      # relative path, expand with the cwd
-      if not cwd: cwd = os.getcwd()
-      
-      # we'll be dealing with both "my/path/" and "./my/path" entries, so
-      # cropping the later
-      if path.startswith("./"): path = path[2:]
-      elif path == ".": path = ""
-      
-      relative_path = os.path.join(cwd, path)
-    
-    return relative_path.rstrip("/")
+        relative_path = os.path.join(cwd, relative_path)
+  
+  return relative_path
 
 def call(command, suppress_exc = True):
   """
