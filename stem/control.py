@@ -54,6 +54,12 @@ State = stem.util.enum.Enum("INIT", "RESET", "CLOSED")
 
 UNDEFINED = "<Undefined_ >"
 
+# TODO: The Thread's isAlive() method was changed to the more conventional
+# is_alive() in python 2.6 and above. We should use that when dropping python
+# 2.5 compatability...
+# http://docs.python.org/library/threading.html#threading.Thread.is_alive
+# http://bugs.python.org/issue15126
+
 class BaseController:
   """
   Controller for the tor process. This is a minimal base class for other
@@ -282,7 +288,7 @@ class BaseController:
     # joins on our threads if it's safe to do so
     
     for t in (self._reader_thread, self._event_thread):
-      if t and t.is_alive() and threading.current_thread() != t:
+      if t and t.isAlive() and threading.current_thread() != t:
         t.join()
     
     self._notify_status_listeners(State.CLOSED, False)
@@ -338,12 +344,12 @@ class BaseController:
     # single thread, which would cause an unexpeceted exception. Best be safe.
     
     with self._socket._get_send_lock():
-      if not self._reader_thread or not self._reader_thread.is_alive():
+      if not self._reader_thread or not self._reader_thread.isAlive():
         self._reader_thread = threading.Thread(target = self._reader_loop, name = "Tor Listener")
         self._reader_thread.setDaemon(True)
         self._reader_thread.start()
       
-      if not self._event_thread or not self._event_thread.is_alive():
+      if not self._event_thread or not self._event_thread.isAlive():
         self._event_thread = threading.Thread(target = self._event_loop, name = "Event Notifier")
         self._event_thread.setDaemon(True)
         self._event_thread.start()
