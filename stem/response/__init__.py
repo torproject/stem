@@ -30,6 +30,8 @@ __all__ = ["getinfo", "getconf", "protocolinfo", "authchallenge", "convert", "Co
 import re
 import threading
 
+import stem.socket
+
 KEY_ARG = re.compile("^(\S+)=")
 
 # Escape sequences from the 'esc_for_log' function of tor's 'common/util.c'.
@@ -446,9 +448,9 @@ class SingleLineResponse(ControlMessage):
     content = self.content()
     
     if len(content) > 1:
-      raise ProtocolError("Received multiline response")
+      raise stem.socket.ProtocolError("Received multiline response")
     elif len(content) == 0:
-      raise ProtocolError("Received empty response")
+      raise stem.socket.ProtocolError("Received empty response")
     else:
       self.code, self.delimiter, self.message = content[0]
 
