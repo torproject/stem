@@ -54,11 +54,9 @@ State = stem.util.enum.Enum("INIT", "RESET", "CLOSED")
 
 UNDEFINED = "<Undefined_ >"
 
-# TODO: The Thread's isAlive() method was changed to the more conventional
-# is_alive() in python 2.6 and above. We should use that when dropping python
-# 2.5 compatability...
-# http://docs.python.org/library/threading.html#threading.Thread.is_alive
-# http://bugs.python.org/issue15126
+# TODO: The Thread's isAlive() method and theading's currentThread() was
+# changed to the more conventional is_alive() and current_thread() in python
+# 2.6 and above. We should use that when dropping python 2.5 compatability.
 
 class BaseController:
   """
@@ -288,7 +286,7 @@ class BaseController:
     # joins on our threads if it's safe to do so
     
     for t in (self._reader_thread, self._event_thread):
-      if t and t.isAlive() and threading.current_thread() != t:
+      if t and t.isAlive() and threading.currentThread() != t:
         t.join()
     
     self._notify_status_listeners(State.CLOSED, False)
