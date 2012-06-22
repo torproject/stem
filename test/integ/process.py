@@ -2,18 +2,26 @@
 Tests the stem.process functions with various use cases.
 """
 
+import os
 import time
+import signal
 import unittest
 
+import stem.prereq
 import stem.socket
 import stem.process
 import test.runner
+import stem.util.system
 
 class TestProcess(unittest.TestCase):
   def test_launch_tor_with_config(self):
     """
     Exercises launch_tor_with_config.
     """
+    
+    if not stem.prereq.is_python_26() and stem.util.system.is_windows():
+      test.runner.skip("(unable to kill subprocesses)")
+      return
     
     if test.runner.only_run_once(self, "test_launch_tor_with_config"): return
     
@@ -37,12 +45,20 @@ class TestProcess(unittest.TestCase):
       self.assertEquals("ControlPort=2778", str(getconf_response))
     finally:
       if control_socket: control_socket.close()
-      tor_process.kill()
+      
+      if stem.prereq.is_python_26():
+        tor_process.kill()
+      elif stem.util.system.is_windows():
+        os.kill(tor_process.pid, signal.SIGTERM)
   
   def test_launch_tor_with_timeout(self):
     """
     Runs launch_tor where it times out before completing.
     """
+    
+    if not stem.prereq.is_python_26() and stem.util.system.is_windows():
+      test.runner.skip("(unable to kill subprocesses)")
+      return
     
     if test.runner.only_run_once(self, "test_launch_tor_with_timeout"): return
     
