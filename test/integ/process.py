@@ -28,7 +28,9 @@ class TestProcess(unittest.TestCase):
     # Launch tor without a torrc, but with a control port. Confirms that this
     # works by checking that we're still able to access the new instance.
     
+    runner = test.runner.get_runner()
     tor_process = stem.process.launch_tor_with_config(
+      tor_cmd = runner.get_tor_command(),
       config = {'SocksPort': '2777', 'ControlPort': '2778'},
       completion_percent = 5
     )
@@ -36,7 +38,6 @@ class TestProcess(unittest.TestCase):
     control_socket = None
     try:
       control_socket = stem.socket.ControlPort(control_port = 2778)
-      runner = test.runner.get_runner()
       stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
       
       # exercises the socket
@@ -62,8 +63,9 @@ class TestProcess(unittest.TestCase):
     
     if test.runner.only_run_once(self, "test_launch_tor_with_timeout"): return
     
+    runner = test.runner.get_runner()
     start_time = time.time()
-    self.assertRaises(OSError, stem.process.launch_tor_with_config, {'SocksPort': '2777'}, "tor", 100, None, 2)
+    self.assertRaises(OSError, stem.process.launch_tor_with_config, {'SocksPort': '2777'}, runner.get_tor_command(), 100, None, 2)
     runtime = time.time() - start_time
     
     if not (runtime > 2 and runtime < 3):
