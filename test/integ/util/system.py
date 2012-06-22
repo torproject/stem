@@ -377,7 +377,7 @@ class TestSystem(unittest.TestCase):
     self.assertEquals(os.getcwd(), stem.util.system.expand_path("./"))
     self.assertEquals(os.path.join(os.getcwd(), "foo"), stem.util.system.expand_path("./foo"))
     
-    home_dir, username = os.getenv("HOME"), getpass.getuser()
+    home_dir, username = os.path.expanduser("~"), getpass.getuser()
     self.assertEquals(home_dir, stem.util.system.expand_path("~"))
     self.assertEquals(home_dir, stem.util.system.expand_path("~/"))
     self.assertEquals(home_dir, stem.util.system.expand_path("~%s" % username))
