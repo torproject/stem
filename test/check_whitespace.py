@@ -4,6 +4,7 @@ which are...
 
 * two space indentations
 * tabs are the root of all evil and should be shot on sight
+* standard newlines (\\n), not windows (\\r\\n) nor classic mac (\\r)
 * no trailing whitespace unless the line is empty, in which case it should have
   the same indentation as the surrounding code
 
@@ -39,7 +40,7 @@ def get_issues(base_path = DEFAULT_TARGET):
   
   for file_path in _get_python_files(base_path):
     with open(file_path) as f: file_contents = f.read()
-    lines, file_issues, prev_indent = file_contents.splitlines(), [], 0
+    lines, file_issues, prev_indent = file_contents.split("\n"), [], 0
     has_with_import, given_with_warning = False, False
     is_block_comment = False
     
@@ -58,6 +59,8 @@ def get_issues(base_path = DEFAULT_TARGET):
       
       if "\t" in whitespace:
         file_issues.append((i + 1, "indentation has a tab"))
+      elif "\r" in content:
+        file_issues.append((i + 1, "contains a windows newline"))
       elif content != content.rstrip():
         file_issues.append((i + 1, "line has trailing whitespace"))
       elif content == '':
