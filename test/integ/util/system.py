@@ -4,6 +4,7 @@ that we're running.
 """
 
 import os
+import platform
 import getpass
 import unittest
 
@@ -293,7 +294,7 @@ class TestSystem(unittest.TestCase):
     """
     
     # on macs this test is unreliable because Quicklook sometimes claims '/tmp'
-    if os.uname()[0] == "Darwin":
+    if platform.system() == "Darwin":
       test.runner.skip(self, "(unreliable due to Quicklook)")
       return
     
