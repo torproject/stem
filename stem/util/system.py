@@ -8,6 +8,7 @@ best-effort, providing None if the lookup fails.
 ::
 
   is_windows - checks if we're running on windows
+  is_mac - checks if we're running on a mac
   is_bsd - checks if we're running on the bsd family of operating systems
   is_available - determines if a command is availabe on this system
   is_running - determines if a given process is running
@@ -57,6 +58,15 @@ def is_windows():
   """
   
   return platform.system() == "Windows"
+
+def is_mac():
+  """
+  Checks if we are running on Mac OSX.
+  
+  :returns: bool to indicate if we're on a Mac
+  """
+  
+  return platform.system() == "Darwin"
 
 def is_bsd():
   """
@@ -260,7 +270,8 @@ def get_pid_by_port(port):
     2. sockstat -4l -P tcp -p <port>
     3. lsof -wnP -iTCP -sTCP:LISTEN | grep ":<port>"
   
-  Most queries limit results to listening TCP connections.
+  Most queries limit results to listening TCP connections. This function likely
+  won't work on Mac OSX.
   
   :param int port: port where the process we're looking for is listening
   
@@ -301,6 +312,7 @@ def get_pid_by_port(port):
   
   # attempts to resolve using sockstat, failing if:
   # - sockstat doesn't accept the -4 flag (BSD only)
+  # - sockstat isn't available (encountered with OSX 10.5.8)
   # - there are multiple instances using the same port on different addresses
   #
   # flags:
@@ -334,6 +346,8 @@ def get_pid_by_port(port):
   
   # resolves using lsof which works on both Linux and BSD, only failing if:
   # - lsof is unavailable (not included by default on OpenBSD)
+  # - lsof doesn't provide the port ip/port, nor accept the -i and -s args
+  #   (encountered with OSX 10.5.8)
   # - the process being run as a different user due to permissions
   # - there are multiple instances using the same port on different addresses
   #
