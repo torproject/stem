@@ -49,7 +49,7 @@ class TestProcess(unittest.TestCase):
       
       if stem.prereq.is_python_26():
         tor_process.kill()
-      elif stem.util.system.is_windows():
+      elif not stem.util.system.is_windows():
         os.kill(tor_process.pid, signal.SIGTERM)
   
   def test_launch_tor_with_timeout(self):

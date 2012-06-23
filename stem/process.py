@@ -87,7 +87,7 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
       
       if stem.prereq.is_python_26():
         tor_process.kill()
-      elif stem.util.system.is_windows():
+      elif not stem.util.system.is_windows():
         os.kill(tor_process.pid, signal.SIGTERM)
       
       raise OSError("reached a %i second timeout without success" % timeout)
@@ -107,7 +107,7 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
       # ... but best make sure
       if stem.prereq.is_python_26():
         tor_process.kill()
-      elif stem.util.system.is_windows():
+      elif not stem.util.system.is_windows():
         os.kill(tor_process.pid, signal.SIGTERM)
       
       raise OSError("Process terminated: %s" % last_problem)
