@@ -100,10 +100,10 @@ class Version:
   
   def __init__(self, version_str):
     self.version_str = version_str
-    m = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?$', version_str)
+    version_parts = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?$', version_str)
     
-    if m:
-      major, minor, micro, patch, status = m.groups()
+    if version_parts:
+      major, minor, micro, patch, status = version_parts.groups()
       
       # The patch and status matches are optional (may be None) and have an extra
       # proceeding period or dash if they exist. Stripping those off.
