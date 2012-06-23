@@ -41,6 +41,7 @@ import sys
 import time
 import stat
 import shutil
+import signal
 import logging
 import tempfile
 import threading
@@ -305,7 +306,13 @@ class Runner:
         # if the tor process has stopped on its own then the following raises
         # an OSError ([Errno 3] No such process)
         
-        try: self._tor_process.kill()
+        try:
+          if stem.prereq.is_python_26():
+            self._tor_process.kill()
+          elif not stem.util.system.is_windows():
+            os.kill(self._tor_process.pid, signal.SIGTERM)
+          else:
+            test.output.print_line("failed (unable to call kill() in python 2.5)", *ERROR_ATTR)
         except OSError: pass
         
         self._tor_process.communicate() # blocks until the process is done
