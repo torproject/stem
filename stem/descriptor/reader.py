@@ -354,13 +354,7 @@ class DescriptorReader:
         else:
           walker = os.walk(target)
         
-        # adds all of the files that it contains
-        for root, _, files in walker:
-          for filename in files:
-            self._handle_file(os.path.join(root, filename), new_processed_files)
-          
-          # this can take a while if, say, we're including the root directory
-          if self._is_stopped.isSet(): break
+        self._handle_walker(walker, new_processed_files)
       else:
         self._handle_file(target, new_processed_files)
     
@@ -382,6 +376,14 @@ class DescriptorReader:
         except Queue.Empty:
           self._iter_notice.wait()
           self._iter_notice.clear()
+  
+  def _handle_walker(self, walker, new_processed_files):
+    for root, _, files in walker:
+      for filename in files:
+        self._handle_file(os.path.join(root, filename), new_processed_files)
+        
+        # this can take a while if, say, we're including the root directory
+        if self._is_stopped.isSet(): return
   
   def _handle_file(self, target, new_processed_files):
     # This is a file. Register its last modified timestamp and check if
