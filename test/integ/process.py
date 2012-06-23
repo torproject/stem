@@ -51,6 +51,12 @@ class TestProcess(unittest.TestCase):
         tor_process.kill()
       elif not stem.util.system.is_windows():
         os.kill(tor_process.pid, signal.SIGTERM)
+        
+        # On OSX, python 2.5 this kill call doesn't seem to block, causing our
+        # tor instance to linger and cause a port conflict with the following
+        # test. Giving it a moment to kill for realz.
+        
+        time.sleep(0.5)
   
   def test_launch_tor_with_timeout(self):
     """
