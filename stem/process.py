@@ -104,6 +104,8 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
     
     # this will provide empty results if the process is terminated
     if not init_line:
+      if timeout: signal.alarm(0) # stop alarm
+      
       # ... but best make sure
       if stem.prereq.is_python_26():
         tor_process.kill()
@@ -120,6 +122,8 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
     problem_match = problem_line.search(init_line)
     
     if bootstrap_match and int(bootstrap_match.groups()[0]) >= completion_percent:
+      if timeout: signal.alarm(0) # stop alarm
+      
       if temp_file:
         try: os.remove(temp_file)
         except: pass
