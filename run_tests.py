@@ -29,6 +29,7 @@ import test.unit.util.connection
 import test.unit.util.enum
 import test.unit.util.system
 import test.unit.util.tor_tools
+import test.unit.util.proc
 import test.unit.version
 import test.integ.connection.authentication
 import test.integ.connection.connect
@@ -44,7 +45,6 @@ import test.integ.util.conf
 import test.integ.util.system
 import test.integ.process
 import test.integ.version
-import test.unit.util.proc
 
 import stem.prereq
 import stem.util.conf
@@ -99,6 +99,7 @@ UNIT_TESTS = (
   test.unit.util.enum.TestEnum,
   test.unit.util.connection.TestConnection,
   test.unit.util.conf.TestConf,
+  test.unit.util.proc.TestProc,
   test.unit.util.system.TestSystem,
   test.unit.util.tor_tools.TestTorTools,
   test.unit.descriptor.reader.TestDescriptorReader,
@@ -111,7 +112,6 @@ UNIT_TESTS = (
   test.unit.response.protocolinfo.TestProtocolInfoResponse,
   test.unit.response.authchallenge.TestAuthChallengeResponse,
   test.unit.connection.authentication.TestAuthenticate,
-  test.unit.util.proc.TestProc,
 )
 
 INTEG_TESTS = (
