@@ -85,6 +85,11 @@ import stem.descriptor
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = "DONE"
 
+# TODO: The threading.Event's isSet() method was changed to the more
+# conventional is_set() in python 2.6 and above. We should use that when
+# dropping python 2.5 compatability...
+# http://docs.python.org/library/threading.html#threading.Event.is_set
+
 class FileSkipped(Exception):
   "Base error when we can't provide descriptor data from a file."
 
@@ -336,7 +341,7 @@ class DescriptorReader:
     new_processed_files = {}
     remaining_files = list(self._targets)
     
-    while remaining_files and not self._is_stopped.is_set():
+    while remaining_files and not self._is_stopped.isSet():
       target = remaining_files.pop(0)
       
       if not os.path.exists(target):
@@ -349,26 +354,20 @@ class DescriptorReader:
         else:
           walker = os.walk(target)
         
-        # adds all of the files that it contains
-        for root, _, files in walker:
-          for filename in files:
-            self._handle_file(os.path.join(root, filename), new_processed_files)
-          
-          # this can take a while if, say, we're including the root directory
-          if self._is_stopped.is_set(): break
+        self._handle_walker(walker, new_processed_files)
       else:
         self._handle_file(target, new_processed_files)
     
     self._processed_files = new_processed_files
     
-    if not self._is_stopped.is_set():
+    if not self._is_stopped.isSet():
       self._unreturned_descriptors.put(FINISHED)
     
     self._iter_notice.set()
   
   def __iter__(self):
     with self._iter_lock:
-      while not self._is_stopped.is_set():
+      while not self._is_stopped.isSet():
         try:
           descriptor = self._unreturned_descriptors.get_nowait()
           
@@ -377,6 +376,14 @@ class DescriptorReader:
         except Queue.Empty:
           self._iter_notice.wait()
           self._iter_notice.clear()
+  
+  def _handle_walker(self, walker, new_processed_files):
+    for root, _, files in walker:
+      for filename in files:
+        self._handle_file(os.path.join(root, filename), new_processed_files)
+        
+        # this can take a while if, say, we're including the root directory
+        if self._is_stopped.isSet(): return
   
   def _handle_file(self, target, new_processed_files):
     # This is a file. Register its last modified timestamp and check if
@@ -427,7 +434,7 @@ class DescriptorReader:
     try:
       with open(target) as target_file:
         for desc in stem.descriptor.parse_file(target, target_file):
-          if self._is_stopped.is_set(): return
+          if self._is_stopped.isSet(): return
           self._unreturned_descriptors.put(desc)
           self._iter_notice.set()
     except TypeError, exc:
@@ -438,22 +445,31 @@ class DescriptorReader:
       self._notify_skip_listeners(target, ReadFailed(exc))
   
   def _handle_archive(self, target):
+    # TODO: This would be nicer via the 'with' keyword, but tarfile's __exit__
+    # method was added sometime after python 2.5. We should change this when
+    # we drop python 2.5 support.
+    
+    tar_file = None
+    
     try:
-      with tarfile.open(target) as tar_file:
-        for tar_entry in tar_file:
-          if tar_entry.isfile():
-            entry = tar_file.extractfile(tar_entry)
-            
-            for desc in stem.descriptor.parse_file(target, entry):
-              if self._is_stopped.is_set(): return
-              self._unreturned_descriptors.put(desc)
-              self._iter_notice.set()
-            
-            entry.close()
+      tar_file = tarfile.open(target)
+      
+      for tar_entry in tar_file:
+        if tar_entry.isfile():
+          entry = tar_file.extractfile(tar_entry)
+          
+          for desc in stem.descriptor.parse_file(target, entry):
+            if self._is_stopped.isSet(): return
+            self._unreturned_descriptors.put(desc)
+            self._iter_notice.set()
+          
+          entry.close()
     except TypeError, exc:
       self._notify_skip_listeners(target, ParsingFailure(exc))
     except IOError, exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
+    finally:
+      if tar_file: tar_file.close()
   
   def _notify_skip_listeners(self, path, exception):
     for listener in self._skip_listeners:

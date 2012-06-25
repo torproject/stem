@@ -23,6 +23,7 @@ import signal
 import tempfile
 import subprocess
 
+import stem.prereq
 import stem.util.system
 
 NO_TORRC = "<no torrc>"
@@ -80,7 +81,15 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
         try: os.remove(temp_file)
         except: pass
       
-      tor_process.kill()
+      # We can't kill the subprocess on python 2.5 running Windows without the
+      # win32process module...
+      # http://stackoverflow.com/questions/552423/use-python-2-6-subprocess-module-in-python-2-5/552510#552510
+      
+      if stem.prereq.is_python_26():
+        tor_process.kill()
+      elif not stem.util.system.is_windows():
+        os.kill(tor_process.pid, signal.SIGTERM)
+      
       raise OSError("reached a %i second timeout without success" % timeout)
     
     signal.signal(signal.SIGALRM, timeout_handler)
@@ -95,7 +104,12 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
     
     # this will provide empty results if the process is terminated
     if not init_line:
-      tor_process.kill() # ... but best make sure
+      # ... but best make sure
+      if stem.prereq.is_python_26():
+        tor_process.kill()
+      elif not stem.util.system.is_windows():
+        os.kill(tor_process.pid, signal.SIGTERM)
+      
       raise OSError("Process terminated: %s" % last_problem)
     
     # provide the caller with the initialization message if they want it
