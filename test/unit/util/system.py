@@ -9,6 +9,8 @@ import os
 import platform
 import functools
 import unittest
+import ntpath
+import posixpath
 import stem.util.proc
 import stem.util.system as system
 import test.mocking as mocking
@@ -292,8 +294,7 @@ class TestSystem(unittest.TestCase):
     """
     
     mocking.mock(platform.system, mocking.return_value("Linux"))
-    original_path_sep = os.path.sep
-    os.path.sep = "/"
+    mocking.mock(os.path.join, posixpath.join, os.path)
     
     self.assertEquals("", system.expand_path(""))
     self.assertEquals("/tmp", system.expand_path("/tmp"))
@@ -303,5 +304,21 @@ class TestSystem(unittest.TestCase):
     self.assertEquals("/tmp/foo", system.expand_path("foo", "/tmp"))
     self.assertEquals("/tmp/foo", system.expand_path("./foo", "/tmp"))
     
-    os.path.sep = original_path_sep
-
+  def test_expand_path_windows(self):
+    """
+    Tests the expand_path function on windows. This does not exercise
+    home directory expansions since that deals with our environment
+    (that's left to integ tests).
+    """
+    
+    mocking.mock(platform.system, mocking.return_value("Windows"))
+    mocking.mock(os.path.join, ntpath.join, os.path)
+    
+    self.assertEquals("", system.expand_path(""))
+    self.assertEquals("C:\\tmp", system.expand_path("C:\\tmp"))
+    self.assertEquals("C:\\tmp", system.expand_path("C:\\tmp\\"))
+    self.assertEquals("C:\\tmp", system.expand_path(".", "C:\\tmp"))
+    self.assertEquals("C:\\tmp", system.expand_path(".\\", "C:\\tmp"))
+    self.assertEquals("C:\\tmp\\foo", system.expand_path("foo", "C:\\tmp"))
+    self.assertEquals("C:\\tmp\\foo", system.expand_path(".\\foo", "C:\\tmp"))
+    
