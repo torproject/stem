@@ -14,6 +14,10 @@ interacting at a higher level.
   
   Controller - General controller class intended for direct use.
     |- get_info - issues a GETINFO query
+    |- get_conf - issues a GETCONF query for a single parameter
+    |- get_conf_mapping - issues a GETCONF query for multiple parameters
+    |- set_conf - issues a SETCONF query
+    |- reset_conf - issues a RESETCONF query
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -560,7 +564,7 @@ class Controller(BaseController):
       Response depends upon how we were called as follows...
       
       * str with the response if multiple was False
-      * list with the response strings multiple was True
+      * list with the response strings if multiple was True
       * default if one was provided and our call failed
     
     :raises:
@@ -662,13 +666,40 @@ class Controller(BaseController):
       if default != UNDEFINED: return default
       else: raise exc
   
-  def set_conf(self, *args):
+  def _set_conf(self, params, command="SETCONF"):
+    controlitems = [command]
+    
+    for key, value in params:
+      if type(value) in (list, tuple):
+        controlitems.extend(["%s=\"%s\"" % (key, val.strip()) for val in value])
+      elif value:
+        controlitems.append("%s=\"%s\"" % (key, value.strip()))
+      else:
+        controlitems.append(key)
+    
+    response = self.msg(" ".join(controlitems))
+    stem.response.convert("SINGLELINE", response)
+    
+    if response.is_ok():
+      return True
+    elif response.code == "552":
+      if response.message.startswith("Unrecognized option: Unknown option '"):
+        key = response.message[37:response.message.find("\'", 37)]
+        raise stem.socket.InvalidArguments(response.code, response.message, [key])
+      raise stem.socket.InvalidRequest(response.code, response.message)
+    elif response.code in ("513", "553"):
+      raise stem.socket.InvalidRequest(response.code, response.message)
+    else:
+      raise stem.socket.ProtocolError("%s returned unexpected status code" % command)
+  
+  def set_conf(self, *params):
     """
     Changes the configuration of one or more configuration variables using the
     control socket.
     
-    :param dict options: a dictionary containing a mapping of configuration keys (string)
-      to the corresponding values (string or list of strings)
+    :param list,dict params: a list containing tuples of configuration keys (string)
+      and their corresponding values (string or list of strings) or a dict
+      containing config-key: config-value pairs.
     
     Or
     
@@ -684,31 +715,50 @@ class Controller(BaseController):
         impossible or if there's a syntax error in the configuration values
     """
     
-    if len(args) == 2:
-      args = {args[0]: args[1]}
-    elif len(args) == 1:
-      args = args[0]
+    if len(params) == 2:
+      arg = [params]
+    elif len(params) == 1:
+      if type(params[0]) == dict:
+        arg = params[0].items()
+      else:
+        arg = params[0]
     else:
       raise TypeError("set_conf expected 1 or 2 arguments, got %d", len(args))
     
-    options = []
-    for key, value in args.iteritems():
-      options.append(key + "=\"" + value + "\"")
-      
-    response = self.msg("SETCONF %s" % " ".join(options))
-    stem.response.convert("SINGLELINE", response)
+    self._set_conf(arg, "SETCONF")
+  
+  def reset_conf(self, params):
+    """
+    Resets the configuration of one or more configuration variables using the
+    control socket.
     
-    if response.is_ok():
-      return True
-    elif response.code == "552":
-      if response.message.startswith("Unrecognized option: Unknown option '"):
-        key = response.message[37:response.message.find("\'", 37)]
-        raise stem.socket.InvalidArguments(response.code, response.message, [key])
-      raise stem.socket.InvalidRequest(response.code, response.message)
-    elif response.code in ("513", "553"):
-      raise stem.socket.InvalidRequest(response.code, response.message)
+    :param str,list,dict params:
+      This could be...
+      
+      * a single configuration key (str)
+      * a list of configuration keys to be reset and/or tuples of configuration
+        keys (string) and their corresponding values (string or list of strings)
+      * a dict containing configuration key/value pairs.
+    
+    :param list params: a list of configuration keys to be reset
+    
+    :returns: True on successfully resetting the values
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails
+      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      :class:`stem.socket.InvalidRequest` if the configuration setting is
+        impossible or if there's a syntax error in the configuration values
+    """
+    
+    if type(params) == str:
+      arg = [(params, None)]
+    elif type(params) == dict:
+      arg = params.items()
     else:
-      raise stem.socket.ProtocolError("SETCONF returned unexpected status code")
+      arg = map(lambda item: (item, None) if type(item) == str else item, params)
+    
+    self._set_conf(arg, "RESETCONF")
 
 def _case_insensitive_lookup(entries, key):
   """

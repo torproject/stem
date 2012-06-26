@@ -193,18 +193,17 @@ class TestController(unittest.TestCase):
       self.assertEqual({}, controller.get_conf_map([], "la-di-dah"))
       
       # context-sensitive keys
-      
-      keys = {
-          "HiddenServiceDir": "/tmp/stemtestdir",
-          "HiddenServicePort": "17234 127.0.0.1:17235"
-          }
+      keys = [
+          ("HiddenServiceDir", "/tmp/stemtestdir"),
+          ("HiddenServicePort", "17234 127.0.0.1:17235")
+          ]
       controller.set_conf(keys)
       self.assertEqual("/tmp/stemtestdir", controller.get_conf("HiddenServiceDir"))
-      self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("HiddenServiceDir"))
+      self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("HiddenServicePort"))
   
   def test_setconf(self):
     """
-    Exercises SETCONF with valid and invalid requests.
+    Exercises Controller.set_conf with valid and invalid requests.
     """
     
     runner = test.runner.get_runner()
@@ -233,11 +232,57 @@ class TestController(unittest.TestCase):
       except stem.socket.InvalidArguments, exc:
         self.assertEqual(["bombay"], exc.arguments)
       
-      settings = {
-          "HiddenServiceDir": "/tmp/stemtestdir",
-          "HiddenServicePort": "17234 127.0.0.1:17235"
-          }
+      settings = [
+          ("HiddenServiceDir", "/tmp/stemtestdir"),
+          ("HiddenServicePort", "17234 127.0.0.1:17235")
+          ]
       controller.set_conf(settings)
+      self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("hiddenserviceport"))
+      self.assertEqual("/tmp/stemtestdir", controller.get_conf("hiddenservicedir"))
+  
+  def test_resetconf(self):
+    """
+    Exercises Controller.reset_conf with valid and invalid requests.
+    """
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      # Single valid key
+      controller.set_conf("contactinfo", "stem@testing")
+      self.assertEqual("stem@testing", controller.get_conf("contactinfo"))
+      controller.reset_conf("contactinfo")
+      self.assertEqual(None, controller.get_conf("contactinfo"))
+      
+      # Invalid key
+      try:
+        controller.reset_conf(("invalidkeyboo", "abcde"))
+      except stem.socket.InvalidArguments, exc:
+        self.assertEqual(["invalidkeyboo"], exc.arguments)
+      
+      # Multiple keys, list & dict
+      settings = {
+          "connlimit": "314",
+          "contactinfo": "stem@testing"
+          }
+      controller.reset_conf(settings)
+      self.assertEqual("314", controller.get_conf("ConnLimit"))
+      self.assertEqual("stem@testing", controller.get_conf("contactinfo"))
+      
+      settings = [
+          ("connlimit", "786"),
+          ("contactinfo", "stem testing")
+          ]
+      controller.reset_conf(settings)
+      self.assertEqual("786", controller.get_conf("ConnLimit"))
+      self.assertEqual("stem testing", controller.get_conf("contactinfo"))
+      
+      # context-sensitive keys
+      settings = [
+          ("HiddenServiceDir", "/tmp/stemtestdir"),
+          ("HiddenServicePort", "17234 127.0.0.1:17235")
+          ]
+      controller.reset_conf(settings)
       self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("hiddenserviceport"))
       self.assertEqual("/tmp/stemtestdir", controller.get_conf("hiddenservicedir"))
 
