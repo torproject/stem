@@ -65,13 +65,18 @@ def is_valid_port(entry, allow_zero = False):
   """
   Checks if a string or int is a valid port number.
   
-  :param str,int entry: string or integer to be checked
+  :param list, str, int entry: string, integer or list to be checked
   :param bool allow_zero: accept port number of zero (reserved by defintion)
   
   :returns: True if input is an integer and within the valid port range, False otherwise
   """
   
-  if isinstance(entry, str):
+  if isinstance(entry, list):
+    for port in entry:
+      if not is_valid_port(port):
+        return False
+
+  elif isinstance(entry, str):
     if not entry.isdigit():
       return False
     elif entry[0] == "0" and len(entry) > 1:
