@@ -28,11 +28,11 @@ class TargetError(Exception):
 def mock_fn(arguments_returns, target=None):
   """
   Provides a lambda function that may be used to mock another function.
+
+  This function operates under the precondition that len(exp_args) = len(return_vals)
   
   :param dict args_rets: expected input value(s) as tuples are the key and return values are the values of the dictionary.
   :param function target: target function to be called if mocking doesn't cover this input
-  
-  :precondition: len(exp_args) = len(return_vals)
   
   :returns: function _mocker such that...
   *return_vals[i]     a = exp_args[i]
