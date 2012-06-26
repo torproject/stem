@@ -25,6 +25,9 @@ ExitPolicy - List of ExitPolicyLine objects
 
 """
 
+import stem.util.connection
+
+
 # ip address ranges substituted by the 'private' keyword
 PRIVATE_IP_RANGES = ("0.0.0.0/8", "169.254.0.0/16", "127.0.0.0/8", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12")
 
@@ -65,6 +68,8 @@ class ExitPolicyLine:
     
     # constructs the binary address just in case of comparison with a mask
     if self.ip_address != "*":
+      if not (stem.util.connection.is_valid_ip_address(self.ip_address) and stem.util.connection.is_valid_ipv6_address(self.ip_address)):
+        raise ExitPolicyError
       self.ip_address_bin = ""
       for octet in self.ip_address.split("."):
         # Converts the int to a binary string, padded with zeros. Source:
@@ -80,9 +85,13 @@ class ExitPolicyLine:
     if entry_port != "*":
       if "-" in entry_port:
         port_comp = entry_port.split("-", 1)
+        if not stem.util.connection.is_valid_port(port_comp):
+          raise ExitPolicyError
         self.min_port = int(port_comp[0])
         self.max_port = int(port_comp[1])
       else:
+        if not stem.util.connection.is_valid_port(entry_port):
+          raise ExitPolicyError
         self.min_port = int(entry_port)
         self.max_port = int(entry_port)
         
@@ -180,7 +189,7 @@ class ExitPolicy:
         break
       
     # Iterates over the policys and adds the the ports we'll return (ie, allows
-    # if a whitelist and rejects if a blacklist). Reguardless of a port's
+    # if a whitelist and rejects if a blacklist). Regardless of a port's
     # allow/reject policy, all further entries with that port are ignored since
     # policies respect the first matching policy.
     
@@ -247,7 +256,7 @@ class ExitPolicy:
     for policy in self._policies:
       if policy.check(ip_address, port): return True
         
-      return False
+    return False
     
   def __iter__(self):
     """
@@ -260,101 +269,9 @@ class ExitPolicy:
     """
     Provides the string used to construct the Exit Policy      
     """
-    return ' , '.join([str(policy) for policy in self._policies])
+    return ', '.join([str(policy) for policy in self._policies])
   
-
-class MicrodescriptorExitPolicy:
-  def __init__(self):
-    self.ports = []
-    self.policy = None
-    # assume it's an accepted list of ports
-    self.is_accept = True
-    self.is_policy = False
-
-  def __str__(self):
-    
-    if self.policy:
-      return self.policy
-    
-    self.ports.sort()
-    
-    port_range = []
-    start_port = self.ports[0]
-    
-    for id, port in enumerate(self.ports):
-      if port+1 == self.ports[id+1]:
-        end_port = port
-      else:
-        if start_port == end_port:
-          port_range.append(start_port)
-        else:
-          port_range.append("%d-%d" % start_port, end_port)
-        start_port = port+1
-        
-    ports = ','.join(port_range)
-    
-    if self.is_accept: policy = 'accept %s' % ports
-    else: policy = 'reject %s' % ports
-    
-    if len(policy) > 1000:
-      #raise PolicyLengthException
-      pass
-  
-    # it's a policy, no more changes to the rules
-    if self.is_policy:
-      self.policy = policy
-      
-    return policy
-  
-  def add(self, rule):
-    # it's a polciy, we can't add more rules
-    if self.is_policy:
-      #raise PolicyException
-      pass
-    
-    # sanitize the input a bit, cleaning up tabs and stripping quotes
-    rule = rule.replace("\\t", " ").replace("\"", "")
-    
-    if ',' in rule:
-      self.add_policy(rule)
-    else:
-      self.add_rule(rule)
-    
-  def add_policy(self):
-    self.is_policy = True
-    self.is_accept = rule.startswith("accept")    
-    
-    # remove "accept " or "reject "
-    ports = rule[7:]
-    
-    for ports in rule.split(','):
-      if '-' in port: 
-        start_port, end_port = ports.split('-', 1)
-        for port in range(int(start_port), int(end_port)):
-          self.ports.append(int(port))
-      else:
-          self.ports.append(int(ports))
-          
-  def add_rule(self):
-    is_accept = rule.startswith("accept")
-    # remove "accept " or "reject "
-    rule = rule[7:]
-    
-    # parse 'ip:port' and 'port'
-    if ':' in rule: ports = rule.split(":", 1)[1]
-    else: ports = rule
-    
-    # last entry
-    if ports is "*":
-      if self.is_accept is not is_accept:
-        self.is_accept = not is_accept
-        self.policy = True
-      else:
-        # we can't have accept 80 and then accept *
-        # raise PolicyException
-        pass
-    # it's a rule
-    else:
-      self.is_accept = is_accept
-      self.ports.append(int(ports))
-        
+class ExitPolicyError(Exception):
+  """
+  Base error for exit policy issues.
+  """
