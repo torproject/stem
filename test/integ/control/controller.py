@@ -5,6 +5,8 @@ Integration tests for the stem.control.Controller class.
 from __future__ import with_statement
 
 import unittest
+import tempfile
+import shutil
 
 import stem.control
 import stem.socket
@@ -193,13 +195,15 @@ class TestController(unittest.TestCase):
       self.assertEqual({}, controller.get_conf_map([], "la-di-dah"))
       
       # context-sensitive keys
+      tmpdir = tempfile.mkdtemp()
       keys = [
-          ("HiddenServiceDir", "/tmp/stemtestdir"),
+          ("HiddenServiceDir", tmpdir),
           ("HiddenServicePort", "17234 127.0.0.1:17235")
           ]
       controller.set_conf(keys)
-      self.assertEqual("/tmp/stemtestdir", controller.get_conf("HiddenServiceDir"))
+      self.assertEqual(tmpdir, controller.get_conf("HiddenServiceDir"))
       self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("HiddenServicePort"))
+      shutil.rmtree(tmpdir)
   
   def test_setconf(self):
     """
@@ -232,13 +236,15 @@ class TestController(unittest.TestCase):
       except stem.socket.InvalidArguments, exc:
         self.assertEqual(["bombay"], exc.arguments)
       
+      tmpdir = tempfile.mkdtemp()
       settings = [
-          ("HiddenServiceDir", "/tmp/stemtestdir"),
+          ("HiddenServiceDir", tmpdir),
           ("HiddenServicePort", "17234 127.0.0.1:17235")
           ]
       controller.set_conf(settings)
       self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("hiddenserviceport"))
-      self.assertEqual("/tmp/stemtestdir", controller.get_conf("hiddenservicedir"))
+      self.assertEqual(tmpdir, controller.get_conf("hiddenservicedir"))
+      shutil.rmtree(tmpdir)
   
   def test_resetconf(self):
     """
@@ -278,11 +284,13 @@ class TestController(unittest.TestCase):
       self.assertEqual("stem testing", controller.get_conf("contactinfo"))
       
       # context-sensitive keys
+      tmpdir = tempfile.mkdtemp()
       settings = [
-          ("HiddenServiceDir", "/tmp/stemtestdir"),
+          ("HiddenServiceDir", tmpdir),
           ("HiddenServicePort", "17234 127.0.0.1:17235")
           ]
       controller.reset_conf(settings)
       self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("hiddenserviceport"))
-      self.assertEqual("/tmp/stemtestdir", controller.get_conf("hiddenservicedir"))
+      self.assertEqual(tmpdir, controller.get_conf("hiddenservicedir"))
+      shutil.rmtree(tmpdir)
 
