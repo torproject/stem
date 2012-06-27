@@ -6,6 +6,7 @@ that we're running.
 import os
 import getpass
 import unittest
+import tempfile
 
 import stem.util.system
 import test.runner
@@ -302,16 +303,13 @@ class TestSystem(unittest.TestCase):
     Checks the stem.util.system.get_pid_by_open_file function.
     """
     
-    # on macs this test is unreliable because Quicklook sometimes claims '/tmp'
-    if stem.util.system.is_mac():
-      test.runner.skip(self, "(unreliable due to Quicklook)")
-      return
-    
     # we're not running with a control socket so this just exercises the
     # failure case
     
-    self.assertEquals(None, stem.util.system.get_pid_by_open_file("/tmp"))
-    self.assertEquals(None, stem.util.system.get_pid_by_open_file("/non-existnt-path"))
+    tmpdir = tempfile.mkdtemp()
+    self.assertEquals(None, stem.util.system.get_pid_by_open_file(tmpdir))
+    os.rmdir(tmpdir)
+    self.assertEquals(None, stem.util.system.get_pid_by_open_file(tmpdir))
   
   def test_get_cwd(self):
     """
