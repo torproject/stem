@@ -20,6 +20,7 @@ interacting at a higher level.
     |- reset_conf - reverts configuration options to their default values
     |- set_options - sets or resets the values of multiple configuration options
     |- load_conf - loads configuration information as if it was in the torrc
+    |- save_conf - saves configuration information to the torrc
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -777,6 +778,25 @@ class Controller(BaseController):
       raise stem.socket.InvalidRequest(response.code, response.message)
     elif not response.is_ok():
       raise stem.socket.ProtocolError("+LOADCONF Received unexpected response\n%s" % str(response))
+  
+  def save_conf(self):
+    """
+    Saves the current configuration options into the active torrc file.
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails
+      :class:`stem.socket.OperationFailed` if the client is unable to save the configuration file
+    """
+    
+    response = self.msg("SAVECONF")
+    stem.response.convert("SINGLELINE", response)
+    
+    if response.is_ok():
+      return True
+    elif response.code == "551":
+      raise stem.socket.OperationFailed(response.code, response.message)
+    else:
+      raise stem.socket.ProtocolError("SAVECONF returned unexpected response code")
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """

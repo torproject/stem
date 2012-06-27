@@ -28,8 +28,10 @@ as instances of the :class:`stem.response.ControlMessage` class.
   
   ControllerError - Base exception raised when using the controller.
     |- ProtocolError - Malformed socket data.
-    |- InvalidRequest - Invalid request.
-    |  +- InvalidArguments - Invalid request parameters.
+    |- OperationFailed - Tor was unable to successfully complete the operation.
+    |  |- UnsatisfiableRequest - Tor was unable to satisfy a valid request.
+    |  +- InvalidRequest - Invalid request.
+    |     +- InvalidArguments - Invalid request parameters.
     +- SocketError - Communication with the socket failed.
        +- SocketClosed - Socket has been shut down.
 """
@@ -550,9 +552,9 @@ class ControllerError(Exception):
 class ProtocolError(ControllerError):
   "Malformed content from the control socket."
 
-class InvalidRequest(ControllerError):
+class OperationFailed(ControllerError):
   """
-  Base Exception class for invalid requests
+  Base exception class for failed operations that return an error code
   
   :var str code: error code returned by Tor
   :var str message: error message returned by Tor or a human readable error message
@@ -560,21 +562,31 @@ class InvalidRequest(ControllerError):
   
   def __init__(self, code = None, message = None):
     """
-    Initializes an InvalidRequest object.
+    Initializes an OperationFailed object.
     
     :param str code: error code returned by Tor
     :param str message: error message returned by Tor or a human readable error message
     
-    :returns: object of InvalidRequest class
+    :returns: object of OperationFailed class
     """
     
-    super(InvalidRequest, self).__init__()
+    super(ControllerError, self).__init__()
     self.code = code
     self.message = message
 
+class UnsatisfiableRequest(OperationFailed):
+  """
+  Exception raised if Tor was unable to process our request.
+  """
+
+class InvalidRequest(OperationFailed):
+  """
+  Exception raised when the request was invalid or malformed.
+  """
+
 class InvalidArguments(InvalidRequest):
   """
-  Exception class for invalid requests which contain invalid arguments.
+  Exception class for requests which had invalid arguments.
   
   :var str code: error code returned by Tor
   :var str message: error message returned by Tor or a human readable error message

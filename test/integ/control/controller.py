@@ -296,4 +296,24 @@ class TestController(unittest.TestCase):
       finally:
         # reload original valid config
         controller.load_conf(oldconf)
+  
+  def test_saveconf(self):
+    
+    if test.runner.require_control(self): return
+    
+    runner = test.runner.get_runner()
+    
+    # only testing for success, since we need to run out of disk space to test
+    # for failure
+    with runner.get_tor_controller() as controller:
+      oldconf = runner.get_torrc_contents()
+      
+      try:
+        controller.set_conf("ContactInfo", "confsaved")
+        controller.save_conf()
+        with file(runner.get_torrc_path()) as torrcfile:
+          self.assertTrue("\nContactInfo confsaved\n" in torrcfile.read())
+      finally:
+        controller.load_conf(oldconf)
+        controller.save_conf()
 
