@@ -28,7 +28,7 @@ class TargetError(Exception):
 def mock_fn(arguments_returns, target=None):
   """
   Provides a lambda function that may be used to mock another function.
-
+  
   This function operates under the precondition that len(exp_args) = len(return_vals)
   
   :param dict args_rets: expected input value(s) as tuples are the key and return values are the values of the dictionary.
@@ -49,20 +49,6 @@ def mock_fn(arguments_returns, target=None):
         return tgt(*arg)
       else:
         raise TargetError("A relevant function could not be applied")
-    '''
-    try:
-      # First check if given input matches one of the inputs to be mocked.
-      i = operator.indexOf(args_rets, arg)
-    except ValueError:
-      i = -1
-    if i == -1:
-      if tgt:
-        return tgt(*arg)
-      else:
-        raise TargetError("A relevant function could not be applied")
-    else:
-      return return_vals[i]
-    '''
   return functools.partial(_mocked, arguments_returns, target)
 
 def find_subsets(xs):
@@ -213,10 +199,7 @@ class TestProc(unittest.TestCase):
     
     pid = 1111
     fd_list = ['1', '2', '3', '4']
-    '''
-    for fd in fd_list:
-      fd_paths.append(('/proc/%s/fd/%s' % (str(pid), fd),))
-    '''
+    
     readlink_results = ['socket:[99999999]', 'socket:[IIIIIIII]', 'pipe:[30303]', 'pipe:[40404]']
     input_vals = {}
     for i in range(len(fd_list)):
@@ -238,8 +221,8 @@ class TestProc(unittest.TestCase):
     
     # First build expected responses, then call the function to be tested.
     results = []
-    for proc_file in file_list:
-      contents = proc_file.getvalue()
+    for keys, files in file_vals.iteritems():
+      contents = files.getvalue()
       
       _, l_addr, f_addr, status, _, _, _, _, _, inode = contents.split()[:10]
       
