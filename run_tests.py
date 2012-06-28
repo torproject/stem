@@ -43,6 +43,7 @@ import test.integ.descriptor.extrainfo_descriptor
 import test.integ.response.protocolinfo
 import test.integ.util.conf
 import test.integ.util.system
+import test.integ.util.proc
 import test.integ.process
 import test.integ.version
 
@@ -116,6 +117,7 @@ UNIT_TESTS = (
 
 INTEG_TESTS = (
   test.integ.util.conf.TestConf,
+  test.integ.util.proc.TestProc,
   test.integ.util.system.TestSystem,
   test.integ.descriptor.reader.TestDescriptorReader,
   test.integ.descriptor.server_descriptor.TestServerDescriptor,
