@@ -756,6 +756,26 @@ class Controller(BaseController):
         raise stem.socket.InvalidRequest(response.code, response.message)
       else:
         raise stem.socket.ProtocolError("%s returned unexpected status code" % command)
+  
+  def load_conf(self, configtext):
+    """
+    Sends the configuration text to Tor and loads it as if it has been read from
+    disk.
+    
+    :param str configtext: the configuration text
+    
+    :raises: :class:`stem.socket.ControllerError` if the call fails
+    """
+    
+    response = self.msg("LOADCONF\n%s" % configtext)
+    stem.response.convert("SINGLELINE", response)
+    
+    if response.code in ("552", "553"):
+      if response.code == "552" and response.message.startswith("Invalid config file: Failed to parse/validate config: Unknown option"):
+        raise stem.socket.InvalidArguments(response.code, response.message, [response.message[70:response.message.find('.', 70) - 1]])
+      raise stem.socket.InvalidRequest(response.code, response.message)
+    elif not response.is_ok():
+      raise stem.socket.ProtocolError("+LOADCONF Received unexpected response\n%s" % str(response))
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """

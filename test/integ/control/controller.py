@@ -267,4 +267,32 @@ class TestController(unittest.TestCase):
         ), reset = True)
         
         shutil.rmtree(tmpdir)
+  
+  def test_loadconf(self):
+    """
+    Exercises Controller.load_conf with valid and invalid requests.
+    """
+    
+    if test.runner.require_control(self): return
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      oldconf = runner.get_torrc_contents()
+      
+      # invalid requests
+      self.assertRaises(stem.socket.InvalidRequest, controller.load_conf, "ContactInfo confloaded")
+      try:
+        controller.load_conf("Blahblah blah")
+      except stem.socket.InvalidArguments, exc:
+        self.assertEqual(["Blahblah"], exc.arguments)
+      else:
+        self.fail()
+      
+      # valid config
+      controller.load_conf(runner.get_torrc_contents() + "\nContactInfo confloaded\n")
+      self.assertEqual("confloaded", controller.get_conf("ContactInfo"))
+      
+      # reload original valid config
+      controller.load_conf(oldconf)
 
