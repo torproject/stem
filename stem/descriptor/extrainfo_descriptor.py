@@ -742,10 +742,13 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Bridge extra-info descriptor (`specification <https://metrics.torproject.org/formats.html#bridgedesc>`_)
+  
+  :var str transport: transport method recognized by the bridge (ex. obfs3)
   """
   
   def __init__(self, raw_contents, validate = True):
     self._digest = None
+    self.transport = None
     
     ExtraInfoDescriptor.__init__(self, raw_contents, validate)
   
@@ -760,7 +763,10 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
       value, _ = values[0]
       line = "%s %s" % (keyword, value) # original line
       
-      if keyword == "router-digest":
+      if keyword == "transport":
+        self.transport = value
+        del entries["transport"]
+      elif keyword == "router-digest":
         if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
           raise ValueError("Router digest line had an invalid sha1 digest: %s" % line)
         

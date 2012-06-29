@@ -65,15 +65,26 @@ def parse_file(path, descriptor_file):
   # Metrics descriptor handling. These contain a single descriptor per file.
   
   first_line, desc = descriptor_file.readline().strip(), None
+  metrics_header_match = re.match("^@type (\S+) (\d+).(\d+)$", first_line)
   
-  if first_line == "@type server-descriptor 1.0":
-    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_file.read())
-  elif first_line == "@type bridge-server-descriptor 1.0":
-    desc = stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_file.read())
-  elif first_line in ("@type extra-info 1.0"):
-    desc = stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_file.read())
-  elif first_line in ("@type bridge-extra-info 1.0"):
-    desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
+  if metrics_header_match:
+    # still doesn't necessarily mean that this is a descriptor, check if the
+    # header contents are recognized
+    
+    desc_type, major_version, minor_version = metrics_header_match.groups()
+    major_version, minor_version = int(major_version), int(minor_version)
+    
+    if desc_type == "server-descriptor" and major_version == 1 and minor_version == 0:
+      desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_file.read())
+    elif desc_type == "bridge-server-descriptor" and major_version == 1 and minor_version == 0:
+      desc = stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_file.read())
+    elif desc_type == "extra-info" and major_version == 1 and minor_version == 0:
+      desc = stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_file.read())
+    elif desc_type == "bridge-extra-info" and major_version == 1 and minor_version in (0, 1):
+      # version 1.1 introduced a 'transport' field...
+      # https://trac.torproject.org/6257
+      
+      desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
   
   if desc:
     desc._set_path(path)

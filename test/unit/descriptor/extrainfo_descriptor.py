@@ -4,7 +4,7 @@ Unit tests for stem.descriptor.extrainfo_descriptor.
 
 import datetime
 import unittest
-from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor, DirResponses, DirStats
+from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor, BridgeExtraInfoDescriptor, DirResponses, DirStats
 
 CRYPTO_BLOB = """
 K5FSywk7qvw/boA4DQcqkls6Ize5vcBYfhQ8JnOeRQC9+uDxbnpm3qaYN9jZ8myj
@@ -12,13 +12,19 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 7LZqklu+gVvhMKREpchVqlAwXkWR44VENm24Hs+mT3M=
 """
 
-EXTRAINFO_DESCRIPTOR_ATTR = (
+RELAY_EXTRAINFO_ATTR = (
   ("extra-info", "ninja B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48"),
   ("published", "2012-05-05 17:03:50"),
   ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
 )
 
-def _make_descriptor(attr = None, exclude = None):
+BRIDGE_EXTRAINFO_ATTR = (
+  ("extra-info", "ec2bridgereaac65a3 1EC248422B57D9C0BD751892FE787585407479A4"),
+  ("published", "2012-05-05 17:03:50"),
+  ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
+)
+
+def _make_descriptor(attr = None, exclude = None, is_bridge = False):
   """
   Constructs a minimal extrainfo descriptor with the given attributes.
   
@@ -31,20 +37,27 @@ def _make_descriptor(attr = None, exclude = None):
   descriptor_lines = []
   if attr is None: attr = {}
   if exclude is None: exclude = []
+  desc_attr = BRIDGE_EXTRAINFO_ATTR if is_bridge else RELAY_EXTRAINFO_ATTR
   attr = dict(attr) # shallow copy since we're destructive
   
-  for keyword, value in EXTRAINFO_DESCRIPTOR_ATTR:
+  for keyword, value in desc_attr:
     if keyword in exclude: continue
     elif keyword in attr:
       value = attr[keyword]
       del attr[keyword]
     
     # if this is the last entry then we should dump in any unused attributes
-    if keyword == "router-signature":
+    if not is_bridge and keyword == "router-signature":
       for attr_keyword, attr_value in attr.items():
         descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
     
     descriptor_lines.append("%s %s" % (keyword, value))
+  
+  # bridges don't have a router-signature so simply append any extra attributes
+  # to the end
+  if is_bridge:
+    for attr_keyword, attr_value in attr.items():
+      descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
   
   return "\n".join(descriptor_lines)
 
@@ -491,6 +504,33 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       for entry in test_entries:
         desc_text = _make_descriptor({keyword: entry})
         self._expect_invalid_attr(desc_text, attr, {})
+  
+  def test_minimal_bridge_descriptor(self):
+    """
+    Basic sanity check that we can parse a descriptor with minimal attributes.
+    """
+    
+    desc_text = _make_descriptor(is_bridge = True)
+    desc = BridgeExtraInfoDescriptor(desc_text)
+    
+    self.assertEquals("ec2bridgereaac65a3", desc.nickname)
+    self.assertEquals("1EC248422B57D9C0BD751892FE787585407479A4", desc.fingerprint)
+    self.assertEquals("006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4", desc.digest())
+    self.assertEquals([], desc.get_unrecognized_lines())
+    
+    # check that we don't have crypto fields
+    self.assertRaises(AttributeError, getattr, desc, "signature")
+  
+  def test_transport_line(self):
+    """
+    Basic exercise of the bridge descriptor's transport entry.
+    attributes.
+    """
+    
+    desc_text = _make_descriptor({"transport": "obfs3"}, is_bridge = True)
+    desc = BridgeExtraInfoDescriptor(desc_text)
+    self.assertEquals("obfs3", desc.transport)
+    self.assertEquals([], desc.get_unrecognized_lines())
   
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
     """
