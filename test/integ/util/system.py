@@ -76,6 +76,9 @@ class TestSystem(unittest.TestCase):
     Checks the stem.util.system.is_running function.
     """
     
+    if not stem.util.system.is_available("ps"):
+      test.runner.skip(self, "(ps unavailable)")
+      return
     self.assertTrue(stem.util.system.is_running("tor"))
     self.assertFalse(stem.util.system.is_running("blarg_and_stuff"))
   
@@ -85,6 +88,9 @@ class TestSystem(unittest.TestCase):
     will fail if there's other tor instances running.
     """
     
+    if stem.util.system.is_windows():
+      test.runner.skip(self, "(unavailable on windows)")
+      return
     if self.is_extra_tor_running:
       test.runner.skip(self, "(multiple tor instances)")
       return
@@ -197,7 +203,9 @@ class TestSystem(unittest.TestCase):
     """
     Checks general usage of the stem.util.system.get_pid_by_port function.
     """
-    
+    if stem.util.system.is_windows():
+      test.runner.skip(self, "(unavailable on windows)")
+      return
     runner = test.runner.get_runner()
     if not _has_port():
       test.runner.skip(self, "(test instance has no port)")
@@ -225,7 +233,7 @@ class TestSystem(unittest.TestCase):
     elif not stem.util.system.is_available("netstat"):
       test.runner.skip(self, "(netstat unavailable)")
       return
-    elif stem.util.system.is_bsd():
+    elif stem.util.system.is_bsd() or stem.util.system.is_windows():
       test.runner.skip(self, "(linux only)")
       return
     elif not runner.is_ptraceable():
@@ -311,6 +319,9 @@ class TestSystem(unittest.TestCase):
     
     runner = test.runner.get_runner()
     
+    if stem.util.system.is_windows():
+      test.runner.skip(self, "(unavailable on windows)")
+      return
     if not runner.is_ptraceable():
       test.runner.skip(self, "(DisableDebuggerAttachment is set)")
       return
