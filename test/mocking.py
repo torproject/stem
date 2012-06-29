@@ -9,6 +9,7 @@ calling :func:`test.mocking.revert_mocking`.
   mock - replaces a function with an alternative implementation
   revert_mocking - reverts any changes made by the mock function
   get_real_function - provides the non-mocked version of a function
+  get_all_combinations - provides all combinations of attributes
   
   Mocking Functions
     no_op           - does nothing
@@ -16,6 +17,7 @@ calling :func:`test.mocking.revert_mocking`.
     return_true     - returns True
     return_false    - returns False
     return_none     - returns None
+    return_for_args - return based on the input arguments
     raise_exception - raises an exception when called
   
   Instance Constructors
@@ -54,6 +56,27 @@ def return_value(value):
 def return_true(): return return_value(True)
 def return_false(): return return_value(False)
 def return_none(): return return_value(None)
+
+def return_for_args(args_to_return_value, default = None):
+  """
+  Returns a value if the arguments to it match something in a given
+  'argument => return value' mapping. Otherwise, a default function
+  is called with the arguments.
+  
+  :param dict args_to_return_value: mapping of arguments to the value we should provide
+  :param functor default: returns the value of this function if the args don't match something that we have, we raise a ValueError by default
+  """
+  
+  def _return_value(*args):
+    if args in args_to_return_value:
+      return args_to_return_value[args]
+    elif default is None:
+      arg_label = ", ".join([str(v) for v in args])
+      raise ValueError("Unrecognized argument sent for return_for_args(): %s" % arg_label)
+    else:
+      return default(args)
+  
+  return _return_value
 
 def raise_exception(exception):
   def _raise(*args): raise exception
@@ -179,6 +202,41 @@ def get_real_function(function):
     return MOCK_STATE[mocking_id][2]
   else:
     return function
+
+def get_all_combinations(attr, include_empty = False):
+  """
+  Provides an iterator for all combinations of a set of attributes. For
+  instance...
+  
+  ::
+  
+    >>> list(test.mocking.get_all_combinations(["a", "b", "c"]))
+    [('a',), ('b',), ('c',), ('a', 'b'), ('a', 'c'), ('b', 'c'), ('a', 'b', 'c')]
+  
+  :param list attr: attributes to provide combinations for
+  :param bool include_empty: includes an entry with zero items if True
+  :returns: iterator for all combinations
+  """
+  
+  # Makes an itertools.product() call for 'i' copies of attr...
+  #
+  # * itertools.product(attr) => all one-element combinations
+  # * itertools.product(attr, attr) => all two-element combinations
+  # * ... etc
+  
+  if include_empty: yield ()
+  
+  seen = set()
+  for i in xrange(1, len(attr) + 1):
+    product_arg = [attr for j in xrange(i)]
+    
+    for item in itertools.product(*product_arg):
+      # deduplicate, sort, and only provide if we haven't seen it yet
+      item = tuple(sorted(set(item)))
+      
+      if not item in seen:
+        seen.add(item)
+        yield item
 
 def get_message(content, reformat = True):
   """

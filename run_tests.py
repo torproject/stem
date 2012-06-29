@@ -27,9 +27,9 @@ import test.unit.response.authchallenge
 import test.unit.util.conf
 import test.unit.util.connection
 import test.unit.util.enum
+import test.unit.util.proc
 import test.unit.util.system
 import test.unit.util.tor_tools
-import test.unit.util.proc
 import test.unit.version
 import test.integ.connection.authentication
 import test.integ.connection.connect
@@ -42,8 +42,8 @@ import test.integ.descriptor.server_descriptor
 import test.integ.descriptor.extrainfo_descriptor
 import test.integ.response.protocolinfo
 import test.integ.util.conf
-import test.integ.util.system
 import test.integ.util.proc
+import test.integ.util.system
 import test.integ.process
 import test.integ.version
 
