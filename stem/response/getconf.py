@@ -5,7 +5,10 @@ class GetConfResponse(stem.response.ControlMessage):
   """
   Reply for a GETCONF query.
   
-  :var dict entries: mapping between the queried options (string) and their values (list of strings)
+  Note that configuration parameters won't match what we queried for if it's one
+  of the special mapping options (ex. "HiddenServiceOptions").
+  
+  :var dict entries: mapping between the config parameter (string) and their values (list of strings)
   """
   
   def _parse_message(self):
@@ -41,8 +44,6 @@ class GetConfResponse(stem.response.ControlMessage):
         key, value = line.pop_mapping(True).items()[0]
       else:
         key, value = (line.pop(), None)
-      
-      entry = self.entries.get(key, None)
       
       self.entries.setdefault(key, []).append(value)
 

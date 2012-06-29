@@ -143,8 +143,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      # successful single query
-      socket = runner.get_tor_socket()
+      socket = controller.get_socket()
       if isinstance(socket, stem.socket.ControlPort):
         connection_value = str(socket.get_port())
         config_key = "ControlPort"
@@ -152,17 +151,18 @@ class TestController(unittest.TestCase):
         connection_value = str(socket.get_socket_path())
         config_key = "ControlSocket"
       
+      # successful single query
       self.assertEqual(connection_value, controller.get_conf(config_key))
       self.assertEqual(connection_value, controller.get_conf(config_key, "la-di-dah"))
       
       # succeessful batch query
-      expected = {config_key: connection_value}
+      expected = {config_key: [connection_value]}
       self.assertEqual(expected, controller.get_conf_map([config_key]))
       self.assertEqual(expected, controller.get_conf_map([config_key], "la-di-dah"))
       
-      getconf_params = set(["ControlPort", "DirPort", "DataDirectory"])
-      self.assertEqual(getconf_params, set(controller.get_conf_map(["ControlPort",
-        "DirPort", "DataDirectory"])))
+      getconf_params = set(["ControlPORT", "dirport", "datadirectory"])
+      self.assertEqual(getconf_params, set(controller.get_conf_map(["ControlPORT",
+        "dirport", "datadirectory"], multiple=False)))
       
       # non-existant option(s)
       self.assertRaises(stem.socket.InvalidArguments, controller.get_conf, "blarg")
@@ -175,16 +175,19 @@ class TestController(unittest.TestCase):
           controller.get_conf_map(["erfusdj", "afiafj"], "la-di-dah", multiple = True))
       
       # multivalue configuration keys
-      nodefamilies = [node_family[11:].strip() for node_family in
-          runner.get_torrc_contents().split("\n") if node_family.startswith("NodeFamily ")]
-      self.assertEqual(nodefamilies, controller.get_conf("NodeFamily", multiple = True))
+      nodefamilies = [("abc", "xyz", "pqrs"), ("mno", "tuv", "wxyz")]
+      controller.msg("SETCONF %s" % " ".join(["nodefamily=\"" + ",".join(x) + "\"" for x in nodefamilies]))
+      self.assertEqual([",".join(n) for n in nodefamilies], controller.get_conf("nodefamily", multiple = True))
+      controller.msg("RESETCONF NodeFamily")
       
       # empty input
-      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf, "")
-      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf_map, [])
-      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf_map, "")
+      self.assertEqual(None, controller.get_conf(""))
+      self.assertEqual({}, controller.get_conf_map([]))
+      self.assertEqual({}, controller.get_conf_map([""]))
+      self.assertEqual(None, controller.get_conf("          "))
+      self.assertEqual({}, controller.get_conf_map(["    ", "        "]))
       
       self.assertEqual("la-di-dah", controller.get_conf("", "la-di-dah"))
-      self.assertEqual({"": "la-di-dah"}, controller.get_conf_map("", "la-di-dah"))
+      self.assertEqual({}, controller.get_conf_map("", "la-di-dah"))
       self.assertEqual({}, controller.get_conf_map([], "la-di-dah"))
 
