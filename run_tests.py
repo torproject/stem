@@ -27,6 +27,7 @@ import test.unit.response.authchallenge
 import test.unit.util.conf
 import test.unit.util.connection
 import test.unit.util.enum
+import test.unit.util.proc
 import test.unit.util.system
 import test.unit.util.tor_tools
 import test.unit.version
@@ -41,6 +42,7 @@ import test.integ.descriptor.server_descriptor
 import test.integ.descriptor.extrainfo_descriptor
 import test.integ.response.protocolinfo
 import test.integ.util.conf
+import test.integ.util.proc
 import test.integ.util.system
 import test.integ.process
 import test.integ.version
@@ -98,6 +100,7 @@ UNIT_TESTS = (
   test.unit.util.enum.TestEnum,
   test.unit.util.connection.TestConnection,
   test.unit.util.conf.TestConf,
+  test.unit.util.proc.TestProc,
   test.unit.util.system.TestSystem,
   test.unit.util.tor_tools.TestTorTools,
   test.unit.descriptor.reader.TestDescriptorReader,
@@ -114,6 +117,7 @@ UNIT_TESTS = (
 
 INTEG_TESTS = (
   test.integ.util.conf.TestConf,
+  test.integ.util.proc.TestProc,
   test.integ.util.system.TestSystem,
   test.integ.descriptor.reader.TestDescriptorReader,
   test.integ.descriptor.server_descriptor.TestServerDescriptor,

@@ -15,27 +15,6 @@ import stem.connection
 import stem.util.log as log
 import test.mocking as mocking
 
-def _get_all_auth_method_combinations():
-  """
-  Enumerates all types of authentication that a PROTOCOLINFO response may
-  provide, returning a tuple with the AuthMethod enums.
-  """
-  
-  for is_none in (False, True):
-    for is_password in (False, True):
-      for is_cookie in (False, True):
-        for is_safecookie in (False, True):
-          for is_unknown in (False, True):
-            auth_methods = []
-            
-            if is_none: auth_methods.append(stem.connection.AuthMethod.NONE)
-            if is_password: auth_methods.append(stem.connection.AuthMethod.PASSWORD)
-            if is_cookie: auth_methods.append(stem.connection.AuthMethod.COOKIE)
-            if is_safecookie: auth_methods.append(stem.connection.AuthMethod.SAFECOOKIE)
-            if is_unknown: auth_methods.append(stem.connection.AuthMethod.UNKNOWN)
-            
-            yield tuple(auth_methods)
-
 class TestAuthenticate(unittest.TestCase):
   def setUp(self):
     mocking.mock(stem.connection.get_protocolinfo, mocking.no_op())
@@ -111,7 +90,15 @@ class TestAuthenticate(unittest.TestCase):
     all_auth_password_exc += control_exc
     all_auth_cookie_exc += control_exc
     
-    for protocolinfo_auth_methods in _get_all_auth_method_combinations():
+    auth_method_combinations = mocking.get_all_combinations([
+      stem.connection.AuthMethod.NONE,
+      stem.connection.AuthMethod.PASSWORD,
+      stem.connection.AuthMethod.COOKIE,
+      stem.connection.AuthMethod.SAFECOOKIE,
+      stem.connection.AuthMethod.UNKNOWN,
+    ], include_empty = True)
+    
+    for protocolinfo_auth_methods in auth_method_combinations:
       # protocolinfo input for the authenticate() call we'll be making
       protocolinfo_arg = mocking.get_protocolinfo_response(
         auth_methods = protocolinfo_auth_methods,
