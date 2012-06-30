@@ -4,7 +4,6 @@ that we're running.
 """
 
 import os
-import platform
 import getpass
 import unittest
 
@@ -79,6 +78,7 @@ class TestSystem(unittest.TestCase):
     if not stem.util.system.is_available("ps"):
       test.runner.skip(self, "(ps unavailable)")
       return
+    
     self.assertTrue(stem.util.system.is_running("tor"))
     self.assertFalse(stem.util.system.is_running("blarg_and_stuff"))
   
@@ -91,7 +91,7 @@ class TestSystem(unittest.TestCase):
     if stem.util.system.is_windows():
       test.runner.skip(self, "(unavailable on windows)")
       return
-    if self.is_extra_tor_running:
+    elif self.is_extra_tor_running:
       test.runner.skip(self, "(multiple tor instances)")
       return
     
@@ -203,11 +203,12 @@ class TestSystem(unittest.TestCase):
     """
     Checks general usage of the stem.util.system.get_pid_by_port function.
     """
+    
+    runner = test.runner.get_runner()
     if stem.util.system.is_windows():
       test.runner.skip(self, "(unavailable on windows)")
       return
-    runner = test.runner.get_runner()
-    if not _has_port():
+    elif not _has_port():
       test.runner.skip(self, "(test instance has no port)")
       return
     elif stem.util.system.is_mac():
@@ -302,7 +303,7 @@ class TestSystem(unittest.TestCase):
     """
     
     # on macs this test is unreliable because Quicklook sometimes claims '/tmp'
-    if platform.system() == "Darwin":
+    if stem.util.system.is_mac():
       test.runner.skip(self, "(unreliable due to Quicklook)")
       return
     
@@ -322,7 +323,7 @@ class TestSystem(unittest.TestCase):
     if stem.util.system.is_windows():
       test.runner.skip(self, "(unavailable on windows)")
       return
-    if not runner.is_ptraceable():
+    elif not runner.is_ptraceable():
       test.runner.skip(self, "(DisableDebuggerAttachment is set)")
       return
     
