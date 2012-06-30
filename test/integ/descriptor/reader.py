@@ -118,7 +118,7 @@ class TestDescriptorReader(unittest.TestCase):
     # http://docs.python.org/library/os.html#os.chmod
     
     if system.is_windows():
-      test.runner.skip("(chmod not functional)")
+      test.runner.skip(self, "(chmod not functional)")
     
     test_listing_path = _make_processed_files_listing(BASIC_LISTING)
     os.chmod(test_listing_path, 0077) # remove read permissions
@@ -298,7 +298,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
     
     # Skip on windows since SIGALRM is unavailable
-    if system.is_windows(): test.runner.skip("(SIGALRM unavailable)")
+    if system.is_windows(): test.runner.skip(self, "(SIGALRM unavailable)")
     
     is_test_running = True
     reader = stem.descriptor.reader.DescriptorReader("/usr")
@@ -422,7 +422,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
     
     if system.is_windows():
-      test.runner.skip("(chmod not functional)")
+      test.runner.skip(self, "(chmod not functional)")
     
     test_path = test.runner.get_runner().get_test_dir("secret_file")
     

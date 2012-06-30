@@ -526,7 +526,7 @@ def expand_path(path, cwd = None):
   if not relative_path or os.path.isabs(relative_path):
     # empty or already absolute - nothing to do
     pass
-  elif not is_windows() and relative_path.startswith("~"):
+  elif relative_path.startswith("~"):
     # prefixed with a ~ or ~user entry
     relative_path = os.path.expanduser(relative_path)
   else:

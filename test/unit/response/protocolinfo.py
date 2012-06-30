@@ -2,6 +2,7 @@
 Unit tests for the stem.response.protocolinfo.ProtocolInfoResponse class.
 """
 
+import os
 import unittest
 
 import stem.socket
@@ -170,7 +171,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     
     stem.connection._expand_cookie_path(control_message, stem.util.system.get_pid_by_name, "tor")
     
-    self.assertEquals("/tmp/foo/tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_path)
+    self.assertEquals(os.path.join("/tmp/foo", "tor-browser_en-US", "Data", "control_auth_cookie"), control_message.cookie_path)
     
     # exercise cookie expansion where both calls fail (should work, just
     # leaving the path unexpanded)
