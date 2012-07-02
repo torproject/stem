@@ -574,7 +574,10 @@ class Controller(BaseController):
     # automagically change the requested parameter if it's context sensitive
     # and cannot be returned on it's own.
     param = param.lower()
-    return self.get_conf_map(self._mapped_config_keys.get(param, param), default, multiple)[param]
+    entries = self.get_conf_map(self._mapped_config_keys.get(param, param), default, multiple)
+    if param in self._mapped_config_keys:
+      return entries[stem.util.control.case_insensitive_lookup(entries, param)]
+    else: return entries[param]
   
   def get_conf_map(self, param, default = UNDEFINED, multiple = True):
     """
@@ -629,13 +632,14 @@ class Controller(BaseController):
       response = self.msg("GETCONF %s" % ' '.join(param))
       stem.response.convert("GETCONF", response)
       
+      lookup = stem.util.control.case_insensitive_lookup
       # map the entries back to the parameters given so the capitalization
       # matches. Note: when the same configuration key is provided multiple
       # times, this uses the first one and ignores the rest.
       for key in response.entries:
         if not key.lower() in self._mapped_config_keys:
-          response.entries[stem.util.control.case_insensitive_lookup(param, key)] = response.entries[key]
-          if key != stem.util.control.case_insensitive_lookup(param, key): del response.entries[key]
+          response.entries[lookup(param, key)] = response.entries[key]
+          if key != lookup(param, key): del response.entries[key]
       
       requested_params = set(param)
       reply_params = set(response.entries.keys())
