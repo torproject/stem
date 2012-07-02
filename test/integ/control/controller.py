@@ -316,4 +316,23 @@ class TestController(unittest.TestCase):
       finally:
         controller.load_conf(oldconf)
         controller.save_conf()
+  
+  def test_enable_feature(self):
+    """
+    Test Controller.enable_feature with valid and invalid inputs.
+    """
+    
+    if test.runner.require_control(self): return
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      if test.runner.require_version(self, stem.version.Requirement.FEATURE_VERBOSENAMES):
+        controller.enable_feature("VERBOSE_NAMES")
+      self.assertRaises(stem.socket.InvalidArguments, controller.enable_feature, ["NOT", "A", "FEATURE"])
+      try:
+        controller.enable_feature(["NOT", "A", "FEATURE"])
+      except stem.socket.InvalidArguments, exc:
+        self.assertEqual(["NOT"], exc.arguments)
+      else: self.fail()
 
