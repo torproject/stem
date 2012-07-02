@@ -33,6 +33,7 @@ import test.unit.util.proc
 import test.unit.util.system
 import test.unit.util.tor_tools
 import test.unit.version
+import test.unit.exit_policy
 import test.integ.connection.authentication
 import test.integ.connection.connect
 import test.integ.control.base_controller
@@ -117,6 +118,7 @@ UNIT_TESTS = (
   test.unit.response.protocolinfo.TestProtocolInfoResponse,
   test.unit.response.authchallenge.TestAuthChallengeResponse,
   test.unit.connection.authentication.TestAuthenticate,
+  test.unit.exit_policy.TestExitPolicy
 )
 
 INTEG_TESTS = (
