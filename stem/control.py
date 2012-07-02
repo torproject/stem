@@ -591,11 +591,9 @@ class Controller(BaseController):
     only whitespace are ignored.
     
     There's three use cases for GETCONF:
-    - a single value is provided
-    - multiple values are provided for the option queried
-    - a set of options that weren't necessarily requested are returned (for
-      instance querying HiddenServiceOptions gives HiddenServiceDir,
-      HiddenServicePort, etc)
+      1. a single value is provided
+      2. multiple values are provided for the option queried
+      3. a set of options that weren't necessarily requested are returned (for instance querying HiddenServiceOptions gives HiddenServiceDir, HiddenServicePort, etc)
     
     The vast majority of the options fall into the first two categories, in
     which case calling get_conf() is sufficient. However, for batch queries or
