@@ -697,22 +697,20 @@ class Controller(BaseController):
     Changes the configuration of one or more configuration variables using the
     control socket.
     
-    :param list,dict params: a list containing tuples of configuration keys (string)
-      and their corresponding values (string or list of strings) or a dict
-      containing config-key: config-value pairs.
+    :param list,dict params: Can be one of...
+    
+      * a list containing tuples of configuration keys (string) and their corresponding values (string or list of strings)
+      * a dict containing config key-value pairs
     
     Or
     
     :param str key: configuration key
     :param str value: configuration value
     
-    :returns: True on successfully setting the values
-    
     :raises:
       :class:`stem.socket.ControllerError` if the call fails
       :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      :class:`stem.socket.InvalidRequest` if the configuration setting is
-        impossible or if there's a syntax error in the configuration values
+      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
     """
     
     if len(params) == 2:
@@ -732,23 +730,16 @@ class Controller(BaseController):
     Resets the configuration of one or more configuration variables using the
     control socket.
     
-    :param str,list,dict params:
-      This could be...
-      
-      * a single configuration key (str)
-      * a list of configuration keys to be reset and/or tuples of configuration
-        keys (string) and their corresponding values (string or list of strings)
+    :param str,list,dict params: Can be one of...
+    
+      * a single configuration key (string)
+      * a list of configuration keys (list of strings) to be reset and/or tuples of configuration keys (string) and their corresponding values (string or list of strings)
       * a dict containing configuration key/value pairs.
-    
-    :param list params: a list of configuration keys to be reset
-    
-    :returns: True on successfully resetting the values
     
     :raises:
       :class:`stem.socket.ControllerError` if the call fails
       :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      :class:`stem.socket.InvalidRequest` if the configuration setting is
-        impossible or if there's a syntax error in the configuration values
+      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
     """
     
     if type(params) == str:
