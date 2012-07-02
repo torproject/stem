@@ -55,4 +55,56 @@ class TestExitPolicy(unittest.TestCase):
     """
     Tests if exiting to this ip is allowed.
     """
-    pass
+    
+    exit_policies = stem.exit_policy.ExitPolicy()
+    exit_policies = stem.exit_policy.ExitPolicy()
+    exit_policies.add("accept *:80")
+    exit_policies.add("accept *:443")
+    exit_policies.add("reject *:*")
+    
+    self.assertTrue(exit_policies.check("www.google.com", 80))
+    self.assertTrue(exit_policies.check("www.atagar.com", 443))
+    
+    self.assertFalse(exit_policies.check("www.atagar.com", 22))
+    self.assertFalse(exit_policies.check("www.atagar.com", 8118))
+    
+  def test_is_exiting_allowed(self):
+    """
+    Tests if this is an exit node
+    """
+    
+    exit_policies = stem.exit_policy.ExitPolicy()
+    exit_policies = stem.exit_policy.ExitPolicy()
+    exit_policies.add("accept *:80")
+    exit_policies.add("accept *:443")
+    exit_policies.add("reject *:*")
+    
+    self.assertTrue(exit_policies.is_exiting_allowed())
+    
+    exit_policies = stem.exit_policy.ExitPolicy()
+    exit_policies = stem.exit_policy.ExitPolicy()
+    exit_policies.add("reject *:*")
+    
+    self.assertFalse(exit_policies.is_exiting_allowed())
+    
+  def test_microdesc_exit_parsing(self):
+    microdesc_exit_policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")
+    
+    self.assertEqual(str(microdesc_exit_policy),"accept 80,443")
+    
+    self.assertRaises(stem.exit_policy.ExitPolicyError, stem.exit_policy.MicrodescriptorExitPolicy, "accept 80,-443")
+    self.assertRaises(stem.exit_policy.ExitPolicyError, stem.exit_policy.MicrodescriptorExitPolicy, "accept 80,+443")
+    self.assertRaises(stem.exit_policy.ExitPolicyError, stem.exit_policy.MicrodescriptorExitPolicy, "accept 80,66666")
+    self.assertRaises(stem.exit_policy.ExitPolicyError, stem.exit_policy.MicrodescriptorExitPolicy, "reject 80,foo")
+    self.assertRaises(stem.exit_policy.ExitPolicyError, stem.exit_policy.MicrodescriptorExitPolicy, "bar 80,foo")
+    self.assertRaises(stem.exit_policy.ExitPolicyError, stem.exit_policy.MicrodescriptorExitPolicy, "foo")
+    self.assertRaises(stem.exit_policy.ExitPolicyError, stem.exit_policy.MicrodescriptorExitPolicy, "bar 80-foo")
+    
+  def test_micodesc_exit_check(self):
+    microdesc_exit_policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")
+    
+    self.assertTrue(microdesc_exit_policy.check(80))
+    self.assertTrue(microdesc_exit_policy.check("www.atagar.com", 443))
+    
+    self.assertFalse(microdesc_exit_policy.check(22))
+    self.assertFalse(microdesc_exit_policy.check("www.atagar.com", 8118))

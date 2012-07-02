@@ -10,6 +10,16 @@ easily parsed and compared, for instance...
 accept *:80 , accept *:443, reject *:*
 >>> print exit_policies.get_summary()
 accept 80, 443
+>>> exit_policies.check("www.google.com", 80)
+True
+
+>>> microdesc_exit_policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")
+>>> print microdesc_exit_policy
+accept 80,443
+>>> microdesc_exit_policy.check("www.google.com", 80)
+True
+>>> microdesc_exit_policy.check(80)
+True
 
 ExitPolicyLine - Single rule from the exit policy
   |- __str__ - string representation
@@ -23,6 +33,11 @@ ExitPolicy - List of ExitPolicyLine objects
   |- get_summary - provides a summary description of the policy chain
   +- is_exiting_allowed - check if exit node
 
+MicrodescriptorExitPolicy - Microdescriptor exit policy
+  |- check - check if exiting to this port is allowed
+  |- ports - returns a list of ports
+  |- is_accept - check if it's a list of accepted/rejected ports
+  +- __str__ - return the summary
 """
 
 import stem.util.connection
@@ -271,6 +286,64 @@ class ExitPolicy:
     """
     return ', '.join([str(policy) for policy in self._policies])
   
+class MicrodescriptorExitPolicy:
+  """
+  Microdescriptor exit policy -  'accept 53,80,443'
+  """
+
+  def __init__(self, summary):
+    self.ports = []
+    self.is_accept = None
+    self.summary = summary
+    
+    # sanitize the input a bit, cleaning up tabs and stripping quotes
+    summary = self.summary.replace("\\t", " ").replace("\"", "")
+    
+    self.is_accept = summary.startswith("accept")
+    
+    # strips off "accept " or "reject " and extra spaces
+    summary = summary[7:].replace(" ", "")
+    
+    for ports in summary.split(','):
+      if '-' in ports:
+        port_range = ports.split("-", 1)
+        if not stem.util.connection.is_valid_port(port_range):
+          raise ExitPolicyError
+        self.ports.append(range(int(port_range[2])), int(port_range[1]))
+      if not stem.util.connection.is_valid_port(ports):
+          raise ExitPolicyError
+      self.ports.append(int(ports))
+      
+  def check(self, ip_address=None, port=None):
+    # stem is intelligent about the arguments
+    if not port:
+      if not '.' in str(ip_address):
+        port = ip_address
+    
+    port = int(port)
+    
+    if port in self.ports:
+      # its a list of accepted ports
+      if self.is_accept:
+        return True
+      else:
+        return False
+    else:
+      # its a list of rejected ports
+      if not self.is_accept:
+        return True
+      else:
+        return False
+    
+  def __str__(self):
+    return self.summary
+
+  def ports(self):
+    return self.ports
+
+  def is_accept(self):
+    return self.is_accept
+
 class ExitPolicyError(Exception):
   """
   Base error for exit policy issues.
