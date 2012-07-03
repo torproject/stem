@@ -37,6 +37,7 @@ providing its own for interacting at a higher level.
     |- repurpose_circuit - change a circuit's purpose
     |- map_address - maps one address to another such that connections to the original are replaced with the other
     |- get_circuits - provides a list of active circuits
+    |- attach_stream - attach a stream to a circuit
     |- get_version - convenience method to get tor version
     |- get_server_descriptor - querying the server descriptor for a relay
     |- get_server_descriptors - provides all presently available server descriptors
@@ -129,6 +130,7 @@ import stem.util.enum
 import stem.version
 
 from stem.util import log
+import stem.util.tor_tools
 
 # state changes a control socket can have
 
@@ -1538,16 +1540,16 @@ class Controller(BaseController):
       raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
     
     return new_circuit
-
+  
   def get_circuits(self):
     """
     Provides the list of circuits Tor is currently handling.
-
+    
     :returns: **list** of :class:`stem.events.CircuitEvent` objects
     
     :raises: :class:`stem.ControllerError` if the call fails
     """
-     
+    
     circuits = []
     response = self.get_info("circuit-status")
     
@@ -1555,8 +1557,36 @@ class Controller(BaseController):
       circ_message = stem.socket.recv_message(StringIO.StringIO("650 CIRC " + circ + "\r\n"))
       stem.response.convert("EVENT", circ_message, arrived_at = 0)
       circuits.append(circ_message)
-
+    
     return circuits
+  
+  def attach_stream(self, stream, circuit, hop = None):
+    """
+    Attaches a stream to a circuit.
+    
+    Note: Tor attaches streams to circuits automatically unless the
+    __LeaveStreamsUnattached configuration variable is set to "1"
+    
+    :param int stream: id of the stream that must be attached
+    :param int circuit: id of the circuit to which it must be attached
+    :param int hop: hop in the circuit that must be used as an exit node
+    
+    :raises:
+      * :class:`stem.InvalidRequest` if the stream or circuit id were unrecognized
+      * :class:`stem.OperationFailed` if the stream couldn't be attached for any other reason
+    """
+    
+    hop_str = " HOP=" + str(hop) if hop else ""
+    response = self.msg("ATTACHSTREAM %i %i%s" % (stream, circuit, hop_str))
+    stem.response.convert("SINGLELINE", response)
+    
+    if not response.is_ok():
+      if response.code == '552':
+        raise stem.InvalidRequest(response.code, response.message)
+      elif response.code == '551':
+        raise stem.OperationFailed(response.code, response.message)
+      else:
+        raise stem.ProtocolError("ATTACHSTREAM returned unexpected response code: %s" % response.code)
   
   def close_circuit(self, circuit_id, flag = ''):
     """

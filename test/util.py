@@ -18,26 +18,37 @@ Accept-Encoding: identity
 
 """
 
-def external_ip(sock):
+def external_ip(host, port):
   """
   Returns the externally visible IP address when using a SOCKS4a proxy.
   Negotiates the socks connection, connects to ipconfig.me and requests
   http://ifconfig.me/ip to find out the externally visible IP.
   
-  :param socket sock: socket connected to a SOCKS4a proxy server
+  Supports only SOCKS4a proxies.
+  
+  :param str host: hostname/IP of the proxy server
+  :param int port: port on which the proxy server is listening
   
   :returns: externally visible IP address, or None if it isn't able to
+  
+  :raises: :class:`stem.socket.SocketError`: unable to connect a socket to the socks server
   """
   
   try:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((host, int(port)))
+  except Exception, exc:
+    raise SocketError("Failed to connect to the socks server: " + str(exc))
+  
+  try:
     negotiate_socks(sock, "ifconfig.me", 80)
-    s.sendall(req)
-    response = s.recv(1000)
+    sock.sendall(ip_request)
+    response = sock.recv(1000)
     
     # everything after the blank line is the 'data' in a HTTP response
     # The response data for our request for request should be an IP address + '\n'
     return response[response.find("\r\n\r\n"):].strip()
-  except:
+  except Exception, exc:
     return None
 
 def negotiate_socks(sock, host, port):
@@ -46,7 +57,7 @@ def negotiate_socks(sock, host, port):
   failure.
   
   :param socket sock: socket connected to socks4a server
-  :param str host: host to connect to
+  :param str host: hostname/IP to connect to
   :param int port: port to connect to
   
   :raises: :class:`stem.ProtocolError` if the socks server doesn't grant our request

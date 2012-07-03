@@ -13,6 +13,8 @@ import threading
 import time
 import unittest
 
+from Queue import Queue
+
 import stem.connection
 import stem.control
 import stem.descriptor.reader
@@ -721,7 +723,36 @@ class TestController(unittest.TestCase):
         
         count += 1
         if count > 10: break
-
+  
+  def test_attachstream(self):
+    
+    if test.runner.require_control(self): return
+    elif test.runner.require_online(self): return
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      controller.set_conf("__LeaveStreamsUnattached", "1")
+      socksport = controller.get_conf("SocksPort")
+      circuits_3hop = [c.id for c in controller.get_circuits() if len(c.path) == 3]
+      self.assertTrue(len(circuits_3hop) > 0)
+      circuit_id = circuits_3hop[0]
+      
+      def handle_streamcreated(stream):
+        if stream.status == "NEW":
+          controller.attach_stream(int(stream.id), int(circuit_id))
+      
+      controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
+      ip = test.util.external_ip('127.0.0.1', socksport)
+      exit_circuit = [c for c in controller.get_circuits() if c.id == circuit_id]
+      self.assertTrue(exit_circuit)
+      exit_ip = controller.get_network_status(exit_circuit[0].path[2][0]).address
+      
+      self.assertEquals(exit_ip, ip)
+      
+      controller.remove_event_listener(handle_streamcreated)
+      controller.reset_conf("__LeaveStreamsUnattached")
+  
   def test_get_circuits(self):
     """
     Fetches circuits via the get_circuits() method.
@@ -735,5 +766,4 @@ class TestController(unittest.TestCase):
       new_circ = controller.new_circuit()
       circuits = controller.get_circuits()
       self.assertTrue(new_circ in [int(circ.id) for circ in circuits])
-  
 
