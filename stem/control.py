@@ -39,6 +39,7 @@ import stem.connection
 import stem.response
 import stem.socket
 import stem.version
+import stem.util.control
 import stem.util.log as log
 
 # state changes a control socket can have
@@ -53,6 +54,17 @@ State = stem.util.enum.Enum("INIT", "RESET", "CLOSED")
 # else fairly unique...
 
 UNDEFINED = "<Undefined_ >"
+
+# Configuration options that are fetched by a special key. The keys are
+# lowercase to make case insensetive lookups easier.
+
+MAPPED_CONFIG_KEYS = {
+  "hiddenservicedir": "HiddenServiceOptions",
+  "hiddenserviceport": "HiddenServiceOptions",
+  "hiddenserviceversion": "HiddenServiceOptions",
+  "hiddenserviceauthorizeclient": "HiddenServiceOptions",
+  "hiddenserviceoptions": "HiddenServiceOptions"
+}
 
 # TODO: The Thread's isAlive() method and theading's currentThread() was
 # changed to the more conventional is_alive() and current_thread() in python
@@ -453,7 +465,9 @@ class Controller(BaseController):
       * dict with the param => response mapping if our param was a list
       * default if one was provided and our call failed
     
-    :raises: :class:`stem.socket.ControllerError` if the call fails, and we weren't provided a default response
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
+      :class:`stem.socket.InvalidArguments` if the 'param' requested was invalid
     """
     
     # TODO: add caching?
@@ -530,4 +544,148 @@ class Controller(BaseController):
     """
     
     return stem.connection.get_protocolinfo(self)
+  
+  def get_conf(self, param, default = UNDEFINED, multiple = False):
+    """
+    Queries the control socket for the value of a given configuration option. If
+    provided a default then that's returned as if the GETCONF option is undefined
+    or if the call fails for any reason (invalid configuration option, error
+    response, control port closed, initiated, etc). If the configuration key
+    consists of whitespace only, None is returned unless a default value is given.
+    
+    :param str param: configuration option to be queried
+    :param object default: response if the query fails
+    :param bool multiple: if True, the value(s) provided are lists of all returned values, otherwise this just provides the first value
+    
+    :returns:
+      Response depends upon how we were called as follows...
+      
+      * str with the response if multiple was False
+      * list with the response strings multiple was True
+      * default if one was provided and our call failed
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
+      :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
+    """
+    
+    # Config options are case insensitive and don't contain whitespace. Using
+    # strip so the following check will catch whitespace-only params.
+    
+    param = param.lower().strip()
+    
+    if not param:
+      return default if default != UNDEFINED else None
+    
+    entries = self.get_conf_map(param, default, multiple)
+    
+    if entries == default: return default
+    else: return _case_insensitive_lookup(entries, param)
+  
+  def get_conf_map(self, param, default = UNDEFINED, multiple = True):
+    """
+    Queries the control socket for the values of given configuration options
+    and provides a mapping of the keys to the values. If provided a default
+    then that's returned if the GETCONF option is undefined or if the call
+    fails for any reason (invalid configuration option, error response, control
+    port closed, initiated, etc). Configuration keys that are empty or contain
+    only whitespace are ignored.
+    
+    There's three use cases for GETCONF:
+    - a single value is provided
+    - multiple values are provided for the option queried
+    - a set of options that weren't necessarily requested are returned (for
+      instance querying HiddenServiceOptions gives HiddenServiceDir,
+      HiddenServicePort, etc)
+    
+    The vast majority of the options fall into the first two categories, in
+    which case calling get_conf() is sufficient. However, for batch queries or
+    the special options that give a set of values this provides back the full
+    response. As of tor version 0.2.1.25 HiddenServiceOptions was the only
+    option like this.
+    
+    The get_conf() and get_conf_map() functions both try to account for these
+    special mappings, so queried like get_conf("HiddenServicePort") should
+    behave as you'd expect. This method, however, simply returns whatever Tor
+    provides so get_conf_map("HiddenServicePort") will give the same response
+    as get_conf_map("HiddenServiceOptions").
+    
+    :param str,list param: configuration option(s) to be queried
+    :param object default: response if the query fails
+    :param bool multiple: if True, the value(s) provided are lists of all returned values,otherwise this just provides the first value
+    
+    :returns:
+      Response depends upon how we were called as follows...
+      
+      * dict of 'config key => value' mappings, the value is a list if 'multiple' is True and a str of just the first value otherwise
+      * default if one was provided and our call failed
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
+      :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
+    """
+    
+    if isinstance(param, str):
+      param = [param]
+    
+    try:
+      # remove strings which contain only whitespace
+      param = filter(lambda entry: entry.strip(), param)
+      if param == []: return {}
+      
+      # translate context sensitive options
+      lookup_param = set([MAPPED_CONFIG_KEYS.get(entry, entry) for entry in param])
+      
+      response = self.msg("GETCONF %s" % ' '.join(lookup_param))
+      stem.response.convert("GETCONF", response)
+      
+      # Maps the entries back to the parameters that the user requested so the
+      # capitalization matches (ie, if they request "exitpolicy" then that
+      # should be the key rather than "ExitPolicy"). When the same
+      # configuration key is provided multiple times this determines the case
+      # based on the first and ignores the rest.
+      #
+      # This retains the tor provided camel casing of MAPPED_CONFIG_KEYS
+      # entries since the user didn't request those by their key, so we can't
+      # be sure what they wanted.
+      
+      for key in response.entries:
+        if not key.lower() in MAPPED_CONFIG_KEYS.values():
+          user_expected_key = _case_insensitive_lookup(param, key)
+          
+          if key != user_expected_key:
+            response.entries[user_expected_key] = response.entries[key]
+            del response.entries[key]
+      
+      if multiple:
+        return response.entries
+      else:
+        return dict([(entry[0], entry[1][0]) for entry in response.entries.items()])
+    except stem.socket.ControllerError, exc:
+      if default != UNDEFINED: return default
+      else: raise exc
+
+def _case_insensitive_lookup(entries, key):
+  """
+  Makes a case insensitive lookup within a list or dictionary, providing the
+  first matching entry that we come across.
+  
+  :param list,dict entries: list or dictionary to be searched
+  :param str key: entry or key value to look up
+  
+  :returns: case insensitive match
+  
+  :raises: ValueError if no such value exists
+  """
+  
+  if isinstance(entries, dict):
+    for k, v in entries.items():
+      if k.lower() == key.lower():
+        return v
+  else:
+    for entry in entries:
+      if entry.lower() == key.lower():
+        return entry
+  
+  raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
 

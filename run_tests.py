@@ -22,6 +22,7 @@ import test.unit.descriptor.extrainfo_descriptor
 import test.unit.response.control_line
 import test.unit.response.control_message
 import test.unit.response.getinfo
+import test.unit.response.getconf
 import test.unit.response.protocolinfo
 import test.unit.response.authchallenge
 import test.unit.util.conf
@@ -110,6 +111,7 @@ UNIT_TESTS = (
   test.unit.response.control_message.TestControlMessage,
   test.unit.response.control_line.TestControlLine,
   test.unit.response.getinfo.TestGetInfoResponse,
+  test.unit.response.getconf.TestGetConfResponse,
   test.unit.response.protocolinfo.TestProtocolInfoResponse,
   test.unit.response.authchallenge.TestAuthChallengeResponse,
   test.unit.connection.authentication.TestAuthenticate,

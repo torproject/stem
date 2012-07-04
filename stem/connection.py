@@ -799,7 +799,7 @@ class AuthenticationFailure(Exception):
   """
   
   def __init__(self, message, auth_response = None):
-    Exception.__init__(self, message)
+    super(AuthenticationFailure, self).__init__(message)
     self.auth_response = auth_response
 
 class UnrecognizedAuthMethods(AuthenticationFailure):
@@ -810,7 +810,7 @@ class UnrecognizedAuthMethods(AuthenticationFailure):
   """
   
   def __init__(self, message, unknown_auth_methods):
-    AuthenticationFailure.__init__(self, message)
+    super(UnrecognizedAuthMethods, self).__init__(message)
     self.unknown_auth_methods = unknown_auth_methods
 
 class IncorrectSocketType(AuthenticationFailure):
@@ -844,7 +844,7 @@ class CookieAuthFailed(AuthenticationFailure):
   """
   
   def __init__(self, message, cookie_path, is_safecookie, auth_response = None):
-    AuthenticationFailure.__init__(self, message, auth_response)
+    super(CookieAuthFailed, self).__init__(message, auth_response)
     self.is_safecookie = is_safecookie
     self.cookie_path = cookie_path
 
@@ -866,7 +866,7 @@ class AuthChallengeFailed(CookieAuthFailed):
   """
   
   def __init__(self, message, cookie_path):
-    CookieAuthFailed.__init__(self, message, cookie_path, True)
+    super(AuthChallengeFailed, self).__init__(message, cookie_path, True)
 
 class AuthChallengeUnsupported(AuthChallengeFailed):
   """
@@ -881,7 +881,7 @@ class UnrecognizedAuthChallengeMethod(AuthChallengeFailed):
   """
   
   def __init__(self, message, cookie_path, authchallenge_method):
-    AuthChallengeFailed.__init__(self, message, cookie_path)
+    super(UnrecognizedAuthChallengeMethod, self).__init__(message, cookie_path)
     self.authchallenge_method = authchallenge_method
 
 class AuthSecurityFailure(AuthChallengeFailed):
@@ -907,7 +907,7 @@ class NoAuthCookie(MissingAuthInfo):
   """
   
   def __init__(self, message, is_safecookie):
-    AuthenticationFailure.__init__(self, message)
+    super(NoAuthCookie, self).__init__(message)
     self.is_safecookie = is_safecookie
 
 # authentication exceptions ordered as per the authenticate function's pydocs

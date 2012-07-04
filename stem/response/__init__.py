@@ -25,7 +25,7 @@ Parses replies from the control socket.
 
 from __future__ import with_statement
 
-__all__ = ["getinfo", "protocolinfo", "authchallenge", "convert", "ControlMessage", "ControlLine"]
+__all__ = ["getinfo", "getconf", "protocolinfo", "authchallenge", "convert", "ControlMessage", "ControlLine"]
 
 import re
 import threading
@@ -42,27 +42,31 @@ KEY_ARG = re.compile("^(\S+)=")
 CONTROL_ESCAPES = {r"\\": "\\",  r"\"": "\"",   r"\'": "'",
                    r"\r": "\r",  r"\n": "\n",   r"\t": "\t"}
 
-def convert(response_type, message):
+def convert(response_type, message, **kwargs):
   """
   Converts a ControlMessage into a particular kind of tor response. This does
   an in-place conversion of the message from being a ControlMessage to a
   subclass for its response type. Recognized types include...
   
-    * GETINFO
+    * **\*** GETINFO
+    * **\*** GETCONF
     * PROTOCOLINFO
     * AUTHCHALLENGE
   
-  If the response_type isn't recognized then this is leaves it alone.
+  **\*** can raise a :class:`stem.socket.InvalidArguments` exception
   
   :param str response_type: type of tor response to convert to
   :param stem.response.ControlMessage message: message to be converted
+  :param kwargs: optional keyword arguments to be passed to the parser method
   
   :raises:
     * :class:`stem.socket.ProtocolError` the message isn't a proper response of that type
+    * :class:`stem.socket.InvalidArguments` the arguments given as input are invalid
     * TypeError if argument isn't a :class:`stem.response.ControlMessage` or response_type isn't supported
   """
   
   import stem.response.getinfo
+  import stem.response.getconf
   import stem.response.protocolinfo
   import stem.response.authchallenge
   
@@ -71,6 +75,8 @@ def convert(response_type, message):
   
   if response_type == "GETINFO":
     response_class = stem.response.getinfo.GetInfoResponse
+  elif response_type == "GETCONF":
+    response_class = stem.response.getconf.GetConfResponse
   elif response_type == "PROTOCOLINFO":
     response_class = stem.response.protocolinfo.ProtocolInfoResponse
   elif response_type == "AUTHCHALLENGE":
@@ -78,7 +84,7 @@ def convert(response_type, message):
   else: raise TypeError("Unsupported response type: %s" % response_type)
   
   message.__class__ = response_class
-  message._parse_message()
+  message._parse_message(**kwargs)
 
 class ControlMessage:
   """

@@ -152,7 +152,7 @@ class LogBuffer(logging.Handler):
   """
   
   def __init__(self, runlevel):
-    logging.Handler.__init__(self, level = logging_level(runlevel))
+    super(LogBuffer, self).__init__(level = logging_level(runlevel))
     self.formatter = logging.Formatter(
       fmt = '%(asctime)s [%(levelname)s] %(message)s',
       datefmt = '%D %H:%M:%S')

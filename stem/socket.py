@@ -28,6 +28,8 @@ as instances of the :class:`stem.response.ControlMessage` class.
   
   ControllerError - Base exception raised when using the controller.
     |- ProtocolError - Malformed socket data.
+    |- InvalidRequest - Invalid request.
+    |  +- InvalidArguments - Invalid request parameters.
     +- SocketError - Communication with the socket failed.
        +- SocketClosed - Socket has been shut down.
 """
@@ -43,7 +45,7 @@ import stem.response
 import stem.util.enum
 import stem.util.log as log
 
-class ControlSocket:
+class ControlSocket(object):
   """
   Wrapper for a socket connection that speaks the Tor control protocol. To the
   better part this transparently handles the formatting for sending and
@@ -276,7 +278,7 @@ class ControlPort(ControlSocket):
     :raises: :class:`stem.socket.SocketError` if connect is True and we're unable to establish a connection
     """
     
-    ControlSocket.__init__(self)
+    super(ControlPort, self).__init__()
     self._control_addr = control_addr
     self._control_port = control_port
     
@@ -324,7 +326,7 @@ class ControlSocketFile(ControlSocket):
     :raises: :class:`stem.socket.SocketError` if connect is True and we're unable to establish a connection
     """
     
-    ControlSocket.__init__(self)
+    super(ControlSocketFile, self).__init__()
     self._socket_path = socket_path
     
     if connect: self.connect()
@@ -547,6 +549,51 @@ class ControllerError(Exception):
 
 class ProtocolError(ControllerError):
   "Malformed content from the control socket."
+
+class InvalidRequest(ControllerError):
+  """
+  Base Exception class for invalid requests
+  
+  :var str code: error code returned by Tor
+  :var str message: error message returned by Tor or a human readable error message
+  """
+  
+  def __init__(self, code = None, message = None):
+    """
+    Initializes an InvalidRequest object.
+    
+    :param str code: error code returned by Tor
+    :param str message: error message returned by Tor or a human readable error message
+    
+    :returns: object of InvalidRequest class
+    """
+    
+    super(InvalidRequest, self).__init__()
+    self.code = code
+    self.message = message
+
+class InvalidArguments(InvalidRequest):
+  """
+  Exception class for invalid requests which contain invalid arguments.
+  
+  :var str code: error code returned by Tor
+  :var str message: error message returned by Tor or a human readable error message
+  :var list arguments: a list of arguments which were invalid
+  """
+  
+  def __init__(self, code = None, message = None, arguments = None):
+    """
+    Initializes an InvalidArguments object.
+    
+    :param str code: error code returned by Tor
+    :param str message: error message returned by Tor or a human readable error message
+    :param list arguments: a list of arguments which were invalid
+    
+    :returns: object of InvalidArguments class
+    """
+    
+    super(InvalidArguments, self).__init__(code, message)
+    self.arguments = arguments
 
 class SocketError(ControllerError):
   "Error arose while communicating with the control socket."

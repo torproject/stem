@@ -281,7 +281,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     :raises: ValueError if the contents is malformed and validate is True
     """
     
-    stem.descriptor.Descriptor.__init__(self, raw_contents)
+    super(ExtraInfoDescriptor, self).__init__(raw_contents)
     
     self.nickname = None
     self.fingerprint = None
@@ -709,7 +709,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
     self.signature = None
     self._digest = None
     
-    ExtraInfoDescriptor.__init__(self, raw_contents, validate)
+    super(RelayExtraInfoDescriptor, self).__init__(raw_contents, validate)
   
   def digest(self):
     if self._digest is None:
@@ -750,7 +750,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
     self._digest = None
     self.transport = None
     
-    ExtraInfoDescriptor.__init__(self, raw_contents, validate)
+    super(BridgeExtraInfoDescriptor, self).__init__(raw_contents, validate)
   
   def digest(self):
     return self._digest

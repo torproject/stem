@@ -188,7 +188,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     :raises: ValueError if the contents is malformed and validate is True
     """
     
-    stem.descriptor.Descriptor.__init__(self, raw_contents)
+    super(ServerDescriptor, self).__init__(raw_contents)
     
     self.nickname = None
     self.fingerprint = None
@@ -561,7 +561,7 @@ class RelayDescriptor(ServerDescriptor):
     self.signature = None
     self._digest = None
     
-    ServerDescriptor.__init__(self, raw_contents, validate, annotations)
+    super(RelayDescriptor, self).__init__(raw_contents, validate, annotations)
     
     # if we have a fingerprint then checks that our fingerprint is a hash of
     # our signing key
@@ -648,7 +648,8 @@ class BridgeDescriptor(ServerDescriptor):
     self.address_alt = []
     self._digest = None
     self._scrubbing_issues = None
-    ServerDescriptor.__init__(self, raw_contents, validate, annotations)
+    
+    super(BridgeDescriptor, self).__init__(raw_contents, validate, annotations)
   
   def digest(self):
     return self._digest
