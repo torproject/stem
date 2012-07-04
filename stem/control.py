@@ -31,7 +31,6 @@ interacting at a higher level.
 
 from __future__ import with_statement
 
-import re
 import time
 import Queue
 import threading
@@ -55,6 +54,17 @@ State = stem.util.enum.Enum("INIT", "RESET", "CLOSED")
 # else fairly unique...
 
 UNDEFINED = "<Undefined_ >"
+
+# Configuration options that are fetched by a special key. The keys are
+# lowercase to make case insensetive lookups easier.
+
+MAPPED_CONFIG_KEYS = {
+  "hiddenservicedir": "HiddenServiceOptions",
+  "hiddenserviceport": "HiddenServiceOptions",
+  "hiddenserviceversion": "HiddenServiceOptions",
+  "hiddenserviceauthorizeclient": "HiddenServiceOptions",
+  "hiddenserviceoptions": "HiddenServiceOptions"
+}
 
 # TODO: The Thread's isAlive() method and theading's currentThread() was
 # changed to the more conventional is_alive() and current_thread() in python
@@ -406,14 +416,6 @@ class Controller(BaseController):
   BaseController and provides a more user friendly API for library users.
   """
   
-  _mapped_config_keys = {
-      "hiddenservicedir": "hiddenserviceoptions",
-      "hiddenserviceport": "hiddenserviceoptions",
-      "hiddenserviceversion": "hiddenserviceoptions",
-      "hiddenserviceauthorizeclient": "hiddenserviceoptions",
-      "hiddenserviceoptions": "hiddenserviceoptions"
-      }
-  
   def from_port(control_addr = "127.0.0.1", control_port = 9051):
     """
     Constructs a ControlPort based Controller.
@@ -464,7 +466,7 @@ class Controller(BaseController):
       * default if one was provided and our call failed
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails, and we weren't provided a default response
+      :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
       :class:`stem.socket.InvalidArguments` if the 'param' requested was invalid
     """
     
@@ -549,12 +551,11 @@ class Controller(BaseController):
     provided a default then that's returned as if the GETCONF option is undefined
     or if the call fails for any reason (invalid configuration option, error
     response, control port closed, initiated, etc). If the configuration key
-    consists of whitespace only, None is returned, unless a default value is given.
+    consists of whitespace only, None is returned unless a default value is given.
     
-    :param str param: GETCONF option to be queried
+    :param str param: configuration option to be queried
     :param object default: response if the query fails
-    :param bool multiple: if True, the value(s) provided are lists of all returned values,
-                          otherwise this just provides the first value
+    :param bool multiple: if True, the value(s) provided are lists of all returned values, otherwise this just provides the first value
     
     :returns:
       Response depends upon how we were called as follows...
@@ -568,25 +569,27 @@ class Controller(BaseController):
       :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
     """
     
-    if re.match("^\s*$", param):
-      if default != UNDEFINED: return default
-      else: return
-    # automagically change the requested parameter if it's context sensitive
-    # and cannot be returned on it's own.
-    param = param.lower()
-    entries = self.get_conf_map(self._mapped_config_keys.get(param, param), default, multiple)
-    if param in self._mapped_config_keys:
-      return entries[stem.util.control.case_insensitive_lookup(entries, param)]
-    else: return entries[param]
+    # Config options are case insensitive and don't contain whitespace. Using
+    # strip so the following check will catch whitespace-only params.
+    
+    param = param.lower().strip()
+    
+    if not param:
+      return default if default != UNDEFINED else None
+    
+    entries = self.get_conf_map(param, default, multiple)
+    
+    if entries == default: return default
+    else: return _case_insensitive_lookup(entries, param)
   
   def get_conf_map(self, param, default = UNDEFINED, multiple = True):
     """
-    Queries the control socket for the values of given configuration options and
-    provides a mapping of the keys to the values. If provided a default then
-    that's returned as if the GETCONF option is undefined or if the call fails
-    for any reason (invalid configuration option, error response, control port
-    closed, initiated, etc). Configuration keys that contain only whitespace are
-    ignored.
+    Queries the control socket for the values of given configuration options
+    and provides a mapping of the keys to the values. If provided a default
+    then that's returned if the GETCONF option is undefined or if the call
+    fails for any reason (invalid configuration option, error response, control
+    port closed, initiated, etc). Configuration keys that are empty or contain
+    only whitespace are ignored.
     
     There's three use cases for GETCONF:
     - a single value is provided
@@ -603,17 +606,18 @@ class Controller(BaseController):
     
     The get_conf() and get_conf_map() functions both try to account for these
     special mappings, so queried like get_conf("HiddenServicePort") should
-    behave as you'd expect.
+    behave as you'd expect. This method, however, simply returns whatever Tor
+    provides so get_conf_map("HiddenServicePort") will give the same response
+    as get_conf_map("HiddenServiceOptions").
     
-    :param str,list param: GETCONF option(s) to be queried
+    :param str,list param: configuration option(s) to be queried
     :param object default: response if the query fails
-    :param bool multiple: if True, the value(s) provided are lists of all returned values,
-                          otherwise this just provides the first value
+    :param bool multiple: if True, the value(s) provided are lists of all returned values,otherwise this just provides the first value
     
     :returns:
       Response depends upon how we were called as follows...
       
-      * dict of 'config key => value' mappings, the value is a list if 'multiple' is True and otherwise is a str of just the first value
+      * dict of 'config key => value' mappings, the value is a list if 'multiple' is True and a str of just the first value otherwise
       * default if one was provided and our call failed
     
     :raises:
@@ -626,37 +630,62 @@ class Controller(BaseController):
     
     try:
       # remove strings which contain only whitespace
-      param = filter(lambda x: not re.match("^\s*$", x), param)
+      param = filter(lambda entry: entry.strip(), param)
       if param == []: return {}
       
-      response = self.msg("GETCONF %s" % ' '.join(param))
+      # translate context sensitive options
+      lookup_param = set([MAPPED_CONFIG_KEYS.get(entry, entry) for entry in param])
+      
+      response = self.msg("GETCONF %s" % ' '.join(lookup_param))
       stem.response.convert("GETCONF", response)
       
-      lookup = stem.util.control.case_insensitive_lookup
-      # map the entries back to the parameters given so the capitalization
-      # matches. Note: when the same configuration key is provided multiple
-      # times, this uses the first one and ignores the rest.
+      # Maps the entries back to the parameters that the user requested so the
+      # capitalization matches (ie, if they request "exitpolicy" then that
+      # should be the key rather than "ExitPolicy"). When the same
+      # configuration key is provided multiple times this determines the case
+      # based on the first and ignores the rest.
+      #
+      # This retains the tor provided camel casing of MAPPED_CONFIG_KEYS
+      # entries since the user didn't request those by their key, so we can't
+      # be sure what they wanted.
+      
       for key in response.entries:
-        if not key.lower() in self._mapped_config_keys:
-          response.entries[lookup(param, key)] = response.entries[key]
-          if key != lookup(param, key): del response.entries[key]
+        if not key.lower() in MAPPED_CONFIG_KEYS.values():
+          user_expected_key = _case_insensitive_lookup(param, key)
+          
+          if key != user_expected_key:
+            response.entries[user_expected_key] = response.entries[key]
+            del response.entries[key]
       
-      requested_params = set(param)
-      reply_params = set(response.entries.keys())
-      
-      # if none of the requested parameters are context sensitive and if the
-      # parameters received don't match the parameters requested
-      if not set(self._mapped_config_keys.values()) & requested_params and requested_params != reply_params:
-        requested_label = ", ".join(requested_params)
-        reply_label = ", ".join(reply_params)
-        
-        raise stem.socket.ProtocolError("GETCONF reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (requested_label, reply_label))
-      
-      if not multiple:
+      if multiple:
+        return response.entries
+      else:
         return dict([(entry[0], entry[1][0]) for entry in response.entries.items()])
-      return response.entries
-    
     except stem.socket.ControllerError, exc:
-      if default != UNDEFINED: return dict([(p, default) for p in param])
+      if default != UNDEFINED: return default
       else: raise exc
+
+def _case_insensitive_lookup(entries, key):
+  """
+  Makes a case insensitive lookup within a list or dictionary, providing the
+  first matching entry that we come across.
+  
+  :param list,dict entries: list or dictionary to be searched
+  :param str key: entry or key value to look up
+  
+  :returns: case insensitive match
+  
+  :raises: ValueError if no such value exists
+  """
+  
+  if isinstance(entries, dict):
+    for k, v in entries.items():
+      if k.lower() == key.lower():
+        return v
+  else:
+    for entry in entries:
+      if entry.lower() == key.lower():
+        return entry
+  
+  raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
 

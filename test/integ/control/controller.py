@@ -140,6 +140,8 @@ class TestController(unittest.TestCase):
     Exercises GETCONF with valid and invalid queries.
     """
     
+    if test.runner.require_control(self): return
+    
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
@@ -160,19 +162,18 @@ class TestController(unittest.TestCase):
       self.assertEqual(expected, controller.get_conf_map([config_key]))
       self.assertEqual(expected, controller.get_conf_map([config_key], "la-di-dah"))
       
-      getconf_params = set(["ControlPORT", "dirport", "datadirectory"])
-      self.assertEqual(getconf_params, set(controller.get_conf_map(["ControlPORT",
-        "dirport", "datadirectory"], multiple=False)))
+      request_params = ["ControlPORT", "dirport", "datadirectory"]
+      reply_params = controller.get_conf_map(request_params, multiple=False).keys()
+      self.assertEqual(set(request_params), set(reply_params))
       
       # non-existant option(s)
       self.assertRaises(stem.socket.InvalidArguments, controller.get_conf, "blarg")
       self.assertEqual("la-di-dah", controller.get_conf("blarg", "la-di-dah"))
       self.assertRaises(stem.socket.InvalidArguments, controller.get_conf_map, "blarg")
-      self.assertEqual({"blarg": "la-di-dah"}, controller.get_conf_map("blarg", "la-di-dah"))
+      self.assertEqual("la-di-dah", controller.get_conf_map("blarg", "la-di-dah"))
       
       self.assertRaises(stem.socket.InvalidRequest, controller.get_conf_map, ["blarg", "huadf"], multiple = True)
-      self.assertEqual({"erfusdj": "la-di-dah", "afiafj": "la-di-dah"},
-          controller.get_conf_map(["erfusdj", "afiafj"], "la-di-dah", multiple = True))
+      self.assertEqual("la-di-dah", controller.get_conf_map(["erfusdj", "afiafj"], "la-di-dah", multiple = True))
       
       # multivalue configuration keys
       nodefamilies = [("abc", "xyz", "pqrs"), ("mno", "tuv", "wxyz")]

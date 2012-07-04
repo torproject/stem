@@ -45,7 +45,7 @@ import stem.response
 import stem.util.enum
 import stem.util.log as log
 
-class ControlSocket:
+class ControlSocket(object):
   """
   Wrapper for a socket connection that speaks the Tor control protocol. To the
   better part this transparently handles the formatting for sending and
@@ -278,7 +278,7 @@ class ControlPort(ControlSocket):
     :raises: :class:`stem.socket.SocketError` if connect is True and we're unable to establish a connection
     """
     
-    ControlSocket.__init__(self)
+    super(ControlPort, self).__init__()
     self._control_addr = control_addr
     self._control_port = control_port
     
@@ -326,7 +326,7 @@ class ControlSocketFile(ControlSocket):
     :raises: :class:`stem.socket.SocketError` if connect is True and we're unable to establish a connection
     """
     
-    ControlSocket.__init__(self)
+    super(ControlSocketFile, self).__init__()
     self._socket_path = socket_path
     
     if connect: self.connect()

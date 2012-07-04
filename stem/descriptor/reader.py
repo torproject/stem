@@ -97,7 +97,7 @@ class AlreadyRead(FileSkipped):
   "Already read a file with this 'last modified' timestamp or later."
   
   def __init__(self, last_modified, last_modified_when_read):
-    FileSkipped.__init__(self)
+    super(AlreadyRead, self).__init__()
     self.last_modified = last_modified
     self.last_modified_when_read = last_modified_when_read
 
@@ -105,7 +105,7 @@ class ParsingFailure(FileSkipped):
   "File contents could not be parsed as descriptor data."
   
   def __init__(self, parsing_exception):
-    FileSkipped.__init__(self)
+    super(ParsingFailure, self).__init__()
     self.exception = parsing_exception
 
 class UnrecognizedType(FileSkipped):
@@ -115,21 +115,21 @@ class UnrecognizedType(FileSkipped):
   """
   
   def __init__(self, mime_type):
-    FileSkipped.__init__(self)
+    super(UnrecognizedType, self).__init__()
     self.mime_type = mime_type
 
 class ReadFailed(FileSkipped):
   "An IOError occured while trying to read the file."
   
   def __init__(self, read_exception):
-    FileSkipped.__init__(self)
+    super(ReadFailed, self).__init__()
     self.exception = read_exception
 
 class FileMissing(ReadFailed):
   "File does not exist."
   
   def __init__(self):
-    ReadFailed.__init__(self, None)
+    super(FileMissing, self).__init__(None)
 
 def load_processed_files(path):
   """

@@ -48,12 +48,12 @@ def convert(response_type, message, **kwargs):
   an in-place conversion of the message from being a ControlMessage to a
   subclass for its response type. Recognized types include...
   
-    * GETINFO
-    * GETCONF
+    * **\*** GETINFO
+    * **\*** GETCONF
     * PROTOCOLINFO
     * AUTHCHALLENGE
   
-  If the response_type isn't recognized then this is leaves it alone.
+  **\*** can raise a :class:`stem.socket.InvalidArguments` exception
   
   :param str response_type: type of tor response to convert to
   :param stem.response.ControlMessage message: message to be converted
@@ -61,8 +61,7 @@ def convert(response_type, message, **kwargs):
   
   :raises:
     * :class:`stem.socket.ProtocolError` the message isn't a proper response of that type
-    * :class:`stem.socket.InvalidArguments` the arguments given as input are
-        invalid. Raised when converting GETINFO or GETCONF requests
+    * :class:`stem.socket.InvalidArguments` the arguments given as input are invalid
     * TypeError if argument isn't a :class:`stem.response.ControlMessage` or response_type isn't supported
   """
   

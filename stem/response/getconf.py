@@ -8,7 +8,7 @@ class GetConfResponse(stem.response.ControlMessage):
   Note that configuration parameters won't match what we queried for if it's one
   of the special mapping options (ex. "HiddenServiceOptions").
   
-  :var dict entries: mapping between the config parameter (string) and their values (list of strings)
+  :var dict entries: mapping between the config parameter (str) and their values (list of str)
   """
   
   def _parse_message(self):
@@ -41,6 +41,9 @@ class GetConfResponse(stem.response.ControlMessage):
       if line.is_next_mapping(quoted = False):
         key, value = line.split("=", 1) # TODO: make this part of the ControlLine?
       elif line.is_next_mapping(quoted = True):
+        # TODO: doesn't seem to occure yet in practice...
+        # https://trac.torproject.org/6172
+        
         key, value = line.pop_mapping(True).items()[0]
       else:
         key, value = (line.pop(), None)

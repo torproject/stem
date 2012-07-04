@@ -95,7 +95,7 @@ def parse_file(path, descriptor_file):
   
   raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
 
-class Descriptor:
+class Descriptor(object):
   """
   Common parent for all types of descriptors.
   """
