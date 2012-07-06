@@ -652,7 +652,7 @@ class Controller(BaseController):
       
       for key in response.entries:
         if not key.lower() in MAPPED_CONFIG_KEYS.values():
-          user_expected_key = _case_insensitive_lookup(param, key)
+          user_expected_key = _case_insensitive_lookup(param, key, key)
           
           if key != user_expected_key:
             response.entries[user_expected_key] = response.entries[key]
@@ -751,15 +751,16 @@ class Controller(BaseController):
     
     self._set_conf(arg, "RESETCONF")
 
-def _case_insensitive_lookup(entries, key):
+def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """
   Makes a case insensitive lookup within a list or dictionary, providing the
   first matching entry that we come across.
   
   :param list,dict entries: list or dictionary to be searched
   :param str key: entry or key value to look up
+  :param object default: value to be returned if the key doesn't exist
   
-  :returns: case insensitive match
+  :returns: case insensitive match or default if one was provided and key wasn't found
   
   :raises: ValueError if no such value exists
   """
@@ -773,5 +774,6 @@ def _case_insensitive_lookup(entries, key):
       if entry.lower() == key.lower():
         return entry
   
-  raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
+  if default != UNDEFINED: return default
+  else: raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
 
