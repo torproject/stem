@@ -39,7 +39,6 @@ import stem.connection
 import stem.response
 import stem.socket
 import stem.version
-import stem.util.control
 import stem.util.log as log
 
 # state changes a control socket can have
