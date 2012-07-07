@@ -303,11 +303,11 @@ class TestSystem(unittest.TestCase):
     Checks the stem.util.system.get_pid_by_open_file function.
     """
     
-    # we're not running with a control socket so this just exercises the
-    # failure case
-    
+    # check a directory that exists, but isn't claimed by any application
     tmpdir = tempfile.mkdtemp()
     self.assertEquals(None, stem.util.system.get_pid_by_open_file(tmpdir))
+    
+    # check a directory that doesn't exist
     os.rmdir(tmpdir)
     self.assertEquals(None, stem.util.system.get_pid_by_open_file(tmpdir))
   
