@@ -242,23 +242,23 @@ class TestController(unittest.TestCase):
         except stem.socket.InvalidArguments, exc:
           self.assertEqual(["bombay"], exc.arguments)
         
-        # context-sensitive keys
-        controller.set_options({
-          "HiddenServiceDir": tmpdir,
-          "HiddenServicePort": "17234 127.0.0.1:17235",
-        })
+        # context-sensitive keys (the only retched things for which order matters)
+        controller.set_options((
+          ("HiddenServiceDir", tmpdir),
+          ("HiddenServicePort", "17234 127.0.0.1:17235"),
+        ))
         
         self.assertEqual(tmpdir, controller.get_conf("HiddenServiceDir"))
         self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("HiddenServicePort"))
       finally:
         # reverts configuration changes
-        controller.set_options({
-          "ExitPolicy": "reject *:*",
-          "ConnLimit": None,
-          "ContactInfo": None,
-          "HiddenServiceDir": None,
-          "HiddenServicePort": None,
-        }, reset = True)
+        controller.set_options((
+          ("ExitPolicy", "reject *:*"),
+          ("ConnLimit", None),
+          ("ContactInfo", None),
+          ("HiddenServiceDir", None),
+          ("HiddenServicePort", None),
+        ), reset = True)
         
         shutil.rmtree(tmpdir)
 

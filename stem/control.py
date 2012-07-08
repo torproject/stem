@@ -703,7 +703,11 @@ class Controller(BaseController):
         "Log": None,
       })
     
-    :param dict params: mapping of configuration options to the values we're setting it to
+    The params can optionally be a list a key/value tuples, though the only
+    reason this type of arguement would be useful is for hidden service
+    configuration (those options are order dependent).
+    
+    :param dict,list params: mapping of configuration options to the values we're setting it to
     :param bool reset: issues a SETCONF if False, and RESETCONF if True
     
     :raises:
@@ -715,7 +719,10 @@ class Controller(BaseController):
     # constructs the SETCONF or RESETCONF query
     query_comp = ["RESETCONF" if reset else "SETCONF"]
     
-    for param, value in params.items():
+    if isinstance(params, dict):
+      params = params.items()
+    
+    for param, value in params:
       if isinstance(value, str):
         query_comp.append("%s=\"%s\"" % (param, value.strip()))
       elif value:
