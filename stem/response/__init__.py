@@ -421,11 +421,12 @@ def _get_quote_indeces(line, escaped):
 
 class SingleLineResponse(ControlMessage):
   """
-  A reply that contains only a single line
+  Reply to a request that performs an action rather than querying data. These
+  requests only contain a single line, which is 'OK' if successful, and a
+  description of the problem if not.
   
-  :var dict entries:
-    mapping between the queried options (string) and their values (string/list
-    of strings)
+  :var str code: status code for our line
+  :var str message: content of the line
   """
   
   def is_ok(self, strict = False):
@@ -433,7 +434,7 @@ class SingleLineResponse(ControlMessage):
     Checks if the response code is "250". If strict is True, checks if the
     response is "250 OK"
     
-    :param bool strict: If True, check if the message is "250 OK"
+    :param bool strict: checks for a "250 OK" message if True
     
     :returns:
       * If strict is False: True if the response code is "250", False otherwise
@@ -452,5 +453,5 @@ class SingleLineResponse(ControlMessage):
     elif len(content) == 0:
       raise stem.socket.ProtocolError("Received empty response")
     else:
-      self.code, self.delimiter, self.message = content[0]
+      self.code, _, self.message = content[0]
 

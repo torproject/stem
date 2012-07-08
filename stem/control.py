@@ -581,9 +581,7 @@ class Controller(BaseController):
       return default if default != UNDEFINED else None
     
     entries = self.get_conf_map(param, default, multiple)
-    
-    if entries == default: return default
-    else: return _case_insensitive_lookup(entries, param)
+    return _case_insensitive_lookup(entries, param, default)
   
   def get_conf_map(self, param, default = UNDEFINED, multiple = True):
     """
@@ -666,90 +664,78 @@ class Controller(BaseController):
       if default != UNDEFINED: return default
       else: raise exc
   
-  def _set_conf(self, params, command="SETCONF"):
-    controlitems = [command]
+  def set_option(self, param, value, reset = False):
+    """
+    Changes the value of a tor configuration option via either a SETCONF or
+    RESETCONF query. Both behave identically unless our value is None, in which
+    case SETCONF sets the value to 0 or NULL, and RESETCONF returns it to its
+    default value.
     
-    for key, value in params:
-      if type(value) in (list, tuple):
-        controlitems.extend(["%s=\"%s\"" % (key, val.strip()) for val in value])
+    Our value can be any of the following...
+    
+    * a string to set a single value
+    * a list of strings to set a series of values (for instance the ExitPolicy)
+    * None to either set the value to 0/NULL or reset it to its default
+    
+    :param str param: configuration option to be set
+    :param str,list value: value to set the parameter to
+    :param bool reset: issues a SETCONF if False, and RESETCONF if True
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails
+      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+    """
+    
+    self.set_options({param: value}, reset)
+  
+  def set_options(self, params, reset = False):
+    """
+    Changes multiple tor configurations, in a similar fashion to
+    :func:`stem.control.Controller.set_option`. For example...
+    
+    ::
+    
+      my_controller.set_options({
+        "Nickname", "caerSidi",
+        "ExitPolicy": ["accept *:80", "accept *:443", "reject *:*"],
+        "ContactInfo": "caerSidi-exit@someplace.com",
+        "Log": None,
+      })
+    
+    :param dict params: mapping of configuration options to the values we're setting it to
+    :param bool reset: issues a SETCONF if False, and RESETCONF if True
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails
+      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+    """
+    
+    # constructs the SETCONF or RESETCONF query
+    query_comp = ["RESETCONF" if reset else "SETCONF"]
+    
+    for param, value in params.items():
+      if isinstance(value, str):
+        query_comp.append("%s=\"%s\"" % (param, value.strip()))
       elif value:
-        controlitems.append("%s=\"%s\"" % (key, value.strip()))
+        query_comp.extend(["%s=\"%s\"" % (param, val.strip()) for val in value])
       else:
-        controlitems.append(key)
+        query_comp.append(param)
     
-    response = self.msg(" ".join(controlitems))
+    response = self.msg(" ".join(query_comp))
     stem.response.convert("SINGLELINE", response)
     
-    if response.is_ok():
-      return True
-    elif response.code == "552":
-      if response.message.startswith("Unrecognized option: Unknown option '"):
-        key = response.message[37:response.message.find("\'", 37)]
-        raise stem.socket.InvalidArguments(response.code, response.message, [key])
-      raise stem.socket.InvalidRequest(response.code, response.message)
-    elif response.code in ("513", "553"):
-      raise stem.socket.InvalidRequest(response.code, response.message)
-    else:
-      raise stem.socket.ProtocolError("%s returned unexpected status code" % command)
-  
-  def set_conf(self, *params):
-    """
-    Changes the configuration of one or more configuration variables using the
-    control socket.
-    
-    :param list,dict params: Can be one of...
-    
-      * a list containing tuples of configuration keys (string) and their corresponding values (string or list of strings)
-      * a dict containing config key-value pairs
-    
-    Or
-    
-    :param str key: configuration key
-    :param str value: configuration value
-    
-    :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
-    """
-    
-    if len(params) == 2:
-      arg = [params]
-    elif len(params) == 1:
-      if type(params[0]) == dict:
-        arg = params[0].items()
+    if not response.is_ok():
+      if response.code == "552":
+        if response.message.startswith("Unrecognized option: Unknown option '"):
+          key = response.message[37:response.message.find("\'", 37)]
+          raise stem.socket.InvalidArguments(response.code, response.message, [key])
+        raise stem.socket.InvalidRequest(response.code, response.message)
+      elif response.code in ("513", "553"):
+        raise stem.socket.InvalidRequest(response.code, response.message)
       else:
-        arg = params[0]
-    else:
-      raise TypeError("set_conf expected 1 or 2 arguments, got %d", len(args))
-    
-    self._set_conf(arg, "SETCONF")
-  
-  def reset_conf(self, params):
-    """
-    Resets the configuration of one or more configuration variables using the
-    control socket.
-    
-    :param str,list,dict params: Can be one of...
-    
-      * a single configuration key (string)
-      * a list of configuration keys (list of strings) to be reset and/or tuples of configuration keys (string) and their corresponding values (string or list of strings)
-      * a dict containing configuration key/value pairs.
-    
-    :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
-    """
-    
-    if type(params) == str:
-      arg = [(params, None)]
-    elif type(params) == dict:
-      arg = params.items()
-    else:
-      arg = map(lambda item: (item, None) if type(item) == str else item, params)
-    
-    self._set_conf(arg, "RESETCONF")
+        raise stem.socket.ProtocolError("%s returned unexpected status code" % command)
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """

@@ -1,5 +1,5 @@
 """
-Unit tests for the stem.response.getconf.GetConfResponse class.
+Unit tests for the stem.response.SingleLineResponse class.
 """
 
 import unittest
@@ -16,6 +16,7 @@ class TestSingleLineResponse(unittest.TestCase):
     message = mocking.get_message("552 NOTOK")
     stem.response.convert("SINGLELINE", message)
     self.assertEqual(False, message.is_ok())
+    
     message = mocking.get_message("250 KK")
     stem.response.convert("SINGLELINE", message)
     self.assertEqual(True, message.is_ok())
@@ -23,6 +24,7 @@ class TestSingleLineResponse(unittest.TestCase):
     message = mocking.get_message("250 OK")
     stem.response.convert("SINGLELINE", message)
     self.assertEqual(True, message.is_ok(True))
+    
     message = mocking.get_message("250 HMM")
     stem.response.convert("SINGLELINE", message)
     self.assertEqual(False, message.is_ok(True))

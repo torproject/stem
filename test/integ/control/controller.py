@@ -193,104 +193,72 @@ class TestController(unittest.TestCase):
       self.assertEqual("la-di-dah", controller.get_conf("", "la-di-dah"))
       self.assertEqual({}, controller.get_conf_map("", "la-di-dah"))
       self.assertEqual({}, controller.get_conf_map([], "la-di-dah"))
-      
-      # context-sensitive keys
-      tmpdir = tempfile.mkdtemp()
-      keys = [
-          ("HiddenServiceDir", tmpdir),
-          ("HiddenServicePort", "17234 127.0.0.1:17235")
-          ]
-      controller.set_conf(keys)
-      self.assertEqual(tmpdir, controller.get_conf("HiddenServiceDir"))
-      self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("HiddenServicePort"))
-      shutil.rmtree(tmpdir)
   
-  def test_setconf(self):
+  def test_set_options(self):
     """
-    Exercises Controller.set_conf with valid and invalid requests.
+    Exercises set_option() and set_options() with valid and invalid requests.
     """
+    
+    if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
+    tmpdir = tempfile.mkdtemp()
     
     with runner.get_tor_controller() as controller:
-      # Single key, valid and invalid
-      connlimit = int(controller.get_conf("ConnLimit"))
-      controller.set_conf("connlimit", str(connlimit - 1))
-      self.assertEqual(connlimit - 1, int(controller.get_conf("ConnLimit")))
       try:
-        controller.set_conf("invalidkeyboo", "abcde")
-      except stem.socket.InvalidArguments, exc:
-        self.assertEqual(["invalidkeyboo"], exc.arguments)
-      
-      settings = {
+        # successfully set a single option
+        connlimit = int(controller.get_conf("ConnLimit"))
+        controller.set_option("connlimit", str(connlimit - 1))
+        self.assertEqual(connlimit - 1, int(controller.get_conf("ConnLimit")))
+        
+        # successfully set a single list option
+        exit_policy = ["accept *:7777", "reject *:*"]
+        controller.set_option("ExitPolicy", exit_policy)
+        self.assertEqual(exit_policy, controller.get_conf("ExitPolicy", multiple = True))
+        
+        # fail to set a single option
+        try:
+          controller.set_option("invalidkeyboo", "abcde")
+          self.fail()
+        except stem.socket.InvalidArguments, exc:
+          self.assertEqual(["invalidkeyboo"], exc.arguments)
+        
+        # successfully sets multiple config options
+        controller.set_options({
           "connlimit": str(connlimit - 2),
-          "contactinfo": "stem@testing"
-          }
-      controller.set_conf(settings)
-      self.assertEqual(connlimit - 2, int(controller.get_conf("ConnLimit")))
-      self.assertEqual("stem@testing", controller.get_conf("contactinfo"))
-      
-      settings["bombay"] = "vadapav"
-      try:
-        controller.set_conf(settings)
-      except stem.socket.InvalidArguments, exc:
-        self.assertEqual(["bombay"], exc.arguments)
-      
-      tmpdir = tempfile.mkdtemp()
-      settings = [
-          ("HiddenServiceDir", tmpdir),
-          ("HiddenServicePort", "17234 127.0.0.1:17235")
-          ]
-      controller.set_conf(settings)
-      self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("hiddenserviceport"))
-      self.assertEqual(tmpdir, controller.get_conf("hiddenservicedir"))
-      shutil.rmtree(tmpdir)
-  
-  def test_resetconf(self):
-    """
-    Exercises Controller.reset_conf with valid and invalid requests.
-    """
-    
-    runner = test.runner.get_runner()
-    
-    with runner.get_tor_controller() as controller:
-      # Single valid key
-      controller.set_conf("contactinfo", "stem@testing")
-      self.assertEqual("stem@testing", controller.get_conf("contactinfo"))
-      controller.reset_conf("contactinfo")
-      self.assertEqual(None, controller.get_conf("contactinfo"))
-      
-      # Invalid key
-      try:
-        controller.reset_conf(("invalidkeyboo", "abcde"))
-      except stem.socket.InvalidArguments, exc:
-        self.assertEqual(["invalidkeyboo"], exc.arguments)
-      
-      # Multiple keys, list & dict
-      settings = {
-          "connlimit": "314",
-          "contactinfo": "stem@testing"
-          }
-      controller.reset_conf(settings)
-      self.assertEqual("314", controller.get_conf("ConnLimit"))
-      self.assertEqual("stem@testing", controller.get_conf("contactinfo"))
-      
-      settings = [
-          ("connlimit", "786"),
-          ("contactinfo", "stem testing")
-          ]
-      controller.reset_conf(settings)
-      self.assertEqual("786", controller.get_conf("ConnLimit"))
-      self.assertEqual("stem testing", controller.get_conf("contactinfo"))
-      
-      # context-sensitive keys
-      tmpdir = tempfile.mkdtemp()
-      settings = [
-          ("HiddenServiceDir", tmpdir),
-          ("HiddenServicePort", "17234 127.0.0.1:17235")
-          ]
-      controller.reset_conf(settings)
-      self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("hiddenserviceport"))
-      self.assertEqual(tmpdir, controller.get_conf("hiddenservicedir"))
-      shutil.rmtree(tmpdir)
+          "contactinfo": "stem@testing",
+        })
+        
+        self.assertEqual(connlimit - 2, int(controller.get_conf("ConnLimit")))
+        self.assertEqual("stem@testing", controller.get_conf("contactinfo"))
+        
+        # fail to set multiple config options
+        try:
+          controller.set_options({
+            "contactinfo": "stem@testing",
+            "bombay": "vadapav",
+          })
+          self.fail()
+        except stem.socket.InvalidArguments, exc:
+          self.assertEqual(["bombay"], exc.arguments)
+        
+        # context-sensitive keys
+        controller.set_options({
+          "HiddenServiceDir": tmpdir,
+          "HiddenServicePort": "17234 127.0.0.1:17235",
+        })
+        
+        self.assertEqual(tmpdir, controller.get_conf("HiddenServiceDir"))
+        self.assertEqual("17234 127.0.0.1:17235", controller.get_conf("HiddenServicePort"))
+      finally:
+        # reverts configuration changes
+        controller.set_options({
+          "ExitPolicy": "reject *:*",
+          "ConnLimit": None,
+          "ContactInfo": None,
+          "HiddenServiceDir": None,
+          "HiddenServicePort": None,
+        }, reset = True)
+        
+        shutil.rmtree(tmpdir)
 
