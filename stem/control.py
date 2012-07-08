@@ -13,11 +13,12 @@ interacting at a higher level.
   from_socket_file - Provides a Controller based on a socket file connection.
   
   Controller - General controller class intended for direct use.
-    |- get_info - issues a GETINFO query
-    |- get_conf - issues a GETCONF query for a single parameter
-    |- get_conf_mapping - issues a GETCONF query for multiple parameters
-    |- set_conf - issues a SETCONF query
-    |- reset_conf - issues a RESETCONF query
+    |- get_info - issues a GETINFO query for a parameter
+    |- get_conf - gets the value of a configuration option
+    |- get_conf_mapping - gets the values of multiple configuration options
+    |- set_conf - sets the value of a configuration option
+    |- reset_conf - reverts configuration options to their default values
+    |- set_options - sets or resets the values of multiple configuration options
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -664,22 +665,17 @@ class Controller(BaseController):
       if default != UNDEFINED: return default
       else: raise exc
   
-  def set_option(self, param, value, reset = False):
+  def set_conf(self, param, value):
     """
-    Changes the value of a tor configuration option via either a SETCONF or
-    RESETCONF query. Both behave identically unless our value is None, in which
-    case SETCONF sets the value to 0 or NULL, and RESETCONF returns it to its
-    default value.
-    
-    Our value can be any of the following...
+    Changes the value of a tor configuration option. Our value can be any of
+    the following...
     
     * a string to set a single value
     * a list of strings to set a series of values (for instance the ExitPolicy)
-    * None to either set the value to 0/NULL or reset it to its default
+    * None to either set the value to 0/NULL
     
     :param str param: configuration option to be set
     :param str,list value: value to set the parameter to
-    :param bool reset: issues a SETCONF if False, and RESETCONF if True
     
     :raises:
       :class:`stem.socket.ControllerError` if the call fails
@@ -687,12 +683,29 @@ class Controller(BaseController):
       :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
     """
     
-    self.set_options({param: value}, reset)
+    self.set_options({param: value}, False)
+  
+  def reset_conf(self, *params):
+    """
+    Reverts one or more parameters to their default values.
+    
+    :param str params: configuration option to be reset
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails
+      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+    """
+    
+    self.set_options(dict([(entry, None) for entry in params]), True)
   
   def set_options(self, params, reset = False):
     """
-    Changes multiple tor configurations, in a similar fashion to
-    :func:`stem.control.Controller.set_option`. For example...
+    Changes multiple tor configuration options via either a SETCONF or
+    RESETCONF query. Both behave identically unless our value is None, in which
+    case SETCONF sets the value to 0 or NULL, and RESETCONF returns it to its
+    default value. This accepts str, list, or None values in a similar fashion
+    to :func:`stem.control.Controller.set_conf`. For example...
     
     ::
     
@@ -708,7 +721,7 @@ class Controller(BaseController):
     configuration (those options are order dependent).
     
     :param dict,list params: mapping of configuration options to the values we're setting it to
-    :param bool reset: issues a SETCONF if False, and RESETCONF if True
+    :param bool reset: issues a RESETCONF, returning None values to their defaults if True
     
     :raises:
       :class:`stem.socket.ControllerError` if the call fails

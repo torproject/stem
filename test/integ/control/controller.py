@@ -194,9 +194,10 @@ class TestController(unittest.TestCase):
       self.assertEqual({}, controller.get_conf_map("", "la-di-dah"))
       self.assertEqual({}, controller.get_conf_map([], "la-di-dah"))
   
-  def test_set_options(self):
+  def test_set_conf(self):
     """
-    Exercises set_option() and set_options() with valid and invalid requests.
+    Exercises set_conf(), reset_conf(), and set_options() methods with valid
+    and invalid requests.
     """
     
     if test.runner.require_control(self): return
@@ -208,20 +209,25 @@ class TestController(unittest.TestCase):
       try:
         # successfully set a single option
         connlimit = int(controller.get_conf("ConnLimit"))
-        controller.set_option("connlimit", str(connlimit - 1))
+        controller.set_conf("connlimit", str(connlimit - 1))
         self.assertEqual(connlimit - 1, int(controller.get_conf("ConnLimit")))
         
         # successfully set a single list option
         exit_policy = ["accept *:7777", "reject *:*"]
-        controller.set_option("ExitPolicy", exit_policy)
+        controller.set_conf("ExitPolicy", exit_policy)
         self.assertEqual(exit_policy, controller.get_conf("ExitPolicy", multiple = True))
         
         # fail to set a single option
         try:
-          controller.set_option("invalidkeyboo", "abcde")
+          controller.set_conf("invalidkeyboo", "abcde")
           self.fail()
         except stem.socket.InvalidArguments, exc:
           self.assertEqual(["invalidkeyboo"], exc.arguments)
+        
+        # resets configuration parameters
+        controller.reset_conf("ConnLimit", "ExitPolicy")
+        self.assertEqual(connlimit, int(controller.get_conf("ConnLimit")))
+        self.assertEqual(None, controller.get_conf("ExitPolicy"))
         
         # successfully sets multiple config options
         controller.set_options({
