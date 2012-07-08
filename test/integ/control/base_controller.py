@@ -11,6 +11,7 @@ import threading
 
 import stem.control
 import stem.socket
+import stem.util.system
 import test.runner
 
 class StateObserver:
@@ -41,6 +42,9 @@ class TestBaseController(unittest.TestCase):
     """
     
     if test.runner.require_control(self): return
+    elif stem.util.system.is_mac():
+      test.runner.skip(self, "(ticket #6235)")
+      return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
@@ -91,6 +95,9 @@ class TestBaseController(unittest.TestCase):
     """
     
     if test.runner.require_control(self): return
+    elif stem.util.system.is_mac():
+      test.runner.skip(self, "(ticket #6235)")
+      return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
