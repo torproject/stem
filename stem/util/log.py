@@ -161,7 +161,7 @@ class LogBuffer(logging.Handler):
     
     self.formatter = logging.Formatter(
       fmt = '%(asctime)s [%(levelname)s] %(message)s',
-      datefmt = '%D %H:%M:%S')
+      datefmt = '%m/%d/%Y %H:%M:%S')
     
     self._buffer = []
   
@@ -185,6 +185,6 @@ def log_to_stdout(runlevel):
   logging.basicConfig(
     level = logging_level(runlevel),
     format = '%(asctime)s [%(levelname)s] %(message)s',
-    datefmt = '%D %H:%M:%S',
+    datefmt = '%m/%d/%Y %H:%M:%S',
   )
 
