@@ -152,7 +152,13 @@ class LogBuffer(logging.Handler):
   """
   
   def __init__(self, runlevel):
-    super(LogBuffer, self).__init__(level = logging_level(runlevel))
+    # TODO: At least in python 2.5 logging.Handler has a bug in that it doesn't
+    # extend object, causing our super() call to fail. When we drop python 2.5
+    # support we should switch back to using super() instead.
+    #super(LogBuffer, self).__init__(level = logging_level(runlevel))
+    
+    logging.Handler.__init__(self, level = logging_level(runlevel))
+    
     self.formatter = logging.Formatter(
       fmt = '%(asctime)s [%(levelname)s] %(message)s',
       datefmt = '%D %H:%M:%S')
