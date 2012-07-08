@@ -25,6 +25,7 @@ import test.unit.response.getinfo
 import test.unit.response.getconf
 import test.unit.response.protocolinfo
 import test.unit.response.authchallenge
+import test.unit.response.singleline
 import test.unit.util.conf
 import test.unit.util.connection
 import test.unit.util.enum
@@ -112,6 +113,7 @@ UNIT_TESTS = (
   test.unit.response.control_line.TestControlLine,
   test.unit.response.getinfo.TestGetInfoResponse,
   test.unit.response.getconf.TestGetConfResponse,
+  test.unit.response.singleline.TestSingleLineResponse,
   test.unit.response.protocolinfo.TestProtocolInfoResponse,
   test.unit.response.authchallenge.TestAuthChallengeResponse,
   test.unit.connection.authentication.TestAuthenticate,

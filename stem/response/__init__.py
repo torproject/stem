@@ -30,6 +30,8 @@ __all__ = ["getinfo", "getconf", "protocolinfo", "authchallenge", "convert", "Co
 import re
 import threading
 
+import stem.socket
+
 KEY_ARG = re.compile("^(\S+)=")
 
 # Escape sequences from the 'esc_for_log' function of tor's 'common/util.c'.
@@ -52,6 +54,7 @@ def convert(response_type, message, **kwargs):
     * **\*** GETCONF
     * PROTOCOLINFO
     * AUTHCHALLENGE
+    * SINGLELINE
   
   **\*** can raise a :class:`stem.socket.InvalidArguments` exception
   
@@ -77,6 +80,8 @@ def convert(response_type, message, **kwargs):
     response_class = stem.response.getinfo.GetInfoResponse
   elif response_type == "GETCONF":
     response_class = stem.response.getconf.GetConfResponse
+  elif response_type == "SINGLELINE":
+    response_class = SingleLineResponse
   elif response_type == "PROTOCOLINFO":
     response_class = stem.response.protocolinfo.ProtocolInfoResponse
   elif response_type == "AUTHCHALLENGE":
@@ -413,4 +418,40 @@ def _get_quote_indeces(line, escaped):
     indices.append(quote_index)
   
   return tuple(indices)
+
+class SingleLineResponse(ControlMessage):
+  """
+  Reply to a request that performs an action rather than querying data. These
+  requests only contain a single line, which is 'OK' if successful, and a
+  description of the problem if not.
+  
+  :var str code: status code for our line
+  :var str message: content of the line
+  """
+  
+  def is_ok(self, strict = False):
+    """
+    Checks if the response code is "250". If strict is True, checks if the
+    response is "250 OK"
+    
+    :param bool strict: checks for a "250 OK" message if True
+    
+    :returns:
+      * If strict is False: True if the response code is "250", False otherwise
+      * If strict is True: True if the response is "250 OK", False otherwise
+    """
+    
+    if strict:
+      return self.content()[0] == ("250", " ", "OK")
+    return self.content()[0][0] == "250"
+  
+  def _parse_message(self):
+    content = self.content()
+    
+    if len(content) > 1:
+      raise stem.socket.ProtocolError("Received multiline response")
+    elif len(content) == 0:
+      raise stem.socket.ProtocolError("Received empty response")
+    else:
+      self.code, _, self.message = content[0]
 

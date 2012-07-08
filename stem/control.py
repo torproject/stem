@@ -13,7 +13,12 @@ interacting at a higher level.
   from_socket_file - Provides a Controller based on a socket file connection.
   
   Controller - General controller class intended for direct use.
-    |- get_info - issues a GETINFO query
+    |- get_info - issues a GETINFO query for a parameter
+    |- get_conf - gets the value of a configuration option
+    |- get_conf_mapping - gets the values of multiple configuration options
+    |- set_conf - sets the value of a configuration option
+    |- reset_conf - reverts configuration options to their default values
+    |- set_options - sets or resets the values of multiple configuration options
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -560,7 +565,7 @@ class Controller(BaseController):
       Response depends upon how we were called as follows...
       
       * str with the response if multiple was False
-      * list with the response strings multiple was True
+      * list with the response strings if multiple was True
       * default if one was provided and our call failed
     
     :raises:
@@ -577,9 +582,7 @@ class Controller(BaseController):
       return default if default != UNDEFINED else None
     
     entries = self.get_conf_map(param, default, multiple)
-    
-    if entries == default: return default
-    else: return _case_insensitive_lookup(entries, param)
+    return _case_insensitive_lookup(entries, param, default)
   
   def get_conf_map(self, param, default = UNDEFINED, multiple = True):
     """
@@ -591,11 +594,9 @@ class Controller(BaseController):
     only whitespace are ignored.
     
     There's three use cases for GETCONF:
-    - a single value is provided
-    - multiple values are provided for the option queried
-    - a set of options that weren't necessarily requested are returned (for
-      instance querying HiddenServiceOptions gives HiddenServiceDir,
-      HiddenServicePort, etc)
+      1. a single value is provided
+      2. multiple values are provided for the option queried
+      3. a set of options that weren't necessarily requested are returned (for instance querying HiddenServiceOptions gives HiddenServiceDir, HiddenServicePort, etc)
     
     The vast majority of the options fall into the first two categories, in
     which case calling get_conf() is sufficient. However, for batch queries or
@@ -650,7 +651,7 @@ class Controller(BaseController):
       
       for key in response.entries:
         if not key.lower() in MAPPED_CONFIG_KEYS.values():
-          user_expected_key = _case_insensitive_lookup(param, key)
+          user_expected_key = _case_insensitive_lookup(param, key, key)
           
           if key != user_expected_key:
             response.entries[user_expected_key] = response.entries[key]
@@ -663,16 +664,109 @@ class Controller(BaseController):
     except stem.socket.ControllerError, exc:
       if default != UNDEFINED: return default
       else: raise exc
+  
+  def set_conf(self, param, value):
+    """
+    Changes the value of a tor configuration option. Our value can be any of
+    the following...
+    
+    * a string to set a single value
+    * a list of strings to set a series of values (for instance the ExitPolicy)
+    * None to either set the value to 0/NULL
+    
+    :param str param: configuration option to be set
+    :param str,list value: value to set the parameter to
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails
+      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+    """
+    
+    self.set_options({param: value}, False)
+  
+  def reset_conf(self, *params):
+    """
+    Reverts one or more parameters to their default values.
+    
+    :param str params: configuration option to be reset
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails
+      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+    """
+    
+    self.set_options(dict([(entry, None) for entry in params]), True)
+  
+  def set_options(self, params, reset = False):
+    """
+    Changes multiple tor configuration options via either a SETCONF or
+    RESETCONF query. Both behave identically unless our value is None, in which
+    case SETCONF sets the value to 0 or NULL, and RESETCONF returns it to its
+    default value. This accepts str, list, or None values in a similar fashion
+    to :func:`stem.control.Controller.set_conf`. For example...
+    
+    ::
+    
+      my_controller.set_options({
+        "Nickname", "caerSidi",
+        "ExitPolicy": ["accept *:80", "accept *:443", "reject *:*"],
+        "ContactInfo": "caerSidi-exit@someplace.com",
+        "Log": None,
+      })
+    
+    The params can optionally be a list a key/value tuples, though the only
+    reason this type of arguement would be useful is for hidden service
+    configuration (those options are order dependent).
+    
+    :param dict,list params: mapping of configuration options to the values we're setting it to
+    :param bool reset: issues a RESETCONF, returning None values to their defaults if True
+    
+    :raises:
+      :class:`stem.socket.ControllerError` if the call fails
+      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+    """
+    
+    # constructs the SETCONF or RESETCONF query
+    query_comp = ["RESETCONF" if reset else "SETCONF"]
+    
+    if isinstance(params, dict):
+      params = params.items()
+    
+    for param, value in params:
+      if isinstance(value, str):
+        query_comp.append("%s=\"%s\"" % (param, value.strip()))
+      elif value:
+        query_comp.extend(["%s=\"%s\"" % (param, val.strip()) for val in value])
+      else:
+        query_comp.append(param)
+    
+    response = self.msg(" ".join(query_comp))
+    stem.response.convert("SINGLELINE", response)
+    
+    if not response.is_ok():
+      if response.code == "552":
+        if response.message.startswith("Unrecognized option: Unknown option '"):
+          key = response.message[37:response.message.find("\'", 37)]
+          raise stem.socket.InvalidArguments(response.code, response.message, [key])
+        raise stem.socket.InvalidRequest(response.code, response.message)
+      elif response.code in ("513", "553"):
+        raise stem.socket.InvalidRequest(response.code, response.message)
+      else:
+        raise stem.socket.ProtocolError("%s returned unexpected status code" % command)
 
-def _case_insensitive_lookup(entries, key):
+def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """
   Makes a case insensitive lookup within a list or dictionary, providing the
   first matching entry that we come across.
   
   :param list,dict entries: list or dictionary to be searched
   :param str key: entry or key value to look up
+  :param object default: value to be returned if the key doesn't exist
   
-  :returns: case insensitive match
+  :returns: case insensitive match or default if one was provided and key wasn't found
   
   :raises: ValueError if no such value exists
   """
@@ -686,5 +780,6 @@ def _case_insensitive_lookup(entries, key):
       if entry.lower() == key.lower():
         return entry
   
-  raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
+  if default != UNDEFINED: return default
+  else: raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
 
