@@ -232,7 +232,7 @@ def get_stats(pid, *stat_types):
     stat_comp.append(stat_line[cmd_start + 1:cmd_end])
     stat_comp += stat_line[cmd_end + 1:].split()
   
-  if len(stat_comp) != 44 and _is_float(stat_comp[13], stat_comp[14], stat_comp[21]):
+  if len(stat_comp) < 44 and _is_float(stat_comp[13], stat_comp[14], stat_comp[21]):
     exc = IOError("stat file had an unexpected format: %s" % stat_path)
     _log_failure(parameter, exc)
     raise exc
