@@ -20,6 +20,9 @@ class TestProc(unittest.TestCase):
     if not proc.is_available():
       test.runner.skip(self, "(proc unavailable)")
       return
+    elif not test.runner.get_runner().is_ptraceable():
+      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      return
     
     runner = test.runner.get_runner()
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
@@ -83,6 +86,9 @@ class TestProc(unittest.TestCase):
       return
     elif not test.runner.Torrc.PORT in runner.get_options():
       test.runner.skip(self, "(no control port)")
+      return
+    elif not test.runner.get_runner().is_ptraceable():
+      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
       return
     
     # making a controller connection so that we have something to query for

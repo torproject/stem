@@ -368,7 +368,7 @@ class Runner:
     a lot of adverse side effects
     (`ticket <https://trac.torproject.org/projects/tor/ticket/3313>`_).
     
-    :returns: True if debugger attachment is disallowd, False otherwise
+    :returns: True if debugger attachment is allowd, False otherwise
     """
     
     # If we're running a tor version where ptrace is disabled and we didn't
