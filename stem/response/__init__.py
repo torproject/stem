@@ -32,7 +32,7 @@ __all__ = [
   "authchallenge",
   "convert",
   "ControlMessage",
-  "ControlLine"
+  "ControlLine",
 ]
 
 import re

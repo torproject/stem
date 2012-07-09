@@ -18,7 +18,7 @@ __all__ = [
   "extrainfo_descriptor",
   "server_descriptor",
   "parse_file",
-  "Descriptor"
+  "Descriptor",
 ]
 
 import os

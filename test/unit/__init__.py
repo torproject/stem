@@ -7,6 +7,6 @@ __all__ = [
   "descriptor",
   "socket",
   "util",
-  "version"
+  "version",
 ]
 

@@ -10,6 +10,6 @@ __all__ = [
   "proc",
   "system",
   "term",
-  "tor_tools"
+  "tor_tools",
 ]
 

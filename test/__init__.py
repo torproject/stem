@@ -6,6 +6,6 @@ __all__ = [
   "check_whitespace",
   "mocking",
   "output",
-  "runner"
+  "runner",
 ]
 

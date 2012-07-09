@@ -274,25 +274,26 @@ class TestController(unittest.TestCase):
     """
     
     if test.runner.require_control(self): return
+    elif test.runner.require_version(self, stem.version.Requirement.LOADCONF): return
     
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
       oldconf = runner.get_torrc_contents()
       
-      # invalid requests
-      self.assertRaises(stem.socket.InvalidRequest, controller.load_conf, "ContactInfo confloaded")
       try:
-        controller.load_conf("Blahblah blah")
-      except stem.socket.InvalidArguments, exc:
-        self.assertEqual(["Blahblah"], exc.arguments)
-      else:
-        self.fail()
-      
-      # valid config
-      controller.load_conf(runner.get_torrc_contents() + "\nContactInfo confloaded\n")
-      self.assertEqual("confloaded", controller.get_conf("ContactInfo"))
-      
-      # reload original valid config
-      controller.load_conf(oldconf)
+        # invalid requests
+        self.assertRaises(stem.socket.InvalidRequest, controller.load_conf, "ContactInfo confloaded")
+        try:
+          controller.load_conf("Blahblah blah")
+          self.fail()
+        except stem.socket.InvalidArguments, exc:
+          self.assertEqual(["Blahblah"], exc.arguments)
+        
+        # valid config
+        controller.load_conf(runner.get_torrc_contents() + "\nContactInfo confloaded\n")
+        self.assertEqual("confloaded", controller.get_conf("ContactInfo"))
+      finally:
+        # reload original valid config
+        controller.load_conf(oldconf)
 

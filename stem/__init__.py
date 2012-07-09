@@ -17,6 +17,6 @@ __all__ = [
   "prereq",
   "process",
   "socket",
-  "version"
+  "version",
 ]
 

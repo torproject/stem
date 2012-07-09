@@ -9,6 +9,6 @@ __all__ = [
   "process",
   "socket",
   "util",
-  "version"
+  "version",
 ]
 

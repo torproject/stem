@@ -19,6 +19,7 @@ interacting at a higher level.
     |- set_conf - sets the value of a configuration option
     |- reset_conf - reverts configuration options to their default values
     |- set_options - sets or resets the values of multiple configuration options
+    |- load_conf - loads configuration information as if it was in the torrc
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -760,7 +761,7 @@ class Controller(BaseController):
   def load_conf(self, configtext):
     """
     Sends the configuration text to Tor and loads it as if it has been read from
-    disk.
+    the torrc.
     
     :param str configtext: the configuration text
     
