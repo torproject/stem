@@ -12,7 +12,14 @@ Package for parsing and processing descriptor data.
     +- __str__ - string that the descriptor was made from
 """
 
-__all__ = ["descriptor", "reader", "extrainfo_descriptor", "server_descriptor", "parse_file", "Descriptor"]
+__all__ = [
+  "descriptor",
+  "reader",
+  "extrainfo_descriptor",
+  "server_descriptor",
+  "parse_file",
+  "Descriptor"
+]
 
 import os
 import re

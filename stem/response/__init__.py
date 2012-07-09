@@ -25,7 +25,15 @@ Parses replies from the control socket.
 
 from __future__ import with_statement
 
-__all__ = ["getinfo", "getconf", "protocolinfo", "authchallenge", "convert", "ControlMessage", "ControlLine"]
+__all__ = [
+  "getinfo",
+  "getconf",
+  "protocolinfo",
+  "authchallenge",
+  "convert",
+  "ControlMessage",
+  "ControlLine"
+]
 
 import re
 import threading
