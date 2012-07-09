@@ -529,7 +529,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     
     desc_text = _make_descriptor({"transport": "obfs3"}, is_bridge = True)
     desc = BridgeExtraInfoDescriptor(desc_text)
-    self.assertEquals("obfs3", desc.transport)
+    self.assertEquals(["obfs3"], desc.transport)
     self.assertEquals([], desc.get_unrecognized_lines())
   
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):

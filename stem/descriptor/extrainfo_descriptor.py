@@ -743,7 +743,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Bridge extra-info descriptor (`specification <https://metrics.torproject.org/formats.html#bridgedesc>`_)
   
-  :var str transport: transport method recognized by the bridge (ex. obfs3)
+  :var list transport: transport method recognized by the bridge (ex. obfs3)
   """
   
   def __init__(self, raw_contents, validate = True):
@@ -764,7 +764,14 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
       line = "%s %s" % (keyword, value) # original line
       
       if keyword == "transport":
-        self.transport = value
+        # "transport" transportname address:port [arglist]
+        # Everything after the transportname is scrubbed in published bridge
+        # descriptors, so we'll never see it in practice.
+        
+        if self.transport is None:
+          self.transport = []
+        
+        self.transport.append(value)
         del entries["transport"]
       elif keyword == "router-digest":
         if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
