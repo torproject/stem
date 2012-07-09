@@ -84,17 +84,18 @@ def convert(response_type, message, **kwargs):
   if not isinstance(message, ControlMessage):
     raise TypeError("Only able to convert stem.response.ControlMessage instances")
   
-  if response_type == "GETINFO":
-    response_class = stem.response.getinfo.GetInfoResponse
-  elif response_type == "GETCONF":
-    response_class = stem.response.getconf.GetConfResponse
-  elif response_type == "SINGLELINE":
-    response_class = SingleLineResponse
-  elif response_type == "PROTOCOLINFO":
-    response_class = stem.response.protocolinfo.ProtocolInfoResponse
-  elif response_type == "AUTHCHALLENGE":
-    response_class = stem.response.authchallenge.AuthChallengeResponse
-  else: raise TypeError("Unsupported response type: %s" % response_type)
+  response_types = {
+    "GETINFO": stem.response.getinfo.GetInfoResponse,
+    "GETCONF": stem.response.getconf.GetConfResponse,
+    "SINGLELINE": SingleLineResponse,
+    "PROTOCOLINFO": stem.response.protocolinfo.ProtocolInfoResponse,
+    "AUTHCHALLENGE": stem.response.authchallenge.AuthChallengeResponse,
+    }
+  
+  try:
+    response_class = response_types[response_type]
+  except TypeError:
+    raise TypeError("Unsupported response type: %s" % response_type)
   
   message.__class__ = response_class
   message._parse_message(**kwargs)
