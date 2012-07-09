@@ -81,13 +81,13 @@ def parse_file(path, descriptor_file):
     desc_type, major_version, minor_version = metrics_header_match.groups()
     major_version, minor_version = int(major_version), int(minor_version)
     
-    if desc_type == "server-descriptor" and major_version == 1 and minor_version == 0:
+    if desc_type == "server-descriptor" and major_version == 1:
       desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_file.read())
-    elif desc_type == "bridge-server-descriptor" and major_version == 1 and minor_version == 0:
+    elif desc_type == "bridge-server-descriptor" and major_version == 1:
       desc = stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_file.read())
-    elif desc_type == "extra-info" and major_version == 1 and minor_version == 0:
+    elif desc_type == "extra-info" and major_version == 1:
       desc = stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_file.read())
-    elif desc_type == "bridge-extra-info" and major_version == 1 and minor_version in (0, 1):
+    elif desc_type == "bridge-extra-info" and major_version == 1:
       # version 1.1 introduced a 'transport' field...
       # https://trac.torproject.org/6257
       
