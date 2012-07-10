@@ -305,7 +305,6 @@ class TestExtraInfoDescriptor(unittest.TestCase):
         ("", None),
         (" ", None),
         ("100", None),
-        ("100.1%", 1.001),
         ("-5%", -0.05),
       )
       

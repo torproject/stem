@@ -488,8 +488,11 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           if not value.endswith("%"): raise ValueError()
           percentage = float(value[:-1]) / 100
           
-          if validate and (percentage > 1 or percentage < 0):
-            raise ValueError()
+          # Bug lets these be above 100%, however they're soon going away...
+          # https://lists.torproject.org/pipermail/tor-dev/2012-June/003679.html
+          
+          if validate and percentage < 0:
+            raise ValueError("Negative percentage value: %s" % line)
           
           if keyword == "dirreq-v2-share":
             self.dir_v2_share = percentage
