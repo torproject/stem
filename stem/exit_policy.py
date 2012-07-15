@@ -31,10 +31,6 @@ exiting to a destination is permissable or not. For instance...
     |- is_match - checks if we match a given destination
     +- __str__ - string representation for this rule
 
-  ExitPolicyLine - Single rule from the exit policy
-    |- __str__ - string representation
-    +- check   - check if exiting to this ip is allowed
-
   ExitPolicy - List of ExitPolicyLine objects
     |- __str__  - string representation
     |- __iter__ - ExitPolicyLine entries for the exit policy
@@ -258,12 +254,18 @@ class ExitPolicyRule:
         
         address = address.lstrip("[").rstrip("]")
       else:
-        raise ValueError("'%s' isn't a valid ipv4 or ipv6 address" % address)
+        raise ValueError("'%s' isn't a valid IPv4 or IPv6 address" % address)
     
     if port != None and not stem.util.connection.is_valid_port(port):
       raise ValueError("'%s' isn't a valid port" % port)
     
     if address is None:
+      # Note that this isn't the exact same as is_address_wildcard(). We only
+      # accept a None address if we got an '*' for our address. Not an IPv4 or
+      # IPv6 address that accepts everything (ex '0.0.0.0/0'). This is because
+      # those still only match against that type (ie, an IPv4 /0 won't match
+      # against IPv6 addresses).
+      
       if self.address_type != AddressType.WILDCARD:
         return False
     elif not self.is_address_wildcard():
@@ -326,125 +328,9 @@ class ExitPolicyRule:
     
     return self._str_representation
 
-class ExitPolicyLine:
-  """
-  Single rule from the user's exit policy. These are chained together to form
-  complete policies.
-  """
-  
-  def __init__(self, rule_entry):
-    """
-    Exit Policy line constructor.
-    """
-    
-    # sanitize the input a bit, cleaning up tabs and stripping quotes
-    rule_entry = rule_entry.replace("\\t", " ").replace("\"", "")
-    
-    self.rule_entry = rule_entry
-    self.is_accept = rule_entry.startswith("accept")
-    
-    # strips off "accept " or "reject " and extra spaces
-    rule_entry = rule_entry[7:].replace(" ", "")
-    
-    # split ip address (with mask if provided) and port
-    if ":" in rule_entry: entry_ip, entry_port = rule_entry.split(":", 1)
-    else: entry_ip, entry_port = rule_entry, "*"
-    
-    # sets the ip address component
-    self.is_ip_wildcard = entry_ip == "*" or entry_ip.endswith("/0")
-    
-    # separate host and mask
-    if "/" in entry_ip:
-      ip_comp = entry_ip.split("/", 1)
-      self.ip_address = ip_comp[0]
-      self.ip_mask = int(ip_comp[1])
-    else:
-      self.ip_address = entry_ip
-      self.ip_mask = 32
-    
-    # constructs the binary address just in case of comparison with a mask
-    if self.ip_address != "*":
-      if not stem.util.connection.is_valid_ip_address(self.ip_address) and \
-         not stem.util.connection.is_valid_ipv6_address(self.ip_address):
-        raise ExitPolicyError()
-      
-      self.ip_address_bin = ""
-      for octet in self.ip_address.split("."):
-        # Converts the int to a binary string, padded with zeros. Source:
-        # http://www.daniweb.com/code/snippet216539.html
-        self.ip_address_bin += "".join([str((int(octet) >> y) & 1) for y in range(7, -1, -1)])
-    else:
-      self.ip_address_bin = "0" * 32
-    
-    # sets the port component
-    self.min_port, self.max_port = 0, 0
-    self.is_port_wildcard = entry_port == "*"
-    
-    if entry_port != "*":
-      if "-" in entry_port:
-        port_comp = entry_port.split("-", 1)
-        if not stem.util.connection.is_valid_port(port_comp):
-          raise ExitPolicyError
-        self.min_port = int(port_comp[0])
-        self.max_port = int(port_comp[1])
-      else:
-        if not stem.util.connection.is_valid_port(entry_port):
-          raise ExitPolicyError
-        self.min_port = int(entry_port)
-        self.max_port = int(entry_port)
-  
-  def __str__(self):
-    # This provides the actual policy rather than the entry used to construct
-    # it so the 'private' keyword is expanded.
-        
-    acceptance_label = "accept" if self.is_accept else "reject"
-        
-    if self.is_ip_wildcard:
-      ip_label = "*"
-    elif self.ip_mask != 32:
-      ip_label = "%s/%i" % (self.ip_address, self.ip_mask)
-    else: ip_label = self.ip_address
-        
-    if self.is_port_wildcard:
-      port_label = "*"
-    elif self.min_port != self.max_port:
-      port_label = "%i-%i" % (self.min_port, self.max_port)
-    else: port_label = str(self.min_port)
-        
-    my_policy = "%s %s:%s" % (acceptance_label, ip_label, port_label)
-    return my_policy
-    
-  def check(self, ip_address, port):
-    """
-    Checks if the rule chain allows exiting to this address, returning true if
-    so and false otherwise.
-    """
-      
-    port = int(port)
-    
-    # does the port check first since comparing ip masks is more work
-    is_port_match = self.is_port_wildcard or (port >= self.min_port and port <= self.max_port)
-    
-    if is_port_match:
-      is_ip_match = self.is_ip_wildcard or self.ip_address == ip_address
-        
-       # expands the check to include the mask if it has one
-      if not is_ip_match and self.ip_mask != 32:
-        input_address_bin = ""
-        for octet in ip_address.split("."):
-          input_address_bin += "".join([str((int(octet) >> y) & 1) for y in range(7, -1, -1)])
-
-        is_ip_match = self.ip_address_bin[:self.ip_mask] == input_address_bin[:self.ip_mask]
-                
-      if is_ip_match: return self.is_accept
-            
-    # fell off the chain without a conclusion (shouldn't happen...)
-    return False
-      
-    
 class ExitPolicy:
   """
-  Provides a wrapper to ExitPolicyLine. This is iterable and can be stringified for
+  Provides a wrapper to ExitPolicyRule. This is iterable and can be stringified for
   individual Exit Policy lines.
   """
     
@@ -467,9 +353,9 @@ class ExitPolicy:
     if "private" in rule_entry.lower():
       for addr in PRIVATE_IP_RANGES:
         new_entry = rule_entry.replace("private", addr)
-        self._policies.append(ExitPolicyLine(new_entry))
+        self._policies.append(ExitPolicyRule(new_entry))
     else:
-      self._policies.append(ExitPolicyLine(rule_entry))
+      self._policies.append(ExitPolicyRule(rule_entry))
 
   def get_summary(self):
     """
@@ -482,7 +368,7 @@ class ExitPolicy:
     is_whitelist = False # default in case we don't have a catch-all policy at the end
     
     for policy in self._policies:
-      if policy.is_ip_wildcard and policy.is_port_wildcard:
+      if policy.is_address_wildcard() and policy.is_port_wildcard():
         is_whitelist = not policy.is_accept
         break
       
@@ -494,7 +380,7 @@ class ExitPolicy:
     display_ports, skip_ports = [], []
     
     for policy in self._policies:
-      if not policy.is_ip_wildcard: continue
+      if not policy.is_address_wildcard(): continue
       
       if policy.min_port == policy.max_port:
         port_range = [policy.min_port]
@@ -543,7 +429,7 @@ class ExitPolicy:
     """
     for policy in self._policies:
       if policy.is_accept: return True
-      elif policy.is_ip_wildcard and policy.is_port_wildcard: return False
+      elif policy.is_address_wildcard() and policy.is_port_wildcard(): return False
     
   def check(self, ip_address, port):
     """
@@ -552,7 +438,8 @@ class ExitPolicy:
     """
     
     for policy in self._policies:
-      if policy.check(ip_address, port): return True
+      if policy.is_match(ip_address, port):
+        return policy.is_accept
         
     return False
     
@@ -591,10 +478,10 @@ class MicrodescriptorExitPolicy:
       if '-' in ports:
         port_range = ports.split("-", 1)
         if not stem.util.connection.is_valid_port(port_range):
-          raise ExitPolicyError
+          raise ValueError("Invaid port range")
         self.ports.append(range(int(port_range[2])), int(port_range[1]))
       if not stem.util.connection.is_valid_port(ports):
-          raise ExitPolicyError
+          raise ValueError("Invalid port range")
       self.ports.append(int(ports))
       
   def check(self, ip_address=None, port=None):
@@ -627,7 +514,3 @@ class MicrodescriptorExitPolicy:
   def is_accept(self):
     return self.is_accept
 
-class ExitPolicyError(Exception):
-  """
-  Base error for exit policy issues.
-  """
