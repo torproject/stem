@@ -55,7 +55,26 @@ AddressType = stem.util.enum.Enum(("WILDCARD", "Wildcard"), ("IPv4", "IPv4"), ("
 PRIVATE_IP_RANGES = ("0.0.0.0/8", "169.254.0.0/16", "127.0.0.0/8",
                      "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12")
 
-class ExitPolicyRule:
+# TODO: The ExitPolicyRule's exitpatterns are used everywhere except the torrc.
+# This is fine for now, but we should add a subclass to handle those slight
+# differences later if we want to provide the ability to parse torrcs.
+
+# TODO: The ExitPolicyRule could easily be a mutable class if we did the
+# following...
+#
+# * Provided setter methods that acquired an RLock which also wrapped all of
+#   our current methods to provide thread safety.
+#
+# * Reset our derived attributes (self._addr_bin, self._mask_bin, and
+#   self._str_representation) when we changed something that it was based on.
+#
+# That said, I'm not sure if this is entirely desirable since for most use
+# cases we *want* the caller to have an immutable ExitPolicy (since it
+# reflects something they... well, can't modify). However, I can think of
+# some use cases where we might want to construct custom policies. Mabye make
+# it a CustomExitPolicyRule subclass?
+
+class ExitPolicyRule(object):
   """
   Single rule from the user's exit policy. These rules are chained together to
   form complete policies that describe where a relay will and will not allow
@@ -67,7 +86,9 @@ class ExitPolicyRule:
   scricter in what it'll accept. For instance, ports are not optional and it
   does not contain the 'private' alias.
   
-  :var str rule: rule that we were created from
+  This should be treated as an immutable object.
+  
+  :var str rule: rule that we were originally created from
   :var bool is_accept: indicates if exiting is allowed or disallowed
   
   :var AddressType address_type: type of address that we have
@@ -83,10 +104,6 @@ class ExitPolicyRule:
   :raises: ValueError if input isn't a valid tor exit policy rule
   """
   
-  # TODO: Exitpatterns are used everywhere except the torrc. This is fine for
-  # now, but we should add a subclass to handle those slight differences later
-  # if we want to provide the ability to parse torrcs.
- 
   def __init__(self, rule):
     self.rule = rule
     
@@ -110,96 +127,14 @@ class ExitPolicyRule:
     if not ":" in exitpattern:
       raise ValueError("An exitpattern must be of the form 'addrspec:portspec': %s" % rule)
     
+    self.address = None
+    self.address_type = None
+    self.mask = self.masked_bits = None
+    self.min_port = self.max_port = None
+    
     addrspec, portspec = exitpattern.rsplit(":", 1)
-    self._addr_bin = self._mask_bin = None
-    
-    # Parses the addrspec...
-    # addrspec ::= "*" | ip4spec | ip6spec
-    
-    if "/" in addrspec:
-      self.address, addr_extra = addrspec.split("/", 1)
-    else:
-      self.address, addr_extra = addrspec, None
-    
-    if addrspec == "*":
-      self.address_type = AddressType.WILDCARD
-      self.address = self.mask = self.masked_bits = None
-    elif stem.util.connection.is_valid_ip_address(self.address):
-      # ipv4spec ::= ip4 | ip4 "/" num_ip4_bits | ip4 "/" ip4mask
-      # ip4 ::= an IPv4 address in dotted-quad format
-      # ip4mask ::= an IPv4 mask in dotted-quad format
-      # num_ip4_bits ::= an integer between 0 and 32
-      
-      self.address_type = AddressType.IPv4
-      
-      if addr_extra is None:
-        self.mask = stem.util.connection.FULL_IPv4_MASK
-        self.masked_bits = 32
-      elif stem.util.connection.is_valid_ip_address(addr_extra):
-        # provided with an ip4mask
-        self.mask = addr_extra
-        
-        try:
-          self.masked_bits = stem.util.connection.get_masked_bits(addr_extra)
-        except ValueError:
-          # mask can't be represented as a number of bits (ex. "255.255.0.255")
-          self.masked_bits = None
-      elif addr_extra.isdigit():
-        # provided with a num_ip4_bits
-        self.mask = stem.util.connection.get_mask(int(addr_extra))
-        self.masked_bits = int(addr_extra)
-      else:
-        raise ValueError("The '%s' isn't a mask nor number of bits: %s" % (addr_extra, rule))
-    elif self.address.startswith("[") and self.address.endswith("]") and \
-      stem.util.connection.is_valid_ipv6_address(self.address[1:-1]):
-      # ip6spec ::= ip6 | ip6 "/" num_ip6_bits
-      # ip6 ::= an IPv6 address, surrounded by square brackets.
-      # num_ip6_bits ::= an integer between 0 and 128
-      
-      self.address = stem.util.connection.expand_ipv6_address(self.address[1:-1].upper())
-      self.address_type = AddressType.IPv6
-      
-      if addr_extra is None:
-        self.mask = stem.util.connection.FULL_IPv6_MASK
-        self.masked_bits = 128
-      elif addr_extra.isdigit():
-        # provided with a num_ip6_bits
-        self.mask = stem.util.connection.get_mask_ipv6(int(addr_extra))
-        self.masked_bits = int(addr_extra)
-      else:
-        raise ValueError("The '%s' isn't a number of bits: %s" % (addr_extra, rule))
-    else:
-      raise ValueError("Address isn't a wildcard, IPv4, or IPv6 address: %s" % rule)
-    
-    # Parses the portspec...
-    # portspec ::= "*" | port | port "-" port
-    # port ::= an integer between 1 and 65535, inclusive.
-    #
-    # Due to a tor bug the spec says that we should accept port of zero, but
-    # connections to port zero are never permitted.
-    
-    if portspec == "*":
-      self.min_port, self.max_port = 1, 65535
-    elif portspec.isdigit():
-      # provided with a single port
-      if stem.util.connection.is_valid_port(portspec, allow_zero = True):
-        self.min_port = self.max_port = int(portspec)
-      else:
-        raise ValueError("'%s' isn't within a valid port range: %s" % (portspec, rule))
-    elif "-" in portspec:
-      # provided with a port range
-      port_comp = portspec.split("-", 1)
-      
-      if stem.util.connection.is_valid_port(port_comp, allow_zero = True):
-        self.min_port = int(port_comp[0])
-        self.max_port = int(port_comp[1])
-        
-        if self.min_port > self.max_port:
-          raise ValueError("Port range has a lower bound that's greater than its upper bound: %s" % rule)
-      else:
-        raise ValueError("Malformed port range: %s" % rule)
-    else:
-      raise ValueError("Port value isn't a wildcard, integer, or range: %s" % rule)
+    self._apply_addrspec(addrspec)
+    self._apply_portspec(portspec)
     
     # Pre-calculating the integer representation of our mask and masked
     # address. These are used by our is_match() method to compare ourselves to
@@ -327,17 +262,104 @@ class ExitPolicyRule:
       self._str_representation = label
     
     return self._str_representation
-
-class ExitPolicy:
-  """
-  Provides a wrapper to ExitPolicyRule. This is iterable and can be stringified for
-  individual Exit Policy lines.
-  """
+  
+  def _apply_addrspec(self, addrspec):
+    # Parses the addrspec...
+    # addrspec ::= "*" | ip4spec | ip6spec
     
+    if "/" in addrspec:
+      self.address, addr_extra = addrspec.split("/", 1)
+    else:
+      self.address, addr_extra = addrspec, None
+    
+    if addrspec == "*":
+      self.address_type = AddressType.WILDCARD
+      self.address = self.mask = self.masked_bits = None
+    elif stem.util.connection.is_valid_ip_address(self.address):
+      # ipv4spec ::= ip4 | ip4 "/" num_ip4_bits | ip4 "/" ip4mask
+      # ip4 ::= an IPv4 address in dotted-quad format
+      # ip4mask ::= an IPv4 mask in dotted-quad format
+      # num_ip4_bits ::= an integer between 0 and 32
+      
+      self.address_type = AddressType.IPv4
+      
+      if addr_extra is None:
+        self.mask = stem.util.connection.FULL_IPv4_MASK
+        self.masked_bits = 32
+      elif stem.util.connection.is_valid_ip_address(addr_extra):
+        # provided with an ip4mask
+        self.mask = addr_extra
+        
+        try:
+          self.masked_bits = stem.util.connection.get_masked_bits(addr_extra)
+        except ValueError:
+          # mask can't be represented as a number of bits (ex. "255.255.0.255")
+          self.masked_bits = None
+      elif addr_extra.isdigit():
+        # provided with a num_ip4_bits
+        self.mask = stem.util.connection.get_mask(int(addr_extra))
+        self.masked_bits = int(addr_extra)
+      else:
+        raise ValueError("The '%s' isn't a mask nor number of bits: %s" % (addr_extra, self.rule))
+    elif self.address.startswith("[") and self.address.endswith("]") and \
+      stem.util.connection.is_valid_ipv6_address(self.address[1:-1]):
+      # ip6spec ::= ip6 | ip6 "/" num_ip6_bits
+      # ip6 ::= an IPv6 address, surrounded by square brackets.
+      # num_ip6_bits ::= an integer between 0 and 128
+      
+      self.address = stem.util.connection.expand_ipv6_address(self.address[1:-1].upper())
+      self.address_type = AddressType.IPv6
+      
+      if addr_extra is None:
+        self.mask = stem.util.connection.FULL_IPv6_MASK
+        self.masked_bits = 128
+      elif addr_extra.isdigit():
+        # provided with a num_ip6_bits
+        self.mask = stem.util.connection.get_mask_ipv6(int(addr_extra))
+        self.masked_bits = int(addr_extra)
+      else:
+        raise ValueError("The '%s' isn't a number of bits: %s" % (addr_extra, self.rule))
+    else:
+      raise ValueError("Address isn't a wildcard, IPv4, or IPv6 address: %s" % self.rule)
+  
+  def _apply_portspec(self, portspec):
+    # Parses the portspec...
+    # portspec ::= "*" | port | port "-" port
+    # port ::= an integer between 1 and 65535, inclusive.
+    #
+    # Due to a tor bug the spec says that we should accept port of zero, but
+    # connections to port zero are never permitted.
+    
+    if portspec == "*":
+      self.min_port, self.max_port = 1, 65535
+    elif portspec.isdigit():
+      # provided with a single port
+      if stem.util.connection.is_valid_port(portspec, allow_zero = True):
+        self.min_port = self.max_port = int(portspec)
+      else:
+        raise ValueError("'%s' isn't within a valid port range: %s" % (portspec, self.rule))
+    elif "-" in portspec:
+      # provided with a port range
+      port_comp = portspec.split("-", 1)
+      
+      if stem.util.connection.is_valid_port(port_comp, allow_zero = True):
+        self.min_port = int(port_comp[0])
+        self.max_port = int(port_comp[1])
+        
+        if self.min_port > self.max_port:
+          raise ValueError("Port range has a lower bound that's greater than its upper bound: %s" % self.rule)
+      else:
+        raise ValueError("Malformed port range: %s" % self.rule)
+    else:
+      raise ValueError("Port value isn't a wildcard, integer, or range: %s" % self.rule)
+
+class ExitPolicy(object):
+  """
+  Policy for the destinations that a relay allows or denies exiting to. This
+  is, in effect, simply a list of ExitPolicyRule entries.
+  """
+  
   def __init__(self):
-    """
-    ExitPolicy constructor
-    """
     self._policies = []
     self.summary = ""
 
