@@ -9,9 +9,6 @@ import stem.util.system
 import test.mocking as mocking
 
 class TestExitPolicy(unittest.TestCase):
-  def tearDown(self):
-    pass
-  
   def test_parsing(self):
     """
     Tests parsing by the ExitPolicy class constructor.

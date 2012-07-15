@@ -7,7 +7,7 @@ but for now just moving the parts we need.
 ::
 
   is_valid_ip_address - checks if a string is a valid IPv4 address
-  is_valid_ip_ipv6_address - checks if a string is a valid IPv6 address
+  is_valid_ipv6_address - checks if a string is a valid IPv6 address
   is_valid_port - checks if something is a valid representation for a port
   expand_ipv6_address - provides an IPv6 address with its collapsed portions expanded
   get_mask - provides the mask representation for a given number of bits
@@ -23,6 +23,9 @@ import hmac
 import hashlib
 
 CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
+
+FULL_IPv4_MASK = "255.255.255.255"
+FULL_IPv6_MASK = "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"
 
 def is_valid_ip_address(address):
   """
@@ -45,14 +48,19 @@ def is_valid_ip_address(address):
   
   return True
 
-def is_valid_ipv6_address(address):
+def is_valid_ipv6_address(address, allow_brackets = False):
   """
   Checks if a string is a valid IPv6 address.
   
   :param str address: string to be checked
+  :param bool allow_brackets: ignore brackets which form '[address]'
   
   :returns: True if input is a valid IPv6 address, False otherwise
   """
+  
+  if allow_brackets:
+    if address.startswith("[") and address.endswith("]"):
+      address = address[1:-1]
   
   # addresses are made up of eight colon separated groups of four hex digits
   # with leading zeros being optional
@@ -85,9 +93,10 @@ def is_valid_port(entry, allow_zero = False):
   
   if isinstance(entry, list):
     for port in entry:
-      if not is_valid_port(port):
+      if not is_valid_port(port, allow_zero):
         return False
-
+    
+    return True
   elif isinstance(entry, str):
     if not entry.isdigit():
       return False

@@ -32,7 +32,8 @@ import test.unit.util.enum
 import test.unit.util.proc
 import test.unit.util.system
 import test.unit.util.tor_tools
-import test.unit.exit_policy
+import test.unit.exit_policy.policy
+import test.unit.exit_policy.rule
 import test.unit.version
 import test.integ.connection.authentication
 import test.integ.connection.connect
@@ -109,7 +110,8 @@ UNIT_TESTS = (
   test.unit.descriptor.reader.TestDescriptorReader,
   test.unit.descriptor.server_descriptor.TestServerDescriptor,
   test.unit.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
-  test.unit.exit_policy.TestExitPolicy,
+  test.unit.exit_policy.rule.TestExitPolicyRule,
+  test.unit.exit_policy.policy.TestExitPolicy,
   test.unit.version.TestVersion,
   test.unit.response.control_message.TestControlMessage,
   test.unit.response.control_line.TestControlLine,
