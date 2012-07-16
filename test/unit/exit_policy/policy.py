@@ -14,72 +14,59 @@ class TestExitPolicy(unittest.TestCase):
     Tests parsing by the ExitPolicy class constructor.
     """
     
-    exit_policies = stem.exit_policy.ExitPolicy()
-    exit_policies.add("accept *:80")
-    exit_policies.add("accept *:443")
-    exit_policies.add("reject *:*")
+    exit_policies = stem.exit_policy.ExitPolicy("accept *:80", "accept *:443", "reject *:*")
     self.assertEqual(str(exit_policies), "accept *:80, accept *:443, reject *:*")
     
     exit_policies = stem.exit_policy.ExitPolicy()
     
     # check ip address
-    self.assertRaises(ValueError, exit_policies.add, "accept 256.255.255.255:80")
-    self.assertRaises(ValueError, exit_policies.add, "accept -10.255.255.255:80")
-    self.assertRaises(ValueError, exit_policies.add, "accept 255.-10.255.255:80")
-    self.assertRaises(ValueError, exit_policies.add, "accept 255.255.-10.255:80")
-    self.assertRaises(ValueError, exit_policies.add, "accept -255.255.255.-10:80")
-    self.assertRaises(ValueError, exit_policies.add, "accept a.b.c.d:80")
-    self.assertRaises(ValueError, exit_policies.add, "accept 255.255.255:80")
-    self.assertRaises(ValueError, exit_policies.add, "accept -255.255:80")
-    self.assertRaises(ValueError, exit_policies.add, "accept 255:80")
-    self.assertRaises(ValueError, exit_policies.add, "accept -:80")
-    self.assertRaises(ValueError, exit_policies.add, "accept :80")
-    self.assertRaises(ValueError, exit_policies.add, "accept ...:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept 256.255.255.255:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept -10.255.255.255:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept 255.-10.255.255:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept 255.255.-10.255:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept -255.255.255.-10:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept a.b.c.d:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept 255.255.255:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept -255.255:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept 255:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept -:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept :80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept ...:80")
     
     # check input string
-    self.assertRaises(ValueError, exit_policies.add, "foo 255.255.255.255:80")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "foo 255.255.255.255:80")
     
     # check ports
-    self.assertRaises(ValueError, exit_policies.add, "accept *:0001")
-    self.assertRaises(ValueError, exit_policies.add, "accept *:-1")
-    self.assertRaises(ValueError, exit_policies.add, "accept *:+1")
-    self.assertRaises(ValueError, exit_policies.add, "accept *:+1-1")
-    self.assertRaises(ValueError, exit_policies.add, "accept *:a")
-    self.assertRaises(ValueError, exit_policies.add, "accept *:70000")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:0001")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:-1")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:+1")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:+1-1")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:a")
+    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:70000")
     
-  def test_check(self):
+  def test_can_exit_to(self):
     """
     Tests if exiting to this ip is allowed.
     """
     
-    exit_policies = stem.exit_policy.ExitPolicy()
-    exit_policies = stem.exit_policy.ExitPolicy()
-    exit_policies.add("accept *:80")
-    exit_policies.add("accept *:443")
-    exit_policies.add("reject *:*")
+    exit_policies = stem.exit_policy.ExitPolicy("accept *:80", "accept *:443", "reject *:*")
     
-    self.assertTrue(exit_policies.check("192.168.0.50", 80))
-    self.assertTrue(exit_policies.check("192.168.0.50", 443))
+    self.assertTrue(exit_policies.can_exit_to("192.168.0.50", 80))
+    self.assertTrue(exit_policies.can_exit_to("192.168.0.50", 443))
     
-    self.assertFalse(exit_policies.check("192.168.0.50", 22))
-    self.assertFalse(exit_policies.check("192.168.0.50", 8118))
+    self.assertFalse(exit_policies.can_exit_to("192.168.0.50", 22))
+    self.assertFalse(exit_policies.can_exit_to("192.168.0.50", 8118))
     
   def test_is_exiting_allowed(self):
     """
     Tests if this is an exit node
     """
     
-    exit_policies = stem.exit_policy.ExitPolicy()
-    exit_policies = stem.exit_policy.ExitPolicy()
-    exit_policies.add("accept *:80")
-    exit_policies.add("accept *:443")
-    exit_policies.add("reject *:*")
+    exit_policies = stem.exit_policy.ExitPolicy("accept *:80", "accept *:443", "reject *:*")
     
     self.assertTrue(exit_policies.is_exiting_allowed())
     
-    exit_policies = stem.exit_policy.ExitPolicy()
-    exit_policies = stem.exit_policy.ExitPolicy()
-    exit_policies.add("reject *:*")
+    exit_policies = stem.exit_policy.ExitPolicy("reject *:*")
     
     self.assertFalse(exit_policies.is_exiting_allowed())
     

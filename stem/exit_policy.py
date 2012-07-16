@@ -4,40 +4,37 @@ exiting to a destination is permissable or not. For instance...
 
 ::
 
-  >>> exit_policies = stem.exit_policy.ExitPolicy()
-  >>> exit_policies.add("accept *:80")
-  >>> exit_policies.add("accept *:443")
-  >>> exit_policies.add("reject *:*")
-  >>> print exit_policies
-  accept *:80 , accept *:443, reject *:*
-  >>> print exit_policies.get_summary()
+  >>> policy = stem.exit_policy.ExitPolicy("accept *:80", "accept *:443", "reject *:*")
+  >>> print policy
+  accept *:80, accept *:443, reject *:*
+  >>> print policy.summary()
   accept 80, 443
-  >>> exit_policies.check("www.google.com", 80)
+  >>> policy.can_exit_to("75.119.206.243", 80)
   True
   
-  >>> microdesc_exit_policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")
-  >>> print microdesc_exit_policy
+  >>> policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")
+  >>> print policy
   accept 80,443
-  >>> microdesc_exit_policy.check("www.google.com", 80)
+  >>> policy.check("www.google.com", 80)
   True
-  >>> microdesc_exit_policy.check(80)
+  >>> policy.check(80)
   True
 
 ::
 
-  ExitPolicyRule - Single rule of an exit policy
-    |- is_address_wildcard - checks if we'll accept any address for our type
+  ExitPolicy - Exit policy for a Tor relay
+    |- set_default_allowed - sets the default can_exit_to() response if no rules apply
+    |- can_exit_to - check if exiting to this destination is allowed or not
+    |- is_exiting_allowed - check if any exiting is allowed
+    |- summary - provides a short label, similar to a microdescriptor
+    |- __str__  - string representation
+    +- __iter__ - ExitPolicyRule entries that this contains
+
+  ExitPolicyRule - Single rule of an exit policy chain
+    |- is_address_wildcard - checks if we'll accept any address
     |- is_port_wildcard - checks if we'll accept any port
     |- is_match - checks if we match a given destination
     +- __str__ - string representation for this rule
-
-  ExitPolicy - List of ExitPolicyLine objects
-    |- __str__  - string representation
-    |- __iter__ - ExitPolicyLine entries for the exit policy
-    |- check    - check if exiting to this ip is allowed
-    |- add      - add new rule to the exit policy
-    |- get_summary - provides a summary description of the policy chain
-    +- is_exiting_allowed - check if exit node
 
   MicrodescriptorExitPolicy - Microdescriptor exit policy
     |- check - check if exiting to this port is allowed
@@ -50,10 +47,6 @@ import stem.util.connection
 import stem.util.enum
 
 AddressType = stem.util.enum.Enum(("WILDCARD", "Wildcard"), ("IPv4", "IPv4"), ("IPv6", "IPv6"))
-
-# ip address ranges substituted by the 'private' keyword
-PRIVATE_IP_RANGES = ("0.0.0.0/8", "169.254.0.0/16", "127.0.0.0/8",
-                     "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12")
 
 # TODO: The ExitPolicyRule's exitpatterns are used everywhere except the torrc.
 # This is fine for now, but we should add a subclass to handle those slight
@@ -73,6 +66,158 @@ PRIVATE_IP_RANGES = ("0.0.0.0/8", "169.254.0.0/16", "127.0.0.0/8",
 # reflects something they... well, can't modify). However, I can think of
 # some use cases where we might want to construct custom policies. Mabye make
 # it a CustomExitPolicyRule subclass?
+
+class ExitPolicy(object):
+  """
+  Policy for the destinations that a relay allows or denies exiting to. This
+  is, in effect, simply a list of ExitPolicyRule entries.
+  
+  :param list rules: str or ExitPolicyRule entries that make up this policy
+  """
+  
+  def __init__(self, *rules):
+    self._rules = []
+    
+    for rule in rules:
+      if isinstance(rule, str):
+        self._rules.append(ExitPolicyRule(rule.strip()))
+      elif isinstance(rule, ExitPolicyRule):
+        self._rules.append(rule)
+      else:
+        raise TypeError("Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)" % (type(rule), rules))
+    
+    self._is_allowed_default = True
+    self._summary_representation = None
+  
+  def set_default_allowed(self, is_allowed_default):
+    """
+    Generally policies end with either an 'reject *:*' or 'accept *:*' policy,
+    but if it doesn't then is_allowed_default will determine the default
+    response for our :meth:`~stem.exit_policy.ExitPolicy.can_exit_to` method.
+    This defaults to True because, according to the dir-spec, this is Tor's
+    default...
+    
+    ::
+    
+      The rules are considered in order; if no rule matches, the address will
+      be accepted. For clarity, the last such entry SHOULD be accept *:* or
+      reject *:*.
+    
+    :param bool is_allowed_default: :meth:`~stem.exit_policy.ExitPolicy.can_exit_to` default when no rules apply
+    """
+    
+    self._is_allowed_default = is_allowed_default
+  
+  def can_exit_to(self, address = None, port = None):
+    """
+    Checks if this policy allows exiting to a given destination or not. If the
+    address or port is omitted then this will check if we allow for its
+    wildcard.
+    
+    :param str address: IPv4 or IPv6 address (with or without brackets)
+    :param int port: port number
+    
+    :returns: True if exiting to this destination is allowed, False otherwise
+    """
+    
+    for rule in self._rules:
+      if rule.is_match(address, port):
+        return rule.is_accept
+    
+    return self._is_allowed_default
+  
+  def is_exiting_allowed(self):
+    """
+    Provides True if the policy allows exiting whatsoever, False otherwise.
+    """
+    
+    for rule in self._rules:
+      if rule.is_accept:
+        return True
+      elif rule.is_address_wildcard() and rule.is_port_wildcard():
+        return False
+    
+    return self._is_allowed_default
+  
+  def summary(self):
+    """
+    Provides a short description of our policy chain, similar to a
+    microdescriptor. This excludes entries that don't cover all IP
+    addresses, and is either whitelist or blacklist policy based on
+    the final entry. For instance...
+    
+    ::
+    
+      >>> policy = ExitPolicy.from_str("accept *:80, accept *:443, reject *:*")
+      >>> policy.summary()
+      "accept 80, 443"
+    
+    :returns: str with a concise summary for our policy
+    """
+    
+    if self._summary_representation is None:
+      # determines if we're a whitelist or blacklist
+      is_whitelist = not self._is_allowed_default
+      
+      for rule in self._rules:
+        if rule.is_address_wildcard() and rule.is_port_wildcard():
+          is_whitelist = not rule.is_accept
+          break
+      
+      # Iterates over the policys and adds the the ports we'll return (ie, allows
+      # if a whitelist and rejects if a blacklist). Regardless of a port's
+      # allow/reject policy, all further entries with that port are ignored since
+      # policies respect the first matching policy.
+      
+      display_ports, skip_ports = [], []
+      
+      for rule in self._rules:
+        if not rule.is_address_wildcard(): continue
+        
+        for port in xrange(rule.min_port, rule.max_port + 1):
+          if port in skip_ports: continue
+          
+          # if accept + whitelist or reject + blacklist then add
+          if policy.is_accept == is_whitelist:
+            display_ports.append(port)
+          
+          # all further entries with this port should be ignored
+          skip_ports.append(port)
+      
+      # convert port list to a list of ranges (ie, ['1-3'] rather than [1, 2, 3])
+      if display_ports:
+        display_ranges, temp_range = [], []
+        display_ports.sort()
+        display_ports.append(None) # ending item to include last range in loop
+        
+        for port in display_ports:
+          if not temp_range or temp_range[-1] + 1 == port:
+            temp_range.append(port)
+          else:
+            if len(temp_range) > 1:
+              display_ranges.append("%i-%i" % (temp_range[0], temp_range[-1]))
+            else:
+              display_ranges.append(str(temp_range[0]))
+              
+            temp_range = [port]
+      else:
+        # everything for the inverse
+        is_whitelist = not is_whitelist
+        display_ranges = ["1-65535"]
+      
+      # constructs the summary string
+      label_prefix = "accept " if is_whitelist else "reject "
+      
+      self._summary_representation = (label_prefix + ", ".join(display_ranges)).strip()
+    
+    return self._summary_representation
+  
+  def __iter__(self):
+    for rule in self._rules:
+      yield rule
+  
+  def __str__(self):
+    return ', '.join([str(rule) for rule in self._rules])
 
 class ExitPolicyRule(object):
   """
@@ -140,7 +285,7 @@ class ExitPolicyRule(object):
     # address. These are used by our is_match() method to compare ourselves to
     # other addresses.
     
-    if self.address_type == AddressType.WILDCARD:
+    if self.is_address_wildcard():
       # is_match() will short circuit so these are unused
       self._mask_bin = self._addr_bin = None
     else:
@@ -151,12 +296,15 @@ class ExitPolicyRule(object):
   
   def is_address_wildcard(self):
     """
-    True if we'll match against any address for our type, False otherwise.
+    True if we'll match against any address, False otherwise. Note that this
+    may be different from matching against a /0 because policies can contain
+    both IPv4 and IPv6 addresses (so 0.0.0.0/0 won't match against an IPv6
+    address).
     
     :returns: bool for if our address matching is a wildcard
     """
     
-    return self.address_type == AddressType.WILDCARD or self.masked_bits == 0
+    return self.address_type == AddressType.WILDCARD
   
   def is_port_wildcard(self):
     """
@@ -194,23 +342,17 @@ class ExitPolicyRule(object):
     if port != None and not stem.util.connection.is_valid_port(port):
       raise ValueError("'%s' isn't a valid port" % port)
     
-    if address is None:
-      # Note that this isn't the exact same as is_address_wildcard(). We only
-      # accept a None address if we got an '*' for our address. Not an IPv4 or
-      # IPv6 address that accepts everything (ex '0.0.0.0/0'). This is because
-      # those still only match against that type (ie, an IPv4 /0 won't match
-      # against IPv6 addresses).
-      
-      if self.address_type != AddressType.WILDCARD:
-        return False
-    elif not self.is_address_wildcard():
+    if not self.is_address_wildcard():
       # Already got the integer representation of our mask and our address
       # with the mask applied. Just need to check if this address with the
       # mask applied matches.
       
-      comparison_addr_bin = int(stem.util.connection.get_address_binary(address), 2)
-      comparison_addr_bin &= self._mask_bin
-      if self._addr_bin != comparison_addr_bin: return False
+      if address is None:
+        return False
+      else:
+        comparison_addr_bin = int(stem.util.connection.get_address_binary(address), 2)
+        comparison_addr_bin &= self._mask_bin
+        if self._addr_bin != comparison_addr_bin: return False
     
     if not self.is_port_wildcard():
       if port is None:
@@ -232,7 +374,7 @@ class ExitPolicyRule(object):
     if self._str_representation is None:
       label = "accept " if self.is_accept else "reject "
       
-      if self.address_type == AddressType.WILDCARD:
+      if self.is_address_wildcard():
         label += "*:"
       else:
         if self.address_type == AddressType.IPv4:
@@ -353,130 +495,6 @@ class ExitPolicyRule(object):
     else:
       raise ValueError("Port value isn't a wildcard, integer, or range: %s" % self.rule)
 
-class ExitPolicy(object):
-  """
-  Policy for the destinations that a relay allows or denies exiting to. This
-  is, in effect, simply a list of ExitPolicyRule entries.
-  """
-  
-  def __init__(self):
-    self._policies = []
-    self.summary = ""
-
-  def add(self, rule_entry):
-    """
-    This method is used to add an Exit Policy rule to the list of policies.
-        
-    Arguments:
-    rule_entry (str) - exit policy rule in the format "accept|reject ADDR[/MASK][:PORT]"
-                       ex - "accept 18.7.22.69:*"
-    """
-        # checks for the private alias (which expands this to a chain of entries)
-    if "private" in rule_entry.lower():
-      for addr in PRIVATE_IP_RANGES:
-        new_entry = rule_entry.replace("private", addr)
-        self._policies.append(ExitPolicyRule(new_entry))
-    else:
-      self._policies.append(ExitPolicyRule(rule_entry))
-
-  def get_summary(self):
-    """
-    Provides a summary description of the policy chain similar to the
-    consensus. This excludes entries that don't cover all ips, and is either
-    a whitelist or blacklist policy based on the final entry. 
-    """
-    
-    # determines if we're a whitelist or blacklist
-    is_whitelist = False # default in case we don't have a catch-all policy at the end
-    
-    for policy in self._policies:
-      if policy.is_address_wildcard() and policy.is_port_wildcard():
-        is_whitelist = not policy.is_accept
-        break
-      
-    # Iterates over the policys and adds the the ports we'll return (ie, allows
-    # if a whitelist and rejects if a blacklist). Regardless of a port's
-    # allow/reject policy, all further entries with that port are ignored since
-    # policies respect the first matching policy.
-    
-    display_ports, skip_ports = [], []
-    
-    for policy in self._policies:
-      if not policy.is_address_wildcard(): continue
-      
-      if policy.min_port == policy.max_port:
-        port_range = [policy.min_port]
-      else:
-        port_range = range(policy.min_port, policy.max_port + 1)
-        
-      for port in port_range:
-        if port in skip_ports: continue
-        
-        # if accept + whitelist or reject + blacklist then add
-        if policy.is_accept == is_whitelist:
-          display_ports.append(port)
-          
-        # all further entries with this port are to be ignored
-        skip_ports.append(port)
-        
-    # gets a list of the port ranges
-    if display_ports:
-      display_ranges, temp_range = [], []
-      display_ports.sort()
-      display_ports.append(None) # ending item to include last range in loop
-      
-      for port in display_ports:
-        if not temp_range or temp_range[-1] + 1 == port:
-          temp_range.append(port)
-        else:
-          if len(temp_range) > 1:
-            display_ranges.append("%i-%i" % (temp_range[0], temp_range[-1]))
-          else:
-            display_ranges.append(str(temp_range[0]))
-            
-          temp_range = [port]
-    else:
-      # everything for the inverse
-      is_whitelist = not is_whitelist
-      display_ranges = ["1-65535"]
-      
-    # constructs the summary string
-    label_prefix = "accept " if is_whitelist else "reject "
-    
-    self.summary = (label_prefix + ", ".join(display_ranges)).strip()
-    
-  def is_exiting_allowed(self):
-    """
-    Provides true if the policy allows exiting whatsoever, false otherwise.
-    """
-    for policy in self._policies:
-      if policy.is_accept: return True
-      elif policy.is_address_wildcard() and policy.is_port_wildcard(): return False
-    
-  def check(self, ip_address, port):
-    """
-    Checks if the rule chain allows exiting to this address, returning true if
-    so and false otherwise.
-    """
-    
-    for policy in self._policies:
-      if policy.is_match(ip_address, port):
-        return policy.is_accept
-        
-    return False
-    
-  def __iter__(self):
-    """
-    Provides an ordered listing of policies in this Exit Policy
-    """
-    for policy in self._policies:
-      yield policy
-    
-  def __str__(self):
-    """
-    Provides the string used to construct the Exit Policy      
-    """
-    return ', '.join([str(policy) for policy in self._policies])
   
 class MicrodescriptorExitPolicy:
   """

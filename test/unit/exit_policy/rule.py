@@ -70,10 +70,10 @@ class TestExitPolicyRule(unittest.TestCase):
       "accept 192.168.0.1:*": (False, True),
       "accept 192.168.0.1:80": (False, False),
       
-      "reject 127.0.0.1/0:*": (True, True),
+      "reject 127.0.0.1/0:*": (False, True),
       "reject 127.0.0.1/16:*": (False, True),
       "reject 127.0.0.1/32:*": (False, True),
-      "reject [0000:0000:0000:0000:0000:0000:0000:0000]/0:80": (True, False),
+      "reject [0000:0000:0000:0000:0000:0000:0000:0000]/0:80": (False, False),
       "reject [0000:0000:0000:0000:0000:0000:0000:0000]/64:80": (False, False),
       "reject [0000:0000:0000:0000:0000:0000:0000:0000]/128:80": (False, False),
       
