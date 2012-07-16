@@ -218,6 +218,12 @@ class ExitPolicy(object):
   
   def __str__(self):
     return ', '.join([str(rule) for rule in self._rules])
+  
+  def __eq__(self, other):
+    if isinstance(other, ExitPolicy):
+      return self._rules == list(other)
+    else:
+      return False
 
 class ExitPolicyRule(object):
   """
@@ -494,7 +500,17 @@ class ExitPolicyRule(object):
         raise ValueError("Malformed port range: %s" % self.rule)
     else:
       raise ValueError("Port value isn't a wildcard, integer, or range: %s" % self.rule)
-
+  
+  def __eq__(self, other):
+    if isinstance(other, ExitPolicyRule):
+      # Our string representation encompasses our effective policy. Technically
+      # this isn't quite right since our rule attribute may differ (ie, "accept
+      # 0.0.0.0/0" == "accept 0.0.0.0/0.0.0.0" will be True), but these
+      # policies are effectively equivilant.
+      
+      return str(self) == str(other)
+    else:
+      return False
   
 class MicrodescriptorExitPolicy:
   """

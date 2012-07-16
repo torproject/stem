@@ -1,14 +1,31 @@
 """
-Unit tests for the stem.exit_policy.ExitPolicy parsing and class.
+Unit tests for the stem.exit_policy.ExitPolicy class.
 """
 
 import unittest
 import stem.exit_policy
 import stem.util.system
+from stem.exit_policy import ExitPolicy, ExitPolicyRule
 
 import test.mocking as mocking
 
 class TestExitPolicy(unittest.TestCase):
+  def test_constructor(self):
+    # The ExitPolicy constructor takes a series of string or ExitPolicyRule
+    # entries. Extra whitespace is ignored to make csvs easier to handle.
+    
+    expected_policy = ExitPolicy(
+      ExitPolicyRule('accept *:80'),
+      ExitPolicyRule('accept *:443'),
+      ExitPolicyRule('reject *:*'),
+    )
+    
+    policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
+    self.assertEquals(expected_policy, policy)
+    
+    policy = ExitPolicy(*"accept *:80, accept *:443, reject *:*".split(","))
+    self.assertEquals(expected_policy, policy)
+  
   def test_parsing(self):
     """
     Tests parsing by the ExitPolicy class constructor.
