@@ -50,7 +50,8 @@ def no_op():
   return _no_op
 
 def return_value(value):
-  def _return_value(*args): return value
+  def _return_value(*args, **kwargs):
+    return value
   return _return_value
 
 def return_true(): return return_value(True)

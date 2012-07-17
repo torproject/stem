@@ -50,6 +50,8 @@ import test.integ.util.proc
 import test.integ.util.system
 import test.integ.process
 import test.integ.version
+#TODO move this by other descriptor tests
+import test.unit.descriptor.export
 
 import stem.prereq
 import stem.util.conf
@@ -121,7 +123,9 @@ UNIT_TESTS = (
   test.unit.response.protocolinfo.TestProtocolInfoResponse,
   test.unit.response.authchallenge.TestAuthChallengeResponse,
   test.unit.connection.authentication.TestAuthenticate,
+  test.unit.descriptor.export.TestExport,
 )
+#  TODO move export test to proper location
 
 INTEG_TESTS = (
   test.integ.util.conf.TestConf,
