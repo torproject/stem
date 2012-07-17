@@ -89,41 +89,6 @@ class TestExitPolicy(unittest.TestCase):
       self.assertEquals(expected_result, policy.is_exiting_allowed())
   
   
-  def test_parsing(self):
-    """
-    Tests parsing by the ExitPolicy class constructor.
-    """
-    
-    exit_policies = stem.exit_policy.ExitPolicy("accept *:80", "accept *:443", "reject *:*")
-    self.assertEqual(str(exit_policies), "accept *:80, accept *:443, reject *:*")
-    
-    exit_policies = stem.exit_policy.ExitPolicy()
-    
-    # check ip address
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept 256.255.255.255:80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept -10.255.255.255:80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept 255.-10.255.255:80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept 255.255.-10.255:80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept -255.255.255.-10:80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept a.b.c.d:80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept 255.255.255:80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept -255.255:80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept 255:80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept -:80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept :80")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept ...:80")
-    
-    # check input string
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "foo 255.255.255.255:80")
-    
-    # check ports
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:0001")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:-1")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:+1")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:+1-1")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:a")
-    self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:70000")
-    
   def test_microdesc_exit_parsing(self):
     microdesc_exit_policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")
     
