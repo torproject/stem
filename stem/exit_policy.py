@@ -148,9 +148,13 @@ class ExitPolicy(object):
     
     ::
     
-      >>> policy = ExitPolicy.from_str("accept *:80, accept *:443, reject *:*")
+      >>> policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
       >>> policy.summary()
       "accept 80, 443"
+      
+      >>> policy = ExitPolicy('accept *:443', 'reject *:1-1024', 'accept *:*')
+      >>> policy.summary()
+      "reject 1-442, 444-1024"
     
     :returns: str with a concise summary for our policy
     """
