@@ -102,7 +102,27 @@ class TestExitPolicy(unittest.TestCase):
     
     policy = ExitPolicy('reject *:80-65535', 'accept *:1-65533', 'reject *:*')
     self.assertEquals("accept 1-79", policy.summary())
+  
+  def test_str(self):
+    # sanity test for our __str__ method
     
+    policy = ExitPolicy('  accept *:80\n', '\taccept *:443')
+    self.assertEquals("accept *:80, accept *:443", str(policy))
+    
+    policy = ExitPolicy('reject 0.0.0.0/255.255.255.0:*', 'accept *:*')
+    self.assertEquals("reject 0.0.0.0/24:*, accept *:*", str(policy))
+  
+  def test_iter(self):
+    # sanity test for our __iter__ method
+    
+    rules = [
+      ExitPolicyRule('accept *:80'),
+      ExitPolicyRule('accept *:443'),
+      ExitPolicyRule('reject *:*'),
+    ]
+    
+    self.assertEquals(rules, list(ExitPolicy(*rules)))
+    self.assertEquals(rules, list(ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')))
   
   
   def test_microdesc_exit_parsing(self):
