@@ -179,16 +179,7 @@ class ExitPolicy(object):
       # port's allow/reject policy, all further entries with that port are
       # ignored since policies respect the first matching policy.
       
-      # TODO: The following will be prohibitively expensive if someome has
-      # policy entries that aren't a wildcard, but covers most ports. For
-      # instance...
-      #
-      #   accept 1025-65535 # just accepts non-privilaged ports
-      #
-      # On one hand handling ranges is a pita, but on the other this
-      # implementation is naive. Patches welcome.
-      
-      display_ports, skip_ports = [], []
+      display_ports, skip_ports = [], set()
       
       for rule in self._rules:
         if not rule.is_address_wildcard(): continue
@@ -202,7 +193,7 @@ class ExitPolicy(object):
             display_ports.append(port)
           
           # all further entries with this port should be ignored
-          skip_ports.append(port)
+          skip_ports.add(port)
       
       # convert port list to a list of ranges (ie, ['1-3'] rather than [1, 2, 3])
       if display_ports:

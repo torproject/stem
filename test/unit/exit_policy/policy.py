@@ -88,6 +88,22 @@ class TestExitPolicy(unittest.TestCase):
       policy = ExitPolicy(*rules)
       self.assertEquals(expected_result, policy.is_exiting_allowed())
   
+  def test_summary_examples(self):
+    # checks the summary() method's pydoc examples
+    
+    policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
+    self.assertEquals("accept 80, 443", policy.summary())
+    
+    policy = ExitPolicy('accept *:443', 'reject *:1-1024', 'accept *:*')
+    self.assertEquals("reject 1-442, 444-1024", policy.summary())
+  
+  def test_summary_large_ranges(self):
+    # checks the summary() method when the policy includes very large port ranges
+    
+    policy = ExitPolicy('reject *:80-65535', 'accept *:1-65533', 'reject *:*')
+    self.assertEquals("accept 1-79", policy.summary())
+    
+  
   
   def test_microdesc_exit_parsing(self):
     microdesc_exit_policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")
