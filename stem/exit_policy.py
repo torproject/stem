@@ -168,21 +168,31 @@ class ExitPolicy(object):
           is_whitelist = not rule.is_accept
           break
       
-      # Iterates over the policys and adds the the ports we'll return (ie, allows
-      # if a whitelist and rejects if a blacklist). Regardless of a port's
-      # allow/reject policy, all further entries with that port are ignored since
-      # policies respect the first matching policy.
+      # Iterates over the policys and adds the the ports we'll return (ie,
+      # allows if a whitelist and rejects if a blacklist). Regardless of a
+      # port's allow/reject policy, all further entries with that port are
+      # ignored since policies respect the first matching policy.
+      
+      # TODO: The following will be prohibitively expensive if someome has
+      # policy entries that aren't a wildcard, but covers most ports. For
+      # instance...
+      #
+      #   accept 1025-65535 # just accepts non-privilaged ports
+      #
+      # On one hand handling ranges is a pita, but on the other this
+      # implementation is naive. Patches welcome.
       
       display_ports, skip_ports = [], []
       
       for rule in self._rules:
         if not rule.is_address_wildcard(): continue
+        elif rule.is_port_wildcard(): break
         
         for port in xrange(rule.min_port, rule.max_port + 1):
           if port in skip_ports: continue
           
           # if accept + whitelist or reject + blacklist then add
-          if policy.is_accept == is_whitelist:
+          if rule.is_accept == is_whitelist:
             display_ports.append(port)
           
           # all further entries with this port should be ignored

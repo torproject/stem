@@ -10,6 +10,15 @@ from stem.exit_policy import ExitPolicy, ExitPolicyRule
 import test.mocking as mocking
 
 class TestExitPolicy(unittest.TestCase):
+  def test_example(self):
+    # tests the ExitPolicy and MicrodescriptorExitPolicy pydoc examples
+    policy = ExitPolicy("accept *:80", "accept *:443", "reject *:*")
+    self.assertEquals("accept *:80, accept *:443, reject *:*", str(policy))
+    self.assertEquals("accept 80, 443", policy.summary())
+    self.assertTrue(policy.can_exit_to("75.119.206.243", 80))
+    
+    # TODO: add MicrodescriptorExitPolicy after it has been revised
+  
   def test_constructor(self):
     # The ExitPolicy constructor takes a series of string or ExitPolicyRule
     # entries. Extra whitespace is ignored to make csvs easier to handle.
