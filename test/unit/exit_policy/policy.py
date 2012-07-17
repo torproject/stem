@@ -57,6 +57,37 @@ class TestExitPolicy(unittest.TestCase):
     policy.set_default_allowed(False)
     self.assertFalse(policy.is_exiting_allowed())
   
+  def test_can_exit_to(self):
+    # Basic sanity test for our can_exit_to() method. Most of the interesting
+    # use cases (ip masks, wildcards, etc) are covered by the ExitPolicyRule
+    # tests.
+    
+    policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
+    
+    for i in xrange(1, 500):
+      ip_addr = "%i.%i.%i.%i" % (i / 2, i / 2, i / 2, i / 2)
+      expected_result = i in (80, 443)
+      
+      self.assertEquals(expected_result, policy.can_exit_to(ip_addr, i))
+      self.assertEquals(expected_result, policy.can_exit_to(port = i))
+  
+  def test_is_exiting_allowed(self):
+    test_inputs = {
+      (): True,
+      ('accept *:*', ): True,
+      ('reject *:*', ): False,
+      ('accept *:80', 'reject *:*'): True,
+      ('reject *:80', 'accept *:80', 'reject *:*'): False,
+      ('reject *:50-90', 'accept *:80', 'reject *:*'): False,
+      ('reject *:2-65535', 'accept *:80-65535', 'reject *:*'): False,
+      ('reject *:2-65535', 'accept 127.0.0.0:1', 'reject *:*'): True,
+      ('reject 127.0.0.1:*', 'accept *:80', 'reject *:*'): True,
+    }
+    
+    for rules, expected_result in test_inputs.items():
+      policy = ExitPolicy(*rules)
+      self.assertEquals(expected_result, policy.is_exiting_allowed())
+  
   
   def test_parsing(self):
     """
@@ -92,32 +123,6 @@ class TestExitPolicy(unittest.TestCase):
     self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:+1-1")
     self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:a")
     self.assertRaises(ValueError, stem.exit_policy.ExitPolicy, "accept *:70000")
-    
-  def test_can_exit_to(self):
-    """
-    Tests if exiting to this ip is allowed.
-    """
-    
-    exit_policies = stem.exit_policy.ExitPolicy("accept *:80", "accept *:443", "reject *:*")
-    
-    self.assertTrue(exit_policies.can_exit_to("192.168.0.50", 80))
-    self.assertTrue(exit_policies.can_exit_to("192.168.0.50", 443))
-    
-    self.assertFalse(exit_policies.can_exit_to("192.168.0.50", 22))
-    self.assertFalse(exit_policies.can_exit_to("192.168.0.50", 8118))
-    
-  def test_is_exiting_allowed(self):
-    """
-    Tests if this is an exit node
-    """
-    
-    exit_policies = stem.exit_policy.ExitPolicy("accept *:80", "accept *:443", "reject *:*")
-    
-    self.assertTrue(exit_policies.is_exiting_allowed())
-    
-    exit_policies = stem.exit_policy.ExitPolicy("reject *:*")
-    
-    self.assertFalse(exit_policies.is_exiting_allowed())
     
   def test_microdesc_exit_parsing(self):
     microdesc_exit_policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")

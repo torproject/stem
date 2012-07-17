@@ -131,11 +131,17 @@ class ExitPolicy(object):
     Provides True if the policy allows exiting whatsoever, False otherwise.
     """
     
+    rejected_ports = set()
     for rule in self._rules:
       if rule.is_accept:
-        return True
-      elif rule.is_address_wildcard() and rule.is_port_wildcard():
-        return False
+        for port in xrange(rule.min_port, rule.max_port + 1):
+          if not port in rejected_ports:
+            return True
+      elif rule.is_address_wildcard():
+        if rule.is_port_wildcard():
+          return False
+        else:
+          rejected_ports.update(range(rule.min_port, rule.max_port + 1))
     
     return self._is_allowed_default
   
