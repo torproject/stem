@@ -5,7 +5,9 @@ Unit tests for the stem.exit_policy.ExitPolicy class.
 import unittest
 import stem.exit_policy
 import stem.util.system
-from stem.exit_policy import ExitPolicy, ExitPolicyRule
+from stem.exit_policy import ExitPolicy, \
+                             MicrodescriptorExitPolicy, \
+                             ExitPolicyRule
 
 import test.mocking as mocking
 
@@ -17,7 +19,8 @@ class TestExitPolicy(unittest.TestCase):
     self.assertEquals("accept 80, 443", policy.summary())
     self.assertTrue(policy.can_exit_to("75.119.206.243", 80))
     
-    # TODO: add MicrodescriptorExitPolicy after it has been revised
+    policy = MicrodescriptorExitPolicy("accept 80,443")
+    self.assertTrue(policy.can_exit_to("75.119.206.243", 80))
   
   def test_constructor(self):
     # The ExitPolicy constructor takes a series of string or ExitPolicyRule
@@ -124,25 +127,71 @@ class TestExitPolicy(unittest.TestCase):
     self.assertEquals(rules, list(ExitPolicy(*rules)))
     self.assertEquals(rules, list(ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')))
   
+  def test_microdescriptor_parsing(self):
+    # mapping between inputs and if they should succeed or not
+    test_inputs = {
+      'accept 80': True,
+      'accept 80,443': True,
+      '': False,
+      'accept': False,
+      'accept ': False,
+      'accept\t80,443': False,
+      'accept 80, 443': False,
+      'accept 80,\t443': False,
+      '80,443': False,
+      'accept 80,-443': False,
+      'accept 80,+443': False,
+      'accept 80,66666': False,
+      'reject 80,foo': False,
+      'bar 80,443': False,
+    }
+    
+    for policy_arg, expect_success in test_inputs.items():
+      try:
+        policy = MicrodescriptorExitPolicy(policy_arg)
+        
+        if expect_success:
+          self.assertEqual(policy_arg, str(policy))
+        else:
+          self.fail()
+      except ValueError:
+        if expect_success: self.fail()
   
-  def test_microdesc_exit_parsing(self):
-    microdesc_exit_policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")
+  def test_microdescriptor_attributes(self):
+    # checks that its is_accept and ports attributes are properly set
     
-    self.assertEqual(str(microdesc_exit_policy),"accept 80,443")
+    # single port
+    policy = MicrodescriptorExitPolicy('accept 443')
+    self.assertTrue(policy.is_accept)
+    self.assertEquals(set([443]), policy.ports)
     
-    self.assertRaises(ValueError, stem.exit_policy.MicrodescriptorExitPolicy, "accept 80,-443")
-    self.assertRaises(ValueError, stem.exit_policy.MicrodescriptorExitPolicy, "accept 80,+443")
-    self.assertRaises(ValueError, stem.exit_policy.MicrodescriptorExitPolicy, "accept 80,66666")
-    self.assertRaises(ValueError, stem.exit_policy.MicrodescriptorExitPolicy, "reject 80,foo")
-    self.assertRaises(ValueError, stem.exit_policy.MicrodescriptorExitPolicy, "bar 80,foo")
-    self.assertRaises(ValueError, stem.exit_policy.MicrodescriptorExitPolicy, "foo")
-    self.assertRaises(ValueError, stem.exit_policy.MicrodescriptorExitPolicy, "bar 80-foo")
+    # multiple ports
+    policy = MicrodescriptorExitPolicy('accept 80,443')
+    self.assertTrue(policy.is_accept)
+    self.assertEquals(set([80, 443]), policy.ports)
     
-  def test_micodesc_exit_check(self):
-    microdesc_exit_policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")
+    # port range
+    policy = MicrodescriptorExitPolicy('reject 1-1024')
+    self.assertFalse(policy.is_accept)
+    self.assertEquals(set(range(1, 1025)), policy.ports)
+  
+  def test_microdescriptor_can_exit_to(self):
+    test_inputs = {
+      'accept 443': {442: False, 443: True, 444: False},
+      'reject 443': {442: True, 443: False, 444: True},
+      'accept 80,443': {80: True, 443: True, 10: False},
+      'reject 1-1024': {1: False, 1024: False, 1025: True},
+    }
     
-    self.assertTrue(microdesc_exit_policy.check(80))
-    self.assertTrue(microdesc_exit_policy.check("www.atagar.com", 443))
+    for policy_arg, attr in test_inputs.items():
+      policy = MicrodescriptorExitPolicy(policy_arg)
+      
+      for port, expected_value in attr.items():
+        self.assertEqual(expected_value, policy.can_exit_to(port = port))
     
-    self.assertFalse(microdesc_exit_policy.check(22))
-    self.assertFalse(microdesc_exit_policy.check("www.atagar.com", 8118))
+    # address argument should be ignored
+    policy = MicrodescriptorExitPolicy('accept 80,443')
+    
+    self.assertFalse(policy.can_exit_to('blah', 79))
+    self.assertTrue(policy.can_exit_to('blah', 80))
+

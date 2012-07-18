@@ -15,15 +15,13 @@ exiting to a destination is permissable or not. For instance...
   >>> policy = stem.exit_policy.MicrodescriptorExitPolicy("accept 80,443")
   >>> print policy
   accept 80,443
-  >>> policy.check("www.google.com", 80)
-  True
-  >>> policy.check(80)
+  >>> policy.check("75.119.206.243", 80)
   True
 
 ::
 
   ExitPolicy - Exit policy for a Tor relay
-    |- set_default_allowed - sets the default can_exit_to() response if no rules apply
+    |  + MicrodescriptorExitPolicy - Microdescriptor exit policy
     |- can_exit_to - check if exiting to this destination is allowed or not
     |- is_exiting_allowed - check if any exiting is allowed
     |- summary - provides a short label, similar to a microdescriptor
@@ -35,12 +33,6 @@ exiting to a destination is permissable or not. For instance...
     |- is_port_wildcard - checks if we'll accept any port
     |- is_match - checks if we match a given destination
     +- __str__ - string representation for this rule
-
-  MicrodescriptorExitPolicy - Microdescriptor exit policy
-    |- check - check if exiting to this port is allowed
-    |- ports - returns a list of ports
-    |- is_accept - check if it's a list of accepted/rejected ports
-    +- __str__ - return the summary
 """
 
 import stem.util.connection
@@ -236,6 +228,94 @@ class ExitPolicy(object):
     else:
       return False
 
+class MicrodescriptorExitPolicy(ExitPolicy):
+  """
+  Exit policy provided by the microdescriptors. This is a distilled version of
+  a normal ExitPolicy contains, just consisting of a list of ports that are
+  either accepted or rejected. For instance...
+  
+  ::
+  
+    accept 80,443       # only accepts common http ports
+    reject 1-1024       # only accepts non-privilaged ports
+  
+  Since these policies are a subset of the exit policy information (lacking IP
+  ranges) clients can only use them to guess if a relay will accept traffic or
+  not. To quote the dir-spec (section 3.2.1)...
+  
+  ::
+  
+    With microdescriptors, clients don't learn exact exit policies:
+    clients can only guess whether a relay accepts their request, try the
+    BEGIN request, and might get end-reason-exit-policy if they guessed
+    wrong, in which case they'll have to try elsewhere.
+  
+  :var set ports: ports that this policy includes
+  :var bool is_accept: True if these are ports that we accept, False if they're ports that we reject
+  
+  :param str policy: policy string that describes this policy
+  """
+  
+  def __init__(self, policy):
+    # Microdescriptor policies are of the form...
+    #
+    #   MicrodescriptrPolicy ::= ("accept" / "reject") SP PortList NL
+    #   PortList ::= PortOrRange
+    #   PortList ::= PortList "," PortOrRange
+    #   PortOrRange ::= INT "-" INT / INT
+    
+    self.ports = set()
+    self._policy = policy
+    
+    if policy.startswith("accept"):
+      self.is_accept = True
+    elif policy.startswith("reject"):
+      self.is_accept = False
+    else:
+      raise ValueError("A microdescriptor exit policy must start with either 'accept' or 'reject': %s" % policy)
+    
+    policy = policy[6:]
+    
+    if not policy.startswith(" ") or (len(policy) - 1 != len(policy.lstrip())):
+      raise ValueError("A microdescriptor exit policy should have a space separating accept/reject from its port list: %s" % self._policy)
+    
+    policy = policy[1:]
+    
+    # convert our port list into ExitPolicyRules
+    rules = []
+    rule_format = "accept *:%s" if self.is_accept else "reject *:%s"
+    
+    for port_entry in policy.split(","):
+      rule_str = rule_format % port_entry
+      
+      try:
+        rule = ExitPolicyRule(rule_str)
+        self.ports.update(range(rule.min_port, rule.max_port + 1))
+        rules.append(rule)
+      except ValueError, exc:
+        exc_msg = "Policy '%s' is malformed. %s" % (self._policy, str(exc).replace(rule_str, port_entry))
+        raise ValueError(exc_msg)
+    
+    super(MicrodescriptorExitPolicy, self).__init__(*rules)
+  
+  def can_exit_to(self, address = None, port = None):
+    # we can greatly simplify our check since our policies don't concern
+    # addresses or masks
+    
+    if port in self.ports:
+      return self.is_accept
+    else:
+      return not self.is_accept
+  
+  def __str__(self):
+    return self._policy
+  
+  def __eq__(self, other):
+    if isinstance(other, MicrodescriptorExitPolicy):
+      return str(self) == str(other)
+    else:
+      return False
+
 class ExitPolicyRule(object):
   """
   Single rule from the user's exit policy. These rules are chained together to
@@ -281,7 +361,7 @@ class ExitPolicyRule(object):
     
     exitpattern = rule[6:]
     
-    if not exitpattern.startswith(" ") or (len(exitpattern) - 1 != len(exitpattern.lstrip())) :
+    if not exitpattern.startswith(" ") or (len(exitpattern) - 1 != len(exitpattern.lstrip())):
       raise ValueError("An exit policy should have a space separating its accept/reject from the exit pattern: %s" % rule)
     
     exitpattern = exitpattern[1:]
@@ -522,62 +602,4 @@ class ExitPolicyRule(object):
       return str(self) == str(other)
     else:
       return False
-  
-class MicrodescriptorExitPolicy:
-  """
-  Microdescriptor exit policy -  'accept 53,80,443'
-  """
-
-  def __init__(self, summary):
-    self.ports = []
-    self.is_accept = None
-    self.summary = summary
-    
-    # sanitize the input a bit, cleaning up tabs and stripping quotes
-    summary = self.summary.replace("\\t", " ").replace("\"", "")
-    
-    self.is_accept = summary.startswith("accept")
-    
-    # strips off "accept " or "reject " and extra spaces
-    summary = summary[7:].replace(" ", "")
-    
-    for ports in summary.split(','):
-      if '-' in ports:
-        port_range = ports.split("-", 1)
-        if not stem.util.connection.is_valid_port(port_range):
-          raise ValueError("Invaid port range")
-        self.ports.append(range(int(port_range[2])), int(port_range[1]))
-      if not stem.util.connection.is_valid_port(ports):
-          raise ValueError("Invalid port range")
-      self.ports.append(int(ports))
-      
-  def check(self, ip_address=None, port=None):
-    # stem is intelligent about the arguments
-    if not port:
-      if not '.' in str(ip_address):
-        port = ip_address
-    
-    port = int(port)
-    
-    if port in self.ports:
-      # its a list of accepted ports
-      if self.is_accept:
-        return True
-      else:
-        return False
-    else:
-      # its a list of rejected ports
-      if not self.is_accept:
-        return True
-      else:
-        return False
-    
-  def __str__(self):
-    return self.summary
-
-  def ports(self):
-    return self.ports
-
-  def is_accept(self):
-    return self.is_accept
 
