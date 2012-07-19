@@ -14,6 +14,7 @@ __all__ = [
   "util",
   "connection",
   "control",
+  "exit_policy",
   "prereq",
   "process",
   "socket",
