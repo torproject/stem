@@ -35,6 +35,7 @@ import datetime
 import stem.prereq
 import stem.descriptor
 import stem.descriptor.extrainfo_descriptor
+import stem.exit_policy
 import stem.version
 import stem.util.log as log
 import stem.util.connection
@@ -204,7 +205,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     self.operating_system = None
     self.uptime = None
     self.contact = None
-    self.exit_policy = [] # should be an ExitPolicy instance when we have the class...
+    self.exit_policy = None
     self.family = []
     
     self.average_bandwidth = None
@@ -241,8 +242,10 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     # influences the resulting exit policy, but for everything else the order
     # does not matter so breaking it into key / value pairs.
     
-    entries, first_keyword, last_keyword, self.exit_policy = \
+    entries, first_keyword, last_keyword, policy = \
       stem.descriptor._get_descriptor_components(raw_contents, validate, ("accept", "reject"))
+    
+    self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
     self._parse(entries, validate)
     if validate: self._check_constraints(entries, first_keyword, last_keyword)
   

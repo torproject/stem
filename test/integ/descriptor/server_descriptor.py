@@ -9,6 +9,7 @@ import datetime
 import unittest
 
 import stem.control
+import stem.exit_policy
 import stem.version
 import stem.descriptor.server_descriptor
 import test.runner
@@ -80,7 +81,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(153600, desc.average_bandwidth)
     self.assertEquals(256000, desc.burst_bandwidth)
     self.assertEquals(104590, desc.observed_bandwidth)
-    self.assertEquals(["reject *:*"], desc.exit_policy)
+    self.assertEquals(stem.exit_policy.ExitPolicy("reject *:*"), desc.exit_policy)
     self.assertEquals(expected_onion_key, desc.onion_key)
     self.assertEquals(expected_signing_key, desc.signing_key)
     self.assertEquals(expected_signature, desc.signature)
@@ -211,7 +212,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(81920, desc.average_bandwidth)
     self.assertEquals(102400, desc.burst_bandwidth)
     self.assertEquals(84275, desc.observed_bandwidth)
-    self.assertEquals(["reject *:*"], desc.exit_policy)
+    self.assertEquals(stem.exit_policy.ExitPolicy("reject *:*"), desc.exit_policy)
     self.assertEquals([], desc.get_unrecognized_lines())
   
   def test_cr_in_contact_line(self):
@@ -309,7 +310,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(409600, desc.average_bandwidth)
     self.assertEquals(819200, desc.burst_bandwidth)
     self.assertEquals(5120, desc.observed_bandwidth)
-    self.assertEquals(["reject *:*"], desc.exit_policy)
+    self.assertEquals(stem.exit_policy.ExitPolicy("reject *:*"), desc.exit_policy)
     self.assertEquals("006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4", desc.digest())
     self.assertEquals([], desc.get_unrecognized_lines())
 
