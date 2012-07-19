@@ -27,7 +27,7 @@ exiting to a destination is permissable or not. For instance...
     |- summary - provides a short label, similar to a microdescriptor
     |- __str__  - string representation
     +- __iter__ - ExitPolicyRule entries that this contains
-
+  
   ExitPolicyRule - Single rule of an exit policy chain
     |- is_address_wildcard - checks if we'll accept any address
     |- is_port_wildcard - checks if we'll accept any port

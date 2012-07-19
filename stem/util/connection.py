@@ -15,6 +15,9 @@ but for now just moving the parts we need.
   get_mask_ipv6 - provides the IPv6 mask representation for a given number of bits
   get_binary - provides the binary representation for an integer with padding
   get_address_binary - provides the binary representation for an address
+  
+  hmac_sha256 - provides a sha256 digest
+  cryptovariables_equal - string comparison for cryptographic operations
 """
 
 import os
