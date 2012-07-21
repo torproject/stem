@@ -94,12 +94,6 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       DirResponses.BUSY: 0,
     }
     
-    expected_signature = """-----BEGIN SIGNATURE-----
-K5FSywk7qvw/boA4DQcqkls6Ize5vcBYfhQ8JnOeRQC9+uDxbnpm3qaYN9jZ8myj
-k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
-7LZqklu+gVvhMKREpchVqlAwXkWR44VENm24Hs+mT3M=
------END SIGNATURE-----"""
-    
     desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_contents)
     self.assertEquals("ec2bridgereaac65a3", desc.nickname)
     self.assertEquals("1EC248422B57D9C0BD751892FE787585407479A4", desc.fingerprint)

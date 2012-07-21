@@ -20,7 +20,7 @@ class TestProcess(unittest.TestCase):
     """
     
     if not stem.prereq.is_python_26() and stem.util.system.is_windows():
-      test.runner.skip("(unable to kill subprocesses)")
+      test.runner.skip(self, "(unable to kill subprocesses)")
       return
     
     if test.runner.only_run_once(self, "test_launch_tor_with_config"): return
@@ -64,7 +64,7 @@ class TestProcess(unittest.TestCase):
     """
     
     if not stem.prereq.is_python_26() and stem.util.system.is_windows():
-      test.runner.skip("(unable to kill subprocesses)")
+      test.runner.skip(self, "(unable to kill subprocesses)")
       return
     
     if test.runner.only_run_once(self, "test_launch_tor_with_timeout"): return

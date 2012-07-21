@@ -173,7 +173,7 @@ def _connect(control_socket, password, chroot_path, controller):
     try: password = getpass.getpass("Controller password: ")
     except KeyboardInterrupt: return None
     
-    return _connect(control_socket, password, controller)
+    return _connect(control_socket, password, chroot_path, controller)
   except AuthenticationFailure, exc:
     control_socket.close()
     print "Unable to authenticate: %s" % exc
@@ -694,7 +694,7 @@ def get_protocolinfo(controller):
   # attempt to expand relative cookie paths
   
   if protocolinfo_response.cookie_path:
-    stem.connection._expand_cookie_path(protocolinfo_response, stem.util.system.get_pid_by_name, "tor")
+    _expand_cookie_path(protocolinfo_response, stem.util.system.get_pid_by_name, "tor")
   
   # attempt to expand relative cookie paths via the control port or socket file
   

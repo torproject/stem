@@ -72,7 +72,7 @@ import stem.util.log as log
 
 CONFS = {}  # mapping of identifier to singleton instances of configs
 
-class SyncListener:
+class SyncListener(object):
   def __init__(self, config_dict, interceptor):
     self.config_dict = config_dict
     self.interceptor = interceptor
@@ -121,7 +121,7 @@ def get_config(handle):
   if not handle in CONFS: CONFS[handle] = Config()
   return CONFS[handle]
 
-class Config():
+class Config(object):
   """
   Handler for easily working with custom configurations, providing persistence
   to and from files. All operations are thread safe.

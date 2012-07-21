@@ -37,7 +37,6 @@ about the tor test instance they're running against.
 from __future__ import with_statement
 
 import os
-import sys
 import time
 import stat
 import shutil
@@ -192,7 +191,7 @@ def get_runner():
   if not INTEG_RUNNER: INTEG_RUNNER = Runner()
   return INTEG_RUNNER
 
-class _MockChrootFile:
+class _MockChrootFile(object):
   """
   Wrapper around a file object that strips given content from readline()
   responses. This is used to simulate a chroot setup by removing the restign
@@ -206,7 +205,7 @@ class _MockChrootFile:
   def readline(self):
     return self.wrapped_file.readline().replace(self.strip_text, "")
 
-class Runner:
+class Runner(object):
   def __init__(self):
     self._runner_lock = threading.RLock()
     

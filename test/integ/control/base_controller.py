@@ -14,7 +14,7 @@ import stem.socket
 import stem.util.system
 import test.runner
 
-class StateObserver:
+class StateObserver(object):
   """
   Simple container for listening to ControlSocket state changes and
   rembembering them for the test.
@@ -49,7 +49,7 @@ class TestBaseController(unittest.TestCase):
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
       
-      for i in xrange(250):
+      for _ in xrange(250):
         controller.connect()
         controller.close()
   
@@ -103,7 +103,7 @@ class TestBaseController(unittest.TestCase):
       controller = stem.control.BaseController(control_socket)
       
       def run_getinfo():
-        for i in xrange(150):
+        for _ in xrange(150):
           try:
             controller.msg("GETINFO version")
             controller.msg("GETINFO blarg")
@@ -113,7 +113,7 @@ class TestBaseController(unittest.TestCase):
       
       message_threads = []
       
-      for i in xrange(5):
+      for _ in xrange(5):
         msg_thread = threading.Thread(target = run_getinfo)
         message_threads.append(msg_thread)
         msg_thread.setDaemon(True)

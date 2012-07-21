@@ -80,7 +80,7 @@ def get_system_tor_version(tor_cmd = "tor"):
   
   return VERSION_CACHE[tor_cmd]
 
-class Version:
+class Version(object):
   """
   Comparable tor version. These are constructed from strings that conform to
   the 'new' style in the `tor version-spec
@@ -159,14 +159,11 @@ class Version:
       if my_version > other_version: return 1
       elif my_version < other_version: return -1
     
-    my_status = self.status if self.status else ""
-    other_status = other.status if other.status else ""
-    
     # not including tags in comparisons because the spec declares them to be
     # 'purely informational'
     return 0
 
-class VersionRequirements:
+class VersionRequirements(object):
   """
   Series of version constraints that can be compared to. For instance, it
   allows for comparisons like 'if I'm greater than version X in the 0.2.2

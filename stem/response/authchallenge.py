@@ -1,4 +1,3 @@
-import re
 import binascii
 
 import stem.socket

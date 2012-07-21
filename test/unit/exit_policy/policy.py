@@ -3,13 +3,9 @@ Unit tests for the stem.exit_policy.ExitPolicy class.
 """
 
 import unittest
-import stem.exit_policy
-import stem.util.system
 from stem.exit_policy import ExitPolicy, \
                              MicrodescriptorExitPolicy, \
                              ExitPolicyRule
-
-import test.mocking as mocking
 
 class TestExitPolicy(unittest.TestCase):
   def test_example(self):

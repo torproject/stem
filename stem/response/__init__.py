@@ -100,7 +100,7 @@ def convert(response_type, message, **kwargs):
   message.__class__ = response_class
   message._parse_message(**kwargs)
 
-class ControlMessage:
+class ControlMessage(object):
   """
   Message from the control socket. This is iterable and can be stringified for
   individual message components stripped of protocol formatting. Messages are

@@ -76,7 +76,7 @@ MAPPED_CONFIG_KEYS = {
 # changed to the more conventional is_alive() and current_thread() in python
 # 2.6 and above. We should use that when dropping python 2.5 compatability.
 
-class BaseController:
+class BaseController(object):
   """
   Controller for the tor process. This is a minimal base class for other
   controllers, providing basic process communication and event listing. Don't
@@ -757,7 +757,7 @@ class Controller(BaseController):
       elif response.code in ("513", "553"):
         raise stem.socket.InvalidRequest(response.code, response.message)
       else:
-        raise stem.socket.ProtocolError("%s returned unexpected status code" % command)
+        raise stem.socket.ProtocolError("Returned unexpected status code: %s" % response.code)
   
   def load_conf(self, configtext):
     """

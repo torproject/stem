@@ -6,9 +6,10 @@ __all__ = [
   "connection",
   "control",
   "descriptor",
-  "process",
+  "response",
   "socket",
   "util",
+  "process",
   "version",
 ]
 

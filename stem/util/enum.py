@@ -75,7 +75,7 @@ def UppercaseEnum(*args):
   
   return Enum(*[(v, v) for v in args])
 
-class Enum:
+class Enum(object):
   """
   Basic enumeration.
   """

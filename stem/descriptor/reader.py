@@ -195,7 +195,7 @@ def save_processed_files(path, processed_files):
       
       output_file.write("%s %i\n" % (path, timestamp))
 
-class DescriptorReader:
+class DescriptorReader(object):
   """
   Iterator for the descriptor data on the local file system. This can process
   text files, tarball archives (gzip or bzip2), or recurse directories.

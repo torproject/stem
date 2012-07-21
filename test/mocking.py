@@ -228,7 +228,7 @@ def get_all_combinations(attr, include_empty = False):
   
   seen = set()
   for i in xrange(1, len(attr) + 1):
-    product_arg = [attr for j in xrange(i)]
+    product_arg = [attr for _ in xrange(i)]
     
     for item in itertools.product(*product_arg):
       # deduplicate, sort, and only provide if we haven't seen it yet

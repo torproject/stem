@@ -29,10 +29,10 @@ class TestControlSocket(unittest.TestCase):
     tor_version = runner.get_tor_version()
     
     with runner.get_tor_socket() as control_socket:
-      for i in range(100):
+      for _ in range(100):
         control_socket.send("GETINFO version")
       
-      for i in range(100):
+      for _ in range(100):
         response = control_socket.recv()
         self.assertTrue(str(response).startswith("version=%s" % tor_version))
         self.assertTrue(str(response).endswith("\nOK"))
@@ -120,7 +120,7 @@ class TestControlSocket(unittest.TestCase):
     if test.runner.require_control(self): return
     
     with test.runner.get_runner().get_tor_socket(False) as control_socket:
-      for i in range(10):
+      for _ in range(10):
         # this will raise if the PROTOCOLINFO query fails
         stem.connection.get_protocolinfo(control_socket)
         

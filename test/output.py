@@ -5,7 +5,6 @@ together for improved readability.
 
 import re
 import sys
-import logging
 
 import stem.util.conf
 import stem.util.enum
@@ -156,7 +155,7 @@ def align_results(line_type, line_content):
   else:
     return "%-61s[%s]" % (line_content, term.format(new_ending, term.Attr.BOLD))
 
-class ErrorTracker:
+class ErrorTracker(object):
   """
   Stores any failure or error results we've encountered.
   """

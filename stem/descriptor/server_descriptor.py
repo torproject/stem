@@ -37,7 +37,6 @@ import stem.descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
 import stem.version
-import stem.util.log as log
 import stem.util.connection
 import stem.util.tor_tools
 

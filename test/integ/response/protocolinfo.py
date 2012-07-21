@@ -95,7 +95,7 @@ class TestProtocolInfo(unittest.TestCase):
     if test.runner.require_control(self): return
     
     with test.runner.get_runner().get_tor_socket(False) as control_socket:
-      for i in range(5):
+      for _ in range(5):
         protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
         self.assert_matches_test_config(protocolinfo_response)
   

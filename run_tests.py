@@ -152,7 +152,7 @@ def load_user_configuration(test_config):
   arg_overrides, config_path = {}, None
   
   try:
-    opts, args = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)
+    opts = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)[0]
   except getopt.GetoptError, exc:
     print "%s (for usage provide --help)" % exc
     sys.exit(1)

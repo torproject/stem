@@ -171,7 +171,7 @@ class TestDescriptorReader(unittest.TestCase):
       descriptor_entries.append(descriptor_file.read())
     
     # running this test multiple times to flush out concurrency issues
-    for i in xrange(15):
+    for _ in xrange(15):
       remaining_entries = list(descriptor_entries)
       
       with stem.descriptor.reader.DescriptorReader(descriptor_path) as reader:

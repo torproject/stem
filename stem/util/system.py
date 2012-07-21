@@ -541,9 +541,9 @@ def expand_path(path, cwd = None):
       relative_path = ""
     
     if relative_path == "":
-        relative_path = cwd
+      relative_path = cwd
     else:
-        relative_path = os.path.join(cwd, relative_path)
+      relative_path = os.path.join(cwd, relative_path)
   
   return relative_path
 
