@@ -159,9 +159,17 @@ class Version(object):
       if my_version > other_version: return 1
       elif my_version < other_version: return -1
     
-    # not including tags in comparisons because the spec declares them to be
-    # 'purely informational'
-    return 0
+    # According to the version spec...
+    #
+    #   If we *do* encounter two versions that differ only by status tag, we
+    #   compare them lexically as ASCII byte strings.
+    
+    my_status = self.status if self.status else ""
+    other_status = other.status if other.status else ""
+    
+    if my_status > other_status: return 1
+    elif my_status < other_status: return -1
+    else: return 0
 
 class VersionRequirements(object):
   """

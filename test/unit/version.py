@@ -82,7 +82,7 @@ class TestVersion(unittest.TestCase):
     self.assert_version_is_greater("0.2.2.3-tag", "0.1.2.3-tag")
     self.assert_version_is_greater("0.1.3.3-tag", "0.1.2.3-tag")
     self.assert_version_is_greater("0.1.2.4-tag", "0.1.2.3-tag")
-    self.assert_version_is_equal("0.1.2.3-ugg", "0.1.2.3-tag")
+    self.assert_version_is_greater("0.1.2.3-ugg", "0.1.2.3-tag")
     self.assert_version_is_equal("0.1.2.3-tag", "0.1.2.3-tag")
     
     # checks that a missing patch level equals zero
@@ -90,7 +90,7 @@ class TestVersion(unittest.TestCase):
     self.assert_version_is_equal("0.1.2-tag", "0.1.2.0-tag")
     
     # checks for missing patch or status
-    self.assert_version_is_equal("0.1.2.3-tag", "0.1.2.3")
+    self.assert_version_is_greater("0.1.2.3-tag", "0.1.2.3")
     self.assert_version_is_greater("0.1.2.3-tag", "0.1.2-tag")
     self.assert_version_is_greater("0.1.2.3-tag", "0.1.2")
     
