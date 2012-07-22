@@ -69,7 +69,7 @@ def get_system_tor_version(tor_cmd = "tor"):
       
       if last_line.startswith("Tor version ") and last_line.endswith("."):
         try:
-          version_str = last_line[12:last_line.find(' ', 12)]
+          version_str = last_line[12:-1]
           VERSION_CACHE[tor_cmd] = Version(version_str)
         except ValueError, exc:
           raise IOError(exc)
@@ -92,6 +92,8 @@ class Version(object):
   :var int micro: micro version
   :var int patch: optional patch level (None if undefined)
   :var str status: optional status tag without the preceding dash such as 'alpha', 'beta-dev', etc (None if undefined)
+  :var str extra: optional extra information without the proceeding space nor its parentheses such as 'git-8be6058d8f31e578' (None if undefined)
+  :var str git_commit: optional git commit id (None if it wasn't provided)
   
   :param str version_str: version to be parsed
   
@@ -100,22 +102,33 @@ class Version(object):
   
   def __init__(self, version_str):
     self.version_str = version_str
-    version_parts = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?$', version_str)
+    version_parts = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?( \(\S*\))?$', version_str)
     
     if version_parts:
-      major, minor, micro, patch, status = version_parts.groups()
+      major, minor, micro, patch, status, extra = version_parts.groups()
       
       # The patch and status matches are optional (may be None) and have an extra
       # proceeding period or dash if they exist. Stripping those off.
       
+      # TODO: The 'extra' attribute isn't technically part of the spec yet, but
+      # it's useful and I'm trying to add it...
+      # https://trac.torproject.org/6445
+      
       if patch: patch = int(patch[1:])
       if status: status = status[1:]
+      if extra: extra = extra[2:-1]
       
       self.major = int(major)
       self.minor = int(minor)
       self.micro = int(micro)
       self.patch = patch
       self.status = status
+      self.extra = extra
+      
+      if extra and re.match("^git-[0-9a-f]{16}$", extra):
+        self.git_commit = extra[4:]
+      else:
+        self.git_commit = None
     else: raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
   
   def meets_requirements(self, requirements):

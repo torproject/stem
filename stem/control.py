@@ -520,12 +520,7 @@ class Controller(BaseController):
       * ValueError if unable to parse the version
     """
     
-    version_str = self.get_info("version")
-    
-    if " " in version_str:
-      version_str = version_str[:version_str.find(' ')]
-    
-    return stem.version.Version(version_str)
+    return stem.version.Version(self.get_info("version"))
   
   def authenticate(self, *args, **kwargs):
     """

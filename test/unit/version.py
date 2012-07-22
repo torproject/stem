@@ -33,7 +33,8 @@ class TestVersion(unittest.TestCase):
     
     mocking.mock(stem.util.system.call, _mock_call)
     version = stem.version.get_system_tor_version()
-    self.assert_versions_match(version, 0, 2, 2, 35, None)
+    self.assert_versions_match(version, 0, 2, 2, 35, None, "git-73ff13ab3cc9570d")
+    self.assertEqual("73ff13ab3cc9570d", version.git_commit)
     
     stem.version.VERSION_CACHE = {}
   
@@ -45,23 +46,34 @@ class TestVersion(unittest.TestCase):
     # valid versions with various number of compontents to the version
     
     version = Version("0.1.2.3-tag")
-    self.assert_versions_match(version, 0, 1, 2, 3, "tag")
+    self.assert_versions_match(version, 0, 1, 2, 3, "tag", None)
     
     version = Version("0.1.2.3")
-    self.assert_versions_match(version, 0, 1, 2, 3, None)
+    self.assert_versions_match(version, 0, 1, 2, 3, None, None)
     
     version = Version("0.1.2-tag")
-    self.assert_versions_match(version, 0, 1, 2, None, "tag")
+    self.assert_versions_match(version, 0, 1, 2, None, "tag", None)
     
     version = Version("0.1.2")
-    self.assert_versions_match(version, 0, 1, 2, None, None)
+    self.assert_versions_match(version, 0, 1, 2, None, None, None)
     
     # checks an empty tag
     version = Version("0.1.2.3-")
-    self.assert_versions_match(version, 0, 1, 2, 3, "")
+    self.assert_versions_match(version, 0, 1, 2, 3, "", None)
     
     version = Version("0.1.2-")
-    self.assert_versions_match(version, 0, 1, 2, None, "")
+    self.assert_versions_match(version, 0, 1, 2, None, "", None)
+    
+    # check with extra informaton
+    version = Version("0.1.2.3-tag (git-73ff13ab3cc9570d)")
+    self.assert_versions_match(version, 0, 1, 2, 3, "tag", "git-73ff13ab3cc9570d")
+    self.assertEqual("73ff13ab3cc9570d", version.git_commit)
+    
+    version = Version("0.1.2.3-tag ()")
+    self.assert_versions_match(version, 0, 1, 2, 3, "tag", "")
+    
+    version = Version("0.1.2 (git-73ff13ab3cc9570d)")
+    self.assert_versions_match(version, 0, 1, 2, None, None, "git-73ff13ab3cc9570d")
     
     # checks invalid version strings
     self.assertRaises(ValueError, stem.version.Version, "")
@@ -197,17 +209,21 @@ class TestVersion(unittest.TestCase):
     for i in xrange(0, 100):
       self.assertFalse(Version("0.2.2.%i" % i).meets_requirements(requirements))
   
-  def assert_versions_match(self, version, major, minor, micro, patch, status):
+  def assert_versions_match(self, version, major, minor, micro, patch, status, extra):
     """
     Asserts that the values for a types.Version instance match the given
     values.
     """
     
-    self.assertEqual(version.major, major)
-    self.assertEqual(version.minor, minor)
-    self.assertEqual(version.micro, micro)
-    self.assertEqual(version.patch, patch)
-    self.assertEqual(version.status, status)
+    self.assertEqual(major, version.major)
+    self.assertEqual(minor, version.minor)
+    self.assertEqual(micro, version.micro)
+    self.assertEqual(patch, version.patch)
+    self.assertEqual(status, version.status)
+    self.assertEqual(extra, version.extra)
+    
+    if extra is None:
+      self.assertEqual(None, version.git_commit)
   
   def assert_version_is_greater(self, first_version, second_version):
     """
