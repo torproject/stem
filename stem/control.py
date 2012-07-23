@@ -454,6 +454,14 @@ class Controller(BaseController):
   from_port = staticmethod(from_port)
   from_socket_file = staticmethod(from_socket_file)
   
+  def close(self):
+    # making a best-effort attempt to quit before detaching the socket
+    if self.is_alive():
+      try: self.msg("QUIT")
+      except: pass
+    
+    super(Controller, self).close()
+  
   def get_info(self, param, default = UNDEFINED):
     """
     Queries the control socket for the given GETINFO option. If provided a
