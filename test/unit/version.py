@@ -97,6 +97,10 @@ class TestVersion(unittest.TestCase):
     self.assert_version_is_greater("0.1.2.3-ugg", "0.1.2.3-tag")
     self.assert_version_is_equal("0.1.2.3-tag", "0.1.2.3-tag")
     
+    # check with common tags
+    self.assert_version_is_greater("0.1.2.3-beta", "0.1.2.3-alpha")
+    self.assert_version_is_greater("0.1.2.3-rc", "0.1.2.3-beta")
+    
     # checks that a missing patch level equals zero
     self.assert_version_is_equal("0.1.2", "0.1.2.0")
     self.assert_version_is_equal("0.1.2-tag", "0.1.2.0-tag")

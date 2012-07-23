@@ -110,10 +110,6 @@ class Version(object):
       # The patch and status matches are optional (may be None) and have an extra
       # proceeding period or dash if they exist. Stripping those off.
       
-      # TODO: The 'extra' attribute isn't technically part of the spec yet, but
-      # it's useful and I'm trying to add it...
-      # https://trac.torproject.org/6445
-      
       if patch: patch = int(patch[1:])
       if status: status = status[1:]
       if extra: extra = extra[2:-1]
