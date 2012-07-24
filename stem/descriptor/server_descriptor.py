@@ -70,8 +70,8 @@ SINGLE_FIELDS = (
 
 def parse_file(descriptor_file, validate = True):
   """
-  Iterates over the server descriptors in a file. This can read either relay or
-  bridge server descriptors.
+  Iterates over the server descriptors in a file. This can only read relay or
+  descriptors.
   
   :param file descriptor_file: file with descriptor content
   :param bool validate: checks the validity of the descriptor's content if True, skips these checks otherwise
