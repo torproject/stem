@@ -58,27 +58,36 @@ def return_true(): return return_value(True)
 def return_false(): return return_value(False)
 def return_none(): return return_value(None)
 
-def return_for_args(args_to_return_value, default = None):
+def return_for_args(args_to_return_value, kwarg_type=None, default=None):
   """
   Returns a value if the arguments to it match something in a given
-  'argument => return value' mapping. Otherwise, a default function
-  is called with the arguments.
+  'argument => return value' mapping. In the case of keyword arguments,
+  a type must be specified so _return_value can check these arguments as
+  well.  Otherwise, a default function is called with the arguments.
   
   :param dict args_to_return_value: mapping of arguments to the value we should provide
+  :param object kwarg_type: type of kwarg mapping to be used in unwraping these arguments.
   :param functor default: returns the value of this function if the args don't match something that we have, we raise a ValueError by default
   """
-  
-  def _return_value(*args):
-    if args in args_to_return_value:
-      return args_to_return_value[args]
-    elif default is None:
-      arg_label = ", ".join([str(v) for v in args])
-      raise ValueError("Unrecognized argument sent for return_for_args(): %s" % arg_label)
+
+  def _return_value(*args, **kwargs):
+    # First handle the case in which we aren't expecting keyword args.
+    if kwarg_type == None:
+      argument = args
     else:
-      return default(args)
+      argument = args + (kwarg_type(**kwargs),)
+    
+    try:
+      return args_to_return_value[argument]
+    except KeyError:
+      if default is None:
+        arg_label = ", ".join(map(str, argument))
+        raise ValueError("Unrecognized argument sent for return_for_args(): %s" % arg_label)
+      else:
+        return default(args)
   
   return _return_value
-
+  
 def raise_exception(exception):
   def _raise(*args): raise exception
   return _raise
@@ -121,7 +130,7 @@ def mock(target, mock_call, target_module=None):
     target_function = target.__name__
     MOCK_STATE[mocking_id] = (target_module, target_function, target)
   
-  mock_wrapper = lambda *args: mock_call(*args)
+  mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
   mock_wrapper.__dict__["mock_id"] = mocking_id
   
   # mocks the function with this wrapper
