@@ -82,6 +82,7 @@ def export_csv_file(descriptors, document, include_fields=(), exclude_fields=(),
   
   Calls get_csv_lines with the given argument, then writes the returned string
   to a file location specified by document_location.
+  Precondition that param document has a 'write' attribute.
   
   :param list descriptors: descriptor objects with attributes to export as csv file.
   :param object document: File object to be written to.
