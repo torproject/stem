@@ -69,7 +69,7 @@ def return_for_args(args_to_return_value, kwarg_type=None, default=None):
   :param object kwarg_type: type of kwarg mapping to be used in unwraping these arguments.
   :param functor default: returns the value of this function if the args don't match something that we have, we raise a ValueError by default
   """
-
+  
   def _return_value(*args, **kwargs):
     # First handle the case in which we aren't expecting keyword args.
     if kwarg_type == None:

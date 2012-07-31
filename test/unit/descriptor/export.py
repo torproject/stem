@@ -136,20 +136,20 @@ class TestExport(unittest.TestCase):
     # Must use named tuples again for ret_vals dictionary.
     Fields = namedtuple('Fields', 'include_fields exclude_fields header')
     
-    ret_vals = {(descriptor, sample_file):sample_csv_string,
-      (descriptor, sample_file, Fields(include_fields=('address', 'onion_key'), exclude_fields=('address',), header=False)):sample_csv_string2}
+    ret_vals = {((descriptor,), Fields(include_fields=(), exclude_fields=(), header=True)):sample_csv_string,
+      ((descriptor,), Fields(include_fields=('address', 'onion_key'), exclude_fields=('address',), header=False)):sample_csv_string2}
     # TODO Ask Danner: mock it once then do both tests (not including assertRaises), or do separate mockings.
     #    the latter requires that we still include empty incl_fields and excl_fields parameters instead of
     #    letting them default to [].  Same for header.
     mocking.mock(export.export_csvs, mocking.return_for_args(ret_vals, kwarg_type=Fields))
     
-    export.export_csv_file(descriptor, sample_file)
+    export.export_csv_file((descriptor,), sample_file)
     self.assertEqual(sample_csv_string, sample_file.getvalue())
     
-    sample_file = cStringIO.StringIO
+    sample_file = cStringIO.StringIO()
     
-    export.export_csv_file(descriptor, sample_file, include_fields=('address', 'onion_key'), exclude_fields=('address',), header=False)
+    export.export_csv_file((descriptor,), sample_file, include_fields=('address', 'onion_key'), exclude_fields=('address',), header=False)
     self.assertEqual(sample_csv_string2, sample_file.getvalue())
-
+    
     # Make sure error is Raised when necessary.
-    self.assertRaises(export.export_csv_file, (descriptor, sample_csv_string))
+    self.assertRaises(AttributeError, export.export_csv_file, (descriptor,), sample_csv_string)

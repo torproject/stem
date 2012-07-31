@@ -76,7 +76,7 @@ def export_csvs(descriptors, include_fields=[], exclude_fields=[], header=False)
   return temp_file.getvalue()
   # cStringIO files are closed automatically when the current scope is exited.
 
-def export_csv_file(descriptors, document, include_fields=[], exclude_fields=[], header=True):
+def export_csv_file(descriptors, document, include_fields=(), exclude_fields=(), header=True):
   """
   Writes descriptor attributes to a csv file on disk.
   
@@ -89,7 +89,8 @@ def export_csv_file(descriptors, document, include_fields=[], exclude_fields=[],
   :param list include_fields: list of attribute fields to include in the csv line.
   :param list exclude_fields: list of attribute fields to exclude from csv line.
   """
-  try:
+  if not hasattr(document, 'write'):
+    raise AttributeError("Provided %r object does not have a write method." % document)
+  else:
     document.write(export_csvs(descriptors, include_fields=include_fields, exclude_fields=exclude_fields, header=header))
-  except AttributeError:
-    print "A valid document object was not provided; could not write"
+  
