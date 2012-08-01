@@ -82,10 +82,6 @@ class TestExport(unittest.TestCase):
     """
     
     # Single descriptor
-    #print "Type descriptor: %s" % type(descriptor)
-    #print "Type SINGLE_ALL: %s" % type(SINGLE_ALL)
-    #print SINGLE_ALL
-    #print "Type fn Call: %s" % type(export.export_csvs([descriptor]))
     self.assertEquals(SINGLE_ALL + "\r\n", export.export_csvs([descriptor]))
     self.assertEqual(SINGLE_PART + "\r\n", export.export_csvs([descriptor],
       include_fields=['address', 'exit_policy']))
@@ -95,14 +91,9 @@ class TestExport(unittest.TestCase):
       include_fields=['address', 'exit_policy', 'fingerprint'], exclude_fields=['fingerprint']))
     
     # Multiple descriptors
-    #print "Sample Call: \n %s \n\n" %  export.export_csvs([descriptor, descriptor2], header=True)
-    
     self.assertEqual(DOUBLE_ALL, export.export_csvs([descriptor, descriptor2]))
     self.assertEqual(DOUBLE_PART, export.export_csvs([descriptor, descriptor2],
       include_fields=['address', 'exit_policy']))
-    #print export.export_csvs([descriptor, descriptor2], exclude_fields=['onion_key', 'fingerprint'])
-    #print "\n %s" % descriptor2.__dict__
-    
     self.assertEqual(DOUBLE_PART2, export.export_csvs([descriptor, descriptor2],
       exclude_fields=['onion_key', 'fingerprint']))
     self.assertEqual(DOUBLE_PART, export.export_csvs([descriptor, descriptor2],

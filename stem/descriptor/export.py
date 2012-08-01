@@ -6,7 +6,7 @@ def export_csv(descriptor, include_fields=(), exclude_fields=()):
   Takes a single descriptor object, puts it in a list, and passes it to
   descriptors_csv_exp to build a csv.
   
-  :param object descriptor: single descriptor whose.
+  :param object descriptor: single descriptor whose attributes will be returned as a string.
   :param list include_fields: list of attribute fields to include in the csv string.
   :param list exclude_fields: list of attribute fields to exclude from csv string.
   
@@ -25,8 +25,7 @@ def export_csvs(descriptors, include_fields=[], exclude_fields=[], header=False)
   :param list descrs: List of descriptor objects whose attributes will be written.
   :param list include_fields: list of attribute fields to include in the csv string.
   :param list exclude_fields: list of attribute fields to exclude from csv string.
-  :param bool header: whether or not a header is requested; probably won't be
-    needed outside of csv_file_exp's call of this function.
+  :param bool header: whether or not a header is requested.
   
   :returns: csv string with one descriptor per line and one attribute per cell.
   :raises: ValueError if more than one descriptor type (e.g. server_descriptor,
@@ -39,7 +38,7 @@ def export_csvs(descriptors, include_fields=[], exclude_fields=[], header=False)
   first = True
   
   for desc in descriptors:
-    import sys
+    #umport sys
     attr = vars(desc)
     
     # Defining incl_fields and the dwriter object requires having access
@@ -90,8 +89,9 @@ def export_csv_file(descriptors, document, include_fields=(), exclude_fields=(),
   :param list include_fields: list of attribute fields to include in the csv line.
   :param list exclude_fields: list of attribute fields to exclude from csv line.
   """
-  if not hasattr(document, 'write'):
-    raise AttributeError("Provided %r object does not have a write method." % document)
-  else:
-    document.write(export_csvs(descriptors, include_fields=include_fields, exclude_fields=exclude_fields, header=header))
   
+  try:
+    document.write(export_csvs(descriptors, include_fields=include_fields, exclude_fields=exclude_fields, header=header))
+  except AttributeError:
+    print "Provided %r object does not have a write() method." % document
+    raise

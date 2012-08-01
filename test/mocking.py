@@ -67,6 +67,11 @@ def return_for_args(args_to_return_value, kwarg_type=None, default=None):
   
   :param dict args_to_return_value: mapping of arguments to the value we should provide
   :param object kwarg_type: type of kwarg mapping to be used in unwraping these arguments.
+    Though a dictionary would be the obvious choice, mapping expected keyword
+    arguments and their values in the keys of args_to_return_value would result
+    in unhashable types.  Instead, a named tuple may be used and kwarg_type
+    provides the type of the named tuple so it may be parsed.
+    See test/unit/descriptor/export.py for an example.
   :param functor default: returns the value of this function if the args don't match something that we have, we raise a ValueError by default
   """
   
