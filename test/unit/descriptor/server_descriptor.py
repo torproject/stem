@@ -10,68 +10,7 @@ import stem.prereq
 import stem.descriptor.server_descriptor
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 import test.runner
-
-CRYPTO_BLOB = """
-MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
-skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
-WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
-"""
-
-RELAY_DESCRIPTOR_ATTR = (
-  ("router", "caerSidi 71.35.133.197 9001 0 0"),
-  ("published", "2012-03-01 17:15:27"),
-  ("bandwidth", "153600 256000 104590"),
-  ("reject", "*:*"),
-  ("onion-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
-  ("signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
-  ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
-)
-
-BRIDGE_DESCRIPTOR_ATTR = (
-  ("router", "Unnamed 10.45.227.253 9001 0 0"),
-  ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
-  ("published", "2012-03-22 17:34:38"),
-  ("bandwidth", "409600 819200 5120"),
-  ("reject", "*:*"),
-)
-
-def _make_descriptor(attr = None, exclude = None, is_bridge = False):
-  """
-  Constructs a minimal server descriptor with the given attributes.
-  
-  :param dict attr: keyword/value mappings to be included in the descriptor
-  :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool is_bridge: minimal descriptor is for a bridge if True, relay otherwise
-  
-  :returns: str with customized descriptor content
-  """
-  
-  descriptor_lines = []
-  if attr is None: attr = {}
-  if exclude is None: exclude = []
-  desc_attr = BRIDGE_DESCRIPTOR_ATTR if is_bridge else RELAY_DESCRIPTOR_ATTR
-  attr = dict(attr) # shallow copy since we're destructive
-  
-  for keyword, value in desc_attr:
-    if keyword in exclude: continue
-    elif keyword in attr:
-      value = attr[keyword]
-      del attr[keyword]
-    
-    # if this is the last entry then we should dump in any unused attributes
-    if not is_bridge and keyword == "router-signature":
-      for attr_keyword, attr_value in attr.items():
-        descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
-    
-    descriptor_lines.append("%s %s" % (keyword, value))
-  
-  # bridges don't have a router-signature so simply append any extra attributes
-  # to the end
-  if is_bridge:
-    for attr_keyword, attr_value in attr.items():
-      descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
-  
-  return "\n".join(descriptor_lines)
+from test.mocking import get_server_descriptor, CRYPTO_BLOB
 
 class TestServerDescriptor(unittest.TestCase):
   def test_minimal_relay_descriptor(self):
@@ -80,7 +19,7 @@ class TestServerDescriptor(unittest.TestCase):
     attributes.
     """
     
-    desc_text = _make_descriptor()
+    desc_text = get_server_descriptor()
     desc = RelayDescriptor(desc_text)
     
     self.assertEquals("caerSidi", desc.nickname)
@@ -95,7 +34,7 @@ class TestServerDescriptor(unittest.TestCase):
     Includes an 'opt <keyword> <value>' entry.
     """
     
-    desc_text = _make_descriptor({"opt": "contact www.atagar.com/contact/"})
+    desc_text = get_server_descriptor({"opt": "contact www.atagar.com/contact/"})
     desc = RelayDescriptor(desc_text)
     self.assertEquals("www.atagar.com/contact/", desc.contact)
   
@@ -104,7 +43,7 @@ class TestServerDescriptor(unittest.TestCase):
     Includes unrecognized content in the descriptor.
     """
     
-    desc_text = _make_descriptor({"pepperjack": "is oh so tasty!"})
+    desc_text = get_server_descriptor({"pepperjack": "is oh so tasty!"})
     desc = RelayDescriptor(desc_text)
     self.assertEquals(["pepperjack is oh so tasty!"], desc.get_unrecognized_lines())
   
@@ -113,7 +52,7 @@ class TestServerDescriptor(unittest.TestCase):
     Includes a line prior to the 'router' entry.
     """
     
-    desc_text = "hibernate 1\n" + _make_descriptor()
+    desc_text = "hibernate 1\n" + get_server_descriptor()
     self._expect_invalid_attr(desc_text)
   
   def test_trailing_line(self):
@@ -121,7 +60,7 @@ class TestServerDescriptor(unittest.TestCase):
     Includes a line after the 'router-signature' entry.
     """
     
-    desc_text = _make_descriptor() + "\nhibernate 1"
+    desc_text = get_server_descriptor() + "\nhibernate 1"
     self._expect_invalid_attr(desc_text)
   
   def test_nickname_missing(self):
@@ -129,7 +68,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with a malformed router entry.
     """
     
-    desc_text = _make_descriptor({"router": " 71.35.133.197 9001 0 0"})
+    desc_text = get_server_descriptor({"router": " 71.35.133.197 9001 0 0"})
     self._expect_invalid_attr(desc_text, "nickname")
   
   def test_nickname_too_long(self):
@@ -137,7 +76,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with a nickname that is an invalid length.
     """
     
-    desc_text = _make_descriptor({"router": "saberrider2008ReallyLongNickname 71.35.133.197 9001 0 0"})
+    desc_text = get_server_descriptor({"router": "saberrider2008ReallyLongNickname 71.35.133.197 9001 0 0"})
     self._expect_invalid_attr(desc_text, "nickname", "saberrider2008ReallyLongNickname")
   
   def test_nickname_invalid_char(self):
@@ -145,7 +84,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with an invalid relay nickname.
     """
     
-    desc_text = _make_descriptor({"router": "$aberrider2008 71.35.133.197 9001 0 0"})
+    desc_text = get_server_descriptor({"router": "$aberrider2008 71.35.133.197 9001 0 0"})
     self._expect_invalid_attr(desc_text, "nickname", "$aberrider2008")
   
   def test_address_malformed(self):
@@ -153,7 +92,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with an invalid ip address.
     """
     
-    desc_text = _make_descriptor({"router": "caerSidi 371.35.133.197 9001 0 0"})
+    desc_text = get_server_descriptor({"router": "caerSidi 371.35.133.197 9001 0 0"})
     self._expect_invalid_attr(desc_text, "address", "371.35.133.197")
   
   def test_port_too_high(self):
@@ -161,7 +100,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with an ORPort that is too large.
     """
     
-    desc_text = _make_descriptor({"router": "caerSidi 71.35.133.197 900001 0 0"})
+    desc_text = get_server_descriptor({"router": "caerSidi 71.35.133.197 900001 0 0"})
     self._expect_invalid_attr(desc_text, "or_port", 900001)
   
   def test_port_malformed(self):
@@ -169,7 +108,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with an ORPort that isn't numeric.
     """
     
-    desc_text = _make_descriptor({"router": "caerSidi 71.35.133.197 900a1 0 0"})
+    desc_text = get_server_descriptor({"router": "caerSidi 71.35.133.197 900a1 0 0"})
     self._expect_invalid_attr(desc_text, "or_port")
   
   def test_port_newline(self):
@@ -177,7 +116,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with a newline replacing the ORPort.
     """
     
-    desc_text = _make_descriptor({"router": "caerSidi 71.35.133.197 \n 0 0"})
+    desc_text = get_server_descriptor({"router": "caerSidi 71.35.133.197 \n 0 0"})
     self._expect_invalid_attr(desc_text, "or_port")
   
   def test_platform_empty(self):
@@ -185,7 +124,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with an empty platform entry.
     """
     
-    desc_text = _make_descriptor({"platform": ""})
+    desc_text = get_server_descriptor({"platform": ""})
     desc = RelayDescriptor(desc_text, validate = False)
     self.assertEquals("", desc.platform)
     
@@ -199,7 +138,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with a protocols line without circuit versions.
     """
     
-    desc_text = _make_descriptor({"opt": "protocols Link 1 2"})
+    desc_text = get_server_descriptor({"opt": "protocols Link 1 2"})
     self._expect_invalid_attr(desc_text, "circuit_protocols")
   
   def test_published_leap_year(self):
@@ -208,10 +147,10 @@ class TestServerDescriptor(unittest.TestCase):
     invalid.
     """
     
-    desc_text = _make_descriptor({"published": "2011-02-29 04:03:19"})
+    desc_text = get_server_descriptor({"published": "2011-02-29 04:03:19"})
     self._expect_invalid_attr(desc_text, "published")
     
-    desc_text = _make_descriptor({"published": "2012-02-29 04:03:19"})
+    desc_text = get_server_descriptor({"published": "2012-02-29 04:03:19"})
     expected_published = datetime.datetime(2012, 2, 29, 4, 3, 19)
     self.assertEquals(expected_published, RelayDescriptor(desc_text).published)
   
@@ -220,7 +159,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with a published entry without a time component.
     """
     
-    desc_text = _make_descriptor({"published": "2012-01-01"})
+    desc_text = get_server_descriptor({"published": "2012-01-01"})
     self._expect_invalid_attr(desc_text, "published")
   
   def test_read_and_write_history(self):
@@ -232,7 +171,7 @@ class TestServerDescriptor(unittest.TestCase):
     
     for field in ("read-history", "write-history"):
       value = "2005-12-16 18:00:48 (900 s) 81,8848,8927,8927,83,8848"
-      desc_text = _make_descriptor({"opt %s" % field: value})
+      desc_text = get_server_descriptor({"opt %s" % field: value})
       desc = RelayDescriptor(desc_text)
       
       if field == "read-history":
@@ -253,7 +192,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     value = "2005-12-17 01:23:11 (900 s) "
-    desc_text = _make_descriptor({"opt read-history": value})
+    desc_text = get_server_descriptor({"opt read-history": value})
     desc = RelayDescriptor(desc_text)
     self.assertEquals(datetime.datetime(2005, 12, 17, 1, 23, 11), desc.read_history_end)
     self.assertEquals(900, desc.read_history_interval)
@@ -265,7 +204,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     desc_text = "@pepperjack very tasty\n@mushrooms not so much\n"
-    desc_text += _make_descriptor()
+    desc_text += get_server_descriptor()
     desc_text += "\ntrailing text that should be ignored, ho hum"
     
     # running parse_file should provide an iterator with a single descriptor
@@ -285,7 +224,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs with a field appearing twice.
     """
     
-    desc_text = _make_descriptor({"<replace>": ""})
+    desc_text = get_server_descriptor({"<replace>": ""})
     desc_text = desc_text.replace("<replace>", "contact foo\ncontact bar")
     self._expect_invalid_attr(desc_text, "contact", "foo")
   
@@ -295,7 +234,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
     
     for attr in stem.descriptor.server_descriptor.REQUIRED_FIELDS:
-      desc_text = _make_descriptor(exclude = [attr])
+      desc_text = get_server_descriptor(exclude = [attr])
       self.assertRaises(ValueError, RelayDescriptor, desc_text)
       
       # check that we can still construct it without validation
@@ -319,7 +258,7 @@ class TestServerDescriptor(unittest.TestCase):
       return
     
     fingerprint = "4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44"
-    desc_text = _make_descriptor({"opt fingerprint": fingerprint})
+    desc_text = get_server_descriptor({"opt fingerprint": fingerprint})
     desc = RelayDescriptor(desc_text)
     self.assertEquals(fingerprint.replace(" ", ""), desc.fingerprint)
   
@@ -334,7 +273,7 @@ class TestServerDescriptor(unittest.TestCase):
       return
     
     fingerprint = "4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE45"
-    desc_text = _make_descriptor({"opt fingerprint": fingerprint})
+    desc_text = get_server_descriptor({"opt fingerprint": fingerprint})
     self._expect_invalid_attr(desc_text, "fingerprint", fingerprint.replace(" ", ""))
   
   def test_minimal_bridge_descriptor(self):
@@ -342,7 +281,7 @@ class TestServerDescriptor(unittest.TestCase):
     Basic sanity check that we can parse a descriptor with minimal attributes.
     """
     
-    desc_text = _make_descriptor(is_bridge = True)
+    desc_text = get_server_descriptor(is_bridge = True)
     desc = BridgeDescriptor(desc_text)
     
     self.assertEquals("Unnamed", desc.nickname)
@@ -371,7 +310,7 @@ class TestServerDescriptor(unittest.TestCase):
     ]
     
     for attr in unsanitized_attr:
-      desc_text = _make_descriptor(attr, is_bridge = True)
+      desc_text = get_server_descriptor(attr, is_bridge = True)
       desc = BridgeDescriptor(desc_text)
       self.assertFalse(desc.is_scrubbed())
   
@@ -381,7 +320,7 @@ class TestServerDescriptor(unittest.TestCase):
     its unsanatized content.
     """
     
-    desc_text = _make_descriptor({"router-digest": "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"})
+    desc_text = get_server_descriptor({"router-digest": "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"})
     desc = BridgeDescriptor(desc_text)
     self.assertFalse(desc.is_scrubbed())
   
@@ -393,13 +332,13 @@ class TestServerDescriptor(unittest.TestCase):
     # checks with valid content
     
     router_digest = "068A2E28D4C934D9490303B7A645BA068DCA0504"
-    desc_text = _make_descriptor({"router-digest": router_digest}, is_bridge = True)
+    desc_text = get_server_descriptor({"router-digest": router_digest}, is_bridge = True)
     desc = BridgeDescriptor(desc_text)
     self.assertEquals(router_digest, desc.digest())
     
     # checks when missing
     
-    desc_text = _make_descriptor(exclude = ["router-digest"], is_bridge = True)
+    desc_text = get_server_descriptor(exclude = ["router-digest"], is_bridge = True)
     self.assertRaises(ValueError, BridgeDescriptor, desc_text)
     
     # check that we can still construct it without validation
@@ -416,7 +355,7 @@ class TestServerDescriptor(unittest.TestCase):
     )
     
     for value in test_values:
-      desc_text = _make_descriptor({"router-digest": value}, is_bridge = True)
+      desc_text = get_server_descriptor({"router-digest": value}, is_bridge = True)
       self.assertRaises(ValueError, BridgeDescriptor, desc_text)
       
       desc = BridgeDescriptor(desc_text, validate = False)
@@ -427,7 +366,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs a bridge descriptor with a sanatized IPv4 or-address entry.
     """
     
-    desc_text = _make_descriptor({"or-address": "10.45.227.253:9001"}, is_bridge = True)
+    desc_text = get_server_descriptor({"or-address": "10.45.227.253:9001"}, is_bridge = True)
     desc = BridgeDescriptor(desc_text)
     self.assertEquals([("10.45.227.253", 9001, False)], desc.address_alt)
   
@@ -436,7 +375,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs a bridge descriptor with a sanatized IPv6 or-address entry.
     """
     
-    desc_text = _make_descriptor({"or-address": "[fd9f:2e19:3bcf::02:9970]:9001"}, is_bridge = True)
+    desc_text = get_server_descriptor({"or-address": "[fd9f:2e19:3bcf::02:9970]:9001"}, is_bridge = True)
     desc = BridgeDescriptor(desc_text)
     self.assertEquals([("fd9f:2e19:3bcf::02:9970", 9001, True)], desc.address_alt)
   
@@ -445,7 +384,7 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs a bridge descriptor with multiple or-address entries and multiple ports.
     """
     
-    desc_text = "\n".join((_make_descriptor(is_bridge = True),
+    desc_text = "\n".join((get_server_descriptor(is_bridge = True),
                           "or-address 10.45.227.253:9001,9005,80",
                           "or-address [fd9f:2e19:3bcf::02:9970]:443"))
     

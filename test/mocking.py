@@ -23,6 +23,7 @@ calling :func:`test.mocking.revert_mocking`.
   Instance Constructors
     get_message               - stem.socket.ControlMessage
     get_protocolinfo_response - stem.response.protocolinfo.ProtocolInfoResponse
+    get_server_descriptor     - text for a tor server descriptor
 """
 
 import inspect
@@ -44,6 +45,30 @@ MOCK_ID = itertools.count(0)
 MOCK_STATE = {}
 
 BUILTIN_TYPE = type(open)
+
+CRYPTO_BLOB = """
+MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
+skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
+WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
+"""
+
+RELAY_DESCRIPTOR_ATTR = (
+  ("router", "caerSidi 71.35.133.197 9001 0 0"),
+  ("published", "2012-03-01 17:15:27"),
+  ("bandwidth", "153600 256000 104590"),
+  ("reject", "*:*"),
+  ("onion-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+  ("signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+  ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+)
+
+BRIDGE_DESCRIPTOR_ATTR = (
+  ("router", "Unnamed 10.45.227.253 9001 0 0"),
+  ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
+  ("published", "2012-03-22 17:34:38"),
+  ("bandwidth", "409600 819200 5120"),
+  ("reject", "*:*"),
+)
 
 def no_op():
   def _no_op(*args): pass
@@ -276,4 +301,42 @@ def get_protocolinfo_response(**attributes):
     protocolinfo_response.__dict__[attr] = attributes[attr]
   
   return protocolinfo_response
+
+def get_server_descriptor(attr = None, exclude = None, is_bridge = False):
+  """
+  Constructs a minimal server descriptor with the given attributes.
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool is_bridge: minimal descriptor is for a bridge if True, relay otherwise
+  
+  :returns: str with customized descriptor content
+  """
+  
+  descriptor_lines = []
+  if attr is None: attr = {}
+  if exclude is None: exclude = []
+  desc_attr = BRIDGE_DESCRIPTOR_ATTR if is_bridge else RELAY_DESCRIPTOR_ATTR
+  attr = dict(attr) # shallow copy since we're destructive
+  
+  for keyword, value in desc_attr:
+    if keyword in exclude: continue
+    elif keyword in attr:
+      value = attr[keyword]
+      del attr[keyword]
+    
+    # if this is the last entry then we should dump in any unused attributes
+    if not is_bridge and keyword == "router-signature":
+      for attr_keyword, attr_value in attr.items():
+        descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
+    
+    descriptor_lines.append("%s %s" % (keyword, value))
+  
+  # bridges don't have a router-signature so simply append any extra attributes
+  # to the end
+  if is_bridge:
+    for attr_keyword, attr_value in attr.items():
+      descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
+  
+  return "\n".join(descriptor_lines)
 

@@ -13,7 +13,7 @@ Package for parsing and processing descriptor data.
 """
 
 __all__ = [
-  "descriptor",
+  "export",
   "reader",
   "extrainfo_descriptor",
   "server_descriptor",

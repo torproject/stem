@@ -16,6 +16,7 @@ import test.output
 import test.runner
 import test.check_whitespace
 import test.unit.connection.authentication
+import test.unit.descriptor.export
 import test.unit.descriptor.reader
 import test.unit.descriptor.server_descriptor
 import test.unit.descriptor.extrainfo_descriptor
@@ -107,6 +108,7 @@ UNIT_TESTS = (
   test.unit.util.proc.TestProc,
   test.unit.util.system.TestSystem,
   test.unit.util.tor_tools.TestTorTools,
+  test.unit.descriptor.export.TestExport,
   test.unit.descriptor.reader.TestDescriptorReader,
   test.unit.descriptor.server_descriptor.TestServerDescriptor,
   test.unit.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
