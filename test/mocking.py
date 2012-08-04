@@ -23,6 +23,7 @@ calling :func:`test.mocking.revert_mocking`.
   Instance Constructors
     get_message               - stem.socket.ControlMessage
     get_protocolinfo_response - stem.response.protocolinfo.ProtocolInfoResponse
+    get_server_descriptor     - text for a tor server descriptor
 """
 
 import inspect
@@ -45,54 +46,63 @@ MOCK_STATE = {}
 
 BUILTIN_TYPE = type(open)
 
+CRYPTO_BLOB = """
+MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
+skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
+WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
+"""
+
+RELAY_DESCRIPTOR_ATTR = (
+  ("router", "caerSidi 71.35.133.197 9001 0 0"),
+  ("published", "2012-03-01 17:15:27"),
+  ("bandwidth", "153600 256000 104590"),
+  ("reject", "*:*"),
+  ("onion-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+  ("signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+  ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+)
+
+BRIDGE_DESCRIPTOR_ATTR = (
+  ("router", "Unnamed 10.45.227.253 9001 0 0"),
+  ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
+  ("published", "2012-03-22 17:34:38"),
+  ("bandwidth", "409600 819200 5120"),
+  ("reject", "*:*"),
+)
+
 def no_op():
   def _no_op(*args): pass
   return _no_op
 
 def return_value(value):
-  def _return_value(*args, **kwargs):
-    return value
+  def _return_value(*args): return value
   return _return_value
 
 def return_true(): return return_value(True)
 def return_false(): return return_value(False)
 def return_none(): return return_value(None)
 
-def return_for_args(args_to_return_value, kwarg_type=None, default=None):
+def return_for_args(args_to_return_value, default = None):
   """
   Returns a value if the arguments to it match something in a given
-  'argument => return value' mapping. In the case of keyword arguments,
-  a type must be specified so _return_value can check these arguments as
-  well.  Otherwise, a default function is called with the arguments.
+  'argument => return value' mapping. Otherwise, a default function
+  is called with the arguments.
   
   :param dict args_to_return_value: mapping of arguments to the value we should provide
-  :param object kwarg_type: type of kwarg mapping to be used in unwraping these arguments.
-    Though a dictionary would be the obvious choice, mapping expected keyword
-    arguments and their values in the keys of args_to_return_value would result
-    in unhashable types.  Instead, a named tuple may be used and kwarg_type
-    provides the type of the named tuple so it may be parsed.
-    See test/unit/descriptor/export.py for an example.
   :param functor default: returns the value of this function if the args don't match something that we have, we raise a ValueError by default
   """
   
-  def _return_value(*args, **kwargs):
-    # First handle the case in which we aren't expecting keyword args.
-    if kwarg_type == None:
-      argument = args
+  def _return_value(*args):
+    if args in args_to_return_value:
+      return args_to_return_value[args]
+    elif default is None:
+      arg_label = ", ".join([str(v) for v in args])
+      raise ValueError("Unrecognized argument sent for return_for_args(): %s" % arg_label)
     else:
-      argument = args + (kwarg_type(**kwargs),)
-    
-    try:
-      return args_to_return_value[argument]
-    except KeyError:
-      if default is None:
-        arg_label = ", ".join(map(str, argument))
-        raise ValueError("Unrecognized argument sent for return_for_args(): %s" % arg_label)
-      else:
-        return default(args)
+      return default(args)
   
   return _return_value
-  
+
 def raise_exception(exception):
   def _raise(*args): raise exception
   return _raise
@@ -135,7 +145,7 @@ def mock(target, mock_call, target_module=None):
     target_function = target.__name__
     MOCK_STATE[mocking_id] = (target_module, target_function, target)
   
-  mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
+  mock_wrapper = lambda *args: mock_call(*args)
   mock_wrapper.__dict__["mock_id"] = mocking_id
   
   # mocks the function with this wrapper
@@ -291,4 +301,42 @@ def get_protocolinfo_response(**attributes):
     protocolinfo_response.__dict__[attr] = attributes[attr]
   
   return protocolinfo_response
+
+def get_server_descriptor(attr = None, exclude = None, is_bridge = False):
+  """
+  Constructs a minimal server descriptor with the given attributes.
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool is_bridge: minimal descriptor is for a bridge if True, relay otherwise
+  
+  :returns: str with customized descriptor content
+  """
+  
+  descriptor_lines = []
+  if attr is None: attr = {}
+  if exclude is None: exclude = []
+  desc_attr = BRIDGE_DESCRIPTOR_ATTR if is_bridge else RELAY_DESCRIPTOR_ATTR
+  attr = dict(attr) # shallow copy since we're destructive
+  
+  for keyword, value in desc_attr:
+    if keyword in exclude: continue
+    elif keyword in attr:
+      value = attr[keyword]
+      del attr[keyword]
+    
+    # if this is the last entry then we should dump in any unused attributes
+    if not is_bridge and keyword == "router-signature":
+      for attr_keyword, attr_value in attr.items():
+        descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
+    
+    descriptor_lines.append("%s %s" % (keyword, value))
+  
+  # bridges don't have a router-signature so simply append any extra attributes
+  # to the end
+  if is_bridge:
+    for attr_keyword, attr_value in attr.items():
+      descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
+  
+  return "\n".join(descriptor_lines)
 
