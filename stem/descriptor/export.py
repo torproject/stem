@@ -1,97 +1,89 @@
-import os, csv, sets, cStringIO
+"""
+Utilities for exporting descriptors to other formats.
+"""
 
+import csv
+import cStringIO
 
-def export_csv(descriptor, include_fields=(), exclude_fields=()):
+import stem.descriptor
+
+class _ExportDialect(csv.excel):
+  lineterminator = '\n'
+
+def export_csv(descriptors, included_fields = (), excluded_fields = (), header = True):
   """
-  Takes a single descriptor object, puts it in a list, and passes it to
-  descriptors_csv_exp to build a csv.
+  Provides a newline separated CSV for one or more descriptors. If simply
+  provided with descriptors then the CSV contains all of its attributes,
+  labelled with a header row. Either 'included_fields' or 'excluded_fields' can
+  be used for more granular control over its attributes and the order.
   
-  :param object descriptor: single descriptor whose attributes will be returned as a string.
-  :param list include_fields: list of attribute fields to include in the csv string.
-  :param list exclude_fields: list of attribute fields to exclude from csv string.
+  :param Descriptor,list descriptors: descriptor or list of descriptors to be exported
+  :param list included_fields: attributes to include in the csv
+  :param list excluded_fields: attributes to exclude from the csv
+  :param bool header: if True then the first line will be a comma separated list of the attribute names
   
-  :returns: single csv line as a string with one descriptor attribute per cell.
-  """
-  
-  descr = (descriptor,)
-  return export_csvs(descr, include_fields=include_fields, exclude_fields=exclude_fields)
-
-
-def export_csvs(descriptors, include_fields=[], exclude_fields=[], header=False):
-  """
-  Takes an iterable of descriptors, returns a string with one line per descriptor
-  where each line is a comma separated list of descriptor attributes.
-  
-  :param list descrs: List of descriptor objects whose attributes will be written.
-  :param list include_fields: list of attribute fields to include in the csv string.
-  :param list exclude_fields: list of attribute fields to exclude from csv string.
-  :param bool header: whether or not a header is requested.
-  
-  :returns: csv string with one descriptor per line and one attribute per cell.
-  :raises: ValueError if more than one descriptor type (e.g. server_descriptor,
-    extrainfo_descriptor) is provided in the iterable.
+  :returns: str of the CSV for the descriptors, one per line
+  :raises: ValueError if descriptors contain more than one descriptor type
   """
   
-  # Need a file object to write to with DictWriter.
-  temp_file = cStringIO.StringIO()
+  output_buffer = cStringIO.StringIO()
+  export_csv_file(output_buffer, descriptors, included_fields, excluded_fields, header)
+  return output_buffer.getvalue()
+
+def export_csv_file(output_file, descriptors, included_fields = (), excluded_fields = (), header = True):
+  """
+  Similar to :func:`stem.descriptor.export.export_csv`, except that the CSV is
+  written directly to a file.
   
-  first = True
+  :param file output_file: file to be written to
+  :param Descriptor,list descriptors: descriptor or list of descriptors to be exported
+  :param list included_fields: attributes to include in the csv
+  :param list excluded_fields: attributes to exclude from the csv
+  :param bool header: if True then the first line will be a comma separated list of the attribute names
+  
+  :returns: str of the CSV for the descriptors, one per line
+  :raises: ValueError if descriptors contain more than one descriptor type
+  """
+  
+  if isinstance(descriptors, stem.descriptor.Descriptor):
+    descriptors = (descriptors,)
+  
+  if not descriptors:
+    return
+  
+  descriptor_type = type(descriptors[0])
+  descriptor_type_label = descriptor_type.__name__
+  included_fields = list(included_fields)
+  
+  # If the user didn't specify the fields to include then export everything,
+  # ordered alphabetically. If they did specify fields then make sure that
+  # they exist.
+  
+  desc_attr = sorted(vars(descriptors[0]).keys())
+  
+  if included_fields:
+    for field in included_fields:
+      if not field in desc_attr:
+        raise ValueError("%s does not have a '%s' attribute, valid fields are: %s" % (descriptor_type_label, field, ", ".join(desc_attr)))
+  else:
+    included_fields = [attr for attr in desc_attr if not attr.startswith('_')]
+  
+  for field in excluded_fields:
+    try:
+      included_fields.remove(field)
+    except ValueError:
+      pass
+  
+  writer = csv.DictWriter(output_file, included_fields, dialect = _ExportDialect(), extrasaction='ignore')
+  
+  if header:
+    writer.writeheader()
   
   for desc in descriptors:
-    #umport sys
-    attr = vars(desc)
+    if not isinstance(desc, stem.descriptor.Descriptor):
+      raise ValueError("Unable to export a descriptor CSV since %s is not a descriptor." % type(desc).__name__)
+    elif descriptor_type != type(desc):
+      raise ValueError("To export a descriptor CSV all of the descriptors must be of the same type. First descriptor was a %s but we later got a %s." % (descriptor_type_label, type(desc)))
     
-    # Defining incl_fields and the dwriter object requires having access
-    # to a descriptor object.
-    if first:
-      # All descriptor objects should be of the same type
-      # (i.e. server_descriptor.RelayDesrciptor)
-      desc_type = type(desc)
-      
-      # define incl_fields, 4 cases where final case is incl_fields already
-      # defined and excl_fields left blank, so no action is necessary.
-      if not include_fields and exclude_fields:
-        incl = set(attr.keys())
-        include_fields = list(incl.difference(exclude_fields))
-      
-      elif not include_fields and not exclude_fields:
-        include_fields = attr.keys()
-      
-      elif include_fields and exclude_fields:
-        incl = set(include_fields)
-        include_fields = list(incl.difference(exclude_fields))
-      
-      dwriter = csv.DictWriter(temp_file, include_fields, extrasaction='ignore')
-      
-      if header:
-        dwriter.writeheader()
-      first = False
-    
-    if desc_type == type(desc):
-      dwriter.writerow(attr)
-    else:
-      raise ValueError('More than one descriptor type provided. Started with a %s, and just got a %s' % (desc_type, type(desc)))
-  
-  return temp_file.getvalue()
-  # cStringIO files are closed automatically when the current scope is exited.
+    writer.writerow(vars(desc))
 
-def export_csv_file(descriptors, document, include_fields=(), exclude_fields=(), header=True):
-  """
-  Writes descriptor attributes to a csv file on disk.
-  
-  Calls get_csv_lines with the given argument, then writes the returned string
-  to a file location specified by document_location.
-  Precondition that param document has a 'write' attribute.
-  
-  :param list descriptors: descriptor objects with attributes to export as csv file.
-  :param object document: File object to be written to.
-  :param bool header: defaults to true, determines if document will have a header row.
-  :param list include_fields: list of attribute fields to include in the csv line.
-  :param list exclude_fields: list of attribute fields to exclude from csv line.
-  """
-  
-  try:
-    document.write(export_csvs(descriptors, include_fields=include_fields, exclude_fields=exclude_fields, header=header))
-  except AttributeError:
-    print "Provided %r object does not have a write() method." % document
-    raise
