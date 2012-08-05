@@ -38,7 +38,7 @@ import stem.util.log as log
 import stem.util.connection
 import stem.util.tor_tools
 
-_bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in ["bd", 
+_bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in ["bd",
   "be", "bg", "bm", "db", "eb", "ed", "ee", "eg", "em", "gb", "gd", "gg", "gm", "mb", "md", "me", "mg", "mm"]]))
 
 def parse_file(document_file, validate = True):
@@ -56,147 +56,7 @@ def parse_file(document_file, validate = True):
     * IOError if the file can't be read
   """
   
-  data = document_file.read()
-  
-  # if the file has Metrics metadata
-  if data.startswith("@type network-status-consensus-3 1.0\n") or data.startswith("@type network-status-vote-3 1.0\n"):
-    return NetworkStatusDocument(data[data.find("\n") + 1:], validate)
-  
   return NetworkStatusDocument(document_file.read(), validate)
-
-class DocumentParser:
-  """
-  Helper class to parse documents.
-
-  :var str line: current line to be being parsed
-  :var list lines: list of remaining lines to be parsed
-  """
-  
-  def __init__(self, raw_content, validate):
-    """
-    Create a new DocumentParser.
-
-    :param str raw_content: content to be parsed
-    :param bool validate: if False, treats every keyword line as optional
-    """
-    
-    self._raw_content = raw_content
-    self.lines = raw_content.split("\n")
-    self.validate = validate
-    self.line = self.lines.pop(0)
-
-  def peek_keyword(self):
-    """
-    Returns the first keyword in the next line. Respects the opt keyword and
-    returns the actual keyword if the first is "opt".
-    
-    :returns: the first keyword of the next line
-    """
-    
-    if self.line:
-      if self.line.startswith("opt "):
-        return self.line.split(" ")[1]
-      return self.line.split(" ")[0]
-  
-  def read_keyword_line(self, keyword, optional = False):
-    """
-    Returns the first keyword in the next line it matches the given keyword.
-    
-    If it doesn't match, a ValueError is raised if optional is True and if the
-    DocumentParser was created with validation enabled. If not, None is returned.
-    
-    Respects the opt keyword and returns the next keyword if the first is "opt".
-
-    :param str keyword: keyword the line must begin with
-    :param bool optional: If the current line must begin with the given keyword
-    
-    :returns: the text after the keyword if the keyword matches the one provided, otherwise returns None or raises an exception
-    
-    :raises: ValueError if a non-optional keyword doesn't match when validation is enabled
-    """
-    
-    keyword_regex = re.compile("(opt )?" + re.escape(keyword) + "($| )")
-    
-    if not self.line:
-      if not optional and self.validate:
-        raise ValueError("Unexpected end of document")
-      return
-    
-    if keyword_regex.match(self.line):
-      try: line, self.line = self.line, self.lines.pop(0)
-      except IndexError: line, self.line = self.line, None
-      
-      if line == "opt " + keyword or line == keyword: return ""
-      elif line.startswith("opt "): return line.split(" ", 2)[2]
-      else: return line.split(" ", 1)[1]
-    elif self.line.startswith("opt"):
-      # if this was something new introduced at some point in the future
-      # ignore it and go to the next line
-      self.read_line()
-      return self.read_keyword_line(self, keyword, optional)
-    elif not optional and self.validate:
-      raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, self.line))
-  
-  def read_line(self):
-    """
-    Returns the current line and shifts the parser to the next line.
-    
-    :returns: the current line if it exists, None otherwise
-    """
-    
-    if self.line:
-      tmp, self.line = self.line, self.lines.pop(0)
-      return tmp
-  
-  def read_block(self, keyword):
-    """
-    Returns a keyword block that begins with "-----BEGIN keyword-----\\n" and
-    ends with "-----END keyword-----\\n".
-
-    :param str keyword: keyword block that must be read
-
-    :returns: the data in the keyword block
-    """
-
-    lines = []
-    
-    if self.line == "-----BEGIN " + keyword + "-----":
-      self.read_line()
-      while self.line != "-----END " + keyword + "-----":
-        lines.append(self.read_line())
-
-    return "\n".join(lines)
-  
-  def read_until(self, terminals = []):
-    """
-    Returns the data in the parser until a line that begins with one of the keywords in terminals are found.
-    
-    :param list terminals: list of strings at which we should stop reading and return the data
-    
-    :returns: the current line if it exists, None otherwise
-    """
-    
-    if self.line == None: return
-    lines, self.line = [self.line], self.lines.pop(0)
-    while self.line and not self.line.split(" ")[0] in terminals:
-      lines.append(self.line)
-      self.line = self.lines.pop(0)
-
-    return "\n".join(lines)
-  
-  def remaining(self):
-    """
-    Returns the data remaining in the parser.
-    
-    :returns: all a list of all unparsed lines
-    """
-    
-    if self.line:
-      lines, self.lines = self.lines, []
-      lines.insert(0, self.line)
-      return lines
-    else:
-      return []
 
 def _strptime(string, validate = True, optional = False):
   try:
@@ -212,7 +72,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   
   :var bool validated: **\*** whether the document is validated
   :var str network_status_version: **\*** a document format version. For v3 documents this is "3"
-  :var str vote_status: **\*** status of the vote. Is either "vote" or "consensus"
+  :var str vote_status: **\*** status of the vote (is either "vote" or "consensus")
   :var list consensus_methods: A list of supported consensus generation methods (integers)
   :var datetime published: time when the document was published
   :var int consensus_method: consensus method used to generate a consensus
@@ -221,7 +81,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   :var datetime valid_until: **\*** time until when the consensus is valid
   :var int vote_delay: **\*** number of seconds allowed for collecting votes from all authorities
   :var int dist_delay: number of seconds allowed for collecting signatures from all authorities
-  :var list client_versions: list of recommended Tor client versions 
+  :var list client_versions: list of recommended Tor client versions
   :var list server_versions: list of recommended Tor server versions
   :var list known_flags: **\*** list of known router flags
   :var list params: dict of parameter(str) => value(int) mappings
@@ -280,13 +140,13 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     :returns: a list of unrecognized trailing lines
     """
-	
+    
     return self._unrecognized_lines
   
   def _parse(self, raw_content):
     # preamble
     validate = self.validated
-    doc_parser = DocumentParser(raw_content, validate)
+    doc_parser = stem.descriptor.DescriptorParser(raw_content, validate)
     
     read_keyword_line = lambda keyword, optional = False: setattr(self, keyword.replace("-", "_"), doc_parser.read_keyword_line(keyword, optional))
     
@@ -326,8 +186,13 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       dirauth_data = doc_parser.read_until(["dir-source", "r"])
       self.directory_authorities.append(DirectoryAuthority(dirauth_data, vote, validate))
     
+    i = 1
     # router descriptors
     while doc_parser.line.startswith("r "):
+      i = i + 1
+      if i % 100 == 0:
+        import pdb
+        pdb.set_trace()
       router_data = doc_parser.read_until(["r", "directory-footer", "directory-signature"])
       self.router_descriptors.append(self._generate_router(router_data, vote, validate))
     
@@ -365,6 +230,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
   :var int orport: current orport
   :var str contact: directory authority's contact information
   :var str legacy_dir_key: fingerprint of and obsolete identity key
+  :var :class:`stem.descriptor.networkstatus_descriptor.KeyCertificate` key_certificate: directory authority's current key certificate
   :var str vote_digest: digest of the authority that contributed to the consensus
   """
   
@@ -380,7 +246,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     """
     
     super(DirectoryAuthority, self).__init__(raw_content)
-    parser = DocumentParser(raw_content, validate)
+    parser = stem.descriptor.DescriptorParser(raw_content, validate)
     
     dir_source = parser.read_keyword_line("dir-source")
     self.nickname, self.identity, self.address, self.ip, self.dirport, self.orport = dir_source.split(" ")
@@ -390,10 +256,108 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     self.contact = parser.read_keyword_line("contact")
     if vote:
       self.legacy_dir_key = parser.read_keyword_line("legacy-dir-key", True)
+      self.key_certificate = KeyCertificate(parser.remaining(), validate)
     else:
       self.vote_digest = parser.read_keyword_line("vote-digest", True)
     if parser.remaining() and validate:
       raise ValueError("Unrecognized trailing data in directory authority information")
+
+class KeyCertificate(stem.descriptor.Descriptor):
+  """
+  Directory key certificate.
+  
+  :var str key_certificate_version: **\*** version of the key certificate (Should be "3")
+  :var str ip: IP address on which the directory authority is listening
+  :var int port: port on which the directory authority is listening
+  :var str fingerprint: **\*** hex encoded fingerprint of the authority's identity key
+  :var str identity_key: **\*** long term authority identity key
+  :var datetime published: **\*** time (in GMT) when this document & the key were last generated
+  :var str expires: **\*** time (in GMT) after which this key becomes invalid
+  :var str signing_key: **\*** directory server's public signing key
+  :var str crosscert: signature made using certificate's signing key
+  :var str certification: **\*** signature of this key certificate signed with the identity key
+  
+  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  """
+  
+  def __init__(self, raw_content, validate = True):
+    """
+    Parse a key certificate entry and provide a KeyCertificate object.
+    
+    :param str raw_content: raw key certificate information
+    :param bool validate: True if the document is to be validated, False otherwise
+    
+    :raises: ValueError if the raw data is invalid
+    """
+    
+    super(DirectoryAuthority, self).__init__(raw_content)
+    parser = stem.descriptor.DescriptorParser(raw_content, validate)
+    peek_check_kw = lambda keyword: keyword == parser.peek_keyword()
+    seen_keywords = set()
+    
+    self.key_certificate_version = parser.read_keyword_line("dir-key-certificate-version")
+    if validate and self.key_certificate_version != "3": raise ValueError("Unrecognized dir-key-certificate-version")
+    
+    def _read_keyword_line(keyword):
+      if validate and keyword in seen_keywords:
+        raise ValueError("Invalid key certificate: '%s' appears twice" % keyword)
+      seen_keywords.add(keyword)
+      return parser.read_keyword_line(keyword)
+    
+    while parser.line:
+      if peek_check_kw("dir-address"):
+        line = _read_keyword_line("dir-address")
+        try:
+          self.ip, self.port = line.rsplit(":", 1)
+          self.port = int(self.port)
+        except Exception:
+          if validate: raise ValueError("Invalid dir-address line: %s" % line)
+      
+      elif peek_check_kw("fingerprint"):
+        self.fingerprint = _read_keyword_line("fingerprint")
+      
+      elif peek_check_kw("dir-identity-key"):
+        _read_keyword_line("dir-identity-key")
+        self.identity_key = parser.read_block("RSA PUBLIC KEY")
+      
+      elif peek_check_kw("dir-key-published"):
+        self.published = _strptime(_read_keyword_line("dir-key-published"))
+      
+      elif peek_check_kw("dir-key-expires"):
+        self.expires = _strptime(_read_keyword_line("dir-key-expires"))
+      
+      elif peek_check_kw("dir-signing-key"):
+        _read_keyword_line("dir-signing-key")
+        self.signing_key = parser.read_block("RSA PUBLIC KEY")
+      
+      elif peek_check_kw("dir-key-crosscert"):
+        _read_keyword_line("dir-key-crosscert")
+        self.crosscert = parser.read_block("ID SIGNATURE")
+      
+      elif peek_check_kw("dir-key-certification"):
+        _read_keyword_line("dir-key-certification")
+        self.certification = parser.read_block("SIGNATURE")
+        break
+      
+      elif validate:
+        raise ValueError("Key certificate contains unrecognized lines: %s" % parser.line)
+      
+      else:
+        # ignore unrecognized lines if we aren't validating
+        self._unrecognized_lines.append(parser.read_line())
+    
+    if parser.remaining():
+      if validate: raise ValueError("Unrecognized trailing data in key certificate")
+      else: self._unrecognized_lines.append(parser.read_line())
+  
+  def get_unrecognized_lines(self):
+    """
+    Returns any unrecognized lines.
+    
+    :returns: a list of unrecognized lines
+    """
+    
+    return self._unrecognized_lines
 
 class DirectorySignature(stem.descriptor.Descriptor):
   """
@@ -418,18 +382,19 @@ class DirectorySignature(stem.descriptor.Descriptor):
     """
     
     super(DirectorySignature, self).__init__(raw_content)
-    parser = DocumentParser(raw_content, validate)
+    parser = stem.descriptor.DescriptorParser(raw_content, validate)
     
     signature_line = parser.read_keyword_line("directory-signature").split(" ")
-
+    
     if len(signature_line) == 2:
       self.identity, self.key_digest = signature_line
     if len(signature_line) == 3: # for microdescriptor consensuses
       self.method, self.identity, self.key_digest = signature_line
-
+    
     self.signature = parser.read_block("SIGNATURE")
-    if parser.remaining() and validate:
-      raise ValueError("Unrecognized trailing data in directory signature")
+    if parser.remaining():
+      if validate: raise ValueError("Unrecognized trailing data in directory signature")
+      else: self._unrecognized_lines.append(parser.read_line())
 
 class RouterDescriptor(stem.descriptor.Descriptor):
   """
@@ -466,7 +431,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
   
   :var :class:`stem.exit_policy.MicrodescriptorExitPolicy` exitpolicy: router's exitpolicy
   
-  :var str mircodescriptor_hashes: "m" SP methods 1*(SP algorithm "=" digest) NL
+  :var str microdescriptor_hashes: a list of two-tuples with a list of consensus methods(int) that may produce the digest and a dict with algorithm(str) => digest(str) mappings. algorithm is the hashing algorithm (usually "sha256") that is used to produce digest (the base64 encoding of the hash of the router's microdescriptor with trailing =s omitted).
   
   **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   """
@@ -490,20 +455,20 @@ class RouterDescriptor(stem.descriptor.Descriptor):
     self.orport = None
     self.dirport = None
     
-    self.is_valid = None
-    self.is_guard = None
-    self.is_named = None
-    self.is_unnamed = None
-    self.is_running = None
-    self.is_stable = None
-    self.is_exit = None
-    self.is_fast = None
-    self.is_authority = None
-    self.supports_v2dir = None
-    self.supports_v3dir = None
-    self.is_hsdir = None
-    self.is_badexit = None
-    self.is_baddirectory = None
+    self.is_valid = False
+    self.is_guard = False
+    self.is_named = False
+    self.is_unnamed = False
+    self.is_running = False
+    self.is_stable = False
+    self.is_exit = False
+    self.is_fast = False
+    self.is_authority = False
+    self.supports_v2dir = False
+    self.supports_v3dir = False
+    self.is_hsdir = False
+    self.is_badexit = False
+    self.is_baddirectory = False
     
     self.version = None
     
@@ -512,7 +477,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
     
     self.exit_policy = None
     
-    self.mircodescriptor_hashes = []
+    self.microdescriptor_hashes = []
     
     self._parse(raw_contents, vote, validate)
   
@@ -524,7 +489,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
     :raises: ValueError if an error occures in validation
     """
     
-    parser = DocumentParser(raw_content, validate)
+    parser = stem.descriptor.DescriptorParser(raw_content, validate)
     seen_keywords = set()
     peek_check_kw = lambda keyword: keyword == parser.peek_keyword()
     
@@ -593,7 +558,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
             key, value = values[0].split("=")
             if key == "Bandwidth": self.bandwidth = int(value)
             elif validate: raise ValueError("Router descriptor contains invalid 'w' line: expected Bandwidth, read " + key)
-        
+            
             if len(values) == 2:
               key, value = values[1].split("=")
               if key == "Measured=": self.measured_bandwidth = int(value)
@@ -613,23 +578,23 @@ class RouterDescriptor(stem.descriptor.Descriptor):
       elif vote and peek_check_kw("m"):
         # microdescriptor hashes
         m = parser.read_keyword_line("m", True)
-        methods, digests = m.split(" ", 1)
-        method_list = methods.split(",")
-        digest_dict = [digest.split("=", 1) for digest in digests.split(" ")]
-        self.microdescriptor_hashes.append((method_list, digest_dict))
+        #methods, digests = m.split(" ", 1)
+        #method_list = methods.split(",")
+        #digest_dict = [digest.split("=", 1) for digest in digests.split(" ")]
+        #self.microdescriptor_hashes.append((method_list, digest_dict))
       
       elif validate:
         raise ValueError("Router descriptor contains unrecognized trailing lines: %s" % parser.line)
       
       else:
         self._unrecognized_lines.append(parser.read_line()) # ignore unrecognized lines if we aren't validating
-
+  
   def get_unrecognized_lines(self):
     """
     Returns any unrecognized lines.
     
     :returns: a list of unrecognized lines
     """
-	
+    
     return self._unrecognized_lines
-  
+

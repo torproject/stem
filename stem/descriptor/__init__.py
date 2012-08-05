@@ -17,6 +17,7 @@ __all__ = [
   "reader",
   "extrainfo_descriptor",
   "server_descriptor",
+  "networkstatus_descriptor",
   "parse_file",
   "Descriptor",
 ]
@@ -46,6 +47,7 @@ def parse_file(path, descriptor_file):
   
   import stem.descriptor.server_descriptor
   import stem.descriptor.extrainfo_descriptor
+  import stem.descriptor.networkstatus_descriptor
   
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
@@ -60,6 +62,8 @@ def parse_file(path, descriptor_file):
   if filename == "cached-descriptors":
     file_parser = stem.descriptor.server_descriptor.parse_file
   elif filename == "cached-extrainfo":
+    file_parser = stem.descriptor.extrainfo_descriptor.parse_file
+  elif filename == "cached-consensus":
     file_parser = stem.descriptor.extrainfo_descriptor.parse_file
   
   if file_parser:
@@ -92,6 +96,8 @@ def parse_file(path, descriptor_file):
       # https://trac.torproject.org/6257
       
       desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
+    elif desc_type == "network-status-consensus-3" and major_version == 1:
+      desc = stem.descriptor.networkstatus_descriptor.NetworkStatusDocument(descriptor_file.read())
   
   if desc:
     desc._set_path(path)
@@ -272,4 +278,140 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords):
       entries[keyword] = [(value, block_contents)]
   
   return entries, first_keyword, last_keyword, extra_entries
+
+class DescriptorParser:
+  """
+  Helper class to parse documents.
+  
+  :var str line: current line to be being parsed
+  :var list lines: list of remaining lines to be parsed
+  """
+  
+  def __init__(self, raw_content, validate):
+    """
+    Create a new DocumentParser.
+    
+    :param str raw_content: content to be parsed
+    :param bool validate: if False, treats every keyword line as optional
+    """
+    
+    self._raw_content = raw_content
+    self.lines = raw_content.split("\n")
+    self.validate = validate
+    self.line = self.lines.pop(0)
+    
+  def peek_keyword(self):
+    """
+    Returns the first keyword in the next line. Respects the opt keyword and
+    returns the actual keyword if the first is "opt".
+    
+    :returns: the first keyword of the next line
+    """
+    
+    if self.line:
+      if self.line.startswith("opt "):
+        return self.line.split(" ")[1]
+      return self.line.split(" ")[0]
+  
+  def read_keyword_line(self, keyword, optional = False):
+    """
+    Returns the first keyword in the next line it matches the given keyword.
+    
+    If it doesn't match, a ValueError is raised if optional is True and if the
+    DocumentParser was created with validation enabled. If not, None is returned.
+    
+    Respects the opt keyword and returns the next keyword if the first is "opt".
+    
+    :param str keyword: keyword the line must begin with
+    :param bool optional: If the current line must begin with the given keyword
+    
+    :returns: the text after the keyword if the keyword matches the one provided, otherwise returns None or raises an exception
+    
+    :raises: ValueError if a non-optional keyword doesn't match when validation is enabled
+    """
+    
+    keyword_regex = re.compile("(opt )?" + re.escape(keyword) + "($| )")
+    
+    if not self.line:
+      if not optional and self.validate:
+        raise ValueError("Unexpected end of document")
+      return
+    
+    if keyword_regex.match(self.line):
+      try: line, self.line = self.line, self.lines.pop(0)
+      except IndexError: line, self.line = self.line, None
+      
+      if line == "opt " + keyword or line == keyword: return ""
+      elif line.startswith("opt "): return line.split(" ", 2)[2]
+      else: return line.split(" ", 1)[1]
+    elif self.line.startswith("opt"):
+      # if this was something new introduced at some point in the future
+      # ignore it and go to the next line
+      self.read_line()
+      return self.read_keyword_line(self, keyword, optional)
+    elif not optional and self.validate:
+      raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, self.line))
+  
+  def read_line(self):
+    """
+    Returns the current line and shifts the parser to the next line.
+    
+    :returns: the current line if it exists, None otherwise
+    """
+    
+    if self.line:
+      tmp, self.line = self.line, self.lines.pop(0)
+      return tmp
+  
+  def read_block(self, keyword):
+    """
+    Returns a keyword block that begins with "-----BEGIN keyword-----\\n" and
+    ends with "-----END keyword-----\\n".
+    
+    :param str keyword: keyword block that must be read
+    
+    :returns: the data in the keyword block
+    """
+    
+    lines = []
+    
+    if self.line == "-----BEGIN " + keyword + "-----":
+      self.read_line()
+      while self.line != "-----END " + keyword + "-----":
+        lines.append(self.read_line())
+
+    self.read_line() # pop out the END line
+    
+    return "\n".join(lines)
+  
+  def read_until(self, terminals = []):
+    """
+    Returns the data in the parser until a line that begins with one of the keywords in terminals are found.
+    
+    :param list terminals: list of strings at which we should stop reading and return the data
+    
+    :returns: the current line if it exists, None otherwise
+    """
+    
+    if self.line == None: return
+    lines, self.line = [self.line], self.lines.pop(0)
+    while self.line and not self.line.split(" ")[0] in terminals:
+      lines.append(self.line)
+      self.line = self.lines.pop(0)
+    
+    return "\n".join(lines)
+  
+  def remaining(self):
+    """
+    Returns the data remaining in the parser.
+    
+    :returns: all a list of all unparsed lines
+    """
+    
+    if self.line:
+      lines, self.lines = self.lines, []
+      lines.insert(0, self.line)
+      return lines
+    else:
+      return []
 
