@@ -14,12 +14,12 @@ etc). This information is provided from a few sources...
 
   parse_file - Iterates over the server descriptors in a file.
   ServerDescriptor - Tor server descriptor.
-    |  |- RelayDescriptor - Server descriptor for a relay.
-    |  |  +- is_valid - checks the signature against the descriptor content
-    |  |
-    |  +- BridgeDescriptor - Scrubbed server descriptor for a bridge.
-    |     |- is_scrubbed - checks if our content has been properly scrubbed
-    |     +- get_scrubbing_issues - description of issues with our scrubbing
+    |- RelayDescriptor - Server descriptor for a relay.
+    |  +- is_valid - checks the signature against the descriptor content
+    |
+    |- BridgeDescriptor - Scrubbed server descriptor for a bridge.
+    |  |- is_scrubbed - checks if our content has been properly scrubbed
+    |  +- get_scrubbing_issues - description of issues with our scrubbing
     |
     |- digest - calculates the digest value for our content
     |- get_unrecognized_lines - lines with unrecognized content
