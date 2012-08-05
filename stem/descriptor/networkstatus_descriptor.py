@@ -186,13 +186,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       dirauth_data = doc_parser.read_until(["dir-source", "r"])
       self.directory_authorities.append(DirectoryAuthority(dirauth_data, vote, validate))
     
-    i = 1
     # router descriptors
     while doc_parser.line.startswith("r "):
-      i = i + 1
-      if i % 100 == 0:
-        import pdb
-        pdb.set_trace()
       router_data = doc_parser.read_until(["r", "directory-footer", "directory-signature"])
       self.router_descriptors.append(self._generate_router(router_data, vote, validate))
     
@@ -561,7 +556,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
             
             if len(values) == 2:
               key, value = values[1].split("=")
-              if key == "Measured=": self.measured_bandwidth = int(value)
+              if key == "Measured": self.measured_bandwidth = int(value)
               elif validate: raise ValueError("Router descriptor contains invalid 'w' line: expected Measured, read " + key)
           elif validate: raise ValueError("Router descriptor contains invalid 'w' line")
         elif validate: raise ValueError("Router descriptor contains empty 'w' line")
@@ -578,10 +573,10 @@ class RouterDescriptor(stem.descriptor.Descriptor):
       elif vote and peek_check_kw("m"):
         # microdescriptor hashes
         m = parser.read_keyword_line("m", True)
-        #methods, digests = m.split(" ", 1)
-        #method_list = methods.split(",")
-        #digest_dict = [digest.split("=", 1) for digest in digests.split(" ")]
-        #self.microdescriptor_hashes.append((method_list, digest_dict))
+        methods, digests = m.split(" ", 1)
+        method_list = methods.split(",")
+        digest_dict = [digest.split("=", 1) for digest in digests.split(" ")]
+        self.microdescriptor_hashes.append((method_list, digest_dict))
       
       elif validate:
         raise ValueError("Router descriptor contains unrecognized trailing lines: %s" % parser.line)
