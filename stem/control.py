@@ -9,10 +9,13 @@ interacting at a higher level.
 
 ::
 
-  from_port - Provides a Controller based on a port connection.
-  from_socket_file - Provides a Controller based on a socket file connection.
-  
   Controller - General controller class intended for direct use.
+    | |- from_port - Provides a Controller based on a port connection.
+    | +- from_socket_file - Provides a Controller based on a socket file connection.
+    |
+    |- is_caching_enabled - true if the controller has enabled caching
+    |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
+    |- clear_cache - clears any cached results
     |- get_info - issues a GETINFO query for a parameter
     |- get_conf - gets the value of a configuration option
     |- get_conf_mapping - gets the values of multiple configuration options
@@ -71,6 +74,24 @@ MAPPED_CONFIG_KEYS = {
   "hiddenserviceauthorizeclient": "HiddenServiceOptions",
   "hiddenserviceoptions": "HiddenServiceOptions"
 }
+
+# unchangeable GETINFO parameters
+CACHEABLE_GETINFO_PARAMS = (
+  'version',
+  'config-file',
+  'exit-policy/default',
+  'fingerprint',
+  'config/names',
+  'config/defaults',
+  'info/names',
+  'events/names',
+  'features/names',
+  'process/descriptor-limit',
+)
+
+# number of sequential attempts before we decide that the Tor geoip database
+# is unavailable
+GEOIP_FAILURE_THRESHOLD = 5
 
 # TODO: The Thread's isAlive() method and theading's currentThread() was
 # changed to the more conventional is_alive() and current_thread() in python
@@ -454,6 +475,19 @@ class Controller(BaseController):
   from_port = staticmethod(from_port)
   from_socket_file = staticmethod(from_socket_file)
   
+  def __init__(self, control_socket, enable_caching = True):
+    super(Controller, self).__init__(control_socket)
+    
+    self._is_caching_enabled = enable_caching
+    self._request_cache = {}
+    
+    # number of sequental 'GETINFO ip-to-country/*' lookups that have failed
+    self._geoip_failure_count = 0
+  
+  def connect(self):
+    super(Controller, self).connect()
+    self.clear_cache()
+  
   def close(self):
     # making a best-effort attempt to quit before detaching the socket
     if self.is_alive():
@@ -462,7 +496,38 @@ class Controller(BaseController):
     
     super(Controller, self).close()
   
-  def get_info(self, param, default = UNDEFINED):
+  def is_caching_enabled(self):
+    """
+    True if caching has been enabled, False otherwise.
+    
+    :returns: bool to indicate if caching is enabled
+    """
+    
+    return self._is_caching_enabled
+  
+  def is_geoip_unavailable(self):
+    """
+    Provides True if we've concluded hat our geoip database is unavailable,
+    False otherwise. This is determined by having our 'GETINFO ip-to-country/*'
+    lookups fail so this will default to False if we aren't making those
+    queries.
+    
+    Geoip failures will be untracked if caching is disabled.
+    
+    :returns: bool to indicate if we've concluded our geoip database to be unavailable or not
+    """
+    
+    return self._geoip_failure_count >= GEOIP_FAILURE_THRESHOLD
+  
+  def clear_cache(self):
+    """
+    Drops any cached results.
+    """
+    
+    self._request_cache = {}
+    self._geoip_failure_count = 0
+  
+  def get_info(self, params, default = UNDEFINED):
     """
     Queries the control socket for the given GETINFO option. If provided a
     default then that's returned if the GETINFO option is undefined or the
@@ -484,35 +549,69 @@ class Controller(BaseController):
       :class:`stem.socket.InvalidArguments` if the 'param' requested was invalid
     """
     
-    # TODO: add caching?
-    # TODO: special geoip handling?
-    # TODO: add logging, including call runtime
+    start_time = time.time()
+    reply = {}
     
-    if isinstance(param, str):
+    if isinstance(params, str):
       is_multiple = False
-      param = [param]
+      params = set([params])
     else:
+      if not params: return {}
       is_multiple = True
+      params = set(params)
+    
+    # check for cached results
+    for param in list(params):
+      cache_key = "getinfo.%s" % param.lower()
+      
+      if cache_key in self._request_cache:
+        reply[param] = self._request_cache[cache_key]
+        params.remove(param)
+      elif param.startswith('ip-to-country/') and self.is_geoip_unavailable():
+        # the geoip database aleady looks to be unavailable - abort the request
+        raise stem.socket.ProtocolError("Tor geoip database is unavailable")
+    
+    # if everything was cached then short circuit making the query
+    if not params:
+      log.debug("GETINFO %s (cache fetch)" % " ".join(reply.keys()))
+      
+      if is_multiple: return reply
+      else: return reply.values()[0]
     
     try:
-      response = self.msg("GETINFO %s" % " ".join(param))
+      response = self.msg("GETINFO %s" % " ".join(params))
       stem.response.convert("GETINFO", response)
+      response.assert_matches(params)
+      reply.update(response.entries)
       
-      # error if we got back different parameters than we requested
-      requested_params = set(param)
-      reply_params = set(response.entries.keys())
+      if self.is_caching_enabled():
+        for key, value in response.entries.items():
+          key = key.lower() # make case insensitive
+          
+          if key in CACHEABLE_GETINFO_PARAMS:
+            self._request_cache["getinfo.%s" % key] = value
+          elif key.startswith('ip-to-country/'):
+            # both cacheable and means that we should reset the geoip failure count
+            self._request_cache["getinfo.%s" % key] = value
+            self._geoip_failure_count = -1
       
-      if requested_params != reply_params:
-        requested_label = ", ".join(requested_params)
-        reply_label = ", ".join(reply_params)
-        
-        raise stem.socket.ProtocolError("GETINFO reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (requested_label, reply_label))
+      log.debug("GETINFO %s (runtime: %0.4f)" % (" ".join(params), time.time() - start_time))
       
       if is_multiple:
-        return response.entries
+        return reply
       else:
-        return response.entries[param[0]]
+        return reply.values()[0]
     except stem.socket.ControllerError, exc:
+      # bump geoip failure count if...
+      # * we're caching results
+      # * this was soley a geoip lookup
+      # * we've never had a successful geoip lookup (faiure count isn't -1)
+      
+      is_geoip_request = len(params) == 1 and list(params)[0].startswith('ip-to-country/')
+      
+      if is_geoip_request and self.is_caching_enabled() and self._geoip_failure_count != -1:
+        self._geoip_failure_count += 1
+      
       if default == UNDEFINED: raise exc
       else: return default
   

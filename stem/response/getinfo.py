@@ -52,4 +52,22 @@ class GetInfoResponse(stem.response.ControlMessage):
         value = value[1:]
       
       self.entries[key] = value
+  
+  def assert_matches(self, params):
+    """
+    Checks if we match a given set of parameters, and raise a ProtocolError if not.
+    
+    :param set params: parameters to assert that we contain
+    
+    :raises:
+      * :class:`stem.socket.ProtocolError` if parameters don't match this response
+    """
+    
+    reply_params = set(self.entries.keys())
+    
+    if params != reply_params:
+      requested_label = ", ".join(params)
+      reply_label = ", ".join(reply_params)
+      
+      raise stem.socket.ProtocolError("GETINFO reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (requested_label, reply_label))
 
