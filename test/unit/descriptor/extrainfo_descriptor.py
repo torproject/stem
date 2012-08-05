@@ -522,13 +522,17 @@ class TestExtraInfoDescriptor(unittest.TestCase):
   
   def test_transport_line(self):
     """
-    Basic exercise of the bridge descriptor's transport entry.
-    attributes.
+    Basic exercise for both a bridge and relay's transport entry.
     """
     
     desc_text = _make_descriptor({"transport": "obfs3"}, is_bridge = True)
     desc = BridgeExtraInfoDescriptor(desc_text)
     self.assertEquals(["obfs3"], desc.transport)
+    self.assertEquals([], desc.get_unrecognized_lines())
+    
+    desc_text = _make_descriptor({"transport": "obfs2 83.212.96.201:33570"})
+    desc = RelayExtraInfoDescriptor(desc_text)
+    self.assertEquals(["obfs2 83.212.96.201:33570"], desc.transport)
     self.assertEquals([], desc.get_unrecognized_lines())
   
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):

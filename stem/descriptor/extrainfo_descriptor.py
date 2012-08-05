@@ -179,6 +179,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var str fingerprint: **\*** identity key fingerprint
   :var datetime published: **\*** time in GMT when this descriptor was made
   :var str geoip_db_digest: sha1 of geoIP database file
+  :var list transport: transport method recognized by the bridge (ex. obfs3)
   
   **Bi-directional connection usage:**
   
@@ -287,6 +288,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.fingerprint = None
     self.published = None
     self.geoip_db_digest = None
+    self.transport = None
     
     self.conn_bi_direct_end = None
     self.conn_bi_direct_interval = None
@@ -421,6 +423,19 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           raise ValueError("Geoip digest line had an invalid sha1 digest: %s" % line)
         
         self.geoip_db_digest = value
+      elif keyword == "transport":
+        # "transport" transportname address:port [arglist]
+        # Everything after the transportname is scrubbed in published bridge
+        # descriptors, so we'll never see it in practice.
+        #
+        # These entries really only make sense for bridges, but have been seen
+        # on non-bridges in the wild when the relay operator configured it this
+        # way.
+        
+        if self.transport is None:
+          self.transport = []
+        
+        self.transport.append(value)
       elif keyword == "cell-circuits-per-decile":
         # "cell-circuits-per-decile" num
         
@@ -746,12 +761,10 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Bridge extra-info descriptor (`specification <https://metrics.torproject.org/formats.html#bridgedesc>`_)
   
-  :var list transport: transport method recognized by the bridge (ex. obfs3)
   """
   
   def __init__(self, raw_contents, validate = True):
     self._digest = None
-    self.transport = None
     
     super(BridgeExtraInfoDescriptor, self).__init__(raw_contents, validate)
   
@@ -766,17 +779,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
       value, _ = values[0]
       line = "%s %s" % (keyword, value) # original line
       
-      if keyword == "transport":
-        # "transport" transportname address:port [arglist]
-        # Everything after the transportname is scrubbed in published bridge
-        # descriptors, so we'll never see it in practice.
-        
-        if self.transport is None:
-          self.transport = []
-        
-        self.transport.append(value)
-        del entries["transport"]
-      elif keyword == "router-digest":
+      if keyword == "router-digest":
         if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
           raise ValueError("Router digest line had an invalid sha1 digest: %s" % line)
         
