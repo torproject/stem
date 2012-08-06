@@ -98,6 +98,10 @@ def parse_file(path, descriptor_file):
       desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
     elif desc_type == "network-status-consensus-3" and major_version == 1:
       desc = stem.descriptor.networkstatus_descriptor.NetworkStatusDocument(descriptor_file.read())
+      for desc in desc.router_descriptors:
+        desc._set_path(path)
+        yield desc
+      return
   
   if desc:
     desc._set_path(path)
@@ -338,14 +342,13 @@ class DescriptorParser:
       return
     
     if keyword_regex.match(self.line):
-      try: line, self.line = self.line, self.lines.pop(0)
-      except IndexError: line, self.line = self.line, None
+      line = self.read_line()
       
       if line == "opt " + keyword or line == keyword: return ""
       elif line.startswith("opt "): return line.split(" ", 2)[2]
       else: return line.split(" ", 1)[1]
     elif self.line.startswith("opt"):
-      # if this was something new introduced at some point in the future
+      # if this is something new we don't recognize
       # ignore it and go to the next line
       self.read_line()
       return self.read_keyword_line(self, keyword, optional)
@@ -360,8 +363,12 @@ class DescriptorParser:
     """
     
     if self.line:
-      tmp, self.line = self.line, self.lines.pop(0)
+      try: tmp, self.line = self.line, self.lines.pop(0)
+      except IndexError: tmp, self.line = self.line, None
+      
       return tmp
+    elif not optional and self.validate:
+      raise ValueError("Unexpected end of document")
   
   def read_block(self, keyword):
     """
@@ -379,7 +386,7 @@ class DescriptorParser:
       self.read_line()
       while self.line != "-----END " + keyword + "-----":
         lines.append(self.read_line())
-
+    
     self.read_line() # pop out the END line
     
     return "\n".join(lines)
@@ -394,10 +401,10 @@ class DescriptorParser:
     """
     
     if self.line == None: return
-    lines, self.line = [self.line], self.lines.pop(0)
+    lines = [self.read_line()]
     while self.line and not self.line.split(" ")[0] in terminals:
       lines.append(self.line)
-      self.line = self.lines.pop(0)
+      self.read_line()
     
     return "\n".join(lines)
   
