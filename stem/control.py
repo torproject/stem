@@ -627,7 +627,13 @@ class Controller(BaseController):
       * ValueError if unable to parse the version
     """
     
-    return stem.version.Version(self.get_info("version"))
+    if not self.is_caching_enabled():
+      return stem.version.Version(self.get_info("version"))
+    elif not "version" in self._request_cache:
+      version = stem.version.Version(self.get_info("version"))
+      self._request_cache["version"] = version
+    
+    return self._request_cache["version"]
   
   def authenticate(self, *args, **kwargs):
     """
