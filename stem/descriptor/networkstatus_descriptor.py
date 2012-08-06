@@ -43,20 +43,20 @@ _bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in
 
 def parse_file(document_file, validate = True):
   """
-  Parses a network status document file, and returns a NetworkStatusDocument
-  object.
+  Iterates over the router descriptors in a network status document.
   
   :param file document_file: file with network status document content
   :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
   
-  :returns: NetworkStatusDocument object created by parsing the file
+  :returns: iterator for  :class:`stem.descriptor.networkstatus_descriptor.RouterDescriptor` instances in the file
   
   :raises:
     * ValueError if the contents is malformed and validate is True
     * IOError if the file can't be read
   """
   
-  return NetworkStatusDocument(document_file.read(), validate)
+  document = NetworkStatusDocument(document_file.read(), validate)
+  return document.router_descriptors
 
 def _strptime(string, validate = True, optional = False):
   try:
@@ -186,10 +186,18 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       dirauth_data = doc_parser.read_until(["dir-source", "r"])
       self.directory_authorities.append(DirectoryAuthority(dirauth_data, vote, validate))
     
+    def _router_desc_generator(raw_content, vote, validate):
+      parser = stem.descriptor.DescriptorParser(raw_content, validate)
+      while parser.line != None:
+        descriptor = parser.read_until("r")
+        yield self._generate_router(descriptor, vote, validate)
+    
     # router descriptors
-    while doc_parser.line.startswith("r "):
-      router_data = doc_parser.read_until(["r", "directory-footer", "directory-signature"])
-      self.router_descriptors.append(self._generate_router(router_data, vote, validate))
+    if doc_parser.peek_keyword() == "r":
+      router_descriptors_data = doc_parser.read_until(["bandwidth-weights", "directory-footer", "directory-signature"])
+      self.router_descriptors = _router_desc_generator(router_descriptors_data, vote, validate)
+    elif validate:
+      raise ValueError("No router descriptors found")
     
     # footer section
     if self.consensus_method > 9 or vote and filter(lambda x: x >= 9, self.consensus_methods):
