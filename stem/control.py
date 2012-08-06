@@ -612,6 +612,8 @@ class Controller(BaseController):
       if is_geoip_request and self.is_caching_enabled() and self._geoip_failure_count != -1:
         self._geoip_failure_count += 1
       
+      log.debug("GETINFO %s (failed: %s)" % (" ".join(params), exc))
+      
       if default == UNDEFINED: raise exc
       else: return default
   
@@ -694,7 +696,7 @@ class Controller(BaseController):
     entries = self.get_conf_map(param, default, multiple)
     return _case_insensitive_lookup(entries, param, default)
   
-  def get_conf_map(self, param, default = UNDEFINED, multiple = True):
+  def get_conf_map(self, params, default = UNDEFINED, multiple = True):
     """
     Queries the control socket for the values of given configuration options
     and provides a mapping of the keys to the values. If provided a default
@@ -720,7 +722,7 @@ class Controller(BaseController):
     provides so get_conf_map("HiddenServicePort") will give the same response
     as get_conf_map("HiddenServiceOptions").
     
-    :param str,list param: configuration option(s) to be queried
+    :param str,list params: configuration option(s) to be queried
     :param object default: response if the query fails
     :param bool multiple: if True, the value(s) provided are lists of all returned values,otherwise this just provides the first value
     
@@ -735,19 +737,44 @@ class Controller(BaseController):
       :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
     """
     
-    if isinstance(param, str):
-      param = [param]
+    start_time = time.time()
+    reply = {}
+    
+    if isinstance(params, str):
+      params = [params]
+    
+    # remove strings which contain only whitespace
+    params = filter(lambda entry: entry.strip(), params)
+    if params == []: return {}
+    
+    # translate context sensitive options
+    lookup_params = set([MAPPED_CONFIG_KEYS.get(entry, entry) for entry in params])
+    
+    # check for cached results
+    for param in list(lookup_params):
+      cache_key = "getconf.%s" % param.lower()
+      
+      if cache_key in self._request_cache:
+        reply[param] = self._request_cache[cache_key]
+        lookup_params.remove(param)
+    
+    # if everything was cached then short circuit making the query
+    if not lookup_params:
+      log.debug("GETCONF %s (cache fetch)" % " ".join(reply.keys()))
+      
+      if multiple:
+        return reply
+      else:
+        return dict([(entry[0], entry[1][0]) for entry in reply.items()])
     
     try:
-      # remove strings which contain only whitespace
-      param = filter(lambda entry: entry.strip(), param)
-      if param == []: return {}
-      
-      # translate context sensitive options
-      lookup_param = set([MAPPED_CONFIG_KEYS.get(entry, entry) for entry in param])
-      
-      response = self.msg("GETCONF %s" % ' '.join(lookup_param))
+      response = self.msg("GETCONF %s" % ' '.join(lookup_params))
       stem.response.convert("GETCONF", response)
+      reply.update(response.entries)
+      
+      if self.is_caching_enabled():
+        for key, value in response.entries.items():
+          self._request_cache["getconf.%s" % key.lower()] = value
       
       # Maps the entries back to the parameters that the user requested so the
       # capitalization matches (ie, if they request "exitpolicy" then that
@@ -759,19 +786,23 @@ class Controller(BaseController):
       # entries since the user didn't request those by their key, so we can't
       # be sure what they wanted.
       
-      for key in response.entries:
+      for key in reply:
         if not key.lower() in MAPPED_CONFIG_KEYS.values():
-          user_expected_key = _case_insensitive_lookup(param, key, key)
+          user_expected_key = _case_insensitive_lookup(params, key, key)
           
           if key != user_expected_key:
-            response.entries[user_expected_key] = response.entries[key]
-            del response.entries[key]
+            reply[user_expected_key] = reply[key]
+            del reply[key]
+      
+      log.debug("GETCONF %s (runtime: %0.4f)" % (" ".join(lookup_params), time.time() - start_time))
       
       if multiple:
-        return response.entries
+        return reply
       else:
-        return dict([(entry[0], entry[1][0]) for entry in response.entries.items()])
+        return dict([(entry[0], entry[1][0]) for entry in reply.items()])
     except stem.socket.ControllerError, exc:
+      log.debug("GETCONF %s (failed: %s)" % (" ".join(lookup_params), exc))
+      
       if default != UNDEFINED: return default
       else: raise exc
   
@@ -820,7 +851,7 @@ class Controller(BaseController):
     ::
     
       my_controller.set_options({
-        "Nickname", "caerSidi",
+        "Nickname": "caerSidi",
         "ExitPolicy": ["accept *:80", "accept *:443", "reject *:*"],
         "ContactInfo": "caerSidi-exit@someplace.com",
         "Log": None,
@@ -839,6 +870,8 @@ class Controller(BaseController):
       :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
     """
     
+    start_time = time.time()
+    
     # constructs the SETCONF or RESETCONF query
     query_comp = ["RESETCONF" if reset else "SETCONF"]
     
@@ -853,10 +886,27 @@ class Controller(BaseController):
       else:
         query_comp.append(param)
     
-    response = self.msg(" ".join(query_comp))
+    query = " ".join(query_comp)
+    response = self.msg(query)
     stem.response.convert("SINGLELINE", response)
     
-    if not response.is_ok():
+    if response.is_ok():
+      log.debug("%s (runtime: %0.4f)" % (query, time.time() - start_time))
+      
+      if self.is_caching_enabled():
+        for param, value in params:
+          cache_key = "getconf.%s" % param.lower()
+          
+          if value is None:
+            if cache_key in self._request_cache:
+              del self._request_cache[cache_key]
+          elif isinstance(value, str):
+            self._request_cache[cache_key] = [value]
+          else:
+            self._request_cache[cache_key] = value
+    else:
+      log.debug("%s (failed, code: %s, message: %s)" % (query, response.code, response.message))
+      
       if response.code == "552":
         if response.message.startswith("Unrecognized option: Unknown option '"):
           key = response.message[37:response.message.find("\'", 37)]
