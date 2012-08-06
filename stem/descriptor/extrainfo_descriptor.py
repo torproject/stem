@@ -179,7 +179,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var str fingerprint: **\*** identity key fingerprint
   :var datetime published: **\*** time in GMT when this descriptor was made
   :var str geoip_db_digest: sha1 of geoIP database file
-  :var list transport: transport method recognized by the bridge (ex. obfs3)
+  :var dict transport: **\*** mapping of transport methods to their (address, port, args) tuple, these usually appeear on bridges in which case all of those are None
   
   **Bi-directional connection usage:**
   
@@ -288,7 +288,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.fingerprint = None
     self.published = None
     self.geoip_db_digest = None
-    self.transport = None
+    self.transport = {}
     
     self.conn_bi_direct_end = None
     self.conn_bi_direct_interval = None
@@ -432,10 +432,41 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         # on non-bridges in the wild when the relay operator configured it this
         # way.
         
-        if self.transport is None:
-          self.transport = []
+        name, address, port, args = None, None, None, None
         
-        self.transport.append(value)
+        if not ' ' in value:
+          # scrubbed
+          name = value
+        else:
+          # not scrubbed
+          value_comp = value.split()
+          
+          if len(value_comp) < 1:
+            raise ValueError("Transport line is missing its transport name: %s" % line)
+          else:
+            name = value_comp[0]
+          
+          if len(value_comp) < 2:
+            raise ValueError("Transport line is missing its address:port value: %s" % line)
+          elif not ":" in value_comp[1]:
+            raise ValueError("Transport line's address:port entry is missing a colon: %s" % line)
+          else:
+            address, port_str = value_comp[1].split(':', 1)
+            
+            if not stem.util.connection.is_valid_ip_address(address) or \
+                   stem.util.connection.is_valid_ipv6_address(address):
+              raise ValueError("Transport line has a malformed address: %s" % line)
+            elif not stem.util.connection.is_valid_port(port_str):
+              raise ValueError("Transport line has a malformed port: %s" % line)
+            
+            port = int(port_str)
+          
+          if len(value_comp) >= 3:
+            args = value_comp[2:]
+          else:
+            args = []
+        
+        self.transport[name] = (address, port, args)
       elif keyword == "cell-circuits-per-decile":
         # "cell-circuits-per-decile" num
         
