@@ -62,7 +62,7 @@ def parse_file(document_file, validate = True):
   :param file document_file: file with network status document content
   :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
   
-  :returns: iterator for  :class:`stem.descriptor.networkstatus.RouterDescriptor` instances in the file
+  :returns: iterator for :class:`stem.descriptor.networkstatus.RouterDescriptor` instances in the file
   
   :raises:
     * ValueError if the contents is malformed and validate is True
@@ -86,9 +86,9 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   :var bool validated: **\*** whether the document is validated
   :var str network_status_version: **\*** a document format version. For v3 documents this is "3"
   :var str vote_status: **\*** status of the vote (is either "vote" or "consensus")
-  :var list consensus_methods: A list of supported consensus generation methods (integers)
-  :var datetime published: time when the document was published
-  :var int consensus_method: consensus method used to generate a consensus
+  :var list consensus_methods: **^** A list of supported consensus generation methods (integers)
+  :var datetime published: **^** time when the document was published
+  :var int consensus_method: **~** consensus method used to generate a consensus
   :var datetime valid_after: **\*** time when the consensus becomes valid
   :var datetime fresh_until: **\*** time until when the consensus is considered to be fresh
   :var datetime valid_until: **\*** time until when the consensus is valid
@@ -100,10 +100,12 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   :var list params: dict of parameter(str) => value(int) mappings
   :var list router_descriptors: **\*** iterator for RouterDescriptor objects defined in the document
   :var list directory_authorities: **\*** list of DirectoryAuthority objects that have generated this document
-  :var dict bandwidth_weights: dict of weight(str) => value(int) mappings
+  :var dict bandwidth_weights: **~** dict of weight(str) => value(int) mappings
   :var list directory_signatures: **\*** list of signatures this document has
   
-  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  | **^** attribute appears only in votes
+  | **~** attribute appears only in consensuses
   """
   
   def __init__(self, raw_content, validate = True):
@@ -247,9 +249,13 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
   :var int dirport: current directory port
   :var int orport: current orport
   :var str contact: directory authority's contact information
-  :var str legacy_dir_key: fingerprint of and obsolete identity key
-  :var :class:`stem.descriptor.KeyCertificate` key_certificate: directory authority's current key certificate
-  :var str vote_digest: digest of the authority that contributed to the consensus
+  :var str legacy_dir_key: **^** fingerprint of and obsolete identity key
+  :var :class:`stem.descriptor.KeyCertificate` key_certificate: **^** directory authority's current key certificate
+  :var str vote_digest: **~** digest of the authority that contributed to the consensus
+  
+  | **^** attribute appears only in votes
+  | **~** attribute appears only in consensuses
+  | legacy_dir_key is the only optional attribute
   """
   
   def __init__(self, raw_content, vote = True, validate = True):
@@ -280,9 +286,18 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
       self.key_certificate = stem.descriptor.KeyCertificate("\n".join(parser.remaining()), validate)
     else:
       self.vote_digest = parser.read_keyword_line("vote-digest", True)
-    rmng = parser.remaining()
-    if rmng and validate:
+    self._unrecognized_lines = parser.remaining()
+    if self._unrecognized_lines and validate:
       raise ValueError("Unrecognized trailing data in directory authority information")
+  
+  def get_unrecognized_lines(self):
+    """
+    Returns any unrecognized lines.
+    
+    :returns: a list of unrecognized lines
+    """
+    
+    return self._unrecognized_lines
 
 class DirectorySignature(stem.descriptor.Descriptor):
   """
@@ -320,6 +335,15 @@ class DirectorySignature(stem.descriptor.Descriptor):
     self._unrecognized_lines = parser.remaining()
     if self._unrecognized_lines and validate:
       raise ValueError("Unrecognized trailing data in directory signature")
+  
+  def get_unrecognized_lines(self):
+    """
+    Returns any unrecognized lines.
+    
+    :returns: a list of unrecognized lines
+    """
+    
+    return self._unrecognized_lines
 
 class RouterDescriptor(stem.descriptor.Descriptor):
   """
@@ -354,11 +378,12 @@ class RouterDescriptor(stem.descriptor.Descriptor):
   :var int bandwidth: router's claimed bandwidth
   :var int measured_bandwidth: router's measured bandwidth
   
-  :var :class:`stem.exit_policy.MicrodescriptorExitPolicy` exitpolicy: router's exitpolicy
+  :var :class:`stem.exit_policy.MicrodescriptorExitPolicy` exit_policy: router's exit policy
   
   :var str microdescriptor_hashes: a list of two-tuples with a list of consensus methods(int) that may produce the digest and a dict with algorithm(str) => digest(str) mappings. algorithm is the hashing algorithm (usually "sha256") that is used to produce digest (the base64 encoding of the hash of the router's microdescriptor with trailing =s omitted).
   
-  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  | exit_policy appears only in votes
   """
   
   def __init__(self, raw_contents, vote = True, validate = True):
