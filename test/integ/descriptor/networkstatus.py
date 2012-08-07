@@ -11,7 +11,7 @@ import unittest
 
 import stem.exit_policy
 import stem.version
-import stem.descriptor.networkstatus_descriptor
+import stem.descriptor.networkstatus
 import test.integ.descriptor
 
 def _strptime(string):
@@ -57,7 +57,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     count = 0
     with open(descriptor_path) as descriptor_file:
-      for desc in stem.descriptor.networkstatus_descriptor.parse_file(descriptor_file):
+      for desc in stem.descriptor.networkstatus.parse_file(descriptor_file):
         if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 100000:
           # if we're using > 100 MB we should fail
           self.fail()
@@ -74,7 +74,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     descriptor_path = test.integ.descriptor.get_resource("consensus")
     
     descriptor_file = file(descriptor_path)
-    desc = stem.descriptor.networkstatus_descriptor.NetworkStatusDocument(descriptor_file.read())
+    desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())
     descriptor_file.close()
     
     self.assertEquals(True, desc.validated)
@@ -145,7 +145,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY="""
     descriptor_path = test.integ.descriptor.get_resource("vote")
     
     descriptor_file = file(descriptor_path)
-    desc = stem.descriptor.networkstatus_descriptor.NetworkStatusDocument(descriptor_file.read())
+    desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())
     descriptor_file.close()
     
     self.assertEquals(True, desc.validated)

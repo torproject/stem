@@ -46,7 +46,7 @@ import test.integ.socket.control_socket
 import test.integ.descriptor.reader
 import test.integ.descriptor.server_descriptor
 import test.integ.descriptor.extrainfo_descriptor
-import test.integ.descriptor.networkstatus_descriptor
+import test.integ.descriptor.networkstatus
 import test.integ.response.protocolinfo
 import test.integ.util.conf
 import test.integ.util.proc
@@ -135,7 +135,7 @@ INTEG_TESTS = (
   test.integ.descriptor.reader.TestDescriptorReader,
   test.integ.descriptor.server_descriptor.TestServerDescriptor,
   test.integ.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
-  test.integ.descriptor.networkstatus_descriptor.TestNetworkStatusDocument,
+  test.integ.descriptor.networkstatus.TestNetworkStatusDocument,
   test.integ.version.TestVersion,
   test.integ.response.protocolinfo.TestProtocolInfo,
   test.integ.process.TestProcess,

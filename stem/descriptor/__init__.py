@@ -17,7 +17,7 @@ __all__ = [
   "reader",
   "extrainfo_descriptor",
   "server_descriptor",
-  "networkstatus_descriptor",
+  "networkstatus",
   "parse_file",
   "Descriptor",
 ]
