@@ -39,18 +39,11 @@ The documents can be obtained from any of the following sources...
 """
 
 import re
-import base64
-import hashlib
 import datetime
 
-import stem.prereq
 import stem.descriptor
-import stem.descriptor.extrainfo_descriptor
 import stem.version
 import stem.exit_policy
-import stem.util.log as log
-import stem.util.connection
-import stem.util.tor_tools
 
 _bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in ["bd",
   "be", "bg", "bm", "db", "eb", "ed", "ee", "eg", "em", "gb", "gd", "gg", "gm", "mb", "md", "me", "mg", "mm"]]))
