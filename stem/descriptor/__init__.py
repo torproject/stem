@@ -418,6 +418,7 @@ class DescriptorParser:
     if self.line:
       lines, self.lines = self.lines, []
       lines.insert(0, self.line)
+      self.line = None
       return lines
     else:
       return []

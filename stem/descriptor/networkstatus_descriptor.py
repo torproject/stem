@@ -259,10 +259,11 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     self.contact = parser.read_keyword_line("contact")
     if vote:
       self.legacy_dir_key = parser.read_keyword_line("legacy-dir-key", True)
-      self.key_certificate = KeyCertificate(parser.remaining(), validate)
+      self.key_certificate = KeyCertificate("\n".join(parser.remaining()), validate)
     else:
       self.vote_digest = parser.read_keyword_line("vote-digest", True)
-    if parser.remaining() and validate:
+    rmng = parser.remaining()
+    if rmng and validate:
       raise ValueError("Unrecognized trailing data in directory authority information")
 
 class KeyCertificate(stem.descriptor.Descriptor):
@@ -349,9 +350,9 @@ class KeyCertificate(stem.descriptor.Descriptor):
         # ignore unrecognized lines if we aren't validating
         self._unrecognized_lines.append(parser.read_line())
     
-    if parser.remaining():
-      if validate: raise ValueError("Unrecognized trailing data in key certificate")
-      else: self._unrecognized_lines.append(parser.read_line())
+    self._unrecognized_lines = parser.remaining()
+    if self._unrecognized_lines and validate:
+      raise ValueError("Unrecognized trailing data in key certificate")
   
   def get_unrecognized_lines(self):
     """
@@ -395,9 +396,9 @@ class DirectorySignature(stem.descriptor.Descriptor):
       self.method, self.identity, self.key_digest = signature_line
     
     self.signature = parser.read_block("SIGNATURE")
-    if parser.remaining():
-      if validate: raise ValueError("Unrecognized trailing data in directory signature")
-      else: self._unrecognized_lines.append(parser.read_line())
+    self._unrecognized_lines = parser.remaining()
+    if self._unrecognized_lines and validate:
+      raise ValueError("Unrecognized trailing data in directory signature")
 
 class RouterDescriptor(stem.descriptor.Descriptor):
   """
