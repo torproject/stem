@@ -9,7 +9,7 @@ voting-delay 300 300
 known-flags Authority BadExit Exit Fast Guard HSDir Running Stable V2Dir Valid
 params CircuitPriorityHalflifeMsec=30000 bwauthpid=1
 dir-source turtles 27B6B5996C426270A5C95488AA5BCEB6BCC86956 76.73.17.194 76.73.17.194 9030 9090
-contact Mike Perry <mikeperryTAfsckedTODorg>
+contact Mike Perry <email>
 dir-key-certificate-version 3
 fingerprint 27B6B5996C426270A5C95488AA5BCEB6BCC86956
 dir-key-published 2011-11-28 21:51:04
