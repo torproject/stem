@@ -587,7 +587,6 @@ class RouterDescriptor(stem.descriptor.Descriptor):
         # "p" SP ("accept" / "reject") SP PortList NL
         if p:
           self.exit_policy = stem.exit_policy.MicrodescriptorExitPolicy(p)
-          #self.exit_policy = p
       
       elif vote and peek_check_kw("m"):
         # microdescriptor hashes
