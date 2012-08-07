@@ -251,6 +251,9 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     """
     
     super(DirectoryAuthority, self).__init__(raw_content)
+    self.nickname, self.identity, self.address, self.ip = None, None, None, None
+    self.dirport, self.orport, self.legacy_dir_key = None, None, None
+    self.key_certificate, self.contact, self.vote_digest = None, None, None
     parser = stem.descriptor.DescriptorParser(raw_content, validate)
     
     dir_source = parser.read_keyword_line("dir-source")
@@ -296,7 +299,11 @@ class KeyCertificate(stem.descriptor.Descriptor):
     :raises: ValueError if the raw data is invalid
     """
     
-    super(DirectoryAuthority, self).__init__(raw_content)
+    super(KeyCertificate, self).__init__(raw_content)
+    self.key_certificate_version, self.ip, self.port = None, None, None
+    self.fingerprint, self.identity_key, self.published = None, None, None
+    self.expires, self.signing_key, self.crosscert = None, None, None
+    self.certification = None
     parser = stem.descriptor.DescriptorParser(raw_content, validate)
     peek_check_kw = lambda keyword: keyword == parser.peek_keyword()
     seen_keywords = set()
@@ -388,6 +395,7 @@ class DirectorySignature(stem.descriptor.Descriptor):
     """
     
     super(DirectorySignature, self).__init__(raw_content)
+    self.identity, self.key_digest, self.method, self.signature = None, None, None, None
     parser = stem.descriptor.DescriptorParser(raw_content, validate)
     
     signature_line = parser.read_keyword_line("directory-signature").split(" ")
