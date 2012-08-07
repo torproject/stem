@@ -1,15 +1,31 @@
 """
 Parsing for Tor network status documents. Currently supports parsing v3 network
-status documents (both votes and consensus').
+status documents (both votes and consensuses).
 
 The network status documents also contain a list of router descriptors,
-directory authorities, signatures etc.
+directory authorities, signatures etc. If you only need the
+:class:`stem.descriptor.networkstatus.RouterDescriptor` objects, use
+:func:`stem.descriptor.parse_file`. Other information can be accessed by
+directly instantiating :class:`stem.descriptor.networkstatus.NetworkStatusDocument`
+objects.
 
-The votes and consensus' can be obtained from any of the following sources...
+The documents can be obtained from any of the following sources...
 
 * the 'cached-consensus' file in tor's data directory
 * tor metrics, at https://metrics.torproject.org/data.html
 * directory authorities and mirrors via their DirPort
+
+::
+
+  import stem.descriptor.networkstatus
+  
+  nsdoc_file = open("/home/neena/.tor/cached-consensus")
+  try:
+    consensus = stem.descriptor.networkstatus.NetworkStatusDocument(nsdoc_file.read())
+  except ValueError:
+    print "Invalid cached-consensus file"
+  
+  print "Consensus was valid between %s and %s" % (str(consensus.valid_after), str(consensus.valid_until))
 
 **Module Overview:**
 
@@ -17,11 +33,9 @@ The votes and consensus' can be obtained from any of the following sources...
 
   parse_file - parses a network status file and provides a NetworkStatusDocument
   NetworkStatusDocument - Tor v3 network status document
-    +- MicrodescriptorConsensus - Tor microdescriptor consensus document
   RouterDescriptor - Router descriptor; contains information about a Tor relay
-    +- RouterMicrodescriptor - Router microdescriptor; contains information that doesn't change often
-  DirectorySignature
-  DirectoryAuthority
+  DirectorySignature - Network status document's directory signature
+  DirectoryAuthority - Directory authority defined in a v3 network status document
 """
 
 import re
@@ -85,7 +99,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   :var list server_versions: list of recommended Tor server versions
   :var list known_flags: **\*** list of known router flags
   :var list params: dict of parameter(str) => value(int) mappings
-  :var list router_descriptors: **\*** list of RouterDescriptor objects defined in the document
+  :var list router_descriptors: **\*** iterator for RouterDescriptor objects defined in the document
   :var list directory_authorities: **\*** list of DirectoryAuthority objects that have generated this document
   :var dict bandwidth_weights: dict of weight(str) => value(int) mappings
   :var list directory_signatures: **\*** list of signatures this document has
@@ -374,8 +388,7 @@ class KeyCertificate(stem.descriptor.Descriptor):
 
 class DirectorySignature(stem.descriptor.Descriptor):
   """
-  Contains directory signature information described in a v3 network status
-  document.
+  Contains directory signatures in a v3 network status document.
   
   :var str identity: signature identity
   :var str key_digest: signature key digest
