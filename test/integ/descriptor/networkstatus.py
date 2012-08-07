@@ -71,7 +71,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     Checks that consensus documents are properly parsed.
     """
     
-    descriptor_path = test.integ.descriptor.get_resource("consensus")
+    descriptor_path = test.integ.descriptor.get_resource("cached-consensus")
     
     descriptor_file = file(descriptor_path)
     desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())

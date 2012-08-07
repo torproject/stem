@@ -64,7 +64,7 @@ def parse_file(path, descriptor_file):
   elif filename == "cached-extrainfo":
     file_parser = stem.descriptor.extrainfo_descriptor.parse_file
   elif filename == "cached-consensus":
-    file_parser = stem.descriptor.extrainfo_descriptor.parse_file
+    file_parser = stem.descriptor.networkstatus.parse_file
   
   if file_parser:
     for desc in file_parser(descriptor_file):

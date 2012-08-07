@@ -355,7 +355,7 @@ class TestDescriptorReader(unittest.TestCase):
     for skip_path, skip_exception in skip_listener.results:
       if skip_path.endswith(".swp"): continue # skip vim temp files
       
-      if not os.path.basename(skip_path) in ("riddle", "tiny.png"):
+      if not os.path.basename(skip_path) in ("riddle", "tiny.png", "vote"):
         self.fail("Unexpected non-descriptor content: %s" % skip_path)
       
       self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
