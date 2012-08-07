@@ -62,15 +62,14 @@ def parse_file(document_file, validate = True):
   :param file document_file: file with network status document content
   :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
   
-  :returns: iterator for  :class:`stem.descriptor.networkstatus_descriptor.RouterDescriptor` instances in the file
+  :returns: iterator for  :class:`stem.descriptor.networkstatus.RouterDescriptor` instances in the file
   
   :raises:
     * ValueError if the contents is malformed and validate is True
     * IOError if the file can't be read
   """
   
-  document = NetworkStatusDocument(document_file.read(), validate)
-  return document.router_descriptors
+  return NetworkStatusDocument(document_file.read(), validate).router_descriptors
 
 def _strptime(string, validate = True, optional = False):
   try:
