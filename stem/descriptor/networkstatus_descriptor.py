@@ -172,10 +172,12 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     voting_delay = doc_parser.read_keyword_line("voting-delay")
     self.vote_delay, self.dist_delay = [int(delay) for delay in voting_delay.split(" ")]
     
-    read_keyword_line("client-versions", True)
-    self.client_versions = [stem.version.Version(version_string) for version_string in self.client_versions.split(",")]
-    read_keyword_line("server-versions", True)
-    self.server_versions = [stem.version.Version(version_string) for version_string in self.server_versions.split(",")]
+    client_versions = doc_parser.read_keyword_line("client-versions", True)
+    if client_versions:
+      self.client_versions = [stem.version.Version(version_string) for version_string in client_versions.split(",")]
+    server_versions = doc_parser.read_keyword_line("server-versions", True)
+    if server_versions:
+      self.server_versions = [stem.version.Version(version_string) for version_string in server_versions.split(",")]
     self.known_flags = doc_parser.read_keyword_line("known-flags").split(" ")
     read_keyword_line("params", True)
     if self.params:
