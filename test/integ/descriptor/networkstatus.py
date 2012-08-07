@@ -18,25 +18,6 @@ def _strptime(string):
   return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
 
 class TestNetworkStatusDocument(unittest.TestCase):
-  def test_metrics_consensus(self):
-    """
-    Checks if consensus documents from Metrics are parsed properly.
-    """
-    
-    descriptor_path = test.integ.descriptor.get_resource("metrics_consensus")
-    
-    with file(descriptor_path) as descriptor_file:
-      desc = stem.descriptor.parse_file(descriptor_path, descriptor_file)
-      
-      router = next(desc)
-      self.assertEquals("sumkledi", router.nickname)
-      self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router.identity)
-      self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router.digest)
-      self.assertEquals(_strptime("2012-07-12 04:01:55"), router.publication)
-      self.assertEquals("178.218.213.229", router.ip)
-      self.assertEquals(80, router.orport)
-      self.assertEquals(None, router.dirport)
-  
   def test_cached_consensus(self):
     """
     Parses the cached-consensus file in our data directory.
@@ -65,6 +46,25 @@ class TestNetworkStatusDocument(unittest.TestCase):
         count += 1
     
     assert count > 100 # sanity check - assuming atleast 100 relays in the Tor network
+  
+  def test_metrics_consensus(self):
+    """
+    Checks if consensus documents from Metrics are parsed properly.
+    """
+    
+    descriptor_path = test.integ.descriptor.get_resource("metrics_consensus")
+    
+    with file(descriptor_path) as descriptor_file:
+      desc = stem.descriptor.parse_file(descriptor_path, descriptor_file)
+      
+      router = next(desc)
+      self.assertEquals("sumkledi", router.nickname)
+      self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router.identity)
+      self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router.digest)
+      self.assertEquals(_strptime("2012-07-12 04:01:55"), router.publication)
+      self.assertEquals("178.218.213.229", router.ip)
+      self.assertEquals(80, router.orport)
+      self.assertEquals(None, router.dirport)
   
   def test_consensus(self):
     """
@@ -136,6 +136,25 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY="""
     self.assertEquals("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", desc.directory_signatures[0].identity)
     self.assertEquals("BF112F1C6D5543CFD0A32215ACABD4197B5279AD", desc.directory_signatures[0].key_digest)
     self.assertEquals(expected_signature, desc.directory_signatures[0].signature)
+  
+  def test_metrics_vote(self):
+    """
+    Checks if vote documents from Metrics are parsed properly.
+    """
+    
+    descriptor_path = test.integ.descriptor.get_resource("metrics_vote")
+    
+    with file(descriptor_path) as descriptor_file:
+      desc = stem.descriptor.parse_file(descriptor_path, descriptor_file)
+      
+      router = next(desc)
+      self.assertEquals("sumkledi", router.nickname)
+      self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router.identity)
+      self.assertEquals("B5n4BiALAF8B5AqafxohyYiuj7E", router.digest)
+      self.assertEquals(_strptime("2012-07-11 04:22:53"), router.publication)
+      self.assertEquals("178.218.213.229", router.ip)
+      self.assertEquals(80, router.orport)
+      self.assertEquals(None, router.dirport)
   
   def test_vote(self):
     """

@@ -96,7 +96,7 @@ def parse_file(path, descriptor_file):
       # https://trac.torproject.org/6257
       
       desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
-    elif desc_type == "network-status-consensus-3" and major_version == 1:
+    elif desc_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
       desc = stem.descriptor.networkstatus_descriptor.NetworkStatusDocument(descriptor_file.read())
       for desc in desc.router_descriptors:
         desc._set_path(path)
