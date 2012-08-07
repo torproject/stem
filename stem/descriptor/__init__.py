@@ -48,7 +48,7 @@ def parse_file(path, descriptor_file):
   
   import stem.descriptor.server_descriptor
   import stem.descriptor.extrainfo_descriptor
-  import stem.descriptor.networkstatus_descriptor
+  import stem.descriptor.networkstatus
   
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
@@ -98,7 +98,7 @@ def parse_file(path, descriptor_file):
       
       desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
     elif desc_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
-      desc = stem.descriptor.networkstatus_descriptor.NetworkStatusDocument(descriptor_file.read())
+      desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())
       for desc in desc.router_descriptors:
         desc._set_path(path)
         yield desc
