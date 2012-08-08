@@ -148,7 +148,31 @@ class Descriptor(object):
   def __str__(self):
     return self._raw_contents
 
-def _read_until_keywords(keywords, descriptor_file, inclusive = False):
+def _peek_keyword(descriptor_file):
+  """
+  Returns the keyword at the current offset of descriptor_file. Respects the
+  "opt" keyword and returns the next keyword instead.
+  
+  :param file descriptor_file: file with the descriptor content
+  
+  :returns: keyword at the current offset of descriptor_file
+  """
+  
+  last_position = descriptor_file.tell()
+  line = descriptor_file.readline()
+  if not line: return None
+  
+  if " " in line:
+    keyword = line.split(" ", 1)[0]
+    if keyword == "opt":
+        keyword = line.split(" ", 2)[1]
+  else: keyword = line.strip()
+  
+  descriptor_file.seek(last_position)
+  
+  return keyword
+
+def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False):
   """
   Reads from the descriptor file until we get to one of the given keywords or reach the
   end of the file.
@@ -156,12 +180,17 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False):
   :param str,list keywords: keyword(s) we want to read until
   :param file descriptor_file: file with the descriptor content
   :param bool inclusive: includes the line with the keyword if True
+  :param bool ignore_first: doesn't check if the first line read has one of the given keywords
   
   :returns: list with the lines until we find one of the keywords
   """
   
   content = []
   if type(keywords) == str: keywords = (keywords,)
+  
+  if ignore_first:
+    content.append(descriptor_file.readline())
+    if content == [None]: return []
   
   while True:
     last_position = descriptor_file.tell()
@@ -180,6 +209,35 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False):
       content.append(line)
   
   return content
+
+def _skip_until_keywords(keywords, descriptor_file, inclusive = False):
+  """
+  Reads and discards lines of data from the descriptor file until we get to one
+  of the given keywords or reach the end of the file.
+  
+  :param str,list keywords: keyword(s) we want to skip until
+  :param file descriptor_file: file with the descriptor content
+  :param bool inclusive: includes the line with the keyword if True
+  
+  :returns: descriptor_file with the new offset
+  """
+  
+  if type(keywords) == str: keywords = (keywords,)
+  
+  while True:
+    last_position = descriptor_file.tell()
+    line = descriptor_file.readline()
+    if not line: break # EOF
+    
+    if " " in line: line_keyword = line.split(" ", 1)[0]
+    else: line_keyword = line.strip()
+    
+    if line_keyword in keywords:
+      if not inclusive: descriptor_file.seek(last_position)
+      
+      break
+  
+  return descriptor_file
 
 def _get_pseudo_pgp_block(remaining_contents):
   """

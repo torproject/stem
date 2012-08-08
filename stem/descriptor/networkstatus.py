@@ -40,13 +40,18 @@ The documents can be obtained from any of the following sources...
 
 import re
 import datetime
+from StringIO import StringIO
 
 import stem.descriptor
 import stem.version
 import stem.exit_policy
 
+from stem.descriptor import _read_until_keywords, _skip_until_keywords, _peek_keyword
+
 _bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in ["bd",
   "be", "bg", "bm", "db", "eb", "ed", "ee", "eg", "em", "gb", "gd", "gg", "gm", "mb", "md", "me", "mg", "mm"]]))
+
+_router_desc_end_kws = ["r", "bandwidth-weights", "directory-footer", "directory-signature"]
 
 def parse_file(document_file, validate = True):
   """
@@ -62,13 +67,30 @@ def parse_file(document_file, validate = True):
     * IOError if the file can't be read
   """
   
-  return NetworkStatusDocument(document_file.read(), validate).router_descriptors
+  # parse until "r"
+  document_data = "".join(_read_until_keywords("r", document_file))
+  # store offset
+  r_offset = document_file.tell()
+  # skip until end of router descriptors
+  _skip_until_keywords(["bandwidth-weights", "directory-footer", "directory-signature"], document_file)
+  # parse until end
+  document_data = document_data + document_file.read()
+  document = NetworkStatusDocument(document_data, validate)
+  document_file.seek(r_offset)
+  document.router_descriptors = _router_desc_generator(document_file, document.vote_status == "vote", validate)
+  return document.router_descriptors
 
 def _strptime(string, validate = True, optional = False):
   try:
     return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
   except ValueError, exc:
     if validate or not optional: raise exc
+    else: return None
+
+def _router_desc_generator(document_file, vote, validate):
+  while _peek_keyword(document_file) == "r":
+    desc_content = "".join(_read_until_keywords(_router_desc_end_kws, document_file, False, True))
+    yield RouterDescriptor(desc_content, vote, validate)
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
   """
@@ -193,21 +215,13 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     # authority section
     while doc_parser.line.startswith("dir-source "):
-      dirauth_data = doc_parser.read_until(["dir-source", "r"])
+      dirauth_data = doc_parser.read_until(["dir-source", "r", "directory-footer", "directory-signature", "bandwidth-weights"])
       self.directory_authorities.append(DirectoryAuthority(dirauth_data, vote, validate))
-    
-    def _router_desc_generator(raw_content, vote, validate):
-      parser = stem.descriptor.DescriptorParser(raw_content, validate)
-      while parser.line != None:
-        descriptor = parser.read_until("r")
-        yield self._generate_router(descriptor, vote, validate)
     
     # router descriptors
     if doc_parser.peek_keyword() == "r":
       router_descriptors_data = doc_parser.read_until(["bandwidth-weights", "directory-footer", "directory-signature"])
-      self.router_descriptors = _router_desc_generator(router_descriptors_data, vote, validate)
-    elif validate:
-      raise ValueError("No router descriptors found")
+      self.router_descriptors = _router_desc_generator(StringIO(router_descriptors_data), vote, validate)
     
     # footer section
     if self.consensus_method > 9 or vote and filter(lambda x: x >= 9, self.consensus_methods):
