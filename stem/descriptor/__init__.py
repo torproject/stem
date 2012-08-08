@@ -148,19 +148,20 @@ class Descriptor(object):
   def __str__(self):
     return self._raw_contents
 
-def _read_until_keyword(keyword, descriptor_file, inclusive = False):
+def _read_until_keywords(keywords, descriptor_file, inclusive = False):
   """
-  Reads from the descriptor file until we get to the given keyword or reach the
+  Reads from the descriptor file until we get to one of the given keywords or reach the
   end of the file.
   
-  :param str keyword: keyword we want to read until
+  :param str,list keywords: keyword(s) we want to read until
   :param file descriptor_file: file with the descriptor content
   :param bool inclusive: includes the line with the keyword if True
   
-  :returns: list with the lines until we find the keyword
+  :returns: list with the lines until we find one of the keywords
   """
   
   content = []
+  if type(keywords) == str: keywords = (keywords,)
   
   while True:
     last_position = descriptor_file.tell()
@@ -170,7 +171,7 @@ def _read_until_keyword(keyword, descriptor_file, inclusive = False):
     if " " in line: line_keyword = line.split(" ", 1)[0]
     else: line_keyword = line.strip()
     
-    if line_keyword == keyword:
+    if line_keyword in keywords:
       if inclusive: content.append(line)
       else: descriptor_file.seek(last_position)
       

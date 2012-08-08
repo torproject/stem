@@ -131,11 +131,11 @@ def parse_file(descriptor_file, validate = True):
   """
   
   while True:
-    extrainfo_content = stem.descriptor._read_until_keyword("router-signature", descriptor_file)
+    extrainfo_content = stem.descriptor._read_until_keywords("router-signature", descriptor_file)
     
     # we've reached the 'router-signature', now include the pgp style block
     block_end_prefix = stem.descriptor.PGP_BLOCK_END.split(' ', 1)[0]
-    extrainfo_content += stem.descriptor._read_until_keyword(block_end_prefix, descriptor_file, True)
+    extrainfo_content += stem.descriptor._read_until_keywords(block_end_prefix, descriptor_file, True)
     
     if extrainfo_content:
       yield RelayExtraInfoDescriptor("".join(extrainfo_content), validate)

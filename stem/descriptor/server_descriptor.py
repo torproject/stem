@@ -109,12 +109,12 @@ def parse_file(descriptor_file, validate = True):
   # to the caller).
   
   while True:
-    annotations = stem.descriptor._read_until_keyword("router", descriptor_file)
-    descriptor_content = stem.descriptor._read_until_keyword("router-signature", descriptor_file)
+    annotations = stem.descriptor._read_until_keywords("router", descriptor_file)
+    descriptor_content = stem.descriptor._read_until_keywords("router-signature", descriptor_file)
     
     # we've reached the 'router-signature', now include the pgp style block
     block_end_prefix = stem.descriptor.PGP_BLOCK_END.split(' ', 1)[0]
-    descriptor_content += stem.descriptor._read_until_keyword(block_end_prefix, descriptor_file, True)
+    descriptor_content += stem.descriptor._read_until_keywords(block_end_prefix, descriptor_file, True)
     
     if descriptor_content:
       # strip newlines from annotations
