@@ -98,8 +98,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
       "0.2.3.18-rc", "0.2.3.19-rc"]]
     self.assertEquals(expected_client_versions, desc.client_versions)
     self.assertEquals(expected_server_versions, desc.server_versions)
-    known_flags = ["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir", "Named", "Running", "Stable", "Unnamed", "V2Dir", "Valid"]
-    self.assertEquals(known_flags, desc.known_flags)
+    self.assertEquals(set(desc.known_flags), set(["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir", "Named", "Running", "Stable", "Unnamed", "V2Dir", "Valid"]))
     expected_params = {"CircuitPriorityHalflifeMsec": 30000, "bwauthpid": 1}
     self.assertEquals(expected_params, desc.params)
     router1 = next(desc.router_descriptors)
@@ -110,6 +109,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEquals("178.218.213.229", router1.ip)
     self.assertEquals(80, router1.orport)
     self.assertEquals(None, router1.dirport)
+    self.assertEquals(set(["Exit", "Fast", "Named", "Running", "Valid"]), set(router1.flags))
     
     self.assertEquals(8, len(desc.directory_authorities))
     self.assertEquals("tor26", desc.directory_authorities[0].nickname)
@@ -182,8 +182,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     self.assertEquals(300, desc.dist_delay)
     self.assertEquals([], desc.client_versions)
     self.assertEquals([], desc.server_versions)
-    known_flags = ["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir", "Running", "Stable", "V2Dir", "Valid"]
-    self.assertEquals(known_flags, desc.known_flags)
+    self.assertEquals(set(desc.known_flags), set(["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir", "Running", "Stable", "V2Dir", "Valid"]))
     expected_params = {"CircuitPriorityHalflifeMsec": 30000, "bwauthpid": 1}
     self.assertEquals(expected_params, desc.params)
     router1 = next(desc.router_descriptors)

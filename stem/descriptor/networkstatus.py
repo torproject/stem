@@ -49,6 +49,7 @@ except:
 import stem.descriptor
 import stem.version
 import stem.exit_policy
+import stem.util.enum
 
 from stem.descriptor import _read_until_keywords, _skip_until_keywords, _peek_keyword, _strptime
 from stem.descriptor import _read_keyword_line, _read_keyword_line_str, _get_pseudo_pgp_block, _peek_line
@@ -57,6 +58,8 @@ _bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in
   "be", "bg", "bm", "db", "eb", "ed", "ee", "eg", "em", "gb", "gd", "gg", "gm", "mb", "md", "me", "mg", "mm"]]))
 
 _router_desc_end_kws = ["r", "bandwidth-weights", "directory-footer", "directory-signature"]
+
+Flag = stem.util.enum.Enum(*[(flag.upper(), flag) for flag in ["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir", "Named", "Running", "Stable", "Unnamed", "V2Dir", "Valid"]])
 
 def parse_file(document_file, validate = True):
   """
@@ -82,13 +85,13 @@ def parse_file(document_file, validate = True):
   document_data = document_data + document_file.read()
   document = NetworkStatusDocument(document_data, validate)
   document_file.seek(r_offset)
-  document.router_descriptors = _router_desc_generator(document_file, document.vote_status == "vote", validate)
+  document.router_descriptors = _router_desc_generator(document_file, document.vote_status == "vote", validate, document.known_flags)
   return document.router_descriptors
 
-def _router_desc_generator(document_file, vote, validate):
+def _router_desc_generator(document_file, vote, validate, known_flags):
   while _peek_keyword(document_file) == "r":
     desc_content = "".join(_read_until_keywords(_router_desc_end_kws, document_file, False, True))
-    yield RouterDescriptor(desc_content, vote, validate)
+    yield RouterDescriptor(desc_content, vote, validate, known_flags)
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
   """
@@ -156,8 +159,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     self._parse(raw_content)
   
-  def _generate_router(self, raw_content, vote, validate):
-    return RouterDescriptor(raw_content, vote, validate)
+  def _generate_router(self, raw_content, vote, validate, known_flags):
+    return RouterDescriptor(raw_content, vote, validate, known_flags)
   
   def _validate_network_status_version(self):
     return self.network_status_version == "3"
@@ -220,7 +223,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     # router descriptors
     if _peek_keyword(content) == "r":
       router_descriptors_data = "".join(_read_until_keywords(["bandwidth-weights", "directory-footer", "directory-signature"], content, False, True))
-      self.router_descriptors = _router_desc_generator(StringIO(router_descriptors_data), vote, validate)
+      self.router_descriptors = _router_desc_generator(StringIO(router_descriptors_data), vote, validate, self.known_flags)
     
     # footer section
     if self.consensus_method > 9 or vote and filter(lambda x: x >= 9, self.consensus_methods):
@@ -366,20 +369,8 @@ class RouterDescriptor(stem.descriptor.Descriptor):
   :var int orport: **\*** router's ORPort
   :var int dirport: **\*** router's DirPort
   
-  :var bool is_valid: **\*** router is valid
-  :var bool is_guard: **\*** router is suitable for use as an entry guard
-  :var bool is_named: **\*** router is named
-  :var bool is_unnamed: **\*** router is unnamed
-  :var bool is_running: **\*** router is running and currently usable
-  :var bool is_stable: **\*** router is stable, i.e., it's suitable for for long-lived circuits
-  :var bool is_exit: **\*** router is an exit router
-  :var bool is_fast: **\*** router is Fast, i.e., it's usable for high-bandwidth circuits
-  :var bool is_authority: **\*** router is a directory authority
-  :var bool supports_v2dir: **\*** router supports v2dir
-  :var bool supports_v3dir: **\*** router supports v3dir
-  :var bool is_hsdir: **\*** router is a hidden status
-  :var bool is_badexit: **\*** router is marked a bad exit
-  :var bool is_baddirectory: **\*** router is a bad directory
+  :var list flags: **\*** list of status flags
+  :var list unknown_flags: **\*** list of unidentified status flags
   
   :var :class:`stem.version.Version`,str version: Version of the Tor protocol this router is running
   
@@ -394,13 +385,17 @@ class RouterDescriptor(stem.descriptor.Descriptor):
   | exit_policy appears only in votes
   """
   
-  def __init__(self, raw_contents, vote = True, validate = True):
+  def __init__(self, raw_contents, vote = True, validate = True, known_flags = Flag):
     """
     Parse a router descriptor in a v3 network status document and provide a new
     RouterDescriptor object.
     
     :param str raw_content: router descriptor content to be parsed
+    :param bool vote: True if the descriptor is from a vote document
     :param bool validate: whether the router descriptor should be validated
+    :param bool known_flags: list of known router status flags
+
+    :raises: ValueError if the descriptor data is invalid
     """
     
     super(RouterDescriptor, self).__init__(raw_contents)
@@ -413,20 +408,8 @@ class RouterDescriptor(stem.descriptor.Descriptor):
     self.orport = None
     self.dirport = None
     
-    self.is_valid = False
-    self.is_guard = False
-    self.is_named = False
-    self.is_unnamed = False
-    self.is_running = False
-    self.is_stable = False
-    self.is_exit = False
-    self.is_fast = False
-    self.is_authority = False
-    self.supports_v2dir = False
-    self.supports_v3dir = False
-    self.is_hsdir = False
-    self.is_badexit = False
-    self.is_baddirectory = False
+    self.flags = []
+    self.unknown_flags = []
     
     self.version = None
     
@@ -437,12 +420,14 @@ class RouterDescriptor(stem.descriptor.Descriptor):
     
     self.microdescriptor_hashes = []
     
-    self._parse(raw_contents, vote, validate)
+    self._parse(raw_contents, vote, validate, known_flags)
   
-  def _parse(self, raw_content, vote, validate):
+  def _parse(self, raw_content, vote, validate, known_flags):
     """
     :param dict raw_content: iptor contents to be applied
+    :param bool vote: True if the descriptor is from a vote document
     :param bool validate: checks the validity of descriptor content if True
+    :param bool known_flags: list of known router status flags
     
     :raises: ValueError if an error occures in validation
     """
@@ -471,27 +456,11 @@ class RouterDescriptor(stem.descriptor.Descriptor):
         seen_keywords.add("s")
         # s Named Running Stable Valid
         #A series of space-separated status flags, in *lexical order*
-        flags = line.split(" ")
-        flag_map = {
-          "Valid": "is_valid",
-          "Guard": "is_guard",
-          "Named": "is_named",
-          "Unnamed": "is_unnamed",
-          "Running": "is_running",
-          "Stable": "is_stable",
-          "Exit": "is_exit",
-          "Fast": "is_fast",
-          "Authority": "is_authority",
-          "V2Dir": "supports_v2dir",
-          "V3Dir": "supports_v3dir",
-          "HSDir": "is_hsdir",
-          "BadExit": "is_badexit",
-          "BadDirectory": "is_baddirectory",
-        }
-        map(lambda flag: setattr(self, flag_map[flag], True), flags)
+        self.flags = line.split(" ")
         
-        if self.is_unnamed: self.is_named = False
-        elif self.is_named: self.is_unnamed = False
+        self.unknown_flags = filter(lambda f: not f in known_flags, self.flags)
+        if validate and self.unknown_flags:
+          raise ValueError("Router contained unknown flags: %s", " ".join(self.unknown_flags))
       
       elif peek_check_kw("v"):
         if "v" in seen_keywords: raise ValueError("Invalid router descriptor: 'v' line appears twice")
