@@ -39,8 +39,8 @@ class TestNetworkStatusDocument(unittest.TestCase):
     count = 0
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.networkstatus.parse_file(descriptor_file):
-        if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 100000:
-          # if we're using > 100 MB we should fail
+        if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 200000:
+          # if we're using > 200 MB we should fail
           self.fail()
         assert desc.nickname # check that the router has a nickname
         count += 1
@@ -129,9 +129,11 @@ class TestNetworkStatusDocument(unittest.TestCase):
         }
     self.assertEquals(expected_bandwidth_weights, desc.bandwidth_weights)
     
-    expected_signature = """HFXB4497LzESysYJ/4jJY83E5vLjhv+igIxD9LU6lf6ftkGeF+lNmIAIEKaMts8H
+    expected_signature = """-----BEGIN SIGNATURE-----
+HFXB4497LzESysYJ/4jJY83E5vLjhv+igIxD9LU6lf6ftkGeF+lNmIAIEKaMts8H
 mfWcW0b+jsrXcJoCxV5IrwCDF3u1aC3diwZY6yiG186pwWbOwE41188XI2DeYPwE
-I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY="""
+I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
+-----END SIGNATURE-----"""
     self.assertEquals(8, len(desc.directory_signatures))
     self.assertEquals("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", desc.directory_signatures[0].identity)
     self.assertEquals("BF112F1C6D5543CFD0A32215ACABD4197B5279AD", desc.directory_signatures[0].key_digest)
@@ -203,7 +205,8 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY="""
     self.assertEquals("Mike Perry <email>", desc.directory_authorities[0].contact)
     self.assertEquals(None, desc.directory_authorities[0].legacy_dir_key)
     
-    expected_identity_key = """MIIBigKCAYEA6uSmsoxj2MiJ3qyZq0qYXlRoG8o82SNqg+22m+t1c7MlQOZWPJYn
+    expected_identity_key = """-----BEGIN RSA PUBLIC KEY-----
+MIIBigKCAYEA6uSmsoxj2MiJ3qyZq0qYXlRoG8o82SNqg+22m+t1c7MlQOZWPJYn
 XeMcBCt8xrTeIt2ZI+Q/Kt2QJSeD9WZRevTKk/kn5Tg2+xXPogalUU47y5tUohGz
 +Q8+CxtRSXpDxBHL2P8rLHvGrI69wbNHGoQkce/7gJy9vw5Ie2qzbyXk1NG6V8Fb
 pr6A885vHo6TbhUnolz2Wqt/kN+UorjLkN2H3fV+iGcQFv42SyHYGDLa0WwL3PJJ
@@ -211,21 +214,28 @@ r/veu36S3VaHBrfhutfioi+d3d4Ya0bKwiWi5Lm2CHuuRTgMpHLU9vlci8Hunuxq
 HsULe2oMsr4VEic7sW5SPC5Obpx6hStHdNv1GxoSEm3/vIuPM8pINpU5ZYAyH9yO
 Ef22ZHeiVMMKmpV9TtFyiFqvlI6GpQn3mNbsQqF1y3XCA3Q4vlRAkpgJVUSvTxFP
 2bNDobOyVCpCM/rwxU1+RCNY5MFJ/+oktUY+0ydvTen3gFdZdgNqCYjKPLfBNm9m
-RGL7jZunMUNvAgMBAAE="""
-    expected_signing_key = """MIGJAoGBAJ5itcJRYNEM3Qf1OVWLRkwjqf84oXPc2ZusaJ5zOe7TVvBMra9GNyc0
+RGL7jZunMUNvAgMBAAE=
+-----END RSA PUBLIC KEY-----"""
+    expected_signing_key = """-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAJ5itcJRYNEM3Qf1OVWLRkwjqf84oXPc2ZusaJ5zOe7TVvBMra9GNyc0
 NM9y6zVkHCAePAjr4KbW/8P1olA6FUE2LV9bozaU1jFf6K8B2OELKs5FUEW+n+ic
-GM0x6MhngyXonWOcKt5Gj+mAu5lrno9tpNbPkz2Utr/Pi0nsDhWlAgMBAAE="""
-    expected_key_crosscert = """RHYImGTwg36wmEdAn7qaRg2sAfql7ZCtPIL/O3lU5OIdXXp0tNn/K00Bamqohjk+
+GM0x6MhngyXonWOcKt5Gj+mAu5lrno9tpNbPkz2Utr/Pi0nsDhWlAgMBAAE=
+-----END RSA PUBLIC KEY-----"""
+    expected_key_crosscert = """-----BEGIN ID SIGNATURE-----
+RHYImGTwg36wmEdAn7qaRg2sAfql7ZCtPIL/O3lU5OIdXXp0tNn/K00Bamqohjk+
 Tz4FKsKXGDlbGv67PQcZPOK6NF0GRkNh4pk89prrDO4XwtEn7rkHHdBH6/qQ7IRG
-GdDZHtZ1a69oFZvPWD3hUaB50xeIe7GoKdKIfdNNJ+8="""
-    expected_key_certification = """fasWOGyUZ3iMCYpDfJ+0JcMiTH25sXPWzvlHorEOyOMbaMqRYpZU4GHzt1jLgdl6
+GdDZHtZ1a69oFZvPWD3hUaB50xeIe7GoKdKIfdNNJ+8=
+-----END ID SIGNATURE-----"""
+    expected_key_certification = """-----BEGIN SIGNATURE-----
+fasWOGyUZ3iMCYpDfJ+0JcMiTH25sXPWzvlHorEOyOMbaMqRYpZU4GHzt1jLgdl6
 AAoR6KdamsLg5VE8xzst48a4UFuzHFlklZ5O8om2rcvDd5DhSnWWYZnYJecqB+bo
 dNisPmaIVSAWb29U8BpNRj4GMC9KAgGYUj8aE/KtutAeEekFfFEHTfWZ2fFp4j3m
 9rY8FWraqyiF+Emq1T8pAAgMQ+79R3oZxq0TXS42Z4Anhms735ccauKhI3pDKjbl
 tD5vAzIHOyjAOXj7a6jY/GrnaBNuJ4qe/4Hf9UmzK/jKKwG95BPJtPTT4LoFwEB0
 KG2OUeQUNoCck4nDpsZwFqPlrWCHcHfTV2iDYFV1HQWDTtZz/qf+GtB8NXsq+I1w
 brADmvReM2BD6p/13h0QURCI5hq7ZYlIKcKrBa0jn1d9cduULl7vgKsRCJDls/ID
-emBZ6pUxMpBmV0v+PrA3v9w4DlE7GHAq61FF/zju2kpqj6MInbEvI/E+e438sWsL"""
+emBZ6pUxMpBmV0v+PrA3v9w4DlE7GHAq61FF/zju2kpqj6MInbEvI/E+e438sWsL
+-----END SIGNATURE-----"""
     self.assertEquals("3", desc.directory_authorities[0].key_certificate.key_certificate_version)
     self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.directory_authorities[0].key_certificate.fingerprint)
     self.assertEquals(_strptime("2011-11-28 21:51:04"), desc.directory_authorities[0].key_certificate.published)
@@ -237,9 +247,11 @@ emBZ6pUxMpBmV0v+PrA3v9w4DlE7GHAq61FF/zju2kpqj6MInbEvI/E+e438sWsL"""
     self.assertEquals(None, desc.directory_authorities[0].vote_digest)
     self.assertEquals({}, desc.bandwidth_weights)
     
-    expected_signature = """fskXN84wB3mXfo+yKGSt0AcDaaPuU3NwMR3ROxWgLN0KjAaVi2eV9PkPCsQkcgw3
+    expected_signature = """-----BEGIN SIGNATURE-----
+fskXN84wB3mXfo+yKGSt0AcDaaPuU3NwMR3ROxWgLN0KjAaVi2eV9PkPCsQkcgw3
 JZ/1HL9sHyZfo6bwaC6YSM9PNiiY6L7rnGpS7UkHiFI+M96VCMorvjm5YPs3FioJ
-DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w="""
+DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
+-----END SIGNATURE-----"""
     self.assertEquals(1, len(desc.directory_signatures))
     self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.directory_signatures[0].identity)
     self.assertEquals("D5C30C15BB3F1DA27669C2D88439939E8F418FCF", desc.directory_signatures[0].key_digest)

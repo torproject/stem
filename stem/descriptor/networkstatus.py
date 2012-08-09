@@ -40,13 +40,18 @@ The documents can be obtained from any of the following sources...
 
 import re
 import datetime
-from StringIO import StringIO
+
+try:
+  from cStringIO import StringIO
+except:
+  from StringIO import StringIO
 
 import stem.descriptor
 import stem.version
 import stem.exit_policy
 
-from stem.descriptor import _read_until_keywords, _skip_until_keywords, _peek_keyword
+from stem.descriptor import _read_until_keywords, _skip_until_keywords, _peek_keyword, _strptime
+from stem.descriptor import _read_keyword_line, _read_keyword_line_str, _get_pseudo_pgp_block, _peek_line
 
 _bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in ["bd",
   "be", "bg", "bm", "db", "eb", "ed", "ee", "eg", "em", "gb", "gd", "gg", "gm", "mb", "md", "me", "mg", "mm"]]))
@@ -79,13 +84,6 @@ def parse_file(document_file, validate = True):
   document_file.seek(r_offset)
   document.router_descriptors = _router_desc_generator(document_file, document.vote_status == "vote", validate)
   return document.router_descriptors
-
-def _strptime(string, validate = True, optional = False):
-  try:
-    return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
-  except ValueError, exc:
-    if validate or not optional: raise exc
-    else: return None
 
 def _router_desc_generator(document_file, vote, validate):
   while _peek_keyword(document_file) == "r":
@@ -171,14 +169,13 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     :returns: a list of unrecognized trailing lines
     """
     
-    return self._unrecognized_lines
+    return self.unrecognized_lines
   
   def _parse(self, raw_content):
     # preamble
+    content = StringIO(raw_content)
     validate = self.validated
-    doc_parser = stem.descriptor.DescriptorParser(raw_content, validate)
-    
-    read_keyword_line = lambda keyword, optional = False: setattr(self, keyword.replace("-", "_"), doc_parser.read_keyword_line(keyword, optional))
+    read_keyword_line = lambda keyword, optional = False: setattr(self, keyword.replace("-", "_"), _read_keyword_line(keyword, content, validate, optional))
     
     map(read_keyword_line, ["network-status-version", "vote-status"])
     if validate and not self._validate_network_status_version():
@@ -186,47 +183,49 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     if self.vote_status == "vote": vote = True
     elif self.vote_status == "consensus": vote = False
-    elif validate: raise ValueError("Unrecognized document type specified in vote-status")
+    elif validate: raise ValueError("Unrecognized vote-status")
     
     if vote:
       read_keyword_line("consensus-methods", True)
       self.consensus_methods = [int(method) for method in self.consensus_methods.split(" ")]
-      self.published = _strptime(doc_parser.read_keyword_line("published", True), validate, True)
+      self.published = _strptime(_read_keyword_line("published", content, validate, True), validate, True)
     else:
-      self.consensus_method = int(doc_parser.read_keyword_line("consensus-method", True))
+      read_keyword_line("consensus-method", True)
+      self.consensus_method = int(self.consensus_method)
     
     map(read_keyword_line, ["valid-after", "fresh-until", "valid-until"])
     self.valid_after = _strptime(self.valid_after, validate)
     self.fresh_until = _strptime(self.fresh_until, validate)
     self.valid_until = _strptime(self.valid_until, validate)
-    voting_delay = doc_parser.read_keyword_line("voting-delay")
+    voting_delay = _read_keyword_line("voting-delay", content, validate)
     self.vote_delay, self.dist_delay = [int(delay) for delay in voting_delay.split(" ")]
     
-    client_versions = doc_parser.read_keyword_line("client-versions", True)
+    client_versions = _read_keyword_line("client-versions", content, validate, True)
     if client_versions:
       self.client_versions = [stem.version.Version(version_string) for version_string in client_versions.split(",")]
-    server_versions = doc_parser.read_keyword_line("server-versions", True)
+    server_versions = _read_keyword_line("server-versions", content, validate, True)
     if server_versions:
       self.server_versions = [stem.version.Version(version_string) for version_string in server_versions.split(",")]
-    self.known_flags = doc_parser.read_keyword_line("known-flags").split(" ")
+    self.known_flags = _read_keyword_line("known-flags", content, validate).split(" ")
     read_keyword_line("params", True)
     if self.params:
       self.params = dict([(param.split("=")[0], int(param.split("=")[1])) for param in self.params.split(" ")])
     
     # authority section
-    while doc_parser.line.startswith("dir-source "):
-      dirauth_data = doc_parser.read_until(["dir-source", "r", "directory-footer", "directory-signature", "bandwidth-weights"])
+    while _peek_keyword(content) == "dir-source":
+      dirauth_data = _read_until_keywords(["dir-source", "r", "directory-footer", "directory-signature", "bandwidth-weights"], content, False, True)
+      dirauth_data = "".join(dirauth_data).rstrip()
       self.directory_authorities.append(DirectoryAuthority(dirauth_data, vote, validate))
     
     # router descriptors
-    if doc_parser.peek_keyword() == "r":
-      router_descriptors_data = doc_parser.read_until(["bandwidth-weights", "directory-footer", "directory-signature"])
+    if _peek_keyword(content) == "r":
+      router_descriptors_data = "".join(_read_until_keywords(["bandwidth-weights", "directory-footer", "directory-signature"], content, False, True))
       self.router_descriptors = _router_desc_generator(StringIO(router_descriptors_data), vote, validate)
     
     # footer section
     if self.consensus_method > 9 or vote and filter(lambda x: x >= 9, self.consensus_methods):
-      if doc_parser.line == "directory-footer":
-        doc_parser.read_line()
+      if _peek_keyword(content) == "directory-footer":
+        content.readline()
       elif validate:
         raise ValueError("Network status document missing directory-footer")
     
@@ -237,12 +236,12 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       elif validate:
         raise ValueError("Invalid bandwidth-weights line")
     
-    while doc_parser.line.startswith("directory-signature "):
-      signature_data = doc_parser.read_until(["directory-signature"])
-      self.directory_signatures.append(DirectorySignature(signature_data))
+    while _peek_keyword(content) == "directory-signature":
+      signature_data = _read_until_keywords("directory-signature", content, False, True)
+      self.directory_signatures.append(DirectorySignature("".join(signature_data)))
     
-    self._unrecognized_lines = doc_parser.remaining()
-    if validate and self._unrecognized_lines: raise ValueError("Unrecognized trailing data")
+    self.unrecognized_lines = content.read()
+    if validate and self.unrecognized_lines: raise ValueError("Unrecognized trailing data")
 
 class DirectoryAuthority(stem.descriptor.Descriptor):
   """
@@ -280,21 +279,21 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     self.nickname, self.identity, self.address, self.ip = None, None, None, None
     self.dirport, self.orport, self.legacy_dir_key = None, None, None
     self.key_certificate, self.contact, self.vote_digest = None, None, None
-    parser = stem.descriptor.DescriptorParser(raw_content, validate)
     
-    dir_source = parser.read_keyword_line("dir-source")
+    content = StringIO(raw_content)
+    dir_source = _read_keyword_line("dir-source", content, validate)
     self.nickname, self.identity, self.address, self.ip, self.dirport, self.orport = dir_source.split(" ")
     self.dirport = int(self.dirport)
     self.orport = int(self.orport)
     
-    self.contact = parser.read_keyword_line("contact")
+    self.contact = _read_keyword_line("contact", content, validate)
     if vote:
-      self.legacy_dir_key = parser.read_keyword_line("legacy-dir-key", True)
-      self.key_certificate = stem.descriptor.KeyCertificate("\n".join(parser.remaining()), validate)
+      self.legacy_dir_key = _read_keyword_line("legacy-dir-key", content, validate, True)
+      self.key_certificate = stem.descriptor.KeyCertificate(content.read(), validate)
     else:
-      self.vote_digest = parser.read_keyword_line("vote-digest", True)
-    self._unrecognized_lines = parser.remaining()
-    if self._unrecognized_lines and validate:
+      self.vote_digest = _read_keyword_line("vote-digest", content, True, validate)
+    self.unrecognized_lines = content.read()
+    if self.unrecognized_lines and validate:
       raise ValueError("Unrecognized trailing data in directory authority information")
   
   def get_unrecognized_lines(self):
@@ -304,7 +303,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     :returns: a list of unrecognized lines
     """
     
-    return self._unrecognized_lines
+    return self.unrecognized_lines
 
 class DirectorySignature(stem.descriptor.Descriptor):
   """
@@ -329,18 +328,20 @@ class DirectorySignature(stem.descriptor.Descriptor):
     
     super(DirectorySignature, self).__init__(raw_content)
     self.identity, self.key_digest, self.method, self.signature = None, None, None, None
-    parser = stem.descriptor.DescriptorParser(raw_content, validate)
+    content = raw_content.splitlines()
     
-    signature_line = parser.read_keyword_line("directory-signature").split(" ")
+    signature_line = _read_keyword_line_str("directory-signature", content, validate).split(" ")
     
     if len(signature_line) == 2:
       self.identity, self.key_digest = signature_line
-    if len(signature_line) == 3: # for microdescriptor consensuses
+    if len(signature_line) == 3:
+      # for microdescriptor consensuses
+      # This 'method' seems to be undocumented 8-8-12
       self.method, self.identity, self.key_digest = signature_line
     
-    self.signature = parser.read_block("SIGNATURE")
-    self._unrecognized_lines = parser.remaining()
-    if self._unrecognized_lines and validate:
+    self.signature = _get_pseudo_pgp_block(content)
+    self.unrecognized_lines = content
+    if self.unrecognized_lines and validate:
       raise ValueError("Unrecognized trailing data in directory signature")
   
   def get_unrecognized_lines(self):
@@ -350,7 +351,7 @@ class DirectorySignature(stem.descriptor.Descriptor):
     :returns: a list of unrecognized lines
     """
     
-    return self._unrecognized_lines
+    return self.unrecognized_lines
 
 class RouterDescriptor(stem.descriptor.Descriptor):
   """
@@ -446,26 +447,26 @@ class RouterDescriptor(stem.descriptor.Descriptor):
     :raises: ValueError if an error occures in validation
     """
     
-    parser = stem.descriptor.DescriptorParser(raw_content, validate)
+    content = StringIO(raw_content)
     seen_keywords = set()
-    peek_check_kw = lambda keyword: keyword == parser.peek_keyword()
+    peek_check_kw = lambda keyword: keyword == _peek_keyword(content)
     
-    r = parser.read_keyword_line("r")
+    r = _read_keyword_line("r", content, validate)
     # r mauer BD7xbfsCFku3+tgybEZsg8Yjhvw itcuKQ6PuPLJ7m/Oi928WjO2j8g 2012-06-22 13:19:32 80.101.105.103 9001 0
     # "r" SP nickname SP identity SP digest SP publication SP IP SP ORPort SP DirPort NL
-    seen_keywords.add("r")
     if r:
+      seen_keywords.add("r")
       values = r.split(" ")
       self.nickname, self.identity, self.digest = values[0], values[1], values[2]
       self.publication = _strptime(" ".join((values[3], values[4])), validate)
       self.ip, self.orport, self.dirport = values[5], int(values[6]), int(values[7])
       if self.dirport == 0: self.dirport = None
-    elif validate: raise ValueError("Invalid router descriptor: empty 'r' line" )
+    elif validate: raise ValueError("Invalid router descriptor: empty 'r' line")
     
-    while parser.line:
+    while _peek_line(content):
       if peek_check_kw("s"):
         if "s" in seen_keywords: raise ValueError("Invalid router descriptor: 's' line appears twice")
-        line = parser.read_keyword_line("s")
+        line = _read_keyword_line("s", content, validate)
         if not line: continue
         seen_keywords.add("s")
         # s Named Running Stable Valid
@@ -494,7 +495,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
       
       elif peek_check_kw("v"):
         if "v" in seen_keywords: raise ValueError("Invalid router descriptor: 'v' line appears twice")
-        line = parser.read_keyword_line("v", True)
+        line = _read_keyword_line("v", content, validate, True)
         seen_keywords.add("v")
         # v Tor 0.2.2.35
         if line:
@@ -506,7 +507,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
       
       elif peek_check_kw("w"):
         if "w" in seen_keywords: raise ValueError("Invalid router descriptor: 'w' line appears twice")
-        w = parser.read_keyword_line("w", True)
+        w = _read_keyword_line("w", content, validate, True)
         # "w" SP "Bandwidth=" INT [SP "Measured=" INT] NL
         seen_keywords.add("w")
         if w:
@@ -525,7 +526,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
       
       elif peek_check_kw("p"):
         if "p" in seen_keywords: raise ValueError("Invalid router descriptor: 'p' line appears twice")
-        p = parser.read_keyword_line("p", True)
+        p = _read_keyword_line("p", content, validate, True)
         seen_keywords.add("p")
         # "p" SP ("accept" / "reject") SP PortList NL
         if p:
@@ -533,17 +534,17 @@ class RouterDescriptor(stem.descriptor.Descriptor):
       
       elif vote and peek_check_kw("m"):
         # microdescriptor hashes
-        m = parser.read_keyword_line("m", True)
+        m = _read_keyword_line("m", content, validate, True)
         methods, digests = m.split(" ", 1)
         method_list = methods.split(",")
         digest_dict = [digest.split("=", 1) for digest in digests.split(" ")]
         self.microdescriptor_hashes.append((method_list, digest_dict))
       
       elif validate:
-        raise ValueError("Router descriptor contains unrecognized trailing lines: %s" % parser.line)
+        raise ValueError("Router descriptor contains unrecognized trailing lines: %s" % content.readline())
       
       else:
-        self._unrecognized_lines.append(parser.read_line()) # ignore unrecognized lines if we aren't validating
+        self.unrecognized_lines.append(content.readline()) # ignore unrecognized lines if we aren't validating
   
   def get_unrecognized_lines(self):
     """
@@ -552,5 +553,5 @@ class RouterDescriptor(stem.descriptor.Descriptor):
     :returns: a list of unrecognized lines
     """
     
-    return self._unrecognized_lines
+    return self.unrecognized_lines
 

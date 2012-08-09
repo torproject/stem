@@ -148,6 +148,21 @@ class Descriptor(object):
   def __str__(self):
     return self._raw_contents
 
+def _peek_line(descriptor_file):
+  """
+  Returns the line at the current offset of descriptor_file.
+  
+  :param file descriptor_file: file with the descriptor content
+  
+  :returns: line at the current offset of descriptor_file
+  """
+  
+  last_position = descriptor_file.tell()
+  line = descriptor_file.readline()
+  descriptor_file.seek(last_position)
+  
+  return line
+
 def _peek_keyword(descriptor_file):
   """
   Returns the keyword at the current offset of descriptor_file. Respects the
@@ -171,6 +186,82 @@ def _peek_keyword(descriptor_file):
   descriptor_file.seek(last_position)
   
   return keyword
+
+def _read_keyword_line(keyword, descriptor_file, validate = True, optional = False):
+  """
+  Returns the rest of the line if the first keyword matches the given keyword. If
+  it doesn't, a ValueError is raised if optional and validate are True, if
+  not, None is returned.
+  
+  Respects the opt keyword and returns the next keyword if the first is "opt".
+  
+  :param str keyword: keyword the line must begin with
+  :param bool optional: if the current line must begin with the given keyword
+  :param bool validate: validation is enabled
+  
+  :returns: the text after the keyword if the keyword matches the one provided, otherwise returns None or raises an exception
+  
+  :raises: ValueError if a non-optional keyword doesn't match when validation is enabled
+  """
+  
+  line = _peek_line(descriptor_file)
+  if not line:
+    if not optional and validate:
+      raise ValueError("Unexpected end of document")
+    return None
+  
+  if line_matches_keyword(keyword, line):
+    line = descriptor_file.readline()
+    
+    if line == "opt " + keyword or line == keyword: return ""
+    elif line.startswith("opt "): return line.split(" ", 2)[2].rstrip("\n")
+    else: return line.split(" ", 1)[1].rstrip("\n")
+  elif line.startswith("opt"):
+    # if this is something new we don't recognize
+    # ignore it and go to the next line
+    descriptor_file.readline()
+    return _read_keyword_line(keyword, descriptor_file, optional)
+  elif not optional and validate:
+    raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, line))
+  else: return None
+
+def _read_keyword_line_str(keyword, lines, validate = True, optional = False):
+  """
+  Returns the rest of the line if the first keyword matches the given keyword. If
+  it doesn't, a ValueError is raised if optional and validate are True, if
+  not, None is returned.
+  
+  Respects the opt keyword and returns the next keyword if the first is "opt".
+  
+  :param str keyword: keyword the line must begin with
+  :param list lines: list of strings to be read from
+  :param bool optional: if the current line must begin with the given keyword
+  :param bool validate: validation is enabled
+  
+  :returns: the text after the keyword if the keyword matches the one provided, otherwise returns None or raises an exception
+  
+  :raises: ValueError if a non-optional keyword doesn't match when validation is enabled
+  """
+  
+  if not lines:
+    if not optional and validate:
+      raise ValueError("Unexpected end of document")
+    return
+  
+  if line_matches_keyword(keyword, lines[0]):
+    line = lines.pop(0)
+    
+    if line == "opt " + keyword or line == keyword: return ""
+    elif line.startswith("opt "): return line.split(" ", 2)[2]
+    else: return line.split(" ", 1)[1]
+  elif line.startswith("opt "):
+    # if this is something new we don't recognize yet
+    # ignore it and go to the next line
+    lines.pop(0)
+    return _read_keyword_line_str(keyword, lines, optional)
+  elif not optional and validate:
+    raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, lines[0]))
+  else: return None
 
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False):
   """
@@ -348,146 +439,10 @@ def _strptime(string, validate = True, optional = False):
     return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
   except ValueError, exc:
     if validate or not optional: raise exc
+    else: return None
 
-class DescriptorParser:
-  """
-  Helper class to parse documents.
-  
-  :var str line: current line to be being parsed
-  :var list lines: list of remaining lines to be parsed
-  """
-  
-  def __init__(self, raw_content, validate):
-    """
-    Create a new DocumentParser.
-    
-    :param str raw_content: content to be parsed
-    :param bool validate: if False, treats every keyword line as optional
-    """
-    
-    self._raw_content = raw_content
-    self.lines = raw_content.split("\n")
-    self.validate = validate
-    self.line = self.lines.pop(0)
-    
-  def peek_keyword(self):
-    """
-    Returns the first keyword in the next line. Respects the opt keyword and
-    returns the actual keyword if the first is "opt".
-    
-    :returns: the first keyword of the next line
-    """
-    
-    if self.line:
-      if self.line.startswith("opt "):
-        return self.line.split(" ")[1]
-      return self.line.split(" ")[0]
-  
-  def read_keyword_line(self, keyword, optional = False):
-    """
-    Returns the first keyword in the next line it matches the given keyword.
-    
-    If it doesn't match, a ValueError is raised if optional is True and if the
-    DocumentParser was created with validation enabled. If not, None is returned.
-    
-    Respects the opt keyword and returns the next keyword if the first is "opt".
-    
-    :param str keyword: keyword the line must begin with
-    :param bool optional: If the current line must begin with the given keyword
-    
-    :returns: the text after the keyword if the keyword matches the one provided, otherwise returns None or raises an exception
-    
-    :raises: ValueError if a non-optional keyword doesn't match when validation is enabled
-    """
-    
-    keyword_regex = re.compile("(opt )?" + re.escape(keyword) + "($| )")
-    
-    if not self.line:
-      if not optional and self.validate:
-        raise ValueError("Unexpected end of document")
-      return
-    
-    if keyword_regex.match(self.line):
-      line = self.read_line()
-      
-      if line == "opt " + keyword or line == keyword: return ""
-      elif line.startswith("opt "): return line.split(" ", 2)[2]
-      else: return line.split(" ", 1)[1]
-    elif self.line.startswith("opt"):
-      # if this is something new we don't recognize
-      # ignore it and go to the next line
-      self.read_line()
-      return self.read_keyword_line(self, keyword, optional)
-    elif not optional and self.validate:
-      raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, self.line))
-  
-  def read_line(self):
-    """
-    Returns the current line and shifts the parser to the next line.
-    
-    :returns: the current line if it exists, None otherwise
-    """
-    
-    if self.line:
-      try: tmp, self.line = self.line, self.lines.pop(0)
-      except IndexError: tmp, self.line = self.line, None
-      
-      return tmp
-    elif not optional and self.validate:
-      raise ValueError("Unexpected end of document")
-  
-  def read_block(self, keyword):
-    """
-    Returns a keyword block that begins with "-----BEGIN keyword-----\\n" and
-    ends with "-----END keyword-----\\n".
-    
-    :param str keyword: keyword block that must be read
-    
-    :returns: the data in the keyword block
-    """
-    
-    lines = []
-    
-    if self.line == "-----BEGIN " + keyword + "-----":
-      self.read_line()
-      while self.line != "-----END " + keyword + "-----":
-        lines.append(self.read_line())
-    
-    self.read_line() # pop out the END line
-    
-    return "\n".join(lines)
-  
-  def read_until(self, terminals = []):
-    """
-    Returns the data in the parser until a line that begins with one of the keywords in terminals are found.
-    
-    :param list terminals: list of strings at which we should stop reading and return the data
-    
-    :returns: the current line if it exists, None otherwise
-    """
-    
-    if self.line == None: return
-    lines = [self.read_line()]
-    while self.line and not self.line.split(" ")[0] in terminals:
-      lines.append(self.line)
-      self.read_line()
-    
-    return "\n".join(lines)
-  
-  def remaining(self):
-    """
-    Returns the data remaining in the parser.
-    
-    :returns: all a list of all unparsed lines
-    """
-    
-    if self.line:
-      lines, self.lines = self.lines, []
-      lines.insert(0, self.line)
-      self.line = None
-      return lines
-    else:
-      return []
+def line_matches_keyword(keyword, line):
+  return re.search("^(opt )?" + re.escape(keyword) + "($| )", line)
 
 class KeyCertificate(Descriptor):
   """
@@ -522,63 +477,54 @@ class KeyCertificate(Descriptor):
     self.fingerprint, self.identity_key, self.published = None, None, None
     self.expires, self.signing_key, self.crosscert = None, None, None
     self.certification = None
-    parser = DescriptorParser(raw_content, validate)
-    peek_check_kw = lambda keyword: keyword == parser.peek_keyword()
+    content = raw_content.splitlines()
     seen_keywords = set()
     
-    self.key_certificate_version = parser.read_keyword_line("dir-key-certificate-version")
-    if validate and self.key_certificate_version != "3": raise ValueError("Unrecognized dir-key-certificate-version")
+    self.key_certificate_version = _read_keyword_line_str("dir-key-certificate-version", content)
+    if validate and self.key_certificate_version != "3":
+      raise ValueError("Unrecognized dir-key-certificate-version")
     
-    def _read_keyword_line(keyword):
+    def read_keyword_line(keyword):
       if validate and keyword in seen_keywords:
         raise ValueError("Invalid key certificate: '%s' appears twice" % keyword)
       seen_keywords.add(keyword)
-      return parser.read_keyword_line(keyword)
+      return _read_keyword_line_str(keyword, content, validate)
     
-    while parser.line:
-      if peek_check_kw("dir-address"):
-        line = _read_keyword_line("dir-address")
+    while content:
+      if line_matches_keyword("dir-address", content[0]):
+        line = read_keyword_line("dir-address")
         try:
           self.ip, self.port = line.rsplit(":", 1)
           self.port = int(self.port)
         except Exception:
           if validate: raise ValueError("Invalid dir-address line: %s" % line)
-      
-      elif peek_check_kw("fingerprint"):
-        self.fingerprint = _read_keyword_line("fingerprint")
-      
-      elif peek_check_kw("dir-identity-key"):
-        _read_keyword_line("dir-identity-key")
-        self.identity_key = parser.read_block("RSA PUBLIC KEY")
-      
-      elif peek_check_kw("dir-key-published"):
-        self.published = _strptime(_read_keyword_line("dir-key-published"))
-      
-      elif peek_check_kw("dir-key-expires"):
-        self.expires = _strptime(_read_keyword_line("dir-key-expires"))
-      
-      elif peek_check_kw("dir-signing-key"):
-        _read_keyword_line("dir-signing-key")
-        self.signing_key = parser.read_block("RSA PUBLIC KEY")
-      
-      elif peek_check_kw("dir-key-crosscert"):
-        _read_keyword_line("dir-key-crosscert")
-        self.crosscert = parser.read_block("ID SIGNATURE")
-      
-      elif peek_check_kw("dir-key-certification"):
-        _read_keyword_line("dir-key-certification")
-        self.certification = parser.read_block("SIGNATURE")
+      elif line_matches_keyword("fingerprint", content[0]):
+        self.fingerprint = read_keyword_line("fingerprint")
+      elif line_matches_keyword("dir-identity-key", content[0]):
+        read_keyword_line("dir-identity-key")
+        self.identity_key = _get_pseudo_pgp_block(content)
+      elif line_matches_keyword("dir-key-published", content[0]):
+        self.published = _strptime(read_keyword_line("dir-key-published"))
+      elif line_matches_keyword("dir-key-expires", content[0]):
+        self.expires = _strptime(read_keyword_line("dir-key-expires"))
+      elif line_matches_keyword("dir-signing-key", content[0]):
+        read_keyword_line("dir-signing-key")
+        self.signing_key = _get_pseudo_pgp_block(content)
+      elif line_matches_keyword("dir-key-crosscert", content[0]):
+        read_keyword_line("dir-key-crosscert")
+        self.crosscert = _get_pseudo_pgp_block(content)
+      elif line_matches_keyword("dir-key-certification", content[0]):
+        read_keyword_line("dir-key-certification")
+        self.certification = _get_pseudo_pgp_block(content)
         break
-      
       elif validate:
-        raise ValueError("Key certificate contains unrecognized lines: %s" % parser.line)
-      
+        raise ValueError("Key certificate contains unrecognized lines: %s" % content[0])
       else:
         # ignore unrecognized lines if we aren't validating
-        self._unrecognized_lines.append(parser.read_line())
+        self.unrecognized_lines.append(content.pop(0))
     
-    self._unrecognized_lines = parser.remaining()
-    if self._unrecognized_lines and validate:
+    self.unrecognized_lines = content
+    if self.unrecognized_lines and validate:
       raise ValueError("Unrecognized trailing data in key certificate")
   
   def get_unrecognized_lines(self):
@@ -588,5 +534,5 @@ class KeyCertificate(Descriptor):
     :returns: a list of unrecognized lines
     """
     
-    return self._unrecognized_lines
+    return self.unrecognized_lines
 
