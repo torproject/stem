@@ -136,6 +136,7 @@ INTEG_TESTS = (
   test.integ.descriptor.server_descriptor.TestServerDescriptor,
   test.integ.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
   test.integ.descriptor.networkstatus.TestNetworkStatusDocument,
+  test.integ.descriptor.networkstatus.TestMicrodescriptorConsensus,
   test.integ.version.TestVersion,
   test.integ.response.protocolinfo.TestProtocolInfo,
   test.integ.process.TestProcess,

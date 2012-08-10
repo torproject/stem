@@ -13,6 +13,7 @@ import stem.exit_policy
 import stem.version
 import stem.descriptor.networkstatus
 import test.integ.descriptor
+from stem.descriptor.networkstatus import Flavour
 
 def _strptime(string):
   return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
@@ -255,4 +256,45 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.directory_signatures[0].identity)
     self.assertEquals("D5C30C15BB3F1DA27669C2D88439939E8F418FCF", desc.directory_signatures[0].key_digest)
     self.assertEquals(expected_signature, desc.directory_signatures[0].signature)
+
+class TestMicrodescriptorConsensus(unittest.TestCase):
+  def test_cached_microdesc_consensus(self):
+    """
+    Parses the cached-microdesc-consensus file in our data directory.
+    """
+    
+    # lengthy test and uneffected by targets, so only run once
+    if test.runner.only_run_once(self, "test_cached_microdesc_consensus"): return
+    
+    descriptor_path = test.runner.get_runner().get_test_dir("cached-microdesc-consensus")
+    
+    if not os.path.exists(descriptor_path):
+      test.runner.skip(self, "(no cached-microdesc-consensus)")
+    
+    count = 0
+    with open(descriptor_path) as descriptor_file:
+      for desc in next(stem.descriptor.networkstatus.parse_file(descriptor_file, True, flavour = Flavour.MICRODESCRIPTOR)).router_descriptors:
+        assert desc.nickname # check that the router has a nickname
+        count += 1
+    
+    assert count > 100 # sanity check - assuming atleast 100 relays in the consensus
+  
+  def test_metrics_microdesc_consensus(self):
+    """
+    Checks if consensus documents from Metrics are parsed properly.
+    """
+    
+    descriptor_path = test.integ.descriptor.get_resource("metrics_microdesc_consensus")
+    
+    with file(descriptor_path) as descriptor_file:
+      desc = stem.descriptor.parse_file(descriptor_path, descriptor_file)
+      
+      router = next(next(desc).router_descriptors)
+      self.assertEquals("JapanAnon", router.nickname)
+      self.assertEquals("AGw/p8P246zRPQ3ZsQx9+pM8I3s", router.identity)
+      self.assertEquals("9LDw0XiFeLQDXK9t8ht4+MK9tWx6Jxp1RwP36eatRWs", router.digest)
+      self.assertEquals(_strptime("2012-07-18 15:55:42"), router.publication)
+      self.assertEquals("220.0.231.71", router.ip)
+      self.assertEquals(443, router.orport)
+      self.assertEquals(9030, router.dirport)
 

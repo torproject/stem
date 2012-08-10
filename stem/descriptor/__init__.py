@@ -66,6 +66,8 @@ def parse_file(path, descriptor_file):
     file_parser = stem.descriptor.extrainfo_descriptor.parse_file
   elif filename == "cached-consensus":
     file_parser = stem.descriptor.networkstatus.parse_file
+  elif filename == "cached-microdesc-consensus":
+    file_parser = lambda f: stem.descriptor.networkstatus.parse_file(f, True, "microdesc")
   
   if file_parser:
     for desc in file_parser(descriptor_file):
@@ -103,6 +105,8 @@ def parse_file(path, descriptor_file):
         desc._set_path(path)
         yield desc
       return
+    elif desc_type == "network-status-microdesc-consensus-3" and major_version == 1:
+      desc = stem.descriptor.networkstatus.MicrodescriptorConsensus(descriptor_file.read())
   
   if desc:
     desc._set_path(path)

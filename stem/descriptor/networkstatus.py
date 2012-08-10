@@ -59,9 +59,30 @@ _bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in
 
 _router_desc_end_kws = ["r", "bandwidth-weights", "directory-footer", "directory-signature"]
 
+Flavour = stem.util.enum.Enum(
+  ("NONE", ""),
+  ("NS", "ns"),
+  ("MICRODESCRIPTOR", "microdesc"),
+  )
+
+Flag = stem.util.enum.Enum(
+  ("AUTHORITY", "Authority"),
+  ("BADEXIT", "BadExit"),
+  ("EXIT", "Exit"),
+  ("FAST", "Fast"),
+  ("GUARD", "Guard"),
+  ("HSDIR", "HSDir"),
+  ("NAMED", "Named"),
+  ("RUNNING", "Running"),
+  ("STABLE", "Stable"),
+  ("UNNAMED", "Unnamed"),
+  ("V2DIR", "V2Dir"),
+  ("VALID", "Valid"),
+  )
+
 Flag = stem.util.enum.Enum(*[(flag.upper(), flag) for flag in ["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir", "Named", "Running", "Stable", "Unnamed", "V2Dir", "Valid"]])
 
-def parse_file(document_file, validate = True):
+def parse_file(document_file, validate = True, flavour = Flavour.NONE):
   """
   Iterates over the router descriptors in a network status document.
   
@@ -83,15 +104,27 @@ def parse_file(document_file, validate = True):
   _skip_until_keywords(["bandwidth-weights", "directory-footer", "directory-signature"], document_file)
   # parse until end
   document_data = document_data + document_file.read()
-  document = NetworkStatusDocument(document_data, validate)
-  document_file.seek(r_offset)
-  document.router_descriptors = _router_desc_generator(document_file, document.vote_status == "vote", validate, document.known_flags)
-  return document.router_descriptors
+  
+  if flavour == Flavour.NONE:
+    document = NetworkStatusDocument(document_data, validate)
+    document_file.seek(r_offset)
+    document.router_descriptors = _ns_router_desc_generator(document_file, document.vote_status == "vote", validate)
+    yield document
+  elif flavour == Flavour.MICRODESCRIPTOR:
+    document = MicrodescriptorConsensus(document_data, validate)
+    document_file.seek(r_offset)
+    document.router_descriptors = _router_microdesc_generator(document_file, validate, document.known_flags)
+    yield document
 
-def _router_desc_generator(document_file, vote, validate, known_flags):
+def _ns_router_desc_generator(document_file, vote, validate):
   while _peek_keyword(document_file) == "r":
     desc_content = "".join(_read_until_keywords(_router_desc_end_kws, document_file, False, True))
-    yield RouterDescriptor(desc_content, vote, validate, known_flags)
+    yield RouterDescriptor(desc_content, vote, validate)
+
+def _router_microdesc_generator(document_file, validate, known_flags):
+  while _peek_keyword(document_file) == "r":
+    desc_content = "".join(_read_until_keywords(_router_desc_end_kws, document_file, False, True))
+    yield RouterMicrodescriptor(desc_content, validate, known_flags)
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
   """
@@ -159,8 +192,10 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     self._parse(raw_content)
   
-  def _generate_router(self, raw_content, vote, validate, known_flags):
-    return RouterDescriptor(raw_content, vote, validate, known_flags)
+  def _router_desc_generator(self, document_file):
+    while _peek_keyword(document_file) == "r":
+      desc_content = "".join(_read_until_keywords(_router_desc_end_kws, document_file, False, True))
+      yield RouterDescriptor(desc_content, self.vote_status == "vote", self.validated, self.known_flags)
   
   def _validate_network_status_version(self):
     return self.network_status_version == "3"
@@ -223,7 +258,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     # router descriptors
     if _peek_keyword(content) == "r":
       router_descriptors_data = "".join(_read_until_keywords(["bandwidth-weights", "directory-footer", "directory-signature"], content, False, True))
-      self.router_descriptors = _router_desc_generator(StringIO(router_descriptors_data), vote, validate, self.known_flags)
+      self.router_descriptors = self._router_desc_generator(StringIO(router_descriptors_data))
     
     # footer section
     if self.consensus_method > 9 or vote and filter(lambda x: x >= 9, self.consensus_methods):
@@ -394,7 +429,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
     :param bool vote: True if the descriptor is from a vote document
     :param bool validate: whether the router descriptor should be validated
     :param bool known_flags: list of known router status flags
-
+    
     :raises: ValueError if the descriptor data is invalid
     """
     
@@ -524,3 +559,164 @@ class RouterDescriptor(stem.descriptor.Descriptor):
     
     return self.unrecognized_lines
 
+class MicrodescriptorConsensus(NetworkStatusDocument):
+  """
+  A v3 microdescriptor consensus.
+  
+  :var bool validated: **\*** whether the document is validated
+  :var str network_status_version: **\*** a document format version. For v3 microdescriptor consensuses this is "3 microdesc"
+  :var str vote_status: **\*** status of the vote (is "consensus")
+  :var int consensus_method: **~** consensus method used to generate a consensus
+  :var datetime valid_after: **\*** time when the consensus becomes valid
+  :var datetime fresh_until: **\*** time until when the consensus is considered to be fresh
+  :var datetime valid_until: **\*** time until when the consensus is valid
+  :var int vote_delay: **\*** number of seconds allowed for collecting votes from all authorities
+  :var int dist_delay: number of seconds allowed for collecting signatures from all authorities
+  :var list client_versions: list of recommended Tor client versions
+  :var list server_versions: list of recommended Tor server versions
+  :var list known_flags: **\*** list of known router flags
+  :var list params: dict of parameter(str) => value(int) mappings
+  :var list router_descriptors: **\*** iterator for RouterDescriptor objects defined in the document
+  :var list directory_authorities: **\*** list of DirectoryAuthority objects that have generated this document
+  :var dict bandwidth_weights: **~** dict of weight(str) => value(int) mappings
+  :var list directory_signatures: **\*** list of signatures this document has
+  
+  | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  | **~** attribute appears only in consensuses
+  """
+  
+  def _router_desc_generator(self, document_file):
+    while _peek_keyword(document_file) == "r":
+      desc_content = "".join(_read_until_keywords(_router_desc_end_kws, document_file, False, True))
+      yield RouterMicrodescriptor(desc_content, self.validated, self.known_flags)
+  
+  def _validate_network_status_version(self):
+    return self.network_status_version == "3 microdesc"
+
+class RouterMicrodescriptor(RouterDescriptor):
+  """
+  Router microdescriptor object. Parses and stores router information in a router
+  microdescriptor from a v3 microdescriptor consensus.
+  
+  :var str nickname: **\*** router's nickname
+  :var str identity: **\*** router's identity
+  :var datetime publication: **\*** router's publication
+  :var str ip: **\*** router's IP address
+  :var int orport: **\*** router's ORPort
+  :var int dirport: **\*** router's DirPort
+  
+  :var list flags: **\*** list of status flags
+  :var list unknown_flags: **\*** list of unidentified status flags
+  
+  :var :class:`stem.version.Version`,str version: Version of the Tor protocol this router is running
+  
+  :var int bandwidth: router's claimed bandwidth
+  :var int measured_bandwidth: router's measured bandwidth
+  
+  :var str digest: base64 of the hash of the router's microdescriptor with trailing =s omitted
+  
+  | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  """
+  
+  def __init__(self, raw_contents, validate = True, known_flags = Flag):
+    """
+    Parse a router descriptor in a v3 microdescriptor consensus and provide a new
+    RouterMicrodescriptor object.
+    
+    :param str raw_content: router descriptor content to be parsed
+    :param bool validate: whether the router descriptor should be validated
+    :param bool known_flags: list of known router status flags
+    
+    :raises: ValueError if the descriptor data is invalid
+    """
+    
+    super(RouterMicrodescriptor, self).__init__(raw_contents, False, validate, known_flags)
+  
+  def _parse(self, raw_content, _, validate, known_flags):
+    """
+    :param dict raw_content: router descriptor contents to be parsed
+    :param bool validate: checks the validity of descriptor content if True
+    :param bool known_flags: list of known router status flags
+    
+    :raises: ValueError if an error occures in validation
+    """
+    
+    content = StringIO(raw_content)
+    seen_keywords = set()
+    peek_check_kw = lambda keyword: keyword == _peek_keyword(content)
+    
+    r = _read_keyword_line("r", content, validate)
+    # r mauer BD7xbfsCFku3+tgybEZsg8Yjhvw itcuKQ6PuPLJ7m/Oi928WjO2j8g 2012-06-22 13:19:32 80.101.105.103 9001 0
+    # "r" SP nickname SP identity SP digest SP publication SP IP SP ORPort SP DirPort NL
+    if r:
+      seen_keywords.add("r")
+      values = r.split(" ")
+      self.nickname, self.identity = values[0], values[1]
+      self.publication = _strptime(" ".join((values[2], values[3])), validate)
+      self.ip, self.orport, self.dirport = values[4], int(values[5]), int(values[6])
+      if self.dirport == 0: self.dirport = None
+    elif validate: raise ValueError("Invalid router descriptor: empty 'r' line")
+    
+    while _peek_line(content):
+      if peek_check_kw("s"):
+        if "s" in seen_keywords: raise ValueError("Invalid router descriptor: 's' line appears twice")
+        line = _read_keyword_line("s", content, validate)
+        if not line: continue
+        seen_keywords.add("s")
+        # s Named Running Stable Valid
+        #A series of space-separated status flags, in *lexical order*
+        self.flags = line.split(" ")
+        
+        self.unknown_flags = filter(lambda f: not f in known_flags, self.flags)
+        if validate and self.unknown_flags:
+          raise ValueError("Router contained unknown flags: %s", " ".join(self.unknown_flags))
+      
+      elif peek_check_kw("v"):
+        if "v" in seen_keywords: raise ValueError("Invalid router descriptor: 'v' line appears twice")
+        line = _read_keyword_line("v", content, validate, True)
+        seen_keywords.add("v")
+        # v Tor 0.2.2.35
+        if line:
+          if line.startswith("Tor "):
+            self.version = stem.version.Version(line[4:])
+          else:
+            self.version = line
+        elif validate: raise ValueError("Invalid router descriptor: empty 'v' line" )
+      
+      elif peek_check_kw("w"):
+        if "w" in seen_keywords: raise ValueError("Invalid router descriptor: 'w' line appears twice")
+        w = _read_keyword_line("w", content, validate, True)
+        # "w" SP "Bandwidth=" INT [SP "Measured=" INT] NL
+        seen_keywords.add("w")
+        if w:
+          values = w.split(" ")
+          if len(values) <= 2 and len(values) > 0:
+            key, value = values[0].split("=")
+            if key == "Bandwidth": self.bandwidth = int(value)
+            elif validate: raise ValueError("Router descriptor contains invalid 'w' line: expected Bandwidth, read " + key)
+            
+            if len(values) == 2:
+              key, value = values[1].split("=")
+              if key == "Measured": self.measured_bandwidth = int(value)
+              elif validate: raise ValueError("Router descriptor contains invalid 'w' line: expected Measured, read " + key)
+          elif validate: raise ValueError("Router descriptor contains invalid 'w' line")
+        elif validate: raise ValueError("Router descriptor contains empty 'w' line")
+      
+      elif peek_check_kw("m"):
+        # microdescriptor hashes
+        self.digest = _read_keyword_line("m", content, validate, True)
+      
+      elif validate:
+        raise ValueError("Router descriptor contains unrecognized trailing lines: %s" % content.readline())
+      
+      else:
+        self.unrecognized_lines.append(content.readline()) # ignore unrecognized lines if we aren't validating
+  
+  def get_unrecognized_lines(self):
+    """
+    Returns any unrecognized lines.
+    
+    :returns: a list of unrecognized lines
+    """
+    
+    return self.unrecognized_lines
