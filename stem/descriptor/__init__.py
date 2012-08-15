@@ -65,9 +65,17 @@ def parse_file(path, descriptor_file):
   elif filename == "cached-extrainfo":
     file_parser = stem.descriptor.extrainfo_descriptor.parse_file
   elif filename == "cached-consensus":
-    file_parser = stem.descriptor.networkstatus.parse_file
+    file_parser = lambda f: [stem.descriptor.networkstatus.parse_file(f)]
   elif filename == "cached-microdesc-consensus":
-    file_parser = lambda f: stem.descriptor.networkstatus.parse_file(f, True, "microdesc")
+    file_parser = lambda f: [stem.descriptor.networkstatus.parse_file(f, True, "microdesc")]
+  else:
+    # Metrics descriptor handling
+    first_line, desc = descriptor_file.readline().strip(), None
+    metrics_header_match = re.match("^@type (\S+) (\d+).(\d+)$", first_line)
+    
+    if metrics_header_match:
+      desc_type, major_version, minor_version = metrics_header_match.groups()
+      file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f)
   
   if file_parser:
     for desc in file_parser(descriptor_file):
@@ -76,46 +84,32 @@ def parse_file(path, descriptor_file):
     
     return
   
-  # Metrics descriptor handling. These contain a single descriptor per file.
-  
-  first_line, desc = descriptor_file.readline().strip(), None
-  metrics_header_match = re.match("^@type (\S+) (\d+).(\d+)$", first_line)
-  
-  if metrics_header_match:
-    # still doesn't necessarily mean that this is a descriptor, check if the
-    # header contents are recognized
-    
-    desc_type, major_version, minor_version = metrics_header_match.groups()
-    major_version, minor_version = int(major_version), int(minor_version)
-    
-    if desc_type == "server-descriptor" and major_version == 1:
-      desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_file.read())
-    elif desc_type == "bridge-server-descriptor" and major_version == 1:
-      desc = stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_file.read())
-    elif desc_type == "extra-info" and major_version == 1:
-      desc = stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_file.read())
-    elif desc_type == "bridge-extra-info" and major_version == 1:
-      # version 1.1 introduced a 'transport' field...
-      # https://trac.torproject.org/6257
-      
-      desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
-    elif desc_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
-      desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())
-      for desc in desc.router_descriptors:
-        desc._set_path(path)
-        yield desc
-      return
-    elif desc_type == "network-status-microdesc-consensus-3" and major_version == 1:
-      desc = stem.descriptor.networkstatus.MicrodescriptorConsensus(descriptor_file.read())
-  
-  if desc:
-    desc._set_path(path)
-    yield desc
-    return
-  
   # Not recognized as a descriptor file.
   
   raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
+
+def _parse_metrics_file(descriptor_type, major_version, minor_version, descriptor_file):
+  # Parses descriptor files from metrics, yielding individual descriptors. This
+  # throws a TypeError if the descriptor_type or version isn't recognized.
+  import stem.descriptor.server_descriptor
+  import stem.descriptor.extrainfo_descriptor
+  import stem.descriptor.networkstatus
+  
+  if descriptor_type == "server-descriptor" and major_version == 1:
+    yield stem.descriptor.server_descriptor.RelayDescriptor(descriptor_file.read())
+  elif descriptor_type == "bridge-server-descriptor" and major_version == 1:
+    yield stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_file.read())
+  elif descriptor_type == "extra-info" and major_version == 1:
+    yield stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_file.read())
+  elif descriptor_type == "bridge-extra-info" and major_version == 1:
+    # version 1.1 introduced a 'transport' field...
+    # https://trac.torproject.org/6257
+    
+    yield stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
+  elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
+    yield stem.descriptor.networkstatus.parse_file(descriptor_file)
+  elif descriptor_type == "network-status-microdesc-consensus-3" and major_version == 1:
+    yield stem.descriptor.networkstatus.parse_file(descriptor_file, flavour = "microdesc")
 
 class Descriptor(object):
   """
@@ -177,19 +171,13 @@ def _peek_keyword(descriptor_file):
   :returns: keyword at the current offset of descriptor_file
   """
   
-  last_position = descriptor_file.tell()
-  line = descriptor_file.readline()
+  line = _peek_line(descriptor_file)
+  
+  if line.startswith("opt "):
+    line = line[4:]
   if not line: return None
   
-  if " " in line:
-    keyword = line.split(" ", 1)[0]
-    if keyword == "opt":
-        keyword = line.split(" ", 2)[1]
-  else: keyword = line.strip()
-  
-  descriptor_file.seek(last_position)
-  
-  return keyword
+  return line.split(" ", 1)[0].rstrip("\n")
 
 def _read_keyword_line(keyword, descriptor_file, validate = True, optional = False):
   """
@@ -200,8 +188,9 @@ def _read_keyword_line(keyword, descriptor_file, validate = True, optional = Fal
   Respects the opt keyword and returns the next keyword if the first is "opt".
   
   :param str keyword: keyword the line must begin with
-  :param bool optional: if the current line must begin with the given keyword
+  :param bool descriptor_file: file/file-like object containing descriptor data
   :param bool validate: validation is enabled
+  :param bool optional: if the current line must begin with the given keyword
   
   :returns: the text after the keyword if the keyword matches the one provided, otherwise returns None or raises an exception
   
@@ -214,13 +203,14 @@ def _read_keyword_line(keyword, descriptor_file, validate = True, optional = Fal
       raise ValueError("Unexpected end of document")
     return None
   
-  if line_matches_keyword(keyword, line):
-    line = descriptor_file.readline()
-    
-    if line == "opt " + keyword or line == keyword: return ""
-    elif line.startswith("opt "): return line.split(" ", 2)[2].rstrip("\n")
-    else: return line.split(" ", 1)[1].rstrip("\n")
-  elif line.startswith("opt"):
+  opt_line = False
+  if line.startswith("opt "):
+    line = line[4:]
+    opt_line = True
+  if re.match("^" + re.escape(keyword) + "($| )", line):
+    descriptor_file.readline()
+    return line[len(keyword):].strip()
+  elif opt_line and not optional:
     # if this is something new we don't recognize
     # ignore it and go to the next line
     descriptor_file.readline()
@@ -239,8 +229,8 @@ def _read_keyword_line_str(keyword, lines, validate = True, optional = False):
   
   :param str keyword: keyword the line must begin with
   :param list lines: list of strings to be read from
-  :param bool optional: if the current line must begin with the given keyword
   :param bool validate: validation is enabled
+  :param bool optional: if the current line must begin with the given keyword
   
   :returns: the text after the keyword if the keyword matches the one provided, otherwise returns None or raises an exception
   
@@ -252,16 +242,17 @@ def _read_keyword_line_str(keyword, lines, validate = True, optional = False):
       raise ValueError("Unexpected end of document")
     return
   
+  opt_line = False
+  if lines[0].startswith("opt "):
+    line = line[4:]
+    opt_line = True
   if line_matches_keyword(keyword, lines[0]):
     line = lines.pop(0)
     
-    if line == "opt " + keyword or line == keyword: return ""
-    elif line.startswith("opt "): return line.split(" ", 2)[2]
-    else: return line.split(" ", 1)[1]
-  elif line.startswith("opt "):
+    return line[len(keyword):].strip()
+  elif opt_line and not optional:
     # if this is something new we don't recognize yet
     # ignore it and go to the next line
-    lines.pop(0)
     return _read_keyword_line_str(keyword, lines, optional)
   elif not optional and validate:
     raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, lines[0]))

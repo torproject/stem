@@ -39,7 +39,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     count = 0
     with open(descriptor_path) as descriptor_file:
-      for desc in stem.descriptor.networkstatus.parse_file(descriptor_file):
+      for desc in stem.descriptor.networkstatus.parse_file(descriptor_file).router_descriptors:
         if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 200000:
           # if we're using > 200 MB we should fail
           self.fail()
@@ -58,7 +58,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     with file(descriptor_path) as descriptor_file:
       desc = stem.descriptor.parse_file(descriptor_path, descriptor_file)
       
-      router = next(desc)
+      router = next(next(desc).router_descriptors)
       self.assertEquals("sumkledi", router.nickname)
       self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router.identity)
       self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router.digest)
@@ -150,7 +150,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     with file(descriptor_path) as descriptor_file:
       desc = stem.descriptor.parse_file(descriptor_path, descriptor_file)
       
-      router = next(desc)
+      router = next(next(desc).router_descriptors)
       self.assertEquals("sumkledi", router.nickname)
       self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router.identity)
       self.assertEquals("B5n4BiALAF8B5AqafxohyYiuj7E", router.digest)
@@ -273,28 +273,9 @@ class TestMicrodescriptorConsensus(unittest.TestCase):
     
     count = 0
     with open(descriptor_path) as descriptor_file:
-      for desc in next(stem.descriptor.networkstatus.parse_file(descriptor_file, True, flavour = Flavour.MICRODESCRIPTOR)).router_descriptors:
+      for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, True, flavour = Flavour.MICRODESCRIPTOR).router_descriptors:
         assert desc.nickname # check that the router has a nickname
         count += 1
     
     assert count > 100 # sanity check - assuming atleast 100 relays in the consensus
-  
-  def test_metrics_microdesc_consensus(self):
-    """
-    Checks if consensus documents from Metrics are parsed properly.
-    """
-    
-    descriptor_path = test.integ.descriptor.get_resource("metrics_microdesc_consensus")
-    
-    with file(descriptor_path) as descriptor_file:
-      desc = stem.descriptor.parse_file(descriptor_path, descriptor_file)
-      
-      router = next(next(desc).router_descriptors)
-      self.assertEquals("JapanAnon", router.nickname)
-      self.assertEquals("AGw/p8P246zRPQ3ZsQx9+pM8I3s", router.identity)
-      self.assertEquals("9LDw0XiFeLQDXK9t8ht4+MK9tWx6Jxp1RwP36eatRWs", router.digest)
-      self.assertEquals(_strptime("2012-07-18 15:55:42"), router.publication)
-      self.assertEquals("220.0.231.71", router.ip)
-      self.assertEquals(443, router.orport)
-      self.assertEquals(9030, router.dirport)
 

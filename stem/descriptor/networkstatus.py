@@ -21,7 +21,7 @@ The documents can be obtained from any of the following sources...
   
   nsdoc_file = open("/home/neena/.tor/cached-consensus")
   try:
-    consensus = stem.descriptor.networkstatus.NetworkStatusDocument(nsdoc_file.read())
+    consensus = stem.descriptor.networkstatus.parse_file(nsdoc_file)
   except ValueError:
     print "Invalid cached-consensus file"
   
@@ -33,7 +33,9 @@ The documents can be obtained from any of the following sources...
 
   parse_file - parses a network status file and provides a NetworkStatusDocument
   NetworkStatusDocument - Tor v3 network status document
+    +- MicrodescriptorConsensus - Microdescriptor flavoured consensus documents
   RouterDescriptor - Router descriptor; contains information about a Tor relay
+    +- RouterMicrodescriptor - Router microdescriptor; contains information that doesn't change frequently
   DirectorySignature - Network status document's directory signature
   DirectoryAuthority - Directory authority defined in a v3 network status document
 """
@@ -63,7 +65,7 @@ Flavour = stem.util.enum.Enum(
   ("NONE", ""),
   ("NS", "ns"),
   ("MICRODESCRIPTOR", "microdesc"),
-  )
+)
 
 Flag = stem.util.enum.Enum(
   ("AUTHORITY", "Authority"),
@@ -78,18 +80,16 @@ Flag = stem.util.enum.Enum(
   ("UNNAMED", "Unnamed"),
   ("V2DIR", "V2Dir"),
   ("VALID", "Valid"),
-  )
-
-Flag = stem.util.enum.Enum(*[(flag.upper(), flag) for flag in ["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir", "Named", "Running", "Stable", "Unnamed", "V2Dir", "Valid"]])
+)
 
 def parse_file(document_file, validate = True, flavour = Flavour.NONE):
   """
-  Iterates over the router descriptors in a network status document.
+  Parses a network status document and provides a NetworkStatusDocument object.
   
   :param file document_file: file with network status document content
   :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
   
-  :returns: iterator for :class:`stem.descriptor.networkstatus.RouterDescriptor` instances in the file
+  :returns: :class:`stem.descriptor.networkstatus.NetworkStatusDocument` object
   
   :raises:
     * ValueError if the contents is malformed and validate is True
@@ -109,12 +109,12 @@ def parse_file(document_file, validate = True, flavour = Flavour.NONE):
     document = NetworkStatusDocument(document_data, validate)
     document_file.seek(r_offset)
     document.router_descriptors = _ns_router_desc_generator(document_file, document.vote_status == "vote", validate)
-    yield document
+    return document
   elif flavour == Flavour.MICRODESCRIPTOR:
     document = MicrodescriptorConsensus(document_data, validate)
     document_file.seek(r_offset)
     document.router_descriptors = _router_microdesc_generator(document_file, validate, document.known_flags)
-    yield document
+    return document
 
 def _ns_router_desc_generator(document_file, vote, validate):
   while _peek_keyword(document_file) == "r":
