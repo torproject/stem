@@ -203,18 +203,11 @@ def _read_keyword_line(keyword, descriptor_file, validate = True, optional = Fal
       raise ValueError("Unexpected end of document")
     return None
   
-  opt_line = False
   if line.startswith("opt "):
     line = line[4:]
-    opt_line = True
   if re.match("^" + re.escape(keyword) + "($| )", line):
     descriptor_file.readline()
     return line[len(keyword):].strip()
-  elif opt_line and not optional:
-    # if this is something new we don't recognize
-    # ignore it and go to the next line
-    descriptor_file.readline()
-    return _read_keyword_line(keyword, descriptor_file, optional)
   elif not optional and validate:
     raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, line))
   else: return None
@@ -242,18 +235,12 @@ def _read_keyword_line_str(keyword, lines, validate = True, optional = False):
       raise ValueError("Unexpected end of document")
     return
   
-  opt_line = False
   if lines[0].startswith("opt "):
     line = line[4:]
-    opt_line = True
   if line_matches_keyword(keyword, lines[0]):
     line = lines.pop(0)
     
     return line[len(keyword):].strip()
-  elif opt_line and not optional:
-    # if this is something new we don't recognize yet
-    # ignore it and go to the next line
-    return _read_keyword_line_str(keyword, lines, optional)
   elif not optional and validate:
     raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, lines[0]))
   else: return None
