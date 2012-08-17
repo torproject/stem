@@ -45,7 +45,6 @@ import time
 import Queue
 import threading
 
-import stem.connection
 import stem.response
 import stem.socket
 import stem.version
@@ -646,6 +645,7 @@ class Controller(BaseController):
     :raises: see :func:`stem.connection.authenticate`
     """
     
+    import stem.connection
     stem.connection.authenticate(self, *args, **kwargs)
   
   def protocolinfo(self):
@@ -659,6 +659,7 @@ class Controller(BaseController):
       * :class:`stem.socket.SocketError` if problems arise in establishing or using the socket
     """
     
+    import stem.connection
     return stem.connection.get_protocolinfo(self)
   
   def get_conf(self, param, default = UNDEFINED, multiple = False):
