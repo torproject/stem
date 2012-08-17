@@ -48,6 +48,7 @@ import threading
 import stem.response
 import stem.socket
 import stem.version
+import stem.util.connection
 import stem.util.log as log
 
 # state changes a control socket can have
@@ -453,6 +454,11 @@ class Controller(BaseController):
     
     :raises: :class:`stem.socket.SocketError` if we're unable to establish a connection
     """
+    
+    if not stem.util.connection.is_valid_ip_address(control_addr):
+      raise ValueError("Invalid IP address: %s" % control_addr)
+    elif not stem.util.connection.is_valid_port(control_port):
+      raise ValueError("Invalid port: %s" % control_port)
     
     control_port = stem.socket.ControlPort(control_addr, control_port)
     return Controller(control_port)
