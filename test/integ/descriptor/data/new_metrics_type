@@ -1,0 +1,3 @@
+@type non-existant-type 1.0
+valid metrics header, but a type we shouldn't recognize
+

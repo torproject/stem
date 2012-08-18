@@ -110,6 +110,8 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     yield stem.descriptor.networkstatus.parse_file(descriptor_file)
   elif descriptor_type == "network-status-microdesc-consensus-3" and major_version == 1:
     yield stem.descriptor.networkstatus.parse_file(descriptor_file, flavour = "microdesc")
+  else:
+    raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
 
 class Descriptor(object):
   """
