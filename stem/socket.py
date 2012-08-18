@@ -570,7 +570,7 @@ class OperationFailed(ControllerError):
     :returns: object of OperationFailed class
     """
     
-    super(ControllerError, self).__init__()
+    super(ControllerError, self).__init__(message)
     self.code = code
     self.message = message
 
