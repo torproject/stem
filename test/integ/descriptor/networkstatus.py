@@ -1,5 +1,5 @@
 """
-Integration tests for stem.descriptor.server_descriptor.
+Integration tests for stem.descriptor.networkstatus.
 """
 
 from __future__ import with_statement
@@ -256,8 +256,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.directory_signatures[0].identity)
     self.assertEquals("D5C30C15BB3F1DA27669C2D88439939E8F418FCF", desc.directory_signatures[0].key_digest)
     self.assertEquals(expected_signature, desc.directory_signatures[0].signature)
-
-class TestMicrodescriptorConsensus(unittest.TestCase):
+  
   def test_cached_microdesc_consensus(self):
     """
     Parses the cached-microdesc-consensus file in our data directory.
