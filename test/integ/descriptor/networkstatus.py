@@ -56,9 +56,9 @@ class TestNetworkStatusDocument(unittest.TestCase):
     descriptor_path = test.integ.descriptor.get_resource("metrics_consensus")
     
     with file(descriptor_path) as descriptor_file:
-      desc = stem.descriptor.parse_file(descriptor_path, descriptor_file)
+      descriptors = stem.descriptor.parse_file(descriptor_path, descriptor_file)
       
-      router = next(next(desc).router_descriptors)
+      router = next(descriptors)
       self.assertEquals("sumkledi", router.nickname)
       self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router.identity)
       self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router.digest)
@@ -148,9 +148,9 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     descriptor_path = test.integ.descriptor.get_resource("metrics_vote")
     
     with file(descriptor_path) as descriptor_file:
-      desc = stem.descriptor.parse_file(descriptor_path, descriptor_file)
+      descriptors = stem.descriptor.parse_file(descriptor_path, descriptor_file)
       
-      router = next(next(desc).router_descriptors)
+      router = next(descriptors)
       self.assertEquals("sumkledi", router.nickname)
       self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router.identity)
       self.assertEquals("B5n4BiALAF8B5AqafxohyYiuj7E", router.digest)

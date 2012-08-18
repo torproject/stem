@@ -65,9 +65,9 @@ def parse_file(path, descriptor_file):
   elif filename == "cached-extrainfo":
     file_parser = stem.descriptor.extrainfo_descriptor.parse_file
   elif filename == "cached-consensus":
-    file_parser = lambda f: [stem.descriptor.networkstatus.parse_file(f)]
+    file_parser = lambda f: stem.descriptor.networkstatus.parse_file(f).router_descriptors
   elif filename == "cached-microdesc-consensus":
-    file_parser = lambda f: [stem.descriptor.networkstatus.parse_file(f, True, "microdesc")]
+    file_parser = lambda f: stem.descriptor.networkstatus.parse_file(f, True, "microdesc").router_descriptors
   else:
     # Metrics descriptor handling
     first_line, desc = descriptor_file.readline().strip(), None
@@ -107,9 +107,15 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     
     yield stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
   elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
-    yield stem.descriptor.networkstatus.parse_file(descriptor_file)
+    consensus = stem.descriptor.networkstatus.parse_file(descriptor_file)
+    
+    for desc in consensus.router_descriptors:
+      yield desc
   elif descriptor_type == "network-status-microdesc-consensus-3" and major_version == 1:
-    yield stem.descriptor.networkstatus.parse_file(descriptor_file, flavour = "microdesc")
+    consensus = stem.descriptor.networkstatus.parse_file(descriptor_file, flavour = "microdesc")
+    
+    for desc in consensus.router_descriptors:
+      yield desc
   else:
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
 
