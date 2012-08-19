@@ -4,7 +4,7 @@ status documents (both votes and consensuses).
 
 The network status documents also contain a list of router descriptors,
 directory authorities, signatures etc. If you only need the
-:class:`stem.descriptor.networkstatus.RouterDescriptor` objects, use
+:class:`stem.descriptor.networkstatus.RouterStatusEntry` objects, use
 :func:`stem.descriptor.parse_file`. Other information can be accessed by
 directly instantiating :class:`stem.descriptor.networkstatus.NetworkStatusDocument`
 objects.
@@ -34,7 +34,7 @@ The documents can be obtained from any of the following sources...
   parse_file - parses a network status file and provides a NetworkStatusDocument
   NetworkStatusDocument - Tor v3 network status document
     +- MicrodescriptorConsensus - Microdescriptor flavoured consensus documents
-  RouterDescriptor - Router descriptor; contains information about a Tor relay
+  RouterStatusEntry - Router descriptor; contains information about a Tor relay
     +- RouterMicrodescriptor - Router microdescriptor; contains information that doesn't change frequently
   DirectorySignature - Network status document's directory signature
   DirectoryAuthority - Directory authority defined in a v3 network status document
@@ -76,7 +76,7 @@ Flag = stem.util.enum.Enum(
 
 def parse_file(document_file, validate = True, is_microdescriptor = False):
   """
-  Parses a network status and iterates over the RouterDescriptor or
+  Parses a network status and iterates over the RouterStatusEntry or
   RouterMicrodescriptor in it. The document that these instances reference have
   an empty 'rotuers' attribute to allow for limited memory usage.
   
@@ -96,7 +96,7 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
   
   if not is_microdescriptor:
     document = NetworkStatusDocument(document_data, validate)
-    router_type = RouterDescriptor
+    router_type = RouterStatusEntry
   else:
     document = MicrodescriptorConsensus(document_data, validate)
     router_type = RouterMicrodescriptor
@@ -168,7 +168,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   
   This could be a v3 consensus or vote document.
   
-  :var tuple routers: RouterDescriptor contained in the document
+  :var tuple routers: RouterStatusEntry contained in the document
   
   :var bool validated: **\*** whether the document is validated
   :var str network_status_version: **\*** a document format version. For v3 documents this is "3"
@@ -238,7 +238,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       self.routers = ()
   
   def _get_router_type(self):
-    return RouterDescriptor
+    return RouterStatusEntry
   
   def _validate_network_status_version(self):
     return self.network_status_version == "3"
@@ -429,7 +429,7 @@ class DirectorySignature(stem.descriptor.Descriptor):
     
     return self.unrecognized_lines
 
-class RouterDescriptor(stem.descriptor.Descriptor):
+class RouterStatusEntry(stem.descriptor.Descriptor):
   """
   Router descriptor object. Parses and stores router information in a router
   entry read from a v3 network status document.
@@ -463,7 +463,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
   def __init__(self, raw_contents, document, validate = True, known_flags = Flag):
     """
     Parse a router descriptor in a v3 network status document and provide a new
-    RouterDescriptor object.
+    RouterStatusEntry object.
     
     :param str raw_content: router descriptor content to be parsed
     :param NetworkStatusDocument document: document this descriptor came from
@@ -473,7 +473,7 @@ class RouterDescriptor(stem.descriptor.Descriptor):
     :raises: ValueError if the descriptor data is invalid
     """
     
-    super(RouterDescriptor, self).__init__(raw_contents)
+    super(RouterStatusEntry, self).__init__(raw_contents)
     
     self.document = document
     
@@ -632,7 +632,7 @@ class MicrodescriptorConsensus(NetworkStatusDocument):
   def _validate_network_status_version(self):
     return self.network_status_version == "3 microdesc"
 
-class RouterMicrodescriptor(RouterDescriptor):
+class RouterMicrodescriptor(RouterStatusEntry):
   """
   Router microdescriptor object. Parses and stores router information in a router
   microdescriptor from a v3 microdescriptor consensus.
