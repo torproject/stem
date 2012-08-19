@@ -65,9 +65,9 @@ def parse_file(path, descriptor_file):
   elif filename == "cached-extrainfo":
     file_parser = stem.descriptor.extrainfo_descriptor.parse_file
   elif filename == "cached-consensus":
-    file_parser = lambda f: stem.descriptor.networkstatus.parse_file(f).router_descriptors
+    file_parser = stem.descriptor.networkstatus.parse_file
   elif filename == "cached-microdesc-consensus":
-    file_parser = lambda f: stem.descriptor.networkstatus.parse_file(f, True, "microdesc").router_descriptors
+    file_parser = lambda f: stem.descriptor.networkstatus.parse_file(f, True, True)
   else:
     # Metrics descriptor handling
     first_line, desc = descriptor_file.readline().strip(), None
@@ -107,14 +107,10 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     
     yield stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
   elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
-    consensus = stem.descriptor.networkstatus.parse_file(descriptor_file)
-    
-    for desc in consensus.router_descriptors:
+    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file):
       yield desc
   elif descriptor_type == "network-status-microdesc-consensus-3" and major_version == 1:
-    consensus = stem.descriptor.networkstatus.parse_file(descriptor_file, flavour = "microdesc")
-    
-    for desc in consensus.router_descriptors:
+    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, is_microdescriptor = True):
       yield desc
   else:
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
@@ -253,7 +249,7 @@ def _read_keyword_line_str(keyword, lines, validate = True, optional = False):
     raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, lines[0]))
   else: return None
 
-def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False):
+def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None):
   """
   Reads from the descriptor file until we get to one of the given keywords or reach the
   end of the file.
@@ -263,6 +259,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   :param bool inclusive: includes the line with the keyword if True
   :param bool ignore_first: doesn't check if the first line read has one of the given keywords
   :param bool skip: skips buffering content, returning None
+  :param int end_position: end if we reach this point in the file
   
   :returns: list with the lines until we find one of the keywords
   """
@@ -278,6 +275,10 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   
   while True:
     last_position = descriptor_file.tell()
+    
+    if end_position and last_position >= end_position:
+      break
+    
     line = descriptor_file.readline()
     if not line: break # EOF
     

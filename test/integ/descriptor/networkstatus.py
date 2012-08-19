@@ -13,7 +13,6 @@ import stem.exit_policy
 import stem.version
 import stem.descriptor.networkstatus
 import test.integ.descriptor
-from stem.descriptor.networkstatus import Flavour
 
 def _strptime(string):
   return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
@@ -39,7 +38,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     count = 0
     with open(descriptor_path) as descriptor_file:
-      for desc in stem.descriptor.networkstatus.parse_file(descriptor_file).router_descriptors:
+      for desc in stem.descriptor.networkstatus.parse_file(descriptor_file):
         if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 200000:
           # if we're using > 200 MB we should fail
           self.fail()
@@ -75,7 +74,8 @@ class TestNetworkStatusDocument(unittest.TestCase):
     descriptor_path = test.integ.descriptor.get_resource("cached-consensus")
     
     descriptor_file = file(descriptor_path)
-    desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())
+    router1 = next(stem.descriptor.networkstatus.parse_file(descriptor_file))
+    desc = router1.document
     descriptor_file.close()
     
     self.assertEquals(True, desc.validated)
@@ -102,7 +102,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEquals(set(desc.known_flags), set(["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir", "Named", "Running", "Stable", "Unnamed", "V2Dir", "Valid"]))
     expected_params = {"CircuitPriorityHalflifeMsec": 30000, "bwauthpid": 1}
     self.assertEquals(expected_params, desc.params)
-    router1 = next(desc.router_descriptors)
+    
     self.assertEquals("sumkledi", router1.nickname)
     self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router1.identity)
     self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router1.digest)
@@ -167,7 +167,8 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     descriptor_path = test.integ.descriptor.get_resource("vote")
     
     descriptor_file = file(descriptor_path)
-    desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())
+    router1 = next(stem.descriptor.networkstatus.parse_file(descriptor_file))
+    desc = router1.document
     descriptor_file.close()
     
     self.assertEquals(True, desc.validated)
@@ -186,7 +187,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     self.assertEquals(set(desc.known_flags), set(["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir", "Running", "Stable", "V2Dir", "Valid"]))
     expected_params = {"CircuitPriorityHalflifeMsec": 30000, "bwauthpid": 1}
     self.assertEquals(expected_params, desc.params)
-    router1 = next(desc.router_descriptors)
+    
     self.assertEquals("sumkledi", router1.nickname)
     self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router1.identity)
     self.assertEquals("B5n4BiALAF8B5AqafxohyYiuj7E", router1.digest)
@@ -272,7 +273,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     
     count = 0
     with open(descriptor_path) as descriptor_file:
-      for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, True, flavour = Flavour.MICRODESCRIPTOR).router_descriptors:
+      for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, True, is_microdescriptor = True):
         assert desc.nickname # check that the router has a nickname
         count += 1
     
