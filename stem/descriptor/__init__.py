@@ -28,7 +28,7 @@ import datetime
 
 KEYWORD_CHAR    = "a-zA-Z0-9-"
 WHITESPACE      = " \t"
-KEYWORD_LINE    = re.compile("^([%s]+)[%s]*(.*)$" % (KEYWORD_CHAR, WHITESPACE))
+KEYWORD_LINE    = re.compile("^([%s]+)(?:[%s]+(.*))?$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END   = "-----END %s-----"
 
@@ -278,8 +278,13 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     line = descriptor_file.readline()
     if not line: break # EOF
     
-    if " " in line: line_keyword = line.split(" ", 1)[0]
-    else: line_keyword = line.strip()
+    line_match = KEYWORD_LINE.match(line)
+    
+    if not line_match:
+      # no spaces or tabs in the line
+      line_keyword = line.strip()
+    else:
+      line_keyword = line_match.groups()[0]
     
     if line_keyword in keywords:
       if inclusive: content.append(line)
@@ -310,8 +315,13 @@ def _skip_until_keywords(keywords, descriptor_file, inclusive = False):
     line = descriptor_file.readline()
     if not line: break # EOF
     
-    if " " in line: line_keyword = line.split(" ", 1)[0]
-    else: line_keyword = line.strip()
+    line_match = KEYWORD_LINE.match(line)
+    
+    if not line_match:
+      # no spaces or tabs in the line
+      line_keyword = line.strip()
+    else:
+      line_keyword = line_match.groups()[0]
     
     if line_keyword in keywords:
       if not inclusive: descriptor_file.seek(last_position)
