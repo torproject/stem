@@ -76,7 +76,9 @@ Flag = stem.util.enum.Enum(
 
 def parse_file(document_file, validate = True, is_microdescriptor = False):
   """
-  Parses a network status document and provides a NetworkStatusDocument object.
+  Parses a network status and iterates over the RouterDescriptor or
+  RouterMicrodescriptor in it. The document that these instances reference have
+  an empty 'rotuers' attribute to allow for limited memory usage.
   
   :param file document_file: file with network status document content
   :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
@@ -89,29 +91,31 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
     * IOError if the file can't be read
   """
   
+  header, footer, routers_end = _get_document_content(document_file, validate)
+  document_data = "".join(header + footer)
+  
   if not is_microdescriptor:
-    document_type, router_type = NetworkStatusDocument, RouterDescriptor
+    document = NetworkStatusDocument(document_data, validate)
+    router_type = RouterDescriptor
   else:
-    document_type, router_type = MicrodescriptorConsensus, RouterMicrodescriptor
+    document = MicrodescriptorConsensus(document_data, validate)
+    router_type = RouterMicrodescriptor
   
-  document, routers_start, routers_end = _get_document(document_file, validate, document_type)
-  document_file.seek(routers_start)
-  
-  while document_file.tell() < routers_end:
-    desc_content = "".join(_read_until_keywords("r", document_file, ignore_first = True, end_position = routers_end))
-    yield router_type(desc_content, document, validate)
+  for desc in _get_routers(document_file, validate, document, routers_end, router_type):
+    yield desc
 
-def _get_document(document_file, validate, document_type):
+def _get_document_content(document_file, validate):
   """
   Network status documents consist of three sections: header, router entries,
   and the footer. This provides back a tuple with the following...
-  (NetworkStatusDocument, routers_start, routers_end)
+  (header_lines, footer_lines, routers_end)
+  
+  This leaves the document_file at the start of the router entries.
   
   :param file document_file: file with network status document content
   :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
-  :param object document_type: consensus document class to construct
   
-  :returns: tuple with the network status document and range that has the routers
+  :returns: tuple with the network status document content and ending position of the routers
   
   :raises:
     * ValueError if the contents is malformed and validate is True
@@ -132,15 +136,39 @@ def _get_document(document_file, validate, document_type):
   routers_end = document_file.tell()
   footer = document_file.readlines()
   
-  document_data = "".join(header + footer)
+  document_file.seek(routers_start)
+  return (header, footer, routers_end)
+
+def _get_routers(document_file, validate, document, end_position, router_type):
+  """
+  Iterates over the router entries in a given document. The document_file is
+  expected to be at the start of the router section and the end_position
+  desigates where that section ends.
   
-  return (document_type(document_data, validate), routers_start, routers_end)
+  :param file document_file: file with network status document content
+  :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
+  :param object document: document the descriptors originate from
+  :param int end_position: location in the document_file where the router section ends
+  :param class router_type: router class to construct
+  
+  :returns: iterator over router_type instances
+  
+  :raises:
+    * ValueError if the contents is malformed and validate is True
+    * IOError if the file can't be read
+  """
+  
+  while document_file.tell() < end_position:
+    desc_content = "".join(_read_until_keywords("r", document_file, ignore_first = True, end_position = end_position))
+    yield router_type(desc_content, document, validate)
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
   """
   A v3 network status document.
   
   This could be a v3 consensus or vote document.
+  
+  :var tuple routers: RouterDescriptor contained in the document
   
   :var bool validated: **\*** whether the document is validated
   :var str network_status_version: **\*** a document format version. For v3 documents this is "3"
@@ -198,7 +226,19 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     self.params = {}
     self.bandwidth_weights = {}
     
-    self._parse(raw_content)
+    document_file = StringIO(raw_content)
+    header, footer, routers_end = _get_document_content(document_file, validate)
+    
+    document_content = "".join(header + footer)
+    self._parse(document_content)
+    
+    if document_file.tell() < routers_end:
+      self.routers = tuple(_get_routers(document_file, validate, self, routers_end, self._get_router_type()))
+    else:
+      self.routers = ()
+  
+  def _get_router_type(self):
+    return RouterDescriptor
   
   def _validate_network_status_version(self):
     return self.network_status_version == "3"
@@ -585,6 +625,9 @@ class MicrodescriptorConsensus(NetworkStatusDocument):
   | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   | **~** attribute appears only in consensuses
   """
+  
+  def _get_router_type(self):
+    return RouterMicrodescriptor
   
   def _validate_network_status_version(self):
     return self.network_status_version == "3 microdesc"

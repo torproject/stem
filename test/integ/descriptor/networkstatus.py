@@ -74,8 +74,8 @@ class TestNetworkStatusDocument(unittest.TestCase):
     descriptor_path = test.integ.descriptor.get_resource("cached-consensus")
     
     descriptor_file = file(descriptor_path)
-    router1 = next(stem.descriptor.networkstatus.parse_file(descriptor_file))
-    desc = router1.document
+    desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())
+    router1 = desc.routers[0]
     descriptor_file.close()
     
     self.assertEquals(True, desc.validated)
@@ -167,8 +167,8 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     descriptor_path = test.integ.descriptor.get_resource("vote")
     
     descriptor_file = file(descriptor_path)
-    router1 = next(stem.descriptor.networkstatus.parse_file(descriptor_file))
-    desc = router1.document
+    desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())
+    router1 = desc.routers[0]
     descriptor_file.close()
     
     self.assertEquals(True, desc.validated)
