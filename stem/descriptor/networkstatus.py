@@ -53,7 +53,7 @@ import stem.version
 import stem.exit_policy
 import stem.util.enum
 
-from stem.descriptor import _read_until_keywords, _skip_until_keywords, _peek_keyword, _strptime
+from stem.descriptor import _read_until_keywords, _peek_keyword, _strptime
 from stem.descriptor import _read_keyword_line, _read_keyword_line_str, _get_pseudo_pgp_block, _peek_line
 
 _bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in ["bd",
@@ -101,7 +101,7 @@ def parse_file(document_file, validate = True, flavour = Flavour.NONE):
   # store offset
   r_offset = document_file.tell()
   # skip until end of router descriptors
-  _skip_until_keywords(["bandwidth-weights", "directory-footer", "directory-signature"], document_file)
+  _read_until_keywords(["bandwidth-weights", "directory-footer", "directory-signature"], document_file, skip = True)
   # parse until end
   document_data = document_data + document_file.read()
   
