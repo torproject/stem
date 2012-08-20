@@ -17,7 +17,7 @@ import test.integ.descriptor
 def _strptime(string):
   return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
 
-class TestNetworkStatusDocument(unittest.TestCase):
+class TestNetworkStatus(unittest.TestCase):
   def test_cached_consensus(self):
     """
     Parses the cached-consensus file in our data directory.
@@ -59,7 +59,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
       
       router = next(descriptors)
       self.assertEquals("sumkledi", router.nickname)
-      self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router.identity)
+      self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
       self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router.digest)
       self.assertEquals(_strptime("2012-07-12 04:01:55"), router.publication)
       self.assertEquals("178.218.213.229", router.ip)
@@ -104,7 +104,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEquals(expected_params, desc.params)
     
     self.assertEquals("sumkledi", router1.nickname)
-    self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router1.identity)
+    self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router1.fingerprint)
     self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router1.digest)
     self.assertEquals(_strptime("2012-07-12 04:01:55"), router1.publication)
     self.assertEquals("178.218.213.229", router1.ip)
@@ -114,7 +114,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     self.assertEquals(8, len(desc.directory_authorities))
     self.assertEquals("tor26", desc.directory_authorities[0].nickname)
-    self.assertEquals("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", desc.directory_authorities[0].identity)
+    self.assertEquals("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", desc.directory_authorities[0].fingerprint)
     self.assertEquals("86.59.21.38", desc.directory_authorities[0].address)
     self.assertEquals("86.59.21.38", desc.directory_authorities[0].ip)
     self.assertEquals(80, desc.directory_authorities[0].dirport)
@@ -152,7 +152,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       
       router = next(descriptors)
       self.assertEquals("sumkledi", router.nickname)
-      self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router.identity)
+      self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
       self.assertEquals("B5n4BiALAF8B5AqafxohyYiuj7E", router.digest)
       self.assertEquals(_strptime("2012-07-11 04:22:53"), router.publication)
       self.assertEquals("178.218.213.229", router.ip)
@@ -189,7 +189,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     self.assertEquals(expected_params, desc.params)
     
     self.assertEquals("sumkledi", router1.nickname)
-    self.assertEquals("ABPSI4nNUNC3hKPkBhyzHozozrU", router1.identity)
+    self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router1.fingerprint)
     self.assertEquals("B5n4BiALAF8B5AqafxohyYiuj7E", router1.digest)
     self.assertEquals(_strptime("2012-07-11 04:22:53"), router1.publication)
     self.assertEquals("178.218.213.229", router1.ip)
@@ -198,7 +198,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     
     self.assertEquals(1, len(desc.directory_authorities))
     self.assertEquals("turtles", desc.directory_authorities[0].nickname)
-    self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.directory_authorities[0].identity)
+    self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.directory_authorities[0].fingerprint)
     self.assertEquals("76.73.17.194", desc.directory_authorities[0].address)
     self.assertEquals("76.73.17.194", desc.directory_authorities[0].ip)
     self.assertEquals(9030, desc.directory_authorities[0].dirport)

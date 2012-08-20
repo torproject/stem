@@ -41,6 +41,7 @@ The documents can be obtained from any of the following sources...
 """
 
 import re
+import base64
 import datetime
 
 try:
@@ -325,7 +326,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
   documents.
   
   :var str nickname: directory authority's nickname
-  :var str identity: uppercase hex fingerprint of the authority's identity key
+  :var str fingerprint: uppercase hex fingerprint of the authority's identity key
   :var str address: hostname
   :var str ip: current IP address
   :var int dirport: current directory port
@@ -352,13 +353,13 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     """
     
     super(DirectoryAuthority, self).__init__(raw_content)
-    self.nickname, self.identity, self.address, self.ip = None, None, None, None
+    self.nickname, self.fingerprint, self.address, self.ip = None, None, None, None
     self.dirport, self.orport, self.legacy_dir_key = None, None, None
     self.key_certificate, self.contact, self.vote_digest = None, None, None
     
     content = StringIO(raw_content)
     dir_source = _read_keyword_line("dir-source", content, validate)
-    self.nickname, self.identity, self.address, self.ip, self.dirport, self.orport = dir_source.split(" ")
+    self.nickname, self.fingerprint, self.address, self.ip, self.dirport, self.orport = dir_source.split(" ")
     self.dirport = int(self.dirport)
     self.orport = int(self.orport)
     
@@ -431,13 +432,13 @@ class DirectorySignature(stem.descriptor.Descriptor):
 
 class RouterStatusEntry(stem.descriptor.Descriptor):
   """
-  Router descriptor object. Parses and stores router information in a router
-  entry read from a v3 network status document.
+  Information about an individual router stored within a network status
+  document.
   
-  :var NetworkStatusDocument document: **\*** document this descriptor came from
+  :var NetworkStatusDocument document: **\*** document that this descriptor came from
   
   :var str nickname: **\*** router's nickname
-  :var str identity: **\*** router's identity
+  :var str fingerprint: **\*** router's fingerprint
   :var str digest: **\*** router's digest
   :var datetime publication: **\*** router's publication
   :var str ip: **\*** router's IP address
@@ -478,7 +479,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     self.document = document
     
     self.nickname = None
-    self.identity = None
+    self.fingerprint = None
     self.digest = None
     self.publication = None
     self.ip = None
@@ -519,7 +520,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     if r:
       seen_keywords.add("r")
       values = r.split(" ")
-      self.nickname, self.identity, self.digest = values[0], values[1], values[2]
+      self.nickname, self.fingerprint, self.digest = values[0], _decode_fingerprint(values[1]), values[2]
       self.publication = _strptime(" ".join((values[3], values[4])), validate)
       self.ip, self.orport, self.dirport = values[5], int(values[6]), int(values[7])
       if self.dirport == 0: self.dirport = None
@@ -640,7 +641,7 @@ class RouterMicrodescriptor(RouterStatusEntry):
   :var MicrodescriptorConsensus document: **\*** document this descriptor came from
   
   :var str nickname: **\*** router's nickname
-  :var str identity: **\*** router's identity
+  :var str fingerprint: **\*** router's fingerprint
   :var datetime publication: **\*** router's publication
   :var str ip: **\*** router's IP address
   :var int orport: **\*** router's ORPort
@@ -695,7 +696,7 @@ class RouterMicrodescriptor(RouterStatusEntry):
     if r:
       seen_keywords.add("r")
       values = r.split(" ")
-      self.nickname, self.identity = values[0], values[1]
+      self.nickname, self.fingerprint = values[0], _decode_fingerprint(values[1])
       self.publication = _strptime(" ".join((values[2], values[3])), validate)
       self.ip, self.orport, self.dirport = values[4], int(values[5]), int(values[6])
       if self.dirport == 0: self.dirport = None
@@ -764,3 +765,39 @@ class RouterMicrodescriptor(RouterStatusEntry):
     """
     
     return self.unrecognized_lines
+
+def _decode_fingerprint(identity):
+  """
+  Decodes the 'identity' value found in consensuses into the more common hex
+  encoding of the relay's fingerprint. For example...
+  
+  ::
+  
+    >>> _decode_fingerprint('p1aag7VwarGxqctS7/fS0y5FU+s')
+    'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
+  
+  :param str identity: encoded fingerprint from the consensus
+  
+  :returns: str with the uppercase hex encoding of the relay's fingerprint
+  """
+  
+  # trailing equal signs were stripped from the identity
+  missing_padding = 28 - len(identity)
+  identity += "=" * missing_padding
+  
+  fingerprint = ""
+  for char in base64.b64decode(identity):
+    # Individual characters are either standard ascii or hex encoded, and each
+    # represent two hex digits. For instnace...
+    #
+    # >>> ord('\n')
+    # 10
+    # >>> hex(10)
+    # '0xa'
+    # >>> '0xa'[2:].zfill(2).upper()
+    # '0A'
+    
+    fingerprint += hex(ord(char))[2:].zfill(2).upper()
+  
+  return fingerprint
+

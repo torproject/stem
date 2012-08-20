@@ -20,6 +20,7 @@ import test.unit.descriptor.export
 import test.unit.descriptor.reader
 import test.unit.descriptor.server_descriptor
 import test.unit.descriptor.extrainfo_descriptor
+import test.unit.descriptor.networkstatus
 import test.unit.response.control_line
 import test.unit.response.control_message
 import test.unit.response.getinfo
@@ -114,6 +115,7 @@ UNIT_TESTS = (
   test.unit.descriptor.reader.TestDescriptorReader,
   test.unit.descriptor.server_descriptor.TestServerDescriptor,
   test.unit.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
+  test.unit.descriptor.networkstatus.TestNetworkStatus,
   test.unit.exit_policy.rule.TestExitPolicyRule,
   test.unit.exit_policy.policy.TestExitPolicy,
   test.unit.version.TestVersion,
@@ -135,7 +137,7 @@ INTEG_TESTS = (
   test.integ.descriptor.reader.TestDescriptorReader,
   test.integ.descriptor.server_descriptor.TestServerDescriptor,
   test.integ.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
-  test.integ.descriptor.networkstatus.TestNetworkStatusDocument,
+  test.integ.descriptor.networkstatus.TestNetworkStatus,
   test.integ.version.TestVersion,
   test.integ.response.protocolinfo.TestProtocolInfo,
   test.integ.process.TestProcess,
