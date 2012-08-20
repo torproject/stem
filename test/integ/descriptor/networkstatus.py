@@ -44,6 +44,13 @@ class TestNetworkStatus(unittest.TestCase):
           self.fail()
         assert desc.nickname # check that the router has a nickname
         count += 1
+        
+        # check if there's any unknown flags
+        for flag in desc.flags:
+          if not flag in stem.descriptor.networkstatus.Flag:
+            # TODO: this should be a special 'new capability' check later
+            # rather than failing the tests
+            raise ValueError("Unrecognized flag type: %s, found on relay %s (%s)" % (flag, desc.fingerprint, desc.nickname))
     
     assert count > 100 # sanity check - assuming atleast 100 relays in the Tor network
   

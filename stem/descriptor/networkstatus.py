@@ -447,7 +447,6 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
   :var int dirport: **\*** router's DirPort
   
   :var list flags: **\*** list of status flags
-  :var list unknown_flags: **\*** list of unidentified status flags
   
   :var :class:`stem.version.Version`,str version: Version of the Tor protocol this router is running
   
@@ -487,7 +486,6 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     self.dirport = None
     
     self.flags = []
-    self.unknown_flags = []
     
     self.version = None
     
@@ -534,10 +532,6 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
         # s Named Running Stable Valid
         #A series of space-separated status flags, in *lexical order*
         self.flags = line.split(" ")
-        
-        self.unknown_flags = filter(lambda f: not f in Flag, self.flags)
-        if validate and self.unknown_flags:
-          raise ValueError("Router contained unknown flags: %s", " ".join(self.unknown_flags))
       
       elif peek_check_kw("v"):
         if "v" in seen_keywords: raise ValueError("Invalid router descriptor: 'v' line appears twice")
@@ -647,7 +641,6 @@ class RouterMicrodescriptor(RouterStatusEntry):
   :var int dirport: **\*** router's DirPort
   
   :var list flags: **\*** list of status flags
-  :var list unknown_flags: **\*** list of unidentified status flags
   
   :var :class:`stem.version.Version`,str version: Version of the Tor protocol this router is running
   
@@ -708,10 +701,6 @@ class RouterMicrodescriptor(RouterStatusEntry):
         # s Named Running Stable Valid
         #A series of space-separated status flags, in *lexical order*
         self.flags = line.split(" ")
-        
-        self.unknown_flags = filter(lambda f: not f in Flag, self.flags)
-        if validate and self.unknown_flags:
-          raise ValueError("Router contained unknown flags: %s", " ".join(self.unknown_flags))
       
       elif peek_check_kw("v"):
         if "v" in seen_keywords: raise ValueError("Invalid router descriptor: 'v' line appears twice")
