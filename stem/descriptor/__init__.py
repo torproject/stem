@@ -387,6 +387,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords):
       raise ValueError("Line contains invalid characters: %s" % line)
     
     keyword, value = line_match.groups()
+    if value is None: value = ''
     
     if not first_keyword: first_keyword = keyword
     last_keyword = keyword
