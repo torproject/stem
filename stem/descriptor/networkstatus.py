@@ -53,6 +53,7 @@ import stem.descriptor
 import stem.version
 import stem.exit_policy
 import stem.util.enum
+import stem.util.tor_tools
 
 from stem.descriptor import _read_until_keywords, _peek_keyword, _strptime
 from stem.descriptor import _read_keyword_line, _read_keyword_line_str, _get_pseudo_pgp_block, _peek_line
@@ -779,6 +780,8 @@ def _decode_fingerprint(identity):
   :param str identity: encoded fingerprint from the consensus
   
   :returns: str with the uppercase hex encoding of the relay's fingerprint
+  
+  :raises: ValueError if the result isn't a valid fingerprint
   """
   
   # trailing equal signs were stripped from the identity
@@ -798,6 +801,9 @@ def _decode_fingerprint(identity):
     # '0A'
     
     fingerprint += hex(ord(char))[2:].zfill(2).upper()
+  
+  if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
+    raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
   
   return fingerprint
 

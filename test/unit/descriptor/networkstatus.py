@@ -24,4 +24,8 @@ class TestNetworkStatus(unittest.TestCase):
     
     for arg, expected in test_values.items():
       self.assertEqual(expected, networkstatus._decode_fingerprint(arg))
+    
+    self.assertRaises(ValueError, networkstatus._decode_fingerprint, '')
+    self.assertRaises(ValueError, networkstatus._decode_fingerprint, '20wYcb')
+    self.assertRaises(ValueError, networkstatus._decode_fingerprint, '20wYcb' * 30)
 
