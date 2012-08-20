@@ -462,7 +462,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
   | exit_policy appears only in votes
   """
   
-  def __init__(self, raw_contents, document, validate = True, known_flags = Flag):
+  def __init__(self, raw_contents, document, validate = True):
     """
     Parse a router descriptor in a v3 network status document and provide a new
     RouterStatusEntry object.
@@ -470,7 +470,6 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     :param str raw_content: router descriptor content to be parsed
     :param NetworkStatusDocument document: document this descriptor came from
     :param bool validate: whether the router descriptor should be validated
-    :param bool known_flags: list of known router status flags
     
     :raises: ValueError if the descriptor data is invalid
     """
@@ -499,13 +498,12 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     
     self.microdescriptor_hashes = []
     
-    self._parse(raw_contents, validate, known_flags)
+    self._parse(raw_contents, validate)
   
-  def _parse(self, raw_content, validate, known_flags):
+  def _parse(self, raw_content, validate):
     """
     :param dict raw_content: iptor contents to be applied
     :param bool validate: checks the validity of descriptor content if True
-    :param bool known_flags: list of known router status flags
     
     :raises: ValueError if an error occures in validation
     """
@@ -537,7 +535,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
         #A series of space-separated status flags, in *lexical order*
         self.flags = line.split(" ")
         
-        self.unknown_flags = filter(lambda f: not f in known_flags, self.flags)
+        self.unknown_flags = filter(lambda f: not f in Flag, self.flags)
         if validate and self.unknown_flags:
           raise ValueError("Router contained unknown flags: %s", " ".join(self.unknown_flags))
       
@@ -661,7 +659,7 @@ class RouterMicrodescriptor(RouterStatusEntry):
   | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   """
   
-  def __init__(self, raw_contents, document, validate = True, known_flags = Flag):
+  def __init__(self, raw_contents, document, validate = True):
     """
     Parse a router descriptor in a v3 microdescriptor consensus and provide a new
     RouterMicrodescriptor object.
@@ -669,20 +667,18 @@ class RouterMicrodescriptor(RouterStatusEntry):
     :param str raw_content: router descriptor content to be parsed
     :param MicrodescriptorConsensus document: document this descriptor came from
     :param bool validate: whether the router descriptor should be validated
-    :param bool known_flags: list of known router status flags
     
     :raises: ValueError if the descriptor data is invalid
     """
     
-    super(RouterMicrodescriptor, self).__init__(raw_contents, document, validate, known_flags)
+    super(RouterMicrodescriptor, self).__init__(raw_contents, document, validate)
     
     self.document = document
   
-  def _parse(self, raw_content, validate, known_flags):
+  def _parse(self, raw_content, validate):
     """
     :param dict raw_content: router descriptor contents to be parsed
     :param bool validate: checks the validity of descriptor content if True
-    :param bool known_flags: list of known router status flags
     
     :raises: ValueError if an error occures in validation
     """
@@ -713,7 +709,7 @@ class RouterMicrodescriptor(RouterStatusEntry):
         #A series of space-separated status flags, in *lexical order*
         self.flags = line.split(" ")
         
-        self.unknown_flags = filter(lambda f: not f in known_flags, self.flags)
+        self.unknown_flags = filter(lambda f: not f in Flag, self.flags)
         if validate and self.unknown_flags:
           raise ValueError("Router contained unknown flags: %s", " ".join(self.unknown_flags))
       
