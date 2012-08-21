@@ -441,7 +441,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
   :var str nickname: **\*** router's nickname
   :var str fingerprint: **\*** router's fingerprint
   :var str digest: **\*** router's digest
-  :var datetime publication: **\*** router's publication
+  :var datetime published: **\*** router's publication
   :var str address: **\*** router's IP address
   :var int or_port: **\*** router's ORPort
   :var int dir_port: **\*** router's DirPort
@@ -479,7 +479,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     self.nickname = None
     self.fingerprint = None
     self.digest = None
-    self.publication = None
+    self.published = None
     self.address = None
     self.or_port = None
     self.dir_port = None
@@ -495,7 +495,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     
     self.exit_policy = None
     self.microdescriptor_hashes = None
-    self.unrecognized_lines = []
+    self._unrecognized_lines = []
     
     self._parse(raw_contents, validate)
   
@@ -556,7 +556,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
         
         try:
           published = "%s %s" % (r_comp[3], r_comp[4])
-          self.publication = datetime.datetime.strptime(published, "%Y-%m-%d %H:%M:%S")
+          self.published = datetime.datetime.strptime(published, "%Y-%m-%d %H:%M:%S")
         except ValueError:
           if validate:
             raise ValueError("Publication time time wasn't parseable: %s" % line)
@@ -655,7 +655,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
         
         self.microdescriptor_hashes.append((methods, hashes))
       else:
-        self.unrecognized_lines.append(line)
+        self._unrecognized_lines.append(line)
   
   def get_unrecognized_lines(self):
     """
@@ -664,7 +664,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     :returns: list of unrecognized lines
     """
     
-    return self.unrecognized_lines
+    return list(self._unrecognized_lines)
 
 class MicrodescriptorConsensus(NetworkStatusDocument):
   """
@@ -706,7 +706,7 @@ class RouterMicrodescriptor(RouterStatusEntry):
   
   :var str nickname: **\*** router's nickname
   :var str fingerprint: **\*** router's fingerprint
-  :var datetime publication: **\*** router's publication
+  :var datetime published: **\*** router's publication
   :var str ip: **\*** router's IP address
   :var int or_port: **\*** router's ORPort
   :var int dir_port: **\*** router's DirPort
@@ -758,7 +758,7 @@ class RouterMicrodescriptor(RouterStatusEntry):
       seen_keywords.add("r")
       values = r.split(" ")
       self.nickname, self.fingerprint = values[0], _decode_fingerprint(values[1], validate)
-      self.publication = _strptime(" ".join((values[2], values[3])), validate)
+      self.published = _strptime(" ".join((values[2], values[3])), validate)
       self.ip, self.or_port, self.dir_port = values[4], int(values[5]), int(values[6])
       if self.dir_port == 0: self.dir_port = None
     elif validate: raise ValueError("Invalid router descriptor: empty 'r' line")
