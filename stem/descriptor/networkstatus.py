@@ -330,8 +330,8 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
   :var str fingerprint: uppercase hex fingerprint of the authority's identity key
   :var str address: hostname
   :var str ip: current IP address
-  :var int dirport: current directory port
-  :var int orport: current orport
+  :var int dir_port: current directory port
+  :var int or_port: current orport
   :var str contact: directory authority's contact information
   :var str legacy_dir_key: **^** fingerprint of and obsolete identity key
   :var :class:`stem.descriptor.KeyCertificate` key_certificate: **^** directory authority's current key certificate
@@ -355,14 +355,14 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     
     super(DirectoryAuthority, self).__init__(raw_content)
     self.nickname, self.fingerprint, self.address, self.ip = None, None, None, None
-    self.dirport, self.orport, self.legacy_dir_key = None, None, None
+    self.dir_port, self.or_port, self.legacy_dir_key = None, None, None
     self.key_certificate, self.contact, self.vote_digest = None, None, None
     
     content = StringIO(raw_content)
     dir_source = _read_keyword_line("dir-source", content, validate)
-    self.nickname, self.fingerprint, self.address, self.ip, self.dirport, self.orport = dir_source.split(" ")
-    self.dirport = int(self.dirport)
-    self.orport = int(self.orport)
+    self.nickname, self.fingerprint, self.address, self.ip, self.dir_port, self.or_port = dir_source.split(" ")
+    self.dir_port = int(self.dir_port)
+    self.or_port = int(self.or_port)
     
     self.contact = _read_keyword_line("contact", content, validate)
     if vote:
@@ -442,33 +442,32 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
   :var str fingerprint: **\*** router's fingerprint
   :var str digest: **\*** router's digest
   :var datetime publication: **\*** router's publication
-  :var str ip: **\*** router's IP address
-  :var int orport: **\*** router's ORPort
-  :var int dirport: **\*** router's DirPort
-  
+  :var str address: **\*** router's IP address
+  :var int or_port: **\*** router's ORPort
+  :var int dir_port: **\*** router's DirPort
   :var list flags: **\*** list of status flags
   
-  :var :class:`stem.version.Version`,str version: Version of the Tor protocol this router is running
+  :var stem.version.Version version: parsed version of tor, this is None if the relay's using a new versioning scheme
+  :var str version_line: versioning information reported by the relay
   
-  :var int bandwidth: router's claimed bandwidth
-  :var int measured_bandwidth: router's measured bandwidth
+  :var int bandwidth: bandwidth claimed by the relay (in kb/s)
+  :var int measured: bandwith measured to be available by the relay
+  :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting information that isn't yet recognized
   
-  :var :class:`stem.exit_policy.MicrodescriptorExitPolicy` exit_policy: router's exit policy
+  :var stem.exit_policy.MicrodescriptorExitPolicy exit_policy: router's exit policy
   
-  :var str microdescriptor_hashes: a list of two-tuples with a list of consensus methods(int) that may produce the digest and a dict with algorithm(str) => digest(str) mappings. algorithm is the hashing algorithm (usually "sha256") that is used to produce digest (the base64 encoding of the hash of the router's microdescriptor with trailing =s omitted).
+  :var list microdescriptor_hashes: tuples of two values, the list of consensus methods for generting a set of digests and the 'algorithm => digest' mappings
   
-  | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
-  | exit_policy appears only in votes
+  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   """
   
   def __init__(self, raw_contents, document, validate = True):
     """
-    Parse a router descriptor in a v3 network status document and provide a new
-    RouterStatusEntry object.
+    Parse a router descriptor in a v3 network status document.
     
     :param str raw_content: router descriptor content to be parsed
     :param NetworkStatusDocument document: document this descriptor came from
-    :param bool validate: whether the router descriptor should be validated
+    :param bool validate: checks the validity of the content if True, skips these checks otherwise
     
     :raises: ValueError if the descriptor data is invalid
     """
@@ -481,116 +480,188 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     self.fingerprint = None
     self.digest = None
     self.publication = None
-    self.ip = None
-    self.orport = None
-    self.dirport = None
+    self.address = None
+    self.or_port = None
+    self.dir_port = None
     
-    self.flags = []
+    self.flags = None
     
+    self.version_line = None
     self.version = None
     
     self.bandwidth = None
-    self.measured_bandwidth = None
+    self.measured = None
+    self.unrecognized_bandwidth_entries = []
     
     self.exit_policy = None
-    
-    self.microdescriptor_hashes = []
+    self.microdescriptor_hashes = None
+    self.unrecognized_lines = []
     
     self._parse(raw_contents, validate)
   
-  def _parse(self, raw_content, validate):
+  def _parse(self, content, validate):
     """
-    :param dict raw_content: iptor contents to be applied
-    :param bool validate: checks the validity of descriptor content if True
+    Parses the given content and applies the attributes.
     
-    :raises: ValueError if an error occures in validation
+    :param str content: descriptor content
+    :param bool validate: checks validity if True
+    
+    :raises: ValueError if a validity check fails
     """
     
-    vote = self.document.vote_status == "vote"
-    content = StringIO(raw_content)
-    seen_keywords = set()
-    peek_check_kw = lambda keyword: keyword == _peek_keyword(content)
+    entries = _get_entries(content, validate, 'r')
     
-    r = _read_keyword_line("r", content, validate)
-    # r mauer BD7xbfsCFku3+tgybEZsg8Yjhvw itcuKQ6PuPLJ7m/Oi928WjO2j8g 2012-06-22 13:19:32 80.101.105.103 9001 0
-    # "r" SP nickname SP identity SP digest SP publication SP IP SP ORPort SP DirPort NL
-    if r:
-      seen_keywords.add("r")
-      values = r.split(" ")
-      self.nickname, self.fingerprint, self.digest = values[0], _decode_fingerprint(values[1]), values[2]
-      self.publication = _strptime(" ".join((values[3], values[4])), validate)
-      self.ip, self.orport, self.dirport = values[5], int(values[6]), int(values[7])
-      if self.dirport == 0: self.dirport = None
-    elif validate: raise ValueError("Invalid router descriptor: empty 'r' line")
+    # check that we have mandatory fields
+    if validate:
+      for keyword in ('r', 's'):
+        if not keyword in entries:
+          raise ValueError("Router status entries must have a '%s' line:\n%s" % (keyword, content))
     
-    while _peek_line(content):
-      if peek_check_kw("s"):
-        if "s" in seen_keywords: raise ValueError("Invalid router descriptor: 's' line appears twice")
-        line = _read_keyword_line("s", content, validate)
-        if not line: continue
-        seen_keywords.add("s")
+    for keyword, values in entries.items():
+      value = values[0]
+      line = "%s %s" % (keyword, value)
+      
+      # most attributes can only appear at most once
+      if validate and len(values) > 1 and keyword in ('r', 's', 'v', 'w', 'p'):
+        raise ValueError("Router status entries can only have a single '%s' line, got %i:\n%s" % (key, len(values), content))
+      
+      if keyword == 'r':
+        # "r" nickname identity digest publication IP ORPort DirPort
+        # r mauer BD7xbfsCFku3+tgybEZsg8Yjhvw itcuKQ6PuPLJ7m/Oi928WjO2j8g 2012-06-22 13:19:32 80.101.105.103 9001 0
+        
+        r_comp = value.split(" ")
+        
+        if len(r_comp) < 5:
+          if not validate: continue
+          raise ValueError("Router status entry's 'r' line line must have eight values: %s" % line)
+        
+        if validate:
+          if not stem.util.tor_tools.is_valid_nickname(r_comp[0]):
+            raise ValueError("Router status entry's nickname isn't valid: %s" % r_comp[0])
+          elif not stem.util.connection.is_valid_ip_address(r_comp[5]):
+            raise ValueError("Router status entry's address isn't a valid IPv4 address: %s" % r_comp[5])
+          elif not stem.util.connection.is_valid_port(r_comp[6]):
+            raise ValueError("Router status entry's ORPort is invalid: %s" % r_comp[6])
+          elif not stem.util.connection.is_valid_port(r_comp[7], allow_zero = True):
+            raise ValueError("Router status entry's DirPort is invalid: %s" % r_comp[7])
+        elif not (r_comp[6].isdigit() and r_comp[7].isdigit()):
+          continue
+        
+        self.nickname    = r_comp[0]
+        self.fingerprint = _decode_fingerprint(r_comp[1], validate)
+        self.digest      = r_comp[2]
+        self.address     = r_comp[5]
+        self.or_port     = int(r_comp[6])
+        self.dir_port    = None if r_comp[7] == '0' else int(r_comp[7])
+        
+        try:
+          published = "%s %s" % (r_comp[3], r_comp[4])
+          self.publication = datetime.datetime.strptime(published, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+          if validate:
+            raise ValueError("Publication time time wasn't parseable: %s" % line)
+      elif keyword == 's':
+        # "s" Flags
         # s Named Running Stable Valid
-        #A series of space-separated status flags, in *lexical order*
-        self.flags = line.split(" ")
-      
-      elif peek_check_kw("v"):
-        if "v" in seen_keywords: raise ValueError("Invalid router descriptor: 'v' line appears twice")
-        line = _read_keyword_line("v", content, validate, True)
-        seen_keywords.add("v")
+        
+        self.flags = value.split(" ")
+      elif keyword == 'v':
+        # "v" version
         # v Tor 0.2.2.35
-        if line:
-          if line.startswith("Tor "):
-            self.version = stem.version.Version(line[4:])
-          else:
-            self.version = line
-        elif validate: raise ValueError("Invalid router descriptor: empty 'v' line" )
-      
-      elif peek_check_kw("w"):
-        if "w" in seen_keywords: raise ValueError("Invalid router descriptor: 'w' line appears twice")
-        w = _read_keyword_line("w", content, validate, True)
-        # "w" SP "Bandwidth=" INT [SP "Measured=" INT] NL
-        seen_keywords.add("w")
-        if w:
-          values = w.split(" ")
-          if len(values) <= 2 and len(values) > 0:
-            key, value = values[0].split("=")
-            if key == "Bandwidth": self.bandwidth = int(value)
-            elif validate: raise ValueError("Router descriptor contains invalid 'w' line: expected Bandwidth, read " + key)
+        #
+        # The spec says that if this starts with "Tor " then what follows is a
+        # tor version. If not then it has "upgraded to a more sophisticated
+        # protocol versioning system".
+        
+        self.version_line = value
+        
+        if value.startswith("Tor "):
+          try:
+            self.version = stem.version.Version(value[4:])
+          except ValueError, exc:
+            if validate:
+              raise ValueError("Router status entry has a malformed tor version (%s): %s" % (exc, line))
+      elif keyword == 'w':
+        # "w" "Bandwidth=" INT ["Measured=" INT]
+        # w Bandwidth=7980
+        
+        w_comp = value.split(" ")
+        
+        if len(w_comp) < 1:
+          if not validate: continue
+          raise ValueError("Router status entry's 'w' line is blank: %s" % line)
+        elif not w_comp[0].startswith("Bandwidth="):
+          if not validate: continue
+          raise ValueError("Router status entry's 'w' line needs to start with a 'Bandwidth=' entry: %s" % line)
+        
+        for w_entry in w_comp:
+          w_key, w_value = w_entry.split('=', 1)
+          
+          if w_key == "Bandwidth":
+            if not w_value.isdigit():
+              if not validate: continue
+              raise ValueError("Router status entry's 'Bandwidth=' entry needs to have a numeric value: %s" % line)
             
-            if len(values) == 2:
-              key, value = values[1].split("=")
-              if key == "Measured": self.measured_bandwidth = int(value)
-              elif validate: raise ValueError("Router descriptor contains invalid 'w' line: expected Measured, read " + key)
-          elif validate: raise ValueError("Router descriptor contains invalid 'w' line")
-        elif validate: raise ValueError("Router descriptor contains empty 'w' line")
-      
-      elif peek_check_kw("p"):
-        if "p" in seen_keywords: raise ValueError("Invalid router descriptor: 'p' line appears twice")
-        p = _read_keyword_line("p", content, validate, True)
-        seen_keywords.add("p")
-        # "p" SP ("accept" / "reject") SP PortList NL
-        if p:
-          self.exit_policy = stem.exit_policy.MicrodescriptorExitPolicy(p)
-      
-      elif vote and peek_check_kw("m"):
-        # microdescriptor hashes
-        m = _read_keyword_line("m", content, validate, True)
-        methods, digests = m.split(" ", 1)
-        method_list = methods.split(",")
-        digest_dict = [digest.split("=", 1) for digest in digests.split(" ")]
-        self.microdescriptor_hashes.append((method_list, digest_dict))
-      
-      elif validate:
-        raise ValueError("Router descriptor contains unrecognized trailing lines: %s" % content.readline())
-      
+            self.bandwidth = int(w_value)
+          elif w_key == "Measured":
+            if not w_value.isdigit():
+              if not validate: continue
+              raise ValueError("Router status entry's 'Measured=' entry needs to have a numeric value: %s" % line)
+            
+            self.measured = int(w_value)
+          else:
+            self.unrecognized_bandwidth_entries.append(w_entry)
+      elif keyword == 'p':
+        # "p" ("accept" / "reject") PortList
+        # p reject 1-65535
+        # p accept 80,110,143,443,993,995,6660-6669,6697,7000-7001
+        
+        try:
+          self.exit_policy = stem.exit_policy.MicrodescriptorExitPolicy(value)
+        except ValueError, exc:
+          if not validate: continue
+          raise ValueError("Router status entry's exit policy is malformed (%s): %s" % (exc, line))
+      elif keyword == 'm':
+        # "m" methods 1*(algorithm "=" digest)
+        # m 8,9,10,11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs
+        
+        m_comp = value.split(" ")
+        
+        if self.document.vote_status != "vote":
+          if not validate: continue
+          raise ValueError("Router status entry's 'm' line should only appear in votes (appeared in a %s): %s" % (self.document.vote_status, line))
+        elif len(m_comp) < 1:
+          if not validate: continue
+          raise ValueError("Router status entry's 'm' line needs to start with a series of methods: %s" % line)
+          
+        try:
+          methods = [int(entry) for entry in m_comp[0].split(",")]
+        except ValueError:
+          if not validate: continue
+          raise ValueError("Router status entry's microdescriptor methods should be a series of comma separated integers: %s" % line)
+        
+        hashes = {}
+        
+        for entry in m_comp[1:]:
+          if not '=' in entry:
+            if not validate: continue
+            raise ValueError("Router status entry's can only have a series of 'algorithm=digest' mappings after the methods: %s" % line)
+          
+          hash_name, digest = entry.split('=', 1)
+          hashes[hash_name] = digest
+        
+        if self.microdescriptor_hashes is None:
+          self.microdescriptor_hashes = []
+        
+        self.microdescriptor_hashes.append((methods, hashes))
       else:
-        self.unrecognized_lines.append(content.readline()) # ignore unrecognized lines if we aren't validating
+        self.unrecognized_lines.append(line)
   
   def get_unrecognized_lines(self):
     """
-    Returns any unrecognized lines.
+    Provides any unrecognized lines.
     
-    :returns: a list of unrecognized lines
+    :returns: list of unrecognized lines
     """
     
     return self.unrecognized_lines
@@ -637,8 +708,8 @@ class RouterMicrodescriptor(RouterStatusEntry):
   :var str fingerprint: **\*** router's fingerprint
   :var datetime publication: **\*** router's publication
   :var str ip: **\*** router's IP address
-  :var int orport: **\*** router's ORPort
-  :var int dirport: **\*** router's DirPort
+  :var int or_port: **\*** router's ORPort
+  :var int dir_port: **\*** router's DirPort
   
   :var list flags: **\*** list of status flags
   
@@ -686,10 +757,10 @@ class RouterMicrodescriptor(RouterStatusEntry):
     if r:
       seen_keywords.add("r")
       values = r.split(" ")
-      self.nickname, self.fingerprint = values[0], _decode_fingerprint(values[1])
+      self.nickname, self.fingerprint = values[0], _decode_fingerprint(values[1], validate)
       self.publication = _strptime(" ".join((values[2], values[3])), validate)
-      self.ip, self.orport, self.dirport = values[4], int(values[5]), int(values[6])
-      if self.dirport == 0: self.dirport = None
+      self.ip, self.or_port, self.dir_port = values[4], int(values[5]), int(values[6])
+      if self.dir_port == 0: self.dir_port = None
     elif validate: raise ValueError("Invalid router descriptor: empty 'r' line")
     
     while _peek_line(content):
@@ -752,7 +823,45 @@ class RouterMicrodescriptor(RouterStatusEntry):
     
     return self.unrecognized_lines
 
-def _decode_fingerprint(identity):
+def _get_entries(content, validate, expected_first_keyword = None):
+  """
+  Provides the {keyword => [values...]} mappings for the given content.
+  
+  :param str content: descriptor content
+  :param bool validate: checks validity if True
+  :param str expected_first_keyword: validates that this is the first keyword
+  
+  :returns: dict with the mapping of keywords to their values
+  
+  :raises: ValueError if a validity check fails
+  """
+  
+  entries = {}
+  
+  for line in content.split("\n"):
+    # empty lines are allowed
+    if not line: continue
+    
+    line_match = stem.descriptor.KEYWORD_LINE.match(line)
+    
+    if not line_match:
+      if not validate: continue
+      raise ValueError("Line contains invalid characters: %s" % line)
+    
+    keyword, value = line_match.groups()
+    if value is None: value = ''
+    
+    if expected_first_keyword != None:
+      if validate and expected_first_keyword != keyword:
+        raise ValueError("Expected to start with a '%s' line:\n%s" % (expected_first_keyword, content))
+      
+      expected_first_keyword = None
+    
+    entries.setdefault(keyword, []).append(value)
+  
+  return entries
+
+def _decode_fingerprint(identity, validate):
   """
   Decodes the 'identity' value found in consensuses into the more common hex
   encoding of the relay's fingerprint. For example...
@@ -763,6 +872,7 @@ def _decode_fingerprint(identity):
     'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
   
   :param str identity: encoded fingerprint from the consensus
+  :param bool validate: checks validity if True
   
   :returns: str with the uppercase hex encoding of the relay's fingerprint
   
@@ -788,7 +898,10 @@ def _decode_fingerprint(identity):
     fingerprint += hex(ord(char))[2:].zfill(2).upper()
   
   if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
-    raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
+    if validate:
+      raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
+    else:
+      return None
   
   return fingerprint
 

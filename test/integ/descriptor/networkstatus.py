@@ -69,9 +69,9 @@ class TestNetworkStatus(unittest.TestCase):
       self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
       self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router.digest)
       self.assertEquals(_strptime("2012-07-12 04:01:55"), router.publication)
-      self.assertEquals("178.218.213.229", router.ip)
-      self.assertEquals(80, router.orport)
-      self.assertEquals(None, router.dirport)
+      self.assertEquals("178.218.213.229", router.address)
+      self.assertEquals(80, router.or_port)
+      self.assertEquals(None, router.dir_port)
   
   def test_consensus(self):
     """
@@ -114,9 +114,9 @@ class TestNetworkStatus(unittest.TestCase):
     self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router1.fingerprint)
     self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router1.digest)
     self.assertEquals(_strptime("2012-07-12 04:01:55"), router1.publication)
-    self.assertEquals("178.218.213.229", router1.ip)
-    self.assertEquals(80, router1.orport)
-    self.assertEquals(None, router1.dirport)
+    self.assertEquals("178.218.213.229", router1.address)
+    self.assertEquals(80, router1.or_port)
+    self.assertEquals(None, router1.dir_port)
     self.assertEquals(set(["Exit", "Fast", "Named", "Running", "Valid"]), set(router1.flags))
     
     self.assertEquals(8, len(desc.directory_authorities))
@@ -124,8 +124,8 @@ class TestNetworkStatus(unittest.TestCase):
     self.assertEquals("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", desc.directory_authorities[0].fingerprint)
     self.assertEquals("86.59.21.38", desc.directory_authorities[0].address)
     self.assertEquals("86.59.21.38", desc.directory_authorities[0].ip)
-    self.assertEquals(80, desc.directory_authorities[0].dirport)
-    self.assertEquals(443, desc.directory_authorities[0].orport)
+    self.assertEquals(80, desc.directory_authorities[0].dir_port)
+    self.assertEquals(443, desc.directory_authorities[0].or_port)
     self.assertEquals("Peter Palfrader", desc.directory_authorities[0].contact)
     self.assertEquals(None, desc.directory_authorities[0].legacy_dir_key)
     self.assertEquals(None, desc.directory_authorities[0].key_certificate)
@@ -162,9 +162,9 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
       self.assertEquals("B5n4BiALAF8B5AqafxohyYiuj7E", router.digest)
       self.assertEquals(_strptime("2012-07-11 04:22:53"), router.publication)
-      self.assertEquals("178.218.213.229", router.ip)
-      self.assertEquals(80, router.orport)
-      self.assertEquals(None, router.dirport)
+      self.assertEquals("178.218.213.229", router.address)
+      self.assertEquals(80, router.or_port)
+      self.assertEquals(None, router.dir_port)
   
   def test_vote(self):
     """
@@ -199,17 +199,17 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router1.fingerprint)
     self.assertEquals("B5n4BiALAF8B5AqafxohyYiuj7E", router1.digest)
     self.assertEquals(_strptime("2012-07-11 04:22:53"), router1.publication)
-    self.assertEquals("178.218.213.229", router1.ip)
-    self.assertEquals(80, router1.orport)
-    self.assertEquals(None, router1.dirport)
+    self.assertEquals("178.218.213.229", router1.address)
+    self.assertEquals(80, router1.or_port)
+    self.assertEquals(None, router1.dir_port)
     
     self.assertEquals(1, len(desc.directory_authorities))
     self.assertEquals("turtles", desc.directory_authorities[0].nickname)
     self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.directory_authorities[0].fingerprint)
     self.assertEquals("76.73.17.194", desc.directory_authorities[0].address)
     self.assertEquals("76.73.17.194", desc.directory_authorities[0].ip)
-    self.assertEquals(9030, desc.directory_authorities[0].dirport)
-    self.assertEquals(9090, desc.directory_authorities[0].orport)
+    self.assertEquals(9030, desc.directory_authorities[0].dir_port)
+    self.assertEquals(9090, desc.directory_authorities[0].or_port)
     self.assertEquals("Mike Perry <email>", desc.directory_authorities[0].contact)
     self.assertEquals(None, desc.directory_authorities[0].legacy_dir_key)
     
