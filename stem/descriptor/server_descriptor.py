@@ -134,7 +134,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   
   :var str address: **\*** IPv4 address of the relay
   :var int or_port: **\*** port used for relaying
-  :var int socks_port: **\*** port used as client (deprecated, always zero)
+  :var int socks_port: **\*** port used as client (deprecated, always None)
   :var int dir_port: **\*** port used for descriptor mirroring
   
   :var str platform: line with operating system and tor version
@@ -340,8 +340,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         self.nickname   = router_comp[0]
         self.address    = router_comp[1]
         self.or_port    = int(router_comp[2])
-        self.socks_port = int(router_comp[3])
-        self.dir_port   = int(router_comp[4])
+        self.socks_port = None if router_comp[3] == '0' else int(router_comp[3])
+        self.dir_port   = None if router_comp[4] == '0' else int(router_comp[4])
       elif keyword == "bandwidth":
         # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
         bandwidth_comp = value.split()
