@@ -531,7 +531,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
         
         r_comp = value.split(" ")
         
-        if len(r_comp) < 5:
+        if len(r_comp) < 8:
           if not validate: continue
           raise ValueError("Router status entry's 'r' line line must have eight values: %s" % line)
         
@@ -564,7 +564,17 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
         # "s" Flags
         # s Named Running Stable Valid
         
-        self.flags = value.split(" ")
+        if value == "":
+          self.flags = []
+        else:
+          self.flags = value.split(" ")
+        
+        if validate:
+          for flag in self.flags:
+            if self.flags.count(flag) > 1:
+              raise ValueError("Router status entry had duplicate flags: %s" % line)
+            elif flag == "":
+              raise ValueError("Router status entry had extra whitespace on its 's' line: %s" % line)
       elif keyword == 'v':
         # "v" version
         # v Tor 0.2.2.35
@@ -595,16 +605,19 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
           raise ValueError("Router status entry's 'w' line needs to start with a 'Bandwidth=' entry: %s" % line)
         
         for w_entry in w_comp:
-          w_key, w_value = w_entry.split('=', 1)
+          if '=' in w_entry:
+            w_key, w_value = w_entry.split('=', 1)
+          else:
+            w_key, w_value = w_entry, None
           
           if w_key == "Bandwidth":
-            if not w_value.isdigit():
+            if not (w_value and w_value.isdigit()):
               if not validate: continue
               raise ValueError("Router status entry's 'Bandwidth=' entry needs to have a numeric value: %s" % line)
             
             self.bandwidth = int(w_value)
           elif w_key == "Measured":
-            if not w_value.isdigit():
+            if not (w_value and w_value.isdigit()):
               if not validate: continue
               raise ValueError("Router status entry's 'Measured=' entry needs to have a numeric value: %s" % line)
             
@@ -627,9 +640,11 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
         
         m_comp = value.split(" ")
         
-        if self.document.vote_status != "vote":
+        if not (self.document and self.document.vote_status == "vote"):
           if not validate: continue
-          raise ValueError("Router status entry's 'm' line should only appear in votes (appeared in a %s): %s" % (self.document.vote_status, line))
+          
+          vote_status = self.document.vote_status if self.document else "<undefined document>"
+          raise ValueError("Router status entry's 'm' line should only appear in votes (appeared in a %s): %s" % (vote_status, line))
         elif len(m_comp) < 1:
           if not validate: continue
           raise ValueError("Router status entry's 'm' line needs to start with a series of methods: %s" % line)
@@ -884,7 +899,14 @@ def _decode_fingerprint(identity, validate):
   identity += "=" * missing_padding
   
   fingerprint = ""
-  for char in base64.b64decode(identity):
+  
+  try:
+    identity_decoded = base64.b64decode(identity)
+  except TypeError, exc:
+    if not validate: return None
+    raise ValueError("Unable to decode identity string '%s'" % identity)
+  
+  for char in identity_decoded:
     # Individual characters are either standard ascii or hex encoded, and each
     # represent two hex digits. For instnace...
     #
@@ -898,10 +920,8 @@ def _decode_fingerprint(identity, validate):
     fingerprint += hex(ord(char))[2:].zfill(2).upper()
   
   if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
-    if validate:
-      raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
-    else:
-      return None
+    if not validate: return None
+    raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
   
   return fingerprint
 
