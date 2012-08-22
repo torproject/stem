@@ -553,8 +553,8 @@ class Controller(BaseController):
       * default if one was provided and our call failed
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
-      :class:`stem.socket.InvalidArguments` if the 'param' requested was invalid
+      * :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
+      * :class:`stem.socket.InvalidArguments` if the 'param' requested was invalid
     """
     
     start_time = time.time()
@@ -691,8 +691,8 @@ class Controller(BaseController):
       * default if one was provided and our call failed
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
-      :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
+      * :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
+      * :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
     """
     
     # Config options are case insensitive and don't contain whitespace. Using
@@ -743,8 +743,8 @@ class Controller(BaseController):
       * default if one was provided and our call failed
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
-      :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
+      * :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
+      * :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
     """
     
     start_time = time.time()
@@ -829,9 +829,9 @@ class Controller(BaseController):
     :param str,list value: value to set the parameter to
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+      * :class:`stem.socket.ControllerError` if the call fails
+      * :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      * :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
     """
     
     self.set_options({param: value}, False)
@@ -843,9 +843,9 @@ class Controller(BaseController):
     :param str params: configuration option to be reset
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+      * :class:`stem.socket.ControllerError` if the call fails
+      * :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      * :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
     """
     
     self.set_options(dict([(entry, None) for entry in params]), True)
@@ -875,9 +875,9 @@ class Controller(BaseController):
     :param bool reset: issues a RESETCONF, returning None values to their defaults if True
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+      * :class:`stem.socket.ControllerError` if the call fails
+      * :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      * :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
     """
     
     start_time = time.time()
@@ -952,8 +952,8 @@ class Controller(BaseController):
     Saves the current configuration options into the active torrc file.
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.OperationFailed` if the client is unable to save the configuration file
+      * :class:`stem.socket.ControllerError` if the call fails
+      * :class:`stem.socket.OperationFailed` if the client is unable to save the configuration file
     """
     
     response = self.msg("SAVECONF")
