@@ -8,10 +8,10 @@ easier.
   >>> control = controller()
   >>> control.get_info("version")
   '0.2.1.30'
-
+  
   >>> is_running()
   True
-
+  
   >>> stop()
 """
 
@@ -37,7 +37,7 @@ def print_usage():
 
 def start():
   """
-  Starts up a tor instance that we can attach a contorller to.
+  Starts up a tor instance that we can attach a controller to.
   """
   
   tor_config = {
@@ -59,10 +59,9 @@ def stop(prompt = False):
   
   if tor_pid:
     if prompt:
-      print
-      response = raw_input(STOP_CONFIRMATION)
+      response = raw_input("\n" + STOP_CONFIRMATION)
       if not response.lower() in ("y", "yes"): return
-  
+    
     os.kill(tor_pid, signal.SIGTERM)
 
 def is_running():
