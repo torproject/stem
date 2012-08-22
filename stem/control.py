@@ -24,6 +24,7 @@ interacting at a higher level.
     |- set_options - sets or resets the values of multiple configuration options
     |- load_conf - loads configuration information as if it was in the torrc
     |- save_conf - saves configuration information to the torrc
+    |- is_feature_enabled - returns true if a given control connection feature is enabled
     |- enable_feature - enables control protocol features that have been disabled by default
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
@@ -489,6 +490,7 @@ class Controller(BaseController):
     
     # number of sequental 'GETINFO ip-to-country/*' lookups that have failed
     self._geoip_failure_count = 0
+    self.enabled_features = []
   
   def connect(self):
     super(Controller, self).connect()
@@ -964,6 +966,28 @@ class Controller(BaseController):
     else:
       raise stem.socket.ProtocolError("SAVECONF returned unexpected response code")
   
+  def is_feature_enabled(self, feature):
+    """
+    Checks if a control connection feature is enabled. These features can be
+    enabled using :func:`stem.control.Controller.enable_feature`.
+    
+    :param str feature: feature to be checked
+    
+    :returns: True if feature is enabled, False otherwise
+    """
+    
+    defaulted_version = None
+    
+    if feature == "EXTENDED_EVENTS":
+      defaulted_version = stem.version.Requirement.EXTENDED_EVENTS_DEFAULTED
+    elif feature == "VERBOSE_NAMES":
+      defaulted_version = stem.version.Requirement.VERBOSE_NAMES_DEFAULTED
+    
+    if defaulted_version and self.get_version().meets_requirements(defaulted_version):
+      return True
+    else:
+      return feature in self.enabled_features
+  
   def enable_feature(self, features):
     """
     Enables features that are disabled by default to maintain backward
@@ -972,21 +996,14 @@ class Controller(BaseController):
     disabled. Feature names are case-insensitive.
     
     The following features are currently accepted:
-      * EXTENDED_EVENTS - Requests the extended event syntax. Has the same
-          effect as calling SETEVENTS with EXTENDED. Introduced in
-          0.1.2.3-alpha, always-on since Tor 0.2.2.1-alpha
-      * VERBOSE_NAMES - Replaces ServerID with LongName in events and GETINFO
-          results. LongName provides a Fingerprint for all routers, an indication
-          of Named status, and a Nickname if one is known. LongName is strictly
-          more informative than ServerID, which only provides either a Fingerprint
-          or a Nickname. Introduced in 0.1.2.2-alpha, always-on since Tor
-          0.2.2.1-alpha.
+      * EXTENDED_EVENTS - Requests the extended event syntax
+      * VERBOSE_NAMES - Replaces ServerID with LongName in events and GETINFO results
     
     :param str,list features: a single feature or a list of features to be enabled
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.InvalidArguments` if features passed were invalid
+      * :class:`stem.socket.ControllerError` if the call fails
+      * :class:`stem.socket.InvalidArguments` if features passed were invalid
     """
     
     if type(features) == str: features = [features]
@@ -1000,6 +1017,8 @@ class Controller(BaseController):
           invalid_feature = [response.message[22:response.message.find("\"", 22)]]
         raise stem.socket.InvalidArguments(response.code, response.message, invalid_feature)
       raise stem.socket.ProtocolError("USEFEATURE returned invalid response code")
+    
+    self.enabled_features = list(set(self.enabled_features).union(features))
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """

@@ -4,9 +4,10 @@ Integration tests for the stem.control.Controller class.
 
 from __future__ import with_statement
 
+import re
+import shutil
 import unittest
 import tempfile
-import shutil
 
 import stem.control
 import stem.socket
@@ -327,8 +328,11 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      if test.runner.require_version(self, stem.version.Requirement.FEATURE_VERBOSENAMES):
+      if not test.runner.require_version(self, stem.version.Version("0.1.2.2-alpha")):
         controller.enable_feature("VERBOSE_NAMES")
+      self.assertTrue(re.match("\$[0-9a-fA-F]{40}[~=].*", controller.get_info('orconn-status').split()[0]))
+      self.assertTrue(controller.is_feature_enabled("VERBOSE_NAMES"))
+      self.assertTrue("VERBOSE_NAMES" in controller.enabled_features)
       self.assertRaises(stem.socket.InvalidArguments, controller.enable_feature, ["NOT", "A", "FEATURE"])
       try:
         controller.enable_feature(["NOT", "A", "FEATURE"])
