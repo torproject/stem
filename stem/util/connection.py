@@ -39,6 +39,8 @@ def is_valid_ip_address(address):
   :returns: True if input is a valid IPv4 address, False otherwise
   """
   
+  if not isinstance(address, str): return False
+  
   # checks if theres four period separated values
   if address.count(".") != 3: return False
   
