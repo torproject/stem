@@ -299,7 +299,6 @@ class TestController(unittest.TestCase):
         controller.load_conf(oldconf)
   
   def test_saveconf(self):
-    
     if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
@@ -337,8 +336,7 @@ class TestController(unittest.TestCase):
       
       # the orconn-status results will be empty if we don't have a connection
       if orconn_output == '':
-        test.runner.skip(self, "(no tor connections)")
-        return
+        if test.runner.require_online(self): return
       
       self.assertTrue(re.match("\$[0-9a-fA-F]{40}[~=].*", controller.get_info('orconn-status').split()[0]))
       self.assertTrue("VERBOSE_NAMES" in controller.enabled_features)
@@ -348,4 +346,34 @@ class TestController(unittest.TestCase):
       except stem.socket.InvalidArguments, exc:
         self.assertEqual(["NOT"], exc.arguments)
       else: self.fail()
+  
+  def test_signal(self):
+    """
+    Test controller.signal with valid and invalid signals.
+    """
+    
+    with test.runner.get_runner().get_tor_controller() as controller:
+      # valid signal
+      controller.signal("CLEARDNSCACHE")
+      
+      # invalid signals
+      self.assertRaises(stem.socket.InvalidArguments, controller.signal, "FOOBAR")
+      
+      controller.signal("INT")
+      self.assertRaises(stem.socket.SocketClosed, controller.msg, "GETINFO version")
+  
+  def test_extendcircuit(self):
+    if test.runner.require_control(self): return
+    elif test.runner.require_online(self): return
+    
+    with test.runner.get_runner().get_tor_controller() as controller:
+      circ_id = controller.extend_circuit(0)
+      # check if our circuit was created
+      self.assertTrue(filter(lambda x: int(x.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines()))
+      circ_id = controller.new_circuit()
+      self.assertTrue(filter(lambda x: int(x.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines()))
+      
+      self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, "foo")
+      self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#")
+      self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#", "foo")
 

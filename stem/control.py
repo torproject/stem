@@ -26,6 +26,9 @@ interacting at a higher level.
     |- save_conf - saves configuration information to the torrc
     |- is_feature_enabled - checks if a given controller feature is enabled
     |- enable_feature - enables a controller feature that has been disabled by default
+    |- signal - sends a signal to the tor client
+    |- new_circuit - create new circuits
+    |- extend_circuit - create new circuits and extend existing ones
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -1026,6 +1029,82 @@ class Controller(BaseController):
       raise stem.socket.ProtocolError("USEFEATURE provided an invalid response code: %s" % response.code)
     
     self.enabled_features += [entry.upper() for entry in features]
+  
+  def signal(self, signal):
+    """
+    Sends a signal to the Tor client.
+    
+    :param str signal: type of signal to be sent. Must be one of the following...
+      * RELOAD or HUP - reload configuration
+      * SHUTDOWN or INT - shut down, waiting ShutdownWaitLength first if we're a relay
+      * DUMP or USR1 - dump log information about open connections and circuits
+      * DEBUG or USR2 - switch logging to the DEBUG runlevel
+      * HALT or TERM - exit immediately
+      * NEWNYM - switch to new circuits, so new application requests don't share any circuits with old ones (this also clears our DNS cache)
+      * CLEARDNSCACHE - clears cached DNS results
+    
+    :raises: :class:`stem.socket.InvalidArguments` if signal provided wasn't recognized.
+    """
+    
+    response = self.msg("SIGNAL %s" % signal)
+    stem.response.convert("SINGLELINE", response)
+    
+    if not response.is_ok():
+      if response.code == "552":
+        raise stem.socket.InvalidArguments(response.code, response.message, [signal])
+      
+      raise stem.socket.ProtocolError("SIGNAL response contained unrecognized status code: %s" % response.code)
+  
+  def new_circuit(self, path = None, purpose = "general"):
+    """
+    Requests a new circuit. If the path isn't provided, one is automatically
+    selected.
+    
+    :param list,str path: one or more relays to make a circuit through
+    :param str purpose: "general" or "controller"
+    
+    :returns: int of the circuit id of the newly created circuit
+    """
+    
+    return self.extend_circuit(0, path, purpose)
+  
+  def extend_circuit(self, circuit = 0, path = None, purpose = "general"):
+    """
+    Either requests a new circuit or extend an existing one.
+    
+    When called with a circuit value of zero (the default) a new circuit is
+    created, and when non-zero the circuit with that id is extended. If the
+    path isn't provided, one is automatically selected.
+    
+    :param int circuit: id of a circuit to be extended
+    :param list,str path: one or more relays to make a circuit through
+    :param str purpose: "general" or "controller"
+    
+    :returns: int of the circuit id of the created or extended circuit
+    
+    :raises: :class:`stem.socket.InvalidRequest` if one of the parameters were invalid
+    """
+    
+    args = [str(circuit)]
+    if type(path) == str: path = [path]
+    if path: args.append(",".join(path))
+    if purpose: args.append("purpose=%s" % purpose)
+    
+    response = self.msg("EXTENDCIRCUIT %s" % " ".join(args))
+    stem.response.convert("SINGLELINE", response)
+    
+    if response.is_ok():
+      try:
+        extended, new_circuit = response.message.split(" ")
+        assert extended == "EXTENDED"
+      except:
+        raise stem.socket.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
+    elif response.code == '552':
+      raise stem.socket.InvalidRequest(response.code, response.message)
+    else:
+      raise stem.socket.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
+    
+    return int(new_circuit)
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """
