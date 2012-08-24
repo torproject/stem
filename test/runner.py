@@ -11,6 +11,7 @@ about the tor test instance they're running against.
   skip - skips the current test if we can
   require_control - skips the test unless tor provides a controller endpoint
   require_version - skips the test unless we meet a tor version requirement
+  require_online - skips unless targets allow for online tests
   exercise_controller - basic sanity check that a controller connection can be used
   
   get_runner - Singleton for fetching our runtime context.
@@ -139,6 +140,20 @@ def require_version(test_case, req_version):
   
   if get_runner().get_tor_version() < req_version:
     skip(test_case, "(requires %s)" % req_version)
+    return True
+
+def require_online(test_case):
+  """
+  Skips the test if we weren't started with the ONLINE target, which indicates
+  that tests requiring network connectivity should run.
+  
+  :param unittest.TestCase test_case: test being ran
+  
+  :returns: True if test should be skipped, False otherwise
+  """
+  
+  if not CONFIG["integ.target.online"]:
+    skip(test_case, "(requires online target)")
     return True
 
 def only_run_once(test_case, test_name):

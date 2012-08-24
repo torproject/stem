@@ -336,8 +336,7 @@ class TestController(unittest.TestCase):
       
       # the orconn-status results will be empty if we don't have a connection
       if orconn_output == '':
-        test.runner.skip(self, "(no tor connections)")
-        return
+        if test.runner.require_online(self): return
       
       self.assertTrue(re.match("\$[0-9a-fA-F]{40}[~=].*", controller.get_info('orconn-status').split()[0]))
       self.assertTrue("VERBOSE_NAMES" in controller.enabled_features)
@@ -352,9 +351,8 @@ class TestController(unittest.TestCase):
     """
     Test controller.signal with valid and invalid signals.
     """
-    runner = test.runner.get_runner()
     
-    with runner.get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       # valid signal
       controller.signal("CLEARDNSCACHE")
       
@@ -366,10 +364,9 @@ class TestController(unittest.TestCase):
   
   def test_extendcircuit(self):
     if test.runner.require_control(self): return
+    elif test.runner.require_online(self): return
     
-    runner = test.runner.get_runner()
-    
-    with runner.get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       circ_id = controller.extend_circuit(0)
       # check if our circuit was created
       self.assertTrue(filter(lambda x: int(x.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines()))
