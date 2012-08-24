@@ -1033,18 +1033,13 @@ class Controller(BaseController):
     Sends a signal to the Tor client.
     
     :param str signal: type of signal to be sent. Must be one of the following...
-      * HUP - Reload configuration
-      * INT - If server is an OP, exit immediately.  If it's an OR, close listeners and exit after ShutdownWaitLength seconds
-      * USR1 - Dump log information about open connections and circuits
-      * USR2 - Switch all open logs to loglevel debug
-      * TERM - Clean up and exit immediately
-      * RELOAD - equivalent to HUP
-      * SHUTDOWN - equivalent to INT
-      * DUMP - . equivalent to USR1
-      * DEBUG - . equivalent to USR2
-      * HALT - . equivalent to TERM
-      * NEWNYM - Switch to clean circuits, so new application requests don't share any circuits with old ones and clear the client-side dns cache
-      * CLEARDNSCACHE - Forget the client-side cached IPs for all hostnames
+      * RELOAD or HUP - reload configuration
+      * SHUTDOWN or INT - shut down, waiting ShutdownWaitLength first if we're a relay
+      * DUMP or USR1 - dump log information about open connections and circuits
+      * DEBUG or USR2 - switch logging to the DEBUG runlevel
+      * HALT or TERM - exit immediately
+      * NEWNYM - switch to new circuits, so new application requests don't share any circuits with old ones (this also clears our DNS cache)
+      * CLEARDNSCACHE - clears cached DNS results
     
     :raises: :class:`stem.socket.InvalidArguments` if signal provided wasn't recognized.
     """
@@ -1055,7 +1050,8 @@ class Controller(BaseController):
     if not response.is_ok():
       if response.code == "552":
         raise stem.socket.InvalidArguments(response.code, response.message, [signal])
-      raise stem.socket.ProtocolError("SIGNAL response contained unrecognized status code")
+      
+      raise stem.socket.ProtocolError("SIGNAL response contained unrecognized status code: %s" % response.code)
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """
