@@ -299,7 +299,6 @@ class TestController(unittest.TestCase):
         controller.load_conf(oldconf)
   
   def test_saveconf(self):
-    
     if test.runner.require_control(self): return
     
     runner = test.runner.get_runner()
@@ -364,4 +363,20 @@ class TestController(unittest.TestCase):
       
       controller.signal("INT")
       self.assertRaises(stem.socket.SocketClosed, controller.msg, "GETINFO version")
+  
+  def test_extendcircuit(self):
+    if test.runner.require_control(self): return
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      circ_id = controller.extend_circuit(0)
+      # check if our circuit was created
+      self.assertTrue(filter(lambda x: int(x.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines()))
+      circ_id = controller.new_circuit()
+      self.assertTrue(filter(lambda x: int(x.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines()))
+      
+      self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, "foo")
+      self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#")
+      self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#", "foo")
 

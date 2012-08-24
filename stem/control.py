@@ -27,6 +27,8 @@ interacting at a higher level.
     |- is_feature_enabled - checks if a given controller feature is enabled
     |- enable_feature - enables a controller feature that has been disabled by default
     |- signal - sends a signal to the tor client
+    |- new_circuit - create new circuits
+    |- extend_circuit - create new circuits and extend existing ones
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -1052,6 +1054,61 @@ class Controller(BaseController):
         raise stem.socket.InvalidArguments(response.code, response.message, [signal])
       
       raise stem.socket.ProtocolError("SIGNAL response contained unrecognized status code: %s" % response.code)
+  
+  def new_circuit(self, relays = None, purpose = None):
+    """
+    Requests Tor to build a new circuit.
+    
+    If the path isn't provided, one is automatically selected. If the purpose
+    isn't provided, "general" circuits are built.
+    
+    :param list,str relays: list of relay nicknames/longnames or a single nickname/longname
+    :param str purpose: "general" or "controller"
+    
+    :returns: Circuit id of the newly created circuit
+    """
+    
+    return self.extend_circuit(0, relays, purpose)
+  
+  def extend_circuit(self, circuit=0, relays = None, purpose = None):
+    """
+    Requests Tor to build a new circuit or extend an existing circuit.
+    
+    When called without any arguments, a new general purpose circuit is created.
+    If circuit is zero, a new circuit is created. If circuit is non-zero, Tor
+    extends the existing circuit with that id . If the path isn't provided, one
+    is automatically selected. If the purpose isn't provided, "general" circuits
+    are built.
+    
+    :param int circuit: id of the circuit which needs extending
+    :param list,str relays: list of relay nicknames/longnames or a single nickname/longname
+    :param str purpose: "general" or "controller"
+    
+    :returns: Circuit id of the created/extended circuit
+    
+    :raises: :class:`stem.socket.InvalidRequest` if one of the parameters were invalid
+    """
+    
+    args = [str(circuit)]
+    if type(relays) == str: relays = [relays]
+    if relays: args.append(",".join(relays))
+    if purpose: args.append("purpose=%s" % purpose)
+    
+    response = self.msg("EXTENDCIRCUIT %s" % " ".join(args))
+    stem.response.convert("SINGLELINE", response)
+    
+    if response.is_ok():
+      try:
+        extended, new_circuit = response.message.split(" ")
+        assert extended == "EXTENDED"
+      except:
+        raise stem.socket.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
+    elif response.code == '552':
+      raise stem.socket.InvalidRequest(response.code, response.message)
+    else:
+      raise stem.socket.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
+    
+    return int(new_circuit)
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """
