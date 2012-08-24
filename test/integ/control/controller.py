@@ -348,4 +348,20 @@ class TestController(unittest.TestCase):
       except stem.socket.InvalidArguments, exc:
         self.assertEqual(["NOT"], exc.arguments)
       else: self.fail()
+  
+  def test_signal(self):
+    """
+    Test controller.signal with valid and invalid signals.
+    """
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      # valid signal
+      controller.signal("CLEARDNSCACHE")
+      
+      # invalid signals
+      self.assertRaises(stem.socket.InvalidArguments, controller.signal, "FOOBAR")
+      
+      controller.signal("INT")
+      self.assertRaises(stem.socket.SocketClosed, controller.msg, "GETINFO version")
 

@@ -26,6 +26,7 @@ interacting at a higher level.
     |- save_conf - saves configuration information to the torrc
     |- is_feature_enabled - checks if a given controller feature is enabled
     |- enable_feature - enables a controller feature that has been disabled by default
+    |- signal - sends a signal to the tor client
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -1026,6 +1027,35 @@ class Controller(BaseController):
       raise stem.socket.ProtocolError("USEFEATURE provided an invalid response code: %s" % response.code)
     
     self.enabled_features += [entry.upper() for entry in features]
+  
+  def signal(self, signal):
+    """
+    Sends a signal to the Tor client.
+    
+    :param str signal: type of signal to be sent. Must be one of the following...
+      * HUP - Reload configuration
+      * INT - If server is an OP, exit immediately.  If it's an OR, close listeners and exit after ShutdownWaitLength seconds
+      * USR1 - Dump log information about open connections and circuits
+      * USR2 - Switch all open logs to loglevel debug
+      * TERM - Clean up and exit immediately
+      * RELOAD - equivalent to HUP
+      * SHUTDOWN - equivalent to INT
+      * DUMP - . equivalent to USR1
+      * DEBUG - . equivalent to USR2
+      * HALT - . equivalent to TERM
+      * NEWNYM - Switch to clean circuits, so new application requests don't share any circuits with old ones and clear the client-side dns cache
+      * CLEARDNSCACHE - Forget the client-side cached IPs for all hostnames
+    
+    :raises: :class:`stem.socket.InvalidArguments` if signal provided wasn't recognized.
+    """
+    
+    response = self.msg("SIGNAL %s" % signal)
+    stem.response.convert("SINGLELINE", response)
+    
+    if not response.is_ok():
+      if response.code == "552":
+        raise stem.socket.InvalidArguments(response.code, response.message, [signal])
+      raise stem.socket.ProtocolError("SIGNAL response contained unrecognized status code")
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """
@@ -1052,4 +1082,5 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   
   if default != UNDEFINED: return default
   else: raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
+
 
