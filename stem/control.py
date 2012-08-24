@@ -24,8 +24,8 @@ interacting at a higher level.
     |- set_options - sets or resets the values of multiple configuration options
     |- load_conf - loads configuration information as if it was in the torrc
     |- save_conf - saves configuration information to the torrc
-    |- is_feature_enabled - returns true if a given control connection feature is enabled
-    |- enable_feature - enables control protocol features that have been disabled by default
+    |- is_feature_enabled - checks if a given controller feature is enabled
+    |- enable_feature - enables a controller feature that has been disabled by default
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -976,16 +976,22 @@ class Controller(BaseController):
     :returns: True if feature is enabled, False otherwise
     """
     
-    defaulted_version = None
+    feature = feature.upper()
     
-    if feature == "EXTENDED_EVENTS":
-      defaulted_version = stem.version.Requirement.EXTENDED_EVENTS_DEFAULTED
-    elif feature == "VERBOSE_NAMES":
-      defaulted_version = stem.version.Requirement.VERBOSE_NAMES_DEFAULTED
-    
-    if defaulted_version and self.get_version().meets_requirements(defaulted_version):
+    if feature in self.enabled_features:
       return True
     else:
+      # check if this feature is on by default
+      defaulted_version = None
+      
+      if feature == "EXTENDED_EVENTS":
+        defaulted_version = stem.version.Requirement.FEATURE_EXTENDED_EVENTS
+      elif feature == "VERBOSE_NAMES":
+        defaulted_version = stem.version.Requirement.FEATURE_VERBOSE_NAMES
+      
+      if defaulted_version and self.get_version().meets_requirements(defaulted_version):
+        self.enabled_features.append(feature)
+      
       return feature in self.enabled_features
   
   def enable_feature(self, features):
@@ -1016,9 +1022,10 @@ class Controller(BaseController):
         if response.message.startswith("Unrecognized feature \""):
           invalid_feature = [response.message[22:response.message.find("\"", 22)]]
         raise stem.socket.InvalidArguments(response.code, response.message, invalid_feature)
-      raise stem.socket.ProtocolError("USEFEATURE returned invalid response code")
+      
+      raise stem.socket.ProtocolError("USEFEATURE provided an invalid response code: %s" % response.code)
     
-    self.enabled_features = list(set(self.enabled_features).union(features))
+    self.enabled_features += [entry.upper() for entry in features]
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """
