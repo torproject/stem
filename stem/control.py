@@ -24,6 +24,8 @@ interacting at a higher level.
     |- set_options - sets or resets the values of multiple configuration options
     |- load_conf - loads configuration information as if it was in the torrc
     |- save_conf - saves configuration information to the torrc
+    |- is_feature_enabled - checks if a given controller feature is enabled
+    |- enable_feature - enables a controller feature that has been disabled by default
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -488,6 +490,7 @@ class Controller(BaseController):
     
     # number of sequental 'GETINFO ip-to-country/*' lookups that have failed
     self._geoip_failure_count = 0
+    self.enabled_features = []
   
   def connect(self):
     super(Controller, self).connect()
@@ -550,8 +553,8 @@ class Controller(BaseController):
       * default if one was provided and our call failed
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
-      :class:`stem.socket.InvalidArguments` if the 'param' requested was invalid
+      * :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
+      * :class:`stem.socket.InvalidArguments` if the 'param' requested was invalid
     """
     
     start_time = time.time()
@@ -688,8 +691,8 @@ class Controller(BaseController):
       * default if one was provided and our call failed
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
-      :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
+      * :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
+      * :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
     """
     
     # Config options are case insensitive and don't contain whitespace. Using
@@ -740,8 +743,8 @@ class Controller(BaseController):
       * default if one was provided and our call failed
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
-      :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
+      * :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
+      * :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
     """
     
     start_time = time.time()
@@ -826,9 +829,9 @@ class Controller(BaseController):
     :param str,list value: value to set the parameter to
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+      * :class:`stem.socket.ControllerError` if the call fails
+      * :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      * :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
     """
     
     self.set_options({param: value}, False)
@@ -840,9 +843,9 @@ class Controller(BaseController):
     :param str params: configuration option to be reset
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+      * :class:`stem.socket.ControllerError` if the call fails
+      * :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      * :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
     """
     
     self.set_options(dict([(entry, None) for entry in params]), True)
@@ -872,9 +875,9 @@ class Controller(BaseController):
     :param bool reset: issues a RESETCONF, returning None values to their defaults if True
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+      * :class:`stem.socket.ControllerError` if the call fails
+      * :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
+      * :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
     """
     
     start_time = time.time()
@@ -949,8 +952,8 @@ class Controller(BaseController):
     Saves the current configuration options into the active torrc file.
     
     :raises:
-      :class:`stem.socket.ControllerError` if the call fails
-      :class:`stem.socket.OperationFailed` if the client is unable to save the configuration file
+      * :class:`stem.socket.ControllerError` if the call fails
+      * :class:`stem.socket.OperationFailed` if the client is unable to save the configuration file
     """
     
     response = self.msg("SAVECONF")
@@ -962,6 +965,67 @@ class Controller(BaseController):
       raise stem.socket.OperationFailed(response.code, response.message)
     else:
       raise stem.socket.ProtocolError("SAVECONF returned unexpected response code")
+  
+  def is_feature_enabled(self, feature):
+    """
+    Checks if a control connection feature is enabled. These features can be
+    enabled using :func:`stem.control.Controller.enable_feature`.
+    
+    :param str feature: feature to be checked
+    
+    :returns: True if feature is enabled, False otherwise
+    """
+    
+    feature = feature.upper()
+    
+    if feature in self.enabled_features:
+      return True
+    else:
+      # check if this feature is on by default
+      defaulted_version = None
+      
+      if feature == "EXTENDED_EVENTS":
+        defaulted_version = stem.version.Requirement.FEATURE_EXTENDED_EVENTS
+      elif feature == "VERBOSE_NAMES":
+        defaulted_version = stem.version.Requirement.FEATURE_VERBOSE_NAMES
+      
+      if defaulted_version and self.get_version().meets_requirements(defaulted_version):
+        self.enabled_features.append(feature)
+      
+      return feature in self.enabled_features
+  
+  def enable_feature(self, features):
+    """
+    Enables features that are disabled by default to maintain backward
+    compatibility. Once enabled, a feature cannot be disabled and a new
+    control connection must be opened to get a connection with the feature
+    disabled. Feature names are case-insensitive.
+    
+    The following features are currently accepted:
+      * EXTENDED_EVENTS - Requests the extended event syntax
+      * VERBOSE_NAMES - Replaces ServerID with LongName in events and GETINFO results
+    
+    :param str,list features: a single feature or a list of features to be enabled
+    
+    :raises:
+      * :class:`stem.socket.ControllerError` if the call fails
+      * :class:`stem.socket.InvalidArguments` if features passed were invalid
+    """
+    
+    if type(features) == str: features = [features]
+    response = self.msg("USEFEATURE %s" % " ".join(features))
+    stem.response.convert("SINGLELINE", response)
+    
+    if not response.is_ok():
+      if response.code == "552":
+        invalid_feature = []
+        if response.message.startswith("Unrecognized feature \""):
+          invalid_feature = [response.message[22:response.message.find("\"", 22)]]
+        raise stem.socket.InvalidArguments(response.code, response.message, invalid_feature)
+      
+      raise stem.socket.ProtocolError("USEFEATURE provided an invalid response code: %s" % response.code)
+    
+    self.enabled_features += [entry.upper() for entry in features]
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """

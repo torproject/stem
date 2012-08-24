@@ -4,9 +4,10 @@ Integration tests for the stem.control.Controller class.
 
 from __future__ import with_statement
 
+import re
+import shutil
 import unittest
 import tempfile
-import shutil
 
 import stem.control
 import stem.socket
@@ -316,4 +317,35 @@ class TestController(unittest.TestCase):
       finally:
         controller.load_conf(oldconf)
         controller.save_conf()
+  
+  def test_enable_feature(self):
+    """
+    Test Controller.enable_feature with valid and invalid inputs.
+    """
+    
+    if test.runner.require_control(self): return
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      if not test.runner.require_version(self, stem.version.Version("0.1.2.2-alpha")):
+        controller.enable_feature("VERBOSE_NAMES")
+      
+      self.assertTrue(controller.is_feature_enabled("VERBOSE_NAMES"))
+      
+      orconn_output = controller.get_info('orconn-status')
+      
+      # the orconn-status results will be empty if we don't have a connection
+      if orconn_output == '':
+        test.runner.skip(self, "(no tor connections)")
+        return
+      
+      self.assertTrue(re.match("\$[0-9a-fA-F]{40}[~=].*", controller.get_info('orconn-status').split()[0]))
+      self.assertTrue("VERBOSE_NAMES" in controller.enabled_features)
+      self.assertRaises(stem.socket.InvalidArguments, controller.enable_feature, ["NOT", "A", "FEATURE"])
+      try:
+        controller.enable_feature(["NOT", "A", "FEATURE"])
+      except stem.socket.InvalidArguments, exc:
+        self.assertEqual(["NOT"], exc.arguments)
+      else: self.fail()
 

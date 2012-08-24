@@ -249,5 +249,7 @@ Requirement = stem.util.enum.Enum(
   ("LOADCONF", Version("0.2.1.1")),
   ("TORRC_CONTROL_SOCKET", Version("0.2.0.30")),
   ("TORRC_DISABLE_DEBUGGER_ATTACHMENT", Version("0.2.3.9")),
+  ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),
+  ("FEATURE_EXTENDED_EVENTS", Version("0.2.2.1-alpha")),
 )
 
