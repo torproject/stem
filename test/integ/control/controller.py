@@ -376,4 +376,29 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, "foo")
       self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#")
       self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#", "foo")
+  
+  def test_repurpose_circuit(self):
+    if test.runner.require_control(self): return
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      circuit_output = controller.get_info('circuit-status')
+      
+      # the circuit-status results will be empty if we don't have a connection
+      if circuit_output == '':
+        if test.runner.require_online(self): return
+      
+      first_circ = circuit_output.splitlines()[0].split()
+      circ_id = int(first_circ[0])
+      purpose = "CONTROLLER"
+      if "PURPOSE=CONTROLLER" in first_circ:
+        purpose = "GENERAL"
+      controller.repurpose_circuit(circ_id, purpose)
+      purpose_arg = "PURPOSE=%s" % purpose
+      circ = filter(lambda line: int(line.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines())[0]
+      self.assertTrue(purpose_arg in circ)
+      
+      self.assertRaises(stem.socket.InvalidRequest, controller.repurpose_circuit, 'f934h9f3h4', "fooo")
+      self.assertRaises(stem.socket.InvalidRequest, controller.repurpose_circuit, '4', "fooo")
 

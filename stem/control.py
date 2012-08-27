@@ -29,6 +29,7 @@ interacting at a higher level.
     |- signal - sends a signal to the tor client
     |- new_circuit - create new circuits
     |- extend_circuit - create new circuits and extend existing ones
+    |- repurpose_circuit - change a circuit's purpose
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -1054,6 +1055,27 @@ class Controller(BaseController):
         raise stem.socket.InvalidArguments(response.code, response.message, [signal])
       
       raise stem.socket.ProtocolError("SIGNAL response contained unrecognized status code: %s" % response.code)
+  
+  def repurpose_circuit(self, circuit_id, purpose):
+    """
+    Changes a circuit's purpose. Currently, two purposes are recognized...
+      * general
+      * controller
+    
+    :param int circuit_id: id of the circuit whose purpose is to be changed
+    :param str purpose: purpose (either "general" or "controller")
+    
+    :raises: :class:`stem.socket.InvalidArguments` if the circuit doesn't exist or if the purpose was invalid
+    """
+    
+    response = self.msg("SETCIRCUITPURPOSE %s purpose=%s" % (str(circuit_id), purpose))
+    stem.response.convert("SINGLELINE", response)
+    
+    if not response.is_ok():
+      if response.code == "552":
+        raise stem.socket.InvalidRequest(response.code, response.message)
+      else:
+        raise stem.socket.ProtocolError("SETCIRCUITPURPOSE returned unexpected response code: %s" % response.code)
   
   def new_circuit(self, path = None, purpose = "general"):
     """
