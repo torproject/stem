@@ -383,7 +383,13 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      first_circ = controller.get_info('circuit-status').splitlines()[0].split()
+      circuit_output = controller.get_info('circuit-status')
+      
+      # the circuit-status results will be empty if we don't have a connection
+      if circuit_output == '':
+        if test.runner.require_online(self): return
+      
+      first_circ = circuit_output.splitlines()[0].split()
       circ_id = int(first_circ[0])
       purpose = "CONTROLLER"
       if "PURPOSE=CONTROLLER" in first_circ:
