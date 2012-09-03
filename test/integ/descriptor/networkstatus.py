@@ -85,7 +85,6 @@ class TestNetworkStatus(unittest.TestCase):
     router1 = desc.routers[0]
     descriptor_file.close()
     
-    self.assertEquals(True, desc.validated)
     self.assertEquals("3", desc.network_status_version)
     self.assertEquals("consensus", desc.vote_status)
     self.assertEquals([], desc.consensus_methods)
@@ -178,7 +177,6 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     router1 = desc.routers[0]
     descriptor_file.close()
     
-    self.assertEquals(True, desc.validated)
     self.assertEquals("3", desc.network_status_version)
     self.assertEquals("vote", desc.vote_status)
     self.assertEquals(range(1, 13), desc.consensus_methods)

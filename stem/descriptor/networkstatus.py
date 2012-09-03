@@ -76,6 +76,34 @@ Flag = stem.util.enum.Enum(
   ("VALID", "Valid"),
 )
 
+# Network status document are either a 'vote' or 'consensus', with different
+# mandatory fields for each. Both though require that their fields appear in a
+# specific order. This is an ordered listing of the following...
+#
+# (field, in_votes, in_consensus, is_mandatory)
+
+HEADER_STATUS_DOCUMENT_FIELDS = (
+  ("network-status-version", True, True, True),
+  ("vote-status", True, True, True),
+  ("consensus-methods", True, False, False),
+  ("consensus-method", False, True, False),
+  ("published", True, False, True),
+  ("valid-after", True, True, True),
+  ("fresh-until", True, True, True),
+  ("valid-until", True, True, True),
+  ("voting-delay", True, True, True),
+  ("client-versions", True, True, False),
+  ("server-versions", True, True, False),
+  ("known-flags", True, True, True),
+  ("params", True, True, False),
+)
+
+FOOTER_STATUS_DOCUMENT_FIELDS = (
+  ("directory-footer", True, True, True),
+  ("bandwidths-weights", False, True, False),
+  ("directory-signature", True, True, True),
+)
+
 def parse_file(document_file, validate = True, is_microdescriptor = False):
   """
   Parses a network status and iterates over the RouterStatusEntry or
@@ -94,7 +122,7 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
   """
   
   header, footer, routers_end = _get_document_content(document_file, validate)
-  document_data = "".join(header + footer)
+  document_data = header + footer
   
   if not is_microdescriptor:
     document = NetworkStatusDocument(document_data, validate)
@@ -110,7 +138,7 @@ def _get_document_content(document_file, validate):
   """
   Network status documents consist of three sections: header, router entries,
   and the footer. This provides back a tuple with the following...
-  (header_lines, footer_lines, routers_end)
+  (header, footer, routers_end)
   
   This leaves the document_file at the start of the router entries.
   
@@ -126,7 +154,7 @@ def _get_document_content(document_file, validate):
   
   # parse until the first router record
   
-  header = _read_until_keywords("r", document_file)
+  header = _read_until_keywords(("r", "directory-footer", "directory-signature"), document_file)
   routers_start = document_file.tell()
   
   # figure out the network status version
@@ -134,12 +162,12 @@ def _get_document_content(document_file, validate):
   # TODO: we should pick either 'directory-footer' or 'directory-signature'
   # based on the header's network-status-version
   
-  _read_until_keywords(["directory-footer", "directory-signature"], document_file, skip = True)
+  _read_until_keywords(("directory-footer", "directory-signature"), document_file, skip = True)
   routers_end = document_file.tell()
   footer = document_file.readlines()
   
   document_file.seek(routers_start)
-  return (header, footer, routers_end)
+  return ("".join(header), "".join(footer), routers_end)
 
 def _get_routers(document_file, validate, document, end_position, router_type):
   """
@@ -166,14 +194,11 @@ def _get_routers(document_file, validate, document, end_position, router_type):
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
   """
-  A v3 network status document.
-  
-  This could be a v3 consensus or vote document.
+  Version 3 network status document. This could be either a vote or consensus.
   
   :var tuple routers: RouterStatusEntry contained in the document
   
-  :var bool validated: **\*** whether the document is validated
-  :var str network_status_version: **\*** a document format version. For v3 documents this is "3"
+  :var int network_status_version: **\*** document version
   :var str vote_status: **\*** status of the vote (is either "vote" or "consensus")
   :var list consensus_methods: **^** A list of supported consensus generation methods (integers)
   :var datetime published: **^** time when the document was published
@@ -210,7 +235,6 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     self.directory_authorities = []
     self.directory_signatures = []
-    self.validated = validate
     
     self.network_status_version = None
     self.vote_status = None
@@ -231,8 +255,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     document_file = StringIO(raw_content)
     header, footer, routers_end = _get_document_content(document_file, validate)
     
-    document_content = "".join(header + footer)
-    self._parse(document_content)
+    self._parse(header, footer, validate)
+    self._parse_old(header + footer, validate)
     
     if document_file.tell() < routers_end:
       self.routers = tuple(_get_routers(document_file, validate, self, routers_end, self._get_router_type()))
@@ -254,10 +278,30 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     return self.unrecognized_lines
   
-  def _parse(self, raw_content):
+  def _parse(self, header, footer, validate):
+    """
+    Parses the given content and applies the attributes.
+    
+    :param str header_content: content of the descriptor header
+    :param str footer_content: content of the descriptor footer
+    :param bool validate: checks validity if True
+    
+    :raises: ValueError if a validity check fails
+    """
+    
+    header_entries = stem.descriptor._get_descriptor_components(header, validate)[0]
+    footer_entries = stem.descriptor._get_descriptor_components(footer, validate)[0]
+    
+    if validate:
+      if not 'vote-status' in header_entries:
+        raise ValueError("Network status documents must have a 'vote-status' line to say if they're a vote or consensus")
+      
+      is_consensus = header_entries['vote-status'][0][0] == "consensus"
+      self._check_for_missing_and_disallowed_fields(is_consensus, header_entries, footer_entries)
+  
+  def _parse_old(self, raw_content, validate):
     # preamble
     content = StringIO(raw_content)
-    validate = self.validated
     read_keyword_line = lambda keyword, optional = False: setattr(self, keyword.replace("-", "_"), _read_keyword_line(keyword, content, validate, optional))
     
     map(read_keyword_line, ["network-status-version", "vote-status"])
@@ -320,6 +364,40 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     self.unrecognized_lines = content.read()
     if validate and self.unrecognized_lines: raise ValueError("Unrecognized trailing data")
+  
+  def _check_for_missing_and_disallowed_fields(self, is_consensus, header_entries, footer_entries):
+    """
+    Checks that we have mandatory fields for our type, and that we don't have
+    any fields exclusive to the other (ie, no vote-only fields appear in a
+    consensus or vice versa).
+    
+    :param bool is_consensus: true if we're a conensus and false if we're a vote
+    :param dict header_entries: ordered keyword/value mappings of the header
+    :param dict footer_entries: ordered keyword/value mappings of the footer
+    
+    :raises: ValueError if we're missing mandatory fields or have fiels we shouldn't
+    """
+    
+    is_vote = not is_consensus # aliasing inverse for readability
+    missing_fields, disallowed_fields = [], []
+    
+    for entries, fields in ((header_entries, HEADER_STATUS_DOCUMENT_FIELDS),\
+                            (footer_entries, FOOTER_STATUS_DOCUMENT_FIELDS)):
+      for field, in_votes, in_consensus, mandatory in fields:
+        if mandatory and ((is_consensus and in_consensus) or (is_vote and in_votes)):
+          # mandatory field, check that we have it
+          if not field in entries.keys():
+            missing_fields.append(field)
+        elif (is_consensus and not in_consensus) or (is_vote and not in_votes):
+          # field we shouldn't have, check that we don't
+          if field in entries.keys():
+            disallowed_fields.append(field)
+    
+    if missing_fields:
+      raise ValueError("Network status document is missing mandatory field: %s" % ', '.join(missing_fields))
+    
+    if disallowed_fields:
+      raise ValueError("Network status document has fields that shouldn't appear in this document type: %s" % ', '.join(disallowed_fields))
 
 class DirectoryAuthority(stem.descriptor.Descriptor):
   """
@@ -509,7 +587,10 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     :raises: ValueError if a validity check fails
     """
     
-    entries = _get_entries(content, validate, 'r')
+    entries, first_keyword, _, _ = stem.descriptor._get_descriptor_components(content, validate)
+    
+    if validate and first_keyword != 'r':
+      raise ValueError("Router status entries are expected to start with a 'r' line:\n%s" % (content))
     
     # check that we have mandatory fields
     if validate:
@@ -518,7 +599,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
           raise ValueError("Router status entries must have a '%s' line:\n%s" % (keyword, content))
     
     for keyword, values in entries.items():
-      value = values[0]
+      value, block_contents = values[0]
       line = "%s %s" % (keyword, value)
       
       # most attributes can only appear at most once
@@ -685,7 +766,6 @@ class MicrodescriptorConsensus(NetworkStatusDocument):
   """
   A v3 microdescriptor consensus.
   
-  :var bool validated: **\*** whether the document is validated
   :var str network_status_version: **\*** a document format version. For v3 microdescriptor consensuses this is "3 microdesc"
   :var str vote_status: **\*** status of the vote (is "consensus")
   :var int consensus_method: **~** consensus method used to generate a consensus
@@ -837,44 +917,6 @@ class RouterMicrodescriptor(RouterStatusEntry):
     """
     
     return self.unrecognized_lines
-
-def _get_entries(content, validate, expected_first_keyword = None):
-  """
-  Provides the {keyword => [values...]} mappings for the given content.
-  
-  :param str content: descriptor content
-  :param bool validate: checks validity if True
-  :param str expected_first_keyword: validates that this is the first keyword
-  
-  :returns: dict with the mapping of keywords to their values
-  
-  :raises: ValueError if a validity check fails
-  """
-  
-  entries = {}
-  
-  for line in content.split("\n"):
-    # empty lines are allowed
-    if not line: continue
-    
-    line_match = stem.descriptor.KEYWORD_LINE.match(line)
-    
-    if not line_match:
-      if not validate: continue
-      raise ValueError("Line contains invalid characters: %s" % line)
-    
-    keyword, value = line_match.groups()
-    if value is None: value = ''
-    
-    if expected_first_keyword != None:
-      if validate and expected_first_keyword != keyword:
-        raise ValueError("Expected to start with a '%s' line:\n%s" % (expected_first_keyword, content))
-      
-      expected_first_keyword = None
-    
-    entries.setdefault(keyword, []).append(value)
-  
-  return entries
 
 def _decode_fingerprint(identity, validate):
   """

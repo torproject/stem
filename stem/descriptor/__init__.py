@@ -25,6 +25,7 @@ __all__ = [
 import os
 import re
 import datetime
+import collections
 
 KEYWORD_CHAR    = "a-zA-Z0-9-"
 WHITESPACE      = " \t"
@@ -335,7 +336,7 @@ def _get_pseudo_pgp_block(remaining_contents):
   else:
     return None
 
-def _get_descriptor_components(raw_contents, validate, extra_keywords):
+def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   """
   Initial breakup of the server descriptor contents to make parsing easier.
   
@@ -356,13 +357,13 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords):
   :returns:
     tuple with the following attributes...
     
-    * **entries (dict)** - keyword => (value, pgp key) entries
+    * **entries (collections.OrderedDict)** - keyword => (value, pgp key) entries
     * **first_keyword (str)** - keyword of the first line
     * **last_keyword (str)**  - keyword of the last line
     * **extra_entries (list)** - lines containing entries matching extra_keywords
   """
   
-  entries = {}
+  entries = collections.OrderedDict()
   first_keyword = None
   last_keyword = None
   extra_entries = [] # entries with a keyword in extra_keywords
@@ -371,8 +372,15 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords):
   while remaining_lines:
     line = remaining_lines.pop(0)
     
-    # last line can be empty
-    if not line and not remaining_lines: continue
+    # V2 network status documents explicitely can contain blank lines...
+    #
+    #   "Implementations MAY insert blank lines for clarity between sections;
+    #   these blank lines are ignored."
+    #
+    # ... and server descriptors end with an extra newline. But other documents
+    # don't say how blank lines should be handled so globally ignoring them.
+    
+    if not line: continue
     
     # Some lines have an 'opt ' for backward compatability. They should be
     # ignored. This prefix is being removed in...
@@ -400,10 +408,8 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords):
     
     if keyword in extra_keywords:
       extra_entries.append("%s %s" % (keyword, value))
-    elif keyword in entries:
-      entries[keyword].append((value, block_contents))
     else:
-      entries[keyword] = [(value, block_contents)]
+      entries.setdefault(keyword, []).append((value, block_contents))
   
   return entries, first_keyword, last_keyword, extra_entries
 
