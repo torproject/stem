@@ -60,11 +60,14 @@ def convert(response_type, message, **kwargs):
   
     * **\*** GETINFO
     * **\*** GETCONF
+    * **&** **^** MAPADDRESS
     * PROTOCOLINFO
     * AUTHCHALLENGE
     * SINGLELINE
   
   **\*** can raise a :class:`stem.socket.InvalidArguments` exception
+  **^** can raise a :class:`stem.socket.InvalidRequest` exception
+  **&** can raise a :class:`stem.socket.OperationFailed` exception
   
   :param str response_type: type of tor response to convert to
   :param stem.response.ControlMessage message: message to be converted
@@ -73,6 +76,7 @@ def convert(response_type, message, **kwargs):
   :raises:
     * :class:`stem.socket.ProtocolError` the message isn't a proper response of that type
     * :class:`stem.socket.InvalidArguments` the arguments given as input are invalid
+    * :class:`stem.socket.InvalidRequest` the arguments given as input are invalid
     * TypeError if argument isn't a :class:`stem.response.ControlMessage` or response_type isn't supported
   """
   
@@ -80,6 +84,7 @@ def convert(response_type, message, **kwargs):
   import stem.response.getconf
   import stem.response.protocolinfo
   import stem.response.authchallenge
+  import stem.response.mapaddress
   
   if not isinstance(message, ControlMessage):
     raise TypeError("Only able to convert stem.response.ControlMessage instances")
@@ -87,10 +92,11 @@ def convert(response_type, message, **kwargs):
   response_types = {
     "GETINFO": stem.response.getinfo.GetInfoResponse,
     "GETCONF": stem.response.getconf.GetConfResponse,
+    "MAPADDRESS": stem.response.mapaddress.MapAddressResponse,
     "SINGLELINE": SingleLineResponse,
     "PROTOCOLINFO": stem.response.protocolinfo.ProtocolInfoResponse,
     "AUTHCHALLENGE": stem.response.authchallenge.AuthChallengeResponse,
-    }
+  }
   
   try:
     response_class = response_types[response_type]
@@ -116,15 +122,15 @@ class ControlMessage(object):
   
   def is_ok(self):
     """
-    Checks if all of our lines have a 250 response.
+    Checks if any of our lines have a 250 response.
     
-    :returns: True if all lines have a 250 response code, False otherwise
+    :returns: True if any lines have a 250 response code, False otherwise
     """
     
     for code, _, _ in self._parsed_content:
-      if code != "250": return False
+      if code == "250": return True
     
-    return True
+    return False
   
   def content(self):
     """

@@ -30,6 +30,7 @@ interacting at a higher level.
     |- new_circuit - create new circuits
     |- extend_circuit - create new circuits and extend existing ones
     |- repurpose_circuit - change a circuit's purpose
+    |- map_address - maps one address to another such that connections to the original are replaced with the other
     |- get_version - convenience method to get tor version
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
@@ -1127,6 +1128,30 @@ class Controller(BaseController):
       raise stem.socket.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
     
     return int(new_circuit)
+  
+  def map_address(self, mapping):
+    """
+    Map addresses to replacement addresses. Tor replaces subseqent connections
+    to the original addresses with the replacement addresses.
+    
+    If the original address is a null address, i.e., one of "0.0.0.0", "::0", or
+    "." Tor picks an original address itself and returns it in the reply. If the
+    original address is already mapped to a different address the mapping is
+    removed.
+    
+    :param dict mapping: mapping of original addresses to replacement addresses
+    
+    :raises:
+      * :class:`stem.socket.InvalidRequest` if the addresses are malformed
+      * :class:`stem.socket.OperationFailed` if Tor couldn't fulfill the request
+    
+    :returns: dictionary with original -> replacement address mappings
+    """
+    
+    response = self.msg("MAPADDRESS %s" % " ".join([k + "=" + mapping[k] for k in mapping.iterkeys()]))
+    stem.response.convert("MAPADDRESS", response)
+    
+    return response.entries
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """
