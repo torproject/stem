@@ -198,11 +198,11 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   
   :var tuple routers: RouterStatusEntry contained in the document
   
-  :var int network_status_version: **\*** document version
+  :var str network_status_version: **\*** document version
   :var str vote_status: **\*** status of the vote (is either "vote" or "consensus")
+  :var int consensus_method: **~** consensus method used to generate a consensus
   :var list consensus_methods: **^** A list of supported consensus generation methods (integers)
   :var datetime published: **^** time when the document was published
-  :var int consensus_method: **~** consensus method used to generate a consensus
   :var datetime valid_after: **\*** time when the consensus becomes valid
   :var datetime fresh_until: **\*** time until when the consensus is considered to be fresh
   :var datetime valid_until: **\*** time until when the consensus is valid
@@ -318,7 +318,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       self.published = _strptime(_read_keyword_line("published", content, validate, True), validate, True)
     else:
       read_keyword_line("consensus-method", True)
-      self.consensus_method = int(self.consensus_method)
+      if self.consensus_method != None:
+        self.consensus_method = int(self.consensus_method)
     
     map(read_keyword_line, ["valid-after", "fresh-until", "valid-until"])
     self.valid_after = _strptime(self.valid_after, validate)
@@ -345,7 +346,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       self.directory_authorities.append(DirectoryAuthority(dirauth_data, vote, validate))
     
     # footer section
-    if self.consensus_method > 9 or vote and filter(lambda x: x >= 9, self.consensus_methods):
+    if self.consensus_method >= 9 or vote and filter(lambda x: x >= 9, self.consensus_methods):
       if _peek_keyword(content) == "directory-footer":
         content.readline()
       elif validate:
@@ -353,17 +354,19 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     if not vote:
       read_keyword_line("bandwidth-weights", True)
-      if _bandwidth_weights_regex.match(self.bandwidth_weights):
+      if self.bandwidth_weights != None and _bandwidth_weights_regex.match(self.bandwidth_weights):
         self.bandwidth_weights = dict([(weight.split("=")[0], int(weight.split("=")[1])) for weight in self.bandwidth_weights.split(" ")])
-      elif validate:
-        raise ValueError("Invalid bandwidth-weights line")
     
     while _peek_keyword(content) == "directory-signature":
       signature_data = _read_until_keywords("directory-signature", content, False, True)
       self.directory_signatures.append(DirectorySignature("".join(signature_data)))
     
-    self.unrecognized_lines = content.read()
-    if validate and self.unrecognized_lines: raise ValueError("Unrecognized trailing data")
+    remainder = content.read()
+    
+    if remainder:
+      self.unrecognized_lines = content.read().split("\n")
+    else:
+      self.unrecognized_lines = []
   
   def _check_for_missing_and_disallowed_fields(self, is_consensus, header_entries, footer_entries):
     """
@@ -508,6 +511,13 @@ class DirectorySignature(stem.descriptor.Descriptor):
     """
     
     return self.unrecognized_lines
+  
+  def __cmp__(self, other):
+    if not isinstance(other, DirectorySignature):
+      return 1
+    
+    # attributes are all derived from content, so we can simply use that to check
+    return str(self) > str(other)
 
 class RouterStatusEntry(stem.descriptor.Descriptor):
   """
