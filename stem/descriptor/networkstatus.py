@@ -255,8 +255,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     document_file = StringIO(raw_content)
     header, footer, routers_end = _get_document_content(document_file, validate)
     
-    self._parse(header, footer, validate)
     self._parse_old(header + footer, validate)
+    self._parse(header, footer, validate)
     
     if document_file.tell() < routers_end:
       self.routers = tuple(_get_routers(document_file, validate, self, routers_end, self._get_router_type()))
@@ -298,6 +298,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       
       is_consensus = header_entries['vote-status'][0][0] == "consensus"
       self._check_for_missing_and_disallowed_fields(is_consensus, header_entries, footer_entries)
+      self._check_for_misordered_fields(is_consensus, header_entries, footer_entries)
   
   def _parse_old(self, raw_content, validate):
     # preamble
@@ -430,6 +431,36 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     if disallowed_fields:
       raise ValueError("Network status document has fields that shouldn't appear in this document type: %s" % ', '.join(disallowed_fields))
+  
+  def _check_for_misordered_fields(self, is_consensus, header_entries, footer_entries):
+    """
+    To be valid a network status document's fiends need to appear in a specific
+    order. Checks that known fields appear in that order (unrecognized fields
+    are ignored).
+    """
+    
+    # Earlier validation has ensured that our fields either belong to our
+    # document type or are unknown. Remove the unknown fields since they
+    # reflect a spec change and can appear anywhere in the document.
+    
+    expected_header = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS]
+    expected_footer = [attr[0] for attr in FOOTER_STATUS_DOCUMENT_FIELDS]
+    
+    actual_header = filter(lambda field: field in expected_header, header_entries.keys())
+    actual_footer = filter(lambda field: field in expected_footer, footer_entries.keys())
+    
+    # Narrow the expected_header and expected_footer to just what we have. If
+    # the lists then match then the order's valid.
+    
+    expected_header = filter(lambda field: field in actual_header, expected_header)
+    expected_footer = filter(lambda field: field in actual_footer, expected_footer)
+    
+    for label, actual, expected in (('header', actual_header, expected_header),
+                                    ('footer', actual_footer, expected_footer)):
+      if actual != expected:
+        actual_label = ', '.join(actual)
+        expected_label = ', '.join(expected)
+        raise ValueError("The fields in the document's %s are misordered. It should be '%s' but was '%s'" % (lable, actual_label, expected_label))
 
 class DirectoryAuthority(stem.descriptor.Descriptor):
   """
