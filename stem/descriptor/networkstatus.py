@@ -198,7 +198,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   
   :var tuple routers: RouterStatusEntry contained in the document
   
-  :var str network_status_version: **\*** document version
+  :var str version: **\*** document version
   :var str vote_status: **\*** status of the vote (is either "vote" or "consensus")
   :var int consensus_method: **~** consensus method used to generate a consensus
   :var list consensus_methods: **^** A list of supported consensus generation methods (integers)
@@ -236,7 +236,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     self.directory_authorities = []
     self.directory_signatures = []
     
-    self.network_status_version = None
+    self.version = None
     self.vote_status = None
     self.consensus_methods = []
     self.published = None
@@ -255,8 +255,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     document_file = StringIO(raw_content)
     header, footer, routers_end = _get_document_content(document_file, validate)
     
-    self._parse_old(header + footer, validate)
     self._parse(header, footer, validate)
+    self._parse_old(header + footer, validate)
     
     if document_file.tell() < routers_end:
       self.routers = tuple(_get_routers(document_file, validate, self, routers_end, self._get_router_type()))
@@ -265,9 +265,6 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   
   def _get_router_type(self):
     return RouterStatusEntry
-  
-  def _validate_network_status_version(self):
-    return self.network_status_version == "3"
   
   def get_unrecognized_lines(self):
     """
@@ -292,23 +289,27 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     header_entries = stem.descriptor._get_descriptor_components(header, validate)[0]
     footer_entries = stem.descriptor._get_descriptor_components(footer, validate)[0]
     
-    if validate:
-      if not 'vote-status' in header_entries:
-        raise ValueError("Network status documents must have a 'vote-status' line to say if they're a vote or consensus")
-      
+    all_entries = dict()
+    all_entries.update(header_entries)
+    all_entries.update(footer_entries)
+    
+    if 'vote-status' in header_entries:
       is_consensus = header_entries['vote-status'][0][0] == "consensus"
       is_vote = not is_consensus
+    else:
+      if validate:
+        raise ValueError("Network status documents must have a 'vote-status' line to say if they're a vote or consensus")
+      
+      is_consensus, is_vote = True, False
+    
+    if validate:
       self._check_for_missing_and_disallowed_fields(is_consensus, header_entries, footer_entries)
       self._check_for_misordered_fields(is_consensus, header_entries, footer_entries)
     
     known_fields = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS + FOOTER_STATUS_DOCUMENT_FIELDS]
     content = header + '\n' + footer
     
-    entries = dict()
-    entries.update(header_entries)
-    entries.update(footer_entries)
-    
-    for keyword, values in entries.items():
+    for keyword, values in all_entries.items():
       value, block_contents = values[0]
       line = "%s %s" % (keyword, value)
       
@@ -318,15 +319,28 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       if validate and len(values) > 1 and keyword in known_fields:
         if not (keyword == 'directory-signature' and is_consensus):
           raise ValueError("Network status documents can only have a single '%s' line, got %i:\n%s" % (keyword, len(values), content))
+      
+      if keyword == 'network-status-version':
+        # "network-status-version" version
+        
+        self.version = value
+        
+        # TODO: Obviously not right when we extend this to parse v2 documents,
+        # but we'll cross that bridge when we come to it.
+        
+        if validate and self.version != "3":
+          raise ValueError("Expected a version 3 network status documents, got version '%s' instead" % self.version)
   
   def _parse_old(self, raw_content, validate):
     # preamble
     content = StringIO(raw_content)
     read_keyword_line = lambda keyword, optional = False: setattr(self, keyword.replace("-", "_"), _read_keyword_line(keyword, content, validate, optional))
     
-    map(read_keyword_line, ["network-status-version", "vote-status"])
-    if validate and not self._validate_network_status_version():
-      raise ValueError("Invalid network-status-version: %s" % self.network_status_version)
+    # ignore things the parse() method handles
+    _read_keyword_line("network-status-version", content, False, True)
+    
+    
+    map(read_keyword_line, ["vote-status"])
     
     vote = False
     if self.vote_status == "vote": vote = True
@@ -479,7 +493,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       if actual != expected:
         actual_label = ', '.join(actual)
         expected_label = ', '.join(expected)
-        raise ValueError("The fields in the document's %s are misordered. It should be '%s' but was '%s'" % (lable, actual_label, expected_label))
+        raise ValueError("The fields in the document's %s are misordered. It should be '%s' but was '%s'" % (label, actual_label, expected_label))
 
 class DirectoryAuthority(stem.descriptor.Descriptor):
   """
@@ -855,7 +869,7 @@ class MicrodescriptorConsensus(NetworkStatusDocument):
   """
   A v3 microdescriptor consensus.
   
-  :var str network_status_version: **\*** a document format version. For v3 microdescriptor consensuses this is "3 microdesc"
+  :var str version: **\*** a document format version. For v3 microdescriptor consensuses this is "3 microdesc"
   :var str vote_status: **\*** status of the vote (is "consensus")
   :var int consensus_method: **~** consensus method used to generate a consensus
   :var datetime valid_after: **\*** time when the consensus becomes valid
@@ -879,7 +893,7 @@ class MicrodescriptorConsensus(NetworkStatusDocument):
     return RouterMicrodescriptor
   
   def _validate_network_status_version(self):
-    return self.network_status_version == "3 microdesc"
+    return self.version == "3 microdesc"
 
 class RouterMicrodescriptor(RouterStatusEntry):
   """

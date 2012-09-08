@@ -100,7 +100,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     sig = DirectorySignature("directory-signature " + NETWORK_STATUS_DOCUMENT_ATTR["directory-signature"])
     
     self.assertEqual((), document.routers)
-    self.assertEqual("3", document.network_status_version)
+    self.assertEqual("3", document.version)
     self.assertEqual("consensus", document.vote_status)
     self.assertEqual(9, document.consensus_method)
     self.assertEqual([], document.consensus_methods)
@@ -133,7 +133,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     sig = DirectorySignature("directory-signature " + NETWORK_STATUS_DOCUMENT_ATTR["directory-signature"])
     
     self.assertEqual((), document.routers)
-    self.assertEqual("3", document.network_status_version)
+    self.assertEqual("3", document.version)
     self.assertEqual("vote", document.vote_status)
     self.assertEqual(None, document.consensus_method)
     self.assertEqual([9], document.consensus_methods)
@@ -213,5 +213,15 @@ class TestNetworkStatusDocument(unittest.TestCase):
         content = "\n".join(test_lines)
         self.assertRaises(ValueError, NetworkStatusDocument, content)
         NetworkStatusDocument(content, False) # constructs without validation
-
+  
+  def test_invalid_version(self):
+    """
+    Try parsing a different document version with the v3 parser.
+    """
+    
+    content = get_network_status_document({"network-status-version": "4"})
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    document = NetworkStatusDocument(content, False)
+    self.assertEquals("4", document.version)
 
