@@ -167,4 +167,23 @@ class TestNetworkStatusDocument(unittest.TestCase):
             content = get_network_status_document(attr, exclude = (field,))
             self.assertRaises(ValueError, NetworkStatusDocument, content)
             NetworkStatusDocument(content, False) # constructs without validation
+  
+  def test_misordered_fields(self):
+    """
+    Rearranges our descriptor fields.
+    """
+    
+    self.skipTest("Needs a parser rewrite first")
+    for is_consensus in (True, False):
+      attr = {"vote-status": "consensus"} if is_consensus else {"vote-status": "vote"}
+      lines = get_network_status_document(attr).split("\n")
+      
+      for i in xrange(len(lines) - 1):
+        # swaps this line with the one after it
+        test_lines = list(lines)
+        test_lines[i], test_lines[i + 1] = test_lines[i + 1], test_lines[i]
+        
+        content = "\n".join(test_lines)
+        self.assertRaises(ValueError, NetworkStatusDocument, content)
+        NetworkStatusDocument(content, False) # constructs without validation
 
