@@ -308,25 +308,49 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     if validate and not self._validate_network_status_version():
       raise ValueError("Invalid network-status-version: %s" % self.network_status_version)
     
+    vote = False
     if self.vote_status == "vote": vote = True
     elif self.vote_status == "consensus": vote = False
     elif validate: raise ValueError("Unrecognized vote-status")
     
     if vote:
       read_keyword_line("consensus-methods", True)
-      self.consensus_methods = [int(method) for method in self.consensus_methods.split(" ")]
-      self.published = _strptime(_read_keyword_line("published", content, validate, True), validate, True)
+      
+      if self.consensus_methods:
+        self.consensus_methods = [int(method) for method in self.consensus_methods.split(" ")]
+      else:
+        self.consensus_methods = []
+      
+      line = _read_keyword_line("published", content, validate, True)
+      
+      if line:
+        self.published = _strptime(line, validate, True)
     else:
       read_keyword_line("consensus-method", True)
       if self.consensus_method != None:
         self.consensus_method = int(self.consensus_method)
     
     map(read_keyword_line, ["valid-after", "fresh-until", "valid-until"])
-    self.valid_after = _strptime(self.valid_after, validate)
-    self.fresh_until = _strptime(self.fresh_until, validate)
-    self.valid_until = _strptime(self.valid_until, validate)
+    
+    if self.valid_after:
+      self.valid_after = _strptime(self.valid_after, validate)
+    elif validate:
+      raise ValueError("Missing the 'valid-after' field")
+    
+    if self.fresh_until:
+      self.fresh_until = _strptime(self.fresh_until, validate)
+    elif validate:
+      raise ValueError("Missing the 'fresh-until' field")
+    
+    if self.valid_until:
+      self.valid_until = _strptime(self.valid_until, validate)
+    elif validate:
+      raise ValueError("Missing the 'valid-until' field")
+    
     voting_delay = _read_keyword_line("voting-delay", content, validate)
-    self.vote_delay, self.dist_delay = [int(delay) for delay in voting_delay.split(" ")]
+    
+    if voting_delay:
+      self.vote_delay, self.dist_delay = [int(delay) for delay in voting_delay.split(" ")]
     
     client_versions = _read_keyword_line("client-versions", content, validate, True)
     if client_versions:
@@ -334,7 +358,12 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     server_versions = _read_keyword_line("server-versions", content, validate, True)
     if server_versions:
       self.server_versions = [stem.version.Version(version_string) for version_string in server_versions.split(",")]
-    self.known_flags = _read_keyword_line("known-flags", content, validate).split(" ")
+    
+    flags_content = _read_keyword_line("known-flags", content, validate)
+    
+    if flags_content:
+      self.known_flags = flags_content.split(" ")
+    
     read_keyword_line("params", True)
     if self.params:
       self.params = dict([(param.split("=")[0], int(param.split("=")[1])) for param in self.params.split(" ")])
@@ -346,7 +375,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       self.directory_authorities.append(DirectoryAuthority(dirauth_data, vote, validate))
     
     # footer section
-    if self.consensus_method >= 9 or vote and filter(lambda x: x >= 9, self.consensus_methods):
+    if self.consensus_method >= 9 or (vote and filter(lambda x: x >= 9, self.consensus_methods)):
       if _peek_keyword(content) == "directory-footer":
         content.readline()
       elif validate:
@@ -364,7 +393,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     remainder = content.read()
     
     if remainder:
-      self.unrecognized_lines = content.read().split("\n")
+      self.unrecognized_lines = remainder.split("\n")
     else:
       self.unrecognized_lines = []
   

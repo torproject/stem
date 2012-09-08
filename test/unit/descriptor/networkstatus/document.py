@@ -10,6 +10,7 @@ from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_
 NETWORK_STATUS_DOCUMENT_ATTR = {
   "network-status-version": "3",
   "vote-status": "consensus",
+  "consensus-methods": "9",
   "consensus-method": "9",
   "published": "2012-09-02 22:00:00",
   "valid-after": "2012-09-02 22:00:00",
@@ -57,17 +58,20 @@ def get_network_status_document(attr = None, exclude = None, routers = None):
       
       if not field in attr:
         # Skip if it's not mandatory for this type of document. An exception is
-        # made for the consensus' consensus-method field since it influences
-        # validation, and is only missing for consensus-method lower than 2.
+        # made for the consensus' consensus-method and consensus-methods fields
+        # since it influences validation, and is only missing for
+        # consensus-method lower than 2.
         
         if field == "consensus-method" and is_consensus:
           pass
-        elif not is_mandatory or not ((is_consensus and in_consensus) or (is_vote and in_vote)):
+        elif field == "consensus-methods" and is_vote:
+          pass
+        elif not is_mandatory or not ((is_consensus and in_consensus) or (is_vote and in_votes)):
           continue
       
       if field in attr:
-        value = attr[keyword]
-        del attr[keyword]
+        value = attr[field]
+        del attr[field]
       elif field in NETWORK_STATUS_DOCUMENT_ATTR:
         value = NETWORK_STATUS_DOCUMENT_ATTR[field]
       
@@ -82,7 +86,7 @@ def get_network_status_document(attr = None, exclude = None, routers = None):
   return "\n".join(header_content + remainder + routers + footer_content)
 
 class TestNetworkStatusDocument(unittest.TestCase):
-  def test_document_minimal(self):
+  def test_minimal_consensus(self):
     """
     Parses a minimal network status document.
     """
@@ -114,4 +118,53 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual(None, document.bandwidth_weights)
     self.assertEqual([sig], document.directory_signatures)
     self.assertEqual([], document.get_unrecognized_lines())
+  
+  def test_minimal_vote(self):
+    """
+    Parses a minimal network status document.
+    """
+    
+    document = NetworkStatusDocument(get_network_status_document({"vote-status": "vote"}))
+    
+    expected_known_flags = [Flag.AUTHORITY, Flag.BADEXIT, Flag.EXIT,
+      Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING,
+      Flag.STABLE, Flag.UNNAMED, Flag.V2DIR, Flag.VALID]
+    
+    sig = DirectorySignature("directory-signature " + NETWORK_STATUS_DOCUMENT_ATTR["directory-signature"])
+    
+    self.assertEqual((), document.routers)
+    self.assertEqual("3", document.network_status_version)
+    self.assertEqual("vote", document.vote_status)
+    self.assertEqual(None, document.consensus_method)
+    self.assertEqual([9], document.consensus_methods)
+    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.published)
+    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.valid_after)
+    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.fresh_until)
+    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.valid_until)
+    self.assertEqual(300, document.vote_delay)
+    self.assertEqual(300, document.dist_delay)
+    self.assertEqual([], document.client_versions)
+    self.assertEqual([], document.server_versions)
+    self.assertEqual(expected_known_flags, document.known_flags)
+    self.assertEqual(None, document.params)
+    self.assertEqual([], document.directory_authorities)
+    self.assertEqual({}, document.bandwidth_weights)
+    self.assertEqual([sig], document.directory_signatures)
+    self.assertEqual([], document.get_unrecognized_lines())
+  
+  def test_missing_fields(self):
+    """
+    Excludes mandatory fields from both a vote and consensus document.
+    """
+    
+    for is_consensus in (True, False):
+      attr = {"vote-status": "consensus"} if is_consensus else {"vote-status": "vote"}
+      is_vote = not is_consensus
+      
+      for entries in (HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS):
+        for field, in_votes, in_consensus, is_mandatory in entries:
+          if is_mandatory and ((is_consensus and in_consensus) or (is_vote and in_votes)):
+            content = get_network_status_document(attr, exclude = (field,))
+            self.assertRaises(ValueError, NetworkStatusDocument, content)
+            NetworkStatusDocument(content, False) # constructs without validation
 
