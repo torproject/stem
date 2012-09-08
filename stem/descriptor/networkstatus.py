@@ -297,8 +297,27 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         raise ValueError("Network status documents must have a 'vote-status' line to say if they're a vote or consensus")
       
       is_consensus = header_entries['vote-status'][0][0] == "consensus"
+      is_vote = not is_consensus
       self._check_for_missing_and_disallowed_fields(is_consensus, header_entries, footer_entries)
       self._check_for_misordered_fields(is_consensus, header_entries, footer_entries)
+    
+    known_fields = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS + FOOTER_STATUS_DOCUMENT_FIELDS]
+    content = header + '\n' + footer
+    
+    entries = dict()
+    entries.update(header_entries)
+    entries.update(footer_entries)
+    
+    for keyword, values in entries.items():
+      value, block_contents = values[0]
+      line = "%s %s" % (keyword, value)
+      
+      # All known fields can only appear once except...
+      # * 'directory-signature' in a consensus
+      
+      if validate and len(values) > 1 and keyword in known_fields:
+        if not (keyword == 'directory-signature' and is_consensus):
+          raise ValueError("Network status documents can only have a single '%s' line, got %i:\n%s" % (keyword, len(values), content))
   
   def _parse_old(self, raw_content, validate):
     # preamble

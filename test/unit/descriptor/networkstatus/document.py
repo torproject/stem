@@ -186,4 +186,32 @@ class TestNetworkStatusDocument(unittest.TestCase):
         content = "\n".join(test_lines)
         self.assertRaises(ValueError, NetworkStatusDocument, content)
         NetworkStatusDocument(content, False) # constructs without validation
+  
+  def test_duplicate_fields(self):
+    """
+    Almost all fields can only appear once. Checking that duplicates cause
+    validation errors.
+    """
+    
+    for is_consensus in (True, False):
+      attr = {"vote-status": "consensus"} if is_consensus else {"vote-status": "vote"}
+      lines = get_network_status_document(attr).split("\n")
+      
+      for i in xrange(len(lines)):
+        # Stop when we hit the 'directory-signature' for a couple reasons...
+        # - that is the one field that can validly appear multiple times
+        # - after it is a crypto blob, which won't trigger this kind of
+        #   validation failure
+        
+        test_lines = list(lines)
+        if test_lines[i].startswith("directory-signature "):
+          break
+        
+        # duplicates the line
+        test_lines.insert(i, test_lines[i])
+        
+        content = "\n".join(test_lines)
+        self.assertRaises(ValueError, NetworkStatusDocument, content)
+        NetworkStatusDocument(content, False) # constructs without validation
+
 
