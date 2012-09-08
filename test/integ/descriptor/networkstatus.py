@@ -86,7 +86,8 @@ class TestNetworkStatus(unittest.TestCase):
     descriptor_file.close()
     
     self.assertEquals("3", desc.version)
-    self.assertEquals("consensus", desc.vote_status)
+    self.assertEquals(True, desc.is_consensus)
+    self.assertEquals(False, desc.is_vote)
     self.assertEquals([], desc.consensus_methods)
     self.assertEquals(None, desc.published)
     self.assertEquals(12, desc.consensus_method)
@@ -178,7 +179,8 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     descriptor_file.close()
     
     self.assertEquals("3", desc.version)
-    self.assertEquals("vote", desc.vote_status)
+    self.assertEquals(False, desc.is_consensus)
+    self.assertEquals(True, desc.is_vote)
     self.assertEquals(range(1, 13), desc.consensus_methods)
     self.assertEquals(_strptime("2012-07-11 23:50:01"), desc.published)
     self.assertEquals(None, desc.consensus_method)

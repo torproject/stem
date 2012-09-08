@@ -101,7 +101,8 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     self.assertEqual((), document.routers)
     self.assertEqual("3", document.version)
-    self.assertEqual("consensus", document.vote_status)
+    self.assertEqual(True, document.is_consensus)
+    self.assertEqual(False, document.is_vote)
     self.assertEqual(9, document.consensus_method)
     self.assertEqual([], document.consensus_methods)
     self.assertEqual(None, document.published)
@@ -134,7 +135,8 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     self.assertEqual((), document.routers)
     self.assertEqual("3", document.version)
-    self.assertEqual("vote", document.vote_status)
+    self.assertEqual(False, document.is_consensus)
+    self.assertEqual(True, document.is_vote)
     self.assertEqual(None, document.consensus_method)
     self.assertEqual([9], document.consensus_methods)
     self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.published)
@@ -216,7 +218,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
   
   def test_invalid_version(self):
     """
-    Try parsing a different document version with the v3 parser.
+    Parses a different document version with the v3 parser.
     """
     
     content = get_network_status_document({"network-status-version": "4"})
@@ -224,4 +226,23 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     document = NetworkStatusDocument(content, False)
     self.assertEquals("4", document.version)
+  
+  def test_invalid_vote_status(self):
+    """
+    Parses an invalid vote-status field.
+    """
+    
+    test_values = (
+      "",
+      "   ",
+      "votee",
+    )
+    
+    for test_value in test_values:
+      content = get_network_status_document({"vote-status": test_value})
+      self.assertRaises(ValueError, NetworkStatusDocument, content)
+      
+      document = NetworkStatusDocument(content, False)
+      self.assertEquals(True, document.is_consensus)
+      self.assertEquals(False, document.is_vote)
 

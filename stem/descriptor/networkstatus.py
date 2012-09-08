@@ -199,7 +199,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   :var tuple routers: RouterStatusEntry contained in the document
   
   :var str version: **\*** document version
-  :var str vote_status: **\*** status of the vote (is either "vote" or "consensus")
+  :var bool is_consensus: **\*** true if the document is a consensus
+  :var bool is_vote: **\*** true if the document is a vote
   :var int consensus_method: **~** consensus method used to generate a consensus
   :var list consensus_methods: **^** A list of supported consensus generation methods (integers)
   :var datetime published: **^** time when the document was published
@@ -237,7 +238,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     self.directory_signatures = []
     
     self.version = None
-    self.vote_status = None
+    self.is_consensus = True
+    self.is_vote = False
     self.consensus_methods = []
     self.published = None
     self.consensus_method = None
@@ -293,19 +295,6 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     all_entries.update(header_entries)
     all_entries.update(footer_entries)
     
-    if 'vote-status' in header_entries:
-      is_consensus = header_entries['vote-status'][0][0] == "consensus"
-      is_vote = not is_consensus
-    else:
-      if validate:
-        raise ValueError("Network status documents must have a 'vote-status' line to say if they're a vote or consensus")
-      
-      is_consensus, is_vote = True, False
-    
-    if validate:
-      self._check_for_missing_and_disallowed_fields(is_consensus, header_entries, footer_entries)
-      self._check_for_misordered_fields(is_consensus, header_entries, footer_entries)
-    
     known_fields = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS + FOOTER_STATUS_DOCUMENT_FIELDS]
     content = header + '\n' + footer
     
@@ -330,6 +319,22 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         
         if validate and self.version != "3":
           raise ValueError("Expected a version 3 network status documents, got version '%s' instead" % self.version)
+      elif keyword == 'vote-status':
+        # "vote-status" type
+        
+        if value == 'consensus':
+          self.is_consensus, self.is_vote = True, False
+        elif value == 'vote':
+          self.is_consensus, self.is_vote = False, True
+        elif validate:
+          raise ValueError("A network status document's vote-status line can only be 'consensus' or 'vote', got '%s' instead" % value)
+    
+    # doing this validation afterward so we know our 'is_consensus' and
+    # 'is_vote' attributes
+    
+    if validate:
+      self._check_for_missing_and_disallowed_fields(header_entries, footer_entries)
+      self._check_for_misordered_fields(header_entries, footer_entries)
   
   def _parse_old(self, raw_content, validate):
     # preamble
@@ -338,14 +343,9 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     # ignore things the parse() method handles
     _read_keyword_line("network-status-version", content, False, True)
+    _read_keyword_line("vote-status", content, False, True)
     
-    
-    map(read_keyword_line, ["vote-status"])
-    
-    vote = False
-    if self.vote_status == "vote": vote = True
-    elif self.vote_status == "consensus": vote = False
-    elif validate: raise ValueError("Unrecognized vote-status")
+    vote = self.is_vote
     
     if vote:
       read_keyword_line("consensus-methods", True)
@@ -431,30 +431,28 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     else:
       self.unrecognized_lines = []
   
-  def _check_for_missing_and_disallowed_fields(self, is_consensus, header_entries, footer_entries):
+  def _check_for_missing_and_disallowed_fields(self, header_entries, footer_entries):
     """
     Checks that we have mandatory fields for our type, and that we don't have
     any fields exclusive to the other (ie, no vote-only fields appear in a
     consensus or vice versa).
     
-    :param bool is_consensus: true if we're a conensus and false if we're a vote
     :param dict header_entries: ordered keyword/value mappings of the header
     :param dict footer_entries: ordered keyword/value mappings of the footer
     
     :raises: ValueError if we're missing mandatory fields or have fiels we shouldn't
     """
     
-    is_vote = not is_consensus # aliasing inverse for readability
     missing_fields, disallowed_fields = [], []
     
     for entries, fields in ((header_entries, HEADER_STATUS_DOCUMENT_FIELDS),\
                             (footer_entries, FOOTER_STATUS_DOCUMENT_FIELDS)):
       for field, in_votes, in_consensus, mandatory in fields:
-        if mandatory and ((is_consensus and in_consensus) or (is_vote and in_votes)):
+        if mandatory and ((self.is_consensus and in_consensus) or (self.is_vote and in_votes)):
           # mandatory field, check that we have it
           if not field in entries.keys():
             missing_fields.append(field)
-        elif (is_consensus and not in_consensus) or (is_vote and not in_votes):
+        elif (self.is_consensus and not in_consensus) or (self.is_vote and not in_votes):
           # field we shouldn't have, check that we don't
           if field in entries.keys():
             disallowed_fields.append(field)
@@ -465,7 +463,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     if disallowed_fields:
       raise ValueError("Network status document has fields that shouldn't appear in this document type: %s" % ', '.join(disallowed_fields))
   
-  def _check_for_misordered_fields(self, is_consensus, header_entries, footer_entries):
+  def _check_for_misordered_fields(self, header_entries, footer_entries):
     """
     To be valid a network status document's fiends need to appear in a specific
     order. Checks that known fields appear in that order (unrecognized fields
@@ -824,10 +822,10 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
         
         m_comp = value.split(" ")
         
-        if not (self.document and self.document.vote_status == "vote"):
+        if not (self.document and self.document.is_vote):
           if not validate: continue
           
-          vote_status = self.document.vote_status if self.document else "<undefined document>"
+          vote_status = "vote" if self.document else "<undefined document>"
           raise ValueError("Router status entry's 'm' line should only appear in votes (appeared in a %s): %s" % (vote_status, line))
         elif len(m_comp) < 1:
           if not validate: continue
@@ -870,7 +868,8 @@ class MicrodescriptorConsensus(NetworkStatusDocument):
   A v3 microdescriptor consensus.
   
   :var str version: **\*** a document format version. For v3 microdescriptor consensuses this is "3 microdesc"
-  :var str vote_status: **\*** status of the vote (is "consensus")
+  :var bool is_consensus: **\*** true if the document is a consensus
+  :var bool is_vote: **\*** true if the document is a vote
   :var int consensus_method: **~** consensus method used to generate a consensus
   :var datetime valid_after: **\*** time when the consensus becomes valid
   :var datetime fresh_until: **\*** time until when the consensus is considered to be fresh
