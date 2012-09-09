@@ -328,6 +328,17 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
           self.is_consensus, self.is_vote = False, True
         elif validate:
           raise ValueError("A network status document's vote-status line can only be 'consensus' or 'vote', got '%s' instead" % value)
+      elif keyword == 'consensus-methods':
+        # "consensus-methods" IntegerList
+        
+        for entry in value.split(" "):
+          if entry.isdigit():
+            self.consensus_methods.append(int(entry))
+          elif validate:
+            raise ValueError("A network status document's consensus-methods must be a list of integer values, but was '%s'" % value)
+        
+        if validate and not (1 in self.consensus_methods):
+          raise ValueError("Network status votes must include consensus-method version 1")
     
     # doing this validation afterward so we know our 'is_consensus' and
     # 'is_vote' attributes
@@ -344,17 +355,11 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     # ignore things the parse() method handles
     _read_keyword_line("network-status-version", content, False, True)
     _read_keyword_line("vote-status", content, False, True)
+    _read_keyword_line("consensus-methods", content, False, True)
     
     vote = self.is_vote
     
     if vote:
-      read_keyword_line("consensus-methods", True)
-      
-      if self.consensus_methods:
-        self.consensus_methods = [int(method) for method in self.consensus_methods.split(" ")]
-      else:
-        self.consensus_methods = []
-      
       line = _read_keyword_line("published", content, validate, True)
       
       if line:

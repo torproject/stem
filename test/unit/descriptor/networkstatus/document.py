@@ -10,7 +10,7 @@ from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_
 NETWORK_STATUS_DOCUMENT_ATTR = {
   "network-status-version": "3",
   "vote-status": "consensus",
-  "consensus-methods": "9",
+  "consensus-methods": "1 9",
   "consensus-method": "9",
   "published": "2012-09-02 22:00:00",
   "valid-after": "2012-09-02 22:00:00",
@@ -138,7 +138,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual(False, document.is_consensus)
     self.assertEqual(True, document.is_vote)
     self.assertEqual(None, document.consensus_method)
-    self.assertEqual([9], document.consensus_methods)
+    self.assertEqual([1, 9], document.consensus_methods)
     self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.published)
     self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.valid_after)
     self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.fresh_until)
@@ -245,4 +245,25 @@ class TestNetworkStatusDocument(unittest.TestCase):
       document = NetworkStatusDocument(content, False)
       self.assertEquals(True, document.is_consensus)
       self.assertEquals(False, document.is_vote)
+  
+  def test_invalid_consensus_methods(self):
+    """
+    Parses an invalid consensus-methods field.
+    """
+    
+    test_values = (
+      ("", []),
+      ("   ", []),
+      ("1 2 3 a 5", [1, 2, 3, 5]),
+      ("1 2 3 4.0 5", [1, 2, 3, 5]),
+      ("2 3 4", [2, 3, 4]), # spec says version one must be included
+    )
+    
+    for test_value, expected_consensus_methods in test_values:
+      content = get_network_status_document({"vote-status": "vote", "consensus-methods": test_value})
+      self.assertRaises(ValueError, NetworkStatusDocument, content)
+      
+      document = NetworkStatusDocument(content, False)
+      self.assertEquals(expected_consensus_methods, document.consensus_methods)
+
 
