@@ -309,4 +309,25 @@ class TestNetworkStatusDocument(unittest.TestCase):
         
         document = NetworkStatusDocument(content, False)
         self.assertEquals(None, getattr(document, attr))
+  
+  def test_invalid_voting_delay(self):
+    """
+    Parses an invalid voting-delay field.
+    """
+    
+    test_values = (
+      "",
+      "   ",
+      "1 a",
+      "1\t2",
+      "1 2.0",
+    )
+    
+    for test_value in test_values:
+      content = get_network_status_document({"voting-delay": test_value})
+      self.assertRaises(ValueError, NetworkStatusDocument, content)
+      
+      document = NetworkStatusDocument(content, False)
+      self.assertEquals(None, document.vote_delay)
+      self.assertEquals(None, document.dist_delay)
 

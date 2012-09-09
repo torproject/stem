@@ -361,6 +361,16 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         except ValueError:
           if validate:
             raise ValueError("Network status document's '%s' time wasn't parseable: %s" % (keyword, value))
+      elif keyword == "voting-delay":
+        # "voting-delay" VoteSeconds DistSeconds
+        
+        value_comp = value.split(' ')
+        
+        if len(value_comp) == 2 and value_comp[0].isdigit() and value_comp[1].isdigit():
+          self.vote_delay = int(value_comp[0])
+          self.dist_delay = int(value_comp[1])
+        elif validate:
+          raise ValueError("A network status document's 'voting-delay' line must be a pair of integer values, but was '%s'" % value)
     
     # doing this validation afterward so we know our 'is_consensus' and
     # 'is_vote' attributes
@@ -383,13 +393,9 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     _read_keyword_line("valid-after", content, False, True)
     _read_keyword_line("fresh-until", content, False, True)
     _read_keyword_line("valid-until", content, False, True)
+    _read_keyword_line("voting-delay", content, False, True)
     
     vote = self.is_vote
-    
-    voting_delay = _read_keyword_line("voting-delay", content, validate)
-    
-    if voting_delay:
-      self.vote_delay, self.dist_delay = [int(delay) for delay in voting_delay.split(" ")]
     
     client_versions = _read_keyword_line("client-versions", content, validate, True)
     if client_versions:
