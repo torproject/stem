@@ -52,7 +52,6 @@ except:
 import stem.descriptor
 import stem.version
 import stem.exit_policy
-import stem.util.enum
 import stem.util.tor_tools
 
 from stem.descriptor import _read_until_keywords, _peek_keyword, _strptime
@@ -60,21 +59,6 @@ from stem.descriptor import _read_keyword_line, _read_keyword_line_str, _get_pse
 
 _bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in ["bd",
   "be", "bg", "bm", "db", "eb", "ed", "ee", "eg", "em", "gb", "gd", "gg", "gm", "mb", "md", "me", "mg", "mm"]]))
-
-Flag = stem.util.enum.Enum(
-  ("AUTHORITY", "Authority"),
-  ("BADEXIT", "BadExit"),
-  ("EXIT", "Exit"),
-  ("FAST", "Fast"),
-  ("GUARD", "Guard"),
-  ("HSDIR", "HSDir"),
-  ("NAMED", "Named"),
-  ("RUNNING", "Running"),
-  ("STABLE", "Stable"),
-  ("UNNAMED", "Unnamed"),
-  ("V2DIR", "V2Dir"),
-  ("VALID", "Valid"),
-)
 
 # Network status document are either a 'vote' or 'consensus', with different
 # mandatory fields for each. Both though require that their fields appear in a
@@ -383,6 +367,11 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
           except ValueError:
             if validate:
               raise ValueError("Network status document's '%s' line had '%s', which isn't a parseable tor version: %s" % (keyword, entry, line))
+      elif keyword == "known-flags":
+        # "known-flags" FlagList
+        
+        # simply fetches the entries, excluding empty strings
+        self.known_flags = [entry for entry in value.split(" ") if entry]
     
     # doing this validation afterward so we know our 'is_consensus' and
     # 'is_vote' attributes
@@ -408,13 +397,9 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     _read_keyword_line("voting-delay", content, False, True)
     _read_keyword_line("client-versions", content, False, True)
     _read_keyword_line("server-versions", content, False, True)
+    _read_keyword_line("known-flags", content, False, True)
     
     vote = self.is_vote
-    
-    flags_content = _read_keyword_line("known-flags", content, validate)
-    
-    if flags_content:
-      self.known_flags = flags_content.split(" ")
     
     read_keyword_line("params", True)
     if self.params:

@@ -27,11 +27,28 @@ import re
 import datetime
 import collections
 
+import stem.util.enum
+
 KEYWORD_CHAR    = "a-zA-Z0-9-"
 WHITESPACE      = " \t"
 KEYWORD_LINE    = re.compile("^([%s]+)(?:[%s]+(.*))?$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END   = "-----END %s-----"
+
+Flag = stem.util.enum.Enum(
+  ("AUTHORITY", "Authority"),
+  ("BADEXIT", "BadExit"),
+  ("EXIT", "Exit"),
+  ("FAST", "Fast"),
+  ("GUARD", "Guard"),
+  ("HSDIR", "HSDir"),
+  ("NAMED", "Named"),
+  ("RUNNING", "Running"),
+  ("STABLE", "Stable"),
+  ("UNNAMED", "Unnamed"),
+  ("V2DIR", "V2Dir"),
+  ("VALID", "Valid"),
+)
 
 def parse_file(path, descriptor_file):
   """

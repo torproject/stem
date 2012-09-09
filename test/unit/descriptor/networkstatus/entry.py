@@ -5,7 +5,8 @@ Unit tests for the RouterStatusEntry of stem.descriptor.networkstatus.
 import datetime
 import unittest
 
-from stem.descriptor.networkstatus import Flag, RouterStatusEntry, _decode_fingerprint
+from stem.descriptor import Flag
+from stem.descriptor.networkstatus import RouterStatusEntry, _decode_fingerprint
 from stem.version import Version
 from stem.exit_policy import MicrodescriptorExitPolicy
 

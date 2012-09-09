@@ -11,6 +11,7 @@ import unittest
 
 import stem.exit_policy
 import stem.version
+import stem.descriptor
 import stem.descriptor.networkstatus
 import test.integ.descriptor
 
@@ -47,7 +48,7 @@ class TestNetworkStatus(unittest.TestCase):
         
         # check if there's any unknown flags
         for flag in desc.flags:
-          if not flag in stem.descriptor.networkstatus.Flag:
+          if not flag in stem.descriptor.Flag:
             # TODO: this should be a special 'new capability' check later
             # rather than failing the tests
             raise ValueError("Unrecognized flag type: %s, found on relay %s (%s)" % (flag, desc.fingerprint, desc.nickname))

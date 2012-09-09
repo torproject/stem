@@ -6,7 +6,8 @@ import datetime
 import unittest
 
 import stem.version
-from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, Flag, NetworkStatusDocument, DirectorySignature
+from stem.descriptor import Flag
+from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, NetworkStatusDocument, DirectorySignature
 
 NETWORK_STATUS_DOCUMENT_ATTR = {
   "network-status-version": "3",
@@ -354,4 +355,25 @@ class TestNetworkStatusDocument(unittest.TestCase):
         
         document = NetworkStatusDocument(content, False)
         self.assertEquals(expected_value, getattr(document, attr))
+  
+  def test_known_flags(self):
+    """
+    Parses some known-flag entries. Just exercising the field, there's not much
+    to test here.
+    """
+    
+    test_values = (
+      ("", []),
+      ("   ", []),
+      ("BadExit", [Flag.BADEXIT]),
+      ("BadExit ", [Flag.BADEXIT]),
+      ("BadExit   ", [Flag.BADEXIT]),
+      ("BadExit Fast", [Flag.BADEXIT, Flag.FAST]),
+      ("BadExit Unrecognized Fast", [Flag.BADEXIT, "Unrecognized", Flag.FAST]),
+    )
+    
+    for test_value, expected_value in test_values:
+      content = get_network_status_document({"known-flags": test_value})
+      document = NetworkStatusDocument(content)
+      self.assertEquals(expected_value, document.known_flags)
 
