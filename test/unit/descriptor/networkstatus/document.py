@@ -267,6 +267,12 @@ class TestNetworkStatusDocument(unittest.TestCase):
       
       document = NetworkStatusDocument(content, False)
       self.assertEquals(expected_consensus_methods, document.consensus_methods)
+    
+    # check that we default to including consensus-method 1
+    content = get_network_status_document({"vote-status": "vote"}, ("consensus-methods",))
+    document = NetworkStatusDocument(content)
+    self.assertEquals([1], document.consensus_methods)
+    self.assertEquals(None, document.consensus_method)
   
   def test_invalid_consensus_method(self):
     """
@@ -286,7 +292,13 @@ class TestNetworkStatusDocument(unittest.TestCase):
       self.assertRaises(ValueError, NetworkStatusDocument, content)
       
       document = NetworkStatusDocument(content, False)
-      self.assertEquals(None, document.consensus_method)
+      self.assertEquals(1, document.consensus_method)
+    
+    # check that we default to being consensus-method 1
+    content = get_network_status_document(exclude = ("consensus-method",))
+    document = NetworkStatusDocument(content)
+    self.assertEquals(1, document.consensus_method)
+    self.assertEquals([], document.consensus_methods)
   
   def test_invalid_time_fields(self):
     """

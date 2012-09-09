@@ -305,21 +305,30 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
           raise ValueError("Expected a version 3 network status documents, got version '%s' instead" % self.version)
       elif keyword == 'vote-status':
         # "vote-status" type
+        #
+        # The consensus-method and consensus-methods fields are optional since
+        # they weren't included in version 1. Setting a default now that we
+        # know if we're a vote or not.
         
         if value == 'consensus':
           self.is_consensus, self.is_vote = True, False
+          self.consensus_method = 1
         elif value == 'vote':
           self.is_consensus, self.is_vote = False, True
+          self.consensus_methods = [1]
         elif validate:
           raise ValueError("A network status document's vote-status line can only be 'consensus' or 'vote', got '%s' instead" % value)
       elif keyword == 'consensus-methods':
         # "consensus-methods" IntegerList
         
+        consensus_methods = []
         for entry in value.split(" "):
           if entry.isdigit():
-            self.consensus_methods.append(int(entry))
+            consensus_methods.append(int(entry))
           elif validate:
             raise ValueError("A network status document's consensus-methods must be a list of integer values, but was '%s'" % value)
+        
+        self.consensus_methods = consensus_methods
         
         if validate and not (1 in self.consensus_methods):
           raise ValueError("Network status votes must include consensus-method version 1")
