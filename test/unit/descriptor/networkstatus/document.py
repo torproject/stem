@@ -265,5 +265,48 @@ class TestNetworkStatusDocument(unittest.TestCase):
       
       document = NetworkStatusDocument(content, False)
       self.assertEquals(expected_consensus_methods, document.consensus_methods)
-
+  
+  def test_invalid_consensus_method(self):
+    """
+    Parses an invalid consensus-method field.
+    """
+    
+    test_values = (
+      "",
+      "   ",
+      "a",
+      "1 2",
+      "2.0",
+    )
+    
+    for test_value in test_values:
+      content = get_network_status_document({"consensus-method": test_value})
+      self.assertRaises(ValueError, NetworkStatusDocument, content)
+      
+      document = NetworkStatusDocument(content, False)
+      self.assertEquals(None, document.consensus_method)
+  
+  def test_invalid_time_fields(self):
+    """
+    Parses invalid published, valid-after, fresh-until, and valid-until fields.
+    All are simply datetime values.
+    """
+    
+    test_values = (
+      "",
+      "   ",
+      "2012-12-12",
+      "2012-12-12 01:01:",
+      "2012-12-12 01:a1:01",
+    )
+    
+    for field in ('published', 'valid-after', 'fresh-until', 'valid-until'):
+      attr = field.replace('-', '_')
+      
+      for test_value in test_values:
+        content = get_network_status_document({"vote-status": "vote", field: test_value})
+        self.assertRaises(ValueError, NetworkStatusDocument, content)
+        
+        document = NetworkStatusDocument(content, False)
+        self.assertEquals(None, getattr(document, attr))
 

@@ -339,6 +339,28 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         
         if validate and not (1 in self.consensus_methods):
           raise ValueError("Network status votes must include consensus-method version 1")
+      elif keyword == 'consensus-method':
+        # "consensus-method" Integer
+        
+        if value.isdigit():
+          self.consensus_method = int(value)
+        elif validate:
+          raise ValueError("A network status document's consensus-method must be an integer, but was '%s'" % value)
+      elif keyword in ('published', 'valid-after', 'fresh-until', 'valid-until'):
+        try:
+          date_value = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+          
+          if keyword == 'published':
+            self.published = date_value
+          elif keyword == 'valid-after':
+            self.valid_after = date_value
+          elif keyword == 'fresh-until':
+            self.fresh_until = date_value
+          elif keyword == 'valid-until':
+            self.valid_until = date_value
+        except ValueError:
+          if validate:
+            raise ValueError("Network status document's '%s' time wasn't parseable: %s" % (keyword, value))
     
     # doing this validation afterward so we know our 'is_consensus' and
     # 'is_vote' attributes
@@ -356,35 +378,13 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     _read_keyword_line("network-status-version", content, False, True)
     _read_keyword_line("vote-status", content, False, True)
     _read_keyword_line("consensus-methods", content, False, True)
+    _read_keyword_line("consensus-method", content, False, True)
+    _read_keyword_line("published", content, False, True)
+    _read_keyword_line("valid-after", content, False, True)
+    _read_keyword_line("fresh-until", content, False, True)
+    _read_keyword_line("valid-until", content, False, True)
     
     vote = self.is_vote
-    
-    if vote:
-      line = _read_keyword_line("published", content, validate, True)
-      
-      if line:
-        self.published = _strptime(line, validate, True)
-    else:
-      read_keyword_line("consensus-method", True)
-      if self.consensus_method != None:
-        self.consensus_method = int(self.consensus_method)
-    
-    map(read_keyword_line, ["valid-after", "fresh-until", "valid-until"])
-    
-    if self.valid_after:
-      self.valid_after = _strptime(self.valid_after, validate)
-    elif validate:
-      raise ValueError("Missing the 'valid-after' field")
-    
-    if self.fresh_until:
-      self.fresh_until = _strptime(self.fresh_until, validate)
-    elif validate:
-      raise ValueError("Missing the 'fresh-until' field")
-    
-    if self.valid_until:
-      self.valid_until = _strptime(self.valid_until, validate)
-    elif validate:
-      raise ValueError("Missing the 'valid-until' field")
     
     voting_delay = _read_keyword_line("voting-delay", content, validate)
     
