@@ -218,10 +218,15 @@ class TestNetworkStatusDocument(unittest.TestCase):
         self.assertRaises(ValueError, NetworkStatusDocument, content)
         NetworkStatusDocument(content, False) # constructs without validation
   
-  def test_invalid_version(self):
+  def test_version(self):
     """
-    Parses a different document version with the v3 parser.
+    Parses the network-status-version field, including trying to handle a
+    different document version with the v3 parser.
     """
+    
+    content = get_network_status_document({"network-status-version": "3"})
+    document = NetworkStatusDocument(content)
+    self.assertEquals("3", document.version)
     
     content = get_network_status_document({"network-status-version": "4"})
     self.assertRaises(ValueError, NetworkStatusDocument, content)
@@ -229,10 +234,20 @@ class TestNetworkStatusDocument(unittest.TestCase):
     document = NetworkStatusDocument(content, False)
     self.assertEquals("4", document.version)
   
-  def test_invalid_vote_status(self):
+  def test_vote_status(self):
     """
-    Parses an invalid vote-status field.
+    Parses the vote-status field.
     """
+    
+    content = get_network_status_document({"vote-status": "vote"})
+    document = NetworkStatusDocument(content)
+    self.assertEquals(False, document.is_consensus)
+    self.assertEquals(True, document.is_vote)
+    
+    content = get_network_status_document({"vote-status": "consensus"})
+    document = NetworkStatusDocument(content)
+    self.assertEquals(True, document.is_consensus)
+    self.assertEquals(False, document.is_vote)
     
     test_values = (
       "",
@@ -248,10 +263,20 @@ class TestNetworkStatusDocument(unittest.TestCase):
       self.assertEquals(True, document.is_consensus)
       self.assertEquals(False, document.is_vote)
   
-  def test_invalid_consensus_methods(self):
+  def test_consensus_methods(self):
     """
-    Parses an invalid consensus-methods field.
+    Parses the consensus-methods field.
     """
+    
+    content = get_network_status_document({"vote-status": "vote", "consensus-methods": "12 3 1 780"})
+    document = NetworkStatusDocument(content)
+    self.assertEquals([12, 3, 1, 780], document.consensus_methods)
+    
+    # check that we default to including consensus-method 1
+    content = get_network_status_document({"vote-status": "vote"}, ("consensus-methods",))
+    document = NetworkStatusDocument(content)
+    self.assertEquals([1], document.consensus_methods)
+    self.assertEquals(None, document.consensus_method)
     
     test_values = (
       ("", []),
@@ -267,17 +292,21 @@ class TestNetworkStatusDocument(unittest.TestCase):
       
       document = NetworkStatusDocument(content, False)
       self.assertEquals(expected_consensus_methods, document.consensus_methods)
-    
-    # check that we default to including consensus-method 1
-    content = get_network_status_document({"vote-status": "vote"}, ("consensus-methods",))
-    document = NetworkStatusDocument(content)
-    self.assertEquals([1], document.consensus_methods)
-    self.assertEquals(None, document.consensus_method)
   
-  def test_invalid_consensus_method(self):
+  def test_consensus_method(self):
     """
-    Parses an invalid consensus-method field.
+    Parses the consensus-method field.
     """
+    
+    content = get_network_status_document({"consensus-method": "12"})
+    document = NetworkStatusDocument(content)
+    self.assertEquals(12, document.consensus_method)
+    
+    # check that we default to being consensus-method 1
+    content = get_network_status_document(exclude = ("consensus-method",))
+    document = NetworkStatusDocument(content)
+    self.assertEquals(1, document.consensus_method)
+    self.assertEquals([], document.consensus_methods)
     
     test_values = (
       "",
@@ -293,18 +322,29 @@ class TestNetworkStatusDocument(unittest.TestCase):
       
       document = NetworkStatusDocument(content, False)
       self.assertEquals(1, document.consensus_method)
-    
-    # check that we default to being consensus-method 1
-    content = get_network_status_document(exclude = ("consensus-method",))
-    document = NetworkStatusDocument(content)
-    self.assertEquals(1, document.consensus_method)
-    self.assertEquals([], document.consensus_methods)
   
-  def test_invalid_time_fields(self):
+  def test_time_fields(self):
     """
     Parses invalid published, valid-after, fresh-until, and valid-until fields.
     All are simply datetime values.
     """
+    
+    expected = datetime.datetime(2012, 9, 2, 22, 0, 0)
+    test_value = "2012-09-02 22:00:00"
+    
+    content = get_network_status_document({
+      "vote-status": "vote",
+      "published": test_value,
+      "valid-after": test_value,
+      "fresh-until": test_value,
+      "valid-until": test_value,
+    })
+    
+    document = NetworkStatusDocument(content)
+    self.assertEquals(expected, document.published)
+    self.assertEquals(expected, document.valid_after)
+    self.assertEquals(expected, document.fresh_until)
+    self.assertEquals(expected, document.valid_until)
     
     test_values = (
       "",
@@ -324,10 +364,15 @@ class TestNetworkStatusDocument(unittest.TestCase):
         document = NetworkStatusDocument(content, False)
         self.assertEquals(None, getattr(document, attr))
   
-  def test_invalid_voting_delay(self):
+  def test_voting_delay(self):
     """
-    Parses an invalid voting-delay field.
+    Parses the voting-delay field.
     """
+    
+    content = get_network_status_document({"voting-delay": "12 345"})
+    document = NetworkStatusDocument(content)
+    self.assertEquals(12, document.vote_delay)
+    self.assertEquals(345, document.dist_delay)
     
     test_values = (
       "",
@@ -345,11 +390,19 @@ class TestNetworkStatusDocument(unittest.TestCase):
       self.assertEquals(None, document.vote_delay)
       self.assertEquals(None, document.dist_delay)
   
-  def test_invalid_version_lists(self):
+  def test_version_lists(self):
     """
-    Parses invalid client-versions and server-versions fields. Both are comma
-    separated lists of tor versions.
+    Parses client-versions and server-versions fields. Both are comma separated
+    lists of tor versions.
     """
+    
+    expected = [stem.version.Version("1.2.3.4"), stem.version.Version("56.789.12.34-alpha")]
+    test_value = "1.2.3.4,56.789.12.34-alpha"
+    
+    content = get_network_status_document({"client-versions": test_value, "server-versions": test_value})
+    document = NetworkStatusDocument(content)
+    self.assertEquals(expected, document.client_versions)
+    self.assertEquals(expected, document.server_versions)
     
     test_values = (
       ("", []),
