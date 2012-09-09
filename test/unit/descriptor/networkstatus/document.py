@@ -5,6 +5,7 @@ Unit tests for the NetworkStatusDocument of stem.descriptor.networkstatus.
 import datetime
 import unittest
 
+import stem.version
 from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, Flag, NetworkStatusDocument, DirectorySignature
 
 NETWORK_STATUS_DOCUMENT_ATTR = {
@@ -330,4 +331,27 @@ class TestNetworkStatusDocument(unittest.TestCase):
       document = NetworkStatusDocument(content, False)
       self.assertEquals(None, document.vote_delay)
       self.assertEquals(None, document.dist_delay)
+  
+  def test_invalid_version_lists(self):
+    """
+    Parses invalid client-versions and server-versions fields. Both are comma
+    separated lists of tor versions.
+    """
+    
+    test_values = (
+      ("", []),
+      ("   ", []),
+      ("1.2.3.4,", [stem.version.Version("1.2.3.4")]),
+      ("1.2.3.4,1.2.3.a", [stem.version.Version("1.2.3.4")]),
+    )
+    
+    for field in ('client-versions', 'server-versions'):
+      attr = field.replace('-', '_')
+      
+      for test_value, expected_value in test_values:
+        content = get_network_status_document({field: test_value})
+        self.assertRaises(ValueError, NetworkStatusDocument, content)
+        
+        document = NetworkStatusDocument(content, False)
+        self.assertEquals(expected_value, getattr(document, attr))
 

@@ -208,9 +208,9 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   :var datetime fresh_until: **\*** time until when the consensus is considered to be fresh
   :var datetime valid_until: **\*** time until when the consensus is valid
   :var int vote_delay: **\*** number of seconds allowed for collecting votes from all authorities
-  :var int dist_delay: number of seconds allowed for collecting signatures from all authorities
-  :var list client_versions: list of recommended Tor client versions
-  :var list server_versions: list of recommended Tor server versions
+  :var int dist_delay: **\*** number of seconds allowed for collecting signatures from all authorities
+  :var list client_versions: list of recommended client tor versions
+  :var list server_versions: list of recommended server tor versions
   :var list known_flags: **\*** list of known router flags
   :var list params: dict of parameter(str) => value(int) mappings
   :var list directory_authorities: **\*** list of DirectoryAuthority objects that have generated this document
@@ -371,6 +371,18 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
           self.dist_delay = int(value_comp[1])
         elif validate:
           raise ValueError("A network status document's 'voting-delay' line must be a pair of integer values, but was '%s'" % value)
+      elif keyword in ("client-versions", "server-versions"):
+        for entry in value.split(","):
+          try:
+            version_value = stem.version.Version(entry)
+            
+            if keyword == 'client-versions':
+              self.client_versions.append(version_value)
+            elif keyword == 'server-versions':
+              self.server_versions.append(version_value)
+          except ValueError:
+            if validate:
+              raise ValueError("Network status document's '%s' line had '%s', which isn't a parseable tor version: %s" % (keyword, entry, line))
     
     # doing this validation afterward so we know our 'is_consensus' and
     # 'is_vote' attributes
@@ -394,15 +406,10 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     _read_keyword_line("fresh-until", content, False, True)
     _read_keyword_line("valid-until", content, False, True)
     _read_keyword_line("voting-delay", content, False, True)
+    _read_keyword_line("client-versions", content, False, True)
+    _read_keyword_line("server-versions", content, False, True)
     
     vote = self.is_vote
-    
-    client_versions = _read_keyword_line("client-versions", content, validate, True)
-    if client_versions:
-      self.client_versions = [stem.version.Version(version_string) for version_string in client_versions.split(",")]
-    server_versions = _read_keyword_line("server-versions", content, validate, True)
-    if server_versions:
-      self.server_versions = [stem.version.Version(version_string) for version_string in server_versions.split(",")]
     
     flags_content = _read_keyword_line("known-flags", content, validate)
     
