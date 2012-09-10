@@ -116,7 +116,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual([], document.client_versions)
     self.assertEqual([], document.server_versions)
     self.assertEqual(expected_known_flags, document.known_flags)
-    self.assertEqual(None, document.params)
+    self.assertEqual({}, document.params)
     self.assertEqual([], document.directory_authorities)
     self.assertEqual(None, document.bandwidth_weights)
     self.assertEqual([sig], document.directory_signatures)
@@ -150,7 +150,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual([], document.client_versions)
     self.assertEqual([], document.server_versions)
     self.assertEqual(expected_known_flags, document.known_flags)
-    self.assertEqual(None, document.params)
+    self.assertEqual({}, document.params)
     self.assertEqual([], document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
     self.assertEqual([sig], document.directory_signatures)
@@ -441,4 +441,74 @@ class TestNetworkStatusDocument(unittest.TestCase):
       content = get_network_status_document({"known-flags": test_value})
       document = NetworkStatusDocument(content)
       self.assertEquals(expected_value, document.known_flags)
+  
+  def test_params(self):
+    """
+    General testing for the 'params' line, exercising the happy cases.
+    """
+    
+    content = get_network_status_document({"params": "CircuitPriorityHalflifeMsec=30000 bwauthpid=1 unrecognized=-122"})
+    document = NetworkStatusDocument(content)
+    self.assertEquals(30000, document.params["CircuitPriorityHalflifeMsec"])
+    self.assertEquals(1, document.params["bwauthpid"])
+    self.assertEquals(-122, document.params["unrecognized"])
+    
+    # empty params line
+    content = get_network_status_document({"params": ""})
+    document = NetworkStatusDocument(content)
+    self.assertEquals({}, document.params)
+  
+  def test_params_malformed(self):
+    """
+    Parses a 'params' line with malformed content.
+    """
+    
+    test_values = (
+      "foo=",
+      "foo=abc",
+      "foo=+123",
+      "foo=12\tbar=12",
+    )
+    
+    for test_value in test_values:
+      content = get_network_status_document({"params": test_value})
+      self.assertRaises(ValueError, NetworkStatusDocument, content)
+      
+      document = NetworkStatusDocument(content, False)
+      self.assertEquals({}, document.params)
+  
+  def test_params_range(self):
+    """
+    Check both the furthest valid 'params' values and values that are out of
+    bounds.
+    """
+    
+    test_values = (
+      ("foo=2147483648", {"foo": 2147483648}, False),
+      ("foo=-2147483649", {"foo": -2147483649}, False),
+      ("foo=2147483647", {"foo": 2147483647}, True),
+      ("foo=-2147483648", {"foo": -2147483648}, True),
+    )
+    
+    for test_value, expected_value, is_ok in test_values:
+      content = get_network_status_document({"params": test_value})
+      
+      if is_ok:
+        document = NetworkStatusDocument(content)
+      else:
+        self.assertRaises(ValueError, NetworkStatusDocument, content)
+        document = NetworkStatusDocument(content, False)
+      
+      self.assertEquals(expected_value, document.params)
+  
+  def test_params_misordered(self):
+    """
+    Check that the 'params' line is rejected if out of order.
+    """
+    
+    content = get_network_status_document({"params": "unrecognized=-122 bwauthpid=1"})
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    document = NetworkStatusDocument(content, False)
+    self.assertEquals({"unrecognized": -122, "bwauthpid": 1}, document.params)
 

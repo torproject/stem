@@ -196,7 +196,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   :var list client_versions: list of recommended client tor versions
   :var list server_versions: list of recommended server tor versions
   :var list known_flags: **\*** list of known router flags
-  :var list params: dict of parameter(str) => value(int) mappings
+  :var list params: **\*** dict of parameter(str) => value(int) mappings
   :var list directory_authorities: **\*** list of DirectoryAuthority objects that have generated this document
   :var dict bandwidth_weights: **~** dict of weight(str) => value(int) mappings
   :var list directory_signatures: **\*** list of signatures this document has
@@ -381,6 +381,49 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         
         # simply fetches the entries, excluding empty strings
         self.known_flags = [entry for entry in value.split(" ") if entry]
+      elif keyword == "params":
+        # "params" [Parameters]
+        # Parameter ::= Keyword '=' Int32
+        # Int32 ::= A decimal integer between -2147483648 and 2147483647.
+        # Parameters ::= Parameter | Parameters SP Parameter
+        
+        # should only appear in consensus-method 7 or later
+        if validate and not (self.consensus_method >= 7 or filter(lambda x: x >= 7, self.consensus_methods)):
+          raise ValueError("A network status document's 'params' line should only appear in consensus-method 7 or later")
+        
+        # skip if this is a blank line
+        if value == "": continue
+        
+        for entry in value.split(" "):
+          try:
+            if not '=' in entry:
+              raise ValueError("must only have 'key=value' entries")
+            
+            entry_key, entry_value = entry.split("=", 1)
+            
+            try:
+              # the int() function accepts things like '+123', but we don't want to
+              if entry_value.startswith('+'):
+                raise ValueError()
+              
+              entry_value = int(entry_value)
+            except ValueError:
+              raise ValueError("'%s' is a non-numeric value" % entry_value)
+            
+            if validate:
+              # check int32 range
+              if entry_value < -2147483648 or entry_value > 2147483647:
+                raise ValueError("values must be between -2147483648 and 2147483647")
+              
+              # parameters should be in ascending order by their key
+              for prior_key in self.params:
+                if prior_key > entry_key:
+                  raise ValueError("parameters must be sorted by their key")
+            
+            self.params[entry_key] = entry_value
+          except ValueError, exc:
+            if not validate: continue
+            raise ValueError("Unable to parse network status document's 'params' line (%s): %s'" % (exc, line))
     
     # doing this validation afterward so we know our 'is_consensus' and
     # 'is_vote' attributes
@@ -407,12 +450,9 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     _read_keyword_line("client-versions", content, False, True)
     _read_keyword_line("server-versions", content, False, True)
     _read_keyword_line("known-flags", content, False, True)
+    _read_keyword_line("params", content, False, True)
     
     vote = self.is_vote
-    
-    read_keyword_line("params", True)
-    if self.params:
-      self.params = dict([(param.split("=")[0], int(param.split("=")[1])) for param in self.params.split(" ")])
     
     # authority section
     while _peek_keyword(content) == "dir-source":
