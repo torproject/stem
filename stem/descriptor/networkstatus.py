@@ -88,6 +88,19 @@ FOOTER_STATUS_DOCUMENT_FIELDS = (
   ("directory-signature", True, True, True),
 )
 
+DEFAULT_PARAMS = {
+  "cbtdisabled": 0,
+  "cbtnummodes": 3,
+  "cbtrecentcount": 20,
+  "cbtmaxtimeouts": 18,
+  "cbtmincircs": 100,
+  "cbtquantile": 80,
+  "cbtclosequantile": 95,
+  "cbttestfreq": 60,
+  "cbtmintimeout": 2000,
+  "cbtinitialtimeout": 60000,
+}
+
 def parse_file(document_file, validate = True, is_microdescriptor = False):
   """
   Parses a network status and iterates over the RouterStatusEntry or
@@ -206,12 +219,13 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   | **~** attribute appears only in consensuses
   """
   
-  def __init__(self, raw_content, validate = True):
+  def __init__(self, raw_content, validate = True, default_params = True):
     """
     Parse a v3 network status document and provide a new NetworkStatusDocument object.
     
     :param str raw_content: raw network status document data
     :param bool validate: True if the document is to be validated, False otherwise
+    :param bool default_params: includes defaults in our params dict, otherwise it just contains values from the document
     
     :raises: ValueError if the document is invalid
     """
@@ -235,7 +249,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     self.client_versions = []
     self.server_versions = []
     self.known_flags = []
-    self.params = {}
+    self.params = dict(DEFAULT_PARAMS) if default_params else {}
     self.bandwidth_weights = {}
     
     document_file = StringIO(raw_content)
@@ -394,6 +408,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         # skip if this is a blank line
         if value == "": continue
         
+        seen_keys = []
         for entry in value.split(" "):
           try:
             if not '=' in entry:
@@ -411,19 +426,19 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
               raise ValueError("'%s' is a non-numeric value" % entry_value)
             
             if validate:
-              # check int32 range
-              if entry_value < -2147483648 or entry_value > 2147483647:
-                raise ValueError("values must be between -2147483648 and 2147483647")
-              
               # parameters should be in ascending order by their key
-              for prior_key in self.params:
+              for prior_key in seen_keys:
                 if prior_key > entry_key:
                   raise ValueError("parameters must be sorted by their key")
             
             self.params[entry_key] = entry_value
+            seen_keys.append(entry_key)
           except ValueError, exc:
             if not validate: continue
             raise ValueError("Unable to parse network status document's 'params' line (%s): %s'" % (exc, line))
+        
+        if validate:
+          self._check_params_constraints()
     
     # doing this validation afterward so we know our 'is_consensus' and
     # 'is_vote' attributes
@@ -544,6 +559,47 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         actual_label = ', '.join(actual)
         expected_label = ', '.join(expected)
         raise ValueError("The fields in the document's %s are misordered. It should be '%s' but was '%s'" % (label, actual_label, expected_label))
+  
+  def _check_params_constraints(self):
+    """
+    Checks that the params we know about are within their documented ranges.
+    """
+    
+    for key, value in self.params.items():
+      # all parameters are constrained to int32 range
+      minimum, maximum = -2147483648, 2147483647
+      
+      if key == "circwindow":
+        minimum, maximum = 100, 1000
+      elif key == "CircuitPriorityHalflifeMsec":
+        minimum = -1
+      elif key in ("perconnbwrate", "perconnbwburst"):
+        minimum = 1
+      elif key == "refuseunknownexits":
+        minimum, maximum = 0, 1
+      elif key == "cbtdisabled":
+        minimum, maximum = 0, 1
+      elif key == "cbtnummodes":
+        minimum, maximum = 1, 20
+      elif key == "cbtrecentcount":
+        minimum, maximum = 3, 1000
+      elif key == "cbtmaxtimeouts":
+        minimum, maximum = 3, 10000
+      elif key == "cbtmincircs":
+        minimum, maximum = 1, 10000
+      elif key == "cbtquantile":
+        minimum, maximum = 10, 99
+      elif key == "cbtclosequantile":
+        minimum, maximum = self.params.get("cbtquantile", minimum), 99
+      elif key == "cbttestfreq":
+        minimum = 1
+      elif key == "cbtmintimeout":
+        minimum = 500
+      elif key == "cbtinitialtimeout":
+        minimum = self.params.get("cbtmintimeout", minimum)
+      
+      if value < minimum or value > maximum:
+        raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
 
 class DirectoryAuthority(stem.descriptor.Descriptor):
   """

@@ -7,7 +7,7 @@ import unittest
 
 import stem.version
 from stem.descriptor import Flag
-from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, NetworkStatusDocument, DirectorySignature
+from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, NetworkStatusDocument, DirectorySignature
 
 NETWORK_STATUS_DOCUMENT_ATTR = {
   "network-status-version": "3",
@@ -116,7 +116,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual([], document.client_versions)
     self.assertEqual([], document.server_versions)
     self.assertEqual(expected_known_flags, document.known_flags)
-    self.assertEqual({}, document.params)
+    self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual([], document.directory_authorities)
     self.assertEqual(None, document.bandwidth_weights)
     self.assertEqual([sig], document.directory_signatures)
@@ -150,7 +150,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual([], document.client_versions)
     self.assertEqual([], document.server_versions)
     self.assertEqual(expected_known_flags, document.known_flags)
-    self.assertEqual({}, document.params)
+    self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual([], document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
     self.assertEqual([sig], document.directory_signatures)
@@ -455,7 +455,11 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     # empty params line
     content = get_network_status_document({"params": ""})
-    document = NetworkStatusDocument(content)
+    document = NetworkStatusDocument(content, default_params = True)
+    self.assertEquals(DEFAULT_PARAMS, document.params)
+    
+    content = get_network_status_document({"params": ""})
+    document = NetworkStatusDocument(content, default_params = False)
     self.assertEquals({}, document.params)
   
   def test_params_malformed(self):
@@ -475,7 +479,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
       self.assertRaises(ValueError, NetworkStatusDocument, content)
       
       document = NetworkStatusDocument(content, False)
-      self.assertEquals({}, document.params)
+      self.assertEquals(DEFAULT_PARAMS, document.params)
   
   def test_params_range(self):
     """
@@ -488,16 +492,25 @@ class TestNetworkStatusDocument(unittest.TestCase):
       ("foo=-2147483649", {"foo": -2147483649}, False),
       ("foo=2147483647", {"foo": 2147483647}, True),
       ("foo=-2147483648", {"foo": -2147483648}, True),
+      
+      # param with special range constraints
+      ("circwindow=99", {"circwindow": 99}, False),
+      ("circwindow=1001", {"circwindow": 1001}, False),
+      ("circwindow=500", {"circwindow": 500}, True),
+      
+      # param that relies on another param for its constraints
+      ("cbtclosequantile=79 cbtquantile=80", {"cbtclosequantile": 79, "cbtquantile": 80}, False),
+      ("cbtclosequantile=80 cbtquantile=80", {"cbtclosequantile": 80, "cbtquantile": 80}, True),
     )
     
     for test_value, expected_value, is_ok in test_values:
       content = get_network_status_document({"params": test_value})
       
       if is_ok:
-        document = NetworkStatusDocument(content)
+        document = NetworkStatusDocument(content, default_params = False)
       else:
         self.assertRaises(ValueError, NetworkStatusDocument, content)
-        document = NetworkStatusDocument(content, False)
+        document = NetworkStatusDocument(content, False, default_params = False)
       
       self.assertEquals(expected_value, document.params)
   
@@ -509,6 +522,6 @@ class TestNetworkStatusDocument(unittest.TestCase):
     content = get_network_status_document({"params": "unrecognized=-122 bwauthpid=1"})
     self.assertRaises(ValueError, NetworkStatusDocument, content)
     
-    document = NetworkStatusDocument(content, False)
+    document = NetworkStatusDocument(content, False, default_params = False)
     self.assertEquals({"unrecognized": -122, "bwauthpid": 1}, document.params)
 
