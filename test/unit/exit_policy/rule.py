@@ -128,7 +128,7 @@ class TestExitPolicyRule(unittest.TestCase):
       self.assertEquals(masked_bits, rule.masked_bits)
   
   def test_invalid_ipv4_addresses(self):
-    test_inputs = {
+    test_inputs = (
       "256.0.0.0",
       "-1.0.0.0",
       "0.0.0",
@@ -136,7 +136,7 @@ class TestExitPolicyRule(unittest.TestCase):
       "0.0.0.a",
       "127.0.0.1/-1",
       "127.0.0.1/33",
-    }
+    )
     
     for rule_addr in test_inputs:
       self.assertRaises(ValueError, ExitPolicyRule, "accept %s:*" % rule_addr)
