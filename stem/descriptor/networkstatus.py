@@ -88,6 +88,8 @@ FOOTER_STATUS_DOCUMENT_FIELDS = (
   ("directory-signature", True, True, True),
 )
 
+ALL_FIELDS = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS + FOOTER_STATUS_DOCUMENT_FIELDS]
+
 DEFAULT_PARAMS = {
   "cbtdisabled": 0,
   "cbtnummodes": 3,
@@ -289,22 +291,16 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     header_entries = stem.descriptor._get_descriptor_components(header, validate)[0]
     footer_entries = stem.descriptor._get_descriptor_components(footer, validate)[0]
     
-    all_entries = dict()
-    all_entries.update(header_entries)
-    all_entries.update(footer_entries)
-    
-    known_fields = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS + FOOTER_STATUS_DOCUMENT_FIELDS]
-    content = header + '\n' + footer
-    
-    for keyword, values in all_entries.items():
+    for keyword, values in header_entries.items() + footer_entries.items():
       value, block_contents = values[0]
       line = "%s %s" % (keyword, value)
       
       # All known fields can only appear once except...
       # * 'directory-signature' in a consensus
       
-      if validate and len(values) > 1 and keyword in known_fields:
+      if validate and len(values) > 1 and keyword in ALL_FIELDS:
         if not (keyword == 'directory-signature' and is_consensus):
+          content = header + '\n' + footer
           raise ValueError("Network status documents can only have a single '%s' line, got %i:\n%s" % (keyword, len(values), content))
       
       if keyword == 'network-status-version':
