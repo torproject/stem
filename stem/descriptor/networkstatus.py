@@ -57,9 +57,6 @@ import stem.util.tor_tools
 from stem.descriptor import _read_until_keywords, _peek_keyword, _strptime
 from stem.descriptor import _read_keyword_line, _read_keyword_line_str, _get_pseudo_pgp_block, _peek_line
 
-_bandwidth_weights_regex = re.compile(" ".join(["W%s=\d+" % weight for weight in ["bd",
-  "be", "bg", "bm", "db", "eb", "ed", "ee", "eg", "em", "gb", "gd", "gg", "gm", "mb", "md", "me", "mg", "mm"]]))
-
 # Network status document are either a 'vote' or 'consensus', with different
 # mandatory fields for each. Both though require that their fields appear in a
 # specific order. This is an ordered listing of the following...
@@ -84,7 +81,7 @@ HEADER_STATUS_DOCUMENT_FIELDS = (
 
 FOOTER_STATUS_DOCUMENT_FIELDS = (
   ("directory-footer", True, True, True),
-  ("bandwidths-weights", False, True, False),
+  ("bandwidth-weights", False, True, False),
   ("directory-signature", True, True, True),
 )
 
@@ -105,6 +102,14 @@ DEFAULT_PARAMS = {
   "cbtmintimeout": 2000,
   "cbtinitialtimeout": 60000,
 }
+
+BANDWIDTH_WEIGHT_ENTRIES = (
+  "Wbd", "Wbe", "Wbg", "Wbm",
+  "Wdb",
+  "Web", "Wed", "Wee", "Weg", "Wem",
+  "Wgb", "Wgd", "Wgg", "Wgm",
+  "Wmb", "Wmd", "Wme", "Wmg", "Wmm",
+)
 
 def parse_file(document_file, validate = True, is_microdescriptor = False):
   """
@@ -203,12 +208,9 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   :var str version: **\*** document version
   :var bool is_consensus: **\*** true if the document is a consensus
   :var bool is_vote: **\*** true if the document is a vote
-  :var int consensus_method: **~** consensus method used to generate a consensus
-  :var list consensus_methods: **^** A list of supported consensus generation methods (integers)
-  :var datetime published: **^** time when the document was published
-  :var datetime valid_after: **\*** time when the consensus becomes valid
-  :var datetime fresh_until: **\*** time until when the consensus is considered to be fresh
-  :var datetime valid_until: **\*** time until when the consensus is valid
+  :var datetime valid_after: **\*** time when the consensus became valid
+  :var datetime fresh_until: **\*** time when the next consensus should be produced
+  :var datetime valid_until: **\*** time when this consensus becomes obsolete
   :var int vote_delay: **\*** number of seconds allowed for collecting votes from all authorities
   :var int dist_delay: **\*** number of seconds allowed for collecting signatures from all authorities
   :var list client_versions: list of recommended client tor versions
@@ -216,12 +218,17 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   :var list known_flags: **\*** list of known router flags
   :var list params: **\*** dict of parameter(str) => value(int) mappings
   :var list directory_authorities: **\*** list of DirectoryAuthority objects that have generated this document
-  :var dict bandwidth_weights: **~** dict of weight(str) => value(int) mappings
   :var list directory_signatures: **\*** list of signatures this document has
   
-  | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
-  | **^** attribute appears only in votes
-  | **~** attribute appears only in consensuses
+  **Consensus Attributes:**
+  :var int consensus_method: method version used to generate this consensus
+  :var dict bandwidth_weights: dict of weight(str) => value(int) mappings
+  
+  **Vote Attributes:**
+  :var list consensus_methods: list of ints for the supported method versions
+  :var datetime published: time when the document was published
+  
+  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   """
   
   def __init__(self, raw_content, validate = True, default_params = True):
@@ -420,34 +427,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         # skip if this is a blank line
         if value == "": continue
         
-        seen_keys = []
-        for entry in value.split(" "):
-          try:
-            if not '=' in entry:
-              raise ValueError("must only have 'key=value' entries")
-            
-            entry_key, entry_value = entry.split("=", 1)
-            
-            try:
-              # the int() function accepts things like '+123', but we don't want to
-              if entry_value.startswith('+'):
-                raise ValueError()
-              
-              entry_value = int(entry_value)
-            except ValueError:
-              raise ValueError("'%s' is a non-numeric value" % entry_value)
-            
-            if validate:
-              # parameters should be in ascending order by their key
-              for prior_key in seen_keys:
-                if prior_key > entry_key:
-                  raise ValueError("parameters must be sorted by their key")
-            
-            self.params[entry_key] = entry_value
-            seen_keys.append(entry_key)
-          except ValueError, exc:
-            if not validate: continue
-            raise ValueError("Unable to parse network status document's 'params' line (%s): %s'" % (exc, line))
+        self.params.update(self._parse_int_mappings(keyword, value, validate))
         
         if validate:
           self._check_params_constraints()
@@ -456,6 +436,17 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         
         if validate and value:
           raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got '%s'" % line)
+      elif keyword == "bandwidth-weights":
+        self.bandwidth_weights = self._parse_int_mappings(keyword, value, validate)
+        
+        if validate:
+          weight_keys = tuple(sorted(self.bandwidth_weights.keys()))
+          
+          if weight_keys != BANDWIDTH_WEIGHT_ENTRIES:
+            expected_label = ', '.join(BANDWIDTH_WEIGHT_ENTRIES)
+            actual_label = ', '.join(weight_keys)
+            
+            raise ValueError("A network status document's 'bandwidth-weights' entries should be '%s', got '%s'" % (expected_label, actual_label))
     
     # doing this validation afterward so we know our 'is_consensus' and
     # 'is_vote' attributes
@@ -493,11 +484,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       self.directory_authorities.append(DirectoryAuthority(dirauth_data, vote, validate))
     
     _read_keyword_line("directory-footer", content, False, True)
-    
-    if not vote:
-      read_keyword_line("bandwidth-weights", True)
-      if self.bandwidth_weights != None and _bandwidth_weights_regex.match(self.bandwidth_weights):
-        self.bandwidth_weights = dict([(weight.split("=")[0], int(weight.split("=")[1])) for weight in self.bandwidth_weights.split(" ")])
+    _read_keyword_line("bandwidth-weights", content, False, True)
     
     while _peek_keyword(content) == "directory-signature":
       signature_data = _read_until_keywords("directory-signature", content, False, True)
@@ -620,6 +607,42 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       
       if value < minimum or value > maximum:
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
+  
+  def _parse_int_mappings(self, keyword, value, validate):
+    # Parse a series of 'key=value' entries, checking the following:
+    # - values are integers
+    # - keys are sorted in lexical order
+    
+    results, seen_keys = {}, []
+    for entry in value.split(" "):
+      try:
+        if not '=' in entry:
+          raise ValueError("must only have 'key=value' entries")
+        
+        entry_key, entry_value = entry.split("=", 1)
+        
+        try:
+          # the int() function accepts things like '+123', but we don't want to
+          if entry_value.startswith('+'):
+            raise ValueError()
+          
+          entry_value = int(entry_value)
+        except ValueError:
+          raise ValueError("'%s' is a non-numeric value" % entry_value)
+        
+        if validate:
+          # parameters should be in ascending order by their key
+          for prior_key in seen_keys:
+            if prior_key > entry_key:
+              raise ValueError("parameters must be sorted by their key")
+        
+        results[entry_key] = entry_value
+        seen_keys.append(entry_key)
+      except ValueError, exc:
+        if not validate: continue
+        raise ValueError("Unable to parse network status document's '%s' line (%s): %s'" % (keyword, exc, value))
+    
+    return results
 
 class DirectoryAuthority(stem.descriptor.Descriptor):
   """

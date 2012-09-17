@@ -7,7 +7,7 @@ import unittest
 
 import stem.version
 from stem.descriptor import Flag
-from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, NetworkStatusDocument, DirectorySignature
+from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, NetworkStatusDocument, DirectorySignature
 
 NETWORK_STATUS_DOCUMENT_ATTR = {
   "network-status-version": "3",
@@ -118,7 +118,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual(expected_known_flags, document.known_flags)
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual([], document.directory_authorities)
-    self.assertEqual(None, document.bandwidth_weights)
+    self.assertEqual({}, document.bandwidth_weights)
     self.assertEqual([SIG], document.directory_signatures)
     self.assertEqual([], document.get_unrecognized_lines())
   
@@ -554,4 +554,99 @@ class TestNetworkStatusDocument(unittest.TestCase):
     document = NetworkStatusDocument(content, False)
     self.assertEqual([SIG], document.directory_signatures)
     self.assertEqual([], document.get_unrecognized_lines())
+  
+  def test_bandwidth_wights_ok(self):
+    """
+    Parses a properly formed 'bandwidth-wights' line. Negative bandwidth
+    weights might or might not be valid. The spec doesn't say, so making sure
+    that we accept them.
+    """
+    
+    weight_entries, expected = [], {}
+    
+    for i in xrange(len(BANDWIDTH_WEIGHT_ENTRIES)):
+      key, value = BANDWIDTH_WEIGHT_ENTRIES[i], i - 5
+      
+      weight_entries.append("%s=%i" % (key, value))
+      expected[key] = value
+    
+    content = get_network_status_document({"bandwidth-weights": " ".join(weight_entries)})
+    document = NetworkStatusDocument(content)
+    self.assertEquals(expected, document.bandwidth_weights)
+  
+  def test_bandwidth_wights_malformed(self):
+    """
+    Provides malformed content in the 'bandwidth-wights' line.
+    """
+    
+    test_values = (
+      "Wbe",
+      "Wbe=",
+      "Wbe=a",
+      "Wbe=+7",
+    )
+    
+    base_weight_entry = " ".join(["%s=5" % e for e in BANDWIDTH_WEIGHT_ENTRIES])
+    expected = dict([(e, 5) for e in BANDWIDTH_WEIGHT_ENTRIES if e != "Wbe"])
+    
+    for test_value in test_values:
+      weight_entry = base_weight_entry.replace("Wbe=5", test_value)
+      content = get_network_status_document({"bandwidth-weights": weight_entry})
+      
+      self.assertRaises(ValueError, NetworkStatusDocument, content)
+      document = NetworkStatusDocument(content, False)
+      self.assertEquals(expected, document.bandwidth_weights)
+  
+  def test_bandwidth_wights_misordered(self):
+    """
+    Check that the 'bandwidth-wights' line is rejected if out of order.
+    """
+    
+    weight_entry = " ".join(["%s=5" % e for e in reversed(BANDWIDTH_WEIGHT_ENTRIES)])
+    expected = dict([(e, 5) for e in BANDWIDTH_WEIGHT_ENTRIES])
+    
+    content = get_network_status_document({"bandwidth-weights": weight_entry})
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    document = NetworkStatusDocument(content, False)
+    self.assertEquals(expected, document.bandwidth_weights)
+  
+  def test_bandwidth_wights_in_vote(self):
+    """
+    Tries adding a 'bandwidth-wights' line to a vote.
+    """
+    
+    weight_entry = " ".join(["%s=5" % e for e in BANDWIDTH_WEIGHT_ENTRIES])
+    expected = dict([(e, 5) for e in BANDWIDTH_WEIGHT_ENTRIES])
+    
+    content = get_network_status_document({"vote-status": "vote", "bandwidth-weights": weight_entry})
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    document = NetworkStatusDocument(content, False)
+    self.assertEquals(expected, document.bandwidth_weights)
+  
+  def test_bandwidth_wights_omissions(self):
+    """
+    Leaves entries out of the 'bandwidth-wights' line.
+    """
+    
+    # try parsing an empty value
+    
+    content = get_network_status_document({"bandwidth-weights": ""})
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    document = NetworkStatusDocument(content, False)
+    self.assertEquals({}, document.bandwidth_weights)
+    
+    # drop individual values
+    
+    for missing_entry in BANDWIDTH_WEIGHT_ENTRIES:
+      weight_entries = ["%s=5" % e for e in BANDWIDTH_WEIGHT_ENTRIES if e != missing_entry]
+      expected = dict([(e, 5) for e in BANDWIDTH_WEIGHT_ENTRIES if e != missing_entry])
+      
+      content = get_network_status_document({"bandwidth-weights": " ".join(weight_entries)})
+      self.assertRaises(ValueError, NetworkStatusDocument, content)
+      
+      document = NetworkStatusDocument(content, False)
+      self.assertEquals(expected, document.bandwidth_weights)
 
