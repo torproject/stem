@@ -90,6 +90,9 @@ FOOTER_STATUS_DOCUMENT_FIELDS = (
 
 ALL_FIELDS = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS + FOOTER_STATUS_DOCUMENT_FIELDS]
 
+# Maybe we should add 'bandwidth-weights'?
+# https://trac.torproject.org/6872
+
 DEFAULT_PARAMS = {
   "cbtdisabled": 0,
   "cbtnummodes": 3,
