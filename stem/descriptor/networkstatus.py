@@ -521,14 +521,18 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     missing_fields, disallowed_fields = [], []
     
+    if not self.meets_consensus_method(9):
+      # footers only appear in consensus-method 9 or later
+      if footer_entries:
+        raise ValueError("Network status document's footer should only apepar in consensus-method 9 or later")
+      else:
+        # pretend to have mandatory fields to prevent validation from whining
+        footer_entries = {"directory-footer": "", "directory-signature": ""}
+    
     for entries, fields in ((header_entries, HEADER_STATUS_DOCUMENT_FIELDS),\
                             (footer_entries, FOOTER_STATUS_DOCUMENT_FIELDS)):
       for field, in_votes, in_consensus, mandatory in fields:
-        if field in ('directory-footer', 'directory-signature') and not self.meets_consensus_method(9):
-          # footers only appear in consensus-method 9 or later
-          if field in entries.keys():
-            disallowed_fields.append(field)
-        elif mandatory and ((self.is_consensus and in_consensus) or (self.is_vote and in_votes)):
+        if mandatory and ((self.is_consensus and in_consensus) or (self.is_vote and in_votes)):
           # mandatory field, check that we have it
           if not field in entries.keys():
             missing_fields.append(field)
