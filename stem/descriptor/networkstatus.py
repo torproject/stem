@@ -268,6 +268,19 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   def _get_router_type(self):
     return RouterStatusEntry
   
+  def meets_consensus_method(self, method):
+    """
+    Checks if we meet the given consensus-method. This works for both votes and
+    consensuses, checking our 'consensus-method' and 'consensus-methods'
+    entries.
+    
+    :param int method: consensus-method to check for
+    
+    :returns: True if we meet the given consensus-method, and False otherwise
+    """
+    
+    return bool(self.consensus_method >= method or filter(lambda x: x >= method, self.consensus_methods))
+  
   def get_unrecognized_lines(self):
     """
     Returns any unrecognized trailing lines.
@@ -398,7 +411,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         # Parameters ::= Parameter | Parameters SP Parameter
         
         # should only appear in consensus-method 7 or later
-        if validate and not (self.consensus_method >= 7 or filter(lambda x: x >= 7, self.consensus_methods)):
+        if validate and not self.meets_consensus_method(7):
           raise ValueError("A network status document's 'params' line should only appear in consensus-method 7 or later")
         
         # skip if this is a blank line
@@ -435,6 +448,11 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         
         if validate:
           self._check_params_constraints()
+      elif keyword == "directory-footer":
+        # nothing to parse, simply checking that we don't have a value
+        
+        if validate and value:
+          raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got '%s'" % line)
     
     # doing this validation afterward so we know our 'is_consensus' and
     # 'is_vote' attributes
@@ -471,12 +489,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       dirauth_data = "".join(dirauth_data).rstrip()
       self.directory_authorities.append(DirectoryAuthority(dirauth_data, vote, validate))
     
-    # footer section
-    if self.consensus_method >= 9 or (vote and filter(lambda x: x >= 9, self.consensus_methods)):
-      if _peek_keyword(content) == "directory-footer":
-        content.readline()
-      elif validate:
-        raise ValueError("Network status document missing directory-footer")
+    _read_keyword_line("directory-footer", content, False, True)
     
     if not vote:
       read_keyword_line("bandwidth-weights", True)
@@ -511,7 +524,11 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     for entries, fields in ((header_entries, HEADER_STATUS_DOCUMENT_FIELDS),\
                             (footer_entries, FOOTER_STATUS_DOCUMENT_FIELDS)):
       for field, in_votes, in_consensus, mandatory in fields:
-        if mandatory and ((self.is_consensus and in_consensus) or (self.is_vote and in_votes)):
+        if field in ('directory-footer', 'directory-signature') and not self.meets_consensus_method(9):
+          # footers only appear in consensus-method 9 or later
+          if field in entries.keys():
+            disallowed_fields.append(field)
+        elif mandatory and ((self.is_consensus and in_consensus) or (self.is_vote and in_votes)):
           # mandatory field, check that we have it
           if not field in entries.keys():
             missing_fields.append(field)
@@ -524,7 +541,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       raise ValueError("Network status document is missing mandatory field: %s" % ', '.join(missing_fields))
     
     if disallowed_fields:
-      raise ValueError("Network status document has fields that shouldn't appear in this document type: %s" % ', '.join(disallowed_fields))
+      raise ValueError("Network status document has fields that shouldn't appear in this document type or version: %s" % ', '.join(disallowed_fields))
   
   def _check_for_misordered_fields(self, header_entries, footer_entries):
     """

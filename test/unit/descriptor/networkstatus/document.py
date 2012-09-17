@@ -30,6 +30,8 @@ NETWORK_STATUS_DOCUMENT_ATTR = {
     "-----END SIGNATURE-----")),
 }
 
+SIG = DirectorySignature("directory-signature " + NETWORK_STATUS_DOCUMENT_ATTR["directory-signature"])
+
 def get_network_status_document(attr = None, exclude = None, routers = None):
   """
   Constructs a minimal network status document with the given attributes. This
@@ -99,8 +101,6 @@ class TestNetworkStatusDocument(unittest.TestCase):
       Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING,
       Flag.STABLE, Flag.UNNAMED, Flag.V2DIR, Flag.VALID]
     
-    sig = DirectorySignature("directory-signature " + NETWORK_STATUS_DOCUMENT_ATTR["directory-signature"])
-    
     self.assertEqual((), document.routers)
     self.assertEqual("3", document.version)
     self.assertEqual(True, document.is_consensus)
@@ -119,7 +119,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual([], document.directory_authorities)
     self.assertEqual(None, document.bandwidth_weights)
-    self.assertEqual([sig], document.directory_signatures)
+    self.assertEqual([SIG], document.directory_signatures)
     self.assertEqual([], document.get_unrecognized_lines())
   
   def test_minimal_vote(self):
@@ -132,8 +132,6 @@ class TestNetworkStatusDocument(unittest.TestCase):
     expected_known_flags = [Flag.AUTHORITY, Flag.BADEXIT, Flag.EXIT,
       Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING,
       Flag.STABLE, Flag.UNNAMED, Flag.V2DIR, Flag.VALID]
-    
-    sig = DirectorySignature("directory-signature " + NETWORK_STATUS_DOCUMENT_ATTR["directory-signature"])
     
     self.assertEqual((), document.routers)
     self.assertEqual("3", document.version)
@@ -153,7 +151,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual([], document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
-    self.assertEqual([sig], document.directory_signatures)
+    self.assertEqual([SIG], document.directory_signatures)
     self.assertEqual([], document.get_unrecognized_lines())
   
   def test_missing_fields(self):
@@ -274,7 +272,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     # check that we default to including consensus-method 1
     content = get_network_status_document({"vote-status": "vote"}, ("consensus-methods",))
-    document = NetworkStatusDocument(content)
+    document = NetworkStatusDocument(content, False)
     self.assertEquals([1], document.consensus_methods)
     self.assertEquals(None, document.consensus_method)
     
@@ -304,7 +302,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     # check that we default to being consensus-method 1
     content = get_network_status_document(exclude = ("consensus-method",))
-    document = NetworkStatusDocument(content)
+    document = NetworkStatusDocument(content, False)
     self.assertEquals(1, document.consensus_method)
     self.assertEquals([], document.consensus_methods)
     
@@ -524,4 +522,36 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     document = NetworkStatusDocument(content, False, default_params = False)
     self.assertEquals({"unrecognized": -122, "bwauthpid": 1}, document.params)
+  
+  def test_footer_consensus_method_requirement(self):
+    """
+    Check that validation will notice if a footer appears before it was
+    introduced.
+    """
+    
+    content = get_network_status_document({"consensus-method": "8"})
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    document = NetworkStatusDocument(content, False)
+    self.assertEqual([SIG], document.directory_signatures)
+    self.assertEqual([], document.get_unrecognized_lines())
+    
+    # excludes a footer from a version that shouldn't have it
+    
+    content = get_network_status_document({"consensus-method": "8"}, ("directory-footer", "directory-signature"))
+    document = NetworkStatusDocument(content)
+    self.assertEqual([], document.directory_signatures)
+    self.assertEqual([], document.get_unrecognized_lines())
+  
+  def test_footer_with_value(self):
+    """
+    Tries to parse a descriptor with content on the 'directory-footer' line.
+    """
+    
+    content = get_network_status_document({"directory-footer": "blarg"})
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    document = NetworkStatusDocument(content, False)
+    self.assertEqual([SIG], document.directory_signatures)
+    self.assertEqual([], document.get_unrecognized_lines())
 
