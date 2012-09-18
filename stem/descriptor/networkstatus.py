@@ -87,10 +87,8 @@ FOOTER_STATUS_DOCUMENT_FIELDS = (
 
 ALL_FIELDS = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS + FOOTER_STATUS_DOCUMENT_FIELDS]
 
-# Maybe we should add 'bandwidth-weights'?
-# https://trac.torproject.org/6872
-
 DEFAULT_PARAMS = {
+  "bwweightscale": 10000,
   "cbtdisabled": 0,
   "cbtnummodes": 3,
   "cbtrecentcount": 20,
@@ -584,6 +582,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         minimum = 1
       elif key == "refuseunknownexits":
         minimum, maximum = 0, 1
+      elif key == "bwweightscale":
+        minimum = 1
       elif key == "cbtdisabled":
         minimum, maximum = 0, 1
       elif key == "cbtnummodes":
