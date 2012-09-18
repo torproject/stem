@@ -143,10 +143,10 @@ HFXB4497LzESysYJ/4jJY83E5vLjhv+igIxD9LU6lf6ftkGeF+lNmIAIEKaMts8H
 mfWcW0b+jsrXcJoCxV5IrwCDF3u1aC3diwZY6yiG186pwWbOwE41188XI2DeYPwE
 I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
 -----END SIGNATURE-----"""
-    self.assertEquals(8, len(desc.directory_signatures))
-    self.assertEquals("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", desc.directory_signatures[0].identity)
-    self.assertEquals("BF112F1C6D5543CFD0A32215ACABD4197B5279AD", desc.directory_signatures[0].key_digest)
-    self.assertEquals(expected_signature, desc.directory_signatures[0].signature)
+    self.assertEquals(8, len(desc.signatures))
+    self.assertEquals("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", desc.signatures[0].identity)
+    self.assertEquals("BF112F1C6D5543CFD0A32215ACABD4197B5279AD", desc.signatures[0].key_digest)
+    self.assertEquals(expected_signature, desc.signatures[0].signature)
   
   def test_metrics_vote(self):
     """
@@ -261,10 +261,10 @@ fskXN84wB3mXfo+yKGSt0AcDaaPuU3NwMR3ROxWgLN0KjAaVi2eV9PkPCsQkcgw3
 JZ/1HL9sHyZfo6bwaC6YSM9PNiiY6L7rnGpS7UkHiFI+M96VCMorvjm5YPs3FioJ
 DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 -----END SIGNATURE-----"""
-    self.assertEquals(1, len(desc.directory_signatures))
-    self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.directory_signatures[0].identity)
-    self.assertEquals("D5C30C15BB3F1DA27669C2D88439939E8F418FCF", desc.directory_signatures[0].key_digest)
-    self.assertEquals(expected_signature, desc.directory_signatures[0].signature)
+    self.assertEquals(1, len(desc.signatures))
+    self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.signatures[0].identity)
+    self.assertEquals("D5C30C15BB3F1DA27669C2D88439939E8F418FCF", desc.signatures[0].key_digest)
+    self.assertEquals(expected_signature, desc.signatures[0].signature)
   
   def test_cached_microdesc_consensus(self):
     """

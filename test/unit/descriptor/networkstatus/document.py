@@ -7,7 +7,16 @@ import unittest
 
 import stem.version
 from stem.descriptor import Flag
-from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, NetworkStatusDocument, DirectorySignature
+from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, NetworkStatusDocument, DocumentSignature
+
+sig_block = """\
+-----BEGIN SIGNATURE-----
+e1XH33ITaUYzXu+dK04F2dZwR4PhcOQgIuK859KGpU77/6lRuggiX/INk/4FJanJ
+ysCTE1K4xk4fH3N1Tzcv/x/gS4LUlIZz3yKfBnj+Xh3w12Enn9V1Gm1Vrhl+/YWH
+eweONYRZTTvgsB+aYsCoBuoBBpbr4Swlu64+85F44o4=
+-----END SIGNATURE-----"""
+
+SIG = DocumentSignature("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", "BF112F1C6D5543CFD0A32215ACABD4197B5279AD", sig_block)
 
 NETWORK_STATUS_DOCUMENT_ATTR = {
   "network-status-version": "3",
@@ -21,16 +30,9 @@ NETWORK_STATUS_DOCUMENT_ATTR = {
   "voting-delay": "300 300",
   "known-flags": "Authority BadExit Exit Fast Guard HSDir Named Running Stable Unnamed V2Dir Valid",
   "directory-footer": "",
-  "directory-signature": "\n".join((
-    "14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4 BF112F1C6D5543CFD0A32215ACABD4197B5279AD",
-    "-----BEGIN SIGNATURE-----",
-    "e1XH33ITaUYzXu+dK04F2dZwR4PhcOQgIuK859KGpU77/6lRuggiX/INk/4FJanJ",
-    "ysCTE1K4xk4fH3N1Tzcv/x/gS4LUlIZz3yKfBnj+Xh3w12Enn9V1Gm1Vrhl+/YWH",
-    "eweONYRZTTvgsB+aYsCoBuoBBpbr4Swlu64+85F44o4=",
-    "-----END SIGNATURE-----")),
+  "directory-signature": "%s %s\n%s" % (SIG.identity, SIG.key_digest, SIG.signature),
 }
 
-SIG = DirectorySignature("directory-signature " + NETWORK_STATUS_DOCUMENT_ATTR["directory-signature"])
 
 def get_network_status_document(attr = None, exclude = None, routers = None):
   """
@@ -119,7 +121,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual([], document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
-    self.assertEqual([SIG], document.directory_signatures)
+    self.assertEqual([SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
   
   def test_minimal_vote(self):
@@ -151,7 +153,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual([], document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
-    self.assertEqual([SIG], document.directory_signatures)
+    self.assertEqual([SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
   
   def test_missing_fields(self):
@@ -169,6 +171,15 @@ class TestNetworkStatusDocument(unittest.TestCase):
             content = get_network_status_document(attr, exclude = (field,))
             self.assertRaises(ValueError, NetworkStatusDocument, content)
             NetworkStatusDocument(content, False) # constructs without validation
+  
+  def test_unrecognized_line(self):
+    """
+    Includes unrecognized content in the document.
+    """
+    
+    content = get_network_status_document({"pepperjack": "is oh so tasty!"})
+    document = NetworkStatusDocument(content)
+    self.assertEquals(["pepperjack is oh so tasty!"], document.get_unrecognized_lines())
   
   def test_misordered_fields(self):
     """
@@ -533,14 +544,14 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertRaises(ValueError, NetworkStatusDocument, content)
     
     document = NetworkStatusDocument(content, False)
-    self.assertEqual([SIG], document.directory_signatures)
+    self.assertEqual([SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
     
     # excludes a footer from a version that shouldn't have it
     
     content = get_network_status_document({"consensus-method": "8"}, ("directory-footer", "directory-signature"))
     document = NetworkStatusDocument(content)
-    self.assertEqual([], document.directory_signatures)
+    self.assertEqual([], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
   
   def test_footer_with_value(self):
@@ -552,7 +563,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertRaises(ValueError, NetworkStatusDocument, content)
     
     document = NetworkStatusDocument(content, False)
-    self.assertEqual([SIG], document.directory_signatures)
+    self.assertEqual([SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
   
   def test_bandwidth_wights_ok(self):
@@ -649,4 +660,24 @@ class TestNetworkStatusDocument(unittest.TestCase):
       
       document = NetworkStatusDocument(content, False)
       self.assertEquals(expected, document.bandwidth_weights)
+  
+  def test_malformed_signature(self):
+    """
+    Provides malformed or missing content in the 'directory-signature' line.
+    """
+    
+    test_values = (
+      "",
+      "\n",
+      "blarg",
+    )
+    
+    for test_value in test_values:
+      for test_attr in xrange(3):
+        attrs = [SIG.identity, SIG.key_digest, SIG.signature]
+        attrs[test_attr] = test_value
+        
+        content = get_network_status_document({"directory-signature": "%s %s\n%s" % tuple(attrs)})
+        self.assertRaises(ValueError, NetworkStatusDocument, content)
+        NetworkStatusDocument(content, False) # checks that it's still parseable without validation
 

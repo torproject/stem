@@ -36,7 +36,7 @@ The documents can be obtained from any of the following sources...
     +- MicrodescriptorConsensus - Microdescriptor flavoured consensus documents
   RouterStatusEntry - Router descriptor; contains information about a Tor relay
     +- RouterMicrodescriptor - Router microdescriptor; contains information that doesn't change frequently
-  DirectorySignature - Network status document's directory signature
+  DocumentSignature - Signature of a document by a directory authority
   DirectoryAuthority - Directory authority defined in a v3 network status document
 """
 
@@ -216,7 +216,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   :var list known_flags: **\*** list of known router flags
   :var list params: **\*** dict of parameter(str) => value(int) mappings
   :var list directory_authorities: **\*** list of DirectoryAuthority objects that have generated this document
-  :var list directory_signatures: **\*** list of signatures this document has
+  :var list signatures: **\*** DocumentSignature of the authorities that have signed the document
   
   **Consensus Attributes:**
   :var int consensus_method: method version used to generate this consensus
@@ -243,7 +243,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     super(NetworkStatusDocument, self).__init__(raw_content)
     
     self.directory_authorities = []
-    self.directory_signatures = []
+    self.signatures = []
     
     self.version = None
     self.is_consensus = True
@@ -261,6 +261,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     self.known_flags = []
     self.params = dict(DEFAULT_PARAMS) if default_params else {}
     self.bandwidth_weights = {}
+    
+    self._unrecognized_lines = []
     
     document_file = StringIO(raw_content)
     header, footer, routers_end = _get_document_content(document_file, validate)
@@ -290,13 +292,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     return bool(self.consensus_method >= method or filter(lambda x: x >= method, self.consensus_methods))
   
   def get_unrecognized_lines(self):
-    """
-    Returns any unrecognized trailing lines.
-    
-    :returns: a list of unrecognized trailing lines
-    """
-    
-    return self.unrecognized_lines
+    return list(self._unrecognized_lines)
   
   def _parse(self, header, footer, validate):
     """
@@ -445,6 +441,15 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
             actual_label = ', '.join(weight_keys)
             
             raise ValueError("A network status document's 'bandwidth-weights' entries should be '%s', got '%s'" % (expected_label, actual_label))
+      elif keyword == "directory-signature":
+        if not " " in value or not block_contents:
+          if not validate: continue
+          raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature FINGERPRINT KEY_DIGEST\\nSIGNATURE', got:\n%s" % line)
+        
+        fingerprint, key_digest = value.split(" ", 1)
+        self.signatures.append(DocumentSignature(fingerprint, key_digest, block_contents, validate))
+      else:
+        self._unrecognized_lines.append(line)
     
     # doing this validation afterward so we know our 'is_consensus' and
     # 'is_vote' attributes
@@ -483,17 +488,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     
     _read_keyword_line("directory-footer", content, False, True)
     _read_keyword_line("bandwidth-weights", content, False, True)
-    
-    while _peek_keyword(content) == "directory-signature":
-      signature_data = _read_until_keywords("directory-signature", content, False, True)
-      self.directory_signatures.append(DirectorySignature("".join(signature_data)))
-    
-    remainder = content.read()
-    
-    if remainder:
-      self.unrecognized_lines = remainder.split("\n")
-    else:
-      self.unrecognized_lines = []
+    _read_keyword_line("directory-signature", content, False, True)
   
   def _check_for_missing_and_disallowed_fields(self, header_entries, footer_entries):
     """
@@ -706,60 +701,44 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     
     return self.unrecognized_lines
 
-class DirectorySignature(stem.descriptor.Descriptor):
+# TODO: microdescriptors have a slightly different format (including a
+# 'method') - should probably be a subclass
+class DocumentSignature(object):
   """
-  Contains directory signatures in a v3 network status document.
+  Directory signature of a v3 network status document.
   
-  :var str identity: signature identity
-  :var str key_digest: signature key digest
-  :var str method: method used to generate the signature
-  :var str signature: the signature data
+  :var str identity: fingerprint of the authority that made the signature
+  :var str key_digest: digest of the signing key
+  :var str signature: document signature
+  :param bool validate: checks validity if True
+  
+  :raises: ValueError if a validity check fails
   """
   
-  def __init__(self, raw_content, validate = True):
-    """
-    Parse a directory signature entry in a v3 network status document and
-    provide a DirectorySignature object.
+  def __init__(self, identity, key_digest, signature, validate = True):
+    # Checking that these attributes are valid. Technically the key
+    # digest isn't a fingerprint, but it has the same characteristics.
     
-    :param str raw_content: raw directory signature entry information
-    :param bool validate: True if the document is to be validated, False otherwise
+    if validate:
+      if not stem.util.tor_tools.is_valid_fingerprint(identity):
+        raise ValueError("Malformed fingerprint (%s) in the document signature" % (identity))
+      
+      if not stem.util.tor_tools.is_valid_fingerprint(key_digest):
+        raise ValueError("Malformed key digest (%s) in the document signature" % (key_digest))
     
-    :raises: ValueError if the raw data is invalid
-    """
-    
-    super(DirectorySignature, self).__init__(raw_content)
-    self.identity, self.key_digest, self.method, self.signature = None, None, None, None
-    content = raw_content.splitlines()
-    
-    signature_line = _read_keyword_line_str("directory-signature", content, validate).split(" ")
-    
-    if len(signature_line) == 2:
-      self.identity, self.key_digest = signature_line
-    if len(signature_line) == 3:
-      # for microdescriptor consensuses
-      # This 'method' seems to be undocumented 8-8-12
-      self.method, self.identity, self.key_digest = signature_line
-    
-    self.signature = _get_pseudo_pgp_block(content)
-    self.unrecognized_lines = content
-    if self.unrecognized_lines and validate:
-      raise ValueError("Unrecognized trailing data in directory signature")
-  
-  def get_unrecognized_lines(self):
-    """
-    Returns any unrecognized lines.
-    
-    :returns: a list of unrecognized lines
-    """
-    
-    return self.unrecognized_lines
+    self.identity = identity
+    self.key_digest = key_digest
+    self.signature = signature
   
   def __cmp__(self, other):
-    if not isinstance(other, DirectorySignature):
+    if not isinstance(other, DocumentSignature):
       return 1
     
-    # attributes are all derived from content, so we can simply use that to check
-    return str(self) > str(other)
+    for attr in ("identity", "key_digest", "signature"):
+      if getattr(self, attr) > getattr(other, attr): return 1
+      elif getattr(self, attr) < getattr(other, attr): return -1
+    
+    return 0
 
 class RouterStatusEntry(stem.descriptor.Descriptor):
   """
@@ -1033,7 +1012,7 @@ class MicrodescriptorConsensus(NetworkStatusDocument):
   :var list params: dict of parameter(str) => value(int) mappings
   :var list directory_authorities: **\*** list of DirectoryAuthority objects that have generated this document
   :var dict bandwidth_weights: **~** dict of weight(str) => value(int) mappings
-  :var list directory_signatures: **\*** list of signatures this document has
+  :var list signatures: **\*** list of signatures this document has
   
   | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   | **~** attribute appears only in consensuses
