@@ -85,7 +85,8 @@ FOOTER_STATUS_DOCUMENT_FIELDS = (
   ("directory-signature", True, True, True),
 )
 
-ALL_FIELDS = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS + FOOTER_STATUS_DOCUMENT_FIELDS]
+HEADER_FIELDS = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS]
+FOOTER_FIELDS = [attr[0] for attr in FOOTER_STATUS_DOCUMENT_FIELDS]
 
 DEFAULT_PARAMS = {
   "bwweightscale": 10000,
@@ -243,32 +244,21 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     super(NetworkStatusDocument, self).__init__(raw_content)
     
     self.directory_authorities = []
-    self.signatures = []
-    
-    self.version = None
-    self.is_consensus = True
-    self.is_vote = False
-    self.consensus_methods = []
-    self.published = None
-    self.consensus_method = None
-    self.valid_after = None
-    self.fresh_until = None
-    self.valid_until = None
-    self.vote_delay = None
-    self.dist_delay = None
-    self.client_versions = []
-    self.server_versions = []
-    self.known_flags = []
-    self.params = dict(DEFAULT_PARAMS) if default_params else {}
-    self.bandwidth_weights = {}
-    
     self._unrecognized_lines = []
     
     document_file = StringIO(raw_content)
-    header, footer, routers_end = _get_document_content(document_file, validate)
+    header_content, footer_content, routers_end = _get_document_content(document_file, validate)
     
-    self._parse(header, footer, validate)
-    self._parse_old(header + footer, validate)
+    self._header = _DocumentHeader(header_content, validate, default_params)
+    self._footer = _DocumentFooter(footer_content, validate, self._header)
+    
+    for attr, value in vars(self._header).items() + vars(self._footer).items():
+      if attr != "_unrecognized_lines":
+        setattr(self, attr, value)
+      else:
+        self._unrecognized_lines += value
+    
+    self._parse_old(header_content + footer_content, validate)
     
     if document_file.tell() < routers_end:
       self.routers = tuple(_get_routers(document_file, validate, self, routers_end, self._get_router_type()))
@@ -289,36 +279,82 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     :returns: True if we meet the given consensus-method, and False otherwise
     """
     
-    return bool(self.consensus_method >= method or filter(lambda x: x >= method, self.consensus_methods))
+    return self._header.meets_consensus_method(method)
   
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
   
-  def _parse(self, header, footer, validate):
-    """
-    Parses the given content and applies the attributes.
+  def _parse_old(self, raw_content, validate):
+    # preamble
+    content = StringIO(raw_content)
+    read_keyword_line = lambda keyword, optional = False: setattr(self, keyword.replace("-", "_"), _read_keyword_line(keyword, content, validate, optional))
     
-    :param str header_content: content of the descriptor header
-    :param str footer_content: content of the descriptor footer
-    :param bool validate: checks validity if True
+    # ignore things the parse() method handles
+    _read_keyword_line("network-status-version", content, False, True)
+    _read_keyword_line("vote-status", content, False, True)
+    _read_keyword_line("consensus-methods", content, False, True)
+    _read_keyword_line("consensus-method", content, False, True)
+    _read_keyword_line("published", content, False, True)
+    _read_keyword_line("valid-after", content, False, True)
+    _read_keyword_line("fresh-until", content, False, True)
+    _read_keyword_line("valid-until", content, False, True)
+    _read_keyword_line("voting-delay", content, False, True)
+    _read_keyword_line("client-versions", content, False, True)
+    _read_keyword_line("server-versions", content, False, True)
+    _read_keyword_line("known-flags", content, False, True)
+    _read_keyword_line("params", content, False, True)
     
-    :raises: ValueError if a validity check fails
-    """
+    # authority section
+    while _peek_keyword(content) == "dir-source":
+      dirauth_data = _read_until_keywords(["dir-source", "r", "directory-footer", "directory-signature", "bandwidth-weights"], content, False, True)
+      dirauth_data = "".join(dirauth_data).rstrip()
+      self.directory_authorities.append(DirectoryAuthority(dirauth_data, self.is_vote, validate))
     
-    header_entries = stem.descriptor._get_descriptor_components(header, validate)[0]
-    footer_entries = stem.descriptor._get_descriptor_components(footer, validate)[0]
+    _read_keyword_line("directory-footer", content, False, True)
+    _read_keyword_line("bandwidth-weights", content, False, True)
+    _read_keyword_line("directory-signature", content, False, True)
+
+class _DocumentHeader(object):
+  def __init__(self, content, validate, default_params):
+    self.version = None
+    self.is_consensus = True
+    self.is_vote = False
+    self.consensus_methods = []
+    self.published = None
+    self.consensus_method = None
+    self.valid_after = None
+    self.fresh_until = None
+    self.valid_until = None
+    self.vote_delay = None
+    self.dist_delay = None
+    self.client_versions = []
+    self.server_versions = []
+    self.known_flags = []
+    self.params = dict(DEFAULT_PARAMS) if default_params else {}
     
-    for keyword, values in header_entries.items() + footer_entries.items():
+    self._unrecognized_lines = []
+    
+    entries = stem.descriptor._get_descriptor_components(content, validate)[0]
+    self._parse(entries, validate)
+    
+    # doing this validation afterward so we know our 'is_consensus' and
+    # 'is_vote' attributes
+    
+    if validate:
+      _check_for_missing_and_disallowed_fields(self, entries, HEADER_STATUS_DOCUMENT_FIELDS)
+      _check_for_misordered_fields(entries, HEADER_FIELDS)
+  
+  def meets_consensus_method(self, method):
+    return bool(self.consensus_method >= method or filter(lambda x: x >= method, self.consensus_methods))
+  
+  def _parse(self, entries, validate):
+    for keyword, values in entries.items():
       value, block_contents = values[0]
       line = "%s %s" % (keyword, value)
       
-      # All known fields can only appear once except...
-      # * 'directory-signature' in a consensus
-      
-      if validate and len(values) > 1 and keyword in ALL_FIELDS:
-        if not (keyword == 'directory-signature' and is_consensus):
-          content = header + '\n' + footer
-          raise ValueError("Network status documents can only have a single '%s' line, got %i:\n%s" % (keyword, len(values), content))
+      # all known header fields can only appear once except
+      if validate and len(values) > 1 and keyword in HEADER_FIELDS:
+        raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
       
       if keyword == 'network-status-version':
         # "network-status-version" version
@@ -421,144 +457,12 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         # skip if this is a blank line
         if value == "": continue
         
-        self.params.update(self._parse_int_mappings(keyword, value, validate))
+        self.params.update(_parse_int_mappings(keyword, value, validate))
         
         if validate:
           self._check_params_constraints()
-      elif keyword == "directory-footer":
-        # nothing to parse, simply checking that we don't have a value
-        
-        if validate and value:
-          raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got '%s'" % line)
-      elif keyword == "bandwidth-weights":
-        self.bandwidth_weights = self._parse_int_mappings(keyword, value, validate)
-        
-        if validate:
-          weight_keys = tuple(sorted(self.bandwidth_weights.keys()))
-          
-          if weight_keys != BANDWIDTH_WEIGHT_ENTRIES:
-            expected_label = ', '.join(BANDWIDTH_WEIGHT_ENTRIES)
-            actual_label = ', '.join(weight_keys)
-            
-            raise ValueError("A network status document's 'bandwidth-weights' entries should be '%s', got '%s'" % (expected_label, actual_label))
-      elif keyword == "directory-signature":
-        if not " " in value or not block_contents:
-          if not validate: continue
-          raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature FINGERPRINT KEY_DIGEST\\nSIGNATURE', got:\n%s" % line)
-        
-        fingerprint, key_digest = value.split(" ", 1)
-        self.signatures.append(DocumentSignature(fingerprint, key_digest, block_contents, validate))
       else:
         self._unrecognized_lines.append(line)
-    
-    # doing this validation afterward so we know our 'is_consensus' and
-    # 'is_vote' attributes
-    
-    if validate:
-      self._check_for_missing_and_disallowed_fields(header_entries, footer_entries)
-      self._check_for_misordered_fields(header_entries, footer_entries)
-  
-  def _parse_old(self, raw_content, validate):
-    # preamble
-    content = StringIO(raw_content)
-    read_keyword_line = lambda keyword, optional = False: setattr(self, keyword.replace("-", "_"), _read_keyword_line(keyword, content, validate, optional))
-    
-    # ignore things the parse() method handles
-    _read_keyword_line("network-status-version", content, False, True)
-    _read_keyword_line("vote-status", content, False, True)
-    _read_keyword_line("consensus-methods", content, False, True)
-    _read_keyword_line("consensus-method", content, False, True)
-    _read_keyword_line("published", content, False, True)
-    _read_keyword_line("valid-after", content, False, True)
-    _read_keyword_line("fresh-until", content, False, True)
-    _read_keyword_line("valid-until", content, False, True)
-    _read_keyword_line("voting-delay", content, False, True)
-    _read_keyword_line("client-versions", content, False, True)
-    _read_keyword_line("server-versions", content, False, True)
-    _read_keyword_line("known-flags", content, False, True)
-    _read_keyword_line("params", content, False, True)
-    
-    vote = self.is_vote
-    
-    # authority section
-    while _peek_keyword(content) == "dir-source":
-      dirauth_data = _read_until_keywords(["dir-source", "r", "directory-footer", "directory-signature", "bandwidth-weights"], content, False, True)
-      dirauth_data = "".join(dirauth_data).rstrip()
-      self.directory_authorities.append(DirectoryAuthority(dirauth_data, vote, validate))
-    
-    _read_keyword_line("directory-footer", content, False, True)
-    _read_keyword_line("bandwidth-weights", content, False, True)
-    _read_keyword_line("directory-signature", content, False, True)
-  
-  def _check_for_missing_and_disallowed_fields(self, header_entries, footer_entries):
-    """
-    Checks that we have mandatory fields for our type, and that we don't have
-    any fields exclusive to the other (ie, no vote-only fields appear in a
-    consensus or vice versa).
-    
-    :param dict header_entries: ordered keyword/value mappings of the header
-    :param dict footer_entries: ordered keyword/value mappings of the footer
-    
-    :raises: ValueError if we're missing mandatory fields or have fiels we shouldn't
-    """
-    
-    missing_fields, disallowed_fields = [], []
-    
-    if not self.meets_consensus_method(9):
-      # footers only appear in consensus-method 9 or later
-      if footer_entries:
-        raise ValueError("Network status document's footer should only apepar in consensus-method 9 or later")
-      else:
-        # pretend to have mandatory fields to prevent validation from whining
-        footer_entries = {"directory-footer": "", "directory-signature": ""}
-    
-    for entries, fields in ((header_entries, HEADER_STATUS_DOCUMENT_FIELDS),\
-                            (footer_entries, FOOTER_STATUS_DOCUMENT_FIELDS)):
-      for field, in_votes, in_consensus, mandatory in fields:
-        if mandatory and ((self.is_consensus and in_consensus) or (self.is_vote and in_votes)):
-          # mandatory field, check that we have it
-          if not field in entries.keys():
-            missing_fields.append(field)
-        elif (self.is_consensus and not in_consensus) or (self.is_vote and not in_votes):
-          # field we shouldn't have, check that we don't
-          if field in entries.keys():
-            disallowed_fields.append(field)
-    
-    if missing_fields:
-      raise ValueError("Network status document is missing mandatory field: %s" % ', '.join(missing_fields))
-    
-    if disallowed_fields:
-      raise ValueError("Network status document has fields that shouldn't appear in this document type or version: %s" % ', '.join(disallowed_fields))
-  
-  def _check_for_misordered_fields(self, header_entries, footer_entries):
-    """
-    To be valid a network status document's fiends need to appear in a specific
-    order. Checks that known fields appear in that order (unrecognized fields
-    are ignored).
-    """
-    
-    # Earlier validation has ensured that our fields either belong to our
-    # document type or are unknown. Remove the unknown fields since they
-    # reflect a spec change and can appear anywhere in the document.
-    
-    expected_header = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS]
-    expected_footer = [attr[0] for attr in FOOTER_STATUS_DOCUMENT_FIELDS]
-    
-    actual_header = filter(lambda field: field in expected_header, header_entries.keys())
-    actual_footer = filter(lambda field: field in expected_footer, footer_entries.keys())
-    
-    # Narrow the expected_header and expected_footer to just what we have. If
-    # the lists then match then the order's valid.
-    
-    expected_header = filter(lambda field: field in actual_header, expected_header)
-    expected_footer = filter(lambda field: field in actual_footer, expected_footer)
-    
-    for label, actual, expected in (('header', actual_header, expected_header),
-                                    ('footer', actual_footer, expected_footer)):
-      if actual != expected:
-        actual_label = ', '.join(actual)
-        expected_label = ', '.join(expected)
-        raise ValueError("The fields in the document's %s are misordered. It should be '%s' but was '%s'" % (label, actual_label, expected_label))
   
   def _check_params_constraints(self):
     """
@@ -602,42 +506,156 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       
       if value < minimum or value > maximum:
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
-  
-  def _parse_int_mappings(self, keyword, value, validate):
-    # Parse a series of 'key=value' entries, checking the following:
-    # - values are integers
-    # - keys are sorted in lexical order
+
+class _DocumentFooter(object):
+  def __init__(self, content, validate, header):
+    self.signatures = []
+    self.bandwidth_weights = {}
     
-    results, seen_keys = {}, []
-    for entry in value.split(" "):
-      try:
-        if not '=' in entry:
-          raise ValueError("must only have 'key=value' entries")
+    self._unrecognized_lines = []
+    
+    if validate and content and not header.meets_consensus_method(9):
+      raise ValueError("Network status document's footer should only apepar in consensus-method 9 or later")
+    elif not content and not header.meets_consensus_method(9):
+      return # footer is optional and there's nothing to parse
+    
+    entries = stem.descriptor._get_descriptor_components(content, validate)[0]
+    self._parse(entries, validate, header)
+    
+    if validate:
+      _check_for_missing_and_disallowed_fields(header, entries, FOOTER_STATUS_DOCUMENT_FIELDS)
+      _check_for_misordered_fields(entries, FOOTER_FIELDS)
+  
+  def _parse(self, entries, validate, header):
+    for keyword, values in entries.items():
+      value, block_contents = values[0]
+      line = "%s %s" % (keyword, value)
+      
+      # all known footer fields can only appear once except...
+      # * 'directory-signature' in a consensus
+      
+      if validate and len(values) > 1 and keyword in FOOTER_FIELDS:
+        if not (keyword == 'directory-signature' and header.is_consensus):
+          raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
+      
+      if keyword == "directory-footer":
+        # nothing to parse, simply checking that we don't have a value
         
-        entry_key, entry_value = entry.split("=", 1)
-        
-        try:
-          # the int() function accepts things like '+123', but we don't want to
-          if entry_value.startswith('+'):
-            raise ValueError()
-          
-          entry_value = int(entry_value)
-        except ValueError:
-          raise ValueError("'%s' is a non-numeric value" % entry_value)
+        if validate and value:
+          raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got '%s'" % line)
+      elif keyword == "bandwidth-weights":
+        self.bandwidth_weights = _parse_int_mappings(keyword, value, validate)
         
         if validate:
-          # parameters should be in ascending order by their key
-          for prior_key in seen_keys:
-            if prior_key > entry_key:
-              raise ValueError("parameters must be sorted by their key")
+          weight_keys = tuple(sorted(self.bandwidth_weights.keys()))
+          
+          if weight_keys != BANDWIDTH_WEIGHT_ENTRIES:
+            expected_label = ', '.join(BANDWIDTH_WEIGHT_ENTRIES)
+            actual_label = ', '.join(weight_keys)
+            
+            raise ValueError("A network status document's 'bandwidth-weights' entries should be '%s', got '%s'" % (expected_label, actual_label))
+      elif keyword == "directory-signature":
+        if not " " in value or not block_contents:
+          if not validate: continue
+          raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature FINGERPRINT KEY_DIGEST\\nSIGNATURE', got:\n%s" % line)
         
-        results[entry_key] = entry_value
-        seen_keys.append(entry_key)
-      except ValueError, exc:
-        if not validate: continue
-        raise ValueError("Unable to parse network status document's '%s' line (%s): %s'" % (keyword, exc, value))
-    
-    return results
+        fingerprint, key_digest = value.split(" ", 1)
+        self.signatures.append(DocumentSignature(fingerprint, key_digest, block_contents, validate))
+
+def _check_for_missing_and_disallowed_fields(header, entries, fields):
+  """
+  Checks that we have mandatory fields for our type, and that we don't have
+  any fields exclusive to the other (ie, no vote-only fields appear in a
+  consensus or vice versa).
+  
+  :param _DocumentHeader header: document header
+  :param dict entries: ordered keyword/value mappings of the header or footer
+  :param list fields: expected field attributes (either HEADER_STATUS_DOCUMENT_FIELDS or FOOTER_STATUS_DOCUMENT_FIELDS)
+  
+  :raises: ValueError if we're missing mandatory fields or have fiels we shouldn't
+  """
+  
+  missing_fields, disallowed_fields = [], []
+  
+  for field, in_votes, in_consensus, mandatory in fields:
+    if mandatory and ((header.is_consensus and in_consensus) or (header.is_vote and in_votes)):
+      # mandatory field, check that we have it
+      if not field in entries.keys():
+        missing_fields.append(field)
+    elif (header.is_consensus and not in_consensus) or (header.is_vote and not in_votes):
+      # field we shouldn't have, check that we don't
+      if field in entries.keys():
+        disallowed_fields.append(field)
+  
+  if missing_fields:
+    raise ValueError("Network status document is missing mandatory field: %s" % ', '.join(missing_fields))
+  
+  if disallowed_fields:
+    raise ValueError("Network status document has fields that shouldn't appear in this document type or version: %s" % ', '.join(disallowed_fields))
+
+def _check_for_misordered_fields(entries, expected):
+  """
+  To be valid a network status document's fiends need to appear in a specific
+  order. Checks that known fields appear in that order (unrecognized fields
+  are ignored).
+  
+  :param dict entries: ordered keyword/value mappings of the header or footer
+  :param list expected: ordered list of expected fields (either HEADER_FIELDS or FOOTER_FIELDS)
+  
+  :raises: ValueError if entries aren't properly ordered
+  """
+  
+  # Earlier validation has ensured that our fields either belong to our
+  # document type or are unknown. Remove the unknown fields since they
+  # reflect a spec change and can appear anywhere in the document.
+  
+  actual = filter(lambda field: field in expected, entries.keys())
+  
+  # Narrow the expected to just what we have. If the lists then match then the
+  # order's valid.
+  
+  expected = filter(lambda field: field in actual, expected)
+  
+  if actual != expected:
+    actual_label = ', '.join(actual)
+    expected_label = ', '.join(expected)
+    raise ValueError("The fields in a section of the document are misordered. It should be '%s' but was '%s'" % (actual_label, expected_label))
+
+def _parse_int_mappings(keyword, value, validate):
+  # Parse a series of 'key=value' entries, checking the following:
+  # - values are integers
+  # - keys are sorted in lexical order
+  
+  results, seen_keys = {}, []
+  for entry in value.split(" "):
+    try:
+      if not '=' in entry:
+        raise ValueError("must only have 'key=value' entries")
+      
+      entry_key, entry_value = entry.split("=", 1)
+      
+      try:
+        # the int() function accepts things like '+123', but we don't want to
+        if entry_value.startswith('+'):
+          raise ValueError()
+        
+        entry_value = int(entry_value)
+      except ValueError:
+        raise ValueError("'%s' is a non-numeric value" % entry_value)
+      
+      if validate:
+        # parameters should be in ascending order by their key
+        for prior_key in seen_keys:
+          if prior_key > entry_key:
+            raise ValueError("parameters must be sorted by their key")
+      
+      results[entry_key] = entry_value
+      seen_keys.append(entry_key)
+    except ValueError, exc:
+      if not validate: continue
+      raise ValueError("Unable to parse network status document's '%s' line (%s): %s'" % (keyword, exc, value))
+  
+  return results
 
 class DirectoryAuthority(stem.descriptor.Descriptor):
   """
