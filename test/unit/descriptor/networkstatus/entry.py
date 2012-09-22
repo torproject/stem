@@ -73,7 +73,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Parses a minimal router status entry.
     """
     
-    entry = RouterStatusEntry(get_router_status_entry(), None)
+    entry = RouterStatusEntry(get_router_status_entry())
     
     expected_flags = set([Flag.FAST, Flag.NAMED, Flag.RUNNING, Flag.STABLE, Flag.VALID])
     self.assertEqual(None, entry.document)
@@ -114,7 +114,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
     
     content = get_router_status_entry({'z': 'New tor feature: sparkly unicorns!'})
-    entry = RouterStatusEntry(content, None)
+    entry = RouterStatusEntry(content)
     self.assertEquals(['z New tor feature: sparkly unicorns!'], entry.get_unrecognized_lines())
   
   def test_proceeding_line(self):
@@ -131,7 +131,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
     
     content = get_router_status_entry() + "\n\nv Tor 0.2.2.35\n\n"
-    entry = RouterStatusEntry(content, None)
+    entry = RouterStatusEntry(content)
     self.assertEqual("Tor 0.2.2.35", entry.version_line)
   
   def test_missing_r_field(self):
@@ -293,7 +293,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     
     for s_line, expected in test_values.items():
       content = get_router_status_entry({'s': s_line})
-      entry = RouterStatusEntry(content, None)
+      entry = RouterStatusEntry(content)
       self.assertEquals(expected, entry.flags)
     
     # tries some invalid inputs
@@ -321,7 +321,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     
     for v_line, expected in test_values.items():
       content = get_router_status_entry({'v': v_line})
-      entry = RouterStatusEntry(content, None)
+      entry = RouterStatusEntry(content)
       self.assertEquals(expected, entry.version)
       self.assertEquals(v_line, entry.version_line)
     
@@ -343,7 +343,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     
     for w_line, expected in test_values.items():
       content = get_router_status_entry({'w': w_line})
-      entry = RouterStatusEntry(content, None)
+      entry = RouterStatusEntry(content)
       self.assertEquals(expected[0], entry.bandwidth)
       self.assertEquals(expected[1], entry.measured)
       self.assertEquals(expected[2], entry.unrecognized_bandwidth_entries)
@@ -378,7 +378,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     
     for p_line, expected in test_values.items():
       content = get_router_status_entry({'p': p_line})
-      entry = RouterStatusEntry(content, None)
+      entry = RouterStatusEntry(content)
       self.assertEquals(expected, entry.exit_policy)
     
     # tries some invalid inputs
@@ -414,7 +414,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     
     for m_line, expected in test_values.items():
       content = get_router_status_entry({'m': m_line})
-      entry = RouterStatusEntry(content, mock_document)
+      entry = RouterStatusEntry(content, document = mock_document)
       self.assertEquals(expected, entry.microdescriptor_hashes)
     
     # try without a document
@@ -430,7 +430,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     
     for m_line in test_values:
       content = get_router_status_entry({'m': m_line})
-      self.assertRaises(ValueError, RouterStatusEntry, content, mock_document)
+      self.assertRaises(ValueError, RouterStatusEntry, content, True, mock_document)
   
   def _expect_invalid_attr(self, content, attr = None, expected_value = None):
     """
@@ -439,8 +439,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     value when we're constructed without validation.
     """
     
-    self.assertRaises(ValueError, RouterStatusEntry, content, None)
-    entry = RouterStatusEntry(content, None, False)
+    self.assertRaises(ValueError, RouterStatusEntry, content)
+    entry = RouterStatusEntry(content, False)
     
     if attr:
       self.assertEquals(expected_value, getattr(entry, attr))

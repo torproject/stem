@@ -149,59 +149,58 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
     document = MicrodescriptorConsensus(document_content, validate)
     router_type = RouterMicrodescriptor
   
-  for desc in _get_routers(document_file, validate, document, routers_start, routers_end, router_type):
+  desc_iterator = _get_entries(
+    document_file,
+    validate,
+    entry_class = router_type,
+    entry_keyword = ROUTERS_START,
+    start_position = routers_start,
+    end_position = routers_end,
+    extra_args = (document,),
+  )
+  
+  for desc in desc_iterator:
     yield desc
 
-def _get_routers(document_file, validate, document, start_position, end_position, router_type):
+def _get_entries(document_file, validate, entry_class, entry_keyword, start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
   """
-  Iterates over the router entries in a given document. The document_file is
-  expected to be at the start of the router section and the end_position
-  desigates where that section ends.
+  Reads a range of the document_file containing some number of entry_class
+  instances. We deliminate the entry_class entries by the keyword on their
+  first line (entry_keyword). When finished the document is left at the
+  end_position.
+  
+  Either a end_position or section_end_keywords must be provided.
   
   :param file document_file: file with network status document content
   :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
-  :param object document: document the descriptors originate from
-  :param int start_position: start of the routers section
-  :param int end_position: end of the routers section
-  :param class router_type: router class to construct
+  :param class entry_class: class to construct instance for
+  :param str entry_keyword: first keyword for the entry instances
+  :param int start_position: start of the section, default is the current position
+  :param int end_position: end of the section
+  :param tuple section_end_keywords: keyword(s) that deliminate the end of the section if no end_position was provided
+  :param tuple extra_args: extra arguments for the entry_class (after the content and validate flag)
   
-  :returns: iterator over router_type instances
+  :returns: iterator over entry_class instances
   
   :raises:
     * ValueError if the contents is malformed and validate is True
     * IOError if the file can't be read
   """
   
+  if start_position is None:
+    start_position = document_file.tell()
+  
+  if end_position is None:
+    if section_end_keywords:
+      _read_until_keywords(section_end_keywords, document_file, skip = True)
+      end_position = document_file.tell()
+    else:
+      raise ValueError("Either a end_position or section_end_keywords must be provided")
+  
   document_file.seek(start_position)
   while document_file.tell() < end_position:
-    desc_content = "".join(_read_until_keywords("r", document_file, ignore_first = True, end_position = end_position))
-    yield router_type(desc_content, document, validate)
-
-def _get_authorities(authorities, is_vote, validate):
-  """
-  Iterates over the authoritiy entries in given content.
-  
-  :param str authority_lines: content of the authorities section
-  :param bool is_vote: indicates if this is for a vote or contensus document
-  :param bool validate: True if the document is to be validated, False otherwise
-  
-  :returns: DirectoryAuthority entries represented by the content
-  
-  :raises: ValueError if the document is invalid
-  """
-  
-  auth_buffer = []
-  
-  for line in authorities.split("\n"):
-    if not line: continue
-    elif line.startswith(AUTH_START) and auth_buffer:
-      yield DirectoryAuthority("\n".join(auth_buffer), is_vote, validate)
-      auth_buffer = []
-    
-    auth_buffer.append(line)
-  
-  if auth_buffer:
-    yield DirectoryAuthority("\n".join(auth_buffer), is_vote, validate)
+    desc_content = "".join(_read_until_keywords(entry_keyword, document_file, ignore_first = True, end_position = end_position))
+    yield router_type(desc_content, validate, *extra_args)
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
   """
@@ -249,18 +248,27 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     super(NetworkStatusDocument, self).__init__(raw_content)
     document_file = StringIO(raw_content)
     
-    header = _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file)
-    self._header = _DocumentHeader("".join(header), validate, default_params)
+    self._header = _DocumentHeader(document_file, validate, default_params)
     
-    authorities = _read_until_keywords((ROUTERS_START, FOOTER_START), document_file)
-    self.directory_authorities = list(_get_authorities("".join(authorities), self._header.is_vote, validate))
+    self.directory_authorities = tuple(_get_entries(
+      document_file,
+      validate,
+      entry_class = DirectoryAuthority,
+      entry_keyword = AUTH_START,
+      section_end_keywords = (ROUTERS_START, FOOTER_START),
+      extra_args = (self._header.is_vote,),
+    ))
     
-    routers_start = document_file.tell()
-    _read_until_keywords(FOOTER_START, document_file, skip = True)
-    routers_end = document_file.tell()
+    self.routers = tuple(_get_entries(
+      document_file,
+      validate,
+      entry_class = self._get_router_type(),
+      entry_keyword = ROUTERS_START,
+      section_end_keywords = FOOTER_START,
+      extra_args = (self,),
+    ))
     
-    self._footer = _DocumentFooter(document_file.read(), validate, self._header)
-    
+    self._footer = _DocumentFooter(document_file, validate, self._header)
     self._unrecognized_lines = []
     
     # copy the header and footer attributes into us
@@ -269,8 +277,6 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
         setattr(self, attr, value)
       else:
         self._unrecognized_lines += value
-    
-    self.routers = tuple(_get_routers(document_file, validate, self, routers_start, routers_end, self._get_router_type()))
   
   def _get_router_type(self):
     return RouterStatusEntry
@@ -292,7 +298,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     return list(self._unrecognized_lines)
 
 class _DocumentHeader(object):
-  def __init__(self, content, validate, default_params):
+  def __init__(self, document_file, validate, default_params):
     self.version = None
     self.is_consensus = True
     self.is_vote = False
@@ -311,6 +317,7 @@ class _DocumentHeader(object):
     
     self._unrecognized_lines = []
     
+    content = "".join(_read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
     entries = stem.descriptor._get_descriptor_components(content, validate)[0]
     self._parse(entries, validate)
     
@@ -485,12 +492,12 @@ class _DocumentHeader(object):
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
 
 class _DocumentFooter(object):
-  def __init__(self, content, validate, header):
+  def __init__(self, document_file, validate, header):
     self.signatures = []
     self.bandwidth_weights = {}
-    
     self._unrecognized_lines = []
     
+    content = document_file.read()
     if validate and content and not header.meets_consensus_method(9):
       raise ValueError("Network status document's footer should only apepar in consensus-method 9 or later")
     elif not content and not header.meets_consensus_method(9):
@@ -655,7 +662,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
   | legacy_dir_key is the only optional attribute
   """
   
-  def __init__(self, raw_content, vote = True, validate = True):
+  def __init__(self, raw_content, validate, vote = True):
     """
     Parse a directory authority entry in a v3 network status document and
     provide a DirectoryAuthority object.
@@ -765,7 +772,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
   **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   """
   
-  def __init__(self, raw_contents, document, validate = True):
+  def __init__(self, raw_contents, validate = True, document = None):
     """
     Parse a router descriptor in a v3 network status document.
     
@@ -1045,7 +1052,7 @@ class RouterMicrodescriptor(RouterStatusEntry):
   | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
   """
   
-  def __init__(self, raw_contents, document, validate = True):
+  def __init__(self, raw_contents, validate, document):
     """
     Parse a router descriptor in a v3 microdescriptor consensus and provide a new
     RouterMicrodescriptor object.
@@ -1057,7 +1064,7 @@ class RouterMicrodescriptor(RouterStatusEntry):
     :raises: ValueError if the descriptor data is invalid
     """
     
-    super(RouterMicrodescriptor, self).__init__(raw_contents, document, validate)
+    super(RouterMicrodescriptor, self).__init__(raw_contents, validate, document)
     
     self.document = document
   
