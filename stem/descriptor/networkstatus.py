@@ -88,6 +88,10 @@ FOOTER_STATUS_DOCUMENT_FIELDS = (
 HEADER_FIELDS = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS]
 FOOTER_FIELDS = [attr[0] for attr in FOOTER_STATUS_DOCUMENT_FIELDS]
 
+AUTH_START = "dir-source"
+ROUTERS_START = "r"
+FOOTER_START = "directory-footer"
+
 DEFAULT_PARAMS = {
   "bwweightscale": 10000,
   "cbtdisabled": 0,
@@ -127,8 +131,8 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
     * IOError if the file can't be read
   """
   
-  header, footer, routers_end = _get_document_content(document_file, validate)
-  document_data = header + footer
+  header, authorities, footer, routers_end = _get_document_content(document_file, validate)
+  document_data = header + authorities + footer
   
   if not is_microdescriptor:
     document = NetworkStatusDocument(document_data, validate)
@@ -142,9 +146,14 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
 
 def _get_document_content(document_file, validate):
   """
-  Network status documents consist of three sections: header, router entries,
-  and the footer. This provides back a tuple with the following...
-  (header, footer, routers_end)
+  Network status documents consist of four sections:
+  * header
+  * authority entries
+  * router entries
+  * footer
+  
+  This provides back a tuple with the following...
+  (header, authorities, footer, routers_end)
   
   This leaves the document_file at the start of the router entries.
   
@@ -158,22 +167,21 @@ def _get_document_content(document_file, validate):
     * IOError if the file can't be read
   """
   
-  # parse until the first router record
+  # parse until the first record of a following section
+  header = _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file)
+  authorities = _read_until_keywords((ROUTERS_START, FOOTER_START), document_file)
   
-  header = _read_until_keywords(("r", "directory-footer", "directory-signature"), document_file)
+  # skip router section, just taking note of the position
   routers_start = document_file.tell()
-  
-  # figure out the network status version
-  
-  # TODO: we should pick either 'directory-footer' or 'directory-signature'
-  # based on the header's network-status-version
-  
-  _read_until_keywords(("directory-footer", "directory-signature"), document_file, skip = True)
+  _read_until_keywords(FOOTER_START, document_file, skip = True)
   routers_end = document_file.tell()
+  
   footer = document_file.readlines()
   
+  # leave our position at the start of the router section
   document_file.seek(routers_start)
-  return ("".join(header), "".join(footer), routers_end)
+  
+  return ("".join(header), "".join(authorities), "".join(footer), routers_end)
 
 def _get_routers(document_file, validate, document, end_position, router_type):
   """
@@ -197,6 +205,32 @@ def _get_routers(document_file, validate, document, end_position, router_type):
   while document_file.tell() < end_position:
     desc_content = "".join(_read_until_keywords("r", document_file, ignore_first = True, end_position = end_position))
     yield router_type(desc_content, document, validate)
+
+def _get_authorities(authority_lines, is_vote, validate):
+  """
+  Iterates over the authoritiy entries in given content.
+  
+  :param list authority_lines: lines of content to be parsed
+  :param bool is_vote: indicates if this is for a vote or contensus document
+  :param bool validate: True if the document is to be validated, False otherwise
+  
+  :returns: DirectoryAuthority entries represented by the content
+  
+  :raises: ValueError if the document is invalid
+  """
+  
+  auth_buffer = []
+  
+  for line in authority_lines:
+    if not line: continue
+    elif line.startswith(AUTH_START) and auth_buffer:
+      yield DirectoryAuthority("\n".join(auth_buffer), is_vote, validate)
+      auth_buffer = []
+    
+    auth_buffer.append(line)
+  
+  if auth_buffer:
+    yield DirectoryAuthority("\n".join(auth_buffer), is_vote, validate)
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
   """
@@ -247,18 +281,17 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     self._unrecognized_lines = []
     
     document_file = StringIO(raw_content)
-    header_content, footer_content, routers_end = _get_document_content(document_file, validate)
+    header_content, authority_content, footer_content, routers_end = _get_document_content(document_file, validate)
     
     self._header = _DocumentHeader(header_content, validate, default_params)
     self._footer = _DocumentFooter(footer_content, validate, self._header)
+    self.directory_authorities = list(_get_authorities(authority_content.split("\n"), self._header.is_vote, validate))
     
     for attr, value in vars(self._header).items() + vars(self._footer).items():
       if attr != "_unrecognized_lines":
         setattr(self, attr, value)
       else:
         self._unrecognized_lines += value
-    
-    self._parse_old(header_content + footer_content, validate)
     
     if document_file.tell() < routers_end:
       self.routers = tuple(_get_routers(document_file, validate, self, routers_end, self._get_router_type()))
@@ -283,36 +316,6 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
-  
-  def _parse_old(self, raw_content, validate):
-    # preamble
-    content = StringIO(raw_content)
-    read_keyword_line = lambda keyword, optional = False: setattr(self, keyword.replace("-", "_"), _read_keyword_line(keyword, content, validate, optional))
-    
-    # ignore things the parse() method handles
-    _read_keyword_line("network-status-version", content, False, True)
-    _read_keyword_line("vote-status", content, False, True)
-    _read_keyword_line("consensus-methods", content, False, True)
-    _read_keyword_line("consensus-method", content, False, True)
-    _read_keyword_line("published", content, False, True)
-    _read_keyword_line("valid-after", content, False, True)
-    _read_keyword_line("fresh-until", content, False, True)
-    _read_keyword_line("valid-until", content, False, True)
-    _read_keyword_line("voting-delay", content, False, True)
-    _read_keyword_line("client-versions", content, False, True)
-    _read_keyword_line("server-versions", content, False, True)
-    _read_keyword_line("known-flags", content, False, True)
-    _read_keyword_line("params", content, False, True)
-    
-    # authority section
-    while _peek_keyword(content) == "dir-source":
-      dirauth_data = _read_until_keywords(["dir-source", "r", "directory-footer", "directory-signature", "bandwidth-weights"], content, False, True)
-      dirauth_data = "".join(dirauth_data).rstrip()
-      self.directory_authorities.append(DirectoryAuthority(dirauth_data, self.is_vote, validate))
-    
-    _read_keyword_line("directory-footer", content, False, True)
-    _read_keyword_line("bandwidth-weights", content, False, True)
-    _read_keyword_line("directory-signature", content, False, True)
 
 class _DocumentHeader(object):
   def __init__(self, content, validate, default_params):
