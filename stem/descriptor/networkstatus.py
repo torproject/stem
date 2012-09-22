@@ -131,59 +131,28 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
     * IOError if the file can't be read
   """
   
-  header, authorities, footer, routers_end = _get_document_content(document_file, validate)
-  document_data = header + authorities + footer
+  # getting the document without the routers section
   
-  if not is_microdescriptor:
-    document = NetworkStatusDocument(document_data, validate)
-    router_type = RouterStatusEntry
-  else:
-    document = MicrodescriptorConsensus(document_data, validate)
-    router_type = RouterMicrodescriptor
+  header = _read_until_keywords((ROUTERS_START, FOOTER_START), document_file)
   
-  for desc in _get_routers(document_file, validate, document, routers_end, router_type):
-    yield desc
-
-def _get_document_content(document_file, validate):
-  """
-  Network status documents consist of four sections:
-  * header
-  * authority entries
-  * router entries
-  * footer
-  
-  This provides back a tuple with the following...
-  (header, authorities, footer, routers_end)
-  
-  This leaves the document_file at the start of the router entries.
-  
-  :param file document_file: file with network status document content
-  :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
-  
-  :returns: tuple with the network status document content and ending position of the routers
-  
-  :raises:
-    * ValueError if the contents is malformed and validate is True
-    * IOError if the file can't be read
-  """
-  
-  # parse until the first record of a following section
-  header = _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file)
-  authorities = _read_until_keywords((ROUTERS_START, FOOTER_START), document_file)
-  
-  # skip router section, just taking note of the position
   routers_start = document_file.tell()
   _read_until_keywords(FOOTER_START, document_file, skip = True)
   routers_end = document_file.tell()
   
   footer = document_file.readlines()
+  document_content = header + footer
   
-  # leave our position at the start of the router section
-  document_file.seek(routers_start)
+  if not is_microdescriptor:
+    document = NetworkStatusDocument(document_content, validate)
+    router_type = RouterStatusEntry
+  else:
+    document = MicrodescriptorConsensus(document_content, validate)
+    router_type = RouterMicrodescriptor
   
-  return ("".join(header), "".join(authorities), "".join(footer), routers_end)
+  for desc in _get_routers(document_file, validate, document, routers_start, routers_end, router_type):
+    yield desc
 
-def _get_routers(document_file, validate, document, end_position, router_type):
+def _get_routers(document_file, validate, document, start_position, end_position, router_type):
   """
   Iterates over the router entries in a given document. The document_file is
   expected to be at the start of the router section and the end_position
@@ -192,7 +161,8 @@ def _get_routers(document_file, validate, document, end_position, router_type):
   :param file document_file: file with network status document content
   :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
   :param object document: document the descriptors originate from
-  :param int end_position: location in the document_file where the router section ends
+  :param int start_position: start of the routers section
+  :param int end_position: end of the routers section
   :param class router_type: router class to construct
   
   :returns: iterator over router_type instances
@@ -202,15 +172,16 @@ def _get_routers(document_file, validate, document, end_position, router_type):
     * IOError if the file can't be read
   """
   
+  document_file.seek(start_position)
   while document_file.tell() < end_position:
     desc_content = "".join(_read_until_keywords("r", document_file, ignore_first = True, end_position = end_position))
     yield router_type(desc_content, document, validate)
 
-def _get_authorities(authority_lines, is_vote, validate):
+def _get_authorities(authorities, is_vote, validate):
   """
   Iterates over the authoritiy entries in given content.
   
-  :param list authority_lines: lines of content to be parsed
+  :param str authority_lines: content of the authorities section
   :param bool is_vote: indicates if this is for a vote or contensus document
   :param bool validate: True if the document is to be validated, False otherwise
   
@@ -221,7 +192,7 @@ def _get_authorities(authority_lines, is_vote, validate):
   
   auth_buffer = []
   
-  for line in authority_lines:
+  for line in authorities.split("\n"):
     if not line: continue
     elif line.startswith(AUTH_START) and auth_buffer:
       yield DirectoryAuthority("\n".join(auth_buffer), is_vote, validate)
@@ -276,27 +247,30 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     """
     
     super(NetworkStatusDocument, self).__init__(raw_content)
+    document_file = StringIO(raw_content)
     
-    self.directory_authorities = []
+    header = _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file)
+    self._header = _DocumentHeader("".join(header), validate, default_params)
+    
+    authorities = _read_until_keywords((ROUTERS_START, FOOTER_START), document_file)
+    self.directory_authorities = list(_get_authorities("".join(authorities), self._header.is_vote, validate))
+    
+    routers_start = document_file.tell()
+    _read_until_keywords(FOOTER_START, document_file, skip = True)
+    routers_end = document_file.tell()
+    
+    self._footer = _DocumentFooter(document_file.read(), validate, self._header)
+    
     self._unrecognized_lines = []
     
-    document_file = StringIO(raw_content)
-    header_content, authority_content, footer_content, routers_end = _get_document_content(document_file, validate)
-    
-    self._header = _DocumentHeader(header_content, validate, default_params)
-    self._footer = _DocumentFooter(footer_content, validate, self._header)
-    self.directory_authorities = list(_get_authorities(authority_content.split("\n"), self._header.is_vote, validate))
-    
+    # copy the header and footer attributes into us
     for attr, value in vars(self._header).items() + vars(self._footer).items():
       if attr != "_unrecognized_lines":
         setattr(self, attr, value)
       else:
         self._unrecognized_lines += value
     
-    if document_file.tell() < routers_end:
-      self.routers = tuple(_get_routers(document_file, validate, self, routers_end, self._get_router_type()))
-    else:
-      self.routers = ()
+    self.routers = tuple(_get_routers(document_file, validate, self, routers_start, routers_end, self._get_router_type()))
   
   def _get_router_type(self):
     return RouterStatusEntry
