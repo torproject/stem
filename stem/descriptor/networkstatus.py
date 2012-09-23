@@ -649,37 +649,96 @@ def _parse_int_mappings(keyword, value, validate):
 
 class DirectoryAuthority(stem.descriptor.Descriptor):
   """
-  Contains directory authority information obtained from v3 network status
-  documents.
+  Directory authority information obtained from a v3 network status document.
   
-  :var str nickname: directory authority's nickname
-  :var str fingerprint: uppercase hex fingerprint of the authority's identity key
-  :var str address: hostname
-  :var str ip: current IP address
-  :var int dir_port: current directory port
-  :var int or_port: current orport
-  :var str contact: directory authority's contact information
-  :var str legacy_dir_key: **^** fingerprint of and obsolete identity key
-  :var :class:`stem.descriptor.KeyCertificate` key_certificate: **^** directory authority's current key certificate
-  :var str vote_digest: **~** digest of the authority that contributed to the consensus
+  :var str nickname: **\*** authority's nickname
+  :var str fingerprint: **\*** authority's fingerprint
+  :var str hostname: **\*** hostname of the authority
+  :var str address: **\*** authority's IP address
+  :var int dir_port: **\*** authority's DirPort
+  :var int or_port: **\*** authority's ORPort
+  :var str contact: **\*** contact information
   
-  | **^** attribute appears only in votes
-  | **~** attribute appears only in consensuses
-  | legacy_dir_key is the only optional attribute
+  **Consensus Attributes:**
+  :var str vote_digest: **\*** digest of the authority that contributed to the consensus
+  
+  **Vote Attributes:**
+  :var str legacy_dir_key: fingerprint of and obsolete identity key
+  :var :class:`stem.descriptor.KeyCertificate` key_certificate: **\*** authority's key certificate
+  
+  **\*** mandatory attribute
   """
   
-  def __init__(self, raw_content, validate, vote = True):
+  def __init__(self, raw_content, validate, is_vote = True):
     """
-    Parse a directory authority entry in a v3 network status document and
-    provide a DirectoryAuthority object.
+    Parse a directory authority entry in a v3 network status document.
     
     :param str raw_content: raw directory authority entry information
-    :param bool validate: True if the document is to be validated, False otherwise
+    :param bool validate: checks the validity of the content if True, skips these checks otherwise
+    :param bool is_vote: True if this is for a vote, False if it's for a consensus
     
-    :raises: ValueError if the raw data is invalid
+    :raises: ValueError if the descriptor data is invalid
     """
     
     super(DirectoryAuthority, self).__init__(raw_content)
+    
+    self.nickname = None
+    self.fingerprint = None
+    self.address = None
+    self.dir_port = None
+    self.or_port = None
+    self.contact = None
+    
+    self.vote_digest = None
+    
+    self.legacy_dir_key = None
+    self.key_certificate = None
+    
+    self._unrecognized_lines = []
+    
+    #self._parse(raw_contents, validate, is_vote)
+    self._parse_old(raw_contents, validate, is_vote)
+  
+  def _parse(self, content, validate, is_vote):
+    """
+    Parses the given content and applies the attributes.
+    
+    :param str content: descriptor content
+    :param bool validate: checks validity if True
+    :param bool is_vote: True if this is for a vote, False if it's for a consensus
+    
+    :raises: ValueError if a validity check fails
+    """
+    
+    entries, first_keyword, _, _ = stem.descriptor._get_descriptor_components(content, validate)
+    
+    if validate and first_keyword != 'dir-source':
+      raise ValueError("Authority entries are expected to start with a 'dir-source' line:\n%s" % (content))
+    
+    # check that we have mandatory fields
+    if validate:
+      required_fields = ["dir-source", "contact"]
+      
+      if is_vote:
+        pass
+        #required_fields += ... god damnit
+      else:
+        required_fields += ["vote-digest"]
+      
+      
+      for keyword in required_fields:
+        if not keyword in entries:
+          raise ValueError("Authority entries must have a '%s' line:\n%s" % (keyword, content))
+    
+    for keyword, values in entries.items():
+      value, block_contents = values[0]
+      line = "%s %s" % (keyword, value)
+      
+      # all known attributes can only appear at most once
+      #if validate and len(values) > 1 and keyword in ('r', 's', 'v', 'w', 'p'):
+      #  raise ValueError("Router status entries can only have a single '%s' line, got %i:\n%s" % (key, len(values), content))
+  
+  def _parse_old(self, content, validate, is_vote):
     self.nickname, self.fingerprint, self.address, self.ip = None, None, None, None
     self.dir_port, self.or_port, self.legacy_dir_key = None, None, None
     self.key_certificate, self.contact, self.vote_digest = None, None, None
