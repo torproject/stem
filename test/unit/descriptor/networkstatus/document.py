@@ -214,12 +214,15 @@ class TestNetworkStatusDocument(unittest.TestCase):
     Rearranges our descriptor fields.
     """
     
-    self.skipTest("Needs a parser rewrite first")
     for is_consensus in (True, False):
       attr = {"vote-status": "consensus"} if is_consensus else {"vote-status": "vote"}
       lines = get_network_status_document(attr).split("\n")
       
       for i in xrange(len(lines) - 1):
+        # once we reach the crypto blob we're done since swapping those won't
+        # be detected
+        if lines[i].startswith("e1XH33"): break
+        
         # swaps this line with the one after it
         test_lines = list(lines)
         test_lines[i], test_lines[i + 1] = test_lines[i + 1], test_lines[i]
