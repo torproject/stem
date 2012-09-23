@@ -4,10 +4,12 @@ Unit tests for the NetworkStatusDocument of stem.descriptor.networkstatus.
 
 import datetime
 import unittest
+import StringIO
 
 import stem.version
 from stem.descriptor import Flag
-from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, NetworkStatusDocument, DocumentSignature
+from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, RouterStatusEntry, NetworkStatusDocument, DocumentSignature, parse_file
+from test.unit.descriptor.networkstatus.entry import get_router_status_entry
 
 sig_block = """\
 -----BEGIN SIGNATURE-----
@@ -32,7 +34,6 @@ NETWORK_STATUS_DOCUMENT_ATTR = {
   "directory-footer": "",
   "directory-signature": "%s %s\n%s" % (SIG.identity, SIG.key_digest, SIG.signature),
 }
-
 
 def get_network_status_document(attr = None, exclude = None, routers = None):
   """
@@ -89,7 +90,13 @@ def get_network_status_document(attr = None, exclude = None, routers = None):
     if attr_value: attr_value = " %s" % attr_value
     remainder.append(attr_keyword + attr_value)
   
-  return "\n".join(header_content + remainder + routers + footer_content)
+  # join the routers into a single block, then split it into lines
+  if routers:
+    router_lines = ("\n".join([str(r) for r in routers])).split("\n")
+  else:
+    router_lines = []
+  
+  return "\n".join(header_content + remainder + router_lines + footer_content)
 
 class TestNetworkStatusDocument(unittest.TestCase):
   def test_minimal_consensus(self):
@@ -155,6 +162,27 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual({}, document.bandwidth_weights)
     self.assertEqual([SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
+  
+  def test_parse_file(self):
+    """
+    Try parsing a document via the parse_file() function.
+    """
+    
+    entry1 = RouterStatusEntry(get_router_status_entry({'s': "Fast"}))
+    entry2 = RouterStatusEntry(get_router_status_entry({'s': "Valid"}))
+    content = get_network_status_document(routers = (entry1, entry2))
+    
+    # the document that the entries refer to should actually be the minimal
+    # descriptor (ie, without the entries)
+    
+    expected_document = NetworkStatusDocument(get_network_status_document())
+    
+    descriptor_file = StringIO.StringIO(content)
+    entries = list(parse_file(descriptor_file))
+    
+    self.assertEquals(entry1, entries[0])
+    self.assertEquals(entry2, entries[1])
+    self.assertEquals(expected_document, entries[0].document)
   
   def test_missing_fields(self):
     """
@@ -680,4 +708,27 @@ class TestNetworkStatusDocument(unittest.TestCase):
         content = get_network_status_document({"directory-signature": "%s %s\n%s" % tuple(attrs)})
         self.assertRaises(ValueError, NetworkStatusDocument, content)
         NetworkStatusDocument(content, False) # checks that it's still parseable without validation
+  
+  def test_with_router_status_entries(self):
+    """
+    Includes a router status entry within the document. This isn't to test the
+    RouterStatusEntry parsing but rather the inclusion of it within the
+    document.
+    """
+    
+    entry1 = RouterStatusEntry(get_router_status_entry({'s': "Fast"}))
+    entry2 = RouterStatusEntry(get_router_status_entry({'s': "Valid"}))
+    content = get_network_status_document(routers = (entry1, entry2))
+    
+    document = NetworkStatusDocument(content)
+    self.assertEquals((entry1, entry2), document.routers)
+    
+    # try with an invalid RouterStatusEntry
+    
+    entry3 = RouterStatusEntry(get_router_status_entry({'r': "ugabuga"}), False)
+    content = get_network_status_document(routers = (entry3,))
+    
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    document = NetworkStatusDocument(content, False)
+    self.assertEquals((entry3,), document.routers)
 

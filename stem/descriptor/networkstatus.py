@@ -140,7 +140,7 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
   routers_end = document_file.tell()
   
   footer = document_file.readlines()
-  document_content = header + footer
+  document_content = "".join(header + footer)
   
   if not is_microdescriptor:
     document = NetworkStatusDocument(document_content, validate)
@@ -200,7 +200,7 @@ def _get_entries(document_file, validate, entry_class, entry_keyword, start_posi
   document_file.seek(start_position)
   while document_file.tell() < end_position:
     desc_content = "".join(_read_until_keywords(entry_keyword, document_file, ignore_first = True, end_position = end_position))
-    yield router_type(desc_content, validate, *extra_args)
+    yield entry_class(desc_content, validate, *extra_args)
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
   """
@@ -296,6 +296,12 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
+  
+  def __cmp__(self, other):
+    if not isinstance(other, NetworkStatusDocument):
+      return 1
+    
+    return str(self) > str(other)
 
 class _DocumentHeader(object):
   def __init__(self, document_file, validate, default_params):
@@ -994,6 +1000,12 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     """
     
     return list(self._unrecognized_lines)
+  
+  def __cmp__(self, other):
+    if not isinstance(other, RouterStatusEntry):
+      return 1
+    
+    return str(self) > str(other)
 
 class MicrodescriptorConsensus(NetworkStatusDocument):
   """
