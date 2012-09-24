@@ -94,7 +94,7 @@ def config_dict(handle, conf_mappings, handler = None):
   for staying in sync is similar to the Config class' synchronize() method,
   only changing the dictionary's values if we're able to cast to the same type.
   
-  If an handler is provided then this is called just prior to assigning new
+  If a handler is provided then this is called just prior to assigning new
   values to the config_dict. The handler function is expected to accept the
   (key, value) for the new values and return what we should actually insert
   into the dictionary. If this returns None then the value is updated as

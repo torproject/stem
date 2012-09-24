@@ -8,5 +8,6 @@ __all__ = [
   "output",
   "prompt",
   "runner",
+  "utils",
 ]
 

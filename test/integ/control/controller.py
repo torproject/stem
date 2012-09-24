@@ -6,6 +6,7 @@ from __future__ import with_statement
 
 import re
 import shutil
+import socket
 import unittest
 import tempfile
 
@@ -14,6 +15,7 @@ import stem.socket
 import stem.version
 import stem.response.protocolinfo
 import test.runner
+import test.util
 
 class TestController(unittest.TestCase):
   def test_from_port(self):
@@ -352,6 +354,8 @@ class TestController(unittest.TestCase):
     Test controller.signal with valid and invalid signals.
     """
     
+    if test.runner.require_control(self): return
+    
     with test.runner.get_runner().get_tor_controller() as controller:
       # valid signal
       controller.signal("CLEARDNSCACHE")
@@ -401,4 +405,26 @@ class TestController(unittest.TestCase):
       
       self.assertRaises(stem.socket.InvalidRequest, controller.repurpose_circuit, 'f934h9f3h4', "fooo")
       self.assertRaises(stem.socket.InvalidRequest, controller.repurpose_circuit, '4', "fooo")
+  
+  def test_mapaddress(self):
+    
+    if test.runner.require_control(self): return
+    elif test.runner.require_online(self): return
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      controller.map_address({'1.2.1.2': 'ifconfig.me'})
+      
+      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      s.connect(('127.0.0.1', int(controller.get_conf('SocksPort'))))
+      test.util.negotiate_socks(s, '1.2.1.2', 80)
+      s.sendall(test.util.ip_request) # make the http request for the ip address
+      response = s.recv(1000)
+      
+      # everything after the blank line is the 'data' in a HTTP response.
+      # The response data for our request for request should be an IP address + '\n'
+      ip_addr = response[response.find("\r\n\r\n"):].strip()
+      
+      self.assertTrue(stem.util.connection.is_valid_ip_address(ip_addr))
 
