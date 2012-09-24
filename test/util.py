@@ -37,7 +37,7 @@ def external_ip(sock):
     # The response data for our request for request should be an IP address + '\n'
     return response[response.find("\r\n\r\n"):].strip()
   except:
-    pass
+    return None
 
 def negotiate_socks(sock, host, port):
   """

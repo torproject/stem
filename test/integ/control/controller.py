@@ -15,7 +15,7 @@ import stem.socket
 import stem.version
 import stem.response.protocolinfo
 import test.runner
-import test.utils
+import test.util
 
 class TestController(unittest.TestCase):
   def test_from_port(self):
@@ -418,13 +418,13 @@ class TestController(unittest.TestCase):
       
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       s.connect(('127.0.0.1', int(controller.get_conf('SocksPort'))))
-      test.utils.negotiate_socks(s, '1.2.1.2', 80)
-      s.sendall(test.utils.ip_request) # make the http request for the ip address
+      test.util.negotiate_socks(s, '1.2.1.2', 80)
+      s.sendall(test.util.ip_request) # make the http request for the ip address
       response = s.recv(1000)
       
       # everything after the blank line is the 'data' in a HTTP response.
       # The response data for our request for request should be an IP address + '\n'
       ip_addr = response[response.find("\r\n\r\n"):].strip()
       
-      stem.util.connection.is_valid_ip_address(ip_addr)
+      self.assertTrue(stem.util.connection.is_valid_ip_address(ip_addr))
 
