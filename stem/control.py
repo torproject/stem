@@ -1148,7 +1148,8 @@ class Controller(BaseController):
     :returns: dictionary with original -> replacement address mappings
     """
     
-    response = self.msg("MAPADDRESS %s" % " ".join([k + "=" + mapping[k] for k in mapping.iterkeys()]))
+    mapaddress_arg = " ".join(["%s=%s" % (k, v) for (k, v) in mapping.items()])
+    response = self.msg("MAPADDRESS %s" % mapaddress_arg)
     stem.response.convert("MAPADDRESS", response)
     
     return response.entries

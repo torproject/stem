@@ -69,7 +69,7 @@ ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
 
 BASE_TORRC = """# configuration for stem integration tests
 DataDirectory %s
-SocksPort 29327
+SocksPort 1112
 DownloadExtraInfo 1
 """
 

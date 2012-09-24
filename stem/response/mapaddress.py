@@ -31,8 +31,9 @@ class MapAddressResponse(stem.response.ControlMessage):
     
     for code, _, message in self.content():
       if code == "250":
-        try: key, value = message.split("=", 1)
-        except ValueError: raise stem.socket.ProtocolError(None, "Not a mapping")
-        
-        self.entries[key] = value
+        try:
+          key, value = message.split("=", 1)
+          self.entries[key] = value
+        except ValueError:
+          raise stem.socket.ProtocolError(None, "MAPADDRESS returned '%s', which isn't a mapping" % message)
 

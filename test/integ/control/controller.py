@@ -409,6 +409,7 @@ class TestController(unittest.TestCase):
   def test_mapaddress(self):
     
     if test.runner.require_control(self): return
+    elif test.runner.require_online(self): return
     
     runner = test.runner.get_runner()
     
@@ -418,9 +419,12 @@ class TestController(unittest.TestCase):
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       s.connect(('127.0.0.1', int(controller.get_conf('SocksPort'))))
       test.utils.negotiate_socks(s, '1.2.1.2', 80)
-      s.sendall(test.utils.ip_request)
+      s.sendall(test.utils.ip_request) # make the http request for the ip address
       response = s.recv(1000)
+      
+      # everything after the blank line is the 'data' in a HTTP response.
+      # The response data for our request for request should be an IP address + '\n'
       ip_addr = response[response.find("\r\n\r\n"):].strip()
       
-      socket.inet_aton(ip_addr) # validate IP
+      stem.util.connection.is_valid_ip_address(ip_addr)
 

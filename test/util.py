@@ -20,6 +20,8 @@ Accept-Encoding: identity
 def external_ip(sock):
   """
   Returns the externally visible IP address when using a SOCKS4a proxy.
+  Negotiates the socks connection, connects to ipconfig.me and requests
+  http://ifconfig.me/ip to find out the externally visible IP.
   
   :param socket sock: socket connected to a SOCKS4a proxy server
   
@@ -31,7 +33,9 @@ def external_ip(sock):
     s.sendall(req)
     response = s.recv(1000)
     
-    return response[response.find("\n\n"):].strip()
+    # everything after the blank line is the 'data' in a HTTP response
+    # The response data for our request for request should be an IP address + '\n'
+    return response[response.find("\r\n\r\n"):].strip()
   except:
     pass
 
@@ -49,6 +53,7 @@ def negotiate_socks(sock, host, port):
   :returns: a list with the IP address and the port that the proxy connected to
   """
   
+  # SOCKS4a request here - http://en.wikipedia.org/wiki/SOCKS#Protocol
   request = "\x04\x01" + struct.pack("!H", port) + "\x00\x00\x00\x01" + "\x00" + host + "\x00"
   sock.sendall(request)
   response = sock.recv(8)
