@@ -801,7 +801,7 @@ class KeyCertificate(stem.descriptor.Descriptor):
   **\*** mandatory attribute
   """
   
-  def __init__(self, raw_content, validate):
+  def __init__(self, raw_content, validate = True):
     super(KeyCertificate, self).__init__(raw_content)
     
     self.version = None
@@ -817,7 +817,7 @@ class KeyCertificate(stem.descriptor.Descriptor):
     
     self._unrecognized_lines = []
     
-    self._parse(raw_contents, validate)
+    self._parse(raw_content, validate)
   
   def _parse(self, content, validate):
     """
@@ -847,14 +847,6 @@ class KeyCertificate(stem.descriptor.Descriptor):
         entry_count = len(entries.get(keyword, []))
         if entry_count > 1:
           raise ValueError("Key certificates can only have a single '%s' line, got %i:\n%s" % (keyword, entry_count, content))
-      
-      # Check that our field's order matches the spec. This isn't explicitely
-      # stated in the spec, but the network status document requires a specific
-      # order so it stands to reason that the key certificate (which is in it)
-      # needs ot match a prescribed order too.
-      
-      fields = [attr[0] for attr in KEY_CERTIFICATE_PARAMS]
-      _check_for_misordered_fields(entries, fields)
     
     for keyword, values in entries.items():
       value, block_contents = values[0]
@@ -936,7 +928,7 @@ class KeyCertificate(stem.descriptor.Descriptor):
     :returns: a list of unrecognized lines
     """
     
-    return self.unrecognized_lines
+    return self._unrecognized_lines
 
 # TODO: microdescriptors have a slightly different format (including a
 # 'method') - should probably be a subclass
