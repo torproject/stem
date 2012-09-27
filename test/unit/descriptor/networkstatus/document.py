@@ -9,7 +9,7 @@ import StringIO
 import stem.version
 from stem.descriptor import Flag
 from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, RouterStatusEntry, NetworkStatusDocument, DocumentSignature, parse_file
-from test.unit.descriptor.networkstatus.entry import get_router_status_entry
+from test.mocking import get_router_status_entry
 
 sig_block = """\
 -----BEGIN SIGNATURE-----
@@ -168,8 +168,8 @@ class TestNetworkStatusDocument(unittest.TestCase):
     Try parsing a document via the parse_file() function.
     """
     
-    entry1 = RouterStatusEntry(get_router_status_entry({'s': "Fast"}))
-    entry2 = RouterStatusEntry(get_router_status_entry({'s': "Valid"}))
+    entry1 = get_router_status_entry({'s': "Fast"})
+    entry2 = get_router_status_entry({'s': "Valid"})
     content = get_network_status_document(routers = (entry1, entry2))
     
     # the document that the entries refer to should actually be the minimal
@@ -719,8 +719,8 @@ class TestNetworkStatusDocument(unittest.TestCase):
     document.
     """
     
-    entry1 = RouterStatusEntry(get_router_status_entry({'s': "Fast"}))
-    entry2 = RouterStatusEntry(get_router_status_entry({'s': "Valid"}))
+    entry1 = get_router_status_entry({'s': "Fast"})
+    entry2 = get_router_status_entry({'s': "Valid"})
     content = get_network_status_document(routers = (entry1, entry2))
     
     document = NetworkStatusDocument(content)
@@ -728,7 +728,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     # try with an invalid RouterStatusEntry
     
-    entry3 = RouterStatusEntry(get_router_status_entry({'r': "ugabuga"}), False)
+    entry3 = RouterStatusEntry(get_router_status_entry({'r': "ugabuga"}, content = True), False)
     content = get_network_status_document(routers = (entry3,))
     
     self.assertRaises(ValueError, NetworkStatusDocument, content)
