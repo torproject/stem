@@ -21,10 +21,12 @@ calling :func:`test.mocking.revert_mocking`.
     raise_exception - raises an exception when called
   
   Instance Constructors
-    get_message                  - stem.socket.ControlMessage
-    get_protocolinfo_response    - stem.response.protocolinfo.ProtocolInfoResponse
-    get_relay_server_descriptor  - stem.descriptor.server_descriptor.RelayDescriptor
-    get_bridge_server_descriptor - stem.descriptor.server_descriptor.BridgeDescriptor
+    get_message                     - stem.socket.ControlMessage
+    get_protocolinfo_response       - stem.response.protocolinfo.ProtocolInfoResponse
+    get_relay_server_descriptor     - stem.descriptor.server_descriptor.RelayDescriptor
+    get_bridge_server_descriptor    - stem.descriptor.server_descriptor.BridgeDescriptor
+    get_relay_extrainfo_descriptor  - stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor
+    get_bridge_extrainfo_descriptor - stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor
 """
 
 import inspect
@@ -35,6 +37,7 @@ import __builtin__
 import stem.response
 import stem.socket
 import stem.descriptor.server_descriptor
+import stem.descriptor.extrainfo_descriptor
 
 # Once we've mocked a function we can't rely on its __module__ or __name__
 # attributes, so instead we associate a unique 'mock_id' attribute that maps
@@ -54,7 +57,7 @@ skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
 
-SERVER_DESCRIPTOR_HEADER = (
+RELAY_SERVER_HEADER = (
   ("router", "caerSidi 71.35.133.197 9001 0 0"),
   ("published", "2012-03-01 17:15:27"),
   ("bandwidth", "153600 256000 104590"),
@@ -63,16 +66,34 @@ SERVER_DESCRIPTOR_HEADER = (
   ("signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
 )
 
-SERVER_DESCRIPTOR_FOOTER = (
+RELAY_SERVER_FOOTER = (
   ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
 )
 
-BRIDGE_DESCRIPTOR_HEADER = (
+BRIDGE_SERVER_HEADER = (
   ("router", "Unnamed 10.45.227.253 9001 0 0"),
   ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
   ("published", "2012-03-22 17:34:38"),
   ("bandwidth", "409600 819200 5120"),
   ("reject", "*:*"),
+)
+
+RELAY_EXTRAINFO_HEADER = (
+  ("extra-info", "ninja B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48"),
+  ("published", "2012-05-05 17:03:50"),
+)
+
+RELAY_EXTRAINFO_FOOTER = (
+  ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+)
+
+BRIDGE_EXTRAINFO_HEADER = (
+  ("extra-info", "ec2bridgereaac65a3 1EC248422B57D9C0BD751892FE787585407479A4"),
+  ("published", "2012-05-05 17:03:50"),
+)
+
+BRIDGE_EXTRAINFO_FOOTER = (
+  ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
 )
 
 def no_op():
@@ -373,7 +394,7 @@ def get_relay_server_descriptor(attr = None, exclude = (), content = False):
   :returns: RelayDescriptor for the requested descriptor content
   """
   
-  desc_content = _get_descriptor_content(attr, exclude, SERVER_DESCRIPTOR_HEADER, SERVER_DESCRIPTOR_FOOTER)
+  desc_content = _get_descriptor_content(attr, exclude, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
   
   if content:
     return desc_content
@@ -392,10 +413,48 @@ def get_bridge_server_descriptor(attr = None, exclude = (), content = False):
   :returns: BridgeDescriptor for the requested descriptor content
   """
   
-  desc_content = _get_descriptor_content(attr, exclude, BRIDGE_DESCRIPTOR_HEADER)
+  desc_content = _get_descriptor_content(attr, exclude, BRIDGE_SERVER_HEADER)
   
   if content:
     return desc_content
   else:
     return stem.descriptor.server_descriptor.BridgeDescriptor(desc_content, validate = False)
+
+def get_relay_extrainfo_descriptor(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: RelayExtraInfoDescriptor for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, RELAY_EXTRAINFO_HEADER, RELAY_EXTRAINFO_FOOTER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(desc_content, validate = False)
+
+def get_bridge_extrainfo_descriptor(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: BridgeExtraInfoDescriptor for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, BRIDGE_EXTRAINFO_HEADER, BRIDGE_EXTRAINFO_FOOTER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(desc_content, validate = False)
 
