@@ -21,9 +21,10 @@ calling :func:`test.mocking.revert_mocking`.
     raise_exception - raises an exception when called
   
   Instance Constructors
-    get_message               - stem.socket.ControlMessage
-    get_protocolinfo_response - stem.response.protocolinfo.ProtocolInfoResponse
-    get_server_descriptor     - text for a tor server descriptor
+    get_message                  - stem.socket.ControlMessage
+    get_protocolinfo_response    - stem.response.protocolinfo.ProtocolInfoResponse
+    get_relay_server_descriptor  - stem.descriptor.server_descriptor.RelayDescriptor
+    get_bridge_server_descriptor - stem.descriptor.server_descriptor.BridgeDescriptor
 """
 
 import inspect
@@ -33,6 +34,7 @@ import __builtin__
 
 import stem.response
 import stem.socket
+import stem.descriptor.server_descriptor
 
 # Once we've mocked a function we can't rely on its __module__ or __name__
 # attributes, so instead we associate a unique 'mock_id' attribute that maps
@@ -52,17 +54,20 @@ skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
 
-RELAY_DESCRIPTOR_ATTR = (
+SERVER_DESCRIPTOR_HEADER = (
   ("router", "caerSidi 71.35.133.197 9001 0 0"),
   ("published", "2012-03-01 17:15:27"),
   ("bandwidth", "153600 256000 104590"),
   ("reject", "*:*"),
   ("onion-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
   ("signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+)
+
+SERVER_DESCRIPTOR_FOOTER = (
   ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
 )
 
-BRIDGE_DESCRIPTOR_ATTR = (
+BRIDGE_DESCRIPTOR_HEADER = (
   ("router", "Unnamed 10.45.227.253 9001 0 0"),
   ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
   ("published", "2012-03-22 17:34:38"),
@@ -302,41 +307,95 @@ def get_protocolinfo_response(**attributes):
   
   return protocolinfo_response
 
-def get_server_descriptor(attr = None, exclude = None, is_bridge = False):
+def _get_descriptor_content(attr = None, exclude = (), header_template = (), footer_template = ()):
   """
-  Constructs a minimal server descriptor with the given attributes.
+  Constructs a minimal descriptor with the given attributes. The content we
+  provide back is of the form...
+  
+  * header_template (with matching attr filled in)
+  * unused attr entries
+  * footer_template (with matching attr filled in)
+  
+  So for instance...
+  
+  ::
+  
+    get_descriptor_content(
+      attr = {'nickname': 'caerSidi', 'contact': 'atagar'},
+      header_template = (
+        ('nickname', 'foobar'),
+        ('fingerprint', '12345'),
+      ),
+    )
+  
+  ... would result in...
+  
+  ::
+  
+    nickname caerSidi
+    fingerprint 12345
+    contact atagar
   
   :param dict attr: keyword/value mappings to be included in the descriptor
   :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool is_bridge: minimal descriptor is for a bridge if True, relay otherwise
+  :param tuple header_template: key/value pairs for mandatory fields before unrecognized content
+  :param tuple footer_template: key/value pairs for mandatory fields after unrecognized content
   
-  :returns: str with customized descriptor content
+  :returns: str with the requested descriptor content
   """
   
-  descriptor_lines = []
+  header_content, footer_content = [], []
   if attr is None: attr = {}
-  if exclude is None: exclude = []
-  desc_attr = BRIDGE_DESCRIPTOR_ATTR if is_bridge else RELAY_DESCRIPTOR_ATTR
   attr = dict(attr) # shallow copy since we're destructive
   
-  for keyword, value in desc_attr:
-    if keyword in exclude: continue
-    elif keyword in attr:
-      value = attr[keyword]
-      del attr[keyword]
-    
-    # if this is the last entry then we should dump in any unused attributes
-    if not is_bridge and keyword == "router-signature":
-      for attr_keyword, attr_value in attr.items():
-        descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
-    
-    descriptor_lines.append("%s %s" % (keyword, value))
+  for content, template in ((header_content, header_template),
+                           (footer_content, footer_template)):
+    for keyword, value in template:
+      if keyword in exclude: continue
+      elif keyword in attr:
+        value = attr[keyword]
+        del attr[keyword]
+      
+      content.append("%s %s" % (keyword, value))
   
-  # bridges don't have a router-signature so simply append any extra attributes
-  # to the end
-  if is_bridge:
-    for attr_keyword, attr_value in attr.items():
-      descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
+  remainder = ["%s %s" % (k, v) for k, v in attr.items()]
+  return "\n".join(header_content + remainder + footer_content)
+
+def get_relay_server_descriptor(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.server_descriptor.RelayDescriptor
   
-  return "\n".join(descriptor_lines)
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: RelayDescriptor for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, SERVER_DESCRIPTOR_HEADER, SERVER_DESCRIPTOR_FOOTER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate = False)
+
+def get_bridge_server_descriptor(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.server_descriptor.BridgeDescriptor
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: BridgeDescriptor for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, BRIDGE_DESCRIPTOR_HEADER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.server_descriptor.BridgeDescriptor(desc_content, validate = False)
 
