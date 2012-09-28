@@ -28,6 +28,7 @@ calling :func:`test.mocking.revert_mocking`.
     get_relay_extrainfo_descriptor  - stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor
     get_bridge_extrainfo_descriptor - stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor
     get_router_status_entry         - stem.descriptor.networkstatus.RouterStatusEntry
+    get_key_certificate             - stem.descriptor.networkstatus.KeyCertificate
 """
 
 import inspect
@@ -100,6 +101,19 @@ BRIDGE_EXTRAINFO_FOOTER = (
 ROUTER_STATUS_ENTRY_HEADER = (
   ("r", "caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0"),
   ("s", "Fast Named Running Stable Valid"),
+)
+
+KEY_CERTIFICATE_HEADER = (
+  ("dir-key-certificate-version", "3"),
+  ("fingerprint", "27B6B5996C426270A5C95488AA5BCEB6BCC86956"),
+  ("dir-key-published", "2011-11-28 21:51:04"),
+  ("dir-key-expires", "2012-11-28 21:51:04"),
+  ("dir-identity-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+  ("dir-signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+)
+
+KEY_CERTIFICATE_FOOTER = (
+  ("dir-key-certification", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
 )
 
 def no_op():
@@ -482,4 +496,23 @@ def get_router_status_entry(attr = None, exclude = (), content = False):
     return desc_content
   else:
     return stem.descriptor.networkstatus.RouterStatusEntry(desc_content, validate = True)
+
+def get_key_certificate(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.networkstatus.KeyCertificate
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: KeyCertificate for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, KEY_CERTIFICATE_HEADER, KEY_CERTIFICATE_FOOTER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.networkstatus.KeyCertificate(desc_content, validate = True)
 
