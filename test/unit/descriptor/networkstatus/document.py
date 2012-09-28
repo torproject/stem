@@ -8,7 +8,7 @@ import StringIO
 
 import stem.version
 from stem.descriptor import Flag
-from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, RouterStatusEntry, NetworkStatusDocument, DocumentSignature, parse_file
+from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, RouterStatusEntry, NetworkStatusDocument, parse_file
 from test.mocking import get_router_status_entry, get_network_status_document, CRYPTO_BLOB, DOC_SIG
 
 class TestNetworkStatusDocument(unittest.TestCase):
