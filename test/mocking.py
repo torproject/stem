@@ -40,6 +40,7 @@ import stem.response
 import stem.socket
 import stem.descriptor.server_descriptor
 import stem.descriptor.extrainfo_descriptor
+import stem.descriptor.networkstatus
 
 # Once we've mocked a function we can't rely on its __module__ or __name__
 # attributes, so instead we associate a unique 'mock_id' attribute that maps
@@ -58,6 +59,11 @@ MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
 skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
+
+DOC_SIG = stem.descriptor.networkstatus.DocumentSignature(
+  "14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4",
+  "BF112F1C6D5543CFD0A32215ACABD4197B5279AD",
+  "-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB)
 
 RELAY_SERVER_HEADER = (
   ("router", "caerSidi 71.35.133.197 9001 0 0"),
@@ -114,6 +120,28 @@ KEY_CERTIFICATE_HEADER = (
 
 KEY_CERTIFICATE_FOOTER = (
   ("dir-key-certification", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+)
+
+NETWORK_STATUS_DOCUMENT_HEADER = (
+  ("network-status-version", "3"),
+  ("vote-status", "consensus"),
+  ("consensus-methods", None),
+  ("consensus-method", None),
+  ("published", None),
+  ("valid-after", "2012-09-02 22:00:00"),
+  ("fresh-until", "2012-09-02 22:00:00"),
+  ("valid-until", "2012-09-02 22:00:00"),
+  ("voting-delay", "300 300"),
+  ("client-versions", None),
+  ("server-versions", None),
+  ("known-flags", "Authority BadExit Exit Fast Guard HSDir Named Running Stable Unnamed V2Dir Valid"),
+  ("params", None),
+)
+
+NETWORK_STATUS_DOCUMENT_FOOTER = (
+  ("directory-footer", ""),
+  ("bandwidth-weights", None),
+  ("directory-signature", "%s %s\n%s" % (DOC_SIG.identity, DOC_SIG.key_digest, DOC_SIG.signature)),
 )
 
 def no_op():
@@ -397,9 +425,18 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
         value = attr[keyword]
         del attr[keyword]
       
-      content.append("%s %s" % (keyword, value))
+      if value is None: continue
+      elif value == "":
+        content.append(keyword)
+      else:
+        content.append("%s %s" % (keyword, value))
   
-  remainder = ["%s %s" % (k, v) for k, v in attr.items()]
+  remainder = []
+  
+  for k, v in attr.items():
+    if v: remainder.append("%s %s" % (k, v))
+    else: remainder.append(k)
+  
   return "\n".join(header_content + remainder + footer_content)
 
 def get_relay_server_descriptor(attr = None, exclude = (), content = False):
@@ -515,4 +552,49 @@ def get_key_certificate(attr = None, exclude = (), content = False):
     return desc_content
   else:
     return stem.descriptor.networkstatus.KeyCertificate(desc_content, validate = True)
+
+def get_network_status_document(attr = None, exclude = (), routers = None, content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.networkstatus.NetworkStatusDocument
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param list routers: router status entries to include in the document
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: NetworkStatusDocument for the requested descriptor content
+  """
+  
+  if attr is None:
+    attr = {}
+  
+  # add defaults only found in a vote or consensus
+  
+  if attr.get("vote-status") == "vote":
+    extra_defaults = {
+      "consensus-methods": "1 9",
+      "published": "2012-09-02 22:00:00",
+    }
+  else:
+    extra_defaults = {
+      "consensus-method": "9",
+    }
+  
+  for k, v in extra_defaults.items():
+    if not (k in attr or (exclude and k in exclude)):
+      attr[k] = v
+  
+  desc_content = _get_descriptor_content(attr, exclude, NETWORK_STATUS_DOCUMENT_HEADER, NETWORK_STATUS_DOCUMENT_FOOTER)
+  
+  if routers:
+    # inject the routers between the header and footer
+    footer_div = desc_content.find("\ndirectory-footer") + 1
+    router_content = "\n".join([str(r) for r in routers]) + "\n"
+    desc_content = desc_content[:footer_div] + router_content + desc_content[footer_div:]
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.networkstatus.NetworkStatusDocument(desc_content, validate = True)
 
