@@ -877,9 +877,11 @@ class KeyCertificate(stem.descriptor.Descriptor):
             raise ValueError("Key certificate's address isn't a valid IPv4 address: %s" % line)
           elif not stem.util.connection.is_valid_port(dirport):
             raise ValueError("Key certificate's dirport is invalid: %s" % line)
+        elif not dirport.isdigit():
+          continue
         
         self.address = address
-        self.dir_port = dirport
+        self.dir_port = int(dirport)
       elif keyword == 'fingerprint':
         # "fingerprint" fingerprint
         
