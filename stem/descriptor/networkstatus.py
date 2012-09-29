@@ -679,7 +679,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
   
   **Vote Attributes:**
   :var str legacy_dir_key: fingerprint of and obsolete identity key
-  :var :class:`stem.descriptor.KeyCertificate` key_certificate: **\*** authority's key certificate
+  :var :class:`stem.descriptor.networkstatus.KeyCertificate` key_certificate: **\*** authority's key certificate
   
   **\*** mandatory attribute
   """
@@ -767,7 +767,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     self.contact = _read_keyword_line("contact", content, validate)
     if vote:
       self.legacy_dir_key = _read_keyword_line("legacy-dir-key", content, validate, True)
-      self.key_certificate = stem.descriptor.KeyCertificate(content.read(), validate)
+      self.key_certificate = KeyCertificate(content.read(), validate)
     else:
       self.vote_digest = _read_keyword_line("vote-digest", content, True, validate)
     self.unrecognized_lines = content.read()
