@@ -2,5 +2,5 @@
 Unit tests for stem.descriptor.networkstatus.
 """
 
-__all__ = ["entry", "key_certificate", "document"]
+__all__ = ["entry", "directory_authority", "key_certificate", "document"]
 

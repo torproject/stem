@@ -21,6 +21,7 @@ import test.unit.descriptor.reader
 import test.unit.descriptor.server_descriptor
 import test.unit.descriptor.extrainfo_descriptor
 import test.unit.descriptor.networkstatus.entry
+import test.unit.descriptor.networkstatus.directory_authority
 import test.unit.descriptor.networkstatus.key_certificate
 import test.unit.descriptor.networkstatus.document
 import test.unit.response.control_line
@@ -118,6 +119,7 @@ UNIT_TESTS = (
   test.unit.descriptor.server_descriptor.TestServerDescriptor,
   test.unit.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
   test.unit.descriptor.networkstatus.entry.TestRouterStatusEntry,
+  test.unit.descriptor.networkstatus.directory_authority.TestDirectoryAuthority,
   test.unit.descriptor.networkstatus.key_certificate.TestKeyCertificate,
   test.unit.descriptor.networkstatus.document.TestNetworkStatusDocument,
   test.unit.exit_policy.rule.TestExitPolicyRule,

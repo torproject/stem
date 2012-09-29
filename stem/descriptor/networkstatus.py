@@ -699,6 +699,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     
     self.nickname = None
     self.fingerprint = None
+    self.hostname = None
     self.address = None
     self.dir_port = None
     self.or_port = None
@@ -712,7 +713,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     self._unrecognized_lines = []
     
     #self._parse(raw_contents, validate, is_vote)
-    self._parse_old(raw_contents, validate, is_vote)
+    self._parse_old(raw_content, validate, is_vote)
   
   def _parse(self, content, validate, is_vote):
     """
@@ -753,26 +754,24 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
       #if validate and len(values) > 1 and keyword in ('r', 's', 'v', 'w', 'p'):
       #  raise ValueError("Router status entries can only have a single '%s' line, got %i:\n%s" % (key, len(values), content))
   
-  def _parse_old(self, content, validate, is_vote):
-    self.nickname, self.fingerprint, self.address, self.ip = None, None, None, None
-    self.dir_port, self.or_port, self.legacy_dir_key = None, None, None
-    self.key_certificate, self.contact, self.vote_digest = None, None, None
-    
+  def _parse_old(self, raw_content, validate, is_vote):
     content = StringIO(raw_content)
     dir_source = _read_keyword_line("dir-source", content, validate)
-    self.nickname, self.fingerprint, self.address, self.ip, self.dir_port, self.or_port = dir_source.split(" ")
+    self.nickname, self.fingerprint, self.hostname, self.address, self.dir_port, self.or_port = dir_source.split(" ")
     self.dir_port = int(self.dir_port)
     self.or_port = int(self.or_port)
     
     self.contact = _read_keyword_line("contact", content, validate)
-    if vote:
+    if is_vote:
       self.legacy_dir_key = _read_keyword_line("legacy-dir-key", content, validate, True)
       self.key_certificate = KeyCertificate(content.read(), validate)
     else:
       self.vote_digest = _read_keyword_line("vote-digest", content, True, validate)
-    self.unrecognized_lines = content.read()
-    if self.unrecognized_lines and validate:
-      raise ValueError("Unrecognized trailing data in directory authority information")
+    
+    remainder = content.read()
+    
+    if remainder:
+      self._unrecognized_lines = remainder.split("\n")
   
   def get_unrecognized_lines(self):
     """
@@ -781,7 +780,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     :returns: a list of unrecognized lines
     """
     
-    return self.unrecognized_lines
+    return self._unrecognized_lines
 
 class KeyCertificate(stem.descriptor.Descriptor):
   """
@@ -931,6 +930,12 @@ class KeyCertificate(stem.descriptor.Descriptor):
     """
     
     return self._unrecognized_lines
+  
+  def __cmp__(self, other):
+    if not isinstance(other, KeyCertificate):
+      return 1
+    
+    return str(self) > str(other)
 
 # TODO: microdescriptors have a slightly different format (including a
 # 'method') - should probably be a subclass

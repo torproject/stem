@@ -28,7 +28,9 @@ calling :func:`test.mocking.revert_mocking`.
     get_relay_extrainfo_descriptor  - stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor
     get_bridge_extrainfo_descriptor - stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor
     get_router_status_entry         - stem.descriptor.networkstatus.RouterStatusEntry
+    get_directory_authority         - stem.descriptor.networkstatus.DirectoryAuthority
     get_key_certificate             - stem.descriptor.networkstatus.KeyCertificate
+    get_network_status_document     - stem.descriptor.networkstatus.NetworkStatusDocument
 """
 
 import inspect
@@ -107,6 +109,11 @@ BRIDGE_EXTRAINFO_FOOTER = (
 ROUTER_STATUS_ENTRY_HEADER = (
   ("r", "caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0"),
   ("s", "Fast Named Running Stable Valid"),
+)
+
+AUTHORITY_HEADER = (
+  ("dir-source", "turtles 27B6B5996C426270A5C95488AA5BCEB6BCC86956 no.place.com 76.73.17.194 9030 9090"),
+  ("contact", "Mike Perry <email>"),
 )
 
 KEY_CERTIFICATE_HEADER = (
@@ -533,6 +540,37 @@ def get_router_status_entry(attr = None, exclude = (), content = False):
     return desc_content
   else:
     return stem.descriptor.networkstatus.RouterStatusEntry(desc_content, validate = True)
+
+def get_directory_authority(attr = None, exclude = (), is_vote = False, content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.networkstatus.DirectoryAuthority
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool is_vote: True if this is for a vote, False if it's for a consensus
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: DirectoryAuthority for the requested descriptor content
+  """
+  
+  if attr is None:
+    attr = {}
+  
+  if not is_vote:
+    # entries from a consensus also have a mandatory 'vote-digest' field
+    if not ('vote-digest' in attr or (exclude and 'vote-digest' in exclude)):
+      attr['vote-digest'] = '0B6D1E9A300B895AA2D0B427F92917B6995C3C1C'
+  
+  desc_content = _get_descriptor_content(attr, exclude, AUTHORITY_HEADER)
+  
+  if is_vote:
+    desc_content += "\n" + str(get_key_certificate())
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.networkstatus.DirectoryAuthority(desc_content, validate = True, is_vote = is_vote)
 
 def get_key_certificate(attr = None, exclude = (), content = False):
   """
