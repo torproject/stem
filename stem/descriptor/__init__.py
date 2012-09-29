@@ -340,15 +340,16 @@ def _get_pseudo_pgp_block(remaining_contents):
   if block_match:
     block_type = block_match.groups()[0]
     block_lines = []
+    end_line = PGP_BLOCK_END % block_type
     
     while True:
       if not remaining_contents:
-        raise ValueError("Unterminated pgp style block")
+        raise ValueError("Unterminated pgp style block (looking for '%s'):\n%s" % (end_line, "\n".join(block_lines)))
       
       line = remaining_contents.pop(0)
       block_lines.append(line)
       
-      if line == PGP_BLOCK_END % block_type:
+      if line == end_line:
         return "\n".join(block_lines)
   else:
     return None
