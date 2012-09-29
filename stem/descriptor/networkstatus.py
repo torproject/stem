@@ -55,7 +55,7 @@ import stem.exit_policy
 import stem.util.tor_tools
 
 from stem.descriptor import _read_until_keywords, _peek_keyword, _strptime
-from stem.descriptor import _read_keyword_line, _read_keyword_line_str, _get_pseudo_pgp_block, _peek_line
+from stem.descriptor import _read_keyword_line, _get_pseudo_pgp_block, _peek_line
 
 # Network status document are either a 'vote' or 'consensus', with different
 # mandatory fields for each. Both though require that their fields appear in a

@@ -234,39 +234,6 @@ def _read_keyword_line(keyword, descriptor_file, validate = True, optional = Fal
     raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, line))
   else: return None
 
-def _read_keyword_line_str(keyword, lines, validate = True, optional = False):
-  """
-  Returns the rest of the line if the first keyword matches the given keyword. If
-  it doesn't, a ValueError is raised if optional and validate are True, if
-  not, None is returned.
-  
-  Respects the opt keyword and returns the next keyword if the first is "opt".
-  
-  :param str keyword: keyword the line must begin with
-  :param list lines: list of strings to be read from
-  :param bool validate: validation is enabled
-  :param bool optional: if the current line must begin with the given keyword
-  
-  :returns: the text after the keyword if the keyword matches the one provided, otherwise returns None or raises an exception
-  
-  :raises: ValueError if a non-optional keyword doesn't match when validation is enabled
-  """
-  
-  if not lines:
-    if not optional and validate:
-      raise ValueError("Unexpected end of document")
-    return
-  
-  if lines[0].startswith("opt "):
-    line = line[4:]
-  if line_matches_keyword(keyword, lines[0]):
-    line = lines.pop(0)
-    
-    return line[len(keyword):].strip()
-  elif not optional and validate:
-    raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, lines[0]))
-  else: return None
-
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None):
   """
   Reads from the descriptor file until we get to one of the given keywords or reach the
@@ -437,7 +404,4 @@ def _strptime(string, validate = True, optional = False):
   except ValueError, exc:
     if validate or not optional: raise exc
     else: return None
-
-def line_matches_keyword(keyword, line):
-  return re.search("^(opt )?" + re.escape(keyword) + "($| )", line)
 
