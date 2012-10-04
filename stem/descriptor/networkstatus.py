@@ -712,8 +712,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     
     self._unrecognized_lines = []
     
-    #self._parse(raw_contents, validate, is_vote)
-    self._parse_old(raw_content, validate, is_vote)
+    self._parse(raw_content, validate, is_vote)
   
   def _parse(self, content, validate, is_vote):
     """
@@ -726,21 +725,30 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     :raises: ValueError if a validity check fails
     """
     
+    # separate the directory authority entry from its key certificate
+    key_cert_content = None
+    
+    if is_vote:
+      key_div = content.find('\ndir-key-certificate-version')
+      
+      if key_div != -1:
+        key_cert_content = content[key_div + 1:]
+        content = content[:key_div + 1]
+    
     entries, first_keyword, _, _ = stem.descriptor._get_descriptor_components(content, validate)
     
     if validate and first_keyword != 'dir-source':
       raise ValueError("Authority entries are expected to start with a 'dir-source' line:\n%s" % (content))
     
     # check that we have mandatory fields
+    
     if validate:
       required_fields = ["dir-source", "contact"]
       
-      if is_vote:
-        pass
-        #required_fields += ... god damnit
-      else:
+      if is_vote and not key_cert_content:
+        raise ValueError("Authority votes must have a key certificate:\n%s" % content)
+      elif not is_vote:
         required_fields += ["vote-digest"]
-      
       
       for keyword in required_fields:
         if not keyword in entries:
@@ -751,27 +759,62 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
       line = "%s %s" % (keyword, value)
       
       # all known attributes can only appear at most once
-      #if validate and len(values) > 1 and keyword in ('r', 's', 'v', 'w', 'p'):
-      #  raise ValueError("Router status entries can only have a single '%s' line, got %i:\n%s" % (key, len(values), content))
-  
-  def _parse_old(self, raw_content, validate, is_vote):
-    content = StringIO(raw_content)
-    dir_source = _read_keyword_line("dir-source", content, validate)
-    self.nickname, self.fingerprint, self.hostname, self.address, self.dir_port, self.or_port = dir_source.split(" ")
-    self.dir_port = int(self.dir_port)
-    self.or_port = int(self.or_port)
+      if validate and len(values) > 1 and keyword in ('dir-source', 'contact', 'legacy-dir-key', 'vote-digest'):
+        raise ValueError("Authority entries can only have a single '%s' line, got %i:\n%s" % (keyword, len(values), content))
+      
+      if keyword == 'dir-source':
+        # "dir-source" nickname identity address IP dirport orport
+        
+        dir_source_comp = value.split(" ")
+        
+        if len(dir_source_comp) < 6:
+          if not validate: continue
+          raise ValueError("Authority entry's 'dir-source' line must have six values: %s" % line)
+        
+        if validate:
+          if not stem.util.tor_tools.is_valid_nickname(dir_source_comp[0]):
+            raise ValueError("Authority's nickname is invalid: %s" % dir_source_comp[0])
+          elif not stem.util.tor_tools.is_valid_fingerprint(dir_source_comp[1]):
+            raise ValueError("Authority's fingerprint is invalid: %s" % dir_source_comp[1])
+          elif not stem.util.connection.is_valid_ip_address(dir_source_comp[3]):
+            raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[3])
+          elif not stem.util.connection.is_valid_port(dir_source_comp[4], allow_zero = True):
+            raise ValueError("Authority's DirPort is invalid: %s" % dir_source_comp[4])
+          elif not stem.util.connection.is_valid_port(dir_source_comp[5]):
+            raise ValueError("Authority's ORPort is invalid: %s" % dir_source_comp[5])
+        elif not (dir_source_comp[4].isdigit() and dir_source_comp[5].isdigit()):
+          continue
+        
+        self.nickname = dir_source_comp[0]
+        self.fingerprint = dir_source_comp[1]
+        self.hostname = dir_source_comp[2]
+        self.address = dir_source_comp[3]
+        self.dir_port = None if dir_source_comp[4] == '0' else int(dir_source_comp[4])
+        self.or_port = int(dir_source_comp[5])
+      elif keyword == 'contact':
+        # "contact" string
+        
+        self.contact = value
+      elif keyword == 'legacy-dir-key':
+        # "legacy-dir-key" FINGERPRINT
+        
+        if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
+          raise ValueError("Authority has a malformed legacy directory key: %s" % line)
+        
+        self.legacy_dir_key = value
+      elif keyword == 'vote-digest':
+        # "vote-digest" digest
+        
+        # technically not a fingerprint, but has the same characteristics
+        if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
+          raise ValueError("Authority has a malformed vote digest: %s" % line)
+        
+        self.vote_digest = value
+      else:
+        self._unrecognized_lines.append(line)
     
-    self.contact = _read_keyword_line("contact", content, validate)
-    if is_vote:
-      self.legacy_dir_key = _read_keyword_line("legacy-dir-key", content, validate, True)
-      self.key_certificate = KeyCertificate(content.read(), validate)
-    else:
-      self.vote_digest = _read_keyword_line("vote-digest", content, True, validate)
-    
-    remainder = content.read()
-    
-    if remainder:
-      self._unrecognized_lines = remainder.split("\n")
+    if key_cert_content:
+      self.key_certificate = KeyCertificate(key_cert_content)
   
   def get_unrecognized_lines(self):
     """
@@ -1081,7 +1124,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
         
         if len(r_comp) < 8:
           if not validate: continue
-          raise ValueError("Router status entry's 'r' line line must have eight values: %s" % line)
+          raise ValueError("Router status entry's 'r' line must have eight values: %s" % line)
         
         if validate:
           if not stem.util.tor_tools.is_valid_nickname(r_comp[0]):
