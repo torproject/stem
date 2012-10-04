@@ -100,6 +100,20 @@ class TestRouterStatusEntry(unittest.TestCase):
     entry = RouterStatusEntry(content)
     self.assertEqual("Tor 0.2.2.35", entry.version_line)
   
+  def test_duplicate_lines(self):
+    """
+    Duplicates linesin the entry.
+    """
+    
+    lines = get_router_status_entry(content = True).split("\n")
+    
+    for i in xrange(len(lines)):
+      content = "\n".join(lines[:i] + [lines[i]] + lines[i:])
+      self.assertRaises(ValueError, RouterStatusEntry, content)
+      
+      entry = RouterStatusEntry(content, False)
+      self.assertEqual("caerSidi", entry.nickname)
+  
   def test_missing_r_field(self):
     """
     Excludes fields from the 'r' line.

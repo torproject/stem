@@ -1114,7 +1114,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
       
       # most attributes can only appear at most once
       if validate and len(values) > 1 and keyword in ('r', 's', 'v', 'w', 'p'):
-        raise ValueError("Router status entries can only have a single '%s' line, got %i:\n%s" % (key, len(values), content))
+        raise ValueError("Router status entries can only have a single '%s' line, got %i:\n%s" % (keyword, len(values), content))
       
       if keyword == 'r':
         # "r" nickname identity digest publication IP ORPort DirPort
