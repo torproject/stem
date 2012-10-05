@@ -684,7 +684,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
   **\*** mandatory attribute
   """
   
-  def __init__(self, raw_content, validate, is_vote = True):
+  def __init__(self, raw_content, validate = True, is_vote = False):
     """
     Parse a directory authority entry in a v3 network status document.
     
