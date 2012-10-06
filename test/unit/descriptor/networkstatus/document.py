@@ -8,8 +8,8 @@ import StringIO
 
 import stem.version
 from stem.descriptor import Flag
-from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, RouterStatusEntry, NetworkStatusDocument, parse_file
-from test.mocking import get_router_status_entry, get_network_status_document, CRYPTO_BLOB, DOC_SIG
+from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, RouterStatusEntry, DirectoryAuthority, NetworkStatusDocument, parse_file
+from test.mocking import get_router_status_entry, get_directory_authority, get_network_status_document, CRYPTO_BLOB, DOC_SIG
 
 class TestNetworkStatusDocument(unittest.TestCase):
   def test_minimal_consensus(self):
@@ -634,4 +634,43 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertRaises(ValueError, NetworkStatusDocument, content)
     document = NetworkStatusDocument(content, False)
     self.assertEquals((entry3,), document.routers)
+  
+  def test_with_directory_authorities(self):
+    """
+    Includes a couple directory authorities in the document.
+    """
+    
+    for is_document_vote in (False, True):
+      for is_authorities_vote in (False, True):
+        authority1 = get_directory_authority({'contact': 'doctor jekyll'}, is_vote = is_authorities_vote)
+        authority2 = get_directory_authority({'contact': 'mister hyde'}, is_vote = is_authorities_vote)
+        
+        vote_status = "vote" if is_document_vote else "consensus"
+        content = get_network_status_document({"vote-status": vote_status}, authorities = (authority1, authority2), content = True)
+        
+        if is_document_vote == is_authorities_vote:
+          document = NetworkStatusDocument(content)
+          self.assertEquals((authority1, authority2), document.directory_authorities)
+        else:
+          # authority votes in a consensus or consensus authorities in a vote
+          self.assertRaises(ValueError, NetworkStatusDocument, content)
+          document = NetworkStatusDocument(content, validate = False)
+          self.assertEquals((authority1, authority2), document.directory_authorities)
+  
+  def test_authority_validation_flag_propagation(self):
+    """
+    Includes invalid certificate content in an authority entry. This is testing
+    that the 'validate' flag propagages from the document to authority, and
+    authority to certificate classes.
+    """
+    
+    # make the dir-key-published field of the certiciate be malformed
+    authority_content = get_directory_authority(is_vote = True, content = True)
+    authority_content = authority_content.replace("dir-key-published 2011", "dir-key-published 2011a")
+    
+    content = get_network_status_document({"vote-status": "vote"}, authorities = (authority_content,), content = True)
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    document = NetworkStatusDocument(content, validate = False)
+    self.assertEquals((DirectoryAuthority(authority_content, False, True),), document.directory_authorities)
 

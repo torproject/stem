@@ -591,13 +591,14 @@ def get_key_certificate(attr = None, exclude = (), content = False):
   else:
     return stem.descriptor.networkstatus.KeyCertificate(desc_content, validate = True)
 
-def get_network_status_document(attr = None, exclude = (), routers = None, content = False):
+def get_network_status_document(attr = None, exclude = (), authorities = None, routers = None, content = False):
   """
   Provides the descriptor content for...
   stem.descriptor.networkstatus.NetworkStatusDocument
   
   :param dict attr: keyword/value mappings to be included in the descriptor
   :param list exclude: mandatory keywords to exclude from the descriptor
+  :param list authorities: directory authorities to include in the document
   :param list routers: router status entries to include in the document
   :param bool content: provides the str content of the descriptor rather than the class if True
   
@@ -625,8 +626,13 @@ def get_network_status_document(attr = None, exclude = (), routers = None, conte
   
   desc_content = _get_descriptor_content(attr, exclude, NETWORK_STATUS_DOCUMENT_HEADER, NETWORK_STATUS_DOCUMENT_FOOTER)
   
+  # inject the authorities and/or routers between the header and footer
+  if authorities:
+    footer_div = desc_content.find("\ndirectory-footer") + 1
+    authority_content = "\n".join([str(a) for a in authorities]) + "\n"
+    desc_content = desc_content[:footer_div] + authority_content + desc_content[footer_div:]
+  
   if routers:
-    # inject the routers between the header and footer
     footer_div = desc_content.find("\ndirectory-footer") + 1
     router_content = "\n".join([str(r) for r in routers]) + "\n"
     desc_content = desc_content[:footer_div] + router_content + desc_content[footer_div:]

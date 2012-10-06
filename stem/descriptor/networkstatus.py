@@ -835,6 +835,12 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     """
     
     return self._unrecognized_lines
+  
+  def __cmp__(self, other):
+    if not isinstance(other, DirectoryAuthority):
+      return 1
+    
+    return str(self) > str(other)
 
 class KeyCertificate(stem.descriptor.Descriptor):
   """
