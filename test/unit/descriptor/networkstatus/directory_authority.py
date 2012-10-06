@@ -4,6 +4,8 @@ Unit tests for the DirectoryAuthority of stem.descriptor.networkstatus.
 
 import unittest
 
+import test.runner
+
 from stem.descriptor.networkstatus import DirectoryAuthority
 from test.mocking import get_directory_authority, get_key_certificate, AUTHORITY_HEADER
 
@@ -103,4 +105,36 @@ class TestDirectoryAuthority(unittest.TestCase):
       
       authority = DirectoryAuthority(content, False)
       self.assertEqual("turtles", authority.nickname)
+  
+  def test_empty_values(self):
+    """
+    The 'dir-source' line has a couple string values where anything (without
+    spaces) would be valud. Check that we're ok with the value being an empty
+    string.
+    """
+    
+    # TODO: Test presently fails because a missing nickname makes us think that
+    # a field is missing. This is technically a bug caused by us ignoring an
+    # idiosyncrasy with how v3 documents are formatted. With all descriptor
+    # types *except* v3 documents a keyword and value is split by any amount
+    # of whitespace. With a v3 document it must be a single space.
+    #
+    # When we have an empty nickname the value starts with a space, causing our
+    # keyword/value regex to gobble the extra space (making the field
+    # disappear). Checking with Nick before investing any further effort into
+    # this...
+    # https://trac.torproject.org/7055
+    
+    test.runner.skip(self, "https://trac.torproject.org/7055")
+    return
+    
+    # drop the authority nickname
+    dir_source = AUTHORITY_HEADER[0][1].replace('turtles', '')
+    authority = get_directory_authority({"dir-source": dir_source})
+    self.assertEqual('', authority.nickname)
+    
+    # drop the hostname
+    dir_source = AUTHORITY_HEADER[0][1].replace('no.place.com', '')
+    authority = get_directory_authority({"dir-source": dir_source})
+    self.assertEqual('', authority.hostname)
 
