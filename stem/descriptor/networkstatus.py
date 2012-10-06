@@ -726,14 +726,13 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     """
     
     # separate the directory authority entry from its key certificate
-    key_cert_content = None
+    key_div = content.find('\ndir-key-certificate-version')
     
-    if is_vote:
-      key_div = content.find('\ndir-key-certificate-version')
-      
-      if key_div != -1:
-        key_cert_content = content[key_div + 1:]
-        content = content[:key_div + 1]
+    if key_div != -1:
+      key_cert_content = content[key_div + 1:]
+      content = content[:key_div + 1]
+    else:
+      key_cert_content = None
     
     entries, first_keyword, _, _ = stem.descriptor._get_descriptor_components(content, validate)
     
@@ -743,16 +742,28 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     # check that we have mandatory fields
     
     if validate:
-      required_fields = ["dir-source", "contact"]
+      required_fields, excluded_fields = ["dir-source", "contact"], []
       
-      if is_vote and not key_cert_content:
-        raise ValueError("Authority votes must have a key certificate:\n%s" % content)
+      if is_vote:
+        if not key_cert_content:
+          raise ValueError("Authority votes must have a key certificate:\n%s" % content)
+        
+        excluded_fields += ["vote-digest"]
       elif not is_vote:
+        if key_cert_content:
+          raise ValueError("Authority consensus entries shouldn't have a key certificate:\n%s" % content)
+        
         required_fields += ["vote-digest"]
+        excluded_fields += ["legacy-dir-key"]
       
       for keyword in required_fields:
         if not keyword in entries:
           raise ValueError("Authority entries must have a '%s' line:\n%s" % (keyword, content))
+      
+      for keyword in entries:
+        if keyword in excluded_fields:
+          type_label = "votes" if is_vote else "consensus entries"
+          raise ValueError("Authority %s shouldn't have a '%s' line:\n%s" % (type_label, keyword, content))
     
     for keyword, values in entries.items():
       value, block_contents = values[0]
@@ -814,7 +825,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
         self._unrecognized_lines.append(line)
     
     if key_cert_content:
-      self.key_certificate = KeyCertificate(key_cert_content)
+      self.key_certificate = KeyCertificate(key_cert_content, validate)
   
   def get_unrecognized_lines(self):
     """
