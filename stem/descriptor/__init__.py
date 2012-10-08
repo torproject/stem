@@ -169,72 +169,6 @@ class Descriptor(object):
   def __str__(self):
     return self._raw_contents
 
-def _peek_line(descriptor_file):
-  """
-  Returns the line at the current offset of descriptor_file.
-  
-  :param file descriptor_file: file with the descriptor content
-  
-  :returns: line at the current offset of descriptor_file
-  """
-  
-  last_position = descriptor_file.tell()
-  line = descriptor_file.readline()
-  descriptor_file.seek(last_position)
-  
-  return line
-
-def _peek_keyword(descriptor_file):
-  """
-  Returns the keyword at the current offset of descriptor_file. Respects the
-  "opt" keyword and returns the next keyword instead.
-  
-  :param file descriptor_file: file with the descriptor content
-  
-  :returns: keyword at the current offset of descriptor_file
-  """
-  
-  line = _peek_line(descriptor_file)
-  
-  if line.startswith("opt "):
-    line = line[4:]
-  if not line: return None
-  
-  return line.split(" ", 1)[0].rstrip("\n")
-
-def _read_keyword_line(keyword, descriptor_file, validate = True, optional = False):
-  """
-  Returns the rest of the line if the first keyword matches the given keyword. If
-  it doesn't, a ValueError is raised if optional and validate are True, if
-  not, None is returned.
-  
-  Respects the opt keyword and returns the next keyword if the first is "opt".
-  
-  :param str keyword: keyword the line must begin with
-  :param bool descriptor_file: file/file-like object containing descriptor data
-  :param bool validate: validation is enabled
-  :param bool optional: if the current line must begin with the given keyword
-  
-  :returns: the text after the keyword if the keyword matches the one provided, otherwise returns None or raises an exception
-  
-  :raises: ValueError if a non-optional keyword doesn't match when validation is enabled
-  """
-  
-  line = _peek_line(descriptor_file)
-  if not line:
-    if not optional and validate:
-      raise ValueError("Unexpected end of document")
-    return None
-  
-  if line.startswith("opt "):
-    line = line[4:]
-  if re.match("^" + re.escape(keyword) + "($| )", line):
-    descriptor_file.readline()
-    return line[len(keyword):].strip()
-  elif not optional and validate:
-    raise ValueError("Error parsing network status document: Expected %s, received: %s" % (keyword, line))
-  else: return None
-
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None):
   """
   Reads from the descriptor file until we get to one of the given keywords or reach the
@@ -398,11 +332,4 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
       entries.setdefault(keyword, []).append((value, block_contents))
   
   return entries, first_keyword, last_keyword, extra_entries
-
-def _strptime(string, validate = True, optional = False):
-  try:
-    return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
-  except ValueError, exc:
-    if validate or not optional: raise exc
-    else: return None
 

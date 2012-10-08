@@ -52,9 +52,6 @@ import stem.version
 import stem.exit_policy
 import stem.util.tor_tools
 
-from stem.descriptor import _read_until_keywords, _peek_keyword, _strptime
-from stem.descriptor import _read_keyword_line, _get_pseudo_pgp_block, _peek_line
-
 # Network status document are either a 'vote' or 'consensus', with different
 # mandatory fields for each. Both though require that their fields appear in a
 # specific order. This is an ordered listing of the following...
@@ -146,10 +143,10 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
   
   # getting the document without the routers section
   
-  header = _read_until_keywords((ROUTERS_START, FOOTER_START), document_file)
+  header = stem.descriptor._read_until_keywords((ROUTERS_START, FOOTER_START), document_file)
   
   routers_start = document_file.tell()
-  _read_until_keywords(FOOTER_START, document_file, skip = True)
+  stem.descriptor._read_until_keywords(FOOTER_START, document_file, skip = True)
   routers_end = document_file.tell()
   
   footer = document_file.readlines()
@@ -203,14 +200,14 @@ def _get_entries(document_file, validate, entry_class, entry_keyword, start_posi
   
   if end_position is None:
     if section_end_keywords:
-      _read_until_keywords(section_end_keywords, document_file, skip = True)
+      stem.descriptor._read_until_keywords(section_end_keywords, document_file, skip = True)
       end_position = document_file.tell()
     else:
       raise ValueError("Either a end_position or section_end_keywords must be provided")
   
   document_file.seek(start_position)
   while document_file.tell() < end_position:
-    desc_content = "".join(_read_until_keywords(entry_keyword, document_file, ignore_first = True, end_position = end_position))
+    desc_content = "".join(stem.descriptor._read_until_keywords(entry_keyword, document_file, ignore_first = True, end_position = end_position))
     yield entry_class(desc_content, validate, *extra_args)
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
@@ -347,7 +344,7 @@ class _DocumentHeader(object):
     
     self._unrecognized_lines = []
     
-    content = "".join(_read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
+    content = "".join(stem.descriptor._read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
     entries = stem.descriptor._get_descriptor_components(content, validate)[0]
     self._parse(entries, validate)
     
