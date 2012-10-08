@@ -240,12 +240,12 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     # influences the resulting exit policy, but for everything else the order
     # does not matter so breaking it into key / value pairs.
     
-    entries, first_keyword, last_keyword, policy = \
+    entries, policy = \
       stem.descriptor._get_descriptor_components(raw_contents, validate, ("accept", "reject"))
     
     self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
     self._parse(entries, validate)
-    if validate: self._check_constraints(entries, first_keyword, last_keyword)
+    if validate: self._check_constraints(entries)
   
   def digest(self):
     """
@@ -495,14 +495,12 @@ class ServerDescriptor(stem.descriptor.Descriptor):
       if self.uptime < 0 and self.tor_version >= stem.version.Version("0.1.2.7"):
         raise ValueError("Descriptor for version '%s' had a negative uptime value: %i" % (self.tor_version, self.uptime))
   
-  def _check_constraints(self, entries, first_keyword, last_keyword):
+  def _check_constraints(self, entries):
     """
     Does a basic check that the entries conform to this descriptor type's
     constraints.
     
     :param dict entries: keyword => (value, pgp key) entries
-    :param str first_keyword: keyword of the first line
-    :param str last_keyword: keyword of the last line
     
     :raises: ValueError if an issue arises in validation
     """
@@ -516,11 +514,11 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
     
     expected_first_keyword = self._first_keyword()
-    if expected_first_keyword and first_keyword != expected_first_keyword:
+    if expected_first_keyword and expected_first_keyword != entries.keys()[0]:
       raise ValueError("Descriptor must start with a '%s' entry" % expected_first_keyword)
     
     expected_last_keyword = self._last_keyword()
-    if expected_last_keyword and last_keyword != expected_last_keyword:
+    if expected_last_keyword and expected_last_keyword != entries.keys()[-1]:
       raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
     
     if not self.exit_policy:

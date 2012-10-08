@@ -359,8 +359,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     
     self._unrecognized_lines = []
     
-    entries, first_keyword, last_keyword, _ = \
-      stem.descriptor._get_descriptor_components(raw_contents, validate, ())
+    entries = stem.descriptor._get_descriptor_components(raw_contents, validate)
     
     if validate:
       for keyword in self._required_fields():
@@ -372,11 +371,11 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           raise ValueError("The '%s' entry can only appear once in an extra-info descriptor" % keyword)
       
       expected_first_keyword = self._first_keyword()
-      if expected_first_keyword and not first_keyword == expected_first_keyword:
+      if expected_first_keyword and expected_first_keyword != entries.keys()[0]:
         raise ValueError("Extra-info descriptor must start with a '%s' entry" % expected_first_keyword)
       
       expected_last_keyword = self._last_keyword()
-      if expected_last_keyword and not last_keyword == expected_last_keyword:
+      if expected_last_keyword and expected_last_keyword != entries.keys()[-1]:
         raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
     
     self._parse(entries, validate)

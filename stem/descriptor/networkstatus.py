@@ -345,7 +345,7 @@ class _DocumentHeader(object):
     self._unrecognized_lines = []
     
     content = "".join(stem.descriptor._read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
-    entries = stem.descriptor._get_descriptor_components(content, validate)[0]
+    entries = stem.descriptor._get_descriptor_components(content, validate)
     self._parse(entries, validate)
     
     # doing this validation afterward so we know our 'is_consensus' and
@@ -538,7 +538,7 @@ class _DocumentFooter(object):
     elif not content and not header.meets_consensus_method(9):
       return # footer is optional and there's nothing to parse
     
-    entries = stem.descriptor._get_descriptor_components(content, validate)[0]
+    entries = stem.descriptor._get_descriptor_components(content, validate)
     self._parse(entries, validate, header)
     
     if validate:
@@ -748,9 +748,9 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     else:
       key_cert_content = None
     
-    entries, first_keyword, _, _ = stem.descriptor._get_descriptor_components(content, validate)
+    entries = stem.descriptor._get_descriptor_components(content, validate)
     
-    if validate and first_keyword != 'dir-source':
+    if validate and 'dir-source' != entries.keys()[0]:
       raise ValueError("Authority entries are expected to start with a 'dir-source' line:\n%s" % (content))
     
     # check that we have mandatory fields
@@ -905,12 +905,12 @@ class KeyCertificate(stem.descriptor.Descriptor):
     :raises: ValueError if a validity check fails
     """
     
-    entries, first_keyword, last_keyword, _ = stem.descriptor._get_descriptor_components(content, validate)
+    entries = stem.descriptor._get_descriptor_components(content, validate)
     
     if validate:
-      if first_keyword != 'dir-key-certificate-version':
+      if 'dir-key-certificate-version' != entries.keys()[0]:
         raise ValueError("Key certificates must start with a 'dir-key-certificate-version' line:\n%s" % (content))
-      elif last_keyword != 'dir-key-certification':
+      elif 'dir-key-certification' != entries.keys()[-1]:
         raise ValueError("Key certificates must end with a 'dir-key-certification' line:\n%s" % (content))
       
       # check that we have mandatory fields and that our known fields only

@@ -71,8 +71,8 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     
     self._unrecognized_lines = []
     
-    entries, first_keyword, _, _ = stem.descriptor._get_descriptor_components(content, validate)
-    if validate: self._check_constraints(entries, first_keyword)
+    entries = stem.descriptor._get_descriptor_components(content, validate)
+    if validate: self._check_constraints(entries)
     self._parse(entries, validate)
   
   def _parse(self, entries, validate):
@@ -95,13 +95,12 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
       else:
         self._unrecognized_lines.append("%s %s" % (keyword, value))
   
-  def _check_constraints(self, entries, first_keyword):
+  def _check_constraints(self, entries):
     """
     Does a basic check that the entries conform to this descriptor type's
     constraints.
     
     :param dict entries: keyword => (value, pgp key) entries
-    :param str first_keyword: keyword of the first line
     
     :raises: ValueError if an issue arises in validation
     """
@@ -114,7 +113,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
       if keyword in entries and len(entries[keyword]) > 1:
         raise ValueError("%s can only have a single '%s' line, got %i:\n%s" % (self._name(True), keyword, len(entries[keyword]), str(self)))
     
-    if first_keyword != 'r':
+    if 'r' != entries.keys()[0]:
       raise ValueError("%s are expected to start with a 'r' line:\n%s" % (self._name(True), str(self)))
   
   def _name(self, is_plural = False):

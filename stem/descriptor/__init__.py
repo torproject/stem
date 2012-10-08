@@ -275,17 +275,12 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   :param list extra_keywords: entity keywords to put into a separate listing with ordering intact
   
   :returns:
-    tuple with the following attributes...
-    
-    * **entries (collections.OrderedDict)** - keyword => (value, pgp key) entries
-    * **first_keyword (str)** - keyword of the first line
-    * **last_keyword (str)**  - keyword of the last line
-    * **extra_entries (list)** - lines containing entries matching extra_keywords
+    collections.OrderedDict with the 'keyword => (value, pgp key) entries'
+    mappings. If a extra_keywords was provided then this instead provides a two
+    value tuple, the second being a list of those entries.
   """
   
   entries = collections.OrderedDict()
-  first_keyword = None
-  last_keyword = None
   extra_entries = [] # entries with a keyword in extra_keywords
   remaining_lines = raw_contents.split("\n")
   
@@ -317,9 +312,6 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     keyword, value = line_match.groups()
     if value is None: value = ''
     
-    if not first_keyword: first_keyword = keyword
-    last_keyword = keyword
-    
     try:
       block_contents = _get_pseudo_pgp_block(remaining_lines)
     except ValueError, exc:
@@ -331,5 +323,8 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     else:
       entries.setdefault(keyword, []).append((value, block_contents))
   
-  return entries, first_keyword, last_keyword, extra_entries
+  if extra_keywords:
+    return entries, extra_entries
+  else:
+    return entries
 
