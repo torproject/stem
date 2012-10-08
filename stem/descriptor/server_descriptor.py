@@ -507,24 +507,20 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     :raises: ValueError if an issue arises in validation
     """
     
-    required_fields = self._required_fields()
-    if required_fields:
-      for keyword in required_fields:
-        if not keyword in entries:
-          raise ValueError("Descriptor must have a '%s' entry" % keyword)
+    for keyword in self._required_fields():
+      if not keyword in entries:
+        raise ValueError("Descriptor must have a '%s' entry" % keyword)
     
-    single_fields = self._single_fields()
-    if single_fields:
-      for keyword in self._single_fields():
-        if keyword in entries and len(entries[keyword]) > 1:
-          raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
+    for keyword in self._single_fields():
+      if keyword in entries and len(entries[keyword]) > 1:
+        raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
     
     expected_first_keyword = self._first_keyword()
-    if expected_first_keyword and not first_keyword == expected_first_keyword:
+    if expected_first_keyword and first_keyword != expected_first_keyword:
       raise ValueError("Descriptor must start with a '%s' entry" % expected_first_keyword)
     
     expected_last_keyword = self._last_keyword()
-    if expected_last_keyword and not last_keyword == expected_last_keyword:
+    if expected_last_keyword and last_keyword != expected_last_keyword:
       raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
     
     if not self.exit_policy:

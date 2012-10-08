@@ -8,8 +8,9 @@ import StringIO
 
 import stem.version
 from stem.descriptor import Flag
-from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, RouterStatusEntry, DirectoryAuthority, NetworkStatusDocument, parse_file
-from test.mocking import get_router_status_entry, get_directory_authority, get_network_status_document, CRYPTO_BLOB, DOC_SIG
+from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, DirectoryAuthority, NetworkStatusDocument, parse_file
+from stem.descriptor.router_status_entry import RouterStatusEntryV3
+from test.mocking import get_router_status_entry_v3, get_directory_authority, get_network_status_document, CRYPTO_BLOB, DOC_SIG
 
 class TestNetworkStatusDocument(unittest.TestCase):
   def test_minimal_consensus(self):
@@ -81,8 +82,8 @@ class TestNetworkStatusDocument(unittest.TestCase):
     Try parsing a document via the parse_file() function.
     """
     
-    entry1 = get_router_status_entry({'s': "Fast"})
-    entry2 = get_router_status_entry({'s': "Valid"})
+    entry1 = get_router_status_entry_v3({'s': "Fast"})
+    entry2 = get_router_status_entry_v3({'s': "Valid"})
     content = get_network_status_document(routers = (entry1, entry2), content = True)
     
     # the document that the entries refer to should actually be the minimal
@@ -620,15 +621,15 @@ class TestNetworkStatusDocument(unittest.TestCase):
     document.
     """
     
-    entry1 = get_router_status_entry({'s': "Fast"})
-    entry2 = get_router_status_entry({'s': "Valid"})
+    entry1 = get_router_status_entry_v3({'s': "Fast"})
+    entry2 = get_router_status_entry_v3({'s': "Valid"})
     document = get_network_status_document(routers = (entry1, entry2))
     
     self.assertEquals((entry1, entry2), document.routers)
     
     # try with an invalid RouterStatusEntry
     
-    entry3 = RouterStatusEntry(get_router_status_entry({'r': "ugabuga"}, content = True), False)
+    entry3 = RouterStatusEntryV3(get_router_status_entry_v3({'r': "ugabuga"}, content = True), False)
     content = get_network_status_document(routers = (entry3,), content = True)
     
     self.assertRaises(ValueError, NetworkStatusDocument, content)

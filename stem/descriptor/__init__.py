@@ -18,6 +18,7 @@ __all__ = [
   "extrainfo_descriptor",
   "server_descriptor",
   "networkstatus",
+  "router_status_entry",
   "parse_file",
   "Descriptor",
 ]

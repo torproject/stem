@@ -27,7 +27,7 @@ calling :func:`test.mocking.revert_mocking`.
     get_bridge_server_descriptor    - stem.descriptor.server_descriptor.BridgeDescriptor
     get_relay_extrainfo_descriptor  - stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor
     get_bridge_extrainfo_descriptor - stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor
-    get_router_status_entry         - stem.descriptor.networkstatus.RouterStatusEntry
+    get_router_status_entry_v3      - stem.descriptor.router_status_entry.RouterStatusEntryV3
     get_directory_authority         - stem.descriptor.networkstatus.DirectoryAuthority
     get_key_certificate             - stem.descriptor.networkstatus.KeyCertificate
     get_network_status_document     - stem.descriptor.networkstatus.NetworkStatusDocument
@@ -43,6 +43,7 @@ import stem.socket
 import stem.descriptor.server_descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.networkstatus
+import stem.descriptor.router_status_entry
 
 # Once we've mocked a function we can't rely on its __module__ or __name__
 # attributes, so instead we associate a unique 'mock_id' attribute that maps
@@ -106,7 +107,7 @@ BRIDGE_EXTRAINFO_FOOTER = (
   ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
 )
 
-ROUTER_STATUS_ENTRY_HEADER = (
+ROUTER_STATUS_ENTRY_V3_HEADER = (
   ("r", "caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0"),
   ("s", "Fast Named Running Stable Valid"),
 )
@@ -522,24 +523,24 @@ def get_bridge_extrainfo_descriptor(attr = None, exclude = (), content = False):
   else:
     return stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(desc_content, validate = True)
 
-def get_router_status_entry(attr = None, exclude = (), content = False):
+def get_router_status_entry_v3(attr = None, exclude = (), content = False):
   """
   Provides the descriptor content for...
-  stem.descriptor.networkstatus.RouterStatusEntry
+  stem.descriptor.router_status_entry.RouterStatusEntryV3
   
   :param dict attr: keyword/value mappings to be included in the descriptor
   :param list exclude: mandatory keywords to exclude from the descriptor
   :param bool content: provides the str content of the descriptor rather than the class if True
   
-  :returns: RouterStatusEntry for the requested descriptor content
+  :returns: RouterStatusEntryV3 for the requested descriptor content
   """
   
-  desc_content = _get_descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_HEADER)
+  desc_content = _get_descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_V3_HEADER)
   
   if content:
     return desc_content
   else:
-    return stem.descriptor.networkstatus.RouterStatusEntry(desc_content, validate = True)
+    return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content, validate = True)
 
 def get_directory_authority(attr = None, exclude = (), is_vote = False, content = False):
   """
