@@ -285,7 +285,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     
     self.digest = None
     
-    super(RouterStatusEntryMicroV3, self).__init__(content)
+    super(RouterStatusEntryMicroV3, self).__init__(content, validate, document)
   
   def _parse(self, entries, validate):
     for keyword, values in entries.items():

@@ -9,7 +9,7 @@ from stem.descriptor import Flag
 from stem.descriptor.router_status_entry import RouterStatusEntryV3, _decode_fingerprint
 from stem.version import Version
 from stem.exit_policy import MicrodescriptorExitPolicy
-from test.mocking import get_router_status_entry_v3, ROUTER_STATUS_ENTRY_V3_HEADER
+from test.mocking import get_router_status_entry_v2, get_router_status_entry_v3, get_router_status_entry_micro_v3, ROUTER_STATUS_ENTRY_V3_HEADER
 
 class TestRouterStatusEntry(unittest.TestCase):
   def test_fingerprint_decoding(self):
@@ -35,9 +35,29 @@ class TestRouterStatusEntry(unittest.TestCase):
       self.assertRaises(ValueError, _decode_fingerprint, arg, True)
       self.assertEqual(None, _decode_fingerprint(arg, False))
   
-  def test_minimal(self):
+  def test_minimal_v2(self):
     """
-    Parses a minimal router status entry.
+    Parses a minimal v2 router status entry.
+    """
+    
+    entry = get_router_status_entry_v2()
+    
+    self.assertEqual(None, entry.document)
+    self.assertEqual("caerSidi", entry.nickname)
+    self.assertEqual("A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB", entry.fingerprint)
+    self.assertEqual("oQZFLYe9e4A7bOkWKR7TaNxb0JE", entry.digest)
+    self.assertEqual(datetime.datetime(2012, 8, 6, 11, 19, 31), entry.published)
+    self.assertEqual("71.35.150.29", entry.address)
+    self.assertEqual(9001, entry.or_port)
+    self.assertEqual(None, entry.dir_port)
+    self.assertEqual(None, entry.flags)
+    self.assertEqual(None, entry.version_line)
+    self.assertEqual(None, entry.version)
+    self.assertEqual([], entry.get_unrecognized_lines())
+  
+  def test_minimal_v3(self):
+    """
+    Parses a minimal v3 router status entry.
     """
     
     entry = get_router_status_entry_v3()
@@ -59,6 +79,27 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual([], entry.unrecognized_bandwidth_entries)
     self.assertEqual(None, entry.exit_policy)
     self.assertEqual(None, entry.microdescriptor_hashes)
+    self.assertEqual([], entry.get_unrecognized_lines())
+  
+  def test_minimal_micro_v3(self):
+    """
+    Parses a minimal microdescriptor v3 router status entry.
+    """
+    
+    entry = get_router_status_entry_micro_v3()
+    
+    expected_flags = set([Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING, Flag.STABLE, Flag.V2DIR, Flag.VALID])
+    self.assertEqual(None, entry.document)
+    self.assertEqual("Konata", entry.nickname)
+    self.assertEqual("011209176CDBAA2AC1F48C2C5B4990CE771C5B0C", entry.fingerprint)
+    self.assertEqual(datetime.datetime(2012, 9, 24, 13, 40, 40), entry.published)
+    self.assertEqual("69.64.48.168", entry.address)
+    self.assertEqual(9001, entry.or_port)
+    self.assertEqual(9030, entry.dir_port)
+    self.assertEqual(expected_flags, set(entry.flags))
+    self.assertEqual(None, entry.version_line)
+    self.assertEqual(None, entry.version)
+    self.assertEqual("aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70", entry.digest)
     self.assertEqual([], entry.get_unrecognized_lines())
   
   def test_missing_fields(self):

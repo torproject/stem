@@ -23,14 +23,24 @@ calling :func:`test.mocking.revert_mocking`.
   Instance Constructors
     get_message                     - stem.socket.ControlMessage
     get_protocolinfo_response       - stem.response.protocolinfo.ProtocolInfoResponse
-    get_relay_server_descriptor     - stem.descriptor.server_descriptor.RelayDescriptor
-    get_bridge_server_descriptor    - stem.descriptor.server_descriptor.BridgeDescriptor
-    get_relay_extrainfo_descriptor  - stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor
-    get_bridge_extrainfo_descriptor - stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor
-    get_router_status_entry_v3      - stem.descriptor.router_status_entry.RouterStatusEntryV3
-    get_directory_authority         - stem.descriptor.networkstatus.DirectoryAuthority
-    get_key_certificate             - stem.descriptor.networkstatus.KeyCertificate
-    get_network_status_document     - stem.descriptor.networkstatus.NetworkStatusDocument
+    
+    stem.descriptor.server_descriptor
+      get_relay_server_descriptor  - RelayDescriptor
+      get_bridge_server_descriptor - BridgeDescriptor
+    
+    stem.descriptor.extrainfo_descriptor
+      get_relay_extrainfo_descriptor  - RelayExtraInfoDescriptor
+      get_bridge_extrainfo_descriptor - BridgeExtraInfoDescriptor
+    
+    stem.descriptor.networkstatus
+      get_directory_authority     - DirectoryAuthority
+      get_key_certificate         - KeyCertificate
+      get_network_status_document - NetworkStatusDocument
+    
+    stem.descriptor.router_status_entry
+      get_router_status_entry_v2       - RouterStatusEntryV2
+      get_router_status_entry_v3       - RouterStatusEntryV3
+      get_router_status_entry_micro_v3 - RouterStatusEntryMicroV3
 """
 
 import inspect
@@ -107,9 +117,19 @@ BRIDGE_EXTRAINFO_FOOTER = (
   ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
 )
 
+ROUTER_STATUS_ENTRY_V2_HEADER = (
+  ("r", "caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0"),
+)
+
 ROUTER_STATUS_ENTRY_V3_HEADER = (
   ("r", "caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0"),
   ("s", "Fast Named Running Stable Valid"),
+)
+
+ROUTER_STATUS_ENTRY_MICRO_V3_HEADER = (
+  ("r", "Konata ARIJF2zbqirB9IwsW0mQznccWww 2012-09-24 13:40:40 69.64.48.168 9001 9030"),
+  ("m", "aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70"),
+  ("s", "Fast Guard HSDir Named Running Stable V2Dir Valid"),
 )
 
 AUTHORITY_HEADER = (
@@ -523,6 +543,25 @@ def get_bridge_extrainfo_descriptor(attr = None, exclude = (), content = False):
   else:
     return stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(desc_content, validate = True)
 
+def get_router_status_entry_v2(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.router_status_entry.RouterStatusEntryV2
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: RouterStatusEntryV2 for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_V2_HEADER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content, validate = True)
+
 def get_router_status_entry_v3(attr = None, exclude = (), content = False):
   """
   Provides the descriptor content for...
@@ -541,6 +580,25 @@ def get_router_status_entry_v3(attr = None, exclude = (), content = False):
     return desc_content
   else:
     return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content, validate = True)
+
+def get_router_status_entry_micro_v3(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: RouterStatusEntryMicroV3 for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_MICRO_V3_HEADER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.router_status_entry.RouterStatusEntryMicroV3(desc_content, validate = True)
 
 def get_directory_authority(attr = None, exclude = (), is_vote = False, content = False):
   """
