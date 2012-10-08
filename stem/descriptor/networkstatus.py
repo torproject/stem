@@ -1,55 +1,73 @@
 """
-Parsing for Tor network status documents. Currently supports parsing v3 network
-status documents (both votes and consensuses).
-
-The network status documents also contain a list of router descriptors,
-directory authorities, signatures etc. If you only need the
-:class:`stem.descriptor.router_status_entry.RouterStatusEntry` objects, use
-:func:`stem.descriptor.parse_file`. Other information can be accessed by
-directly instantiating :class:`stem.descriptor.networkstatus.NetworkStatusDocument`
-objects.
-
-The documents can be obtained from any of the following sources...
+Parsing for Tor network status documents. This supports both the v2 and v3
+dir-spec. Documents can be obtained from a few sources...
 
 * the 'cached-consensus' file in tor's data directory
 * tor metrics, at https://metrics.torproject.org/data.html
 * directory authorities and mirrors via their DirPort
 
+... and contain the following sections...
+
+* document header
+* list of :class:`stem.descriptor.networkstatus.DirectoryAuthority`
+* list of :class:`stem.descriptor.router_status_entry.RouterStatusEntry`
+* document footer
+
+Of these, the router status entry section can be quite large (on the order of
+hundreds of kilobytes). As such we provide a couple methods of reading network
+status documents...
+
+* :class:`stem.descriptor.networkstatus.NetworkStatusDocument` constructor
+
+If read time and memory aren't a concern then you can simply use the document
+constructor. Router entries are assigned to its 'routers' attribute...
+
 ::
 
-  import stem.descriptor.networkstatus
+  from stem.descriptor.networkstatus import NetworkStatusDocument
   
-  nsdoc_file = open("/home/neena/.tor/cached-consensus")
-  try:
-    consensus = stem.descriptor.networkstatus.parse_file(nsdoc_file)
-  except ValueError:
-    print "Invalid cached-consensus file"
+  with open('.tor/cached-consensus', 'r') as consensus_file:
+    # Reads the full consensus into memory twice (both for the parsed and
+    # unparsed contents).
+    
+    consensus = NetworkStatusDocument(consensus_file.read())
+    
+    for router in consensus.routers:
+      print router.nickname
+
+* :func:`stem.descriptor.parse_file`
+
+Alternatively, the parse_file() function provides an iterator for a document's
+routers. Those routers refer to a 'thin' document, which doesn't have a
+'routers' attribute. This allows for lower memory usage and upfront runtime.
+
+::
+
+  from stem.descriptor.networkstatus import parse_file
   
-  print "Consensus was valid between %s and %s" % (str(consensus.valid_after), str(consensus.valid_until))
+  with open('.tor/cached-consensus', 'r') as consensus_file:
+    # Processes the routers as we read them in. The routers refer to a document
+    # with an unset 'routers' attribute.
+    
+    for router in parse_file(consensus_file):
+      print router.nickname
 
 **Module Overview:**
 
 ::
 
-  parse_file - parses a network status file and provides a NetworkStatusDocument
-  NetworkStatusDocument - Tor v3 network status document
-    +- MicrodescriptorConsensus - Microdescriptor flavoured consensus documents
-  DocumentSignature - Signature of a document by a directory authority
-  DirectoryAuthority - Directory authority defined in a v3 network status document
+  parse_file - parses a network status file, providing an iterator for its routers
+  NetworkStatusDocument - Version 3 network status document.
+  DocumentSignature - Signature of a document by a directory authority.
+  DirectoryAuthority - Directory authority as defined in a v3 network status document.
 """
 
-import re
 import datetime
-
-try:
-  from cStringIO import StringIO
-except:
-  from StringIO import StringIO
+from StringIO import StringIO
 
 import stem.descriptor
 import stem.descriptor.router_status_entry
 import stem.version
-import stem.exit_policy
 import stem.util.tor_tools
 
 # Network status document are either a 'vote' or 'consensus', with different
