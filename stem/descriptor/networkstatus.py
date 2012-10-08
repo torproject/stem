@@ -801,6 +801,9 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
             raise ValueError("Authority's nickname is invalid: %s" % dir_source_comp[0])
           elif not stem.util.tor_tools.is_valid_fingerprint(dir_source_comp[1]):
             raise ValueError("Authority's fingerprint is invalid: %s" % dir_source_comp[1])
+          elif not dir_source_comp[2]:
+            # https://trac.torproject.org/7055
+            raise ValueError("Authority's hostname can't be blank: %s" % line)
           elif not stem.util.connection.is_valid_ip_address(dir_source_comp[3]):
             raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[3])
           elif not stem.util.connection.is_valid_port(dir_source_comp[4], allow_zero = True):
