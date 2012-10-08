@@ -156,11 +156,9 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
   document_content = "".join(header + footer)
   
   if not is_microdescriptor:
-    document = NetworkStatusDocument(document_content, validate)
     router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
   else:
-    document = MicrodescriptorConsensus(document_content, validate)
-    router_type = RouterMicrodescriptor
+    router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
   
   desc_iterator = _get_entries(
     document_file,
@@ -169,7 +167,7 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
     entry_keyword = ROUTERS_START,
     start_position = routers_start,
     end_position = routers_end,
-    extra_args = (document,),
+    extra_args = (NetworkStatusDocument(document_content, validate),),
   )
   
   for desc in desc_iterator:
@@ -221,9 +219,11 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   
   :var tuple routers: RouterStatusEntryV3 contained in the document
   
-  :var str version: **\*** document version
+  :var int version: **\*** document version
+  :var str version_flavor: **\*** flavor associated with the document (such as 'microdesc')
   :var bool is_consensus: **\*** true if the document is a consensus
   :var bool is_vote: **\*** true if the document is a vote
+  :var bool is_microdescriptor: **\*** true if this is a microdescriptor flavored document, false otherwise
   :var datetime valid_after: **\*** time when the consensus became valid
   :var datetime fresh_until: **\*** time when the next consensus should be produced
   :var datetime valid_until: **\*** time when this consensus becomes obsolete
@@ -262,6 +262,14 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     document_file = StringIO(raw_content)
     
     self._header = _DocumentHeader(document_file, validate, default_params)
+    self._unrecognized_lines = []
+    
+    # merge header attributes into us
+    for attr, value in vars(self._header).items():
+      if attr != "_unrecognized_lines":
+        setattr(self, attr, value)
+      else:
+        self._unrecognized_lines += value
     
     self.directory_authorities = tuple(_get_entries(
       document_file,
@@ -272,27 +280,28 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
       extra_args = (self._header.is_vote,),
     ))
     
+    if not self._header.is_microdescriptor:
+      router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
+    else:
+      router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
+    
     self.routers = tuple(_get_entries(
       document_file,
       validate,
-      entry_class = self._get_router_type(),
+      entry_class = router_type,
       entry_keyword = ROUTERS_START,
       section_end_keywords = FOOTER_START,
       extra_args = (self,),
     ))
     
     self._footer = _DocumentFooter(document_file, validate, self._header)
-    self._unrecognized_lines = []
     
-    # copy the header and footer attributes into us
-    for attr, value in vars(self._header).items() + vars(self._footer).items():
+    # merge header attributes into us
+    for attr, value in vars(self._footer).items():
       if attr != "_unrecognized_lines":
         setattr(self, attr, value)
       else:
         self._unrecognized_lines += value
-  
-  def _get_router_type(self):
-    return stem.descriptor.router_status_entry.RouterStatusEntryV3
   
   def meets_consensus_method(self, method):
     """
@@ -319,8 +328,10 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
 class _DocumentHeader(object):
   def __init__(self, document_file, validate, default_params):
     self.version = None
+    self.version_flavor = None
     self.is_consensus = True
     self.is_vote = False
+    self.is_microdescriptor = False
     self.consensus_methods = []
     self.published = None
     self.consensus_method = None
@@ -362,12 +373,20 @@ class _DocumentHeader(object):
       if keyword == 'network-status-version':
         # "network-status-version" version
         
-        self.version = value
+        if ' ' in value:
+          version, flavor = value.split(' ', 1)
+        else:
+          version, flavor = value, None
         
-        # TODO: Obviously not right when we extend this to parse v2 documents,
-        # but we'll cross that bridge when we come to it.
+        if not version.isdigit():
+          if not validate: continue
+          raise ValueError("Network status document has a non-numeric version: %s" % line)
         
-        if validate and self.version != "3":
+        self.version = int(version)
+        self.version_flavor = flavor
+        self.is_microdescriptor = flavor == 'microdesc'
+        
+        if validate and self.version != 3:
           raise ValueError("Expected a version 3 network status documents, got version '%s' instead" % self.version)
       elif keyword == 'vote-status':
         # "vote-status" type
@@ -1033,161 +1052,4 @@ class DocumentSignature(object):
       elif getattr(self, attr) < getattr(other, attr): return -1
     
     return 0
-
-class MicrodescriptorConsensus(NetworkStatusDocument):
-  """
-  A v3 microdescriptor consensus.
-  
-  :var str version: **\*** a document format version. For v3 microdescriptor consensuses this is "3 microdesc"
-  :var bool is_consensus: **\*** true if the document is a consensus
-  :var bool is_vote: **\*** true if the document is a vote
-  :var int consensus_method: **~** consensus method used to generate a consensus
-  :var datetime valid_after: **\*** time when the consensus becomes valid
-  :var datetime fresh_until: **\*** time until when the consensus is considered to be fresh
-  :var datetime valid_until: **\*** time until when the consensus is valid
-  :var int vote_delay: **\*** number of seconds allowed for collecting votes from all authorities
-  :var int dist_delay: number of seconds allowed for collecting signatures from all authorities
-  :var list client_versions: list of recommended Tor client versions
-  :var list server_versions: list of recommended Tor server versions
-  :var list known_flags: **\*** list of known router flags
-  :var list params: dict of parameter(str) => value(int) mappings
-  :var list directory_authorities: **\*** list of DirectoryAuthority objects that have generated this document
-  :var dict bandwidth_weights: **~** dict of weight(str) => value(int) mappings
-  :var list signatures: **\*** list of signatures this document has
-  
-  | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
-  | **~** attribute appears only in consensuses
-  """
-  
-  def _get_router_type(self):
-    return RouterMicrodescriptor
-  
-  def _validate_network_status_version(self):
-    return self.version == "3 microdesc"
-
-class RouterMicrodescriptor(stem.descriptor.router_status_entry.RouterStatusEntry):
-  """
-  Router microdescriptor object. Parses and stores router information in a router
-  microdescriptor from a v3 microdescriptor consensus.
-  
-  :var MicrodescriptorConsensus document: **\*** document this descriptor came from
-  
-  :var str nickname: **\*** router's nickname
-  :var str fingerprint: **\*** router's fingerprint
-  :var datetime published: **\*** router's publication
-  :var str ip: **\*** router's IP address
-  :var int or_port: **\*** router's ORPort
-  :var int dir_port: **\*** router's DirPort
-  
-  :var list flags: **\*** list of status flags
-  
-  :var :class:`stem.version.Version`,str version: Version of the Tor protocol this router is running
-  
-  :var int bandwidth: router's claimed bandwidth
-  :var int measured_bandwidth: router's measured bandwidth
-  
-  :var str digest: base64 of the hash of the router's microdescriptor with trailing =s omitted
-  
-  | **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
-  """
-  
-  def __init__(self, raw_contents, validate, document):
-    """
-    Parse a router descriptor in a v3 microdescriptor consensus and provide a new
-    RouterMicrodescriptor object.
-    
-    :param str raw_content: router descriptor content to be parsed
-    :param MicrodescriptorConsensus document: document this descriptor came from
-    :param bool validate: whether the router descriptor should be validated
-    
-    :raises: ValueError if the descriptor data is invalid
-    """
-    
-    super(RouterMicrodescriptor, self).__init__(raw_contents, validate, document)
-    
-    self.document = document
-  
-  def _parse(self, raw_content, validate):
-    """
-    :param dict raw_content: router descriptor contents to be parsed
-    :param bool validate: checks the validity of descriptor content if True
-    
-    :raises: ValueError if an error occures in validation
-    """
-    
-    content = StringIO(raw_content)
-    seen_keywords = set()
-    peek_check_kw = lambda keyword: keyword == _peek_keyword(content)
-    
-    r = _read_keyword_line("r", content, validate)
-    # r mauer BD7xbfsCFku3+tgybEZsg8Yjhvw itcuKQ6PuPLJ7m/Oi928WjO2j8g 2012-06-22 13:19:32 80.101.105.103 9001 0
-    # "r" SP nickname SP identity SP digest SP publication SP IP SP ORPort SP DirPort NL
-    if r:
-      seen_keywords.add("r")
-      values = r.split(" ")
-      self.nickname, self.fingerprint = values[0], _decode_fingerprint(values[1], validate)
-      self.published = _strptime(" ".join((values[2], values[3])), validate)
-      self.ip, self.or_port, self.dir_port = values[4], int(values[5]), int(values[6])
-      if self.dir_port == 0: self.dir_port = None
-    elif validate: raise ValueError("Invalid router descriptor: empty 'r' line")
-    
-    while _peek_line(content):
-      if peek_check_kw("s"):
-        if "s" in seen_keywords: raise ValueError("Invalid router descriptor: 's' line appears twice")
-        line = _read_keyword_line("s", content, validate)
-        if not line: continue
-        seen_keywords.add("s")
-        # s Named Running Stable Valid
-        #A series of space-separated status flags, in *lexical order*
-        self.flags = line.split(" ")
-      
-      elif peek_check_kw("v"):
-        if "v" in seen_keywords: raise ValueError("Invalid router descriptor: 'v' line appears twice")
-        line = _read_keyword_line("v", content, validate, True)
-        seen_keywords.add("v")
-        # v Tor 0.2.2.35
-        if line:
-          if line.startswith("Tor "):
-            self.version = stem.version.Version(line[4:])
-          else:
-            self.version = line
-        elif validate: raise ValueError("Invalid router descriptor: empty 'v' line" )
-      
-      elif peek_check_kw("w"):
-        if "w" in seen_keywords: raise ValueError("Invalid router descriptor: 'w' line appears twice")
-        w = _read_keyword_line("w", content, validate, True)
-        # "w" SP "Bandwidth=" INT [SP "Measured=" INT] NL
-        seen_keywords.add("w")
-        if w:
-          values = w.split(" ")
-          if len(values) <= 2 and len(values) > 0:
-            key, value = values[0].split("=")
-            if key == "Bandwidth": self.bandwidth = int(value)
-            elif validate: raise ValueError("Router descriptor contains invalid 'w' line: expected Bandwidth, read " + key)
-            
-            if len(values) == 2:
-              key, value = values[1].split("=")
-              if key == "Measured": self.measured_bandwidth = int(value)
-              elif validate: raise ValueError("Router descriptor contains invalid 'w' line: expected Measured, read " + key)
-          elif validate: raise ValueError("Router descriptor contains invalid 'w' line")
-        elif validate: raise ValueError("Router descriptor contains empty 'w' line")
-      
-      elif peek_check_kw("m"):
-        # microdescriptor hashes
-        self.digest = _read_keyword_line("m", content, validate, True)
-      
-      elif validate:
-        raise ValueError("Router descriptor contains unrecognized trailing lines: %s" % content.readline())
-      
-      else:
-        self.unrecognized_lines.append(content.readline()) # ignore unrecognized lines if we aren't validating
-  
-  def get_unrecognized_lines(self):
-    """
-    Returns any unrecognized lines.
-    
-    :returns: a list of unrecognized lines
-    """
-    
-    return self.unrecognized_lines
 

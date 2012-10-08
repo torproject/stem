@@ -9,8 +9,8 @@ import StringIO
 import stem.version
 from stem.descriptor import Flag
 from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, DirectoryAuthority, NetworkStatusDocument, parse_file
-from stem.descriptor.router_status_entry import RouterStatusEntryV3
-from test.mocking import get_router_status_entry_v3, get_directory_authority, get_network_status_document, CRYPTO_BLOB, DOC_SIG
+from stem.descriptor.router_status_entry import RouterStatusEntryV3, RouterStatusEntryMicroV3
+from test.mocking import get_router_status_entry_v3, get_router_status_entry_micro_v3, get_directory_authority, get_network_status_document, CRYPTO_BLOB, DOC_SIG
 
 class TestNetworkStatusDocument(unittest.TestCase):
   def test_minimal_consensus(self):
@@ -25,9 +25,11 @@ class TestNetworkStatusDocument(unittest.TestCase):
       Flag.STABLE, Flag.UNNAMED, Flag.V2DIR, Flag.VALID]
     
     self.assertEqual((), document.routers)
-    self.assertEqual("3", document.version)
+    self.assertEqual(3, document.version)
+    self.assertEqual(None, document.version_flavor)
     self.assertEqual(True, document.is_consensus)
     self.assertEqual(False, document.is_vote)
+    self.assertEqual(False, document.is_microdescriptor)
     self.assertEqual(9, document.consensus_method)
     self.assertEqual([], document.consensus_methods)
     self.assertEqual(None, document.published)
@@ -57,7 +59,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
       Flag.STABLE, Flag.UNNAMED, Flag.V2DIR, Flag.VALID]
     
     self.assertEqual((), document.routers)
-    self.assertEqual("3", document.version)
+    self.assertEqual(3, document.version)
     self.assertEqual(False, document.is_consensus)
     self.assertEqual(True, document.is_vote)
     self.assertEqual(None, document.consensus_method)
@@ -178,13 +180,22 @@ class TestNetworkStatusDocument(unittest.TestCase):
     """
     
     document = get_network_status_document({"network-status-version": "3"})
-    self.assertEquals("3", document.version)
+    self.assertEquals(3, document.version)
+    self.assertEquals(None, document.version_flavor)
+    self.assertEquals(False, document.is_microdescriptor)
+    
+    document = get_network_status_document({"network-status-version": "3 microdesc"})
+    self.assertEquals(3, document.version)
+    self.assertEquals('microdesc', document.version_flavor)
+    self.assertEquals(True, document.is_microdescriptor)
     
     content = get_network_status_document({"network-status-version": "4"}, content = True)
     self.assertRaises(ValueError, NetworkStatusDocument, content)
     
     document = NetworkStatusDocument(content, False)
-    self.assertEquals("4", document.version)
+    self.assertEquals(4, document.version)
+    self.assertEquals(None, document.version_flavor)
+    self.assertEquals(False, document.is_microdescriptor)
   
   def test_vote_status(self):
     """
@@ -616,7 +627,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
   
   def test_with_router_status_entries(self):
     """
-    Includes a router status entry within the document. This isn't to test the
+    Includes router status entries within the document. This isn't to test the
     RouterStatusEntry parsing but rather the inclusion of it within the
     document.
     """
@@ -635,6 +646,53 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertRaises(ValueError, NetworkStatusDocument, content)
     document = NetworkStatusDocument(content, False)
     self.assertEquals((entry3,), document.routers)
+    
+    # try including with a microdescriptor consensus
+    
+    content = get_network_status_document({"network-status-version": "3 microdesc"}, routers = (entry1, entry2), content = True)
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    expected_routers = (
+      RouterStatusEntryMicroV3(str(entry1), False),
+      RouterStatusEntryMicroV3(str(entry2), False),
+    )
+    
+    document = NetworkStatusDocument(content, False)
+    self.assertEquals(expected_routers, document.routers)
+  
+  def test_with_microdescriptor_router_status_entries(self):
+    """
+    Includes microdescriptor flavored router status entries within the
+    document.
+    """
+    
+    entry1 = get_router_status_entry_micro_v3({'s': "Fast"})
+    entry2 = get_router_status_entry_micro_v3({'s': "Valid"})
+    document = get_network_status_document({"network-status-version": "3 microdesc"}, routers = (entry1, entry2))
+    
+    self.assertEquals((entry1, entry2), document.routers)
+    
+    # try with an invalid RouterStatusEntry
+    
+    entry3 = RouterStatusEntryMicroV3(get_router_status_entry_micro_v3({'r': "ugabuga"}, content = True), False)
+    content = get_network_status_document({"network-status-version": "3 microdesc"}, routers = (entry3,), content = True)
+    
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    document = NetworkStatusDocument(content, False)
+    self.assertEquals((entry3,), document.routers)
+    
+    # try including microdescriptor entries in a normal consensus
+    
+    content = get_network_status_document(routers = (entry1, entry2), content = True)
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    expected_routers = (
+      RouterStatusEntryV3(str(entry1), False),
+      RouterStatusEntryV3(str(entry2), False),
+    )
+    
+    document = NetworkStatusDocument(content, False)
+    self.assertEquals(expected_routers, document.routers)
   
   def test_with_directory_authorities(self):
     """
