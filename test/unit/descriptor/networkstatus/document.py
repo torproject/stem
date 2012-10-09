@@ -2,6 +2,8 @@
 Unit tests for the NetworkStatusDocument of stem.descriptor.networkstatus.
 """
 
+from __future__ import with_statement
+
 import datetime
 import unittest
 import StringIO
@@ -10,7 +12,7 @@ import stem.version
 from stem.descriptor import Flag
 from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, DirectoryAuthority, NetworkStatusDocument, parse_file
 from stem.descriptor.router_status_entry import RouterStatusEntryV3, RouterStatusEntryMicroV3
-from test.mocking import get_router_status_entry_v3, get_router_status_entry_micro_v3, get_directory_authority, get_network_status_document, CRYPTO_BLOB, DOC_SIG
+from test.mocking import support_with, get_router_status_entry_v3, get_router_status_entry_micro_v3, get_directory_authority, get_network_status_document, CRYPTO_BLOB, DOC_SIG
 
 class TestNetworkStatusDocument(unittest.TestCase):
   def test_minimal_consensus(self):
@@ -78,6 +80,32 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual({}, document.bandwidth_weights)
     self.assertEqual([DOC_SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
+  
+  def test_examples(self):
+    """
+    Run something similar to the examples in the header pydocs.
+    """
+    
+    # makes a consensus with a couple routers, both with the same nickname
+    
+    entry1 = get_router_status_entry_v3({'s': "Fast"})
+    entry2 = get_router_status_entry_v3({'s': "Valid"})
+    content = get_network_status_document(routers = (entry1, entry2), content = True)
+    
+    # first example: parsing via the NetworkStatusDocument constructor
+    
+    consensus_file = StringIO.StringIO(content)
+    consensus = NetworkStatusDocument(consensus_file.read())
+    consensus_file.close()
+    
+    for router in consensus.routers:
+      self.assertEqual('caerSidi', router.nickname)
+    
+    # second example: using parse_file
+    
+    with support_with(StringIO.StringIO(content)) as consensus_file:
+      for router in parse_file(consensus_file):
+        self.assertEqual('caerSidi', router.nickname)
   
   def test_parse_file(self):
     """

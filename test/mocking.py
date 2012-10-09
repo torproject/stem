@@ -10,6 +10,7 @@ calling :func:`test.mocking.revert_mocking`.
   revert_mocking - reverts any changes made by the mock function
   get_real_function - provides the non-mocked version of a function
   get_all_combinations - provides all combinations of attributes
+  support_with - makes object be compatable for use via the 'with' keyword
   
   Mocking Functions
     no_op           - does nothing
@@ -216,10 +217,13 @@ def support_with(obj):
   does nothing.
   
   :param object obj: object to support the 'with' keyword
+  
+  :returns: input object
   """
   
   obj.__dict__["__enter__"] = return_value(obj)
   obj.__dict__["__exit__"] = no_op()
+  return obj
 
 def mock(target, mock_call, target_module=None):
   """

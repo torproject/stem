@@ -26,14 +26,15 @@ constructor. Router entries are assigned to its 'routers' attribute...
 
   from stem.descriptor.networkstatus import NetworkStatusDocument
   
-  with open('.tor/cached-consensus', 'r') as consensus_file:
-    # Reads the full consensus into memory twice (both for the parsed and
-    # unparsed contents).
-    
-    consensus = NetworkStatusDocument(consensus_file.read())
-    
-    for router in consensus.routers:
-      print router.nickname
+  # Reads the full consensus into memory twice (both for the parsed and
+  # unparsed contents).
+  
+  consensus_file = open('.tor/cached-consensus', 'r')
+  consensus = NetworkStatusDocument(consensus_file.read())
+  consensus_file.close()
+  
+  for router in consensus.routers:
+    print router.nickname
 
 * :func:`stem.descriptor.parse_file`
 
@@ -378,7 +379,7 @@ class _DocumentHeader(object):
   
   def _parse(self, entries, validate):
     for keyword, values in entries.items():
-      value, block_contents = values[0]
+      value, _ = values[0]
       line = "%s %s" % (keyword, value)
       
       # all known header fields can only appear once except
@@ -798,7 +799,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
           raise ValueError("Authority %s shouldn't have a '%s' line:\n%s" % (type_label, keyword, content))
     
     for keyword, values in entries.items():
-      value, block_contents = values[0]
+      value, _ = values[0]
       line = "%s %s" % (keyword, value)
       
       # all known attributes can only appear at most once
