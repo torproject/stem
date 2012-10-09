@@ -75,6 +75,7 @@ WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
 
 DOC_SIG = stem.descriptor.networkstatus.DocumentSignature(
+  None,
   "14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4",
   "BF112F1C6D5543CFD0A32215ACABD4197B5279AD",
   "-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB)
@@ -671,7 +672,7 @@ def get_network_status_document(attr = None, exclude = (), authorities = None, r
   if attr is None:
     attr = {}
   
-  # add defaults only found in a vote or consensus
+  # add defaults only found in a vote, consensus, or microdescriptor
   
   if attr.get("vote-status") == "vote":
     extra_defaults = {
@@ -682,6 +683,11 @@ def get_network_status_document(attr = None, exclude = (), authorities = None, r
     extra_defaults = {
       "consensus-method": "9",
     }
+  
+  if "microdesc" in attr.get("network-status-version", ""):
+    extra_defaults.update({
+      "directory-signature": "sha256 " + NETWORK_STATUS_DOCUMENT_FOOTER[2][1],
+    })
   
   for k, v in extra_defaults.items():
     if not (k in attr or (exclude and k in exclude)):

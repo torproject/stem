@@ -593,12 +593,25 @@ class _DocumentFooter(object):
             
             raise ValueError("A network status document's 'bandwidth-weights' entries should be '%s', got '%s'" % (expected_label, actual_label))
       elif keyword == "directory-signature":
-        if not " " in value or not block_contents:
-          if not validate: continue
-          raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature FINGERPRINT KEY_DIGEST\\nSIGNATURE', got:\n%s" % line)
-        
-        fingerprint, key_digest = value.split(" ", 1)
-        self.signatures.append(DocumentSignature(fingerprint, key_digest, block_contents, validate))
+        for sig_value, block_contents in values:
+          if not header.is_microdescriptor:
+            expected_spaces = 1
+            format_label = 'directory-signature FINGERPRINT KEY_DIGEST'
+          else:
+            expected_spaces = 2
+            format_label = 'directory-signature METHOD FINGERPRINT KEY_DIGEST'
+          
+          if sig_value.count(" ") != expected_spaces or not block_contents:
+            if not validate: continue
+            raise ValueError("Authority signatures in a network status document are expected to be of the form '%s\\nSIGNATURE', got:\n%s\n%s" % (format_label, sig_value, block_contents))
+          
+          if not header.is_microdescriptor:
+            method = None
+            fingerprint, key_digest = sig_value.split(" ", 1)
+          else:
+            method, fingerprint, key_digest = sig_value.split(" ", 2)
+          
+          self.signatures.append(DocumentSignature(method, fingerprint, key_digest, block_contents, validate))
 
 def _check_for_missing_and_disallowed_fields(header, entries, fields):
   """
@@ -1033,12 +1046,11 @@ class KeyCertificate(stem.descriptor.Descriptor):
     
     return str(self) > str(other)
 
-# TODO: microdescriptors have a slightly different format (including a
-# 'method') - should probably be a subclass
 class DocumentSignature(object):
   """
   Directory signature of a v3 network status document.
   
+  :var str method: method used to make the signature, this only appears in microdescriptor consensuses
   :var str identity: fingerprint of the authority that made the signature
   :var str key_digest: digest of the signing key
   :var str signature: document signature
@@ -1047,7 +1059,7 @@ class DocumentSignature(object):
   :raises: ValueError if a validity check fails
   """
   
-  def __init__(self, identity, key_digest, signature, validate = True):
+  def __init__(self, method, identity, key_digest, signature, validate = True):
     # Checking that these attributes are valid. Technically the key
     # digest isn't a fingerprint, but it has the same characteristics.
     
@@ -1058,6 +1070,11 @@ class DocumentSignature(object):
       if not stem.util.tor_tools.is_valid_fingerprint(key_digest):
         raise ValueError("Malformed key digest (%s) in the document signature" % (key_digest))
     
+    # TODO: The method field is undocumented so I'm just guessing how we should
+    # handle it. Ticket for clarification...
+    # https://trac.torproject.org/7072
+    
+    self.method = method
     self.identity = identity
     self.key_digest = key_digest
     self.signature = signature

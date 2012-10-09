@@ -12,7 +12,7 @@ import stem.version
 from stem.descriptor import Flag
 from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, DirectoryAuthority, NetworkStatusDocument, parse_file
 from stem.descriptor.router_status_entry import RouterStatusEntryV3, RouterStatusEntryMicroV3
-from test.mocking import support_with, get_router_status_entry_v3, get_router_status_entry_micro_v3, get_directory_authority, get_network_status_document, CRYPTO_BLOB, DOC_SIG
+from test.mocking import support_with, get_router_status_entry_v3, get_router_status_entry_micro_v3, get_directory_authority, get_network_status_document, CRYPTO_BLOB, DOC_SIG, NETWORK_STATUS_DOCUMENT_FOOTER
 
 class TestNetworkStatusDocument(unittest.TestCase):
   def test_minimal_consensus(self):
@@ -632,6 +632,42 @@ class TestNetworkStatusDocument(unittest.TestCase):
       
       document = NetworkStatusDocument(content, False)
       self.assertEquals(expected, document.bandwidth_weights)
+  
+  def test_microdescriptor_signature(self):
+    """
+    The 'directory-signature' lines for normal and microdescriptor conensuses
+    differ slightly in their format.
+    """
+    
+    # including a microdescriptor flavored 'directory-signature' line should work
+    
+    document = get_network_status_document({"network-status-version": "3 microdesc"})
+    self.assertEqual('sha256', document.signatures[0].method)
+    
+    # include a standard 'directory-signature' line in a microdescriptor
+    # consensus
+    
+    content = get_network_status_document({
+      "network-status-version": "3 microdesc",
+      "directory-signature": NETWORK_STATUS_DOCUMENT_FOOTER[2][1],
+    }, content = True)
+    
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    document = NetworkStatusDocument(content, validate = False)
+    self.assertEqual([], document.signatures)
+    
+    # includes a microdescriptor flavored 'directory-signature' line in a
+    # normal consensus
+    
+    content = get_network_status_document({
+      "directory-signature": "sha256 " + NETWORK_STATUS_DOCUMENT_FOOTER[2][1],
+    }, content = True)
+    
+    self.assertRaises(ValueError, NetworkStatusDocument, content)
+    
+    document = NetworkStatusDocument(content, validate = False)
+    self.assertEqual([], document.signatures)
   
   def test_malformed_signature(self):
     """

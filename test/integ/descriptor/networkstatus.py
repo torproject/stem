@@ -82,11 +82,12 @@ class TestNetworkStatus(unittest.TestCase):
     descriptor_path = test.integ.descriptor.get_resource("cached-consensus")
     
     descriptor_file = file(descriptor_path)
-    desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())
+    desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read(), default_params = False)
     router1 = desc.routers[0]
     descriptor_file.close()
     
-    self.assertEquals("3", desc.version)
+    self.assertEquals(3, desc.version)
+    self.assertEquals(None, desc.version_flavor)
     self.assertEquals(True, desc.is_consensus)
     self.assertEquals(False, desc.is_vote)
     self.assertEquals([], desc.consensus_methods)
@@ -123,8 +124,8 @@ class TestNetworkStatus(unittest.TestCase):
     self.assertEquals(8, len(desc.directory_authorities))
     self.assertEquals("tor26", desc.directory_authorities[0].nickname)
     self.assertEquals("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", desc.directory_authorities[0].fingerprint)
+    self.assertEquals("86.59.21.38", desc.directory_authorities[0].hostname)
     self.assertEquals("86.59.21.38", desc.directory_authorities[0].address)
-    self.assertEquals("86.59.21.38", desc.directory_authorities[0].ip)
     self.assertEquals(80, desc.directory_authorities[0].dir_port)
     self.assertEquals(443, desc.directory_authorities[0].or_port)
     self.assertEquals("Peter Palfrader", desc.directory_authorities[0].contact)
@@ -175,11 +176,12 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     descriptor_path = test.integ.descriptor.get_resource("vote")
     
     descriptor_file = file(descriptor_path)
-    desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read())
+    desc = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read(), default_params = False)
     router1 = desc.routers[0]
     descriptor_file.close()
     
-    self.assertEquals("3", desc.version)
+    self.assertEquals(3, desc.version)
+    self.assertEquals(None, desc.version_flavor)
     self.assertEquals(False, desc.is_consensus)
     self.assertEquals(True, desc.is_vote)
     self.assertEquals(range(1, 13), desc.consensus_methods)
@@ -207,8 +209,8 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     self.assertEquals(1, len(desc.directory_authorities))
     self.assertEquals("turtles", desc.directory_authorities[0].nickname)
     self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.directory_authorities[0].fingerprint)
+    self.assertEquals("76.73.17.194", desc.directory_authorities[0].hostname)
     self.assertEquals("76.73.17.194", desc.directory_authorities[0].address)
-    self.assertEquals("76.73.17.194", desc.directory_authorities[0].ip)
     self.assertEquals(9030, desc.directory_authorities[0].dir_port)
     self.assertEquals(9090, desc.directory_authorities[0].or_port)
     self.assertEquals("Mike Perry <email>", desc.directory_authorities[0].contact)
@@ -245,7 +247,7 @@ KG2OUeQUNoCck4nDpsZwFqPlrWCHcHfTV2iDYFV1HQWDTtZz/qf+GtB8NXsq+I1w
 brADmvReM2BD6p/13h0QURCI5hq7ZYlIKcKrBa0jn1d9cduULl7vgKsRCJDls/ID
 emBZ6pUxMpBmV0v+PrA3v9w4DlE7GHAq61FF/zju2kpqj6MInbEvI/E+e438sWsL
 -----END SIGNATURE-----"""
-    self.assertEquals("3", desc.directory_authorities[0].key_certificate.key_certificate_version)
+    self.assertEquals(3, desc.directory_authorities[0].key_certificate.version)
     self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", desc.directory_authorities[0].key_certificate.fingerprint)
     self.assertEquals(_strptime("2011-11-28 21:51:04"), desc.directory_authorities[0].key_certificate.published)
     self.assertEquals(_strptime("2012-11-28 21:51:04"), desc.directory_authorities[0].key_certificate.expires)
