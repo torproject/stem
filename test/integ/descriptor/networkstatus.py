@@ -14,9 +14,6 @@ import stem.descriptor
 import stem.descriptor.networkstatus
 import test.integ.descriptor
 
-def _strptime(string):
-  return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
-
 class TestNetworkStatus(unittest.TestCase):
   def test_cached_consensus(self):
     """
@@ -106,7 +103,7 @@ class TestNetworkStatus(unittest.TestCase):
       self.assertEquals("sumkledi", router.nickname)
       self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
       self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router.digest)
-      self.assertEquals(_strptime("2012-07-12 04:01:55"), router.published)
+      self.assertEquals(datetime.datetime(2012, 7, 12, 4, 1, 55), router.published)
       self.assertEquals("178.218.213.229", router.address)
       self.assertEquals(80, router.or_port)
       self.assertEquals(None, router.dir_port)
@@ -152,9 +149,9 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       self.assertEquals([], document.consensus_methods)
       self.assertEquals(None, document.published)
       self.assertEquals(12, document.consensus_method)
-      self.assertEquals(_strptime("2012-07-12 10:00:00"), document.valid_after)
-      self.assertEquals(_strptime("2012-07-12 11:00:00"), document.fresh_until)
-      self.assertEquals(_strptime("2012-07-12 13:00:00"), document.valid_until)
+      self.assertEquals(datetime.datetime(2012, 7, 12, 10, 0, 0), document.valid_after)
+      self.assertEquals(datetime.datetime(2012, 7, 12, 11, 0, 0), document.fresh_until)
+      self.assertEquals(datetime.datetime(2012, 7, 12, 13, 0, 0), document.valid_until)
       self.assertEquals(300, document.vote_delay)
       self.assertEquals(300, document.dist_delay)
       self.assertEquals(expected_versions, document.client_versions)
@@ -168,7 +165,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       self.assertEquals("sumkledi", router.nickname)
       self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
       self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router.digest)
-      self.assertEquals(_strptime("2012-07-12 04:01:55"), router.published)
+      self.assertEquals(datetime.datetime(2012, 7, 12, 4, 1, 55), router.published)
       self.assertEquals("178.218.213.229", router.address)
       self.assertEquals(80, router.or_port)
       self.assertEquals(None, router.dir_port)
@@ -207,7 +204,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       self.assertEquals("sumkledi", router.nickname)
       self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
       self.assertEquals("B5n4BiALAF8B5AqafxohyYiuj7E", router.digest)
-      self.assertEquals(_strptime("2012-07-11 04:22:53"), router.published)
+      self.assertEquals(datetime.datetime(2012, 7, 11, 4, 22, 53), router.published)
       self.assertEquals("178.218.213.229", router.address)
       self.assertEquals(80, router.or_port)
       self.assertEquals(None, router.dir_port)
@@ -271,11 +268,11 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEquals(False, document.is_consensus)
       self.assertEquals(True, document.is_vote)
       self.assertEquals(range(1, 13), document.consensus_methods)
-      self.assertEquals(_strptime("2012-07-11 23:50:01"), document.published)
+      self.assertEquals(datetime.datetime(2012, 7, 11, 23, 50, 1), document.published)
       self.assertEquals(None, document.consensus_method)
-      self.assertEquals(_strptime("2012-07-12 00:00:00"), document.valid_after)
-      self.assertEquals(_strptime("2012-07-12 01:00:00"), document.fresh_until)
-      self.assertEquals(_strptime("2012-07-12 03:00:00"), document.valid_until)
+      self.assertEquals(datetime.datetime(2012, 7, 12, 0, 0, 0), document.valid_after)
+      self.assertEquals(datetime.datetime(2012, 7, 12, 1, 0, 0), document.fresh_until)
+      self.assertEquals(datetime.datetime(2012, 7, 12, 3, 0, 0), document.valid_until)
       self.assertEquals(300, document.vote_delay)
       self.assertEquals(300, document.dist_delay)
       self.assertEquals([], document.client_versions)
@@ -288,7 +285,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEquals("sumkledi", router.nickname)
       self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
       self.assertEquals("B5n4BiALAF8B5AqafxohyYiuj7E", router.digest)
-      self.assertEquals(_strptime("2012-07-11 04:22:53"), router.published)
+      self.assertEquals(datetime.datetime(2012, 7, 11, 4, 22, 53), router.published)
       self.assertEquals("178.218.213.229", router.address)
       self.assertEquals(80, router.or_port)
       self.assertEquals(None, router.dir_port)
@@ -306,8 +303,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       
       self.assertEquals(3, authority.key_certificate.version)
       self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", authority.key_certificate.fingerprint)
-      self.assertEquals(_strptime("2011-11-28 21:51:04"), authority.key_certificate.published)
-      self.assertEquals(_strptime("2012-11-28 21:51:04"), authority.key_certificate.expires)
+      self.assertEquals(datetime.datetime(2011, 11, 28, 21, 51, 4), authority.key_certificate.published)
+      self.assertEquals(datetime.datetime(2012, 11, 28, 21, 51, 4), authority.key_certificate.expires)
       self.assertEquals(expected_identity_key, authority.key_certificate.identity_key)
       self.assertEquals(expected_signing_key, authority.key_certificate.signing_key)
       self.assertEquals(expected_key_crosscert, authority.key_certificate.crosscert)
