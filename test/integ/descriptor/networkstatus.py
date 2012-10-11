@@ -49,7 +49,7 @@ class TestNetworkStatus(unittest.TestCase):
         # failing the tests
         for flag in router.flags:
           if not flag in stem.descriptor.Flag:
-            raise ValueError("Unrecognized flag type: %s, found on relay %s (%s)" % (flag, roouter.fingerprint, router.nickname))
+            raise ValueError("Unrecognized flag type: %s, found on relay %s (%s)" % (flag, router.fingerprint, router.nickname))
     
     # Sanity test that there's at least a hundred relays. If that's not the
     # case then this probably isn't a real, complete tor consensus.
@@ -85,7 +85,7 @@ class TestNetworkStatus(unittest.TestCase):
         # failing the tests
         for flag in router.flags:
           if not flag in stem.descriptor.Flag:
-            raise ValueError("Unrecognized flag type: %s, found on microdescriptor relay %s (%s)" % (flag, roouter.fingerprint, router.nickname))
+            raise ValueError("Unrecognized flag type: %s, found on microdescriptor relay %s (%s)" % (flag, router.fingerprint, router.nickname))
     
     self.assertTrue(count > 100)
   
@@ -146,9 +146,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       self.assertEquals(None, document.version_flavor)
       self.assertEquals(True, document.is_consensus)
       self.assertEquals(False, document.is_vote)
-      self.assertEquals([], document.consensus_methods)
-      self.assertEquals(None, document.published)
-      self.assertEquals(12, document.consensus_method)
+      self.assertEquals(False, document.is_microdescriptor)
       self.assertEquals(datetime.datetime(2012, 7, 12, 10, 0, 0), document.valid_after)
       self.assertEquals(datetime.datetime(2012, 7, 12, 11, 0, 0), document.fresh_until)
       self.assertEquals(datetime.datetime(2012, 7, 12, 13, 0, 0), document.valid_until)
@@ -158,7 +156,11 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       self.assertEquals(expected_versions, document.server_versions)
       self.assertEquals(expected_flags, set(document.known_flags))
       self.assertEquals({"CircuitPriorityHalflifeMsec": 30000, "bwauthpid": 1}, document.params)
+      
+      self.assertEquals(12, document.consensus_method)
       self.assertEquals(expected_bandwidth_weights, document.bandwidth_weights)
+      self.assertEquals([], document.consensus_methods)
+      self.assertEquals(None, document.published)
       self.assertEquals([], document.get_unrecognized_lines())
       
       router = document.routers[0]
@@ -180,12 +182,13 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       self.assertEquals(80, authority.dir_port)
       self.assertEquals(443, authority.or_port)
       self.assertEquals("Peter Palfrader", authority.contact)
+      self.assertEquals("0B6D1E9A300B895AA2D0B427F92917B6995C3C1C", authority.vote_digest)
       self.assertEquals(None, authority.legacy_dir_key)
       self.assertEquals(None, authority.key_certificate)
-      self.assertEquals("0B6D1E9A300B895AA2D0B427F92917B6995C3C1C", authority.vote_digest)
       
       signature = document.signatures[0]
       self.assertEquals(8, len(document.signatures))
+      self.assertEquals(None, signature.method)
       self.assertEquals("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", signature.identity)
       self.assertEquals("BF112F1C6D5543CFD0A32215ACABD4197B5279AD", signature.key_digest)
       self.assertEquals(expected_signature, signature.signature)
@@ -267,9 +270,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEquals(None, document.version_flavor)
       self.assertEquals(False, document.is_consensus)
       self.assertEquals(True, document.is_vote)
-      self.assertEquals(range(1, 13), document.consensus_methods)
-      self.assertEquals(datetime.datetime(2012, 7, 11, 23, 50, 1), document.published)
-      self.assertEquals(None, document.consensus_method)
+      self.assertEquals(False, document.is_microdescriptor)
       self.assertEquals(datetime.datetime(2012, 7, 12, 0, 0, 0), document.valid_after)
       self.assertEquals(datetime.datetime(2012, 7, 12, 1, 0, 0), document.fresh_until)
       self.assertEquals(datetime.datetime(2012, 7, 12, 3, 0, 0), document.valid_until)
@@ -279,7 +280,12 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEquals([], document.server_versions)
       self.assertEquals(expected_flags, set(document.known_flags))
       self.assertEquals({"CircuitPriorityHalflifeMsec": 30000, "bwauthpid": 1}, document.params)
+      
+      self.assertEquals(None, document.consensus_method)
       self.assertEquals({}, document.bandwidth_weights)
+      self.assertEquals(range(1, 13), document.consensus_methods)
+      self.assertEquals(datetime.datetime(2012, 7, 11, 23, 50, 1), document.published)
+      self.assertEquals([], document.get_unrecognized_lines())
       
       router = document.routers[0]
       self.assertEquals("sumkledi", router.nickname)
@@ -299,20 +305,24 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEquals(9030, authority.dir_port)
       self.assertEquals(9090, authority.or_port)
       self.assertEquals("Mike Perry <email>", authority.contact)
+      self.assertEquals(None, authority.vote_digest)
       self.assertEquals(None, authority.legacy_dir_key)
       
-      self.assertEquals(3, authority.key_certificate.version)
-      self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", authority.key_certificate.fingerprint)
-      self.assertEquals(datetime.datetime(2011, 11, 28, 21, 51, 4), authority.key_certificate.published)
-      self.assertEquals(datetime.datetime(2012, 11, 28, 21, 51, 4), authority.key_certificate.expires)
-      self.assertEquals(expected_identity_key, authority.key_certificate.identity_key)
-      self.assertEquals(expected_signing_key, authority.key_certificate.signing_key)
-      self.assertEquals(expected_key_crosscert, authority.key_certificate.crosscert)
-      self.assertEquals(expected_key_certification, authority.key_certificate.certification)
-      self.assertEquals(None, authority.vote_digest)
+      certificate = authority.key_certificate
+      self.assertEquals(3, certificate.version)
+      self.assertEquals(None, certificate.address)
+      self.assertEquals(None, certificate.dir_port)
+      self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", certificate.fingerprint)
+      self.assertEquals(expected_identity_key, certificate.identity_key)
+      self.assertEquals(datetime.datetime(2011, 11, 28, 21, 51, 4), certificate.published)
+      self.assertEquals(datetime.datetime(2012, 11, 28, 21, 51, 4), certificate.expires)
+      self.assertEquals(expected_signing_key, certificate.signing_key)
+      self.assertEquals(expected_key_crosscert, certificate.crosscert)
+      self.assertEquals(expected_key_certification, certificate.certification)
       
       signature = document.signatures[0]
       self.assertEquals(1, len(document.signatures))
+      self.assertEquals(None, signature.method)
       self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", signature.identity)
       self.assertEquals("D5C30C15BB3F1DA27669C2D88439939E8F418FCF", signature.key_digest)
       self.assertEquals(expected_signature, signature.signature)
