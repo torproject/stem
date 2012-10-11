@@ -140,7 +140,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     consensus_path = test.integ.descriptor.get_resource("cached-consensus")
     
     with open(consensus_path) as descriptor_file:
-      document = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read(), default_params = False)
+      document = stem.descriptor.networkstatus.NetworkStatusDocumentV3(descriptor_file.read(), default_params = False)
       
       self.assertEquals(3, document.version)
       self.assertEquals(None, document.version_flavor)
@@ -264,7 +264,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     vote_path = test.integ.descriptor.get_resource("vote")
     
     with open(vote_path) as descriptor_file:
-      document = stem.descriptor.networkstatus.NetworkStatusDocument(descriptor_file.read(), default_params = False)
+      document = stem.descriptor.networkstatus.NetworkStatusDocumentV3(descriptor_file.read(), default_params = False)
       
       self.assertEquals(3, document.version)
       self.assertEquals(None, document.version_flavor)

@@ -17,20 +17,20 @@ Of these, the router status entry section can be quite large (on the order of
 hundreds of kilobytes). As such we provide a couple methods of reading network
 status documents...
 
-* :class:`stem.descriptor.networkstatus.NetworkStatusDocument` constructor
+* :class:`stem.descriptor.networkstatus.NetworkStatusDocumentV3` constructor
 
 If read time and memory aren't a concern then you can simply use the document
 constructor. Router entries are assigned to its 'routers' attribute...
 
 ::
 
-  from stem.descriptor.networkstatus import NetworkStatusDocument
+  from stem.descriptor.networkstatus import NetworkStatusDocumentV3
   
   # Reads the full consensus into memory twice (both for the parsed and
   # unparsed contents).
   
   consensus_file = open('.tor/cached-consensus', 'r')
-  consensus = NetworkStatusDocument(consensus_file.read())
+  consensus = NetworkStatusDocumentV3(consensus_file.read())
   consensus_file.close()
   
   for router in consensus.routers:
@@ -58,7 +58,7 @@ routers. Those routers refer to a 'thin' document, which doesn't have a
 ::
 
   parse_file - parses a network status file, providing an iterator for its routers
-  NetworkStatusDocument - Version 3 network status document.
+  NetworkStatusDocumentV3 - Version 3 network status document.
   DocumentSignature - Signature of a document by a directory authority.
   DirectoryAuthority - Directory authority as defined in a v3 network status document.
 """
@@ -153,7 +153,7 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
   :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
   :param bool is_microdescriptor: True if this is for a microdescriptor consensus, False otherwise
   
-  :returns: :class:`stem.descriptor.networkstatus.NetworkStatusDocument` object
+  :returns: :class:`stem.descriptor.networkstatus.NetworkStatusDocumentV3` object
   
   :raises:
     * ValueError if the contents is malformed and validate is True
@@ -183,7 +183,7 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
     entry_keyword = ROUTERS_START,
     start_position = routers_start,
     end_position = routers_end,
-    extra_args = (NetworkStatusDocument(document_content, validate),),
+    extra_args = (NetworkStatusDocumentV3(document_content, validate),),
   )
   
   for desc in desc_iterator:
@@ -229,7 +229,7 @@ def _get_entries(document_file, validate, entry_class, entry_keyword, start_posi
     desc_content = "".join(stem.descriptor._read_until_keywords(entry_keyword, document_file, ignore_first = True, end_position = end_position))
     yield entry_class(desc_content, validate, *extra_args)
 
-class NetworkStatusDocument(stem.descriptor.Descriptor):
+class NetworkStatusDocumentV3(stem.descriptor.Descriptor):
   """
   Version 3 network status document. This could be either a vote or consensus.
   
@@ -265,7 +265,8 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   
   def __init__(self, raw_content, validate = True, default_params = True):
     """
-    Parse a v3 network status document and provide a new NetworkStatusDocument object.
+    Parse a v3 network status document and provide a new
+    NetworkStatusDocumentV3 object.
     
     :param str raw_content: raw network status document data
     :param bool validate: True if the document is to be validated, False otherwise
@@ -274,7 +275,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     :raises: ValueError if the document is invalid
     """
     
-    super(NetworkStatusDocument, self).__init__(raw_content)
+    super(NetworkStatusDocumentV3, self).__init__(raw_content)
     document_file = StringIO(raw_content)
     
     self._header = _DocumentHeader(document_file, validate, default_params)
@@ -336,7 +337,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
     return list(self._unrecognized_lines)
   
   def __cmp__(self, other):
-    if not isinstance(other, NetworkStatusDocument):
+    if not isinstance(other, NetworkStatusDocumentV3):
       return 1
     
     return str(self) > str(other)

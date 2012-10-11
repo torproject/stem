@@ -34,9 +34,9 @@ calling :func:`test.mocking.revert_mocking`.
       get_bridge_extrainfo_descriptor - BridgeExtraInfoDescriptor
     
     stem.descriptor.networkstatus
-      get_directory_authority     - DirectoryAuthority
-      get_key_certificate         - KeyCertificate
-      get_network_status_document - NetworkStatusDocument
+      get_directory_authority        - DirectoryAuthority
+      get_key_certificate            - KeyCertificate
+      get_network_status_document_v3 - NetworkStatusDocumentV3
     
     stem.descriptor.router_status_entry
       get_router_status_entry_v2       - RouterStatusEntryV2
@@ -655,10 +655,10 @@ def get_key_certificate(attr = None, exclude = (), content = False):
   else:
     return stem.descriptor.networkstatus.KeyCertificate(desc_content, validate = True)
 
-def get_network_status_document(attr = None, exclude = (), authorities = None, routers = None, content = False):
+def get_network_status_document_v3(attr = None, exclude = (), authorities = None, routers = None, content = False):
   """
   Provides the descriptor content for...
-  stem.descriptor.networkstatus.NetworkStatusDocument
+  stem.descriptor.networkstatus.NetworkStatusDocumentV3
   
   :param dict attr: keyword/value mappings to be included in the descriptor
   :param list exclude: mandatory keywords to exclude from the descriptor
@@ -666,7 +666,7 @@ def get_network_status_document(attr = None, exclude = (), authorities = None, r
   :param list routers: router status entries to include in the document
   :param bool content: provides the str content of the descriptor rather than the class if True
   
-  :returns: NetworkStatusDocument for the requested descriptor content
+  :returns: NetworkStatusDocumentV3 for the requested descriptor content
   """
   
   if attr is None:
@@ -709,5 +709,5 @@ def get_network_status_document(attr = None, exclude = (), authorities = None, r
   if content:
     return desc_content
   else:
-    return stem.descriptor.networkstatus.NetworkStatusDocument(desc_content, validate = True)
+    return stem.descriptor.networkstatus.NetworkStatusDocumentV3(desc_content, validate = True)
 
