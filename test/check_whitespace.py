@@ -38,7 +38,7 @@ def get_issues(base_path = DEFAULT_TARGET):
   
   issues = {}
   
-  for file_path in _get_python_files(base_path):
+  for file_path in _get_files_with_suffix(base_path):
     with open(file_path) as f: file_contents = f.read()
     lines, file_issues, prev_indent = file_contents.split("\n"), [], 0
     has_with_import, given_with_warning = False, False
@@ -96,18 +96,20 @@ def get_issues(base_path = DEFAULT_TARGET):
   
   return issues
 
-def _get_python_files(base_path):
+def _get_files_with_suffix(base_path, suffix = ".py"):
   """
-  Iterates over all of the python files within a directory.
+  Iterates over files in a given directory, providing filenames with a certain
+  suffix.
   
   :param str base_path: directory to be iterated over
+  :param str suffix: filename suffix to look for
   
-  :returns: iterator that yields the absolute path for python source code
+  :returns: iterator that yields the absolute path for files with the given suffix
   """
   
   for root, _, files in os.walk(base_path):
     for filename in files:
-      if filename.endswith(".py"):
+      if filename.endswith(suffix):
         yield os.path.join(root, filename)
 
 if __name__ == '__main__':

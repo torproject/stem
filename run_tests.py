@@ -235,6 +235,25 @@ def load_user_configuration(test_config):
     print "Unable to start tor, '%s' does not exists." % tor_config
     sys.exit(1)
 
+def _clean_orphaned_pyc():
+  test.output.print_noline("  checking for orphaned .pyc files... ", *test.runner.STATUS_ATTR)
+  
+  orphaned_pyc = []
+  
+  for base_dir in ('stem', 'test', 'run_tests.py'):
+    for pyc_path in test.check_whitespace._get_files_with_suffix(base_dir, ".pyc"):
+      if not os.path.exists(pyc_path[:-1]):
+        orphaned_pyc.append(pyc_path)
+  
+  if not orphaned_pyc:
+    # no orphaned files, nothing to do
+    test.output.print_line("done", *test.runner.STATUS_ATTR)
+  else:
+    print
+    for pyc_file in orphaned_pyc:
+      test.output.print_line("    removing %s" % pyc_file, *test.runner.ERROR_ATTR)
+      os.remove(pyc_file)
+
 if __name__ == '__main__':
   try:
     stem.prereq.check_requriements()
@@ -278,6 +297,13 @@ if __name__ == '__main__':
   stem_logger = log.get_logger()
   logging_buffer = log.LogBuffer(CONFIG["argument.log"])
   stem_logger.addHandler(logging_buffer)
+  
+  test.output.print_divider("INITIALISING", True)
+  
+  test.output.print_line("Performing startup activities...", *test.runner.STATUS_ATTR)
+  _clean_orphaned_pyc()
+  
+  print
   
   if CONFIG["argument.unit"]:
     test.output.print_divider("UNIT TESTS", True)
