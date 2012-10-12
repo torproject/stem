@@ -164,7 +164,7 @@ BANDWIDTH_WEIGHT_ENTRIES = (
   "Wmb", "Wmd", "Wme", "Wmg", "Wmm",
 )
 
-def parse_file(document_file, validate = True, is_microdescriptor = False):
+def parse_file(document_file, validate = True, is_microdescriptor = False, document_version = 3):
   """
   Parses a network status and iterates over the RouterStatusEntry in it. The
   document that these instances reference have an empty 'rotuers' attribute to
@@ -173,29 +173,38 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
   :param file document_file: file with network status document content
   :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
   :param bool is_microdescriptor: True if this is for a microdescriptor consensus, False otherwise
+  :param int document_version: network status document version
   
-  :returns: :class:`stem.descriptor.networkstatus.NetworkStatusDocumentV3` object
+  :returns: :class:`stem.descriptor.networkstatus.NetworkStatusDocument` object
   
   :raises:
-    * ValueError if the contents is malformed and validate is True
+    * ValueError if the document_version is unrecognized or the contents is malformed and validate is True
     * IOError if the file can't be read
   """
   
   # getting the document without the routers section
   
-  header = stem.descriptor._read_until_keywords((ROUTERS_START, FOOTER_START), document_file)
+  header = stem.descriptor._read_until_keywords((ROUTERS_START, FOOTER_START, V2_FOOTER_START), document_file)
   
   routers_start = document_file.tell()
-  stem.descriptor._read_until_keywords(FOOTER_START, document_file, skip = True)
+  stem.descriptor._read_until_keywords((FOOTER_START, V2_FOOTER_START), document_file, skip = True)
   routers_end = document_file.tell()
   
   footer = document_file.readlines()
   document_content = "".join(header + footer)
   
-  if not is_microdescriptor:
+  if document_version == 2:
+    document_type = NetworkStatusDocumentV2
     router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
+  elif document_version == 3:
+    document_type = NetworkStatusDocumentV3
+    
+    if not is_microdescriptor:
+      router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
+    else:
+      router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
   else:
-    router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
+    raise ValueError("Document version %i isn't recognized (only able to parse v2 or v3)" % document_version)
   
   desc_iterator = _get_entries(
     document_file,
@@ -204,7 +213,7 @@ def parse_file(document_file, validate = True, is_microdescriptor = False):
     entry_keyword = ROUTERS_START,
     start_position = routers_start,
     end_position = routers_end,
-    extra_args = (NetworkStatusDocumentV3(document_content, validate),),
+    extra_args = (document_type(document_content, validate),),
   )
   
   for desc in desc_iterator:

@@ -25,7 +25,6 @@ __all__ = [
 
 import os
 import re
-import datetime
 import collections
 
 import stem.util.enum
@@ -86,7 +85,7 @@ def parse_file(path, descriptor_file):
   elif filename == "cached-consensus":
     file_parser = stem.descriptor.networkstatus.parse_file
   elif filename == "cached-microdesc-consensus":
-    file_parser = lambda f: stem.descriptor.networkstatus.parse_file(f, True, True)
+    file_parser = lambda f: stem.descriptor.networkstatus.parse_file(f, is_microdescriptor = True)
   else:
     # Metrics descriptor handling
     first_line, desc = descriptor_file.readline().strip(), None
@@ -127,6 +126,9 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     yield stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
   elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
     for desc in stem.descriptor.networkstatus.parse_file(descriptor_file):
+      yield desc
+  elif descriptor_type == "network-status-2" and major_version == 1:
+    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, document_version = 2):
       yield desc
   elif descriptor_type == "network-status-microdesc-consensus-3" and major_version == 1:
     for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, is_microdescriptor = True):

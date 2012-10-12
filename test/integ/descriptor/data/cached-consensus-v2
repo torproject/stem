@@ -1,3 +1,4 @@
+@type network-status-2 1.0
 network-status-version 2
 dir-source 18.244.0.114 18.244.0.114 80
 fingerprint 719BE45DE224B607C53707D0E2143E2D423E74CF
