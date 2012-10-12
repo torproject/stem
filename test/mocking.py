@@ -36,6 +36,7 @@ calling :func:`test.mocking.revert_mocking`.
     stem.descriptor.networkstatus
       get_directory_authority        - DirectoryAuthority
       get_key_certificate            - KeyCertificate
+      get_network_status_document_v2 - NetworkStatusDocumentV2
       get_network_status_document_v3 - NetworkStatusDocumentV3
     
     stem.descriptor.router_status_entry
@@ -150,6 +151,19 @@ KEY_CERTIFICATE_HEADER = (
 
 KEY_CERTIFICATE_FOOTER = (
   ("dir-key-certification", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+)
+
+NETWORK_STATUS_DOCUMENT_HEADER_V2 = (
+  ("network-status-version", "2"),
+  ("dir-source", "18.244.0.114 18.244.0.114 80"),
+  ("fingerprint", "719BE45DE224B607C53707D0E2143E2D423E74CF"),
+  ("contact", "arma at mit dot edu"),
+  ("published", "2005-12-16 00:13:46"),
+  ("dir-signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+)
+
+NETWORK_STATUS_DOCUMENT_FOOTER_V2 = (
+  ("directory-signature", "moria2\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
 )
 
 NETWORK_STATUS_DOCUMENT_HEADER = (
@@ -654,6 +668,26 @@ def get_key_certificate(attr = None, exclude = (), content = False):
     return desc_content
   else:
     return stem.descriptor.networkstatus.KeyCertificate(desc_content, validate = True)
+
+def get_network_status_document_v2(attr = None, exclude = (), routers = None, content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.networkstatus.NetworkStatusDocumentV2
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param list routers: router status entries to include in the document
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: NetworkStatusDocumentV2 for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, NETWORK_STATUS_DOCUMENT_HEADER_V2, NETWORK_STATUS_DOCUMENT_FOOTER_V2)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.networkstatus.NetworkStatusDocumentV2(desc_content, validate = True)
 
 def get_network_status_document_v3(attr = None, exclude = (), authorities = None, routers = None, content = False):
   """
