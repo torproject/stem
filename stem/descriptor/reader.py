@@ -423,14 +423,14 @@ class DescriptorReader(object):
     
     if target_type[0] in (None, 'text/plain'):
       # either '.txt' or an unknown type
-      self._handle_descriptor_file(target)
+      self._handle_descriptor_file(target, target_type)
     elif is_tar:
       # handles gzip, bz2, and decompressed tarballs among others
       self._handle_archive(target)
     else:
       self._notify_skip_listeners(target, UnrecognizedType(target_type))
   
-  def _handle_descriptor_file(self, target):
+  def _handle_descriptor_file(self, target, mime_type):
     try:
       with open(target) as target_file:
         for desc in stem.descriptor.parse_file(target, target_file):
@@ -438,7 +438,7 @@ class DescriptorReader(object):
           self._unreturned_descriptors.put(desc)
           self._iter_notice.set()
     except TypeError, exc:
-      self._notify_skip_listeners(target, UnrecognizedType(None))
+      self._notify_skip_listeners(target, UnrecognizedType(mime_type))
     except ValueError, exc:
       self._notify_skip_listeners(target, ParsingFailure(exc))
     except IOError, exc:

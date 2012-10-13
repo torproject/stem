@@ -10,6 +10,7 @@ calling :func:`test.mocking.revert_mocking`.
   revert_mocking - reverts any changes made by the mock function
   get_real_function - provides the non-mocked version of a function
   get_all_combinations - provides all combinations of attributes
+  support_with - makes object be compatable for use via the 'with' keyword
   
   Mocking Functions
     no_op           - does nothing
@@ -21,9 +22,27 @@ calling :func:`test.mocking.revert_mocking`.
     raise_exception - raises an exception when called
   
   Instance Constructors
-    get_message               - stem.socket.ControlMessage
-    get_protocolinfo_response - stem.response.protocolinfo.ProtocolInfoResponse
-    get_server_descriptor     - text for a tor server descriptor
+    get_message                     - stem.socket.ControlMessage
+    get_protocolinfo_response       - stem.response.protocolinfo.ProtocolInfoResponse
+    
+    stem.descriptor.server_descriptor
+      get_relay_server_descriptor  - RelayDescriptor
+      get_bridge_server_descriptor - BridgeDescriptor
+    
+    stem.descriptor.extrainfo_descriptor
+      get_relay_extrainfo_descriptor  - RelayExtraInfoDescriptor
+      get_bridge_extrainfo_descriptor - BridgeExtraInfoDescriptor
+    
+    stem.descriptor.networkstatus
+      get_directory_authority        - DirectoryAuthority
+      get_key_certificate            - KeyCertificate
+      get_network_status_document_v2 - NetworkStatusDocumentV2
+      get_network_status_document_v3 - NetworkStatusDocumentV3
+    
+    stem.descriptor.router_status_entry
+      get_router_status_entry_v2       - RouterStatusEntryV2
+      get_router_status_entry_v3       - RouterStatusEntryV3
+      get_router_status_entry_micro_v3 - RouterStatusEntryMicroV3
 """
 
 import inspect
@@ -33,6 +52,10 @@ import __builtin__
 
 import stem.response
 import stem.socket
+import stem.descriptor.server_descriptor
+import stem.descriptor.extrainfo_descriptor
+import stem.descriptor.networkstatus
+import stem.descriptor.router_status_entry
 
 # Once we've mocked a function we can't rely on its __module__ or __name__
 # attributes, so instead we associate a unique 'mock_id' attribute that maps
@@ -52,22 +75,117 @@ skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
 
-RELAY_DESCRIPTOR_ATTR = (
+DOC_SIG = stem.descriptor.networkstatus.DocumentSignature(
+  None,
+  "14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4",
+  "BF112F1C6D5543CFD0A32215ACABD4197B5279AD",
+  "-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB)
+
+RELAY_SERVER_HEADER = (
   ("router", "caerSidi 71.35.133.197 9001 0 0"),
   ("published", "2012-03-01 17:15:27"),
   ("bandwidth", "153600 256000 104590"),
   ("reject", "*:*"),
   ("onion-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
   ("signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+)
+
+RELAY_SERVER_FOOTER = (
   ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
 )
 
-BRIDGE_DESCRIPTOR_ATTR = (
+BRIDGE_SERVER_HEADER = (
   ("router", "Unnamed 10.45.227.253 9001 0 0"),
   ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
   ("published", "2012-03-22 17:34:38"),
   ("bandwidth", "409600 819200 5120"),
   ("reject", "*:*"),
+)
+
+RELAY_EXTRAINFO_HEADER = (
+  ("extra-info", "ninja B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48"),
+  ("published", "2012-05-05 17:03:50"),
+)
+
+RELAY_EXTRAINFO_FOOTER = (
+  ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+)
+
+BRIDGE_EXTRAINFO_HEADER = (
+  ("extra-info", "ec2bridgereaac65a3 1EC248422B57D9C0BD751892FE787585407479A4"),
+  ("published", "2012-05-05 17:03:50"),
+)
+
+BRIDGE_EXTRAINFO_FOOTER = (
+  ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
+)
+
+ROUTER_STATUS_ENTRY_V2_HEADER = (
+  ("r", "caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0"),
+)
+
+ROUTER_STATUS_ENTRY_V3_HEADER = (
+  ("r", "caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0"),
+  ("s", "Fast Named Running Stable Valid"),
+)
+
+ROUTER_STATUS_ENTRY_MICRO_V3_HEADER = (
+  ("r", "Konata ARIJF2zbqirB9IwsW0mQznccWww 2012-09-24 13:40:40 69.64.48.168 9001 9030"),
+  ("m", "aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70"),
+  ("s", "Fast Guard HSDir Named Running Stable V2Dir Valid"),
+)
+
+AUTHORITY_HEADER = (
+  ("dir-source", "turtles 27B6B5996C426270A5C95488AA5BCEB6BCC86956 no.place.com 76.73.17.194 9030 9090"),
+  ("contact", "Mike Perry <email>"),
+)
+
+KEY_CERTIFICATE_HEADER = (
+  ("dir-key-certificate-version", "3"),
+  ("fingerprint", "27B6B5996C426270A5C95488AA5BCEB6BCC86956"),
+  ("dir-key-published", "2011-11-28 21:51:04"),
+  ("dir-key-expires", "2012-11-28 21:51:04"),
+  ("dir-identity-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+  ("dir-signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+)
+
+KEY_CERTIFICATE_FOOTER = (
+  ("dir-key-certification", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+)
+
+NETWORK_STATUS_DOCUMENT_HEADER_V2 = (
+  ("network-status-version", "2"),
+  ("dir-source", "18.244.0.114 18.244.0.114 80"),
+  ("fingerprint", "719BE45DE224B607C53707D0E2143E2D423E74CF"),
+  ("contact", "arma at mit dot edu"),
+  ("published", "2005-12-16 00:13:46"),
+  ("dir-signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+)
+
+NETWORK_STATUS_DOCUMENT_FOOTER_V2 = (
+  ("directory-signature", "moria2\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+)
+
+NETWORK_STATUS_DOCUMENT_HEADER = (
+  ("network-status-version", "3"),
+  ("vote-status", "consensus"),
+  ("consensus-methods", None),
+  ("consensus-method", None),
+  ("published", None),
+  ("valid-after", "2012-09-02 22:00:00"),
+  ("fresh-until", "2012-09-02 22:00:00"),
+  ("valid-until", "2012-09-02 22:00:00"),
+  ("voting-delay", "300 300"),
+  ("client-versions", None),
+  ("server-versions", None),
+  ("known-flags", "Authority BadExit Exit Fast Guard HSDir Named Running Stable Unnamed V2Dir Valid"),
+  ("params", None),
+)
+
+NETWORK_STATUS_DOCUMENT_FOOTER = (
+  ("directory-footer", ""),
+  ("bandwidth-weights", None),
+  ("directory-signature", "%s %s\n%s" % (DOC_SIG.identity, DOC_SIG.key_digest, DOC_SIG.signature)),
 )
 
 def no_op():
@@ -114,10 +232,13 @@ def support_with(obj):
   does nothing.
   
   :param object obj: object to support the 'with' keyword
+  
+  :returns: input object
   """
   
   obj.__dict__["__enter__"] = return_value(obj)
   obj.__dict__["__exit__"] = no_op()
+  return obj
 
 def mock(target, mock_call, target_module=None):
   """
@@ -302,41 +423,325 @@ def get_protocolinfo_response(**attributes):
   
   return protocolinfo_response
 
-def get_server_descriptor(attr = None, exclude = None, is_bridge = False):
+def _get_descriptor_content(attr = None, exclude = (), header_template = (), footer_template = ()):
   """
-  Constructs a minimal server descriptor with the given attributes.
+  Constructs a minimal descriptor with the given attributes. The content we
+  provide back is of the form...
+  
+  * header_template (with matching attr filled in)
+  * unused attr entries
+  * footer_template (with matching attr filled in)
+  
+  So for instance...
+  
+  ::
+  
+    get_descriptor_content(
+      attr = {'nickname': 'caerSidi', 'contact': 'atagar'},
+      header_template = (
+        ('nickname', 'foobar'),
+        ('fingerprint', '12345'),
+      ),
+    )
+  
+  ... would result in...
+  
+  ::
+  
+    nickname caerSidi
+    fingerprint 12345
+    contact atagar
   
   :param dict attr: keyword/value mappings to be included in the descriptor
   :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool is_bridge: minimal descriptor is for a bridge if True, relay otherwise
+  :param tuple header_template: key/value pairs for mandatory fields before unrecognized content
+  :param tuple footer_template: key/value pairs for mandatory fields after unrecognized content
   
-  :returns: str with customized descriptor content
+  :returns: str with the requested descriptor content
   """
   
-  descriptor_lines = []
+  header_content, footer_content = [], []
   if attr is None: attr = {}
-  if exclude is None: exclude = []
-  desc_attr = BRIDGE_DESCRIPTOR_ATTR if is_bridge else RELAY_DESCRIPTOR_ATTR
   attr = dict(attr) # shallow copy since we're destructive
   
-  for keyword, value in desc_attr:
-    if keyword in exclude: continue
-    elif keyword in attr:
-      value = attr[keyword]
-      del attr[keyword]
-    
-    # if this is the last entry then we should dump in any unused attributes
-    if not is_bridge and keyword == "router-signature":
-      for attr_keyword, attr_value in attr.items():
-        descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
-    
-    descriptor_lines.append("%s %s" % (keyword, value))
+  for content, template in ((header_content, header_template),
+                           (footer_content, footer_template)):
+    for keyword, value in template:
+      if keyword in exclude: continue
+      elif keyword in attr:
+        value = attr[keyword]
+        del attr[keyword]
+      
+      if value is None: continue
+      elif value == "":
+        content.append(keyword)
+      else:
+        content.append("%s %s" % (keyword, value))
   
-  # bridges don't have a router-signature so simply append any extra attributes
-  # to the end
-  if is_bridge:
-    for attr_keyword, attr_value in attr.items():
-      descriptor_lines.append("%s %s" % (attr_keyword, attr_value))
+  remainder = []
   
-  return "\n".join(descriptor_lines)
+  for k, v in attr.items():
+    if v: remainder.append("%s %s" % (k, v))
+    else: remainder.append(k)
+  
+  return "\n".join(header_content + remainder + footer_content)
+
+def get_relay_server_descriptor(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.server_descriptor.RelayDescriptor
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: RelayDescriptor for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate = True)
+
+def get_bridge_server_descriptor(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.server_descriptor.BridgeDescriptor
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: BridgeDescriptor for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, BRIDGE_SERVER_HEADER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.server_descriptor.BridgeDescriptor(desc_content, validate = True)
+
+def get_relay_extrainfo_descriptor(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: RelayExtraInfoDescriptor for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, RELAY_EXTRAINFO_HEADER, RELAY_EXTRAINFO_FOOTER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(desc_content, validate = True)
+
+def get_bridge_extrainfo_descriptor(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: BridgeExtraInfoDescriptor for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, BRIDGE_EXTRAINFO_HEADER, BRIDGE_EXTRAINFO_FOOTER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(desc_content, validate = True)
+
+def get_router_status_entry_v2(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.router_status_entry.RouterStatusEntryV2
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: RouterStatusEntryV2 for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_V2_HEADER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content, validate = True)
+
+def get_router_status_entry_v3(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.router_status_entry.RouterStatusEntryV3
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: RouterStatusEntryV3 for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_V3_HEADER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content, validate = True)
+
+def get_router_status_entry_micro_v3(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: RouterStatusEntryMicroV3 for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_MICRO_V3_HEADER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.router_status_entry.RouterStatusEntryMicroV3(desc_content, validate = True)
+
+def get_directory_authority(attr = None, exclude = (), is_vote = False, content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.networkstatus.DirectoryAuthority
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool is_vote: True if this is for a vote, False if it's for a consensus
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: DirectoryAuthority for the requested descriptor content
+  """
+  
+  if attr is None:
+    attr = {}
+  
+  if not is_vote:
+    # entries from a consensus also have a mandatory 'vote-digest' field
+    if not ('vote-digest' in attr or (exclude and 'vote-digest' in exclude)):
+      attr['vote-digest'] = '0B6D1E9A300B895AA2D0B427F92917B6995C3C1C'
+  
+  desc_content = _get_descriptor_content(attr, exclude, AUTHORITY_HEADER)
+  
+  if is_vote:
+    desc_content += "\n" + str(get_key_certificate())
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.networkstatus.DirectoryAuthority(desc_content, validate = True, is_vote = is_vote)
+
+def get_key_certificate(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.networkstatus.KeyCertificate
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: KeyCertificate for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, KEY_CERTIFICATE_HEADER, KEY_CERTIFICATE_FOOTER)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.networkstatus.KeyCertificate(desc_content, validate = True)
+
+def get_network_status_document_v2(attr = None, exclude = (), routers = None, content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.networkstatus.NetworkStatusDocumentV2
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param list routers: router status entries to include in the document
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: NetworkStatusDocumentV2 for the requested descriptor content
+  """
+  
+  desc_content = _get_descriptor_content(attr, exclude, NETWORK_STATUS_DOCUMENT_HEADER_V2, NETWORK_STATUS_DOCUMENT_FOOTER_V2)
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.networkstatus.NetworkStatusDocumentV2(desc_content, validate = True)
+
+def get_network_status_document_v3(attr = None, exclude = (), authorities = None, routers = None, content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.networkstatus.NetworkStatusDocumentV3
+  
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param list authorities: directory authorities to include in the document
+  :param list routers: router status entries to include in the document
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  
+  :returns: NetworkStatusDocumentV3 for the requested descriptor content
+  """
+  
+  if attr is None:
+    attr = {}
+  
+  # add defaults only found in a vote, consensus, or microdescriptor
+  
+  if attr.get("vote-status") == "vote":
+    extra_defaults = {
+      "consensus-methods": "1 9",
+      "published": "2012-09-02 22:00:00",
+    }
+  else:
+    extra_defaults = {
+      "consensus-method": "9",
+    }
+  
+  if "microdesc" in attr.get("network-status-version", ""):
+    extra_defaults.update({
+      "directory-signature": "sha256 " + NETWORK_STATUS_DOCUMENT_FOOTER[2][1],
+    })
+  
+  for k, v in extra_defaults.items():
+    if not (k in attr or (exclude and k in exclude)):
+      attr[k] = v
+  
+  desc_content = _get_descriptor_content(attr, exclude, NETWORK_STATUS_DOCUMENT_HEADER, NETWORK_STATUS_DOCUMENT_FOOTER)
+  
+  # inject the authorities and/or routers between the header and footer
+  if authorities:
+    footer_div = desc_content.find("\ndirectory-footer") + 1
+    authority_content = "\n".join([str(a) for a in authorities]) + "\n"
+    desc_content = desc_content[:footer_div] + authority_content + desc_content[footer_div:]
+  
+  if routers:
+    footer_div = desc_content.find("\ndirectory-footer") + 1
+    router_content = "\n".join([str(r) for r in routers]) + "\n"
+    desc_content = desc_content[:footer_div] + router_content + desc_content[footer_div:]
+  
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.networkstatus.NetworkStatusDocumentV3(desc_content, validate = True)
 

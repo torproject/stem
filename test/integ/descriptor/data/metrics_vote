@@ -1,0 +1,85 @@
+@type network-status-vote-3 1.0
+network-status-version 3
+vote-status vote
+consensus-methods 1 2 3 4 5 6 7 8 9 10 11 12
+published 2012-07-11 23:50:01
+valid-after 2012-07-12 00:00:00
+fresh-until 2012-07-12 01:00:00
+valid-until 2012-07-12 03:00:00
+voting-delay 300 300
+client-versions 0.2.2.35,0.2.2.36,0.2.2.37,0.2.3.10-alpha,0.2.3.11-alpha,0.2.3.12-alpha,0.2.3.13-alpha,0.2.3.14-alpha,0.2.3.15-alpha,0.2.3.16-alpha,0.2.3.17-beta,0.2.3.18-rc,0.2.3.19-rc
+server-versions 0.2.2.35,0.2.2.36,0.2.2.37,0.2.3.10-alpha,0.2.3.11-alpha,0.2.3.12-alpha,0.2.3.13-alpha,0.2.3.14-alpha,0.2.3.15-alpha,0.2.3.16-alpha,0.2.3.17-beta,0.2.3.18-rc,0.2.3.19-rc
+known-flags Authority BadExit Exit Fast Guard HSDir Named Running Stable Unnamed V2Dir Valid
+params CircuitPriorityHalflifeMsec=30000 bwauthpid=1
+dir-source tor26 14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4 86.59.21.38 86.59.21.38 80 443
+contact Peter Palfrader
+dir-key-certificate-version 3
+fingerprint 14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4
+dir-key-published 2012-04-29 21:21:25
+dir-key-expires 2013-05-29 21:21:25
+dir-identity-key
+-----BEGIN RSA PUBLIC KEY-----
+MIIBigKCAYEA7cZXvDRxfjDYtr9/9UsQ852+6cmHMr8VVh8GkLwbq3RzqjkULwQ2
+R9mFvG4FnqMcMKXi62rYYA3fZL1afhT804cpvyp/D3dPM8QxW88fafFAgIFP4LiD
+0JYjnF8cva5qZ0nzlWnMXLb32IXSvsGSE2FRyAV0YN9a6k967LSgCfUnZ+IKMezW
+1vhL9YK4QIfsDowgtVsavg63GzGmA7JvZmn77+/J5wKz11vGr7Wttf8XABbH2taX
+O9j/KGBOX2OKhoF3mXfZSmUO2dV9NMwtkJ7zD///Ny6sfApWV6kVP4O9TdG3bAsl
++fHCoCKgF/jAAWzh6VckQTOPzQZaH5aMWfXrDlzFWg17MjonI+bBTD2Ex2pHczzJ
+bN7coDMRH2SuOXv8wFf27KdUxZ/GcrXSRGzlRLygxqlripUanjVGN2JvrVQVr0kz
+pjNjiZl2z8ZyZ5d4zQuBi074JPGgx62xAstP37v1mPw14sIWfLgY16ewYuS5bCxV
+lyS28jsPht9VAgMBAAE=
+-----END RSA PUBLIC KEY-----
+dir-signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBANROlyEQEWJ20RC+DogV0Ww8mrUw9viscZ7eqAkyhDZKIt++2kVXszUI
+Zd2NoWG025f3np4zlTuIkz2PShn1yAYmKBlRcwbexgR6dXBToL3Zxe1Mezig/UuL
+kX75imfneBiLdtCRzaZs/Fa5cwd3msUNPVsq5Zmk0R7rCmBqiLDbAgMBAAE=
+-----END RSA PUBLIC KEY-----
+dir-key-crosscert
+-----BEGIN ID SIGNATURE-----
+UuK7wNT0weVelnsMYgoj2apYzr5pJqaI7pM+IzWiSGq1NipqMDEwZqx0WVWR/izB
+kLQm1mxU0+84QxAtNNmwNo5uHXR1h2fZJQ2yHf8JLIjIEsaOeOfvDLkn9IyHwmIA
+OBPgHmAetivVUYc8lqejBO5l4xg8BpG7KK16yjTDflc=
+-----END ID SIGNATURE-----
+dir-key-certification
+-----BEGIN SIGNATURE-----
+t5PLDPgT2TJiM8fNmqXkXY0rK6u5LZEtMNqQ4BCQCrvUN87BPBpF4U0GptqVjmdK
+aKS0v6BMRBbSQhyro42jv8iaP8X57V39rJAEbQsWJVNnhBmgLPxY9LYS/he8dUPZ
+0LuNjNuBaekvUoPr6iunHGYUjVMZa3aOf+SeUxdS4ZudlozegDyBrkMeEVH/7DC/
+dx/VsqR5hIZ8/e+u3XQcSIYCmBbJxPNeOWNERi4npbyY0Iy2AJ1eJyX2onUsk2Qq
+jnMxPtuCSDAWEebChwtKTTV6EAnZzYcCZLxNLXcd4Tvfm2EgSw8xKtiDn+eABpcv
+7FaKEkuUBGLe+sN3jt3K05qOAOvVtCi0hSO/94+DO7PiXFxmb6Om6vEbKiGxagH2
+3jE6rNpJJsO0TspO3KTD7fpXJU7gtXIurcQwziXUGchK84aNFjdX/G1ra5M5kMHf
+hJt6p7rCqPyEVOwW+DIGVfucLfjtJu/h7XuWw9/htrE0TNx0Hah8V2+7Ok5XA10N
+-----END SIGNATURE-----
+r sumkledi ABPSI4nNUNC3hKPkBhyzHozozrU B5n4BiALAF8B5AqafxohyYiuj7E 2012-07-11 04:22:53 178.218.213.229 80 0
+s Exit Named Valid
+opt v Tor 0.2.2.35
+w Bandwidth=51
+p accept 80,443
+m 8,9,10,11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs
+r Unnamed AEXri4INxBAZeyi0wvJZoC58nZs csTseFzwBV0RLsEdlyxDw6jTZ1o 2012-07-11 10:47:26 79.139.135.90 443 22
+s Fast HSDir Running V2Dir Valid
+opt v Tor 0.2.2.37
+w Bandwidth=92
+p reject 1-65535
+m 8,9,10,11,12 sha256=iZfmvEGdBG/qc9KYZUh4JsWEHbn9Bw2jy5i0AtCoRB0
+r default AFU4pMWKyq+eTPuBO0D9W179kQQ OZzEaq9N5+VX5yxzi051zqyEcPk 2012-07-11 08:17:21 2.90.115.167 443 9030
+s V2Dir Valid
+opt v Tor 0.2.3.15-alpha
+w Bandwidth=53
+p reject 1-65535
+m 8,9,10,11,12 sha256=m/RouK3TqoaYBBHCxgmzMPuGGCIEr0ufSTB1i85zicM
+r satoshi11 AFzRyEo3Ibdko7vl4rReoU3BDfM rWaYhhU9Kym4sXAVe+uE99VGpJs 2012-07-11 08:10:01 80.218.153.44 443 9030
+s V2Dir Valid
+opt v Tor 0.2.2.35
+w Bandwidth=196
+p reject 1-65535
+m 8,9,10,11,12 sha256=yxuOPz7IraIzzmU/qeZRJHOJrutNmvPwDwj2AmsHZSI
+directory-footer
+directory-signature 14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4 BF112F1C6D5543CFD0A32215ACABD4197B5279AD
+-----BEGIN SIGNATURE-----
+02UCTf06pLYkuLgUSR+L0vHOJ7gUyidKscg88q8TWUAiP57x27o+BlZdEMSu/ArT
+yBOz+0ZOWggb04maA2cwJQQEK2LkzxzBijmfoC6RhQx3wS8llhyOMaoR6rkobE1D
+oLqVZPDNPX87DkhmQfgBM2I3vYQX13YJwZc0jNCEGpU=
+-----END SIGNATURE-----

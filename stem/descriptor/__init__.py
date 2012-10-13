@@ -17,18 +17,38 @@ __all__ = [
   "reader",
   "extrainfo_descriptor",
   "server_descriptor",
+  "networkstatus",
+  "router_status_entry",
   "parse_file",
   "Descriptor",
 ]
 
 import os
 import re
+import collections
+
+import stem.util.enum
 
 KEYWORD_CHAR    = "a-zA-Z0-9-"
 WHITESPACE      = " \t"
-KEYWORD_LINE    = re.compile("^([%s]+)[%s]*(.*)$" % (KEYWORD_CHAR, WHITESPACE))
+KEYWORD_LINE    = re.compile("^([%s]+)(?:[%s]+(.*))?$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END   = "-----END %s-----"
+
+Flag = stem.util.enum.Enum(
+  ("AUTHORITY", "Authority"),
+  ("BADEXIT", "BadExit"),
+  ("EXIT", "Exit"),
+  ("FAST", "Fast"),
+  ("GUARD", "Guard"),
+  ("HSDIR", "HSDir"),
+  ("NAMED", "Named"),
+  ("RUNNING", "Running"),
+  ("STABLE", "Stable"),
+  ("UNNAMED", "Unnamed"),
+  ("V2DIR", "V2Dir"),
+  ("VALID", "Valid"),
+)
 
 def parse_file(path, descriptor_file):
   """
@@ -46,6 +66,7 @@ def parse_file(path, descriptor_file):
   
   import stem.descriptor.server_descriptor
   import stem.descriptor.extrainfo_descriptor
+  import stem.descriptor.networkstatus
   
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
@@ -61,6 +82,18 @@ def parse_file(path, descriptor_file):
     file_parser = stem.descriptor.server_descriptor.parse_file
   elif filename == "cached-extrainfo":
     file_parser = stem.descriptor.extrainfo_descriptor.parse_file
+  elif filename == "cached-consensus":
+    file_parser = stem.descriptor.networkstatus.parse_file
+  elif filename == "cached-microdesc-consensus":
+    file_parser = lambda f: stem.descriptor.networkstatus.parse_file(f, is_microdescriptor = True)
+  else:
+    # Metrics descriptor handling
+    first_line, desc = descriptor_file.readline().strip(), None
+    metrics_header_match = re.match("^@type (\S+) (\d+).(\d+)$", first_line)
+    
+    if metrics_header_match:
+      desc_type, major_version, minor_version = metrics_header_match.groups()
+      file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f)
   
   if file_parser:
     for desc in file_parser(descriptor_file):
@@ -69,38 +102,39 @@ def parse_file(path, descriptor_file):
     
     return
   
-  # Metrics descriptor handling. These contain a single descriptor per file.
-  
-  first_line, desc = descriptor_file.readline().strip(), None
-  metrics_header_match = re.match("^@type (\S+) (\d+).(\d+)$", first_line)
-  
-  if metrics_header_match:
-    # still doesn't necessarily mean that this is a descriptor, check if the
-    # header contents are recognized
-    
-    desc_type, major_version, minor_version = metrics_header_match.groups()
-    major_version, minor_version = int(major_version), int(minor_version)
-    
-    if desc_type == "server-descriptor" and major_version == 1:
-      desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_file.read())
-    elif desc_type == "bridge-server-descriptor" and major_version == 1:
-      desc = stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_file.read())
-    elif desc_type == "extra-info" and major_version == 1:
-      desc = stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_file.read())
-    elif desc_type == "bridge-extra-info" and major_version == 1:
-      # version 1.1 introduced a 'transport' field...
-      # https://trac.torproject.org/6257
-      
-      desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
-  
-  if desc:
-    desc._set_path(path)
-    yield desc
-    return
-  
   # Not recognized as a descriptor file.
   
   raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
+
+def _parse_metrics_file(descriptor_type, major_version, minor_version, descriptor_file):
+  # Parses descriptor files from metrics, yielding individual descriptors. This
+  # throws a TypeError if the descriptor_type or version isn't recognized.
+  import stem.descriptor.server_descriptor
+  import stem.descriptor.extrainfo_descriptor
+  import stem.descriptor.networkstatus
+  
+  if descriptor_type == "server-descriptor" and major_version == 1:
+    yield stem.descriptor.server_descriptor.RelayDescriptor(descriptor_file.read())
+  elif descriptor_type == "bridge-server-descriptor" and major_version == 1:
+    yield stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_file.read())
+  elif descriptor_type == "extra-info" and major_version == 1:
+    yield stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_file.read())
+  elif descriptor_type == "bridge-extra-info" and major_version == 1:
+    # version 1.1 introduced a 'transport' field...
+    # https://trac.torproject.org/6257
+    
+    yield stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
+  elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
+    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file):
+      yield desc
+  elif descriptor_type == "network-status-2" and major_version == 1:
+    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, document_version = 2):
+      yield desc
+  elif descriptor_type == "network-status-microdesc-consensus-3" and major_version == 1:
+    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, is_microdescriptor = True):
+      yield desc
+  else:
+    raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
 
 class Descriptor(object):
   """
@@ -137,34 +171,55 @@ class Descriptor(object):
   def __str__(self):
     return self._raw_contents
 
-def _read_until_keyword(keyword, descriptor_file, inclusive = False):
+def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None):
   """
-  Reads from the descriptor file until we get to the given keyword or reach the
+  Reads from the descriptor file until we get to one of the given keywords or reach the
   end of the file.
   
-  :param str keyword: keyword we want to read until
+  :param str,list keywords: keyword(s) we want to read until
   :param file descriptor_file: file with the descriptor content
   :param bool inclusive: includes the line with the keyword if True
+  :param bool ignore_first: doesn't check if the first line read has one of the given keywords
+  :param bool skip: skips buffering content, returning None
+  :param int end_position: end if we reach this point in the file
   
-  :returns: list with the lines until we find the keyword
+  :returns: list with the lines until we find one of the keywords
   """
   
-  content = []
+  content = None if skip else []
+  if type(keywords) == str: keywords = (keywords,)
+  
+  if ignore_first:
+    first_line = descriptor_file.readline()
+    
+    if content != None and first_line != None:
+      content.append(first_line)
   
   while True:
     last_position = descriptor_file.tell()
+    
+    if end_position and last_position >= end_position:
+      break
+    
     line = descriptor_file.readline()
     if not line: break # EOF
     
-    if " " in line: line_keyword = line.split(" ", 1)[0]
-    else: line_keyword = line.strip()
+    line_match = KEYWORD_LINE.match(line)
     
-    if line_keyword == keyword:
-      if inclusive: content.append(line)
-      else: descriptor_file.seek(last_position)
+    if not line_match:
+      # no spaces or tabs in the line
+      line_keyword = line.strip()
+    else:
+      line_keyword = line_match.groups()[0]
+    
+    if line_keyword in keywords:
+      if not inclusive:
+        descriptor_file.seek(last_position)
+      elif content != None:
+        content.append(line)
       
       break
-    else:
+    elif content != None:
       content.append(line)
   
   return content
@@ -189,20 +244,21 @@ def _get_pseudo_pgp_block(remaining_contents):
   if block_match:
     block_type = block_match.groups()[0]
     block_lines = []
+    end_line = PGP_BLOCK_END % block_type
     
     while True:
       if not remaining_contents:
-        raise ValueError("Unterminated pgp style block")
+        raise ValueError("Unterminated pgp style block (looking for '%s'):\n%s" % (end_line, "\n".join(block_lines)))
       
       line = remaining_contents.pop(0)
       block_lines.append(line)
       
-      if line == PGP_BLOCK_END % block_type:
+      if line == end_line:
         return "\n".join(block_lines)
   else:
     return None
 
-def _get_descriptor_components(raw_contents, validate, extra_keywords):
+def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   """
   Initial breakup of the server descriptor contents to make parsing easier.
   
@@ -221,25 +277,27 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords):
   :param list extra_keywords: entity keywords to put into a separate listing with ordering intact
   
   :returns:
-    tuple with the following attributes...
-    
-    * **entries (dict)** - keyword => (value, pgp key) entries
-    * **first_keyword (str)** - keyword of the first line
-    * **last_keyword (str)**  - keyword of the last line
-    * **extra_entries (list)** - lines containing entries matching extra_keywords
+    collections.OrderedDict with the 'keyword => (value, pgp key) entries'
+    mappings. If a extra_keywords was provided then this instead provides a two
+    value tuple, the second being a list of those entries.
   """
   
-  entries = {}
-  first_keyword = None
-  last_keyword = None
+  entries = collections.OrderedDict()
   extra_entries = [] # entries with a keyword in extra_keywords
   remaining_lines = raw_contents.split("\n")
   
   while remaining_lines:
     line = remaining_lines.pop(0)
     
-    # last line can be empty
-    if not line and not remaining_lines: continue
+    # V2 network status documents explicitely can contain blank lines...
+    #
+    #   "Implementations MAY insert blank lines for clarity between sections;
+    #   these blank lines are ignored."
+    #
+    # ... and server descriptors end with an extra newline. But other documents
+    # don't say how blank lines should be handled so globally ignoring them.
+    
+    if not line: continue
     
     # Some lines have an 'opt ' for backward compatability. They should be
     # ignored. This prefix is being removed in...
@@ -254,9 +312,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords):
       raise ValueError("Line contains invalid characters: %s" % line)
     
     keyword, value = line_match.groups()
-    
-    if not first_keyword: first_keyword = keyword
-    last_keyword = keyword
+    if value is None: value = ''
     
     try:
       block_contents = _get_pseudo_pgp_block(remaining_lines)
@@ -266,10 +322,11 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords):
     
     if keyword in extra_keywords:
       extra_entries.append("%s %s" % (keyword, value))
-    elif keyword in entries:
-      entries[keyword].append((value, block_contents))
     else:
-      entries[keyword] = [(value, block_contents)]
+      entries.setdefault(keyword, []).append((value, block_contents))
   
-  return entries, first_keyword, last_keyword, extra_entries
+  if extra_keywords:
+    return entries, extra_entries
+  else:
+    return entries
 

@@ -14,12 +14,12 @@ etc). This information is provided from a few sources...
 
   parse_file - Iterates over the server descriptors in a file.
   ServerDescriptor - Tor server descriptor.
-    |  |- RelayDescriptor - Server descriptor for a relay.
-    |  |  +- is_valid - checks the signature against the descriptor content
-    |  |
-    |  +- BridgeDescriptor - Scrubbed server descriptor for a bridge.
-    |     |- is_scrubbed - checks if our content has been properly scrubbed
-    |     +- get_scrubbing_issues - description of issues with our scrubbing
+    |- RelayDescriptor - Server descriptor for a relay.
+    |  +- is_valid - checks the signature against the descriptor content
+    |
+    |- BridgeDescriptor - Scrubbed server descriptor for a bridge.
+    |  |- is_scrubbed - checks if our content has been properly scrubbed
+    |  +- get_scrubbing_issues - description of issues with our scrubbing
     |
     |- digest - calculates the digest value for our content
     |- get_unrecognized_lines - lines with unrecognized content
@@ -109,12 +109,12 @@ def parse_file(descriptor_file, validate = True):
   # to the caller).
   
   while True:
-    annotations = stem.descriptor._read_until_keyword("router", descriptor_file)
-    descriptor_content = stem.descriptor._read_until_keyword("router-signature", descriptor_file)
+    annotations = stem.descriptor._read_until_keywords("router", descriptor_file)
+    descriptor_content = stem.descriptor._read_until_keywords("router-signature", descriptor_file)
     
     # we've reached the 'router-signature', now include the pgp style block
     block_end_prefix = stem.descriptor.PGP_BLOCK_END.split(' ', 1)[0]
-    descriptor_content += stem.descriptor._read_until_keyword(block_end_prefix, descriptor_file, True)
+    descriptor_content += stem.descriptor._read_until_keywords(block_end_prefix, descriptor_file, True)
     
     if descriptor_content:
       # strip newlines from annotations
@@ -134,7 +134,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   
   :var str address: **\*** IPv4 address of the relay
   :var int or_port: **\*** port used for relaying
-  :var int socks_port: **\*** port used as client (deprecated, always zero)
+  :var int socks_port: **\*** port used as client (deprecated, always None)
   :var int dir_port: **\*** port used for descriptor mirroring
   
   :var str platform: line with operating system and tor version
@@ -240,12 +240,12 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     # influences the resulting exit policy, but for everything else the order
     # does not matter so breaking it into key / value pairs.
     
-    entries, first_keyword, last_keyword, policy = \
+    entries, policy = \
       stem.descriptor._get_descriptor_components(raw_contents, validate, ("accept", "reject"))
     
     self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
     self._parse(entries, validate)
-    if validate: self._check_constraints(entries, first_keyword, last_keyword)
+    if validate: self._check_constraints(entries)
   
   def digest(self):
     """
@@ -340,8 +340,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         self.nickname   = router_comp[0]
         self.address    = router_comp[1]
         self.or_port    = int(router_comp[2])
-        self.socks_port = int(router_comp[3])
-        self.dir_port   = int(router_comp[4])
+        self.socks_port = None if router_comp[3] == '0' else int(router_comp[3])
+        self.dir_port   = None if router_comp[4] == '0' else int(router_comp[4])
       elif keyword == "bandwidth":
         # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
         bandwidth_comp = value.split()
@@ -495,36 +495,30 @@ class ServerDescriptor(stem.descriptor.Descriptor):
       if self.uptime < 0 and self.tor_version >= stem.version.Version("0.1.2.7"):
         raise ValueError("Descriptor for version '%s' had a negative uptime value: %i" % (self.tor_version, self.uptime))
   
-  def _check_constraints(self, entries, first_keyword, last_keyword):
+  def _check_constraints(self, entries):
     """
     Does a basic check that the entries conform to this descriptor type's
     constraints.
     
     :param dict entries: keyword => (value, pgp key) entries
-    :param str first_keyword: keyword of the first line
-    :param str last_keyword: keyword of the last line
     
     :raises: ValueError if an issue arises in validation
     """
     
-    required_fields = self._required_fields()
-    if required_fields:
-      for keyword in required_fields:
-        if not keyword in entries:
-          raise ValueError("Descriptor must have a '%s' entry" % keyword)
+    for keyword in self._required_fields():
+      if not keyword in entries:
+        raise ValueError("Descriptor must have a '%s' entry" % keyword)
     
-    single_fields = self._single_fields()
-    if single_fields:
-      for keyword in self._single_fields():
-        if keyword in entries and len(entries[keyword]) > 1:
-          raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
+    for keyword in self._single_fields():
+      if keyword in entries and len(entries[keyword]) > 1:
+        raise ValueError("The '%s' entry can only appear once in a descriptor" % keyword)
     
     expected_first_keyword = self._first_keyword()
-    if expected_first_keyword and not first_keyword == expected_first_keyword:
+    if expected_first_keyword and expected_first_keyword != entries.keys()[0]:
       raise ValueError("Descriptor must start with a '%s' entry" % expected_first_keyword)
     
     expected_last_keyword = self._last_keyword()
-    if expected_last_keyword and not last_keyword == expected_last_keyword:
+    if expected_last_keyword and expected_last_keyword != entries.keys()[-1]:
       raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
     
     if not self.exit_policy:

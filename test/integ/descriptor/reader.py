@@ -350,12 +350,12 @@ class TestDescriptorReader(unittest.TestCase):
     
     with reader: list(reader) # iterates over all of the descriptors
     
-    self.assertTrue(2, len(skip_listener.results))
+    self.assertEqual(4, len(skip_listener.results))
     
     for skip_path, skip_exception in skip_listener.results:
       if skip_path.endswith(".swp"): continue # skip vim temp files
       
-      if not os.path.basename(skip_path) in ("riddle", "tiny.png"):
+      if not os.path.basename(skip_path) in ("riddle", "tiny.png", "vote", "new_metrics_type"):
         self.fail("Unexpected non-descriptor content: %s" % skip_path)
       
       self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
@@ -406,7 +406,7 @@ class TestDescriptorReader(unittest.TestCase):
       reader.register_skip_listener(skip_listener.listener)
       with reader: list(reader) # iterates over all of the descriptors
       
-      self.assertTrue(1, len(skip_listener.results))
+      self.assertEqual(1, len(skip_listener.results))
       
       skipped_path, skip_exception = skip_listener.results[0]
       self.assertEqual(test_path, skipped_path)
@@ -438,7 +438,7 @@ class TestDescriptorReader(unittest.TestCase):
       reader.register_skip_listener(skip_listener.listener)
       with reader: list(reader) # iterates over all of the descriptors
       
-      self.assertTrue(1, len(skip_listener.results))
+      self.assertEqual(1, len(skip_listener.results))
       
       skipped_path, skip_exception = skip_listener.results[0]
       self.assertEqual(test_path, skipped_path)
@@ -460,9 +460,28 @@ class TestDescriptorReader(unittest.TestCase):
     reader.register_skip_listener(skip_listener.listener)
     with reader: list(reader) # iterates over all of the descriptors
     
-    self.assertTrue(1, len(skip_listener.results))
+    self.assertEqual(1, len(skip_listener.results))
     
     skipped_path, skip_exception = skip_listener.results[0]
     self.assertEqual(test_path, skipped_path)
     self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.FileMissing))
+  
+  def test_unrecognized_metrics_type(self):
+    """
+    Parses a file that has a valid metrics header, but an unrecognized type.
+    """
+    
+    test_path = test.integ.descriptor.get_resource("new_metrics_type")
+    
+    skip_listener = SkipListener()
+    reader = stem.descriptor.reader.DescriptorReader(test_path)
+    reader.register_skip_listener(skip_listener.listener)
+    with reader: list(reader) # iterates over all of the descriptors
+    
+    self.assertEqual(1, len(skip_listener.results))
+    
+    skipped_path, skip_exception = skip_listener.results[0]
+    self.assertEqual(test_path, skipped_path)
+    self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
+    self.assertEqual((None, None), skip_exception.mime_type)
 

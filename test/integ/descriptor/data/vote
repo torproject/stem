@@ -1,0 +1,100 @@
+network-status-version 3
+vote-status vote
+consensus-methods 1 2 3 4 5 6 7 8 9 10 11 12
+published 2012-07-11 23:50:01
+valid-after 2012-07-12 00:00:00
+fresh-until 2012-07-12 01:00:00
+valid-until 2012-07-12 03:00:00
+voting-delay 300 300
+known-flags Authority BadExit Exit Fast Guard HSDir Running Stable V2Dir Valid
+params CircuitPriorityHalflifeMsec=30000 bwauthpid=1
+dir-source turtles 27B6B5996C426270A5C95488AA5BCEB6BCC86956 76.73.17.194 76.73.17.194 9030 9090
+contact Mike Perry <email>
+dir-key-certificate-version 3
+fingerprint 27B6B5996C426270A5C95488AA5BCEB6BCC86956
+dir-key-published 2011-11-28 21:51:04
+dir-key-expires 2012-11-28 21:51:04
+dir-identity-key
+-----BEGIN RSA PUBLIC KEY-----
+MIIBigKCAYEA6uSmsoxj2MiJ3qyZq0qYXlRoG8o82SNqg+22m+t1c7MlQOZWPJYn
+XeMcBCt8xrTeIt2ZI+Q/Kt2QJSeD9WZRevTKk/kn5Tg2+xXPogalUU47y5tUohGz
++Q8+CxtRSXpDxBHL2P8rLHvGrI69wbNHGoQkce/7gJy9vw5Ie2qzbyXk1NG6V8Fb
+pr6A885vHo6TbhUnolz2Wqt/kN+UorjLkN2H3fV+iGcQFv42SyHYGDLa0WwL3PJJ
+r/veu36S3VaHBrfhutfioi+d3d4Ya0bKwiWi5Lm2CHuuRTgMpHLU9vlci8Hunuxq
+HsULe2oMsr4VEic7sW5SPC5Obpx6hStHdNv1GxoSEm3/vIuPM8pINpU5ZYAyH9yO
+Ef22ZHeiVMMKmpV9TtFyiFqvlI6GpQn3mNbsQqF1y3XCA3Q4vlRAkpgJVUSvTxFP
+2bNDobOyVCpCM/rwxU1+RCNY5MFJ/+oktUY+0ydvTen3gFdZdgNqCYjKPLfBNm9m
+RGL7jZunMUNvAgMBAAE=
+-----END RSA PUBLIC KEY-----
+dir-signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAJ5itcJRYNEM3Qf1OVWLRkwjqf84oXPc2ZusaJ5zOe7TVvBMra9GNyc0
+NM9y6zVkHCAePAjr4KbW/8P1olA6FUE2LV9bozaU1jFf6K8B2OELKs5FUEW+n+ic
+GM0x6MhngyXonWOcKt5Gj+mAu5lrno9tpNbPkz2Utr/Pi0nsDhWlAgMBAAE=
+-----END RSA PUBLIC KEY-----
+dir-key-crosscert
+-----BEGIN ID SIGNATURE-----
+RHYImGTwg36wmEdAn7qaRg2sAfql7ZCtPIL/O3lU5OIdXXp0tNn/K00Bamqohjk+
+Tz4FKsKXGDlbGv67PQcZPOK6NF0GRkNh4pk89prrDO4XwtEn7rkHHdBH6/qQ7IRG
+GdDZHtZ1a69oFZvPWD3hUaB50xeIe7GoKdKIfdNNJ+8=
+-----END ID SIGNATURE-----
+dir-key-certification
+-----BEGIN SIGNATURE-----
+fasWOGyUZ3iMCYpDfJ+0JcMiTH25sXPWzvlHorEOyOMbaMqRYpZU4GHzt1jLgdl6
+AAoR6KdamsLg5VE8xzst48a4UFuzHFlklZ5O8om2rcvDd5DhSnWWYZnYJecqB+bo
+dNisPmaIVSAWb29U8BpNRj4GMC9KAgGYUj8aE/KtutAeEekFfFEHTfWZ2fFp4j3m
+9rY8FWraqyiF+Emq1T8pAAgMQ+79R3oZxq0TXS42Z4Anhms735ccauKhI3pDKjbl
+tD5vAzIHOyjAOXj7a6jY/GrnaBNuJ4qe/4Hf9UmzK/jKKwG95BPJtPTT4LoFwEB0
+KG2OUeQUNoCck4nDpsZwFqPlrWCHcHfTV2iDYFV1HQWDTtZz/qf+GtB8NXsq+I1w
+brADmvReM2BD6p/13h0QURCI5hq7ZYlIKcKrBa0jn1d9cduULl7vgKsRCJDls/ID
+emBZ6pUxMpBmV0v+PrA3v9w4DlE7GHAq61FF/zju2kpqj6MInbEvI/E+e438sWsL
+-----END SIGNATURE-----
+r sumkledi ABPSI4nNUNC3hKPkBhyzHozozrU B5n4BiALAF8B5AqafxohyYiuj7E 2012-07-11 04:22:53 178.218.213.229 80 0
+s Exit Valid
+opt v Tor 0.2.2.35
+w Bandwidth=51 Measured=36
+p accept 80,443
+m 8,9,10,11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs
+r Unnamed AEXri4INxBAZeyi0wvJZoC58nZs csTseFzwBV0RLsEdlyxDw6jTZ1o 2012-07-11 10:47:26 79.139.135.90 443 22
+s Fast HSDir Running V2Dir Valid
+opt v Tor 0.2.2.37
+w Bandwidth=92 Measured=15
+p reject 1-65535
+m 8,9,10,11,12 sha256=iZfmvEGdBG/qc9KYZUh4JsWEHbn9Bw2jy5i0AtCoRB0
+r default AFU4pMWKyq+eTPuBO0D9W179kQQ OZzEaq9N5+VX5yxzi051zqyEcPk 2012-07-11 08:17:21 2.90.115.167 443 9030
+s V2Dir Valid
+opt v Tor 0.2.3.15-alpha
+w Bandwidth=53
+p reject 1-65535
+m 8,9,10,11,12 sha256=m/RouK3TqoaYBBHCxgmzMPuGGCIEr0ufSTB1i85zicM
+r satoshi11 AFzRyEo3Ibdko7vl4rReoU3BDfM rWaYhhU9Kym4sXAVe+uE99VGpJs 2012-07-11 08:10:01 80.218.153.44 443 9030
+s V2Dir Valid
+opt v Tor 0.2.2.35
+w Bandwidth=196 Measured=113
+p reject 1-65535
+m 8,9,10,11,12 sha256=yxuOPz7IraIzzmU/qeZRJHOJrutNmvPwDwj2AmsHZSI
+r JapanAnon AGw/p8P246zRPQ3ZsQx9+pM8I3s FpQ4fP9FE2j4AnpZTcPiUbaIjwQ 2012-07-11 15:55:42 220.0.231.71 443 9030
+s Exit V2Dir Valid
+opt v Tor 0.2.2.37
+w Bandwidth=41 Measured=5
+p accept 110,143,443,706,993,995,1863,5050,5190,5222-5223,6660-6669,6697,7000-7001,8300,8888
+m 8,9,10,11,12 sha256=fdV6McsFl7ZaX8YJjRCchKa7B7ImTr6++AE3e7zCkK8
+r ANONIONROUTER AHhuQ8zFQJdT8l42Axxc6m6kNwI UUUhUJVXZ5b+8Lizh1ghVkUTGo0 2012-07-11 20:13:16 93.128.114.184 24051 24052
+s Fast Running V2Dir Valid
+opt v Tor 0.2.2.37
+w Bandwidth=196 Measured=100
+p reject 1-65535
+m 8,9,10,11,12 sha256=ooi27oMS4TBXes4FY4JyULgZYZcFzAyvB1JicaQ8zxs
+r pornosteffi AJrkZLNAIMRi7J3Q5os1iBJTM38 tV2vC76eZNwVpSFO8+r9lCqJSVw 2012-07-11 11:00:29 88.78.83.210 443 0
+s Fast Running Valid
+opt v Tor 0.2.2.35
+w Bandwidth=32 Measured=14
+p reject 1-65535
+m 8,9,10,11,12 sha256=JiARdiiTbey4aLkt4x1DUgEU3oaD2oDB2dtP7SGl3EU
+directory-footer
+directory-signature 27B6B5996C426270A5C95488AA5BCEB6BCC86956 D5C30C15BB3F1DA27669C2D88439939E8F418FCF
+-----BEGIN SIGNATURE-----
+fskXN84wB3mXfo+yKGSt0AcDaaPuU3NwMR3ROxWgLN0KjAaVi2eV9PkPCsQkcgw3
+JZ/1HL9sHyZfo6bwaC6YSM9PNiiY6L7rnGpS7UkHiFI+M96VCMorvjm5YPs3FioJ
+DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
+-----END SIGNATURE-----
