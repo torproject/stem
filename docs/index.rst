@@ -58,7 +58,7 @@ You'll need to restart Tor or issue a SIGHUP for these new settings to take effe
   % python example.py 
   My Tor relay has read 33406 bytes and written 29649.
 
-Congratulations! You've written your first controller script.
+Congratulations! You've just written your first controller script.
 
 Mirror Mirror on the Wall
 -------------------------
@@ -89,7 +89,7 @@ To read this file we'll use the :class:`~stem.descriptor.reader.DescriptorReader
       if desc.exit_policy.is_exiting_allowed():
         bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
   
-  sorted_bw = reversed(sorted(bw_to_relay.keys()))
+  sorted_bw = sorted(bw_to_relay.keys(), reverse = True)
   
   # prints the top fifteen relays
   

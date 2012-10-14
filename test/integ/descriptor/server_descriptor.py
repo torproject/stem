@@ -32,7 +32,7 @@ class TestServerDescriptor(unittest.TestCase):
         if desc.exit_policy.is_exiting_allowed():
           bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
     
-    sorted_bw = reversed(sorted(bw_to_relay.keys()))
+    sorted_bw = sorted(bw_to_relay.keys(), reverse = True)
     
     # prints the top fifteen relays
     
