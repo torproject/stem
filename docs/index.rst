@@ -75,7 +75,7 @@ We've already used the control port, so for this example we'll use the cached fi
 
 Tor has several descriptor types. For bandwidth information we'll go to the server descriptors, which are located in the **cached-descriptors** file. These have somewhat infrequently changing information published by the relays themselves.
 
-To read this file we'll use the :class:`~stem.descriptor.reader.DescriptorReader`, a class designed to read descriptor files.
+To read this file we'll use the :class:`~stem.descriptor.reader.DescriptorReader`, a class designed to read descriptor files. The **cached-descriptors** is full of server descriptors, so the reader will provide us with :class:`~stem.descriptor.server_descriptor.RelayDescriptor` instances (a :class:`~stem.descriptor.server_descriptor.ServerDescriptor` subclass for relays).
 
 ::
 
