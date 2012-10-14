@@ -18,6 +18,31 @@ import test.runner
 import test.util
 
 class TestController(unittest.TestCase):
+  def test_tutorial(self):
+    """
+    Tests the tutorial from our front page.
+    """
+    
+    if test.runner.require_control(self): return
+    if test.runner.require_version(self, stem.version.Version("0.2.3.1")): return # uses a relatively new feature
+    elif not test.runner.Torrc.PORT in test.runner.get_runner().get_options():
+      test.runner.skip(self, "no port")
+      return
+    
+    from stem.control import Controller
+    
+    controller = Controller.from_port(control_port = test.runner.CONTROL_PORT)
+    
+    try:
+      controller.authenticate(test.runner.CONTROL_PASSWORD)
+      
+      bytes_read = controller.get_info("traffic/read")
+      bytes_written = controller.get_info("traffic/written")
+      
+      printed_msg = "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
+    finally:
+      controller.close()
+  
   def test_from_port(self):
     """
     Basic sanity check for the from_port constructor.
@@ -362,9 +387,6 @@ class TestController(unittest.TestCase):
       
       # invalid signals
       self.assertRaises(stem.socket.InvalidArguments, controller.signal, "FOOBAR")
-      
-      controller.signal("INT")
-      self.assertRaises(stem.socket.SocketClosed, controller.msg, "GETINFO version")
   
   def test_extendcircuit(self):
     if test.runner.require_control(self): return
