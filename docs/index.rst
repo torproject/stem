@@ -52,6 +52,7 @@ You'll need to restart Tor or issue a SIGHUP for these new settings to take effe
   bytes_written = controller.get_info("traffic/written")
   
   print "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
+  controller.close()
 
 ::
 
