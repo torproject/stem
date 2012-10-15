@@ -6,6 +6,9 @@ Stem is a python controller library for `Tor <https://www.torproject.org/>`_. Li
 .. image:: /_static/buttons/tutorial.png
    :target: tutorial.html
 
+.. image:: /_static/buttons/download.png
+   :target: download.html
+
 :mod:`stem.connection`
 ----------------------
 
