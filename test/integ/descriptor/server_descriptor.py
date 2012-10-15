@@ -16,35 +16,6 @@ import test.runner
 import test.integ.descriptor
 
 class TestServerDescriptor(unittest.TestCase):
-  def test_tutorial(self):
-    """
-    Runs the tutorial example for parsing server descriptors. We use our
-    metrics consensus rather than the cached one so it won't take overly long.
-    """
-    
-    from stem.descriptor.reader import DescriptorReader
-    
-    bw_to_relay = {} # mapping of observed bandwidth to the relay nicknames
-    
-    descriptor_path = test.integ.descriptor.get_resource("example_descriptor")
-    with DescriptorReader([descriptor_path]) as reader:
-      for desc in reader:
-        if desc.exit_policy.is_exiting_allowed():
-          bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
-    
-    sorted_bw = reversed(sorted(bw_to_relay.keys()))
-    
-    # prints the top fifteen relays
-    
-    count = 1
-    for bw_value in sorted_bw:
-      for nickname in bw_to_relay[bw_value]:
-        printed_line = "%i. %s (%i bytes/s)" % (count, nickname, bw_value)
-        count += 1
-        
-        if count > 15:
-          return
-  
   def test_metrics_descriptor(self):
     """
     Parses and checks our results against a server descriptor from metrics.

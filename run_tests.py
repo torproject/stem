@@ -42,6 +42,7 @@ import test.unit.util.tor_tools
 import test.unit.exit_policy.policy
 import test.unit.exit_policy.rule
 import test.unit.version
+import test.unit.tutorial
 import test.integ.connection.authentication
 import test.integ.connection.connect
 import test.integ.control.base_controller
@@ -127,6 +128,7 @@ UNIT_TESTS = (
   test.unit.exit_policy.rule.TestExitPolicyRule,
   test.unit.exit_policy.policy.TestExitPolicy,
   test.unit.version.TestVersion,
+  test.unit.tutorial.TestTutorial,
   test.unit.response.control_message.TestControlMessage,
   test.unit.response.control_line.TestControlLine,
   test.unit.response.getinfo.TestGetInfoResponse,

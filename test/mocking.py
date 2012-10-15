@@ -11,6 +11,7 @@ calling :func:`test.mocking.revert_mocking`.
   get_real_function - provides the non-mocked version of a function
   get_all_combinations - provides all combinations of attributes
   support_with - makes object be compatable for use via the 'with' keyword
+  get_object - get an abitrary mock object of any class
   
   Mocking Functions
     no_op           - does nothing
@@ -211,11 +212,15 @@ def return_for_args(args_to_return_value, default = None):
   """
   
   def _return_value(*args):
+    # strip off the 'self' for mock clases
+    if args and 'MockClass' in str(type(args[0])):
+      args = args[1:] if len(args) > 2 else args[1]
+    
     if args in args_to_return_value:
       return args_to_return_value[args]
     elif default is None:
       arg_label = ", ".join([str(v) for v in args])
-      raise ValueError("Unrecognized argument sent for return_for_args(): %s" % arg_label)
+      raise ValueError("Unrecognized argument sent for return_for_args(). Got '%s' but we only recognize '%s'." % (arg_label, ", ".join(args_to_return_value.keys())))
     else:
       return default(args)
   
@@ -383,6 +388,37 @@ def get_all_combinations(attr, include_empty = False):
       if not item in seen:
         seen.add(item)
         yield item
+
+def get_object(object_class, methods = None):
+  """
+  Provides a mock Controller instance. Its methods are mocked with the given
+  replacements, and calling any others will result in an exception.
+  
+  :param class object_class: class that we're making an instance of
+  :param dict methods: mapping of method names to their mocked implementation
+  
+  :returns: stem.control.Controller instance
+  """
+  
+  if methods is None:
+    methods = {}
+  
+  mock_methods = {}
+  
+  for method_name in dir(object_class):
+    if method_name in methods:
+      mock_methods[method_name] = methods[method_name]
+    elif method_name.startswith('__') and method_name.endswith('__'):
+      pass # messing with most private methods makes for a broken mock object
+    else:
+      mock_methods[method_name] = raise_exception(ValueError("Unexpected call of '%s' on a mock object" % method_name))
+  
+  # makes it so our constructor won't need any arguments
+  mock_methods['__init__'] = no_op()
+  
+  mock_class = type('MockClass', (object_class,), mock_methods)
+  
+  return mock_class()
 
 def get_message(content, reformat = True):
   """
