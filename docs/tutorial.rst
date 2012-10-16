@@ -95,12 +95,10 @@ To read this file we'll use the :class:`~stem.descriptor.reader.DescriptorReader
       if desc.exit_policy.is_exiting_allowed():
         bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
   
-  sorted_bw = sorted(bw_to_relay.keys(), reverse = True)
-  
   # prints the top fifteen relays
   
   count = 1
-  for bw_value in sorted_bw:
+  for bw_value in sorted(bw_to_relay.keys(), reverse = True):
     for nickname in bw_to_relay[bw_value]:
       print "%i. %s (%i bytes/s)" % (count, nickname, bw_value)
       count += 1
@@ -126,4 +124,29 @@ To read this file we'll use the :class:`~stem.descriptor.reader.DescriptorReader
   13. ndnr1 (26595129 bytes/s)
   14. politkovskaja2 (26149682 bytes/s)
   15. wau (25929953 bytes/s)
+
+This can be easily done through the controller too...
+
+::
+
+  import sys 
+  from stem.control import Controller
+  
+  bw_to_relay = {} # mapping of observed bandwidth to the relay nicknames
+  
+  with Controller.from_port(control_port = 9051) as controller:
+    controller.authenticate()
+    
+    for desc in controller.get_server_descriptors():
+      if desc.exit_policy.is_exiting_allowed():
+        bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
+  
+  count = 1 
+  for bw_value in sorted(bw_to_relay.keys(), reverse = True):
+    for nickname in bw_to_relay[bw_value]:
+      print "%i. %s (%i bytes/s)" % (count, nickname, bw_value)
+      count += 1
+      
+      if count > 15: 
+        sys.exit()
 

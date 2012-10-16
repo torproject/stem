@@ -60,12 +60,10 @@ class TestTutorial(unittest.TestCase):
         if desc.exit_policy.is_exiting_allowed():
           bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
     
-    sorted_bw = sorted(bw_to_relay.keys(), reverse = True)
-    
     # prints the top fifteen relays
     
     count = 1
-    for bw_value in sorted_bw:
+    for bw_value in sorted(bw_to_relay.keys(), reverse = True:
       for nickname in bw_to_relay[bw_value]:
         expected_line = "%i. speedyexit (104590 bytes/s)" % count
         printed_line = "%i. %s (%i bytes/s)" % (count, nickname, bw_value)
