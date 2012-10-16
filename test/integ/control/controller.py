@@ -462,6 +462,29 @@ class TestController(unittest.TestCase):
       self.assertEqual(first_descriptor, controller.get_server_descriptor(first_descriptor.fingerprint))
       self.assertEqual(first_descriptor, controller.get_server_descriptor(first_descriptor.nickname))
   
+  def test_get_server_descriptors(self):
+    """
+    Fetches a few descriptors via the get_server_descriptors() method.
+    """
+    
+    runner = test.runner.get_runner()
+    
+    if test.runner.require_control(self): return
+    
+    with runner.get_tor_controller() as controller:
+      count = 0
+      
+      for desc in controller.get_server_descriptors():
+        self.assertTrue(desc.fingerprint != None)
+        self.assertTrue(desc.nickname != None)
+        
+        # Se don't want to take the time to read the whole thing. We already
+        # have another test that reads the full cached descriptors (and takes a
+        # while to do so).
+        
+        count += 1
+        if count > 10: break
+  
   def test_get_network_status(self):
     """
     Compares get_network_status() against our cached descriptors.
@@ -501,4 +524,23 @@ class TestController(unittest.TestCase):
       
       self.assertEqual(first_descriptor, controller.get_network_status(first_descriptor.fingerprint))
       self.assertEqual(first_descriptor, controller.get_network_status(first_descriptor.nickname))
+  
+  def test_get_network_statuses(self):
+    """
+    Fetches a few descriptors via the get_network_statuses() method.
+    """
+    
+    runner = test.runner.get_runner()
+    
+    if test.runner.require_control(self): return
+    
+    with runner.get_tor_controller() as controller:
+      count = 0
+      
+      for desc in controller.get_network_statuses():
+        self.assertTrue(desc.fingerprint != None)
+        self.assertTrue(desc.nickname != None)
+        
+        count += 1
+        if count > 10: break
 

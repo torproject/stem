@@ -22,6 +22,44 @@ import datetime
 import stem.descriptor
 import stem.exit_policy
 
+def parse_file(document_file, validate, entry_class, entry_keyword = "r", start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
+  """
+  Reads a range of the document_file containing some number of entry_class
+  instances. We deliminate the entry_class entries by the keyword on their
+  first line (entry_keyword). When finished the document is left at the
+  end_position.
+  
+  Either a end_position or section_end_keywords must be provided.
+  
+  :param file document_file: file with network status document content
+  :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
+  :param class entry_class: class to construct instance for
+  :param str entry_keyword: first keyword for the entry instances
+  :param int start_position: start of the section, default is the current position
+  :param int end_position: end of the section
+  :param tuple section_end_keywords: keyword(s) that deliminate the end of the section if no end_position was provided
+  :param tuple extra_args: extra arguments for the entry_class (after the content and validate flag)
+  
+  :returns: iterator over entry_class instances
+  
+  :raises:
+    * ValueError if the contents is malformed and validate is True
+    * IOError if the file can't be read
+  """
+  
+  if start_position is None:
+    start_position = document_file.tell()
+  
+  if end_position is None:
+    if section_end_keywords:
+      stem.descriptor._read_until_keywords(section_end_keywords, document_file, skip = True)
+      end_position = document_file.tell()
+  
+  document_file.seek(start_position)
+  while not end_position or document_file.tell() < end_position:
+    desc_content = "".join(stem.descriptor._read_until_keywords(entry_keyword, document_file, ignore_first = True, end_position = end_position))
+    yield entry_class(desc_content, validate, *extra_args)
+
 class RouterStatusEntry(stem.descriptor.Descriptor):
   """
   Information about an individual router stored within a network status

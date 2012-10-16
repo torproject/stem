@@ -52,6 +52,7 @@ from __future__ import with_statement
 
 import time
 import Queue
+import StringIO
 import threading
 
 import stem.response
@@ -679,6 +680,24 @@ class Controller(BaseController):
     desc_content = self.get_info(query)
     return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
   
+  def get_server_descriptors(self):
+    """
+    Provides an iterator for all of the server descriptors that tor presently
+    knows about.
+    
+    :returns: iterates over :class:`stem.descriptor.server_descriptor.RelayDescriptor` for relays in the tor network
+    
+    :raises: :class:`stem.socket.ControllerError` if unable to query tor
+    """
+    
+    # TODO: We should iterate over the descriptors as they're read from the
+    # socket rather than reading the whole thing into memeory.
+    
+    desc_content = self.get_info("desc/all-recent")
+    
+    for desc in stem.descriptor.server_descriptor.parse_file(StringIO.StringIO(desc_content)):
+      yield desc
+  
   def get_network_status(self, relay):
     """
     Provides the router status entry for the relay with the given fingerprint
@@ -703,6 +722,30 @@ class Controller(BaseController):
     
     desc_content = self.get_info(query)
     return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content)
+  
+  def get_network_statuses(self):
+    """
+    Provides an iterator for all of the router status entries that tor
+    presently knows about.
+    
+    :returns: iterates over :class:`stem.descriptor.router_status_entry.RouterStatusEntryV2` for relays in the tor network
+    
+    :raises: :class:`stem.socket.ControllerError` if unable to query tor
+    """
+    
+    # TODO: We should iterate over the descriptors as they're read from the
+    # socket rather than reading the whole thing into memeory.
+    
+    desc_content = self.get_info("ns/all")
+    
+    desc_iterator = stem.descriptor.router_status_entry.parse_file(
+      StringIO.StringIO(desc_content),
+      True,
+      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
+    )
+    
+    for desc in desc_iterator:
+      yield desc
   
   def authenticate(self, *args, **kwargs):
     """
