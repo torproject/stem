@@ -4,6 +4,7 @@ Integration tests for the stem.control.Controller class.
 
 from __future__ import with_statement
 
+import os
 import re
 import shutil
 import socket
@@ -16,6 +17,8 @@ import stem.version
 import stem.response.protocolinfo
 import test.runner
 import test.util
+import stem.descriptor.router_status_entry
+import stem.descriptor.reader
 
 class TestController(unittest.TestCase):
   def test_from_port(self):
@@ -424,4 +427,78 @@ class TestController(unittest.TestCase):
       ip_addr = response[response.find("\r\n\r\n"):].strip()
       
       self.assertTrue(stem.util.connection.is_valid_ip_address(ip_addr))
+  
+  def test_get_server_descriptor(self):
+    """
+    Compares get_server_descriptor() against our cached descriptors.
+    """
+    
+    runner = test.runner.get_runner()
+    descriptor_path = runner.get_test_dir("cached-descriptors")
+    
+    if test.runner.require_control(self): return
+    elif not os.path.exists(descriptor_path):
+      test.runner.skip(self, "(no cached descriptors)")
+      return
+    
+    with runner.get_tor_controller() as controller:
+      # we should balk at invalid content
+      self.assertRaises(ValueError, controller.get_server_descriptor, None)
+      self.assertRaises(ValueError, controller.get_server_descriptor, "")
+      self.assertRaises(ValueError, controller.get_server_descriptor, 5)
+      self.assertRaises(ValueError, controller.get_server_descriptor, "z" * 30)
+      
+      # try with a relay that doesn't exist
+      self.assertRaises(stem.socket.ControllerError, controller.get_server_descriptor, "blargg")
+      self.assertRaises(stem.socket.ControllerError, controller.get_server_descriptor, "5" * 40)
+      
+      first_descriptor = None
+      with stem.descriptor.reader.DescriptorReader([descriptor_path]) as reader:
+        for desc in reader:
+          if desc.nickname != "Unnamed":
+            first_descriptor = desc
+            break
+      
+      self.assertEqual(first_descriptor, controller.get_server_descriptor(first_descriptor.fingerprint))
+      self.assertEqual(first_descriptor, controller.get_server_descriptor(first_descriptor.nickname))
+  
+  def test_get_network_status(self):
+    """
+    Compares get_network_status() against our cached descriptors.
+    """
+    
+    runner = test.runner.get_runner()
+    descriptor_path = runner.get_test_dir("cached-consensus")
+    
+    if test.runner.require_control(self): return
+    elif not os.path.exists(descriptor_path):
+      test.runner.skip(self, "(no cached descriptors)")
+      return
+    
+    with runner.get_tor_controller() as controller:
+      # we should balk at invalid content
+      self.assertRaises(ValueError, controller.get_network_status, None)
+      self.assertRaises(ValueError, controller.get_network_status, "")
+      self.assertRaises(ValueError, controller.get_network_status, 5)
+      self.assertRaises(ValueError, controller.get_network_status, "z" * 30)
+      
+      # try with a relay that doesn't exist
+      self.assertRaises(stem.socket.ControllerError, controller.get_network_status, "blargg")
+      self.assertRaises(stem.socket.ControllerError, controller.get_network_status, "5" * 40)
+      
+      # our cached consensus is v3 but the control port can only be queried for
+      # v2 or v1 network status information
+      
+      first_descriptor = None
+      with stem.descriptor.reader.DescriptorReader([descriptor_path]) as reader:
+        for desc in reader:
+          if desc.nickname != "Unnamed":
+            # truncate to just the first couple lines and reconstruct as a v2 entry
+            truncated_content = "\n".join(str(desc).split("\n")[:2])
+            
+            first_descriptor = stem.descriptor.router_status_entry.RouterStatusEntryV2(truncated_content)
+            break
+      
+      self.assertEqual(first_descriptor, controller.get_network_status(first_descriptor.fingerprint))
+      self.assertEqual(first_descriptor, controller.get_network_status(first_descriptor.nickname))
 

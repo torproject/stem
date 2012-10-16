@@ -32,6 +32,8 @@ interacting at a higher level.
     |- repurpose_circuit - change a circuit's purpose
     |- map_address - maps one address to another such that connections to the original are replaced with the other
     |- get_version - convenience method to get tor version
+    |- get_server_descriptor - querying the server descriptor for a relay
+    |- get_network_status - querying the router status entry for a relay
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
   
@@ -55,6 +57,8 @@ import threading
 import stem.response
 import stem.socket
 import stem.version
+import stem.descriptor.router_status_entry
+import stem.descriptor.server_descriptor
 import stem.util.connection
 import stem.util.log as log
 
@@ -649,6 +653,56 @@ class Controller(BaseController):
       self._request_cache["version"] = version
     
     return self._request_cache["version"]
+  
+  def get_server_descriptor(self, relay):
+    """
+    Provides the server descriptor for the relay with the given fingerprint or
+    nickname. If the relay identifier could be either a fingerprint *or*
+    nickname then it's queried as a fingerprint.
+    
+    :param str relay: fingerprint or nickname of the relay to be queried
+    
+    :returns: :class:`stem.descriptor.server_descriptor.RelayDescriptor` for the given relay
+    
+    :raises:
+      * :class:`stem.socket.ControllerError` if unable to query the descriptor
+      * ValueError if **relay** doesn't conform with the patter for being a fingerprint or nickname
+    """
+    
+    if stem.util.tor_tools.is_valid_fingerprint(relay):
+      query = "desc/id/%s" % relay
+    elif stem.util.tor_tools.is_valid_nickname(relay):
+      query = "desc/name/%s" % relay
+    else:
+      raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
+    
+    desc_content = self.get_info(query)
+    return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
+  
+  def get_network_status(self, relay):
+    """
+    Provides the router status entry for the relay with the given fingerprint
+    or nickname. If the relay identifier could be either a fingerprint *or*
+    nickname then it's queried as a fingerprint.
+    
+    :param str relay: fingerprint or nickname of the relay to be queried
+    
+    :returns: :class:`stem.descriptor.router_status_entry.RouterStatusEntryV2` for the given relay
+    
+    :raises:
+      * :class:`stem.socket.ControllerError` if unable to query the descriptor
+      * ValueError if **relay** doesn't conform with the patter for being a fingerprint or nickname
+    """
+    
+    if stem.util.tor_tools.is_valid_fingerprint(relay):
+      query = "ns/id/%s" % relay
+    elif stem.util.tor_tools.is_valid_nickname(relay):
+      query = "ns/name/%s" % relay
+    else:
+      raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
+    
+    desc_content = self.get_info(query)
+    return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content)
   
   def authenticate(self, *args, **kwargs):
     """
