@@ -32,6 +32,8 @@ interacting at a higher level.
     |- repurpose_circuit - change a circuit's purpose
     |- map_address - maps one address to another such that connections to the original are replaced with the other
     |- get_version - convenience method to get tor version
+    |- get_server_descriptor - querying the server descriptor for a relay
+    |- get_network_status - querying the router status entry for a relay
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
   
@@ -50,11 +52,14 @@ from __future__ import with_statement
 
 import time
 import Queue
+import StringIO
 import threading
 
 import stem.response
 import stem.socket
 import stem.version
+import stem.descriptor.router_status_entry
+import stem.descriptor.server_descriptor
 import stem.util.connection
 import stem.util.log as log
 
@@ -649,6 +654,98 @@ class Controller(BaseController):
       self._request_cache["version"] = version
     
     return self._request_cache["version"]
+  
+  def get_server_descriptor(self, relay):
+    """
+    Provides the server descriptor for the relay with the given fingerprint or
+    nickname. If the relay identifier could be either a fingerprint *or*
+    nickname then it's queried as a fingerprint.
+    
+    :param str relay: fingerprint or nickname of the relay to be queried
+    
+    :returns: :class:`stem.descriptor.server_descriptor.RelayDescriptor` for the given relay
+    
+    :raises:
+      * :class:`stem.socket.ControllerError` if unable to query the descriptor
+      * ValueError if **relay** doesn't conform with the patter for being a fingerprint or nickname
+    """
+    
+    if stem.util.tor_tools.is_valid_fingerprint(relay):
+      query = "desc/id/%s" % relay
+    elif stem.util.tor_tools.is_valid_nickname(relay):
+      query = "desc/name/%s" % relay
+    else:
+      raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
+    
+    desc_content = self.get_info(query)
+    return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
+  
+  def get_server_descriptors(self):
+    """
+    Provides an iterator for all of the server descriptors that tor presently
+    knows about.
+    
+    :returns: iterates over :class:`stem.descriptor.server_descriptor.RelayDescriptor` for relays in the tor network
+    
+    :raises: :class:`stem.socket.ControllerError` if unable to query tor
+    """
+    
+    # TODO: We should iterate over the descriptors as they're read from the
+    # socket rather than reading the whole thing into memeory.
+    
+    desc_content = self.get_info("desc/all-recent")
+    
+    for desc in stem.descriptor.server_descriptor.parse_file(StringIO.StringIO(desc_content)):
+      yield desc
+  
+  def get_network_status(self, relay):
+    """
+    Provides the router status entry for the relay with the given fingerprint
+    or nickname. If the relay identifier could be either a fingerprint *or*
+    nickname then it's queried as a fingerprint.
+    
+    :param str relay: fingerprint or nickname of the relay to be queried
+    
+    :returns: :class:`stem.descriptor.router_status_entry.RouterStatusEntryV2` for the given relay
+    
+    :raises:
+      * :class:`stem.socket.ControllerError` if unable to query the descriptor
+      * ValueError if **relay** doesn't conform with the patter for being a fingerprint or nickname
+    """
+    
+    if stem.util.tor_tools.is_valid_fingerprint(relay):
+      query = "ns/id/%s" % relay
+    elif stem.util.tor_tools.is_valid_nickname(relay):
+      query = "ns/name/%s" % relay
+    else:
+      raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
+    
+    desc_content = self.get_info(query)
+    return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content)
+  
+  def get_network_statuses(self):
+    """
+    Provides an iterator for all of the router status entries that tor
+    presently knows about.
+    
+    :returns: iterates over :class:`stem.descriptor.router_status_entry.RouterStatusEntryV2` for relays in the tor network
+    
+    :raises: :class:`stem.socket.ControllerError` if unable to query tor
+    """
+    
+    # TODO: We should iterate over the descriptors as they're read from the
+    # socket rather than reading the whole thing into memeory.
+    
+    desc_content = self.get_info("ns/all")
+    
+    desc_iterator = stem.descriptor.router_status_entry.parse_file(
+      StringIO.StringIO(desc_content),
+      True,
+      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
+    )
+    
+    for desc in desc_iterator:
+      yield desc
   
   def authenticate(self, *args, **kwargs):
     """

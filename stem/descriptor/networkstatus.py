@@ -206,7 +206,7 @@ def parse_file(document_file, validate = True, is_microdescriptor = False, docum
   else:
     raise ValueError("Document version %i isn't recognized (only able to parse v2 or v3)" % document_version)
   
-  desc_iterator = _get_entries(
+  desc_iterator = stem.descriptor.router_status_entry.parse_file(
     document_file,
     validate,
     entry_class = router_type,
@@ -218,46 +218,6 @@ def parse_file(document_file, validate = True, is_microdescriptor = False, docum
   
   for desc in desc_iterator:
     yield desc
-
-def _get_entries(document_file, validate, entry_class, entry_keyword, start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
-  """
-  Reads a range of the document_file containing some number of entry_class
-  instances. We deliminate the entry_class entries by the keyword on their
-  first line (entry_keyword). When finished the document is left at the
-  end_position.
-  
-  Either a end_position or section_end_keywords must be provided.
-  
-  :param file document_file: file with network status document content
-  :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
-  :param class entry_class: class to construct instance for
-  :param str entry_keyword: first keyword for the entry instances
-  :param int start_position: start of the section, default is the current position
-  :param int end_position: end of the section
-  :param tuple section_end_keywords: keyword(s) that deliminate the end of the section if no end_position was provided
-  :param tuple extra_args: extra arguments for the entry_class (after the content and validate flag)
-  
-  :returns: iterator over entry_class instances
-  
-  :raises:
-    * ValueError if the contents is malformed and validate is True
-    * IOError if the file can't be read
-  """
-  
-  if start_position is None:
-    start_position = document_file.tell()
-  
-  if end_position is None:
-    if section_end_keywords:
-      stem.descriptor._read_until_keywords(section_end_keywords, document_file, skip = True)
-      end_position = document_file.tell()
-    else:
-      raise ValueError("Either a end_position or section_end_keywords must be provided")
-  
-  document_file.seek(start_position)
-  while document_file.tell() < end_position:
-    desc_content = "".join(stem.descriptor._read_until_keywords(entry_keyword, document_file, ignore_first = True, end_position = end_position))
-    yield entry_class(desc_content, validate, *extra_args)
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
   """
@@ -325,7 +285,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     document_file = StringIO.StringIO(raw_content)
     document_content = "".join(stem.descriptor._read_until_keywords((ROUTERS_START, V2_FOOTER_START), document_file))
     
-    self.routers = tuple(_get_entries(
+    self.routers = tuple(stem.descriptor.router_status_entry.parse_file(
       document_file,
       validate,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
@@ -489,7 +449,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       else:
         self._unrecognized_lines += value
     
-    self.directory_authorities = tuple(_get_entries(
+    self.directory_authorities = tuple(stem.descriptor.router_status_entry.parse_file(
       document_file,
       validate,
       entry_class = DirectoryAuthority,
@@ -503,7 +463,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     else:
       router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
     
-    self.routers = tuple(_get_entries(
+    self.routers = tuple(stem.descriptor.router_status_entry.parse_file(
       document_file,
       validate,
       entry_class = router_type,

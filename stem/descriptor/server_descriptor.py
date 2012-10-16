@@ -631,6 +631,12 @@ class RelayDescriptor(ServerDescriptor):
         del entries["router-signature"]
     
     ServerDescriptor._parse(self, entries, validate)
+  
+  def __cmp__(self, other):
+    if not isinstance(other, RelayDescriptor):
+      return 1
+    
+    return str(self).strip() > str(other).strip()
 
 class BridgeDescriptor(ServerDescriptor):
   """
@@ -762,4 +768,10 @@ class BridgeDescriptor(ServerDescriptor):
   
   def _last_keyword(self):
     return None
+  
+  def __cmp__(self, other):
+    if not isinstance(other, BridgeDescriptor):
+      return 1
+    
+    return str(self).strip() > str(other).strip()
 

@@ -29,7 +29,9 @@ def is_valid_fingerprint(entry, check_prefix = False):
   :returns: True if the string could be a relay fingerprint, False otherwise.
   """
   
-  if check_prefix:
+  if not isinstance(entry, str):
+    return False
+  elif check_prefix:
     if not entry or entry[0] != "$": return False
     entry = entry[1:]
   
@@ -43,6 +45,9 @@ def is_valid_nickname(entry):
   
   :returns: True if the string could be a nickname, False otherwise.
   """
+  
+  if not isinstance(entry, str):
+    return False
   
   return bool(NICKNAME_PATTERN.match(entry))
 
