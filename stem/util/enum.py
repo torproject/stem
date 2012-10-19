@@ -24,7 +24,6 @@ with overwritten string counterparts:
 
 ::
 
-  to_camel_case - converts a string to camel case
   UppercaseEnum - Provides an enum instance with capitalized values.
   Enum - Provides a basic, ordered  enumeration.
     |- keys - string representation of our enum keys
@@ -35,26 +34,7 @@ with overwritten string counterparts:
     +- __iter__ - iterator over our enum keys
 """
 
-def to_camel_case(label, word_divider = " "):
-  """
-  Converts the given string to camel case, ie:
-  
-  ::
-  
-    >>> to_camel_case("I_LIKE_PEPPERJACK!")
-    'I Like Pepperjack!'
-  
-  :param str label: input string to be converted
-  :param str word_divider: string used to replace underscores
-  """
-  
-  words = []
-  for entry in label.split("_"):
-    if len(entry) == 0: words.append("")
-    elif len(entry) == 1: words.append(entry.upper())
-    else: words.append(entry[0].upper() + entry[1:].lower())
-  
-  return word_divider.join(words)
+import stem.util.str_tools
 
 def UppercaseEnum(*args):
   """
@@ -86,7 +66,7 @@ class Enum(object):
     
     for entry in args:
       if isinstance(entry, str):
-        key, val = entry, to_camel_case(entry)
+        key, val = entry, stem.util.str_tools.to_camel_case(entry)
       elif isinstance(entry, tuple) and len(entry) == 2:
         key, val = entry
       else: raise ValueError("Unrecognized input: %s" % args)

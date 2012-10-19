@@ -6,22 +6,6 @@ import unittest
 import stem.util.enum
 
 class TestEnum(unittest.TestCase):
-  def test_to_camel_case(self):
-    """
-    Checks the stem.util.enum.to_camel_case function.
-    """
-    
-    # test the pydoc example
-    self.assertEquals("I Like Pepperjack!", stem.util.enum.to_camel_case("I_LIKE_PEPPERJACK!"))
-    
-    # check a few edge cases
-    self.assertEquals("", stem.util.enum.to_camel_case(""))
-    self.assertEquals("Hello", stem.util.enum.to_camel_case("hello"))
-    self.assertEquals("Hello", stem.util.enum.to_camel_case("HELLO"))
-    self.assertEquals("Hello  World", stem.util.enum.to_camel_case("hello__world"))
-    self.assertEquals("Hello\tworld", stem.util.enum.to_camel_case("hello\tWORLD"))
-    self.assertEquals("Hello\t\tWorld", stem.util.enum.to_camel_case("hello__world", "\t"))
-  
   def test_enum_examples(self):
     """
     Checks that the pydoc examples are accurate.
