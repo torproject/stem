@@ -156,6 +156,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   :var bool extra_info_cache: **\*** flag if a mirror for extra-info documents
   :var str extra_info_digest: hex encoded digest of our extra-info document
   :var bool eventdns: flag for evdns backend (deprecated, always unset)
+  :var list address_alt: alternative for our address/or_port attributes, each entry is a tuple of the form ``(address (str), port (int), is_ipv6 (bool))``
   
   Deprecated, moved to extra-info descriptor...
   
@@ -218,6 +219,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     self.extra_info_digest = None
     self.hidden_service_dir = None
     self.eventdns = None
+    self.address_alt = []
     
     self.read_history_end = None
     self.read_history_interval = None
@@ -462,6 +464,32 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         self.family = value.split(" ")
       elif keyword == "eventdns":
         self.eventdns = value == "1"
+      elif keyword == "or-address":
+        or_address_entries = [value for (value, _) in values]
+        
+        for entry in or_address_entries:
+          line = "%s %s" % (keyword, entry)
+          
+          if not ":" in entry:
+            if not validate: continue
+            else: raise ValueError("or-address line missing a colon: %s" % line)
+          
+          div = entry.rfind(":")
+          address, ports = entry[:div], entry[div+1:]
+          is_ipv6 = address.startswith("[") and address.endswith("]")
+          if is_ipv6: address = address[1:-1] # remove brackets
+          
+          if not ((not is_ipv6 and stem.util.connection.is_valid_ip_address(address)) or
+                 (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
+            if not validate: continue
+            else: raise ValueError("or-address line has a malformed address: %s" % line)
+          
+          for port in ports.split(","):
+            if not stem.util.connection.is_valid_port(port):
+              if not validate: break
+              else: raise ValueError("or-address line has malformed ports: %s" % line)
+            
+            self.address_alt.append((address, int(port), is_ipv6))
       elif keyword in ("read-history", "write-history"):
         try:
           timestamp, interval, remainder = \
@@ -642,11 +670,9 @@ class BridgeDescriptor(ServerDescriptor):
   """
   Bridge descriptor (`specification <https://metrics.torproject.org/formats.html#bridgedesc>`_)
   
-  :var list address_alt: alternative for our address/or_port attributes, each entry is a tuple of the form ``(address (str), port (int), is_ipv6 (bool))``
   """
   
   def __init__(self, raw_contents, validate = True, annotations = None):
-    self.address_alt = []
     self._digest = None
     self._scrubbing_issues = None
     
@@ -669,34 +695,6 @@ class BridgeDescriptor(ServerDescriptor):
         
         self._digest = value
         del entries["router-digest"]
-      elif keyword == "or-address":
-        or_address_entries = [value for (value, _) in values]
-        
-        for entry in or_address_entries:
-          line = "%s %s" % (keyword, entry)
-          
-          if not ":" in entry:
-            if not validate: continue
-            else: raise ValueError("or-address line missing a colon: %s" % line)
-          
-          div = entry.rfind(":")
-          address, ports = entry[:div], entry[div+1:]
-          is_ipv6 = address.startswith("[") and address.endswith("]")
-          if is_ipv6: address = address[1:-1] # remove brackets
-          
-          if not ((not is_ipv6 and stem.util.connection.is_valid_ip_address(address)) or
-                 (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
-            if not validate: continue
-            else: raise ValueError("or-address line has a malformed address: %s" % line)
-          
-          for port in ports.split(","):
-            if not stem.util.connection.is_valid_port(port):
-              if not validate: break
-              else: raise ValueError("or-address line has malformed ports: %s" % line)
-            
-            self.address_alt.append((address, int(port), is_ipv6))
-        
-        del entries["or-address"]
     
     ServerDescriptor._parse(self, entries, validate)
   
