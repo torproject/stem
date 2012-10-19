@@ -37,6 +37,7 @@ class TestTutorial(unittest.TestCase):
   def test_mirror_mirror_on_the_wall(self):
     from stem.descriptor.server_descriptor import RelayDescriptor
     from stem.descriptor.reader import DescriptorReader
+    from stem.util import str_tools
     
     exit_descriptor = RelayDescriptor(mocking.get_relay_server_descriptor({
       'router': 'speedyexit 149.255.97.109 9001 0 0'
@@ -65,8 +66,8 @@ class TestTutorial(unittest.TestCase):
     count = 1
     for bw_value in sorted(bw_to_relay.keys(), reverse = True):
       for nickname in bw_to_relay[bw_value]:
-        expected_line = "%i. speedyexit (104590 bytes/s)" % count
-        printed_line = "%i. %s (%i bytes/s)" % (count, nickname, bw_value)
+        expected_line = "%i. speedyexit (102.13 KB/s)" % count
+        printed_line = "%i. %s (%s/s)" % (count, nickname, str_tools.get_size_label(bw_value, 2))
         self.assertEqual(expected_line, printed_line)
         
         count += 1
