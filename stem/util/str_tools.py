@@ -51,6 +51,8 @@ def to_camel_case(label, word_divider = " "):
   
   :param str label: input string to be converted
   :param str word_divider: string used to replace underscores
+  
+  :returns: camel cased string
   """
   
   words = []
@@ -84,6 +86,8 @@ def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
   :param int decimal: number of decimal digits to be included
   :param bool is_long: expands units label
   :param bool is_bytes: provides units in bytes if true, bits otherwise
+  
+  :returns: str with human readable representation of the size
   """
   
   if is_bytes: return _get_label(SIZE_UNITS_BYTES, byte_count, decimal, is_long)
@@ -113,6 +117,8 @@ def get_time_label(seconds, decimal = 0, is_long = False):
   :param int seconds: number of seconds to be converted
   :param int decimal: number of decimal digits to be included
   :param bool is_long: expands units label
+  
+  :returns: str with human readable representation of the time
   """
   
   return _get_label(TIME_UNITS, seconds, decimal, is_long)
@@ -133,12 +139,14 @@ def get_time_labels(seconds, is_long = False):
   
   :param int seconds: number of seconds to be converted
   :param bool is_long: expands units label
+  
+  :returns: list of strings with human readable representations of the time
   """
   
   time_labels = []
   
   for count_per_unit, _, _ in TIME_UNITS:
-    if seconds >= count_per_unit:
+    if abs(seconds) >= count_per_unit:
       time_labels.append(_get_label(TIME_UNITS, seconds, 0, is_long))
       seconds %= count_per_unit
   
@@ -149,8 +157,23 @@ def get_short_time_label(seconds):
   Provides a time in the following format:
   [[dd-]hh:]mm:ss
   
+  ::
+  
+    >>> get_short_time_label(111)
+    '01:51'
+    
+    >>> get_short_time_label(544100)
+    '6-07:08:20'
+    
   :param int seconds: number of seconds to be converted
+  
+  :returns: str with the short representation for the time
+  
+  :raises: ValueError if the input is negative
   """
+  
+  if seconds < 0:
+    raise ValueError("Input needs to be a non-negative integer, got '%i'" % seconds)
   
   time_comp = {}
   
@@ -174,7 +197,17 @@ def parse_short_time_label(label):
   cputime and etime fields of ps:
   [[dd-]hh:]mm:ss or mm:ss.ss
   
+  ::
+  
+    >>> parse_short_time_label('01:51')
+    111
+    
+    >>> parse_short_time_label('6-07:08:20')
+    544100
+    
   :param str label: time entry to be parsed
+  
+  :returns: int with the number of seconds represented by the label
   
   :raises: ValueError if input is malformed
   """
