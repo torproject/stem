@@ -37,6 +37,7 @@ import test.unit.util.conf
 import test.unit.util.connection
 import test.unit.util.enum
 import test.unit.util.proc
+import test.unit.util.str_tools
 import test.unit.util.system
 import test.unit.util.tor_tools
 import test.unit.exit_policy.policy
@@ -114,6 +115,7 @@ UNIT_TESTS = (
   test.unit.util.connection.TestConnection,
   test.unit.util.conf.TestConf,
   test.unit.util.proc.TestProc,
+  test.unit.util.str_tools.TestStrTools,
   test.unit.util.system.TestSystem,
   test.unit.util.tor_tools.TestTorTools,
   test.unit.descriptor.export.TestExport,

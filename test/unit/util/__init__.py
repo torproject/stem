@@ -7,6 +7,7 @@ __all__ = [
   "connection",
   "enum",
   "proc",
+  "str_tools",
   "system",
   "tor_tools",
 ]

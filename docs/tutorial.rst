@@ -87,6 +87,7 @@ To read this file we'll use the :class:`~stem.descriptor.reader.DescriptorReader
 
   import sys
   from stem.descriptor.reader import DescriptorReader
+  from stem.util import str_tools
   
   bw_to_relay = {} # mapping of observed bandwidth to the relay nicknames
   
@@ -100,7 +101,7 @@ To read this file we'll use the :class:`~stem.descriptor.reader.DescriptorReader
   count = 1
   for bw_value in sorted(bw_to_relay.keys(), reverse = True):
     for nickname in bw_to_relay[bw_value]:
-      print "%i. %s (%i bytes/s)" % (count, nickname, bw_value)
+      print "%i. %s (%s/s)" % (count, nickname, str_tools.get_size_label(bw_value, 2))
       count += 1
       
       if count > 15:
@@ -108,22 +109,22 @@ To read this file we'll use the :class:`~stem.descriptor.reader.DescriptorReader
 
 ::
 
-  % python example.py 
-  1. herngaard (42939655 bytes/s)
-  2. chaoscomputerclub19 (42402911 bytes/s)
-  3. chaoscomputerclub18 (41967097 bytes/s)
-  4. chaoscomputerclub20 (40882989 bytes/s)
-  5. wannabe (40514411 bytes/s)
-  6. dorrisdeebrown (40349829 bytes/s)
-  7. manning2 (40057719 bytes/s)
-  8. chaoscomputerclub21 (38701399 bytes/s)
-  9. TorLand1 (37983627 bytes/s)
-  10. bolobolo1 (37676580 bytes/s)
-  11. manning1 (37117034 bytes/s)
-  12. gorz (35760527 bytes/s)
-  13. ndnr1 (26595129 bytes/s)
-  14. politkovskaja2 (26149682 bytes/s)
-  15. wau (25929953 bytes/s)
+  % python example.py
+  1. herngaard (40.95 MB/s)
+  2. chaoscomputerclub19 (40.43 MB/s)
+  3. chaoscomputerclub18 (40.02 MB/s)
+  4. chaoscomputerclub20 (38.98 MB/s)
+  5. wannabe (38.63 MB/s)
+  6. dorrisdeebrown (38.48 MB/s)
+  7. manning2 (38.20 MB/s)
+  8. chaoscomputerclub21 (36.90 MB/s)
+  9. TorLand1 (36.22 MB/s)
+  10. bolobolo1 (35.93 MB/s)
+  11. manning1 (35.39 MB/s)
+  12. gorz (34.10 MB/s)
+  13. ndnr1 (25.36 MB/s)
+  14. politkovskaja2 (24.93 MB/s)
+  15. wau (24.72 MB/s)
 
 This can be easily done through the controller too...
 
@@ -131,6 +132,7 @@ This can be easily done through the controller too...
 
   import sys 
   from stem.control import Controller
+  from stem.util import str_tools
   
   bw_to_relay = {} # mapping of observed bandwidth to the relay nicknames
   
@@ -144,7 +146,7 @@ This can be easily done through the controller too...
   count = 1 
   for bw_value in sorted(bw_to_relay.keys(), reverse = True):
     for nickname in bw_to_relay[bw_value]:
-      print "%i. %s (%i bytes/s)" % (count, nickname, bw_value)
+      print "%i. %s (%s/s)" % (count, nickname, str_tools.get_size_label(bw_value, 2))
       count += 1
       
       if count > 15: 
