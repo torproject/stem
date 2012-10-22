@@ -21,7 +21,3 @@ Indices and tables
 
 *Last updated:* |today|
 
-
-
-
-
