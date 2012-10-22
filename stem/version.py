@@ -17,7 +17,7 @@ easily parsed and compared, for instance...
 
   get_system_tor_version - gets the version of our system's tor installation
   
-  Version - Tor versioning information.
+  Version - Tor versioning information
     |- meets_requirements - checks if this version meets the given requirements
     |- __str__ - string representation
     +- __cmp__ - compares with another Version
@@ -27,7 +27,7 @@ easily parsed and compared, for instance...
     |- less_than    - adds rule that matches if we're less than a version
     +- in_range     - adds rule that matches if we're within a given version range
   
-  Requirement - Enumerations for the version requirements of features.
+  Requirement - Enumerations for the version requirements of features
     |- AUTH_SAFECOOKIE      - 'SAFECOOKIE' authentication method
     |- GETINFO_CONFIG_TEXT  - 'GETINFO config-text' query
     |- TORRC_CONTROL_SOCKET - 'ControlSocket <path>' config option
