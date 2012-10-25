@@ -8,7 +8,9 @@ Contents
    download
    tutorial
 
+   descriptor/export
    descriptor/reader
+
    types/exit_policy
    types/version
 

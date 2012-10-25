@@ -11,4 +11,5 @@ Descriptors
 -----------
 
 * `stem.descriptor.reader <descriptor/reader.html>`_ - Reads and parses descriptor files from disk.
+* `stem.descriptor.export <descriptor/export.html>`_ - Exports descriptors to other formats.
 

@@ -52,10 +52,10 @@ and picks up where it left off if ran again...
 
 ::
 
-  load_processed_files - Loads a listing of processed files.
-  save_processed_files - Saves a listing of processed files.
+  load_processed_files - Loads a listing of processed files
+  save_processed_files - Saves a listing of processed files
   
-  DescriptorReader - Iterator for descriptor data on the local file system.
+  DescriptorReader - Iterator for descriptor data on the local file system
     |- get_processed_files - provides the listing of files that we've processed
     |- set_processed_files - sets our tracking of the files we have processed
     |- register_skip_listener - adds a listener that's notified of skipped files
@@ -64,12 +64,12 @@ and picks up where it left off if ran again...
     |- __enter__ / __exit__ - manages the descriptor reader thread in the context
     +- __iter__ - iterates over descriptor data in unread files
   
-  FileSkipped - Base exception for a file that was skipped.
-    |- AlreadyRead - We've already read a file with this last modified timestamp.
-    |- ParsingFailure - Contents can't be parsed as descriptor data.
-    |- UnrecognizedType - File extension indicates non-descriptor data.
-    +- ReadFailed - Wraps an error that was raised while reading the file.
-       +- FileMissing - File does not exist.
+  FileSkipped - Base exception for a file that was skipped
+    |- AlreadyRead - We've already read a file with this last modified timestamp
+    |- ParsingFailure - Contents can't be parsed as descriptor data
+    |- UnrecognizedType - File extension indicates non-descriptor data
+    +- ReadFailed - Wraps an error that was raised while reading the file
+       +- FileMissing - File does not exist
 """
 
 from __future__ import with_statement
