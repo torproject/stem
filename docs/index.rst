@@ -19,5 +19,10 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+.. toctree::
+   :maxdepth: 1
+
+   contents
+
 *Last updated:* |today|
 
