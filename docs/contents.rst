@@ -11,6 +11,8 @@ Contents
    descriptor/export
    descriptor/reader
 
+   descriptor/descriptor
+
    types/exit_policy
    types/version
 

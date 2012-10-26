@@ -60,8 +60,8 @@ def parse_file(path, descriptor_file):
   :returns: iterator for :class:`stem.descriptor.Descriptor` instances in the file
   
   :raises:
-    * TypeError if we can't match the contents of the file to a descriptor type
-    * IOError if unable to read from the descriptor_file
+    * **TypeError** if we can't match the contents of the file to a descriptor type
+    * **IOError** if unable to read from the descriptor_file
   """
   
   import stem.descriptor.server_descriptor
@@ -149,7 +149,7 @@ class Descriptor(object):
     """
     Provides the absolute path that we loaded this descriptor from.
     
-    :returns: str with the absolute path of the descriptor source
+    :returns: **str** with the absolute path of the descriptor source
     """
     
     return self._path
@@ -160,7 +160,7 @@ class Descriptor(object):
     not know how to process. This is most common due to new descriptor fields
     that this library does not yet know how to process. Patches welcome!
     
-    :returns: list of lines of unrecognized content
+    :returns: **list** of lines of unrecognized content
     """
     
     raise NotImplementedError
@@ -183,7 +183,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   :param bool skip: skips buffering content, returning None
   :param int end_position: end if we reach this point in the file
   
-  :returns: list with the lines until we find one of the keywords
+  :returns: **list** with the lines until we find one of the keywords
   """
   
   content = None if skip else []
@@ -231,9 +231,9 @@ def _get_pseudo_pgp_block(remaining_contents):
   
   :param list remaining_contents: lines to be checked for a public key block
   
-  :returns: str with the armor wrapped contents or None if it doesn't exist
+  :returns: **str** with the armor wrapped contents or None if it doesn't exist
   
-  :raises: ValueError if the contents starts with a key block but it's malformed (for instance, if it lacks an ending line)
+  :raises: **ValueError** if the contents starts with a key block but it's malformed (for instance, if it lacks an ending line)
   """
   
   if not remaining_contents:
@@ -277,7 +277,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   :param list extra_keywords: entity keywords to put into a separate listing with ordering intact
   
   :returns:
-    collections.OrderedDict with the 'keyword => (value, pgp key) entries'
+    **collections.OrderedDict** with the 'keyword => (value, pgp key) entries'
     mappings. If a extra_keywords was provided then this instead provides a two
     value tuple, the second being a list of those entries.
   """
