@@ -12,6 +12,7 @@ Contents
    descriptor/reader
 
    descriptor/descriptor
+   descriptor/server_descriptor
 
    types/exit_policy
    types/version
