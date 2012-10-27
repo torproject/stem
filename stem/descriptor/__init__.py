@@ -179,7 +179,8 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   :param str,list keywords: keyword(s) we want to read until
   :param file descriptor_file: file with the descriptor content
   :param bool inclusive: includes the line with the keyword if True
-  :param bool ignore_first: doesn't check if the first line read has one of the given keywords
+  :param bool ignore_first: doesn't check if the first line read has one of the
+    given keywords
   :param bool skip: skips buffering content, returning None
   :param int end_position: end if we reach this point in the file
   
@@ -233,7 +234,8 @@ def _get_pseudo_pgp_block(remaining_contents):
   
   :returns: **str** with the armor wrapped contents or None if it doesn't exist
   
-  :raises: **ValueError** if the contents starts with a key block but it's malformed (for instance, if it lacks an ending line)
+  :raises: **ValueError** if the contents starts with a key block but it's
+    malformed (for instance, if it lacks an ending line)
   """
   
   if not remaining_contents:
@@ -273,8 +275,10 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   else in server descriptors the order does not matter.
   
   :param str raw_contents: descriptor content provided by the relay
-  :param bool validate: checks the validity of the descriptor's content if True, skips these checks otherwise
-  :param list extra_keywords: entity keywords to put into a separate listing with ordering intact
+  :param bool validate: checks the validity of the descriptor's content if
+    True, skips these checks otherwise
+  :param list extra_keywords: entity keywords to put into a separate listing
+    with ordering intact
   
   :returns:
     **collections.OrderedDict** with the 'keyword => (value, pgp key) entries'

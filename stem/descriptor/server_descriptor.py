@@ -73,7 +73,8 @@ def parse_file(descriptor_file, validate = True):
   Iterates over the server descriptors in a file.
   
   :param file descriptor_file: file with descriptor content
-  :param bool validate: checks the validity of the descriptor's content if **True**, skips these checks otherwise
+  :param bool validate: checks the validity of the descriptor's content if
+    **True**, skips these checks otherwise
   
   :returns: iterator for ServerDescriptor instances in the file
   
@@ -156,7 +157,9 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   :var bool extra_info_cache: **\*** flag if a mirror for extra-info documents
   :var str extra_info_digest: hex encoded digest of our extra-info document
   :var bool eventdns: flag for evdns backend (deprecated, always unset)
-  :var list address_alt: alternative for our address/or_port attributes, each entry is a tuple of the form (address (**str**), port (**int**), is_ipv6 (**bool**))
+  :var list address_alt: alternative for our address/or_port attributes, each
+    entry is a tuple of the form (address (**str**), port (**int**), is_ipv6
+    (**bool**))
   
   Deprecated, moved to extra-info descriptor...
   
@@ -168,7 +171,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   :var int write_history_interval: seconds per interval
   :var list write_history_values: bytes written during each interval
   
-  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as **None** if undefined
+  **\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
   """
   
   def __init__(self, raw_contents, validate = True, annotations = None):
@@ -182,7 +186,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     malformed data.
     
     :param str raw_contents: descriptor content provided by the relay
-    :param bool validate: checks the validity of the descriptor's content if **True**, skips these checks otherwise
+    :param bool validate: checks the validity of the descriptor's content if
+      **True**, skips these checks otherwise
     :param list annotations: lines that appeared prior to the descriptor
     
     :raises: **ValueError** if the contents is malformed and validate is True
@@ -570,7 +575,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
 
 class RelayDescriptor(ServerDescriptor):
   """
-  Server descriptor (`descriptor specification <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_)
+  Server descriptor (`descriptor specification
+  <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_)
   
   :var str onion_key: **\*** key used to encrypt EXTEND cells
   :var str signing_key: **\*** relay's long-term identity key
@@ -718,7 +724,8 @@ class BridgeDescriptor(ServerDescriptor):
     """
     Provides issues with our scrubbing.
     
-    :returns: **list** of strings which describe issues we have with our scrubbing, this list is empty if we're properly scrubbed
+    :returns: **list** of strings which describe issues we have with our
+      scrubbing, this list is empty if we're properly scrubbed
     """
     
     if self._scrubbing_issues == None:

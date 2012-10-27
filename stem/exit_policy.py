@@ -72,7 +72,8 @@ class ExitPolicy(object):
   is, in effect, just a list of :class:`~stem.exit_policy.ExitPolicyRule`
   entries.
   
-  :param list rules: **str** or :class:`~stem.exit_policy.ExitPolicyRule` entries that make up this policy
+  :param list rules: **str** or :class:`~stem.exit_policy.ExitPolicyRule`
+    entries that make up this policy
   """
   
   def __init__(self, *rules):
@@ -98,7 +99,9 @@ class ExitPolicy(object):
     
     Our default, and tor's, is **True**.
     
-    :param bool is_allowed_default: :meth:`~stem.exit_policy.ExitPolicy.can_exit_to` default when no rules apply
+    :param bool is_allowed_default:
+      :meth:`~stem.exit_policy.ExitPolicy.can_exit_to` default when no rules
+      apply
     """
     
     self._is_allowed_default = is_allowed_default
@@ -255,7 +258,8 @@ class MicrodescriptorExitPolicy(ExitPolicy):
     wrong, in which case they'll have to try elsewhere.
   
   :var set ports: ports that this policy includes
-  :var bool is_accept: **True** if these are ports that we accept, **False** if they're ports that we reject
+  :var bool is_accept: **True** if these are ports that we accept, **False** if
+    they're ports that we reject
   
   :param str policy: policy string that describes this policy
   """
@@ -341,7 +345,8 @@ class ExitPolicyRule(object):
   :var AddressType address_type: type of address that we have
   :var str address: address that this rule is for
   :var str mask: subnet mask for the address (ex. "255.255.255.0")
-  :var int masked_bits: number of bits the subnet mask represents, **None** if the mask can't have a bit representation
+  :var int masked_bits: number of bits the subnet mask represents, **None** if
+    the mask can't have a bit representation
   
   :var int min_port: lower end of the port range that we include (inclusive)
   :var int max_port: upper end of the port range that we include (inclusive)

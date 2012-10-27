@@ -122,9 +122,11 @@ def parse_file(descriptor_file, validate = True):
   Iterates over the extra-info descriptors in a file.
   
   :param file descriptor_file: file with descriptor content
-  :param bool validate: checks the validity of the descriptor's content if **True**, skips these checks otherwise
+  :param bool validate: checks the validity of the descriptor's content if
+    **True**, skips these checks otherwise
   
-  :returns: iterator for :class:`~stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor` instances in the file
+  :returns: iterator for :class:`~stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor`
+    instances in the file
   
   :raises:
     * **ValueError** if the contents is malformed and validate is **True**
@@ -149,7 +151,8 @@ def _parse_timestamp_and_interval(keyword, content):
   :param str keyword: line's keyword
   :param str content: line content to be parsed
   
-  :returns: **tuple** of the form (timestamp (**datetime**), interval (**int**), remaining content (**str**))
+  :returns: **tuple** of the form (timestamp (**datetime**), interval
+    (**int**), remaining content (**str**))
   
   :raises: **ValueError** if the content is malformed
   """
@@ -180,7 +183,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var str fingerprint: **\*** identity key fingerprint
   :var datetime published: **\*** time in GMT when this descriptor was made
   :var str geoip_db_digest: sha1 of geoIP database file
-  :var dict transport: **\*** mapping of transport methods to their (address, port, args) tuple, these usually appeear on bridges in which case all of those are **None**
+  :var dict transport: **\*** mapping of transport methods to their (address,
+    port, args) tuple, these usually appeear on bridges in which case all of
+    those are **None**
   
   **Bi-directional connection usage:**
   
@@ -268,7 +273,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var datetime geoip_start_time: replaced by bridge_stats_end (deprecated)
   :var dict geoip_client_origins: replaced by bridge_ips (deprecated)
   
-  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as **None** if undefined
+  **\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
   """
   
   def __init__(self, raw_contents, validate = True):
@@ -278,7 +284,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     either improve performance or be accepting of malformed data.
     
     :param str raw_contents: extra-info content provided by the relay
-    :param bool validate: checks the validity of the extra-info descriptor if **True**, skips these checks otherwise
+    :param bool validate: checks the validity of the extra-info descriptor if
+      **True**, skips these checks otherwise
     
     :raises: **ValueError** if the contents is malformed and validate is True
     """
@@ -790,7 +797,8 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
 
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
-  Bridge extra-info descriptor (`bridge descriptor specification <https://metrics.torproject.org/formats.html#bridgedesc>`_)
+  Bridge extra-info descriptor (`bridge descriptor specification
+  <https://metrics.torproject.org/formats.html#bridgedesc>`_)
   """
   
   def __init__(self, raw_contents, validate = True):

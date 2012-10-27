@@ -1,7 +1,8 @@
 """
 Utilities for reading descriptors from local directories and archives. This is
-mostly done through the :class:`~stem.descriptor.reader.DescriptorReader` class, which is an iterator for the
-descriptor data in a series of destinations. For example...
+mostly done through the :class:`~stem.descriptor.reader.DescriptorReader`
+class, which is an iterator for the descriptor data in a series of
+destinations. For example...
 
 ::
 
@@ -99,7 +100,8 @@ class AlreadyRead(FileSkipped):
   Already read a file with this 'last modified' timestamp or later.
   
   :param int last_modified: unix timestamp for when the file was last modified
-  :param int last_modified_when_read: unix timestamp for the modification time when we last read this file
+  :param int last_modified_when_read: unix timestamp for the modification time
+    when we last read this file
   """
   
   def __init__(self, last_modified, last_modified_when_read):
@@ -134,7 +136,8 @@ class ReadFailed(FileSkipped):
   """
   An IOError occured while trying to read the file.
   
-  :param IOError exception: issue that arose when reading the file, **None** if this arose due to the file not being present
+  :param IOError exception: issue that arose when reading the file, **None** if
+    this arose due to the file not being present
   """
   
   def __init__(self, read_exception):
@@ -155,7 +158,8 @@ def load_processed_files(path):
   
   :param str path: location to load the processed files dictionary from
   
-  :returns: **dict** of 'path (str) => last modified unix timestamp (int)' mappings
+  :returns: **dict** of 'path (**str**) => last modified unix timestamp
+    (**int**)' mappings
   
   :raises:
     * **IOError** if unable to read the file
@@ -229,9 +233,12 @@ class DescriptorReader(object):
   :func:`~stem.descriptor.reader.save_processed_files` functions instead.
   
   :param str,list target: path or list of paths for files or directories to be read from
-  :param bool follow_links: determines if we'll follow symlinks when traversing directories (requires python 2.6)
-  :param int buffer_size: descriptors we'll buffer before waiting for some to be read, this is unbounded if zero
-  :param str persistence_path: if set we will load and save processed file listings from this path, errors are ignored
+  :param bool follow_links: determines if we'll follow symlinks when traversing
+    directories (requires python 2.6)
+  :param int buffer_size: descriptors we'll buffer before waiting for some to
+    be read, this is unbounded if zero
+  :param str persistence_path: if set we will load and save processed file
+    listings from this path, errors are ignored
   """
   
   def __init__(self, target, follow_links = False, buffer_size = 100, persistence_path = None):
@@ -277,7 +284,8 @@ class DescriptorReader(object):
     method. Each run resets this to only the files that were present during
     that run.
     
-    :returns: **dict** with the absolute paths and unix timestamp for the last modified times of the files we have processed
+    :returns: **dict** with the absolute paths and unix timestamp for the last
+      modified times of the files we have processed
     """
     
     # make sure that we only provide back absolute paths
@@ -289,7 +297,8 @@ class DescriptorReader(object):
     with a newly created :class:`~stem.descriptor.reader.DescriptorReader` to
     pre-populate the listing of descriptor files that we have seen.
     
-    :param dict processed_files: mapping of absolute paths (**str**) to unix timestamps for the last modified time (**int**)
+    :param dict processed_files: mapping of absolute paths (**str**) to unix
+      timestamps for the last modified time (**int**)
     """
     
     self._processed_files = dict(processed_files)
@@ -303,7 +312,8 @@ class DescriptorReader(object):
     
       my_listener(path, exception)
     
-    :param functor listener: functor to be notified of files that are skipped to read errors or because they couldn't be parsed as valid descriptor data
+    :param functor listener: functor to be notified of files that are skipped
+      to read errors or because they couldn't be parsed as valid descriptor data
     """
     
     self._skip_listeners.append(listener)
@@ -313,7 +323,8 @@ class DescriptorReader(object):
     Provides the number of descriptors that are waiting to be iterated over.
     This is limited to the buffer_size that we were constructed with.
     
-    :returns: **int** for the estimated number of currently enqueued descriptors, this is not entirely reliable
+    :returns: **int** for the estimated number of currently enqueued
+      descriptors, this is not entirely reliable
     """
     
     return self._unreturned_descriptors.qsize()

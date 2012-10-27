@@ -93,7 +93,8 @@ class Version(object):
   :var int micro: micro version
   :var int patch: patch level (**None** if undefined)
   :var str status: status tag such as 'alpha' or 'beta-dev' (**None** if undefined)
-  :var str extra: extra information without its parentheses such as 'git-8be6058d8f31e578' (**None** if undefined)
+  :var str extra: extra information without its parentheses such as
+    'git-8be6058d8f31e578' (**None** if undefined)
   :var str git_commit: git commit id (**None** if it wasn't provided)
   
   :param str version_str: version to be parsed
