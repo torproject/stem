@@ -13,6 +13,7 @@ Descriptors
 * **Classes**
  * `stem.descriptor <descriptor/descriptor.html>`_ - Base class for descriptors.
  * `stem.descriptor.server_descriptor <descriptor/server_descriptor.html>`_ - Relay and bridge server descriptors.
+ * `stem.descriptor.extrainfo_descriptor <descriptor/extrainfo_descriptor.html>`_ - Relay and bridge extrainfo descriptors.
 
 * **Utilities**
  * `stem.descriptor.reader <descriptor/reader.html>`_ - Reads and parses descriptor files from disk.

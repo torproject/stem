@@ -13,6 +13,7 @@ Contents
 
    descriptor/descriptor
    descriptor/server_descriptor
+   descriptor/extrainfo_descriptor
 
    types/exit_policy
    types/version
