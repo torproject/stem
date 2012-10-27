@@ -3,7 +3,7 @@ Parsing for router status entries, the information for individual routers
 within a network status document. This information is provided from a few
 sources...
 
-* control port via 'GETINFO ns/*' and 'GETINFO md/*' queries
+* control port via 'GETINFO ns/\*' and 'GETINFO md/\*' queries
 * router entries in a network status document, like the cached-consensus
 
 **Module Overview:**
@@ -32,19 +32,22 @@ def parse_file(document_file, validate, entry_class, entry_keyword = "r", start_
   Either a end_position or section_end_keywords must be provided.
   
   :param file document_file: file with network status document content
-  :param bool validate: checks the validity of the document's contents if True, skips these checks otherwise
+  :param bool validate: checks the validity of the document's contents if
+    **True**, skips these checks otherwise
   :param class entry_class: class to construct instance for
   :param str entry_keyword: first keyword for the entry instances
   :param int start_position: start of the section, default is the current position
   :param int end_position: end of the section
-  :param tuple section_end_keywords: keyword(s) that deliminate the end of the section if no end_position was provided
-  :param tuple extra_args: extra arguments for the entry_class (after the content and validate flag)
+  :param tuple section_end_keywords: keyword(s) that deliminate the end of the
+    section if no end_position was provided
+  :param tuple extra_args: extra arguments for the entry_class (after the
+    content and validate flag)
   
   :returns: iterator over entry_class instances
   
   :raises:
-    * ValueError if the contents is malformed and validate is True
-    * IOError if the file can't be read
+    * **ValueError** if the contents is malformed and validate is **True**
+    * **IOError** if the file can't be read
   """
   
   if start_position is None:
@@ -76,7 +79,8 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
   
   :var list flags: **\*** list of status flags
   
-  :var stem.version.Version version: parsed version of tor, this is None if the relay's using a new versioning scheme
+  :var stem.version.Version version: parsed version of tor, this is **None** if
+    the relay's using a new versioning scheme
   :var str version_line: versioning information reported by the relay
   """
   
@@ -86,9 +90,10 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     
     :param str content: router descriptor content to be parsed
     :param NetworkStatusDocument document: document this descriptor came from
-    :param bool validate: checks the validity of the content if True, skips these checks otherwise
+    :param bool validate: checks the validity of the content if **True**, skips
+      these checks otherwise
     
-    :raises: ValueError if the descriptor data is invalid
+    :raises: **ValueError** if the descriptor data is invalid
     """
     
     super(RouterStatusEntry, self).__init__(content)
@@ -118,9 +123,9 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     Parses the given content and applies the attributes.
     
     :param dict entries: keyword => (value, pgp key) entries
-    :param bool validate: checks validity if True
+    :param bool validate: checks validity if **True**
     
-    :raises: ValueError if a validity check fails
+    :raises: **ValueError** if a validity check fails
     """
     
     for keyword, values in entries.items():
@@ -140,7 +145,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     
     :param dict entries: keyword => (value, pgp key) entries
     
-    :raises: ValueError if an issue arises in validation
+    :raises: **ValueError** if an issue arises in validation
     """
     
     for keyword in self._required_fields():
@@ -200,7 +205,8 @@ class RouterStatusEntryV2(RouterStatusEntry):
   
   :var str digest: **\*** router's digest
   
-  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  **\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
   """
   
   def __init__(self, content, validate = True, document = None):
@@ -244,13 +250,16 @@ class RouterStatusEntryV3(RouterStatusEntry):
   
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
   :var int measured: bandwith measured to be available by the relay
-  :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting information that isn't yet recognized
+  :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting
+    information that isn't yet recognized
   
   :var stem.exit_policy.MicrodescriptorExitPolicy exit_policy: router's exit policy
   
-  :var list microdescriptor_hashes: tuples of two values, the list of consensus methods for generting a set of digests and the 'algorithm => digest' mappings
+  :var list microdescriptor_hashes: tuples of two values, the list of consensus
+    methods for generting a set of digests and the 'algorithm => digest' mappings
   
-  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  **\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
   """
   
   def __init__(self, content, validate = True, document = None):
@@ -309,11 +318,13 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
   :var int measured: bandwith measured to be available by the relay
-  :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting information that isn't yet recognized
+  :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting
+    information that isn't yet recognized
   
   :var str digest: **\*** router's base64 encoded router microdescriptor digest
   
-  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  **\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
   """
   
   def __init__(self, content, validate = True, document = None):
@@ -535,11 +546,11 @@ def _decode_fingerprint(identity, validate):
     'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
   
   :param str identity: encoded fingerprint from the consensus
-  :param bool validate: checks validity if True
+  :param bool validate: checks validity if **True**
   
-  :returns: str with the uppercase hex encoding of the relay's fingerprint
+  :returns: **str** with the uppercase hex encoding of the relay's fingerprint
   
-  :raises: ValueError if the result isn't a valid fingerprint
+  :raises: **ValueError** if the result isn't a valid fingerprint
   """
   
   # trailing equal signs were stripped from the identity

@@ -15,6 +15,7 @@ Descriptors
  * `stem.descriptor.server_descriptor <descriptor/server_descriptor.html>`_ - Relay and bridge server descriptors.
  * `stem.descriptor.extrainfo_descriptor <descriptor/extrainfo_descriptor.html>`_ - Relay and bridge extrainfo descriptors.
  * `stem.descriptor.networkstatus <descriptor/networkstatus.html>`_ - Network status documents which make up the Tor consensus.
+ * `stem.descriptor.router_status_entry <descriptor/router_status_entry.html>`_ - Relay entries within a network status document.
 
 * **Utilities**
  * `stem.descriptor.reader <descriptor/reader.html>`_ - Reads and parses descriptor files from disk.
