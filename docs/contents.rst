@@ -20,3 +20,5 @@ Contents
    types/exit_policy
    types/version
 
+   util/enum
+
