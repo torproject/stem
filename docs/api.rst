@@ -30,4 +30,5 @@ Utilities
 * `stem.util.log <util/log.html>`_ - Logging utilities.
 * `stem.util.proc <util/proc.html>`_ - Tools to read a process' proc contents.
 * `stem.util.str_tools <util/str_tools.html>`_ - String utilities.
+* `stem.util.system <util/system.html>`_ - Tools related to the local system.
 
