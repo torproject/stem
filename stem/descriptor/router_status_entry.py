@@ -10,10 +10,10 @@ sources...
 
 ::
 
-  RouterStatusEntry - Common parent for router status entries.
-    |- RouterStatusEntryV2 - Entry for a network status v2 document.
-    |- RouterStatusEntryV3 - Entry for a network status v3 document.
-    +- RouterStatusEntryMicroV3 - Entry for a microdescriptor flavored v3 document.
+  RouterStatusEntry - Common parent for router status entries
+    |- RouterStatusEntryV2 - Entry for a network status v2 document
+    |- RouterStatusEntryV3 - Entry for a network status v3 document
+    +- RouterStatusEntryMicroV3 - Entry for a microdescriptor flavored v3 document
 """
 
 import base64

@@ -35,7 +35,7 @@ exiting to a destination is permissable or not. For instance...
     |- is_port_wildcard - checks if we'll accept any port
     |- is_match - checks if we match a given destination
     +- __str__ - string representation for this rule
-
+  
   AddressType - Enumerations for IP address types that can be in an exit policy
     |- WILDCARD - any address of either IPv4 or IPv6
     |- IPv4 - IPv4 address

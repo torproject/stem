@@ -60,12 +60,12 @@ memory usage and upfront runtime.
 
   parse_file - parses a network status file, providing an iterator for its routers
   
-  NetworkStatusDocument - Network status document.
-    |- NetworkStatusDocumentV2 - Version 2 network status document.
-    +- NetworkStatusDocumentV3 - Version 3 network status document.
+  NetworkStatusDocument - Network status document
+    |- NetworkStatusDocumentV2 - Version 2 network status document
+    +- NetworkStatusDocumentV3 - Version 3 network status document
   
-  DocumentSignature - Signature of a document by a directory authority.
-  DirectoryAuthority - Directory authority as defined in a v3 network status document.
+  DocumentSignature - Signature of a document by a directory authority
+  DirectoryAuthority - Directory authority as defined in a v3 network status document
 """
 
 import datetime

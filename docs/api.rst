@@ -22,5 +22,6 @@ Descriptors
 Utilities
 ---------
 
+* `stem.util.conf <util/conf.html>`_ - Configuration file handling.
 * `stem.util.enum <util/enum.html>`_ - Enumeration class.
 

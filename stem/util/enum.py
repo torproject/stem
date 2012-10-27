@@ -26,9 +26,9 @@ constructed as simple type listings...
 
 ::
 
-  UppercaseEnum - Provides an enum instance with capitalized values.
+  UppercaseEnum - Provides an enum instance with capitalized values
   
-  Enum - Provides a basic, ordered  enumeration.
+  Enum - Provides a basic, ordered  enumeration
     |- keys - string representation of our enum keys
     |- index_of - indice of an enum value
     |- next - provides the enum after a given enum value
