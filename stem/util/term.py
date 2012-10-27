@@ -1,5 +1,26 @@
 """
 Utilities for working with the terminal.
+
+**Module Overview:**
+
+::
+
+  Color - enumeration for terminal colors
+    |- BLACK
+    |- BLUE
+    |- CYAN
+    |- GREEN
+    |- MAGENTA
+    |- RED
+    |- WHITE
+    +- YELLOW
+  
+  Attr - enumeration of terminal text attributes
+    |- BOLD
+    |- HILIGHT
+    +- UNDERLINE
+  
+  format - wrap text with ANSI for the given colors or attributes
 """
 
 import stem.util.enum
@@ -30,9 +51,11 @@ def format(msg, *attr):
   * `colorama <http://pypi.python.org/pypi/colorama>`_
   
   :param str msg: string to be formatted
-  :param str attr: text attributes, this can be Color, BgColor, or Attr enums and are case insensitive (so strings like "red" are fine)
+  :param str attr: text attributes, this can be Color, BgColor, or Attr enums
+    and are case insensitive (so strings like "red" are fine)
   
-  :returns: string wrapped with ANSI escape encodings, starting with the given attributes and ending with a reset
+  :returns: **str** wrapped with ANSI escape encodings, starting with the given
+    attributes and ending with a reset
   """
   
   # if we have reset sequences in the message then apply our attributes

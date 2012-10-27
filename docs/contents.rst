@@ -27,4 +27,5 @@ Contents
    util/proc
    util/str_tools
    util/system
+   util/term
 
