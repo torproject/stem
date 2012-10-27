@@ -32,4 +32,5 @@ Utilities
 * `stem.util.str_tools <util/str_tools.html>`_ - String utilities.
 * `stem.util.system <util/system.html>`_ - Tools related to the local system.
 * `stem.util.term <util/term.html>`_ - Tools for interacting with the terminal.
+* `stem.util.tor_tools <util/tor_tools.html>`_ - Helper functions for working with tor.
 

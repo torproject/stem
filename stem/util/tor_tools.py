@@ -1,5 +1,13 @@
 """
 Miscellaneous utility functions for working with tor.
+
+**Module Overview:**
+
+::
+
+  is_valid_fingerprint - checks if a string is a valid tor relay fingerprint
+  is_valid_nickname - checks if a string is a valid tor relay nickname
+  is_hex_digits - checks if a string is only made up of hex digits
 """
 
 import re
@@ -26,7 +34,7 @@ def is_valid_fingerprint(entry, check_prefix = False):
   :param str entry: string to be checked
   :param bool check_prefix: checks for a '$' prefix
   
-  :returns: True if the string could be a relay fingerprint, False otherwise.
+  :returns: **True** if the string could be a relay fingerprint, **False** otherwise
   """
   
   if not isinstance(entry, str):
@@ -43,7 +51,7 @@ def is_valid_nickname(entry):
   
   :param str entry: string to be checked
   
-  :returns: True if the string could be a nickname, False otherwise.
+  :returns: **True** if the string could be a nickname, **False** otherwise
   """
   
   if not isinstance(entry, str):
@@ -59,7 +67,7 @@ def is_hex_digits(entry, count):
   :param str entry: string to be checked
   :param int count: number of hex digits to be checked for
   
-  :returns: True if the string matches this number
+  :returns: **True** if the string matches this number
   """
   
   return bool(re.match("^%s{%i}$" % (HEX_DIGIT, count), entry))

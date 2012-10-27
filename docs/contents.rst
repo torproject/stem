@@ -28,4 +28,5 @@ Contents
    util/str_tools
    util/system
    util/term
+   util/tor_tools
 
