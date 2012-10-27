@@ -21,5 +21,6 @@ Contents
    types/version
 
    util/conf
+   util/connection
    util/enum
 

@@ -36,7 +36,7 @@ def is_valid_ip_address(address):
   
   :param str address: string to be checked
   
-  :returns: True if input is a valid IPv4 address, False otherwise
+  :returns: **True** if input is a valid IPv4 address, **False** otherwise
   """
   
   if not isinstance(address, str): return False
@@ -60,7 +60,7 @@ def is_valid_ipv6_address(address, allow_brackets = False):
   :param str address: string to be checked
   :param bool allow_brackets: ignore brackets which form '[address]'
   
-  :returns: True if input is a valid IPv6 address, False otherwise
+  :returns: **True** if input is a valid IPv6 address, **False** otherwise
   """
   
   if allow_brackets:
@@ -93,7 +93,7 @@ def is_valid_port(entry, allow_zero = False):
   :param list,str,int entry: string, integer or list to be checked
   :param bool allow_zero: accept port number of zero (reserved by defintion)
   
-  :returns: True if input is an integer and within the valid port range, False otherwise
+  :returns: **True** if input is an integer and within the valid port range, **False** otherwise
   """
   
   if isinstance(entry, list):
@@ -129,7 +129,7 @@ def expand_ipv6_address(address):
   
   :param str address: IPv6 address to be expanded
   
-  :raises: ValueError if the address can't be expanded due to being malformed
+  :raises: **ValueError** if the address can't be expanded due to being malformed
   """
   
   if not is_valid_ipv6_address(address):
@@ -158,9 +158,9 @@ def get_mask(bits):
   
   :param int bits: number of bits to be converted
   
-  :returns: str with the subnet mask representation for this many bits
+  :returns: **str** with the subnet mask representation for this many bits
   
-  :raises: ValueError if given a number of bits outside the range of 0-32
+  :raises: **ValueError** if given a number of bits outside the range of 0-32
   """
   
   if bits > 32 or bits < 0:
@@ -182,9 +182,9 @@ def get_masked_bits(mask):
   
   :param str mask: mask to be converted
   
-  :returns: int with the number of bits represented by the mask
+  :returns: **int** with the number of bits represented by the mask
   
-  :raises: ValueError if the mask is invalid or can't be converted
+  :raises: **ValueError** if the mask is invalid or can't be converted
   """
   
   if not is_valid_ip_address(mask):
@@ -206,9 +206,9 @@ def get_mask_ipv6(bits):
   
   :param int bits: number of bits to be converted
   
-  :returns: str with the subnet mask representation for this many bits
+  :returns: **str** with the subnet mask representation for this many bits
   
-  :raises: ValueError if given a number of bits outside the range of 0-128
+  :raises: **ValueError** if given a number of bits outside the range of 0-128
   """
   
   if bits > 128 or bits < 0:
@@ -239,9 +239,9 @@ def get_address_binary(address):
   """
   Provides the binary value for an IPv4 or IPv6 address.
   
-  :returns: str with the binary prepresentation of this address
+  :returns: **str** with the binary prepresentation of this address
   
-  :raises: ValueError if address is neither an IPv4 nor IPv6 address
+  :raises: **ValueError** if address is neither an IPv4 nor IPv6 address
   """
   
   if is_valid_ip_address(address):
@@ -271,7 +271,7 @@ def cryptovariables_equal(x, y):
   :param str x: string to be compared.
   :param str y: the other string to be compared.
   
-  :returns: True if both strings are equal, False otherwise.
+  :returns: **True** if both strings are equal, **False** otherwise.
   """
   
   return (hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
