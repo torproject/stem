@@ -8,25 +8,25 @@ Contents
    download
    tutorial
 
-   descriptor/export
-   descriptor/reader
+   api/exit_policy
+   api/version
 
-   descriptor/descriptor
-   descriptor/server_descriptor
-   descriptor/extrainfo_descriptor
-   descriptor/networkstatus
-   descriptor/router_status_entry
+   api/descriptor/export
+   api/descriptor/reader
 
-   types/exit_policy
-   types/version
+   api/descriptor/descriptor
+   api/descriptor/server_descriptor
+   api/descriptor/extrainfo_descriptor
+   api/descriptor/networkstatus
+   api/descriptor/router_status_entry
 
-   util/conf
-   util/connection
-   util/enum
-   util/log
-   util/proc
-   util/str_tools
-   util/system
-   util/term
-   util/tor_tools
+   api/util/conf
+   api/util/connection
+   api/util/enum
+   api/util/log
+   api/util/proc
+   api/util/str_tools
+   api/util/system
+   api/util/term
+   api/util/tor_tools
 
