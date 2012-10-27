@@ -24,5 +24,6 @@ Contents
    util/connection
    util/enum
    util/log
+   util/proc
    util/str_tools
 

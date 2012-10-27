@@ -48,7 +48,7 @@ def is_available():
   """
   Checks if proc information is available on this platform.
   
-  :returns: bool that's True if proc contents exist on this platform, False otherwise
+  :returns: **True** if proc contents exist on this platform, **False** otherwise
   """
   
   global IS_PROC_AVAILABLE
@@ -74,9 +74,9 @@ def get_system_start_time():
   """
   Provides the unix time (seconds since epoch) when the system started.
   
-  :returns: float for the unix time of when the system started
+  :returns: **float** for the unix time of when the system started
   
-  :raises: IOError if it can't be determined
+  :raises: **IOError** if it can't be determined
   """
   
   global SYS_START_TIME
@@ -98,9 +98,9 @@ def get_physical_memory():
   """
   Provides the total physical memory on the system in bytes.
   
-  :returns: int for the bytes of physical memory this system has
+  :returns: **int** for the bytes of physical memory this system has
   
-  :raises: IOError if it can't be determined
+  :raises: **IOError** if it can't be determined
   """
   
   global SYS_PHYSICAL_MEMORY
@@ -124,9 +124,9 @@ def get_cwd(pid):
   
   :param int pid: process id of the process to be queried
   
-  :returns: str with the path of the workign direcctory for the process
+  :returns: **str** with the path of the workign direcctory for the process
   
-  :raises: IOError if it can't be determined
+  :raises: **IOError** if it can't be determined
   """
   
   start_time, parameter = time.time(), "cwd"
@@ -149,9 +149,9 @@ def get_uid(pid):
   
   :param int pid: process id of the process to be queried
   
-  :returns: int with the user id for the owner of the process
+  :returns: **int** with the user id for the owner of the process
   
-  :raises: IOError if it can't be determined
+  :raises: **IOError** if it can't be determined
   """
   
   start_time, parameter = time.time(), "uid"
@@ -173,9 +173,10 @@ def get_memory_usage(pid):
   
   :param int pid: process id of the process to be queried
   
-  :returns: tuple of two ints with the memory usage of the process, of the form ``(resident_size, virtual_size)``
+  :returns: **tuple** of two ints with the memory usage of the process, of the
+    form **(resident_size, virtual_size)**
   
-  :raises: IOError if it can't be determined
+  :raises: **IOError** if it can't be determined
   """
   
   # checks if this is the kernel process
@@ -208,9 +209,9 @@ def get_stats(pid, *stat_types):
   :param int pid: process id of the process to be queried
   :param Stat stat_types: information to be provided back
   
-  :returns: tuple with all of the requested statistics as strings
+  :returns: **tuple** with all of the requested statistics as strings
   
-  :raises: IOError if it can't be determined
+  :raises: **IOError** if it can't be determined
   """
   
   if CLOCK_TICKS is None:
@@ -268,9 +269,11 @@ def get_connections(pid):
   
   :param int pid: process id of the process to be queried
   
-  :returns: A listing of connection tuples of the form ``[(local_ipAddr1, local_port1, foreign_ipAddr1, foreign_port1), ...]`` (IP addresses are strings and ports are ints)
+  :returns: A listing of connection tuples of the form **[(local_ipAddr1,
+    local_port1, foreign_ipAddr1, foreign_port1), ...]** (IP addresses are
+    strings and ports are ints)
   
-  :raises: IOError if it can't be determined
+  :raises: **IOError** if it can't be determined
   """
   
   if pid == 0: return []
@@ -341,7 +344,7 @@ def _decode_proc_address_encoding(addr):
   
   :param str addr: proc address entry to be decoded
   
-  :returns: tuple of the form ``(addr, port)``, with addr as a string and port an int
+  :returns: **tuple** of the form **(addr, port)**, with addr as a string and port an int
   """
   
   ip, port = addr.split(':')
@@ -388,7 +391,7 @@ def _get_lines(file_path, line_prefixes, parameter):
   
   :returns: mapping of prefixes to the matching line
   
-  :raises: IOError if unable to read the file or can't find all of the prefixes
+  :raises: **IOError** if unable to read the file or can't find all of the prefixes
   """
   
   try:
