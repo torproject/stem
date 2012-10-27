@@ -23,5 +23,6 @@ Contents
    util/conf
    util/connection
    util/enum
+   util/log
    util/str_tools
 

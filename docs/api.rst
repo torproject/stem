@@ -27,5 +27,6 @@ Utilities
 * `stem.util.conf <util/conf.html>`_ - Configuration file handling.
 * `stem.util.connection <util/connection.html>`_ - Connection and IP related utilities.
 * `stem.util.enum <util/enum.html>`_ - Enumeration class.
+* `stem.util.log <util/log.html>`_ - Logging utilities.
 * `stem.util.str_tools <util/str_tools.html>`_ - String utilities.
 
