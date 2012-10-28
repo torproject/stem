@@ -42,70 +42,54 @@ fine-grained control over the authentication process. For instance...
     print "Unable to authenticate: %s" % exc
     sys.exit(1)
 
-The AuthMethod enumeration includes methods by which a controller can
-authenticate to the control port. Tor gives a list of all the authentication
-methods it will accept in response to PROTOCOLINFO queries.
-
-**AuthMethod.NONE**
-  No authentication required
-
-**AuthMethod.PASSWORD**
-  See tor's HashedControlPassword option. Controllers must provide the password
-  used to generate the hash.
-
-**AuthMethod.COOKIE**
-  See tor's CookieAuthentication option. Controllers need to supply the
-  contents of the cookie file.
-
-**AuthMethod.SAFECOOKIE**
-  See tor's CookieAuthentication option. Controllers need to reply to a
-  hmac challenge using the contents of the cookie file.
-
-**AuthMethod.UNKNOWN**
-  Tor provided one or more authentication methods that we don't recognize. This
-  is probably from a new addition to the control protocol.
-
 **Module Overview:**
 
 ::
 
-  connect_port - Convenience method to get an authenticated control connection.
-  connect_socket_file - Similar to connect_port, but for control socket files.
+  connect_port - Convenience method to get an authenticated control connection
+  connect_socket_file - Similar to connect_port, but for control socket files
   
-  authenticate - Main method for authenticating to a control socket.
-  authenticate_none - Authenticates to an open control socket.
-  authenticate_password - Authenticates to a socket supporting password auth.
-  authenticate_cookie - Authenticates to a socket supporting cookie auth.
-  authenticate_safecookie - Authenticates to a socket supporting safecookie auth.
+  authenticate - Main method for authenticating to a control socket
+  authenticate_none - Authenticates to an open control socket
+  authenticate_password - Authenticates to a socket supporting password auth
+  authenticate_cookie - Authenticates to a socket supporting cookie auth
+  authenticate_safecookie - Authenticates to a socket supporting safecookie auth
   
-  get_protocolinfo - Issues a PROTOCOLINFO query.
+  get_protocolinfo - Issues a PROTOCOLINFO query
   
-  AuthenticationFailure - Base exception raised for authentication failures.
-    |- UnrecognizedAuthMethods - Authentication methods are unsupported.
-    |- IncorrectSocketType - Socket does not speak the tor control protocol.
+  AuthenticationFailure - Base exception raised for authentication failures
+    |- UnrecognizedAuthMethods - Authentication methods are unsupported
+    |- IncorrectSocketType - Socket does not speak the tor control protocol
     |
-    |- OpenAuthFailed - Failure when authenticating by an open socket.
-    |  +- OpenAuthRejected - Tor rejected this method of authentication.
+    |- OpenAuthFailed - Failure when authenticating by an open socket
+    |  +- OpenAuthRejected - Tor rejected this method of authentication
     |
-    |- PasswordAuthFailed - Failure when authenticating by a password.
-    |  |- PasswordAuthRejected - Tor rejected this method of authentication.
-    |  |- IncorrectPassword - Password was rejected.
-    |  +- MissingPassword - Socket supports password auth but wasn't attempted.
+    |- PasswordAuthFailed - Failure when authenticating by a password
+    |  |- PasswordAuthRejected - Tor rejected this method of authentication
+    |  |- IncorrectPassword - Password was rejected
+    |  +- MissingPassword - Socket supports password auth but wasn't attempted
     |
-    |- CookieAuthFailed - Failure when authenticating by a cookie.
-    |  |- CookieAuthRejected - Tor rejected this method of authentication.
-    |  |- IncorrectCookieValue - Authentication cookie was rejected.
-    |  |- IncorrectCookieSize - Size of the cookie file is incorrect.
-    |  |- UnreadableCookieFile - Unable to read the contents of the auth cookie.
-    |  +- AuthChallengeFailed - Failure completing the authchallenge request.
-    |     |- AuthChallengeUnsupported - Tor doesn't recognize the AUTHCHALLENGE command.
-    |     |- AuthSecurityFailure - Server provided the wrong nonce credentials.
-    |     |- InvalidClientNonce - The client nonce is invalid.
+    |- CookieAuthFailed - Failure when authenticating by a cookie
+    |  |- CookieAuthRejected - Tor rejected this method of authentication
+    |  |- IncorrectCookieValue - Authentication cookie was rejected
+    |  |- IncorrectCookieSize - Size of the cookie file is incorrect
+    |  |- UnreadableCookieFile - Unable to read the contents of the auth cookie
+    |  +- AuthChallengeFailed - Failure completing the authchallenge request
+    |     |- AuthChallengeUnsupported - Tor doesn't recognize the AUTHCHALLENGE command
+    |     |- AuthSecurityFailure - Server provided the wrong nonce credentials
+    |     |- InvalidClientNonce - The client nonce is invalid
     |     +- UnrecognizedAuthChallengeMethod - AUTHCHALLENGE does not support the given methods.
     |
-    +- MissingAuthInfo - Unexpected PROTOCOLINFO response, missing auth info.
-       |- NoAuthMethods - Missing any methods for authenticating.
-       +- NoAuthCookie - Supports cookie auth but doesn't have its path.
+    +- MissingAuthInfo - Unexpected PROTOCOLINFO response, missing auth info
+       |- NoAuthMethods - Missing any methods for authenticating
+       +- NoAuthCookie - Supports cookie auth but doesn't have its path
+  
+  AuthMethod - Enumeration on PROTOCOLINFO responses for supported authentication methods
+    |- NONE - No authentication required
+    |- PASSWORD - Password required, see tor's HashedControlPassword option
+    |- COOKIE - Contents of the cookie file required, see tor's CookieAuthentication option
+    |- SAFECOOKIE - Need to reply to a hmac challenge using the contents of the cookie file
+    +- UNKNOWN - Tor provided one or more authentication methods that we don't recognize, probably something new
 """
 
 from __future__ import with_statement
