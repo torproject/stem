@@ -1,5 +1,12 @@
 """
-Utilities for exporting descriptors to other formats.
+Toolkit for exporting descriptors to other formats.
+
+**Module Overview:**
+
+::
+
+  export_csv - Exports descriptors to a CSV
+  export_csv_file - Writes exported CSV output to a file
 """
 
 import csv
@@ -14,16 +21,18 @@ def export_csv(descriptors, included_fields = (), excluded_fields = (), header =
   """
   Provides a newline separated CSV for one or more descriptors. If simply
   provided with descriptors then the CSV contains all of its attributes,
-  labelled with a header row. Either 'included_fields' or 'excluded_fields' can
+  labeled with a header row. Either 'included_fields' or 'excluded_fields' can
   be used for more granular control over its attributes and the order.
   
-  :param Descriptor,list descriptors: descriptor or list of descriptors to be exported
+  :param Descriptor,list descriptors: either a
+    :class:`~stem.descriptor.Descriptor` or list of descriptors to be exported
   :param list included_fields: attributes to include in the csv
   :param list excluded_fields: attributes to exclude from the csv
-  :param bool header: if True then the first line will be a comma separated list of the attribute names
+  :param bool header: if **True** then the first line will be a comma separated
+    list of the attribute names
   
-  :returns: str of the CSV for the descriptors, one per line
-  :raises: ValueError if descriptors contain more than one descriptor type
+  :returns: **str** of the CSV for the descriptors, one per line
+  :raises: **ValueError** if descriptors contain more than one descriptor type
   """
   
   output_buffer = cStringIO.StringIO()
@@ -36,13 +45,15 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
   written directly to a file.
   
   :param file output_file: file to be written to
-  :param Descriptor,list descriptors: descriptor or list of descriptors to be exported
+  :param Descriptor,list descriptors: either a
+    :class:`~stem.descriptor.Descriptor` or list of descriptors to be exported
   :param list included_fields: attributes to include in the csv
   :param list excluded_fields: attributes to exclude from the csv
-  :param bool header: if True then the first line will be a comma separated list of the attribute names
+  :param bool header: if **True** then the first line will be a comma separated
+    list of the attribute names
   
-  :returns: str of the CSV for the descriptors, one per line
-  :raises: ValueError if descriptors contain more than one descriptor type
+  :returns: **str** of the CSV for the descriptors, one per line
+  :raises: **ValueError** if descriptors contain more than one descriptor type
   """
   
   if isinstance(descriptors, stem.descriptor.Descriptor):

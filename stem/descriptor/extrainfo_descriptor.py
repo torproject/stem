@@ -4,16 +4,17 @@ their server descriptor is published and have a similar format. However, unlike
 server descriptors these don't contain information that Tor clients require to
 function and as such aren't fetched by default.
 
-Defined in section 2.2 of the dir-spec, extra-info descriptors contain
-interesting but non-vital information such as usage statistics. These documents
-cannot be requested of bridges.
+Defined in section 2.2 of the `dir-spec
+<https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_,
+extra-info descriptors contain interesting but non-vital information such as
+usage statistics. Tor clients cannot request these documents for bridges.
 
 Extra-info descriptors are available from a few sources...
 
 * if you have 'DownloadExtraInfo 1' in your torrc...
 
-  * control port via 'GETINFO extra-info/digest/*' queries
-  * the 'cached-extrainfo' file in tor's data directory
+ * control port via 'GETINFO extra-info/digest/\*' queries
+ * the 'cached-extrainfo' file in tor's data directory
 
 * tor metrics, at https://metrics.torproject.org/data.html
 * directory authorities and mirrors via their DirPort
@@ -33,7 +34,7 @@ Extra-info descriptors are available from a few sources...
   DirStats - known stats for ExtraInfoDescriptor's dir_*_direct_dl and dir_*_tunneled_dl
     |- COMPLETE - requests that completed successfully
     |- TIMEOUT - requests that didn't complete within a ten minute timeout
-    |- RUNNING - requests still in procress when measurement's taken
+    |- RUNNING - requests still in process when measurement's taken
     |- MIN - smallest rate at which a descriptor was downloaded in B/s
     |- MAX - largest rate at which a descriptor was downloaded in B/s
     |- D1-4 and D6-9 - rate of the slowest x/10 download rates in B/s
@@ -121,13 +122,15 @@ def parse_file(descriptor_file, validate = True):
   Iterates over the extra-info descriptors in a file.
   
   :param file descriptor_file: file with descriptor content
-  :param bool validate: checks the validity of the descriptor's content if True, skips these checks otherwise
+  :param bool validate: checks the validity of the descriptor's content if
+    **True**, skips these checks otherwise
   
-  :returns: iterator for ExtraInfoDescriptor instances in the file
+  :returns: iterator for :class:`~stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor`
+    instances in the file
   
   :raises:
-    * ValueError if the contents is malformed and validate is True
-    * IOError if the file can't be read
+    * **ValueError** if the contents is malformed and validate is **True**
+    * **IOError** if the file can't be read
   """
   
   while True:
@@ -148,9 +151,10 @@ def _parse_timestamp_and_interval(keyword, content):
   :param str keyword: line's keyword
   :param str content: line content to be parsed
   
-  :returns: tuple of the form ``(timestamp (datetime), interval (int), remaining content (str))``
+  :returns: **tuple** of the form (timestamp (**datetime**), interval
+    (**int**), remaining content (**str**))
   
-  :raises: ValueError if the content is malformed
+  :raises: **ValueError** if the content is malformed
   """
   
   line = "%s %s" % (keyword, content)
@@ -179,7 +183,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var str fingerprint: **\*** identity key fingerprint
   :var datetime published: **\*** time in GMT when this descriptor was made
   :var str geoip_db_digest: sha1 of geoIP database file
-  :var dict transport: **\*** mapping of transport methods to their (address, port, args) tuple, these usually appeear on bridges in which case all of those are None
+  :var dict transport: **\*** mapping of transport methods to their (address,
+    port, args) tuple, these usually appear on bridges in which case all of
+    those are **None**
   
   **Bi-directional connection usage:**
   
@@ -220,18 +226,18 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var dict dir_v2_requests: mapping of locales to rounded count of requests
   :var dict dir_v3_requests: mapping of locales to rounded count of requests
   
-  :var dict dir_v2_responses: mapping of DirResponses to their rounded count
-  :var dict dir_v3_responses: mapping of DirResponses to their rounded count
+  :var dict dir_v2_responses: mapping of **DirResponses** to their rounded count
+  :var dict dir_v3_responses: mapping of **DirResponses** to their rounded count
   :var dict dir_v2_responses_unknown: mapping of unrecognized statuses to their count
   :var dict dir_v3_responses_unknown: mapping of unrecognized statuses to their count
   
-  :var dict dir_v2_direct_dl: mapping of DirStats to measurement over DirPort
-  :var dict dir_v3_direct_dl: mapping of DirStats to measurement over DirPort
+  :var dict dir_v2_direct_dl: mapping of **DirStats** to measurement over DirPort
+  :var dict dir_v3_direct_dl: mapping of **DirStats** to measurement over DirPort
   :var dict dir_v2_direct_dl_unknown: mapping of unrecognized stats to their measurement
   :var dict dir_v3_direct_dl_unknown: mapping of unrecognized stats to their measurement
   
-  :var dict dir_v2_tunneled_dl: mapping of DirStats to measurement over ORPort
-  :var dict dir_v3_tunneled_dl: mapping of DirStats to measurement over ORPort
+  :var dict dir_v2_tunneled_dl: mapping of **DirStats** to measurement over ORPort
+  :var dict dir_v3_tunneled_dl: mapping of **DirStats** to measurement over ORPort
   :var dict dir_v2_tunneled_dl_unknown: mapping of unrecognized stats to their measurement
   :var dict dir_v3_tunneled_dl_unknown: mapping of unrecognized stats to their measurement
   
@@ -267,7 +273,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var datetime geoip_start_time: replaced by bridge_stats_end (deprecated)
   :var dict geoip_client_origins: replaced by bridge_ips (deprecated)
   
-  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  **\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
   """
   
   def __init__(self, raw_contents, validate = True):
@@ -277,9 +284,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     either improve performance or be accepting of malformed data.
     
     :param str raw_contents: extra-info content provided by the relay
-    :param bool validate: checks the validity of the extra-info descriptor if True, skips these checks otherwise
+    :param bool validate: checks the validity of the extra-info descriptor if
+      **True**, skips these checks otherwise
     
-    :raises: ValueError if the contents is malformed and validate is True
+    :raises: **ValueError** if the contents is malformed and validate is True
     """
     
     super(ExtraInfoDescriptor, self).__init__(raw_contents)
@@ -391,7 +399,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     :param dict entries: descriptor contents to be applied
     :param bool validate: checks the validity of descriptor content if True
     
-    :raises: ValueError if an error occures in validation
+    :raises: **ValueError** if an error occurs in validation
     """
     
     for keyword, values in entries.items():
@@ -728,7 +736,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     Provides the hex encoded sha1 of our content. This value is part of the
     server descriptor entry for this relay.
     
-    :returns: str with the digest value for this server descriptor
+    :returns: **str** with the digest value for this server descriptor
     """
     
     raise NotImplementedError("Unsupported Operation: this should be implemented by the ExtraInfoDescriptor subclass")
@@ -745,12 +753,12 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
 class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Relay extra-info descriptor, constructed from data such as that provided by
-  "GETINFO extra-info/digest/*", cached descriptors, and metrics
+  "GETINFO extra-info/digest/\*", cached descriptors, and metrics
   (`specification <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_).
   
   :var str signature: **\*** signature for this extrainfo descriptor
   
-  **\*** attribute is either required when we're parsed with validation or has a default value, others are left as None if undefined
+  **\*** attribute is required when we're parsed with validation
   """
   
   def __init__(self, raw_contents, validate = True):
@@ -789,8 +797,8 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
 
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
-  Bridge extra-info descriptor (`specification <https://metrics.torproject.org/formats.html#bridgedesc>`_)
-  
+  Bridge extra-info descriptor (`bridge descriptor specification
+  <https://metrics.torproject.org/formats.html#bridgedesc>`_)
   """
   
   def __init__(self, raw_contents, validate = True):

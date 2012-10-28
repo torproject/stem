@@ -1,8 +1,15 @@
 """
-This provides handlers for specially formatted configuration files. Entries are
-expected to consist of simple key/value pairs, and anything after "#" is
-stripped as a comment. Excess whitespace is trimmed and empty lines are
-ignored. For instance:
+Handlers for text configuration files. Configurations are simple string to
+string mappings, with the configuration files using the following rules...
+
+* the key/value is separated by a space
+* anything after a "#" is ignored as a comment
+* excess whitespace is trimmed
+* empty lines are ignored
+* multi-line values can be defined by following the key with lines starting
+  with a '|'
+
+For instance...
 
 ::
 
@@ -11,49 +18,113 @@ ignored. For instance:
   user.password yabba1234 # here's an inline comment
   user.notes takes a fancy to pepperjack chese
   blankEntry.example
+  
+  msg.greeting
+  |Multi-line message exclaiming of the
+  |wonder and awe that is pepperjack!
 
-would be loaded as four entries, the last one's value being an empty string.
-Mulit-line entries can be defined my providing an entry followed by lines with
-a '|' prefix. For instance...
+... would be loaded as...
 
 ::
 
-  msg.greeting
-  |This is a multi-line message
-  |exclaiming about the wonders
-  |and awe that is pepperjack!
+  config = {
+    "user.name": "Galen",
+    "user.password": "yabba1234",
+    "user.notes": "takes a fancy to pepperjack chese",
+    "blankEntry.example": "",
+    "msg.greeting": "Multi-line message exclaiming of the\\nwonder and awe that is pepperjack!",
+  }
 
-The Config class acts as a central store for configuration values. Users of
-this store have their own dictionaries of config key/value pairs that provide
-three things...
+Configurations are loaded or saved via the :class:`~stem.util.conf.Config`
+class. The :class:`~stem.util.conf.Config` can be be used directly with its
+:func:`~stem.util.conf.Config.get` and :func:`~stem.util.conf.Config.set`
+methods, but usually modules will want a local dictionary with just the
+configurations that it cares about. This can be done a couple ways...
 
-  1. Default values for the configuration keys in case they're either undefined
-     or of the wrong type.
-  2. Types that we should attempt to cast the configuration values to.
-  3. An easily accessable container for getting the config values.
+* **Independent Dictionary**
 
-There are many ways of using the Config class but the most common ones are...
+To simply get a dictionary that has configurations use the
+:func:`~stem.util.conf.Config.synchronize` method. This takes as an argument
+a dictionary with the default values.
 
-* Call config_dict to get a dictionary that's always synced with a Config.
+For instance, lets say that you had a file at '/home/atagar/user_config'
+with...
 
-* Make a dictionary and call synchronize() to bring it into sync with the
-  Config. This does not keep it in sync as the Config changes. See the Config
-  class' pydocs for an example.
+::
 
-* Just call the Config's get() or get_value() methods directly.
+  username waddle_doo
+  permissions.ssh true
+  some.extra.stuff foobar
+
+... then run...
+
+::
+
+  >>> from stem.util.conf import get_config
+  >>> my_module_config = {
+  ...   "username": "default",
+  ...   "permissions.ssh": False,
+  ...   "permissions.sudo": False,
+  ... }
+  
+  >>> config = get_config("user_config")
+  >>> config.load("/home/atagar/user_config")
+  >>> config.synchronize(my_module_config)
+  
+  >>> print my_module_config
+  {'username': 'waddle_doo', 'permissions.sudo': False, 'permissions.ssh': True}
+
+The configuration file just contains string mappings, but the
+:class:`~stem.util.conf.Config` attempts to convert those values to be the same
+types as the dictionary's defaults. For more information on how type inferences
+work see the :func:`~stem.util.conf.Config.get` method.
+
+* **Linked Dictionary**
+
+Alternatively you can get a read-only dictionary that stays in sync with the
+:class:`~stem.util.conf.Config` by using the
+:func:`~stem.util.conf.config_dict` function...
+
+::
+
+  >>> # Make a dictionary that watches the 'user_config' configuration for changes.
+  
+  >>> from stem.util.conf import config_dict
+  >>> my_module_config = config_dict("user_config", {
+  ...   "username": "default",
+  ...   "permissions.ssh": False,
+  ...   "permissions.sudo": False,
+  ... })
+  >>> print my_module_config
+  {'username': 'default', 'permissions.sudo': False, 'permissions.ssh': False}
+  
+  >>> # Something (maybe another module) loads the config, causing the
+  >>> # my_module_config above to be updated.
+  
+  >>> from stem.util.conf import get_config
+  >>> config = get_config("user_config")
+  >>> config.load("/home/atagar/user_config")
+  
+  >>> print my_module_config
+  {'username': 'waddle_doo', 'permissions.sudo': False, 'permissions.ssh': True}
+  
+  >>> config.set('username', 'ness')
+  >>> print my_module_config
+  {'username': 'ness', 'permissions.sudo': False, 'permissions.ssh': True}
 
 **Module Overview:**
 
 ::
 
   config_dict - provides a dictionary that's kept synchronized with a config
-  get_config - Singleton for getting configurations
-  Config - Custom configuration.
+  get_config - singleton for getting configurations
+  
+  Config - Custom configuration
     |- load - reads a configuration file
     |- save - writes the current configuration to a file
     |- clear - empties our loaded configuration contents
     |- synchronize - replaces mappings in a dictionary with the config's values
-    |- add_listener - notifies the given listener when an update occures
+    |- add_listener - notifies the given listener when an update occurs
     |- clear_listeners - removes any attached listeners
     |- keys - provides keys in the loaded configuration
     |- set - sets the given key/value pair
@@ -72,7 +143,7 @@ import stem.util.log as log
 
 CONFS = {}  # mapping of identifier to singleton instances of configs
 
-class SyncListener(object):
+class _SyncListener(object):
   def __init__(self, config_dict, interceptor):
     self.config_dict = config_dict
     self.interceptor = interceptor
@@ -91,8 +162,9 @@ class SyncListener(object):
 def config_dict(handle, conf_mappings, handler = None):
   """
   Makes a dictionary that stays synchronized with a configuration. The process
-  for staying in sync is similar to the Config class' synchronize() method,
-  only changing the dictionary's values if we're able to cast to the same type.
+  for staying in sync is similar to the :class:`~stem.util.conf.Config` class'
+  :func:`~stem.util.conf.Config.synchronize` method, only changing the
+  dictionary's values if we're able to cast to the same type.
   
   If a handler is provided then this is called just prior to assigning new
   values to the config_dict. The handler function is expected to accept the
@@ -106,7 +178,7 @@ def config_dict(handle, conf_mappings, handler = None):
   """
   
   selected_config = get_config(handle)
-  selected_config.add_listener(SyncListener(conf_mappings, handler).update)
+  selected_config.add_listener(_SyncListener(conf_mappings, handler).update)
   return conf_mappings
 
 def get_config(handle):
@@ -170,17 +242,22 @@ class Config(object):
     
     # Replaces the contents of ssh_config with the values from the user's
     # config file if...
-    # - the key is present in the config file
-    # - we're able to convert the configuration file's value to the same type
+    #
+    # * the key is present in the config file
+    # * we're able to convert the configuration file's value to the same type
     #   as what's in the mapping (see the Config.get() method for how these
     #   type inferences work)
     #
-    # For instance in this case the login values are left alone (because they
-    # aren't in the user's config file), and the 'destination.port' is also
-    # left with the value of 22 because we can't turn "blarg" into an
-    # integer.
+    # For instance in this case...
+    #
+    # * the login values are left alone because they aren't in the user's
+    #   config file
+    #
+    # * the 'destination.port' is also left with the value of 22 because we
+    #   can't turn "blarg" into an integer
     #
     # The other values are replaced, so ssh_config now becomes...
+    #
     # {"login.user": "atagar",
     #  "login.password": "pepperjack_is_awesome!",
     #  "destination.ip": "1.2.3.4",
@@ -194,10 +271,6 @@ class Config(object):
   """
   
   def __init__(self):
-    """
-    Creates a new configuration instance.
-    """
-    
     self._path = None        # location we last loaded from or saved to
     self._contents = {}      # configuration key/value pairs
     self._raw_contents = []  # raw contents read from configuration file
@@ -214,11 +287,13 @@ class Config(object):
     Reads in the contents of the given path, adding its configuration values
     to our current contents.
     
-    :param str path: file path to be loaded
+    :param str path: file path to be loaded, this uses the last loaded path if
+      not provided
     
     :raises:
-      * IOError if we fail to read the file (it doesn't exist, insufficient permissions, etc)
-      * ValueError if we don't have a default path and none was provided
+      * **IOError** if we fail to read the file (it doesn't exist, insufficient
+        permissions, etc)
+      * **ValueError** if no path was provided and we've never been provided one
     """
     
     if path:
@@ -267,12 +342,12 @@ class Config(object):
   
   def save(self, path = None):
     """
-    Saves configuration contents to the config file or to the path
-    specified. If a path is provided then it replaces the configuration
-    location that we track.
+    Saves configuration contents to disk. If a path is provided then it
+    replaces the configuration location that we track.
     
     :param str path: location to be saved to
-    :raises: ValueError if we don't have a default path and none was provided
+    
+    :raises: **ValueError** if no path was provided and we've never been provided one
     """
     
     if path:
@@ -280,7 +355,7 @@ class Config(object):
     elif not self._path:
       raise ValueError("Unable to save configuration: no path provided")
     
-    # TODO: when we drop python 2.5 compatability we can simplify this
+    # TODO: when we drop python 2.5 compatibility we can simplify this
     with self._contents_lock:
       with open(self._path, 'w') as output_file:
         for entry_key in sorted(self.keys()):
@@ -311,10 +386,11 @@ class Config(object):
     * we can't convert our value to be the same type as the default_value
     
     For more information about how we convert types see our
-    :func:`stem.util.conf.Config.get` method.
+    :func:`~stem.util.conf.Config.get` method.
     
     :param dict conf_mappings: configuration key/value mappings to be revised
-    :param dict limits: mappings of limits on numeric values, expected to be of the form "configKey -> min" or "configKey -> (min, max)"
+    :param dict limits: mappings of limits on numeric values, expected to be of
+      the form "configKey -> min" or "configKey -> (min, max)"
     """
     
     if limits is None: limits = {}
@@ -338,11 +414,11 @@ class Config(object):
   
   def add_listener(self, listener, backfill = True):
     """
-    Registers the given function to be notified of configuration updates.
-    Listeners are expected to be functors which accept (config, key).
+    Registers the function to be notified of configuration updates. Listeners
+    are expected to be functors which accept (config, key).
     
     :param functor listener: function to be notified when our configuration is changed
-    :param bool backfill: calls the function with our current values if true
+    :param bool backfill: calls the function with our current values if **True**
     """
     
     with self._contents_lock:
@@ -354,7 +430,7 @@ class Config(object):
   
   def clear_listeners(self):
     """
-    Removes any attached listeners.
+    Removes all attached listeners.
     """
     
     self._listeners = []
@@ -363,7 +439,7 @@ class Config(object):
     """
     Provides all keys in the currently loaded configuration.
     
-    :returns: list if strings for the configuration keys we've loaded
+    :returns: **list** if strings for the configuration keys we've loaded
     """
     
     return self._contents.keys()
@@ -371,9 +447,11 @@ class Config(object):
   def unused_keys(self):
     """
     Provides the configuration keys that have never been provided to a caller
-    via the get, get_value, or synchronize methods.
+    via the :func:`~stem.util.conf.Config.get`,
+    :func:`~stem.util.conf.Config.get_value`, or
+    :func:`~stem.util.conf.Config.synchronize` methods.
     
-    :returns: set of configuration keys we've loaded but have never been requested
+    :returns: **set** of configuration keys we've loaded but have never been requested
     """
     
     return set(self.keys()).difference(self._requested_keys)
@@ -385,7 +463,8 @@ class Config(object):
     
     :param str key: key for the configuration mapping
     :param str,list value: value we're setting the mapping to
-    :param bool overwrite: replaces the previous value if true, otherwise the values are appended
+    :param bool overwrite: replaces the previous value if **True**, otherwise
+      the values are appended
     """
     
     with self._contents_lock:
@@ -483,9 +562,11 @@ class Config(object):
     
     :param str key: config setting to be fetched
     :param object default: value provided if no such key exists
-    :param bool multiple: provides back a list of all values if true, otherwise this returns the last loaded configuration value
+    :param bool multiple: provides back a list of all values if **True**,
+      otherwise this returns the last loaded configuration value
     
-    :returns: string or list of string configuration values associated with the given key, providing the default if no such key exists
+    :returns: **str** or **list** of string configuration values associated
+      with the given key, providing the default if no such key exists
     """
     
     with self._contents_lock:
@@ -506,11 +587,14 @@ class Config(object):
     Fetches the given key as a comma separated value.
     
     :param str key: config setting to be fetched, last if multiple exists
-    :param object default: value provided if no such key exists or doesn't match the count
-    :param int count: if set then the default is returned when the number of elements doesn't match this value
-    :param str sub_key: handle the configuration entry as a dictionary and use this key within it
+    :param object default: value provided if no such key exists or doesn't
+      match the count
+    :param int count: if set then the default is returned when the number of
+      elements doesn't match this value
+    :param str sub_key: handle the configuration entry as a dictionary and use
+      this key within it
     
-    :returns: list with the stripped values
+    :returns: **list** with the stripped values
     """
     
     if sub_key: conf_value = self.get(key, {}).get(sub_key)
@@ -539,13 +623,15 @@ class Config(object):
     values aren't integers or don't follow the given constraints.
     
     :param str key: config setting to be fetched, last if multiple exists
-    :param object default: value provided if no such key exists, doesn't match the count, values aren't all integers, or doesn't match the bounds
+    :param object default: value provided if no such key exists, doesn't match
+      the count, values aren't all integers, or doesn't match the bounds
     :param int count: checks that the number of values matches this if set
     :param int min_value: checks that all values are over this if set
     :param int max_value: checks that all values are under this if set
-    :param str sub_key: handle the configuration entry as a dictionary and use this key within it
+    :param str sub_key: handle the configuration entry as a dictionary and use
+      this key within it
     
-    :returns: list with the stripped values
+    :returns: **list** with the stripped values
     """
     
     conf_comp = self.get_str_csv(key, default, count, sub_key)

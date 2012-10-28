@@ -4,10 +4,11 @@ easily parsed and compared, for instance...
 
 ::
 
-  >>> my_version = stem.version.get_system_tor_version()
+  >>> from stem.version import get_system_tor_version, Requirement
+  >>> my_version = get_system_tor_version()
   >>> print my_version
   0.2.1.30
-  >>> my_version.meets_requirements(stem.version.Requirement.CONTROL_SOCKET)
+  >>> my_version.meets_requirements(Requirement.CONTROL_SOCKET)
   True
 
 **Module Overview:**
@@ -16,7 +17,7 @@ easily parsed and compared, for instance...
 
   get_system_tor_version - gets the version of our system's tor installation
   
-  Version - Tor versioning information.
+  Version - Tor versioning information
     |- meets_requirements - checks if this version meets the given requirements
     |- __str__ - string representation
     +- __cmp__ - compares with another Version
@@ -26,7 +27,7 @@ easily parsed and compared, for instance...
     |- less_than    - adds rule that matches if we're less than a version
     +- in_range     - adds rule that matches if we're within a given version range
   
-  Requirement - Enumerations for the version requirements of features.
+  Requirement - Enumerations for the version requirements of features
     |- AUTH_SAFECOOKIE      - 'SAFECOOKIE' authentication method
     |- GETINFO_CONFIG_TEXT  - 'GETINFO config-text' query
     |- TORRC_CONTROL_SOCKET - 'ControlSocket <path>' config option
@@ -48,9 +49,9 @@ def get_system_tor_version(tor_cmd = "tor"):
   
   :param str tor_cmd: command used to run tor
   
-  :returns: :class:`stem.version.Version` provided by the tor command
+  :returns: :class:`~stem.version.Version` provided by the tor command
   
-  :raises: IOError if unable to query or parse the version
+  :raises: **IOError** if unable to query or parse the version
   """
   
   if not tor_cmd in VERSION_CACHE:
@@ -90,14 +91,15 @@ class Version(object):
   :var int major: major version
   :var int minor: minor version
   :var int micro: micro version
-  :var int patch: optional patch level (None if undefined)
-  :var str status: optional status tag without the preceding dash such as 'alpha', 'beta-dev', etc (None if undefined)
-  :var str extra: optional extra information without the proceeding space nor its parentheses such as 'git-8be6058d8f31e578' (None if undefined)
-  :var str git_commit: optional git commit id (None if it wasn't provided)
+  :var int patch: patch level (**None** if undefined)
+  :var str status: status tag such as 'alpha' or 'beta-dev' (**None** if undefined)
+  :var str extra: extra information without its parentheses such as
+    'git-8be6058d8f31e578' (**None** if undefined)
+  :var str git_commit: git commit id (**None** if it wasn't provided)
   
   :param str version_str: version to be parsed
   
-  :raises: ValueError if input isn't a valid tor version
+  :raises: **ValueError** if input isn't a valid tor version
   """
   
   def __init__(self, version_str):
@@ -129,12 +131,11 @@ class Version(object):
   
   def meets_requirements(self, requirements):
     """
-    Checks if this version meets the requirements for a given feature.
+    Checks if this version meets the requirements for a given feature. We can
+    be compared to either a :class:`~stem.version.Version` or
+    :class:`~stem.version.VersionRequirements`.
     
-    Requirements can be either a :class:`stem.version.Version` or
-    :class:`stem.version.VersionRequirements`.
-    
-    :param requirements: requrirements to be checked for
+    :param requirements: requirements to be checked for
     """
     
     if isinstance(requirements, Version):
@@ -147,15 +148,14 @@ class Version(object):
   
   def __str__(self):
     """
-    Provides the string used to construct the Version.
+    Provides the string used to construct the version.
     """
     
     return self.version_str
   
   def __cmp__(self, other):
     """
-    Simple comparison of versions. An undefined patch level is treated as zero
-    and status tags are not included in comparisions (as per the version spec).
+    Compares version ordering according to the spec.
     """
     
     if not isinstance(other, Version):
@@ -182,23 +182,21 @@ class Version(object):
 
 class VersionRequirements(object):
   """
-  Series of version constraints that can be compared to. For instance, it
+  Series of version constraints that can be compared to. For instance, this
   allows for comparisons like 'if I'm greater than version X in the 0.2.2
   series, or greater than version Y in the 0.2.3 series'.
   
   This is a logical 'or' of the series of rules.
   """
   
-  def __init__(self, rule = None):
+  def __init__(self):
     self.rules = []
-    
-    if rule: self.greater_than(rule)
   
   def greater_than(self, version, inclusive = True):
     """
     Adds a constraint that we're greater than the given version.
     
-    :param stem.version.Version verison: version we're checking against
+    :param stem.version.Version version: version we're checking against
     :param bool inclusive: if comparison is inclusive or not
     """
     
@@ -211,7 +209,7 @@ class VersionRequirements(object):
     """
     Adds a constraint that we're less than the given version.
     
-    :param stem.version.Version verison: version we're checking against
+    :param stem.version.Version version: version we're checking against
     :param bool inclusive: if comparison is inclusive or not
     """
     
@@ -224,8 +222,8 @@ class VersionRequirements(object):
     """
     Adds constraint that we're within the range from one version to another.
     
-    :param stem.version.Version from_verison: beginning of the comparison range
-    :param stem.version.Version to_verison: end of the comparison range
+    :param stem.version.Version from_version: beginning of the comparison range
+    :param stem.version.Version to_version: end of the comparison range
     :param bool from_inclusive: if comparison is inclusive with the starting version
     :param bool to_inclusive: if comparison is inclusive with the ending version
     """

@@ -1,20 +1,22 @@
 """
 Basic enumeration, providing ordered types for collections. These can be
-constructed as simple type listings, ie:
+constructed as simple type listings...
 
 ::
 
-  >>> insects = Enum("ANT", "WASP", "LADYBUG", "FIREFLY")
+  >>> from stem.util import enum
+  >>> insects = enum.Enum("ANT", "WASP", "LADYBUG", "FIREFLY")
   >>> insects.ANT
   'Ant'
   >>> tuple(insects)
   ('Ant', 'Wasp', 'Ladybug', 'Firefly')
 
-with overwritten string counterparts:
+... or with overwritten string counterparts...
 
 ::
 
-  >>> pets = Enum(("DOG", "Skippy"), "CAT", ("FISH", "Nemo"))
+  >>> from stem.util import enum
+  >>> pets = enum.Enum(("DOG", "Skippy"), "CAT", ("FISH", "Nemo"))
   >>> pets.DOG
   'Skippy'
   >>> pets.CAT
@@ -24,8 +26,9 @@ with overwritten string counterparts:
 
 ::
 
-  UppercaseEnum - Provides an enum instance with capitalized values.
-  Enum - Provides a basic, ordered  enumeration.
+  UppercaseEnum - Provides an enum instance with capitalized values
+  
+  Enum - Provides a basic, ordered  enumeration
     |- keys - string representation of our enum keys
     |- index_of - indice of an enum value
     |- next - provides the enum after a given enum value
@@ -38,19 +41,20 @@ import stem.util.str_tools
 
 def UppercaseEnum(*args):
   """
-  Provides an Enum instance where the values are identical to the keys. Since
-  the keys are uppercase by convention this means the values are too. For
-  instance...
+  Provides an :class:`~stem.util.enum.Enum` instance where the values are
+  identical to the keys. Since the keys are uppercase by convention this means
+  the values are too. For instance...
   
   ::
   
-    >>> runlevels = UppercaseEnum("DEBUG", "INFO", "NOTICE", "WARN", "ERROR")
+    >>> from stem.util import enum
+    >>> runlevels = enum.UppercaseEnum("DEBUG", "INFO", "NOTICE", "WARN", "ERROR")
     >>> runlevels.DEBUG
     'DEBUG'
   
   :param list args: enum keys to initialize with
   
-  :returns: :class:`stem.util.Enum` instance with the given keys
+  :returns: :class:`~stem.util.enum.Enum` instance with the given keys
   """
   
   return Enum(*[(v, v) for v in args])
@@ -82,7 +86,7 @@ class Enum(object):
     """
     Provides an ordered listing of the enumeration keys in this set.
     
-    :returns: tuple with our enum keys
+    :returns: **tuple** with our enum keys
     """
     
     return self._keys
@@ -93,9 +97,9 @@ class Enum(object):
     
     :param str value: entry to be looked up
     
-    :returns: integer index of the given entry
+    :returns: **int** index of the given entry
     
-    :raises: ValueError if no such element exists
+    :raises: **ValueError** if no such element exists
     """
     
     return self._values.index(value)
@@ -108,7 +112,7 @@ class Enum(object):
     
     :returns: enum value following the given entry
     
-    :raises: ValueError if no such element exists
+    :raises: **ValueError** if no such element exists
     """
     
     if not value in self._values:
@@ -127,7 +131,7 @@ class Enum(object):
     
     :returns: enum value proceeding the given entry
     
-    :raises: ValueError if no such element exists
+    :raises: **ValueError** if no such element exists
     """
     
     if not value in self._values:
@@ -144,9 +148,9 @@ class Enum(object):
     
     :param str item: key to be looked up
     
-    :returns: str with the value for the given key
+    :returns: **str** with the value for the given key
     
-    :raises: ValueError if the key doesn't exist
+    :raises: **ValueError** if the key doesn't exist
     """
     
     if item in self.__dict__:

@@ -60,8 +60,8 @@ def parse_file(path, descriptor_file):
   :returns: iterator for :class:`stem.descriptor.Descriptor` instances in the file
   
   :raises:
-    * TypeError if we can't match the contents of the file to a descriptor type
-    * IOError if unable to read from the descriptor_file
+    * **TypeError** if we can't match the contents of the file to a descriptor type
+    * **IOError** if unable to read from the descriptor_file
   """
   
   import stem.descriptor.server_descriptor
@@ -74,7 +74,7 @@ def parse_file(path, descriptor_file):
   # by an annotation on their first line...
   # https://trac.torproject.org/5651
   
-  # Cached descriptor handling. These contain mulitple descriptors per file.
+  # Cached descriptor handling. These contain multiple descriptors per file.
   
   filename, file_parser = os.path.basename(path), None
   
@@ -149,7 +149,7 @@ class Descriptor(object):
     """
     Provides the absolute path that we loaded this descriptor from.
     
-    :returns: str with the absolute path of the descriptor source
+    :returns: **str** with the absolute path of the descriptor source
     """
     
     return self._path
@@ -160,7 +160,7 @@ class Descriptor(object):
     not know how to process. This is most common due to new descriptor fields
     that this library does not yet know how to process. Patches welcome!
     
-    :returns: list of lines of unrecognized content
+    :returns: **list** of lines of unrecognized content
     """
     
     raise NotImplementedError
@@ -179,11 +179,12 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   :param str,list keywords: keyword(s) we want to read until
   :param file descriptor_file: file with the descriptor content
   :param bool inclusive: includes the line with the keyword if True
-  :param bool ignore_first: doesn't check if the first line read has one of the given keywords
+  :param bool ignore_first: doesn't check if the first line read has one of the
+    given keywords
   :param bool skip: skips buffering content, returning None
   :param int end_position: end if we reach this point in the file
   
-  :returns: list with the lines until we find one of the keywords
+  :returns: **list** with the lines until we find one of the keywords
   """
   
   content = None if skip else []
@@ -231,9 +232,10 @@ def _get_pseudo_pgp_block(remaining_contents):
   
   :param list remaining_contents: lines to be checked for a public key block
   
-  :returns: str with the armor wrapped contents or None if it doesn't exist
+  :returns: **str** with the armor wrapped contents or None if it doesn't exist
   
-  :raises: ValueError if the contents starts with a key block but it's malformed (for instance, if it lacks an ending line)
+  :raises: **ValueError** if the contents starts with a key block but it's
+    malformed (for instance, if it lacks an ending line)
   """
   
   if not remaining_contents:
@@ -266,18 +268,20 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   followed by an optional value. Lines can also be followed by a signature
   block.
   
-  To get a sublisting with just certain keywords use extra_keywords. This can
+  To get a sub-listing with just certain keywords use extra_keywords. This can
   be useful if we care about their relative ordering with respect to each
   other. For instance, we care about the ordering of 'accept' and 'reject'
   entries because this influences the resulting exit policy, but for everything
   else in server descriptors the order does not matter.
   
   :param str raw_contents: descriptor content provided by the relay
-  :param bool validate: checks the validity of the descriptor's content if True, skips these checks otherwise
-  :param list extra_keywords: entity keywords to put into a separate listing with ordering intact
+  :param bool validate: checks the validity of the descriptor's content if
+    True, skips these checks otherwise
+  :param list extra_keywords: entity keywords to put into a separate listing
+    with ordering intact
   
   :returns:
-    collections.OrderedDict with the 'keyword => (value, pgp key) entries'
+    **collections.OrderedDict** with the 'keyword => (value, pgp key) entries'
     mappings. If a extra_keywords was provided then this instead provides a two
     value tuple, the second being a list of those entries.
   """
@@ -289,7 +293,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   while remaining_lines:
     line = remaining_lines.pop(0)
     
-    # V2 network status documents explicitely can contain blank lines...
+    # V2 network status documents explicitly can contain blank lines...
     #
     #   "Implementations MAY insert blank lines for clarity between sections;
     #   these blank lines are ignored."
@@ -299,7 +303,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     
     if not line: continue
     
-    # Some lines have an 'opt ' for backward compatability. They should be
+    # Some lines have an 'opt ' for backward compatibility. They should be
     # ignored. This prefix is being removed in...
     # https://trac.torproject.org/projects/tor/ticket/5124
     

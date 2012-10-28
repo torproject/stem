@@ -85,9 +85,9 @@ def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
   :param int byte_count: number of bytes to be converted
   :param int decimal: number of decimal digits to be included
   :param bool is_long: expands units label
-  :param bool is_bytes: provides units in bytes if true, bits otherwise
+  :param bool is_bytes: provides units in bytes if **True**, bits otherwise
   
-  :returns: str with human readable representation of the size
+  :returns: **str** with human readable representation of the size
   """
   
   if is_bytes: return _get_label(SIZE_UNITS_BYTES, byte_count, decimal, is_long)
@@ -118,7 +118,7 @@ def get_time_label(seconds, decimal = 0, is_long = False):
   :param int decimal: number of decimal digits to be included
   :param bool is_long: expands units label
   
-  :returns: str with human readable representation of the time
+  :returns: **str** with human readable representation of the time
   """
   
   return _get_label(TIME_UNITS, seconds, decimal, is_long)
@@ -140,7 +140,7 @@ def get_time_labels(seconds, is_long = False):
   :param int seconds: number of seconds to be converted
   :param bool is_long: expands units label
   
-  :returns: list of strings with human readable representations of the time
+  :returns: **list** of strings with human readable representations of the time
   """
   
   time_labels = []
@@ -167,9 +167,9 @@ def get_short_time_label(seconds):
     
   :param int seconds: number of seconds to be converted
   
-  :returns: str with the short representation for the time
+  :returns: **str** with the short representation for the time
   
-  :raises: ValueError if the input is negative
+  :raises: **ValueError** if the input is negative
   """
   
   if seconds < 0:
@@ -207,9 +207,9 @@ def parse_short_time_label(label):
     
   :param str label: time entry to be parsed
   
-  :returns: int with the number of seconds represented by the label
+  :returns: **int** with the number of seconds represented by the label
   
-  :raises: ValueError if input is malformed
+  :raises: **ValueError** if input is malformed
   """
   
   days, hours, minutes, seconds = '0', '0', '0', '0'
@@ -240,10 +240,11 @@ def _get_label(units, count, decimal, is_long):
   Provides label corresponding to units of the highest significance in the
   provided set. This rounds down (ie, integer truncation after visible units).
   
-  :param tuple units: type of units to be used for conversion, containing (count_per_unit, short_label, long_label)
+  :param tuple units: type of units to be used for conversion, containing
+    (count_per_unit, short_label, long_label)
   :param int count: number of base units being converted
   :param int decimal: decimal precision of label
-  :param bool is_long: uses the long label if true, short label otherwise
+  :param bool is_long: uses the long label if **True&&, short label otherwise
   """
   
   # formatted string for the requested number of digits

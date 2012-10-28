@@ -10,8 +10,8 @@ calling :func:`test.mocking.revert_mocking`.
   revert_mocking - reverts any changes made by the mock function
   get_real_function - provides the non-mocked version of a function
   get_all_combinations - provides all combinations of attributes
-  support_with - makes object be compatable for use via the 'with' keyword
-  get_object - get an abitrary mock object of any class
+  support_with - makes object be compatible for use via the 'with' keyword
+  get_object - get an arbitrary mock object of any class
   
   Mocking Functions
     no_op           - does nothing
@@ -252,8 +252,8 @@ def mock(target, mock_call, target_module=None):
   
   The target_module only needs to be set if the results of
   'inspect.getmodule(target)' doesn't match the module that we want to mock
-  (for instance, the 'os' module provies the platform module that it wraps like
-  'postix', which won't work).
+  (for instance, the 'os' module provides the platform module that it wraps
+  like 'postix', which won't work).
   
   :param function target: function to be mocked
   :param functor mock_call: mocking to replace the function with
@@ -282,7 +282,7 @@ def mock(target, mock_call, target_module=None):
 
 def mock_method(target_class, method_name, mock_call):
   """
-  Mocks the given class method in a similar fasion as what mock() does for
+  Mocks the given class method in a similar fashion as what mock() does for
   functions.
   
   :param class target_class: class with the method we want to mock
@@ -426,10 +426,10 @@ def get_message(content, reformat = True):
   the following changes unless 'reformat' is false...
   
   * ensures the content ends with a newline
-  * newlines are replaced with a carrage return and newline pair
+  * newlines are replaced with a carriage return and newline pair
   
   :param str content: base content for the controller message
-  :param str reformat: modifies content to be more accomidateing to being parsed
+  :param str reformat: modifies content to be more accommodating to being parsed
   
   :returns: stem.socket.ControlMessage instance
   """

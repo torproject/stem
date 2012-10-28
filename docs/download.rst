@@ -6,12 +6,14 @@ Download
    :header-rows: 0
 
    * - .. image:: /_static/section/git.png
+          :target: https://gitweb.torproject.org/
+
      - .. image:: /_static/label/git.png
 
        For those wanting to live on the bleeding edge or contribute to stem,
        its git repository can be fetched with...
 
-       **git clone git://git.torproject.org/stem.git** (`browse <https://gitweb.torproject.org/stem.git>`_)
+       `git clone git://git.torproject.org/stem.git <https://gitweb.torproject.org/stem.git>`_
 
    * - .. image:: /_static/section/debian.png
      - .. image:: /_static/label/debian.png

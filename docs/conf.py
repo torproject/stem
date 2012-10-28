@@ -13,15 +13,6 @@
 
 import sys, os
 
-# Our make file calls sphinx-apidoc, but read-the-docs uses our config instead
-# (so it skips that step). Calling apidoc here instead if we're being built
-# there.
-
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-
-if on_rtd:
-  os.system("sphinx-apidoc -f -o . ../stem")
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.

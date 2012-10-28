@@ -39,19 +39,23 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
   while. Usually this is done in 50 seconds or so, but occasionally calls seem
   to get stuck, taking well over the default timeout.
   
-  Note: Timeout argument does not work on Windows (`ticket
+  Note: The timeout argument does not work on Windows (`ticket
   <https://trac.torproject.org/5783>`_)
   
   :param str tor_cmd: command for starting tor
   :param list args: additional arguments for tor
   :param str torrc_path: location of the torrc for us to use
-  :param int completion_percent: percent of bootstrap completion at which this'll return
-  :param functor init_msg_handler: optional functor that will be provided with tor's initialization stdout as we get it
-  :param int timeout: time after which the attempt to start tor is aborted, no timeouts are applied if None
+  :param int completion_percent: percent of bootstrap completion at which
+    this'll return
+  :param functor init_msg_handler: optional functor that will be provided with
+    tor's initialization stdout as we get it
+  :param int timeout: time after which the attempt to start tor is aborted, no
+    timeouts are applied if **None**
   
-  :returns: subprocess.Popen instance for the tor subprocess
+  :returns: **subprocess.Popen** instance for the tor subprocess
   
-  :raises: OSError if we either fail to create the tor process or reached a timeout without success
+  :raises: **OSError** if we either fail to create the tor process or reached a
+    timeout without success
   """
   
   if stem.util.system.is_windows():
@@ -138,19 +142,23 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
 
 def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
   """
-  Initializes a tor process, like :func:`stem.process.launch_tor`, but with a
+  Initializes a tor process, like :func:`~stem.process.launch_tor`, but with a
   customized configuration. This writes a temporary torrc to disk, launches
   tor, then deletes the torrc.
   
-  :param dict config: configuration options, such as ``{"ControlPort": "9051"}``
+  :param dict config: configuration options, such as '{"ControlPort": "9051"}'
   :param str tor_cmd: command for starting tor
-  :param int completion_percent: percent of bootstrap completion at which this'll return
-  :param functor init_msg_handler: optional functor that will be provided with tor's initialization stdout as we get it
-  :param int timeout: time after which the attempt to start tor is aborted, no timeouts are applied if None
+  :param int completion_percent: percent of bootstrap completion at which
+    this'll return
+  :param functor init_msg_handler: optional functor that will be provided with
+    tor's initialization stdout as we get it
+  :param int timeout: time after which the attempt to start tor is aborted, no
+    timeouts are applied if **None**
   
-  :returns: subprocess.Popen instance for the tor subprocess
+  :returns: **subprocess.Popen** instance for the tor subprocess
   
-  :raises: OSError if we either fail to create the tor process or reached a timeout without success
+  :raises: **OSError** if we either fail to create the tor process or reached a
+    timeout without success
   """
   
   torrc_path = tempfile.mkstemp(prefix = "torrc-", text = True)[1]

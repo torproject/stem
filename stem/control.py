@@ -1,15 +1,15 @@
 """
 Classes for interacting with the tor control socket.
 
-Controllers are a wrapper around a ControlSocket, retaining many of its methods
-(connect, close, is_alive, etc) in addition to providing its own for
-interacting at a higher level.
+Controllers are a wrapper around a :class:`~stem.socket.ControlSocket`,
+retaining many of its methods (connect, close, is_alive, etc) in addition to
+providing its own for interacting at a higher level.
 
 **Module Overview:**
 
 ::
 
-  Controller - General controller class intended for direct use.
+  Controller - General controller class intended for direct use
     | |- from_port - Provides a Controller based on a port connection.
     | +- from_socket_file - Provides a Controller based on a socket file connection.
     |
@@ -37,7 +37,7 @@ interacting at a higher level.
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
   
-  BaseController - Base controller class asynchronous message handling.
+  BaseController - Base controller class asynchronous message handling
     |- msg - communicates with the tor process
     |- is_alive - reports if our connection to tor is open or closed
     |- connect - connects or reconnects to tor
@@ -46,6 +46,11 @@ interacting at a higher level.
     |- add_status_listener - notifies a callback of changes in our status
     |- remove_status_listener - prevents further notification of status changes
     +- __enter__ / __exit__ - manages socket connection
+  
+  State - enumeration for states that a controller can have
+    |- INIT - new control connection
+    |- RESET - received a reset/sighup signal
+    +- CLOSED - control connection closed
 """
 
 from __future__ import with_statement
@@ -64,9 +69,6 @@ import stem.util.connection
 import stem.util.log as log
 
 # state changes a control socket can have
-# INIT   - new control connection
-# RESET  - received a reset/sighup signal
-# CLOSED - control connection closed
 
 State = stem.util.enum.Enum("INIT", "RESET", "CLOSED")
 
@@ -113,11 +115,12 @@ class BaseController(object):
   """
   Controller for the tor process. This is a minimal base class for other
   controllers, providing basic process communication and event listing. Don't
-  use this directly - subclasses like the Controller provide higher level
-  functionality.
+  use this directly - subclasses like the :class:`~stem.control.Controller`
+  provide higher level functionality.
   
-  Do not continue to directly interacte with the ControlSocket we're
-  constructed from - use our wrapper methods instead.
+  It's highly suggested that you don't interact directly with the
+  :class:`~stem.socket.ControlSocket` that we're constructed from - use our
+  wrapper methods instead.
   """
   
   def __init__(self, control_socket):
@@ -156,11 +159,13 @@ class BaseController(object):
     
     :param str message: message to be formatted and sent to tor
     
-    :returns: :class:`stem.response.ControlMessage` with the response
+    :returns: :class:`~stem.response.ControlMessage` with the response
     
     :raises:
-      * :class:`stem.socket.ProtocolError` the content from the socket is malformed
-      * :class:`stem.socket.SocketError` if a problem arises in using the socket
+      * :class:`stem.socket.ProtocolError` the content from the socket is
+        malformed
+      * :class:`stem.socket.SocketError` if a problem arises in using the
+        socket
       * :class:`stem.socket.SocketClosed` if the socket is shut down
     """
     
@@ -177,8 +182,8 @@ class BaseController(object):
       #   message.
       #
       # - This is a leftover response for a msg() call. We can't tell who an
-      #   exception was airmarked for, so we only know that this was the case
-      #   if it's a ControlMessage. This should not be possable and indicates
+      #   exception was earmarked for, so we only know that this was the case
+      #   if it's a ControlMessage. This should not be possible and indicates
       #   a stem bug. This deserves a NOTICE level log message since it
       #   indicates that one of our callers didn't get their reply.
       
@@ -222,18 +227,18 @@ class BaseController(object):
   
   def is_alive(self):
     """
-    Checks if our socket is currently connected. This is a passthrough for our
-    socket's is_alive() method.
+    Checks if our socket is currently connected. This is a pass-through for our
+    socket's :func:`~stem.socket.ControlSocket.is_alive` method.
     
-    :returns: bool that's True if we're shut down and False otherwise
+    :returns: **bool** that's **True** if we're shut down and **False** otherwise
     """
     
     return self._socket.is_alive()
   
   def connect(self):
     """
-    Reconnects our control socket. This is a passthrough for our socket's
-    connect() method.
+    Reconnects our control socket. This is a pass-through for our socket's
+    :func:`~stem.socket.ControlSocket.connect` method.
     
     :raises: :class:`stem.socket.SocketError` if unable to make a socket
     """
@@ -242,8 +247,8 @@ class BaseController(object):
   
   def close(self):
     """
-    Closes our socket connection. This is a passthrough for our socket's
-    :func:`stem.socket.ControlSocket.close` method.
+    Closes our socket connection. This is a pass-through for our socket's
+    :func:`~stem.socket.ControlSocket.close` method.
     """
     
     self._socket.close()
@@ -251,9 +256,9 @@ class BaseController(object):
   def get_socket(self):
     """
     Provides the socket used to speak with the tor process. Communicating with
-    the socket directly isn't advised since it may confuse the controller.
+    the socket directly isn't advised since it may confuse this controller.
     
-    :returns: :class:`stem.socket.ControlSocket` we're communicating with
+    :returns: :class:`~stem.socket.ControlSocket` we're communicating with
     """
     
     return self._socket
@@ -269,18 +274,19 @@ class BaseController(object):
     
     The state is a value from stem.socket.State, functions **must** allow for
     new values in this field. The timestamp is a float for the unix time when
-    the change occured.
+    the change occurred.
     
-    This class only provides ``State.INIT`` and ``State.CLOSED`` notifications.
+    This class only provides **State.INIT** and **State.CLOSED** notifications.
     Subclasses may provide others.
     
-    If spawn is True then the callback is notified via a new daemon thread. If
-    false then the notice is under our locks, within the thread where the
-    change occured. In general this isn't advised, especially if your callback
-    could block for a while.
+    If spawn is **True** then the callback is notified via a new daemon thread.
+    If **False** then the notice is under our locks, within the thread where
+    the change occurred. In general this isn't advised, especially if your
+    callback could block for a while.
     
     :param function callback: function to be notified when our state changes
-    :param bool spawn: calls function via a new thread if True, otherwise it's part of the connect/close method call
+    :param bool spawn: calls function via a new thread if **True**, otherwise
+      it's part of the connect/close method call
     """
     
     with self._status_listeners_lock:
@@ -292,7 +298,8 @@ class BaseController(object):
     
     :param function callback: function to be removed from our listeners
     
-    :returns: bool that's True if we removed one or more occurances of the callback, False otherwise
+    :returns: **bool** that's **True** if we removed one or more occurrences of
+      the callback, **False** otherwise
     """
     
     with self._status_listeners_lock:
@@ -317,7 +324,8 @@ class BaseController(object):
     Callback to be overwritten by subclasses for event listening. This is
     notified whenever we receive an event from the control socket.
     
-    :param stem.response.ControlMessage event_message: message received from the control socket
+    :param stem.response.ControlMessage event_message: message received from
+      the control socket
     """
     
     pass
@@ -345,26 +353,27 @@ class BaseController(object):
   
   def _notify_status_listeners(self, state, expect_alive = None):
     """
-    Informs our status listeners that a state change occured.
+    Informs our status listeners that a state change occurred.
     
     States imply that our socket is either alive or not, which may not hold
-    true when multiple events occure in quick succession. For instance, a
-    sighup could cause two events (``State.RESET`` for the sighup and
-    ``State.CLOSE`` if it causes tor to crash). However, there's no guarentee
-    of the order in which they occure, and it would be bad if listeners got the
-    ``State.RESET`` last, implying that we were alive.
+    true when multiple events occur in quick succession. For instance, a
+    sighup could cause two events (**State.RESET** for the sighup and
+    **State.CLOSE** if it causes tor to crash). However, there's no guarantee
+    of the order in which they occur, and it would be bad if listeners got the
+    **State.RESET** last, implying that we were alive.
     
     If set, the expect_alive flag will discard our event if it conflicts with
-    our current :func:`stem.control.BaseController.is_alive` state.
+    our current :func:`~stem.control.BaseController.is_alive` state.
     
-    :param stem.socket.State state: state change that has occured
-    :param bool expect_alive: discard event if it conflicts with our :func:`stem.control.BaseController.is_alive` state
+    :param stem.socket.State state: state change that has occurred
+    :param bool expect_alive: discard event if it conflicts with our
+      :func:`~stem.control.BaseController.is_alive` state
     """
     
     # Any changes to our is_alive() state happen under the send lock, so we
     # need to have it to ensure it doesn't change beneath us.
     
-    # TODO: when we drop python 2.5 compatability we can simplify this
+    # TODO: when we drop python 2.5 compatibility we can simplify this
     with self._socket._get_send_lock():
       with self._status_listeners_lock:
         change_timestamp = time.time()
@@ -389,8 +398,8 @@ class BaseController(object):
     them if we're restarted.
     """
     
-    # In theory concurrent calls could result in multple start() calls on a
-    # single thread, which would cause an unexpeceted exception. Best be safe.
+    # In theory concurrent calls could result in multiple start() calls on a
+    # single thread, which would cause an unexpected exception. Best be safe.
     
     with self._socket._get_send_lock():
       if not self._reader_thread or not self._reader_thread.isAlive():
@@ -457,12 +466,12 @@ class Controller(BaseController):
   
   def from_port(control_addr = "127.0.0.1", control_port = 9051):
     """
-    Constructs a ControlPort based Controller.
+    Constructs a :class:`~stem.socket.ControlPort` based Controller.
     
     :param str control_addr: ip address of the controller
     :param int control_port: port number of the controller
     
-    :returns: :class:`stem.control.Controller` attached to the given port
+    :returns: :class:`~stem.control.Controller` attached to the given port
     
     :raises: :class:`stem.socket.SocketError` if we're unable to establish a connection
     """
@@ -477,11 +486,11 @@ class Controller(BaseController):
   
   def from_socket_file(socket_path = "/var/run/tor/control"):
     """
-    Constructs a ControlSocketFile based Controller.
+    Constructs a :class:`~stem.socket.ControlSocketFile` based Controller.
     
     :param str socket_path: path where the control socket is located
     
-    :returns: :class:`stem.control.Controller` attached to the given socket file
+    :returns: :class:`~stem.control.Controller` attached to the given socket file
     
     :raises: :class:`stem.socket.SocketError` if we're unable to establish a connection
     """
@@ -498,7 +507,7 @@ class Controller(BaseController):
     self._is_caching_enabled = enable_caching
     self._request_cache = {}
     
-    # number of sequental 'GETINFO ip-to-country/*' lookups that have failed
+    # number of sequential 'GETINFO ip-to-country/*' lookups that have failed
     self._geoip_failure_count = 0
     self.enabled_features = []
   
@@ -516,7 +525,7 @@ class Controller(BaseController):
   
   def is_caching_enabled(self):
     """
-    True if caching has been enabled, False otherwise.
+    **True** if caching has been enabled, **False** otherwise.
     
     :returns: bool to indicate if caching is enabled
     """
@@ -525,14 +534,15 @@ class Controller(BaseController):
   
   def is_geoip_unavailable(self):
     """
-    Provides True if we've concluded hat our geoip database is unavailable,
-    False otherwise. This is determined by having our 'GETINFO ip-to-country/*'
-    lookups fail so this will default to False if we aren't making those
-    queries.
+    Provides **True** if we've concluded hat our geoip database is unavailable,
+    **False** otherwise. This is determined by having our 'GETINFO
+    ip-to-country/\*' lookups fail so this will default to **False** if we
+    aren't making those queries.
     
     Geoip failures will be untracked if caching is disabled.
     
-    :returns: bool to indicate if we've concluded our geoip database to be unavailable or not
+    :returns: **bool** to indicate if we've concluded our geoip database to be
+      unavailable or not
     """
     
     return self._geoip_failure_count >= GEOIP_FAILURE_THRESHOLD
@@ -558,13 +568,15 @@ class Controller(BaseController):
     :returns:
       Response depends upon how we were called as follows...
       
-      * str with the response if our param was a str
-      * dict with the param => response mapping if our param was a list
+      * **str** with the response if our param was a **str**
+      * **dict** with the 'param => response' mapping if our param was a **list**
       * default if one was provided and our call failed
     
     :raises:
-      * :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
-      * :class:`stem.socket.InvalidArguments` if the 'param' requested was invalid
+      * :class:`stem.socket.ControllerError` if the call fails and we weren't
+        provided a default response
+      * :class:`stem.socket.InvalidArguments` if the 'param' requested was
+        invalid
     """
     
     start_time = time.time()
@@ -609,7 +621,7 @@ class Controller(BaseController):
           if key in CACHEABLE_GETINFO_PARAMS:
             self._request_cache["getinfo.%s" % key] = value
           elif key.startswith('ip-to-country/'):
-            # both cacheable and means that we should reset the geoip failure count
+            # both cache-able and means that we should reset the geoip failure count
             self._request_cache["getinfo.%s" % key] = value
             self._geoip_failure_count = -1
       
@@ -623,7 +635,7 @@ class Controller(BaseController):
       # bump geoip failure count if...
       # * we're caching results
       # * this was soley a geoip lookup
-      # * we've never had a successful geoip lookup (faiure count isn't -1)
+      # * we've never had a successful geoip lookup (failure count isn't -1)
       
       is_geoip_request = len(params) == 1 and list(params)[0].startswith('ip-to-country/')
       
@@ -640,11 +652,12 @@ class Controller(BaseController):
     A convenience method to get tor version that current controller is
     connected to.
     
-    :returns: :class:`stem.version.Version`
+    :returns: :class:`~stem.version.Version` of the tor instance that we're
+      connected to
     
     :raises:
       * :class:`stem.socket.ControllerError` if unable to query the version
-      * ValueError if unable to parse the version
+      * **ValueError** if unable to parse the version
     """
     
     if not self.is_caching_enabled():
@@ -663,11 +676,12 @@ class Controller(BaseController):
     
     :param str relay: fingerprint or nickname of the relay to be queried
     
-    :returns: :class:`stem.descriptor.server_descriptor.RelayDescriptor` for the given relay
+    :returns: :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for the given relay
     
     :raises:
       * :class:`stem.socket.ControllerError` if unable to query the descriptor
-      * ValueError if **relay** doesn't conform with the patter for being a fingerprint or nickname
+      * **ValueError** if **relay** doesn't conform with the pattern for being
+        a fingerprint or nickname
     """
     
     if stem.util.tor_tools.is_valid_fingerprint(relay):
@@ -685,13 +699,15 @@ class Controller(BaseController):
     Provides an iterator for all of the server descriptors that tor presently
     knows about.
     
-    :returns: iterates over :class:`stem.descriptor.server_descriptor.RelayDescriptor` for relays in the tor network
+    :returns: iterates over
+      :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for relays in
+      the tor network
     
     :raises: :class:`stem.socket.ControllerError` if unable to query tor
     """
     
     # TODO: We should iterate over the descriptors as they're read from the
-    # socket rather than reading the whole thing into memeory.
+    # socket rather than reading the whole thing into memory.
     
     desc_content = self.get_info("desc/all-recent")
     
@@ -706,11 +722,13 @@ class Controller(BaseController):
     
     :param str relay: fingerprint or nickname of the relay to be queried
     
-    :returns: :class:`stem.descriptor.router_status_entry.RouterStatusEntryV2` for the given relay
+    :returns: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2`
+      for the given relay
     
     :raises:
       * :class:`stem.socket.ControllerError` if unable to query the descriptor
-      * ValueError if **relay** doesn't conform with the patter for being a fingerprint or nickname
+      * **ValueError** if **relay** doesn't conform with the patter for being a
+        fingerprint or nickname
     """
     
     if stem.util.tor_tools.is_valid_fingerprint(relay):
@@ -728,7 +746,9 @@ class Controller(BaseController):
     Provides an iterator for all of the router status entries that tor
     presently knows about.
     
-    :returns: iterates over :class:`stem.descriptor.router_status_entry.RouterStatusEntryV2` for relays in the tor network
+    :returns: iterates over
+      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` for
+      relays in the tor network
     
     :raises: :class:`stem.socket.ControllerError` if unable to query tor
     """
@@ -749,11 +769,8 @@ class Controller(BaseController):
   
   def authenticate(self, *args, **kwargs):
     """
-    A convenience method to authenticate the controller.
-    
-    :param: see :func:`stem.connection.authenticate`
-    
-    :raises: see :func:`stem.connection.authenticate`
+    A convenience method to authenticate the controller. This is just a
+    pass-through to :func:`stem.connection.authenticate`.
     """
     
     import stem.connection
@@ -763,11 +780,13 @@ class Controller(BaseController):
     """
     A convenience method to get the protocol info of the controller.
     
-    :returns: :class:`stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
+    :returns: :class:`~stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
     
     :raises:
-      * :class:`stem.socket.ProtocolError` if the PROTOCOLINFO response is malformed
-      * :class:`stem.socket.SocketError` if problems arise in establishing or using the socket
+      * :class:`stem.socket.ProtocolError` if the PROTOCOLINFO response is
+        malformed
+      * :class:`stem.socket.SocketError` if problems arise in establishing or
+        using the socket
     """
     
     import stem.connection
@@ -779,22 +798,26 @@ class Controller(BaseController):
     provided a default then that's returned as if the GETCONF option is undefined
     or if the call fails for any reason (invalid configuration option, error
     response, control port closed, initiated, etc). If the configuration key
-    consists of whitespace only, None is returned unless a default value is given.
+    consists of whitespace only, **None** is returned unless a default value is
+    given.
     
     :param str param: configuration option to be queried
     :param object default: response if the query fails
-    :param bool multiple: if True, the value(s) provided are lists of all returned values, otherwise this just provides the first value
+    :param bool multiple: if **True**, the value(s) provided are lists of all
+      returned values, otherwise this just provides the first value
     
     :returns:
       Response depends upon how we were called as follows...
       
-      * str with the response if multiple was False
-      * list with the response strings if multiple was True
+      * **str** with the response if multiple was **False**
+      * **list** with the response strings if multiple was **True**
       * default if one was provided and our call failed
     
     :raises:
-      * :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
-      * :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
+      * :class:`stem.socket.ControllerError` if the call fails and we weren't
+        provided a default response
+      * :class:`stem.socket.InvalidArguments` if the configuration option
+        requested was invalid
     """
     
     # Config options are case insensitive and don't contain whitespace. Using
@@ -818,30 +841,36 @@ class Controller(BaseController):
     only whitespace are ignored.
     
     There's three use cases for GETCONF:
+    
       1. a single value is provided
       2. multiple values are provided for the option queried
-      3. a set of options that weren't necessarily requested are returned (for instance querying HiddenServiceOptions gives HiddenServiceDir, HiddenServicePort, etc)
+      3. a set of options that weren't necessarily requested are returned (for
+         instance querying HiddenServiceOptions gives HiddenServiceDir,
+         HiddenServicePort, etc)
     
     The vast majority of the options fall into the first two categories, in
-    which case calling get_conf() is sufficient. However, for batch queries or
-    the special options that give a set of values this provides back the full
-    response. As of tor version 0.2.1.25 HiddenServiceOptions was the only
-    option like this.
+    which case calling :func:`~stem.control.Controller.get_conf` is sufficient.
+    However, for batch queries or the special options that give a set of values
+    this provides back the full response. As of tor version 0.2.1.25
+    HiddenServiceOptions was the only option like this.
     
-    The get_conf() and get_conf_map() functions both try to account for these
-    special mappings, so queried like get_conf("HiddenServicePort") should
-    behave as you'd expect. This method, however, simply returns whatever Tor
-    provides so get_conf_map("HiddenServicePort") will give the same response
-    as get_conf_map("HiddenServiceOptions").
+    The :func:`~stem.control.Controller.get_conf` and
+    :func:`~stem.control.Controller.get_conf_map` functions both try to account
+    for these special mappings, so queried like get_conf("HiddenServicePort")
+    should behave as you'd expect. This method, however, simply returns
+    whatever Tor provides so get_conf_map("HiddenServicePort") will give the
+    same response as get_conf_map("HiddenServiceOptions").
     
     :param str,list params: configuration option(s) to be queried
     :param object default: response if the query fails
-    :param bool multiple: if True, the value(s) provided are lists of all returned values,otherwise this just provides the first value
+    :param bool multiple: if **True**, the value(s) provided are lists of all
+      returned values,otherwise this just provides the first value
     
     :returns:
       Response depends upon how we were called as follows...
       
-      * dict of 'config key => value' mappings, the value is a list if 'multiple' is True and a str of just the first value otherwise
+      * **dict** of 'config key => value' mappings, the value is a list if
+        'multiple' is **True** and a **str** of just the first value otherwise
       * default if one was provided and our call failed
     
     :raises:
@@ -932,8 +961,10 @@ class Controller(BaseController):
     
     :raises:
       * :class:`stem.socket.ControllerError` if the call fails
-      * :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      * :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+      * :class:`stem.socket.InvalidArguments` if configuration options
+        requested was invalid
+      * :class:`stem.socket.InvalidRequest` if the configuration setting is
+        impossible or if there's a syntax error in the configuration values
     """
     
     self.set_options({param: value}, False)
@@ -947,7 +978,8 @@ class Controller(BaseController):
     :raises:
       * :class:`stem.socket.ControllerError` if the call fails
       * :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      * :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+      * :class:`stem.socket.InvalidRequest` if the configuration setting is
+        impossible or if there's a syntax error in the configuration values
     """
     
     self.set_options(dict([(entry, None) for entry in params]), True)
@@ -958,7 +990,7 @@ class Controller(BaseController):
     RESETCONF query. Both behave identically unless our value is None, in which
     case SETCONF sets the value to 0 or NULL, and RESETCONF returns it to its
     default value. This accepts str, list, or None values in a similar fashion
-    to :func:`stem.control.Controller.set_conf`. For example...
+    to :func:`~stem.control.Controller.set_conf`. For example...
     
     ::
     
@@ -970,16 +1002,20 @@ class Controller(BaseController):
       })
     
     The params can optionally be a list a key/value tuples, though the only
-    reason this type of arguement would be useful is for hidden service
+    reason this type of argument would be useful is for hidden service
     configuration (those options are order dependent).
     
-    :param dict,list params: mapping of configuration options to the values we're setting it to
-    :param bool reset: issues a RESETCONF, returning None values to their defaults if True
+    :param dict,list params: mapping of configuration options to the values
+      we're setting it to
+    :param bool reset: issues a RESETCONF, returning **None** values to their
+      defaults if **True**
     
     :raises:
       * :class:`stem.socket.ControllerError` if the call fails
-      * :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      * :class:`stem.socket.InvalidRequest` if the configuration setting is impossible or if there's a syntax error in the configuration values
+      * :class:`stem.socket.InvalidArguments` if configuration options
+        requested was invalid
+      * :class:`stem.socket.InvalidRequest` if the configuration setting is
+        impossible or if there's a syntax error in the configuration values
     """
     
     start_time = time.time()
@@ -1055,7 +1091,8 @@ class Controller(BaseController):
     
     :raises:
       * :class:`stem.socket.ControllerError` if the call fails
-      * :class:`stem.socket.OperationFailed` if the client is unable to save the configuration file
+      * :class:`stem.socket.OperationFailed` if the client is unable to save
+        the configuration file
     """
     
     response = self.msg("SAVECONF")
@@ -1071,11 +1108,11 @@ class Controller(BaseController):
   def is_feature_enabled(self, feature):
     """
     Checks if a control connection feature is enabled. These features can be
-    enabled using :func:`stem.control.Controller.enable_feature`.
+    enabled using :func:`~stem.control.Controller.enable_feature`.
     
     :param str feature: feature to be checked
     
-    :returns: True if feature is enabled, False otherwise
+    :returns: **True** if feature is enabled, **False** otherwise
     """
     
     feature = feature.upper()
@@ -1104,6 +1141,7 @@ class Controller(BaseController):
     disabled. Feature names are case-insensitive.
     
     The following features are currently accepted:
+    
       * EXTENDED_EVENTS - Requests the extended event syntax
       * VERBOSE_NAMES - Replaces ServerID with LongName in events and GETINFO results
     
@@ -1134,15 +1172,19 @@ class Controller(BaseController):
     Sends a signal to the Tor client.
     
     :param str signal: type of signal to be sent. Must be one of the following...
-      * RELOAD or HUP - reload configuration
-      * SHUTDOWN or INT - shut down, waiting ShutdownWaitLength first if we're a relay
-      * DUMP or USR1 - dump log information about open connections and circuits
-      * DEBUG or USR2 - switch logging to the DEBUG runlevel
-      * HALT or TERM - exit immediately
-      * NEWNYM - switch to new circuits, so new application requests don't share any circuits with old ones (this also clears our DNS cache)
-      * CLEARDNSCACHE - clears cached DNS results
     
-    :raises: :class:`stem.socket.InvalidArguments` if signal provided wasn't recognized.
+      * **RELOAD** or **HUP** - reload configuration
+      * **SHUTDOWN** or **INT** - shut down, waiting ShutdownWaitLength first
+        if we're a relay
+      * **DUMP** or **USR1** - dump log information about open connections and
+        circuits
+      * **DEBUG** or **USR2** - switch logging to the DEBUG runlevel
+      * **HALT** or **TERM** - exit immediately
+      * **NEWNYM** - switch to new circuits, so new application requests don't
+        share any circuits with old ones (this also clears our DNS cache)
+      * **CLEARDNSCACHE** - clears cached DNS results
+    
+    :raises: :class:`stem.socket.InvalidArguments` if signal provided wasn't recognized
     """
     
     response = self.msg("SIGNAL %s" % signal)
@@ -1242,7 +1284,7 @@ class Controller(BaseController):
       * :class:`stem.socket.InvalidRequest` if the addresses are malformed
       * :class:`stem.socket.OperationFailed` if Tor couldn't fulfill the request
     
-    :returns: dictionary with original -> replacement address mappings
+    :returns: **dict** with 'original -> replacement' address mappings
     """
     
     mapaddress_arg = " ".join(["%s=%s" % (k, v) for (k, v) in mapping.items()])
@@ -1262,7 +1304,7 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   
   :returns: case insensitive match or default if one was provided and key wasn't found
   
-  :raises: ValueError if no such value exists
+  :raises: **ValueError** if no such value exists
   """
   
   if isinstance(entries, dict):

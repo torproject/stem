@@ -2,8 +2,8 @@
 Functions to aid library logging. Default logging is usually NOTICE and above,
 runlevels being used as follows...
 
-* **ERROR** - critical issue occured, the user needs to be notified
-* **WARN** - non-critical issue occured that the user should be aware of
+* **ERROR** - critical issue occurred, the user needs to be notified
+* **WARN** - non-critical issue occurred that the user should be aware of
 * **NOTICE** - information that is helpful to the user
 * **INFO** - high level library activity
 * **DEBUG** - low level library activity
@@ -69,17 +69,17 @@ DEDUPLICATION_MESSAGE_IDS = set()
 # could be found for logger "stem"' warning as per...
 # http://docs.python.org/release/3.1.3/library/logging.html#configuring-logging-for-a-library
 
-class NullHandler(logging.Handler):
+class _NullHandler(logging.Handler):
   def emit(self, record): pass
 
 if not LOGGER.handlers:
-  LOGGER.addHandler(NullHandler())
+  LOGGER.addHandler(_NullHandler())
 
 def get_logger():
   """
   Provides the stem logger.
   
-  :return: logging.Logger for stem
+  :return: **logging.Logger** for stem
   """
   
   return LOGGER
@@ -88,7 +88,7 @@ def logging_level(runlevel):
   """
   Translates a runlevel into the value expected by the logging module.
   
-  :param Runlevel runlevel: runlevel to be returned, no logging if None
+  :param Runlevel runlevel: runlevel to be returned, no logging if **None**
   """
   
   if runlevel: return LOG_VALUES[runlevel]
@@ -96,7 +96,7 @@ def logging_level(runlevel):
 
 def escape(message):
   """
-  Escapes specific sequences for logging (newlines, tabs, carrage returns).
+  Escapes specific sequences for logging (newlines, tabs, carriage returns).
   
   :param str message: string to be escaped
   
@@ -112,7 +112,7 @@ def log(runlevel, message):
   """
   Logs a message at the given runlevel.
   
-  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if None
+  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if **None**
   :param str message: message to be logged
   """
   
@@ -125,10 +125,10 @@ def log_once(message_id, runlevel, message):
   been logged then this is a no-op.
   
   :param str message_id: unique message identifier to deduplicate on
-  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if None
+  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if **None**
   :param str message: message to be logged
   
-  :returns: True if we log the message, False otherwise
+  :returns: **True** if we log the message, **False** otherwise
   """
   
   if not runlevel or message_id in DEDUPLICATION_MESSAGE_IDS:

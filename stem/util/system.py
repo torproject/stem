@@ -1,7 +1,7 @@
 """
 Helper functions for working with the underlying system. These are mostly os
 dependent, only working on linux, osx, and bsd. In almost all cases they're
-best-effort, providing None if the lookup fails.
+best-effort, providing **None** if the lookup fails.
 
 **Module Overview:**
 
@@ -10,7 +10,7 @@ best-effort, providing None if the lookup fails.
   is_windows - checks if we're running on windows
   is_mac - checks if we're running on a mac
   is_bsd - checks if we're running on the bsd family of operating systems
-  is_available - determines if a command is availabe on this system
+  is_available - determines if a command is available on this system
   is_running - determines if a given process is running
   get_pid_by_name - gets the pid for a process by the given name
   get_pid_by_port - gets the pid for a process listening to a given port
@@ -54,7 +54,7 @@ def is_windows():
   """
   Checks if we are running on Windows.
   
-  :returns: bool to indicate if we're on Windows
+  :returns: **bool** to indicate if we're on Windows
   """
   
   return platform.system() == "Windows"
@@ -63,7 +63,7 @@ def is_mac():
   """
   Checks if we are running on Mac OSX.
   
-  :returns: bool to indicate if we're on a Mac
+  :returns: **bool** to indicate if we're on a Mac
   """
   
   return platform.system() == "Darwin"
@@ -73,7 +73,7 @@ def is_bsd():
   Checks if we are within the BSD family of operating systems. This presently
   recognizes Macs, FreeBSD, and OpenBSD but may be expanded later.
   
-  :returns: bool to indicate if we're on a BSD OS
+  :returns: **bool** to indicate if we're on a BSD OS
   """
   
   return platform.system() in ("Darwin", "FreeBSD", "OpenBSD")
@@ -88,9 +88,10 @@ def is_available(command, cached=True):
   PATH so this lookup will fail for them.
   
   :param str command: command to search for
-  :param bool cached: makes use of available cached results if True
+  :param bool cached: makes use of available cached results if **True**
   
-  :returns: True if an executable we can use by that name exists in the PATH, False otherwise
+  :returns: **True** if an executable we can use by that name exists in the
+    PATH, **False** otherwise
   """
   
   if " " in command: command = command.split(" ")[0]
@@ -116,7 +117,8 @@ def is_running(command):
   
   :param str command: process name to be checked
   
-  :returns: True if the process is running, False if it's not among ps results, and None if ps can't be queried
+  :returns: **True** if the process is running, **False** if it's not among ps
+    results, and **None** if ps can't be queried
   """
   
   # Linux and the BSD families have different variants of ps. Guess based on
@@ -166,7 +168,7 @@ def get_pid_by_name(process_name):
   
   :param str process_name: process name for which to fetch the pid
   
-  :returns: int with the process id, None if it can't be determined
+  :returns: **int** with the process id, **None** if it can't be determined
   """
   
   # attempts to resolve using pgrep, failing if:
@@ -275,7 +277,7 @@ def get_pid_by_port(port):
   
   :param int port: port where the process we're looking for is listening
   
-  :returns: int with the process id, None if it can't be determined
+  :returns: **int** with the process id, **None** if it can't be determined
   """
   
   # attempts to resolve using netstat, failing if:
@@ -387,7 +389,7 @@ def get_pid_by_open_file(path):
   
   :param str path: location of the socket file to query against
   
-  :returns: int with the process id, None if it can't be determined
+  :returns: **int** with the process id, **None** if it can't be determined
   """
   
   # resolves using lsof which works on both Linux and BSD, only failing if:
@@ -416,7 +418,8 @@ def get_cwd(pid):
   Provices the working directory of the given process.
   
   :param int pid: process id of the process to be queried
-  :returns: str with the absolute path for the process' present working directory, None if it can't be determined
+  :returns: **str** with the absolute path for the process' present working
+    directory, **None** if it can't be determined
   """
   
   # try fetching via the proc contents if it's available
@@ -481,7 +484,7 @@ def get_bsd_jail_id(pid):
   
   :param int pid: process id of the jail id to be queried
   
-  :returns: int for the jail id, zero if this can't be determined
+  :returns: **int** for the jail id, zero if this can't be determined
   """
   
   # Output when called from a FreeBSD jail or when Tor isn't jailed:
@@ -508,14 +511,15 @@ def get_bsd_jail_id(pid):
 
 def expand_path(path, cwd = None):
   """
-  Provides an absolute path, expanding tildas with the user's home and
+  Provides an absolute path, expanding tildes with the user's home and
   appending a current working directory if the path was relative. This is
   unix-specific and paths never have an ending slash.
   
   :param str path: path to be expanded
-  :param str cwd: current working directory to expand relative paths with, our process' if this is None
+  :param str cwd: current working directory to expand relative paths with, our
+    process' if this is **None**
   
-  :returns: str of the path expanded to be an absolute path
+  :returns: **str** of the path expanded to be an absolute path
   """
   
   if is_windows():
@@ -554,11 +558,13 @@ def call(command, suppress_exc = True):
   are not permitted.
   
   :param str command: command to be issued
-  :param bool suppress_exc: if True then None is returned on failure, otherwise this raises the exception
+  :param bool suppress_exc: if **True** then **None** is returned on failure,
+    otherwise this raises the exception
   
-  :returns: list with the lines of output from the command, None in case of failure if suppress_exc is True
+  :returns: **list** with the lines of output from the command, **None** in
+    case of failure if suppress_exc is **True**
   
-  :raises: OSError if this fails and suppress_exc is False
+  :raises: **OSError** if this fails and suppress_exc is **False**
   """
   
   try:

@@ -1,46 +1,46 @@
 API
 ===
 
-:mod:`stem.connection`
-----------------------
+Controller
+----------
 
-Connecting and authenticating to a Tor process.
+* **Core**
 
-:mod:`stem.control`
--------------------
+ * `stem.control <api/control.html>`_ - **Controller used to talk with Tor**.
+ * `stem.connection <api/connection.html>`_ - Connection and authentication to the Tor control port or socket.
+ * `stem.socket <api/socket.html>`_ - Low level control socket used to talk with Tor.
+ * `stem.process <api/process.html>`_ - Launcher for the Tor process.
+ * `stem.response <api/response.html>`_ - Messages that Tor may provide the controller.
 
-Provides the :class:`~stem.control.Controller` class which, as the name implies, is used for talking with and controlling a Tor instance. As a user this is the primary class that you'll need.
+* **Types**
 
-:mod:`stem.socket`
-------------------
+ * `stem.exit_policy <api/exit_policy.html>`_ - Relay policy for the destinations it will or won't allow traffic to.
+ * `stem.version <api/version.html>`_ - Tor versions that can be compared to determine Tor's capabilities.
 
-Base classes for communicating with a Tor control socket.
+Descriptors
+-----------
 
-:mod:`stem.process`
--------------------
+* **Classes**
 
-Used for launching Tor and managing the process.
+ * `stem.descriptor <api/descriptor/descriptor.html>`_ - Base class for descriptors.
+ * `stem.descriptor.server_descriptor <api/descriptor/server_descriptor.html>`_ - Relay and bridge server descriptors.
+ * `stem.descriptor.extrainfo_descriptor <api/descriptor/extrainfo_descriptor.html>`_ - Relay and bridge extrainfo descriptors.
+ * `stem.descriptor.networkstatus <api/descriptor/networkstatus.html>`_ - Network status documents which make up the Tor consensus.
+ * `stem.descriptor.router_status_entry <api/descriptor/router_status_entry.html>`_ - Relay entries within a network status document.
 
-:mod:`stem.version`
--------------------
+* `stem.descriptor.reader <api/descriptor/reader.html>`_ - Reads and parses descriptor files from disk.
+* `stem.descriptor.export <api/descriptor/export.html>`_ - Exports descriptors to other formats.
 
-Parsed versions that can be compared to the requirement for various features.
+Utilities
+---------
 
-`stem.descriptor <stem.descriptor.html>`_
------------------------------------------
-
-Utilities for working with the Tor consensus and descriptors.
-
-`stem.response <stem.response.html>`_
--------------------------------------
-
-Parsed replies that we receive from the Tor control socket.
-
-`stem.util <stem.util.html>`_
------------------------------
-
-Utility functions available to stem and its users.
-
-.. toctree::
-   :maxdepth: 2
+* `stem.util.conf <api/util/conf.html>`_ - Configuration file handling.
+* `stem.util.connection <api/util/connection.html>`_ - Connection and IP related utilities.
+* `stem.util.enum <api/util/enum.html>`_ - Enumeration class.
+* `stem.util.log <api/util/log.html>`_ - Logging utilities.
+* `stem.util.proc <api/util/proc.html>`_ - Tools to read a process' proc contents.
+* `stem.util.str_tools <api/util/str_tools.html>`_ - String utilities.
+* `stem.util.system <api/util/system.html>`_ - Tools related to the local system.
+* `stem.util.term <api/util/term.html>`_ - Tools for interacting with the terminal.
+* `stem.util.tor_tools <api/util/tor_tools.html>`_ - Helper functions for working with tor.
 

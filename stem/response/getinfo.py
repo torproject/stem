@@ -47,7 +47,7 @@ class GetInfoResponse(stem.response.ControlMessage):
       
       if "\n" in value:
         if not value.startswith("\n"):
-          raise stem.socket.ProtocolError("GETINFO response contained a multiline value that didn't start with a newline:\n%s" % self)
+          raise stem.socket.ProtocolError("GETINFO response contained a multi-line value that didn't start with a newline:\n%s" % self)
         
         value = value[1:]
       

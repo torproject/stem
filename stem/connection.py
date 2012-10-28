@@ -1,14 +1,15 @@
 """
-Functions for connecting and authenticating to the tor process. Most commonly
-you'll either want the 'connect_*' or 'authenticate' function.
+Functions for connecting and authenticating to the tor process.
 
-The 'connect_*' functions give an easy, one line method for getting an
-authenticated control connection. This is handy for CLI applications and the
-python interactive interpretor, but does several things that makes it
-undesirable for applications (uses stdin/stdout, suppresses exceptions, etc).
+The :func:`~stem.connection.connect_port` and
+:func:`~stem.connection.connect_socket_file` functions give an easy, one line
+method for getting an authenticated control connection. This is handy for CLI
+applications and the python interactive interpretor, but does several things
+that makes it undesirable for applications (uses stdin/stdout, suppresses
+exceptions, etc).
 
-The 'authenticate' function, however, gives easy but fine-grained control over
-the authentication process. For instance...
+The :func:`~stem.connection.authenticate` function, however, gives easy but
+fine-grained control over the authentication process. For instance...
 
 ::
 
@@ -45,43 +46,50 @@ the authentication process. For instance...
 
 ::
 
-  connect_port - Convenience method to get an authenticated control connection.
-  connect_socket_file - Similar to connect_port, but for control socket files.
+  connect_port - Convenience method to get an authenticated control connection
+  connect_socket_file - Similar to connect_port, but for control socket files
   
-  authenticate - Main method for authenticating to a control socket.
-  authenticate_none - Authenticates to an open control socket.
-  authenticate_password - Authenticates to a socket supporting password auth.
-  authenticate_cookie - Authenticates to a socket supporting cookie auth.
-  authenticate_safecookie - Authenticates to a socket supporting safecookie auth.
+  authenticate - Main method for authenticating to a control socket
+  authenticate_none - Authenticates to an open control socket
+  authenticate_password - Authenticates to a socket supporting password auth
+  authenticate_cookie - Authenticates to a socket supporting cookie auth
+  authenticate_safecookie - Authenticates to a socket supporting safecookie auth
   
-  get_protocolinfo - Issues a PROTOCOLINFO query.
+  get_protocolinfo - Issues a PROTOCOLINFO query
   
-  AuthenticationFailure - Base exception raised for authentication failures.
-    |- UnrecognizedAuthMethods - Authentication methods are unsupported.
-    |- IncorrectSocketType - Socket does not speak the tor control protocol.
+  AuthenticationFailure - Base exception raised for authentication failures
+    |- UnrecognizedAuthMethods - Authentication methods are unsupported
+    |- IncorrectSocketType - Socket does not speak the tor control protocol
     |
-    |- OpenAuthFailed - Failure when authenticating by an open socket.
-    |  +- OpenAuthRejected - Tor rejected this method of authentication.
+    |- OpenAuthFailed - Failure when authenticating by an open socket
+    |  +- OpenAuthRejected - Tor rejected this method of authentication
     |
-    |- PasswordAuthFailed - Failure when authenticating by a password.
-    |  |- PasswordAuthRejected - Tor rejected this method of authentication.
-    |  |- IncorrectPassword - Password was rejected.
-    |  +- MissingPassword - Socket supports password auth but wasn't attempted.
+    |- PasswordAuthFailed - Failure when authenticating by a password
+    |  |- PasswordAuthRejected - Tor rejected this method of authentication
+    |  |- IncorrectPassword - Password was rejected
+    |  +- MissingPassword - Socket supports password auth but wasn't attempted
     |
-    |- CookieAuthFailed - Failure when authenticating by a cookie.
-    |  |- CookieAuthRejected - Tor rejected this method of authentication.
-    |  |- IncorrectCookieValue - Authentication cookie was rejected.
-    |  |- IncorrectCookieSize - Size of the cookie file is incorrect.
-    |  |- UnreadableCookieFile - Unable to read the contents of the auth cookie.
-    |  +- AuthChallengeFailed - Failure completing the authchallenge request.
-    |     |- AuthChallengeUnsupported - Tor doesn't recognize the AUTHCHALLENGE command.
-    |     |- AuthSecurityFailure - Server provided the wrong nonce credentials.
-    |     |- InvalidClientNonce - The client nonce is invalid.
+    |- CookieAuthFailed - Failure when authenticating by a cookie
+    |  |- CookieAuthRejected - Tor rejected this method of authentication
+    |  |- IncorrectCookieValue - Authentication cookie was rejected
+    |  |- IncorrectCookieSize - Size of the cookie file is incorrect
+    |  |- UnreadableCookieFile - Unable to read the contents of the auth cookie
+    |  +- AuthChallengeFailed - Failure completing the authchallenge request
+    |     |- AuthChallengeUnsupported - Tor doesn't recognize the AUTHCHALLENGE command
+    |     |- AuthSecurityFailure - Server provided the wrong nonce credentials
+    |     |- InvalidClientNonce - The client nonce is invalid
     |     +- UnrecognizedAuthChallengeMethod - AUTHCHALLENGE does not support the given methods.
     |
-    +- MissingAuthInfo - Unexpected PROTOCOLINFO response, missing auth info.
-       |- NoAuthMethods - Missing any methods for authenticating.
-       +- NoAuthCookie - Supports cookie auth but doesn't have its path.
+    +- MissingAuthInfo - Unexpected PROTOCOLINFO response, missing auth info
+       |- NoAuthMethods - Missing any methods for authenticating
+       +- NoAuthCookie - Supports cookie auth but doesn't have its path
+  
+  AuthMethod - Enumeration on PROTOCOLINFO responses for supported authentication methods
+    |- NONE - No authentication required
+    |- PASSWORD - Password required, see tor's HashedControlPassword option
+    |- COOKIE - Contents of the cookie file required, see tor's CookieAuthentication option
+    |- SAFECOOKIE - Need to reply to a hmac challenge using the contents of the cookie file
+    +- UNKNOWN - Tor provided one or more authentication methods that we don't recognize, probably something new
 """
 
 from __future__ import with_statement
@@ -98,7 +106,8 @@ import stem.util.enum
 import stem.util.system
 import stem.util.connection
 import stem.util.log as log
-from stem.response.protocolinfo import AuthMethod
+
+AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "SAFECOOKIE", "UNKNOWN")
 
 CLIENT_HASH_CONSTANT = "Tor safe cookie authentication controller-to-server hash"
 SERVER_HASH_CONSTANT = "Tor safe cookie authentication server-to-controller hash"
@@ -108,13 +117,14 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
   Convenience function for quickly getting a control connection. This is very
   handy for debugging or CLI setup, handling setup and prompting for a password
   if necessary (and none is provided). If any issues arise this prints a
-  description of the problem and returns None.
+  description of the problem and returns **None**.
   
   :param str control_addr: ip address of the controller
   :param int control_port: port number of the controller
   :param str password: passphrase to authenticate to the socket
   :param str chroot_path: path prefix if in a chroot environment
-  :param Class controller: BaseController subclass to be returned, this provides a ControlSocket if None
+  :param Class controller: :class:`~stem.control.BaseController` subclass to be
+    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
   
   :returns: authenticated control connection, the type based on the controller argument
   """
@@ -130,12 +140,13 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
 def connect_socket_file(socket_path = "/var/run/tor/control", password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. For more
-  information see the connect_port function.
+  information see the :func:`~stem.connection.connect_port` function.
   
   :param str socket_path: path where the control socket is located
   :param str password: passphrase to authenticate to the socket
   :param str chroot_path: path prefix if in a chroot environment
-  :param Class controller: BaseController subclass to be returned, this provides a ControlSocket if None
+  :param Class controller: :class:`~stem.control.BaseController` subclass to be
+    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
   
   :returns: authenticated control connection, the type based on the controller argument
   """
@@ -155,7 +166,8 @@ def _connect(control_socket, password, chroot_path, controller):
   :param stem.socket.ControlSocket control_socket: socket being authenticated to
   :param str password: passphrase to authenticate to the socket
   :param str chroot_path: path prefix if in a chroot environment
-  :param Class controller: BaseController subclass to be returned, this provides a ControlSocket if None
+  :param Class controller: :class:`~stem.control.BaseController` subclass to be
+    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
   
   :returns: authenticated control connection, the type based on the controller argument
   """
@@ -187,17 +199,23 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
   
   All exceptions are subclasses of AuthenticationFailure so, in practice,
   callers should catch the types of authentication failure that they care
-  about, then have a AuthenticationFailure catch-all at the end.
+  about, then have a :class:`~stem.connection.AuthenticationFailure` catch-all
+  at the end.
   
-  This can authenticate to either a :class:`stem.control.BaseController` or
-  :class:`stem.socket.ControlSocket`.
+  This can authenticate to either a :class:`~stem.control.BaseController` or
+  :class:`~stem.socket.ControlSocket`.
   
   :param controller: tor controller or socket to be authenticated
-  :param str password: passphrase to present to the socket if it uses password authentication (skips password auth if None)
+  :param str password: passphrase to present to the socket if it uses password
+    authentication (skips password auth if **None**)
   :param str chroot_path: path prefix if in a chroot environment
-  :param stem.response.protocolinfo.ProtocolInfoResponse protocolinfo_response: tor protocolinfo response, this is retrieved on our own if None
+  :param stem.response.protocolinfo.ProtocolInfoResponse protocolinfo_response:
+    tor protocolinfo response, this is retrieved on our own if **None**
   
-  :raises: If all attempts to authenticate fails then this will raise a :class:`stem.connection.AuthenticationFailure` subclass. Since this may try multiple authentication methods it may encounter multiple exceptions. If so then the exception this raises is prioritized as follows...
+  :raises: If all attempts to authenticate fails then this will raise a
+    :class:`~stem.connection.AuthenticationFailure` subclass. Since this may
+    try multiple authentication methods it may encounter multiple exceptions.
+    If so then the exception this raises is prioritized as follows...
     
     * :class:`stem.connection.IncorrectSocketType`
     
@@ -278,8 +296,8 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
     to treat these as errors. If you have a use case where this commonly
     happens, please file a ticket on 'trac.torproject.org'.
     
-    In the future new :class:`stem.connection.AuthenticationFailure` subclasses
-    may be added to allow for better error handling.
+    In the future new :class:`~stem.connection.AuthenticationFailure`
+    subclasses may be added to allow for better error handling.
   """
   
   if not protocolinfo_response:
@@ -390,15 +408,18 @@ def authenticate_none(controller, suppress_ctl_errors = True):
   
   If authentication fails tor will disconnect and we'll make a best effort
   attempt to re-establish the connection. This may not succeed, so check
-  is_alive() before using the socket further.
+  :func:`~stem.socket.ControlSocket.is_alive` before using the socket further.
   
-  This can authenticate to either a :class:`stem.control.BaseController` or
-  :class:`stem.socket.ControlSocket`.
+  This can authenticate to either a :class:`~stem.control.BaseController` or
+  :class:`~stem.socket.ControlSocket`.
   
-  *For general usage use the authenticate() function instead.*
+  For general usage use the :func:`~stem.connection.authenticate` function
+  instead.
   
   :param controller: tor controller or socket to be authenticated
-  :param bool suppress_ctl_errors: reports raised :class:`stem.socket.ControllerError` as authentication rejection if True, otherwise they're re-raised
+  :param bool suppress_ctl_errors: reports raised
+    :class:`~stem.socket.ControllerError` as authentication rejection if
+    **True**, otherwise they're re-raised
   
   :raises: :class:`stem.connection.OpenAuthRejected` if the empty authentication credentials aren't accepted
   """
@@ -426,25 +447,31 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
   
   If authentication fails tor will disconnect and we'll make a best effort
   attempt to re-establish the connection. This may not succeed, so check
-  is_alive() before using the socket further.
+  :func:`~stem.socket.ControlSocket.is_alive` before using the socket further.
   
-  If you use this function directly, rather than authenticate(), we may
-  mistakenly raise a PasswordAuthRejected rather than IncorrectPassword. This
-  is because we rely on tor's error messaging which is liable to change in
-  future versions (`ticket <https://trac.torproject.org/4817>`_).
+  If you use this function directly, rather than
+  :func:`~stem.connection.authenticate`, we may mistakenly raise a
+  PasswordAuthRejected rather than IncorrectPassword. This is because we rely
+  on tor's error messaging which is liable to change in future versions
+  (`ticket <https://trac.torproject.org/4817>`_).
   
-  This can authenticate to either a :class:`stem.control.BaseController` or
-  :class:`stem.socket.ControlSocket`.
+  This can authenticate to either a :class:`~stem.control.BaseController` or
+  :class:`~stem.socket.ControlSocket`.
   
-  *For general usage use the authenticate() function instead.*
+  For general usage use the :func:`~stem.connection.authenticate` function
+  instead.
   
   :param controller: tor controller or socket to be authenticated
   :param str password: passphrase to present to the socket
-  :param bool suppress_ctl_errors: reports raised :class:`stem.socket.ControllerError` as authentication rejection if True, otherwise they're re-raised
+  :param bool suppress_ctl_errors: reports raised
+    :class:`~stem.socket.ControllerError` as authentication rejection if
+    **True**, otherwise they're re-raised
   
   :raises:
-    * :class:`stem.connection.PasswordAuthRejected` if the socket doesn't accept password authentication
-    * :class:`stem.connection.IncorrectPassword` if the authentication credentials aren't accepted
+    * :class:`stem.connection.PasswordAuthRejected` if the socket doesn't
+      accept password authentication
+    * :class:`stem.connection.IncorrectPassword` if the authentication
+      credentials aren't accepted
   """
   
   # Escapes quotes. Tor can include those in the password hash, in which case
@@ -483,32 +510,42 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
   validation that this is a cookie before presenting the contents to the
   socket.
   
-  The IncorrectCookieSize and UnreadableCookieFile exceptions take precedence
+  The :class:`~stem.connection.IncorrectCookieSize` and
+  :class:`~stem.connection.UnreadableCookieFile` exceptions take precedence
   over the other types.
   
   If authentication fails tor will disconnect and we'll make a best effort
   attempt to re-establish the connection. This may not succeed, so check
-  is_alive() before using the socket further.
+  :func:`~stem.socket.ControlSocket.is_alive` before using the socket further.
   
-  If you use this function directly, rather than authenticate(), we may
-  mistakenly raise a CookieAuthRejected rather than IncorrectCookieValue. This
-  is because we rely on tor's error messaging which is liable to change in
-  future versions (`ticket <https://trac.torproject.org/4817>`_).
+  If you use this function directly, rather than
+  :func:`~stem.connection.authenticate`, we may mistakenly raise a
+  :class:`~stem.connection.CookieAuthRejected` rather than
+  :class:`~stem.connection.IncorrectCookieValue`. This is because we rely on
+  tor's error messaging which is liable to change in future versions (`ticket
+  <https://trac.torproject.org/4817>`_).
   
-  This can authenticate to either a :class:`stem.control.BaseController` or
-  :class:`stem.socket.ControlSocket`.
+  This can authenticate to either a :class:`~stem.control.BaseController` or
+  :class:`~stem.socket.ControlSocket`.
   
-  *For general usage use the authenticate() function instead.*
+  For general usage use the :func:`~stem.connection.authenticate` function
+  instead.
   
   :param controller: tor controller or socket to be authenticated
   :param str cookie_path: path of the authentication cookie to send to tor
-  :param bool suppress_ctl_errors: reports raised :class:`stem.socket.ControllerError` as authentication rejection if True, otherwise they're re-raised
+  :param bool suppress_ctl_errors: reports raised
+    :class:`~stem.socket.ControllerError` as authentication rejection if
+    **True**, otherwise they're re-raised
   
   :raises:
-    * :class:`stem.connection.IncorrectCookieSize` if the cookie file's size is wrong
-    * :class:`stem.connection.UnreadableCookieFile` if the cookie file doesn't exist or we're unable to read it
-    * :class:`stem.connection.CookieAuthRejected` if cookie authentication is attempted but the socket doesn't accept it
-    * :class:`stem.connection.IncorrectCookieValue` if the cookie file's value is rejected
+    * :class:`stem.connection.IncorrectCookieSize` if the cookie file's size
+      is wrong
+    * :class:`stem.connection.UnreadableCookieFile` if the cookie file doesn't
+      exist or we're unable to read it
+    * :class:`stem.connection.CookieAuthRejected` if cookie authentication is
+      attempted but the socket doesn't accept it
+    * :class:`stem.connection.IncorrectCookieValue` if the cookie file's value
+      is rejected
   """
   
   cookie_data = _read_cookie(cookie_path, False)
@@ -551,36 +588,51 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
   2. generate a hash digest using the challenge received in the first step, and
      use it to authenticate the controller
   
-  The IncorrectCookieSize and UnreadableCookieFile exceptions take
-  precedence over the other exception types.
+  The :class:`~stem.connection.IncorrectCookieSize` and
+  :class:`~stem.connection.UnreadableCookieFile` exceptions take precedence
+  over the other exception types.
   
-  The AuthChallengeUnsupported, UnrecognizedAuthChallengeMethod,
-  InvalidClientNonce and CookieAuthRejected exceptions are next in the order of
-  precedence. Depending on the reason, one of these is raised if the first
+  The :class:`~stem.connection.AuthChallengeUnsupported`,
+  :class:`~stem.connection.UnrecognizedAuthChallengeMethod`,
+  :class:`~stem.connection.InvalidClientNonce` and
+  :class:`~stem.connection.CookieAuthRejected` exceptions are next in the order
+  of precedence. Depending on the reason, one of these is raised if the first
   (AUTHCHALLENGE) step fails.
   
-  In the second (AUTHENTICATE) step, IncorrectCookieValue or
-  CookieAuthRejected maybe raised.
+  In the second (AUTHENTICATE) step,
+  :class:`~stem.connection.IncorrectCookieValue` or
+  :class:`~stem.connection.CookieAuthRejected` maybe raised.
   
   If authentication fails tor will disconnect and we'll make a best effort
   attempt to re-establish the connection. This may not succeed, so check
-  is_alive() before using the socket further.
+  :func:`~stem.socket.ControlSocket.is_alive` before using the socket further.
   
-  For general usage use the authenticate() function instead.
+  For general usage use the :func:`~stem.connection.authenticate` function
+  instead.
   
   :param controller: tor controller or socket to be authenticated
   :param str cookie_path: path of the authentication cookie to send to tor
-  :param bool suppress_ctl_errors: reports raised :class:`stem.socket.ControllerError` as authentication rejection if True, otherwise they're re-raised
+  :param bool suppress_ctl_errors: reports raised
+    :class:`~stem.socket.ControllerError` as authentication rejection if
+    **True**, otherwise they're re-raised
   
   :raises:
-    * :class:`stem.connection.IncorrectCookieSize` if the cookie file's size is wrong
-    * :class:`stem.connection.UnreadableCookieFile` if the cookie file doesn't exist or we're unable to read it
-    * :class:`stem.connection.CookieAuthRejected` if cookie authentication is attempted but the socket doesn't accept it
-    * :class:`stem.connection.IncorrectCookieValue` if the cookie file's value is rejected
-    * :class:`stem.connection.UnrecognizedAuthChallengeMethod` if the Tor client fails to recognize the AuthChallenge method
-    * :class:`stem.connection.AuthChallengeUnsupported` if AUTHCHALLENGE is unimplemented, or if unable to parse AUTHCHALLENGE response
-    * :class:`stem.connection.AuthSecurityFailure` if AUTHCHALLENGE's response looks like a security attack
-    * :class:`stem.connection.InvalidClientNonce` if stem's AUTHCHALLENGE client nonce is rejected for being invalid
+    * :class:`stem.connection.IncorrectCookieSize` if the cookie file's size
+      is wrong
+    * :class:`stem.connection.UnreadableCookieFile` if the cookie file doesn't
+      exist or we're unable to read it
+    * :class:`stem.connection.CookieAuthRejected` if cookie authentication is
+      attempted but the socket doesn't accept it
+    * :class:`stem.connection.IncorrectCookieValue` if the cookie file's value
+      is rejected
+    * :class:`stem.connection.UnrecognizedAuthChallengeMethod` if the Tor
+      client fails to recognize the AuthChallenge method
+    * :class:`stem.connection.AuthChallengeUnsupported` if AUTHCHALLENGE is
+      unimplemented, or if unable to parse AUTHCHALLENGE response
+    * :class:`stem.connection.AuthSecurityFailure` if AUTHCHALLENGE's response
+      looks like a security attack
+    * :class:`stem.connection.InvalidClientNonce` if stem's AUTHCHALLENGE
+      client nonce is rejected for being invalid
   """
   
   cookie_data = _read_cookie(cookie_path, True)
@@ -661,16 +713,18 @@ def get_protocolinfo(controller):
   path is relative then we'll make an attempt (which may not work) to correct
   this (`ticket <https://trac.torproject.org/1101>`_).
   
-  This can authenticate to either a :class:`stem.control.BaseController` or
-  :class:`stem.socket.ControlSocket`.
+  This can authenticate to either a :class:`~stem.control.BaseController` or
+  :class:`~stem.socket.ControlSocket`.
   
   :param controller: tor controller or socket to be queried
   
-  :returns: :class:`stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
+  :returns: :class:`~stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
   
   :raises:
-    * :class:`stem.socket.ProtocolError` if the PROTOCOLINFO response is malformed
-    * :class:`stem.socket.SocketError` if problems arise in establishing or using the socket
+    * :class:`stem.socket.ProtocolError` if the PROTOCOLINFO response is
+      malformed
+    * :class:`stem.socket.SocketError` if problems arise in establishing or
+      using the socket
   """
   
   try:
@@ -715,7 +769,8 @@ def get_protocolinfo(controller):
 
 def _msg(controller, message):
   """
-  Sends and receives a message with either a ControlSocket or BaseController.
+  Sends and receives a message with either a
+  :class:`~stem.socket.ControlSocket` or :class:`~stem.control.BaseController`.
   """
   
   if isinstance(controller, stem.socket.ControlSocket):
@@ -729,11 +784,14 @@ def _read_cookie(cookie_path, is_safecookie):
   Provides the contents of a given cookie file.
   
   :param str cookie_path: absolute path of the cookie file
-  :param bool is_safecookie: True if this was for SAFECOOKIE authentication, False if for COOKIE
+  :param bool is_safecookie: **True** if this was for SAFECOOKIE
+    authentication, **False** if for COOKIE
   
   :raises:
-    * :class:`stem.connection.UnreadableCookieFile` if the cookie file is unreadable
-    * :class:`stem.connection.IncorrectCookieSize` if the cookie size is incorrect (not 32 bytes)
+    * :class:`stem.connection.UnreadableCookieFile` if the cookie file is
+      unreadable
+    * :class:`stem.connection.IncorrectCookieSize` if the cookie size is
+      incorrect (not 32 bytes)
   """
   
   if not os.path.exists(cookie_path):
@@ -765,8 +823,8 @@ def _read_cookie(cookie_path, is_safecookie):
 def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg):
   """
   Attempts to expand a relative cookie path with the given pid resolver. This
-  leaves the cookie_path alone if it's already absolute, None, or the system
-  calls fail.
+  leaves the cookie_path alone if it's already absolute, **None**, or the
+  system calls fail.
   """
   
   cookie_path = protocolinfo_response.cookie_path
@@ -795,7 +853,8 @@ class AuthenticationFailure(Exception):
   """
   Base error for authentication failures.
   
-  :var stem.socket.ControlMessage auth_response: AUTHENTICATE response from the control socket, None if one wasn't received
+  :var stem.socket.ControlMessage auth_response: AUTHENTICATE response from the
+    control socket, **None** if one wasn't received
   """
   
   def __init__(self, message, auth_response = None):
@@ -839,8 +898,10 @@ class CookieAuthFailed(AuthenticationFailure):
   Failure to authenticate with an authentication cookie.
   
   :param str cookie_path: location of the authentication cookie we attempted
-  :param bool is_safecookie: True if this was for SAFECOOKIE authentication, False if for COOKIE
-  :param stem.response.ControlMessage auth_response: reply to our authentication attempt
+  :param bool is_safecookie: **True** if this was for SAFECOOKIE
+    authentication, **False** if for COOKIE
+  :param stem.response.ControlMessage auth_response: reply to our
+    authentication attempt
   """
   
   def __init__(self, message, cookie_path, is_safecookie, auth_response = None):
@@ -903,7 +964,8 @@ class NoAuthCookie(MissingAuthInfo):
   """
   PROTOCOLINFO response supports cookie auth but doesn't have its path.
   
-  :param bool is_safecookie: True if this was for SAFECOOKIE authentication, False if for COOKIE
+  :param bool is_safecookie: **True** if this was for SAFECOOKIE
+    authentication, **False** if for COOKIE
   """
   
   def __init__(self, message, is_safecookie):

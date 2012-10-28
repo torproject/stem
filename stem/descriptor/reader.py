@@ -1,7 +1,8 @@
 """
 Utilities for reading descriptors from local directories and archives. This is
-mostly done through the DescriptorReader class, which is an iterator for the
-descriptor data in a series of destinations. For example...
+mostly done through the :class:`~stem.descriptor.reader.DescriptorReader`
+class, which is an iterator for the descriptor data in a series of
+destinations. For example...
 
 ::
 
@@ -17,14 +18,15 @@ descriptor data in a series of destinations. For example...
 
 This ignores files that cannot be processed due to read errors or unparsable
 content. To be notified of skipped files you can register a listener with
-:func:`stem.descriptor.reader.DescriptorReader.register_skip_listener`.
+:func:`~stem.descriptor.reader.DescriptorReader.register_skip_listener`.
 
-The DescriptorReader keeps track of the last modified timestamps for descriptor
-files that it has read so it can skip unchanged files if ran again. This
-listing of processed files can also be persisted and applied to other
-DescriptorReaders. For instance, the following prints descriptors as they're
-changed over the course of a minute, and picks up where it left off if ran
-again...
+The :class:`~stem.descriptor.reader.DescriptorReader` keeps track of the last
+modified timestamps for descriptor files that it has read so it can skip
+unchanged files if ran again. This listing of processed files can also be
+persisted and applied to other
+:class:`~stem.descriptor.reader.DescriptorReader` instances. For example, the
+following prints descriptors as they're changed over the course of a minute,
+and picks up where it left off if ran again...
 
 ::
 
@@ -37,7 +39,7 @@ again...
   
   start_time = time.time()
   
-  while time.time() - start_time < 60:
+  while (time.time() - start_time) < 60:
     # prints any descriptors that have changed since last checked
     with reader:
       for descriptor in reader:
@@ -51,10 +53,10 @@ again...
 
 ::
 
-  load_processed_files - Loads a listing of processed files.
-  save_processed_files - Saves a listing of processed files.
+  load_processed_files - Loads a listing of processed files
+  save_processed_files - Saves a listing of processed files
   
-  DescriptorReader - Iterator for descriptor data on the local file system.
+  DescriptorReader - Iterator for descriptor data on the local file system
     |- get_processed_files - provides the listing of files that we've processed
     |- set_processed_files - sets our tracking of the files we have processed
     |- register_skip_listener - adds a listener that's notified of skipped files
@@ -63,12 +65,12 @@ again...
     |- __enter__ / __exit__ - manages the descriptor reader thread in the context
     +- __iter__ - iterates over descriptor data in unread files
   
-  FileSkipped - Base exception for a file that was skipped.
-    |- AlreadyRead - We've already read a file with this last modified timestamp.
-    |- ParsingFailure - Contents can't be parsed as descriptor data.
-    |- UnrecognizedType - File extension indicates non-descriptor data.
-    +- ReadFailed - Wraps an error that was raised while reading the file.
-       +- FileMissing - File does not exist.
+  FileSkipped - Base exception for a file that was skipped
+    |- AlreadyRead - We've already read a file with this last modified timestamp
+    |- ParsingFailure - Contents can't be parsed as descriptor data
+    |- UnrecognizedType - File extension indicates non-descriptor data
+    +- ReadFailed - Wraps an error that was raised while reading the file
+       +- FileMissing - File does not exist
 """
 
 from __future__ import with_statement
@@ -94,7 +96,13 @@ class FileSkipped(Exception):
   "Base error when we can't provide descriptor data from a file."
 
 class AlreadyRead(FileSkipped):
-  "Already read a file with this 'last modified' timestamp or later."
+  """
+  Already read a file with this 'last modified' timestamp or later.
+  
+  :param int last_modified: unix timestamp for when the file was last modified
+  :param int last_modified_when_read: unix timestamp for the modification time
+    when we last read this file
+  """
   
   def __init__(self, last_modified, last_modified_when_read):
     super(AlreadyRead, self).__init__()
@@ -102,7 +110,11 @@ class AlreadyRead(FileSkipped):
     self.last_modified_when_read = last_modified_when_read
 
 class ParsingFailure(FileSkipped):
-  "File contents could not be parsed as descriptor data."
+  """
+  File contents could not be parsed as descriptor data.
+  
+  :param ValueError exception: issue that arose when parsing
+  """
   
   def __init__(self, parsing_exception):
     super(ParsingFailure, self).__init__()
@@ -112,6 +124,8 @@ class UnrecognizedType(FileSkipped):
   """
   File doesn't contain descriptor data. This could either be due to its file
   type or because it doesn't conform to a recognizable descriptor type.
+  
+  :param tuple mime_type: the (type, encoding) tuple provided by mimetypes.guess_type()
   """
   
   def __init__(self, mime_type):
@@ -119,7 +133,12 @@ class UnrecognizedType(FileSkipped):
     self.mime_type = mime_type
 
 class ReadFailed(FileSkipped):
-  "An IOError occured while trying to read the file."
+  """
+  An IOError occurred while trying to read the file.
+  
+  :param IOError exception: issue that arose when reading the file, **None** if
+    this arose due to the file not being present
+  """
   
   def __init__(self, read_exception):
     super(ReadFailed, self).__init__()
@@ -134,16 +153,17 @@ class FileMissing(ReadFailed):
 def load_processed_files(path):
   """
   Loads a dictionary of 'path => last modified timestamp' mappings, as
-  persisted by :func:`stem.descriptor.reader.save_processed_files`, from a
+  persisted by :func:`~stem.descriptor.reader.save_processed_files`, from a
   file.
   
   :param str path: location to load the processed files dictionary from
   
-  :returns: dict of 'path (str) => last modified unix timestamp (int)' mappings
+  :returns: **dict** of 'path (**str**) => last modified unix timestamp
+    (**int**)' mappings
   
   :raises:
-    * IOError if unable to read the file
-    * TypeError if unable to parse the file's contents
+    * **IOError** if unable to read the file
+    * **TypeError** if unable to parse the file's contents
   """
   
   processed_files = {}
@@ -171,15 +191,17 @@ def load_processed_files(path):
 def save_processed_files(path, processed_files):
   """
   Persists a dictionary of 'path => last modified timestamp' mappings (as
-  provided by the DescriptorReader's get_processed_files() method) so that they
-  can be loaded later and applied to another DescriptorReader.
+  provided by the DescriptorReader's
+  :func:`~stem.descriptor.reader.DescriptorReader.get_processed_files` method)
+  so that they can be loaded later and applied to another
+  :class:`~stem.descriptor.reader.DescriptorReader`.
   
   :param str path: location to save the processed files dictionary to
   :param dict processed_files: 'path => last modified' mappings
   
   :raises:
-    * IOError if unable to write to the file
-    * TypeError if processed_files is of the wrong type
+    * **IOError** if unable to write to the file
+    * **TypeError** if processed_files is of the wrong type
   """
   
   # makes the parent directory if it doesn't already exist
@@ -206,13 +228,17 @@ class DescriptorReader(object):
   
   Our persistence_path argument is a convenient method to persist the listing
   of files we have processed between runs, however it doesn't allow for error
-  handling. If you want that then use the load/save_processed_files functions
-  instead.
+  handling. If you want that then use the
+  :func:`~stem.descriptor.reader.load_processed_files` and
+  :func:`~stem.descriptor.reader.save_processed_files` functions instead.
   
   :param str,list target: path or list of paths for files or directories to be read from
-  :param bool follow_links: determines if we'll follow symlinks when traversing directories (requires python 2.6)
-  :param int buffer_size: descriptors we'll buffer before waiting for some to be read, this is unbounded if zero
-  :param str persistence_path: if set we will load and save processed file listings from this path, errors are ignored
+  :param bool follow_links: determines if we'll follow symlinks when traversing
+    directories (requires python 2.6)
+  :param int buffer_size: descriptors we'll buffer before waiting for some to
+    be read, this is unbounded if zero
+  :param str persistence_path: if set we will load and save processed file
+    listings from this path, errors are ignored
   """
   
   def __init__(self, target, follow_links = False, buffer_size = 100, persistence_path = None):
@@ -253,10 +279,13 @@ class DescriptorReader(object):
     
       absolute path (str) => last modified unix timestamp (int)
     
-    This includes entries set through the set_processed_files() method. After
-    each run is reset to only the files that were present during that run.
+    This includes entries set through the
+    :func:`~stem.descriptor.reader.DescriptorReader.set_processed_files`
+    method. Each run resets this to only the files that were present during
+    that run.
     
-    :returns: dict with the absolute paths and unix timestamp for the last modified times of the files we have processed
+    :returns: **dict** with the absolute paths and unix timestamp for the last
+      modified times of the files we have processed
     """
     
     # make sure that we only provide back absolute paths
@@ -264,11 +293,12 @@ class DescriptorReader(object):
   
   def set_processed_files(self, processed_files):
     """
-    Sets the listing of the files we have processed. Most often this is useful
-    as a method for pre-populating the listing of descriptor files that we have
-    seen.
+    Sets the listing of the files we have processed. Most often this is used
+    with a newly created :class:`~stem.descriptor.reader.DescriptorReader` to
+    pre-populate the listing of descriptor files that we have seen.
     
-    :param dict processed_files: mapping of absolute paths (str) to unix timestamps for the last modified time (int)
+    :param dict processed_files: mapping of absolute paths (**str**) to unix
+      timestamps for the last modified time (**int**)
     """
     
     self._processed_files = dict(processed_files)
@@ -282,7 +312,8 @@ class DescriptorReader(object):
     
       my_listener(path, exception)
     
-    :param functor listener: functor to be notified of files that are skipped to read errors or because they couldn't be parsed as valid descriptor data
+    :param functor listener: functor to be notified of files that are skipped
+      to read errors or because they couldn't be parsed as valid descriptor data
     """
     
     self._skip_listeners.append(listener)
@@ -292,7 +323,8 @@ class DescriptorReader(object):
     Provides the number of descriptors that are waiting to be iterated over.
     This is limited to the buffer_size that we were constructed with.
     
-    :returns: int for the estimated number of currently enqueued descriptors, this is not entirely reliable
+    :returns: **int** for the estimated number of currently enqueued
+      descriptors, this is not entirely reliable
     """
     
     return self._unreturned_descriptors.qsize()
@@ -301,7 +333,7 @@ class DescriptorReader(object):
     """
     Starts reading our descriptor files.
     
-    :raises: ValueError if we're already reading the descriptor files
+    :raises: **ValueError** if we're already reading the descriptor files
     """
     
     with self._reader_thread_lock:

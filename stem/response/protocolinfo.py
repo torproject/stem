@@ -1,37 +1,9 @@
-"""
-Parses replies to a tor PROTOCOLINFO queries.
-
-The AuthMethod enumeration includes methods by which a controller can
-authenticate to the control port. Tor gives a list of all the authentication
-methods it will accept in response to PROTOCOLINFO queries.
-
-**AuthMethod.NONE**
-  No authentication required
-
-**AuthMethod.PASSWORD**
-  See tor's HashedControlPassword option. Controllers must provide the password
-  used to generate the hash.
-
-**AuthMethod.COOKIE**
-  See tor's CookieAuthentication option. Controllers need to supply the
-  contents of the cookie file.
-
-**AuthMethod.SAFECOOKIE**
-  See tor's CookieAuthentication option. Controllers need to reply to a
-  hmac challenge using the contents of the cookie file.
-
-**AuthMethod.UNKNOWN**
-  Tor provided one or more authentication methods that we don't recognize. This
-  is probably from a new addition to the control protocol.
-"""
-
 import stem.socket
 import stem.response
 import stem.version
-import stem.util.enum
 import stem.util.log as log
 
-AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "SAFECOOKIE", "UNKNOWN")
+from stem.connection import AuthMethod
 
 class ProtocolInfoResponse(stem.response.ControlMessage):
   """
