@@ -284,6 +284,9 @@ if __name__ == '__main__':
   # override flag to indicate at the end that testing failed somewhere
   testing_failed = False
   
+  # count how many tests have been skipped.
+  skipped_test_count = 0
+
   # loads and validates our various configurations
   test_config = stem.util.conf.get_config("test")
   
@@ -333,7 +336,9 @@ if __name__ == '__main__':
       test.output.print_divider(test_class.__module__)
       suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
       test_results = StringIO.StringIO()
-      unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+      run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+      if stem.prereq.is_python_27():
+        skipped_test_count += len(run_result.skipped)
       
       sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
       print
@@ -409,7 +414,9 @@ if __name__ == '__main__':
           test.output.print_divider(test_class.__module__)
           suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
           test_results = StringIO.StringIO()
-          unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+          run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+          if stem.prereq.is_python_27():
+            skipped_test_count += len(run_result.skipped)
           
           sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
           print
@@ -473,6 +480,10 @@ if __name__ == '__main__':
     
     for line in error_tracker:
       test.output.print_line("  %s" % line, *ERROR_ATTR)
+  elif skipped_test_count > 0:
+    test.output.print_line("%i TESTS WERE SKIPPED" % skipped_test_count, term.Color.BLUE, term.Attr.BOLD)
+    test.output.print_line("ALL OTHER TESTS PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
+    print    
   else:
     test.output.print_line("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
     print
