@@ -11,6 +11,7 @@ Contents
    api/control
    api/connection
    api/socket
+   api/process
 
    api/exit_policy
    api/version
