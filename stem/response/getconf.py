@@ -8,7 +8,8 @@ class GetConfResponse(stem.response.ControlMessage):
   Note that configuration parameters won't match what we queried for if it's one
   of the special mapping options (ex. "HiddenServiceOptions").
   
-  :var dict entries: mapping between the config parameter (str) and their values (list of str)
+  :var dict entries: mapping between the config parameter (**str**) and their
+    values (**list** of **str**)
   """
   
   def _parse_message(self):

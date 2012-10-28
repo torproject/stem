@@ -42,6 +42,29 @@ fine-grained control over the authentication process. For instance...
     print "Unable to authenticate: %s" % exc
     sys.exit(1)
 
+The AuthMethod enumeration includes methods by which a controller can
+authenticate to the control port. Tor gives a list of all the authentication
+methods it will accept in response to PROTOCOLINFO queries.
+
+**AuthMethod.NONE**
+  No authentication required
+
+**AuthMethod.PASSWORD**
+  See tor's HashedControlPassword option. Controllers must provide the password
+  used to generate the hash.
+
+**AuthMethod.COOKIE**
+  See tor's CookieAuthentication option. Controllers need to supply the
+  contents of the cookie file.
+
+**AuthMethod.SAFECOOKIE**
+  See tor's CookieAuthentication option. Controllers need to reply to a
+  hmac challenge using the contents of the cookie file.
+
+**AuthMethod.UNKNOWN**
+  Tor provided one or more authentication methods that we don't recognize. This
+  is probably from a new addition to the control protocol.
+
 **Module Overview:**
 
 ::
@@ -99,7 +122,8 @@ import stem.util.enum
 import stem.util.system
 import stem.util.connection
 import stem.util.log as log
-from stem.response.protocolinfo import AuthMethod
+
+AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "SAFECOOKIE", "UNKNOWN")
 
 CLIENT_HASH_CONSTANT = "Tor safe cookie authentication controller-to-server hash"
 SERVER_HASH_CONSTANT = "Tor safe cookie authentication server-to-controller hash"

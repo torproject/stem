@@ -54,9 +54,10 @@ CONTROL_ESCAPES = {r"\\": "\\",  r"\"": "\"",   r"\'": "'",
 
 def convert(response_type, message, **kwargs):
   """
-  Converts a ControlMessage into a particular kind of tor response. This does
-  an in-place conversion of the message from being a ControlMessage to a
-  subclass for its response type. Recognized types include...
+  Converts a :class:`~stem.response.ControlMessage` into a particular kind of
+  tor response. This does an in-place conversion of the message from being a
+  :class:`~stem.response.ControlMessage` to a subclass for its response type.
+  Recognized types include...
   
     * **\*** GETINFO
     * **\*** GETCONF
@@ -65,19 +66,23 @@ def convert(response_type, message, **kwargs):
     * AUTHCHALLENGE
     * SINGLELINE
   
-  **\*** can raise a :class:`stem.socket.InvalidArguments` exception
-  **^** can raise a :class:`stem.socket.InvalidRequest` exception
-  **&** can raise a :class:`stem.socket.OperationFailed` exception
+  * **\*** can raise a :class:`stem.socket.InvalidArguments` exception
+  * **^** can raise a :class:`stem.socket.InvalidRequest` exception
+  * **&** can raise a :class:`stem.socket.OperationFailed` exception
   
   :param str response_type: type of tor response to convert to
   :param stem.response.ControlMessage message: message to be converted
   :param kwargs: optional keyword arguments to be passed to the parser method
   
   :raises:
-    * :class:`stem.socket.ProtocolError` the message isn't a proper response of that type
-    * :class:`stem.socket.InvalidArguments` the arguments given as input are invalid
-    * :class:`stem.socket.InvalidRequest` the arguments given as input are invalid
-    * TypeError if argument isn't a :class:`stem.response.ControlMessage` or response_type isn't supported
+    * :class:`stem.socket.ProtocolError` the message isn't a proper response of
+      that type
+    * :class:`stem.socket.InvalidArguments` the arguments given as input are
+      invalid
+    * :class:`stem.socket.InvalidRequest` the arguments given as input are
+      invalid
+    * **TypeError** if argument isn't a :class:`~stem.response.ControlMessage`
+      or response_type isn't supported
   """
   
   import stem.response.getinfo
@@ -124,7 +129,7 @@ class ControlMessage(object):
     """
     Checks if any of our lines have a 250 response.
     
-    :returns: True if any lines have a 250 response code, False otherwise
+    :returns: **True** if any lines have a 250 response code, **False** otherwise
     """
     
     for code, _, _ in self._parsed_content:
@@ -154,7 +159,7 @@ class ControlMessage(object):
     For data entries the content is the full multi-line payload with newline
     linebreaks and leading periods unescaped.
     
-    :returns: list of (str, str, str) tuples for the components of this message
+    :returns: **list** of (str, str, str) tuples for the components of this message
     """
     
     return list(self._parsed_content)
@@ -163,7 +168,7 @@ class ControlMessage(object):
     """
     Provides the unparsed content read from the control socket.
     
-    :returns: string of the socket data used to generate this message
+    :returns: **str** of the socket data used to generate this message
     """
     
     return self._raw_content
@@ -178,8 +183,8 @@ class ControlMessage(object):
   
   def __iter__(self):
     """
-    Provides ControlLine instances for the content of the message. This is
-    stripped of status codes and dividers, for instance...
+    Provides :class:`~stem.response.ControlLine` instances for the content of
+    the message. This is stripped of status codes and dividers, for instance...
     
     ::
     
@@ -204,14 +209,14 @@ class ControlMessage(object):
   
   def __len__(self):
     """
-    :returns: Number of ControlLines
+    :returns: number of ControlLines
     """
     
     return len(self._parsed_content)
   
   def __getitem__(self, index):
     """
-    :returns: ControlLine at index
+    :returns: :class:`~stem.response.ControlLine` at the index
     """
     
     return ControlLine(self._parsed_content[index][2])
@@ -238,7 +243,7 @@ class ControlLine(str):
     Provides our unparsed content. This is an empty string after we've popped
     all entries.
     
-    :returns: str of the unparsed content
+    :returns: **str** of the unparsed content
     """
     
     return self._remainder
@@ -247,7 +252,7 @@ class ControlLine(str):
     """
     Checks if we have further content to pop or not.
     
-    :returns: True if we have additional content, False otherwise
+    :returns: **True** if we have additional content, **False** otherwise
     """
     
     return self._remainder == ""
@@ -256,9 +261,9 @@ class ControlLine(str):
     """
     Checks if our next entry is a quoted value or not.
     
-    :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
+    :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
     
-    :returns: True if the next entry can be parsed as a quoted value, False otherwise
+    :returns: **True** if the next entry can be parsed as a quoted value, **False** otherwise
     """
     
     start_quote, end_quote = _get_quote_indeces(self._remainder, escaped)
@@ -268,11 +273,12 @@ class ControlLine(str):
     """
     Checks if our next entry is a KEY=VALUE mapping or not.
     
-    :param str key: checks that the key matches this value, skipping the check if ``None``
+    :param str key: checks that the key matches this value, skipping the check if **None**
     :param bool quoted: checks that the mapping is to a quoted value
-    :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
+    :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
     
-    :returns: True if the next entry can be parsed as a key=value mapping, False otherwise
+    :returns: **True** if the next entry can be parsed as a key=value mapping,
+      **False** otherwise
     """
     
     remainder = self._remainder # temp copy to avoid locking
@@ -293,10 +299,10 @@ class ControlLine(str):
   
   def peek_key(self):
     """
-    Provides the key of the next entry, providing None if it isn't a key/value
-    mapping.
+    Provides the key of the next entry, providing **None** if it isn't a
+    key/value mapping.
     
-    :returns: str with the next entry's key
+    :returns: **str** with the next entry's key
     """
     
     remainder = self._remainder
@@ -327,13 +333,13 @@ class ControlLine(str):
         "this has a \\" and \\\\ in it"
     
     :param bool quoted: parses the next entry as a quoted value, removing the quotes
-    :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
+    :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
     
-    :returns: str of the next space separated entry
+    :returns: **str** of the next space separated entry
     
     :raises:
-      * ValueError if quoted is True without the value being quoted
-      * IndexError if we don't have any remaining content left to parse
+      * **ValueError** if quoted is True without the value being quoted
+      * **IndexError** if we don't have any remaining content left to parse
     """
     
     with self._remainder_lock:
@@ -347,12 +353,13 @@ class ControlLine(str):
     and the space from our remaining content.
     
     :param bool quoted: parses the value as being quoted, removing the quotes
-    :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
+    :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
     
-    :returns: tuple of the form (key, value)
+    :returns: **tuple** of the form (key, value)
     
-    :raises: ValueError if this isn't a KEY=VALUE mapping or if quoted is True without the value being quoted
-    :raises: IndexError if there's nothing to parse from the line
+    :raises: **ValueError** if this isn't a KEY=VALUE mapping or if quoted is
+      **True** without the value being quoted
+    :raises: **IndexError** if there's nothing to parse from the line
     """
     
     with self._remainder_lock:
@@ -376,13 +383,13 @@ def _parse_entry(line, quoted, escaped):
   
   :param str line: content to be parsed
   :param bool quoted: parses the next entry as a quoted value, removing the quotes
-  :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
+  :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
   
-  :returns: tuple of the form (entry, remainder)
+  :returns: **tuple** of the form (entry, remainder)
   
   :raises:
-    * ValueError if quoted is True without the next value being quoted
-    * IndexError if there's nothing to parse from the line
+    * **ValueError** if quoted is True without the next value being quoted
+    * **IndexError** if there's nothing to parse from the line
   """
   
   if line == "":
@@ -414,9 +421,9 @@ def _get_quote_indeces(line, escaped):
   Provides the indices of the next two quotes in the given content.
   
   :param str line: content to be parsed
-  :param bool escaped: unescapes the ``CONTROL_ESCAPES`` escape sequences
+  :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
   
-  :returns: tuple of two ints, indices being -1 if a quote doesn't exist
+  :returns: **tuple** of two ints, indices being -1 if a quote doesn't exist
   """
   
   indices, quote_index = [], -1
@@ -446,14 +453,14 @@ class SingleLineResponse(ControlMessage):
   
   def is_ok(self, strict = False):
     """
-    Checks if the response code is "250". If strict is True, checks if the
-    response is "250 OK"
+    Checks if the response code is "250". If strict is **True** then this
+    checks if the response is "250 OK"
     
-    :param bool strict: checks for a "250 OK" message if True
+    :param bool strict: checks for a "250 OK" message if **True**
     
     :returns:
-      * If strict is False: True if the response code is "250", False otherwise
-      * If strict is True: True if the response is "250 OK", False otherwise
+      * If strict is **False**: **True** if the response code is "250", **False** otherwise
+      * If strict is **True**: **True** if the response is "250 OK", **False** otherwise
     """
     
     if strict:
