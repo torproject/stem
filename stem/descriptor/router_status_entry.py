@@ -249,14 +249,14 @@ class RouterStatusEntryV3(RouterStatusEntry):
   :var str digest: **\*** router's digest
   
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
-  :var int measured: bandwith measured to be available by the relay
+  :var int measured: bandwidth measured to be available by the relay
   :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting
     information that isn't yet recognized
   
   :var stem.exit_policy.MicrodescriptorExitPolicy exit_policy: router's exit policy
   
   :var list microdescriptor_hashes: tuples of two values, the list of consensus
-    methods for generting a set of digests and the 'algorithm => digest' mappings
+    methods for generating a set of digests and the 'algorithm => digest' mappings
   
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -317,7 +317,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   flavored network status document.
   
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
-  :var int measured: bandwith measured to be available by the relay
+  :var int measured: bandwidth measured to be available by the relay
   :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting
     information that isn't yet recognized
   
@@ -566,8 +566,8 @@ def _decode_fingerprint(identity, validate):
     raise ValueError("Unable to decode identity string '%s'" % identity)
   
   for char in identity_decoded:
-    # Individual characters are either standard ascii or hex encoded, and each
-    # represent two hex digits. For instnace...
+    # Individual characters are either standard ASCII or hex encoded, and each
+    # represent two hex digits. For instance...
     #
     # >>> ord('\n')
     # 10

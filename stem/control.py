@@ -182,8 +182,8 @@ class BaseController(object):
       #   message.
       #
       # - This is a leftover response for a msg() call. We can't tell who an
-      #   exception was airmarked for, so we only know that this was the case
-      #   if it's a ControlMessage. This should not be possable and indicates
+      #   exception was earmarked for, so we only know that this was the case
+      #   if it's a ControlMessage. This should not be possible and indicates
       #   a stem bug. This deserves a NOTICE level log message since it
       #   indicates that one of our callers didn't get their reply.
       
@@ -227,7 +227,7 @@ class BaseController(object):
   
   def is_alive(self):
     """
-    Checks if our socket is currently connected. This is a passthrough for our
+    Checks if our socket is currently connected. This is a pass-through for our
     socket's :func:`~stem.socket.ControlSocket.is_alive` method.
     
     :returns: **bool** that's **True** if we're shut down and **False** otherwise
@@ -237,7 +237,7 @@ class BaseController(object):
   
   def connect(self):
     """
-    Reconnects our control socket. This is a passthrough for our socket's
+    Reconnects our control socket. This is a pass-through for our socket's
     :func:`~stem.socket.ControlSocket.connect` method.
     
     :raises: :class:`stem.socket.SocketError` if unable to make a socket
@@ -247,7 +247,7 @@ class BaseController(object):
   
   def close(self):
     """
-    Closes our socket connection. This is a passthrough for our socket's
+    Closes our socket connection. This is a pass-through for our socket's
     :func:`~stem.socket.ControlSocket.close` method.
     """
     
@@ -274,14 +274,14 @@ class BaseController(object):
     
     The state is a value from stem.socket.State, functions **must** allow for
     new values in this field. The timestamp is a float for the unix time when
-    the change occured.
+    the change occurred.
     
     This class only provides **State.INIT** and **State.CLOSED** notifications.
     Subclasses may provide others.
     
     If spawn is **True** then the callback is notified via a new daemon thread.
     If **False** then the notice is under our locks, within the thread where
-    the change occured. In general this isn't advised, especially if your
+    the change occurred. In general this isn't advised, especially if your
     callback could block for a while.
     
     :param function callback: function to be notified when our state changes
@@ -298,7 +298,7 @@ class BaseController(object):
     
     :param function callback: function to be removed from our listeners
     
-    :returns: **bool** that's **True** if we removed one or more occurances of
+    :returns: **bool** that's **True** if we removed one or more occurrences of
       the callback, **False** otherwise
     """
     
@@ -353,19 +353,19 @@ class BaseController(object):
   
   def _notify_status_listeners(self, state, expect_alive = None):
     """
-    Informs our status listeners that a state change occured.
+    Informs our status listeners that a state change occurred.
     
     States imply that our socket is either alive or not, which may not hold
-    true when multiple events occure in quick succession. For instance, a
+    true when multiple events occur in quick succession. For instance, a
     sighup could cause two events (**State.RESET** for the sighup and
-    **State.CLOSE** if it causes tor to crash). However, there's no guarentee
-    of the order in which they occure, and it would be bad if listeners got the
+    **State.CLOSE** if it causes tor to crash). However, there's no guarantee
+    of the order in which they occur, and it would be bad if listeners got the
     **State.RESET** last, implying that we were alive.
     
     If set, the expect_alive flag will discard our event if it conflicts with
     our current :func:`~stem.control.BaseController.is_alive` state.
     
-    :param stem.socket.State state: state change that has occured
+    :param stem.socket.State state: state change that has occurred
     :param bool expect_alive: discard event if it conflicts with our
       :func:`~stem.control.BaseController.is_alive` state
     """
@@ -373,7 +373,7 @@ class BaseController(object):
     # Any changes to our is_alive() state happen under the send lock, so we
     # need to have it to ensure it doesn't change beneath us.
     
-    # TODO: when we drop python 2.5 compatability we can simplify this
+    # TODO: when we drop python 2.5 compatibility we can simplify this
     with self._socket._get_send_lock():
       with self._status_listeners_lock:
         change_timestamp = time.time()
@@ -398,8 +398,8 @@ class BaseController(object):
     them if we're restarted.
     """
     
-    # In theory concurrent calls could result in multple start() calls on a
-    # single thread, which would cause an unexpeceted exception. Best be safe.
+    # In theory concurrent calls could result in multiple start() calls on a
+    # single thread, which would cause an unexpected exception. Best be safe.
     
     with self._socket._get_send_lock():
       if not self._reader_thread or not self._reader_thread.isAlive():
@@ -507,7 +507,7 @@ class Controller(BaseController):
     self._is_caching_enabled = enable_caching
     self._request_cache = {}
     
-    # number of sequental 'GETINFO ip-to-country/*' lookups that have failed
+    # number of sequential 'GETINFO ip-to-country/*' lookups that have failed
     self._geoip_failure_count = 0
     self.enabled_features = []
   
@@ -621,7 +621,7 @@ class Controller(BaseController):
           if key in CACHEABLE_GETINFO_PARAMS:
             self._request_cache["getinfo.%s" % key] = value
           elif key.startswith('ip-to-country/'):
-            # both cacheable and means that we should reset the geoip failure count
+            # both cache-able and means that we should reset the geoip failure count
             self._request_cache["getinfo.%s" % key] = value
             self._geoip_failure_count = -1
       
@@ -635,7 +635,7 @@ class Controller(BaseController):
       # bump geoip failure count if...
       # * we're caching results
       # * this was soley a geoip lookup
-      # * we've never had a successful geoip lookup (faiure count isn't -1)
+      # * we've never had a successful geoip lookup (failure count isn't -1)
       
       is_geoip_request = len(params) == 1 and list(params)[0].startswith('ip-to-country/')
       
@@ -707,7 +707,7 @@ class Controller(BaseController):
     """
     
     # TODO: We should iterate over the descriptors as they're read from the
-    # socket rather than reading the whole thing into memeory.
+    # socket rather than reading the whole thing into memory.
     
     desc_content = self.get_info("desc/all-recent")
     
@@ -770,7 +770,7 @@ class Controller(BaseController):
   def authenticate(self, *args, **kwargs):
     """
     A convenience method to authenticate the controller. This is just a
-    passthrough to :func:`stem.connection.authenticate`.
+    pass-through to :func:`stem.connection.authenticate`.
     """
     
     import stem.connection
@@ -1002,7 +1002,7 @@ class Controller(BaseController):
       })
     
     The params can optionally be a list a key/value tuples, though the only
-    reason this type of arguement would be useful is for hidden service
+    reason this type of argument would be useful is for hidden service
     configuration (those options are order dependent).
     
     :param dict,list params: mapping of configuration options to the values

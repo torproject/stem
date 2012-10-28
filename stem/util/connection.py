@@ -91,7 +91,7 @@ def is_valid_port(entry, allow_zero = False):
   Checks if a string or int is a valid port number.
   
   :param list,str,int entry: string, integer or list to be checked
-  :param bool allow_zero: accept port number of zero (reserved by defintion)
+  :param bool allow_zero: accept port number of zero (reserved by definition)
   
   :returns: **True** if input is an integer and within the valid port range, **False** otherwise
   """
@@ -190,7 +190,7 @@ def get_masked_bits(mask):
   if not is_valid_ip_address(mask):
     raise ValueError("'%s' is an invalid subnet mask" % mask)
   
-  # converts octets to binary representatino
+  # converts octets to binary representation
   mask_bin = get_address_binary(mask)
   mask_match = re.match("^(1*)(0*)$", mask_bin)
   
@@ -239,7 +239,7 @@ def get_address_binary(address):
   """
   Provides the binary value for an IPv4 or IPv6 address.
   
-  :returns: **str** with the binary prepresentation of this address
+  :returns: **str** with the binary representation of this address
   
   :raises: **ValueError** if address is neither an IPv4 nor IPv6 address
   """

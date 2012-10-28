@@ -68,7 +68,7 @@ def is_running():
   """
   Checks if we're likely running a tor instance spawned by this module. This is
   simply a check if our custom control port is in use, so it can be confused by
-  other applications (not likely, but possable).
+  other applications (not likely, but possible).
   
   :returns: True if the control port is used, False otherwise
   """

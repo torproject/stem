@@ -71,7 +71,7 @@ def print_config(test_config):
 
 def apply_filters(testing_output, *filters):
   """
-  Gets the tests results, possably processed through a series of filters. The
+  Gets the tests results, possibly processed through a series of filters. The
   filters are applied in order, each getting the output of the previous.
   
   A filter's input arguments should be the line's (type, content) and the
@@ -115,7 +115,7 @@ def colorize(line_type, line_content):
 def strip_module(line_type, line_content):
   """
   Removes the module name from testing output. This information tends to be
-  repetative, and redundant with the headers.
+  repetitive, and redundant with the headers.
   """
   
   m = re.match(".*( \(.*?\)).*", line_content)

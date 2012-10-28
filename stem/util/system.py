@@ -10,7 +10,7 @@ best-effort, providing **None** if the lookup fails.
   is_windows - checks if we're running on windows
   is_mac - checks if we're running on a mac
   is_bsd - checks if we're running on the bsd family of operating systems
-  is_available - determines if a command is availabe on this system
+  is_available - determines if a command is available on this system
   is_running - determines if a given process is running
   get_pid_by_name - gets the pid for a process by the given name
   get_pid_by_port - gets the pid for a process listening to a given port
@@ -511,7 +511,7 @@ def get_bsd_jail_id(pid):
 
 def expand_path(path, cwd = None):
   """
-  Provides an absolute path, expanding tildas with the user's home and
+  Provides an absolute path, expanding tildes with the user's home and
   appending a current working directory if the path was relative. This is
   unix-specific and paths never have an ending slash.
   

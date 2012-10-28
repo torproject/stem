@@ -100,7 +100,7 @@ class RunnerStopped(Exception):
   "Raised when we try to use a Runner that doesn't have an active tor instance"
 
 class TorInaccessable(Exception):
-  "Raised when information is needed from tor but the instance we have is inaccessable"
+  "Raised when information is needed from tor but the instance we have is inaccessible"
 
 def skip(test_case, message):
   """
@@ -209,7 +209,7 @@ def get_runner():
 class _MockChrootFile(object):
   """
   Wrapper around a file object that strips given content from readline()
-  responses. This is used to simulate a chroot setup by removing the restign
+  responses. This is used to simulate a chroot setup by removing the prefix
   directory from the paths we report.
   """
   
@@ -335,7 +335,7 @@ class Runner(object):
       if self._test_dir and CONFIG["integ.test_directory"] == "":
         shutil.rmtree(self._test_dir, ignore_errors = True)
       
-      # reverts any mockin of stem.socket.recv_message
+      # reverts any mocking of stem.socket.recv_message
       if self._original_recv_message:
         stem.socket.recv_message = self._original_recv_message
         self._original_recv_message = None
@@ -382,7 +382,7 @@ class Runner(object):
     a lot of adverse side effects
     (`ticket <https://trac.torproject.org/projects/tor/ticket/3313>`_).
     
-    :returns: True if debugger attachment is allowd, False otherwise
+    :returns: True if debugger attachment is allowed, False otherwise
     """
     
     # If we're running a tor version where ptrace is disabled and we didn't
@@ -407,7 +407,7 @@ class Runner(object):
     
     :param str resource: file within our test directory to provide the path for
     
-    :returns: str with our test direcectory's absolute path or that of a file within it
+    :returns: str with our test directory's absolute path or that of a file within it
     
     :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
@@ -596,7 +596,7 @@ class Runner(object):
     
     # Makes a directory for the control socket if needed. As of, at least, Tor
     # 0.2.3.10 it checks during startup that the directory a control socket
-    # resides in is only accessable by the tor user (and refuses to finish
+    # resides in is only accessible by the tor user (and refuses to finish
     # starting if it isn't).
     
     if Torrc.SOCKET in self._custom_opts:

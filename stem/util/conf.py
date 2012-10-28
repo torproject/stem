@@ -124,7 +124,7 @@ Alternatively you can get a read-only dictionary that stays in sync with the
     |- save - writes the current configuration to a file
     |- clear - empties our loaded configuration contents
     |- synchronize - replaces mappings in a dictionary with the config's values
-    |- add_listener - notifies the given listener when an update occures
+    |- add_listener - notifies the given listener when an update occurs
     |- clear_listeners - removes any attached listeners
     |- keys - provides keys in the loaded configuration
     |- set - sets the given key/value pair
@@ -355,7 +355,7 @@ class Config(object):
     elif not self._path:
       raise ValueError("Unable to save configuration: no path provided")
     
-    # TODO: when we drop python 2.5 compatability we can simplify this
+    # TODO: when we drop python 2.5 compatibility we can simplify this
     with self._contents_lock:
       with open(self._path, 'w') as output_file:
         for entry_key in sorted(self.keys()):

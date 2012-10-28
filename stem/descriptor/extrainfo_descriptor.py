@@ -34,7 +34,7 @@ Extra-info descriptors are available from a few sources...
   DirStats - known stats for ExtraInfoDescriptor's dir_*_direct_dl and dir_*_tunneled_dl
     |- COMPLETE - requests that completed successfully
     |- TIMEOUT - requests that didn't complete within a ten minute timeout
-    |- RUNNING - requests still in procress when measurement's taken
+    |- RUNNING - requests still in process when measurement's taken
     |- MIN - smallest rate at which a descriptor was downloaded in B/s
     |- MAX - largest rate at which a descriptor was downloaded in B/s
     |- D1-4 and D6-9 - rate of the slowest x/10 download rates in B/s
@@ -184,7 +184,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var datetime published: **\*** time in GMT when this descriptor was made
   :var str geoip_db_digest: sha1 of geoIP database file
   :var dict transport: **\*** mapping of transport methods to their (address,
-    port, args) tuple, these usually appeear on bridges in which case all of
+    port, args) tuple, these usually appear on bridges in which case all of
     those are **None**
   
   **Bi-directional connection usage:**
@@ -399,7 +399,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     :param dict entries: descriptor contents to be applied
     :param bool validate: checks the validity of descriptor content if True
     
-    :raises: **ValueError** if an error occures in validation
+    :raises: **ValueError** if an error occurs in validation
     """
     
     for keyword, values in entries.items():

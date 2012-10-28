@@ -134,7 +134,7 @@ class UnrecognizedType(FileSkipped):
 
 class ReadFailed(FileSkipped):
   """
-  An IOError occured while trying to read the file.
+  An IOError occurred while trying to read the file.
   
   :param IOError exception: issue that arose when reading the file, **None** if
     this arose due to the file not being present

@@ -124,7 +124,7 @@ def get_cwd(pid):
   
   :param int pid: process id of the process to be queried
   
-  :returns: **str** with the path of the workign direcctory for the process
+  :returns: **str** with the path of the working directory for the process
   
   :raises: **IOError** if it can't be determined
   """

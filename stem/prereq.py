@@ -8,7 +8,7 @@ series). Other requirements for complete functionality are...
 
 * rsa module
 
-  * validating descriptor signagure integrity
+  * validating descriptor signature integrity
 
 ::
 
@@ -70,7 +70,7 @@ def is_rsa_available():
       IS_RSA_AVAILABLE = False
       
       msg = "Unable to import the rsa module. Because of this we'll be unable to verify descriptor signature integrity."
-      log.log_once("stem.prereq.is_rsa_availabe", log.INFO, msg)
+      log.log_once("stem.prereq.is_rsa_available", log.INFO, msg)
   
   return IS_RSA_AVAILABLE
 

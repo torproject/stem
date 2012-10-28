@@ -2,8 +2,8 @@
 Functions to aid library logging. Default logging is usually NOTICE and above,
 runlevels being used as follows...
 
-* **ERROR** - critical issue occured, the user needs to be notified
-* **WARN** - non-critical issue occured that the user should be aware of
+* **ERROR** - critical issue occurred, the user needs to be notified
+* **WARN** - non-critical issue occurred that the user should be aware of
 * **NOTICE** - information that is helpful to the user
 * **INFO** - high level library activity
 * **DEBUG** - low level library activity
@@ -96,7 +96,7 @@ def logging_level(runlevel):
 
 def escape(message):
   """
-  Escapes specific sequences for logging (newlines, tabs, carrage returns).
+  Escapes specific sequences for logging (newlines, tabs, carriage returns).
   
   :param str message: string to be escaped
   

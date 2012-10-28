@@ -471,7 +471,7 @@ class SingleLineResponse(ControlMessage):
     content = self.content()
     
     if len(content) > 1:
-      raise stem.socket.ProtocolError("Received multiline response")
+      raise stem.socket.ProtocolError("Received multi-line response")
     elif len(content) == 0:
       raise stem.socket.ProtocolError("Received empty response")
     else:

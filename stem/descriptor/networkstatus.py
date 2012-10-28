@@ -168,7 +168,7 @@ BANDWIDTH_WEIGHT_ENTRIES = (
 def parse_file(document_file, validate = True, is_microdescriptor = False, document_version = 3):
   """
   Parses a network status and iterates over the RouterStatusEntry in it. The
-  document that these instances reference have an empty 'rotuers' attribute to
+  document that these instances reference have an empty 'routers' attribute to
   allow for limited memory usage.
   
   :param file document_file: file with network status document content
@@ -366,7 +366,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
           self.published = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         except ValueError:
           if validate:
-            raise ValueError("Versino 2 network status document's 'published' time wasn't parseable: %s" % value)
+            raise ValueError("Version 2 network status document's 'published' time wasn't parseable: %s" % value)
       elif keyword == "dir-options":
         self.options = value.split()
       elif keyword == "directory-signature":
@@ -727,7 +727,7 @@ class _DocumentFooter(object):
     
     content = document_file.read()
     if validate and content and not header.meets_consensus_method(9):
-      raise ValueError("Network status document's footer should only apepar in consensus-method 9 or later")
+      raise ValueError("Network status document's footer should only appear in consensus-method 9 or later")
     elif not content and not header.meets_consensus_method(9):
       return # footer is optional and there's nothing to parse
     
@@ -798,7 +798,7 @@ def _check_for_missing_and_disallowed_fields(header, entries, fields):
   :param list fields: expected field attributes (either
     **HEADER_STATUS_DOCUMENT_FIELDS** or **FOOTER_STATUS_DOCUMENT_FIELDS**)
   
-  :raises: **ValueError** if we're missing mandatory fields or have fiels we shouldn't
+  :raises: **ValueError** if we're missing mandatory fields or have fields we shouldn't
   """
   
   missing_fields, disallowed_fields = [], []

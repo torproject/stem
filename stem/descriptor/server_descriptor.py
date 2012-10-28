@@ -313,7 +313,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     :param dict entries: descriptor contents to be applied
     :param bool validate: checks the validity of descriptor content if **True**
     
-    :raises: **ValueError** if an error occures in validation
+    :raises: **ValueError** if an error occurs in validation
     """
     
     for keyword, values in entries.items():
@@ -381,7 +381,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         # platform Tor 0.2.2.35 (git-73ff13ab3cc9570d) on Linux x86_64
         #
         # There's no guarantee that we'll be able to pick these out the
-        # version, but might as well try to save our caller the effot.
+        # version, but might as well try to save our caller the effort.
         
         platform_match = re.match("^Tor (\S*).* on (.*)$", self.platform)
         
@@ -411,7 +411,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
               raise ValueError("Fingerprint line should have groupings of four hex digits: %s" % value)
           
           if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
-            raise ValueError("Tor relay fingerprints consist of fourty hex digits: %s" % value)
+            raise ValueError("Tor relay fingerprints consist of forty hex digits: %s" % value)
         
         self.fingerprint = fingerprint
       elif keyword == "hibernating":
@@ -439,7 +439,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         else:
           self.hidden_service_dir = ["2"]
       elif keyword == "uptime":
-        # We need to be tolerant of negative uptimes to accomidate a past tor
+        # We need to be tolerant of negative uptimes to accommodate a past tor
         # bug...
         #
         # Changes in version 0.1.2.7-alpha - 2007-02-06
@@ -448,7 +448,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         #    buckets go absurdly negative.
         #
         # After parsing all of the attributes we'll double check that negative
-        # uptimes only occured prior to this fix.
+        # uptimes only occurred prior to this fix.
         
         try:
           self.uptime = int(value)

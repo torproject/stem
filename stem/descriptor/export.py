@@ -21,7 +21,7 @@ def export_csv(descriptors, included_fields = (), excluded_fields = (), header =
   """
   Provides a newline separated CSV for one or more descriptors. If simply
   provided with descriptors then the CSV contains all of its attributes,
-  labelled with a header row. Either 'included_fields' or 'excluded_fields' can
+  labeled with a header row. Either 'included_fields' or 'excluded_fields' can
   be used for more granular control over its attributes and the order.
   
   :param Descriptor,list descriptors: either a

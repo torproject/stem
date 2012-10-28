@@ -174,7 +174,7 @@ class ControlSocket(object):
         self._socket_file = self._socket.makefile()
         self._is_alive = True
         
-        # It's possable for this to have a transient failure...
+        # It's possible for this to have a transient failure...
         # SocketError: [Errno 4] Interrupted system call
         #
         # It's safe to retry, so give it another try if it fails.
@@ -359,7 +359,7 @@ class ControlSocketFile(ControlSocket):
 def send_message(control_file, message, raw = False):
   """
   Sends a message to the control socket, adding the expected formatting for
-  single verses multiline messages. Neither message type should contain an
+  single verses multi-line messages. Neither message type should contain an
   ending newline (if so it'll be treated as a multi-line message with a blank
   line at the end). If the message doesn't contain a newline then it's sent
   as...

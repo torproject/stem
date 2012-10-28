@@ -8,7 +8,7 @@ which are...
 * no trailing whitespace unless the line is empty, in which case it should have
   the same indentation as the surrounding code
 
-This also checks for 2.5 compatability issues (yea, they're not whitespace but
+This also checks for 2.5 compatibility issues (yea, they're not whitespace but
 it's so much easier to do here...):
 
 * checks that anything using the 'with' keyword has...

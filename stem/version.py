@@ -135,7 +135,7 @@ class Version(object):
     be compared to either a :class:`~stem.version.Version` or
     :class:`~stem.version.VersionRequirements`.
     
-    :param requirements: requrirements to be checked for
+    :param requirements: requirements to be checked for
     """
     
     if isinstance(requirements, Version):
@@ -196,7 +196,7 @@ class VersionRequirements(object):
     """
     Adds a constraint that we're greater than the given version.
     
-    :param stem.version.Version verison: version we're checking against
+    :param stem.version.Version version: version we're checking against
     :param bool inclusive: if comparison is inclusive or not
     """
     
@@ -209,7 +209,7 @@ class VersionRequirements(object):
     """
     Adds a constraint that we're less than the given version.
     
-    :param stem.version.Version verison: version we're checking against
+    :param stem.version.Version version: version we're checking against
     :param bool inclusive: if comparison is inclusive or not
     """
     
@@ -222,8 +222,8 @@ class VersionRequirements(object):
     """
     Adds constraint that we're within the range from one version to another.
     
-    :param stem.version.Version from_verison: beginning of the comparison range
-    :param stem.version.Version to_verison: end of the comparison range
+    :param stem.version.Version from_version: beginning of the comparison range
+    :param stem.version.Version to_version: end of the comparison range
     :param bool from_inclusive: if comparison is inclusive with the starting version
     :param bool to_inclusive: if comparison is inclusive with the ending version
     """

@@ -74,7 +74,7 @@ def parse_file(path, descriptor_file):
   # by an annotation on their first line...
   # https://trac.torproject.org/5651
   
-  # Cached descriptor handling. These contain mulitple descriptors per file.
+  # Cached descriptor handling. These contain multiple descriptors per file.
   
   filename, file_parser = os.path.basename(path), None
   
@@ -268,7 +268,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   followed by an optional value. Lines can also be followed by a signature
   block.
   
-  To get a sublisting with just certain keywords use extra_keywords. This can
+  To get a sub-listing with just certain keywords use extra_keywords. This can
   be useful if we care about their relative ordering with respect to each
   other. For instance, we care about the ordering of 'accept' and 'reject'
   entries because this influences the resulting exit policy, but for everything
@@ -293,7 +293,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   while remaining_lines:
     line = remaining_lines.pop(0)
     
-    # V2 network status documents explicitely can contain blank lines...
+    # V2 network status documents explicitly can contain blank lines...
     #
     #   "Implementations MAY insert blank lines for clarity between sections;
     #   these blank lines are ignored."
@@ -303,7 +303,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     
     if not line: continue
     
-    # Some lines have an 'opt ' for backward compatability. They should be
+    # Some lines have an 'opt ' for backward compatibility. They should be
     # ignored. This prefix is being removed in...
     # https://trac.torproject.org/projects/tor/ticket/5124
     

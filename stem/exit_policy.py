@@ -1,6 +1,6 @@
 """
 Representation of tor exit policies. These can be easily used to check if
-exiting to a destination is permissable or not. For instance...
+exiting to a destination is permissible or not. For instance...
 
 ::
 
@@ -63,7 +63,7 @@ AddressType = stem.util.enum.Enum(("WILDCARD", "Wildcard"), ("IPv4", "IPv4"), ("
 # That said, I'm not sure if this is entirely desirable since for most use
 # cases we *want* the caller to have an immutable ExitPolicy (since it
 # reflects something they... well, can't modify). However, I can think of
-# some use cases where we might want to construct custom policies. Mabye make
+# some use cases where we might want to construct custom policies. Maybe make
 # it a CustomExitPolicyRule subclass?
 
 class ExitPolicy(object):
@@ -148,7 +148,7 @@ class ExitPolicy(object):
     """
     Provides a short description of our policy chain, similar to a
     microdescriptor. This excludes entries that don't cover all IP
-    addresses, and is either whitelist or blacklist policy based on
+    addresses, and is either white-list or blacklist policy based on
     the final entry. For instance...
     
     ::
@@ -165,7 +165,7 @@ class ExitPolicy(object):
     """
     
     if self._summary_representation is None:
-      # determines if we're a whitelist or blacklist
+      # determines if we're a white-list or blacklist
       is_whitelist = not self._is_allowed_default
       
       for rule in self._rules:
@@ -173,8 +173,8 @@ class ExitPolicy(object):
           is_whitelist = not rule.is_accept
           break
       
-      # Iterates over the policys and adds the the ports we'll return (ie,
-      # allows if a whitelist and rejects if a blacklist). Regardless of a
+      # Iterates over the policies and adds the the ports we'll return (ie,
+      # allows if a white-list and rejects if a blacklist). Regardless of a
       # port's allow/reject policy, all further entries with that port are
       # ignored since policies respect the first matching policy.
       
@@ -187,7 +187,7 @@ class ExitPolicy(object):
         for port in xrange(rule.min_port, rule.max_port + 1):
           if port in skip_ports: continue
           
-          # if accept + whitelist or reject + blacklist then add
+          # if accept + white-list or reject + blacklist then add
           if rule.is_accept == is_whitelist:
             display_ports.append(port)
           
@@ -244,7 +244,7 @@ class MicrodescriptorExitPolicy(ExitPolicy):
   ::
   
     accept 80,443       # only accepts common http ports
-    reject 1-1024       # only accepts non-privilaged ports
+    reject 1-1024       # only accepts non-privileged ports
   
   Since these policies are a subset of the exit policy information (lacking IP
   ranges) clients can only use them to guess if a relay will accept traffic or
@@ -334,7 +334,7 @@ class ExitPolicyRule(object):
   <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_ as an
   "exitpattern". Note that while these are similar to tor's man page entry for
   ExitPolicies, it's not the exact same. An exitpattern is better defined and
-  scricter in what it'll accept. For instance, ports are not optional and it
+  stricter in what it'll accept. For instance, ports are not optional and it
   does not contain the 'private' alias.
   
   This should be treated as an immutable object.
@@ -435,7 +435,7 @@ class ExitPolicyRule(object):
     :raises: **ValueError** if provided with a malformed address or port
     """
     
-    # validate our input and check if the argumement doens't match our address type
+    # validate our input and check if the argument doesn't match our address type
     if address != None:
       if stem.util.connection.is_valid_ip_address(address):
         if self.address_type == AddressType.IPv6: return False
@@ -490,7 +490,7 @@ class ExitPolicyRule(object):
           label += "[%s]" % self.address
         
         # Including our mask label as follows...
-        # - exclde our mask if it doesn't do anything
+        # - exclude our mask if it doesn't do anything
         # - use our masked bit count if we can
         # - use the mask itself otherwise
         
@@ -607,7 +607,7 @@ class ExitPolicyRule(object):
       # Our string representation encompasses our effective policy. Technically
       # this isn't quite right since our rule attribute may differ (ie, "accept
       # 0.0.0.0/0" == "accept 0.0.0.0/0.0.0.0" will be True), but these
-      # policies are effectively equivilant.
+      # policies are effectively equivalent.
       
       return str(self) == str(other)
     else:
