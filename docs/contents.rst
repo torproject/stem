@@ -8,17 +8,19 @@ Contents
    download
    tutorial
 
+   api/connection
+
    api/exit_policy
    api/version
-
-   api/descriptor/export
-   api/descriptor/reader
 
    api/descriptor/descriptor
    api/descriptor/server_descriptor
    api/descriptor/extrainfo_descriptor
    api/descriptor/networkstatus
    api/descriptor/router_status_entry
+
+   api/descriptor/export
+   api/descriptor/reader
 
    api/util/conf
    api/util/connection

@@ -1,11 +1,17 @@
 API
 ===
 
-Types
------
+Controller
+----------
 
-* `stem.exit_policy <api/exit_policy.html>`_ - Relay policy for the destinations it will or won't allow traffic to.
-* `stem.version <api/version.html>`_ - Tor versions that can be compared to determine Tor's capablilites.
+* **Core**
+
+ * `stem.connection <api/connection.html>`_ - Connection and authentication to the Tor control port or socket.
+
+* **Types**
+
+ * `stem.exit_policy <api/exit_policy.html>`_ - Relay policy for the destinations it will or won't allow traffic to.
+ * `stem.version <api/version.html>`_ - Tor versions that can be compared to determine Tor's capablilites.
 
 Descriptors
 -----------
