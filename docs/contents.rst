@@ -8,6 +8,7 @@ Contents
    download
    tutorial
 
+   api/control
    api/connection
    api/socket
 
