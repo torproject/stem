@@ -272,7 +272,7 @@ def _clean_orphaned_pyc():
 
 if __name__ == '__main__':
   try:
-    stem.prereq.check_requriements()
+    stem.prereq.check_requirements()
   except ImportError, exc:
     print exc
     print

@@ -12,7 +12,7 @@ series). Other requirements for complete functionality are...
 
 ::
 
-  check_requriements - checks for minimum requirements for running stem
+  check_requirements - checks for minimum requirements for running stem
   
   is_python_26 - checks if python 2.6 or later is available
   is_python_27 - checks if python 2.7 or later is available
@@ -26,7 +26,7 @@ import stem.util.log as log
 
 IS_RSA_AVAILABLE = None
 
-def check_requriements():
+def check_requirements():
   """
   Checks that we meet the minimum requirements to run stem. If we don't then
   this raises an ImportError with the issue.
