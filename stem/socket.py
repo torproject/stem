@@ -1,7 +1,7 @@
 """
 Supports message based communication with sockets speaking the tor control
 protocol. This lets users send messages as basic strings and receive responses
-as instances of the :class:`stem.response.ControlMessage` class.
+as instances of the :class:`~stem.response.ControlMessage` class.
 
 **Module Overview:**
 
@@ -54,7 +54,7 @@ class ControlSocket(object):
   receiving complete messages. All methods are thread safe.
   
   Callers should not instantiate this class directly, but rather use subclasses
-  which are expected to implement the ``_make_socket()`` method.
+  which are expected to implement the **_make_socket()** method.
   """
   
   def __init__(self):
@@ -71,7 +71,7 @@ class ControlSocket(object):
   def send(self, message, raw = False):
     """
     Formats and sends a message to the control socket. For more information see
-    the :func:`stem.socket.send_message` function.
+    the :func:`~stem.socket.send_message` function.
     
     :param str message: message to be formatted and sent to the socket
     :param bool raw: leaves the message formatting untouched, passing it to the socket as-is
@@ -94,9 +94,9 @@ class ControlSocket(object):
   def recv(self):
     """
     Receives a message from the control socket, blocking until we've received
-    one. For more information see the :func:`stem.socket.recv_message` function.
+    one. For more information see the :func:`~stem.socket.recv_message` function.
     
-    :returns: :class:`stem.response.ControlMessage` for the message received
+    :returns: :class:`~stem.response.ControlMessage` for the message received
     
     :raises:
       * :class:`stem.socket.ProtocolError` the content from the socket is malformed
@@ -140,12 +140,14 @@ class ControlSocket(object):
     until we either use it or have explicitily shut it down.
     
     In practice a socket derived from a port knows about its disconnection
-    after a failed ``recv()`` call. Socket file derived connections know after
-    either a ``send()`` or ``recv()``.
+    after a failed :func:`~stem.socket.ControlSocket.recv` call. Socket file
+    derived connections know after either a
+    :func:`~stem.socket.ControlSocket.send` or
+    :func:`~stem.socket.ControlSocket.recv`.
     
     This means that to have reliable detection for when we're disconnected
     you need to continually pull from the socket (which is part of what the
-    :class:`stem.control.BaseController` does).
+    :class:`~stem.control.BaseController` does).
     
     :returns: bool that's True if we're known to be shut down and False otherwise
     """
@@ -222,10 +224,12 @@ class ControlSocket(object):
   def _get_send_lock(self):
     """
     The send lock is useful to classes that interact with us at a deep level
-    because it's used to lock connect() / close(), and by extension our
-    is_alive() state changes.
+    because it's used to lock :func:`stem.socket.ControlSocket.connect` /
+    :func:`stem.socket.ControlSocket.close`, and by extension our
+    :func:`stem.socket.ControlSocket.is_alive` state changes.
     
-    :returns: threading.RLock that governs sending messages to our socket and state changes
+    :returns: **threading.RLock** that governs sending messages to our socket
+      and state changes
     """
     
     return self._send_lock
@@ -254,11 +258,11 @@ class ControlSocket(object):
     """
     Constructs and connects new socket. This is implemented by subclasses.
     
-    :returns: socket.socket for our configuration
+    :returns: **socket.socket** for our configuration
     
     :raises:
       * :class:`stem.socket.SocketError` if unable to make a socket
-      * NotImplementedError if not implemented by a subclass
+      * **NotImplementedError** if not implemented by a subclass
     """
     
     raise NotImplementedError("Unsupported Operation: this should be implemented by the ControlSocket subclass")
@@ -277,7 +281,8 @@ class ControlPort(ControlSocket):
     :param int control_port: port number of the controller
     :param bool connect: connects to the socket if True, leaves it unconnected otherwise
     
-    :raises: :class:`stem.socket.SocketError` if connect is True and we're unable to establish a connection
+    :raises: :class:`stem.socket.SocketError` if connect is **True** and we're
+      unable to establish a connection
     """
     
     super(ControlPort, self).__init__()
@@ -325,7 +330,8 @@ class ControlSocketFile(ControlSocket):
     :param str socket_path: path where the control socket is located
     :param bool connect: connects to the socket if True, leaves it unconnected otherwise
     
-    :raises: :class:`stem.socket.SocketError` if connect is True and we're unable to establish a connection
+    :raises: :class:`stem.socket.SocketError` if connect is **True** and we're
+      unable to establish a connection
     """
     
     super(ControlSocketFile, self).__init__()
@@ -371,9 +377,11 @@ def send_message(control_file, message, raw = False):
     <line 3>\\r\\n
     .\\r\\n
   
-  :param file control_file: file derived from the control socket (see the socket's makefile() method for more information)
+  :param file control_file: file derived from the control socket (see the
+    socket's makefile() method for more information)
   :param str message: message to be sent on the control socket
-  :param bool raw: leaves the message formatting untouched, passing it to the socket as-is
+  :param bool raw: leaves the message formatting untouched, passing it to the
+    socket as-is
   
   :raises:
     * :class:`stem.socket.SocketError` if a problem arises in using the socket
@@ -411,13 +419,15 @@ def recv_message(control_file):
   Pulls from a control socket until we either have a complete message or
   encounter a problem.
   
-  :param file control_file: file derived from the control socket (see the socket's makefile() method for more information)
+  :param file control_file: file derived from the control socket (see the
+    socket's makefile() method for more information)
   
-  :returns: :class:`stem.response.ControlMessage` read from the socket
+  :returns: :class:`~stem.response.ControlMessage` read from the socket
   
   :raises:
     * :class:`stem.socket.ProtocolError` the content from the socket is malformed
-    * :class:`stem.socket.SocketClosed` if the socket closes before we receive a complete message
+    * :class:`stem.socket.SocketClosed` if the socket closes before we receive
+      a complete message
   """
   
   parsed_content, raw_content = [], ""
@@ -522,11 +532,12 @@ def recv_message(control_file):
 def send_formatting(message):
   """
   Performs the formatting expected from sent control messages. For more
-  information see the :func:`stem.socket.send_message` function.
+  information see the :func:`~stem.socket.send_message` function.
   
   :param str message: message to be formatted
   
-  :returns: str of the message wrapped by the formatting expected from controllers
+  :returns: **str** of the message wrapped by the formatting expected from
+    controllers
   """
   
   # From control-spec section 2.2...
@@ -557,19 +568,11 @@ class OperationFailed(ControllerError):
   Base exception class for failed operations that return an error code
   
   :var str code: error code returned by Tor
-  :var str message: error message returned by Tor or a human readable error message
+  :var str message: error message returned by Tor or a human readable error
+    message
   """
   
   def __init__(self, code = None, message = None):
-    """
-    Initializes an OperationFailed object.
-    
-    :param str code: error code returned by Tor
-    :param str message: error message returned by Tor or a human readable error message
-    
-    :returns: object of OperationFailed class
-    """
-    
     super(ControllerError, self).__init__(message)
     self.code = code
     self.message = message
@@ -589,21 +592,12 @@ class InvalidArguments(InvalidRequest):
   Exception class for requests which had invalid arguments.
   
   :var str code: error code returned by Tor
-  :var str message: error message returned by Tor or a human readable error message
+  :var str message: error message returned by Tor or a human readable error
+    message
   :var list arguments: a list of arguments which were invalid
   """
   
   def __init__(self, code = None, message = None, arguments = None):
-    """
-    Initializes an InvalidArguments object.
-    
-    :param str code: error code returned by Tor
-    :param str message: error message returned by Tor or a human readable error message
-    :param list arguments: a list of arguments which were invalid
-    
-    :returns: object of InvalidArguments class
-    """
-    
     super(InvalidArguments, self).__init__(code, message)
     self.arguments = arguments
 

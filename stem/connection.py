@@ -209,75 +209,75 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
     try multiple authentication methods it may encounter multiple exceptions.
     If so then the exception this raises is prioritized as follows...
     
-    * :class:`~stem.connection.IncorrectSocketType`
+    * :class:`stem.connection.IncorrectSocketType`
     
       The controller does not speak the tor control protocol. Most often this
       happened because the user confused the SocksPort or ORPort with the
       ControlPort.
     
-    * :class:`~stem.connection.UnrecognizedAuthMethods`
+    * :class:`stem.connection.UnrecognizedAuthMethods`
     
       All of the authentication methods tor will accept are new and
       unrecognized. Please upgrade stem and, if that doesn't work, file a
       ticket on 'trac.torproject.org' and I'd be happy to add support.
     
-    * :class:`~stem.connection.MissingPassword`
+    * :class:`stem.connection.MissingPassword`
     
       We were unable to authenticate but didn't attempt password authentication
       because none was provided. You should prompt the user for a password and
       try again via 'authenticate_password'.
     
-    * :class:`~stem.connection.IncorrectPassword`
+    * :class:`stem.connection.IncorrectPassword`
     
       We were provided with a password but it was incorrect.
     
-    * :class:`~stem.connection.IncorrectCookieSize`
+    * :class:`stem.connection.IncorrectCookieSize`
     
       Tor allows for authentication by reading it a cookie file, but that file
       is the wrong size to be an authentication cookie.
     
-    * :class:`~stem.connection.UnreadableCookieFile`
+    * :class:`stem.connection.UnreadableCookieFile`
     
       Tor allows for authentication by reading it a cookie file, but we can't
       read that file (probably due to permissions).
     
-    * **\***:class:`~stem.connection.IncorrectCookieValue`
+    * **\***:class:`stem.connection.IncorrectCookieValue`
     
       Tor allows for authentication by reading it a cookie file, but rejected
       the contents of that file.
     
-    * **\***:class:`~stem.connection.AuthChallengeUnsupported`
+    * **\***:class:`stem.connection.AuthChallengeUnsupported`
     
       Tor doesn't recognize the AUTHCHALLENGE command. This is probably a Tor
       version prior to SAFECOOKIE being implement, but this exception shouldn't
       arise because we won't attempt SAFECOOKIE auth unless Tor claims to
       support it.
     
-    * **\***:class:`~stem.connection.UnrecognizedAuthChallengeMethod`
+    * **\***:class:`stem.connection.UnrecognizedAuthChallengeMethod`
     
       Tor couldn't recognize the AUTHCHALLENGE method Stem sent to it. This
       shouldn't happen at all.
     
-    * **\***:class:`~stem.connection.InvalidClientNonce`
+    * **\***:class:`stem.connection.InvalidClientNonce`
     
       Tor says that the client nonce provided by Stem during the AUTHCHALLENGE
       process is invalid.
     
-    * **\***:class:`~stem.connection.AuthSecurityFailure`
+    * **\***:class:`stem.connection.AuthSecurityFailure`
     
       Nonce value provided by the server was invalid.
     
-    * **\***:class:`~stem.connection.OpenAuthRejected`
+    * **\***:class:`stem.connection.OpenAuthRejected`
     
       Tor says that it allows for authentication without any credentials, but
       then rejected our authentication attempt.
     
-    * **\***:class:`~stem.connection.MissingAuthInfo`
+    * **\***:class:`stem.connection.MissingAuthInfo`
     
       Tor provided us with a PROTOCOLINFO reply that is technically valid, but
       missing the information we need to authenticate.
     
-    * **\***:class:`~stem.connection.AuthenticationFailure`
+    * **\***:class:`stem.connection.AuthenticationFailure`
     
       There are numerous other ways that authentication could have failed
       including socket failures, malformed controller responses, etc. These
@@ -413,7 +413,7 @@ def authenticate_none(controller, suppress_ctl_errors = True):
     :class:`~stem.socket.ControllerError` as authentication rejection if
     **True**, otherwise they're re-raised
   
-  :raises: :class:`~stem.connection.OpenAuthRejected` if the empty authentication credentials aren't accepted
+  :raises: :class:`stem.connection.OpenAuthRejected` if the empty authentication credentials aren't accepted
   """
   
   try:
@@ -460,9 +460,9 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
     **True**, otherwise they're re-raised
   
   :raises:
-    * :class:`~stem.connection.PasswordAuthRejected` if the socket doesn't
+    * :class:`stem.connection.PasswordAuthRejected` if the socket doesn't
       accept password authentication
-    * :class:`~stem.connection.IncorrectPassword` if the authentication
+    * :class:`stem.connection.IncorrectPassword` if the authentication
       credentials aren't accepted
   """
   
@@ -530,11 +530,11 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
     **True**, otherwise they're re-raised
   
   :raises:
-    * :class:`~stem.connection.IncorrectCookieSize` if the cookie file's size
+    * :class:`stem.connection.IncorrectCookieSize` if the cookie file's size
       is wrong
-    * :class:`~stem.connection.UnreadableCookieFile` if the cookie file doesn't
+    * :class:`stem.connection.UnreadableCookieFile` if the cookie file doesn't
       exist or we're unable to read it
-    * :class:`~stem.connection.CookieAuthRejected` if cookie authentication is
+    * :class:`stem.connection.CookieAuthRejected` if cookie authentication is
       attempted but the socket doesn't accept it
     * :class:`stem.connection.IncorrectCookieValue` if the cookie file's value
       is rejected
@@ -609,21 +609,21 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
     **True**, otherwise they're re-raised
   
   :raises:
-    * :class:`~stem.connection.IncorrectCookieSize` if the cookie file's size
+    * :class:`stem.connection.IncorrectCookieSize` if the cookie file's size
       is wrong
-    * :class:`~stem.connection.UnreadableCookieFile` if the cookie file doesn't
+    * :class:`stem.connection.UnreadableCookieFile` if the cookie file doesn't
       exist or we're unable to read it
-    * :class:`~stem.connection.CookieAuthRejected` if cookie authentication is
+    * :class:`stem.connection.CookieAuthRejected` if cookie authentication is
       attempted but the socket doesn't accept it
-    * :class:`~stem.connection.IncorrectCookieValue` if the cookie file's value
+    * :class:`stem.connection.IncorrectCookieValue` if the cookie file's value
       is rejected
-    * :class:`~stem.connection.UnrecognizedAuthChallengeMethod` if the Tor
+    * :class:`stem.connection.UnrecognizedAuthChallengeMethod` if the Tor
       client fails to recognize the AuthChallenge method
-    * :class:`~stem.connection.AuthChallengeUnsupported` if AUTHCHALLENGE is
+    * :class:`stem.connection.AuthChallengeUnsupported` if AUTHCHALLENGE is
       unimplemented, or if unable to parse AUTHCHALLENGE response
-    * :class:`~stem.connection.AuthSecurityFailure` if AUTHCHALLENGE's response
+    * :class:`stem.connection.AuthSecurityFailure` if AUTHCHALLENGE's response
       looks like a security attack
-    * :class:`~stem.connection.InvalidClientNonce` if stem's AUTHCHALLENGE
+    * :class:`stem.connection.InvalidClientNonce` if stem's AUTHCHALLENGE
       client nonce is rejected for being invalid
   """
   
@@ -713,9 +713,9 @@ def get_protocolinfo(controller):
   :returns: :class:`~stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
   
   :raises:
-    * :class:`~stem.socket.ProtocolError` if the PROTOCOLINFO response is
+    * :class:`stem.socket.ProtocolError` if the PROTOCOLINFO response is
       malformed
-    * :class:`~stem.socket.SocketError` if problems arise in establishing or
+    * :class:`stem.socket.SocketError` if problems arise in establishing or
       using the socket
   """
   
@@ -780,9 +780,9 @@ def _read_cookie(cookie_path, is_safecookie):
     authentication, **False** if for COOKIE
   
   :raises:
-    * :class:`~stem.connection.UnreadableCookieFile` if the cookie file is
+    * :class:`stem.connection.UnreadableCookieFile` if the cookie file is
       unreadable
-    * :class:`~stem.connection.IncorrectCookieSize` if the cookie size is
+    * :class:`stem.connection.IncorrectCookieSize` if the cookie size is
       incorrect (not 32 bytes)
   """
   

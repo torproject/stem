@@ -9,6 +9,7 @@ Contents
    tutorial
 
    api/connection
+   api/socket
 
    api/exit_policy
    api/version
