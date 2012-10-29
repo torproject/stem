@@ -5,6 +5,9 @@ Unit tests for stem.descriptor.export.
 import StringIO
 import unittest
 
+import stem.prereq
+import test.runner
+
 from stem.descriptor.export import export_csv, export_csv_file
 from test.mocking import get_relay_server_descriptor, get_bridge_server_descriptor
 
@@ -13,6 +16,11 @@ class TestExport(unittest.TestCase):
     """
     Exports a single minimal tor server descriptor.
     """
+    
+    # we won't have a header prior to python 2.7
+    if not stem.prereq.is_python_27():
+      test.runner.skip(self, "(header added in python 2.7)")
+      return
     
     desc = get_relay_server_descriptor()
     
@@ -58,6 +66,11 @@ class TestExport(unittest.TestCase):
     """
     Checks that the default attributes for our csv output doesn't include private fields.
     """
+    
+    # we won't have a header prior to python 2.7
+    if not stem.prereq.is_python_27():
+      test.runner.skip(self, "(header added in python 2.7)")
+      return
     
     desc = get_relay_server_descriptor()
     desc_csv = export_csv(desc)

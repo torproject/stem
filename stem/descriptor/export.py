@@ -13,6 +13,7 @@ import csv
 import cStringIO
 
 import stem.descriptor
+import stem.prereq
 
 class _ExportDialect(csv.excel):
   lineterminator = '\n'
@@ -29,7 +30,7 @@ def export_csv(descriptors, included_fields = (), excluded_fields = (), header =
   :param list included_fields: attributes to include in the csv
   :param list excluded_fields: attributes to exclude from the csv
   :param bool header: if **True** then the first line will be a comma separated
-    list of the attribute names
+    list of the attribute names (**only supported in python 2.7 and higher**)
   
   :returns: **str** of the CSV for the descriptors, one per line
   :raises: **ValueError** if descriptors contain more than one descriptor type
@@ -50,7 +51,7 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
   :param list included_fields: attributes to include in the csv
   :param list excluded_fields: attributes to exclude from the csv
   :param bool header: if **True** then the first line will be a comma separated
-    list of the attribute names
+    list of the attribute names (**only supported in python 2.7 and higher**)
   
   :returns: **str** of the CSV for the descriptors, one per line
   :raises: **ValueError** if descriptors contain more than one descriptor type
@@ -87,7 +88,7 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
   
   writer = csv.DictWriter(output_file, included_fields, dialect = _ExportDialect(), extrasaction='ignore')
   
-  if header:
+  if header and stem.prereq.is_python_27():
     writer.writeheader()
   
   for desc in descriptors:
