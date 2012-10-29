@@ -7,6 +7,7 @@ __all__ = [
   "connection",
   "enum",
   "log",
+  "ordereddict",
   "proc",
   "system",
   "term",

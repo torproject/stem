@@ -25,9 +25,13 @@ __all__ = [
 
 import os
 import re
-import collections
 
 import stem.util.enum
+
+try:
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
 
 KEYWORD_CHAR    = "a-zA-Z0-9-"
 WHITESPACE      = " \t"
@@ -286,7 +290,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     value tuple, the second being a list of those entries.
   """
   
-  entries = collections.OrderedDict()
+  entries = OrderedDict()
   extra_entries = [] # entries with a keyword in extra_keywords
   remaining_lines = raw_contents.split("\n")
   
