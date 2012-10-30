@@ -4,6 +4,7 @@ Tests the stem.process functions with various use cases.
 
 import os
 import time
+import shutil
 import signal
 import unittest
 
@@ -13,7 +14,15 @@ import stem.process
 import test.runner
 import stem.util.system
 
+DATA_DIRECTORY = '/tmp/stem_integ'
+
 class TestProcess(unittest.TestCase):
+  def setUp(self):
+    os.makedirs(DATA_DIRECTORY)
+  
+  def tearDown(self):
+    shutil.rmtree(DATA_DIRECTORY, ignore_errors = True)
+    
   def test_launch_tor_with_config(self):
     """
     Exercises launch_tor_with_config.
@@ -31,7 +40,11 @@ class TestProcess(unittest.TestCase):
     runner = test.runner.get_runner()
     tor_process = stem.process.launch_tor_with_config(
       tor_cmd = runner.get_tor_command(),
-      config = {'SocksPort': '2777', 'ControlPort': '2778'},
+      config = {
+        'SocksPort': '2777',
+        'ControlPort': '2778',
+        'DataDirectory': DATA_DIRECTORY,
+      },
       completion_percent = 5
     )
     
@@ -71,7 +84,8 @@ class TestProcess(unittest.TestCase):
     
     runner = test.runner.get_runner()
     start_time = time.time()
-    self.assertRaises(OSError, stem.process.launch_tor_with_config, {'SocksPort': '2777'}, runner.get_tor_command(), 100, None, 2)
+    config = {'SocksPort': '2777', 'DataDirectory': DATA_DIRECTORY}
+    self.assertRaises(OSError, stem.process.launch_tor_with_config, config, runner.get_tor_command(), 100, None, 2)
     runtime = time.time() - start_time
     
     if not (runtime > 2 and runtime < 3):
