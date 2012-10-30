@@ -54,16 +54,22 @@ class TestTutorial(unittest.TestCase):
       )))
     })
     
-    bw_to_relay = {} # mapping of observed bandwidth to the relay nicknames
-    
-    with reader_wrapper as reader:
-      for desc in reader:
-        if desc.exit_policy.is_exiting_allowed():
-          bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
+    # provides a mapping of observed bandwidth to the relay nicknames
+    def get_bw_to_relay():
+      bw_to_relay = {}
+      
+      with reader_wrapper as reader:
+        for desc in reader:
+          if desc.exit_policy.is_exiting_allowed():
+            bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
+      
+      return bw_to_relay
     
     # prints the top fifteen relays
     
+    bw_to_relay = get_bw_to_relay()
     count = 1
+    
     for bw_value in sorted(bw_to_relay.keys(), reverse = True):
       for nickname in bw_to_relay[bw_value]:
         expected_line = "%i. speedyexit (102.13 KB/s)" % count

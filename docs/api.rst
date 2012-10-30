@@ -7,7 +7,7 @@ Controller
 * **Core**
 
  * `stem.control <api/control.html>`_ - **Controller used to talk with Tor**.
- * `stem.connection <api/connection.html>`_ - Connection and authentication to the Tor control port or socket.
+ * `stem.connection <api/connection.html>`_ - Connection and authentication to the Tor control socket.
  * `stem.socket <api/socket.html>`_ - Low level control socket used to talk with Tor.
  * `stem.process <api/process.html>`_ - Launcher for the Tor process.
  * `stem.response <api/response.html>`_ - Messages that Tor may provide the controller.
