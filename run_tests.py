@@ -286,7 +286,7 @@ if __name__ == '__main__':
   
   # count how many tests have been skipped.
   skipped_test_count = 0
-
+  
   # loads and validates our various configurations
   test_config = stem.util.conf.get_config("test")
   
@@ -484,7 +484,7 @@ if __name__ == '__main__':
   elif skipped_test_count > 0:
     test.output.print_line("%i TESTS WERE SKIPPED" % skipped_test_count, term.Color.BLUE, term.Attr.BOLD)
     test.output.print_line("ALL OTHER TESTS PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
-    print    
+    print
   else:
     test.output.print_line("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
     print

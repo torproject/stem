@@ -107,10 +107,14 @@ def _get_files_with_suffix(base_path, suffix = ".py"):
   :returns: iterator that yields the absolute path for files with the given suffix
   """
   
-  for root, _, files in os.walk(base_path):
-    for filename in files:
-      if filename.endswith(suffix):
-        yield os.path.join(root, filename)
+  if os.path.isfile(base_path):
+    if base_path.endswith(suffix):
+      yield base_path
+  else:
+    for root, _, files in os.walk(base_path):
+      for filename in files:
+        if filename.endswith(suffix):
+          yield os.path.join(root, filename)
 
 if __name__ == '__main__':
   issues = get_issues()
