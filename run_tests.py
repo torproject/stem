@@ -455,9 +455,10 @@ if __name__ == '__main__':
     
     # TODO: note unused config options afterward?
   
-  whitespace_issues = test.check_whitespace.get_issues("stem")
-  whitespace_issues.update(test.check_whitespace.get_issues("test"))
-  whitespace_issues.update(test.check_whitespace.get_issues("run_tests.py"))
+  base_path = os.path.sep.join(__file__.split(os.path.sep)[:-1])
+  whitespace_issues = test.check_whitespace.get_issues(os.path.join(base_path, "stem"))
+  whitespace_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "test")))
+  whitespace_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "run_tests.py")))
   
   if whitespace_issues:
     test.output.print_line("WHITESPACE ISSUES", term.Color.BLUE, term.Attr.BOLD)
