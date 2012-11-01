@@ -382,32 +382,31 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#", "foo")
   
   def test_repurpose_circuit(self):
+    """
+    Tests Controller.repurpose_circuit with valid and invalid input.
+    """
+    
     if test.runner.require_control(self): return
+    elif test.runner.require_online(self): return
     
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      circuit_output = controller.get_info('circuit-status')
+      circ_id = controller.new_circuit()
+      controller.repurpose_circuit(circ_id, "CONTROLLER")
+      circuit_output = controller.get_info("circuit-status")
+      circ = filter(re.compile("^%i " % circ_id).match, circuit_output.splitlines())[0]
+      self.assertTrue("PURPOSE=CONTROLLER" in circ)
       
-      # the circuit-status results will be empty if we don't have a connection
-      if circuit_output == '':
-        if test.runner.require_online(self): return
-      
-      first_circ = circuit_output.splitlines()[0].split()
-      circ_id = int(first_circ[0])
-      purpose = "CONTROLLER"
-      if "PURPOSE=CONTROLLER" in first_circ:
-        purpose = "GENERAL"
-      controller.repurpose_circuit(circ_id, purpose)
-      purpose_arg = "PURPOSE=%s" % purpose
-      circ = filter(lambda line: int(line.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines())[0]
-      self.assertTrue(purpose_arg in circ)
+      controller.repurpose_circuit(circ_id, "GENERAL")
+      circuit_output = controller.get_info("circuit-status")
+      circ = filter(re.compile("^%i " % circ_id).match, circuit_output.splitlines())[0]
+      self.assertTrue("PURPOSE=GENERAL" in circ)
       
       self.assertRaises(stem.socket.InvalidRequest, controller.repurpose_circuit, 'f934h9f3h4', "fooo")
       self.assertRaises(stem.socket.InvalidRequest, controller.repurpose_circuit, '4', "fooo")
   
   def test_mapaddress(self):
-    
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return
     
