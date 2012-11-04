@@ -18,11 +18,9 @@ DATA_DIRECTORY = '/tmp/stem_integ'
 
 class TestProcess(unittest.TestCase):
   def setUp(self):
-    os.makedirs(DATA_DIRECTORY)
+    if not os.path.exists(DATA_DIRECTORY):
+      os.makedirs(DATA_DIRECTORY)
   
-  def tearDown(self):
-    shutil.rmtree(DATA_DIRECTORY, ignore_errors = True)
-    
   def test_launch_tor_with_config(self):
     """
     Exercises launch_tor_with_config.
