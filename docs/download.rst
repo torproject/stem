@@ -1,6 +1,19 @@
 Download
 ========
 
+.. Image Sources:
+   
+   * Git
+     Source: http://www.dylanbeattie.net/git_logo/
+     Author: Dylan Beattie
+     License: CC v3 (A, SA)
+   
+   * Debian
+     Source: NuoveXT (http://nuovext.pwsp.net/)
+     Author: Alexandre Moore (http://sa-ki.deviantart.com/)
+     License: GPL v2
+     File: NuoveXT/128x128/apps/debian-logo.png
+
 .. list-table::
    :widths: 1 10
    :header-rows: 0
