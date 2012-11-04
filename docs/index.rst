@@ -3,6 +3,11 @@ Welcome to Stem!
 
 Stem is a python controller library for `Tor <https://www.torproject.org/>`_. Like its predecessor, `TorCtl <https://www.torproject.org/getinvolved/volunteer.html.en#project-torctl>`_, it uses Tor's `control protocol <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_ to help developers program against the Tor process, enabling them to build things similar to `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <http://www.atagar.com/arm/>`_.
 
+.. Main Stem Logo
+   Source: http://www.wpclipart.com/plants/assorted/P/plant_stem.png.html
+   Author: Jakub Jankiewicz
+   License: Public Domain (http://www.wpclipart.com/legal.html#terms)
+
 .. Source: NuoveXT 2 (http://nuovext.pwsp.net/)
    Author: Alexandre Moore (http://sa-ki.deviantart.com/)
    License: LGPL v3
