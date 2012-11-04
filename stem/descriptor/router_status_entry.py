@@ -61,7 +61,11 @@ def parse_file(document_file, validate, entry_class, entry_keyword = "r", start_
   document_file.seek(start_position)
   while not end_position or document_file.tell() < end_position:
     desc_content = "".join(stem.descriptor._read_until_keywords(entry_keyword, document_file, ignore_first = True, end_position = end_position))
-    yield entry_class(desc_content, validate, *extra_args)
+    
+    if desc_content:
+      yield entry_class(desc_content, validate, *extra_args)
+    else:
+      break
 
 class RouterStatusEntry(stem.descriptor.Descriptor):
   """
