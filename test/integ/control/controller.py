@@ -6,6 +6,7 @@ from __future__ import with_statement
 
 import os
 import re
+import time
 import shutil
 import socket
 import unittest
@@ -19,6 +20,8 @@ import test.runner
 import test.util
 import stem.descriptor.router_status_entry
 import stem.descriptor.reader
+
+from stem.control import EventType
 
 class TestController(unittest.TestCase):
   def test_from_port(self):
@@ -46,6 +49,48 @@ class TestController(unittest.TestCase):
         self.assertTrue(isinstance(controller, stem.control.Controller))
     else:
       self.assertRaises(stem.SocketError, stem.control.Controller.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
+  
+  def test_event_handling(self):
+    """
+    Add a couple listeners for various events and make sure that they receive
+    them. Then remove the listeners.
+    """
+    
+    if test.runner.require_control(self): return
+    
+    event_buffer1, event_buffer2 = [], []
+    
+    def listener1(event):
+      event_buffer1.append(event)
+    
+    def listener2(event):
+      event_buffer2.append(event)
+    
+    runner = test.runner.get_runner()
+    with runner.get_tor_controller() as controller:
+      controller.add_event_listener(listener1, EventType.BW)
+      controller.add_event_listener(listener2, EventType.BW, EventType.DEBUG)
+      
+      # BW events occure at the rate of one per second, so wait a bit to let
+      # some accumulate.
+      
+      # TODO: check that the type of events in event_buffer1 are BandwidthEvent
+      # instances when we have proper event types
+      
+      time.sleep(3)
+      
+      self.assertTrue(len(event_buffer1) >= 2)
+      self.assertTrue(len(event_buffer2) >= 2)
+      
+      # Checking that a listener's no longer called after being removed.
+      
+      controller.remove_event_listener(listener2)
+      
+      buffer2_size = len(event_buffer2)
+      time.sleep(2)
+      
+      self.assertTrue(len(event_buffer1) >= 4)
+      self.assertEqual(buffer2_size, len(event_buffer2))
   
   def test_getinfo(self):
     """

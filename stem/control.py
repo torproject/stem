@@ -13,6 +13,8 @@ providing its own for interacting at a higher level.
     | |- from_port - Provides a Controller based on a port connection.
     | +- from_socket_file - Provides a Controller based on a socket file connection.
     |
+    |- add_event_listener - attaches an event listener to be notified of tor events
+    |- remove_event_listener - removes a listener so it isn't notified of further events
     |- is_caching_enabled - true if the controller has enabled caching
     |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
     |- clear_cache - clears any cached results
@@ -72,6 +74,34 @@ import stem.util.log as log
 # state changes a control socket can have
 
 State = stem.util.enum.Enum("INIT", "RESET", "CLOSED")
+
+EventType = stem.util.enum.UppercaseEnum(
+  "CIRC",
+  "STREAM",
+  "ORCONN",
+  "BW",
+  "DEBUG",
+  "INFO",
+  "NOTICE",
+  "WARN",
+  "ERR",
+  "NEWDESC",
+  "ADDRMAP",
+  "AUTHDIR_NEWDESCS",
+  "DESCCHANGED",
+  "STATUS_GENERAL",
+  "STATUS_CLIENT",
+  "STATUS_SERVER",
+  "GUARD",
+  "NS",
+  "STREAM_BW",
+  "CLIENTS_SEEN",
+  "NEWCONSENSUS",
+  "BUILDTIMEOUT_SET",
+  "SIGNAL",
+  "CONF_CHANGED",
+  "CIRC_MINOR",
+)
 
 # Constant to indicate an undefined argument default. Usually we'd use None for
 # this, but users will commonly provide None as the argument so need something
@@ -508,6 +538,11 @@ class Controller(BaseController):
     self._is_caching_enabled = enable_caching
     self._request_cache = {}
     
+    # mapping of event types to their listeners
+    
+    self._event_listeners = {}
+    self._event_listeners_lock = threading.RLock()
+    
     # number of sequential 'GETINFO ip-to-country/*' lookups that have failed
     self._geoip_failure_count = 0
     self.enabled_features = []
@@ -523,6 +558,57 @@ class Controller(BaseController):
       except: pass
     
     super(Controller, self).close()
+  
+  def add_event_listener(self, listener, *events):
+    """
+    Directs further tor controller events to a given function. The function is
+    expected to take a single argument, which is a
+    :class:`~stem.response.events.Event` subclass.
+    
+    If a new control connection is initialized then this listener will be
+    reattached.
+    
+    :param functor listener: function to be called when an event is received
+    :param stem.control.EventType events: event types to be listened for
+    
+    :raises: :class:`stem.socket.ControllerError` if unable to set the events
+    """
+    
+    with self._event_listeners_lock:
+      for event_type in events:
+        self._event_listeners.setdefault(event_type, []).append(listener)
+      
+      if self.is_alive():
+        response = self.msg("SETEVENTS %s" % " ".join(self._event_listeners.keys()))
+        
+        if not response.is_ok():
+          raise stem.socket.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
+  
+  def remove_event_listener(self, listener):
+    """
+    Stops a listener from being notified of further tor events.
+    
+    :param stem.control.EventListener listener: listener to be removed
+    
+    :raises: :class:`stem.socket.ControllerError` if unable to set the events
+    """
+    
+    with self._event_listeners_lock:
+      event_types_changed = False
+      
+      for event_type, event_listeners in self._event_listeners.items():
+        if listener in event_listeners:
+          event_listeners.remove(listener)
+          
+          if len(event_listeners) == 0:
+            event_types_changed = True
+            del self._event_listeners[event_type]
+      
+      if event_types_changed:
+        response = self.msg("SETEVENTS %s" % " ".join(self._event_listeners.keys()))
+        
+        if not response.is_ok():
+          raise stem.socket.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
   
   def is_caching_enabled(self):
     """
@@ -1320,6 +1406,17 @@ class Controller(BaseController):
     stem.response.convert("MAPADDRESS", response)
     
     return response.entries
+  
+  def _handle_event(self, event_message):
+    # TODO: parse the event_message into a stem.response.events.Event class
+    
+    event_message_type = str(event_message).split()[0]
+    
+    with self._event_listeners_lock:
+      for event_type, event_listeners in self._event_listeners.items():
+        if event_type == event_message_type:
+          for listener in event_listeners:
+            listener(event_message)
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """
