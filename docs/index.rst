@@ -9,6 +9,9 @@ Stem is a python controller library for `Tor <https://www.torproject.org/>`_. Li
 .. image:: /_static/buttons/api.png
    :target: api.html
 
+.. image:: /_static/buttons/bug_tracker.png
+   :target: https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs
+
 .. image:: /_static/buttons/download.png
    :target: download.html
 
