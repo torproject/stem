@@ -590,11 +590,16 @@ class Controller(BaseController):
     
     The EventType enumeration is mapped to event classes as follows...
     
-    ========= ===========
-    EventType Event Class
-    ========= ===========
-    **BW**    :class:`stem.response.events.BandwidthEvent`
-    ========= ===========
+    =========== ===========
+    EventType   Event Class
+    =========== ===========
+    **DEBUG**   :class:`stem.response.events.LogEvent`
+    **INFO**    :class:`stem.response.events.LogEvent`
+    **NOTICE**  :class:`stem.response.events.LogEvent`
+    **WARN**    :class:`stem.response.events.LogEvent`
+    **ERR**     :class:`stem.response.events.LogEvent`
+    **BW**      :class:`stem.response.events.BandwidthEvent`
+    =========== ===========
     
     :param functor listener: function to be called when an event is received
     :param stem.control.EventType events: event types to be listened for

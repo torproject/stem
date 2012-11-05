@@ -14,6 +14,11 @@ class Event(stem.response.ControlMessage):
   Base for events we receive asynchronously, as described in section 4.1 of the
   `control-spec
   <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_.
+  
+  :var str type: event type
+  :var int arrived_at: unix timestamp for when the message arrived
+  :var list positional_args: positional arguments of the event
+  :var dict keyword_args: key/value arguments of the event
   """
   
   _POSITIONAL_ARGS = ()
@@ -91,7 +96,29 @@ class BandwidthEvent(Event):
     self.read = long(self.read)
     self.written = long(self.written)
 
+class LogEvent(Event):
+  """
+  Tor logging event. These are the most visible kind of event since, by
+  default, tor logs at the NOTICE runlevel to stdout.
+  
+  :var str runlevel: runlevel of the logged message
+  :var str message: logged message
+  """
+  
+  def _parse(self):
+    self.runlevel = self.type
+    
+    # message is our content, minus the runlevel and ending "OK" if a
+    # multi-line message
+    
+    self.message = str(self)[len(self.runlevel) + 1:].rstrip("\nOK")
+
 EVENT_TYPE_TO_CLASS = {
   "BW": BandwidthEvent,
+  "DEBUG": LogEvent,
+  "INFO": LogEvent,
+  "NOTICE": LogEvent,
+  "WARN": LogEvent,
+  "ERR": LogEvent,
 }
 

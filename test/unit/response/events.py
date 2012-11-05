@@ -72,4 +72,23 @@ class TestEvents(unittest.TestCase):
     self.assertRaises(ProtocolError, _get_event, "650 BW -15 25")
     self.assertRaises(ProtocolError, _get_event, "650 BW 15 -25")
     self.assertRaises(ProtocolError, _get_event, "650 BW x 25")
+  
+  def test_log_events(self):
+    event = _get_event("650 DEBUG connection_edge_process_relay_cell(): Got an extended cell! Yay.")
+    
+    self.assertTrue(isinstance(event, stem.response.events.LogEvent))
+    self.assertEqual("DEBUG", event.runlevel)
+    self.assertEqual("connection_edge_process_relay_cell(): Got an extended cell! Yay.", event.message)
+    
+    event = _get_event("650 INFO circuit_finish_handshake(): Finished building circuit hop:")
+    
+    self.assertTrue(isinstance(event, stem.response.events.LogEvent))
+    self.assertEqual("INFO", event.runlevel)
+    self.assertEqual("circuit_finish_handshake(): Finished building circuit hop:", event.message)
+    
+    event = _get_event("650+WARN\na multi-line\nwarning message\n.\n650 OK\n")
+    
+    self.assertTrue(isinstance(event, stem.response.events.LogEvent))
+    self.assertEqual("WARN", event.runlevel)
+    self.assertEqual("a multi-line\nwarning message", event.message)
 
