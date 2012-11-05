@@ -30,7 +30,7 @@ constructed as simple type listings...
   
   Enum - Provides a basic, ordered  enumeration
     |- keys - string representation of our enum keys
-    |- index_of - indice of an enum value
+    |- index_of - index of an enum value
     |- next - provides the enum after a given enum value
     |- previous - provides the enum before a given value
     |- __getitem__ - provides the value for an enum key

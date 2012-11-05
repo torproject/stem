@@ -35,7 +35,7 @@ and picks up where it left off if ran again...
   try:
     processed_files = load_processed_files("/tmp/used_descriptors")
     reader.set_processed_files(processed_files)
-  except: pass # could not load, mabye this is the first run
+  except: pass # could not load, maybe this is the first run
   
   start_time = time.time()
   
@@ -89,7 +89,7 @@ FINISHED = "DONE"
 
 # TODO: The threading.Event's isSet() method was changed to the more
 # conventional is_set() in python 2.6 and above. We should use that when
-# dropping python 2.5 compatability...
+# dropping python 2.5 compatibility...
 # http://docs.python.org/library/threading.html#threading.Event.is_set
 
 class FileSkipped(Exception):

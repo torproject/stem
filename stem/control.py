@@ -79,7 +79,7 @@ State = stem.util.enum.Enum("INIT", "RESET", "CLOSED")
 UNDEFINED = "<Undefined_ >"
 
 # Configuration options that are fetched by a special key. The keys are
-# lowercase to make case insensetive lookups easier.
+# lowercase to make case insensitive lookups easier.
 
 MAPPED_CONFIG_KEYS = {
   "hiddenservicedir": "HiddenServiceOptions",
@@ -107,9 +107,9 @@ CACHEABLE_GETINFO_PARAMS = (
 # is unavailable
 GEOIP_FAILURE_THRESHOLD = 5
 
-# TODO: The Thread's isAlive() method and theading's currentThread() was
+# TODO: The Thread's isAlive() method and threading's currentThread() was
 # changed to the more conventional is_alive() and current_thread() in python
-# 2.6 and above. We should use that when dropping python 2.5 compatability.
+# 2.6 and above. We should use that when dropping python 2.5 compatibility.
 
 class BaseController(object):
   """

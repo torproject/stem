@@ -266,7 +266,7 @@ class ControlLine(str):
     :returns: **True** if the next entry can be parsed as a quoted value, **False** otherwise
     """
     
-    start_quote, end_quote = _get_quote_indeces(self._remainder, escaped)
+    start_quote, end_quote = _get_quote_indices(self._remainder, escaped)
     return start_quote == 0 and end_quote != -1
   
   def is_next_mapping(self, key = None, quoted = False, escaped = False):
@@ -290,7 +290,7 @@ class ControlLine(str):
       
       if quoted:
         # checks that we have a quoted value and that it comes after the 'key='
-        start_quote, end_quote = _get_quote_indeces(remainder, escaped)
+        start_quote, end_quote = _get_quote_indices(remainder, escaped)
         return start_quote == key_match.end() and end_quote != -1
       else:
         return True # we just needed to check for the key
@@ -399,7 +399,7 @@ def _parse_entry(line, quoted, escaped):
   
   if quoted:
     # validate and parse the quoted value
-    start_quote, end_quote = _get_quote_indeces(remainder, escaped)
+    start_quote, end_quote = _get_quote_indices(remainder, escaped)
     
     if start_quote != 0 or end_quote == -1:
       raise ValueError("the next entry isn't a quoted value: " + line)
@@ -416,7 +416,7 @@ def _parse_entry(line, quoted, escaped):
   
   return (next_entry, remainder.lstrip())
 
-def _get_quote_indeces(line, escaped):
+def _get_quote_indices(line, escaped):
   """
   Provides the indices of the next two quotes in the given content.
   

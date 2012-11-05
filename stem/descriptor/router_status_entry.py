@@ -29,7 +29,7 @@ def parse_file(document_file, validate, entry_class, entry_keyword = "r", start_
   first line (entry_keyword). When finished the document is left at the
   end_position.
   
-  Either a end_position or section_end_keywords must be provided.
+  Either an end_position or section_end_keywords must be provided.
   
   :param file document_file: file with network status document content
   :param bool validate: checks the validity of the document's contents if

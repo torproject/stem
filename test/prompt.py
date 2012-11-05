@@ -1,5 +1,5 @@
 """
-Simple helper methods to make troubleshooting with the python interpretor
+Simple helper methods to make troubleshooting with the python interpreter
 easier.
 
 ::

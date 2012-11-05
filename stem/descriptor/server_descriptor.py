@@ -400,7 +400,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
           if validate:
             raise ValueError("Published line's time wasn't parseable: %s" % line)
       elif keyword == "fingerprint":
-        # This is fourty hex digits split into space separated groups of four.
+        # This is forty hex digits split into space separated groups of four.
         # Checking that we match this pattern.
         
         fingerprint = value.replace(" ", "")
@@ -426,11 +426,11 @@ class ServerDescriptor(stem.descriptor.Descriptor):
       elif keyword == "caches-extra-info":
         self.extra_info_cache = True
       elif keyword == "extra-info-digest":
-        # this is fourty hex digits which just so happens to be the same a
+        # this is forty hex digits which just so happens to be the same a
         # fingerprint
         
         if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError("Extra-info digests should consist of fourty hex digits: %s" % value)
+          raise ValueError("Extra-info digests should consist of forty hex digits: %s" % value)
         
         self.extra_info_digest = value
       elif keyword == "hidden-service-dir":

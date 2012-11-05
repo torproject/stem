@@ -16,7 +16,7 @@ For instance...
   # This is my sample config
   user.name Galen
   user.password yabba1234 # here's an inline comment
-  user.notes takes a fancy to pepperjack chese
+  user.notes takes a fancy to pepperjack cheese
   blankEntry.example
   
   msg.greeting
@@ -30,7 +30,7 @@ For instance...
   config = {
     "user.name": "Galen",
     "user.password": "yabba1234",
-    "user.notes": "takes a fancy to pepperjack chese",
+    "user.notes": "takes a fancy to pepperjack cheese",
     "blankEntry.example": "",
     "msg.greeting": "Multi-line message exclaiming of the\\nwonder and awe that is pepperjack!",
   }

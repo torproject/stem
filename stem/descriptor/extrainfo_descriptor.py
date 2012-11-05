@@ -280,7 +280,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   def __init__(self, raw_contents, validate = True):
     """
     Extra-info descriptor constructor. By default this validates the
-    descriptor's content as it's parsed. This validation can be disables to
+    descriptor's content as it's parsed. This validation can be disabled to
     either improve performance or be accepting of malformed data.
     
     :param str raw_contents: extra-info content provided by the relay
@@ -419,7 +419,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           if not stem.util.tor_tools.is_valid_nickname(extra_info_comp[0]):
             raise ValueError("Extra-info line entry isn't a valid nickname: %s" % extra_info_comp[0])
           elif not stem.util.tor_tools.is_valid_fingerprint(extra_info_comp[1]):
-            raise ValueError("Tor relay fingerprints consist of fourty hex digits: %s" % extra_info_comp[1])
+            raise ValueError("Tor relay fingerprints consist of forty hex digits: %s" % extra_info_comp[1])
         
         self.nickname = extra_info_comp[0]
         self.fingerprint = extra_info_comp[1]

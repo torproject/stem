@@ -161,7 +161,7 @@ class TestServerDescriptor(unittest.TestCase):
   
   def test_read_and_write_history(self):
     """
-    Parses a read-history and write-history entry. This is now a depricated
+    Parses a read-history and write-history entry. This is now a deprecated
     field for relay server descriptors but is still found in archives and
     extra-info descriptors.
     """

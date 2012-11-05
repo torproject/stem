@@ -415,7 +415,7 @@ def get_pid_by_open_file(path):
 
 def get_cwd(pid):
   """
-  Provices the working directory of the given process.
+  Provides the working directory of the given process.
   
   :param int pid: process id of the process to be queried
   :returns: **str** with the absolute path for the process' present working
