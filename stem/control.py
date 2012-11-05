@@ -563,7 +563,21 @@ class Controller(BaseController):
     """
     Directs further tor controller events to a given function. The function is
     expected to take a single argument, which is a
-    :class:`~stem.response.events.Event` subclass.
+    :class:`~stem.response.events.Event` subclass. For instance the following
+    would would print the bytes sent and received by tor over five seconds...
+    
+    ::
+    
+      import time
+      from stem.control import Controller, EventType
+      
+      def print_bw(event):
+        print "sent: %i, received: %i" % (event.written, event.read)
+      
+      with Controller.from_port(control_port = 9051) as controller:
+        controller.authenticate()
+        controller.add_event_listener(print_bw, EventType.BW)
+        time.sleep(5)
     
     If a new control connection is initialized then this listener will be
     reattached.
