@@ -1,6 +1,7 @@
 import re
 
 import stem.response
+import stem.socket
 
 # Matches keyword=value arguments. This can't be a simple "(.*)=(.*)" pattern
 # because some positional arguments, like circuit paths, can have an equal
@@ -26,6 +27,11 @@ class Event(stem.response.ControlMessage):
     
     self.type = fields.pop(0)
     self.arrived_at = arrived_at
+    
+    # if we're a recognized event type then translate ourselves into that subclass
+    
+    if self.type in EVENT_TYPE_TO_CLASS:
+      self.__class__ = EVENT_TYPE_TO_CLASS[self.type]
     
     # Tor events contain some number of positional arguments followed by
     # key/value mappings. Parsing keyword arguments from the end until we hit
@@ -58,8 +64,30 @@ class Event(stem.response.ControlMessage):
     for controller_attr_name, attr_name in self._KEYWORD_ARGS.items():
       setattr(self, attr_name, self.keyword_args.get(controller_attr_name))
     
-    # if we're a recognized event type then translate ourselves into that subclass
+    self._parse()
+  
+  # method overwritten by our subclasses for special handling that they do
+  def _parse(self):
+    pass
+
+class BandwidthEvent(Event):
+  """
+  Event emitted every second with the bytes sent and received by tor.
+  
+  :var long read: bytes received by tor that second
+  :var long written: bytes sent by tor that second
+  """
+  
+  _POSITIONAL_ARGS = ("read", "written")
+  
+  def _parse(self):
+    if (self.read and not self.read.isdigit()) or (self.written and not self.written.isdigit()):
+      raise stem.socket.ProtocolError("A BW event's bytes sent and received values should be numeric, received: %s" % self)
     
-    #self.__class__ = response_class
-    #self._parse_message()
+    self.read = long(self.read)
+    self.written = long(self.written)
+
+EVENT_TYPE_TO_CLASS = {
+  "BW": BandwidthEvent,
+}
 

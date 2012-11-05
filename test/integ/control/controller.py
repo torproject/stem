@@ -93,6 +93,10 @@ class TestController(unittest.TestCase):
         self.assertTrue(isinstance(event, stem.response.events.Event))
         self.assertEqual(2, len(event.positional_args))
         self.assertEqual({}, event.keyword_args)
+        
+        self.assertTrue(isinstance(event, stem.response.events.BandwidthEvent))
+        self.assertTrue(hasattr(event, 'read'))
+        self.assertTrue(hasattr(event, 'written'))
   
   def test_getinfo(self):
     """

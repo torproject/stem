@@ -1408,8 +1408,6 @@ class Controller(BaseController):
     return response.entries
   
   def _handle_event(self, event_message):
-    # TODO: parse the event_message into a stem.response.events.Event class
-    
     stem.response.convert("EVENT", event_message, arrived_at=time.time())
     
     with self._event_listeners_lock:
