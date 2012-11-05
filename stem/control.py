@@ -1410,11 +1410,11 @@ class Controller(BaseController):
   def _handle_event(self, event_message):
     # TODO: parse the event_message into a stem.response.events.Event class
     
-    event_message_type = str(event_message).split()[0]
+    stem.response.convert("EVENT", event_message, arrived_at=time.time())
     
     with self._event_listeners_lock:
       for event_type, event_listeners in self._event_listeners.items():
-        if event_type == event_message_type:
+        if event_type == event_message.type:
           for listener in event_listeners:
             listener(event_message)
 

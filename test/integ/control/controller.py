@@ -74,9 +74,6 @@ class TestController(unittest.TestCase):
       # BW events occure at the rate of one per second, so wait a bit to let
       # some accumulate.
       
-      # TODO: check that the type of events in event_buffer1 are BandwidthEvent
-      # instances when we have proper event types
-      
       time.sleep(3)
       
       self.assertTrue(len(event_buffer1) >= 2)
@@ -91,6 +88,11 @@ class TestController(unittest.TestCase):
       
       self.assertTrue(len(event_buffer1) >= 4)
       self.assertEqual(buffer2_size, len(event_buffer2))
+      
+      for event in event_buffer1:
+        self.assertTrue(isinstance(event, stem.response.events.Event))
+        self.assertEqual(2, len(event.positional_args))
+        self.assertEqual({}, event.keyword_args)
   
   def test_getinfo(self):
     """
