@@ -81,8 +81,12 @@ class BandwidthEvent(Event):
   _POSITIONAL_ARGS = ("read", "written")
   
   def _parse(self):
-    if (self.read and not self.read.isdigit()) or (self.written and not self.written.isdigit()):
-      raise stem.socket.ProtocolError("A BW event's bytes sent and received values should be numeric, received: %s" % self)
+    if not self.read:
+      raise stem.socket.ProtocolError("BW event is missing its read value")
+    elif not self.written:
+      raise stem.socket.ProtocolError("BW event is missing its written value")
+    elif not self.read.isdigit() or not self.written.isdigit():
+      raise stem.socket.ProtocolError("A BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
     
     self.read = long(self.read)
     self.written = long(self.written)
