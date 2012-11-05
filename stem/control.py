@@ -1422,7 +1422,7 @@ class Controller(BaseController):
     return response.entries
   
   def _handle_event(self, event_message):
-    stem.response.convert("EVENT", event_message, arrived_at=time.time())
+    stem.response.convert("EVENT", event_message, arrived_at = time.time())
     
     with self._event_listeners_lock:
       for event_type, event_listeners in self._event_listeners.items():
