@@ -687,7 +687,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
         
         content = get_network_status_document_v3({"directory-signature": "%s %s\n%s" % tuple(attrs)}, content = True)
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
-        NetworkStatusDocumentV3(content, False) # checks that it's still parseable without validation
+        NetworkStatusDocumentV3(content, False) # checks that it's still parsable without validation
   
   def test_with_router_status_entries(self):
     """

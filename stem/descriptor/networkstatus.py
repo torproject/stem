@@ -14,7 +14,7 @@ dir-spec. Documents can be obtained from a few sources...
 * document footer
 
 Of these, the router status entry section can be quite large (on the order of
-hundreds of kilobytes). As such we provide a couple of methods for reading 
+hundreds of kilobytes). As such we provide a couple of methods for reading
 network status documents...
 
 * :class:`stem.descriptor.networkstatus.NetworkStatusDocumentV3` constructor
@@ -366,7 +366,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
           self.published = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         except ValueError:
           if validate:
-            raise ValueError("Version 2 network status document's 'published' time wasn't parseable: %s" % value)
+            raise ValueError("Version 2 network status document's 'published' time wasn't parsable: %s" % value)
       elif keyword == "dir-options":
         self.options = value.split()
       elif keyword == "directory-signature":
@@ -628,7 +628,7 @@ class _DocumentHeader(object):
             self.valid_until = date_value
         except ValueError:
           if validate:
-            raise ValueError("Network status document's '%s' time wasn't parseable: %s" % (keyword, value))
+            raise ValueError("Network status document's '%s' time wasn't parsable: %s" % (keyword, value))
       elif keyword == "voting-delay":
         # "voting-delay" VoteSeconds DistSeconds
         
@@ -650,7 +650,7 @@ class _DocumentHeader(object):
               self.server_versions.append(version_value)
           except ValueError:
             if validate:
-              raise ValueError("Network status document's '%s' line had '%s', which isn't a parseable tor version: %s" % (keyword, entry, line))
+              raise ValueError("Network status document's '%s' line had '%s', which isn't a parsable tor version: %s" % (keyword, entry, line))
       elif keyword == "known-flags":
         # "known-flags" FlagList
         
@@ -1192,7 +1192,7 @@ class KeyCertificate(stem.descriptor.Descriptor):
             self.expires = date_value
         except ValueError:
           if validate:
-            raise ValueError("Key certificate's '%s' time wasn't parseable: %s" % (keyword, value))
+            raise ValueError("Key certificate's '%s' time wasn't parsable: %s" % (keyword, value))
       elif keyword in ('dir-identity-key', 'dir-signing-key', 'dir-key-crosscert', 'dir-key-certification'):
         # "dir-identity-key" NL a public key in PEM format
         # "dir-signing-key" NL a key in PEM format

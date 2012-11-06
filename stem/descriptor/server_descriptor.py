@@ -398,7 +398,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
           self.published = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         except ValueError:
           if validate:
-            raise ValueError("Published line's time wasn't parseable: %s" % line)
+            raise ValueError("Published line's time wasn't parsable: %s" % line)
       elif keyword == "fingerprint":
         # This is forty hex digits split into space separated groups of four.
         # Checking that we match this pattern.

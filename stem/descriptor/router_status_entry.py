@@ -425,7 +425,7 @@ def _parse_r_line(desc, value, validate, include_digest = True):
     desc.published = datetime.datetime.strptime(published, "%Y-%m-%d %H:%M:%S")
   except ValueError:
     if validate:
-      raise ValueError("Publication time time wasn't parseable: r %s" % value)
+      raise ValueError("Publication time time wasn't parsable: r %s" % value)
 
 def _parse_s_line(desc, value, validate):
   # "s" Flags

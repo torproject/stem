@@ -173,7 +173,7 @@ def _parse_timestamp_and_interval(keyword, content):
     timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
     return timestamp, int(interval), remainder
   except ValueError:
-    raise ValueError("%s line's timestamp wasn't parseable: %s" % (keyword, line))
+    raise ValueError("%s line's timestamp wasn't parsable: %s" % (keyword, line))
 
 class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   """
@@ -589,7 +589,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             self.geoip_start_time = timestamp
         except ValueError:
           if validate:
-            raise ValueError("Timestamp on %s line wasn't parseable: %s" % (keyword, line))
+            raise ValueError("Timestamp on %s line wasn't parsable: %s" % (keyword, line))
       elif keyword in ("cell-stats-end", "entry-stats-end", "exit-stats-end", "bridge-stats-end", "dirreq-stats-end"):
         # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
         
