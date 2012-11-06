@@ -108,7 +108,7 @@ class TestBaseController(unittest.TestCase):
             controller.msg("GETINFO version")
             controller.msg("GETINFO blarg")
             controller.msg("blarg")
-          except stem.socket.ControllerError:
+          except stem.ControllerError:
             pass
       
       message_threads = []
@@ -213,7 +213,7 @@ class TestBaseController(unittest.TestCase):
       
       # cause the socket to shut down without calling close()
       controller.msg("Blarg!")
-      self.assertRaises(stem.socket.SocketClosed, controller.msg, "blarg")
+      self.assertRaises(stem.SocketClosed, controller.msg, "blarg")
       self.assertEquals(controller, state_observer.controller)
       self.assertEquals(stem.control.State.CLOSED, state_observer.state)
       self.assertTrue(state_observer.timestamp < time.time())

@@ -40,11 +40,11 @@ class TestAuthenticate(unittest.TestCase):
     stem.connection.authenticate(None)
     
     # tests where get_protocolinfo raises an exception
-    raised_exc = stem.socket.ProtocolError(None)
+    raised_exc = stem.ProtocolError(None)
     mocking.mock(stem.connection.get_protocolinfo, mocking.raise_exception(raised_exc))
     self.assertRaises(stem.connection.IncorrectSocketType, stem.connection.authenticate, None)
     
-    raised_exc = stem.socket.SocketError(None)
+    raised_exc = stem.SocketError(None)
     mocking.mock(stem.connection.get_protocolinfo, mocking.raise_exception(raised_exc))
     self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None)
   
@@ -82,9 +82,9 @@ class TestAuthenticate(unittest.TestCase):
     # 'suppress_ctl_errors' is False, so including those
     
     control_exc = (
-      stem.socket.ProtocolError(None),
-      stem.socket.SocketError(None),
-      stem.socket.SocketClosed(None))
+      stem.ProtocolError(None),
+      stem.SocketError(None),
+      stem.SocketClosed(None))
     
     all_auth_none_exc += control_exc
     all_auth_password_exc += control_exc

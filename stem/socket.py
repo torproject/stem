@@ -25,15 +25,6 @@ as instances of the :class:`~stem.response.ControlMessage` class.
   send_message - Writes a message to a control socket.
   recv_message - Reads a ControlMessage from a control socket.
   send_formatting - Performs the formatting expected from sent messages.
-  
-  ControllerError - Base exception raised when using the controller.
-    |- ProtocolError - Malformed socket data.
-    |- OperationFailed - Tor was unable to successfully complete the operation.
-    |  |- UnsatisfiableRequest - Tor was unable to satisfy a valid request.
-    |  +- InvalidRequest - Invalid request.
-    |     +- InvalidArguments - Invalid request parameters.
-    +- SocketError - Communication with the socket failed.
-       +- SocketClosed - Socket has been shut down.
 """
 
 from __future__ import with_statement
@@ -77,15 +68,15 @@ class ControlSocket(object):
     :param bool raw: leaves the message formatting untouched, passing it to the socket as-is
     
     :raises:
-      * :class:`stem.socket.SocketError` if a problem arises in using the socket
-      * :class:`stem.socket.SocketClosed` if the socket is known to be shut down
+      * :class:`stem.SocketError` if a problem arises in using the socket
+      * :class:`stem.SocketClosed` if the socket is known to be shut down
     """
     
     with self._send_lock:
       try:
-        if not self.is_alive(): raise SocketClosed()
+        if not self.is_alive(): raise stem.SocketClosed()
         send_message(self._socket_file, message, raw)
-      except SocketClosed, exc:
+      except stem.SocketClosed, exc:
         # if send_message raises a SocketClosed then we should properly shut
         # everything down
         if self.is_alive(): self.close()
@@ -99,8 +90,8 @@ class ControlSocket(object):
     :returns: :class:`~stem.response.ControlMessage` for the message received
     
     :raises:
-      * :class:`stem.socket.ProtocolError` the content from the socket is malformed
-      * :class:`stem.socket.SocketClosed` if the socket closes before we receive a complete message
+      * :class:`stem.ProtocolError` the content from the socket is malformed
+      * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
     """
     
     with self._recv_lock:
@@ -110,9 +101,9 @@ class ControlSocket(object):
         
         socket_file = self._socket_file
         
-        if not socket_file: raise SocketClosed()
+        if not socket_file: raise stem.SocketClosed()
         return recv_message(socket_file)
-      except SocketClosed, exc:
+      except stem.SocketClosed, exc:
         # If recv_message raises a SocketClosed then we should properly shut
         # everything down. However, there's a couple cases where this will
         # cause deadlock...
@@ -159,7 +150,7 @@ class ControlSocket(object):
     Connects to a new socket, closing our previous one if we're already
     attached.
     
-    :raises: :class:`stem.socket.SocketError` if unable to make a socket
+    :raises: :class:`stem.SocketError` if unable to make a socket
     """
     
     with self._send_lock:
@@ -181,7 +172,7 @@ class ControlSocket(object):
         
         try:
           self._connect()
-        except SocketError:
+        except stem.SocketError:
           self._connect() # single retry
   
   def close(self):
@@ -261,7 +252,7 @@ class ControlSocket(object):
     :returns: **socket.socket** for our configuration
     
     :raises:
-      * :class:`stem.socket.SocketError` if unable to make a socket
+      * :class:`stem.SocketError` if unable to make a socket
       * **NotImplementedError** if not implemented by a subclass
     """
     
@@ -281,7 +272,7 @@ class ControlPort(ControlSocket):
     :param int control_port: port number of the controller
     :param bool connect: connects to the socket if True, leaves it unconnected otherwise
     
-    :raises: :class:`stem.socket.SocketError` if connect is **True** and we're
+    :raises: :class:`stem.SocketError` if connect is **True** and we're
       unable to establish a connection
     """
     
@@ -315,7 +306,7 @@ class ControlPort(ControlSocket):
       control_socket.connect((self._control_addr, self._control_port))
       return control_socket
     except socket.error, exc:
-      raise SocketError(exc)
+      raise stem.SocketError(exc)
 
 class ControlSocketFile(ControlSocket):
   """
@@ -330,7 +321,7 @@ class ControlSocketFile(ControlSocket):
     :param str socket_path: path where the control socket is located
     :param bool connect: connects to the socket if True, leaves it unconnected otherwise
     
-    :raises: :class:`stem.socket.SocketError` if connect is **True** and we're
+    :raises: :class:`stem.SocketError` if connect is **True** and we're
       unable to establish a connection
     """
     
@@ -354,7 +345,7 @@ class ControlSocketFile(ControlSocket):
       control_socket.connect(self._socket_path)
       return control_socket
     except socket.error, exc:
-      raise SocketError(exc)
+      raise stem.SocketError(exc)
 
 def send_message(control_file, message, raw = False):
   """
@@ -384,8 +375,8 @@ def send_message(control_file, message, raw = False):
     socket as-is
   
   :raises:
-    * :class:`stem.socket.SocketError` if a problem arises in using the socket
-    * :class:`stem.socket.SocketClosed` if the socket is known to be shut down
+    * :class:`stem.SocketError` if a problem arises in using the socket
+    * :class:`stem.SocketClosed` if the socket is known to be shut down
   """
   
   if not raw: message = send_formatting(message)
@@ -404,15 +395,15 @@ def send_message(control_file, message, raw = False):
     # Just accounting for known disconnection responses.
     
     if str(exc) == "[Errno 32] Broken pipe":
-      raise SocketClosed(exc)
+      raise stem.SocketClosed(exc)
     else:
-      raise SocketError(exc)
+      raise stem.SocketError(exc)
   except AttributeError:
     # if the control_file has been closed then flush will receive:
     # AttributeError: 'NoneType' object has no attribute 'sendall'
     
     log.info("Failed to send message: file has been closed")
-    raise SocketClosed("file has been closed")
+    raise stem.SocketClosed("file has been closed")
 
 def recv_message(control_file):
   """
@@ -425,8 +416,8 @@ def recv_message(control_file):
   :returns: :class:`~stem.response.ControlMessage` read from the socket
   
   :raises:
-    * :class:`stem.socket.ProtocolError` the content from the socket is malformed
-    * :class:`stem.socket.SocketClosed` if the socket closes before we receive
+    * :class:`stem.ProtocolError` the content from the socket is malformed
+    * :class:`stem.SocketClosed` if the socket closes before we receive
       a complete message
   """
   
@@ -441,14 +432,14 @@ def recv_message(control_file):
       
       prefix = logging_prefix % "SocketClosed"
       log.info(prefix + "socket file has been closed")
-      raise SocketClosed("socket file has been closed")
+      raise stem.SocketClosed("socket file has been closed")
     except socket.error, exc:
       # when disconnected we get...
       # socket.error: [Errno 107] Transport endpoint is not connected
       
       prefix = logging_prefix % "SocketClosed"
       log.info(prefix + "received exception \"%s\"" % exc)
-      raise SocketClosed(exc)
+      raise stem.SocketClosed(exc)
     
     raw_content += line
     
@@ -461,19 +452,19 @@ def recv_message(control_file):
       
       prefix = logging_prefix % "SocketClosed"
       log.info(prefix + "empty socket content")
-      raise SocketClosed("Received empty socket content.")
+      raise stem.SocketClosed("Received empty socket content.")
     elif len(line) < 4:
       prefix = logging_prefix % "ProtocolError"
       log.info(prefix + "line too short, \"%s\"" % log.escape(line))
-      raise ProtocolError("Badly formatted reply line: too short")
+      raise stem.ProtocolError("Badly formatted reply line: too short")
     elif not re.match(r'^[a-zA-Z0-9]{3}[-+ ]', line):
       prefix = logging_prefix % "ProtocolError"
       log.info(prefix + "malformed status code/divider, \"%s\"" % log.escape(line))
-      raise ProtocolError("Badly formatted reply line: beginning is malformed")
+      raise stem.ProtocolError("Badly formatted reply line: beginning is malformed")
     elif not line.endswith("\r\n"):
       prefix = logging_prefix % "ProtocolError"
       log.info(prefix + "no CRLF linebreak, \"%s\"" % log.escape(line))
-      raise ProtocolError("All lines should end with CRLF")
+      raise stem.ProtocolError("All lines should end with CRLF")
     
     line = line[:-2] # strips off the CRLF
     status_code, divider, content = line[:3], line[3], line[4:]
@@ -498,14 +489,14 @@ def recv_message(control_file):
         except socket.error, exc:
           prefix = logging_prefix % "SocketClosed"
           log.info(prefix + "received an exception while mid-way through a data reply (exception: \"%s\", read content: \"%s\")" % (exc, log.escape(raw_content)))
-          raise SocketClosed(exc)
+          raise stem.SocketClosed(exc)
         
         raw_content += line
         
         if not line.endswith("\r\n"):
           prefix = logging_prefix % "ProtocolError"
           log.info(prefix + "CRLF linebreaks missing from a data reply, \"%s\"" % log.escape(raw_content))
-          raise ProtocolError("All lines should end with CRLF")
+          raise stem.ProtocolError("All lines should end with CRLF")
         elif line == ".\r\n":
           break # data block termination
         
@@ -527,7 +518,7 @@ def recv_message(control_file):
       # be safe...
       prefix = logging_prefix % "ProtocolError"
       log.warn(prefix + "\"%s\" isn't a recognized divider type" % line)
-      raise ProtocolError("Unrecognized divider type '%s': %s" % (divider, line))
+      raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, line))
 
 def send_formatting(message):
   """
@@ -556,54 +547,4 @@ def send_formatting(message):
     return "+%s\r\n.\r\n" % message.replace("\n", "\r\n")
   else:
     return message + "\r\n"
-
-class ControllerError(Exception):
-  "Base error for controller communication issues."
-
-class ProtocolError(ControllerError):
-  "Malformed content from the control socket."
-
-class OperationFailed(ControllerError):
-  """
-  Base exception class for failed operations that return an error code
-  
-  :var str code: error code returned by Tor
-  :var str message: error message returned by Tor or a human readable error
-    message
-  """
-  
-  def __init__(self, code = None, message = None):
-    super(ControllerError, self).__init__(message)
-    self.code = code
-    self.message = message
-
-class UnsatisfiableRequest(OperationFailed):
-  """
-  Exception raised if Tor was unable to process our request.
-  """
-
-class InvalidRequest(OperationFailed):
-  """
-  Exception raised when the request was invalid or malformed.
-  """
-
-class InvalidArguments(InvalidRequest):
-  """
-  Exception class for requests which had invalid arguments.
-  
-  :var str code: error code returned by Tor
-  :var str message: error message returned by Tor or a human readable error
-    message
-  :var list arguments: a list of arguments which were invalid
-  """
-  
-  def __init__(self, code = None, message = None, arguments = None):
-    super(InvalidArguments, self).__init__(code, message)
-    self.arguments = arguments
-
-class SocketError(ControllerError):
-  "Error arose while communicating with the control socket."
-
-class SocketClosed(SocketError):
-  "Control socket was closed before completing the message."
 

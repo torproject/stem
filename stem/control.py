@@ -162,11 +162,11 @@ class BaseController(object):
     :returns: :class:`~stem.response.ControlMessage` with the response
     
     :raises:
-      * :class:`stem.socket.ProtocolError` the content from the socket is
+      * :class:`stem.ProtocolError` the content from the socket is
         malformed
-      * :class:`stem.socket.SocketError` if a problem arises in using the
+      * :class:`stem.SocketError` if a problem arises in using the
         socket
-      * :class:`stem.socket.SocketClosed` if the socket is shut down
+      * :class:`stem.SocketClosed` if the socket is shut down
     """
     
     with self._msg_lock:
@@ -191,11 +191,11 @@ class BaseController(object):
         try:
           response = self._reply_queue.get_nowait()
           
-          if isinstance(response, stem.socket.SocketClosed):
+          if isinstance(response, stem.SocketClosed):
             pass # this is fine
-          elif isinstance(response, stem.socket.ProtocolError):
+          elif isinstance(response, stem.ProtocolError):
             log.info("Tor provided a malformed message (%s)" % response)
-          elif isinstance(response, stem.socket.ControllerError):
+          elif isinstance(response, stem.ControllerError):
             log.info("Socket experienced a problem (%s)" % response)
           elif isinstance(response, stem.response.ControlMessage):
             log.notice("BUG: the msg() function failed to deliver a response: %s" % response)
@@ -212,11 +212,11 @@ class BaseController(object):
         # If the message we received back had an exception then re-raise it to the
         # caller. Otherwise return the response.
         
-        if isinstance(response, stem.socket.ControllerError):
+        if isinstance(response, stem.ControllerError):
           raise response
         else:
           return response
-      except stem.socket.SocketClosed, exc:
+      except stem.SocketClosed, exc:
         # If the recv() thread caused the SocketClosed then we could still be
         # in the process of closing. Calling close() here so that we can
         # provide an assurance to the caller that when we raise a SocketClosed
@@ -240,7 +240,7 @@ class BaseController(object):
     Reconnects our control socket. This is a pass-through for our socket's
     :func:`~stem.socket.ControlSocket.connect` method.
     
-    :raises: :class:`stem.socket.SocketError` if unable to make a socket
+    :raises: :class:`stem.SocketError` if unable to make a socket
     """
     
     self._socket.connect()
@@ -432,7 +432,7 @@ class BaseController(object):
         else:
           # response to a msg() call
           self._reply_queue.put(control_message)
-      except stem.socket.ControllerError, exc:
+      except stem.ControllerError, exc:
         # Assume that all exceptions belong to the reader. This isn't always
         # true, but the msg() call can do a better job of sorting it out.
         #
@@ -473,7 +473,7 @@ class Controller(BaseController):
     
     :returns: :class:`~stem.control.Controller` attached to the given port
     
-    :raises: :class:`stem.socket.SocketError` if we're unable to establish a connection
+    :raises: :class:`stem.SocketError` if we're unable to establish a connection
     """
     
     if not stem.util.connection.is_valid_ip_address(control_addr):
@@ -492,7 +492,7 @@ class Controller(BaseController):
     
     :returns: :class:`~stem.control.Controller` attached to the given socket file
     
-    :raises: :class:`stem.socket.SocketError` if we're unable to establish a connection
+    :raises: :class:`stem.SocketError` if we're unable to establish a connection
     """
     
     control_socket = stem.socket.ControlSocketFile(socket_path)
@@ -573,9 +573,9 @@ class Controller(BaseController):
       * default if one was provided and our call failed
     
     :raises:
-      * :class:`stem.socket.ControllerError` if the call fails and we weren't
+      * :class:`stem.ControllerError` if the call fails and we weren't
         provided a default response
-      * :class:`stem.socket.InvalidArguments` if the 'param' requested was
+      * :class:`stem.InvalidArguments` if the 'param' requested was
         invalid
     """
     
@@ -599,7 +599,7 @@ class Controller(BaseController):
         params.remove(param)
       elif param.startswith('ip-to-country/') and self.is_geoip_unavailable():
         # the geoip database aleady looks to be unavailable - abort the request
-        raise stem.socket.ProtocolError("Tor geoip database is unavailable")
+        raise stem.ProtocolError("Tor geoip database is unavailable")
     
     # if everything was cached then short circuit making the query
     if not params:
@@ -631,7 +631,7 @@ class Controller(BaseController):
         return reply
       else:
         return reply.values()[0]
-    except stem.socket.ControllerError, exc:
+    except stem.ControllerError, exc:
       # bump geoip failure count if...
       # * we're caching results
       # * this was soley a geoip lookup
@@ -656,7 +656,7 @@ class Controller(BaseController):
       connected to
     
     :raises:
-      * :class:`stem.socket.ControllerError` if unable to query the version
+      * :class:`stem.ControllerError` if unable to query the version
       * **ValueError** if unable to parse the version
     """
     
@@ -679,7 +679,7 @@ class Controller(BaseController):
     :returns: :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for the given relay
     
     :raises:
-      * :class:`stem.socket.ControllerError` if unable to query the descriptor
+      * :class:`stem.ControllerError` if unable to query the descriptor
       * **ValueError** if **relay** doesn't conform with the pattern for being
         a fingerprint or nickname
     """
@@ -703,7 +703,7 @@ class Controller(BaseController):
       :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for relays in
       the tor network
     
-    :raises: :class:`stem.socket.ControllerError` if unable to query tor
+    :raises: :class:`stem.ControllerError` if unable to query tor
     """
     
     # TODO: We should iterate over the descriptors as they're read from the
@@ -726,7 +726,7 @@ class Controller(BaseController):
       for the given relay
     
     :raises:
-      * :class:`stem.socket.ControllerError` if unable to query the descriptor
+      * :class:`stem.ControllerError` if unable to query the descriptor
       * **ValueError** if **relay** doesn't conform with the patter for being a
         fingerprint or nickname
     """
@@ -750,7 +750,7 @@ class Controller(BaseController):
       :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` for
       relays in the tor network
     
-    :raises: :class:`stem.socket.ControllerError` if unable to query tor
+    :raises: :class:`stem.ControllerError` if unable to query tor
     """
     
     # TODO: We should iterate over the descriptors as they're read from the
@@ -783,9 +783,9 @@ class Controller(BaseController):
     :returns: :class:`~stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
     
     :raises:
-      * :class:`stem.socket.ProtocolError` if the PROTOCOLINFO response is
+      * :class:`stem.ProtocolError` if the PROTOCOLINFO response is
         malformed
-      * :class:`stem.socket.SocketError` if problems arise in establishing or
+      * :class:`stem.SocketError` if problems arise in establishing or
         using the socket
     """
     
@@ -814,9 +814,9 @@ class Controller(BaseController):
       * default if one was provided and our call failed
     
     :raises:
-      * :class:`stem.socket.ControllerError` if the call fails and we weren't
+      * :class:`stem.ControllerError` if the call fails and we weren't
         provided a default response
-      * :class:`stem.socket.InvalidArguments` if the configuration option
+      * :class:`stem.InvalidArguments` if the configuration option
         requested was invalid
     """
     
@@ -874,8 +874,8 @@ class Controller(BaseController):
       * default if one was provided and our call failed
     
     :raises:
-      * :class:`stem.socket.ControllerError` if the call fails and we weren't provided a default response
-      * :class:`stem.socket.InvalidArguments` if the configuration option requested was invalid
+      * :class:`stem.ControllerError` if the call fails and we weren't provided a default response
+      * :class:`stem.InvalidArguments` if the configuration option requested was invalid
     """
     
     start_time = time.time()
@@ -941,7 +941,7 @@ class Controller(BaseController):
         return reply
       else:
         return dict([(entry[0], entry[1][0]) for entry in reply.items()])
-    except stem.socket.ControllerError, exc:
+    except stem.ControllerError, exc:
       log.debug("GETCONF %s (failed: %s)" % (" ".join(lookup_params), exc))
       
       if default != UNDEFINED: return default
@@ -960,10 +960,10 @@ class Controller(BaseController):
     :param str,list value: value to set the parameter to
     
     :raises:
-      * :class:`stem.socket.ControllerError` if the call fails
-      * :class:`stem.socket.InvalidArguments` if configuration options
+      * :class:`stem.ControllerError` if the call fails
+      * :class:`stem.InvalidArguments` if configuration options
         requested was invalid
-      * :class:`stem.socket.InvalidRequest` if the configuration setting is
+      * :class:`stem.InvalidRequest` if the configuration setting is
         impossible or if there's a syntax error in the configuration values
     """
     
@@ -976,9 +976,9 @@ class Controller(BaseController):
     :param str params: configuration option to be reset
     
     :raises:
-      * :class:`stem.socket.ControllerError` if the call fails
-      * :class:`stem.socket.InvalidArguments` if configuration options requested was invalid
-      * :class:`stem.socket.InvalidRequest` if the configuration setting is
+      * :class:`stem.ControllerError` if the call fails
+      * :class:`stem.InvalidArguments` if configuration options requested was invalid
+      * :class:`stem.InvalidRequest` if the configuration setting is
         impossible or if there's a syntax error in the configuration values
     """
     
@@ -1011,10 +1011,10 @@ class Controller(BaseController):
       defaults if **True**
     
     :raises:
-      * :class:`stem.socket.ControllerError` if the call fails
-      * :class:`stem.socket.InvalidArguments` if configuration options
+      * :class:`stem.ControllerError` if the call fails
+      * :class:`stem.InvalidArguments` if configuration options
         requested was invalid
-      * :class:`stem.socket.InvalidRequest` if the configuration setting is
+      * :class:`stem.InvalidRequest` if the configuration setting is
         impossible or if there's a syntax error in the configuration values
     """
     
@@ -1058,12 +1058,12 @@ class Controller(BaseController):
       if response.code == "552":
         if response.message.startswith("Unrecognized option: Unknown option '"):
           key = response.message[37:response.message.find("\'", 37)]
-          raise stem.socket.InvalidArguments(response.code, response.message, [key])
-        raise stem.socket.InvalidRequest(response.code, response.message)
+          raise stem.InvalidArguments(response.code, response.message, [key])
+        raise stem.InvalidRequest(response.code, response.message)
       elif response.code in ("513", "553"):
-        raise stem.socket.InvalidRequest(response.code, response.message)
+        raise stem.InvalidRequest(response.code, response.message)
       else:
-        raise stem.socket.ProtocolError("Returned unexpected status code: %s" % response.code)
+        raise stem.ProtocolError("Returned unexpected status code: %s" % response.code)
   
   def load_conf(self, configtext):
     """
@@ -1072,7 +1072,7 @@ class Controller(BaseController):
     
     :param str configtext: the configuration text
     
-    :raises: :class:`stem.socket.ControllerError` if the call fails
+    :raises: :class:`stem.ControllerError` if the call fails
     """
     
     response = self.msg("LOADCONF\n%s" % configtext)
@@ -1080,18 +1080,18 @@ class Controller(BaseController):
     
     if response.code in ("552", "553"):
       if response.code == "552" and response.message.startswith("Invalid config file: Failed to parse/validate config: Unknown option"):
-        raise stem.socket.InvalidArguments(response.code, response.message, [response.message[70:response.message.find('.', 70) - 1]])
-      raise stem.socket.InvalidRequest(response.code, response.message)
+        raise stem.InvalidArguments(response.code, response.message, [response.message[70:response.message.find('.', 70) - 1]])
+      raise stem.InvalidRequest(response.code, response.message)
     elif not response.is_ok():
-      raise stem.socket.ProtocolError("+LOADCONF Received unexpected response\n%s" % str(response))
+      raise stem.ProtocolError("+LOADCONF Received unexpected response\n%s" % str(response))
   
   def save_conf(self):
     """
     Saves the current configuration options into the active torrc file.
     
     :raises:
-      * :class:`stem.socket.ControllerError` if the call fails
-      * :class:`stem.socket.OperationFailed` if the client is unable to save
+      * :class:`stem.ControllerError` if the call fails
+      * :class:`stem.OperationFailed` if the client is unable to save
         the configuration file
     """
     
@@ -1101,9 +1101,9 @@ class Controller(BaseController):
     if response.is_ok():
       return True
     elif response.code == "551":
-      raise stem.socket.OperationFailed(response.code, response.message)
+      raise stem.OperationFailed(response.code, response.message)
     else:
-      raise stem.socket.ProtocolError("SAVECONF returned unexpected response code")
+      raise stem.ProtocolError("SAVECONF returned unexpected response code")
   
   def is_feature_enabled(self, feature):
     """
@@ -1148,8 +1148,8 @@ class Controller(BaseController):
     :param str,list features: a single feature or a list of features to be enabled
     
     :raises:
-      * :class:`stem.socket.ControllerError` if the call fails
-      * :class:`stem.socket.InvalidArguments` if features passed were invalid
+      * :class:`stem.ControllerError` if the call fails
+      * :class:`stem.InvalidArguments` if features passed were invalid
     """
     
     if type(features) == str: features = [features]
@@ -1161,9 +1161,9 @@ class Controller(BaseController):
         invalid_feature = []
         if response.message.startswith("Unrecognized feature \""):
           invalid_feature = [response.message[22:response.message.find("\"", 22)]]
-        raise stem.socket.InvalidArguments(response.code, response.message, invalid_feature)
+        raise stem.InvalidArguments(response.code, response.message, invalid_feature)
       
-      raise stem.socket.ProtocolError("USEFEATURE provided an invalid response code: %s" % response.code)
+      raise stem.ProtocolError("USEFEATURE provided an invalid response code: %s" % response.code)
     
     self.enabled_features += [entry.upper() for entry in features]
   
@@ -1184,7 +1184,7 @@ class Controller(BaseController):
         share any circuits with old ones (this also clears our DNS cache)
       * **CLEARDNSCACHE** - clears cached DNS results
     
-    :raises: :class:`stem.socket.InvalidArguments` if signal provided wasn't recognized
+    :raises: :class:`stem.InvalidArguments` if signal provided wasn't recognized
     """
     
     response = self.msg("SIGNAL %s" % signal)
@@ -1192,9 +1192,9 @@ class Controller(BaseController):
     
     if not response.is_ok():
       if response.code == "552":
-        raise stem.socket.InvalidArguments(response.code, response.message, [signal])
+        raise stem.InvalidArguments(response.code, response.message, [signal])
       
-      raise stem.socket.ProtocolError("SIGNAL response contained unrecognized status code: %s" % response.code)
+      raise stem.ProtocolError("SIGNAL response contained unrecognized status code: %s" % response.code)
   
   def repurpose_circuit(self, circuit_id, purpose):
     """
@@ -1205,7 +1205,7 @@ class Controller(BaseController):
     :param int circuit_id: id of the circuit whose purpose is to be changed
     :param str purpose: purpose (either "general" or "controller")
     
-    :raises: :class:`stem.socket.InvalidArguments` if the circuit doesn't exist or if the purpose was invalid
+    :raises: :class:`stem.InvalidArguments` if the circuit doesn't exist or if the purpose was invalid
     """
     
     response = self.msg("SETCIRCUITPURPOSE %s purpose=%s" % (str(circuit_id), purpose))
@@ -1213,9 +1213,9 @@ class Controller(BaseController):
     
     if not response.is_ok():
       if response.code == "552":
-        raise stem.socket.InvalidRequest(response.code, response.message)
+        raise stem.InvalidRequest(response.code, response.message)
       else:
-        raise stem.socket.ProtocolError("SETCIRCUITPURPOSE returned unexpected response code: %s" % response.code)
+        raise stem.ProtocolError("SETCIRCUITPURPOSE returned unexpected response code: %s" % response.code)
   
   def new_circuit(self, path = None, purpose = "general"):
     """
@@ -1244,7 +1244,7 @@ class Controller(BaseController):
     
     :returns: int of the circuit id of the created or extended circuit
     
-    :raises: :class:`stem.socket.InvalidRequest` if one of the parameters were invalid
+    :raises: :class:`stem.InvalidRequest` if one of the parameters were invalid
     """
     
     args = [str(circuit)]
@@ -1260,11 +1260,11 @@ class Controller(BaseController):
         extended, new_circuit = response.message.split(" ")
         assert extended == "EXTENDED"
       except:
-        raise stem.socket.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
+        raise stem.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
     elif response.code == '552':
-      raise stem.socket.InvalidRequest(response.code, response.message)
+      raise stem.InvalidRequest(response.code, response.message)
     else:
-      raise stem.socket.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
+      raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
     
     return int(new_circuit)
   
@@ -1281,8 +1281,8 @@ class Controller(BaseController):
     :param dict mapping: mapping of original addresses to replacement addresses
     
     :raises:
-      * :class:`stem.socket.InvalidRequest` if the addresses are malformed
-      * :class:`stem.socket.OperationFailed` if Tor couldn't fulfill the request
+      * :class:`stem.InvalidRequest` if the addresses are malformed
+      * :class:`stem.OperationFailed` if Tor couldn't fulfill the request
     
     :returns: **dict** with 'original -> replacement' address mappings
     """

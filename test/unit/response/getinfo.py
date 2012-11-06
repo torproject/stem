@@ -111,7 +111,7 @@ class TestGetInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(NON_KEY_VALUE_ENTRY)
-    self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "GETINFO", control_message)
+    self.assertRaises(stem.ProtocolError, stem.response.convert, "GETINFO", control_message)
   
   def test_unrecognized_key_response(self):
     """
@@ -119,11 +119,11 @@ class TestGetInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(UNRECOGNIZED_KEY_ENTRY)
-    self.assertRaises(stem.socket.InvalidArguments, stem.response.convert, "GETINFO", control_message)
+    self.assertRaises(stem.InvalidArguments, stem.response.convert, "GETINFO", control_message)
     
     try:
       stem.response.convert("GETINFO", control_message)
-    except stem.socket.InvalidArguments, exc:
+    except stem.InvalidArguments, exc:
       self.assertEqual(exc.arguments, ["blackhole"])
   
   def test_invalid_multiline_content(self):
@@ -134,5 +134,5 @@ class TestGetInfoResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(MISSING_MULTILINE_NEWLINE)
-    self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "GETINFO", control_message)
+    self.assertRaises(stem.ProtocolError, stem.response.convert, "GETINFO", control_message)
 

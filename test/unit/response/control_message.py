@@ -111,7 +111,7 @@ class TestControlMessage(unittest.TestCase):
       # replace the CRLF for the line
       infonames_lines[i] = infonames_lines[i].rstrip("\r\n") + "\n"
       test_socket_file = StringIO.StringIO("".join(infonames_lines))
-      self.assertRaises(stem.socket.ProtocolError, stem.socket.recv_message, test_socket_file)
+      self.assertRaises(stem.ProtocolError, stem.socket.recv_message, test_socket_file)
       
       # puts the CRLF back
       infonames_lines[i] = infonames_lines[i].rstrip("\n") + "\r\n"
@@ -136,8 +136,8 @@ class TestControlMessage(unittest.TestCase):
         # - this is part of the message prefix
         # - this is disrupting the line ending
         
-        self.assertRaises(stem.socket.ProtocolError, stem.socket.recv_message, StringIO.StringIO(removal_test_input))
-        self.assertRaises(stem.socket.ProtocolError, stem.socket.recv_message, StringIO.StringIO(replacement_test_input))
+        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, StringIO.StringIO(removal_test_input))
+        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, StringIO.StringIO(replacement_test_input))
       else:
         # otherwise the data will be malformed, but this goes undetected
         self._assert_message_parses(removal_test_input)
@@ -151,7 +151,7 @@ class TestControlMessage(unittest.TestCase):
     
     control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     control_socket_file = control_socket.makefile()
-    self.assertRaises(stem.socket.SocketClosed, stem.socket.recv_message, control_socket_file)
+    self.assertRaises(stem.SocketClosed, stem.socket.recv_message, control_socket_file)
   
   def _assert_message_parses(self, controller_reply):
     """

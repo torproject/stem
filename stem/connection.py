@@ -20,7 +20,7 @@ fine-grained control over the authentication process. For instance...
   
   try:
     control_socket = stem.socket.ControlPort(control_port = 9051)
-  except stem.socket.SocketError, exc:
+  except stem.SocketError, exc:
     print "Unable to connect to port 9051 (%s)" % exc
     sys.exit(1)
   
@@ -131,7 +131,7 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
   
   try:
     control_port = stem.socket.ControlPort(control_addr, control_port)
-  except stem.socket.SocketError, exc:
+  except stem.SocketError, exc:
     print exc
     return None
   
@@ -153,7 +153,7 @@ def connect_socket_file(socket_path = "/var/run/tor/control", password = None, c
   
   try:
     control_socket = stem.socket.ControlSocketFile(socket_path)
-  except stem.socket.SocketError, exc:
+  except stem.SocketError, exc:
     print exc
     return None
   
@@ -303,9 +303,9 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
   if not protocolinfo_response:
     try:
       protocolinfo_response = get_protocolinfo(controller)
-    except stem.socket.ProtocolError:
+    except stem.ProtocolError:
       raise IncorrectSocketType("unable to use the control socket")
-    except stem.socket.SocketError, exc:
+    except stem.SocketError, exc:
       raise AuthenticationFailure("socket connection failed (%s)" % exc)
   
   auth_methods = list(protocolinfo_response.auth_methods)
@@ -384,7 +384,7 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
       
       log.debug("The %s method raised a CookieAuthRejected when cookie auth should be available. Stem may need to be corrected to recognize this response: %s" % (auth_func, exc))
       auth_exceptions.append(IncorrectCookieValue(str(exc), exc.cookie_path, exc.is_safecookie))
-    except stem.socket.ControllerError, exc:
+    except stem.ControllerError, exc:
       auth_exceptions.append(AuthenticationFailure(str(exc)))
   
   # All authentication attempts failed. Raise the exception that takes priority
@@ -418,7 +418,7 @@ def authenticate_none(controller, suppress_ctl_errors = True):
   
   :param controller: tor controller or socket to be authenticated
   :param bool suppress_ctl_errors: reports raised
-    :class:`~stem.socket.ControllerError` as authentication rejection if
+    :class:`~stem.ControllerError` as authentication rejection if
     **True**, otherwise they're re-raised
   
   :raises: :class:`stem.connection.OpenAuthRejected` if the empty authentication credentials aren't accepted
@@ -433,7 +433,7 @@ def authenticate_none(controller, suppress_ctl_errors = True):
       except: pass
       
       raise OpenAuthRejected(str(auth_response), auth_response)
-  except stem.socket.ControllerError, exc:
+  except stem.ControllerError, exc:
     try: controller.connect()
     except: pass
     
@@ -464,7 +464,7 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
   :param controller: tor controller or socket to be authenticated
   :param str password: passphrase to present to the socket
   :param bool suppress_ctl_errors: reports raised
-    :class:`~stem.socket.ControllerError` as authentication rejection if
+    :class:`~stem.ControllerError` as authentication rejection if
     **True**, otherwise they're re-raised
   
   :raises:
@@ -496,7 +496,7 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
         raise IncorrectPassword(str(auth_response), auth_response)
       else:
         raise PasswordAuthRejected(str(auth_response), auth_response)
-  except stem.socket.ControllerError, exc:
+  except stem.ControllerError, exc:
     try: controller.connect()
     except: pass
     
@@ -534,7 +534,7 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
   :param controller: tor controller or socket to be authenticated
   :param str cookie_path: path of the authentication cookie to send to tor
   :param bool suppress_ctl_errors: reports raised
-    :class:`~stem.socket.ControllerError` as authentication rejection if
+    :class:`~stem.ControllerError` as authentication rejection if
     **True**, otherwise they're re-raised
   
   :raises:
@@ -568,7 +568,7 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
         raise IncorrectCookieValue(str(auth_response), cookie_path, False, auth_response)
       else:
         raise CookieAuthRejected(str(auth_response), cookie_path, False, auth_response)
-  except stem.socket.ControllerError, exc:
+  except stem.ControllerError, exc:
     try: controller.connect()
     except: pass
     
@@ -613,7 +613,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
   :param controller: tor controller or socket to be authenticated
   :param str cookie_path: path of the authentication cookie to send to tor
   :param bool suppress_ctl_errors: reports raised
-    :class:`~stem.socket.ControllerError` as authentication rejection if
+    :class:`~stem.ControllerError` as authentication rejection if
     **True**, otherwise they're re-raised
   
   :raises:
@@ -657,7 +657,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
         raise CookieAuthRejected(authchallenge_response_str, cookie_path, True)
       else:
         raise AuthChallengeFailed(authchallenge_response, cookie_path)
-  except stem.socket.ControllerError, exc:
+  except stem.ControllerError, exc:
     try: controller.connect()
     except: pass
     
@@ -666,7 +666,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
   
   try:
     stem.response.convert("AUTHCHALLENGE", authchallenge_response)
-  except stem.socket.ProtocolError, exc:
+  except stem.ProtocolError, exc:
     if not suppress_ctl_errors: raise exc
     else: raise AuthChallengeFailed("Unable to parse AUTHCHALLENGE response: %s" % exc, cookie_path)
   
@@ -680,7 +680,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
     client_hash = stem.util.connection.hmac_sha256(CLIENT_HASH_CONSTANT,
         cookie_data + client_nonce + authchallenge_response.server_nonce)
     auth_response = _msg(controller, "AUTHENTICATE %s" % (binascii.b2a_hex(client_hash)))
-  except stem.socket.ControllerError, exc:
+  except stem.ControllerError, exc:
     try: controller.connect()
     except: pass
     
@@ -721,9 +721,9 @@ def get_protocolinfo(controller):
   :returns: :class:`~stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
   
   :raises:
-    * :class:`stem.socket.ProtocolError` if the PROTOCOLINFO response is
+    * :class:`stem.ProtocolError` if the PROTOCOLINFO response is
       malformed
-    * :class:`stem.socket.SocketError` if problems arise in establishing or
+    * :class:`stem.SocketError` if problems arise in establishing or
       using the socket
   """
   
@@ -740,8 +740,8 @@ def get_protocolinfo(controller):
     
     try:
       protocolinfo_response = _msg(controller, "PROTOCOLINFO 1")
-    except stem.socket.SocketClosed, exc:
-      raise stem.socket.SocketError(exc)
+    except stem.SocketClosed, exc:
+      raise stem.SocketError(exc)
   
   stem.response.convert("PROTOCOLINFO", protocolinfo_response)
   

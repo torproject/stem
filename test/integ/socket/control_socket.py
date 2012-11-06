@@ -49,7 +49,7 @@ class TestControlSocket(unittest.TestCase):
       control_socket.close()
       self.assertFalse(control_socket.is_alive())
       
-      self.assertRaises(stem.socket.SocketClosed, control_socket.send, "blarg")
+      self.assertRaises(stem.SocketClosed, control_socket.send, "blarg")
   
   def test_send_disconnected(self):
     """
@@ -75,7 +75,7 @@ class TestControlSocket(unittest.TestCase):
         control_socket.send("blarg")
         self.assertTrue(control_socket.is_alive())
       else:
-        self.assertRaises(stem.socket.SocketClosed, control_socket.send, "blarg")
+        self.assertRaises(stem.SocketClosed, control_socket.send, "blarg")
         self.assertFalse(control_socket.is_alive())
   
   def test_recv_closed(self):
@@ -90,7 +90,7 @@ class TestControlSocket(unittest.TestCase):
       control_socket.close()
       self.assertFalse(control_socket.is_alive())
       
-      self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
+      self.assertRaises(stem.SocketClosed, control_socket.recv)
   
   def test_recv_disconnected(self):
     """
@@ -109,7 +109,7 @@ class TestControlSocket(unittest.TestCase):
       # however.
       
       self.assertTrue(control_socket.is_alive())
-      self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
+      self.assertRaises(stem.SocketClosed, control_socket.recv)
       self.assertFalse(control_socket.is_alive())
   
   def test_connect_repeatedly(self):
@@ -125,6 +125,6 @@ class TestControlSocket(unittest.TestCase):
         stem.connection.get_protocolinfo(control_socket)
         
         control_socket.close()
-        self.assertRaises(stem.socket.SocketClosed, control_socket.send, "PROTOCOLINFO 1")
+        self.assertRaises(stem.SocketClosed, control_socket.send, "PROTOCOLINFO 1")
         control_socket.connect()
 

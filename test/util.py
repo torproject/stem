@@ -1,7 +1,7 @@
 import struct
 import socket
 
-from stem.socket import ProtocolError
+from stem import ProtocolError
 import test.runner
 
 error_msgs = {
@@ -48,7 +48,7 @@ def negotiate_socks(sock, host, port):
   :param str host: host to connect to
   :param int port: port to connect to
   
-  :raises: :class:`stem.socket.ProtocolError` if the socks server doesn't grant our request
+  :raises: :class:`stem.ProtocolError` if the socks server doesn't grant our request
   
   :returns: a list with the IP address and the port that the proxy connected to
   """

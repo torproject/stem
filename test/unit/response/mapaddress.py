@@ -61,7 +61,7 @@ class TestMapAddressResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(UNRECOGNIZED_KEYS_RESPONSE)
-    self.assertRaises(stem.socket.InvalidRequest, stem.response.convert, "MAPADDRESS", control_message)
+    self.assertRaises(stem.InvalidRequest, stem.response.convert, "MAPADDRESS", control_message)
     expected = { "23": "324" }
     
     control_message = mocking.get_message(PARTIAL_FAILURE_RESPONSE)
@@ -76,8 +76,8 @@ class TestMapAddressResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(INVALID_EMPTY_RESPONSE)
-    self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "MAPADDRESS", control_message)
+    self.assertRaises(stem.ProtocolError, stem.response.convert, "MAPADDRESS", control_message)
     
     control_message = mocking.get_message(INVALID_RESPONSE)
-    self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "MAPADDRESS", control_message)
+    self.assertRaises(stem.ProtocolError, stem.response.convert, "MAPADDRESS", control_message)
 

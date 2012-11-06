@@ -9,8 +9,8 @@ class MapAddressResponse(stem.response.ControlMessage):
   :var dict entries: mapping between the original and replacement addresses
   
   :raises:
-    * :class:`stem.socket.OperationFailed` if Tor was unable to satisfy the request
-    * :class:`stem.socket.InvalidRequest` if the addresses provided were invalid
+    * :class:`stem.OperationFailed` if Tor was unable to satisfy the request
+    * :class:`stem.InvalidRequest` if the addresses provided were invalid
   """
   
   def _parse_message(self):
@@ -21,11 +21,11 @@ class MapAddressResponse(stem.response.ControlMessage):
     if not self.is_ok():
       for code, _, message in self.content():
         if code == "512":
-          raise stem.socket.InvalidRequest(code, message)
+          raise stem.InvalidRequest(code, message)
         elif code == "451":
-          raise stem.socket.OperationFailed(code, message)
+          raise stem.OperationFailed(code, message)
         else:
-          raise stem.socket.ProtocolError("MAPADDRESS returned unexpected response code: %s", code)
+          raise stem.ProtocolError("MAPADDRESS returned unexpected response code: %s", code)
     
     self.entries = {}
     
@@ -35,5 +35,5 @@ class MapAddressResponse(stem.response.ControlMessage):
           key, value = message.split("=", 1)
           self.entries[key] = value
         except ValueError:
-          raise stem.socket.ProtocolError(None, "MAPADDRESS returned '%s', which isn't a mapping" % message)
+          raise stem.ProtocolError(None, "MAPADDRESS returned '%s', which isn't a mapping" % message)
 

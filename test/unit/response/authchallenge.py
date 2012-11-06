@@ -50,5 +50,5 @@ class TestAuthChallengeResponse(unittest.TestCase):
       
       remaining_comp = auth_challenge_comp[:i] + auth_challenge_comp[i + 1:]
       control_message = mocking.get_message(' '.join(remaining_comp))
-      self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "AUTHCHALLENGE", control_message)
+      self.assertRaises(stem.ProtocolError, stem.response.convert, "AUTHCHALLENGE", control_message)
 

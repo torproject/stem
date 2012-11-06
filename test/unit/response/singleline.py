@@ -31,5 +31,5 @@ class TestSingleLineResponse(unittest.TestCase):
   
   def test_multi_line_response(self):
     message = mocking.get_message(MULTILINE_RESPONSE)
-    self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "SINGLELINE", message)
+    self.assertRaises(stem.ProtocolError, stem.response.convert, "SINGLELINE", message)
 

@@ -96,11 +96,11 @@ class TestGetConfResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(UNRECOGNIZED_KEY_RESPONSE)
-    self.assertRaises(stem.socket.InvalidArguments, stem.response.convert, "GETCONF", control_message)
+    self.assertRaises(stem.InvalidArguments, stem.response.convert, "GETCONF", control_message)
     
     try:
       stem.response.convert("GETCONF", control_message)
-    except stem.socket.InvalidArguments, exc:
+    except stem.InvalidArguments, exc:
       self.assertEqual(exc.arguments, ["brickroad", "submarine"])
   
   def test_invalid_content(self):
@@ -111,5 +111,5 @@ class TestGetConfResponse(unittest.TestCase):
     """
     
     control_message = mocking.get_message(INVALID_RESPONSE)
-    self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "GETCONF", control_message)
+    self.assertRaises(stem.ProtocolError, stem.response.convert, "GETCONF", control_message)
 

@@ -36,11 +36,11 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
     remaining_lines = list(self)
     
     if not self.is_ok() or not remaining_lines.pop() == "OK":
-      raise stem.socket.ProtocolError("PROTOCOLINFO response didn't have an OK status:\n%s" % self)
+      raise stem.ProtocolError("PROTOCOLINFO response didn't have an OK status:\n%s" % self)
     
     # sanity check that we're a PROTOCOLINFO response
     if not remaining_lines[0].startswith("PROTOCOLINFO"):
-      raise stem.socket.ProtocolError("Message is not a PROTOCOLINFO response:\n%s" % self)
+      raise stem.ProtocolError("Message is not a PROTOCOLINFO response:\n%s" % self)
     
     while remaining_lines:
       line = remaining_lines.pop(0)
@@ -52,12 +52,12 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
         #   PIVERSION = 1*DIGIT
         
         if line.is_empty():
-          raise stem.socket.ProtocolError("PROTOCOLINFO response's initial line is missing the protocol version: %s" % line)
+          raise stem.ProtocolError("PROTOCOLINFO response's initial line is missing the protocol version: %s" % line)
         
         try:
           self.protocol_version = int(line.pop())
         except ValueError:
-          raise stem.socket.ProtocolError("PROTOCOLINFO response version is non-numeric: %s" % line)
+          raise stem.ProtocolError("PROTOCOLINFO response version is non-numeric: %s" % line)
         
         # The piversion really should be "1" but, according to the spec, tor
         # does not necessarily need to provide the PROTOCOLINFO version that we
@@ -75,7 +75,7 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
         
         # parse AuthMethod mapping
         if not line.is_next_mapping("METHODS"):
-          raise stem.socket.ProtocolError("PROTOCOLINFO response's AUTH line is missing its mandatory 'METHODS' mapping: %s" % line)
+          raise stem.ProtocolError("PROTOCOLINFO response's AUTH line is missing its mandatory 'METHODS' mapping: %s" % line)
         
         for method in line.pop_mapping()[1].split(","):
           if method == "NULL":
@@ -105,12 +105,12 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
         #   TorVersion = QuotedString
         
         if not line.is_next_mapping("Tor", True):
-          raise stem.socket.ProtocolError("PROTOCOLINFO response's VERSION line is missing its mandatory tor version mapping: %s" % line)
+          raise stem.ProtocolError("PROTOCOLINFO response's VERSION line is missing its mandatory tor version mapping: %s" % line)
         
         try:
           self.tor_version = stem.version.Version(line.pop_mapping(True)[1])
         except ValueError, exc:
-          raise stem.socket.ProtocolError(exc)
+          raise stem.ProtocolError(exc)
       else:
         log.debug("Unrecognized PROTOCOLINFO line type '%s', ignoring it: %s" % (line_type, line))
     

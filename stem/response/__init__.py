@@ -66,20 +66,20 @@ def convert(response_type, message, **kwargs):
     * AUTHCHALLENGE
     * SINGLELINE
   
-  * **\*** can raise a :class:`stem.socket.InvalidArguments` exception
-  * **^** can raise a :class:`stem.socket.InvalidRequest` exception
-  * **&** can raise a :class:`stem.socket.OperationFailed` exception
+  * **\*** can raise a :class:`stem.InvalidArguments` exception
+  * **^** can raise a :class:`stem.InvalidRequest` exception
+  * **&** can raise a :class:`stem.OperationFailed` exception
   
   :param str response_type: type of tor response to convert to
   :param stem.response.ControlMessage message: message to be converted
   :param kwargs: optional keyword arguments to be passed to the parser method
   
   :raises:
-    * :class:`stem.socket.ProtocolError` the message isn't a proper response of
+    * :class:`stem.ProtocolError` the message isn't a proper response of
       that type
-    * :class:`stem.socket.InvalidArguments` the arguments given as input are
+    * :class:`stem.InvalidArguments` the arguments given as input are
       invalid
-    * :class:`stem.socket.InvalidRequest` the arguments given as input are
+    * :class:`stem.InvalidRequest` the arguments given as input are
       invalid
     * **TypeError** if argument isn't a :class:`~stem.response.ControlMessage`
       or response_type isn't supported
@@ -471,9 +471,9 @@ class SingleLineResponse(ControlMessage):
     content = self.content()
     
     if len(content) > 1:
-      raise stem.socket.ProtocolError("Received multi-line response")
+      raise stem.ProtocolError("Received multi-line response")
     elif len(content) == 0:
-      raise stem.socket.ProtocolError("Received empty response")
+      raise stem.ProtocolError("Received empty response")
     else:
       self.code, _, self.message = content[0]
 

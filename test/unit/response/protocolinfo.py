@@ -72,7 +72,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     
     # attempt to convert a different message type
     bw_event_control_message = mocking.get_message("650 BW 32326 2856")
-    self.assertRaises(stem.socket.ProtocolError, stem.response.convert, "PROTOCOLINFO", bw_event_control_message)
+    self.assertRaises(stem.ProtocolError, stem.response.convert, "PROTOCOLINFO", bw_event_control_message)
   
   def test_no_auth(self):
     """

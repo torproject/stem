@@ -36,23 +36,23 @@ class TestControlMessage(unittest.TestCase):
     # checked in more depth by the ControlSocket integ tests.
     
     self.assertTrue(control_socket.is_alive())
-    self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
+    self.assertRaises(stem.SocketClosed, control_socket.recv)
     self.assertFalse(control_socket.is_alive())
     
     # Additional socket usage should fail, and pulling more responses will fail
     # with more closed exceptions.
     
-    self.assertRaises(stem.socket.SocketError, control_socket.send, "GETINFO version")
-    self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
-    self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
-    self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
+    self.assertRaises(stem.SocketError, control_socket.send, "GETINFO version")
+    self.assertRaises(stem.SocketClosed, control_socket.recv)
+    self.assertRaises(stem.SocketClosed, control_socket.recv)
+    self.assertRaises(stem.SocketClosed, control_socket.recv)
     
     # The socket connection is already broken so calling close shouldn't have
     # an impact.
     
     control_socket.close()
-    self.assertRaises(stem.socket.SocketClosed, control_socket.send, "GETINFO version")
-    self.assertRaises(stem.socket.SocketClosed, control_socket.recv)
+    self.assertRaises(stem.SocketClosed, control_socket.send, "GETINFO version")
+    self.assertRaises(stem.SocketClosed, control_socket.recv)
   
   def test_invalid_command(self):
     """

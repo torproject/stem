@@ -31,23 +31,23 @@ class GetInfoResponse(stem.response.ControlMessage):
           unrecognized_keywords.append(line[18:-1])
       
       if unrecognized_keywords:
-        raise stem.socket.InvalidArguments("552", "GETINFO request contained unrecognized keywords: %s\n" \
+        raise stem.InvalidArguments("552", "GETINFO request contained unrecognized keywords: %s\n" \
             % ', '.join(unrecognized_keywords), unrecognized_keywords)
       else:
-        raise stem.socket.ProtocolError("GETINFO response didn't have an OK status:\n%s" % self)
+        raise stem.ProtocolError("GETINFO response didn't have an OK status:\n%s" % self)
     
     while remaining_lines:
       try:
         key, value = remaining_lines.pop(0).split("=", 1)
       except ValueError:
-        raise stem.socket.ProtocolError("GETINFO replies should only contain parameter=value mappings:\n%s" % self)
+        raise stem.ProtocolError("GETINFO replies should only contain parameter=value mappings:\n%s" % self)
       
       # if the value is a multiline value then it *must* be of the form
       # '<key>=\n<value>'
       
       if "\n" in value:
         if not value.startswith("\n"):
-          raise stem.socket.ProtocolError("GETINFO response contained a multi-line value that didn't start with a newline:\n%s" % self)
+          raise stem.ProtocolError("GETINFO response contained a multi-line value that didn't start with a newline:\n%s" % self)
         
         value = value[1:]
       
@@ -60,7 +60,7 @@ class GetInfoResponse(stem.response.ControlMessage):
     :param set params: parameters to assert that we contain
     
     :raises:
-      * :class:`stem.socket.ProtocolError` if parameters don't match this response
+      * :class:`stem.ProtocolError` if parameters don't match this response
     """
     
     reply_params = set(self.entries.keys())
@@ -69,5 +69,5 @@ class GetInfoResponse(stem.response.ControlMessage):
       requested_label = ", ".join(params)
       reply_label = ", ".join(reply_params)
       
-      raise stem.socket.ProtocolError("GETINFO reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (requested_label, reply_label))
+      raise stem.ProtocolError("GETINFO reply doesn't match the parameters that we requested. Queried '%s' but got '%s'." % (requested_label, reply_label))
 

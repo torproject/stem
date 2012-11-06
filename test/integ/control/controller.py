@@ -32,7 +32,7 @@ class TestController(unittest.TestCase):
       with stem.control.Controller.from_port(control_port = test.runner.CONTROL_PORT) as controller:
         self.assertTrue(isinstance(controller, stem.control.Controller))
     else:
-      self.assertRaises(stem.socket.SocketError, stem.control.Controller.from_port, "127.0.0.1", test.runner.CONTROL_PORT)
+      self.assertRaises(stem.SocketError, stem.control.Controller.from_port, "127.0.0.1", test.runner.CONTROL_PORT)
   
   def test_from_socket_file(self):
     """
@@ -45,7 +45,7 @@ class TestController(unittest.TestCase):
       with stem.control.Controller.from_socket_file(socket_path = test.runner.CONTROL_SOCKET_PATH) as controller:
         self.assertTrue(isinstance(controller, stem.control.Controller))
     else:
-      self.assertRaises(stem.socket.SocketError, stem.control.Controller.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
+      self.assertRaises(stem.SocketError, stem.control.Controller.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
   
   def test_getinfo(self):
     """
@@ -75,12 +75,12 @@ class TestController(unittest.TestCase):
       
       # non-existant option
       
-      self.assertRaises(stem.socket.ControllerError, controller.get_info, "blarg")
+      self.assertRaises(stem.ControllerError, controller.get_info, "blarg")
       self.assertEqual("ho hum", controller.get_info("blarg", "ho hum"))
       
       # empty input
       
-      self.assertRaises(stem.socket.ControllerError, controller.get_info, "")
+      self.assertRaises(stem.ControllerError, controller.get_info, "")
       self.assertEqual("ho hum", controller.get_info("", "ho hum"))
       
       self.assertEqual({}, controller.get_info([]))
@@ -175,12 +175,12 @@ class TestController(unittest.TestCase):
       self.assertEqual(set(request_params), set(reply_params))
       
       # non-existant option(s)
-      self.assertRaises(stem.socket.InvalidArguments, controller.get_conf, "blarg")
+      self.assertRaises(stem.InvalidArguments, controller.get_conf, "blarg")
       self.assertEqual("la-di-dah", controller.get_conf("blarg", "la-di-dah"))
-      self.assertRaises(stem.socket.InvalidArguments, controller.get_conf_map, "blarg")
+      self.assertRaises(stem.InvalidArguments, controller.get_conf_map, "blarg")
       self.assertEqual("la-di-dah", controller.get_conf_map("blarg", "la-di-dah"))
       
-      self.assertRaises(stem.socket.InvalidRequest, controller.get_conf_map, ["blarg", "huadf"], multiple = True)
+      self.assertRaises(stem.InvalidRequest, controller.get_conf_map, ["blarg", "huadf"], multiple = True)
       self.assertEqual("la-di-dah", controller.get_conf_map(["erfusdj", "afiafj"], "la-di-dah", multiple = True))
       
       # multivalue configuration keys
@@ -227,7 +227,7 @@ class TestController(unittest.TestCase):
         try:
           controller.set_conf("invalidkeyboo", "abcde")
           self.fail()
-        except stem.socket.InvalidArguments, exc:
+        except stem.InvalidArguments, exc:
           self.assertEqual(["invalidkeyboo"], exc.arguments)
         
         # resets configuration parameters
@@ -251,7 +251,7 @@ class TestController(unittest.TestCase):
             "bombay": "vadapav",
           })
           self.fail()
-        except stem.socket.InvalidArguments, exc:
+        except stem.InvalidArguments, exc:
           self.assertEqual(["bombay"], exc.arguments)
         
         # context-sensitive keys (the only retched things for which order matters)
@@ -289,11 +289,11 @@ class TestController(unittest.TestCase):
       
       try:
         # invalid requests
-        self.assertRaises(stem.socket.InvalidRequest, controller.load_conf, "ContactInfo confloaded")
+        self.assertRaises(stem.InvalidRequest, controller.load_conf, "ContactInfo confloaded")
         try:
           controller.load_conf("Blahblah blah")
           self.fail()
-        except stem.socket.InvalidArguments, exc:
+        except stem.InvalidArguments, exc:
           self.assertEqual(["Blahblah"], exc.arguments)
         
         # valid config
@@ -345,10 +345,10 @@ class TestController(unittest.TestCase):
       
       self.assertTrue(re.match("\$[0-9a-fA-F]{40}[~=].*", controller.get_info('orconn-status').split()[0]))
       self.assertTrue("VERBOSE_NAMES" in controller.enabled_features)
-      self.assertRaises(stem.socket.InvalidArguments, controller.enable_feature, ["NOT", "A", "FEATURE"])
+      self.assertRaises(stem.InvalidArguments, controller.enable_feature, ["NOT", "A", "FEATURE"])
       try:
         controller.enable_feature(["NOT", "A", "FEATURE"])
-      except stem.socket.InvalidArguments, exc:
+      except stem.InvalidArguments, exc:
         self.assertEqual(["NOT"], exc.arguments)
       else: self.fail()
   
@@ -364,7 +364,7 @@ class TestController(unittest.TestCase):
       controller.signal("CLEARDNSCACHE")
       
       # invalid signals
-      self.assertRaises(stem.socket.InvalidArguments, controller.signal, "FOOBAR")
+      self.assertRaises(stem.InvalidArguments, controller.signal, "FOOBAR")
   
   def test_extendcircuit(self):
     if test.runner.require_control(self): return
@@ -377,9 +377,9 @@ class TestController(unittest.TestCase):
       circ_id = controller.new_circuit()
       self.assertTrue(filter(lambda x: int(x.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines()))
       
-      self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, "foo")
-      self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#")
-      self.assertRaises(stem.socket.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#", "foo")
+      self.assertRaises(stem.InvalidRequest, controller.extend_circuit, "foo")
+      self.assertRaises(stem.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#")
+      self.assertRaises(stem.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#", "foo")
   
   def test_repurpose_circuit(self):
     """
@@ -403,8 +403,8 @@ class TestController(unittest.TestCase):
       circ = filter(re.compile("^%i " % circ_id).match, circuit_output.splitlines())[0]
       self.assertTrue("PURPOSE=GENERAL" in circ)
       
-      self.assertRaises(stem.socket.InvalidRequest, controller.repurpose_circuit, 'f934h9f3h4', "fooo")
-      self.assertRaises(stem.socket.InvalidRequest, controller.repurpose_circuit, '4', "fooo")
+      self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, 'f934h9f3h4', "fooo")
+      self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, '4', "fooo")
   
   def test_mapaddress(self):
     if test.runner.require_control(self): return
@@ -448,8 +448,8 @@ class TestController(unittest.TestCase):
       self.assertRaises(ValueError, controller.get_server_descriptor, "z" * 30)
       
       # try with a relay that doesn't exist
-      self.assertRaises(stem.socket.ControllerError, controller.get_server_descriptor, "blargg")
-      self.assertRaises(stem.socket.ControllerError, controller.get_server_descriptor, "5" * 40)
+      self.assertRaises(stem.ControllerError, controller.get_server_descriptor, "blargg")
+      self.assertRaises(stem.ControllerError, controller.get_server_descriptor, "5" * 40)
       
       first_descriptor = None
       with stem.descriptor.reader.DescriptorReader([descriptor_path]) as reader:
@@ -505,8 +505,8 @@ class TestController(unittest.TestCase):
       self.assertRaises(ValueError, controller.get_network_status, "z" * 30)
       
       # try with a relay that doesn't exist
-      self.assertRaises(stem.socket.ControllerError, controller.get_network_status, "blargg")
-      self.assertRaises(stem.socket.ControllerError, controller.get_network_status, "5" * 40)
+      self.assertRaises(stem.ControllerError, controller.get_network_status, "blargg")
+      self.assertRaises(stem.ControllerError, controller.get_network_status, "5" * 40)
       
       # our cached consensus is v3 but the control port can only be queried for
       # v2 or v1 network status information

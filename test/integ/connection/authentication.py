@@ -137,7 +137,7 @@ class TestAuthenticate(unittest.TestCase):
     
     try:
       control_socket = stem.socket.ControlPort(control_port = test.runner.CONTROL_PORT)
-    except stem.socket.SocketError:
+    except stem.SocketError:
       # assert that we didn't have a socket to connect to
       self.assertFalse(test.runner.Torrc.PORT in tor_options)
       return
