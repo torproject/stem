@@ -489,7 +489,8 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
       except: pass
       
       # all we have to go on is the error message from tor...
-      # ...Password did not match HashedControlPassword.
+      # Password did not match HashedControlPassword value value from configuration...
+      # Password did not match HashedControlPassword *or*...
       
       if "Password did not match HashedControlPassword" in str(auth_response):
         raise IncorrectPassword(str(auth_response), auth_response)
