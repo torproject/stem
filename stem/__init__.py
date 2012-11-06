@@ -32,6 +32,14 @@ __all__ = [
   "process",
   "socket",
   "version",
+  "ControllerError",
+  "ProtocolError",
+  "OperationFailed",
+  "UnsatisfiableRequest",
+  "InvalidRequest",
+  "InvalidArguments",
+  "SocketError",
+  "SocketClosed",
 ]
 
 class ControllerError(Exception):
