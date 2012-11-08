@@ -19,7 +19,7 @@ Download
    :header-rows: 0
 
    * - .. image:: /_static/section/git.png
-          :target: https://gitweb.torproject.org/
+          :target: https://gitweb.torproject.org/stem.git
 
      - .. image:: /_static/label/git.png
 
