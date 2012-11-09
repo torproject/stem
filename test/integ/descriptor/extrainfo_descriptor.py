@@ -11,7 +11,7 @@ import unittest
 import stem.descriptor.extrainfo_descriptor
 import test.runner
 import test.integ.descriptor
-from stem.descriptor.extrainfo_descriptor import DirResponses
+from stem.descriptor.extrainfo_descriptor import DirResponse
 
 class TestExtraInfoDescriptor(unittest.TestCase):
   def test_metrics_relay_descriptor(self):
@@ -78,20 +78,20 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     descriptor_file.close()
     
     expected_dir_v2_responses = {
-      DirResponses.OK: 0,
-      DirResponses.UNAVAILABLE: 0,
-      DirResponses.NOT_FOUND: 0,
-      DirResponses.NOT_MODIFIED: 0,
-      DirResponses.BUSY: 0,
+      DirResponse.OK: 0,
+      DirResponse.UNAVAILABLE: 0,
+      DirResponse.NOT_FOUND: 0,
+      DirResponse.NOT_MODIFIED: 0,
+      DirResponse.BUSY: 0,
     }
     
     expected_dir_v3_responses = {
-      DirResponses.OK: 72,
-      DirResponses.NOT_ENOUGH_SIGS: 0,
-      DirResponses.UNAVAILABLE: 0,
-      DirResponses.NOT_FOUND: 0,
-      DirResponses.NOT_MODIFIED: 0,
-      DirResponses.BUSY: 0,
+      DirResponse.OK: 72,
+      DirResponse.NOT_ENOUGH_SIGS: 0,
+      DirResponse.UNAVAILABLE: 0,
+      DirResponse.NOT_FOUND: 0,
+      DirResponse.NOT_MODIFIED: 0,
+      DirResponse.BUSY: 0,
     }
     
     desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_contents)

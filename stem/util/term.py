@@ -5,22 +5,37 @@ Utilities for working with the terminal.
 
 ::
 
-  Color - enumeration for terminal colors
-    |- BLACK
-    |- BLUE
-    |- CYAN
-    |- GREEN
-    |- MAGENTA
-    |- RED
-    |- WHITE
-    +- YELLOW
-  
-  Attr - enumeration of terminal text attributes
-    |- BOLD
-    |- HILIGHT
-    +- UNDERLINE
-  
   format - wrap text with ANSI for the given colors or attributes
+
+.. data:: Color (enum)
+.. data:: BgColor (enum)
+  
+  Enumerations for foreground or background terminal color.
+  
+  =========== ===========
+  Color       Description
+  =========== ===========
+  **BLACK**   black color
+  **BLUE**    blue color
+  **CYAN**    cyan color
+  **GREEN**   green color
+  **MAGENTA** magenta color
+  **RED**     red color
+  **WHITE**   white color
+  **YELLOW**  yellow color
+  =========== ===========
+
+.. data:: Attr (enum)
+  
+  Enumerations of terminal text attributes.
+  
+  ============= ===========
+  Attr          Description
+  ============= ===========
+  **BOLD**      heavy typeface
+  **HILIGHT**   inverted foreground and background
+  **UNDERLINE** underlined text
+  ============= ===========
 """
 
 import stem.util.enum
@@ -51,7 +66,7 @@ def format(msg, *attr):
   * `colorama <http://pypi.python.org/pypi/colorama>`_
   
   :param str msg: string to be formatted
-  :param str attr: text attributes, this can be Color, BgColor, or Attr enums
+  :param str attr: text attributes, this can be :data:`~stem.util.term.Color`, :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` enums
     and are case insensitive (so strings like "red" are fine)
   
   :returns: **str** wrapped with ANSI escape encodings, starting with the given

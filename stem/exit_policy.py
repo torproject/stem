@@ -35,11 +35,18 @@ exiting to a destination is permissible or not. For instance...
     |- is_port_wildcard - checks if we'll accept any port
     |- is_match - checks if we match a given destination
     +- __str__ - string representation for this rule
+
+.. data:: AddressType (enum)
   
-  AddressType - Enumerations for IP address types that can be in an exit policy
-    |- WILDCARD - any address of either IPv4 or IPv6
-    |- IPv4 - IPv4 address
-    +- IPv6 - IPv6 address
+  Enumerations for IP address types that can be in an exit policy.
+  
+  ============ ===========
+  AddressType  Description
+  ============ ===========
+  **WILDCARD** any address of either IPv4 or IPv6
+  **IPv4**     IPv4 address
+  **IPv6**     IPv6 address
+  ============ ===========
 """
 
 import stem.util.connection
@@ -342,7 +349,7 @@ class ExitPolicyRule(object):
   :var str rule: rule that we were originally created from
   :var bool is_accept: indicates if exiting is allowed or disallowed
   
-  :var AddressType address_type: type of address that we have
+  :var stem.exit_policy.AddressType address_type: type of address that we have
   :var str address: address that this rule is for
   :var str mask: subnet mask for the address (ex. "255.255.255.0")
   :var int masked_bits: number of bits the subnet mask represents, **None** if

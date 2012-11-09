@@ -14,7 +14,7 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
   
   :var int protocol_version: protocol version of the response
   :var stem.version.Version tor_version: version of the tor process
-  :var tuple auth_methods: AuthMethod types that tor will accept
+  :var tuple auth_methods: :data:`stem.connection.AuthMethod` types that tor will accept
   :var tuple unknown_auth_methods: strings of unrecognized auth methods
   :var str cookie_path: path of tor's authentication cookie
   """

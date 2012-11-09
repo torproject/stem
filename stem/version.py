@@ -26,12 +26,22 @@ easily parsed and compared, for instance...
     |- greater_than - adds rule that matches if we're greater than a version
     |- less_than    - adds rule that matches if we're less than a version
     +- in_range     - adds rule that matches if we're within a given version range
+
+.. data:: Requirement (enum)
   
-  Requirement - Enumerations for the version requirements of features
-    |- AUTH_SAFECOOKIE      - 'SAFECOOKIE' authentication method
-    |- GETINFO_CONFIG_TEXT  - 'GETINFO config-text' query
-    |- TORRC_CONTROL_SOCKET - 'ControlSocket <path>' config option
-    +- TORRC_DISABLE_DEBUGGER_ATTACHMENT - 'DisableDebuggerAttachment' config option
+  Enumerations for the version requirements of features.
+  
+  ===================================== ===========
+  Requirement                           Description
+  ===================================== ===========
+  **AUTH_SAFECOOKIE**                   'SAFECOOKIE' authentication method
+  **GETINFO_CONFIG_TEXT**               'GETINFO config-text' query
+  **LOADCONF**                          'LOADCONF' query
+  **TORRC_CONTROL_SOCKET**              'ControlSocket <path>' config option
+  **TORRC_DISABLE_DEBUGGER_ATTACHMENT** 'DisableDebuggerAttachment' config option
+  **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
+  **FEATURE_EXTENDED_EVENTS**           'EXTENDED_EVENTS' optional feature
+  ===================================== ===========
 """
 
 import re

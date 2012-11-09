@@ -83,13 +83,20 @@ fine-grained control over the authentication process. For instance...
     +- MissingAuthInfo - Unexpected PROTOCOLINFO response, missing auth info
        |- NoAuthMethods - Missing any methods for authenticating
        +- NoAuthCookie - Supports cookie auth but doesn't have its path
+
+.. data:: AuthMethod (enum)
   
-  AuthMethod - Enumeration on PROTOCOLINFO responses for supported authentication methods
-    |- NONE - No authentication required
-    |- PASSWORD - Password required, see tor's HashedControlPassword option
-    |- COOKIE - Contents of the cookie file required, see tor's CookieAuthentication option
-    |- SAFECOOKIE - Need to reply to a hmac challenge using the contents of the cookie file
-    +- UNKNOWN - Tor provided one or more authentication methods that we don't recognize, probably something new
+  Enumeration of PROTOCOLINFO responses for supported authentication methods.
+  
+  ============== ===========
+  AuthMethod     Description
+  ============== ===========
+  **NONE**       No authentication required.
+  **PASSWORD**   Password required, see tor's HashedControlPassword option.
+  **COOKIE**     Contents of the cookie file required, see tor's CookieAuthentication option.
+  **SAFECOOKIE** Need to reply to a hmac challenge using the contents of the cookie file.
+  **UNKNOWN**    Tor provided one or more authentication methods that we don't recognize, probably something new.
+  ============== ===========
 """
 
 from __future__ import with_statement

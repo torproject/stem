@@ -4,7 +4,7 @@ Unit tests for stem.descriptor.extrainfo_descriptor.
 
 import datetime
 import unittest
-from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor, DirResponses, DirStats
+from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor, DirResponse, DirStat
 from test.mocking import get_relay_extrainfo_descriptor, get_bridge_extrainfo_descriptor, CRYPTO_BLOB
 
 class TestExtraInfoDescriptor(unittest.TestCase):
@@ -122,10 +122,10 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       
       test_value = "ok=0,unavailable=0,not-found=984,not-modified=0,something-new=7"
       desc = get_relay_extrainfo_descriptor({keyword: test_value})
-      self.assertEquals(0, getattr(desc, attr)[DirResponses.OK])
-      self.assertEquals(0, getattr(desc, attr)[DirResponses.UNAVAILABLE])
-      self.assertEquals(984, getattr(desc, attr)[DirResponses.NOT_FOUND])
-      self.assertEquals(0, getattr(desc, attr)[DirResponses.NOT_MODIFIED])
+      self.assertEquals(0, getattr(desc, attr)[DirResponse.OK])
+      self.assertEquals(0, getattr(desc, attr)[DirResponse.UNAVAILABLE])
+      self.assertEquals(984, getattr(desc, attr)[DirResponse.NOT_FOUND])
+      self.assertEquals(0, getattr(desc, attr)[DirResponse.NOT_MODIFIED])
       self.assertEquals(7, getattr(desc, unknown_attr)["something-new"])
       
       test_entries = (
@@ -152,22 +152,22 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       
       test_value = "complete=2712,timeout=32,running=4,min=741,d1=14507,d2=22702,q1=28881,d3=38277,d4=73729,md=111455,d6=168231,d7=257218,q3=319833,d8=390507,d9=616301,something-new=11,max=29917857"
       desc = get_relay_extrainfo_descriptor({keyword: test_value})
-      self.assertEquals(2712, getattr(desc, attr)[DirStats.COMPLETE])
-      self.assertEquals(32, getattr(desc, attr)[DirStats.TIMEOUT])
-      self.assertEquals(4, getattr(desc, attr)[DirStats.RUNNING])
-      self.assertEquals(741, getattr(desc, attr)[DirStats.MIN])
-      self.assertEquals(14507, getattr(desc, attr)[DirStats.D1])
-      self.assertEquals(22702, getattr(desc, attr)[DirStats.D2])
-      self.assertEquals(28881, getattr(desc, attr)[DirStats.Q1])
-      self.assertEquals(38277, getattr(desc, attr)[DirStats.D3])
-      self.assertEquals(73729, getattr(desc, attr)[DirStats.D4])
-      self.assertEquals(111455, getattr(desc, attr)[DirStats.MD])
-      self.assertEquals(168231, getattr(desc, attr)[DirStats.D6])
-      self.assertEquals(257218, getattr(desc, attr)[DirStats.D7])
-      self.assertEquals(319833, getattr(desc, attr)[DirStats.Q3])
-      self.assertEquals(390507, getattr(desc, attr)[DirStats.D8])
-      self.assertEquals(616301, getattr(desc, attr)[DirStats.D9])
-      self.assertEquals(29917857, getattr(desc, attr)[DirStats.MAX])
+      self.assertEquals(2712, getattr(desc, attr)[DirStat.COMPLETE])
+      self.assertEquals(32, getattr(desc, attr)[DirStat.TIMEOUT])
+      self.assertEquals(4, getattr(desc, attr)[DirStat.RUNNING])
+      self.assertEquals(741, getattr(desc, attr)[DirStat.MIN])
+      self.assertEquals(14507, getattr(desc, attr)[DirStat.D1])
+      self.assertEquals(22702, getattr(desc, attr)[DirStat.D2])
+      self.assertEquals(28881, getattr(desc, attr)[DirStat.Q1])
+      self.assertEquals(38277, getattr(desc, attr)[DirStat.D3])
+      self.assertEquals(73729, getattr(desc, attr)[DirStat.D4])
+      self.assertEquals(111455, getattr(desc, attr)[DirStat.MD])
+      self.assertEquals(168231, getattr(desc, attr)[DirStat.D6])
+      self.assertEquals(257218, getattr(desc, attr)[DirStat.D7])
+      self.assertEquals(319833, getattr(desc, attr)[DirStat.Q3])
+      self.assertEquals(390507, getattr(desc, attr)[DirStat.D8])
+      self.assertEquals(616301, getattr(desc, attr)[DirStat.D9])
+      self.assertEquals(29917857, getattr(desc, attr)[DirStat.MAX])
       self.assertEquals(11, getattr(desc, unknown_attr)["something-new"])
       
       test_entries = (

@@ -35,7 +35,6 @@ import socket
 import threading
 
 import stem.response
-import stem.util.enum
 import stem.util.log as log
 
 class ControlSocket(object):

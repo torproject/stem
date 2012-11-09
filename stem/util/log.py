@@ -1,13 +1,6 @@
 """
-Functions to aid library logging. Default logging is usually NOTICE and above,
-runlevels being used as follows...
-
-* **ERROR** - critical issue occurred, the user needs to be notified
-* **WARN** - non-critical issue occurred that the user should be aware of
-* **NOTICE** - information that is helpful to the user
-* **INFO** - high level library activity
-* **DEBUG** - low level library activity
-* **TRACE** - request/reply logging
+Functions to aid library logging. The default logging
+:data:`~stem.util.log.Runlevel` is usually NOTICE and above.
 
 **Module Overview:**
 
@@ -31,6 +24,21 @@ runlevels being used as follows...
     +- __iter__ - iterates over and removes the buffered events
   
   log_to_stdout - reports further logged events to stdout
+
+.. data:: Runlevel (enum)
+  
+  Enumeration for logging runlevels.
+  
+  ========== ===========
+  Runlevel   Description
+  ========== ===========
+  **ERROR**  critical issue occurred, the user needs to be notified
+  **WARN**   non-critical issue occurred that the user should be aware of
+  **NOTICE** information that is helpful to the user
+  **INFO**   high level library activity
+  **DEBUG**  low level library activity
+  **TRACE**  request/reply logging
+  ========== ===========
 """
 
 import logging
@@ -88,7 +96,7 @@ def logging_level(runlevel):
   """
   Translates a runlevel into the value expected by the logging module.
   
-  :param Runlevel runlevel: runlevel to be returned, no logging if **None**
+  :param stem.util.log.Runlevel runlevel: runlevel to be returned, no logging if **None**
   """
   
   if runlevel: return LOG_VALUES[runlevel]
@@ -112,7 +120,7 @@ def log(runlevel, message):
   """
   Logs a message at the given runlevel.
   
-  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if **None**
+  :param stem.util.log.Runlevel runlevel: runlevel to log the message at, logging is skipped if **None**
   :param str message: message to be logged
   """
   
@@ -125,7 +133,7 @@ def log_once(message_id, runlevel, message):
   been logged then this is a no-op.
   
   :param str message_id: unique message identifier to deduplicate on
-  :param Runlevel runlevel: runlevel to log the message at, logging is skipped if **None**
+  :param stem.util.log.Runlevel runlevel: runlevel to log the message at, logging is skipped if **None**
   :param str message: message to be logged
   
   :returns: **True** if we log the message, **False** otherwise
@@ -179,7 +187,7 @@ def log_to_stdout(runlevel):
   """
   Logs further events to stdout.
   
-  :param Runlevel runlevel: minimum runlevel a message needs to be to be logged
+  :param stem.util.log.Runlevel runlevel: minimum runlevel a message needs to be to be logged
   """
   
   logging.basicConfig(

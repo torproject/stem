@@ -21,6 +21,19 @@ Dave Daeschler, Giampaolo Rodola' and is under the BSD license.
   get_memory_usage - provides the memory usage of a process
   get_stats - queries statistics about a process
   get_connections - provides the connections made by a process
+
+.. data:: Stat (enum)
+  
+  Types of data available via the :func:`~stem.util.proc.get_stats` function.
+  
+  ============== ===========
+  Stat           Description
+  ============== ===========
+  **COMMAND**    command name under which the process is running
+  **CPU_UTIME**  total user time spent on the process
+  **CPU_STIME**  total system time spent on the process
+  **START_TIME** when this process began, in unix time
+  ============== ===========
 """
 
 import os
@@ -199,12 +212,8 @@ def get_memory_usage(pid):
 
 def get_stats(pid, *stat_types):
   """
-  Provides process specific information. Options are:
-  
-  * **Stat.COMMAND** - command name under which the process is running
-  * **Stat.CPU_UTIME** - total user time spent on the process
-  * **Stat.CPU_STIME** - total system time spent on the process
-  * **Stat.START_TIME** - when this process began, in unix time
+  Provides process specific information. See the :data:`~stem.util.proc.Stat`
+  enum for valid options.
   
   :param int pid: process id of the process to be queried
   :param Stat stat_types: information to be provided back

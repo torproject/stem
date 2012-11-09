@@ -23,24 +23,6 @@ Extra-info descriptors are available from a few sources...
 
 ::
 
-  DirResponses - known statuses for ExtraInfoDescriptor's dir_*_responses
-    |- OK - network status requests that were answered
-    |- NOT_ENOUGH_SIGS - network status wasn't signed by enough authorities
-    |- UNAVAILABLE - requested network status was unavailable
-    |- NOT_FOUND - requested network status was not found
-    |- NOT_MODIFIED - network status unmodified since If-Modified-Since time
-    +- BUSY - directory was busy
-  
-  DirStats - known stats for ExtraInfoDescriptor's dir_*_direct_dl and dir_*_tunneled_dl
-    |- COMPLETE - requests that completed successfully
-    |- TIMEOUT - requests that didn't complete within a ten minute timeout
-    |- RUNNING - requests still in process when measurement's taken
-    |- MIN - smallest rate at which a descriptor was downloaded in B/s
-    |- MAX - largest rate at which a descriptor was downloaded in B/s
-    |- D1-4 and D6-9 - rate of the slowest x/10 download rates in B/s
-    |- Q1 and Q3 - rate of the slowest and fastest quarter download rates in B/s
-    +- MD - median download rate in B/s
-  
   parse_file - Iterates over the extra-info descriptors in a file.
   ExtraInfoDescriptor - Tor extra-info descriptor.
     |  |- RelayExtraInfoDescriptor - Extra-info descriptor for a relay.
@@ -48,6 +30,39 @@ Extra-info descriptors are available from a few sources...
     |
     |- digest - calculates the digest value for our content
     +- get_unrecognized_lines - lines with unrecognized content
+
+.. data:: DirResponse (enum)
+  
+  Enumeration for known statuses for ExtraInfoDescriptor's dir_*_responses.
+  
+  =================== ===========
+  DirResponse         Description
+  =================== ===========
+  **OK**              network status requests that were answered
+  **NOT_ENOUGH_SIGS** network status wasn't signed by enough authorities
+  **UNAVAILABLE**     requested network status was unavailable
+  **NOT_FOUND**       requested network status was not found
+  **NOT_MODIFIED**    network status unmodified since If-Modified-Since time
+  **BUSY**            directory was busy
+  =================== ===========
+
+.. data:: DirStat (enum)
+  
+  Enumeration for known stats for ExtraInfoDescriptor's dir_*_direct_dl and
+  dir_*_tunneled_dl.
+  
+  ===================== ===========
+  DirStat               Description
+  ===================== ===========
+  **COMPLETE**          requests that completed successfully
+  **TIMEOUT**           requests that didn't complete within a ten minute timeout
+  **RUNNING**           requests still in process when measurement's taken
+  **MIN**               smallest rate at which a descriptor was downloaded in B/s
+  **MAX**               largest rate at which a descriptor was downloaded in B/s
+  **D1-4** and **D6-9** rate of the slowest x/10 download rates in B/s
+  **Q1** and **Q3**     rate of the slowest and fastest quarter download rates in B/s
+  **MD**                median download rate in B/s
+  ===================== ===========
 """
 
 import re
@@ -59,7 +74,7 @@ import stem.util.enum
 import stem.util.connection
 
 # known statuses for dirreq-v2-resp and dirreq-v3-resp...
-DirResponses = stem.util.enum.Enum(
+DirResponse = stem.util.enum.Enum(
   ("OK", "ok"),
   ("NOT_ENOUGH_SIGS", "not-enough-sigs"),
   ("UNAVAILABLE", "unavailable"),
@@ -72,7 +87,7 @@ DirResponses = stem.util.enum.Enum(
 dir_stats = ['complete', 'timeout', 'running', 'min', 'max', 'q1', 'q3', 'md']
 dir_stats += ['d%i' % i for i in range(1, 5)]
 dir_stats += ['d%i' % i for i in range(6, 10)]
-DirStats = stem.util.enum.Enum(*[(stat.upper(), stat) for stat in dir_stats])
+DirStat = stem.util.enum.Enum(*[(stat.upper(), stat) for stat in dir_stats])
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -226,18 +241,18 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var dict dir_v2_requests: mapping of locales to rounded count of requests
   :var dict dir_v3_requests: mapping of locales to rounded count of requests
   
-  :var dict dir_v2_responses: mapping of **DirResponses** to their rounded count
-  :var dict dir_v3_responses: mapping of **DirResponses** to their rounded count
+  :var dict dir_v2_responses: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirResponse` to their rounded count
+  :var dict dir_v3_responses: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirResponse` to their rounded count
   :var dict dir_v2_responses_unknown: mapping of unrecognized statuses to their count
   :var dict dir_v3_responses_unknown: mapping of unrecognized statuses to their count
   
-  :var dict dir_v2_direct_dl: mapping of **DirStats** to measurement over DirPort
-  :var dict dir_v3_direct_dl: mapping of **DirStats** to measurement over DirPort
+  :var dict dir_v2_direct_dl: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirStat` to measurement over DirPort
+  :var dict dir_v3_direct_dl: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirStat` to measurement over DirPort
   :var dict dir_v2_direct_dl_unknown: mapping of unrecognized stats to their measurement
   :var dict dir_v3_direct_dl_unknown: mapping of unrecognized stats to their measurement
   
-  :var dict dir_v2_tunneled_dl: mapping of **DirStats** to measurement over ORPort
-  :var dict dir_v3_tunneled_dl: mapping of **DirStats** to measurement over ORPort
+  :var dict dir_v2_tunneled_dl: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirStat` to measurement over ORPort
+  :var dict dir_v3_tunneled_dl: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirStat` to measurement over ORPort
   :var dict dir_v2_tunneled_dl_unknown: mapping of unrecognized stats to their measurement
   :var dict dir_v3_tunneled_dl_unknown: mapping of unrecognized stats to their measurement
   
@@ -494,7 +509,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         unrecognized_counts = {}
         
         is_response_stats = keyword in ("dirreq-v2-resp", "dirreq-v3-resp")
-        key_set = DirResponses if is_response_stats else DirStats
+        key_set = DirResponse if is_response_stats else DirStat
         
         key_type = "STATUS" if is_response_stats else "STAT"
         error_msg = "%s lines should contain %s=COUNT mappings: %s" % (keyword, key_type, line)
