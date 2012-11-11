@@ -41,6 +41,7 @@ Stem is a python controller library for `Tor <https://www.torproject.org/>`_. Li
 Subsections
 ===========
 
+* `Development Wiki <https://trac.torproject.org/projects/tor/wiki/doc/stem>`_
 * `Contact <http://www.atagar.com/contact/>`_
 * :ref:`genindex`
 * :ref:`modindex`
