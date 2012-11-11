@@ -54,13 +54,31 @@ providing its own for interacting at a higher level.
   
   Enumeration for states that a controller can have.
   
-  ====== ===========
-  State  Description
-  ====== ===========
-  INIT   new control connection
-  RESET  received a reset/sighup signal
-  CLOSED control connection closed
-  ====== ===========
+  ========== ===========
+  State      Description
+  ========== ===========
+  **INIT**   new control connection
+  **RESET**  received a reset/sighup signal
+  **CLOSED** control connection closed
+  ========== ===========
+
+.. data:: EventType (enum)
+  
+  Known types of events that the
+  :func:`~stem.control.Controller.add_event_listener` method of the
+  :class:`~stem.control.Controller` can listen for. Enums are mapped to
+  :class:`~stem.response.events.Event` subclasses as follows...
+  
+  =========== ===========
+  EventType   Event Class
+  =========== ===========
+  **DEBUG**   :class:`stem.response.events.LogEvent`
+  **INFO**    :class:`stem.response.events.LogEvent`
+  **NOTICE**  :class:`stem.response.events.LogEvent`
+  **WARN**    :class:`stem.response.events.LogEvent`
+  **ERR**     :class:`stem.response.events.LogEvent`
+  **BW**      :class:`stem.response.events.BandwidthEvent`
+  =========== ===========
 """
 
 from __future__ import with_statement
@@ -595,19 +613,6 @@ class Controller(BaseController):
         controller.authenticate()
         controller.add_event_listener(print_bw, EventType.BW)
         time.sleep(5)
-    
-    The EventType enumeration is mapped to event classes as follows...
-    
-    =========== ===========
-    EventType   Event Class
-    =========== ===========
-    **DEBUG**   :class:`stem.response.events.LogEvent`
-    **INFO**    :class:`stem.response.events.LogEvent`
-    **NOTICE**  :class:`stem.response.events.LogEvent`
-    **WARN**    :class:`stem.response.events.LogEvent`
-    **ERR**     :class:`stem.response.events.LogEvent`
-    **BW**      :class:`stem.response.events.BandwidthEvent`
-    =========== ===========
     
     :param functor listener: function to be called when an event is received
     :param stem.control.EventType events: event types to be listened for
