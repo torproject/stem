@@ -49,11 +49,18 @@ providing its own for interacting at a higher level.
     |- add_status_listener - notifies a callback of changes in our status
     |- remove_status_listener - prevents further notification of status changes
     +- __enter__ / __exit__ - manages socket connection
+
+.. data:: State (enum)
   
-  State - enumeration for states that a controller can have
-    |- INIT - new control connection
-    |- RESET - received a reset/sighup signal
-    +- CLOSED - control connection closed
+  Enumeration for states that a controller can have.
+  
+  ====== ===========
+  State  Description
+  ====== ===========
+  INIT   new control connection
+  RESET  received a reset/sighup signal
+  CLOSED control connection closed
+  ====== ===========
 """
 
 from __future__ import with_statement
@@ -69,6 +76,7 @@ import stem.version
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.util.connection
+import stem.util.enum
 import stem.util.log as log
 
 # state changes a control socket can have
@@ -303,9 +311,9 @@ class BaseController(object):
     
       my_function(controller, state, timestamp)
     
-    The state is a value from stem.socket.State, functions **must** allow for
-    new values in this field. The timestamp is a float for the unix time when
-    the change occurred.
+    The state is a value from the :data:`stem.control.State` enum. Functions
+    **must** allow for new values. The timestamp is a float for the unix time
+    when the change occurred.
     
     This class only provides **State.INIT** and **State.CLOSED** notifications.
     Subclasses may provide others.
@@ -396,7 +404,7 @@ class BaseController(object):
     If set, the expect_alive flag will discard our event if it conflicts with
     our current :func:`~stem.control.BaseController.is_alive` state.
     
-    :param stem.socket.State state: state change that has occurred
+    :param stem.control.State state: state change that has occurred
     :param bool expect_alive: discard event if it conflicts with our
       :func:`~stem.control.BaseController.is_alive` state
     """
