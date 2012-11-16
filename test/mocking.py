@@ -511,6 +511,8 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
       if value is None: continue
       elif value == "":
         content.append(keyword)
+      elif keyword == "onion-key" or keyword == "signing-key" or keyword == "router-signature":
+        content.append("%s%s" % (keyword, value))
       else:
         content.append("%s %s" % (keyword, value))
   
