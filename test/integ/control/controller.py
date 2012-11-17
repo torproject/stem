@@ -451,6 +451,9 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.ControllerError, controller.get_server_descriptor, "blargg")
       self.assertRaises(stem.ControllerError, controller.get_server_descriptor, "5" * 40)
       
+      test.runner.skip(self, "(https://trac.torproject.org/7163)")
+      return
+      
       first_descriptor = None
       with stem.descriptor.reader.DescriptorReader([descriptor_path]) as reader:
         for desc in reader:
@@ -510,6 +513,9 @@ class TestController(unittest.TestCase):
       
       # our cached consensus is v3 but the control port can only be queried for
       # v2 or v1 network status information
+      
+      test.runner.skip(self, "(https://trac.torproject.org/7163)")
+      return
       
       first_descriptor = None
       with stem.descriptor.reader.DescriptorReader([descriptor_path]) as reader:
