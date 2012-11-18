@@ -10,15 +10,7 @@ import stem.response
 import stem.response.events
 import test.mocking as mocking
 
-from stem import ProtocolError
-from stem.control import CircStatus,\
-                         CircBuildFlag,\
-                         CircPurpose,\
-                         CircClosureReason,\
-                         StreamStatus,\
-                         StreamClosureReason,\
-                         StreamSource,\
-                         StreamPurpose
+from stem import * # enums and exceptions
 
 # CIRC events from tor v0.2.3.16
 

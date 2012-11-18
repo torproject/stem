@@ -1,5 +1,6 @@
 import re
 
+import stem
 import stem.control
 import stem.response
 
@@ -86,17 +87,17 @@ class CircuitEvent(Event):
   version 0.1.2.2.
   
   :var str id: circuit identifier
-  :var stem.control.CircStatus status: reported status for the circuit
+  :var stem.CircStatus status: reported status for the circuit
   :var tuple path: relays involved in the circuit, these are
     **(fingerprint, nickname)** tuples
-  :var tuple build_flags: :data:`~stem.control.CircBuildFlag` attributes
+  :var tuple build_flags: :data:`~stem.CircBuildFlag` attributes
     governing how the circuit is built
-  :var stem.control.CircPurpose purpose: purpose that the circuit is intended for
-  :var stem.control.HiddenServiceState hs_state: status if this is a hidden service circuit
+  :var stem.CircPurpose purpose: purpose that the circuit is intended for
+  :var stem.HiddenServiceState hs_state: status if this is a hidden service circuit
   :var str rend_query: circuit's rendezvous-point if this is hidden service related
   :var datetime created: time when the circuit was created or cannibalized
-  :var stem.control.CircClosureReason reason: reason for the circuit to be closed
-  :var stem.control.CircClosureReason remote_reason: remote side's reason for the circuit to be closed
+  :var stem.CircClosureReason reason: reason for the circuit to be closed
+  :var stem.CircClosureReason remote_reason: remote side's reason for the circuit to be closed
   """
   
   _POSITIONAL_ARGS = ("id", "status", "path")
@@ -130,29 +131,29 @@ class CircuitEvent(Event):
     
     unrecognized_msg = "CIRC event had an unrecognised %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'" % self
     
-    if self.status and (not self.status in stem.control.CircStatus):
+    if self.status and (not self.status in stem.CircStatus):
       log_id = "event.circ.unknown_status.%s" % self.status
       log.log_once(log_id, log.INFO, unrecognized_msg % ('status', self.status))
     
     if self.build_flags:
       for flag in self.build_flags:
-        if not flag in stem.control.CircBuildFlag:
+        if not flag in stem.CircBuildFlag:
           log_id = "event.circ.unknown_build_flag.%s" % flag
           log.log_once(log_id, log.INFO, unrecognized_msg % ('build flag', flag))
     
-    if self.purpose and (not self.purpose in stem.control.CircPurpose):
+    if self.purpose and (not self.purpose in stem.CircPurpose):
       log_id = "event.circ.unknown_purpose.%s" % self.purpose
       log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
     
-    if self.hs_state and (not self.hs_state in stem.control.HiddenServiceState):
+    if self.hs_state and (not self.hs_state in stem.HiddenServiceState):
       log_id = "event.circ.unknown_hs_state.%s" % self.hs_state
       log.log_once(log_id, log.INFO, unrecognized_msg % ('hidden service state', self.hs_state))
     
-    if self.reason and (not self.reason in stem.control.CircClosureReason):
+    if self.reason and (not self.reason in stem.CircClosureReason):
       log_id = "event.circ.unknown_reason.%s" % self.reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('reason', self.reason))
     
-    if self.remote_reason and (not self.remote_reason in stem.control.CircClosureReason):
+    if self.remote_reason and (not self.remote_reason in stem.CircClosureReason):
       log_id = "event.circ.unknown_remote_reason.%s" % self.remote_reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('remote reason', self.remote_reason))
 
@@ -161,18 +162,18 @@ class StreamEvent(Event):
   Event that indicates that a stream has changed.
   
   :var str id: stream identifier
-  :var stem.control.StreamStatus status: reported status for the stream
+  :var stem.StreamStatus status: reported status for the stream
   :var str circ_id: circuit that the stream is attached to
   :var str target: destination of the stream
   :var str target_address: destination address (ip or hostname)
   :var int target_port: destination port
-  :var stem.control.StreamClosureReason reason: reason for the stream to be closed
-  :var stem.control.StreamClosureReason remote_reason: remote side's reason for the stream to be closed
-  :var stem.control.StreamSource source: origin of the REMAP request
+  :var stem.StreamClosureReason reason: reason for the stream to be closed
+  :var stem.StreamClosureReason remote_reason: remote side's reason for the stream to be closed
+  :var stem.StreamSource source: origin of the REMAP request
   :var str source_addr: requester of the connection
   :var str source_address: requester address (ip or hostname)
   :var int source_port: requester port
-  :var stem.control.StreamPurpose purpose: purpose for the stream
+  :var stem.StreamPurpose purpose: purpose for the stream
   """
   
   _POSITIONAL_ARGS = ("id", "status", "circ_id", "target")
@@ -224,15 +225,15 @@ class StreamEvent(Event):
     
     unrecognized_msg = "STREAM event had an unrecognised %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'" % self
     
-    if self.reason and (not self.reason in stem.control.StreamClosureReason):
+    if self.reason and (not self.reason in stem.StreamClosureReason):
       log_id = "event.stream.reason.%s" % self.reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('reason', self.reason))
     
-    if self.remote_reason and (not self.remote_reason in stem.control.StreamClosureReason):
+    if self.remote_reason and (not self.remote_reason in stem.StreamClosureReason):
       log_id = "event.stream.remote_reason.%s" % self.remote_reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('remote reason', self.remote_reason))
     
-    if self.purpose and (not self.purpose in stem.control.StreamPurpose):
+    if self.purpose and (not self.purpose in stem.StreamPurpose):
       log_id = "event.stream.purpose.%s" % self.purpose
       log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
 
