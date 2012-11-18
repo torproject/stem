@@ -2,7 +2,9 @@
 Unit tests for the stem.util.str_tools functions.
 """
 
+import datetime
 import unittest
+
 from stem.util import str_tools
 
 class TestStrTools(unittest.TestCase):
@@ -118,4 +120,33 @@ class TestStrTools(unittest.TestCase):
     self.assertRaises(ValueError, str_tools.parse_short_time_label, '05:')
     self.assertRaises(ValueError, str_tools.parse_short_time_label, '05a:00')
     self.assertRaises(ValueError, str_tools.parse_short_time_label, '-05:00')
+  
+  def test_parse_iso_timestamp(self):
+    """
+    Checks the parse_iso_timestamp() function.
+    """
+    
+    test_inputs = {
+      '2012-11-08T16:48:41.420251':
+        datetime.datetime(2012, 11, 8, 16, 48, 41, 420251),
+      '2012-11-08T16:48:41.000000':
+        datetime.datetime(2012, 11, 8, 16, 48, 41, 0),
+      '2012-11-08T16:48:41':
+        datetime.datetime(2012, 11, 8, 16, 48, 41, 0),
+    }
+    
+    for arg, expected in test_inputs.items():
+      self.assertEqual(expected, str_tools.parse_iso_timestamp(arg))
+    
+    invalid_input = [
+      None,
+      32,
+      'hello world',
+      '2012-11-08T16:48:41.42025',   # too few microsecond digits
+      '2012-11-08T16:48:41.4202511', # too many microsecond digits
+      '2012-11-08T16:48',
+    ]
+    
+    for arg in invalid_input:
+      self.assertRaises(ValueError, str_tools.parse_iso_timestamp, arg)
 

@@ -11,7 +11,11 @@ Toolkit for various string activity.
   get_time_labels - human readable labels for each time unit
   get_short_time_label - condensed time label output
   parse_short_time_label - seconds represented by a short time label
+  
+  parse_iso_timestamp - parses an ISO timestamp as a datetime value
 """
+
+import datetime
 
 # label conversion tuples of the form...
 # (bits / bytes / seconds, short label, long label)
@@ -234,6 +238,38 @@ def parse_short_time_label(label):
     return time_sum
   except ValueError:
     raise ValueError("Non-numeric value in time entry: %s" % label)
+
+def parse_iso_timestamp(entry):
+  """
+  Parses the ISO 8601 standard that provides for timestamps like...
+  
+  ::
+  
+    2012-11-08T16:48:41.420251
+  
+  :param str entry: timestamp to be parsed
+  
+  :returns: datetime for the time represented by the timestamp
+  
+  :raises: ValueError if the timestamp is malformed
+  """
+  
+  if not isinstance(entry, str):
+    raise ValueError("parse_iso_timestamp() input must be a str, got a %s" % type(entry))
+  
+  # based after suggestions from...
+  # http://stackoverflow.com/questions/127803/how-to-parse-iso-formatted-date-in-python
+  
+  if '.' in entry:
+    timestamp_str, microseconds = entry.split('.')
+  else:
+    timestamp_str, microseconds = entry, '000000'
+  
+  if len(microseconds) != 6 or not microseconds.isdigit():
+    raise ValueError("timestamp's microseconds should be six digits")
+  
+  timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S")
+  return timestamp + datetime.timedelta(microseconds = int(microseconds))
 
 def _get_label(units, count, decimal, is_long):
   """

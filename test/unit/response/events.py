@@ -2,6 +2,7 @@
 Unit tests for the stem.response.events classes.
 """
 
+import datetime
 import threading
 import unittest
 
@@ -9,7 +10,37 @@ import stem.response
 import stem.response.events
 import test.mocking as mocking
 
-from stem.socket import ProtocolError
+from stem import ProtocolError
+from stem.control import CircStatus, CircBuildFlag, CircPurpose, CircClosureReason
+
+# CIRC events from tor v0.2.3.16
+
+CIRC_LAUNCHED = "650 CIRC 7 LAUNCHED \
+BUILD_FLAGS=NEED_CAPACITY \
+PURPOSE=GENERAL \
+TIME_CREATED=2012-11-08T16:48:38.417238"
+
+CIRC_EXTENDED = "650 CIRC 7 EXTENDED \
+$999A226EBED397F331B612FE1E4CFAE5C1F201BA=piyaz \
+BUILD_FLAGS=NEED_CAPACITY \
+PURPOSE=GENERAL \
+TIME_CREATED=2012-11-08T16:48:38.417238"
+
+CIRC_FAILED = "650 CIRC 5 FAILED \
+$E57A476CD4DFBD99B4EE52A100A58610AD6E80B9=ergebnisoffen \
+BUILD_FLAGS=NEED_CAPACITY \
+PURPOSE=GENERAL \
+TIME_CREATED=2012-11-08T16:48:36.400959 \
+REASON=DESTROYED \
+REMOTE_REASON=OR_CONN_CLOSED"
+
+# CIRC events from tor v0.2.1.30 without the VERBOSE_NAMES feature
+
+CIRC_LAUNCHED_OLD = "650 CIRC 4 LAUNCHED"
+CIRC_EXTENDED_OLD = "650 CIRC 1 EXTENDED \
+$E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone"
+CIRC_BUILT_OLD = "650 CIRC 1 BUILT \
+$E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14"
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -46,6 +77,97 @@ class TestEvents(unittest.TestCase):
     events_thread.start()
     time.sleep(0.2)
     events_thread.join()
+  
+  def test_circ_event(self):
+    event = _get_event(CIRC_LAUNCHED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.CircuitEvent))
+    self.assertEqual(CIRC_LAUNCHED.lstrip("650 "), str(event))
+    self.assertEqual("7", event.id)
+    self.assertEqual(CircStatus.LAUNCHED, event.status)
+    self.assertEqual((), event.path)
+    self.assertEqual((CircBuildFlag.NEED_CAPACITY,), event.build_flags)
+    self.assertEqual(CircPurpose.GENERAL, event.purpose)
+    self.assertEqual(None, event.hs_state)
+    self.assertEqual(None, event.rend_query)
+    self.assertEqual(datetime.datetime(2012, 11, 8, 16, 48, 38, 417238), event.created)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    
+    event = _get_event(CIRC_EXTENDED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.CircuitEvent))
+    self.assertEqual(CIRC_EXTENDED.lstrip("650 "), str(event))
+    self.assertEqual("7", event.id)
+    self.assertEqual(CircStatus.EXTENDED, event.status)
+    self.assertEqual((("999A226EBED397F331B612FE1E4CFAE5C1F201BA", "piyaz"),), event.path)
+    self.assertEqual((CircBuildFlag.NEED_CAPACITY,), event.build_flags)
+    self.assertEqual(CircPurpose.GENERAL, event.purpose)
+    self.assertEqual(None, event.hs_state)
+    self.assertEqual(None, event.rend_query)
+    self.assertEqual(datetime.datetime(2012, 11, 8, 16, 48, 38, 417238), event.created)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    
+    event = _get_event(CIRC_FAILED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.CircuitEvent))
+    self.assertEqual(CIRC_FAILED.lstrip("650 "), str(event))
+    self.assertEqual("5", event.id)
+    self.assertEqual(CircStatus.FAILED, event.status)
+    self.assertEqual((("E57A476CD4DFBD99B4EE52A100A58610AD6E80B9", "ergebnisoffen"),), event.path)
+    self.assertEqual((CircBuildFlag.NEED_CAPACITY,), event.build_flags)
+    self.assertEqual(CircPurpose.GENERAL, event.purpose)
+    self.assertEqual(None, event.hs_state)
+    self.assertEqual(None, event.rend_query)
+    self.assertEqual(datetime.datetime(2012, 11, 8, 16, 48, 36, 400959), event.created)
+    self.assertEqual(CircClosureReason.DESTROYED, event.reason)
+    self.assertEqual(CircClosureReason.OR_CONN_CLOSED, event.remote_reason)
+    
+    event = _get_event(CIRC_LAUNCHED_OLD)
+    
+    self.assertTrue(isinstance(event, stem.response.events.CircuitEvent))
+    self.assertEqual(CIRC_LAUNCHED_OLD.lstrip("650 "), str(event))
+    self.assertEqual("4", event.id)
+    self.assertEqual(CircStatus.LAUNCHED, event.status)
+    self.assertEqual((), event.path)
+    self.assertEqual(None, event.build_flags)
+    self.assertEqual(None, event.purpose)
+    self.assertEqual(None, event.hs_state)
+    self.assertEqual(None, event.rend_query)
+    self.assertEqual(None, event.created)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    
+    event = _get_event(CIRC_EXTENDED_OLD)
+    
+    self.assertTrue(isinstance(event, stem.response.events.CircuitEvent))
+    self.assertEqual(CIRC_EXTENDED_OLD.lstrip("650 "), str(event))
+    self.assertEqual("1", event.id)
+    self.assertEqual(CircStatus.EXTENDED, event.status)
+    self.assertEqual((("E57A476CD4DFBD99B4EE52A100A58610AD6E80B9", None), (None,"hamburgerphone")), event.path)
+    self.assertEqual(None, event.build_flags)
+    self.assertEqual(None, event.purpose)
+    self.assertEqual(None, event.hs_state)
+    self.assertEqual(None, event.rend_query)
+    self.assertEqual(None, event.created)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    
+    event = _get_event(CIRC_BUILT_OLD)
+    
+    self.assertTrue(isinstance(event, stem.response.events.CircuitEvent))
+    self.assertEqual(CIRC_BUILT_OLD.lstrip("650 "), str(event))
+    self.assertEqual("1", event.id)
+    self.assertEqual(CircStatus.BUILT, event.status)
+    self.assertEqual((("E57A476CD4DFBD99B4EE52A100A58610AD6E80B9", None), (None,"hamburgerphone"), (None, "PrivacyRepublic14")), event.path)
+    self.assertEqual(None, event.build_flags)
+    self.assertEqual(None, event.purpose)
+    self.assertEqual(None, event.hs_state)
+    self.assertEqual(None, event.rend_query)
+    self.assertEqual(None, event.created)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
   
   def test_bw_event(self):
     event = _get_event("650 BW 15 25")
