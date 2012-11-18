@@ -95,6 +95,51 @@ class TestEvents(unittest.TestCase):
     time.sleep(0.2)
     events_thread.join()
   
+  def test_log_events(self):
+    event = _get_event("650 DEBUG connection_edge_process_relay_cell(): Got an extended cell! Yay.")
+    
+    self.assertTrue(isinstance(event, stem.response.events.LogEvent))
+    self.assertEqual("DEBUG", event.runlevel)
+    self.assertEqual("connection_edge_process_relay_cell(): Got an extended cell! Yay.", event.message)
+    
+    event = _get_event("650 INFO circuit_finish_handshake(): Finished building circuit hop:")
+    
+    self.assertTrue(isinstance(event, stem.response.events.LogEvent))
+    self.assertEqual("INFO", event.runlevel)
+    self.assertEqual("circuit_finish_handshake(): Finished building circuit hop:", event.message)
+    
+    event = _get_event("650+WARN\na multi-line\nwarning message\n.\n650 OK\n")
+    
+    self.assertTrue(isinstance(event, stem.response.events.LogEvent))
+    self.assertEqual("WARN", event.runlevel)
+    self.assertEqual("a multi-line\nwarning message", event.message)
+  
+  def test_bw_event(self):
+    event = _get_event("650 BW 15 25")
+    
+    self.assertTrue(isinstance(event, stem.response.events.BandwidthEvent))
+    self.assertEqual(15, event.read)
+    self.assertEqual(25, event.written)
+    
+    event = _get_event("650 BW 0 0")
+    self.assertEqual(0, event.read)
+    self.assertEqual(0, event.written)
+    
+    # BW events are documented as possibly having various keywords including
+    # DIR, OR, EXIT, and APP in the future. This is kinda a pointless note
+    # since tor doesn't actually do it yet (and likely never will), but might
+    # as well sanity test that it'll be ok.
+    
+    event = _get_event("650 BW 10 20 OR=5 EXIT=500")
+    self.assertEqual(10, event.read)
+    self.assertEqual(20, event.written)
+    self.assertEqual({'OR': '5', 'EXIT': '500'}, event.keyword_args)
+    
+    self.assertRaises(ProtocolError, _get_event, "650 BW 15")
+    self.assertRaises(ProtocolError, _get_event, "650 BW -15 25")
+    self.assertRaises(ProtocolError, _get_event, "650 BW 15 -25")
+    self.assertRaises(ProtocolError, _get_event, "650 BW x 25")
+  
   def test_circ_event(self):
     event = _get_event(CIRC_LAUNCHED)
     
@@ -321,49 +366,4 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.source_address)
     self.assertEqual(None, event.source_port)
     self.assertEqual(None, event.purpose)
-  
-  def test_bw_event(self):
-    event = _get_event("650 BW 15 25")
-    
-    self.assertTrue(isinstance(event, stem.response.events.BandwidthEvent))
-    self.assertEqual(15, event.read)
-    self.assertEqual(25, event.written)
-    
-    event = _get_event("650 BW 0 0")
-    self.assertEqual(0, event.read)
-    self.assertEqual(0, event.written)
-    
-    # BW events are documented as possibly having various keywords including
-    # DIR, OR, EXIT, and APP in the future. This is kinda a pointless note
-    # since tor doesn't actually do it yet (and likely never will), but might
-    # as well sanity test that it'll be ok.
-    
-    event = _get_event("650 BW 10 20 OR=5 EXIT=500")
-    self.assertEqual(10, event.read)
-    self.assertEqual(20, event.written)
-    self.assertEqual({'OR': '5', 'EXIT': '500'}, event.keyword_args)
-    
-    self.assertRaises(ProtocolError, _get_event, "650 BW 15")
-    self.assertRaises(ProtocolError, _get_event, "650 BW -15 25")
-    self.assertRaises(ProtocolError, _get_event, "650 BW 15 -25")
-    self.assertRaises(ProtocolError, _get_event, "650 BW x 25")
-  
-  def test_log_events(self):
-    event = _get_event("650 DEBUG connection_edge_process_relay_cell(): Got an extended cell! Yay.")
-    
-    self.assertTrue(isinstance(event, stem.response.events.LogEvent))
-    self.assertEqual("DEBUG", event.runlevel)
-    self.assertEqual("connection_edge_process_relay_cell(): Got an extended cell! Yay.", event.message)
-    
-    event = _get_event("650 INFO circuit_finish_handshake(): Finished building circuit hop:")
-    
-    self.assertTrue(isinstance(event, stem.response.events.LogEvent))
-    self.assertEqual("INFO", event.runlevel)
-    self.assertEqual("circuit_finish_handshake(): Finished building circuit hop:", event.message)
-    
-    event = _get_event("650+WARN\na multi-line\nwarning message\n.\n650 OK\n")
-    
-    self.assertTrue(isinstance(event, stem.response.events.LogEvent))
-    self.assertEqual("WARN", event.runlevel)
-    self.assertEqual("a multi-line\nwarning message", event.message)
 
