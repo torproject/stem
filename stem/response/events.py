@@ -3,7 +3,7 @@ import re
 import stem.control
 import stem.response
 
-from stem.util import log, str_tools, tor_tools
+from stem.util import connection, log, str_tools, tor_tools
 
 # Matches keyword=value arguments. This can't be a simple "(.*)=(.*)" pattern
 # because some positional arguments, like circuit paths, can have an equal
@@ -156,6 +156,86 @@ class CircuitEvent(Event):
       log_id = "event.circ.unknown_remote_reason.%s" % self.remote_reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('remote reason', self.remote_reason))
 
+class StreamEvent(Event):
+  """
+  Event that indicates that a stream has changed.
+  
+  :var str id: stream identifier
+  :var stem.control.StreamStatus status: reported status for the stream
+  :var str circ_id: circuit that the stream is attached to
+  :var str target: destination of the stream
+  :var str target_address: destination address (ip or hostname)
+  :var int target_port: destination port
+  :var stem.control.StreamClosureReason reason: reason for the stream to be closed
+  :var stem.control.StreamClosureReason remote_reason: remote side's reason for the stream to be closed
+  :var stem.control.StreamSource source: origin of the REMAP request
+  :var str source_addr: requester of the connection
+  :var str source_address: requester address (ip or hostname)
+  :var int source_port: requester port
+  :var stem.control.StreamPurpose purpose: purpose for the stream
+  """
+  
+  _POSITIONAL_ARGS = ("id", "status", "circ_id", "target")
+  _KEYWORD_ARGS = {
+    "REASON": "reason",
+    "REMOTE_REASON": "remote_reason",
+    "SOURCE": "source",
+    "SOURCE_ADDR": "source_addr",
+    "PURPOSE": "purpose",
+  }
+  
+  def _parse(self):
+    if self.target is None:
+      self.target_address = None
+      self.target_port = None
+    else:
+      if not ':' in self.target:
+        raise stem.ProtocolError("Target location must be of the form 'address:port': %s" % self)
+      
+      address, port = self.target.split(':')
+      
+      if not connection.is_valid_port(port):
+        raise stem.ProtocolError("Target location's port is invalid: %s" % self)
+      
+      self.target_address = address
+      self.target_port = int(port)
+    
+    if self.source_addr is None:
+      self.source_address = None
+      self.source_port = None
+    else:
+      if not ':' in self.source_addr:
+        raise stem.ProtocolError("Source location must be of the form 'address:port': %s" % self)
+      
+      address, port = self.source_addr.split(':')
+      
+      if not connection.is_valid_port(port):
+        raise stem.ProtocolError("Source location's port is invalid: %s" % self)
+      
+      self.source_address = address
+      self.source_port = int(port)
+    
+    # spec specifies a circ_id of zero if the stream is unattached
+    
+    if self.circ_id == "0":
+      self.circ_id = None
+    
+    # log if we have an unrecognized closure reason or purpose
+    
+    unrecognized_msg = "STREAM event had an unrecognised %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'" % self
+    
+    if self.reason and (not self.reason in stem.control.StreamClosureReason):
+      log_id = "event.stream.reason.%s" % self.reason
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('reason', self.reason))
+    
+    if self.remote_reason and (not self.remote_reason in stem.control.StreamClosureReason):
+      log_id = "event.stream.remote_reason.%s" % self.remote_reason
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('remote reason', self.remote_reason))
+    
+    if self.purpose and (not self.purpose in stem.control.StreamPurpose):
+      log_id = "event.stream.purpose.%s" % self.purpose
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
+
 class BandwidthEvent(Event):
   """
   Event emitted every second with the bytes sent and received by tor.
@@ -196,6 +276,7 @@ class LogEvent(Event):
 
 EVENT_TYPE_TO_CLASS = {
   "CIRC": CircuitEvent,
+  "STREAM": StreamEvent,
   "BW": BandwidthEvent,
   "DEBUG": LogEvent,
   "INFO": LogEvent,

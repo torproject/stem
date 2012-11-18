@@ -11,7 +11,14 @@ import stem.response.events
 import test.mocking as mocking
 
 from stem import ProtocolError
-from stem.control import CircStatus, CircBuildFlag, CircPurpose, CircClosureReason
+from stem.control import CircStatus,\
+                         CircBuildFlag,\
+                         CircPurpose,\
+                         CircClosureReason,\
+                         StreamStatus,\
+                         StreamClosureReason,\
+                         StreamSource,\
+                         StreamPurpose
 
 # CIRC events from tor v0.2.3.16
 
@@ -41,6 +48,19 @@ CIRC_EXTENDED_OLD = "650 CIRC 1 EXTENDED \
 $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone"
 CIRC_BUILT_OLD = "650 CIRC 1 BUILT \
 $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14"
+
+# STREAM events from tor 0.2.3.16 for visiting the google front page
+
+STREAM_NEW = "650 STREAM 18 NEW 0 \
+encrypted.google.com:443 \
+SOURCE_ADDR=127.0.0.1:47849 \
+PURPOSE=USER"
+
+STREAM_SENTCONNECT = "650 STREAM 18 SENTCONNECT 26 encrypted.google.com:443"
+STREAM_REMAP = "650 STREAM 18 REMAP 26 74.125.227.129:443 SOURCE=EXIT"
+STREAM_SUCCEEDED = "650 STREAM 18 SUCCEEDED 26 74.125.227.129:443"
+STREAM_CLOSED_RESET = "650 STREAM 21 CLOSED 26 74.125.227.129:443 REASON=CONNRESET"
+STREAM_CLOSED_DONE = "650 STREAM 25 CLOSED 26 199.7.52.72:80 REASON=DONE"
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -168,6 +188,115 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.created)
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
+  
+  def test_stream_event(self):
+    event = _get_event(STREAM_NEW)
+    
+    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
+    self.assertEqual(STREAM_NEW.lstrip("650 "), str(event))
+    self.assertEqual("18", event.id)
+    self.assertEqual(StreamStatus.NEW, event.status)
+    self.assertEqual(None, event.circ_id)
+    self.assertEqual("encrypted.google.com:443", event.target)
+    self.assertEqual("encrypted.google.com", event.target_address)
+    self.assertEqual(443, event.target_port)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual(None, event.source)
+    self.assertEqual("127.0.0.1:47849", event.source_addr)
+    self.assertEqual("127.0.0.1", event.source_address)
+    self.assertEqual(47849, event.source_port)
+    self.assertEqual(StreamPurpose.USER, event.purpose)
+    
+    event = _get_event(STREAM_SENTCONNECT)
+    
+    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
+    self.assertEqual(STREAM_SENTCONNECT.lstrip("650 "), str(event))
+    self.assertEqual("18", event.id)
+    self.assertEqual(StreamStatus.SENTCONNECT, event.status)
+    self.assertEqual("26", event.circ_id)
+    self.assertEqual("encrypted.google.com:443", event.target)
+    self.assertEqual("encrypted.google.com", event.target_address)
+    self.assertEqual(443, event.target_port)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual(None, event.source)
+    self.assertEqual(None, event.source_addr)
+    self.assertEqual(None, event.source_address)
+    self.assertEqual(None, event.source_port)
+    self.assertEqual(None, event.purpose)
+    
+    event = _get_event(STREAM_REMAP)
+    
+    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
+    self.assertEqual(STREAM_REMAP.lstrip("650 "), str(event))
+    self.assertEqual("18", event.id)
+    self.assertEqual(StreamStatus.REMAP, event.status)
+    self.assertEqual("26", event.circ_id)
+    self.assertEqual("74.125.227.129:443", event.target)
+    self.assertEqual("74.125.227.129", event.target_address)
+    self.assertEqual(443, event.target_port)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual(StreamSource.EXIT, event.source)
+    self.assertEqual(None, event.source_addr)
+    self.assertEqual(None, event.source_address)
+    self.assertEqual(None, event.source_port)
+    self.assertEqual(None, event.purpose)
+    
+    event = _get_event(STREAM_SUCCEEDED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
+    self.assertEqual(STREAM_SUCCEEDED.lstrip("650 "), str(event))
+    self.assertEqual("18", event.id)
+    self.assertEqual(StreamStatus.SUCCEEDED, event.status)
+    self.assertEqual("26", event.circ_id)
+    self.assertEqual("74.125.227.129:443", event.target)
+    self.assertEqual("74.125.227.129", event.target_address)
+    self.assertEqual(443, event.target_port)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual(None, event.source)
+    self.assertEqual(None, event.source_addr)
+    self.assertEqual(None, event.source_address)
+    self.assertEqual(None, event.source_port)
+    self.assertEqual(None, event.purpose)
+    
+    event = _get_event(STREAM_CLOSED_RESET)
+    
+    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
+    self.assertEqual(STREAM_CLOSED_RESET.lstrip("650 "), str(event))
+    self.assertEqual("21", event.id)
+    self.assertEqual(StreamStatus.CLOSED, event.status)
+    self.assertEqual("26", event.circ_id)
+    self.assertEqual("74.125.227.129:443", event.target)
+    self.assertEqual("74.125.227.129", event.target_address)
+    self.assertEqual(443, event.target_port)
+    self.assertEqual(StreamClosureReason.CONNRESET, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual(None, event.source)
+    self.assertEqual(None, event.source_addr)
+    self.assertEqual(None, event.source_address)
+    self.assertEqual(None, event.source_port)
+    self.assertEqual(None, event.purpose)
+    
+    event = _get_event(STREAM_CLOSED_DONE)
+    
+    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
+    self.assertEqual(STREAM_CLOSED_DONE.lstrip("650 "), str(event))
+    self.assertEqual("25", event.id)
+    self.assertEqual(StreamStatus.CLOSED, event.status)
+    self.assertEqual("26", event.circ_id)
+    self.assertEqual("199.7.52.72:80", event.target)
+    self.assertEqual("199.7.52.72", event.target_address)
+    self.assertEqual(80, event.target_port)
+    self.assertEqual(StreamClosureReason.DONE, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual(None, event.source)
+    self.assertEqual(None, event.source_addr)
+    self.assertEqual(None, event.source_address)
+    self.assertEqual(None, event.source_port)
+    self.assertEqual(None, event.purpose)
   
   def test_bw_event(self):
     event = _get_event("650 BW 15 25")

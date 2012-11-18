@@ -182,6 +182,77 @@ providing its own for interacting at a higher level.
   **HSSR_CONNECTING**           connecting to the introductory point
   **HSSR_JOINED**               connected to the rendezvous-point
   ============================= ===========
+
+.. data:: StreamStatus (enum)
+  
+  State that a stream going through tor can have. Tor may provide states not in
+  this enum.
+  
+  ================= ===========
+  StreamStatus      Description
+  ================= ===========
+  **NEW**           request for a new connection
+  **NEWRESOLVE**    request to resolve an address
+  **REMAP**         address is being re-mapped to another
+  **SENTCONNECT**   sent a connect cell along a circuit
+  **SENTRESOLVE**   sent a resolve cell along a circuit
+  **SUCCEEDED**     stream has been established
+  **FAILED**        stream is detached, and won't be re-established
+  **DETACHED**      stream is detached, but might be re-established
+  **CLOSED**        stream has closed
+  ================= ===========
+
+.. data:: StreamClosureReason (enum)
+  
+  Reason that a stream is being closed or failed to be established. Tor may
+  provide purposes not in this enum.
+  
+  ===================== ===========
+  StreamClosureReason   Description
+  ===================== ===========
+  **MISC**              none of the following reasons
+  **RESOLVEFAILED**     unable to resolve the hostname
+  **CONNECTREFUSED**    remote host refused the connection
+  **EXITPOLICY**        rejected by the exit due to its exit policy
+  **DESTROY**           circuit is being shut down
+  **DONE**              connection has been closed
+  **TIMEOUT**           connection timed out
+  **NOROUTE**           routing error while contacting the destinaiton
+  **HIBERNATING**       relay is hibernating
+  **INTERNAL**          internal error
+  **RESOURCELIMIT**     relay has insufficient resources to service the request
+  **CONNRESET**         connection has been reset
+  **TORPROTOCOL**       violation in the tor protocol
+  **NOTDIRECTORY**      directory information requested from a relay that isn't mirroring it
+  **END**               endpoint has sent a RELAY_END cell
+  **PRIVATE_ADDR**      endpoint was a private address (127.0.0.1, 10.0.0.1, etc)
+  ===================== ===========
+
+.. data:: StreamSource (enum)
+  
+  Cause of a stream being remapped to another address.
+  
+  ============= ===========
+  StreamSource  Description
+  ============= ===========
+  **CACHE**     tor is remapping because of a cached answer
+  **EXIT**      exit relay requested the remap
+  ============= ===========
+
+.. data:: StreamPurpose (enum)
+  
+  Purpsoe of the stream. This is only provided with new streams and tor may
+  provide purposes not in this enum.
+  
+  ================= ===========
+  StreamPurpose     Description
+  ================= ===========
+  **DIR_FETCH**     unknown (https://trac.torproject.org/7508)
+  **UPLOAD_DESC**   unknown (https://trac.torproject.org/7508)
+  **DNS_REQUEST**   unknown (https://trac.torproject.org/7508)
+  **USER**          unknown (https://trac.torproject.org/7508)
+  **DIRPORT_TEST**  unknown (https://trac.torproject.org/7508)
+  ================= ===========
 """
 
 from __future__ import with_statement
@@ -287,6 +358,50 @@ HiddenServiceState = stem.util.enum.UppercaseEnum(
   "HSSI_ESTABLISHED",
   "HSSR_CONNECTING",
   "HSSR_JOINED",
+)
+
+StreamStatus = stem.util.enum.UppercaseEnum(
+  "NEW",
+  "NEWRESOLVE",
+  "REMAP",
+  "SENTCONNECT",
+  "SENTRESOLVE",
+  "SUCCEEDED",
+  "FAILED",
+  "DETACHED",
+  "CLOSED",
+)
+
+StreamClosureReason = stem.util.enum.UppercaseEnum(
+  "MISC",
+  "RESOLVEFAILED",
+  "CONNECTREFUSED",
+  "EXITPOLICY",
+  "DESTROY",
+  "DONE",
+  "TIMEOUT",
+  "NOROUTE",
+  "HIBERNATING",
+  "INTERNAL",
+  "RESOURCELIMIT",
+  "CONNRESET",
+  "TORPROTOCOL",
+  "NOTDIRECTORY",
+  "END",
+  "PRIVATE_ADDR",
+)
+
+StreamSource = stem.util.enum.UppercaseEnum(
+  "CACHE",
+  "EXIT",
+)
+
+StreamPurpose = stem.util.enum.UppercaseEnum(
+  "DIR_FETCH",
+  "UPLOAD_DESC",
+  "DNS_REQUEST",
+  "USER",
+  "DIRPORT_TEST",
 )
 
 # Constant to indicate an undefined argument default. Usually we'd use None for
