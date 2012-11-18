@@ -78,6 +78,27 @@ class Event(stem.response.ControlMessage):
   def _parse(self):
     pass
 
+class BandwidthEvent(Event):
+  """
+  Event emitted every second with the bytes sent and received by tor.
+  
+  :var long read: bytes received by tor that second
+  :var long written: bytes sent by tor that second
+  """
+  
+  _POSITIONAL_ARGS = ("read", "written")
+  
+  def _parse(self):
+    if not self.read:
+      raise stem.ProtocolError("BW event is missing its read value")
+    elif not self.written:
+      raise stem.ProtocolError("BW event is missing its written value")
+    elif not self.read.isdigit() or not self.written.isdigit():
+      raise stem.ProtocolError("A BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
+    
+    self.read = long(self.read)
+    self.written = long(self.written)
+
 class CircuitEvent(Event):
   """
   Event that indicates that a circuit has changed.
@@ -156,6 +177,23 @@ class CircuitEvent(Event):
     if self.remote_reason and (not self.remote_reason in stem.CircClosureReason):
       log_id = "event.circ.unknown_remote_reason.%s" % self.remote_reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('remote reason', self.remote_reason))
+
+class LogEvent(Event):
+  """
+  Tor logging event. These are the most visible kind of event since, by
+  default, tor logs at the NOTICE runlevel to stdout.
+  
+  :var str runlevel: runlevel of the logged message
+  :var str message: logged message
+  """
+  
+  def _parse(self):
+    self.runlevel = self.type
+    
+    # message is our content, minus the runlevel and ending "OK" if a
+    # multi-line message
+    
+    self.message = str(self)[len(self.runlevel) + 1:].rstrip("\nOK")
 
 class StreamEvent(Event):
   """
@@ -236,44 +274,6 @@ class StreamEvent(Event):
     if self.purpose and (not self.purpose in stem.StreamPurpose):
       log_id = "event.stream.purpose.%s" % self.purpose
       log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
-
-class BandwidthEvent(Event):
-  """
-  Event emitted every second with the bytes sent and received by tor.
-  
-  :var long read: bytes received by tor that second
-  :var long written: bytes sent by tor that second
-  """
-  
-  _POSITIONAL_ARGS = ("read", "written")
-  
-  def _parse(self):
-    if not self.read:
-      raise stem.ProtocolError("BW event is missing its read value")
-    elif not self.written:
-      raise stem.ProtocolError("BW event is missing its written value")
-    elif not self.read.isdigit() or not self.written.isdigit():
-      raise stem.ProtocolError("A BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
-    
-    self.read = long(self.read)
-    self.written = long(self.written)
-
-class LogEvent(Event):
-  """
-  Tor logging event. These are the most visible kind of event since, by
-  default, tor logs at the NOTICE runlevel to stdout.
-  
-  :var str runlevel: runlevel of the logged message
-  :var str message: logged message
-  """
-  
-  def _parse(self):
-    self.runlevel = self.type
-    
-    # message is our content, minus the runlevel and ending "OK" if a
-    # multi-line message
-    
-    self.message = str(self)[len(self.runlevel) + 1:].rstrip("\nOK")
 
 EVENT_TYPE_TO_CLASS = {
   "CIRC": CircuitEvent,
