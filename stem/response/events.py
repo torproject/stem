@@ -129,7 +129,7 @@ class CircuitEvent(Event):
     # log if we have an unrecognized status, build flag, purpose, hidden
     # service state, or closure reason
     
-    unrecognized_msg = "CIRC event had an unrecognised %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'" % self
+    unrecognized_msg = "CIRC event had an unrecognized %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'" % self
     
     if self.status and (not self.status in stem.CircStatus):
       log_id = "event.circ.unknown_status.%s" % self.status
@@ -223,7 +223,7 @@ class StreamEvent(Event):
     
     # log if we have an unrecognized closure reason or purpose
     
-    unrecognized_msg = "STREAM event had an unrecognised %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'" % self
+    unrecognized_msg = "STREAM event had an unrecognized %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'" % self
     
     if self.reason and (not self.reason in stem.StreamClosureReason):
       log_id = "event.stream.reason.%s" % self.reason

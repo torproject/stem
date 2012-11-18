@@ -150,7 +150,7 @@ Library for working with the tor process.
   **DESTROY**           circuit is being shut down
   **DONE**              connection has been closed
   **TIMEOUT**           connection timed out
-  **NOROUTE**           routing error while contacting the destinaiton
+  **NOROUTE**           routing error while contacting the destination
   **HIBERNATING**       relay is hibernating
   **INTERNAL**          internal error
   **RESOURCELIMIT**     relay has insufficient resources to service the request
