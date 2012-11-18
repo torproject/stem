@@ -1500,36 +1500,50 @@ def _parse_circ_path(path):
   :raises: :class:`stem.ProtocolError` if the path is malformed
   """
   
-  if not path: return []
+  if path:
+    try:
+      return [_parse_circ_entry(entry) for entry in path.split(',')]
+    except stem.ProtocolError, exc:
+      # include the path with the exception
+      raise stem.ProtocolError("%s: %s" % (exc, path))
+  else:
+    return []
+
+def _parse_circ_entry(entry):
+  """
+  Parses a single relay's 'LongName' or 'ServerID'. See the
+  :func:`~_stem.control._parse_circ_path` function for more information.
   
-  circ_path = []
+  :param str entry: relay information to be parsed
   
-  for path_component in path.split(','):
-    if '=' in path_component:
-      # common case
-      fingerprint, nickname = path_component.split('=')
-    elif '~' in path_component:
-      # this is allowed for by the spec, but I've never seen it used
-      fingerprint, nickname = path_component.split('~')
-    elif path_component[0] == '$':
-      # old style, fingerprint only
-      fingerprint, nickname = path_component, None
-    else:
-      # old style, nickname only
-      fingerprint, nickname = None, path_component
-    
-    if fingerprint != None:
-      if not stem.util.tor_tools.is_valid_fingerprint(fingerprint, True):
-        raise stem.ProtocolError("Fingerprint in the circuit path is malformed (%s): %s" % (fingerprint, path))
-      
-      fingerprint = fingerprint[1:] # strip off the leading '$'
-    
-    if nickname != None and not stem.util.tor_tools.is_valid_nickname(nickname):
-      raise stem.ProtocolError("Nickname in the circuit path is malformed (%s): %s" % (fingerprint, path))
-    
-    circ_path.append((fingerprint, nickname))
+  :returns: **(fingerprint, nickname)** tuple
   
-  return circ_path
+  :raises: :class:`stem.ProtocolError` if the entry is malformed
+  """
+  
+  if '=' in entry:
+    # common case
+    fingerprint, nickname = entry.split('=')
+  elif '~' in entry:
+    # this is allowed for by the spec, but I've never seen it used
+    fingerprint, nickname = entry.split('~')
+  elif entry[0] == '$':
+    # old style, fingerprint only
+    fingerprint, nickname = entry, None
+  else:
+    # old style, nickname only
+    fingerprint, nickname = None, entry
+  
+  if fingerprint != None:
+    if not stem.util.tor_tools.is_valid_fingerprint(fingerprint, True):
+      raise stem.ProtocolError("Fingerprint in the circuit path is malformed (%s)" % fingerprint)
+    
+    fingerprint = fingerprint[1:] # strip off the leading '$'
+  
+  if nickname != None and not stem.util.tor_tools.is_valid_nickname(nickname):
+    raise stem.ProtocolError("Nickname in the circuit path is malformed (%s)" % fingerprint)
+  
+  return (fingerprint, nickname)
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """

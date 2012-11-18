@@ -62,7 +62,7 @@ Library for working with the tor process.
 .. data:: CircClosureReason (enum)
   
   Reason that a circuit is being closed or failed to be established. Tor may
-  provide purposes not in this enum.
+  provide reasons not in this enum.
   
   ========================= ===========
   CircClosureReason         Description
@@ -138,7 +138,7 @@ Library for working with the tor process.
 .. data:: StreamClosureReason (enum)
   
   Reason that a stream is being closed or failed to be established. Tor may
-  provide purposes not in this enum.
+  provide reasons not in this enum.
   
   ===================== ===========
   StreamClosureReason   Description
@@ -163,7 +163,8 @@ Library for working with the tor process.
 
 .. data:: StreamSource (enum)
   
-  Cause of a stream being remapped to another address.
+  Cause of a stream being remapped to another address. Tor may provide sources
+  not in this enum.
   
   ============= ===========
   StreamSource  Description
@@ -177,15 +178,58 @@ Library for working with the tor process.
   Purpsoe of the stream. This is only provided with new streams and tor may
   provide purposes not in this enum.
   
+  Enum descriptions are pending...
+  https://trac.torproject.org/7508
+  
   ================= ===========
   StreamPurpose     Description
   ================= ===========
-  **DIR_FETCH**     unknown (https://trac.torproject.org/7508)
-  **UPLOAD_DESC**   unknown (https://trac.torproject.org/7508)
-  **DNS_REQUEST**   unknown (https://trac.torproject.org/7508)
-  **USER**          unknown (https://trac.torproject.org/7508)
-  **DIRPORT_TEST**  unknown (https://trac.torproject.org/7508)
+  **DIR_FETCH**     unknown
+  **UPLOAD_DESC**   unknown
+  **DNS_REQUEST**   unknown
+  **USER**          unknown
+  **DIRPORT_TEST**  unknown
   ================= ===========
+
+.. data:: ORStatus (enum)
+  
+  State that an OR connection can have. Tor may provide states not in this
+  enum.
+  
+  Enum descriptions are pending...
+  https://trac.torproject.org/7513
+  
+  =============== ===========
+  ORStatus        Description
+  =============== ===========
+  **NEW**         unknown
+  **LAUNCHED**    unknown
+  **CONNECTED**   unknown
+  **FAILED**      unknown
+  **CLOSED**      unknown
+  =============== ===========
+
+.. data:: ORClosureReason (enum)
+  
+  Reason that an OR connection is being closed or failed to be established. Tor
+  may provide reasons not in this enum.
+  
+  Enum descriptions are pending...
+  https://trac.torproject.org/7513
+  
+  =================== ===========
+  ORClosureReason     Description
+  =================== ===========
+  **MISC**            unknown
+  **DONE**            unknown
+  **CONNECTREFUSED**  unknown
+  **IDENTITY**        unknown
+  **CONNECTRESET**    unknown
+  **TIMEOUT**         unknown
+  **NOROUTE**         unknown
+  **IOERROR**         unknown
+  **RESOURCELIMIT**   unknown
+  =================== ===========
 """
 
 __version__ = '0.0.1'
@@ -222,6 +266,8 @@ __all__ = [
   "StreamClosureReason",
   "StreamSource",
   "StreamPurpose",
+  "ORStatus",
+  "ORClosureReason",
 ]
 
 import stem.util.enum
@@ -375,5 +421,25 @@ StreamPurpose = stem.util.enum.UppercaseEnum(
   "DNS_REQUEST",
   "USER",
   "DIRPORT_TEST",
+)
+
+ORStatus = stem.util.enum.UppercaseEnum(
+  "NEW",
+  "LAUNCHED",
+  "CONNECTED",
+  "FAILED",
+  "CLOSED",
+)
+
+ORClosureReason = stem.util.enum.UppercaseEnum(
+  "MISC",
+  "DONE",
+  "CONNECTREFUSED",
+  "IDENTITY",
+  "CONNECTRESET",
+  "TIMEOUT",
+  "NOROUTE",
+  "IOERROR",
+  "RESOURCELIMIT",
 )
 

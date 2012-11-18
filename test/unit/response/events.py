@@ -54,6 +54,11 @@ STREAM_SUCCEEDED = "650 STREAM 18 SUCCEEDED 26 74.125.227.129:443"
 STREAM_CLOSED_RESET = "650 STREAM 21 CLOSED 26 74.125.227.129:443 REASON=CONNRESET"
 STREAM_CLOSED_DONE = "650 STREAM 25 CLOSED 26 199.7.52.72:80 REASON=DONE"
 
+# ORCONN events from starting tor 0.2.2.39 via TBB
+
+ORCONN_CONNECTED = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon CONNECTED"
+ORCONN_CLOSED = "650 ORCONN $A1130635A0CDA6F60C276FBF6994EFBD4ECADAB1~tama CLOSED REASON=DONE"
+
 def _get_event(content):
   controller_event = mocking.get_message(content)
   stem.response.convert("EVENT", controller_event, arrived_at = 25)
@@ -180,6 +185,33 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.created)
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
+  
+  def test_orconn_event(self):
+    event = _get_event(ORCONN_CONNECTED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.ORConnEvent))
+    self.assertEqual(ORCONN_CONNECTED.lstrip("650 "), str(event))
+    self.assertEqual("$7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon", event.endpoint)
+    self.assertEqual("7ED90E2833EE38A75795BA9237B0A4560E51E1A0", event.endpoint_fingerprint)
+    self.assertEqual("GreenDragon", event.endpoint_nickname)
+    self.assertEqual(None, event.endpoint_address)
+    self.assertEqual(None, event.endpoint_port)
+    self.assertEqual(ORStatus.CONNECTED, event.status)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.circ_count)
+    
+    event = _get_event(ORCONN_CLOSED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.ORConnEvent))
+    self.assertEqual(ORCONN_CLOSED.lstrip("650 "), str(event))
+    self.assertEqual("$A1130635A0CDA6F60C276FBF6994EFBD4ECADAB1~tama", event.endpoint)
+    self.assertEqual("A1130635A0CDA6F60C276FBF6994EFBD4ECADAB1", event.endpoint_fingerprint)
+    self.assertEqual("tama", event.endpoint_nickname)
+    self.assertEqual(None, event.endpoint_address)
+    self.assertEqual(None, event.endpoint_port)
+    self.assertEqual(ORStatus.CLOSED, event.status)
+    self.assertEqual(ORClosureReason.DONE, event.reason)
+    self.assertEqual(None, event.circ_count)
   
   def test_stream_event(self):
     event = _get_event(STREAM_NEW)

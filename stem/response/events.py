@@ -12,6 +12,10 @@ from stem.util import connection, log, str_tools, tor_tools
 
 KW_ARG = re.compile("([A-Za-z0-9_]+)=(.*)")
 
+# base message for when we get attributes not covered by our enums
+
+UNRECOGNIZED_ATTR_MSG = "%s event had an unrecognized %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'"
+
 class Event(stem.response.ControlMessage):
   """
   Base for events we receive asynchronously, as described in section 4.1 of the
@@ -150,7 +154,7 @@ class CircuitEvent(Event):
     # log if we have an unrecognized status, build flag, purpose, hidden
     # service state, or closure reason
     
-    unrecognized_msg = "CIRC event had an unrecognized %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'" % self
+    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("CIRC", self)
     
     if self.status and (not self.status in stem.CircStatus):
       log_id = "event.circ.unknown_status.%s" % self.status
@@ -195,6 +199,73 @@ class LogEvent(Event):
     
     self.message = str(self)[len(self.runlevel) + 1:].rstrip("\nOK")
 
+class ORConnEvent(Event):
+  """
+  Event that indicates a change in a relay connection. The 'endpoint' could be
+  any of several things including a...
+  
+  * fingerprint
+  * nickname
+  * 'fingerprint=nickname' pair
+  * address:port
+  
+  The derived 'endpoint_*' attributes are generally more useful.
+  
+  :var str endpoint: relay that the event concerns
+  :var str endpoint_fingerprint: endpoint's finterprint if it was provided
+  :var str endpoint_nickname: endpoint's nickname if it was provided
+  :var str endpoint_address: endpoint's address if it was provided
+  :var int endpoint_port: endpoint's port if it was provided
+  :var stem.ORStatus status: state of the connection
+  :var stem.ORClosureReason reason: reason for the connection to be closed
+  :var int circ_count: number of established and pending circuits
+  """
+  
+  _POSITIONAL_ARGS = ("endpoint", "status")
+  _KEYWORD_ARGS = {
+    "REASON": "reason",
+    "NCIRCS": "circ_count",
+  }
+  
+  def _parse(self):
+    self.endpoint_fingerprint = None
+    self.endpoint_nickname = None
+    self.endpoint_address = None
+    self.endpoint_port = None
+    
+    try:
+      self.endpoint_fingerprint, self.endpoint_nickname = \
+        stem.control._parse_circ_entry(self.endpoint)
+    except stem.ProtocolError:
+      if not ':' in self.endpoint:
+        raise stem.ProtocolError("ORCONN endpoint is neither a relay nor 'address:port': %s" % self)
+      
+      address, port = self.endpoint.split(':', 1)
+      
+      if not connection.is_valid_port(port):
+        raise stem.ProtocolError("ORCONN's endpoint location's port is invalid: %s" % self)
+      
+      self.endpoint_address = address
+      self.endpoint_port = int(port)
+    
+    if self.circ_count != None:
+      if not self.circ_count.isdigit():
+        raise stem.ProtocolError("ORCONN event got a non-numeric circuit count (%s): %s" % (self.circ_count, self))
+      
+      self.circ_count = int(self.circ_count)
+    
+    # log if we have an unrecognized status or reason
+    
+    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("ORCONN", self)
+    
+    if self.status and (not self.status in stem.ORStatus):
+      log_id = "event.orconn.unknown_status.%s" % self.status
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('status', self.status))
+    
+    if self.reason and (not self.reason in stem.ORClosureReason):
+      log_id = "event.orconn.unknown_reason.%s" % self.reason
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('reason', self.reason))
+
 class StreamEvent(Event):
   """
   Event that indicates that a stream has changed.
@@ -231,7 +302,7 @@ class StreamEvent(Event):
       if not ':' in self.target:
         raise stem.ProtocolError("Target location must be of the form 'address:port': %s" % self)
       
-      address, port = self.target.split(':')
+      address, port = self.target.split(':', 1)
       
       if not connection.is_valid_port(port):
         raise stem.ProtocolError("Target location's port is invalid: %s" % self)
@@ -246,7 +317,7 @@ class StreamEvent(Event):
       if not ':' in self.source_addr:
         raise stem.ProtocolError("Source location must be of the form 'address:port': %s" % self)
       
-      address, port = self.source_addr.split(':')
+      address, port = self.source_addr.split(':', 1)
       
       if not connection.is_valid_port(port):
         raise stem.ProtocolError("Source location's port is invalid: %s" % self)
@@ -261,7 +332,7 @@ class StreamEvent(Event):
     
     # log if we have an unrecognized closure reason or purpose
     
-    unrecognized_msg = "STREAM event had an unrecognized %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'" % self
+    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("STREAM", self)
     
     if self.reason and (not self.reason in stem.StreamClosureReason):
       log_id = "event.stream.reason.%s" % self.reason
@@ -276,13 +347,14 @@ class StreamEvent(Event):
       log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
 
 EVENT_TYPE_TO_CLASS = {
-  "CIRC": CircuitEvent,
-  "STREAM": StreamEvent,
-  "BW": BandwidthEvent,
   "DEBUG": LogEvent,
   "INFO": LogEvent,
   "NOTICE": LogEvent,
   "WARN": LogEvent,
   "ERR": LogEvent,
+  "BW": BandwidthEvent,
+  "CIRC": CircuitEvent,
+  "ORCONN": ORConnEvent,
+  "STREAM": StreamEvent,
 }
 
