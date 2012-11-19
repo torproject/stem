@@ -79,6 +79,8 @@ providing its own for interacting at a higher level.
   **ERR**     :class:`stem.response.events.LogEvent`
   **BW**      :class:`stem.response.events.BandwidthEvent`
   **CIRC**    :class:`stem.response.events.CircuitEvent`
+  **NEWDESC** :class:`stem.response.events.NewDescEvent`
+  **ORCONN**  :class:`stem.response.events.ORConnEvent`
   **STREAM**  :class:`stem.response.events.StreamEvent`
   =========== ===========
 """

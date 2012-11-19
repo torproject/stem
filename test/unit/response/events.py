@@ -59,6 +59,13 @@ STREAM_CLOSED_DONE = "650 STREAM 25 CLOSED 26 199.7.52.72:80 REASON=DONE"
 ORCONN_CONNECTED = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon CONNECTED"
 ORCONN_CLOSED = "650 ORCONN $A1130635A0CDA6F60C276FBF6994EFBD4ECADAB1~tama CLOSED REASON=DONE"
 
+# NEWDESC events. I've never actually seen multiple descriptors in an event,
+# but the spec allows for it.
+
+NEWDESC_SINGLE = "650 NEWDESC $B3FA3110CC6F42443F039220C134CBD2FC4F0493=Sakura"
+NEWDESC_MULTIPLE = "650 NEWDESC $BE938957B2CA5F804B3AFC2C1EE6673170CDBBF8=Moonshine \
+$B4BE08B22D4D2923EDC3970FD1B93D0448C6D8FF~Unnamed"
+
 def _get_event(content):
   controller_event = mocking.get_message(content)
   stem.response.convert("EVENT", controller_event, arrived_at = 25)
@@ -230,6 +237,22 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.created)
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
+  
+  def test_newdesc_event(self):
+    event = _get_event(NEWDESC_SINGLE)
+    expected_relays = (("B3FA3110CC6F42443F039220C134CBD2FC4F0493", "Sakura"),)
+    
+    self.assertTrue(isinstance(event, stem.response.events.NewDescEvent))
+    self.assertEqual(NEWDESC_SINGLE.lstrip("650 "), str(event))
+    self.assertEqual(expected_relays, event.relays)
+    
+    event = _get_event(NEWDESC_MULTIPLE)
+    expected_relays = (("BE938957B2CA5F804B3AFC2C1EE6673170CDBBF8", "Moonshine"),
+                       ("B4BE08B22D4D2923EDC3970FD1B93D0448C6D8FF", "Unnamed"))
+    
+    self.assertTrue(isinstance(event, stem.response.events.NewDescEvent))
+    self.assertEqual(NEWDESC_MULTIPLE.lstrip("650 "), str(event))
+    self.assertEqual(expected_relays, event.relays)
   
   def test_orconn_event(self):
     event = _get_event(ORCONN_CONNECTED)

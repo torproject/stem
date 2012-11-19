@@ -107,9 +107,9 @@ class CircuitEvent(Event):
   """
   Event that indicates that a circuit has changed.
   
-  The fingerprint or nickname values in our path may be **None** if the
-  VERBOSE_NAMES feature is unavailable. The option was first introduced in tor
-  version 0.1.2.2.
+  The fingerprint or nickname values in our 'path' may be **None** if the
+  VERBOSE_NAMES feature isn't enabled. The option was first introduced in tor
+  version 0.1.2.2, and on by default after 0.2.2.1.
   
   :var str id: circuit identifier
   :var stem.CircStatus status: reported status for the circuit
@@ -198,6 +198,21 @@ class LogEvent(Event):
     # multi-line message
     
     self.message = str(self)[len(self.runlevel) + 1:].rstrip("\nOK")
+
+class NewDescEvent(Event):
+  """
+  Event that indicates that a new descriptor is available.
+  
+  The fingerprint or nickname values in our 'relays' may be **None** if the
+  VERBOSE_NAMES feature isn't enabled. The option was first introduced in tor
+  version 0.1.2.2, and on by default after 0.2.2.1.
+  
+  :param tuple relays: **(fingerprint, nickname)** tuples for the relays with
+    new descriptors
+  """
+  
+  def _parse(self):
+    self.relays = tuple([stem.control._parse_circ_entry(entry) for entry in str(self).split()[1:]])
 
 class ORConnEvent(Event):
   """
@@ -354,6 +369,7 @@ EVENT_TYPE_TO_CLASS = {
   "ERR": LogEvent,
   "BW": BandwidthEvent,
   "CIRC": CircuitEvent,
+  "NEWDESC": NewDescEvent,
   "ORCONN": ORConnEvent,
   "STREAM": StreamEvent,
 }
