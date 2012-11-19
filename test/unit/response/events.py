@@ -66,6 +66,12 @@ NEWDESC_SINGLE = "650 NEWDESC $B3FA3110CC6F42443F039220C134CBD2FC4F0493=Sakura"
 NEWDESC_MULTIPLE = "650 NEWDESC $BE938957B2CA5F804B3AFC2C1EE6673170CDBBF8=Moonshine \
 $B4BE08B22D4D2923EDC3970FD1B93D0448C6D8FF~Unnamed"
 
+# ADDRMAP event
+# TODO: it would be nice to have an example of an error event
+
+ADDRMAP = '650 ADDRMAP www.atagar.com 75.119.206.243 "2012-11-19 00:50:13" \
+EXPIRES="2012-11-19 08:50:13"'
+
 def _get_event(content):
   controller_event = mocking.get_message(content)
   stem.response.convert("EVENT", controller_event, arrived_at = 25)
@@ -120,6 +126,17 @@ class TestEvents(unittest.TestCase):
     self.assertTrue(isinstance(event, stem.response.events.LogEvent))
     self.assertEqual("WARN", event.runlevel)
     self.assertEqual("a multi-line\nwarning message", event.message)
+  
+  def test_addrmap_event(self):
+    event = _get_event(ADDRMAP)
+    
+    self.assertTrue(isinstance(event, stem.response.events.AddrMapEvent))
+    self.assertEqual(ADDRMAP.lstrip("650 "), str(event))
+    self.assertEqual("www.atagar.com", event.hostname)
+    self.assertEqual("75.119.206.243", event.destination)
+    self.assertEqual(datetime.datetime(2012, 11, 19, 0, 50, 13), event.expiry)
+    self.assertEqual(None, event.error)
+    self.assertEqual(datetime.datetime(2012, 11, 19, 8, 50, 13), event.gmt_expiry)
   
   def test_bw_event(self):
     event = _get_event("650 BW 15 25")

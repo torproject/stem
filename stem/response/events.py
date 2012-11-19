@@ -1,4 +1,5 @@
 import re
+import datetime
 
 import stem
 import stem.control
@@ -30,14 +31,13 @@ class Event(stem.response.ControlMessage):
   
   _POSITIONAL_ARGS = ()
   _KEYWORD_ARGS = {}
+  _QUOTED = ()
   
   def _parse_message(self, arrived_at):
-    fields = str(self).split()
-    
-    if not fields:
+    if not str(self).strip():
       raise stem.ProtocolError("Received a blank tor event. Events must at the very least have a type.")
     
-    self.type = fields.pop(0)
+    self.type = str(self).split().pop(0)
     self.arrived_at = arrived_at
     
     # if we're a recognized event type then translate ourselves into that subclass
@@ -45,12 +45,31 @@ class Event(stem.response.ControlMessage):
     if self.type in EVENT_TYPE_TO_CLASS:
       self.__class__ = EVENT_TYPE_TO_CLASS[self.type]
     
+    self.positional_args = []
+    self.keyword_args = {}
+    
+    # Whoever decided to allow for quoted attributes in events should be
+    # punished. Preferably under some of those maritime laws that allow for
+    # flogging. Event parsing was nice until we threw this crap in...
+    #
+    # Pulling quoted keyword arguments out here. Quoted positonal arguments
+    # are handled later.
+    
+    content = str(self)
+    
+    for keyword in set(self._QUOTED).intersection(set(self._KEYWORD_ARGS.keys())):
+      match = re.match("^(.*) %s=\"(.*)\"(.*)$" % keyword, content)
+      
+      if match:
+        prefix, value, suffix = match.groups()
+        content = prefix + suffix
+        self.keyword_args[keyword] = value
+    
+    fields = content.split()[1:]
+    
     # Tor events contain some number of positional arguments followed by
     # key/value mappings. Parsing keyword arguments from the end until we hit
     # something that isn't a key/value mapping. The rest are positional.
-    
-    self.positional_args = []
-    self.keyword_args = {}
     
     while fields:
       kw_match = KW_ARG.match(fields[-1])
@@ -69,7 +88,25 @@ class Event(stem.response.ControlMessage):
     
     for i in xrange(len(self._POSITIONAL_ARGS)):
       attr_name = self._POSITIONAL_ARGS[i]
-      attr_value = self.positional_args[i] if i < len(self.positional_args) else None
+      attr_value = None
+      
+      if self.positional_args:
+        if attr_name in self._QUOTED:
+          attr_values = [self.positional_args.pop(0)]
+          
+          if not attr_values[0].startswith('"'):
+            raise stem.ProtocolError("The %s value should be quoted, but didn't have a starting quote: %s" % self)
+          
+          while True:
+            if not self.positional_args:
+              raise stem.ProtocolError("The %s value should be quoted, but didn't have an ending quote: %s" % self)
+            
+            attr_values.append(self.positional_args.pop(0))
+            if attr_values[-1].endswith('"'): break
+          
+          attr_value = " ".join(attr_values)[1:-1]
+        else:
+          attr_value = self.positional_args.pop(0)
       
       setattr(self, attr_name, attr_value)
     
@@ -81,6 +118,41 @@ class Event(stem.response.ControlMessage):
   # method overwritten by our subclasses for special handling that they do
   def _parse(self):
     pass
+
+class AddrMapEvent(Event):
+  """
+  Event that indicates a new address mapping.
+  
+  :var str hostname: address being resolved
+  :var str destination: destionation of the resolution, this is usually an ip,
+    but could be a hostname if TrackHostExits is enabled or **NONE** if the
+    resolution failed
+  :var datetime expiry: expiration time of the resolution in local time
+  :var str error: error code if the resolution failed
+  :var datetime gmt_expiry: expiration time of the resolution in gmt
+  """
+  
+  # TODO: The spec for this event is a little vague. Making a couple guesses
+  # about it...
+  #
+  # https://trac.torproject.org/7515
+  
+  _POSITIONAL_ARGS = ("hostname", "destination", "expiry")
+  _KEYWORD_ARGS = {
+    "error": "error",
+    "EXPIRES": "gmt_expiry",
+  }
+  _QUOTED = ("expiry", "EXPIRES")
+  
+  def _parse(self):
+    if self.destination == "<error>":
+      self.destination = None
+    
+    if self.expiry != None:
+      self.expiry = datetime.datetime.strptime(self.expiry, "%Y-%m-%d %H:%M:%S")
+    
+    if self.gmt_expiry != None:
+      self.gmt_expiry = datetime.datetime.strptime(self.gmt_expiry, "%Y-%m-%d %H:%M:%S")
 
 class BandwidthEvent(Event):
   """
@@ -367,6 +439,7 @@ EVENT_TYPE_TO_CLASS = {
   "NOTICE": LogEvent,
   "WARN": LogEvent,
   "ERR": LogEvent,
+  "ADDRMAP": AddrMapEvent,
   "BW": BandwidthEvent,
   "CIRC": CircuitEvent,
   "NEWDESC": NewDescEvent,

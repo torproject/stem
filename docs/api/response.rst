@@ -17,6 +17,7 @@ Events
 
 .. autoclass:: stem.response.events.Event
 .. autoclass:: stem.response.events.LogEvent
+.. autoclass:: stem.response.events.AddrMapEvent
 .. autoclass:: stem.response.events.BandwidthEvent
 .. autoclass:: stem.response.events.CircuitEvent
 .. autoclass:: stem.response.events.NewDescEvent
