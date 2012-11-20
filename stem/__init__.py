@@ -230,6 +230,22 @@ Library for working with the tor process.
   **IOERROR**         unknown
   **RESOURCELIMIT**   unknown
   =================== ===========
+
+.. data:: AuthDescriptorAction (enum)
+  
+  Actions that directory authorities might take with relay descriptors. Tor may
+  provide reasons not in this enum.
+  
+  Enum descriptions are pending...
+  https://trac.torproject.org/7533
+  
+  ===================== ===========
+  AuthDescriptorAction  Description
+  ===================== ===========
+  **ACCEPTED**          unknown
+  **DROPPED**           unknown
+  **REJECTED**          unknown
+  ===================== ===========
 """
 
 __version__ = '0.0.1'
@@ -441,5 +457,11 @@ ORClosureReason = stem.util.enum.UppercaseEnum(
   "NOROUTE",
   "IOERROR",
   "RESOURCELIMIT",
+)
+
+AuthDescriptorAction = stem.util.enum.UppercaseEnum(
+  "ACCEPTED",
+  "DROPPED",
+  "REJECTED",
 )
 

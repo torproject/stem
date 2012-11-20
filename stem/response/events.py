@@ -32,6 +32,7 @@ class Event(stem.response.ControlMessage):
   _POSITIONAL_ARGS = ()
   _KEYWORD_ARGS = {}
   _QUOTED = ()
+  _SKIP_PARSING = False
   
   def _parse_message(self, arrived_at):
     if not str(self).strip():
@@ -47,6 +48,21 @@ class Event(stem.response.ControlMessage):
     
     self.positional_args = []
     self.keyword_args = {}
+    
+    if not self._SKIP_PARSING:
+      self._parse_standard_attr()
+    
+    self._parse()
+  
+  def _parse_standard_attr(self):
+    """
+    Most events are of the form...
+    650 *( positional_args ) *( key "=" value )
+    
+    This parses this standard format, populating our **positional_args** and
+    **keyword_args** attributes and creating attributes if it's in our event's
+    **_POSITIONAL_ARGS** and **_KEYWORD_ARGS**.
+    """
     
     # Whoever decided to allow for quoted attributes in events should be
     # punished. Preferably under some of those maritime laws that allow for
@@ -112,8 +128,6 @@ class Event(stem.response.ControlMessage):
     
     for controller_attr_name, attr_name in self._KEYWORD_ARGS.items():
       setattr(self, attr_name, self.keyword_args.get(controller_attr_name))
-    
-    self._parse()
   
   # method overwritten by our subclasses for special handling that they do
   def _parse(self):
@@ -153,6 +167,20 @@ class AddrMapEvent(Event):
     
     if self.gmt_expiry != None:
       self.gmt_expiry = datetime.datetime.strptime(self.gmt_expiry, "%Y-%m-%d %H:%M:%S")
+
+class AuthDirNewDescEvent(Event):
+  """
+  Event specific to directory authorities, indicating that we just received new
+  descriptors.
+  
+  **Unimplemented, waiting on 'https://trac.torproject.org/7534'.**
+  
+  :var stem.AuthDescriptorAction action: what is being done with the descriptor
+  :var str message: unknown
+  :var stem.descriptor.Descriptor descriptor: unknown
+  """
+  
+  _SKIP_PARSING = True
 
 class BandwidthEvent(Event):
   """
@@ -262,6 +290,8 @@ class LogEvent(Event):
   :var str runlevel: runlevel of the logged message
   :var str message: logged message
   """
+  
+  _SKIP_PARSING = True
   
   def _parse(self):
     self.runlevel = self.type
@@ -440,6 +470,7 @@ EVENT_TYPE_TO_CLASS = {
   "WARN": LogEvent,
   "ERR": LogEvent,
   "ADDRMAP": AddrMapEvent,
+  "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
   "BW": BandwidthEvent,
   "CIRC": CircuitEvent,
   "NEWDESC": NewDescEvent,
