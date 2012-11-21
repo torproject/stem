@@ -138,6 +138,17 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.error)
     self.assertEqual(datetime.datetime(2012, 11, 19, 8, 50, 13), event.gmt_expiry)
   
+  def test_authdir_newdesc_event(self):
+    # TODO: We aren't actually parsing the event yet. Until then we can only
+    # check that we properly get a AuthDirNewDescEvent for it.
+    
+    event = _get_event("650 AUTHDIR_NEWDESCS")
+    
+    self.assertTrue(isinstance(event, stem.response.events.AuthDirNewDescEvent))
+    self.assertEqual("AUTHDIR_NEWDESCS", str(event))
+    self.assertEqual([], event.positional_args)
+    self.assertEqual({}, event.keyword_args)
+  
   def test_bw_event(self):
     event = _get_event("650 BW 15 25")
     
@@ -254,6 +265,17 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.created)
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
+  
+  def test_descchanged_event(self):
+    # all we can check for is that the event is properly parsed as a
+    # DescChangedEvent instance
+    
+    event = _get_event("650 DESCCHANGED")
+    
+    self.assertTrue(isinstance(event, stem.response.events.DescChangedEvent))
+    self.assertEqual("DESCCHANGED", str(event))
+    self.assertEqual([], event.positional_args)
+    self.assertEqual({}, event.keyword_args)
   
   def test_newdesc_event(self):
     event = _get_event(NEWDESC_SINGLE)

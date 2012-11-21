@@ -69,20 +69,23 @@ providing its own for interacting at a higher level.
   :class:`~stem.control.Controller` can listen for. Enums are mapped to
   :class:`~stem.response.events.Event` subclasses as follows...
   
-  =========== ===========
-  EventType   Event Class
-  =========== ===========
-  **DEBUG**   :class:`stem.response.events.LogEvent`
-  **INFO**    :class:`stem.response.events.LogEvent`
-  **NOTICE**  :class:`stem.response.events.LogEvent`
-  **WARN**    :class:`stem.response.events.LogEvent`
-  **ERR**     :class:`stem.response.events.LogEvent`
-  **BW**      :class:`stem.response.events.BandwidthEvent`
-  **CIRC**    :class:`stem.response.events.CircuitEvent`
-  **NEWDESC** :class:`stem.response.events.NewDescEvent`
-  **ORCONN**  :class:`stem.response.events.ORConnEvent`
-  **STREAM**  :class:`stem.response.events.StreamEvent`
-  =========== ===========
+  ===================== ===========
+  EventType             Event Class
+  ===================== ===========
+  **DEBUG**             :class:`stem.response.events.LogEvent`
+  **INFO**              :class:`stem.response.events.LogEvent`
+  **NOTICE**            :class:`stem.response.events.LogEvent`
+  **WARN**              :class:`stem.response.events.LogEvent`
+  **ERR**               :class:`stem.response.events.LogEvent`
+  **ADDRMAP**           :class:`stem.response.events.AddrMapEvent`
+  **AUTHDIR_NEWDESCS**  :class:`stem.response.events.AuthDirNewDescEvent`
+  **BW**                :class:`stem.response.events.BandwidthEvent`
+  **CIRC**              :class:`stem.response.events.CircuitEvent`
+  **DESCCHANGED**       :class:`stem.response.events.DescChangedEvent`
+  **NEWDESC**           :class:`stem.response.events.NewDescEvent`
+  **ORCONN**            :class:`stem.response.events.ORConnEvent`
+  **STREAM**            :class:`stem.response.events.StreamEvent`
+  ===================== ===========
 """
 
 from __future__ import with_statement

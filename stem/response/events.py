@@ -282,6 +282,14 @@ class CircuitEvent(Event):
       log_id = "event.circ.unknown_remote_reason.%s" % self.remote_reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('remote reason', self.remote_reason))
 
+class DescChangedEvent(Event):
+  """
+  Event that indicates that our descriptor has changed. This was first added in
+  tor version 0.1.2.2.
+  """
+  
+  pass
+
 class LogEvent(Event):
   """
   Tor logging event. These are the most visible kind of event since, by
@@ -473,6 +481,7 @@ EVENT_TYPE_TO_CLASS = {
   "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
   "BW": BandwidthEvent,
   "CIRC": CircuitEvent,
+  "DESCCHANGED": DescChangedEvent,
   "NEWDESC": NewDescEvent,
   "ORCONN": ORConnEvent,
   "STREAM": StreamEvent,
