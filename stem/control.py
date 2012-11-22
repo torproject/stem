@@ -29,6 +29,7 @@ providing its own for interacting at a higher level.
     |- signal - sends a signal to the tor client
     |- new_circuit - create new circuits
     |- extend_circuit - create new circuits and extend existing ones
+    |- close_circuit - close a circuit
     |- repurpose_circuit - change a circuit's purpose
     |- map_address - maps one address to another such that connections to the original are replaced with the other
     |- get_version - convenience method to get tor version
@@ -1268,6 +1269,26 @@ class Controller(BaseController):
     
     return int(new_circuit)
   
+  def close_circuit(self, circuit_id, flag = ''):
+    """
+    Closes the specified circuit.
+
+    :param int circuit_id: id of the circuit to be closed
+    :param str flag: optional value to modify closing, the only flag available
+      is "IfUnused" which will not close the circuit unless it is unused
+
+    :raises: :class:`stem.InvalidArguments` if the circuit doesn't exist or not enough information is provided
+    """
+
+    response = self.msg("CLOSECIRCUIT %s %s"% (str(circuit_id), flag))
+    stem.response.convert("SINGLELINE", response)
+
+    if not response.is_ok():
+      if response.code in ('512', '552'):
+        raise stem.InvalidRequest(response.code, response.message)
+      else:
+        raise stem.ProtocolError("CLOSECIRCUIT returned unexpected response code: %s" % response.code)
+
   def map_address(self, mapping):
     """
     Map addresses to replacement addresses. Tor replaces subseqent connections
