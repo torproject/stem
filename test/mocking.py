@@ -759,11 +759,6 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
       "consensus-method": "9",
     }
   
-  if "microdesc" in attr.get("network-status-version", ""):
-    extra_defaults.update({
-      "directory-signature": "sha256 " + NETWORK_STATUS_DOCUMENT_FOOTER[2][1],
-    })
-  
   for k, v in extra_defaults.items():
     if not (k in attr or (exclude and k in exclude)):
       attr[k] = v

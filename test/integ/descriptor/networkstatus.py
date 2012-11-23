@@ -189,7 +189,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       
       signature = document.signatures[0]
       self.assertEquals(8, len(document.signatures))
-      self.assertEquals(None, signature.method)
+      self.assertEquals("sha1", signature.method)
       self.assertEquals("14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4", signature.identity)
       self.assertEquals("BF112F1C6D5543CFD0A32215ACABD4197B5279AD", signature.key_digest)
       self.assertEquals(expected_signature, signature.signature)
@@ -400,7 +400,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       
       signature = document.signatures[0]
       self.assertEquals(1, len(document.signatures))
-      self.assertEquals(None, signature.method)
+      self.assertEquals("sha1", signature.method)
       self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", signature.identity)
       self.assertEquals("D5C30C15BB3F1DA27669C2D88439939E8F418FCF", signature.key_digest)
       self.assertEquals(expected_signature, signature.signature)

@@ -635,39 +635,26 @@ class TestNetworkStatusDocument(unittest.TestCase):
   
   def test_microdescriptor_signature(self):
     """
-    The 'directory-signature' lines for normal and microdescriptor conensuses
-    differ slightly in their format.
+    The 'directory-signature' lines both with and without a defined method for
+    the signature format.
     """
     
-    # including a microdescriptor flavored 'directory-signature' line should work
+    # including the signature method field should work
     
-    document = get_network_status_document_v3({"network-status-version": "3 microdesc"})
+    document = get_network_status_document_v3({
+      "network-status-version": "3 microdesc",
+      "directory-signature": "sha256 " + NETWORK_STATUS_DOCUMENT_FOOTER[2][1],
+    })
+    
     self.assertEqual('sha256', document.signatures[0].method)
     
-    # include a standard 'directory-signature' line in a microdescriptor
-    # consensus
+    # excluding the method should default to sha1
     
-    content = get_network_status_document_v3({
+    document = get_network_status_document_v3({
       "network-status-version": "3 microdesc",
-      "directory-signature": NETWORK_STATUS_DOCUMENT_FOOTER[2][1],
-    }, content = True)
+    })
     
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
-    
-    document = NetworkStatusDocumentV3(content, validate = False)
-    self.assertEqual([], document.signatures)
-    
-    # includes a microdescriptor flavored 'directory-signature' line in a
-    # normal consensus
-    
-    content = get_network_status_document_v3({
-      "directory-signature": "sha256 " + NETWORK_STATUS_DOCUMENT_FOOTER[2][1],
-    }, content = True)
-    
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
-    
-    document = NetworkStatusDocumentV3(content, validate = False)
-    self.assertEqual([], document.signatures)
+    self.assertEqual('sha1', document.signatures[0].method)
   
   def test_malformed_signature(self):
     """

@@ -768,19 +768,12 @@ class _DocumentFooter(object):
             raise ValueError("A network status document's 'bandwidth-weights' entries should be '%s', got '%s'" % (expected_label, actual_label))
       elif keyword == "directory-signature":
         for sig_value, block_contents in values:
-          if not header.is_microdescriptor:
-            expected_spaces = 1
-            format_label = 'directory-signature FINGERPRINT KEY_DIGEST'
-          else:
-            expected_spaces = 2
-            format_label = 'directory-signature METHOD FINGERPRINT KEY_DIGEST'
-          
-          if sig_value.count(" ") != expected_spaces or not block_contents:
+          if not sig_value.count(" ") in (1, 2) or not block_contents:
             if not validate: continue
-            raise ValueError("Authority signatures in a network status document are expected to be of the form '%s\\nSIGNATURE', got:\n%s\n%s" % (format_label, sig_value, block_contents))
+            raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST\\nSIGNATURE', got:\n%s\n%s" % (sig_value, block_contents))
           
-          if not header.is_microdescriptor:
-            method = None
+          if sig_value.count(" ") == 1:
+            method = 'sha1' # default if none was provided
             fingerprint, key_digest = sig_value.split(" ", 1)
           else:
             method, fingerprint, key_digest = sig_value.split(" ", 2)
@@ -1232,8 +1225,7 @@ class DocumentSignature(object):
   """
   Directory signature of a v3 network status document.
   
-  :var str method: method used to make the signature, this only appears in
-    microdescriptor consensuses
+  :var str method: algorithm used to make the signature
   :var str identity: fingerprint of the authority that made the signature
   :var str key_digest: digest of the signing key
   :var str signature: document signature
@@ -1252,10 +1244,6 @@ class DocumentSignature(object):
       
       if not stem.util.tor_tools.is_valid_fingerprint(key_digest):
         raise ValueError("Malformed key digest (%s) in the document signature" % (key_digest))
-    
-    # TODO: The method field is undocumented so I'm just guessing how we should
-    # handle it. Ticket for clarification...
-    # https://trac.torproject.org/7072
     
     self.method = method
     self.identity = identity
