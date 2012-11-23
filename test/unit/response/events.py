@@ -136,7 +136,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual("75.119.206.243", event.destination)
     self.assertEqual(datetime.datetime(2012, 11, 19, 0, 50, 13), event.expiry)
     self.assertEqual(None, event.error)
-    self.assertEqual(datetime.datetime(2012, 11, 19, 8, 50, 13), event.gmt_expiry)
+    self.assertEqual(datetime.datetime(2012, 11, 19, 8, 50, 13), event.utc_expiry)
   
   def test_authdir_newdesc_event(self):
     # TODO: We aren't actually parsing the event yet. Until then we can only

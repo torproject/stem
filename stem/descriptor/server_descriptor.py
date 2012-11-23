@@ -132,7 +132,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   
   :var str nickname: **\*** relay's nickname
   :var str fingerprint: identity key fingerprint
-  :var datetime published: **\*** time in GMT when this descriptor was made
+  :var datetime published: **\*** time in UTC when this descriptor was made
   
   :var str address: **\*** IPv4 address of the relay
   :var int or_port: **\*** port used for relaying

@@ -143,7 +143,7 @@ class AddrMapEvent(Event):
     resolution failed
   :var datetime expiry: expiration time of the resolution in local time
   :var str error: error code if the resolution failed
-  :var datetime gmt_expiry: expiration time of the resolution in gmt
+  :var datetime utc_expiry: expiration time of the resolution in UTC
   """
   
   # TODO: The spec for this event is a little vague. Making a couple guesses
@@ -154,7 +154,7 @@ class AddrMapEvent(Event):
   _POSITIONAL_ARGS = ("hostname", "destination", "expiry")
   _KEYWORD_ARGS = {
     "error": "error",
-    "EXPIRES": "gmt_expiry",
+    "EXPIRES": "utc_expiry",
   }
   _QUOTED = ("expiry", "EXPIRES")
   
@@ -165,8 +165,8 @@ class AddrMapEvent(Event):
     if self.expiry != None:
       self.expiry = datetime.datetime.strptime(self.expiry, "%Y-%m-%d %H:%M:%S")
     
-    if self.gmt_expiry != None:
-      self.gmt_expiry = datetime.datetime.strptime(self.gmt_expiry, "%Y-%m-%d %H:%M:%S")
+    if self.utc_expiry != None:
+      self.utc_expiry = datetime.datetime.strptime(self.utc_expiry, "%Y-%m-%d %H:%M:%S")
 
 class AuthDirNewDescEvent(Event):
   """
