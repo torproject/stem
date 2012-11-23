@@ -24,7 +24,7 @@ import sys
 
 import stem.util.log as log
 
-IS_RSA_AVAILABLE = None
+IS_CRYPTO_AVAILABLE = None
 
 def check_requirements():
   """
@@ -59,20 +59,23 @@ def is_python_27():
   
   return _check_version(7)
 
-def is_rsa_available():
-  global IS_RSA_AVAILABLE
+def is_crypto_available():
+  global IS_CRYPTO_AVAILABLE
   
-  if IS_RSA_AVAILABLE == None:
+  if IS_CRYPTO_AVAILABLE == None:
     try:
-      import rsa
-      IS_RSA_AVAILABLE = True
+      from Crypto.PublicKey import RSA
+      from Crypto.Util import asn1
+      from Crypto.Util.number import long_to_bytes
+      IS_CRYPTO_AVAILABLE = True
     except ImportError:
-      IS_RSA_AVAILABLE = False
+      IS_CRYPTO_AVAILABLE = False
       
-      msg = "Unable to import the rsa module. Because of this we'll be unable to verify descriptor signature integrity."
-      log.log_once("stem.prereq.is_rsa_available", log.INFO, msg)
+      # the code that verifies relay descriptor signatures uses the python-crypto library
+      msg = "Unable to import the crypto module. Because of this we'll be unable to verify descriptor signature integrity."
+      log.log_once("stem.prereq.is_crypto_available", log.INFO, msg)
   
-  return IS_RSA_AVAILABLE
+  return IS_CRYPTO_AVAILABLE
 
 def _check_version(minor_req):
   major_version, minor_version = sys.version_info[0:2]

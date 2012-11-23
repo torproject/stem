@@ -86,7 +86,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(expected_signing_key, desc.signing_key)
     self.assertEquals(expected_signature, desc.signature)
     self.assertEquals([], desc.get_unrecognized_lines())
-    self.assertEquals("2C7B27BEAB04B4E2459D89CA6D5CD1CC5F95A689", desc.digest())
+    self.assertEquals("2C7B27BEAB04B4E2459D89CA6D5CD1CC5F95A689", desc.digest().upper())
   
   def test_old_descriptor(self):
     """
@@ -190,7 +190,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     
     desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
     self.assertEquals("torrelay389752132", desc.nickname)
-    self.assertEquals("FEBC7F992AC418BBE42BC13FE94EFCFE6549197E", desc.fingerprint)
+    self.assertEquals("5D47E91A1F7421A4E3255F4D04E534E9A21407BB", desc.fingerprint)
     self.assertEquals("130.243.230.116", desc.address)
     self.assertEquals(9001, desc.or_port)
     self.assertEquals(None, desc.socks_port)

@@ -3,7 +3,7 @@ router torrelay389752132 130.243.230.116 9001 0 0
 platform Tor 0.2.2.35 (git-4f42b0a93422f70e) on Linux x86_64
 opt protocols Link 1 2 Circuit 1
 published 2012-03-21 16:28:14
-opt fingerprint FEBC 7F99 2AC4 18BB E42B C13F E94E FCFE 6549 197E
+opt fingerprint 5D47 E91A 1F74 21A4 E325 5F4D 04E5 34E9 A214 07BB
 uptime 3103848
 bandwidth 81920 102400 84275
 opt extra-info-digest 51E9FD0DA7C235D8C0250BAFB6E1ABB5F1EF9F04
@@ -15,16 +15,16 @@ k3Rx75up+wsuBzhfwSYr7W+T+WkDQvz49RFPpns6Ef0qFpQ1TlHxAgMBAAE=
 -----END RSA PUBLIC KEY-----
 signing-key
 -----BEGIN RSA PUBLIC KEY-----
-MIGJAoGBAMSmtutGlXVdvh/IC4TyhQpgSajxrZItC2lS5/70Vr4uLevryPlBgVrW
-35CHxKYaj0MAOfkJQ0/OvTaXe7hlaCLrDDXScaH/XEDurcWrynsdzomsCvn/6VJ+
-xZFszt2Dn5myXKMvYy3j1oevC4iDaZXwxgpwx/UMJsFn7GOUPFYbAgMBAAE=
+MIGJAoGBALRHQWXGjGLNROY8At3dMnrcSxw4PF/9oLYuqCsXNAq0Gju+EBA5qfM4
+AMpeOk+7ZsZ6AsjdBPAPaOf7hm+z6Kr3Am/gC43dci+iuNHf2wYLR8TnW/C5Q6ZQ
+iXpSAGrOHnIptyPHa0j9ayM4WmHWrPBKnC0QA91CGrxnnNc6DHehAgMBAAE=
 -----END RSA PUBLIC KEY-----
 opt hidden-service-dir
 contact 2048R/F171EC1F Johan Blåbäck こんにちは
 reject *:*
 router-signature
 -----BEGIN SIGNATURE-----
-q3Tw41+miuycnXowX/k6CCOcHMjw0BCDjW56Wh/eHoICmVb/hBJdtuzTaorWHLWp
-OoTa4Sy4OrGFL+ldzajGC8+oqMvrYudiIxbJWmH3NXFyd7ZeEdnHzHxNOU8p1+X+
-hFwdOCEvzvvTbOuS2DwDt+TU8rljZunZfcMWgXktAD0=
+WqBgiomhJ+XewpbOGg1r+6KXlAkdxHRhgCB/D980yJVzXWbOCrRhwyyAH9Lx+yrK
+1EFXAtfQBBx2hmsw8CSYuUT6ckjXyUBAKEdABC25yRdi+fN3NfSQd56U9MvArjo9
+Y8oz244gH4BSVp4CScL8dK0EUsUrAxjs+OU7bnV5saA=
 -----END SIGNATURE-----

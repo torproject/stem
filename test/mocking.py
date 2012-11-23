@@ -46,6 +46,9 @@ calling :func:`test.mocking.revert_mocking`.
       get_router_status_entry_micro_v3 - RouterStatusEntryMicroV3
 """
 
+
+import base64
+import hashlib
 import inspect
 import itertools
 import StringIO
@@ -541,6 +544,7 @@ def get_relay_server_descriptor(attr = None, exclude = (), content = False):
   if content:
     return desc_content
   else:
+    desc_content = sign_descriptor_content(desc_content)
     return stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate = True)
 
 def get_bridge_server_descriptor(attr = None, exclude = (), content = False):
@@ -783,3 +787,84 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
   else:
     return stem.descriptor.networkstatus.NetworkStatusDocumentV3(desc_content, validate = True)
 
+def sign_descriptor_content(desc_content):
+  
+  if not stem.prereq.is_crypto_available():
+    return desc_content
+  else:
+    from Crypto.PublicKey import RSA
+    from Crypto.Util import asn1
+    from Crypto.Util.number import long_to_bytes
+    
+    # generate a key
+    private_key = RSA.generate(1024)
+    
+    # get a string representation of the public key
+    seq = asn1.DerSequence()
+    seq.append(private_key.n)
+    seq.append(private_key.e)
+    seq_as_string = seq.encode()
+    public_key_string = base64.b64encode(seq_as_string)
+    
+    # split public key into lines 64 characters long
+    public_key_string =  public_key_string [:64] + "\n" +public_key_string[64:128] +"\n" +public_key_string[128:]
+    
+    # generate the new signing key string
+    signing_key_token = "\nsigning-key\n" #note the trailing '\n' is important here so as not to match the string elsewhere
+    signing_key_token_start = "-----BEGIN RSA PUBLIC KEY-----\n"
+    signing_key_token_end = "\n-----END RSA PUBLIC KEY-----\n"
+    new_sk = signing_key_token+ signing_key_token_start+public_key_string+signing_key_token_end
+    
+    # update the descriptor string with the new signing key
+    skt_start = desc_content.find(signing_key_token)
+    skt_end = desc_content.find(signing_key_token_end, skt_start)
+    desc_content = desc_content[:skt_start]+new_sk+ desc_content[skt_end+len(signing_key_token_end):]
+    
+    # generate the new fingerprint string
+    key_hash = hashlib.sha1(seq_as_string).hexdigest().upper()
+    grouped_fingerprint = ""
+    for x in range(0, len(key_hash), 4):
+      grouped_fingerprint += " " + key_hash[x:x+4]
+      fingerprint_token = "\nfingerprint"
+      new_fp = fingerprint_token + grouped_fingerprint
+      
+    # update the descriptor string with the new fingerprint
+    ft_start = desc_content.find(fingerprint_token)
+    if ft_start < 0:
+      fingerprint_token = "\nopt fingerprint"
+      ft_start = desc_content.find(fingerprint_token)
+    
+    # if the descriptor does not already contain a fingerprint do not add one
+    if ft_start >= 0:
+      ft_end = desc_content.find("\n", ft_start+1)
+      desc_content = desc_content[:ft_start]+new_fp+desc_content[ft_end:]
+    
+    # calculate the new digest for the descriptor
+    tempDesc = stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate=False)
+    new_digest_hex = tempDesc.digest()
+    # remove the hex encoding
+    new_digest = new_digest_hex.decode('hex')
+    
+    # Generate the digest buffer.
+    #  block is 128 bytes in size
+    #  2 bytes for the type info
+    #  1 byte for the separator
+    padding = ""
+    for x in range(125 - len(new_digest)):
+      padding += '\xFF'
+      digestBuffer = '\x00\x01' + padding + '\x00' + new_digest
+    
+    # generate a new signature by signing the digest buffer with the private key
+    (signature, ) = private_key.sign(digestBuffer, None)
+    signature_as_bytes = long_to_bytes(signature, 128)
+    signature_base64 = base64.b64encode(signature_as_bytes)
+    signature_base64 =  signature_base64 [:64] + "\n" +signature_base64[64:128] +"\n" +signature_base64[128:]
+    
+    # update the descriptor string with the new signature
+    router_signature_token = "\nrouter-signature\n"
+    router_signature_start = "-----BEGIN SIGNATURE-----\n"
+    router_signature_end = "\n-----END SIGNATURE-----\n"
+    rst_start = desc_content.find(router_signature_token)
+    desc_content = desc_content[:rst_start] + router_signature_token + router_signature_start + signature_base64 + router_signature_end
+    
+    return desc_content

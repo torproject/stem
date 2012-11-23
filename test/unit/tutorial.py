@@ -39,9 +39,11 @@ class TestTutorial(unittest.TestCase):
     from stem.descriptor.reader import DescriptorReader
     from stem.util import str_tools
     
-    exit_descriptor = RelayDescriptor(mocking.get_relay_server_descriptor({
-      'router': 'speedyexit 149.255.97.109 9001 0 0'
-    }, content = True).replace('reject *:*', 'accept *:*'))
+    exit_descriptor = mocking.get_relay_server_descriptor({
+     'router': 'speedyexit 149.255.97.109 9001 0 0'
+    }, content = True).replace('reject *:*', 'accept *:*')
+    exit_descriptor = mocking.sign_descriptor_content(exit_descriptor)
+    exit_descriptor = RelayDescriptor(exit_descriptor)
     
     reader_wrapper = mocking.get_object(DescriptorReader, {
       '__enter__': lambda x: x,
