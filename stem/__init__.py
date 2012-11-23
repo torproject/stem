@@ -81,7 +81,7 @@ Library for working with the tor process.
   **DESTROYED**             circuit unexpectedly closed
   **NOPATH**                not enough relays to make a circuit
   **NOSUCHSERVICE**         requested hidden service does not exist
-  **MEASUREMENT_EXPIRED**   unknown (https://trac.torproject.org/7506)
+  **MEASUREMENT_EXPIRED**   same as **TIMEOUT** except that it was left open for measurement purposes
   ========================= ===========
 
 .. data:: HiddenServiceState (enum)
