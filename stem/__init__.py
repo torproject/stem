@@ -194,17 +194,14 @@ Library for working with the tor process.
   State that an OR connection can have. Tor may provide states not in this
   enum.
   
-  Enum descriptions are pending...
-  https://trac.torproject.org/7513
-  
   =============== ===========
   ORStatus        Description
   =============== ===========
-  **NEW**         unknown
-  **LAUNCHED**    unknown
-  **CONNECTED**   unknown
-  **FAILED**      unknown
-  **CLOSED**      unknown
+  **NEW**         received OR connection, starting server-side handshake
+  **LAUNCHED**    launched outbound OR connection, starting client-side handshake
+  **CONNECTED**   OR connection has been established
+  **FAILED**      attempt to establish OR connection failed
+  **CLOSED**      OR connection has been closed
   =============== ===========
 
 .. data:: ORClosureReason (enum)
@@ -212,21 +209,18 @@ Library for working with the tor process.
   Reason that an OR connection is being closed or failed to be established. Tor
   may provide reasons not in this enum.
   
-  Enum descriptions are pending...
-  https://trac.torproject.org/7513
-  
   =================== ===========
   ORClosureReason     Description
   =================== ===========
-  **MISC**            unknown
-  **DONE**            unknown
-  **CONNECTREFUSED**  unknown
-  **IDENTITY**        unknown
-  **CONNECTRESET**    unknown
-  **TIMEOUT**         unknown
-  **NOROUTE**         unknown
-  **IOERROR**         unknown
-  **RESOURCELIMIT**   unknown
+  **DONE**            OR connection shut down cleanly
+  **CONNECTREFUSED**  got a ECONNREFUSED when connecting to the relay
+  **IDENTITY**        identity of the relay wasn't what we expected
+  **CONNECTRESET**    got a ECONNRESET or similar error from relay
+  **TIMEOUT**         got a ETIMEOUT or similar error from relay
+  **NOROUTE**         got a ENOTCONN, ENETUNREACH, ENETDOWN, EHOSTUNREACH, or similar error from relay
+  **IOERROR**         got a different kind of error from relay
+  **RESOURCELIMIT**   relay has insufficient resources to service the request
+  **MISC**            connection refused for another reason
   =================== ===========
 
 .. data:: AuthDescriptorAction (enum)
@@ -447,7 +441,6 @@ ORStatus = stem.util.enum.UppercaseEnum(
 )
 
 ORClosureReason = stem.util.enum.UppercaseEnum(
-  "MISC",
   "DONE",
   "CONNECTREFUSED",
   "IDENTITY",
@@ -456,6 +449,7 @@ ORClosureReason = stem.util.enum.UppercaseEnum(
   "NOROUTE",
   "IOERROR",
   "RESOURCELIMIT",
+  "MISC",
 )
 
 AuthDescriptorAction = stem.util.enum.UppercaseEnum(
