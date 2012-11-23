@@ -178,17 +178,15 @@ Library for working with the tor process.
   Purpsoe of the stream. This is only provided with new streams and tor may
   provide purposes not in this enum.
   
-  Enum descriptions are pending...
-  https://trac.torproject.org/7508
-  
   ================= ===========
   StreamPurpose     Description
   ================= ===========
-  **DIR_FETCH**     unknown
-  **UPLOAD_DESC**   unknown
-  **DNS_REQUEST**   unknown
-  **USER**          unknown
-  **DIRPORT_TEST**  unknown
+  **DIR_FETCH**     fetching directory information (descriptors, consensus, etc)
+  **DIR_UPLOAD**    uploading our descriptor to an authority
+  **UPLOAD_DESC**   obsolete
+  **DNS_REQUEST**   user initiated DNS request
+  **DIRPORT_TEST**  checking that our directory port is reachable externally
+  **USER**          either relaying user traffic or not one of the above categories
   ================= ===========
 
 .. data:: ORStatus (enum)
@@ -433,10 +431,11 @@ StreamSource = stem.util.enum.UppercaseEnum(
 
 StreamPurpose = stem.util.enum.UppercaseEnum(
   "DIR_FETCH",
+  "DIR_UPLOAD",
   "UPLOAD_DESC",
   "DNS_REQUEST",
-  "USER",
   "DIRPORT_TEST",
+  "USER",
 )
 
 ORStatus = stem.util.enum.UppercaseEnum(
