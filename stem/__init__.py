@@ -183,7 +183,6 @@ Library for working with the tor process.
   ================= ===========
   **DIR_FETCH**     fetching directory information (descriptors, consensus, etc)
   **DIR_UPLOAD**    uploading our descriptor to an authority
-  **UPLOAD_DESC**   obsolete
   **DNS_REQUEST**   user initiated DNS request
   **DIRPORT_TEST**  checking that our directory port is reachable externally
   **USER**          either relaying user traffic or not one of the above categories
@@ -426,7 +425,6 @@ StreamSource = stem.util.enum.UppercaseEnum(
 StreamPurpose = stem.util.enum.UppercaseEnum(
   "DIR_FETCH",
   "DIR_UPLOAD",
-  "UPLOAD_DESC",
   "DNS_REQUEST",
   "DIRPORT_TEST",
   "USER",
