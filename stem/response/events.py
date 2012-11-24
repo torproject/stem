@@ -171,16 +171,27 @@ class AddrMapEvent(Event):
 class AuthDirNewDescEvent(Event):
   """
   Event specific to directory authorities, indicating that we just received new
-  descriptors.
-  
-  **Unimplemented, waiting on 'https://trac.torproject.org/7534'.**
+  descriptors. The descriptor type contained within this event is unspecified
+  so the descriptor contents are left unparsed.
   
   :var stem.AuthDescriptorAction action: what is being done with the descriptor
-  :var str message: unknown
-  :var stem.descriptor.Descriptor descriptor: unknown
+  :var str message: explanation of why we chose this action
+  :var str descriptor: content of the descriptor
   """
   
   _SKIP_PARSING = True
+  
+  def _parse(self):
+    lines = str(self).split('\n')
+    
+    if len(lines) < 5:
+      raise stem.ProtocolError("AUTHDIR_NEWDESCS events must contain lines for at least the type, action, message, descriptor, and terminating 'OK'")
+    elif not lines[-1] == "OK":
+      raise stem.ProtocolError("AUTHDIR_NEWDESCS doesn't end with an 'OK'")
+    
+    self.action = lines[1]
+    self.message = lines[2]
+    self.descriptor = '\n'.join(lines[3:-1])
 
 class BandwidthEvent(Event):
   """

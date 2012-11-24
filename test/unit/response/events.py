@@ -142,10 +142,9 @@ class TestEvents(unittest.TestCase):
     # TODO: We aren't actually parsing the event yet. Until then we can only
     # check that we properly get a AuthDirNewDescEvent for it.
     
-    event = _get_event("650 AUTHDIR_NEWDESCS")
+    event = _get_event("650+AUTHDIR_NEWDESCS\nAction\nMessage\nDescriptor\n.\n650 OK\n")
     
     self.assertTrue(isinstance(event, stem.response.events.AuthDirNewDescEvent))
-    self.assertEqual("AUTHDIR_NEWDESCS", str(event))
     self.assertEqual([], event.positional_args)
     self.assertEqual({}, event.keyword_args)
   
