@@ -410,28 +410,28 @@ class TestController(unittest.TestCase):
     """
     Tests Controller.close_circuit with valid and invalid input.
     """
-
+    
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return
-
+    
     runner = test.runner.get_runner()
-
+    
     with runner.get_tor_controller() as controller:
       circ_id = controller.new_circuit()
       controller.close_circuit(circ_id)
       circuit_output = controller.get_info("circuit-status")
       circ = [x.split()[0] for x in circuit_output.splitlines()]
       self.assertFalse(circ_id in circ)
-
+      
       circ_id = controller.new_circuit()
       controller.close_circuit(circ_id, "IfUnused")
       circuit_output = controller.get_info("circuit-status")
       circ = [x.split()[0] for x in circuit_output.splitlines()]
       self.assertFalse(circ_id in circ)
-
+      
       circ_id = controller.new_circuit()
       self.assertRaises(stem.InvalidRequest, controller.close_circuit, circ_id + 1024)
-
+  
   def test_mapaddress(self):
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return

@@ -1272,23 +1272,23 @@ class Controller(BaseController):
   def close_circuit(self, circuit_id, flag = ''):
     """
     Closes the specified circuit.
-
+    
     :param int circuit_id: id of the circuit to be closed
     :param str flag: optional value to modify closing, the only flag available
       is "IfUnused" which will not close the circuit unless it is unused
-
+    
     :raises: :class:`stem.InvalidArguments` if the circuit doesn't exist or not enough information is provided
     """
-
+    
     response = self.msg("CLOSECIRCUIT %s %s"% (str(circuit_id), flag))
     stem.response.convert("SINGLELINE", response)
-
+    
     if not response.is_ok():
       if response.code in ('512', '552'):
         raise stem.InvalidRequest(response.code, response.message)
       else:
         raise stem.ProtocolError("CLOSECIRCUIT returned unexpected response code: %s" % response.code)
-
+  
   def map_address(self, mapping):
     """
     Map addresses to replacement addresses. Tor replaces subseqent connections
