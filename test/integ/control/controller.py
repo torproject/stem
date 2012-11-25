@@ -420,13 +420,13 @@ class TestController(unittest.TestCase):
       circ_id = controller.new_circuit()
       controller.close_circuit(circ_id)
       circuit_output = controller.get_info("circuit-status")
-      circ = filter(re.compile("^%i " % circ_id).match, circuit_output.splitlines())[0]
+      circ = [x.split()[0] for x in circuit_output.splitlines()]
       self.assertFalse(circ_id in circ)
 
       circ_id = controller.new_circuit()
       controller.close_circuit(circ_id, "IfUnused")
       circuit_output = controller.get_info("circuit-status")
-      circ = filter(re.compile("^%i " % circ_id).match, circuit_output.splitlines())[0]
+      circ = [x.split()[0] for x in circuit_output.splitlines()]
       self.assertFalse(circ_id in circ)
 
       circ_id = controller.new_circuit()
