@@ -1240,13 +1240,20 @@ class Controller(BaseController):
     path isn't provided, one is automatically selected.
     
     :param int circuit: id of a circuit to be extended
-    :param list,str path: one or more relays to make a circuit through
+    :param list,str path: one or more relays to make a circuit through, this is
+      required if the circuit id is non-zero
     :param str purpose: "general" or "controller"
     
     :returns: int of the circuit id of the created or extended circuit
     
     :raises: :class:`stem.InvalidRequest` if one of the parameters were invalid
     """
+    
+    if path is None and circuit == 0:
+      path_opt_version = stem.version.Requirement.EXTENDCIRCUIT_PATH_OPTIONAL
+      
+      if not self.get_version().meets_requirements(path_opt_version):
+        raise stem.InvalidRequest(512, "EXTENDCIRCUIT requires the path prior to version %s" % path_opt_version)
     
     args = [str(circuit)]
     if type(path) == str: path = [path]
@@ -1262,7 +1269,7 @@ class Controller(BaseController):
         assert extended == "EXTENDED"
       except:
         raise stem.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
-    elif response.code == '552':
+    elif response.code == ('512', '552'):
       raise stem.InvalidRequest(response.code, response.message)
     else:
       raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)

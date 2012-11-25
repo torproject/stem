@@ -36,6 +36,7 @@ easily parsed and compared, for instance...
   ===================================== ===========
   **AUTH_SAFECOOKIE**                   'SAFECOOKIE' authentication method
   **GETINFO_CONFIG_TEXT**               'GETINFO config-text' query
+  **EXTENDCIRCUIT_PATH_OPTIONAL**       'EXTENDCIRCUIT' queries can omit the path if the circuit is zero
   **LOADCONF**                          'LOADCONF' query
   **TORRC_CONTROL_SOCKET**              'ControlSocket <path>' config option
   **TORRC_DISABLE_DEBUGGER_ATTACHMENT** 'DisableDebuggerAttachment' config option
@@ -254,6 +255,7 @@ safecookie_req.greater_than(Version("0.2.3.13"))
 Requirement = stem.util.enum.Enum(
   ("AUTH_SAFECOOKIE", safecookie_req),
   ("GETINFO_CONFIG_TEXT", Version("0.2.2.7")),
+  ("EXTENDCIRCUIT_PATH_OPTIONAL", Version("0.2.2.9")),
   ("LOADCONF", Version("0.2.1.1")),
   ("TORRC_CONTROL_SOCKET", Version("0.2.0.30")),
   ("TORRC_DISABLE_DEBUGGER_ATTACHMENT", Version("0.2.3.9")),
