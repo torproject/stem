@@ -227,15 +227,12 @@ Library for working with the tor process.
   Actions that directory authorities might take with relay descriptors. Tor may
   provide reasons not in this enum.
   
-  Enum descriptions are pending...
-  https://trac.torproject.org/7533
-  
   ===================== ===========
   AuthDescriptorAction  Description
   ===================== ===========
-  **ACCEPTED**          unknown
-  **DROPPED**           unknown
-  **REJECTED**          unknown
+  **ACCEPTED**          accepting the descriptor as the newest version
+  **DROPPED**           descriptor rejected without notifying the relay
+  **REJECTED**          relay notified that its descriptor has been rejected
   ===================== ===========
 """
 
