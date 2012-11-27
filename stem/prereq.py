@@ -62,7 +62,7 @@ def is_python_27():
 def is_crypto_available():
   global IS_CRYPTO_AVAILABLE
   
-  if IS_CRYPTO_AVAILABLE == None:
+  if IS_CRYPTO_AVAILABLE is None:
     try:
       from Crypto.PublicKey import RSA
       from Crypto.Util import asn1

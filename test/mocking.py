@@ -788,6 +788,16 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
     return stem.descriptor.networkstatus.NetworkStatusDocumentV3(desc_content, validate = True)
 
 def sign_descriptor_content(desc_content):
+  """
+  Add a valid signature to the supplied descriptor string.
+  If the python-crypto library is available the function will generate a key
+  pair, and use it to sign the descriptor string. Any existing fingerprint,
+  signing-key or router-signature data will be overwritten.
+  If crypto is unavailable the code will return the unaltered descriptor
+  string.
+  :param string desc_content: the descriptor string to sign
+  :returns: a descriptor string, signed if crypto available, unaltered otherwise
+  """
   
   if not stem.prereq.is_crypto_available():
     return desc_content
@@ -839,9 +849,10 @@ def sign_descriptor_content(desc_content):
       ft_end = desc_content.find("\n", ft_start+1)
       desc_content = desc_content[:ft_start]+new_fp+desc_content[ft_end:]
     
-    # calculate the new digest for the descriptor
+    # create a temporary object to use to calculate the digest
     tempDesc = stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate=False)
-    new_digest_hex = tempDesc.digest()
+    # calculate the new digest for the descriptor
+    new_digest_hex = tempDesc.digest().lower()
     # remove the hex encoding
     new_digest = new_digest_hex.decode('hex')
     
