@@ -46,7 +46,6 @@ calling :func:`test.mocking.revert_mocking`.
       get_router_status_entry_micro_v3 - RouterStatusEntryMicroV3
 """
 
-
 import base64
 import hashlib
 import inspect

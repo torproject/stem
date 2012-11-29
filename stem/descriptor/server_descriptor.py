@@ -600,21 +600,24 @@ class RelayDescriptor(ServerDescriptor):
   
   def digest(self):
     """
-    Get the digest for this descriptor.
-    If the digest has not already been calculated it will be done inline.
+    Provides the digest of our descriptor's content.
+    
     :raises: ValueError if the digest canot be calculated
+    
     :returns: the digest string encoded in uppercase hex
     """
     
     if self._digest is None:
       # Digest is calculated from everything in the
       # descriptor except the router-signature.
+      
       raw_descriptor = str(self)
       start_token = "router "
       sig_token = "\nrouter-signature\n"
       start = raw_descriptor.find(start_token)
       sig_start = raw_descriptor.find(sig_token)
       end = sig_start + len(sig_token)
+      
       if start >= 0 and sig_start > 0 and end > start:
         for_digest = raw_descriptor[start:end]
         digest_hash = hashlib.sha1(for_digest)
@@ -627,15 +630,19 @@ class RelayDescriptor(ServerDescriptor):
   def _validate_content(self):
     """
     Validates that the descriptor content matches the signature.
+    
     :raises: ValueError if the signature does not match the content
     """
     
     key_as_bytes = RelayDescriptor._get_key_bytes(self.signing_key)
     
     # ensure the fingerprint is a hash of the signing key
+    
     if self.fingerprint:
       # calculate the signing key hash
+      
       key_der_as_hash = hashlib.sha1(key_as_bytes).hexdigest()
+      
       if key_der_as_hash != self.fingerprint.lower():
         log.warn("Signing key hash: %s != fingerprint: %s" % (key_der_as_hash, self.fingerprint.lower()))
         raise ValueError("Fingerprint does not match hash")
@@ -650,19 +657,28 @@ class RelayDescriptor(ServerDescriptor):
     from Crypto.Util.number import bytes_to_long, long_to_bytes
     
     # get the ASN.1 sequence
+    
     seq = asn1.DerSequence()
     seq.decode(key_as_der)
     modulus = seq[0]
     public_exponent = seq[1] # should always be 65537
     
     sig_as_bytes = RelayDescriptor._get_key_bytes(self.signature)
+    
     # convert the descriptor signature to an int
+    
     sig_as_long = bytes_to_long(sig_as_bytes)
+    
     # use the public exponent[e] & the modulus[n] to decrypt the int
+    
     decrypted_int = pow(sig_as_long, public_exponent, modulus)
+    
     # block size will always be 128 for a 1024 bit key
+    
     blocksize = 128
+    
     # convert the int to a byte array.
+    
     decrypted_bytes = long_to_bytes(decrypted_int, blocksize)
     
     ############################################################################
@@ -676,6 +692,7 @@ class RelayDescriptor(ServerDescriptor):
     ## More info here http://www.ietf.org/rfc/rfc2313.txt
     ##                esp the Notes in section 8.1
     ############################################################################
+    
     try:
       if decrypted_bytes.index('\x00\x01') != 0:
         raise ValueError("Verification failed, identifier missing")
@@ -684,16 +701,20 @@ class RelayDescriptor(ServerDescriptor):
     
     try:
       identifier_offset = 2
+      
       # find the separator
       seperator_index = decrypted_bytes.index('\x00', identifier_offset)
     except ValueError:
       raise ValueError("Verification failed, seperator not found")
     
     digest = decrypted_bytes[seperator_index+1:]
+    
     # The local digest is stored in uppercase hex;
     #  - so decode it from hex
     #  - and convert it to lower case
+    
     local_digest = self.digest().lower().decode('hex')
+    
     if digest != local_digest:
       raise ValueError("Decrypted digest does not match local digest")
   
@@ -701,6 +722,7 @@ class RelayDescriptor(ServerDescriptor):
     entries = dict(entries) # shallow copy since we're destructive
     
     # handles fields only in server descriptors
+    
     for keyword, values in entries.items():
       value, block_contents = values[0]
       line = "%s %s" % (keyword, value)
@@ -737,13 +759,14 @@ class RelayDescriptor(ServerDescriptor):
     # Remove the newlines from the key string & strip off the
     # '-----BEGIN RSA PUBLIC KEY-----' header and
     # '-----END RSA PUBLIC KEY-----' footer
+    
     key_as_string = ''.join(key_string.split('\n')[1:4])
     
     # get the key representation in bytes
+    
     key_bytes = base64.b64decode(key_as_string)
     
     return key_bytes
-
 
 class BridgeDescriptor(ServerDescriptor):
   """
