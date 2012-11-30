@@ -41,6 +41,61 @@ $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone"
 CIRC_BUILT_OLD = "650 CIRC 1 BUILT \
 $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14"
 
+# STATUS_* events that I was able to easily trigger. Most came from starting
+# TBB, then listening while it bootstrapped.
+
+STATUS_CLIENT_CONSENSUS_ARRIVED = "650 STATUS_CLIENT NOTICE CONSENSUS_ARRIVED"
+STATUS_CLIENT_ENOUGH_DIR_INFO = "650 STATUS_CLIENT NOTICE ENOUGH_DIR_INFO"
+STATUS_CLIENT_CIRC_ESTABLISHED = "650 STATUS_CLIENT NOTICE CIRCUIT_ESTABLISHED"
+
+STATUS_CLIENT_BOOTSTRAP_DESCRIPTORS = '650 STATUS_CLIENT NOTICE BOOTSTRAP \
+PROGRESS=53 \
+TAG=loading_descriptors \
+SUMMARY="Loading relay descriptors"'
+
+STATUS_CLIENT_BOOTSTRAP_STUCK = '650 STATUS_CLIENT WARN BOOTSTRAP \
+PROGRESS=80 \
+TAG=conn_or \
+SUMMARY="Connecting to the Tor network" \
+WARNING="Network is unreachable" \
+REASON=NOROUTE \
+COUNT=5 \
+RECOMMENDATION=warn'
+
+STATUS_CLIENT_BOOTSTRAP_CONNECTING = '650 STATUS_CLIENT NOTICE BOOTSTRAP \
+PROGRESS=80 \
+TAG=conn_or \
+SUMMARY="Connecting to the Tor network"'
+
+STATUS_CLIENT_BOOTSTRAP_FIRST_HANDSHAKE = '650 STATUS_CLIENT NOTICE BOOTSTRAP \
+PROGRESS=85 \
+TAG=handshake_or \
+SUMMARY="Finishing handshake with first hop"'
+
+STATUS_CLIENT_BOOTSTRAP_ESTABLISHED = '650 STATUS_CLIENT NOTICE BOOTSTRAP \
+PROGRESS=90 \
+TAG=circuit_create \
+SUMMARY="Establishing a Tor circuit"'
+
+STATUS_CLIENT_BOOTSTRAP_DONE = '650 STATUS_CLIENT NOTICE BOOTSTRAP \
+PROGRESS=100 \
+TAG=done \
+SUMMARY="Done"'
+
+STATUS_SERVER_CHECK_REACHABILITY = "650 STATUS_SERVER NOTICE CHECKING_REACHABILITY \
+ORADDRESS=71.35.143.230:9050"
+
+STATUS_SERVER_DNS_TIMEOUT = '650 STATUS_SERVER NOTICE NAMESERVER_STATUS \
+NS=205.171.3.25 \
+STATUS=DOWN \
+ERR="request timed out."'
+
+STATUS_SERVER_DNS_DOWN = "650 STATUS_SERVER WARN NAMESERVER_ALL_DOWN"
+
+STATUS_SERVER_DNS_UP = "650 STATUS_SERVER NOTICE NAMESERVER_STATUS \
+NS=205.171.3.25 \
+STATUS=UP"
+
 # STREAM events from tor 0.2.3.16 for visiting the google front page
 
 STREAM_NEW = "650 STREAM 18 NEW 0 \
@@ -318,6 +373,15 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(ORStatus.CLOSED, event.status)
     self.assertEqual(ORClosureReason.DONE, event.reason)
     self.assertEqual(None, event.circ_count)
+  
+  def test_status_event(self):
+    event = _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.StatusEvent))
+    self.assertEqual(STATUS_CLIENT_CONSENSUS_ARRIVED.lstrip("650 "), str(event))
+    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("CONSENSUS_ARRIVED", event.action)
   
   def test_stream_event(self):
     event = _get_event(STREAM_NEW)

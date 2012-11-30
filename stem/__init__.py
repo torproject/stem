@@ -14,6 +14,20 @@ Library for working with the tor process.
     +- SocketError - Communication with the socket failed.
        +- SocketClosed - Socket has been shut down.
 
+.. data:: Runlevel (enum)
+  
+  Rating of importance used for event logging.
+  
+  =========== ===========
+  Runlevel    Description
+  =========== ===========
+  **ERR**     critical issues that impair tor's ability to function
+  **WARN**    non-critical issues the user should be aware of
+  **NOTICE**  information that may be helpful to the user
+  **INFO**    high level runtime information
+  **DEBUG**   low level runtime information
+  =========== ===========
+
 .. data:: CircStatus (enum)
   
   Statuses that a circuit can be in. Tor may provide statuses not in this enum.
@@ -234,6 +248,18 @@ Library for working with the tor process.
   **DROPPED**           descriptor rejected without notifying the relay
   **REJECTED**          relay notified that its descriptor has been rejected
   ===================== ===========
+
+.. data:: StatusType (enum)
+  
+  Sources for tor status events. Tor may provide types not in this enum.
+  
+  ============= ===========
+  StatusType    Description
+  ============= ===========
+  **GENERAL**   general tor activity, not specifically as a client or relay
+  **CLIENT**    related to our activity as a tor client
+  **SERVER**    related to our activity as a tor relay
+  ============= ===========
 """
 
 __version__ = '0.0.1'
@@ -261,6 +287,7 @@ __all__ = [
   "InvalidArguments",
   "SocketError",
   "SocketClosed",
+  "Runlevel",
   "CircStatus",
   "CircBuildFlag",
   "CircPurpose",
@@ -272,6 +299,8 @@ __all__ = [
   "StreamPurpose",
   "ORStatus",
   "ORClosureReason",
+  "AuthDescriptorAction",
+  "StatusType",
 ]
 
 import stem.util.enum
@@ -325,6 +354,14 @@ class SocketError(ControllerError):
 
 class SocketClosed(SocketError):
   "Control socket was closed before completing the message."
+
+Runlevel = stem.util.enum.UppercaseEnum(
+  "DEBUG",
+  "INFO",
+  "NOTICE",
+  "WARN",
+  "ERR",
+)
 
 CircStatus = stem.util.enum.UppercaseEnum(
   "LAUNCHED",
@@ -451,5 +488,11 @@ AuthDescriptorAction = stem.util.enum.UppercaseEnum(
   "ACCEPTED",
   "DROPPED",
   "REJECTED",
+)
+
+StatusType = stem.util.enum.UppercaseEnum(
+  "GENERAL",
+  "CLIENT",
+  "SERVER",
 )
 

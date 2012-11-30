@@ -304,9 +304,9 @@ class DescChangedEvent(Event):
 class LogEvent(Event):
   """
   Tor logging event. These are the most visible kind of event since, by
-  default, tor logs at the NOTICE runlevel to stdout.
+  default, tor logs at the NOTICE :data:`~stem.Runlevel` to stdout.
   
-  :var str runlevel: runlevel of the logged message
+  :var stem.Runlevel runlevel: runlevel of the logged message
   :var str message: logged message
   """
   
@@ -319,6 +319,14 @@ class LogEvent(Event):
     # multi-line message
     
     self.message = str(self)[len(self.runlevel) + 1:].rstrip("\nOK")
+    
+    # log if our runlevel isn't recognized
+    
+    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("Logging", self)
+    
+    if not self.runlevel in stem.Runlevel:
+      log_id = "event.logging.unknown_runlevel.%s" % self.runlevel
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('runlevel', self.runlevel))
 
 class NewDescEvent(Event):
   """
@@ -402,6 +410,38 @@ class ORConnEvent(Event):
       log_id = "event.orconn.unknown_reason.%s" % self.reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('reason', self.reason))
 
+class StatusEvent(Event):
+  """
+  Notification of a change in tor's state. These are generally triggered for
+  the same sort of things as log messages of the NOTICE level or higher.
+  However, unlike :class:`~stem.response.events.LogEvent` these contain well
+  formed data.
+  
+  :var stem.StatusType status_type: category of the status event
+  :var stem.Runlevel runlevel: runlevel of the logged message
+  :var str message: logged message
+  """
+  
+  _POSITIONAL_ARGS = ("runlevel", "action")
+  
+  def _parse(self):
+    if self.type == 'STATUS_GENERAL':
+      self.status_type = stem.StatusType.GENERAL
+    elif self.type == 'STATUS_CLIENT':
+      self.status_type = stem.StatusType.CLIENT
+    elif self.type == 'STATUS_SERVER':
+      self.status_type = stem.StatusType.SERVER
+    else:
+      raise ValueError("BUG: Unrecognized status type (%s), likely an EVENT_TYPE_TO_CLASS addition without revising how 'status_type' is assigned." % self.type)
+    
+    # log if our runlevel isn't recognized
+    
+    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("Status", self)
+    
+    if not self.runlevel in stem.Runlevel:
+      log_id = "event.status.unknown_runlevel.%s" % self.runlevel
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('runlevel', self.runlevel))
+
 class StreamEvent(Event):
   """
   Event that indicates that a stream has changed.
@@ -483,18 +523,21 @@ class StreamEvent(Event):
       log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
 
 EVENT_TYPE_TO_CLASS = {
-  "DEBUG": LogEvent,
-  "INFO": LogEvent,
-  "NOTICE": LogEvent,
-  "WARN": LogEvent,
-  "ERR": LogEvent,
   "ADDRMAP": AddrMapEvent,
   "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
   "BW": BandwidthEvent,
   "CIRC": CircuitEvent,
+  "DEBUG": LogEvent,
   "DESCCHANGED": DescChangedEvent,
+  "ERR": LogEvent,
+  "INFO": LogEvent,
   "NEWDESC": NewDescEvent,
+  "NOTICE": LogEvent,
   "ORCONN": ORConnEvent,
+  "STATUS_CLIENT": StatusEvent,
+  "STATUS_GENERAL": StatusEvent,
+  "STATUS_SERVER": StatusEvent,
   "STREAM": StreamEvent,
+  "WARN": LogEvent,
 }
 

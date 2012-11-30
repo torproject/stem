@@ -66,25 +66,34 @@ providing its own for interacting at a higher level.
   
   Known types of events that the
   :func:`~stem.control.Controller.add_event_listener` method of the
-  :class:`~stem.control.Controller` can listen for. Enums are mapped to
-  :class:`~stem.response.events.Event` subclasses as follows...
+  :class:`~stem.control.Controller` can listen for.
+  
+  The most frequently listened for event types tend to be the logging events
+  (**DEBUG**, **INFO**, **NOTICE**, **WARN**, and **ERR**), bandwidth usage
+  (**BW**), and circuit or stream changes (**CIRC** and **STREAM**).
+  
+  Enums are mapped to :class:`~stem.response.events.Event` subclasses as
+  follows...
   
   ===================== ===========
   EventType             Event Class
   ===================== ===========
-  **DEBUG**             :class:`stem.response.events.LogEvent`
-  **INFO**              :class:`stem.response.events.LogEvent`
-  **NOTICE**            :class:`stem.response.events.LogEvent`
-  **WARN**              :class:`stem.response.events.LogEvent`
-  **ERR**               :class:`stem.response.events.LogEvent`
   **ADDRMAP**           :class:`stem.response.events.AddrMapEvent`
   **AUTHDIR_NEWDESCS**  :class:`stem.response.events.AuthDirNewDescEvent`
   **BW**                :class:`stem.response.events.BandwidthEvent`
   **CIRC**              :class:`stem.response.events.CircuitEvent`
+  **DEBUG**             :class:`stem.response.events.LogEvent`
   **DESCCHANGED**       :class:`stem.response.events.DescChangedEvent`
+  **ERR**               :class:`stem.response.events.LogEvent`
+  **INFO**              :class:`stem.response.events.LogEvent`
   **NEWDESC**           :class:`stem.response.events.NewDescEvent`
+  **NOTICE**            :class:`stem.response.events.LogEvent`
   **ORCONN**            :class:`stem.response.events.ORConnEvent`
+  **STATUS_CLIENT**     :class:`stem.response.events.StatusEvent`
+  **STATUS_GENERAL**    :class:`stem.response.events.StatusEvent`
+  **STATUS_SERVER**     :class:`stem.response.events.StatusEvent`
   **STREAM**            :class:`stem.response.events.StreamEvent`
+  **WARN**              :class:`stem.response.events.LogEvent`
   ===================== ===========
 """
 
