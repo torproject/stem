@@ -498,6 +498,8 @@ class DescriptorReader(object):
           entry.close()
     except TypeError, exc:
       self._notify_skip_listeners(target, ParsingFailure(exc))
+    except ValueError, exc:
+      self._notify_skip_listeners(target, ParsingFailure(exc))
     except IOError, exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
     finally:
