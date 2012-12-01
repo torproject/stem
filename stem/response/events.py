@@ -854,6 +854,31 @@ class StreamEvent(Event):
       log_id = "event.stream.purpose.%s" % self.purpose
       log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
 
+class StreamBwEvent(Event):
+  """
+  Event (emitted approximately every second) with the bytes sent and received
+  by the application since the last such event on this stream.
+  
+  :var str id: stream identifier
+  :var long written: bytes sent by the application
+  :var long read: bytes received by the application
+  """
+  
+  _POSITIONAL_ARGS = ("id", "written", "read")
+  
+  def _parse(self):
+    if self.id != None and not tor_tools.is_valid_stream_id(self.id):
+      raise stem.ProtocolError("Stream IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
+    elif not self.written:
+      raise stem.ProtocolError("STREAM_BW event is missing its written value")
+    elif not self.read:
+      raise stem.ProtocolError("STREAM_BW event is missing its read value")
+    elif not self.read.isdigit() or not self.written.isdigit():
+      raise stem.ProtocolError("A STREAM_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
+    
+    self.read = long(self.read)
+    self.written = long(self.written)
+
 EVENT_TYPE_TO_CLASS = {
   "ADDRMAP": AddrMapEvent,
   "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
@@ -878,6 +903,7 @@ EVENT_TYPE_TO_CLASS = {
   "STATUS_GENERAL": StatusEvent,
   "STATUS_SERVER": StatusEvent,
   "STREAM": StreamEvent,
+  "STREAM_BW": StreamBwEvent,
   "WARN": LogEvent,
   
   # accounting for a bug in tor 0.2.0.22
