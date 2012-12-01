@@ -864,4 +864,26 @@ class TestEvents(unittest.TestCase):
     self.assertEqual("127.0.0.1", event.source_address)
     self.assertEqual(15297, event.source_port)
     self.assertEqual(StreamPurpose.DNS_REQUEST, event.purpose)
+  
+  def test_stream_bw_event(self):
+    event = _get_event("650 STREAM_BW 2 15 25")
+    
+    self.assertTrue(isinstance(event, stem.response.events.StreamBwEvent))
+    self.assertEqual("2", event.id)
+    self.assertEqual(15, event.written)
+    self.assertEqual(25, event.read)
+    
+    event = _get_event("650 STREAM_BW Stream02 0 0")
+    self.assertEqual("Stream02", event.id)
+    self.assertEqual(0, event.written)
+    self.assertEqual(0, event.read)
+    
+    self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW")
+    self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2")
+    self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2 15")
+    self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW - 15 25")
+    self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 12345678901234567 15 25")
+    self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2 -15 25")
+    self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2 15 -25")
+    self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2 x 25")
 
