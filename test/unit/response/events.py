@@ -109,6 +109,10 @@ STREAM_SUCCEEDED = "650 STREAM 18 SUCCEEDED 26 74.125.227.129:443"
 STREAM_CLOSED_RESET = "650 STREAM 21 CLOSED 26 74.125.227.129:443 REASON=CONNRESET"
 STREAM_CLOSED_DONE = "650 STREAM 25 CLOSED 26 199.7.52.72:80 REASON=DONE"
 
+STREAM_DIR_FETCH = "650 STREAM 14 NEW 0 \
+176.28.51.238.$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA.exit:443 \
+SOURCE_ADDR=(Tor_internal):0 PURPOSE=DIR_FETCH"
+
 # ORCONN events from starting tor 0.2.2.39 via TBB
 
 ORCONN_CONNECTED = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon CONNECTED"
@@ -491,4 +495,22 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.source_address)
     self.assertEqual(None, event.source_port)
     self.assertEqual(None, event.purpose)
+    
+    event = _get_event(STREAM_DIR_FETCH)
+    
+    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
+    self.assertEqual(STREAM_DIR_FETCH.lstrip("650 "), str(event))
+    self.assertEqual("14", event.id)
+    self.assertEqual(StreamStatus.NEW, event.status)
+    self.assertEqual(None, event.circ_id)
+    self.assertEqual("176.28.51.238.$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA.exit:443", event.target)
+    self.assertEqual("176.28.51.238.$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA.exit", event.target_address)
+    self.assertEqual(443, event.target_port)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual(None, event.source)
+    self.assertEqual("(Tor_internal):0", event.source_addr)
+    self.assertEqual("(Tor_internal)", event.source_address)
+    self.assertEqual(0, event.source_port)
+    self.assertEqual(StreamPurpose.DIR_FETCH, event.purpose)
 

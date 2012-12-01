@@ -495,7 +495,7 @@ class StreamEvent(Event):
       
       address, port = self.source_addr.split(':', 1)
       
-      if not connection.is_valid_port(port):
+      if not connection.is_valid_port(port, allow_zero = True):
         raise stem.ProtocolError("Source location's port is invalid: %s" % self)
       
       self.source_address = address
