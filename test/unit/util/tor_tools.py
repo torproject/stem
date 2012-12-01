@@ -52,4 +52,29 @@ class TestTorTools(unittest.TestCase):
     
     for nickname in invalid_nicknames:
       self.assertFalse(stem.util.tor_tools.is_valid_nickname(nickname))
+  
+  def test_is_valid_circuit_id(self):
+    """
+    Checks the is_valid_circuit_id function.
+    """
+    
+    valid_circuit_ids = (
+      "0",
+      "2",
+      "abcABC123",
+    )
+    
+    invalid_circuit_ids = (
+      "",
+      0,
+      2,
+      "toolonggggggggggg",
+      "bad_character",
+    )
+    
+    for circuit_id in valid_circuit_ids:
+      self.assertTrue(stem.util.tor_tools.is_valid_circuit_id(circuit_id))
+    
+    for circuit_id in invalid_circuit_ids:
+      self.assertFalse(stem.util.tor_tools.is_valid_circuit_id(circuit_id))
 
