@@ -539,5 +539,8 @@ EVENT_TYPE_TO_CLASS = {
   "STATUS_SERVER": StatusEvent,
   "STREAM": StreamEvent,
   "WARN": LogEvent,
+  
+  # accounting for a bug in tor 0.2.0.22
+  "STATUS_SEVER": StatusEvent,
 }
 
