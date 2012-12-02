@@ -85,6 +85,7 @@ providing its own for interacting at a higher level.
   **DEBUG**             :class:`stem.response.events.LogEvent`
   **DESCCHANGED**       :class:`stem.response.events.DescChangedEvent`
   **ERR**               :class:`stem.response.events.LogEvent`
+  **GUARD**             :class:`stem.response.events.GuardEvent`
   **INFO**              :class:`stem.response.events.LogEvent`
   **NEWDESC**           :class:`stem.response.events.NewDescEvent`
   **NOTICE**            :class:`stem.response.events.LogEvent`

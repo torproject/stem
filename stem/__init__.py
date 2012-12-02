@@ -260,6 +260,37 @@ Library for working with the tor process.
   **CLIENT**    related to our activity as a tor client
   **SERVER**    related to our activity as a tor relay
   ============= ===========
+
+.. data:: GuardType (enum)
+  
+  Use a guard relay can be for. Tor may provide types not in this enum.
+  
+  Enum descriptions are pending...
+  https://trac.torproject.org/7619
+  
+  =========== ===========
+  GuardType   Description
+  =========== ===========
+  **ENTRY**   unknown
+  =========== ===========
+
+.. data:: GuardStatus (enum)
+  
+  Status a guard relay can have. Tor may provide types not in this enum.
+  
+  Enum descriptions are pending...
+  https://trac.torproject.org/7619
+  
+  ============= ===========
+  GuardStatus   Description
+  ============= ===========
+  **NEW**       unknown
+  **UP**        unknown
+  **DOWN**      unknown
+  **BAD**       unknown
+  **GOOD**      unknown
+  **DROPPED**   unknown
+  ============= ===========
 """
 
 __version__ = '0.0.1'
@@ -301,6 +332,8 @@ __all__ = [
   "ORClosureReason",
   "AuthDescriptorAction",
   "StatusType",
+  "GuardType",
+  "GuardStatus",
 ]
 
 import stem.util.enum
@@ -494,5 +527,18 @@ StatusType = stem.util.enum.UppercaseEnum(
   "GENERAL",
   "CLIENT",
   "SERVER",
+)
+
+GuardType = stem.util.enum.UppercaseEnum(
+  "ENTRY",
+)
+
+GuardStatus = stem.util.enum.UppercaseEnum(
+  "NEW",
+  "UP",
+  "DOWN",
+  "BAD",
+  "GOOD",
+  "DROPPED",
 )
 

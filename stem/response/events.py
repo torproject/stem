@@ -317,6 +317,22 @@ class DescChangedEvent(Event):
   
   pass
 
+class GuardEvent(Event):
+  """
+  Event that indicates that our guard relays have changed.
+  
+  :var stem.GuardType guard_type: purpose the guard relay is for
+  :var str name: nickname or fingerprint of the guard relay
+  :var stem.GuardStatus status: status of the guard relay
+  """
+  
+  # TODO: We should replace the 'name' field with a fingerprint or nickname
+  # attribute once we know what it can be...
+  #
+  # https://trac.torproject.org/7619
+  
+  _POSITIONAL_ARGS = ("guard_type", "name", "status")
+
 class LogEvent(Event):
   """
   Tor logging event. These are the most visible kind of event since, by
@@ -547,6 +563,7 @@ EVENT_TYPE_TO_CLASS = {
   "DEBUG": LogEvent,
   "DESCCHANGED": DescChangedEvent,
   "ERR": LogEvent,
+  "GUARD": GuardEvent,
   "INFO": LogEvent,
   "NEWDESC": NewDescEvent,
   "NOTICE": LogEvent,

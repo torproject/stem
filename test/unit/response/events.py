@@ -41,6 +41,12 @@ $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone"
 CIRC_BUILT_OLD = "650 CIRC 1 BUILT \
 $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14"
 
+# GUARD events from tor v0.2.1.30.
+
+GUARD_NEW = "650 GUARD ENTRY $36B5DBA788246E8369DBAF58577C6BC044A9A374 NEW"
+GUARD_GOOD = "650 GUARD ENTRY $5D0034A368E0ABAF663D21847E1C9B6CFA09752A GOOD"
+GUARD_BAD = "650 GUARD ENTRY $5D0034A368E0ABAF663D21847E1C9B6CFA09752A BAD"
+
 # STATUS_* events that I was able to easily trigger. Most came from starting
 # TBB, then listening while it bootstrapped.
 
@@ -338,6 +344,25 @@ class TestEvents(unittest.TestCase):
     self.assertEqual("DESCCHANGED", str(event))
     self.assertEqual([], event.positional_args)
     self.assertEqual({}, event.keyword_args)
+  
+  def test_guard_event(self):
+    event = _get_event(GUARD_NEW)
+    
+    self.assertTrue(isinstance(event, stem.response.events.GuardEvent))
+    self.assertEqual(GUARD_NEW.lstrip("650 "), str(event))
+    self.assertEqual(GuardType.ENTRY, event.guard_type)
+    self.assertEqual("$36B5DBA788246E8369DBAF58577C6BC044A9A374", event.name)
+    self.assertEqual(GuardStatus.NEW, event.status)
+    
+    event = _get_event(GUARD_GOOD)
+    self.assertEqual(GuardType.ENTRY, event.guard_type)
+    self.assertEqual("$5D0034A368E0ABAF663D21847E1C9B6CFA09752A", event.name)
+    self.assertEqual(GuardStatus.GOOD, event.status)
+    
+    event = _get_event(GUARD_BAD)
+    self.assertEqual(GuardType.ENTRY, event.guard_type)
+    self.assertEqual("$5D0034A368E0ABAF663D21847E1C9B6CFA09752A", event.name)
+    self.assertEqual(GuardStatus.BAD, event.status)
   
   def test_newdesc_event(self):
     event = _get_event(NEWDESC_SINGLE)
