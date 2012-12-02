@@ -113,6 +113,10 @@ STREAM_DIR_FETCH = "650 STREAM 14 NEW 0 \
 176.28.51.238.$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA.exit:443 \
 SOURCE_ADDR=(Tor_internal):0 PURPOSE=DIR_FETCH"
 
+STREAM_DNS_REQUEST = "650 STREAM 1113 NEW 0 www.google.com:0 \
+SOURCE_ADDR=127.0.0.1:15297 \
+PURPOSE=DNS_REQUEST"
+
 # ORCONN events from starting tor 0.2.2.39 via TBB
 
 ORCONN_CONNECTED = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon CONNECTED"
@@ -670,4 +674,22 @@ class TestEvents(unittest.TestCase):
     self.assertEqual("(Tor_internal)", event.source_address)
     self.assertEqual(0, event.source_port)
     self.assertEqual(StreamPurpose.DIR_FETCH, event.purpose)
+    
+    event = _get_event(STREAM_DNS_REQUEST)
+    
+    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
+    self.assertEqual(STREAM_DNS_REQUEST.lstrip("650 "), str(event))
+    self.assertEqual("1113", event.id)
+    self.assertEqual(StreamStatus.NEW, event.status)
+    self.assertEqual(None, event.circ_id)
+    self.assertEqual("www.google.com:0", event.target)
+    self.assertEqual("www.google.com", event.target_address)
+    self.assertEqual(0, event.target_port)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual(None, event.source)
+    self.assertEqual("127.0.0.1:15297", event.source_addr)
+    self.assertEqual("127.0.0.1", event.source_address)
+    self.assertEqual(15297, event.source_port)
+    self.assertEqual(StreamPurpose.DNS_REQUEST, event.purpose)
 
