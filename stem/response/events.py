@@ -34,6 +34,11 @@ class Event(stem.response.ControlMessage):
   _QUOTED = ()
   _SKIP_PARSING = False
   
+  # If set then we'll parse anything that looks like a quoted key/value
+  # mapping, reguardless of if it shows up in _QUOTED.
+  
+  _PERMISSIVE_QUOTED_MAPPINGS = False
+  
   def _parse_message(self, arrived_at):
     if not str(self).strip():
       raise stem.ProtocolError("Received a blank tor event. Events must at the very least have a type.")
@@ -73,13 +78,24 @@ class Event(stem.response.ControlMessage):
     
     content = str(self)
     
-    for keyword in set(self._QUOTED).intersection(set(self._KEYWORD_ARGS.keys())):
-      match = re.match("^(.*) %s=\"(.*)\"(.*)$" % keyword, content)
-      
-      if match:
-        prefix, value, suffix = match.groups()
-        content = prefix + suffix
-        self.keyword_args[keyword] = value
+    if self._PERMISSIVE_QUOTED_MAPPINGS:
+      while True:
+        match = re.match("^(.*) (\S*)=\"(.*)\"(.*)$", content)
+        
+        if match:
+          prefix, keyword, value, suffix = match.groups()
+          content = prefix + suffix
+          self.keyword_args[keyword] = value
+        else:
+          break
+    else:
+      for keyword in set(self._QUOTED).intersection(set(self._KEYWORD_ARGS.keys())):
+        match = re.match("^(.*) %s=\"(.*)\"(.*)$" % keyword, content)
+        
+        if match:
+          prefix, value, suffix = match.groups()
+          content = prefix + suffix
+          self.keyword_args[keyword] = value
     
     fields = content.split()[1:]
     
@@ -423,6 +439,7 @@ class StatusEvent(Event):
   """
   
   _POSITIONAL_ARGS = ("runlevel", "action")
+  _PERMISSIVE_QUOTED_MAPPINGS = True
   
   def _parse(self):
     if self.type == 'STATUS_GENERAL':

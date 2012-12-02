@@ -378,7 +378,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(ORClosureReason.DONE, event.reason)
     self.assertEqual(None, event.circ_count)
   
-  def test_status_event(self):
+  def test_status_event_consensus_arrived(self):
     event = _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED)
     
     self.assertTrue(isinstance(event, stem.response.events.StatusEvent))
@@ -386,6 +386,163 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(StatusType.CLIENT, event.status_type)
     self.assertEqual(Runlevel.NOTICE, event.runlevel)
     self.assertEqual("CONSENSUS_ARRIVED", event.action)
+  
+  def test_status_event_enough_dir_info(self):
+    event = _get_event(STATUS_CLIENT_ENOUGH_DIR_INFO)
+    
+    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("ENOUGH_DIR_INFO", event.action)
+  
+  def test_status_event_circuit_established(self):
+    event = _get_event(STATUS_CLIENT_CIRC_ESTABLISHED)
+    
+    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("CIRCUIT_ESTABLISHED", event.action)
+  
+  def test_status_event_bootstrap_descriptors(self):
+    event = _get_event(STATUS_CLIENT_BOOTSTRAP_DESCRIPTORS)
+    
+    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("BOOTSTRAP", event.action)
+    
+    expected_attr = {
+      'PROGRESS': '53',
+      'TAG': 'loading_descriptors',
+      'SUMMARY': 'Loading relay descriptors',
+    }
+    
+    self.assertEqual(expected_attr, event.keyword_args)
+  
+  def test_status_event_bootstrap_stuck(self):
+    event = _get_event(STATUS_CLIENT_BOOTSTRAP_STUCK)
+    
+    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(Runlevel.WARN, event.runlevel)
+    self.assertEqual("BOOTSTRAP", event.action)
+    
+    expected_attr = {
+      'PROGRESS': '80',
+      'TAG': 'conn_or',
+      'SUMMARY': 'Connecting to the Tor network',
+      'WARNING': 'Network is unreachable',
+      'REASON': 'NOROUTE',
+      'COUNT': '5',
+      'RECOMMENDATION': 'warn',
+    }
+    
+    self.assertEqual(expected_attr, event.keyword_args)
+  
+  def test_status_event_bootstrap_connecting(self):
+    event = _get_event(STATUS_CLIENT_BOOTSTRAP_CONNECTING)
+    
+    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("BOOTSTRAP", event.action)
+    
+    expected_attr = {
+      'PROGRESS': '80',
+      'TAG': 'conn_or',
+      'SUMMARY': 'Connecting to the Tor network',
+    }
+    
+    self.assertEqual(expected_attr, event.keyword_args)
+  
+  def test_status_event_bootstrap_first_handshake(self):
+    event = _get_event(STATUS_CLIENT_BOOTSTRAP_FIRST_HANDSHAKE)
+    
+    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("BOOTSTRAP", event.action)
+    
+    expected_attr = {
+      'PROGRESS': '85',
+      'TAG': 'handshake_or',
+      'SUMMARY': 'Finishing handshake with first hop',
+    }
+    
+    self.assertEqual(expected_attr, event.keyword_args)
+  
+  def test_status_event_bootstrap_established(self):
+    event = _get_event(STATUS_CLIENT_BOOTSTRAP_ESTABLISHED)
+    
+    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("BOOTSTRAP", event.action)
+    
+    expected_attr = {
+      'PROGRESS': '90',
+      'TAG': 'circuit_create',
+      'SUMMARY': 'Establishing a Tor circuit',
+    }
+    
+    self.assertEqual(expected_attr, event.keyword_args)
+  
+  def test_status_event_bootstrap_done(self):
+    event = _get_event(STATUS_CLIENT_BOOTSTRAP_DONE)
+    
+    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("BOOTSTRAP", event.action)
+    
+    expected_attr = {
+      'PROGRESS': '100',
+      'TAG': 'done',
+      'SUMMARY': 'Done',
+    }
+    
+    self.assertEqual(expected_attr, event.keyword_args)
+  
+  def test_status_event_bootstrap_check_reachability(self):
+    event = _get_event(STATUS_SERVER_CHECK_REACHABILITY)
+    
+    self.assertEqual(StatusType.SERVER, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("CHECKING_REACHABILITY", event.action)
+    
+    expected_attr = {
+      'ORADDRESS': '71.35.143.230:9050',
+    }
+    
+    self.assertEqual(expected_attr, event.keyword_args)
+  
+  def test_status_event_dns_timeout(self):
+    event = _get_event(STATUS_SERVER_DNS_TIMEOUT)
+    
+    self.assertEqual(StatusType.SERVER, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("NAMESERVER_STATUS", event.action)
+    
+    expected_attr = {
+      'NS': '205.171.3.25',
+      'STATUS': 'DOWN',
+      'ERR': 'request timed out.',
+    }
+    
+    self.assertEqual(expected_attr, event.keyword_args)
+  
+  def test_status_event_dns_down(self):
+    event = _get_event(STATUS_SERVER_DNS_DOWN)
+    
+    self.assertEqual(StatusType.SERVER, event.status_type)
+    self.assertEqual(Runlevel.WARN, event.runlevel)
+    self.assertEqual("NAMESERVER_ALL_DOWN", event.action)
+  
+  def test_status_event_dns_up(self):
+    event = _get_event(STATUS_SERVER_DNS_UP)
+    
+    self.assertEqual(StatusType.SERVER, event.status_type)
+    self.assertEqual(Runlevel.NOTICE, event.runlevel)
+    self.assertEqual("NAMESERVER_STATUS", event.action)
+    
+    expected_attr = {
+      'NS': '205.171.3.25',
+      'STATUS': 'UP',
+    }
+    
+    self.assertEqual(expected_attr, event.keyword_args)
   
   def test_stream_event(self):
     event = _get_event(STREAM_NEW)
