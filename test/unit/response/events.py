@@ -41,6 +41,13 @@ $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone"
 CIRC_BUILT_OLD = "650 CIRC 1 BUILT \
 $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14"
 
+# CLIENTS_SEEN example from the spec
+
+CLIENTS_SEEN_EVENT = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=us=16,de=8,uk=8 \
+IPVersions=v4=16,v6=40'
+
 # GUARD events from tor v0.2.1.30.
 
 GUARD_NEW = "650 GUARD ENTRY $36B5DBA788246E8369DBAF58577C6BC044A9A374 NEW"
@@ -342,6 +349,15 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.created)
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
+  
+  def test_clients_seen_event(self):
+    event = _get_event(CLIENTS_SEEN_EVENT)
+    
+    self.assertTrue(isinstance(event, stem.response.events.ClientsSeenEvent))
+    self.assertEqual(CLIENTS_SEEN_EVENT.lstrip("650 "), str(event))
+    self.assertEqual(datetime.datetime(2008, 12, 25, 23, 50, 43), event.start_time)
+    self.assertEqual({'us': 16, 'de': 8, 'uk': 8}, event.locales)
+    self.assertEqual({'v4': 16, 'v6': 40}, event.ip_versions)
   
   def test_descchanged_event(self):
     # all we can check for is that the event is properly parsed as a

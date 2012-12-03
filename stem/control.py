@@ -82,6 +82,7 @@ providing its own for interacting at a higher level.
   **AUTHDIR_NEWDESCS**  :class:`stem.response.events.AuthDirNewDescEvent`
   **BW**                :class:`stem.response.events.BandwidthEvent`
   **CIRC**              :class:`stem.response.events.CircuitEvent`
+  **CLIENTS_SEEN**      :class:`stem.response.events.ClientsSeenEvent`
   **DEBUG**             :class:`stem.response.events.LogEvent`
   **DESCCHANGED**       :class:`stem.response.events.DescChangedEvent`
   **ERR**               :class:`stem.response.events.LogEvent`

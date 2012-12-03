@@ -311,6 +311,63 @@ class CircuitEvent(Event):
       log_id = "event.circ.unknown_remote_reason.%s" % self.remote_reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('remote reason', self.remote_reason))
 
+class ClientsSeenEvent(Event):
+  """
+  Periodic event on bridge relays that provides a summary of our users.
+  
+  :var datetime start_time: time in UTC that we started collecting these stats
+  :var dict locales: mapping of country codes to a rounded count for the number of users
+  :var dict ip_versions: mapping of ip protocols to a rounded count for the number of users
+  """
+  
+  _KEYWORD_ARGS = {
+    "TimeStarted": "start_time",
+    "CountrySummary": "locales",
+    "IPVersions": "ip_versions",
+  }
+  
+  _QUOTED = ("TimeStarted",)
+  
+  def _parse(self):
+    if self.start_time != None:
+      self.start_time = datetime.datetime.strptime(self.start_time, "%Y-%m-%d %H:%M:%S")
+    
+    if self.locales != None:
+      locale_to_count = {}
+      
+      for entry in self.locales.split(','):
+        if not '=' in entry:
+          raise stem.ProtocolError("The CLIENTS_SEEN's CountrySummary should be a comma separated listing of '<locale>=<count>' mappings: %s" % self)
+        
+        locale, count = entry.split('=', 1)
+        
+        if len(locale) != 2:
+          raise stem.ProtocolError("Locales should be a two character code, got '%s': %s" % (locale, self))
+        elif not count.isdigit():
+          raise stem.ProtocolError("Locale count was non-numeric (%s): %s" % (count, self))
+        elif locale in locale_to_count:
+          raise stem.ProtocolError("CountrySummary had multiple mappings for '%s': %s" % (locale, self))
+        
+        locale_to_count[locale] = int(count)
+      
+      self.locales = locale_to_count
+    
+    if self.ip_versions != None:
+      protocol_to_count = {}
+      
+      for entry in self.ip_versions.split(','):
+        if not '=' in entry:
+          raise stem.ProtocolError("The CLIENTS_SEEN's IPVersions should be a comma separated listing of '<protocol>=<count>' mappings: %s" % self)
+        
+        protocol, count = entry.split('=', 1)
+        
+        if not count.isdigit():
+          raise stem.ProtocolError("IP protocol count was non-numeric (%s): %s" % (count, self))
+        
+        protocol_to_count[protocol] = int(count)
+      
+      self.ip_versions = protocol_to_count
+
 class DescChangedEvent(Event):
   """
   Event that indicates that our descriptor has changed. This was first added in
@@ -581,6 +638,7 @@ EVENT_TYPE_TO_CLASS = {
   "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
   "BW": BandwidthEvent,
   "CIRC": CircuitEvent,
+  "CLIENTS_SEEN": ClientsSeenEvent,
   "DEBUG": LogEvent,
   "DESCCHANGED": DescChangedEvent,
   "ERR": LogEvent,
