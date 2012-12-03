@@ -12,3 +12,8 @@ Responses
 .. autoclass:: stem.response.mapaddress.MapAddressResponse
 .. autoclass:: stem.response.protocolinfo.ProtocolInfoResponse
 
+Events
+------
+
+.. automodule:: stem.response.events
+

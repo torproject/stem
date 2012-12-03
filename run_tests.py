@@ -16,6 +16,7 @@ import test.output
 import test.runner
 import test.check_whitespace
 import test.unit.connection.authentication
+import test.unit.control.controller
 import test.unit.descriptor.export
 import test.unit.descriptor.reader
 import test.unit.descriptor.server_descriptor
@@ -27,6 +28,7 @@ import test.unit.descriptor.networkstatus.document_v2
 import test.unit.descriptor.networkstatus.document_v3
 import test.unit.response.control_line
 import test.unit.response.control_message
+import test.unit.response.events
 import test.unit.response.getinfo
 import test.unit.response.getconf
 import test.unit.response.protocolinfo
@@ -133,6 +135,7 @@ UNIT_TESTS = (
   test.unit.tutorial.TestTutorial,
   test.unit.response.control_message.TestControlMessage,
   test.unit.response.control_line.TestControlLine,
+  test.unit.response.events.TestEvents,
   test.unit.response.getinfo.TestGetInfoResponse,
   test.unit.response.getconf.TestGetConfResponse,
   test.unit.response.singleline.TestSingleLineResponse,
@@ -140,6 +143,7 @@ UNIT_TESTS = (
   test.unit.response.protocolinfo.TestProtocolInfoResponse,
   test.unit.response.authchallenge.TestAuthChallengeResponse,
   test.unit.connection.authentication.TestAuthenticate,
+  test.unit.control.controller.TestControl,
 )
 
 INTEG_TESTS = (

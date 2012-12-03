@@ -26,6 +26,7 @@ Parses replies from the control socket.
 from __future__ import with_statement
 
 __all__ = [
+  "events",
   "getinfo",
   "getconf",
   "protocolinfo",
@@ -85,6 +86,7 @@ def convert(response_type, message, **kwargs):
       or response_type isn't supported
   """
   
+  import stem.response.events
   import stem.response.getinfo
   import stem.response.getconf
   import stem.response.protocolinfo
@@ -95,6 +97,7 @@ def convert(response_type, message, **kwargs):
     raise TypeError("Only able to convert stem.response.ControlMessage instances")
   
   response_types = {
+    "EVENT": stem.response.events.Event,
     "GETINFO": stem.response.getinfo.GetInfoResponse,
     "GETCONF": stem.response.getconf.GetConfResponse,
     "MAPADDRESS": stem.response.mapaddress.MapAddressResponse,

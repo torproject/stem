@@ -3,8 +3,8 @@ Controller
 
 .. automodule:: stem.control
 
-Exceptions
-----------
+Exceptions and Attribute Enums
+------------------------------
 
 .. automodule:: stem
 

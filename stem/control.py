@@ -13,6 +13,8 @@ providing its own for interacting at a higher level.
     | |- from_port - Provides a Controller based on a port connection.
     | +- from_socket_file - Provides a Controller based on a socket file connection.
     |
+    |- add_event_listener - attaches an event listener to be notified of tor events
+    |- remove_event_listener - removes a listener so it isn't notified of further events
     |- is_caching_enabled - true if the controller has enabled caching
     |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
     |- clear_cache - clears any cached results
@@ -47,11 +49,55 @@ providing its own for interacting at a higher level.
     |- add_status_listener - notifies a callback of changes in our status
     |- remove_status_listener - prevents further notification of status changes
     +- __enter__ / __exit__ - manages socket connection
+
+.. data:: State (enum)
   
-  State - enumeration for states that a controller can have
-    |- INIT - new control connection
-    |- RESET - received a reset/sighup signal
-    +- CLOSED - control connection closed
+  Enumeration for states that a controller can have.
+  
+  ========== ===========
+  State      Description
+  ========== ===========
+  **INIT**   new control connection
+  **RESET**  received a reset/sighup signal
+  **CLOSED** control connection closed
+  ========== ===========
+
+.. data:: EventType (enum)
+  
+  Known types of events that the
+  :func:`~stem.control.Controller.add_event_listener` method of the
+  :class:`~stem.control.Controller` can listen for.
+  
+  The most frequently listened for event types tend to be the logging events
+  (**DEBUG**, **INFO**, **NOTICE**, **WARN**, and **ERR**), bandwidth usage
+  (**BW**), and circuit or stream changes (**CIRC** and **STREAM**).
+  
+  Enums are mapped to :class:`~stem.response.events.Event` subclasses as
+  follows...
+  
+  ===================== ===========
+  EventType             Event Class
+  ===================== ===========
+  **ADDRMAP**           :class:`stem.response.events.AddrMapEvent`
+  **AUTHDIR_NEWDESCS**  :class:`stem.response.events.AuthDirNewDescEvent`
+  **BW**                :class:`stem.response.events.BandwidthEvent`
+  **CIRC**              :class:`stem.response.events.CircuitEvent`
+  **CLIENTS_SEEN**      :class:`stem.response.events.ClientsSeenEvent`
+  **DEBUG**             :class:`stem.response.events.LogEvent`
+  **DESCCHANGED**       :class:`stem.response.events.DescChangedEvent`
+  **ERR**               :class:`stem.response.events.LogEvent`
+  **GUARD**             :class:`stem.response.events.GuardEvent`
+  **INFO**              :class:`stem.response.events.LogEvent`
+  **NEWDESC**           :class:`stem.response.events.NewDescEvent`
+  **NOTICE**            :class:`stem.response.events.LogEvent`
+  **NS**                :class:`stem.response.events.NetworkStatusEvent`
+  **ORCONN**            :class:`stem.response.events.ORConnEvent`
+  **STATUS_CLIENT**     :class:`stem.response.events.StatusEvent`
+  **STATUS_GENERAL**    :class:`stem.response.events.StatusEvent`
+  **STATUS_SERVER**     :class:`stem.response.events.StatusEvent`
+  **STREAM**            :class:`stem.response.events.StreamEvent`
+  **WARN**              :class:`stem.response.events.LogEvent`
+  ===================== ===========
 """
 
 from __future__ import with_statement
@@ -67,11 +113,40 @@ import stem.version
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.util.connection
+import stem.util.enum
 import stem.util.log as log
 
 # state changes a control socket can have
 
 State = stem.util.enum.Enum("INIT", "RESET", "CLOSED")
+
+EventType = stem.util.enum.UppercaseEnum(
+  "CIRC",
+  "STREAM",
+  "ORCONN",
+  "BW",
+  "DEBUG",
+  "INFO",
+  "NOTICE",
+  "WARN",
+  "ERR",
+  "NEWDESC",
+  "ADDRMAP",
+  "AUTHDIR_NEWDESCS",
+  "DESCCHANGED",
+  "STATUS_GENERAL",
+  "STATUS_CLIENT",
+  "STATUS_SERVER",
+  "GUARD",
+  "NS",
+  "STREAM_BW",
+  "CLIENTS_SEEN",
+  "NEWCONSENSUS",
+  "BUILDTIMEOUT_SET",
+  "SIGNAL",
+  "CONF_CHANGED",
+  "CIRC_MINOR",
+)
 
 # Constant to indicate an undefined argument default. Usually we'd use None for
 # this, but users will commonly provide None as the argument so need something
@@ -273,9 +348,9 @@ class BaseController(object):
     
       my_function(controller, state, timestamp)
     
-    The state is a value from stem.socket.State, functions **must** allow for
-    new values in this field. The timestamp is a float for the unix time when
-    the change occurred.
+    The state is a value from the :data:`stem.control.State` enum. Functions
+    **must** allow for new values. The timestamp is a float for the unix time
+    when the change occurred.
     
     This class only provides **State.INIT** and **State.CLOSED** notifications.
     Subclasses may provide others.
@@ -366,7 +441,7 @@ class BaseController(object):
     If set, the expect_alive flag will discard our event if it conflicts with
     our current :func:`~stem.control.BaseController.is_alive` state.
     
-    :param stem.socket.State state: state change that has occurred
+    :param stem.control.State state: state change that has occurred
     :param bool expect_alive: discard event if it conflicts with our
       :func:`~stem.control.BaseController.is_alive` state
     """
@@ -465,6 +540,9 @@ class Controller(BaseController):
   BaseController and provides a more user friendly API for library users.
   """
   
+  # TODO: We need a set_up() (and maybe tear_down()?) method, so we can
+  # reattach listeners and set VERBOSE_NAMES.
+  
   def from_port(control_addr = "127.0.0.1", control_port = 9051):
     """
     Constructs a :class:`~stem.socket.ControlPort` based Controller.
@@ -508,6 +586,20 @@ class Controller(BaseController):
     self._is_caching_enabled = enable_caching
     self._request_cache = {}
     
+    # mapping of event types to their listeners
+    
+    self._event_listeners = {}
+    self._event_listeners_lock = threading.RLock()
+    
+    # TODO: We want the capability of taking post-authentication actions, for
+    # instance to call SETEVENTS so our event listeners will work on new
+    # connections. The trouble is that the user could do this by a variety of
+    # methods (authenticate(), msg(), stem.connection.authenticete(), etc)...
+    #
+    # When we get it figured out we should add the pydoc comment:
+    # If a new control connection is initialized then this listener will be
+    # reattached.
+    
     # number of sequential 'GETINFO ip-to-country/*' lookups that have failed
     self._geoip_failure_count = 0
     self.enabled_features = []
@@ -523,6 +615,68 @@ class Controller(BaseController):
       except: pass
     
     super(Controller, self).close()
+  
+  def add_event_listener(self, listener, *events):
+    """
+    Directs further tor controller events to a given function. The function is
+    expected to take a single argument, which is a
+    :class:`~stem.response.events.Event` subclass. For instance the following
+    would would print the bytes sent and received by tor over five seconds...
+    
+    ::
+    
+      import time
+      from stem.control import Controller, EventType
+      
+      def print_bw(event):
+        print "sent: %i, received: %i" % (event.written, event.read)
+      
+      with Controller.from_port(control_port = 9051) as controller:
+        controller.authenticate()
+        controller.add_event_listener(print_bw, EventType.BW)
+        time.sleep(5)
+    
+    :param functor listener: function to be called when an event is received
+    :param stem.control.EventType events: event types to be listened for
+    
+    :raises: :class:`stem.socket.ControllerError` if unable to set the events
+    """
+    
+    with self._event_listeners_lock:
+      for event_type in events:
+        self._event_listeners.setdefault(event_type, []).append(listener)
+      
+      if self.is_alive():
+        response = self.msg("SETEVENTS %s" % " ".join(self._event_listeners.keys()))
+        
+        if not response.is_ok():
+          raise stem.socket.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
+  
+  def remove_event_listener(self, listener):
+    """
+    Stops a listener from being notified of further tor events.
+    
+    :param stem.control.EventListener listener: listener to be removed
+    
+    :raises: :class:`stem.socket.ControllerError` if unable to set the events
+    """
+    
+    with self._event_listeners_lock:
+      event_types_changed = False
+      
+      for event_type, event_listeners in self._event_listeners.items():
+        if listener in event_listeners:
+          event_listeners.remove(listener)
+          
+          if len(event_listeners) == 0:
+            event_types_changed = True
+            del self._event_listeners[event_type]
+      
+      if event_types_changed:
+        response = self.msg("SETEVENTS %s" % " ".join(self._event_listeners.keys()))
+        
+        if not response.is_ok():
+          raise stem.socket.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
   
   def is_caching_enabled(self):
     """
@@ -1320,6 +1474,93 @@ class Controller(BaseController):
     stem.response.convert("MAPADDRESS", response)
     
     return response.entries
+  
+  def _handle_event(self, event_message):
+    stem.response.convert("EVENT", event_message, arrived_at = time.time())
+    
+    with self._event_listeners_lock:
+      for event_type, event_listeners in self._event_listeners.items():
+        if event_type == event_message.type:
+          for listener in event_listeners:
+            listener(event_message)
+
+def _parse_circ_path(path):
+  """
+  Parses a circuit path as a list of **(fingerprint, nickname)** tuples. Tor
+  circuit paths are defined as being of the form...
+  
+  ::
+  
+    Path = LongName *("," LongName)
+    LongName = Fingerprint [ ( "=" / "~" ) Nickname ]
+    
+    example:
+    $999A226EBED397F331B612FE1E4CFAE5C1F201BA=piyaz
+  
+  ... *unless* this is prior to tor version 0.2.2.1 with the VERBOSE_NAMES
+  feature turned off (or before version 0.1.2.2 where the feature was
+  introduced). In that case either the fingerprint or nickname in the tuple
+  will be **None**, depending on which is missing.
+  
+  ::
+  
+    Path = ServerID *("," ServerID)
+    ServerID = Nickname / Fingerprint
+    
+    example:
+    $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14
+  
+  :param str path: circuit path to be parsed
+  
+  :returns: list of **(fingerprint, nickname)** tuples, fingerprints do not have a proceeding '$'
+  
+  :raises: :class:`stem.ProtocolError` if the path is malformed
+  """
+  
+  if path:
+    try:
+      return [_parse_circ_entry(entry) for entry in path.split(',')]
+    except stem.ProtocolError, exc:
+      # include the path with the exception
+      raise stem.ProtocolError("%s: %s" % (exc, path))
+  else:
+    return []
+
+def _parse_circ_entry(entry):
+  """
+  Parses a single relay's 'LongName' or 'ServerID'. See the
+  :func:`~_stem.control._parse_circ_path` function for more information.
+  
+  :param str entry: relay information to be parsed
+  
+  :returns: **(fingerprint, nickname)** tuple
+  
+  :raises: :class:`stem.ProtocolError` if the entry is malformed
+  """
+  
+  if '=' in entry:
+    # common case
+    fingerprint, nickname = entry.split('=')
+  elif '~' in entry:
+    # this is allowed for by the spec, but I've never seen it used
+    fingerprint, nickname = entry.split('~')
+  elif entry[0] == '$':
+    # old style, fingerprint only
+    fingerprint, nickname = entry, None
+  else:
+    # old style, nickname only
+    fingerprint, nickname = None, entry
+  
+  if fingerprint != None:
+    if not stem.util.tor_tools.is_valid_fingerprint(fingerprint, True):
+      raise stem.ProtocolError("Fingerprint in the circuit path is malformed (%s)" % fingerprint)
+    
+    fingerprint = fingerprint[1:] # strip off the leading '$'
+  
+  if nickname != None and not stem.util.tor_tools.is_valid_nickname(nickname):
+    raise stem.ProtocolError("Nickname in the circuit path is malformed (%s)" % fingerprint)
+  
+  return (fingerprint, nickname)
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """

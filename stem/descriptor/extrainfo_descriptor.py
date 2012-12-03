@@ -196,7 +196,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   
   :var str nickname: **\*** relay's nickname
   :var str fingerprint: **\*** identity key fingerprint
-  :var datetime published: **\*** time in GMT when this descriptor was made
+  :var datetime published: **\*** time in UTC when this descriptor was made
   :var str geoip_db_digest: sha1 of geoIP database file
   :var dict transport: **\*** mapping of transport methods to their (address,
     port, args) tuple, these usually appear on bridges in which case all of

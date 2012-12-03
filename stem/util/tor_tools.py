@@ -7,15 +7,20 @@ Miscellaneous utility functions for working with tor.
 
   is_valid_fingerprint - checks if a string is a valid tor relay fingerprint
   is_valid_nickname - checks if a string is a valid tor relay nickname
+  is_valid_circuit_id - checks if a string is a valid tor circuit id
   is_hex_digits - checks if a string is only made up of hex digits
 """
 
 import re
 
 # The control-spec defines the following as...
+#
 #   Fingerprint = "$" 40*HEXDIG
 #   NicknameChar = "a"-"z" / "A"-"Z" / "0" - "9"
 #   Nickname = 1*19 NicknameChar
+#
+#   CircuitID = 1*16 IDChar
+#   IDChar = ALPHA / DIGIT
 #
 # HEXDIG is defined in RFC 5234 as being uppercase and used in RFC 5987 as
 # case insensitive. Tor doesn't define this in the spec so flipping a coin
@@ -24,6 +29,7 @@ import re
 HEX_DIGIT = "[0-9a-fA-F]"
 FINGERPRINT_PATTERN = re.compile("^%s{40}$" % HEX_DIGIT)
 NICKNAME_PATTERN = re.compile("^[a-zA-Z0-9]{1,19}$")
+CIRC_ID_PATTERN = re.compile("^[a-zA-Z0-9]{1,16}$")
 
 def is_valid_fingerprint(entry, check_prefix = False):
   """
@@ -58,6 +64,18 @@ def is_valid_nickname(entry):
     return False
   
   return bool(NICKNAME_PATTERN.match(entry))
+
+def is_valid_circuit_id(entry):
+  """
+  Checks if a string is a valid format for being a circuit identifier.
+  
+  :returns: **True** if the string could be a circuit id, **False** otherwise
+  """
+  
+  if not isinstance(entry, str):
+    return False
+  
+  return bool(CIRC_ID_PATTERN.match(entry))
 
 def is_hex_digits(entry, count):
   """
