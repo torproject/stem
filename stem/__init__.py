@@ -87,6 +87,7 @@ Library for working with the tor process.
   **HS_SERVICE_REND**  server side hidden service rendezvous circuit
   **TESTING**          testing to see if we're reachable, so we can be used as a relay
   **CONTROLLER**       circuit that was built by a controller
+  **MEASURE_TIMEOUT**  unknown (https://trac.torproject.org/7626)
   ==================== ===========
 
 .. data:: CircClosureReason (enum)
@@ -113,6 +114,18 @@ Library for working with the tor process.
   **NOSUCHSERVICE**         requested hidden service does not exist
   **MEASUREMENT_EXPIRED**   same as **TIMEOUT** except that it was left open for measurement purposes
   ========================= ===========
+
+.. data:: CircEvent (enum)
+  
+  Type of change reflected in a circuit by a CIRC_MINOR event. Tor may provide
+  event types not in this enum.
+  
+  ===================== ===========
+  CircEvent             Description
+  ===================== ===========
+  **PURPOSE_CHANGED**   circuit purpose or hidden service state has changed
+  **CANNIBALIZED**      circuit connections are being reused for a different circuit
+  ===================== ===========
 
 .. data:: HiddenServiceState (enum)
   
@@ -355,6 +368,7 @@ __all__ = [
   "CircBuildFlag",
   "CircPurpose",
   "CircClosureReason",
+  "CircEvent",
   "HiddenServiceState",
   "StreamStatus",
   "StreamClosureReason",
@@ -467,6 +481,7 @@ CircPurpose = stem.util.enum.UppercaseEnum(
   "HS_SERVICE_REND",
   "TESTING",
   "CONTROLLER",
+  "MEASURE_TIMEOUT",
 )
 
 CircClosureReason = stem.util.enum.UppercaseEnum(
@@ -485,6 +500,11 @@ CircClosureReason = stem.util.enum.UppercaseEnum(
   "NOPATH",
   "NOSUCHSERVICE",
   "MEASUREMENT_EXPIRED",
+)
+
+CircEvent = stem.util.enum.UppercaseEnum(
+  "PURPOSE_CHANGED",
+  "CANNIBALIZED",
 )
 
 HiddenServiceState = stem.util.enum.UppercaseEnum(

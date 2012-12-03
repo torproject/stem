@@ -53,6 +53,15 @@ $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone"
 CIRC_BUILT_OLD = "650 CIRC 1 BUILT \
 $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14"
 
+# CIRC_MINOR event from tor 0.2.3.16.
+
+CIRC_MINOR_EVENT = "650 CIRC_MINOR 7 PURPOSE_CHANGED \
+$67B2BDA4264D8A189D9270E28B1D30A262838243~europa1 \
+BUILD_FLAGS=IS_INTERNAL,NEED_CAPACITY \
+PURPOSE=MEASURE_TIMEOUT \
+TIME_CREATED=2012-12-03T16:45:33.409602 \
+OLD_PURPOSE=TESTING"
+
 # CLIENTS_SEEN example from the spec
 
 CLIENTS_SEEN_EVENT = '650 CLIENTS_SEEN \
@@ -405,6 +414,22 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2008, 12, 25, 23, 50, 43), event.start_time)
     self.assertEqual({'us': 16, 'de': 8, 'uk': 8}, event.locales)
     self.assertEqual({'v4': 16, 'v6': 40}, event.ip_versions)
+  
+  def test_circ_minor_event(self):
+    event = _get_event(CIRC_MINOR_EVENT)
+    
+    self.assertTrue(isinstance(event, stem.response.events.CircMinorEvent))
+    self.assertEqual(CIRC_MINOR_EVENT.lstrip("650 "), str(event))
+    self.assertEqual("7", event.id)
+    self.assertEqual(CircEvent.PURPOSE_CHANGED, event.event)
+    self.assertEqual((("67B2BDA4264D8A189D9270E28B1D30A262838243", "europa1"),), event.path)
+    self.assertEqual((CircBuildFlag.IS_INTERNAL, CircBuildFlag.NEED_CAPACITY), event.build_flags)
+    self.assertEqual(CircPurpose.MEASURE_TIMEOUT, event.purpose)
+    self.assertEqual(None, event.hs_state)
+    self.assertEqual(None, event.rend_query)
+    self.assertEqual(datetime.datetime(2012, 12, 3, 16, 45, 33, 409602), event.created)
+    self.assertEqual(CircPurpose.TESTING, event.old_purpose)
+    self.assertEqual(None, event.old_hs_state)
   
   def test_conf_changed(self):
     event = _get_event(CONF_CHANGED_EVENT)

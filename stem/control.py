@@ -83,6 +83,7 @@ providing its own for interacting at a higher level.
   **BUILDTIMEOUT_SET**  :class:`stem.response.events.BuildTimeoutSetEvent`
   **BW**                :class:`stem.response.events.BandwidthEvent`
   **CIRC**              :class:`stem.response.events.CircuitEvent`
+  **CIRC_MINOR**        :class:`stem.response.events.CircMinorEvent`
   **CLIENTS_SEEN**      :class:`stem.response.events.ClientsSeenEvent`
   **CONF_CHANGED**      :class:`stem.response.events.ConfChangedEvent`
   **DEBUG**             :class:`stem.response.events.LogEvent`

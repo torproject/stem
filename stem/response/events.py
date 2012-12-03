@@ -367,6 +367,82 @@ class CircuitEvent(Event):
       log_id = "event.circ.unknown_remote_reason.%s" % self.remote_reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('remote reason', self.remote_reason))
 
+class CircMinorEvent(Event):
+  """
+  Event providing information about minor changes in our circuits. This was
+  first added in tor version 0.2.3.11.
+  
+  :var str id: circuit identifier
+  :var stem.CircEvent event: type of change in the circuit
+  :var tuple path: relays involved in the circuit, these are
+    **(fingerprint, nickname)** tuples
+  :var tuple build_flags: :data:`~stem.CircBuildFlag` attributes
+    governing how the circuit is built
+  :var stem.CircPurpose purpose: purpose that the circuit is intended for
+  :var stem.HiddenServiceState hs_state: status if this is a hidden service circuit
+  :var str rend_query: circuit's rendezvous-point if this is hidden service related
+  :var datetime created: time when the circuit was created or cannibalized
+  :var stem.CircPurpose old_purpose: prior purpose for the circuit
+  :var stem.HiddenServiceState old_hs_state: prior status as a hidden service circuit
+  """
+  
+  _POSITIONAL_ARGS = ("id", "event", "path")
+  _KEYWORD_ARGS = {
+    "BUILD_FLAGS": "build_flags",
+    "PURPOSE": "purpose",
+    "HS_STATE": "hs_state",
+    "REND_QUERY": "rend_query",
+    "TIME_CREATED": "created",
+    "OLD_PURPOSE": "old_purpose",
+    "OLD_HS_STATE": "old_hs_state",
+  }
+  
+  def _parse(self):
+    self.path = tuple(stem.control._parse_circ_path(self.path))
+    
+    if self.build_flags != None:
+      self.build_flags = tuple(self.build_flags.split(','))
+    
+    if self.created != None:
+      try:
+        self.created = str_tools.parse_iso_timestamp(self.created)
+      except ValueError, exc:
+        raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
+    
+    if self.id != None and not tor_tools.is_valid_circuit_id(self.id):
+      raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
+    
+    # log if we have an unrecognized event, status, build flag, purpose, or
+    # hidden service state
+    
+    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("CIRC_MINOR", self)
+    
+    if not self.event in stem.CircEvent:
+      log_id = "event.circ_minor.unknown_event.%s" % self.event
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('event', self.event))
+    
+    if self.build_flags:
+      for flag in self.build_flags:
+        if not flag in stem.CircBuildFlag:
+          log_id = "event.circ_minor.unknown_build_flag.%s" % flag
+          log.log_once(log_id, log.INFO, unrecognized_msg % ('build flag', flag))
+    
+    if self.purpose and (not self.purpose in stem.CircPurpose):
+      log_id = "event.circ_minor.unknown_purpose.%s" % self.purpose
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
+    
+    if self.hs_state and (not self.hs_state in stem.HiddenServiceState):
+      log_id = "event.circ_minor.unknown_hs_state.%s" % self.hs_state
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('hidden service state', self.hs_state))
+    
+    if self.old_purpose and (not self.old_purpose in stem.CircPurpose):
+      log_id = "event.circ_minor.unknown_purpose.%s" % self.old_purpose
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.old_purpose))
+    
+    if self.old_hs_state and (not self.old_hs_state in stem.HiddenServiceState):
+      log_id = "event.circ_minor.unknown_hs_state.%s" % self.old_hs_state
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('hidden service state', self.hs_state))
+
 class ClientsSeenEvent(Event):
   """
   Periodic event on bridge relays that provides a summary of our users.
@@ -784,6 +860,7 @@ EVENT_TYPE_TO_CLASS = {
   "BUILDTIMEOUT_SET": BuildTimeoutSetEvent,
   "BW": BandwidthEvent,
   "CIRC": CircuitEvent,
+  "CIRC_MINOR": CircMinorEvent,
   "CLIENTS_SEEN": ClientsSeenEvent,
   "CONF_CHANGED": ConfChangedEvent,
   "DEBUG": LogEvent,
