@@ -89,6 +89,7 @@ providing its own for interacting at a higher level.
   **INFO**              :class:`stem.response.events.LogEvent`
   **NEWDESC**           :class:`stem.response.events.NewDescEvent`
   **NOTICE**            :class:`stem.response.events.LogEvent`
+  **NS**                :class:`stem.response.events.NetworkStatusEvent`
   **ORCONN**            :class:`stem.response.events.ORConnEvent`
   **STATUS_CLIENT**     :class:`stem.response.events.StatusEvent`
   **STATUS_GENERAL**    :class:`stem.response.events.StatusEvent`

@@ -47,6 +47,15 @@ GUARD_NEW = "650 GUARD ENTRY $36B5DBA788246E8369DBAF58577C6BC044A9A374 NEW"
 GUARD_GOOD = "650 GUARD ENTRY $5D0034A368E0ABAF663D21847E1C9B6CFA09752A GOOD"
 GUARD_BAD = "650 GUARD ENTRY $5D0034A368E0ABAF663D21847E1C9B6CFA09752A BAD"
 
+# NS event from tor v0.2.1.30.
+
+NS_EVENT = """650+NS
+r whnetz dbBxYcJriTTrcxsuy4PUZcMRwCA VStM7KAIH/mXXoGDUpoGB1OXufg 2012-12-02 21:03:56 141.70.120.13 9001 9030
+s Fast HSDir Named Stable V2Dir Valid
+.
+650 OK
+"""
+
 # STATUS_* events that I was able to easily trigger. Most came from starting
 # TBB, then listening while it bootstrapped.
 
@@ -379,6 +388,17 @@ class TestEvents(unittest.TestCase):
     self.assertTrue(isinstance(event, stem.response.events.NewDescEvent))
     self.assertEqual(NEWDESC_MULTIPLE.lstrip("650 "), str(event))
     self.assertEqual(expected_relays, event.relays)
+  
+  def test_ns_event(self):
+    expected_desc = mocking.get_router_status_entry_v3({
+      "r": "whnetz dbBxYcJriTTrcxsuy4PUZcMRwCA VStM7KAIH/mXXoGDUpoGB1OXufg 2012-12-02 21:03:56 141.70.120.13 9001 9030",
+      "s": "Fast HSDir Named Stable V2Dir Valid",
+    })
+    
+    event = _get_event(NS_EVENT)
+    
+    self.assertTrue(isinstance(event, stem.response.events.NetworkStatusEvent))
+    self.assertEqual([expected_desc], event.desc)
   
   def test_orconn_event(self):
     event = _get_event(ORCONN_CONNECTED)

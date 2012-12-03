@@ -1,9 +1,11 @@
 import re
 import datetime
+import StringIO
 
 import stem
 import stem.control
 import stem.response
+import stem.descriptor.router_status_entry
 
 from stem.util import connection, log, str_tools, tor_tools
 
@@ -360,6 +362,25 @@ class LogEvent(Event):
       log_id = "event.logging.unknown_runlevel.%s" % self.runlevel
       log.log_once(log_id, log.INFO, unrecognized_msg % ('runlevel', self.runlevel))
 
+class NetworkStatusEvent(Event):
+  """
+  Event for when our copy of the consensus has changed. This was introduced in
+  tor version 0.1.2.3.
+  
+  :param list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
+  """
+  
+  _SKIP_PARSING = True
+  
+  def _parse(self):
+    content = str(self).lstrip("NS\n")
+    
+    self.desc = list(stem.descriptor.router_status_entry.parse_file(
+      StringIO.StringIO(content),
+      True,
+      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
+    ))
+
 class NewDescEvent(Event):
   """
   Event that indicates that a new descriptor is available.
@@ -567,6 +588,7 @@ EVENT_TYPE_TO_CLASS = {
   "INFO": LogEvent,
   "NEWDESC": NewDescEvent,
   "NOTICE": LogEvent,
+  "NS": NetworkStatusEvent,
   "ORCONN": ORConnEvent,
   "STATUS_CLIENT": StatusEvent,
   "STATUS_GENERAL": StatusEvent,
