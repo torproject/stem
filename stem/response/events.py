@@ -438,6 +438,29 @@ class NetworkStatusEvent(Event):
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
     ))
 
+class NewConsensusEvent(Event):
+  """
+  Event for when we have a new consensus. This is similar to
+  :class:`~stem.response.events.NetworkStatusEvent`, except that it contains
+  the whole consensus so anything not listed is implicitly no longer
+  recommended.
+  
+  This was introduced in tor version 0.2.1.13.
+  
+  :param list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
+  """
+  
+  _SKIP_PARSING = True
+  
+  def _parse(self):
+    content = str(self).lstrip("NEWCONSENSUS\n")
+    
+    self.desc = list(stem.descriptor.router_status_entry.parse_file(
+      StringIO.StringIO(content),
+      True,
+      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
+    ))
+
 class NewDescEvent(Event):
   """
   Event that indicates that a new descriptor is available.
@@ -644,6 +667,7 @@ EVENT_TYPE_TO_CLASS = {
   "ERR": LogEvent,
   "GUARD": GuardEvent,
   "INFO": LogEvent,
+  "NEWCONSENSUS": NewConsensusEvent,
   "NEWDESC": NewDescEvent,
   "NOTICE": LogEvent,
   "NS": NetworkStatusEvent,
