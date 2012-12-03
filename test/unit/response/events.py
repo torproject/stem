@@ -60,6 +60,15 @@ TimeStarted="2008-12-25 23:50:43" \
 CountrySummary=us=16,de=8,uk=8 \
 IPVersions=v4=16,v6=40'
 
+# CONF_CHANGED event from tor 0.2.3.16.
+
+CONF_CHANGED_EVENT = """650-CONF_CHANGED
+650-ExitNodes=caerSidi
+650-ExitPolicy
+650-MaxCircuitDirtiness=20
+650 OK
+"""
+
 # GUARD events from tor v0.2.1.30.
 
 GUARD_NEW = "650 GUARD ENTRY $36B5DBA788246E8369DBAF58577C6BC044A9A374 NEW"
@@ -396,6 +405,18 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2008, 12, 25, 23, 50, 43), event.start_time)
     self.assertEqual({'us': 16, 'de': 8, 'uk': 8}, event.locales)
     self.assertEqual({'v4': 16, 'v6': 40}, event.ip_versions)
+  
+  def test_conf_changed(self):
+    event = _get_event(CONF_CHANGED_EVENT)
+    
+    expected_config = {
+      'ExitNodes': 'caerSidi',
+      'MaxCircuitDirtiness': '20',
+      'ExitPolicy': None,
+    }
+    
+    self.assertTrue(isinstance(event, stem.response.events.ConfChangedEvent))
+    self.assertEqual(expected_config, event.config)
   
   def test_descchanged_event(self):
     # all we can check for is that the event is properly parsed as a

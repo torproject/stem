@@ -424,6 +424,37 @@ class ClientsSeenEvent(Event):
       
       self.ip_versions = protocol_to_count
 
+class ConfChangedEvent(Event):
+  """
+  Event that indicates that our configuration changed, either in response to a
+  SETCONF or RELOAD signal.
+  
+  :var dict config: mapping of configuration options to their new values
+    (**None** of the option is being unset)
+  """
+  
+  _SKIP_PARSING = True
+  
+  def _parse(self):
+    self.config = {}
+    
+    # Skip first and last line since they're the header and footer. For
+    # instance...
+    #
+    # 650-CONF_CHANGED
+    # 650-ExitNodes=caerSidi
+    # 650-ExitPolicy
+    # 650-MaxCircuitDirtiness=20
+    # 650 OK
+    
+    for line in str(self).splitlines()[1:-1]:
+      if '=' in line:
+        key, value = line.split('=', 1)
+      else:
+        key, value = line, None
+      
+      self.config[key] = value
+
 class DescChangedEvent(Event):
   """
   Event that indicates that our descriptor has changed. This was first added in
@@ -754,6 +785,7 @@ EVENT_TYPE_TO_CLASS = {
   "BW": BandwidthEvent,
   "CIRC": CircuitEvent,
   "CLIENTS_SEEN": ClientsSeenEvent,
+  "CONF_CHANGED": ConfChangedEvent,
   "DEBUG": LogEvent,
   "DESCCHANGED": DescChangedEvent,
   "ERR": LogEvent,

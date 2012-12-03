@@ -84,6 +84,7 @@ providing its own for interacting at a higher level.
   **BW**                :class:`stem.response.events.BandwidthEvent`
   **CIRC**              :class:`stem.response.events.CircuitEvent`
   **CLIENTS_SEEN**      :class:`stem.response.events.ClientsSeenEvent`
+  **CONF_CHANGED**      :class:`stem.response.events.ConfChangedEvent`
   **DEBUG**             :class:`stem.response.events.LogEvent`
   **DESCCHANGED**       :class:`stem.response.events.DescChangedEvent`
   **ERR**               :class:`stem.response.events.LogEvent`
