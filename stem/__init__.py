@@ -28,6 +28,22 @@ Library for working with the tor process.
   **DEBUG**   low level runtime information
   =========== ===========
 
+.. data:: Signal (enum)
+  
+  Signals that the tor process will accept.
+  
+  ========================= ===========
+  Signal                    Description
+  ========================= ===========
+  **RELOAD** or **HUP**     reloads our torrc
+  **SHUTDOWN** or **INT**   shut down, waiting ShutdownWaitLength first if we're a relay
+  **DUMP** or **USR1**      dumps information about open connections and circuits to our log
+  **DEBUG** or **USR2**     switch our logging to the DEBUG runlevel
+  **HALT** or **TERM**      exit tor immediately
+  **NEWNYM**                switch to new circuits, so new application requests don't share any circuits with old ones (this also clears our DNS cache)
+  **CLEARDNSCACHE**         clears cached DNS results
+  ========================= ===========
+
 .. data:: CircStatus (enum)
   
   Statuses that a circuit can be in. Tor may provide statuses not in this enum.
@@ -334,6 +350,7 @@ __all__ = [
   "SocketError",
   "SocketClosed",
   "Runlevel",
+  "Signal",
   "CircStatus",
   "CircBuildFlag",
   "CircPurpose",
@@ -410,6 +427,21 @@ Runlevel = stem.util.enum.UppercaseEnum(
   "NOTICE",
   "WARN",
   "ERR",
+)
+
+Signal = stem.util.enum.UppercaseEnum(
+  "RELOAD",
+  "HUP",
+  "SHUTDOWN",
+  "INT",
+  "DUMP",
+  "USR1",
+  "DEBUG",
+  "USR2",
+  "HALT",
+  "TERM",
+  "NEWNYM",
+  "CLEARDNSCACHE",
 )
 
 CircStatus = stem.util.enum.UppercaseEnum(

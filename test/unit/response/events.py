@@ -499,6 +499,15 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(ORClosureReason.DONE, event.reason)
     self.assertEqual(None, event.circ_count)
   
+  def test_signal_event(self):
+    event = _get_event("650 SIGNAL DEBUG")
+    self.assertTrue(isinstance(event, stem.response.events.SignalEvent))
+    self.assertEqual("SIGNAL DEBUG", str(event))
+    self.assertEqual(Signal.DEBUG, event.signal)
+    
+    event = _get_event("650 SIGNAL DUMP")
+    self.assertEqual(Signal.DUMP, event.signal)
+  
   def test_status_event_consensus_arrived(self):
     event = _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED)
     

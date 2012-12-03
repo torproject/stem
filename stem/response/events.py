@@ -599,6 +599,41 @@ class ORConnEvent(Event):
       log_id = "event.orconn.unknown_reason.%s" % self.reason
       log.log_once(log_id, log.INFO, unrecognized_msg % ('reason', self.reason))
 
+class SignalEvent(Event):
+  """
+  Event that indicates that tor has received and acted upon a signal being sent
+  to the process. As of tor version 0.2.4.6 the only signals conveyed by this
+  event are...
+  
+  * RELOAD
+  * DUMP
+  * DEBUG
+  * NEWNYM
+  * CLEARDNSCACHE
+  
+  This was introduced in tor version 0.2.3.1.
+  
+  :var stem.Signal signal: signal that tor received
+  """
+  
+  _POSITIONAL_ARGS = ("signal",)
+  
+  def _parse(self):
+    # log if we recieved an unrecognized signal
+    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("SIGNAL", self)
+    
+    expected_signals = (
+      stem.Signal.RELOAD,
+      stem.Signal.DUMP,
+      stem.Signal.DEBUG,
+      stem.Signal.NEWNYM,
+      stem.Signal.CLEARDNSCACHE,
+    )
+    
+    if not self.signal in expected_signals:
+      log_id = "event.signal.unknown_signal.%s" % self.signal
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('signal', self.signal))
+
 class StatusEvent(Event):
   """
   Notification of a change in tor's state. These are generally triggered for
@@ -729,6 +764,7 @@ EVENT_TYPE_TO_CLASS = {
   "NOTICE": LogEvent,
   "NS": NetworkStatusEvent,
   "ORCONN": ORConnEvent,
+  "SIGNAL": SignalEvent,
   "STATUS_CLIENT": StatusEvent,
   "STATUS_GENERAL": StatusEvent,
   "STATUS_SERVER": StatusEvent,

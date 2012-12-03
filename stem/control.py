@@ -93,6 +93,7 @@ providing its own for interacting at a higher level.
   **NOTICE**            :class:`stem.response.events.LogEvent`
   **NS**                :class:`stem.response.events.NetworkStatusEvent`
   **ORCONN**            :class:`stem.response.events.ORConnEvent`
+  **SIGNAL**            :class:`stem.response.events.SignalEvent`
   **STATUS_CLIENT**     :class:`stem.response.events.StatusEvent`
   **STATUS_GENERAL**    :class:`stem.response.events.StatusEvent`
   **STATUS_SERVER**     :class:`stem.response.events.StatusEvent`
@@ -1327,18 +1328,7 @@ class Controller(BaseController):
     """
     Sends a signal to the Tor client.
     
-    :param str signal: type of signal to be sent. Must be one of the following...
-    
-      * **RELOAD** or **HUP** - reload configuration
-      * **SHUTDOWN** or **INT** - shut down, waiting ShutdownWaitLength first
-        if we're a relay
-      * **DUMP** or **USR1** - dump log information about open connections and
-        circuits
-      * **DEBUG** or **USR2** - switch logging to the DEBUG runlevel
-      * **HALT** or **TERM** - exit immediately
-      * **NEWNYM** - switch to new circuits, so new application requests don't
-        share any circuits with old ones (this also clears our DNS cache)
-      * **CLEARDNSCACHE** - clears cached DNS results
+    :param stem.Signal signal: type of signal to be sent
     
     :raises: :class:`stem.InvalidArguments` if signal provided wasn't recognized
     """
