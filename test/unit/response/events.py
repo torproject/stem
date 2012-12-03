@@ -12,6 +12,18 @@ import test.mocking as mocking
 
 from stem import * # enums and exceptions
 
+# BUILDTIMEOUT_SET event from tor 0.2.3.16.
+
+BUILD_TIMEOUT_EVENT = "650 BUILDTIMEOUT_SET COMPUTED \
+TOTAL_TIMES=124 \
+TIMEOUT_MS=9019 \
+XM=1375 \
+ALPHA=0.855662 \
+CUTOFF_QUANTILE=0.800000 \
+TIMEOUT_RATE=0.137097 \
+CLOSE_MS=21850 \
+CLOSE_RATE=0.072581"
+
 # CIRC events from tor v0.2.3.16
 
 CIRC_LAUNCHED = "650 CIRC 7 LAUNCHED \
@@ -243,6 +255,21 @@ class TestEvents(unittest.TestCase):
     self.assertTrue(isinstance(event, stem.response.events.AuthDirNewDescEvent))
     self.assertEqual([], event.positional_args)
     self.assertEqual({}, event.keyword_args)
+  
+  def test_build_timeout_set_event(self):
+    event = _get_event(BUILD_TIMEOUT_EVENT)
+    
+    self.assertTrue(isinstance(event, stem.response.events.BuildTimeoutSetEvent))
+    self.assertEqual(BUILD_TIMEOUT_EVENT.lstrip("650 "), str(event))
+    self.assertEqual(TimeoutSetType.COMPUTED, event.set_type)
+    self.assertEqual(124, event.total_times)
+    self.assertEqual(9019, event.timeout)
+    self.assertEqual(1375, event.xm)
+    self.assertEqual(0.855662, event.alpha)
+    self.assertEqual(0.8, event.quantile)
+    self.assertEqual(0.137097, event.timeout_rate)
+    self.assertEqual(21850, event.close_timeout)
+    self.assertEqual(0.072581, event.close_rate)
   
   def test_bw_event(self):
     event = _get_event("650 BW 15 25")

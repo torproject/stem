@@ -291,6 +291,21 @@ Library for working with the tor process.
   **GOOD**      unknown
   **DROPPED**   unknown
   ============= ===========
+
+.. data:: TimeoutSetType (enum)
+  
+  Way in which the timeout value of a circuit is changing. Tor may provide
+  types not in this enum.
+  
+  =============== ===========
+  TimeoutSetType  Description
+  =============== ===========
+  **COMPUTED**    tor has computed a new timeout based on prior circuits
+  **RESET**       timeout reverted to its default
+  **SUSPENDED**   timeout reverted to its default until network connectivity has recovered
+  **DISCARD**     throwing out timeout value from when the network was down
+  **RESUME**      resumed calculations to determine the proper timeout
+  =============== ===========
 """
 
 __version__ = '0.0.1'
@@ -334,6 +349,7 @@ __all__ = [
   "StatusType",
   "GuardType",
   "GuardStatus",
+  "TimeoutSetType",
 ]
 
 import stem.util.enum
@@ -540,5 +556,13 @@ GuardStatus = stem.util.enum.UppercaseEnum(
   "BAD",
   "GOOD",
   "DROPPED",
+)
+
+TimeoutSetType = stem.util.enum.UppercaseEnum(
+  "COMPUTED",
+  "RESET",
+  "SUSPENDED",
+  "DISCARD",
+  "RESUME",
 )
 

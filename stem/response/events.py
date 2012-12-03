@@ -232,6 +232,62 @@ class BandwidthEvent(Event):
     self.read = long(self.read)
     self.written = long(self.written)
 
+class BuildTimeoutSetEvent(Event):
+  """
+  Event indicating that the timeout value for a circuit has changed. This was
+  first added in tor version 0.2.2.7.
+  
+  :var stem.TimeoutSetType set_type: way in which the timeout is changing
+  :var int total_times: circuit build times tor used to determine the timeout
+  :var int timeout: circuit timeout value in milliseconds
+  :var int xm: Pareto parameter Xm in milliseconds
+  :var float alpha: Paredo paremter alpha
+  :var float quantile: CDF quantile cutoff point
+  :var float timeout_rate: ratio of circuits that have time out
+  :var int close_timeout: duration to keep measurement circuits in milliseconds
+  :var float close_rate: ratio of measurement circuits that are closed
+  """
+  
+  _POSITIONAL_ARGS = ("set_type",)
+  _KEYWORD_ARGS = {
+    "TOTAL_TIMES": "total_times",
+    "TIMEOUT_MS": "timeout",
+    "XM": "xm",
+    "ALPHA": "alpha",
+    "CUTOFF_QUANTILE": "quantile",
+    "TIMEOUT_RATE": "timeout_rate",
+    "CLOSE_MS": "close_timeout",
+    "CLOSE_RATE": "close_rate",
+  }
+  
+  def _parse(self):
+    # convert our integer and float parameters
+    
+    for param in ('total_times', 'timeout', 'xm', 'close_timeout'):
+      param_value = getattr(self, param)
+      
+      if param_value != None:
+        try:
+          setattr(self, param, int(param_value))
+        except ValueError:
+          raise stem.ProtocolError("The %s of a BUILDTIMEOUT_SET should be an integer: %s" % (param, self))
+    
+    for param in ('alpha', 'quantile', 'timeout_rate', 'close_rate'):
+      param_value = getattr(self, param)
+      
+      if param_value != None:
+        try:
+          setattr(self, param, float(param_value))
+        except ValueError:
+          raise stem.ProtocolError("The %s of a BUILDTIMEOUT_SET should be a float: %s" % (param, self))
+    
+    # log if we have an unrecognized timeout set type
+    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("BUILDTIMEOUT_SET", self)
+    
+    if self.set_type and (not self.set_type in stem.TimeoutSetType):
+      log_id = "event.buildtimeout_set.unknown_timeout_set_type.%s" % self.set_type
+      log.log_once(log_id, log.INFO, unrecognized_msg % ('timeout set type', self.set_type))
+
 class CircuitEvent(Event):
   """
   Event that indicates that a circuit has changed.
@@ -424,7 +480,7 @@ class NetworkStatusEvent(Event):
   Event for when our copy of the consensus has changed. This was introduced in
   tor version 0.1.2.3.
   
-  :param list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
+  :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
   """
   
   _SKIP_PARSING = True
@@ -447,7 +503,7 @@ class NewConsensusEvent(Event):
   
   This was introduced in tor version 0.2.1.13.
   
-  :param list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
+  :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
   """
   
   _SKIP_PARSING = True
@@ -469,7 +525,7 @@ class NewDescEvent(Event):
   VERBOSE_NAMES feature isn't enabled. The option was first introduced in tor
   version 0.1.2.2, and on by default after 0.2.2.1.
   
-  :param tuple relays: **(fingerprint, nickname)** tuples for the relays with
+  :var tuple relays: **(fingerprint, nickname)** tuples for the relays with
     new descriptors
   """
   
@@ -659,6 +715,7 @@ class StreamEvent(Event):
 EVENT_TYPE_TO_CLASS = {
   "ADDRMAP": AddrMapEvent,
   "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
+  "BUILDTIMEOUT_SET": BuildTimeoutSetEvent,
   "BW": BandwidthEvent,
   "CIRC": CircuitEvent,
   "CLIENTS_SEEN": ClientsSeenEvent,

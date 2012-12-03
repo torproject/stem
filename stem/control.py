@@ -80,6 +80,7 @@ providing its own for interacting at a higher level.
   ===================== ===========
   **ADDRMAP**           :class:`stem.response.events.AddrMapEvent`
   **AUTHDIR_NEWDESCS**  :class:`stem.response.events.AuthDirNewDescEvent`
+  **BUILDTIMEOUT_SET**  :class:`stem.response.events.BuildTimeoutSetEvent`
   **BW**                :class:`stem.response.events.BandwidthEvent`
   **CIRC**              :class:`stem.response.events.CircuitEvent`
   **CLIENTS_SEEN**      :class:`stem.response.events.ClientsSeenEvent`
