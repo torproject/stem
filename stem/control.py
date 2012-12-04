@@ -100,6 +100,7 @@ providing its own for interacting at a higher level.
   **STATUS_GENERAL**    :class:`stem.response.events.StatusEvent`
   **STATUS_SERVER**     :class:`stem.response.events.StatusEvent`
   **STREAM**            :class:`stem.response.events.StreamEvent`
+  **STREAM_BW**         :class:`stem.response.events.StreamBwEvent`
   **WARN**              :class:`stem.response.events.LogEvent`
   ===================== ===========
 """

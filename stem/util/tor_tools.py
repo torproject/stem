@@ -78,13 +78,15 @@ def is_valid_circuit_id(entry):
   
   return bool(CIRC_ID_PATTERN.match(entry))
 
-is_valid_stream_id = is_valid_circuit_id
-"""
+def is_valid_stream_id(entry):
+  """
   Checks if a string is a valid format for being a stream identifier.
   Currently, this is just an alias to :func:`~stem.util.tor_tools.is_valid_circuit_id`.
   
   :returns: **True** if the string could be a stream id, **False** otherwise
-"""
+  """
+  
+  return is_valid_circuit_id(entry)
 
 def is_hex_digits(entry, count):
   """
