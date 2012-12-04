@@ -91,6 +91,7 @@ providing its own for interacting at a higher level.
   **ERR**               :class:`stem.response.events.LogEvent`
   **GUARD**             :class:`stem.response.events.GuardEvent`
   **INFO**              :class:`stem.response.events.LogEvent`
+  **NEWCONSENSUS**      :class:`stem.response.events.NewConsensusEvent`
   **NEWDESC**           :class:`stem.response.events.NewDescEvent`
   **NOTICE**            :class:`stem.response.events.LogEvent`
   **NS**                :class:`stem.response.events.NetworkStatusEvent`

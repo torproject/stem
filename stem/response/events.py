@@ -13,7 +13,8 @@ from stem.util import connection, log, str_tools, tor_tools
 # because some positional arguments, like circuit paths, can have an equal
 # sign.
 
-KW_ARG = re.compile("([A-Za-z0-9_]+)=(.*)")
+KW_ARG = re.compile("^(.*) ([A-Za-z0-9_]+)=(\S*)$")
+QUOTED_KW_ARG = re.compile("^(.*) ([A-Za-z0-9_]+)=\"(.*)\"$")
 
 class Event(stem.response.ControlMessage):
   """
@@ -31,11 +32,6 @@ class Event(stem.response.ControlMessage):
   _KEYWORD_ARGS = {}
   _QUOTED = ()
   _SKIP_PARSING = False
-  
-  # If set then we'll parse anything that looks like a quoted key/value
-  # mapping, reguardless of if it shows up in _QUOTED.
-  
-  _PERMISSIVE_QUOTED_MAPPINGS = False
   
   def _parse_message(self, arrived_at):
     if not str(self).strip():
@@ -67,51 +63,25 @@ class Event(stem.response.ControlMessage):
     **_POSITIONAL_ARGS** and **_KEYWORD_ARGS**.
     """
     
-    # Whoever decided to allow for quoted attributes in events should be
-    # punished. Preferably under some of those maritime laws that allow for
-    # flogging. Event parsing was nice until we threw this crap in...
-    #
-    # Pulling quoted keyword arguments out here. Quoted positonal arguments
-    # are handled later.
-    
-    content = str(self)
-    
-    if self._PERMISSIVE_QUOTED_MAPPINGS:
-      while True:
-        match = re.match("^(.*) (\S*)=\"(.*)\"(.*)$", content)
-        
-        if match:
-          prefix, keyword, value, suffix = match.groups()
-          content = prefix + suffix
-          self.keyword_args[keyword] = value
-        else:
-          break
-    else:
-      for keyword in set(self._QUOTED).intersection(set(self._KEYWORD_ARGS.keys())):
-        match = re.match("^(.*) %s=\"(.*)\"(.*)$" % keyword, content)
-        
-        if match:
-          prefix, value, suffix = match.groups()
-          content = prefix + suffix
-          self.keyword_args[keyword] = value
-    
-    fields = content.split()[1:]
-    
     # Tor events contain some number of positional arguments followed by
     # key/value mappings. Parsing keyword arguments from the end until we hit
     # something that isn't a key/value mapping. The rest are positional.
     
-    while fields:
-      kw_match = KW_ARG.match(fields[-1])
+    content = str(self)
+    
+    while True:
+      match = QUOTED_KW_ARG.match(content)
       
-      if kw_match:
-        k, v = kw_match.groups()
-        self.keyword_args[k] = v
-        fields.pop() # remove the field
+      if not match:
+        match = KW_ARG.match(content)
+      
+      if match:
+        content, keyword, value = match.groups()
+        self.keyword_args[keyword] = value
       else:
-        # not a key/value mapping, the remaining fields are positional
-        self.positional_args = fields
         break
+    
+    self.positional_args = content.split()[1:]
     
     # Setting attributes for the fields that we recognize. Unrecognized fields
     # only appear in our 'positional_args' and 'keyword_args' attributes.
@@ -180,11 +150,6 @@ class AddrMapEvent(Event):
   :var str error: error code if the resolution failed
   :var datetime utc_expiry: expiration time of the resolution in UTC
   """
-  
-  # TODO: The spec for this event is a little vague. Making a couple guesses
-  # about it...
-  #
-  # https://trac.torproject.org/7515
   
   _POSITIONAL_ARGS = ("hostname", "destination", "expiry")
   _KEYWORD_ARGS = {
@@ -698,7 +663,6 @@ class StatusEvent(Event):
   """
   
   _POSITIONAL_ARGS = ("runlevel", "action")
-  _PERMISSIVE_QUOTED_MAPPINGS = True
   
   def _parse(self):
     if self.type == 'STATUS_GENERAL':
