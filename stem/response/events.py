@@ -28,10 +28,10 @@ class Event(stem.response.ControlMessage):
   :var dict keyword_args: key/value arguments of the event
   """
   
-  _POSITIONAL_ARGS = ()
-  _KEYWORD_ARGS = {}
-  _QUOTED = ()
-  _SKIP_PARSING = False
+  _POSITIONAL_ARGS = ()   # attribute names for recognized positional arguments
+  _KEYWORD_ARGS = {}      # map of 'keyword => attribute' for recognized attributes
+  _QUOTED = ()            # positional arguments that are quoted
+  _SKIP_PARSING = False   # skip parsing contents into our positional_args and keyword_args
   
   def _parse_message(self, arrived_at):
     if not str(self).strip():
@@ -156,7 +156,7 @@ class AddrMapEvent(Event):
     "error": "error",
     "EXPIRES": "utc_expiry",
   }
-  _QUOTED = ("expiry", "EXPIRES")
+  _QUOTED = ("expiry")
   
   def _parse(self):
     if self.destination == "<error>":
@@ -386,8 +386,6 @@ class ClientsSeenEvent(Event):
     "CountrySummary": "locales",
     "IPVersions": "ip_versions",
   }
-  
-  _QUOTED = ("TimeStarted",)
   
   def _parse(self):
     if self.start_time != None:
