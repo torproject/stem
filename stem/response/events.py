@@ -81,32 +81,31 @@ class Event(stem.response.ControlMessage):
       else:
         break
     
+    # Setting attributes for the fields that we recognize.
+    
     self.positional_args = content.split()[1:]
+    positional = list(self.positional_args)
     
-    # Setting attributes for the fields that we recognize. Unrecognized fields
-    # only appear in our 'positional_args' and 'keyword_args' attributes.
-    
-    for i in xrange(len(self._POSITIONAL_ARGS)):
-      attr_name = self._POSITIONAL_ARGS[i]
+    for attr_name in self._POSITIONAL_ARGS:
       attr_value = None
       
-      if self.positional_args:
+      if positional:
         if attr_name in self._QUOTED:
-          attr_values = [self.positional_args.pop(0)]
+          attr_values = [positional.pop(0)]
           
           if not attr_values[0].startswith('"'):
             raise stem.ProtocolError("The %s value should be quoted, but didn't have a starting quote: %s" % self)
           
           while True:
-            if not self.positional_args:
+            if not positional:
               raise stem.ProtocolError("The %s value should be quoted, but didn't have an ending quote: %s" % self)
             
-            attr_values.append(self.positional_args.pop(0))
+            attr_values.append(positional.pop(0))
             if attr_values[-1].endswith('"'): break
           
           attr_value = " ".join(attr_values)[1:-1]
         else:
-          attr_value = self.positional_args.pop(0)
+          attr_value = positional.pop(0)
       
       setattr(self, attr_name, attr_value)
     
