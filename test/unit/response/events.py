@@ -8,6 +8,7 @@ import unittest
 
 import stem.response
 import stem.response.events
+import stem.util.log
 import test.mocking as mocking
 
 from stem import * # enums and exceptions
@@ -886,4 +887,30 @@ class TestEvents(unittest.TestCase):
     self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2 -15 25")
     self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2 15 -25")
     self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2 x 25")
+  
+  def test_unrecognized_enum_logging(self):
+    """
+    Checks that when event parsing gets a value that isn't recognized by stem's
+    enumeration of the attribute that we log a message.
+    """
+    
+    stem_logger = stem.util.log.get_logger()
+    logging_buffer = stem.util.log.LogBuffer(stem.util.log.INFO)
+    stem_logger.addHandler(logging_buffer)
+    
+    # Try parsing a valid event. We shouldn't log anything.
+    
+    _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED)
+    self.assertTrue(logging_buffer.is_empty())
+    self.assertEqual([], list(logging_buffer))
+    
+    # Parse an invalid runlevel.
+    
+    _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED.replace("NOTICE", "OMEGA_CRITICAL!!!"))
+    logged_events = list(logging_buffer)
+    
+    self.assertEqual(1, len(logged_events))
+    self.assertTrue("STATUS_CLIENT event had an unrecognized runlevel" in logged_events[0])
+    
+    stem_logger.removeHandler(logging_buffer)
 

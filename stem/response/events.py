@@ -15,10 +15,6 @@ from stem.util import connection, log, str_tools, tor_tools
 
 KW_ARG = re.compile("([A-Za-z0-9_]+)=(.*)")
 
-# base message for when we get attributes not covered by our enums
-
-UNRECOGNIZED_ATTR_MSG = "%s event had an unrecognized %%s (%%s). Maybe a new addition to the control protocol? Full Event: '%s'"
-
 class Event(stem.response.ControlMessage):
   """
   Base for events we receive asynchronously, as described in section 4.1 of the
@@ -150,6 +146,27 @@ class Event(stem.response.ControlMessage):
   # method overwritten by our subclasses for special handling that they do
   def _parse(self):
     pass
+  
+  def _log_if_unrecognized(self, attr, attr_enum):
+    """
+    Checks if an attribute exists in a given enumeration, logging a message if
+    it isn't. Attributes can either be for a string or collection of strings
+    
+    :param str attr: name of the attribute to check
+    :param stem.util.enum.Enum enum: enumeration to check against
+    """
+    
+    attr_values = getattr(self, attr)
+    
+    if attr_values:
+      if isinstance(attr_values, str):
+        attr_values = [attr_values]
+      
+      for value in attr_values:
+        if not value in attr_enum:
+          log_id = "event.%s.unknown_%s.%s" % (self.type.lower(), attr, value)
+          unrecognized_msg = "%s event had an unrecognized %s (%s). Maybe a new addition to the control protocol? Full Event: '%s'" % (self.type, attr, value, self)
+          log.log_once(log_id, log.INFO, unrecognized_msg)
 
 class AddrMapEvent(Event):
   """
@@ -281,12 +298,7 @@ class BuildTimeoutSetEvent(Event):
         except ValueError:
           raise stem.ProtocolError("The %s of a BUILDTIMEOUT_SET should be a float: %s" % (param, self))
     
-    # log if we have an unrecognized timeout set type
-    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("BUILDTIMEOUT_SET", self)
-    
-    if self.set_type and (not self.set_type in stem.TimeoutSetType):
-      log_id = "event.buildtimeout_set.unknown_timeout_set_type.%s" % self.set_type
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('timeout set type', self.set_type))
+    self._log_if_unrecognized('set_type', stem.TimeoutSetType)
 
 class CircuitEvent(Event):
   """
@@ -336,36 +348,12 @@ class CircuitEvent(Event):
     if self.id != None and not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     
-    # log if we have an unrecognized status, build flag, purpose, hidden
-    # service state, or closure reason
-    
-    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("CIRC", self)
-    
-    if self.status and (not self.status in stem.CircStatus):
-      log_id = "event.circ.unknown_status.%s" % self.status
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('status', self.status))
-    
-    if self.build_flags:
-      for flag in self.build_flags:
-        if not flag in stem.CircBuildFlag:
-          log_id = "event.circ.unknown_build_flag.%s" % flag
-          log.log_once(log_id, log.INFO, unrecognized_msg % ('build flag', flag))
-    
-    if self.purpose and (not self.purpose in stem.CircPurpose):
-      log_id = "event.circ.unknown_purpose.%s" % self.purpose
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
-    
-    if self.hs_state and (not self.hs_state in stem.HiddenServiceState):
-      log_id = "event.circ.unknown_hs_state.%s" % self.hs_state
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('hidden service state', self.hs_state))
-    
-    if self.reason and (not self.reason in stem.CircClosureReason):
-      log_id = "event.circ.unknown_reason.%s" % self.reason
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('reason', self.reason))
-    
-    if self.remote_reason and (not self.remote_reason in stem.CircClosureReason):
-      log_id = "event.circ.unknown_remote_reason.%s" % self.remote_reason
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('remote reason', self.remote_reason))
+    self._log_if_unrecognized('status', stem.CircStatus)
+    self._log_if_unrecognized('build_flags', stem.CircBuildFlag)
+    self._log_if_unrecognized('purpose', stem.CircPurpose)
+    self._log_if_unrecognized('hs_state', stem.HiddenServiceState)
+    self._log_if_unrecognized('reason', stem.CircClosureReason)
+    self._log_if_unrecognized('remote_reason', stem.CircClosureReason)
 
 class CircMinorEvent(Event):
   """
@@ -412,36 +400,12 @@ class CircMinorEvent(Event):
     if self.id != None and not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     
-    # log if we have an unrecognized event, status, build flag, purpose, or
-    # hidden service state
-    
-    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("CIRC_MINOR", self)
-    
-    if not self.event in stem.CircEvent:
-      log_id = "event.circ_minor.unknown_event.%s" % self.event
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('event', self.event))
-    
-    if self.build_flags:
-      for flag in self.build_flags:
-        if not flag in stem.CircBuildFlag:
-          log_id = "event.circ_minor.unknown_build_flag.%s" % flag
-          log.log_once(log_id, log.INFO, unrecognized_msg % ('build flag', flag))
-    
-    if self.purpose and (not self.purpose in stem.CircPurpose):
-      log_id = "event.circ_minor.unknown_purpose.%s" % self.purpose
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
-    
-    if self.hs_state and (not self.hs_state in stem.HiddenServiceState):
-      log_id = "event.circ_minor.unknown_hs_state.%s" % self.hs_state
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('hidden service state', self.hs_state))
-    
-    if self.old_purpose and (not self.old_purpose in stem.CircPurpose):
-      log_id = "event.circ_minor.unknown_purpose.%s" % self.old_purpose
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.old_purpose))
-    
-    if self.old_hs_state and (not self.old_hs_state in stem.HiddenServiceState):
-      log_id = "event.circ_minor.unknown_hs_state.%s" % self.old_hs_state
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('hidden service state', self.hs_state))
+    self._log_if_unrecognized('event', stem.CircEvent)
+    self._log_if_unrecognized('build_flags', stem.CircBuildFlag)
+    self._log_if_unrecognized('purpose', stem.CircPurpose)
+    self._log_if_unrecognized('hs_state', stem.HiddenServiceState)
+    self._log_if_unrecognized('old_purpose', stem.CircPurpose)
+    self._log_if_unrecognized('old_hs_state', stem.HiddenServiceState)
 
 class ClientsSeenEvent(Event):
   """
@@ -568,19 +532,12 @@ class LogEvent(Event):
   
   def _parse(self):
     self.runlevel = self.type
+    self._log_if_unrecognized('runlevel', stem.Runlevel)
     
     # message is our content, minus the runlevel and ending "OK" if a
     # multi-line message
     
     self.message = str(self)[len(self.runlevel) + 1:].rstrip("\nOK")
-    
-    # log if our runlevel isn't recognized
-    
-    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("Logging", self)
-    
-    if not self.runlevel in stem.Runlevel:
-      log_id = "event.logging.unknown_runlevel.%s" % self.runlevel
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('runlevel', self.runlevel))
 
 class NetworkStatusEvent(Event):
   """
@@ -694,17 +651,8 @@ class ORConnEvent(Event):
       
       self.circ_count = int(self.circ_count)
     
-    # log if we have an unrecognized status or reason
-    
-    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("ORCONN", self)
-    
-    if self.status and (not self.status in stem.ORStatus):
-      log_id = "event.orconn.unknown_status.%s" % self.status
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('status', self.status))
-    
-    if self.reason and (not self.reason in stem.ORClosureReason):
-      log_id = "event.orconn.unknown_reason.%s" % self.reason
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('reason', self.reason))
+    self._log_if_unrecognized('status', stem.ORStatus)
+    self._log_if_unrecognized('reason', stem.ORClosureReason)
 
 class SignalEvent(Event):
   """
@@ -727,8 +675,6 @@ class SignalEvent(Event):
   
   def _parse(self):
     # log if we recieved an unrecognized signal
-    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("SIGNAL", self)
-    
     expected_signals = (
       stem.Signal.RELOAD,
       stem.Signal.DUMP,
@@ -737,9 +683,7 @@ class SignalEvent(Event):
       stem.Signal.CLEARDNSCACHE,
     )
     
-    if not self.signal in expected_signals:
-      log_id = "event.signal.unknown_signal.%s" % self.signal
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('signal', self.signal))
+    self._log_if_unrecognized('signal', expected_signals)
 
 class StatusEvent(Event):
   """
@@ -766,13 +710,7 @@ class StatusEvent(Event):
     else:
       raise ValueError("BUG: Unrecognized status type (%s), likely an EVENT_TYPE_TO_CLASS addition without revising how 'status_type' is assigned." % self.type)
     
-    # log if our runlevel isn't recognized
-    
-    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("Status", self)
-    
-    if not self.runlevel in stem.Runlevel:
-      log_id = "event.status.unknown_runlevel.%s" % self.runlevel
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('runlevel', self.runlevel))
+    self._log_if_unrecognized('runlevel', stem.Runlevel)
 
 class StreamEvent(Event):
   """
@@ -838,21 +776,9 @@ class StreamEvent(Event):
     if self.circ_id == "0":
       self.circ_id = None
     
-    # log if we have an unrecognized closure reason or purpose
-    
-    unrecognized_msg = UNRECOGNIZED_ATTR_MSG % ("STREAM", self)
-    
-    if self.reason and (not self.reason in stem.StreamClosureReason):
-      log_id = "event.stream.reason.%s" % self.reason
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('reason', self.reason))
-    
-    if self.remote_reason and (not self.remote_reason in stem.StreamClosureReason):
-      log_id = "event.stream.remote_reason.%s" % self.remote_reason
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('remote reason', self.remote_reason))
-    
-    if self.purpose and (not self.purpose in stem.StreamPurpose):
-      log_id = "event.stream.purpose.%s" % self.purpose
-      log.log_once(log_id, log.INFO, unrecognized_msg % ('purpose', self.purpose))
+    self._log_if_unrecognized('reason', stem.StreamClosureReason)
+    self._log_if_unrecognized('remote_reason', stem.StreamClosureReason)
+    self._log_if_unrecognized('purpose', stem.StreamPurpose)
 
 class StreamBwEvent(Event):
   """
