@@ -119,7 +119,7 @@ class TestBaseController(unittest.TestCase):
         msg_thread.setDaemon(True)
         msg_thread.start()
       
-      for i in xrange(100):
+      for index in xrange(100):
         controller.connect()
         controller.close()
       

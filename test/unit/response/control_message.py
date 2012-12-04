@@ -107,14 +107,14 @@ class TestControlMessage(unittest.TestCase):
     
     infonames_lines = [line + "\n" for line in GETINFO_INFONAMES.splitlines()]
     
-    for i in range(len(infonames_lines)):
+    for index, line in enumerate(infonames_lines):
       # replace the CRLF for the line
-      infonames_lines[i] = infonames_lines[i].rstrip("\r\n") + "\n"
+      infonames_lines[index] = line.rstrip("\r\n") + "\n"
       test_socket_file = StringIO.StringIO("".join(infonames_lines))
       self.assertRaises(stem.ProtocolError, stem.socket.recv_message, test_socket_file)
       
       # puts the CRLF back
-      infonames_lines[i] = infonames_lines[i].rstrip("\n") + "\r\n"
+      infonames_lines[index] = infonames_lines[index].rstrip("\n") + "\r\n"
     
     # sanity check the above test isn't broken due to leaving infonames_lines
     # with invalid data
@@ -126,12 +126,12 @@ class TestControlMessage(unittest.TestCase):
     Checks parsing for responses where the header is missing a digit or divider.
     """
     
-    for i in range(len(EVENT_BW)):
+    for index in range(len(EVENT_BW)):
       # makes test input with that character missing or replaced
-      removal_test_input = EVENT_BW[:i] + EVENT_BW[i + 1:]
-      replacement_test_input = EVENT_BW[:i] + "#" + EVENT_BW[i + 1:]
+      removal_test_input = EVENT_BW[:index] + EVENT_BW[index + 1:]
+      replacement_test_input = EVENT_BW[:index] + "#" + EVENT_BW[index + 1:]
       
-      if i < 4 or i >= (len(EVENT_BW) - 2):
+      if index < 4 or index >= (len(EVENT_BW) - 2):
         # dropping the character should cause an error if...
         # - this is part of the message prefix
         # - this is disrupting the line ending

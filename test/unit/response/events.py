@@ -213,7 +213,7 @@ class TestEvents(unittest.TestCase):
       self.assertEqual("sent: 25, received: 15", msg)
     
     def event_sender():
-      for i in xrange(3):
+      for index in xrange(3):
         print_bw(self._get_event("650 BW 15 25"))
         time.sleep(0.05)
     

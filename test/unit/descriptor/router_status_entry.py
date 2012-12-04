@@ -148,8 +148,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     
     lines = get_router_status_entry_v3(content = True).split("\n")
     
-    for i in xrange(len(lines)):
-      content = "\n".join(lines[:i] + [lines[i]] + lines[i:])
+    for index, duplicate_line in enumerate(lines):
+      content = "\n".join(lines[:index] + [duplicate_line] + lines[index:])
       self.assertRaises(ValueError, RouterStatusEntryV3, content)
       
       entry = RouterStatusEntryV3(content, False)

@@ -63,12 +63,12 @@ class TestExitPolicy(unittest.TestCase):
     
     policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
     
-    for i in xrange(1, 500):
-      ip_addr = "%i.%i.%i.%i" % (i / 2, i / 2, i / 2, i / 2)
-      expected_result = i in (80, 443)
+    for index in xrange(1, 500):
+      ip_addr = "%i.%i.%i.%i" % (index / 2, index / 2, index / 2, index / 2)
+      expected_result = index in (80, 443)
       
-      self.assertEquals(expected_result, policy.can_exit_to(ip_addr, i))
-      self.assertEquals(expected_result, policy.can_exit_to(port = i))
+      self.assertEquals(expected_result, policy.can_exit_to(ip_addr, index))
+      self.assertEquals(expected_result, policy.can_exit_to(port = index))
   
   def test_is_exiting_allowed(self):
     test_inputs = {

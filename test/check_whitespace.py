@@ -44,8 +44,8 @@ def get_issues(base_path = DEFAULT_TARGET):
     has_with_import, given_with_warning = False, False
     is_block_comment = False
     
-    for i in xrange(len(lines)):
-      whitespace, content = re.match("^(\s*)(.*)$", lines[i]).groups()
+    for index, line in enumerate(lines):
+      whitespace, content = re.match("^(\s*)(.*)$", line).groups()
       
       if '"""' in content:
         is_block_comment = not is_block_comment
@@ -54,23 +54,23 @@ def get_issues(base_path = DEFAULT_TARGET):
         has_with_import = True
       elif content.startswith("with ") and content.endswith(":") \
         and not has_with_import and not given_with_warning and not is_block_comment:
-        file_issues.append((i + 1, "missing 'with' import (from __future__ import with_statement)"))
+        file_issues.append((index + 1, "missing 'with' import (from __future__ import with_statement)"))
         given_with_warning = True
       
       if "\t" in whitespace:
-        file_issues.append((i + 1, "indentation has a tab"))
+        file_issues.append((index + 1, "indentation has a tab"))
       elif "\r" in content:
-        file_issues.append((i + 1, "contains a windows newline"))
+        file_issues.append((index + 1, "contains a windows newline"))
       elif content != content.rstrip():
-        file_issues.append((i + 1, "line has trailing whitespace"))
+        file_issues.append((index + 1, "line has trailing whitespace"))
       elif content == '':
         # empty line, check its indentation against the previous and next line
         # with content
         
         next_indent = 0
         
-        for k in xrange(i + 1, len(lines)):
-          future_whitespace, future_content = re.match("^(\s*)(.*)$", lines[k]).groups()
+        for future_index in xrange(index + 1, len(lines)):
+          future_whitespace, future_content = re.match("^(\s*)(.*)$", lines[future_index]).groups()
           
           if future_content:
             next_indent = len(future_whitespace)
@@ -86,7 +86,7 @@ def get_issues(base_path = DEFAULT_TARGET):
           else:
             msg = msg % ("%i or %i" % (next_indent, prev_indent))
           
-          file_issues.append((i + 1, msg))
+          file_issues.append((index + 1, msg))
       else:
         # we had content and it's fine, making a note of its indentation
         prev_indent = len(whitespace)

@@ -99,8 +99,8 @@ class TestDirectoryAuthority(unittest.TestCase):
     
     lines = get_directory_authority(content = True).split("\n")
     
-    for i in xrange(len(lines)):
-      content = "\n".join(lines[:i] + [lines[i]] + lines[i:])
+    for index, duplicate_line in enumerate(lines):
+      content = "\n".join(lines[:index] + [duplicate_line] + lines[index:])
       self.assertRaises(ValueError, DirectoryAuthority, content)
       
       authority = DirectoryAuthority(content, False)

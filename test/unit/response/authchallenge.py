@@ -43,12 +43,12 @@ class TestAuthChallengeResponse(unittest.TestCase):
     
     auth_challenge_comp = VALID_RESPONSE.split()
     
-    for i in xrange(1, len(auth_challenge_comp)):
+    for index in xrange(1, len(auth_challenge_comp)):
       # Attempts to parse a message without this item. The first item is
       # skipped because, without the 250 code, the message won't be
       # constructed.
       
-      remaining_comp = auth_challenge_comp[:i] + auth_challenge_comp[i + 1:]
+      remaining_comp = auth_challenge_comp[:index] + auth_challenge_comp[index + 1:]
       control_message = mocking.get_message(' '.join(remaining_comp))
       self.assertRaises(stem.ProtocolError, stem.response.convert, "AUTHCHALLENGE", control_message)
 

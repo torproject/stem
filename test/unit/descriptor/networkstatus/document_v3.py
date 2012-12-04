@@ -161,14 +161,14 @@ class TestNetworkStatusDocument(unittest.TestCase):
       attr = {"vote-status": "consensus"} if is_consensus else {"vote-status": "vote"}
       lines = get_network_status_document_v3(attr, content = True).split("\n")
       
-      for i in xrange(len(lines) - 1):
+      for index in xrange(len(lines) - 1):
         # once we reach the crypto blob we're done since swapping those won't
         # be detected
-        if lines[i].startswith(CRYPTO_BLOB[1:10]): break
+        if lines[index].startswith(CRYPTO_BLOB[1:10]): break
         
         # swaps this line with the one after it
         test_lines = list(lines)
-        test_lines[i], test_lines[i + 1] = test_lines[i + 1], test_lines[i]
+        test_lines[index], test_lines[index + 1] = test_lines[index + 1], test_lines[index]
         
         content = "\n".join(test_lines)
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
@@ -184,18 +184,18 @@ class TestNetworkStatusDocument(unittest.TestCase):
       attr = {"vote-status": "consensus"} if is_consensus else {"vote-status": "vote"}
       lines = get_network_status_document_v3(attr, content = True).split("\n")
       
-      for i in xrange(len(lines)):
+      for index, line in enumerate(lines):
         # Stop when we hit the 'directory-signature' for a couple reasons...
         # - that is the one field that can validly appear multiple times
         # - after it is a crypto blob, which won't trigger this kind of
         #   validation failure
         
         test_lines = list(lines)
-        if test_lines[i].startswith("directory-signature "):
+        if line.startswith("directory-signature "):
           break
         
         # duplicates the line
-        test_lines.insert(i, test_lines[i])
+        test_lines.insert(index, line)
         
         content = "\n".join(test_lines)
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
@@ -548,11 +548,9 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     weight_entries, expected = [], {}
     
-    for i in xrange(len(BANDWIDTH_WEIGHT_ENTRIES)):
-      key, value = BANDWIDTH_WEIGHT_ENTRIES[i], i - 5
-      
-      weight_entries.append("%s=%i" % (key, value))
-      expected[key] = value
+    for index, key in enumerate(BANDWIDTH_WEIGHT_ENTRIES):
+      weight_entries.append("%s=%i" % (key, index - 5))
+      expected[key] = index - 5
     
     document = get_network_status_document_v3({"bandwidth-weights": " ".join(weight_entries)})
     self.assertEquals(expected, document.bandwidth_weights)

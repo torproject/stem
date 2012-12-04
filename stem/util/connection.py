@@ -142,9 +142,9 @@ def expand_ipv6_address(address):
     address = address.replace("::", "::" + ":" * missing_groups)
   
   # inserts missing zeros
-  for i in xrange(8):
-    start = i * 5
-    end = address.index(":", start) if i != 7 else len(address)
+  for index in xrange(8):
+    start = index * 5
+    end = address.index(":", start) if index != 7 else len(address)
     missing_zeros = 4 - (end - start)
     
     if missing_zeros > 0:
