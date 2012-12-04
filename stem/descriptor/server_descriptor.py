@@ -821,7 +821,7 @@ class BridgeDescriptor(ServerDescriptor):
       scrubbing, this list is empty if we're properly scrubbed
     """
     
-    if self._scrubbing_issues == None:
+    if self._scrubbing_issues is None:
       issues = []
       
       if not self.address.startswith("10."):

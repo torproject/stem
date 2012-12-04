@@ -197,7 +197,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   if ignore_first:
     first_line = descriptor_file.readline()
     
-    if content != None and first_line != None:
+    if content is not None and first_line is not None:
       content.append(first_line)
   
   while True:
@@ -220,11 +220,11 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     if line_keyword in keywords:
       if not inclusive:
         descriptor_file.seek(last_position)
-      elif content != None:
+      elif content is not None:
         content.append(line)
       
       break
-    elif content != None:
+    elif content is not None:
       content.append(line)
   
   return content

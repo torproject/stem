@@ -161,10 +161,10 @@ class AddrMapEvent(Event):
     if self.destination == "<error>":
       self.destination = None
     
-    if self.expiry != None:
+    if self.expiry is not None:
       self.expiry = datetime.datetime.strptime(self.expiry, "%Y-%m-%d %H:%M:%S")
     
-    if self.utc_expiry != None:
+    if self.utc_expiry is not None:
       self.utc_expiry = datetime.datetime.strptime(self.utc_expiry, "%Y-%m-%d %H:%M:%S")
 
 class AuthDirNewDescEvent(Event):
@@ -247,7 +247,7 @@ class BuildTimeoutSetEvent(Event):
     for param in ('total_times', 'timeout', 'xm', 'close_timeout'):
       param_value = getattr(self, param)
       
-      if param_value != None:
+      if param_value is not None:
         try:
           setattr(self, param, int(param_value))
         except ValueError:
@@ -256,7 +256,7 @@ class BuildTimeoutSetEvent(Event):
     for param in ('alpha', 'quantile', 'timeout_rate', 'close_rate'):
       param_value = getattr(self, param)
       
-      if param_value != None:
+      if param_value is not None:
         try:
           setattr(self, param, float(param_value))
         except ValueError:
@@ -300,16 +300,16 @@ class CircuitEvent(Event):
   def _parse(self):
     self.path = tuple(stem.control._parse_circ_path(self.path))
     
-    if self.build_flags != None:
+    if self.build_flags is not None:
       self.build_flags = tuple(self.build_flags.split(','))
     
-    if self.created != None:
+    if self.created is not None:
       try:
         self.created = str_tools.parse_iso_timestamp(self.created)
       except ValueError, exc:
         raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
     
-    if self.id != None and not tor_tools.is_valid_circuit_id(self.id):
+    if self.id is not None and not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     
     self._log_if_unrecognized('status', stem.CircStatus)
@@ -352,16 +352,16 @@ class CircMinorEvent(Event):
   def _parse(self):
     self.path = tuple(stem.control._parse_circ_path(self.path))
     
-    if self.build_flags != None:
+    if self.build_flags is not None:
       self.build_flags = tuple(self.build_flags.split(','))
     
-    if self.created != None:
+    if self.created is not None:
       try:
         self.created = str_tools.parse_iso_timestamp(self.created)
       except ValueError, exc:
         raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
     
-    if self.id != None and not tor_tools.is_valid_circuit_id(self.id):
+    if self.id is not None and not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     
     self._log_if_unrecognized('event', stem.CircEvent)
@@ -387,10 +387,10 @@ class ClientsSeenEvent(Event):
   }
   
   def _parse(self):
-    if self.start_time != None:
+    if self.start_time is not None:
       self.start_time = datetime.datetime.strptime(self.start_time, "%Y-%m-%d %H:%M:%S")
     
-    if self.locales != None:
+    if self.locales is not None:
       locale_to_count = {}
       
       for entry in self.locales.split(','):
@@ -410,7 +410,7 @@ class ClientsSeenEvent(Event):
       
       self.locales = locale_to_count
     
-    if self.ip_versions != None:
+    if self.ip_versions is not None:
       protocol_to_count = {}
       
       for entry in self.ip_versions.split(','):
@@ -607,7 +607,7 @@ class ORConnEvent(Event):
       self.endpoint_address = address
       self.endpoint_port = int(port)
     
-    if self.circ_count != None:
+    if self.circ_count is not None:
       if not self.circ_count.isdigit():
         raise stem.ProtocolError("ORCONN event got a non-numeric circuit count (%s): %s" % (self.circ_count, self))
       
@@ -754,7 +754,7 @@ class StreamBwEvent(Event):
   _POSITIONAL_ARGS = ("id", "written", "read")
   
   def _parse(self):
-    if self.id != None and not tor_tools.is_valid_stream_id(self.id):
+    if self.id is not None and not tor_tools.is_valid_stream_id(self.id):
       raise stem.ProtocolError("Stream IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     elif not self.written:
       raise stem.ProtocolError("STREAM_BW event is missing its written value")

@@ -460,7 +460,7 @@ class BaseController(object):
       with self._status_listeners_lock:
         change_timestamp = time.time()
         
-        if expect_alive != None and expect_alive != self.is_alive():
+        if expect_alive is not None and expect_alive != self.is_alive():
           return
         
         for listener, spawn in self._status_listeners:
@@ -1546,13 +1546,13 @@ def _parse_circ_entry(entry):
     # old style, nickname only
     fingerprint, nickname = None, entry
   
-  if fingerprint != None:
+  if fingerprint is not None:
     if not stem.util.tor_tools.is_valid_fingerprint(fingerprint, True):
       raise stem.ProtocolError("Fingerprint in the circuit path is malformed (%s)" % fingerprint)
     
     fingerprint = fingerprint[1:] # strip off the leading '$'
   
-  if nickname != None and not stem.util.tor_tools.is_valid_nickname(nickname):
+  if nickname is not None and not stem.util.tor_tools.is_valid_nickname(nickname):
     raise stem.ProtocolError("Nickname in the circuit path is malformed (%s)" % fingerprint)
   
   return (fingerprint, nickname)

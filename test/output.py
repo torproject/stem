@@ -99,7 +99,7 @@ def apply_filters(testing_output, *filters):
       line = result_filter(line_type, line)
       if line is None: break
     
-    if line != None:
+    if line is not None:
       results.append(line)
   
   return "\n".join(results) + "\n"

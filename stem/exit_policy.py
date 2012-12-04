@@ -443,7 +443,7 @@ class ExitPolicyRule(object):
     """
     
     # validate our input and check if the argument doesn't match our address type
-    if address != None:
+    if address is not None:
       if stem.util.connection.is_valid_ip_address(address):
         if self.address_type == AddressType.IPv6: return False
       elif stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True):
@@ -453,7 +453,7 @@ class ExitPolicyRule(object):
       else:
         raise ValueError("'%s' isn't a valid IPv4 or IPv6 address" % address)
     
-    if port != None and not stem.util.connection.is_valid_port(port):
+    if port is not None and not stem.util.connection.is_valid_port(port):
       raise ValueError("'%s' isn't a valid port" % port)
     
     if not self.is_address_wildcard():

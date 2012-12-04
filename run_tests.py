@@ -358,7 +358,7 @@ if __name__ == '__main__':
     # Queue up all the targets with torrc options we want to run against.
     
     integ_run_targets = []
-    all_run_targets = [t for t in Target if CONFIG["target.torrc"].get(t) != None]
+    all_run_targets = [t for t in Target if CONFIG["target.torrc"].get(t) is not None]
     
     if test_config.get("integ.target.run.all", False):
       # test against everything with torrc options

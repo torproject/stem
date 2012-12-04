@@ -360,7 +360,7 @@ class Runner(object):
       # Check for an unexpected shutdown by calling subprocess.Popen.poll(),
       # which returns the exit code or None if we're still running.
       
-      if self._tor_process and self._tor_process.poll() != None:
+      if self._tor_process and self._tor_process.poll() is not None:
         # clean up the temporary resources and note the unexpected shutdown
         self.stop()
         test.output.print_line("tor shut down unexpectedly", *ERROR_ATTR)

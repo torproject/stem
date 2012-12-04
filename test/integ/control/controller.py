@@ -554,8 +554,8 @@ class TestController(unittest.TestCase):
       count = 0
       
       for desc in controller.get_server_descriptors():
-        self.assertTrue(desc.fingerprint != None)
-        self.assertTrue(desc.nickname != None)
+        self.assertTrue(desc.fingerprint is not None)
+        self.assertTrue(desc.nickname is not None)
         
         # Se don't want to take the time to read the whole thing. We already
         # have another test that reads the full cached descriptors (and takes a
@@ -620,8 +620,8 @@ class TestController(unittest.TestCase):
       count = 0
       
       for desc in controller.get_network_statuses():
-        self.assertTrue(desc.fingerprint != None)
-        self.assertTrue(desc.nickname != None)
+        self.assertTrue(desc.fingerprint is not None)
+        self.assertTrue(desc.nickname is not None)
         
         count += 1
         if count > 10: break

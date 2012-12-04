@@ -606,9 +606,9 @@ class Config(object):
       conf_comp = [entry.strip() for entry in conf_value.split(",")]
       
       # check if the count doesn't match
-      if count != None and len(conf_comp) != count:
+      if count is not None and len(conf_comp) != count:
         msg = "Config entry '%s' is expected to be %i comma separated values" % (key, count)
-        if default != None and (isinstance(default, list) or isinstance(default, tuple)):
+        if default is not None and (isinstance(default, list) or isinstance(default, tuple)):
           defaultStr = ", ".join([str(i) for i in default])
           msg += ", defaulting to '%s'" % defaultStr
         
@@ -642,7 +642,7 @@ class Config(object):
     base_error_msg = "Config entry '%s' is expected to %%s" % key
     
     # includes our default value in the message
-    if default != None and (isinstance(default, list) or isinstance(default, tuple)):
+    if default is not None and (isinstance(default, list) or isinstance(default, tuple)):
       default_str = ", ".join([str(i) for i in default])
       base_error_msg += ", defaulting to '%s'" % default_str
     
@@ -651,10 +651,10 @@ class Config(object):
         error_msg = base_error_msg % "only have integer values"
         break
       else:
-        if min_value != None and int(val) < min_value:
+        if min_value is not None and int(val) < min_value:
           error_msg = base_error_msg % "only have values over %i" % min_value
           break
-        elif max_value != None and int(val) > max_value:
+        elif max_value is not None and int(val) > max_value:
           error_msg = base_error_msg % "only have values less than %i" % max_value
           break
     
