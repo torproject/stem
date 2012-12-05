@@ -222,7 +222,7 @@ class BuildTimeoutSetEvent(Event):
   :var int total_times: circuit build times tor used to determine the timeout
   :var int timeout: circuit timeout value in milliseconds
   :var int xm: Pareto parameter Xm in milliseconds
-  :var float alpha: Paredo paremter alpha
+  :var float alpha: Pareto parameter alpha
   :var float quantile: CDF quantile cutoff point
   :var float timeout_rate: ratio of circuits that have time out
   :var int close_timeout: duration to keep measurement circuits in milliseconds
@@ -432,7 +432,7 @@ class ConfChangedEvent(Event):
   SETCONF or RELOAD signal.
   
   :var dict config: mapping of configuration options to their new values
-    (**None** of the option is being unset)
+    (**None** if the option is being unset)
   """
   
   _SKIP_PARSING = True

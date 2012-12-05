@@ -139,7 +139,7 @@ class ControlSocket(object):
     you need to continually pull from the socket (which is part of what the
     :class:`~stem.control.BaseController` does).
     
-    :returns: bool that's True if we're known to be shut down and False otherwise
+    :returns: **bool** that's **True** if our socket is connected and **False** otherwise
     """
     
     return self._is_alive

@@ -322,7 +322,7 @@ class BaseController(object):
     Checks if our socket is currently connected. This is a pass-through for our
     socket's :func:`~stem.socket.ControlSocket.is_alive` method.
     
-    :returns: **bool** that's **True** if we're shut down and **False** otherwise
+    :returns: **bool** that's **True** if our socket is connected and **False** otherwise
     """
     
     return self._socket.is_alive()
@@ -639,7 +639,7 @@ class Controller(BaseController):
     Directs further tor controller events to a given function. The function is
     expected to take a single argument, which is a
     :class:`~stem.response.events.Event` subclass. For instance the following
-    would would print the bytes sent and received by tor over five seconds...
+    would print the bytes sent and received by tor over five seconds...
     
     ::
     
@@ -730,7 +730,7 @@ class Controller(BaseController):
     call fails for any reason (error response, control port closed, initiated,
     etc).
     
-    :param str,list param: GETINFO option or options to be queried
+    :param str,list params: GETINFO option or options to be queried
     :param object default: response if the query fails
     
     :returns:
@@ -743,8 +743,10 @@ class Controller(BaseController):
     :raises:
       * :class:`stem.ControllerError` if the call fails and we weren't
         provided a default response
-      * :class:`stem.InvalidArguments` if the 'param' requested was
+      * :class:`stem.InvalidArguments` if the 'params' requested was
         invalid
+      * :class:`stem.ProtocolError` if the geoip database is unavailable
+        and the response is not in the cache
     """
     
     start_time = time.time()
@@ -766,7 +768,7 @@ class Controller(BaseController):
         reply[param] = self._request_cache[cache_key]
         params.remove(param)
       elif param.startswith('ip-to-country/') and self.is_geoip_unavailable():
-        # the geoip database aleady looks to be unavailable - abort the request
+        # the geoip database already looks to be unavailable - abort the request
         raise stem.ProtocolError("Tor geoip database is unavailable")
     
     # if everything was cached then short circuit making the query
