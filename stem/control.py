@@ -36,6 +36,7 @@ providing its own for interacting at a higher level.
     |- close_stream - close a stream
     |- repurpose_circuit - change a circuit's purpose
     |- map_address - maps one address to another such that connections to the original are replaced with the other
+    |- get_circuits - provides a list of active circuits
     |- get_version - convenience method to get tor version
     |- get_server_descriptor - querying the server descriptor for a relay
     |- get_server_descriptors - provides all presently available server descriptors
@@ -1537,6 +1538,25 @@ class Controller(BaseController):
       raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
     
     return new_circuit
+
+  def get_circuits(self):
+    """
+    Provides the list of circuits Tor is currently handling.
+
+    :returns: **list** of :class:`stem.events.CircuitEvent` objects
+    
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+     
+    circuits = []
+    response = self.get_info("circuit-status")
+    
+    for circ in response.splitlines():
+      circ_message = stem.socket.recv_message(StringIO.StringIO("650 CIRC " + circ + "\r\n"))
+      stem.response.convert("EVENT", circ_message, arrived_at = 0)
+      circuits.append(circ_message)
+
+    return circuits
   
   def close_circuit(self, circuit_id, flag = ''):
     """

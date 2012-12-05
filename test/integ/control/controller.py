@@ -722,3 +722,18 @@ class TestController(unittest.TestCase):
         count += 1
         if count > 10: break
 
+  def test_get_circuits(self):
+    """
+    Fetches circuits via the get_circuits() method.
+    """
+    
+    if test.runner.require_control(self): return
+    if test.runner.require_online(self): return
+    
+    runner = test.runner.get_runner()
+    with runner.get_tor_controller() as controller:
+      new_circ = controller.new_circuit()
+      circuits = controller.get_circuits()
+      self.assertTrue(new_circ in [int(circ.id) for circ in circuits])
+  
+
