@@ -175,7 +175,7 @@ class Descriptor(object):
   def __str__(self):
     return self._raw_contents
 
-def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None):
+def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):
   """
   Reads from the descriptor file until we get to one of the given keywords or reach the
   end of the file.
@@ -187,11 +187,14 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     given keywords
   :param bool skip: skips buffering content, returning None
   :param int end_position: end if we reach this point in the file
+  :param bool include_ending_keyword: provides the keyword we broke on if **True**
   
-  :returns: **list** with the lines until we find one of the keywords
+  :returns: **list** with the lines until we find one of the keywords, this is a two value tuple with the ending keyword if include_ending_keyword is **True**
   """
   
   content = None if skip else []
+  ending_keyword = None
+  
   if type(keywords) == str: keywords = (keywords,)
   
   if ignore_first:
@@ -218,6 +221,8 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
       line_keyword = line_match.groups()[0]
     
     if line_keyword in keywords:
+      ending_keyword = line_keyword
+      
       if not inclusive:
         descriptor_file.seek(last_position)
       elif content is not None:
@@ -227,7 +232,10 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     elif content is not None:
       content.append(line)
   
-  return content
+  if include_ending_keyword:
+    return (content, ending_keyword)
+  else:
+    return content
 
 def _get_pseudo_pgp_block(remaining_contents):
   """

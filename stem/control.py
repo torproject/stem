@@ -36,7 +36,9 @@ providing its own for interacting at a higher level.
     |- map_address - maps one address to another such that connections to the original are replaced with the other
     |- get_version - convenience method to get tor version
     |- get_server_descriptor - querying the server descriptor for a relay
+    |- get_server_descriptors - provides all presently available server descriptors
     |- get_network_status - querying the router status entry for a relay
+    |- get_network_statuses - provides all preently available router status entries
     |- authenticate - convenience method to authenticate the controller
     +- protocolinfo - convenience method to get the protocol info
   

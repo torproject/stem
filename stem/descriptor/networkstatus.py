@@ -296,7 +296,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
       validate,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
       entry_keyword = ROUTERS_START,
-      section_end_keywords = V2_FOOTER_START,
+      section_end_keywords = (V2_FOOTER_START,),
       extra_args = (self,),
     ))
     
@@ -483,7 +483,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       validate,
       entry_class = router_type,
       entry_keyword = ROUTERS_START,
-      section_end_keywords = FOOTER_START,
+      section_end_keywords = (FOOTER_START,),
       extra_args = (self,),
     ))
     

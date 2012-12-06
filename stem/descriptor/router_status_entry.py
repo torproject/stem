@@ -50,20 +50,40 @@ def parse_file(document_file, validate, entry_class, entry_keyword = "r", start_
     * **IOError** if the file can't be read
   """
   
-  if start_position is None:
+  if start_position:
+    document_file.seek(start_position)
+  else:
     start_position = document_file.tell()
   
-  if end_position is None:
-    if section_end_keywords:
-      stem.descriptor._read_until_keywords(section_end_keywords, document_file, skip = True)
-      end_position = document_file.tell()
+  # check if we're starting at the end of the section (ie, there's no entries to read)
+  if section_end_keywords:
+    first_keyword = None
+    line_match = stem.descriptor.KEYWORD_LINE.match(document_file.readline())
+    
+    if line_match:
+      first_keyword = line_match.groups()[0]
+    
+    document_file.seek(start_position)
+    
+    if first_keyword in section_end_keywords:
+      return
   
-  document_file.seek(start_position)
-  while not end_position or document_file.tell() < end_position:
-    desc_content = "".join(stem.descriptor._read_until_keywords(entry_keyword, document_file, ignore_first = True, end_position = end_position))
+  while end_position is None or document_file.tell() < end_position:
+    desc_lines, ending_keyword = stem.descriptor._read_until_keywords(
+      (entry_keyword,) + section_end_keywords,
+      document_file,
+      ignore_first = True,
+      end_position = end_position,
+      include_ending_keyword = True
+    )
+    
+    desc_content = "".join(desc_lines)
     
     if desc_content:
       yield entry_class(desc_content, validate, *extra_args)
+      
+      # check if we stopped at the end of the section
+      if ending_keyword in section_end_keywords: break
     else:
       break
 
