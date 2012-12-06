@@ -1382,11 +1382,23 @@ class Controller(BaseController):
   
   def extend_circuit(self, circuit = 0, path = None, purpose = "general"):
     """
-    Either requests a new circuit or extend an existing one.
+    Either requests the creation of a new circuit or extends an existing one.
     
     When called with a circuit value of zero (the default) a new circuit is
     created, and when non-zero the circuit with that id is extended. If the
     path isn't provided, one is automatically selected.
+    
+    A python interpreter session used to create circuits could look like this...
+    
+    ::
+      
+      >>> control.extend_circuit(0, ["718BCEA286B531757ACAFF93AE04910EA73DE617", "30BAB8EE7606CBD12F3CC269AE976E0153E7A58D", "2765D8A8C4BBA3F89585A9FFE0E8575615880BEB"])
+      19
+      >>> control.extend_circuit(0)
+      20
+      >>> print control.get_info('circuit-status')
+      20 EXTENDED $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA=Eskimo BUILD_FLAGS=NEED_CAPACITY PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:51:11.433755
+      19 BUILT $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$30BAB8EE7606CBD12F3CC269AE976E0153E7A58D=Pascal1,$2765D8A8C4BBA3F89585A9FFE0E8575615880BEB=Anthracite PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:50:56.969938
     
     :param int circuit: id of a circuit to be extended
     :param list,str path: one or more relays to make a circuit through, this is
