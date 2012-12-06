@@ -1418,7 +1418,7 @@ class Controller(BaseController):
         assert extended == "EXTENDED"
       except:
         raise stem.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
-    elif response.code == ('512', '552'):
+    elif response.code in ('512', '552'):
       raise stem.InvalidRequest(response.code, response.message)
     else:
       raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
