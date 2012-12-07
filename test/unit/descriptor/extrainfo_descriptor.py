@@ -458,6 +458,17 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     # check that we don't have crypto fields
     self.assertRaises(AttributeError, getattr, desc, "signature")
   
+  def test_bridge_ip_versions_line(self):
+    """
+    Parses the 'bridge-ip-versions' line, which only appears in bridges.
+    """
+    
+    desc = get_bridge_extrainfo_descriptor({"bridge-ip-versions": "v4=16,v6=40"})
+    self.assertEquals({'v4': 16, 'v6': 40}, desc.ip_versions)
+    
+    desc_text = get_bridge_extrainfo_descriptor({"bridge-ip-versions": "v4=24.5"}, content = True)
+    self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text)
+  
   def test_transport_line(self):
     """
     Basic exercise for both a bridge and relay's transport entry.

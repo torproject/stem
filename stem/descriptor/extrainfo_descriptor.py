@@ -824,9 +824,12 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Bridge extra-info descriptor (`bridge descriptor specification
   <https://metrics.torproject.org/formats.html#bridgedesc>`_)
+  
+  :var dict ip_versions: mapping of ip protocols to a rounded count for the number of users
   """
   
   def __init__(self, raw_contents, validate = True):
+    self.ip_versions = None
     self._digest = None
     
     super(BridgeExtraInfoDescriptor, self).__init__(raw_contents, validate)
@@ -848,6 +851,21 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
         
         self._digest = value
         del entries["router-digest"]
+      elif keyword == "bridge-ip-versions":
+        self.ip_versions = {}
+        
+        for entry in value.split(','):
+          if not '=' in entry:
+            raise stem.ProtocolError("The bridge-ip-versions should be a comma separated       listing of '<protocol>=<count>' mappings: %s" % line)
+          
+          protocol, count = entry.split('=', 1)
+          
+          if not count.isdigit():
+            raise stem.ProtocolError("IP protocol count was non-numeric (%s): %s" % (count, line))
+          
+          self.ip_versions[protocol] = int(count)
+        
+        del entries["bridge-ip-versions"]
     
     ExtraInfoDescriptor._parse(self, entries, validate)
   
