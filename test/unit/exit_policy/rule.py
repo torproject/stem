@@ -46,7 +46,6 @@ class TestExitPolicyRule(unittest.TestCase):
     
     for rule_arg in test_inputs:
       rule = ExitPolicyRule(rule_arg)
-      self.assertEquals(rule_arg, rule.rule)
       self.assertEquals(rule_arg, str(rule))
   
   def test_str_changed(self):
@@ -60,7 +59,6 @@ class TestExitPolicyRule(unittest.TestCase):
     
     for rule_arg, expected_str in test_inputs.items():
       rule = ExitPolicyRule(rule_arg)
-      self.assertEquals(rule_arg, rule.rule)
       self.assertEquals(expected_str, str(rule))
   
   def test_valid_wildcard(self):
@@ -103,9 +101,9 @@ class TestExitPolicyRule(unittest.TestCase):
   
   def test_wildcard_attributes(self):
     rule = ExitPolicyRule("reject *:*")
-    self.assertEquals(AddressType.WILDCARD, rule.address_type)
+    self.assertEquals(AddressType.WILDCARD, rule.get_address_type())
     self.assertEquals(None, rule.address)
-    self.assertEquals(None, rule.mask)
+    self.assertEquals(None, rule.get_mask())
     self.assertEquals(None, rule.masked_bits)
     self.assertEquals(1, rule.min_port)
     self.assertEquals(65535, rule.max_port)
@@ -122,9 +120,9 @@ class TestExitPolicyRule(unittest.TestCase):
       address, mask, masked_bits = attr
       
       rule = ExitPolicyRule("accept %s:*" % rule_addr)
-      self.assertEquals(AddressType.IPv4, rule.address_type)
+      self.assertEquals(AddressType.IPv4, rule.get_address_type())
       self.assertEquals(address, rule.address)
-      self.assertEquals(mask, rule.mask)
+      self.assertEquals(mask, rule.get_mask())
       self.assertEquals(masked_bits, rule.masked_bits)
   
   def test_invalid_ipv4_addresses(self):
@@ -161,9 +159,9 @@ class TestExitPolicyRule(unittest.TestCase):
       address, mask, masked_bits = attr
       
       rule = ExitPolicyRule("accept %s:*" % rule_addr)
-      self.assertEquals(AddressType.IPv6, rule.address_type)
+      self.assertEquals(AddressType.IPv6, rule.get_address_type())
       self.assertEquals(address, rule.address)
-      self.assertEquals(mask, rule.mask)
+      self.assertEquals(mask, rule.get_mask())
       self.assertEquals(masked_bits, rule.masked_bits)
   
   def test_invalid_ipv6_addresses(self):

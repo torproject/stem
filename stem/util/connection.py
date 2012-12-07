@@ -165,6 +165,8 @@ def get_mask(bits):
   
   if bits > 32 or bits < 0:
     raise ValueError("A mask can only be 0-32 bits, got %i" % bits)
+  elif bits == 32:
+    return FULL_IPv4_MASK
   
   # get the binary representation of the mask
   mask_bin = get_binary(2 ** bits - 1, 32)[::-1]
@@ -213,6 +215,8 @@ def get_mask_ipv6(bits):
   
   if bits > 128 or bits < 0:
     raise ValueError("A mask can only be 0-128 bits, got %i" % bits)
+  elif bits == 128:
+    return FULL_IPv6_MASK
   
   # get the binary representation of the mask
   mask_bin = get_binary(2 ** bits - 1, 128)[::-1]

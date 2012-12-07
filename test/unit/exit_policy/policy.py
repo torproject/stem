@@ -154,22 +154,19 @@ class TestExitPolicy(unittest.TestCase):
         if expect_success: self.fail()
   
   def test_microdescriptor_attributes(self):
-    # checks that its is_accept and ports attributes are properly set
+    # checks that its is_accept attribute is properly set
     
     # single port
     policy = MicrodescriptorExitPolicy('accept 443')
     self.assertTrue(policy.is_accept)
-    self.assertEquals(set([443]), policy.ports)
     
     # multiple ports
     policy = MicrodescriptorExitPolicy('accept 80,443')
     self.assertTrue(policy.is_accept)
-    self.assertEquals(set([80, 443]), policy.ports)
     
     # port range
     policy = MicrodescriptorExitPolicy('reject 1-1024')
     self.assertFalse(policy.is_accept)
-    self.assertEquals(set(range(1, 1025)), policy.ports)
   
   def test_microdescriptor_can_exit_to(self):
     test_inputs = {
@@ -188,6 +185,6 @@ class TestExitPolicy(unittest.TestCase):
     # address argument should be ignored
     policy = MicrodescriptorExitPolicy('accept 80,443')
     
-    self.assertFalse(policy.can_exit_to('blah', 79))
-    self.assertTrue(policy.can_exit_to('blah', 80))
+    self.assertFalse(policy.can_exit_to('127.0.0.1', 79))
+    self.assertTrue(policy.can_exit_to('127.0.0.1', 80))
 
