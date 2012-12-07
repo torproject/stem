@@ -6,6 +6,7 @@ import stem
 import stem.control
 import stem.response
 import stem.descriptor.router_status_entry
+import stem.version
 
 from stem.util import connection, log, str_tools, tor_tools
 
@@ -32,6 +33,7 @@ class Event(stem.response.ControlMessage):
   _KEYWORD_ARGS = {}      # map of 'keyword => attribute' for recognized attributes
   _QUOTED = ()            # positional arguments that are quoted
   _SKIP_PARSING = False   # skip parsing contents into our positional_args and keyword_args
+  _VERSION_ADDED = stem.version.Version('0.1.1.1-alpha')  # minimum version with control-spec V1 event support
   
   def _parse_message(self, arrived_at):
     if not str(self).strip():
