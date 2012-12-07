@@ -264,7 +264,6 @@ class MicrodescriptorExitPolicy(ExitPolicy):
     BEGIN request, and might get end-reason-exit-policy if they guessed
     wrong, in which case they'll have to try elsewhere.
   
-  :var set ports: ports that this policy includes
   :var bool is_accept: **True** if these are ports that we accept, **False** if
     they're ports that we reject
   
@@ -279,7 +278,6 @@ class MicrodescriptorExitPolicy(ExitPolicy):
     #   PortList ::= PortList "," PortOrRange
     #   PortOrRange ::= INT "-" INT / INT
     
-    self.ports = set()
     self._policy = policy
     
     if policy.startswith("accept"):
@@ -305,22 +303,12 @@ class MicrodescriptorExitPolicy(ExitPolicy):
       
       try:
         rule = ExitPolicyRule(rule_str)
-        self.ports.update(range(rule.min_port, rule.max_port + 1))
         rules.append(rule)
       except ValueError, exc:
         exc_msg = "Policy '%s' is malformed. %s" % (self._policy, str(exc).replace(rule_str, port_entry))
         raise ValueError(exc_msg)
     
     super(MicrodescriptorExitPolicy, self).__init__(*rules)
-  
-  def can_exit_to(self, address = None, port = None):
-    # we can greatly simplify our check since our policies don't concern
-    # addresses or masks
-    
-    if port in self.ports:
-      return self.is_accept
-    else:
-      return not self.is_accept
   
   def __str__(self):
     return self._policy
