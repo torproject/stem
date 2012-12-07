@@ -489,9 +489,9 @@ class ExitPolicyRule(object):
     # Lazy loading our mask because it very infrequently requested. There's
     # no reason to usually usse memory for it.
     
-    address_type = self.get_address_type()
-    
     if not self._mask:
+      address_type = self.get_address_type()
+      
       if address_type == AddressType.WILDCARD:
         mask = None
       elif address_type == AddressType.IPv4:
