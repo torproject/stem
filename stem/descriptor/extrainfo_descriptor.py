@@ -101,6 +101,7 @@ SINGLE_FIELDS = (
   "read-history",
   "write-history",
   "geoip-db-digest",
+  "geoip6-db-digest",
   "bridge-stats-end",
   "bridge-ips",
   "dirreq-stats-end",
@@ -197,7 +198,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var str nickname: **\*** relay's nickname
   :var str fingerprint: **\*** identity key fingerprint
   :var datetime published: **\*** time in UTC when this descriptor was made
-  :var str geoip_db_digest: sha1 of geoIP database file
+  :var str geoip_db_digest: sha1 of the geoIP database file for IPv4 addresses
+  :var str geoip6_db_digest: sha1 of the geoIP database file for IPv6 addresses
   :var dict transport: **\*** mapping of transport methods to their (address,
     port, args) tuple, these usually appear on bridges in which case all of
     those are **None**
@@ -311,6 +313,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.fingerprint = None
     self.published = None
     self.geoip_db_digest = None
+    self.geoip6_db_digest = None
     self.transport = {}
     
     self.conn_bi_direct_end = None
@@ -445,6 +448,13 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           raise ValueError("Geoip digest line had an invalid sha1 digest: %s" % line)
         
         self.geoip_db_digest = value
+      elif keyword == "geoip6-db-digest":
+        # "geoip6-db-digest" Digest
+        
+        if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
+          raise ValueError("Geoip v6 digest line had an invalid sha1 digest: %s" % line)
+        
+        self.geoip6_db_digest = value
       elif keyword == "transport":
         # "transport" transportname address:port [arglist]
         # Everything after the transportname is scrubbed in published bridge

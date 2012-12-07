@@ -66,12 +66,16 @@ class TestExtraInfoDescriptor(unittest.TestCase):
   
   def test_geoip_db_digest(self):
     """
-    Parses the geoip-db-digest line with valid and invalid data.
+    Parses the geoip-db-digest and geoip6-db-digest lines with valid and
+    invalid data.
     """
     
     geoip_db_digest = "916A3CA8B7DF61473D5AE5B21711F35F301CE9E8"
     desc = get_relay_extrainfo_descriptor({"geoip-db-digest": geoip_db_digest})
     self.assertEquals(geoip_db_digest, desc.geoip_db_digest)
+    
+    desc = get_relay_extrainfo_descriptor({"geoip6-db-digest": geoip_db_digest})
+    self.assertEquals(geoip_db_digest, desc.geoip6_db_digest)
     
     test_entries = (
       "",
@@ -84,6 +88,9 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     for entry in test_entries:
       desc_text = get_relay_extrainfo_descriptor({"geoip-db-digest": entry}, content = True)
       self._expect_invalid_attr(desc_text, "geoip_db_digest", entry)
+      
+      desc_text = get_relay_extrainfo_descriptor({"geoip6-db-digest": entry}, content = True)
+      self._expect_invalid_attr(desc_text, "geoip6_db_digest", entry)
   
   def test_cell_circuits_per_decile(self):
     """
