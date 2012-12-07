@@ -150,6 +150,9 @@ class AddrMapEvent(Event):
   :var datetime expiry: expiration time of the resolution in local time
   :var str error: error code if the resolution failed
   :var datetime utc_expiry: expiration time of the resolution in UTC
+  
+  The ADDRMAP event was one of the first Control Protocol V1 events and was
+  introduced in tor version 0.1.1.1-alpha.
   """
   
   _POSITIONAL_ARGS = ("hostname", "destination", "expiry")
@@ -200,6 +203,9 @@ class BandwidthEvent(Event):
   
   :var long read: bytes received by tor that second
   :var long written: bytes sent by tor that second
+  
+  The BW event was one of the first Control Protocol V1 events and was
+  introduced in tor version 0.1.1.1-alpha.
   """
   
   _POSITIONAL_ARGS = ("read", "written")
@@ -286,6 +292,9 @@ class CircuitEvent(Event):
   :var datetime created: time when the circuit was created or cannibalized
   :var stem.CircClosureReason reason: reason for the circuit to be closed
   :var stem.CircClosureReason remote_reason: remote side's reason for the circuit to be closed
+  
+  The CIRC event was one of the first Control Protocol V1 events and was
+  introduced in tor version 0.1.1.1-alpha.
   """
   
   _POSITIONAL_ARGS = ("id", "status", "path")
@@ -490,6 +499,9 @@ class LogEvent(Event):
   
   :var stem.Runlevel runlevel: runlevel of the logged message
   :var str message: logged message
+  
+  The logging events were some of the first Control Protocol V1 events
+  and were introduced in tor version 0.1.1.1-alpha.
   """
   
   _SKIP_PARSING = True
@@ -555,6 +567,9 @@ class NewDescEvent(Event):
   
   :var tuple relays: **(fingerprint, nickname)** tuples for the relays with
     new descriptors
+  
+  The NEWDESC event was one of the first Control Protocol V1 events and was
+  introduced in tor version 0.1.1.1-alpha.
   """
   
   def _parse(self):
@@ -580,6 +595,9 @@ class ORConnEvent(Event):
   :var stem.ORStatus status: state of the connection
   :var stem.ORClosureReason reason: reason for the connection to be closed
   :var int circ_count: number of established and pending circuits
+  
+  The ORCONN event was one of the first Control Protocol V1 events and was
+  introduced in tor version 0.1.1.1-alpha.
   """
   
   _POSITIONAL_ARGS = ("endpoint", "status")
@@ -692,6 +710,9 @@ class StreamEvent(Event):
   :var str source_address: requester address (ip or hostname)
   :var int source_port: requester port
   :var stem.StreamPurpose purpose: purpose for the stream
+  
+  The STREAM event was one of the first Control Protocol V1 events and was
+  introduced in tor version 0.1.1.1-alpha.
   """
   
   _POSITIONAL_ARGS = ("id", "status", "circ_id", "target")
