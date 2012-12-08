@@ -660,14 +660,17 @@ class Controller(BaseController):
     :raises: :class:`stem.socket.ControllerError` if unable to set the events
     """
     
+    # first checking that tor supports these event types
     for event_type in events:
       event_version = stem.response.events.EVENT_TYPE_TO_CLASS[event_type]._VERSION_ADDED
       if not self.get_version().meets_requirements(event_version):
         raise stem.InvalidRequest(552, "%s event requires Tor version %s or later" % (event_type, event_version))
-      
-      with self._event_listeners_lock:
+    
+    with self._event_listeners_lock:
+      for event_type in events:
         self._event_listeners.setdefault(event_type, []).append(listener)
-        self._attach_listeners()
+      
+      self._attach_listeners()
   
   def remove_event_listener(self, listener):
     """
