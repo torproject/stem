@@ -657,7 +657,7 @@ class Controller(BaseController):
     :param functor listener: function to be called when an event is received
     :param stem.control.EventType events: event types to be listened for
     
-    :raises: :class:`stem.socket.ControllerError` if unable to set the events
+    :raises: :class:`stem.ProtocolError` if unable to set the events
     """
     
     # first checking that tor supports these event types
@@ -678,7 +678,7 @@ class Controller(BaseController):
     
     :param stem.control.EventListener listener: listener to be removed
     
-    :raises: :class:`stem.socket.ControllerError` if unable to set the events
+    :raises: :class:`stem.ProtocolError` if unable to set the events
     """
     
     with self._event_listeners_lock:
@@ -696,7 +696,7 @@ class Controller(BaseController):
         response = self.msg("SETEVENTS %s" % " ".join(self._event_listeners.keys()))
         
         if not response.is_ok():
-          raise stem.socket.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
+          raise stem.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
   
   def is_caching_enabled(self):
     """
