@@ -110,6 +110,7 @@ providing its own for interacting at a higher level.
 
 from __future__ import with_statement
 
+import os
 import time
 import Queue
 import StringIO
@@ -1495,6 +1496,25 @@ class Controller(BaseController):
       self._attach_listeners()
     except stem.ProtocolError, exc:
       log.warn("We were unable to re-attach our event listeners to the new tor instance (%s)" % exc)
+    
+    # issue TAKEOWNERSHIP if we're the owning process for this tor instance
+    
+    owning_pid = self.get_conf("__OwningControllerProcess", None)
+    
+    if owning_pid == str(os.getpid()):
+      response = self.msg("TAKEOWNERSHIP")
+      stem.response.convert("SINGLELINE", response)
+      
+      if response.is_ok():
+        # Now that tor is tracking our ownership of the process via the control
+        # connection, we can stop having it check for us via our pid.
+        
+        try:
+          self.reset_conf("__OwningControllerProcess")
+        except stem.ControllerError, exc:
+          log.warn("We were unable to reset tor's __OwningControllerProcess configuration. It will continue to periodically check if our pid exists. (%s)" % response)
+      else:
+        log.warn("We were unable assert ownership of tor through TAKEOWNERSHIP, despite being configured to be the owning process thrugh __OwningControllerProcess. (%s)" % response)
   
   def _handle_event(self, event_message):
     stem.response.convert("EVENT", event_message, arrived_at = time.time())

@@ -37,7 +37,8 @@ easily parsed and compared, for instance...
   **AUTH_SAFECOOKIE**                   'SAFECOOKIE' authentication method
   **GETINFO_CONFIG_TEXT**               'GETINFO config-text' query
   **EXTENDCIRCUIT_PATH_OPTIONAL**       'EXTENDCIRCUIT' queries can omit the path if the circuit is zero
-  **LOADCONF**                          'LOADCONF' query
+  **LOADCONF**                          'LOADCONF' requests
+  **TAKEOWNERSHIP**                     'TAKEOWNERSHIP' requests
   **TORRC_CONTROL_SOCKET**              'ControlSocket <path>' config option
   **TORRC_DISABLE_DEBUGGER_ATTACHMENT** 'DisableDebuggerAttachment' config option
   **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
@@ -257,6 +258,7 @@ Requirement = stem.util.enum.Enum(
   ("GETINFO_CONFIG_TEXT", Version("0.2.2.7")),
   ("EXTENDCIRCUIT_PATH_OPTIONAL", Version("0.2.2.9")),
   ("LOADCONF", Version("0.2.1.1")),
+  ("TAKEOWNERSHIP", Version("0.2.2.28-beta")),
   ("TORRC_CONTROL_SOCKET", Version("0.2.0.30")),
   ("TORRC_DISABLE_DEBUGGER_ATTACHMENT", Version("0.2.3.9")),
   ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),

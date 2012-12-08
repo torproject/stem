@@ -29,7 +29,7 @@ import stem.util.system
 NO_TORRC = "<no torrc>"
 DEFAULT_INIT_TIMEOUT = 90
 
-def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
+def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
   """
   Initializes a tor process. This blocks until initialization completes or we
   error out.
@@ -51,6 +51,9 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
     tor's initialization stdout as we get it
   :param int timeout: time after which the attempt to start tor is aborted, no
     timeouts are applied if **None**
+  :param bool take_ownership: asserts ownership over the tor process so it
+    aborts if this python process terminates or a :class:`~stem.control.Controller`
+    we establish to it disconnects
   
   :returns: **subprocess.Popen** instance for the tor subprocess
   
@@ -75,6 +78,9 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
       runtime_args += ["-f", temp_file]
     else:
       runtime_args += ["-f", torrc_path]
+  
+  if take_ownership:
+    runtime_args += ["--__OwningControllerProcess", _get_pid()]
   
   tor_process = subprocess.Popen(runtime_args, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
   
@@ -140,13 +146,28 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
         if ": " in msg: msg = msg.split(": ")[-1].strip()
         last_problem = msg
 
-def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT):
+def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
   """
   Initializes a tor process, like :func:`~stem.process.launch_tor`, but with a
   customized configuration. This writes a temporary torrc to disk, launches
   tor, then deletes the torrc.
   
-  :param dict config: configuration options, such as '{"ControlPort": "9051"}'
+  For example...
+  
+  ::
+  
+    tor_process = stem.process.launch_tor_with_config(
+      config = {
+        'ControlPort': '2778',
+        'Log': [
+          'NOTICE stdout',
+          'ERR file /tmp/tor_error_log',
+        ],
+      },
+    )
+  
+  :param dict config: configuration options, such as '{"ControlPort": "9051"}',
+    values can either be a **str** or **list of str** if for multiple values
   :param str tor_cmd: command for starting tor
   :param int completion_percent: percent of bootstrap completion at which
     this'll return
@@ -154,6 +175,9 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
     tor's initialization stdout as we get it
   :param int timeout: time after which the attempt to start tor is aborted, no
     timeouts are applied if **None**
+  :param bool take_ownership: asserts ownership over the tor process so it
+    aborts if this python process terminates or a :class:`~stem.control.Controller`
+    we establish to it disconnects
   
   :returns: **subprocess.Popen** instance for the tor subprocess
   
@@ -165,11 +189,18 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
   
   try:
     with open(torrc_path, "w") as torrc_file:
-      for key, value in config.items():
-        torrc_file.write("%s %s\n" % (key, value))
+      for key, values in config.items():
+        if isinstance(values, str):
+          torrc_file.write("%s %s\n" % (key, values))
+        else:
+          for value in values:
+            torrc_file.write("%s %s\n" % (key, value))
     
-    return launch_tor(tor_cmd, None, torrc_path, completion_percent, init_msg_handler, timeout)
+    return launch_tor(tor_cmd, None, torrc_path, completion_percent, init_msg_handler, timeout, take_ownership)
   finally:
     try: os.remove(torrc_path)
     except: pass
+
+def _get_pid():
+  return str(os.getpid())
 
