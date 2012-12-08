@@ -98,6 +98,44 @@ class TestController(unittest.TestCase):
         self.assertTrue(hasattr(event, 'read'))
         self.assertTrue(hasattr(event, 'written'))
   
+  def test_reattaching_listeners(self):
+    """
+    Checks that event listeners are re-attached when a controller disconnects
+    then reconnects to tor.
+    """
+    
+    if test.runner.require_control(self): return
+    
+    event_buffer = []
+    
+    def listener(event):
+      event_buffer.append(event)
+    
+    runner = test.runner.get_runner()
+    with runner.get_tor_controller() as controller:
+      controller.add_event_listener(listener, EventType.BW)
+      
+      # get a BW event or two
+      
+      time.sleep(2)
+      self.assertTrue(len(event_buffer) >= 1)
+      
+      # disconnect and check that we stop getting events
+      
+      controller.close()
+      event_buffer = []
+      
+      time.sleep(2)
+      self.assertTrue(len(event_buffer) == 0)
+      
+      # reconnect and check that we get events again
+      
+      controller.connect()
+      controller.authenticate()
+      
+      time.sleep(2)
+      self.assertTrue(len(event_buffer) >= 1)
+  
   def test_getinfo(self):
     """
     Exercises GETINFO with valid and invalid queries.

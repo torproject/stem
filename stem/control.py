@@ -299,6 +299,13 @@ class BaseController(object):
         if isinstance(response, stem.ControllerError):
           raise response
         else:
+          # I really, really don't like putting hooks into this method, but
+          # this is the most reliable method I can think of for taking actions
+          # immediately after successfully authenticating to a connection.
+          
+          if message.upper().startswith("AUTHENTICATE"):
+            self._post_authentication()
+          
           return response
       except stem.SocketClosed, exc:
         # If the recv() thread caused the SocketClosed then we could still be
@@ -435,6 +442,11 @@ class BaseController(object):
     self._notify_status_listeners(State.CLOSED, False)
     self._socket_close()
   
+  def _post_authentication(self):
+    # actions to be taken after we have a newly authenticated connection
+    
+    pass
+  
   def _notify_status_listeners(self, state, expect_alive = None):
     """
     Informs our status listeners that a state change occurred.
@@ -548,9 +560,6 @@ class Controller(BaseController):
   BaseController and provides a more user friendly API for library users.
   """
   
-  # TODO: We need a set_up() (and maybe tear_down()?) method, so we can
-  # reattach listeners and set VERBOSE_NAMES.
-  
   def from_port(control_addr = "127.0.0.1", control_port = 9051):
     """
     Constructs a :class:`~stem.socket.ControlPort` based Controller.
@@ -653,12 +662,7 @@ class Controller(BaseController):
     with self._event_listeners_lock:
       for event_type in events:
         self._event_listeners.setdefault(event_type, []).append(listener)
-      
-      if self.is_alive():
-        response = self.msg("SETEVENTS %s" % " ".join(self._event_listeners.keys()))
-        
-        if not response.is_ok():
-          raise stem.socket.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
+        self._attach_listeners()
   
   def remove_event_listener(self, listener):
     """
@@ -1484,6 +1488,14 @@ class Controller(BaseController):
     
     return response.entries
   
+  def _post_authentication(self):
+    # try to re-attach event listeners to the new instance
+    
+    try:
+      self._attach_listeners()
+    except stem.ProtocolError, exc:
+      log.warn("We were unable to re-attach our event listeners to the new tor instance (%s)" % exc)
+  
   def _handle_event(self, event_message):
     stem.response.convert("EVENT", event_message, arrived_at = time.time())
     
@@ -1492,6 +1504,16 @@ class Controller(BaseController):
         if event_type == event_message.type:
           for listener in event_listeners:
             listener(event_message)
+  
+  def _attach_listeners(self):
+    # issues the SETEVENTS call for our event listeners
+    
+    with self._event_listeners_lock:
+      if self.is_alive():
+        response = self.msg("SETEVENTS %s" % " ".join(self._event_listeners.keys()))
+        
+        if not response.is_ok():
+          raise stem.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
 
 def _parse_circ_path(path):
   """
