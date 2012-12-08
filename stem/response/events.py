@@ -181,9 +181,12 @@ class AuthDirNewDescEvent(Event):
   :var stem.AuthDescriptorAction action: what is being done with the descriptor
   :var str message: explanation of why we chose this action
   :var str descriptor: content of the descriptor
+  
+  The AUTHDIR_NEWDESCS event was introduced in tor version 0.1.1.10-alpha.
   """
   
   _SKIP_PARSING = True
+  _VERSION_ADDED = stem.version.Version('0.1.1.10-alpha')
   
   def _parse(self):
     lines = str(self).split('\n')
@@ -235,6 +238,8 @@ class BuildTimeoutSetEvent(Event):
   :var float timeout_rate: ratio of circuits that have time out
   :var int close_timeout: duration to keep measurement circuits in milliseconds
   :var float close_rate: ratio of measurement circuits that are closed
+  
+  The BUILDTIMEOUT_SET event was introduced in tor version 0.2.2.7-alpha.
   """
   
   _POSITIONAL_ARGS = ("set_type",)
@@ -248,6 +253,7 @@ class BuildTimeoutSetEvent(Event):
     "CLOSE_MS": "close_timeout",
     "CLOSE_RATE": "close_rate",
   }
+  _VERSION_ADDED = stem.version.Version('0.2.2.7-alpha')
   
   def _parse(self):
     # convert our integer and float parameters
@@ -347,6 +353,8 @@ class CircMinorEvent(Event):
   :var datetime created: time when the circuit was created or cannibalized
   :var stem.CircPurpose old_purpose: prior purpose for the circuit
   :var stem.HiddenServiceState old_hs_state: prior status as a hidden service circuit
+  
+  The CIRC_MINOR event was introduced in tor version 0.2.3.11-alpha.
   """
   
   _POSITIONAL_ARGS = ("id", "event", "path")
@@ -359,6 +367,7 @@ class CircMinorEvent(Event):
     "OLD_PURPOSE": "old_purpose",
     "OLD_HS_STATE": "old_hs_state",
   }
+  _VERSION_ADDED = stem.version.Version('0.2.3.11-alpha')
   
   def _parse(self):
     self.path = tuple(stem.control._parse_circ_path(self.path))
@@ -389,6 +398,8 @@ class ClientsSeenEvent(Event):
   :var datetime start_time: time in UTC that we started collecting these stats
   :var dict locales: mapping of country codes to a rounded count for the number of users
   :var dict ip_versions: mapping of ip protocols to a rounded count for the number of users
+  
+  The CLIENTS_SEEN event was introduced in tor version 0.2.1.10-alpha.
   """
   
   _KEYWORD_ARGS = {
@@ -396,6 +407,7 @@ class ClientsSeenEvent(Event):
     "CountrySummary": "locales",
     "IPVersions": "ip_versions",
   }
+  _VERSION_ADDED = stem.version.Version('0.2.1.10-alpha')
   
   def _parse(self):
     if self.start_time is not None:
@@ -444,9 +456,12 @@ class ConfChangedEvent(Event):
   
   :var dict config: mapping of configuration options to their new values
     (**None** if the option is being unset)
+  
+  The CONF_CHANGED event was introduced in tor version 0.2.3.3-alpha.
   """
   
   _SKIP_PARSING = True
+  _VERSION_ADDED = stem.version.Version('0.2.3.3-alpha')
   
   def _parse(self):
     self.config = {}
@@ -470,9 +485,12 @@ class ConfChangedEvent(Event):
 
 class DescChangedEvent(Event):
   """
-  Event that indicates that our descriptor has changed. This was first added in
-  tor version 0.1.2.2.
+  Event that indicates that our descriptor has changed.
+  
+  The DESCCHANGED event was introduced in tor version 0.1.2.2-alpha.
   """
+  
+  _VERSION_ADDED = stem.version.Version('0.1.2.2-alpha')
   
   pass
 
@@ -483,7 +501,11 @@ class GuardEvent(Event):
   :var stem.GuardType guard_type: purpose the guard relay is for
   :var str name: nickname or fingerprint of the guard relay
   :var stem.GuardStatus status: status of the guard relay
+  
+  The GUARD event was introduced in tor version 0.1.2.5-alpha.
   """
+  
+  _VERSION_ADDED = stem.version.Version('0.1.2.5-alpha')
   
   # TODO: We should replace the 'name' field with a fingerprint or nickname
   # attribute once we know what it can be...
@@ -521,9 +543,12 @@ class NetworkStatusEvent(Event):
   tor version 0.1.2.3.
   
   :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
+  
+  The NS event was introduced in tor version 0.1.2.3-alpha.
   """
   
   _SKIP_PARSING = True
+  _VERSION_ADDED = stem.version.Version('0.1.2.3-alpha')
   
   def _parse(self):
     content = str(self).lstrip("NS\n")
@@ -541,12 +566,13 @@ class NewConsensusEvent(Event):
   the whole consensus so anything not listed is implicitly no longer
   recommended.
   
-  This was introduced in tor version 0.2.1.13.
-  
   :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
+  
+  The NEWCONSENSUS event was introduced in tor version 0.2.1.13-alpha.
   """
   
   _SKIP_PARSING = True
+  _VERSION_ADDED = stem.version.Version('0.2.1.13-alpha')
   
   def _parse(self):
     content = str(self).lstrip("NEWCONSENSUS\n")
@@ -648,12 +674,13 @@ class SignalEvent(Event):
   * NEWNYM
   * CLEARDNSCACHE
   
-  This was introduced in tor version 0.2.3.1.
-  
   :var stem.Signal signal: signal that tor received
+  
+  The SIGNAL event was introduced in tor version 0.2.3.1-alpha.
   """
   
   _POSITIONAL_ARGS = ("signal",)
+  _VERSION_ADDED = stem.version.Version('0.2.3.1-alpha')
   
   def _parse(self):
     # log if we recieved an unrecognized signal
@@ -677,9 +704,13 @@ class StatusEvent(Event):
   :var stem.StatusType status_type: category of the status event
   :var stem.Runlevel runlevel: runlevel of the logged message
   :var str message: logged message
+  
+  The STATUS_GENERAL, STATUS_CLIENT, STATUS_SERVER events were introduced
+  in tor version 0.1.2.3-alpha.
   """
   
   _POSITIONAL_ARGS = ("runlevel", "action")
+  _VERSION_ADDED = stem.version.Version('0.1.2.3-alpha')
   
   def _parse(self):
     if self.type == 'STATUS_GENERAL':
@@ -772,9 +803,12 @@ class StreamBwEvent(Event):
   :var str id: stream identifier
   :var long written: bytes sent by the application
   :var long read: bytes received by the application
+  
+  The STREAM_BW event was introduced in tor version 0.1.2.8-beta.
   """
   
   _POSITIONAL_ARGS = ("id", "written", "read")
+  _VERSION_ADDED = stem.version.Version('0.1.2.8-beta')
   
   def _parse(self):
     if self.id is not None and not tor_tools.is_valid_stream_id(self.id):
