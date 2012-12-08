@@ -1636,14 +1636,15 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   :raises: **ValueError** if no such value exists
   """
   
-  if isinstance(entries, dict):
-    for k, v in entries.items():
-      if k.lower() == key.lower():
-        return v
-  else:
-    for entry in entries:
-      if entry.lower() == key.lower():
-        return entry
+  if entries is not None:
+    if isinstance(entries, dict):
+      for k, v in entries.items():
+        if k.lower() == key.lower():
+          return v
+    else:
+      for entry in entries:
+        if entry.lower() == key.lower():
+          return entry
   
   if default != UNDEFINED: return default
   else: raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
