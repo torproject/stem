@@ -752,8 +752,8 @@ class Controller(BaseController):
         provided a default response
       * :class:`stem.InvalidArguments` if the 'params' requested was
         invalid
-      * :class:`stem.ProtocolError` if the geoip database is unavailable
-        and the response is not in the cache
+      * :class:`stem.ProtocolError` if the geoip database is known to be
+        unavailable
     """
     
     start_time = time.time()
