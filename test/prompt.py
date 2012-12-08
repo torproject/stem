@@ -5,8 +5,8 @@ easier.
 ::
 
   >>> from test.prompt import *
-  >>> control = controller()
-  >>> control.get_info("version")
+  >>> controller = controller()
+  >>> controller.get_info("version")
   '0.2.1.30'
   
   >>> is_running()
@@ -16,6 +16,7 @@ easier.
 """
 
 import os
+import sys
 import signal
 
 import stem.control
@@ -32,7 +33,7 @@ def print_usage():
   """
   
   print "Welcome to stem's testing prompt. You currently have a controller available"
-  print "via the 'control' variable."
+  print "via the 'controller' variable."
   print
 
 def start():
@@ -46,7 +47,9 @@ def start():
     'ExitPolicy': 'reject *:*',
   }
   
+  sys.stdout.write("Starting tor...")
   stem.process.launch_tor_with_config(config = tor_config, completion_percent = 5)
+  sys.stdout.write("  done\n\n")
 
 def stop(prompt = False):
   """
@@ -82,7 +85,7 @@ def controller():
   """
   
   if not is_running(): start()
-  control = stem.control.Controller.from_port(control_port = CONTROL_PORT)
-  control.authenticate()
-  return control
+  controller = stem.control.Controller.from_port(control_port = CONTROL_PORT)
+  controller.authenticate()
+  return controller
 

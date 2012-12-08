@@ -6,14 +6,14 @@
 #
 #   atagar@morrigan:~/Desktop/stem$ ./prompt 
 #   Welcome to stem's testing prompt. You currently have a controller available
-#   via the 'control' variable.
+#   via the 'controller' variable.
 #
-#   >>> control.get_info("version")
+#   >>> controller.get_info("version")
 #   '0.2.1.30'
 #   >>> quit()
 #
 #   Would you like to stop the tor instance we made? (y/n, default: n): y
 
-python -i -c "import test.prompt; test.prompt.print_usage(); control = test.prompt.controller()"
+python -i -c "import test.prompt; test.prompt.print_usage(); controller = test.prompt.controller()"
 python -c "import test.prompt; test.prompt.stop(True)"
 
