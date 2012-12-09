@@ -432,7 +432,6 @@ class TestController(unittest.TestCase):
       if orconn_output == '':
         if test.runner.require_online(self): return
       
-      self.assertTrue(re.match("\$[0-9a-fA-F]{40}[~=].*", controller.get_info('orconn-status').split()[0]))
       self.assertTrue("VERBOSE_NAMES" in controller.enabled_features)
       self.assertRaises(stem.InvalidArguments, controller.enable_feature, ["NOT", "A", "FEATURE"])
       try:
