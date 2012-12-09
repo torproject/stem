@@ -196,7 +196,10 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
           for value in values:
             torrc_file.write("%s %s\n" % (key, value))
     
-    return launch_tor(tor_cmd, None, torrc_path, completion_percent, init_msg_handler, timeout, take_ownership)
+    # prevents tor from erroring out due to a missing torrc if it gets a sighup
+    args = ['--__ReloadTorrcOnSIGHUP', '0']
+    
+    return launch_tor(tor_cmd, args, torrc_path, completion_percent, init_msg_handler, timeout, take_ownership)
   finally:
     try: os.remove(torrc_path)
     except: pass
