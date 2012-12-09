@@ -166,20 +166,20 @@ Library for working with the tor process.
   =================== ===========
   RelayEndReason      Description
   =================== ===========
-  **MISC**            catch-all for unlisted reasons
-  **RESOLVEFAILED**   couldn't look up hostname
-  **CONNECTREFUSED**  remote host refused connection
-  **EXITPOLICY**      OR refuses to connect to host or port
-  **DESTROY**         Circuit is being destroyed
-  **DONE**            Anonymized TCP connection was closed
-  **TIMEOUT**         Connection timed out, or OR timed out while connecting
-  **NOROUTE**         Routing error while attempting to contact destination
-  **HIBERNATING**     OR is temporarily hibernating
-  **INTERNAL**        Internal error at the OR
-  **RESOURCELIMIT**   OR has no resources to fulfill request
-  **CONNRESET**       Connection was unexpectedly reset
-  **TORPROTOCOL**     Sent when closing connection because of Tor protocol violations.
-  **NOTDIRECTORY**    Client sent RELAY_BEGIN_DIR to a non-directory relay.
+  **MISC**            none of the following reasons
+  **RESOLVEFAILED**   unable to resolve the hostname
+  **CONNECTREFUSED**  remote host refused the connection
+  **EXITPOLICY**      OR refuses to connect to the destination
+  **DESTROY**         circuit is being shut down
+  **DONE**            connection has been closed
+  **TIMEOUT**         connection timed out
+  **NOROUTE**         routing error while contacting the destination
+  **HIBERNATING**     relay is temporarily hibernating
+  **INTERNAL**        internal error at the relay
+  **RESOURCELIMIT**   relay has insufficient resources to service the request
+  **CONNRESET**       connection was unexpectedly reset
+  **TORPROTOCOL**     violation in the tor protocol
+  **NOTDIRECTORY**    directory information requested from a relay that isn't mirroring it
   =================== ===========
 
 .. data:: StreamStatus (enum)
@@ -203,26 +203,13 @@ Library for working with the tor process.
 
 .. data:: StreamClosureReason (enum)
   
-  Reason that a stream is being closed or failed to be established. Tor may
+  Reason that a stream is being closed or failed to be established. This
+  includes all values in the :data:`~stem.RelayEndReason` enumeration. Tor may
   provide reasons not in this enum.
   
   ===================== ===========
   StreamClosureReason   Description
   ===================== ===========
-  **MISC**              none of the following reasons
-  **RESOLVEFAILED**     unable to resolve the hostname
-  **CONNECTREFUSED**    remote host refused the connection
-  **EXITPOLICY**        rejected by the exit due to its exit policy
-  **DESTROY**           circuit is being shut down
-  **DONE**              connection has been closed
-  **TIMEOUT**           connection timed out
-  **NOROUTE**           routing error while contacting the destination
-  **HIBERNATING**       relay is hibernating
-  **INTERNAL**          internal error
-  **RESOURCELIMIT**     relay has insufficient resources to service the request
-  **CONNRESET**         connection has been reset
-  **TORPROTOCOL**       violation in the tor protocol
-  **NOTDIRECTORY**      directory information requested from a relay that isn't mirroring it
   **END**               endpoint has sent a RELAY_END cell
   **PRIVATE_ADDR**      endpoint was a private address (127.0.0.1, 10.0.0.1, etc)
   ===================== ===========
@@ -393,6 +380,7 @@ __all__ = [
   "CircClosureReason",
   "CircEvent",
   "HiddenServiceState",
+  "RelayEndReason",
   "StreamStatus",
   "StreamClosureReason",
   "StreamSource",
