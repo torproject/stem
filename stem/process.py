@@ -80,7 +80,7 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
       runtime_args += ["-f", torrc_path]
   
   if take_ownership:
-    runtime_args += ["--__OwningControllerProcess", _get_pid()]
+    runtime_args += ["__OwningControllerProcess", _get_pid()]
   
   tor_process = subprocess.Popen(runtime_args, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
   
@@ -197,7 +197,7 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
             torrc_file.write("%s %s\n" % (key, value))
     
     # prevents tor from erroring out due to a missing torrc if it gets a sighup
-    args = ['--__ReloadTorrcOnSIGHUP', '0']
+    args = ['__ReloadTorrcOnSIGHUP', '0']
     
     return launch_tor(tor_cmd, args, torrc_path, completion_percent, init_msg_handler, timeout, take_ownership)
   finally:
