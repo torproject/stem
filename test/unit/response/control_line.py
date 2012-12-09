@@ -3,6 +3,7 @@ Unit tests for the stem.response.ControlLine class.
 """
 
 import unittest
+
 import stem.response
 
 # response made by having 'DataDirectory /tmp/my data\"dir/' in the torrc

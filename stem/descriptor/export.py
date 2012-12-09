@@ -9,8 +9,8 @@ Toolkit for exporting descriptors to other formats.
   export_csv_file - Writes exported CSV output to a file
 """
 
-import csv
 import cStringIO
+import csv
 
 import stem.descriptor
 import stem.prereq

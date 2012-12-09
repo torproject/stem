@@ -4,37 +4,46 @@
 Runs unit and integration tests. For usage information run this with '--help'.
 """
 
-import os
-import sys
-import time
 import getopt
-import unittest
-import threading
+import os
 import StringIO
+import sys
+import threading
+import time
+import unittest
 
+import stem.prereq
+import stem.util.conf
+import stem.util.enum
+
+from stem.util import log, system, term
+
+import test.check_whitespace
 import test.output
 import test.runner
-import test.check_whitespace
 import test.unit.connection.authentication
 import test.unit.control.controller
 import test.unit.descriptor.export
-import test.unit.descriptor.reader
-import test.unit.descriptor.server_descriptor
 import test.unit.descriptor.extrainfo_descriptor
-import test.unit.descriptor.router_status_entry
 import test.unit.descriptor.networkstatus.directory_authority
-import test.unit.descriptor.networkstatus.key_certificate
 import test.unit.descriptor.networkstatus.document_v2
 import test.unit.descriptor.networkstatus.document_v3
+import test.unit.descriptor.networkstatus.key_certificate
+import test.unit.descriptor.reader
+import test.unit.descriptor.router_status_entry
+import test.unit.descriptor.server_descriptor
+import test.unit.exit_policy.policy
+import test.unit.exit_policy.rule
+import test.unit.response.authchallenge
 import test.unit.response.control_line
 import test.unit.response.control_message
 import test.unit.response.events
-import test.unit.response.getinfo
 import test.unit.response.getconf
-import test.unit.response.protocolinfo
-import test.unit.response.authchallenge
-import test.unit.response.singleline
+import test.unit.response.getinfo
 import test.unit.response.mapaddress
+import test.unit.response.protocolinfo
+import test.unit.response.singleline
+import test.unit.tutorial
 import test.unit.util.conf
 import test.unit.util.connection
 import test.unit.util.enum
@@ -42,33 +51,23 @@ import test.unit.util.proc
 import test.unit.util.str_tools
 import test.unit.util.system
 import test.unit.util.tor_tools
-import test.unit.exit_policy.policy
-import test.unit.exit_policy.rule
 import test.unit.version
-import test.unit.tutorial
 import test.integ.connection.authentication
 import test.integ.connection.connect
 import test.integ.control.base_controller
 import test.integ.control.controller
-import test.integ.socket.control_message
-import test.integ.socket.control_socket
-import test.integ.descriptor.reader
-import test.integ.descriptor.server_descriptor
 import test.integ.descriptor.extrainfo_descriptor
 import test.integ.descriptor.networkstatus
+import test.integ.descriptor.reader
+import test.integ.descriptor.server_descriptor
+import test.integ.process
 import test.integ.response.protocolinfo
+import test.integ.socket.control_message
+import test.integ.socket.control_socket
 import test.integ.util.conf
 import test.integ.util.proc
 import test.integ.util.system
-import test.integ.process
 import test.integ.version
-
-import stem.prereq
-import stem.util.conf
-import stem.util.enum
-import stem.util.log as log
-import stem.util.term as term
-import stem.util.system as system
 
 OPT = "uit:l:c:h"
 OPT_EXPANDED = ["unit", "integ", "targets=", "test=", "log=", "tor=", "config=", "help"]

@@ -5,14 +5,15 @@ Unit tests for the stem.response.protocolinfo.ProtocolInfoResponse class.
 import os
 import unittest
 
-import stem.socket
-import stem.version
-import stem.util.proc
-import stem.util.system
 import stem.response
 import stem.response.protocolinfo
-import test.mocking as mocking
+import stem.socket
+import stem.util.proc
+import stem.util.system
+import stem.version
+
 from stem.response.protocolinfo import AuthMethod
+from test import mocking
 
 NO_AUTH = """250-PROTOCOLINFO 1
 250-AUTH METHODS=NULL

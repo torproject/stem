@@ -8,9 +8,14 @@ import unittest
 
 import stem.prereq
 import stem.descriptor.server_descriptor
-from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 import test.runner
-from test.mocking import get_relay_server_descriptor, get_bridge_server_descriptor, CRYPTO_BLOB, sign_descriptor_content
+
+from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
+
+from test.mocking import get_relay_server_descriptor, \
+                         get_bridge_server_descriptor, \
+                         CRYPTO_BLOB, \
+                         sign_descriptor_content
 
 class TestServerDescriptor(unittest.TestCase):
   def test_minimal_relay_descriptor(self):

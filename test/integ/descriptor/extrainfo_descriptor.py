@@ -4,13 +4,14 @@ Integration tests for stem.descriptor.extrainfo_descriptor.
 
 from __future__ import with_statement
 
-import os
 import datetime
+import os
 import unittest
 
 import stem.descriptor.extrainfo_descriptor
-import test.runner
 import test.integ.descriptor
+import test.runner
+
 from stem.descriptor.extrainfo_descriptor import DirResponse
 
 class TestExtraInfoDescriptor(unittest.TestCase):

@@ -5,14 +5,32 @@ Unit tests for the NetworkStatusDocumentV3 of stem.descriptor.networkstatus.
 from __future__ import with_statement
 
 import datetime
-import unittest
 import StringIO
+import unittest
 
 import stem.version
+
 from stem.descriptor import Flag
-from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS, DEFAULT_PARAMS, BANDWIDTH_WEIGHT_ENTRIES, DirectoryAuthority, NetworkStatusDocumentV3, parse_file
-from stem.descriptor.router_status_entry import RouterStatusEntryV3, RouterStatusEntryMicroV3
-from test.mocking import support_with, get_router_status_entry_v3, get_router_status_entry_micro_v3, get_directory_authority, get_network_status_document_v3, CRYPTO_BLOB, DOC_SIG, NETWORK_STATUS_DOCUMENT_FOOTER
+
+from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, \
+                                          FOOTER_STATUS_DOCUMENT_FIELDS, \
+                                          DEFAULT_PARAMS, \
+                                          BANDWIDTH_WEIGHT_ENTRIES, \
+                                          DirectoryAuthority, \
+                                          NetworkStatusDocumentV3, \
+                                          parse_file
+
+from stem.descriptor.router_status_entry import RouterStatusEntryV3, \
+                                                RouterStatusEntryMicroV3
+
+from test.mocking import support_with, \
+                         get_router_status_entry_v3, \
+                         get_router_status_entry_micro_v3, \
+                         get_directory_authority, \
+                         get_network_status_document_v3, \
+                         CRYPTO_BLOB, \
+                         DOC_SIG, \
+                         NETWORK_STATUS_DOCUMENT_FOOTER
 
 class TestNetworkStatusDocument(unittest.TestCase):
   def test_minimal_consensus(self):

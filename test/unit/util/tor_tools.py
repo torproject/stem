@@ -3,6 +3,7 @@ Unit tests for the stem.util.tor_tools functions.
 """
 
 import unittest
+
 import stem.util.tor_tools
 
 class TestTorTools(unittest.TestCase):

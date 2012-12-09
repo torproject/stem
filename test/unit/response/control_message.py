@@ -5,6 +5,7 @@ Unit tests for the stem.response.ControlMessage parsing and class.
 import socket
 import StringIO
 import unittest
+
 import stem.socket
 
 OK_REPLY = "250 OK\r\n"

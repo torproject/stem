@@ -111,19 +111,20 @@ providing its own for interacting at a higher level.
 from __future__ import with_statement
 
 import os
-import time
 import Queue
 import StringIO
 import threading
+import time
 
-import stem.response
-import stem.socket
-import stem.version
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
+import stem.response
+import stem.socket
 import stem.util.connection
 import stem.util.enum
-import stem.util.log as log
+import stem.version
+
+from stem.util import log
 
 # state changes a control socket can have
 

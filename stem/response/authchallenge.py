@@ -1,7 +1,7 @@
 import binascii
 
-import stem.socket
 import stem.response
+import stem.socket
 import stem.util.tor_tools
 
 class AuthChallengeResponse(stem.response.ControlMessage):

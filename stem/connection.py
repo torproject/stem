@@ -101,18 +101,19 @@ fine-grained control over the authentication process. For instance...
 
 from __future__ import with_statement
 
-import os
-import getpass
 import binascii
+import getpass
+import os
 
+import stem.control
 import stem.response
 import stem.socket
-import stem.control
-import stem.version
+import stem.util.connection
 import stem.util.enum
 import stem.util.system
-import stem.util.connection
-import stem.util.log as log
+import stem.version
+
+from stem.util import log
 
 AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "SAFECOOKIE", "UNKNOWN")
 

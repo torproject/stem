@@ -73,8 +73,8 @@ import StringIO
 
 import stem.descriptor
 import stem.descriptor.router_status_entry
-import stem.version
 import stem.util.tor_tools
+import stem.version
 
 # Version 2 network status document fields, tuples of the form...
 # (keyword, is_mandatory)

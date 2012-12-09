@@ -6,7 +6,11 @@ import datetime
 import unittest
 
 from stem.descriptor.networkstatus import KeyCertificate
-from test.mocking import get_key_certificate, CRYPTO_BLOB, KEY_CERTIFICATE_HEADER, KEY_CERTIFICATE_FOOTER
+
+from test.mocking import get_key_certificate, \
+                         CRYPTO_BLOB, \
+                         KEY_CERTIFICATE_HEADER, \
+                         KEY_CERTIFICATE_FOOTER
 
 class TestKeyCertificate(unittest.TestCase):
   def test_minimal(self):

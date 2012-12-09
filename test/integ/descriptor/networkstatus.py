@@ -4,14 +4,14 @@ Integration tests for stem.descriptor.networkstatus.
 
 from __future__ import with_statement
 
+import datetime
 import os
 import resource
-import datetime
 import unittest
 
-import stem.version
 import stem.descriptor
 import stem.descriptor.networkstatus
+import stem.version
 import test.integ.descriptor
 
 class TestNetworkStatus(unittest.TestCase):

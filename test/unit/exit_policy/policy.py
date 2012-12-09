@@ -3,6 +3,7 @@ Unit tests for the stem.exit_policy.ExitPolicy class.
 """
 
 import unittest
+
 from stem.exit_policy import ExitPolicy, \
                              MicrodescriptorExitPolicy, \
                              ExitPolicyRule

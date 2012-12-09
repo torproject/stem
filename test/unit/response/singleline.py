@@ -4,9 +4,10 @@ Unit tests for the stem.response.SingleLineResponse class.
 
 import unittest
 
-import stem.socket
 import stem.response
-import test.mocking as mocking
+import stem.socket
+
+from test import mocking
 
 MULTILINE_RESPONSE = """250-MULTI
 250 LINE"""

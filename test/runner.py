@@ -37,23 +37,24 @@ about the tor test instance they're running against.
 
 from __future__ import with_statement
 
+import logging
 import os
-import time
-import stat
 import shutil
 import signal
-import logging
+import stat
 import tempfile
 import threading
+import time
 
 import stem.prereq
-import stem.socket
 import stem.process
-import stem.version
+import stem.socket
 import stem.util.conf
 import stem.util.enum
-import stem.util.term as term
+import stem.version
 import test.output
+
+from stem.util import term
 
 CONFIG = stem.util.conf.config_dict("test", {
   "integ.test_directory": "./test/data",

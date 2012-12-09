@@ -20,10 +20,10 @@ but for now just moving the parts we need.
   cryptovariables_equal - string comparison for cryptographic operations
 """
 
+import hashlib
+import hmac
 import os
 import re
-import hmac
-import hashlib
 
 CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
 

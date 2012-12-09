@@ -9,7 +9,8 @@ import os
 import unittest
 
 import test.runner
-import stem.util.proc as proc
+
+from stem.util import proc
 
 class TestProc(unittest.TestCase):
   def test_get_cwd(self):

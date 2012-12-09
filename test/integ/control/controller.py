@@ -6,20 +6,20 @@ from __future__ import with_statement
 
 import os
 import re
-import time
 import shutil
 import socket
-import unittest
 import tempfile
+import time
+import unittest
 
 import stem.control
+import stem.descriptor.reader
+import stem.descriptor.router_status_entry
+import stem.response.protocolinfo
 import stem.socket
 import stem.version
-import stem.response.protocolinfo
 import test.runner
 import test.util
-import stem.descriptor.router_status_entry
-import stem.descriptor.reader
 
 from stem.control import EventType
 

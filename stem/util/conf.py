@@ -139,7 +139,7 @@ from __future__ import with_statement
 
 import threading
 
-import stem.util.log as log
+from stem.util import log
 
 CONFS = {}  # mapping of identifier to singleton instances of configs
 

@@ -3,6 +3,7 @@ Unit tests for the stem.util.enum class and functions.
 """
 
 import unittest
+
 import stem.util.enum
 
 class TestEnum(unittest.TestCase):

@@ -75,14 +75,14 @@ and picks up where it left off if ran again...
 
 from __future__ import with_statement
 
+import mimetypes
 import os
+import Queue
 import tarfile
 import threading
-import mimetypes
-import Queue
 
-import stem.prereq
 import stem.descriptor
+import stem.prereq
 
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = "DONE"

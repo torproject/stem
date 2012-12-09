@@ -3,11 +3,12 @@ Unit tests for the stem.version.Version parsing and class.
 """
 
 import unittest
-import stem.version
-from stem.version import Version
-import stem.util.system
 
-import test.mocking as mocking
+import stem.util.system
+import stem.version
+
+from stem.version import Version
+from test import mocking
 
 TOR_VERSION_OUTPUT = """Mar 22 23:09:37.088 [notice] Tor v0.2.2.35 \
 (git-73ff13ab3cc9570d). This is experimental software. Do not rely on it for \

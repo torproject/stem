@@ -53,12 +53,12 @@ import itertools
 import StringIO
 import __builtin__
 
-import stem.response
-import stem.socket
-import stem.descriptor.server_descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.networkstatus
 import stem.descriptor.router_status_entry
+import stem.descriptor.server_descriptor
+import stem.response
+import stem.socket
 
 # Once we've mocked a function we can't rely on its __module__ or __name__
 # attributes, so instead we associate a unique 'mock_id' attribute that maps

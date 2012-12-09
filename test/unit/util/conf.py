@@ -3,6 +3,7 @@ Unit tests for the stem.util.conf class and functions.
 """
 
 import unittest
+
 import stem.util.conf
 
 class TestConf(unittest.TestCase):

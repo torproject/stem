@@ -22,12 +22,13 @@ best-effort, providing **None** if the lookup fails.
 """
 
 import os
-import time
 import platform
 import subprocess
+import time
 
 import stem.util.proc
-import stem.util.log as log
+
+from stem.util import log
 
 # Mapping of commands to if they're available or not. This isn't always
 # reliable, failing for some special commands. For these the cache is

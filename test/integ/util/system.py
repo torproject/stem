@@ -3,14 +3,15 @@ Integration tests for the stem.util.system functions against the tor process
 that we're running.
 """
 
-import os
 import getpass
-import unittest
+import os
 import tempfile
+import unittest
 
 import stem.util.system
 import test.runner
-import test.mocking as mocking
+
+from test import mocking
 
 def filter_system_call(prefixes):
   """

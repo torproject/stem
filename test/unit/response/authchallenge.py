@@ -4,10 +4,11 @@ Unit tests for the stem.response.authchallenge.AuthChallengeResponse class.
 
 import unittest
 
-import stem.socket
 import stem.response
 import stem.response.authchallenge
-import test.mocking as mocking
+import stem.socket
+
+from test import mocking
 
 VALID_RESPONSE = "250 AUTHCHALLENGE \
 SERVERHASH=B16F72DACD4B5ED1531F3FCC04B593D46A1E30267E636EA7C7F8DD7A2B7BAA05 \

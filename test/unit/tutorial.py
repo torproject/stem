@@ -3,9 +3,10 @@ Tests for the examples given in stem's tutorial.
 """
 
 from __future__ import with_statement
+
 import unittest
 
-import test.mocking as mocking
+from test import mocking
 
 class TestTutorial(unittest.TestCase):
   def tearDown(self):

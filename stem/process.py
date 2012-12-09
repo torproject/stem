@@ -17,11 +17,11 @@ Helper functions for working with tor as a process.
 
 from __future__ import with_statement
 
-import re
 import os
+import re
 import signal
-import tempfile
 import subprocess
+import tempfile
 
 import stem.prereq
 import stem.util.system

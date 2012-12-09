@@ -5,15 +5,16 @@ Integration tests for stem.descriptor.reader.
 from __future__ import with_statement
 
 import os
-import sys
-import time
 import signal
+import sys
 import tarfile
+import time
 import unittest
 
 import stem.descriptor.reader
-import stem.util.system as system
 import test.runner
+
+from stem.util import system
 
 BASIC_LISTING = """
 /tmp 123

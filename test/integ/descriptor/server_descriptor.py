@@ -4,16 +4,16 @@ Integration tests for stem.descriptor.server_descriptor.
 
 from __future__ import with_statement
 
-import os
 import datetime
+import os
 import unittest
 
 import stem.control
+import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.version
-import stem.descriptor.server_descriptor
-import test.runner
 import test.integ.descriptor
+import test.runner
 
 class TestServerDescriptor(unittest.TestCase):
   def test_metrics_descriptor(self):

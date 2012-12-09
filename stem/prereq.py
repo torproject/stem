@@ -22,7 +22,7 @@ series). Other requirements for complete functionality are...
 
 import sys
 
-import stem.util.log as log
+from stem.util import log
 
 IS_CRYPTO_AVAILABLE = None
 

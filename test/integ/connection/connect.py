@@ -2,9 +2,9 @@
 Integration tests for the connect_* convenience functions.
 """
 
+import StringIO
 import sys
 import unittest
-import StringIO
 
 import stem.connection
 import test.runner

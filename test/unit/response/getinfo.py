@@ -4,10 +4,11 @@ Unit tests for the stem.response.getinfo.GetInfoResponse class.
 
 import unittest
 
-import stem.socket
 import stem.response
 import stem.response.getinfo
-import test.mocking as mocking
+import stem.socket
+
+from test import mocking
 
 EMPTY_RESPONSE = "250 OK"
 

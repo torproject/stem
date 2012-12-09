@@ -3,6 +3,7 @@ Unit tests for the stem.util.connection functions.
 """
 
 import unittest
+
 import stem.util.connection
 
 class TestConnection(unittest.TestCase):

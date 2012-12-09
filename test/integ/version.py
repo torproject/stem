@@ -6,8 +6,8 @@ running with.
 import unittest
 
 import stem.prereq
-import test.runner
 import stem.version
+import test.runner
 
 class TestVersion(unittest.TestCase):
   def test_get_system_tor_version(self):

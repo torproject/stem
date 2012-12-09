@@ -27,19 +27,20 @@ etc). This information is provided from a few sources...
     +- get_annotation_lines - lines that provided the annotations
 """
 
-import re
 import base64
-import hashlib
 import datetime
+import hashlib
+import re
 
-import stem.prereq
 import stem.descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
-import stem.version
+import stem.prereq
 import stem.util.connection
 import stem.util.tor_tools
-import stem.util.log as log
+import stem.version
+
+from stem.util import log
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (

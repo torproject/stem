@@ -3,19 +3,19 @@ Tests the stem.process functions with various use cases.
 """
 
 import os
-import time
 import shutil
 import signal
-import unittest
 import subprocess
+import time
+import unittest
 
 import stem.prereq
-import stem.socket
 import stem.process
-import stem.version
+import stem.socket
 import stem.util.system
-
+import stem.version
 import test.runner
+
 from test import mocking
 
 DATA_DIRECTORY = '/tmp/stem_integ'

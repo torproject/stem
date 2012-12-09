@@ -36,15 +36,16 @@ Dave Daeschler, Giampaolo Rodola' and is under the BSD license.
   ============== ===========
 """
 
+import base64
 import os
+import platform
+import socket
 import sys
 import time
-import socket
-import base64
-import platform
 
 import stem.util.enum
-import stem.util.log as log
+
+from stem.util import log
 
 # cached system values
 IS_PROC_AVAILABLE, SYS_START_TIME, SYS_PHYSICAL_MEMORY = None, None, None

@@ -1,11 +1,11 @@
-import re
 import datetime
+import re
 import StringIO
 
 import stem
 import stem.control
-import stem.response
 import stem.descriptor.router_status_entry
+import stem.response
 import stem.version
 
 from stem.util import connection, log, str_tools, tor_tools

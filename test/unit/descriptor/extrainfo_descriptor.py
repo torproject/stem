@@ -4,6 +4,7 @@ Unit tests for stem.descriptor.extrainfo_descriptor.
 
 import datetime
 import unittest
+
 from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor, DirResponse, DirStat
 from test.mocking import get_relay_extrainfo_descriptor, get_bridge_extrainfo_descriptor, CRYPTO_BLOB
 

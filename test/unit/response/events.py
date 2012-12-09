@@ -9,9 +9,9 @@ import unittest
 import stem.response
 import stem.response.events
 import stem.util.log
-import test.mocking as mocking
 
 from stem import * # enums and exceptions
+from test import mocking
 
 # BUILDTIMEOUT_SET event from tor 0.2.3.16.
 

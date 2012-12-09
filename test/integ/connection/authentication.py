@@ -8,11 +8,10 @@ from __future__ import with_statement
 import os
 import unittest
 
-import test.runner
 import stem.connection
 import stem.socket
 import stem.version
-from stem.response.protocolinfo import AuthMethod
+import test.runner
 
 # Responses given by tor for various authentication failures. These may change
 # in the future and if they do then this test should be updated.
@@ -95,11 +94,11 @@ def _get_auth_failure_message(auth_type):
 
 class TestAuthenticate(unittest.TestCase):
   def setUp(self):
-    self.cookie_auth_methods = [AuthMethod.COOKIE]
+    self.cookie_auth_methods = [stem.connection.AuthMethod.COOKIE]
     
     tor_version = test.runner.get_runner().get_tor_version()
     if tor_version.meets_requirements(stem.version.Requirement.AUTH_SAFECOOKIE):
-      self.cookie_auth_methods.append(AuthMethod.SAFECOOKIE)
+      self.cookie_auth_methods.append(stem.connection.AuthMethod.SAFECOOKIE)
   
   def test_authenticate_general_socket(self):
     """
@@ -214,7 +213,7 @@ class TestAuthenticate(unittest.TestCase):
     # test both cookie authentication mechanisms
     with runner.get_tor_socket(False) as control_socket:
       if is_cookie_only:
-        for method in (AuthMethod.COOKIE, AuthMethod.SAFECOOKIE):
+        for method in (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.SAFECOOKIE):
           protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
           
           if method in protocolinfo_response.auth_methods:
@@ -308,13 +307,13 @@ class TestAuthenticate(unittest.TestCase):
     for auth_type in self.cookie_auth_methods:
       if _can_authenticate(stem.connection.AuthMethod.NONE):
         # authentication will work anyway unless this is safecookie
-        if auth_type == AuthMethod.COOKIE:
+        if auth_type == stem.connection.AuthMethod.COOKIE:
           self._check_auth(auth_type, auth_value)
-        elif auth_type == AuthMethod.SAFECOOKIE:
+        elif auth_type == stem.connection.AuthMethod.SAFECOOKIE:
           exc_type = stem.connection.CookieAuthRejected
           self.assertRaises(exc_type, self._check_auth, auth_type, auth_value)
       else:
-        if auth_type == AuthMethod.SAFECOOKIE:
+        if auth_type == stem.connection.AuthMethod.SAFECOOKIE:
           if _can_authenticate(auth_type):
             exc_type = stem.connection.AuthSecurityFailure
           else:

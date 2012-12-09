@@ -29,6 +29,7 @@ import re
 import stem.util.enum
 
 try:
+  # added in python 2.7
   from collections import OrderedDict
 except ImportError:
   from stem.util.ordereddict import OrderedDict

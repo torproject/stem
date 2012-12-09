@@ -8,7 +8,8 @@ import sys
 
 import stem.util.conf
 import stem.util.enum
-import stem.util.term as term
+
+from stem.util import term
 
 CONFIG = stem.util.conf.config_dict("test", {
   "argument.no_color": False,

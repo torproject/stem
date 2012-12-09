@@ -16,8 +16,8 @@ easier.
 """
 
 import os
-import sys
 import signal
+import sys
 
 import stem.control
 import stem.process

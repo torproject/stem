@@ -65,13 +65,13 @@ Extra-info descriptors are available from a few sources...
   ===================== ===========
 """
 
-import re
-import hashlib
 import datetime
+import hashlib
+import re
 
 import stem.descriptor
-import stem.util.enum
 import stem.util.connection
+import stem.util.enum
 
 # known statuses for dirreq-v2-resp and dirreq-v3-resp...
 DirResponse = stem.util.enum.Enum(

@@ -4,10 +4,11 @@ Unit tests for the stem.response.mapaddress.MapAddressResponse class.
 
 import unittest
 
-import stem.socket
 import stem.response
 import stem.response.mapaddress
-import test.mocking as mocking
+import stem.socket
+
+from test import mocking
 
 SINGLE_RESPONSE = """250 foo=bar"""
 

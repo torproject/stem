@@ -5,14 +5,14 @@ Integration tests for the stem.control.BaseController class.
 from __future__ import with_statement
 
 import re
+import threading
 import time
 import unittest
-import threading
 
 import stem.control
+import test.runner
 import stem.socket
 import stem.util.system
-import test.runner
 
 class StateObserver(object):
   """

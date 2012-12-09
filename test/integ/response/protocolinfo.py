@@ -7,12 +7,13 @@ from __future__ import with_statement
 
 import unittest
 
-import test.runner
-import stem.socket
 import stem.connection
-import stem.version
+import stem.socket
 import stem.util.system
-import test.mocking as mocking
+import stem.version
+import test.runner
+
+from test import mocking
 from test.integ.util.system import filter_system_call
 
 class TestProtocolInfo(unittest.TestCase):

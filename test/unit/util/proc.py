@@ -3,11 +3,11 @@ Unit testing code for the stem.util.proc functions.
 """
 
 import os
-import unittest
 import StringIO
+import unittest
 
-import test.mocking as mocking
-import stem.util.proc as proc
+from stem.util import proc
+from test import mocking
 
 class TestProc(unittest.TestCase):
   def tearDown(self):

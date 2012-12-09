@@ -1,5 +1,5 @@
-import stem.socket
 import stem.response
+import stem.socket
 
 class GetConfResponse(stem.response.ControlMessage):
   """

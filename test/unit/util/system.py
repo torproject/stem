@@ -5,15 +5,17 @@ these tests actually make system calls, use proc, or otherwise deal with the
 system running the tests.
 """
 
+import functools
+import ntpath
 import os
 import platform
-import functools
-import unittest
-import ntpath
 import posixpath
+import unittest
+
 import stem.util.proc
-import stem.util.system as system
-import test.mocking as mocking
+
+from stem.util import system
+from test import mocking
 
 # Base responses for the get_pid_by_name tests. The 'success' and
 # 'multiple_results' entries are filled in by tests.

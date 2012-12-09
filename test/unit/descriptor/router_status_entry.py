@@ -7,9 +7,13 @@ import unittest
 
 from stem.descriptor import Flag
 from stem.descriptor.router_status_entry import RouterStatusEntryV3, _decode_fingerprint
-from stem.version import Version
 from stem.exit_policy import MicrodescriptorExitPolicy
-from test.mocking import get_router_status_entry_v2, get_router_status_entry_v3, get_router_status_entry_micro_v3, ROUTER_STATUS_ENTRY_V3_HEADER
+from stem.version import Version
+
+from test.mocking import get_router_status_entry_v2, \
+                         get_router_status_entry_v3, \
+                         get_router_status_entry_micro_v3, \
+                         ROUTER_STATUS_ENTRY_V3_HEADER
 
 class TestRouterStatusEntry(unittest.TestCase):
   def test_fingerprint_decoding(self):

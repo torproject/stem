@@ -12,8 +12,9 @@ various error conditions, and make sure that the right exception is raised.
 import unittest
 
 import stem.connection
-import stem.util.log as log
-import test.mocking as mocking
+
+from stem.util import log
+from test import mocking
 
 class TestAuthenticate(unittest.TestCase):
   def setUp(self):

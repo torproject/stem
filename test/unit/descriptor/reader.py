@@ -2,8 +2,8 @@
 Unit tests for stem.descriptor.reader.
 """
 
-import unittest
 import StringIO
+import unittest
 
 import stem.descriptor.reader
 import test.mocking as mocking

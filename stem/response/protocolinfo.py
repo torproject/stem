@@ -1,9 +1,9 @@
-import stem.socket
 import stem.response
+import stem.socket
 import stem.version
-import stem.util.log as log
 
 from stem.connection import AuthMethod
+from stem.util import log
 
 class ProtocolInfoResponse(stem.response.ControlMessage):
   """
