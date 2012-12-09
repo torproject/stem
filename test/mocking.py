@@ -299,7 +299,7 @@ def mock_method(target_class, method_name, mock_call):
   # themselves don't reference the class. This is unfortunate because it means
   # that we need to know both the class and method we're replacing.
   
-  target_method = target_class.__dict__[method_name]
+  target_method = getattr(target_class, method_name)
   
   if "mock_id" in target_method.__dict__:
     # we're overriding an already mocked method
@@ -311,10 +311,10 @@ def mock_method(target_class, method_name, mock_call):
     MOCK_STATE[mocking_id] = (target_class, method_name, target_method)
   
   mock_wrapper = lambda *args: mock_call(*args)
-  mock_wrapper.__dict__["mock_id"] = mocking_id
+  setattr(mock_wrapper, "mock_id", mocking_id)
   
   # mocks the function with this wrapper
-  target_class.__dict__[method_name] = mock_wrapper
+  setattr(target_class, method_name, mock_wrapper)
 
 def revert_mocking():
   """
@@ -334,7 +334,7 @@ def revert_mocking():
     if module == __builtin__:
       setattr(__builtin__, function, impl)
     else:
-      module.__dict__[function] = impl
+      setattr(module, function, impl)
     
     del MOCK_STATE[mock_id]
   
