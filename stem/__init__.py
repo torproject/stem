@@ -496,7 +496,6 @@ CircPurpose = stem.util.enum.UppercaseEnum(
 )
 
 CircClosureReason = stem.util.enum.UppercaseEnum(
-  "NONE",
   "TORPROTOCOL",
   "INTERNAL",
   "REQUESTED",

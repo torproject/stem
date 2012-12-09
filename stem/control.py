@@ -1483,14 +1483,17 @@ class Controller(BaseController):
     Closes the specified stream.
     
     :param int stream_id: id of the stream to be closed
-    :param int reason: reason the stream is closing (see RelayEndReason)
+    :param stem.RelayEndReason reason: reason the stream is closing
     :param str flag: not currently used
     
     :raises: :class:`stem.InvalidArguments` if the stream or reason are not recognized
     :raises: :class:`stem.InvalidRequest` if the stream and/or reason are missing
     """
     
-    response = self.msg("CLOSESTREAM %s %s %s"% (str(stream_id), str(stem.RelayEndReason.index_of(reason)), flag))
+    # there's a single value offset between RelayEndReason.index_of() and the
+    # value that tor expects since tor's value starts with the index of one
+    
+    response = self.msg("CLOSESTREAM %s %s %s"% (stream_id, stem.RelayEndReason.index_of(reason) + 1, flag))
     stem.response.convert("SINGLELINE", response)
     
     if not response.is_ok():
