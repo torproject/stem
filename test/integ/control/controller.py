@@ -518,7 +518,8 @@ class TestController(unittest.TestCase):
       self.assertFalse(circ_id in circ)
       
       circ_id = controller.new_circuit()
-      self.assertRaises(stem.InvalidRequest, controller.close_circuit, circ_id + 1024)
+      self.assertRaises(stem.InvalidArguments, controller.close_circuit, circ_id + 1024)
+      self.assertRaises(stem.InvalidRequest, controller.close_circuit, "")
   
   def test_mapaddress(self):
     if test.runner.require_control(self): return
