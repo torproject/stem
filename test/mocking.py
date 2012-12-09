@@ -7,6 +7,7 @@ calling :func:`test.mocking.revert_mocking`.
 ::
 
   mock - replaces a function with an alternative implementation
+  mock_method - replaces a method with an alternative implementation
   revert_mocking - reverts any changes made by the mock function
   get_real_function - provides the non-mocked version of a function
   get_all_combinations - provides all combinations of attributes
@@ -284,12 +285,23 @@ def mock(target, mock_call, target_module=None):
 
 def mock_method(target_class, method_name, mock_call):
   """
-  Mocks the given class method in a similar fashion as what mock() does for
-  functions.
+  Mocks the given method in target_class in a similar fashion as mock()
+  does for functions. For instance...
+  
+  ::
+  
+    >>> mock_method(stem.control.Controller, "is_feature_enabled", mocking.return_true())
+    >>> controller.is_feature_enabled("VERBOSE_EVENTS")
+    True
+    
+  ::
+  
+  "VERBOSE_EVENTS" does not exist and can never be True, but the mocked
+  "is_feature_enabled" will always return True, regardless.
   
   :param class target_class: class with the method we want to mock
   :param str method_name: name of the method to be mocked
-  :param functor mock_call: mocking to replace the method with
+  :param functor mock_call: mocking to replace the method
   """
   
   # Ideally callers could call us with just the method, for instance like...
@@ -299,7 +311,7 @@ def mock_method(target_class, method_name, mock_call):
   # themselves don't reference the class. This is unfortunate because it means
   # that we need to know both the class and method we're replacing.
   
-  target_method = target_class.__dict__[method_name]
+  target_method = getattr(target_class, method_name)
   
   if "mock_id" in target_method.__dict__:
     # we're overriding an already mocked method
@@ -311,10 +323,10 @@ def mock_method(target_class, method_name, mock_call):
     MOCK_STATE[mocking_id] = (target_class, method_name, target_method)
   
   mock_wrapper = lambda *args: mock_call(*args)
-  mock_wrapper.__dict__["mock_id"] = mocking_id
+  setattr(mock_wrapper, "mock_id", mocking_id)
   
   # mocks the function with this wrapper
-  target_class.__dict__[method_name] = mock_wrapper
+  setattr(target_class, method_name, mock_wrapper)
 
 def revert_mocking():
   """
@@ -334,7 +346,7 @@ def revert_mocking():
     if module == __builtin__:
       setattr(__builtin__, function, impl)
     else:
-      module.__dict__[function] = impl
+      setattr(module, function, impl)
     
     del MOCK_STATE[mock_id]
   
