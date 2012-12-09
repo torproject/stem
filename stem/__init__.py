@@ -574,24 +574,16 @@ StreamStatus = stem.util.enum.UppercaseEnum(
   "CLOSED",
 )
 
-StreamClosureReason = stem.util.enum.UppercaseEnum(
-  "MISC",
-  "RESOLVEFAILED",
-  "CONNECTREFUSED",
-  "EXITPOLICY",
-  "DESTROY",
-  "DONE",
-  "TIMEOUT",
-  "NOROUTE",
-  "HIBERNATING",
-  "INTERNAL",
-  "RESOURCELIMIT",
-  "CONNRESET",
-  "TORPROTOCOL",
-  "NOTDIRECTORY",
+# add STREAM event specific reasons to the list of RELAY_END reasons
+_tmp_StreamClosureReason = [v for v in RelayEndReason]
+_tmp_StreamClosureReason.extend((
   "END",
   "PRIVATE_ADDR",
-)
+))
+# build UppercaseEnum from extended list
+StreamClosureReason = stem.util.enum.UppercaseEnum(*_tmp_StreamClosureReason)
+# remove temporary list
+del _tmp_StreamClosureReason
 
 StreamSource = stem.util.enum.UppercaseEnum(
   "CACHE",
