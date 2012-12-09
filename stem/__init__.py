@@ -159,6 +159,29 @@ Library for working with the tor process.
   **HSSR_JOINED**               connected to the rendezvous-point
   ============================= ===========
 
+.. data:: RelayEndReason (enum)
+  
+  Enumeration for possible reasons to close a stream.
+  
+  =================== ===========
+  RelayEndReason      Description
+  =================== ===========
+  **MISC**            catch-all for unlisted reasons
+  **RESOLVEFAILED**   couldn't look up hostname
+  **CONNECTREFUSED**  remote host refused connection
+  **EXITPOLICY**      OR refuses to connect to host or port
+  **DESTROY**         Circuit is being destroyed
+  **DONE**            Anonymized TCP connection was closed
+  **TIMEOUT**         Connection timed out, or OR timed out while connecting
+  **NOROUTE**         Routing error while attempting to contact destination
+  **HIBERNATING**     OR is temporarily hibernating
+  **INTERNAL**        Internal error at the OR
+  **RESOURCELIMIT**   OR has no resources to fulfill request
+  **CONNRESET**       Connection was unexpectedly reset
+  **TORPROTOCOL**     Sent when closing connection because of Tor protocol violations.
+  **NOTDIRECTORY**    Client sent RELAY_BEGIN_DIR to a non-directory relay.
+  =================== ===========
+
 .. data:: StreamStatus (enum)
   
   State that a stream going through tor can have. Tor may provide states not in
@@ -519,6 +542,24 @@ HiddenServiceState = stem.util.enum.UppercaseEnum(
   "HSSI_ESTABLISHED",
   "HSSR_CONNECTING",
   "HSSR_JOINED",
+)
+
+RelayEndReason = stem.util.enum.UppercaseEnum(
+  "NONE",
+  "MISC",
+  "RESOLVEFAILED",
+  "CONNECTREFUSED",
+  "EXITPOLICY",
+  "DESTROY",
+  "DONE",
+  "TIMEOUT",
+  "NOROUTE",
+  "HIBERNATING",
+  "INTERNAL",
+  "RESOURCELIMIT",
+  "CONNRESET",
+  "TORPROTOCOL",
+  "NOTDIRECTORY",
 )
 
 StreamStatus = stem.util.enum.UppercaseEnum(
