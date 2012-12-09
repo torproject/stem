@@ -1462,7 +1462,8 @@ class Controller(BaseController):
     :param str flag: optional value to modify closing, the only flag available
       is "IfUnused" which will not close the circuit unless it is unused
     
-    :raises: :class:`stem.InvalidArguments` if the circuit doesn't exist or not enough information is provided
+    :raises: :class:`stem.InvalidArguments` if the circuit is unknown
+    :raises: :class:`stem.InvalidRequest` if not enough information is provided
     """
     
     response = self.msg("CLOSECIRCUIT %s %s"% (str(circuit_id), flag))
@@ -1470,6 +1471,8 @@ class Controller(BaseController):
     
     if not response.is_ok():
       if response.code in ('512', '552'):
+        if response.message.startswith("Unknown circuit "):
+          raise stem.InvalidArguments(response.code, response.message, [circuit_id])
         raise stem.InvalidRequest(response.code, response.message)
       else:
         raise stem.ProtocolError("CLOSECIRCUIT returned unexpected response code: %s" % response.code)
