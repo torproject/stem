@@ -18,6 +18,7 @@ as instances of the :class:`~stem.response.ControlMessage` class.
     |- send - sends a message to the socket
     |- recv - receives a ControlMessage from the socket
     |- is_alive - reports if the socket is known to be closed
+    |- is_localhost - returns if the socket is for the local system or not
     |- connect - connects a new socket
     |- close - shuts down the socket
     +- __enter__ / __exit__ - manages socket connection
@@ -145,6 +146,15 @@ class ControlSocket(object):
     
     return self._is_alive
   
+  def is_localhost(self):
+    """
+    Returns if the connection is for the local system or not.
+    
+    :returns: **bool** that's **True** if the connection is for the local host and **False** otherwise
+    """
+    
+    return False
+    
   def connect(self):
     """
     Connects to a new socket, closing our previous one if we're already
@@ -300,6 +310,9 @@ class ControlPort(ControlSocket):
     
     return self._control_port
   
+  def is_localhost(self):
+    return self._control_addr == "127.0.0.1"
+  
   def _make_socket(self):
     try:
       control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -338,6 +351,9 @@ class ControlSocketFile(ControlSocket):
     """
     
     return self._socket_path
+  
+  def is_localhost(self):
+    return True
   
   def _make_socket(self):
     try:

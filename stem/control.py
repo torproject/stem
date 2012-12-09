@@ -1511,7 +1511,7 @@ class Controller(BaseController):
     
     owning_pid = self.get_conf("__OwningControllerProcess", None)
     
-    if owning_pid == str(os.getpid()):
+    if owning_pid == str(os.getpid()) and self.get_socket().is_localhost():
       response = self.msg("TAKEOWNERSHIP")
       stem.response.convert("SINGLELINE", response)
       
@@ -1524,7 +1524,7 @@ class Controller(BaseController):
         except stem.ControllerError, exc:
           log.warn("We were unable to reset tor's __OwningControllerProcess configuration. It will continue to periodically check if our pid exists. (%s)" % response)
       else:
-        log.warn("We were unable assert ownership of tor through TAKEOWNERSHIP, despite being configured to be the owning process thrugh __OwningControllerProcess. (%s)" % response)
+        log.warn("We were unable assert ownership of tor through TAKEOWNERSHIP, despite being configured to be the owning process through __OwningControllerProcess. (%s)" % response)
   
   def _handle_event(self, event_message):
     stem.response.convert("EVENT", event_message, arrived_at = time.time())
