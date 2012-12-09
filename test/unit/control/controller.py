@@ -5,11 +5,12 @@ integ tests, but a few bits lend themselves to unit testing.
 
 import unittest
 
-from stem import InvalidRequest, ProtocolError
-from stem.control import _parse_circ_path, Controller, EventType
 import stem.socket
 import stem.version
-import test.mocking as mocking
+
+from stem import InvalidRequest, ProtocolError
+from stem.control import _parse_circ_path, Controller, EventType
+from test import mocking
 
 class TestControl(unittest.TestCase):
   def setUp(self):
@@ -65,12 +66,14 @@ class TestControl(unittest.TestCase):
     
     # set up for failure to create any events
     mocking.mock_method(Controller, "get_version", mocking.return_value(stem.version.Version('0.1.0.14')))
-    self.assertRaises(InvalidRequest, self.controller.add_event_listener, lambda x: x, EventType.BW)
+    self.assertRaises(InvalidRequest, self.controller.add_event_listener, mocking.no_op(), EventType.BW)
     
     # set up to only fail newer events
     mocking.mock_method(Controller, "get_version", mocking.return_value(stem.version.Version('0.2.0.35')))
+    
     # EventType.BW is one of the earliest events
-    self.assertIsNone(self.controller.add_event_listener(lambda x: x, EventType.BW))
+    self.controller.add_event_listener(mocking.no_op(), EventType.BW)
+    
     # EventType.SIGNAL was added in tor version 0.2.3.1-alpha
-    self.assertRaises(InvalidRequest, self.controller.add_event_listener, lambda x: x, EventType.SIGNAL)
+    self.assertRaises(InvalidRequest, self.controller.add_event_listener, mocking.no_op(), EventType.SIGNAL)
 
