@@ -7,6 +7,7 @@ calling :func:`test.mocking.revert_mocking`.
 ::
 
   mock - replaces a function with an alternative implementation
+  mock_method - replaces a method with an alternative implementation
   revert_mocking - reverts any changes made by the mock function
   get_real_function - provides the non-mocked version of a function
   get_all_combinations - provides all combinations of attributes
@@ -284,12 +285,23 @@ def mock(target, mock_call, target_module=None):
 
 def mock_method(target_class, method_name, mock_call):
   """
-  Mocks the given class method in a similar fashion as what mock() does for
-  functions.
+  Mocks the given method in target_class in a similar fashion as mock()
+  does for functions. For instance...
+  
+  ::
+  
+    >>> mock_method(stem.control.Controller, "is_feature_enabled", mocking.return_true())
+    >>> controller.is_feature_enabled("VERBOSE_EVENTS")
+    True
+    
+  ::
+  
+  "VERBOSE_EVENTS" does not exist and can never be True, but the mocked
+  "is_feature_enabled" will always return True, regardless.
   
   :param class target_class: class with the method we want to mock
   :param str method_name: name of the method to be mocked
-  :param functor mock_call: mocking to replace the method with
+  :param functor mock_call: mocking to replace the method
   """
   
   # Ideally callers could call us with just the method, for instance like...
