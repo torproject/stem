@@ -161,7 +161,7 @@ Library for working with the tor process.
 
 .. data:: RelayEndReason (enum)
   
-  Enumeration for possible reasons to close a stream.
+  Reasons why the stream is to be closed.
   
   =================== ===========
   RelayEndReason      Description
@@ -204,8 +204,8 @@ Library for working with the tor process.
 .. data:: StreamClosureReason (enum)
   
   Reason that a stream is being closed or failed to be established. This
-  includes all values in the :data:`~stem.RelayEndReason` enumeration. Tor may
-  provide reasons not in this enum.
+  includes all values in the :data:`~stem.RelayEndReason` enumeration as
+  well as the following. Tor may provide reasons not in this enum.
   
   ===================== ===========
   StreamClosureReason   Description
@@ -496,6 +496,7 @@ CircPurpose = stem.util.enum.UppercaseEnum(
 )
 
 CircClosureReason = stem.util.enum.UppercaseEnum(
+  "NONE",
   "TORPROTOCOL",
   "INTERNAL",
   "REQUESTED",
@@ -532,7 +533,6 @@ HiddenServiceState = stem.util.enum.UppercaseEnum(
 )
 
 RelayEndReason = stem.util.enum.UppercaseEnum(
-  "NONE",
   "MISC",
   "RESOLVEFAILED",
   "CONNECTREFUSED",
