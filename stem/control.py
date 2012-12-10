@@ -32,6 +32,7 @@ providing its own for interacting at a higher level.
     |- new_circuit - create new circuits
     |- extend_circuit - create new circuits and extend existing ones
     |- close_circuit - close a circuit
+    |- close_stream - close a stream
     |- repurpose_circuit - change a circuit's purpose
     |- map_address - maps one address to another such that connections to the original are replaced with the other
     |- get_version - convenience method to get tor version
@@ -1476,6 +1477,34 @@ class Controller(BaseController):
         raise stem.InvalidRequest(response.code, response.message)
       else:
         raise stem.ProtocolError("CLOSECIRCUIT returned unexpected response code: %s" % response.code)
+  
+  def close_stream(self, stream_id, reason = stem.RelayEndReason.MISC, flag = ''):
+    """
+    Closes the specified stream.
+    
+    :param int stream_id: id of the stream to be closed
+    :param stem.RelayEndReason reason: reason the stream is closing
+    :param str flag: not currently used
+    
+    :raises: :class:`stem.InvalidArguments` if the stream or reason are not recognized
+    :raises: :class:`stem.InvalidRequest` if the stream and/or reason are missing
+    """
+    
+    # there's a single value offset between RelayEndReason.index_of() and the
+    # value that tor expects since tor's value starts with the index of one
+    
+    response = self.msg("CLOSESTREAM %s %s %s"% (stream_id, stem.RelayEndReason.index_of(reason) + 1, flag))
+    stem.response.convert("SINGLELINE", response)
+    
+    if not response.is_ok():
+      if response.code in ('512', '552'):
+        if response.message.startswith("Unknown stream "):
+          raise stem.InvalidArguments(response.code, response.message, [stream_id])
+        elif response.message.startswith("Unrecognized reason "):
+          raise stem.InvalidArguments(response.code, response.message, [reason])
+        raise stem.InvalidRequest(response.code, response.message)
+      else:
+        raise stem.ProtocolError("CLOSESTREAM returned unexpected response code: %s" % response.code)
   
   def map_address(self, mapping):
     """

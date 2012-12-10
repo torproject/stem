@@ -159,6 +159,29 @@ Library for working with the tor process.
   **HSSR_JOINED**               connected to the rendezvous-point
   ============================= ===========
 
+.. data:: RelayEndReason (enum)
+  
+  Reasons why the stream is to be closed.
+  
+  =================== ===========
+  RelayEndReason      Description
+  =================== ===========
+  **MISC**            none of the following reasons
+  **RESOLVEFAILED**   unable to resolve the hostname
+  **CONNECTREFUSED**  remote host refused the connection
+  **EXITPOLICY**      OR refuses to connect to the destination
+  **DESTROY**         circuit is being shut down
+  **DONE**            connection has been closed
+  **TIMEOUT**         connection timed out
+  **NOROUTE**         routing error while contacting the destination
+  **HIBERNATING**     relay is temporarily hibernating
+  **INTERNAL**        internal error at the relay
+  **RESOURCELIMIT**   relay has insufficient resources to service the request
+  **CONNRESET**       connection was unexpectedly reset
+  **TORPROTOCOL**     violation in the tor protocol
+  **NOTDIRECTORY**    directory information requested from a relay that isn't mirroring it
+  =================== ===========
+
 .. data:: StreamStatus (enum)
   
   State that a stream going through tor can have. Tor may provide states not in
@@ -180,26 +203,13 @@ Library for working with the tor process.
 
 .. data:: StreamClosureReason (enum)
   
-  Reason that a stream is being closed or failed to be established. Tor may
-  provide reasons not in this enum.
+  Reason that a stream is being closed or failed to be established. This
+  includes all values in the :data:`~stem.RelayEndReason` enumeration as
+  well as the following. Tor may provide reasons not in this enum.
   
   ===================== ===========
   StreamClosureReason   Description
   ===================== ===========
-  **MISC**              none of the following reasons
-  **RESOLVEFAILED**     unable to resolve the hostname
-  **CONNECTREFUSED**    remote host refused the connection
-  **EXITPOLICY**        rejected by the exit due to its exit policy
-  **DESTROY**           circuit is being shut down
-  **DONE**              connection has been closed
-  **TIMEOUT**           connection timed out
-  **NOROUTE**           routing error while contacting the destination
-  **HIBERNATING**       relay is hibernating
-  **INTERNAL**          internal error
-  **RESOURCELIMIT**     relay has insufficient resources to service the request
-  **CONNRESET**         connection has been reset
-  **TORPROTOCOL**       violation in the tor protocol
-  **NOTDIRECTORY**      directory information requested from a relay that isn't mirroring it
   **END**               endpoint has sent a RELAY_END cell
   **PRIVATE_ADDR**      endpoint was a private address (127.0.0.1, 10.0.0.1, etc)
   ===================== ===========
@@ -370,6 +380,7 @@ __all__ = [
   "CircClosureReason",
   "CircEvent",
   "HiddenServiceState",
+  "RelayEndReason",
   "StreamStatus",
   "StreamClosureReason",
   "StreamSource",
@@ -521,19 +532,7 @@ HiddenServiceState = stem.util.enum.UppercaseEnum(
   "HSSR_JOINED",
 )
 
-StreamStatus = stem.util.enum.UppercaseEnum(
-  "NEW",
-  "NEWRESOLVE",
-  "REMAP",
-  "SENTCONNECT",
-  "SENTRESOLVE",
-  "SUCCEEDED",
-  "FAILED",
-  "DETACHED",
-  "CLOSED",
-)
-
-StreamClosureReason = stem.util.enum.UppercaseEnum(
+RelayEndReason = stem.util.enum.UppercaseEnum(
   "MISC",
   "RESOLVEFAILED",
   "CONNECTREFUSED",
@@ -548,9 +547,25 @@ StreamClosureReason = stem.util.enum.UppercaseEnum(
   "CONNRESET",
   "TORPROTOCOL",
   "NOTDIRECTORY",
+)
+
+StreamStatus = stem.util.enum.UppercaseEnum(
+  "NEW",
+  "NEWRESOLVE",
+  "REMAP",
+  "SENTCONNECT",
+  "SENTRESOLVE",
+  "SUCCEEDED",
+  "FAILED",
+  "DETACHED",
+  "CLOSED",
+)
+
+# StreamClosureReason is a superset of RelayEndReason
+StreamClosureReason = stem.util.enum.UppercaseEnum(*(RelayEndReason.keys() + (
   "END",
   "PRIVATE_ADDR",
-)
+)))
 
 StreamSource = stem.util.enum.UppercaseEnum(
   "CACHE",
