@@ -784,7 +784,7 @@ class Controller(BaseController):
     
     # if everything was cached then short circuit making the query
     if not params:
-      log.debug("GETINFO %s (cache fetch)" % " ".join(reply.keys()))
+      log.trace("GETINFO %s (cache fetch)" % " ".join(reply.keys()))
       
       if is_multiple: return reply
       else: return reply.values()[0]
@@ -1085,7 +1085,7 @@ class Controller(BaseController):
     
     # if everything was cached then short circuit making the query
     if not lookup_params:
-      log.debug("GETCONF %s (cache fetch)" % " ".join(reply.keys()))
+      log.trace("GETCONF %s (cache fetch)" % " ".join(reply.keys()))
       
       if multiple:
         return reply
