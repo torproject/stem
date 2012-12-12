@@ -820,6 +820,9 @@ class Controller(BaseController):
       
       if is_geoip_request and self.is_caching_enabled() and self._geoip_failure_count != -1:
         self._geoip_failure_count += 1
+        
+        if self.is_geoip_unavailable():
+          log.warn("Tor's geoip database is unavailable.")
       
       log.debug("GETINFO %s (failed: %s)" % (" ".join(params), exc))
       
