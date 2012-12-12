@@ -778,7 +778,9 @@ class Controller(BaseController):
         params.remove(param)
       elif param.startswith('ip-to-country/') and self.is_geoip_unavailable():
         # the geoip database already looks to be unavailable - abort the request
-        raise stem.ProtocolError("Tor geoip database is unavailable")
+        if default == UNDEFINED:
+          raise stem.ProtocolError("Tor geoip database is unavailable")
+        else: return default
     
     # if everything was cached then short circuit making the query
     if not params:
