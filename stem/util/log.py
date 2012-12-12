@@ -183,6 +183,17 @@ class LogBuffer(logging.Handler):
   def emit(self, record):
     self._buffer.append(record)
 
+class _StdoutLogger(logging.Handler):
+  def __init__(self, runlevel):
+    logging.Handler.__init__(self, level = logging_level(runlevel))
+    
+    self.formatter = logging.Formatter(
+      fmt = '%(asctime)s [%(levelname)s] %(message)s',
+      datefmt = '%m/%d/%Y %H:%M:%S')
+  
+  def emit(self, record):
+    print self.formatter.format(record)
+
 def log_to_stdout(runlevel):
   """
   Logs further events to stdout.
@@ -190,9 +201,5 @@ def log_to_stdout(runlevel):
   :param stem.util.log.Runlevel runlevel: minimum runlevel a message needs to be to be logged
   """
   
-  logging.basicConfig(
-    level = logging_level(runlevel),
-    format = '%(asctime)s [%(levelname)s] %(message)s',
-    datefmt = '%m/%d/%Y %H:%M:%S',
-  )
+  get_logger().addHandler(_StdoutLogger(runlevel))
 
