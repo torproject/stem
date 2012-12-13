@@ -459,15 +459,15 @@ class TestController(unittest.TestCase):
     elif test.runner.require_online(self): return
     
     with test.runner.get_runner().get_tor_controller() as controller:
-      circ_id = controller.extend_circuit(0)
+      circ_id = controller.extend_circuit('0')
       # check if our circuit was created
       self.assertTrue(filter(lambda x: int(x.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines()))
       circ_id = controller.new_circuit()
       self.assertTrue(filter(lambda x: int(x.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines()))
       
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, "foo")
-      self.assertRaises(stem.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#")
-      self.assertRaises(stem.InvalidRequest, controller.extend_circuit, 0, "thisroutershouldntexistbecausestemexists!@##$%#", "foo")
+      self.assertRaises(stem.InvalidRequest, controller.extend_circuit, '0', "thisroutershouldntexistbecausestemexists!@##$%#")
+      self.assertRaises(stem.InvalidRequest, controller.extend_circuit, '0', "thisroutershouldntexistbecausestemexists!@##$%#", "foo")
   
   def test_repurpose_circuit(self):
     """

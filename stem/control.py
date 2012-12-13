@@ -1375,13 +1375,13 @@ class Controller(BaseController):
       * general
       * controller
     
-    :param int circuit_id: id of the circuit whose purpose is to be changed
+    :param str circuit_id: id of the circuit whose purpose is to be changed
     :param str purpose: purpose (either "general" or "controller")
     
     :raises: :class:`stem.InvalidArguments` if the circuit doesn't exist or if the purpose was invalid
     """
     
-    response = self.msg("SETCIRCUITPURPOSE %s purpose=%s" % (str(circuit_id), purpose))
+    response = self.msg("SETCIRCUITPURPOSE %s purpose=%s" % (circuit_id, purpose))
     stem.response.convert("SINGLELINE", response)
     
     if not response.is_ok():
@@ -1403,7 +1403,7 @@ class Controller(BaseController):
     
     return self.extend_circuit(0, path, purpose)
   
-  def extend_circuit(self, circuit = 0, path = None, purpose = "general"):
+  def extend_circuit(self, circuit = "0", path = None, purpose = "general"):
     """
     Either requests the creation of a new circuit or extends an existing one.
     
@@ -1415,31 +1415,34 @@ class Controller(BaseController):
     
     ::
       
-      >>> control.extend_circuit(0, ["718BCEA286B531757ACAFF93AE04910EA73DE617", "30BAB8EE7606CBD12F3CC269AE976E0153E7A58D", "2765D8A8C4BBA3F89585A9FFE0E8575615880BEB"])
+      >>> control.extend_circuit('0', ["718BCEA286B531757ACAFF93AE04910EA73DE617", "30BAB8EE7606CBD12F3CC269AE976E0153E7A58D", "2765D8A8C4BBA3F89585A9FFE0E8575615880BEB"])
       19
-      >>> control.extend_circuit(0)
+      >>> control.extend_circuit('0')
       20
       >>> print control.get_info('circuit-status')
       20 EXTENDED $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA=Eskimo BUILD_FLAGS=NEED_CAPACITY PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:51:11.433755
       19 BUILT $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$30BAB8EE7606CBD12F3CC269AE976E0153E7A58D=Pascal1,$2765D8A8C4BBA3F89585A9FFE0E8575615880BEB=Anthracite PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:50:56.969938
     
-    :param int circuit: id of a circuit to be extended
+    :param str circuit: id of a circuit to be extended
     :param list,str path: one or more relays to make a circuit through, this is
       required if the circuit id is non-zero
     :param str purpose: "general" or "controller"
     
-    :returns: int of the circuit id of the created or extended circuit
+    :returns: str of the circuit id of the created or extended circuit
     
     :raises: :class:`stem.InvalidRequest` if one of the parameters were invalid
     """
     
-    if path is None and circuit == 0:
+    # we might accidently get integer circuit ids
+    circuit = str(circuit)
+    
+    if path is None and circuit == '0':
       path_opt_version = stem.version.Requirement.EXTENDCIRCUIT_PATH_OPTIONAL
       
       if not self.get_version().meets_requirements(path_opt_version):
         raise stem.InvalidRequest(512, "EXTENDCIRCUIT requires the path prior to version %s" % path_opt_version)
     
-    args = [str(circuit)]
+    args = [circuit]
     if type(path) == str: path = [path]
     if path: args.append(",".join(path))
     if purpose: args.append("purpose=%s" % purpose)
@@ -1458,13 +1461,13 @@ class Controller(BaseController):
     else:
       raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
     
-    return int(new_circuit)
+    return new_circuit
   
   def close_circuit(self, circuit_id, flag = ''):
     """
     Closes the specified circuit.
     
-    :param int circuit_id: id of the circuit to be closed
+    :param str circuit_id: id of the circuit to be closed
     :param str flag: optional value to modify closing, the only flag available
       is "IfUnused" which will not close the circuit unless it is unused
     
@@ -1487,7 +1490,7 @@ class Controller(BaseController):
     """
     Closes the specified stream.
     
-    :param int stream_id: id of the stream to be closed
+    :param str stream_id: id of the stream to be closed
     :param stem.RelayEndReason reason: reason the stream is closing
     :param str flag: not currently used
     
