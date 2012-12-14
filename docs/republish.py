@@ -24,28 +24,25 @@ If stem's repository is unchanged then this is a no-op.
   -r, --repeat RATE     tries to republish the site at a set rate, in minutes
 """
 
-def run(command):
+def run(command, cwd = None):
   # Runs the given command. This returns the stdout if successful, and raises
   # an OSError if it fails.
   
-  cmd = subprocess.Popen(command.split(' '), stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+  cmd = subprocess.Popen(command.split(' '), stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd)
   
   if cmd.wait() == 0:
     return cmd.communicate()[0]
   else:
     stdout, stderr = cmd.communicate()
-    raise OSError("'%s' failed\n  stdout: %s\n  stderr: %s" % (command, stdout, stderr))
+    raise OSError("'%s' failed\n  stdout: %s\n  stderr: %s" % (command, stdout.strip(), stderr.strip()))
 
 def republish_site():
   # Checks if stem's repository has changed, rebuilding the site if so. Ideally
   # we'd use plumbing commands to check this but... meh. Patches welcome.
   
-  clone_cmd = 'git --git-dir=/home/stem/stem/.git pull'
-  
-  if 'Already up-to-date.' not in run(clone_cmd):
+  if 'Already up-to-date.' not in run('git pull', cwd = '/home/stem/stem'):
     LOGGER.log(logging.INFO, "Stem's repository has changed. Republishing...")
-    run('cd /home/stem/stem/docs')
-    run('make html')
+    run('make html', cwd = '/home/stem/stem/docs')
     run('sudo -u mirroradm static-master-update-component stem.torproject.org')
     LOGGER.log(logging.INFO, "  site republished")
 
