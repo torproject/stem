@@ -211,7 +211,8 @@ CONNECTED NCIRCS=too_many"
 # STATUS_* events that I was able to easily trigger. Most came from starting
 # TBB, then listening while it bootstrapped.
 
-STATUS_CLIENT_CONSENSUS_ARRIVED = "650 STATUS_CLIENT NOTICE CONSENSUS_ARRIVED"
+STATUS_GENERAL_CONSENSUS_ARRIVED = "650 STATUS_GENERAL NOTICE CONSENSUS_ARRIVED"
+
 STATUS_CLIENT_ENOUGH_DIR_INFO = "650 STATUS_CLIENT NOTICE ENOUGH_DIR_INFO"
 STATUS_CLIENT_CIRC_ESTABLISHED = "650 STATUS_CLIENT NOTICE CIRCUIT_ESTABLISHED"
 
@@ -704,11 +705,11 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(Signal.DUMP, event.signal)
   
   def test_status_event_consensus_arrived(self):
-    event = _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED)
+    event = _get_event(STATUS_GENERAL_CONSENSUS_ARRIVED)
     
     self.assertTrue(isinstance(event, stem.response.events.StatusEvent))
-    self.assertEqual(STATUS_CLIENT_CONSENSUS_ARRIVED.lstrip("650 "), str(event))
-    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(STATUS_GENERAL_CONSENSUS_ARRIVED.lstrip("650 "), str(event))
+    self.assertEqual(StatusType.GENERAL, event.status_type)
     self.assertEqual(Runlevel.NOTICE, event.runlevel)
     self.assertEqual("CONSENSUS_ARRIVED", event.action)
   
@@ -1048,17 +1049,17 @@ class TestEvents(unittest.TestCase):
     
     # Try parsing a valid event. We shouldn't log anything.
     
-    _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED)
+    _get_event(STATUS_GENERAL_CONSENSUS_ARRIVED)
     self.assertTrue(logging_buffer.is_empty())
     self.assertEqual([], list(logging_buffer))
     
     # Parse an invalid runlevel.
     
-    _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED.replace("NOTICE", "OMEGA_CRITICAL!!!"))
+    _get_event(STATUS_GENERAL_CONSENSUS_ARRIVED.replace("NOTICE", "OMEGA_CRITICAL!!!"))
     logged_events = list(logging_buffer)
     
     self.assertEqual(1, len(logged_events))
-    self.assertTrue("STATUS_CLIENT event had an unrecognized runlevel" in logged_events[0])
+    self.assertTrue("STATUS_GENERAL event had an unrecognized runlevel" in logged_events[0])
     
     stem_logger.removeHandler(logging_buffer)
 
