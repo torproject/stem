@@ -125,6 +125,36 @@ TimeStarted="2008-12-25 23:50:43" \
 CountrySummary=us=16,de=8,uk=8 \
 IPVersions=v4=16,v6=40'
 
+CLIENTS_SEEN_EVENT_BAD_1 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=us:16,de:8,uk:8 \
+IPVersions=v4=16,v6=40'
+
+CLIENTS_SEEN_EVENT_BAD_2 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=usa=16,unitedkingdom=8 \
+IPVersions=v4=16,v6=40'
+
+CLIENTS_SEEN_EVENT_BAD_3 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=us=16,de=8,uk=eight \
+IPVersions=v4=16,v6=40'
+
+CLIENTS_SEEN_EVENT_BAD_4 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=au=16,au=8,au=8 \
+IPVersions=v4=16,v6=40'
+
+CLIENTS_SEEN_EVENT_BAD_5 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=us=16,de=8,uk=8 \
+IPVersions=v4:16,v6:40'
+
+CLIENTS_SEEN_EVENT_BAD_6 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=us=16,de=8,uk=8 \
+IPVersions=v4=sixteen,v6=40'
+
 # CONF_CHANGED event from tor 0.2.3.16.
 
 CONF_CHANGED_EVENT = """650-CONF_CHANGED
@@ -512,6 +542,13 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2008, 12, 25, 23, 50, 43), event.start_time)
     self.assertEqual({'us': 16, 'de': 8, 'uk': 8}, event.locales)
     self.assertEqual({'v4': 16, 'v6': 40}, event.ip_versions)
+    
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_2)
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_3)
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_4)
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_5)
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_6)
   
   def test_conf_changed(self):
     event = _get_event(CONF_CHANGED_EVENT)
