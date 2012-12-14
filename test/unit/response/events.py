@@ -63,6 +63,16 @@ BUILD_FLAGS=NEED_CAPACITY \
 PURPOSE=GENERAL \
 TIME_CREATED=2012-11-08T16:48:38.417238"
 
+CIRC_LAUNCHED_BAD_1 = "650 CIRC 7 LAUNCHED \
+BUILD_FLAGS=NEED_CAPACITY \
+PURPOSE=GENERAL \
+TIME_CREATED=20121108T164838417238"
+
+CIRC_LAUNCHED_BAD_2 = "650 CIRC toolong8901234567 LAUNCHED \
+BUILD_FLAGS=NEED_CAPACITY \
+PURPOSE=GENERAL \
+TIME_CREATED=2012-11-08T16:48:38.417238"
+
 CIRC_EXTENDED = "650 CIRC 7 EXTENDED \
 $999A226EBED397F331B612FE1E4CFAE5C1F201BA=piyaz \
 BUILD_FLAGS=NEED_CAPACITY \
@@ -382,6 +392,9 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 11, 8, 16, 48, 38, 417238), event.created)
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
+    
+    self.assertRaises(ProtocolError, _get_event, CIRC_LAUNCHED_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, CIRC_LAUNCHED_BAD_2)
     
     event = _get_event(CIRC_EXTENDED)
     
