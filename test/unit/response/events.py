@@ -235,6 +235,16 @@ class TestEvents(unittest.TestCase):
     time.sleep(0.2)
     events_thread.join()
   
+  def test_event(self):
+    # synthetic, contrived message construction to reach the blank event check
+    self.assertRaises(ProtocolError, stem.response.convert, "EVENT", stem.response.ControlMessage([('', '', '')], ''), arrived_at = 25)
+    
+    # Event._parse_message() on an unknown event type
+    event = _get_event('650 NONE SOLID "NON SENSE" condition=MEH quoted="1 2 3"')
+    self.assertEqual("NONE", event.type)
+    self.assertEqual(["SOLID", '"NON', 'SENSE"'], event.positional_args)
+    self.assertEqual({"condition":"MEH", "quoted":"1 2 3"}, event.keyword_args)
+  
   def test_log_events(self):
     event = _get_event("650 DEBUG connection_edge_process_relay_cell(): Got an extended cell! Yay.")
     
