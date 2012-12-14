@@ -3,6 +3,5 @@
 export PATH=/home/stem/bin:$PATH
 export PYTHONPATH=/home/stem/lib/python
 
-python /home/stem/stem/docs/republish.py $*
-disown -h
+python /home/stem/stem/docs/republish.py $*&
 
