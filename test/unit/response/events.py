@@ -295,6 +295,19 @@ STREAM_DNS_REQUEST = "650 STREAM 1113 NEW 0 www.google.com:0 \
 SOURCE_ADDR=127.0.0.1:15297 \
 PURPOSE=DNS_REQUEST"
 
+STREAM_SENTCONNECT_BAD_1 = "650 STREAM 18 SENTCONNECT 26"
+STREAM_SENTCONNECT_BAD_2 = "650 STREAM 18 SENTCONNECT 26 encrypted.google.com"
+STREAM_SENTCONNECT_BAD_3 = "650 STREAM 18 SENTCONNECT 26 encrypted.google.com:https"
+
+STREAM_DNS_REQUEST_BAD_1 = "650 STREAM 1113 NEW 0 www.google.com:0 \
+SOURCE_ADDR=127.0.0.1 \
+PURPOSE=DNS_REQUEST"
+
+STREAM_DNS_REQUEST_BAD_2 = "650 STREAM 1113 NEW 0 www.google.com:0 \
+SOURCE_ADDR=127.0.0.1:dns \
+PURPOSE=DNS_REQUEST"
+
+
 def _get_event(content):
   controller_event = mocking.get_message(content)
   stem.response.convert("EVENT", controller_event, arrived_at = 25)
@@ -1023,6 +1036,29 @@ class TestEvents(unittest.TestCase):
     self.assertEqual("127.0.0.1", event.source_address)
     self.assertEqual(15297, event.source_port)
     self.assertEqual(StreamPurpose.DNS_REQUEST, event.purpose)
+    
+    event = _get_event(STREAM_SENTCONNECT_BAD_1)
+    
+    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
+    self.assertEqual(STREAM_SENTCONNECT_BAD_1.lstrip("650 "), str(event))
+    self.assertEqual("18", event.id)
+    self.assertEqual(StreamStatus.SENTCONNECT, event.status)
+    self.assertEqual("26", event.circ_id)
+    self.assertEqual(None, event.target)
+    self.assertEqual(None, event.target_address)
+    self.assertEqual(None, event.target_port)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual(None, event.source)
+    self.assertEqual(None, event.source_addr)
+    self.assertEqual(None, event.source_address)
+    self.assertEqual(None, event.source_port)
+    self.assertEqual(None, event.purpose)
+    
+    self.assertRaises(ProtocolError, _get_event, STREAM_SENTCONNECT_BAD_2)
+    self.assertRaises(ProtocolError, _get_event, STREAM_SENTCONNECT_BAD_3)
+    self.assertRaises(ProtocolError, _get_event, STREAM_DNS_REQUEST_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, STREAM_DNS_REQUEST_BAD_2)
   
   def test_stream_bw_event(self):
     event = _get_event("650 STREAM_BW 2 15 25")
