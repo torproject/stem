@@ -96,11 +96,11 @@ class Event(stem.response.ControlMessage):
           attr_values = [positional.pop(0)]
           
           if not attr_values[0].startswith('"'):
-            raise stem.ProtocolError("The %s value should be quoted, but didn't have a starting quote: %s" % self)
+            raise stem.ProtocolError("The %s value should be quoted, but didn't have a starting quote: %s" % (attr_name, self))
           
           while True:
             if not positional:
-              raise stem.ProtocolError("The %s value should be quoted, but didn't have an ending quote: %s" % self)
+              raise stem.ProtocolError("The %s value should be quoted, but didn't have an ending quote: %s" % (attr_name, self))
             
             attr_values.append(positional.pop(0))
             if attr_values[-1].endswith('"'): break
