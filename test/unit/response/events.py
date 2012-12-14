@@ -264,6 +264,9 @@ STATUS_SERVER_DNS_UP = "650 STATUS_SERVER NOTICE NAMESERVER_STATUS \
 NS=205.171.3.25 \
 STATUS=UP"
 
+# unknown STATUS_* event type
+STATUS_SPECIFIC_CONSENSUS_ARRIVED = "650 STATUS_SPECIFIC NOTICE CONSENSUS_ARRIVED"
+
 # STREAM events from tor 0.2.3.16 for visiting the google front page
 
 STREAM_NEW = "650 STREAM 18 NEW 0 \
@@ -869,6 +872,12 @@ class TestEvents(unittest.TestCase):
     }
     
     self.assertEqual(expected_attr, event.keyword_args)
+  
+  def test_status_event_bug(self):
+    # briefly insert a fake value in EVENT_TYPE_TO_CLASS
+    stem.response.events.EVENT_TYPE_TO_CLASS['STATUS_SPECIFIC'] = stem.response.events.StatusEvent
+    self.assertRaises(ValueError, _get_event, STATUS_SPECIFIC_CONSENSUS_ARRIVED)
+    del stem.response.events.EVENT_TYPE_TO_CLASS['STATUS_SPECIFIC']
   
   def test_stream_event(self):
     event = _get_event(STREAM_NEW)
