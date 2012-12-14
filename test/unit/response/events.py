@@ -36,6 +36,26 @@ TIMEOUT_RATE=0.137097 \
 CLOSE_MS=21850 \
 CLOSE_RATE=0.072581"
 
+BUILD_TIMEOUT_EVENT_BAD_1 = "650 BUILDTIMEOUT_SET COMPUTED \
+TOTAL_TIMES=one_twenty_four \
+TIMEOUT_MS=9019 \
+XM=1375 \
+ALPHA=0.855662 \
+CUTOFF_QUANTILE=0.800000 \
+TIMEOUT_RATE=0.137097 \
+CLOSE_MS=21850 \
+CLOSE_RATE=0.072581"
+
+BUILD_TIMEOUT_EVENT_BAD_2 = "650 BUILDTIMEOUT_SET COMPUTED \
+TOTAL_TIMES=124 \
+TIMEOUT_MS=9019 \
+XM=1375 \
+ALPHA=0.855662 \
+CUTOFF_QUANTILE=zero_point_eight \
+TIMEOUT_RATE=0.137097 \
+CLOSE_MS=21850 \
+CLOSE_RATE=0.072581"
+
 # CIRC events from tor v0.2.3.16
 
 CIRC_LAUNCHED = "650 CIRC 7 LAUNCHED \
@@ -316,6 +336,9 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(0.137097, event.timeout_rate)
     self.assertEqual(21850, event.close_timeout)
     self.assertEqual(0.072581, event.close_rate)
+    
+    self.assertRaises(ProtocolError, _get_event, BUILD_TIMEOUT_EVENT_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, BUILD_TIMEOUT_EVENT_BAD_2)
   
   def test_bw_event(self):
     event = _get_event("650 BW 15 25")
