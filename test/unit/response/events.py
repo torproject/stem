@@ -338,6 +338,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(20, event.written)
     self.assertEqual({'OR': '5', 'EXIT': '500'}, event.keyword_args)
     
+    self.assertRaises(ProtocolError, _get_event, "650 BW")
     self.assertRaises(ProtocolError, _get_event, "650 BW 15")
     self.assertRaises(ProtocolError, _get_event, "650 BW -15 25")
     self.assertRaises(ProtocolError, _get_event, "650 BW 15 -25")
