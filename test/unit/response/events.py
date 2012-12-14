@@ -190,6 +190,24 @@ s Fast HSDir Named Stable V2Dir Valid
 650 OK
 """
 
+# ORCONN events from starting tor 0.2.2.39 via TBB
+
+ORCONN_CLOSED = "650 ORCONN $A1130635A0CDA6F60C276FBF6994EFBD4ECADAB1~tama CLOSED REASON=DONE"
+ORCONN_CONNECTED = "650 ORCONN 127.0.0.1:9000 CONNECTED NCIRCS=20"
+ORCONN_LAUNCHED = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon LAUNCHED"
+
+ORCONN_CONNECTED_BAD_1 = "650 ORCONN \
+$7ED90E2833EE38A75795BA9237B0A4560E5=GreenD \
+LAUNCHED"
+
+ORCONN_CONNECTED_BAD_2 = "650 ORCONN \
+127.0.0.1:001 \
+CONNECTED"
+
+ORCONN_CONNECTED_BAD_3 = "650 ORCONN \
+127.0.0.1:9000 \
+CONNECTED NCIRCS=too_many"
+
 # STATUS_* events that I was able to easily trigger. Most came from starting
 # TBB, then listening while it bootstrapped.
 
@@ -265,11 +283,6 @@ SOURCE_ADDR=(Tor_internal):0 PURPOSE=DIR_FETCH"
 STREAM_DNS_REQUEST = "650 STREAM 1113 NEW 0 www.google.com:0 \
 SOURCE_ADDR=127.0.0.1:15297 \
 PURPOSE=DNS_REQUEST"
-
-# ORCONN events from starting tor 0.2.2.39 via TBB
-
-ORCONN_CONNECTED = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon CONNECTED"
-ORCONN_CLOSED = "650 ORCONN $A1130635A0CDA6F60C276FBF6994EFBD4ECADAB1~tama CLOSED REASON=DONE"
 
 # NEWDESC events. I've never actually seen multiple descriptors in an event,
 # but the spec allows for it.
@@ -638,19 +651,6 @@ class TestEvents(unittest.TestCase):
     self.assertEqual([expected_desc], event.desc)
   
   def test_orconn_event(self):
-    event = _get_event(ORCONN_CONNECTED)
-    
-    self.assertTrue(isinstance(event, stem.response.events.ORConnEvent))
-    self.assertEqual(ORCONN_CONNECTED.lstrip("650 "), str(event))
-    self.assertEqual("$7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon", event.endpoint)
-    self.assertEqual("7ED90E2833EE38A75795BA9237B0A4560E51E1A0", event.endpoint_fingerprint)
-    self.assertEqual("GreenDragon", event.endpoint_nickname)
-    self.assertEqual(None, event.endpoint_address)
-    self.assertEqual(None, event.endpoint_port)
-    self.assertEqual(ORStatus.CONNECTED, event.status)
-    self.assertEqual(None, event.reason)
-    self.assertEqual(None, event.circ_count)
-    
     event = _get_event(ORCONN_CLOSED)
     
     self.assertTrue(isinstance(event, stem.response.events.ORConnEvent))
@@ -663,6 +663,36 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(ORStatus.CLOSED, event.status)
     self.assertEqual(ORClosureReason.DONE, event.reason)
     self.assertEqual(None, event.circ_count)
+    
+    event = _get_event(ORCONN_CONNECTED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.ORConnEvent))
+    self.assertEqual(ORCONN_CONNECTED.lstrip("650 "), str(event))
+    self.assertEqual("127.0.0.1:9000", event.endpoint)
+    self.assertEqual(None, event.endpoint_fingerprint)
+    self.assertEqual(None, event.endpoint_nickname)
+    self.assertEqual('127.0.0.1', event.endpoint_address)
+    self.assertEqual(9000, event.endpoint_port)
+    self.assertEqual(ORStatus.CONNECTED, event.status)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(20, event.circ_count)
+    
+    event = _get_event(ORCONN_LAUNCHED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.ORConnEvent))
+    self.assertEqual(ORCONN_LAUNCHED.lstrip("650 "), str(event))
+    self.assertEqual("$7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon", event.endpoint)
+    self.assertEqual("7ED90E2833EE38A75795BA9237B0A4560E51E1A0", event.endpoint_fingerprint)
+    self.assertEqual("GreenDragon", event.endpoint_nickname)
+    self.assertEqual(None, event.endpoint_address)
+    self.assertEqual(None, event.endpoint_port)
+    self.assertEqual(ORStatus.LAUNCHED, event.status)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.circ_count)
+    
+    self.assertRaises(ProtocolError, _get_event, ORCONN_CONNECTED_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, ORCONN_CONNECTED_BAD_2)
+    self.assertRaises(ProtocolError, _get_event, ORCONN_CONNECTED_BAD_3)
   
   def test_signal_event(self):
     event = _get_event("650 SIGNAL DEBUG")
