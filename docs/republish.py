@@ -73,14 +73,15 @@ if __name__ == '__main__':
   if repeat_rate:
     latest_run = 0 # unix timestamp for when we last ran
     
-    while time.time() < (latest_run + repeat_rate * 60):
-      time.sleep(15)
-    
-    try:
-      latest_run = time.time()
-      republish_site()
-    except OSError, exc:
-      LOGGER.log(logging.WARN, str(exc))
+    while True:
+      while time.time() < (latest_run + repeat_rate * 60):
+        time.sleep(15)
+      
+      try:
+        latest_run = time.time()
+        republish_site()
+      except OSError, exc:
+        LOGGER.log(logging.WARN, str(exc))
   else:
     republish_site()
 
