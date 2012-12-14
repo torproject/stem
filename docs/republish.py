@@ -7,7 +7,7 @@ import time
 LOGGER = logging.getLogger("republish")
 LOGGER.setLevel(logging.INFO)
 
-handler = logging.FileHandler('/home/stem/site_republishing.log')
+handler = logging.FileHandler('/home/stem/republish.log')
 handler.setFormatter(logging.Formatter(
   fmt = '%(asctime)s [%(levelname)s] %(message)s',
   datefmt = '%m/%d/%Y %H:%M:%S',
@@ -53,7 +53,6 @@ if __name__ == '__main__':
     print "%s (for usage provide --help)" % exc
     sys.exit(1)
   
-  LOGGER.log(logging.INFO, "Starting stem site republisher")
   repeat_rate = None
   
   for opt, arg in opts:
@@ -68,6 +67,7 @@ if __name__ == '__main__':
       sys.exit()
   
   if repeat_rate:
+    LOGGER.log(logging.INFO, "Starting stem site republisher")
     latest_run = 0 # unix timestamp for when we last ran
     
     while True:
