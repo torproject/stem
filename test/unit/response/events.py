@@ -104,6 +104,20 @@ PURPOSE=MEASURE_TIMEOUT \
 TIME_CREATED=2012-12-03T16:45:33.409602 \
 OLD_PURPOSE=TESTING"
 
+CIRC_MINOR_EVENT_BAD_1 = "650 CIRC_MINOR 7 PURPOSE_CHANGED \
+$67B2BDA4264D8A189D9270E28B1D30A262838243~europa1 \
+BUILD_FLAGS=IS_INTERNAL,NEED_CAPACITY \
+PURPOSE=MEASURE_TIMEOUT \
+TIME_CREATED=20121203T164533409602 \
+OLD_PURPOSE=TESTING"
+
+CIRC_MINOR_EVENT_BAD_2 = "650 CIRC_MINOR toolong8901234567 PURPOSE_CHANGED \
+$67B2BDA4264D8A189D9270E28B1D30A262838243~europa1 \
+BUILD_FLAGS=IS_INTERNAL,NEED_CAPACITY \
+PURPOSE=MEASURE_TIMEOUT \
+TIME_CREATED=2012-12-03T16:45:33.409602 \
+OLD_PURPOSE=TESTING"
+
 # CLIENTS_SEEN example from the spec
 
 CLIENTS_SEEN_EVENT = '650 CLIENTS_SEEN \
@@ -471,15 +485,6 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
   
-  def test_clients_seen_event(self):
-    event = _get_event(CLIENTS_SEEN_EVENT)
-    
-    self.assertTrue(isinstance(event, stem.response.events.ClientsSeenEvent))
-    self.assertEqual(CLIENTS_SEEN_EVENT.lstrip("650 "), str(event))
-    self.assertEqual(datetime.datetime(2008, 12, 25, 23, 50, 43), event.start_time)
-    self.assertEqual({'us': 16, 'de': 8, 'uk': 8}, event.locales)
-    self.assertEqual({'v4': 16, 'v6': 40}, event.ip_versions)
-  
   def test_circ_minor_event(self):
     event = _get_event(CIRC_MINOR_EVENT)
     
@@ -495,6 +500,18 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 12, 3, 16, 45, 33, 409602), event.created)
     self.assertEqual(CircPurpose.TESTING, event.old_purpose)
     self.assertEqual(None, event.old_hs_state)
+    
+    self.assertRaises(ProtocolError, _get_event, CIRC_MINOR_EVENT_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, CIRC_MINOR_EVENT_BAD_2)
+  
+  def test_clients_seen_event(self):
+    event = _get_event(CLIENTS_SEEN_EVENT)
+    
+    self.assertTrue(isinstance(event, stem.response.events.ClientsSeenEvent))
+    self.assertEqual(CLIENTS_SEEN_EVENT.lstrip("650 "), str(event))
+    self.assertEqual(datetime.datetime(2008, 12, 25, 23, 50, 43), event.start_time)
+    self.assertEqual({'us': 16, 'de': 8, 'uk': 8}, event.locales)
+    self.assertEqual({'v4': 16, 'v6': 40}, event.ip_versions)
   
   def test_conf_changed(self):
     event = _get_event(CONF_CHANGED_EVENT)
