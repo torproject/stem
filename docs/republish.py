@@ -41,10 +41,13 @@ def republish_site():
   # we'd use plumbing commands to check this but... meh. Patches welcome.
   
   if 'Already up-to-date.' not in run('git pull', cwd = '/home/stem/stem'):
+    start_time = time.time()
     LOGGER.log(logging.INFO, "Stem's repository has changed. Republishing...")
     run('make html', cwd = '/home/stem/stem/docs')
     run('sudo -u mirroradm static-master-update-component stem.torproject.org')
-    LOGGER.log(logging.INFO, "  site republished")
+    
+    runtime = int(time.time() - start_time)
+    LOGGER.log(logging.INFO, "  site republished (took %s seconds)" % runtime)
 
 if __name__ == '__main__':
   try: 
