@@ -181,6 +181,13 @@ s Fast Guard Running Stable Valid
 650 OK
 """
 
+# NEWDESC events. I've never actually seen multiple descriptors in an event,
+# but the spec allows for it.
+
+NEWDESC_SINGLE = "650 NEWDESC $B3FA3110CC6F42443F039220C134CBD2FC4F0493=Sakura"
+NEWDESC_MULTIPLE = "650 NEWDESC $BE938957B2CA5F804B3AFC2C1EE6673170CDBBF8=Moonshine \
+$B4BE08B22D4D2923EDC3970FD1B93D0448C6D8FF~Unnamed"
+
 # NS event from tor v0.2.1.30.
 
 NS_EVENT = """650+NS
@@ -287,13 +294,6 @@ SOURCE_ADDR=(Tor_internal):0 PURPOSE=DIR_FETCH"
 STREAM_DNS_REQUEST = "650 STREAM 1113 NEW 0 www.google.com:0 \
 SOURCE_ADDR=127.0.0.1:15297 \
 PURPOSE=DNS_REQUEST"
-
-# NEWDESC events. I've never actually seen multiple descriptors in an event,
-# but the spec allows for it.
-
-NEWDESC_SINGLE = "650 NEWDESC $B3FA3110CC6F42443F039220C134CBD2FC4F0493=Sakura"
-NEWDESC_MULTIPLE = "650 NEWDESC $BE938957B2CA5F804B3AFC2C1EE6673170CDBBF8=Moonshine \
-$B4BE08B22D4D2923EDC3970FD1B93D0448C6D8FF~Unnamed"
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
