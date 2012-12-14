@@ -1,7 +1,7 @@
 Tutorial
 ========
 
-Getting started with any new library can be rather daunting, so lets get our feet wet by jumping straight in with a tutorial...
+Getting started with any new library can be rather daunting, so let's get our feet wet by jumping straight in with a tutorial...
 
 * :ref:`the-little-relay-that-could` - Hello world with the control port.
 * :ref:`mirror-mirror-on-the-wall` - Querying information about the Tor network.
@@ -11,7 +11,7 @@ Getting started with any new library can be rather daunting, so lets get our fee
 The Little Relay that Could
 ---------------------------
 
-Lets say you just set up your very first `Tor relay <https://www.torproject.org/docs/tor-doc-relay.html.en>`_. Thank you! Now you want to write a script that tells you how much it is being used.
+Let's say you just set up your very first `Tor relay <https://www.torproject.org/docs/tor-doc-relay.html.en>`_. Thank you! Now you want to write a script that tells you how much it is being used.
 
 First, for any script we write to be able to talk with our relay it'll need to have a control port available. This is a port that's usually only available on localhost and protected by either a password or authentication cookie.
 
@@ -42,7 +42,7 @@ Look at your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_ for th
   
   HashedControlPassword 16:E600ADC1B52C80BB6022A0E999A7734571A451EB6AE50FED489B72E3DF
 
-You'll need to restart Tor or issue a SIGHUP for these new settings to take effect. Now lets write a script that tells us how many bytes Tor has sent and received...
+You'll need to restart Tor or issue a SIGHUP for these new settings to take effect. Now let's write a script that tells us how many bytes Tor has sent and received...
 
 ::
 
@@ -69,7 +69,7 @@ Congratulations! You've just written your first controller script.
 Mirror Mirror on the Wall
 -------------------------
 
-A script that tells us our contributed bandwidth is neat and all, but now lets figure out who the *biggest* exit relays are.
+A script that tells us our contributed bandwidth is neat and all, but now let's figure out who the *biggest* exit relays are.
 
 Information about the Tor relay network come from documents called **descriptors**. Descriptors can come from a few things...
 

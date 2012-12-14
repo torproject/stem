@@ -350,7 +350,7 @@ Library for working with the tor process.
 __version__ = '0.0.1'
 __author__ = 'Damian Johnson'
 __contact__ = 'atagar@torproject.org'
-__url__ = 'http://stem.readthedocs.org'
+__url__ = 'https://stem.torproject.org/'
 __license__ = 'LGPLv3'
 
 __all__ = [
