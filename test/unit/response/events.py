@@ -13,6 +13,20 @@ import stem.util.log
 from stem import * # enums and exceptions
 from test import mocking
 
+# ADDRMAP event
+
+ADDRMAP = '650 ADDRMAP www.atagar.com 75.119.206.243 "2012-11-19 00:50:13" \
+EXPIRES="2012-11-19 08:50:13"'
+
+ADDRMAP_ERROR_EVENT = '650 ADDRMAP www.atagar.com <error> "2012-11-19 00:50:13" \
+error=yes EXPIRES="2012-11-19 08:50:13"'
+
+ADDRMAP_BAD_1 = '650 ADDRMAP www.atagar.com 75.119.206.243 2012-11-19 00:50:13" \
+EXPIRES="2012-11-19 08:50:13"'
+
+ADDRMAP_BAD_2 = '650 ADDRMAP www.atagar.com 75.119.206.243 "2012-11-19 00:50:13 \
+EXPIRES="2012-11-19 08:50:13"'
+
 # BUILDTIMEOUT_SET event from tor 0.2.3.16.
 
 BUILD_TIMEOUT_EVENT = "650 BUILDTIMEOUT_SET COMPUTED \
@@ -25,9 +39,39 @@ TIMEOUT_RATE=0.137097 \
 CLOSE_MS=21850 \
 CLOSE_RATE=0.072581"
 
+BUILD_TIMEOUT_EVENT_BAD_1 = "650 BUILDTIMEOUT_SET COMPUTED \
+TOTAL_TIMES=one_twenty_four \
+TIMEOUT_MS=9019 \
+XM=1375 \
+ALPHA=0.855662 \
+CUTOFF_QUANTILE=0.800000 \
+TIMEOUT_RATE=0.137097 \
+CLOSE_MS=21850 \
+CLOSE_RATE=0.072581"
+
+BUILD_TIMEOUT_EVENT_BAD_2 = "650 BUILDTIMEOUT_SET COMPUTED \
+TOTAL_TIMES=124 \
+TIMEOUT_MS=9019 \
+XM=1375 \
+ALPHA=0.855662 \
+CUTOFF_QUANTILE=zero_point_eight \
+TIMEOUT_RATE=0.137097 \
+CLOSE_MS=21850 \
+CLOSE_RATE=0.072581"
+
 # CIRC events from tor v0.2.3.16
 
 CIRC_LAUNCHED = "650 CIRC 7 LAUNCHED \
+BUILD_FLAGS=NEED_CAPACITY \
+PURPOSE=GENERAL \
+TIME_CREATED=2012-11-08T16:48:38.417238"
+
+CIRC_LAUNCHED_BAD_1 = "650 CIRC 7 LAUNCHED \
+BUILD_FLAGS=NEED_CAPACITY \
+PURPOSE=GENERAL \
+TIME_CREATED=20121108T164838417238"
+
+CIRC_LAUNCHED_BAD_2 = "650 CIRC toolong8901234567 LAUNCHED \
 BUILD_FLAGS=NEED_CAPACITY \
 PURPOSE=GENERAL \
 TIME_CREATED=2012-11-08T16:48:38.417238"
@@ -63,12 +107,56 @@ PURPOSE=MEASURE_TIMEOUT \
 TIME_CREATED=2012-12-03T16:45:33.409602 \
 OLD_PURPOSE=TESTING"
 
+CIRC_MINOR_EVENT_BAD_1 = "650 CIRC_MINOR 7 PURPOSE_CHANGED \
+$67B2BDA4264D8A189D9270E28B1D30A262838243~europa1 \
+BUILD_FLAGS=IS_INTERNAL,NEED_CAPACITY \
+PURPOSE=MEASURE_TIMEOUT \
+TIME_CREATED=20121203T164533409602 \
+OLD_PURPOSE=TESTING"
+
+CIRC_MINOR_EVENT_BAD_2 = "650 CIRC_MINOR toolong8901234567 PURPOSE_CHANGED \
+$67B2BDA4264D8A189D9270E28B1D30A262838243~europa1 \
+BUILD_FLAGS=IS_INTERNAL,NEED_CAPACITY \
+PURPOSE=MEASURE_TIMEOUT \
+TIME_CREATED=2012-12-03T16:45:33.409602 \
+OLD_PURPOSE=TESTING"
+
 # CLIENTS_SEEN example from the spec
 
 CLIENTS_SEEN_EVENT = '650 CLIENTS_SEEN \
 TimeStarted="2008-12-25 23:50:43" \
 CountrySummary=us=16,de=8,uk=8 \
 IPVersions=v4=16,v6=40'
+
+CLIENTS_SEEN_EVENT_BAD_1 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=us:16,de:8,uk:8 \
+IPVersions=v4=16,v6=40'
+
+CLIENTS_SEEN_EVENT_BAD_2 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=usa=16,unitedkingdom=8 \
+IPVersions=v4=16,v6=40'
+
+CLIENTS_SEEN_EVENT_BAD_3 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=us=16,de=8,uk=eight \
+IPVersions=v4=16,v6=40'
+
+CLIENTS_SEEN_EVENT_BAD_4 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=au=16,au=8,au=8 \
+IPVersions=v4=16,v6=40'
+
+CLIENTS_SEEN_EVENT_BAD_5 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=us=16,de=8,uk=8 \
+IPVersions=v4:16,v6:40'
+
+CLIENTS_SEEN_EVENT_BAD_6 = '650 CLIENTS_SEEN \
+TimeStarted="2008-12-25 23:50:43" \
+CountrySummary=us=16,de=8,uk=8 \
+IPVersions=v4=sixteen,v6=40'
 
 # CONF_CHANGED event from tor 0.2.3.16.
 
@@ -96,6 +184,13 @@ s Fast Guard Running Stable Valid
 650 OK
 """
 
+# NEWDESC events. I've never actually seen multiple descriptors in an event,
+# but the spec allows for it.
+
+NEWDESC_SINGLE = "650 NEWDESC $B3FA3110CC6F42443F039220C134CBD2FC4F0493=Sakura"
+NEWDESC_MULTIPLE = "650 NEWDESC $BE938957B2CA5F804B3AFC2C1EE6673170CDBBF8=Moonshine \
+$B4BE08B22D4D2923EDC3970FD1B93D0448C6D8FF~Unnamed"
+
 # NS event from tor v0.2.1.30.
 
 NS_EVENT = """650+NS
@@ -105,10 +200,21 @@ s Fast HSDir Named Stable V2Dir Valid
 650 OK
 """
 
+# ORCONN events from starting tor 0.2.2.39 via TBB
+
+ORCONN_CLOSED = "650 ORCONN $A1130635A0CDA6F60C276FBF6994EFBD4ECADAB1~tama CLOSED REASON=DONE"
+ORCONN_CONNECTED = "650 ORCONN 127.0.0.1:9000 CONNECTED NCIRCS=20"
+ORCONN_LAUNCHED = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon LAUNCHED"
+
+ORCONN_BAD_1 = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E5=GreenD LAUNCHED"
+ORCONN_BAD_2 = "650 ORCONN 127.0.0.1:001 CONNECTED"
+ORCONN_BAD_3 = "650 ORCONN 127.0.0.1:9000 CONNECTED NCIRCS=too_many"
+
 # STATUS_* events that I was able to easily trigger. Most came from starting
 # TBB, then listening while it bootstrapped.
 
-STATUS_CLIENT_CONSENSUS_ARRIVED = "650 STATUS_CLIENT NOTICE CONSENSUS_ARRIVED"
+STATUS_GENERAL_CONSENSUS_ARRIVED = "650 STATUS_GENERAL NOTICE CONSENSUS_ARRIVED"
+
 STATUS_CLIENT_ENOUGH_DIR_INFO = "650 STATUS_CLIENT NOTICE ENOUGH_DIR_INFO"
 STATUS_CLIENT_CIRC_ESTABLISHED = "650 STATUS_CLIENT NOTICE CIRCUIT_ESTABLISHED"
 
@@ -160,6 +266,9 @@ STATUS_SERVER_DNS_UP = "650 STATUS_SERVER NOTICE NAMESERVER_STATUS \
 NS=205.171.3.25 \
 STATUS=UP"
 
+# unknown STATUS_* event type
+STATUS_SPECIFIC_CONSENSUS_ARRIVED = "650 STATUS_SPECIFIC NOTICE CONSENSUS_ARRIVED"
+
 # STREAM events from tor 0.2.3.16 for visiting the google front page
 
 STREAM_NEW = "650 STREAM 18 NEW 0 \
@@ -181,23 +290,18 @@ STREAM_DNS_REQUEST = "650 STREAM 1113 NEW 0 www.google.com:0 \
 SOURCE_ADDR=127.0.0.1:15297 \
 PURPOSE=DNS_REQUEST"
 
-# ORCONN events from starting tor 0.2.2.39 via TBB
+STREAM_SENTCONNECT_BAD_1 = "650 STREAM 18 SENTCONNECT 26"
+STREAM_SENTCONNECT_BAD_2 = "650 STREAM 18 SENTCONNECT 26 encrypted.google.com"
+STREAM_SENTCONNECT_BAD_3 = "650 STREAM 18 SENTCONNECT 26 encrypted.google.com:https"
 
-ORCONN_CONNECTED = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon CONNECTED"
-ORCONN_CLOSED = "650 ORCONN $A1130635A0CDA6F60C276FBF6994EFBD4ECADAB1~tama CLOSED REASON=DONE"
+STREAM_DNS_REQUEST_BAD_1 = "650 STREAM 1113 NEW 0 www.google.com:0 \
+SOURCE_ADDR=127.0.0.1 \
+PURPOSE=DNS_REQUEST"
 
-# NEWDESC events. I've never actually seen multiple descriptors in an event,
-# but the spec allows for it.
+STREAM_DNS_REQUEST_BAD_2 = "650 STREAM 1113 NEW 0 www.google.com:0 \
+SOURCE_ADDR=127.0.0.1:dns \
+PURPOSE=DNS_REQUEST"
 
-NEWDESC_SINGLE = "650 NEWDESC $B3FA3110CC6F42443F039220C134CBD2FC4F0493=Sakura"
-NEWDESC_MULTIPLE = "650 NEWDESC $BE938957B2CA5F804B3AFC2C1EE6673170CDBBF8=Moonshine \
-$B4BE08B22D4D2923EDC3970FD1B93D0448C6D8FF~Unnamed"
-
-# ADDRMAP event
-# TODO: it would be nice to have an example of an error event
-
-ADDRMAP = '650 ADDRMAP www.atagar.com 75.119.206.243 "2012-11-19 00:50:13" \
-EXPIRES="2012-11-19 08:50:13"'
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -235,6 +339,16 @@ class TestEvents(unittest.TestCase):
     time.sleep(0.2)
     events_thread.join()
   
+  def test_event(self):
+    # synthetic, contrived message construction to reach the blank event check
+    self.assertRaises(ProtocolError, stem.response.convert, "EVENT", stem.response.ControlMessage([('', '', '')], ''), arrived_at = 25)
+    
+    # Event._parse_message() on an unknown event type
+    event = _get_event('650 NONE SOLID "NON SENSE" condition=MEH quoted="1 2 3"')
+    self.assertEqual("NONE", event.type)
+    self.assertEqual(["SOLID", '"NON', 'SENSE"'], event.positional_args)
+    self.assertEqual({"condition":"MEH", "quoted":"1 2 3"}, event.keyword_args)
+  
   def test_log_events(self):
     event = _get_event("650 DEBUG connection_edge_process_relay_cell(): Got an extended cell! Yay.")
     
@@ -264,6 +378,20 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 11, 19, 0, 50, 13), event.expiry)
     self.assertEqual(None, event.error)
     self.assertEqual(datetime.datetime(2012, 11, 19, 8, 50, 13), event.utc_expiry)
+    
+    event = _get_event(ADDRMAP_ERROR_EVENT)
+    
+    self.assertTrue(isinstance(event, stem.response.events.AddrMapEvent))
+    self.assertEqual(ADDRMAP_ERROR_EVENT.lstrip("650 "), str(event))
+    self.assertEqual("www.atagar.com", event.hostname)
+    self.assertEqual(None, event.destination)
+    self.assertEqual(datetime.datetime(2012, 11, 19, 0, 50, 13), event.expiry)
+    self.assertEqual("yes", event.error)
+    self.assertEqual(datetime.datetime(2012, 11, 19, 8, 50, 13), event.utc_expiry)
+    
+    # malformed content where quotes are missing
+    self.assertRaises(ProtocolError, _get_event, ADDRMAP_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, ADDRMAP_BAD_2)
   
   def test_authdir_newdesc_event(self):
     # TODO: awaiting test data - https://trac.torproject.org/7534
@@ -288,6 +416,10 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(0.137097, event.timeout_rate)
     self.assertEqual(21850, event.close_timeout)
     self.assertEqual(0.072581, event.close_rate)
+    
+    # malformed content where we get non-numeric values
+    self.assertRaises(ProtocolError, _get_event, BUILD_TIMEOUT_EVENT_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, BUILD_TIMEOUT_EVENT_BAD_2)
   
   def test_bw_event(self):
     event = _get_event("650 BW 15 25")
@@ -310,6 +442,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(20, event.written)
     self.assertEqual({'OR': '5', 'EXIT': '500'}, event.keyword_args)
     
+    self.assertRaises(ProtocolError, _get_event, "650 BW")
     self.assertRaises(ProtocolError, _get_event, "650 BW 15")
     self.assertRaises(ProtocolError, _get_event, "650 BW -15 25")
     self.assertRaises(ProtocolError, _get_event, "650 BW 15 -25")
@@ -405,15 +538,12 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.created)
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
-  
-  def test_clients_seen_event(self):
-    event = _get_event(CLIENTS_SEEN_EVENT)
     
-    self.assertTrue(isinstance(event, stem.response.events.ClientsSeenEvent))
-    self.assertEqual(CLIENTS_SEEN_EVENT.lstrip("650 "), str(event))
-    self.assertEqual(datetime.datetime(2008, 12, 25, 23, 50, 43), event.start_time)
-    self.assertEqual({'us': 16, 'de': 8, 'uk': 8}, event.locales)
-    self.assertEqual({'v4': 16, 'v6': 40}, event.ip_versions)
+    # malformed TIME_CREATED timestamp
+    self.assertRaises(ProtocolError, _get_event, CIRC_LAUNCHED_BAD_1)
+    
+    # invalid circuit id
+    self.assertRaises(ProtocolError, _get_event, CIRC_LAUNCHED_BAD_2)
   
   def test_circ_minor_event(self):
     event = _get_event(CIRC_MINOR_EVENT)
@@ -430,6 +560,39 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 12, 3, 16, 45, 33, 409602), event.created)
     self.assertEqual(CircPurpose.TESTING, event.old_purpose)
     self.assertEqual(None, event.old_hs_state)
+    
+    # malformed TIME_CREATED timestamp
+    self.assertRaises(ProtocolError, _get_event, CIRC_MINOR_EVENT_BAD_1)
+    
+    # invalid circuit id
+    self.assertRaises(ProtocolError, _get_event, CIRC_MINOR_EVENT_BAD_2)
+  
+  def test_clients_seen_event(self):
+    event = _get_event(CLIENTS_SEEN_EVENT)
+    
+    self.assertTrue(isinstance(event, stem.response.events.ClientsSeenEvent))
+    self.assertEqual(CLIENTS_SEEN_EVENT.lstrip("650 "), str(event))
+    self.assertEqual(datetime.datetime(2008, 12, 25, 23, 50, 43), event.start_time)
+    self.assertEqual({'us': 16, 'de': 8, 'uk': 8}, event.locales)
+    self.assertEqual({'v4': 16, 'v6': 40}, event.ip_versions)
+    
+    # CountrySummary's 'key=value' mappings are replaced with 'key:value'
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_1)
+    
+    # CountrySummary's country codes aren't two letters
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_2)
+    
+    # CountrySummary's mapping contains a non-numeric value
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_3)
+    
+    # CountrySummary has duplicate country codes (multiple 'au=' mappings)
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_4)
+    
+    # IPVersions's 'key=value' mappings are replaced with 'key:value'
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_5)
+    
+    # IPVersions's mapping contains a non-numeric value
+    self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_6)
   
   def test_conf_changed(self):
     event = _get_event(CONF_CHANGED_EVENT)
@@ -519,19 +682,6 @@ class TestEvents(unittest.TestCase):
     self.assertEqual([expected_desc], event.desc)
   
   def test_orconn_event(self):
-    event = _get_event(ORCONN_CONNECTED)
-    
-    self.assertTrue(isinstance(event, stem.response.events.ORConnEvent))
-    self.assertEqual(ORCONN_CONNECTED.lstrip("650 "), str(event))
-    self.assertEqual("$7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon", event.endpoint)
-    self.assertEqual("7ED90E2833EE38A75795BA9237B0A4560E51E1A0", event.endpoint_fingerprint)
-    self.assertEqual("GreenDragon", event.endpoint_nickname)
-    self.assertEqual(None, event.endpoint_address)
-    self.assertEqual(None, event.endpoint_port)
-    self.assertEqual(ORStatus.CONNECTED, event.status)
-    self.assertEqual(None, event.reason)
-    self.assertEqual(None, event.circ_count)
-    
     event = _get_event(ORCONN_CLOSED)
     
     self.assertTrue(isinstance(event, stem.response.events.ORConnEvent))
@@ -544,6 +694,41 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(ORStatus.CLOSED, event.status)
     self.assertEqual(ORClosureReason.DONE, event.reason)
     self.assertEqual(None, event.circ_count)
+    
+    event = _get_event(ORCONN_CONNECTED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.ORConnEvent))
+    self.assertEqual(ORCONN_CONNECTED.lstrip("650 "), str(event))
+    self.assertEqual("127.0.0.1:9000", event.endpoint)
+    self.assertEqual(None, event.endpoint_fingerprint)
+    self.assertEqual(None, event.endpoint_nickname)
+    self.assertEqual('127.0.0.1', event.endpoint_address)
+    self.assertEqual(9000, event.endpoint_port)
+    self.assertEqual(ORStatus.CONNECTED, event.status)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(20, event.circ_count)
+    
+    event = _get_event(ORCONN_LAUNCHED)
+    
+    self.assertTrue(isinstance(event, stem.response.events.ORConnEvent))
+    self.assertEqual(ORCONN_LAUNCHED.lstrip("650 "), str(event))
+    self.assertEqual("$7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon", event.endpoint)
+    self.assertEqual("7ED90E2833EE38A75795BA9237B0A4560E51E1A0", event.endpoint_fingerprint)
+    self.assertEqual("GreenDragon", event.endpoint_nickname)
+    self.assertEqual(None, event.endpoint_address)
+    self.assertEqual(None, event.endpoint_port)
+    self.assertEqual(ORStatus.LAUNCHED, event.status)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.circ_count)
+    
+    # malformed fingerprint
+    self.assertRaises(ProtocolError, _get_event, ORCONN_BAD_1)
+    
+    # invalid port number ('001')
+    self.assertRaises(ProtocolError, _get_event, ORCONN_BAD_2)
+    
+    # non-numeric NCIRCS
+    self.assertRaises(ProtocolError, _get_event, ORCONN_BAD_3)
   
   def test_signal_event(self):
     event = _get_event("650 SIGNAL DEBUG")
@@ -555,11 +740,11 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(Signal.DUMP, event.signal)
   
   def test_status_event_consensus_arrived(self):
-    event = _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED)
+    event = _get_event(STATUS_GENERAL_CONSENSUS_ARRIVED)
     
     self.assertTrue(isinstance(event, stem.response.events.StatusEvent))
-    self.assertEqual(STATUS_CLIENT_CONSENSUS_ARRIVED.lstrip("650 "), str(event))
-    self.assertEqual(StatusType.CLIENT, event.status_type)
+    self.assertEqual(STATUS_GENERAL_CONSENSUS_ARRIVED.lstrip("650 "), str(event))
+    self.assertEqual(StatusType.GENERAL, event.status_type)
     self.assertEqual(Runlevel.NOTICE, event.runlevel)
     self.assertEqual("CONSENSUS_ARRIVED", event.action)
   
@@ -720,6 +905,12 @@ class TestEvents(unittest.TestCase):
     
     self.assertEqual(expected_attr, event.keyword_args)
   
+  def test_status_event_bug(self):
+    # briefly insert a fake value in EVENT_TYPE_TO_CLASS
+    stem.response.events.EVENT_TYPE_TO_CLASS['STATUS_SPECIFIC'] = stem.response.events.StatusEvent
+    self.assertRaises(ValueError, _get_event, STATUS_SPECIFIC_CONSENSUS_ARRIVED)
+    del stem.response.events.EVENT_TYPE_TO_CLASS['STATUS_SPECIFIC']
+  
   def test_stream_event(self):
     event = _get_event(STREAM_NEW)
     
@@ -864,6 +1055,21 @@ class TestEvents(unittest.TestCase):
     self.assertEqual("127.0.0.1", event.source_address)
     self.assertEqual(15297, event.source_port)
     self.assertEqual(StreamPurpose.DNS_REQUEST, event.purpose)
+    
+    # missing target
+    self.assertRaises(ProtocolError, _get_event, STREAM_SENTCONNECT_BAD_1)
+    
+    # target is missing a port
+    self.assertRaises(ProtocolError, _get_event, STREAM_SENTCONNECT_BAD_2)
+    
+    # target's port is malformed
+    self.assertRaises(ProtocolError, _get_event, STREAM_SENTCONNECT_BAD_3)
+    
+    # SOURCE_ADDR is missing a port
+    self.assertRaises(ProtocolError, _get_event, STREAM_DNS_REQUEST_BAD_1)
+    
+    # SOURCE_ADDR's port is malformed
+    self.assertRaises(ProtocolError, _get_event, STREAM_DNS_REQUEST_BAD_2)
   
   def test_stream_bw_event(self):
     event = _get_event("650 STREAM_BW 2 15 25")
@@ -899,17 +1105,17 @@ class TestEvents(unittest.TestCase):
     
     # Try parsing a valid event. We shouldn't log anything.
     
-    _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED)
+    _get_event(STATUS_GENERAL_CONSENSUS_ARRIVED)
     self.assertTrue(logging_buffer.is_empty())
     self.assertEqual([], list(logging_buffer))
     
     # Parse an invalid runlevel.
     
-    _get_event(STATUS_CLIENT_CONSENSUS_ARRIVED.replace("NOTICE", "OMEGA_CRITICAL!!!"))
+    _get_event(STATUS_GENERAL_CONSENSUS_ARRIVED.replace("NOTICE", "OMEGA_CRITICAL!!!"))
     logged_events = list(logging_buffer)
     
     self.assertEqual(1, len(logged_events))
-    self.assertTrue("STATUS_CLIENT event had an unrecognized runlevel" in logged_events[0])
+    self.assertTrue("STATUS_GENERAL event had an unrecognized runlevel" in logged_events[0])
     
     stem_logger.removeHandler(logging_buffer)
 
