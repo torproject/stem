@@ -17,12 +17,15 @@ from test import mocking
 
 ADDRMAP = '650 ADDRMAP www.atagar.com 75.119.206.243 "2012-11-19 00:50:13" \
 EXPIRES="2012-11-19 08:50:13"'
+
+ADDRMAP_ERROR_EVENT = '650 ADDRMAP www.atagar.com <error> "2012-11-19 00:50:13" \
+error=yes EXPIRES="2012-11-19 08:50:13"'
+
 ADDRMAP_BAD_1 = '650 ADDRMAP www.atagar.com 75.119.206.243 2012-11-19 00:50:13" \
 EXPIRES="2012-11-19 08:50:13"'
+
 ADDRMAP_BAD_2 = '650 ADDRMAP www.atagar.com 75.119.206.243 "2012-11-19 00:50:13 \
 EXPIRES="2012-11-19 08:50:13"'
-ADDRMAP_BAD_3 = '650 ADDRMAP www.atagar.com <error> "2012-11-19 00:50:13" \
-error=yes EXPIRES="2012-11-19 08:50:13"'
 
 # BUILDTIMEOUT_SET event from tor 0.2.3.16.
 
@@ -203,17 +206,9 @@ ORCONN_CLOSED = "650 ORCONN $A1130635A0CDA6F60C276FBF6994EFBD4ECADAB1~tama CLOSE
 ORCONN_CONNECTED = "650 ORCONN 127.0.0.1:9000 CONNECTED NCIRCS=20"
 ORCONN_LAUNCHED = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon LAUNCHED"
 
-ORCONN_CONNECTED_BAD_1 = "650 ORCONN \
-$7ED90E2833EE38A75795BA9237B0A4560E5=GreenD \
-LAUNCHED"
-
-ORCONN_CONNECTED_BAD_2 = "650 ORCONN \
-127.0.0.1:001 \
-CONNECTED"
-
-ORCONN_CONNECTED_BAD_3 = "650 ORCONN \
-127.0.0.1:9000 \
-CONNECTED NCIRCS=too_many"
+ORCONN_BAD_1 = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E5=GreenD LAUNCHED"
+ORCONN_BAD_2 = "650 ORCONN 127.0.0.1:001 CONNECTED"
+ORCONN_BAD_3 = "650 ORCONN 127.0.0.1:9000 CONNECTED NCIRCS=too_many"
 
 # STATUS_* events that I was able to easily trigger. Most came from starting
 # TBB, then listening while it bootstrapped.
@@ -384,18 +379,19 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.error)
     self.assertEqual(datetime.datetime(2012, 11, 19, 8, 50, 13), event.utc_expiry)
     
-    self.assertRaises(ProtocolError, _get_event, ADDRMAP_BAD_1)
-    self.assertRaises(ProtocolError, _get_event, ADDRMAP_BAD_2)
-    
-    event = _get_event(ADDRMAP_BAD_3)
+    event = _get_event(ADDRMAP_ERROR_EVENT)
     
     self.assertTrue(isinstance(event, stem.response.events.AddrMapEvent))
-    self.assertEqual(ADDRMAP_BAD_3.lstrip("650 "), str(event))
+    self.assertEqual(ADDRMAP_ERROR_EVENT.lstrip("650 "), str(event))
     self.assertEqual("www.atagar.com", event.hostname)
     self.assertEqual(None, event.destination)
     self.assertEqual(datetime.datetime(2012, 11, 19, 0, 50, 13), event.expiry)
     self.assertEqual("yes", event.error)
     self.assertEqual(datetime.datetime(2012, 11, 19, 8, 50, 13), event.utc_expiry)
+    
+    # malformed content where quotes are missing
+    self.assertRaises(ProtocolError, _get_event, ADDRMAP_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, ADDRMAP_BAD_2)
   
   def test_authdir_newdesc_event(self):
     # TODO: awaiting test data - https://trac.torproject.org/7534
@@ -421,6 +417,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(21850, event.close_timeout)
     self.assertEqual(0.072581, event.close_rate)
     
+    # malformed content where we get non-numeric values
     self.assertRaises(ProtocolError, _get_event, BUILD_TIMEOUT_EVENT_BAD_1)
     self.assertRaises(ProtocolError, _get_event, BUILD_TIMEOUT_EVENT_BAD_2)
   
@@ -466,9 +463,6 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 11, 8, 16, 48, 38, 417238), event.created)
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
-    
-    self.assertRaises(ProtocolError, _get_event, CIRC_LAUNCHED_BAD_1)
-    self.assertRaises(ProtocolError, _get_event, CIRC_LAUNCHED_BAD_2)
     
     event = _get_event(CIRC_EXTENDED)
     
@@ -544,6 +538,12 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.created)
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
+    
+    # malformed TIME_CREATED timestamp
+    self.assertRaises(ProtocolError, _get_event, CIRC_LAUNCHED_BAD_1)
+    
+    # invalid circuit id
+    self.assertRaises(ProtocolError, _get_event, CIRC_LAUNCHED_BAD_2)
   
   def test_circ_minor_event(self):
     event = _get_event(CIRC_MINOR_EVENT)
@@ -561,7 +561,10 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(CircPurpose.TESTING, event.old_purpose)
     self.assertEqual(None, event.old_hs_state)
     
+    # malformed TIME_CREATED timestamp
     self.assertRaises(ProtocolError, _get_event, CIRC_MINOR_EVENT_BAD_1)
+    
+    # invalid circuit id
     self.assertRaises(ProtocolError, _get_event, CIRC_MINOR_EVENT_BAD_2)
   
   def test_clients_seen_event(self):
@@ -573,11 +576,22 @@ class TestEvents(unittest.TestCase):
     self.assertEqual({'us': 16, 'de': 8, 'uk': 8}, event.locales)
     self.assertEqual({'v4': 16, 'v6': 40}, event.ip_versions)
     
+    # CountrySummary's 'key=value' mappings are replaced with 'key:value'
     self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_1)
+    
+    # CountrySummary's country codes aren't two letters
     self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_2)
+    
+    # CountrySummary's mapping contains a non-numeric value
     self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_3)
+    
+    # CountrySummary has duplicate country codes (multiple 'au=' mappings)
     self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_4)
+    
+    # IPVersions's 'key=value' mappings are replaced with 'key:value'
     self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_5)
+    
+    # IPVersions's mapping contains a non-numeric value
     self.assertRaises(ProtocolError, _get_event, CLIENTS_SEEN_EVENT_BAD_6)
   
   def test_conf_changed(self):
@@ -707,9 +721,14 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.circ_count)
     
-    self.assertRaises(ProtocolError, _get_event, ORCONN_CONNECTED_BAD_1)
-    self.assertRaises(ProtocolError, _get_event, ORCONN_CONNECTED_BAD_2)
-    self.assertRaises(ProtocolError, _get_event, ORCONN_CONNECTED_BAD_3)
+    # malformed fingerprint
+    self.assertRaises(ProtocolError, _get_event, ORCONN_BAD_1)
+    
+    # invalid port number ('001')
+    self.assertRaises(ProtocolError, _get_event, ORCONN_BAD_2)
+    
+    # non-numeric NCIRCS
+    self.assertRaises(ProtocolError, _get_event, ORCONN_BAD_3)
   
   def test_signal_event(self):
     event = _get_event("650 SIGNAL DEBUG")
@@ -1037,27 +1056,19 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(15297, event.source_port)
     self.assertEqual(StreamPurpose.DNS_REQUEST, event.purpose)
     
-    event = _get_event(STREAM_SENTCONNECT_BAD_1)
+    # missing target
+    self.assertRaises(ProtocolError, _get_event, STREAM_SENTCONNECT_BAD_1)
     
-    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
-    self.assertEqual(STREAM_SENTCONNECT_BAD_1.lstrip("650 "), str(event))
-    self.assertEqual("18", event.id)
-    self.assertEqual(StreamStatus.SENTCONNECT, event.status)
-    self.assertEqual("26", event.circ_id)
-    self.assertEqual(None, event.target)
-    self.assertEqual(None, event.target_address)
-    self.assertEqual(None, event.target_port)
-    self.assertEqual(None, event.reason)
-    self.assertEqual(None, event.remote_reason)
-    self.assertEqual(None, event.source)
-    self.assertEqual(None, event.source_addr)
-    self.assertEqual(None, event.source_address)
-    self.assertEqual(None, event.source_port)
-    self.assertEqual(None, event.purpose)
-    
+    # target is missing a port
     self.assertRaises(ProtocolError, _get_event, STREAM_SENTCONNECT_BAD_2)
+    
+    # target's port is malformed
     self.assertRaises(ProtocolError, _get_event, STREAM_SENTCONNECT_BAD_3)
+    
+    # SOURCE_ADDR is missing a port
     self.assertRaises(ProtocolError, _get_event, STREAM_DNS_REQUEST_BAD_1)
+    
+    # SOURCE_ADDR's port is malformed
     self.assertRaises(ProtocolError, _get_event, STREAM_DNS_REQUEST_BAD_2)
   
   def test_stream_bw_event(self):

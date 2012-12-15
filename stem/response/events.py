@@ -757,8 +757,7 @@ class StreamEvent(Event):
   
   def _parse(self):
     if self.target is None:
-      self.target_address = None
-      self.target_port = None
+      raise stem.ProtocolError("STREAM event didn't have a target: %s" % self)
     else:
       if not ':' in self.target:
         raise stem.ProtocolError("Target location must be of the form 'address:port': %s" % self)
