@@ -13,6 +13,7 @@ import threading
 import time
 import unittest
 
+import stem.connection
 import stem.control
 import stem.descriptor.reader
 import stem.descriptor.router_status_entry
@@ -144,6 +145,34 @@ class TestController(unittest.TestCase):
       
       controller.connect()
       controller.authenticate()
+      
+      event_notice.wait(2)
+      self.assertTrue(len(event_buffer) >= 1)
+      
+      # disconnect
+      
+      controller.close()
+      event_notice.clear()
+      event_buffer = []
+      
+      # reconnect and check that we get events again
+      
+      controller.connect()
+      stem.connection.authenticate(controller)
+      
+      event_notice.wait(2)
+      self.assertTrue(len(event_buffer) >= 1)
+      
+      # disconnect
+      
+      controller.close()
+      event_notice.clear()
+      event_buffer = []
+      
+      # reconnect and check that we get events again
+      
+      controller.connect()
+      controller.msg("AUTHENTICATE")
       
       event_notice.wait(2)
       self.assertTrue(len(event_buffer) >= 1)
