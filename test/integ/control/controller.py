@@ -9,6 +9,7 @@ import re
 import shutil
 import socket
 import tempfile
+import threading
 import time
 import unittest
 
@@ -58,13 +59,16 @@ class TestController(unittest.TestCase):
     
     if test.runner.require_control(self): return
     
+    event_notice1, event_notice2 = threading.Event(), threading.Event()
     event_buffer1, event_buffer2 = [], []
     
     def listener1(event):
       event_buffer1.append(event)
+      event_notice1.set()
     
     def listener2(event):
       event_buffer2.append(event)
+      event_notice2.set()
     
     runner = test.runner.get_runner()
     with runner.get_tor_controller() as controller:
@@ -74,19 +78,24 @@ class TestController(unittest.TestCase):
       # BW events occure at the rate of one per second, so wait a bit to let
       # some accumulate.
       
-      time.sleep(3)
+      event_notice1.wait(2)
+      self.assertTrue(len(event_buffer1) >= 1)
+      event_notice1.clear()
       
-      self.assertTrue(len(event_buffer1) >= 2)
-      self.assertTrue(len(event_buffer2) >= 2)
+      event_notice2.wait(2)
+      self.assertTrue(len(event_buffer2) >= 1)
+      event_notice2.clear()
       
       # Checking that a listener's no longer called after being removed.
       
       controller.remove_event_listener(listener2)
       
       buffer2_size = len(event_buffer2)
-      time.sleep(2)
       
-      self.assertTrue(len(event_buffer1) >= 4)
+      event_notice1.wait(2)
+      self.assertTrue(len(event_buffer1) >= 2)
+      
+      event_notice2.wait(2)
       self.assertEqual(buffer2_size, len(event_buffer2))
       
       for event in event_buffer1:
@@ -106,10 +115,12 @@ class TestController(unittest.TestCase):
     
     if test.runner.require_control(self): return
     
+    event_notice = threading.Event()
     event_buffer = []
     
     def listener(event):
       event_buffer.append(event)
+      event_notice.set()
     
     runner = test.runner.get_runner()
     with runner.get_tor_controller() as controller:
@@ -117,15 +128,16 @@ class TestController(unittest.TestCase):
       
       # get a BW event or two
       
-      time.sleep(2)
+      event_notice.wait(2)
       self.assertTrue(len(event_buffer) >= 1)
       
       # disconnect and check that we stop getting events
       
       controller.close()
+      event_notice.clear()
       event_buffer = []
       
-      time.sleep(2)
+      event_notice.wait(2)
       self.assertTrue(len(event_buffer) == 0)
       
       # reconnect and check that we get events again
@@ -133,7 +145,7 @@ class TestController(unittest.TestCase):
       controller.connect()
       controller.authenticate()
       
-      time.sleep(2)
+      event_notice.wait(2)
       self.assertTrue(len(event_buffer) >= 1)
   
   def test_getinfo(self):
