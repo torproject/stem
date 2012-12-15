@@ -43,6 +43,7 @@ class TestTorTools(unittest.TestCase):
     )
     
     invalid_nicknames = (
+      None,
       "",
       "toolongggggggggggggg",
       "bad_character",
@@ -66,6 +67,7 @@ class TestTorTools(unittest.TestCase):
     )
     
     invalid_circuit_ids = (
+      None,
       "",
       0,
       2,

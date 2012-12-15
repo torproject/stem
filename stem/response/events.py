@@ -326,7 +326,7 @@ class CircuitEvent(Event):
       except ValueError, exc:
         raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
     
-    if self.id is not None and not tor_tools.is_valid_circuit_id(self.id):
+    if not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     
     self._log_if_unrecognized('status', stem.CircStatus)
@@ -381,7 +381,7 @@ class CircMinorEvent(Event):
       except ValueError, exc:
         raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
     
-    if self.id is not None and not tor_tools.is_valid_circuit_id(self.id):
+    if not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     
     self._log_if_unrecognized('event', stem.CircEvent)
@@ -811,7 +811,7 @@ class StreamBwEvent(Event):
   _VERSION_ADDED = stem.version.Version('0.1.2.8-beta')
   
   def _parse(self):
-    if self.id is not None and not tor_tools.is_valid_stream_id(self.id):
+    if not tor_tools.is_valid_stream_id(self.id):
       raise stem.ProtocolError("Stream IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     elif not self.written:
       raise stem.ProtocolError("STREAM_BW event is missing its written value")
