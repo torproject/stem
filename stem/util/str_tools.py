@@ -280,14 +280,16 @@ def _get_label(units, count, decimal, is_long):
     (count_per_unit, short_label, long_label)
   :param int count: number of base units being converted
   :param int decimal: decimal precision of label
-  :param bool is_long: uses the long label if **True&&, short label otherwise
+  :param bool is_long: uses the long label if **True**, short label otherwise
   """
   
   # formatted string for the requested number of digits
   label_format = "%%.%if" % decimal
   
-  # for zero or negative values use the smallest units
-  if count < 1:
+  if count < 0:
+    label_format = "-" + label_format
+    count = abs(count)
+  elif count == 0:
     units_label = units[-1][2] + "s" if is_long else units[-1][1]
     return "%s%s" % (label_format % count, units_label)
   

@@ -39,6 +39,7 @@ class TestStrTools(unittest.TestCase):
     self.assertEquals('0.00 B', str_tools.get_size_label(0, 2))
     self.assertEquals('-10 B', str_tools.get_size_label(-10))
     self.assertEquals('80 b', str_tools.get_size_label(10, is_bytes = False))
+    self.assertEquals('-1 MB', str_tools.get_size_label(-2000000))
     
     # checking that we round down
     self.assertEquals('23.43 Kb', str_tools.get_size_label(3000, 2, is_bytes = False))
