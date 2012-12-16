@@ -71,7 +71,7 @@ class TestGetConfResponse(unittest.TestCase):
       "CookieAuthentication": ["0"],
       "ControlPort": ["9100"],
       "DataDirectory": ["/tmp/fake dir"],
-      "DirPort": [None],
+      "DirPort": [],
     }
     
     self.assertEqual(expected, control_message.entries)

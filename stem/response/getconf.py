@@ -49,5 +49,9 @@ class GetConfResponse(stem.response.ControlMessage):
       else:
         key, value = (line.pop(), None)
       
-      self.entries.setdefault(key, []).append(value)
+      if not key in self.entries:
+        self.entries[key] = []
+      
+      if value is not None:
+        self.entries[key].append(value)
 

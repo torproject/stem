@@ -263,14 +263,20 @@ class TestController(unittest.TestCase):
       reply_params = controller.get_conf_map(request_params, multiple=False).keys()
       self.assertEqual(set(request_params), set(reply_params))
       
+      # queries an option that is unset
+      
+      self.assertEqual(None, controller.get_conf("HTTPSProxy"))
+      self.assertEqual("la-di-dah", controller.get_conf("HTTPSProxy", "la-di-dah"))
+      self.assertEqual([], controller.get_conf("HTTPSProxy", [], multiple = True))
+      
       # non-existant option(s)
       self.assertRaises(stem.InvalidArguments, controller.get_conf, "blarg")
       self.assertEqual("la-di-dah", controller.get_conf("blarg", "la-di-dah"))
       self.assertRaises(stem.InvalidArguments, controller.get_conf_map, "blarg")
-      self.assertEqual("la-di-dah", controller.get_conf_map("blarg", "la-di-dah"))
+      self.assertEqual({"blarg": "la-di-dah"}, controller.get_conf_map("blarg", "la-di-dah"))
       
       self.assertRaises(stem.InvalidRequest, controller.get_conf_map, ["blarg", "huadf"], multiple = True)
-      self.assertEqual("la-di-dah", controller.get_conf_map(["erfusdj", "afiafj"], "la-di-dah", multiple = True))
+      self.assertEqual({"erfusdj": "la-di-dah", "afiafj": "la-di-dah"}, controller.get_conf_map(["erfusdj", "afiafj"], "la-di-dah", multiple = True))
       
       # multivalue configuration keys
       nodefamilies = [("abc", "xyz", "pqrs"), ("mno", "tuv", "wxyz")]

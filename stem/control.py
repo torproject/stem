@@ -978,24 +978,32 @@ class Controller(BaseController):
   
   def get_conf(self, param, default = UNDEFINED, multiple = False):
     """
-    Queries the control socket for the value of a given configuration option. If
-    provided a default then that's returned as if the GETCONF option is undefined
-    or if the call fails for any reason (invalid configuration option, error
-    response, control port closed, initiated, etc). If the configuration key
-    consists of whitespace only, **None** is returned unless a default value is
-    given.
+    Queries the current value for a configuration option. Some configuration
+    options (like the ExitPolicy) can have multiple values. This provides a
+    **list** with all of the values if **multiple** is **True**. Otherwise this
+    will be a **str** with the first value.
+    
+    If provided with a **default** then that is provided if the configuration
+    option was unset or the query fails (invalid configuration option, error
+    response, control port closed, initiated, etc).
+    
+    If the configuration value is unset and no **default** was given then this
+    provides **None** if **multiple** was **False** and an empty list if it was
+    **True**.
     
     :param str param: configuration option to be queried
-    :param object default: response if the query fails
-    :param bool multiple: if **True**, the value(s) provided are lists of all
-      returned values, otherwise this just provides the first value
+    :param object default: response if the option is unset or the query fails
+    :param bool multiple: if **True** then provides a list with all of the
+      present values (this is an empty list if the config option is unset)
     
     :returns:
       Response depends upon how we were called as follows...
       
-      * **str** with the response if multiple was **False**
+      * **str** with the configuration value if **multiple** was **False**,
+        **None** if it was unset
       * **list** with the response strings if multiple was **True**
-      * default if one was provided and our call failed
+      * default if one was provided and the configuration option was either
+        unset or our call failed
     
     :raises:
       * :class:`stem.ControllerError` if the call fails and we weren't
@@ -1017,49 +1025,45 @@ class Controller(BaseController):
   
   def get_conf_map(self, params, default = UNDEFINED, multiple = True):
     """
-    Queries the control socket for the values of given configuration options
-    and provides a mapping of the keys to the values. If provided a default
-    then that's returned if the GETCONF option is undefined or if the call
-    fails for any reason (invalid configuration option, error response, control
-    port closed, initiated, etc). Configuration keys that are empty or contain
-    only whitespace are ignored.
+    Similar to :func:`~stem.control.Controller.get_conf` but queries multiple
+    configuration options, providing back a mapping of those options to their
+    values.
     
-    There's three use cases for GETCONF:
+    There are three use cases for GETCONF:
     
-      1. a single value is provided
-      2. multiple values are provided for the option queried
+      1. a single value is provided (ex. **ControlPort**)
+      2. multiple values are provided for the option (ex. **ExitPolicy**)
       3. a set of options that weren't necessarily requested are returned (for
-         instance querying HiddenServiceOptions gives HiddenServiceDir,
-         HiddenServicePort, etc)
+         instance querying **HiddenServiceOptions** gives **HiddenServiceDir**,
+         **HiddenServicePort**, etc)
     
     The vast majority of the options fall into the first two categories, in
     which case calling :func:`~stem.control.Controller.get_conf` is sufficient.
     However, for batch queries or the special options that give a set of values
     this provides back the full response. As of tor version 0.2.1.25
-    HiddenServiceOptions was the only option like this.
-    
-    The :func:`~stem.control.Controller.get_conf` and
-    :func:`~stem.control.Controller.get_conf_map` functions both try to account
-    for these special mappings, so queried like get_conf("HiddenServicePort")
-    should behave as you'd expect. This method, however, simply returns
-    whatever Tor provides so get_conf_map("HiddenServicePort") will give the
-    same response as get_conf_map("HiddenServiceOptions").
+    **HiddenServiceOptions** was the only option that falls into the third
+    category.
     
     :param str,list params: configuration option(s) to be queried
-    :param object default: response if the query fails
-    :param bool multiple: if **True**, the value(s) provided are lists of all
-      returned values,otherwise this just provides the first value
+    :param object default: value for the mappings if the configuration option
+      is either undefined or the query fails
+    :param bool multiple: if **True** then the provided are lists with all of
+      the present values
     
     :returns:
-      Response depends upon how we were called as follows...
+      **dict** of the 'config key => value' mappings. The value is a...
       
-      * **dict** of 'config key => value' mappings, the value is a list if
-        'multiple' is **True** and a **str** of just the first value otherwise
-      * default if one was provided and our call failed
+      * **str** if **multiple** is **False**, **None** if the configuration
+        option is unset
+      * **list** if **multiple** is **True**
+      * the **default** if it was set and the value was either undefined or our
+        lookup failed
     
     :raises:
-      * :class:`stem.ControllerError` if the call fails and we weren't provided a default response
-      * :class:`stem.InvalidArguments` if the configuration option requested was invalid
+      * :class:`stem.ControllerError` if the call fails and we weren't provided
+        a default response
+      * :class:`stem.InvalidArguments` if the configuration option requested
+        was invalid
     """
     
     start_time = time.time()
@@ -1086,11 +1090,7 @@ class Controller(BaseController):
     # if everything was cached then short circuit making the query
     if not lookup_params:
       log.trace("GETCONF %s (cache fetch)" % " ".join(reply.keys()))
-      
-      if multiple:
-        return reply
-      else:
-        return dict([(entry[0], entry[1][0]) for entry in reply.items()])
+      return self._get_conf_dict_to_response(reply, default, multiple)
     
     try:
       response = self.msg("GETCONF %s" % ' '.join(lookup_params))
@@ -1120,16 +1120,33 @@ class Controller(BaseController):
             del reply[key]
       
       log.debug("GETCONF %s (runtime: %0.4f)" % (" ".join(lookup_params), time.time() - start_time))
-      
-      if multiple:
-        return reply
-      else:
-        return dict([(entry[0], entry[1][0]) for entry in reply.items()])
+      return self._get_conf_dict_to_response(reply, default, multiple)
     except stem.ControllerError, exc:
       log.debug("GETCONF %s (failed: %s)" % (" ".join(lookup_params), exc))
       
-      if default != UNDEFINED: return default
+      if default != UNDEFINED: return dict((param, default) for param in params)
       else: raise exc
+  
+  def _get_conf_dict_to_response(self, config_dict, default, multiple):
+    """
+    Translates a dictionary of 'config key => [value1, value2...]' into the
+    return value of :func:`~stem.control.Controller.get_conf_map`, taking into
+    account what the caller requested.
+    """
+    
+    return_dict = {}
+    
+    for key, values in config_dict.items():
+      if values == []:
+        # config option was unset
+        if default != UNDEFINED:
+          return_dict[key] = default
+        else:
+          return_dict[key] = [] if multiple else None
+      else:
+        return_dict[key] = values if multiple else values[0]
+    
+    return return_dict
   
   def set_conf(self, param, value):
     """
