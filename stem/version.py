@@ -40,6 +40,7 @@ easily parsed and compared, for instance...
   **LOADCONF**                          'LOADCONF' requests
   **TAKEOWNERSHIP**                     'TAKEOWNERSHIP' requests
   **TORRC_CONTROL_SOCKET**              'ControlSocket <path>' config option
+  **TORRC_PORT_FORWARDING**             'PortForwarding' config option
   **TORRC_DISABLE_DEBUGGER_ATTACHMENT** 'DisableDebuggerAttachment' config option
   **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
   **FEATURE_EXTENDED_EVENTS**           'EXTENDED_EVENTS' optional feature
@@ -255,11 +256,12 @@ safecookie_req.greater_than(Version("0.2.3.13"))
 
 Requirement = stem.util.enum.Enum(
   ("AUTH_SAFECOOKIE", safecookie_req),
-  ("GETINFO_CONFIG_TEXT", Version("0.2.2.7")),
+  ("GETINFO_CONFIG_TEXT", Version("0.2.2.7-alpha")),
   ("EXTENDCIRCUIT_PATH_OPTIONAL", Version("0.2.2.9")),
   ("LOADCONF", Version("0.2.1.1")),
   ("TAKEOWNERSHIP", Version("0.2.2.28-beta")),
   ("TORRC_CONTROL_SOCKET", Version("0.2.0.30")),
+  ("TORRC_PORT_FORWARDING", Version("0.2.3.1-alpha")),
   ("TORRC_DISABLE_DEBUGGER_ATTACHMENT", Version("0.2.3.9")),
   ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),
   ("FEATURE_EXTENDED_EVENTS", Version("0.2.2.1-alpha")),
