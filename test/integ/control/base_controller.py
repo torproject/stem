@@ -183,6 +183,17 @@ class TestBaseController(unittest.TestCase):
         self.assertTrue(re.match("650 BW [0-9]+ [0-9]+\r\n", bw_event.raw_content()))
         self.assertEquals(("650", " "), bw_event.content()[0][:2])
   
+  def test_get_latest_heartbeat(self):
+    """
+    Basic check for get_latest_heartbeat().
+    """
+    
+    # makes a getinfo query, then checks that the heartbeat is close to now
+    with test.runner.get_runner().get_tor_socket() as control_socket:
+      controller = stem.control.BaseController(control_socket)
+      controller.msg("GETINFO version")
+      self.assertTrue((time.time() - controller.get_latest_heartbeat()) < 5)
+  
   def test_status_notifications(self):
     """
     Checks basic functionality of the add_status_listener() and

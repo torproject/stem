@@ -49,6 +49,7 @@ providing its own for interacting at a higher level.
     |- connect - connects or reconnects to tor
     |- close - shuts down our connection to the tor process
     |- get_socket - provides the socket used for control communication
+    |- get_latest_heartbeat - timestamp for when we last heard from tor
     |- add_status_listener - notifies a callback of changes in our status
     |- remove_status_listener - prevents further notification of status changes
     +- __enter__ / __exit__ - manages socket connection
@@ -237,6 +238,8 @@ class BaseController(object):
     self._socket._connect = self._connect
     self._socket._close = self._close
     
+    self._last_heartbeat = 0.0 # timestamp for when we last heard from tor
+    
     if self._socket.is_alive():
       self._launch_threads()
   
@@ -356,6 +359,16 @@ class BaseController(object):
     """
     
     return self._socket
+  
+  def get_latest_heartbeat(self):
+    """
+    Provides the unix timestamp for when we last heard from tor. This is zero
+    if we've never received a message.
+    
+    :returns: float for the unix timestamp of when we last heard from tor
+    """
+    
+    return self._last_heartbeat
   
   def add_status_listener(self, callback, spawn = True):
     """
@@ -523,6 +536,7 @@ class BaseController(object):
     while self.is_alive():
       try:
         control_message = self._socket.recv()
+        self._last_heartbeat = time.time()
         
         if control_message.content()[-1][0] == "650":
           # asynchronous message, adds to the event queue and wakes up its handler
