@@ -1560,15 +1560,15 @@ class Controller(BaseController):
     
     return circuits
   
-  def attach_stream(self, stream, circuit, hop = None):
+  def attach_stream(self, stream_id, circuit_id, hop = None):
     """
     Attaches a stream to a circuit.
     
     Note: Tor attaches streams to circuits automatically unless the
     __LeaveStreamsUnattached configuration variable is set to "1"
     
-    :param int stream: id of the stream that must be attached
-    :param int circuit: id of the circuit to which it must be attached
+    :param int stream_id: id of the stream that must be attached
+    :param int circuit_id: id of the circuit to which it must be attached
     :param int hop: hop in the circuit that must be used as an exit node
     
     :raises:
@@ -1577,7 +1577,7 @@ class Controller(BaseController):
     """
     
     hop_str = " HOP=" + str(hop) if hop else ""
-    response = self.msg("ATTACHSTREAM %i %i%s" % (stream, circuit, hop_str))
+    response = self.msg("ATTACHSTREAM %i %i%s" % (stream_id, circuit_id, hop_str))
     stem.response.convert("SINGLELINE", response)
     
     if not response.is_ok():
