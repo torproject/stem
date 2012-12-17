@@ -552,20 +552,20 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      circ_id = controller.new_circuit()
-      controller.close_circuit(circ_id)
+      circuit_id = controller.new_circuit()
+      controller.close_circuit(circuit_id)
       circuit_output = controller.get_info("circuit-status")
       circ = [x.split()[0] for x in circuit_output.splitlines()]
       self.assertFalse(circ_id in circ)
       
-      circ_id = controller.new_circuit()
-      controller.close_circuit(circ_id, "IfUnused")
+      circuit_id = controller.new_circuit()
+      controller.close_circuit(circuit_id, "IfUnused")
       circuit_output = controller.get_info("circuit-status")
       circ = [x.split()[0] for x in circuit_output.splitlines()]
       self.assertFalse(circ_id in circ)
       
-      circ_id = controller.new_circuit()
-      self.assertRaises(stem.InvalidArguments, controller.close_circuit, circ_id + 1024)
+      circuit_id = controller.new_circuit()
+      self.assertRaises(stem.InvalidArguments, controller.close_circuit, circuit_id + "1024")
       self.assertRaises(stem.InvalidRequest, controller.close_circuit, "")
   
   def test_mapaddress(self):
