@@ -622,7 +622,7 @@ class Controller(BaseController):
     
     # number of sequential 'GETINFO ip-to-country/*' lookups that have failed
     self._geoip_failure_count = 0
-    self.enabled_features = []
+    self._enabled_features = []
   
   def connect(self):
     super(Controller, self).connect()
@@ -1318,7 +1318,7 @@ class Controller(BaseController):
     
     feature = feature.upper()
     
-    if feature in self.enabled_features:
+    if feature in self._enabled_features:
       return True
     else:
       # check if this feature is on by default
@@ -1330,9 +1330,9 @@ class Controller(BaseController):
         defaulted_version = stem.version.Requirement.FEATURE_VERBOSE_NAMES
       
       if defaulted_version and self.get_version().meets_requirements(defaulted_version):
-        self.enabled_features.append(feature)
+        self._enabled_features.append(feature)
       
-      return feature in self.enabled_features
+      return feature in self._enabled_features
   
   def enable_feature(self, features):
     """
@@ -1366,7 +1366,7 @@ class Controller(BaseController):
       
       raise stem.ProtocolError("USEFEATURE provided an invalid response code: %s" % response.code)
     
-    self.enabled_features += [entry.upper() for entry in features]
+    self._enabled_features += [entry.upper() for entry in features]
   
   def signal(self, signal):
     """

@@ -438,7 +438,7 @@ class TestController(unittest.TestCase):
       if orconn_output == '':
         if test.runner.require_online(self): return
       
-      self.assertTrue("VERBOSE_NAMES" in controller.enabled_features)
+      self.assertTrue("VERBOSE_NAMES" in controller._enabled_features)
       self.assertRaises(stem.InvalidArguments, controller.enable_feature, ["NOT", "A", "FEATURE"])
       try:
         controller.enable_feature(["NOT", "A", "FEATURE"])
