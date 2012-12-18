@@ -8,12 +8,19 @@ the tor network.
     +- SocksError - Reports problems returned by the SOCKS proxy.
   
   Socks - Communicate through a SOCKS5 proxy with a socket interface
+  
+  SocksPatch - Force socket-using code to use :class: `~test.network.Socks`
 """
 
+import functools
 import socket
 import struct
 
 import stem.util.connection
+
+# Store a reference to the original class so we can find it after
+# monkey patching.
+_socket_socket = socket.socket
 
 SOCKS5_NOAUTH_GREETING = (0x05, 0x01, 0x00)
 SOCKS5_NOAUTH_RESPONSE = (0x05, 0x00)
@@ -52,7 +59,7 @@ class SocksError(ProxyError):
       code = self.code
     return "[%s] %s" % (code, self._ERROR_MESSAGE[code])
 
-class Socks(socket.socket):
+class Socks(_socket_socket):
   """
   A **socket.socket**-like interface through a SOCKS5 proxy connection.
   Tor does not support proxy authentication, so neither does this class.
@@ -181,7 +188,7 @@ class Socks(socket.socket):
     :raises: :class:`test.SocksError` for any errors
     """
     
-    socket.socket.connect(self, (self._proxy_addr[0], self._proxy_addr[1]))
+    _socket_socket.connect(self, (self._proxy_addr[0], self._proxy_addr[1]))
     # ask for non-authenticated connection
     self.sendall(self._ints_to_bytes(SOCKS5_NOAUTH_GREETING))
     response = self._bytes_to_ints(self._recvall(2))
@@ -210,4 +217,32 @@ class Socks(socket.socket):
     """
     
     raise NotImplementedError
+
+class SocksPatch(object):
+  """
+  Monkey-patch **socket.socket** to use :class:`~test.network.Socks`, instead.
+  Classes in the patched context (e.g. urllib.urlopen in the example below)
+  do not use the SOCKS5 proxy for domain name resolution and such information
+  may be leaked.
+  
+  ::
+  
+    import urllib
+    from test.network import SocksPatch
+    
+    with SocksPatch(('127.0.0.1', 9050)):
+      with urllib.urlopen("https://www.torproject.org") as f:
+        for line in f.readline():
+          print line
+  """
+  
+  def __init__(self, *args, **kwargs):
+    self._partial = functools.partial(Socks, *args, **kwargs)
+  
+  def __enter__(self):
+    socket.socket = self._partial
+    return self
+  
+  def __exit__(self, exit_type, value, traceback):
+    socket.socket = _socket_socket
 
