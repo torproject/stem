@@ -306,7 +306,6 @@ class Runner(object):
         if CONFIG["integ.target.relative_data_dir"]:
           os.chdir(original_cwd)
       except OSError, exc:
-        self.stop()
         raise exc
   
   def stop(self):
