@@ -248,11 +248,6 @@ def load_user_configuration(test_config):
     print "'%s' isn't a logging runlevel, use one of the following instead:" % log_config
     print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
     sys.exit(1)
-  
-  tor_config = CONFIG["argument.tor"]
-  if CONFIG["argument.integ"] and not os.path.exists(tor_config) and not stem.util.system.is_available(tor_config):
-    print "Unable to start tor, '%s' does not exists." % tor_config
-    sys.exit(1)
 
 def _clean_orphaned_pyc():
   test.output.print_noline("  checking for orphaned .pyc files... ", *test.runner.STATUS_ATTR)

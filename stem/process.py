@@ -64,6 +64,18 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
   if stem.util.system.is_windows():
     timeout = None
   
+  # sanity check that we got a tor binary
+  
+  if os.path.sep in tor_cmd:
+    # got a path (either relative or absolute), check what it leads to
+    
+    if os.path.isdir(tor_cmd):
+      raise OSError("'%s' is a directory, not the tor executable" % tor_cmd)
+    elif not os.path.isfile(tor_cmd):
+      raise OSError("'%s' doesn't exist" % tor_cmd)
+  elif not stem.util.system.is_available(tor_cmd):
+    raise OSError("'%s' isn't available on your system. Maybe it's not in your PATH?" % tor_cmd)
+  
   # double check that we have a torrc to work with
   if not torrc_path in (None, NO_TORRC) and not os.path.exists(torrc_path):
     raise OSError("torrc doesn't exist (%s)" % torrc_path)
