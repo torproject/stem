@@ -438,7 +438,7 @@ if __name__ == '__main__':
         test.output.print_line("  aborted starting tor: keyboard interrupt\n", *ERROR_ATTR)
         break
       except OSError:
-        pass
+        testing_failed = True
       finally:
         integ_runner.stop()
     
