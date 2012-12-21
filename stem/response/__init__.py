@@ -63,6 +63,7 @@ def convert(response_type, message, **kwargs):
     * **\*** GETINFO
     * **\*** GETCONF
     * **&** **^** MAPADDRESS
+    * EVENT
     * PROTOCOLINFO
     * AUTHCHALLENGE
     * SINGLELINE

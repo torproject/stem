@@ -96,8 +96,8 @@ class TestControlMessage(unittest.TestCase):
   
   def test_no_crlf(self):
     """
-    Checks that we get a ProtocolError when we don't have both a carrage
-    returna and newline for line endings. This doesn't really check for
+    Checks that we get a ProtocolError when we don't have both a carriage
+    return and newline for line endings. This doesn't really check for
     newlines (since that's what readline would break on), but not the end of
     the world.
     """

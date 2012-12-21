@@ -856,7 +856,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
         
         for entry in value.split(','):
           if not '=' in entry:
-            raise stem.ProtocolError("The bridge-ip-versions should be a comma separated       listing of '<protocol>=<count>' mappings: %s" % line)
+            raise stem.ProtocolError("The bridge-ip-versions should be a comma separated listing of '<protocol>=<count>' mappings: %s" % line)
           
           protocol, count = entry.split('=', 1)
           

@@ -1045,8 +1045,8 @@ class Controller(BaseController):
     
     There are three use cases for GETCONF:
     
-      1. a single value is provided (ex. **ControlPort**)
-      2. multiple values are provided for the option (ex. **ExitPolicy**)
+      1. a single value is provided (e.g. **ControlPort**)
+      2. multiple values are provided for the option (e.g. **ExitPolicy**)
       3. a set of options that weren't necessarily requested are returned (for
          instance querying **HiddenServiceOptions** gives **HiddenServiceDir**,
          **HiddenServicePort**, etc)
@@ -1061,8 +1061,8 @@ class Controller(BaseController):
     :param str,list params: configuration option(s) to be queried
     :param object default: value for the mappings if the configuration option
       is either undefined or the query fails
-    :param bool multiple: if **True** then the provided are lists with all of
-      the present values
+    :param bool multiple: if **True** then the values provided are lists with
+      all of the present values
     
     :returns:
       **dict** of the 'config key => value' mappings. The value is a...
@@ -1429,7 +1429,7 @@ class Controller(BaseController):
     :param list,str path: one or more relays to make a circuit through
     :param str purpose: "general" or "controller"
     
-    :returns: int of the circuit id of the newly created circuit
+    :returns: str of the circuit id of the newly created circuit
     """
     
     return self.extend_circuit(0, path, purpose)

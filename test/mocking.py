@@ -445,7 +445,7 @@ def get_message(content, reformat = True):
   :param str content: base content for the controller message
   :param str reformat: modifies content to be more accommodating to being parsed
   
-  :returns: stem.socket.ControlMessage instance
+  :returns: stem.response.ControlMessage instance
   """
   
   if reformat:
