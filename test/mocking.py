@@ -441,8 +441,8 @@ def get_all_combinations(attr, include_empty = False):
 
 def get_object(object_class, methods = None):
   """
-  Provides a mock Controller instance. Its methods are mocked with the given
-  replacements, and calling any others will result in an exception.
+  Provides a mock instance of an arbitrary class. Its methods are mocked with
+  the given replacements, and calling any others will result in an exception.
   
   :param class object_class: class that we're making an instance of
   :param dict methods: mapping of method names to their mocked implementation
