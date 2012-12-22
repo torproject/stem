@@ -540,16 +540,16 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      circuit_id = controller.new_circuit()
-      controller.repurpose_circuit(circuit_id, "CONTROLLER")
-      circuit_output = controller.get_info("circuit-status")
-      circ = filter(re.compile("^%s " % circuit_id).match, circuit_output.splitlines())[0]
-      self.assertTrue("PURPOSE=CONTROLLER" in circ)
+      circ_id = controller.new_circuit()
+      controller.repurpose_circuit(circ_id, "CONTROLLER")
+      circuits = controller.get_circuits()
+      circuit = filter(lambda circ: circ.id == circ_id, circuits)[0]
+      self.assertTrue(circuit.purpose == "CONTROLLER")
       
-      controller.repurpose_circuit(circuit_id, "GENERAL")
-      circuit_output = controller.get_info("circuit-status")
-      circ = filter(re.compile("^%s " % circuit_id).match, circuit_output.splitlines())[0]
-      self.assertTrue("PURPOSE=GENERAL" in circ)
+      controller.repurpose_circuit(circ_id, "GENERAL")
+      circuits = controller.get_circuits()
+      circuit = filter(lambda circ: circ.id == circ_id, circuits)[0]
+      self.assertTrue(circuit.purpose == "GENERAL")
       
       self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, 'f934h9f3h4', "fooo")
       self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, '4', "fooo")
