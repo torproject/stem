@@ -21,7 +21,7 @@ class TestTutorial(unittest.TestCase):
       'get_info': mocking.return_for_args({
         ('traffic/read',): '1234',
         ('traffic/written',): '5678',
-      }),
+      }, method = True),
     })
     
     controller.authenticate()

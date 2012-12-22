@@ -204,7 +204,7 @@ def return_true(): return return_value(True)
 def return_false(): return return_value(False)
 def return_none(): return return_value(None)
 
-def return_for_args(args_to_return_value, default = None):
+def return_for_args(args_to_return_value, default = None, method = False):
   """
   Returns a value if the arguments to it match something in a given
   'argument => return value' mapping. Otherwise, a default function
@@ -230,14 +230,27 @@ def return_for_args(args_to_return_value, default = None):
         ("Stem", "alignment=center", "size=10"): "   Stem   ",
         ("Stem", "alignment=right", "size=10"):  "      Stem",
       })
+    
+    The mocked method returns one of three circuit ids depending on the input:
+    
+    ::
+    
+      mocking.mock_method(Controller, "new_circuit", mocking.return_for_args({
+        (): "1",
+        ("path=['718BCEA286B531757ACAFF93AE04910EA73DE617', " + \
+          "'30BAB8EE7606CBD12F3CC269AE976E0153E7A58D', " + \
+          "'2765D8A8C4BBA3F89585A9FFE0E8575615880BEB']",): "2"
+        ("path=['1A', '2B', '3C']", "purpose=controller"): "3"
+      }, method = True)
   
   :param dict,tuple args_to_return_value: mapping of arguments to the value we should provide
   :param functor default: returns the value of this function if the args don't match something that we have, we raise a ValueError by default
+  :param bool method: removes the 'self' reference before processing the remainder of the parameters
   """
   
   def _return_value(*args, **kwargs):
-    # strip off the 'self' for mock clases
-    if args and 'MockClass' in str(type(args[0])):
+    # strip off the 'self' for mock classes
+    if args and method:
       args = args[1:] if len(args) > 2 else [args[1]]
     
     if kwargs:
