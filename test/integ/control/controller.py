@@ -506,11 +506,11 @@ class TestController(unittest.TestCase):
     elif test.runner.require_online(self): return
     
     with test.runner.get_runner().get_tor_controller() as controller:
-      circ_id = controller.extend_circuit('0')
+      circuit_id = controller.extend_circuit('0')
       # check if our circuit was created
-      self.assertTrue(filter(lambda x: int(x.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines()))
-      circ_id = controller.new_circuit()
-      self.assertTrue(filter(lambda x: int(x.split()[0]) == circ_id, controller.get_info('circuit-status').splitlines()))
+      self.assertTrue(filter(lambda x: x.split()[0] == circuit_id, controller.get_info('circuit-status').splitlines()))
+      circuit_id = controller.new_circuit()
+      self.assertTrue(filter(lambda x: x.split()[0] == circuit_id, controller.get_info('circuit-status').splitlines()))
       
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, "foo")
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, '0', "thisroutershouldntexistbecausestemexists!@##$%#")
@@ -527,15 +527,15 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      circ_id = controller.new_circuit()
-      controller.repurpose_circuit(circ_id, "CONTROLLER")
+      circuit_id = controller.new_circuit()
+      controller.repurpose_circuit(circuit_id, "CONTROLLER")
       circuit_output = controller.get_info("circuit-status")
-      circ = filter(re.compile("^%i " % circ_id).match, circuit_output.splitlines())[0]
+      circ = filter(re.compile("^%s " % circuit_id).match, circuit_output.splitlines())[0]
       self.assertTrue("PURPOSE=CONTROLLER" in circ)
       
-      controller.repurpose_circuit(circ_id, "GENERAL")
+      controller.repurpose_circuit(circuit_id, "GENERAL")
       circuit_output = controller.get_info("circuit-status")
-      circ = filter(re.compile("^%i " % circ_id).match, circuit_output.splitlines())[0]
+      circ = filter(re.compile("^%s " % circuit_id).match, circuit_output.splitlines())[0]
       self.assertTrue("PURPOSE=GENERAL" in circ)
       
       self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, 'f934h9f3h4', "fooo")
@@ -552,20 +552,20 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      circ_id = controller.new_circuit()
-      controller.close_circuit(circ_id)
+      circuit_id = controller.new_circuit()
+      controller.close_circuit(circuit_id)
       circuit_output = controller.get_info("circuit-status")
       circ = [x.split()[0] for x in circuit_output.splitlines()]
       self.assertFalse(circ_id in circ)
       
-      circ_id = controller.new_circuit()
-      controller.close_circuit(circ_id, "IfUnused")
+      circuit_id = controller.new_circuit()
+      controller.close_circuit(circuit_id, "IfUnused")
       circuit_output = controller.get_info("circuit-status")
       circ = [x.split()[0] for x in circuit_output.splitlines()]
       self.assertFalse(circ_id in circ)
       
-      circ_id = controller.new_circuit()
-      self.assertRaises(stem.InvalidArguments, controller.close_circuit, circ_id + 1024)
+      circuit_id = controller.new_circuit()
+      self.assertRaises(stem.InvalidArguments, controller.close_circuit, circuit_id + "1024")
       self.assertRaises(stem.InvalidRequest, controller.close_circuit, "")
   
   def test_mapaddress(self):
