@@ -223,7 +223,8 @@ def return_for_args(args_to_return_value, default = None):
       return args_to_return_value[args]
     elif default is None:
       arg_label = ", ".join([str(v) for v in args])
-      raise ValueError("Unrecognized argument sent for return_for_args(). Got '%s' but we only recognize '%s'." % (arg_label, ", ".join(args_to_return_value.keys())))
+      arg_keys = ";".join([str(v) for v in args_to_return_value.keys()])
+      raise ValueError("Unrecognized argument sent for return_for_args(). Got '%s' but we only recognize '%s'." % (arg_label, arg_keys))
     else:
       return default(args)
   
