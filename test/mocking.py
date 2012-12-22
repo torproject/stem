@@ -210,15 +210,39 @@ def return_for_args(args_to_return_value, default = None):
   'argument => return value' mapping. Otherwise, a default function
   is called with the arguments.
   
-  :param dict args_to_return_value: mapping of arguments to the value we should provide
+  The mapped argument is a tuple (not a list) of parameters to a function (or
+  method). Positional arguments must be in the order used to call the mocked
+  function and keyword arguments must be strings of the form 'k=v' in
+  alphabetical order.  Some examples:
+  
+  ::
+  
+    Mocked functions can return different types depending on input:
+    
+      mocking.mock("get_answer", mocking.return_for_args({
+        ("breakfast_menu",): "spam",
+        ("lunch_menu",): "eggs and spam",
+        (42,): ["life", "universe", "everything"],
+      })
+      
+      mocking.mock("align_text", {
+        ("Stem", "alignment=left", "size=10"):   "Stem      ",
+        ("Stem", "alignment=center", "size=10"): "   Stem   ",
+        ("Stem", "alignment=right", "size=10"):  "      Stem",
+      })
+  
+  :param dict,tuple args_to_return_value: mapping of arguments to the value we should provide
   :param functor default: returns the value of this function if the args don't match something that we have, we raise a ValueError by default
   """
   
-  def _return_value(*args):
+  def _return_value(*args, **kwargs):
     # strip off the 'self' for mock clases
     if args and 'MockClass' in str(type(args[0])):
-      args = args[1:] if len(args) > 2 else args[1]
+      args = args[1:] if len(args) > 2 else [args[1]]
     
+    if kwargs:
+      args.extend(['='.join((str(k),str(kwargs[k]))) for k in sorted(kwargs.keys())])
+    args = tuple(args)
     if args in args_to_return_value:
       return args_to_return_value[args]
     elif default is None:
@@ -275,7 +299,7 @@ def mock(target, mock_call, target_module=None):
     target_function = target.__name__
     MOCK_STATE[mocking_id] = (target_module, target_function, target)
   
-  mock_wrapper = lambda *args: mock_call(*args)
+  mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
   mock_wrapper.__dict__["mock_id"] = mocking_id
   
   # mocks the function with this wrapper
@@ -323,7 +347,7 @@ def mock_method(target_class, method_name, mock_call):
     mocking_id = MOCK_ID.next()
     MOCK_STATE[mocking_id] = (target_class, method_name, target_method)
   
-  mock_wrapper = lambda *args: mock_call(*args)
+  mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
   setattr(mock_wrapper, "mock_id", mocking_id)
   
   # mocks the function with this wrapper

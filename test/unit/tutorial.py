@@ -19,8 +19,8 @@ class TestTutorial(unittest.TestCase):
       'authenticate': mocking.no_op(),
       'close': mocking.no_op(),
       'get_info': mocking.return_for_args({
-        'traffic/read': '1234',
-        'traffic/written': '5678',
+        ('traffic/read',): '1234',
+        ('traffic/written',): '5678',
       }),
     })
     
