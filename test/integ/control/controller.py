@@ -765,5 +765,5 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       new_circ = controller.new_circuit()
       circuits = controller.get_circuits()
-      self.assertTrue(new_circ in [int(circ.id) for circ in circuits])
+      self.assertTrue(new_circ in [circ.id for circ in circuits])
 
