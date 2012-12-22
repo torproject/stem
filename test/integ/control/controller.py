@@ -565,17 +565,15 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      circuit_id = controller.new_circuit()
-      controller.close_circuit(circuit_id)
-      circuit_output = controller.get_info("circuit-status")
-      circ = [x.split()[0] for x in circuit_output.splitlines()]
-      self.assertFalse(circ_id in circ)
+      circ_id = controller.new_circuit()
+      controller.close_circuit(circ_id)
+      circuit_ids = [circ.id for circ in controller.get_circuits()]
+      self.assertFalse(circ_id in circuit_ids)
       
-      circuit_id = controller.new_circuit()
-      controller.close_circuit(circuit_id, "IfUnused")
-      circuit_output = controller.get_info("circuit-status")
-      circ = [x.split()[0] for x in circuit_output.splitlines()]
-      self.assertFalse(circ_id in circ)
+      circ_id = controller.new_circuit()
+      controller.close_circuit(circ_id, "IfUnused")
+      circuit_ids = [circ.id for circ in controller.get_circuits()]
+      self.assertFalse(circ_id in circuit_ids)
       
       circuit_id = controller.new_circuit()
       self.assertRaises(stem.InvalidArguments, controller.close_circuit, circuit_id + "1024")
