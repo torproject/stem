@@ -68,11 +68,14 @@ STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
 SUBSTATUS_ATTR = (term.Color.BLUE, )
 ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
 
+SOCKS_HOST = "127.0.0.1"
+SOCKS_PORT = 1112
+
 BASE_TORRC = """# configuration for stem integration tests
-DataDirectory %s
-SocksPort 1112
+DataDirectory %%s
+SocksListenAddress %s:%i
 DownloadExtraInfo 1
-"""
+""" % (SOCKS_HOST, SOCKS_PORT)
 
 # We make some paths relative to stem's base directory (the one above us)
 # rather than the process' cwd. This doesn't end with a slash.
