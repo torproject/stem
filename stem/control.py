@@ -1320,6 +1320,33 @@ class Controller(BaseController):
     else:
       raise stem.ProtocolError("SAVECONF returned unexpected response code")
   
+  def get_socks_ports(self):
+    """
+    Returns a list of SOCKS proxy ports open on the controlled tor instance.
+    
+    :returns: list of **(host, port)** tuples or an empty list if there are no
+      SOCKS listeners
+    """
+    
+    try:
+      raw_addrs = self.get_info("net/listeners/socks").split()
+      # remove the surrounding quotes from each listener
+      raw_addrs = [x.replace("\"", "") for x in raw_addrs]
+    except stem.InvalidArguments:
+      # tor version is old (pre-tor-0.2.2.26-beta); use get_conf()
+      socks_port = self.get_conf('SocksPort')
+      raw_addrs = []
+      for listener in self.get_conf('SocksListenAddress', multiple = True):
+        if listener.count(':') == 0:
+          listener = listener + ":" + socks_port
+        raw_addrs.append(listener)
+    # both processes above give a list of strings of the form host:port
+    proxy_addrs = []
+    for proxy in raw_addrs:
+      proxy_pair = proxy.split(":")
+      proxy_addrs.append(tuple((proxy_pair[0], int(proxy_pair[1]))))
+    return proxy_addrs
+  
   def is_feature_enabled(self, feature):
     """
     Checks if a control connection feature is enabled. These features can be

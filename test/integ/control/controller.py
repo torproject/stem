@@ -458,6 +458,17 @@ class TestController(unittest.TestCase):
         controller.load_conf(oldconf)
         controller.save_conf()
   
+  def test_get_socks_ports(self):
+    """
+    Test Controller.get_socks_ports against a running tor instance.
+    """
+    if test.runner.require_control(self): return
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      self.assertEqual([('127.0.0.1', 1112)], controller.get_socks_ports())
+  
   def test_enable_feature(self):
     """
     Test Controller.enable_feature with valid and invalid inputs.
