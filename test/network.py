@@ -9,7 +9,7 @@ the tor network.
   
   Socks - Communicate through a SOCKS5 proxy with a socket interface
   
-  SocksPatch - Force socket-using code to use :class: `~test.network.Socks`
+  SocksPatch - Force socket-using code to use test.network.Socks
 """
 
 import functools
