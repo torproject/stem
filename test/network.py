@@ -28,7 +28,7 @@ SOCKS5_CONN_BY_IPV4 = (0x05, 0x01, 0x00, 0x01)
 SOCKS5_CONN_BY_NAME = (0x05, 0x01, 0x00, 0x03)
 
 class ProxyError(Exception):
-  """ Base error for proxy issues. """
+  "Base error for proxy issues."
 
 class SocksError(ProxyError):
   """
