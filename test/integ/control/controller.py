@@ -521,9 +521,9 @@ class TestController(unittest.TestCase):
     with test.runner.get_runner().get_tor_controller() as controller:
       circuit_id = controller.extend_circuit('0')
       # check if our circuit was created
-      self.assertTrue(filter(lambda x: x.split()[0] == circuit_id, controller.get_info('circuit-status').splitlines()))
+      self.assertTrue(filter(lambda circ: circ.id == circuit_id, controller.get_circuits()))
       circuit_id = controller.new_circuit()
-      self.assertTrue(filter(lambda x: x.split()[0] == circuit_id, controller.get_info('circuit-status').splitlines()))
+      self.assertTrue(filter(lambda circ: circ.id == circuit_id, controller.get_circuits()))
       
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, "foo")
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, '0', "thisroutershouldntexistbecausestemexists!@##$%#")
@@ -575,8 +575,8 @@ class TestController(unittest.TestCase):
       circuit_ids = [circ.id for circ in controller.get_circuits()]
       self.assertFalse(circ_id in circuit_ids)
       
-      circuit_id = controller.new_circuit()
-      self.assertRaises(stem.InvalidArguments, controller.close_circuit, circuit_id + "1024")
+      circ_id = controller.new_circuit()
+      self.assertRaises(stem.InvalidArguments, controller.close_circuit, str(int(circ_id) + 1024))
       self.assertRaises(stem.InvalidRequest, controller.close_circuit, "")
   
   def test_mapaddress(self):
