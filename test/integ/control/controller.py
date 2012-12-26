@@ -732,13 +732,22 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       controller.set_conf("__LeaveStreamsUnattached", "1")
       socksport = controller.get_conf("SocksPort")
-      circuits_3hop = [c.id for c in controller.get_circuits() if len(c.path) == 3]
-      self.assertTrue(len(circuits_3hop) > 0)
-      circuit_id = circuits_3hop[0]
+      circ_status, circ_status_q = "", Queue()
+      
+      def handle_circ(circuit):
+        circ_status_q.put(circuit)
       
       def handle_streamcreated(stream):
         if stream.status == "NEW":
           controller.attach_stream(int(stream.id), int(circuit_id))
+      
+      controller.add_event_listener(handle_circ, stem.control.EventType.CIRC)
+      while circ_status != "BUILT":
+        circuit_id = controller.new_circuit()
+        while not circ_status in ("BUILT", "FAILED"):
+          circ_event = circ_status_q.get()
+          if circ_event.id == circuit_id:
+            circ_status = circ_event.status
       
       controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
       ip = test.util.external_ip('127.0.0.1', socksport)
