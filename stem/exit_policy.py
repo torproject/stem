@@ -35,6 +35,7 @@ exiting to a destination is permissible or not. For instance...
     |- get_address_type - provides the protocol our ip address belongs to
     |- is_match - checks if we match a given destination
     |- get_mask - provides the address representation of our mask
+    |- get_masked_bits - provides the bit representation of our mask
     +- __str__ - string representation for this rule
 
 .. data:: AddressType (enum)
@@ -339,8 +340,6 @@ class ExitPolicyRule(object):
   :var bool is_accept: indicates if exiting is allowed or disallowed
   
   :var str address: address that this rule is for
-  :var int masked_bits: number of bits the subnet mask represents, **None** if
-    the mask can't have a bit representation
   
   :var int min_port: lower end of the port range that we include (inclusive)
   :var int max_port: upper end of the port range that we include (inclusive)
@@ -373,7 +372,7 @@ class ExitPolicyRule(object):
     
     self.address = None
     self._address_type = None
-    self.masked_bits = None
+    self._masked_bits = None
     self.min_port = self.max_port = None
     
     # Our mask in ip notation (ex. "255.255.255.0"). This is only set if we
@@ -494,14 +493,24 @@ class ExitPolicyRule(object):
       if address_type == AddressType.WILDCARD:
         mask = None
       elif address_type == AddressType.IPv4:
-        mask = stem.util.connection.get_mask(self.masked_bits)
+        mask = stem.util.connection.get_mask(self._masked_bits)
       elif address_type == AddressType.IPv6:
-        mask = stem.util.connection.get_mask_ipv6(self.masked_bits)
+        mask = stem.util.connection.get_mask_ipv6(self._masked_bits)
       
       if not cache: return mask
       self._mask = mask
     
     return self._mask
+  
+  def get_masked_bits(self):
+    """
+    Provides the number of bits our subnet mask represents. This is **None** if
+    our mask can't have a bit representation.
+    
+    :returns: int with the bit representation of our mask
+    """
+    
+    return self._masked_bits
   
   def __str__(self):
     """
@@ -530,11 +539,11 @@ class ExitPolicyRule(object):
         # - use our masked bit count if we can
         # - use the mask itself otherwise
         
-        if (address_type == AddressType.IPv4 and self.masked_bits == 32) or \
-           (address_type == AddressType.IPv6 and self.masked_bits == 128):
+        if (address_type == AddressType.IPv4 and self._masked_bits == 32) or \
+           (address_type == AddressType.IPv6 and self._masked_bits == 128):
           label += ":"
-        elif self.masked_bits is not None:
-          label += "/%i:" % self.masked_bits
+        elif self._masked_bits is not None:
+          label += "/%i:" % self._masked_bits
         else:
           label += "/%s:" % self.get_mask()
       
@@ -576,7 +585,7 @@ class ExitPolicyRule(object):
     
     if addrspec == "*":
       self._address_type = _address_type_to_int(AddressType.WILDCARD)
-      self.address = self.masked_bits = None
+      self.address = self._masked_bits = None
     elif stem.util.connection.is_valid_ip_address(self.address):
       # ipv4spec ::= ip4 | ip4 "/" num_ip4_bits | ip4 "/" ip4mask
       # ip4 ::= an IPv4 address in dotted-quad format
@@ -586,20 +595,20 @@ class ExitPolicyRule(object):
       self._address_type = _address_type_to_int(AddressType.IPv4)
       
       if addr_extra is None:
-        self.masked_bits = 32
+        self._masked_bits = 32
       elif stem.util.connection.is_valid_ip_address(addr_extra):
         # provided with an ip4mask
         try:
-          self.masked_bits = stem.util.connection.get_masked_bits(addr_extra)
+          self._masked_bits = stem.util.connection.get_masked_bits(addr_extra)
         except ValueError:
           # mask can't be represented as a number of bits (ex. "255.255.0.255")
           self._mask = addr_extra
-          self.masked_bits = None
+          self._masked_bits = None
       elif addr_extra.isdigit():
         # provided with a num_ip4_bits
-        self.masked_bits = int(addr_extra)
+        self._masked_bits = int(addr_extra)
         
-        if self.masked_bits < 0 or self.masked_bits > 32:
+        if self._masked_bits < 0 or self._masked_bits > 32:
           raise ValueError("IPv4 masks must be in the range of 0-32 bits")
       else:
         raise ValueError("The '%s' isn't a mask nor number of bits: %s" % (addr_extra, rule))
@@ -613,12 +622,12 @@ class ExitPolicyRule(object):
       self._address_type = _address_type_to_int(AddressType.IPv6)
       
       if addr_extra is None:
-        self.masked_bits = 128
+        self._masked_bits = 128
       elif addr_extra.isdigit():
         # provided with a num_ip6_bits
-        self.masked_bits = int(addr_extra)
+        self._masked_bits = int(addr_extra)
         
-        if self.masked_bits < 0 or self.masked_bits > 128:
+        if self._masked_bits < 0 or self._masked_bits > 128:
           raise ValueError("IPv6 masks must be in the range of 0-128 bits")
       else:
         raise ValueError("The '%s' isn't a number of bits: %s" % (addr_extra, rule))

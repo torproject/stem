@@ -104,7 +104,7 @@ class TestExitPolicyRule(unittest.TestCase):
     self.assertEquals(AddressType.WILDCARD, rule.get_address_type())
     self.assertEquals(None, rule.address)
     self.assertEquals(None, rule.get_mask())
-    self.assertEquals(None, rule.masked_bits)
+    self.assertEquals(None, rule.get_masked_bits())
     self.assertEquals(1, rule.min_port)
     self.assertEquals(65535, rule.max_port)
   
@@ -123,7 +123,7 @@ class TestExitPolicyRule(unittest.TestCase):
       self.assertEquals(AddressType.IPv4, rule.get_address_type())
       self.assertEquals(address, rule.address)
       self.assertEquals(mask, rule.get_mask())
-      self.assertEquals(masked_bits, rule.masked_bits)
+      self.assertEquals(masked_bits, rule.get_masked_bits())
   
   def test_invalid_ipv4_addresses(self):
     test_inputs = (
@@ -162,7 +162,7 @@ class TestExitPolicyRule(unittest.TestCase):
       self.assertEquals(AddressType.IPv6, rule.get_address_type())
       self.assertEquals(address, rule.address)
       self.assertEquals(mask, rule.get_mask())
-      self.assertEquals(masked_bits, rule.masked_bits)
+      self.assertEquals(masked_bits, rule.get_masked_bits())
   
   def test_invalid_ipv6_addresses(self):
     test_inputs = (
