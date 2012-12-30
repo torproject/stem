@@ -1565,27 +1565,33 @@ class Controller(BaseController):
       
       raise ValueError("Tor presently does not have a circuit with the id of '%s'" % circuit_id)
     except Exception, exc:
-      if default: return default
-      else: raise exc
+      if default == UNDEFINED: raise exc
+      else: return default
   
-  def get_circuits(self):
+  def get_circuits(self, default = UNDEFINED):
     """
-    Provides the list of circuits Tor is currently handling.
+    Provides tor's currently available circuits.
     
-    :returns: **list** of :class:`stem.events.CircuitEvent` objects
+    :param object default: response if the query fails
     
-    :raises: :class:`stem.ControllerError` if the call fails
+    :returns: **list** of :class:`stem.events.CircuitEvent` for our circuits
+    
+    :raises: :class:`stem.ControllerError` if the call fails and no default was provided
     """
     
-    circuits = []
-    response = self.get_info("circuit-status")
-    
-    for circ in response.splitlines():
-      circ_message = stem.socket.recv_message(StringIO.StringIO("650 CIRC " + circ + "\r\n"))
-      stem.response.convert("EVENT", circ_message, arrived_at = 0)
-      circuits.append(circ_message)
-    
-    return circuits
+    try:
+      circuits = []
+      response = self.get_info("circuit-status")
+      
+      for circ in response.splitlines():
+        circ_message = stem.socket.recv_message(StringIO.StringIO("650 CIRC " + circ + "\r\n"))
+        stem.response.convert("EVENT", circ_message, arrived_at = 0)
+        circuits.append(circ_message)
+      
+      return circuits
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else: return default
   
   def attach_stream(self, stream_id, circuit_id, hop = None):
     """
