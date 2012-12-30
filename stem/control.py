@@ -36,6 +36,7 @@ providing its own for interacting at a higher level.
     |- close_stream - close a stream
     |- repurpose_circuit - change a circuit's purpose
     |- map_address - maps one address to another such that connections to the original are replaced with the other
+    |- get_circuit - provides an active circuit
     |- get_circuits - provides a list of active circuits
     |- attach_stream - attach a stream to a circuit
     |- get_version - convenience method to get tor version
@@ -1540,6 +1541,32 @@ class Controller(BaseController):
       raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
     
     return new_circuit
+  
+  def get_circuit(self, circuit_id, default = UNDEFINED):
+    """
+    Provides a circuit presently available from tor.
+    
+    :param int circuit_id: circuit to be fetched
+    :param object default: response if the query fails
+    
+    :returns: :class:`stem.events.CircuitEvent` for the given circuit
+    
+    :raises:
+      * :class:`stem.ControllerError` if the call fails
+      * ValueError if the circuit doesn't exist
+      
+      An exception is only raised if we weren't provided a default response.
+    """
+    
+    try:
+      for circ in self.get_circuits():
+        if circ.id == circuit_id:
+          return circ
+      
+      raise ValueError("Tor presently does not have a circuit with the id of '%s'" % circuit_id)
+    except Exception, exc:
+      if default: return default
+      else: raise exc
   
   def get_circuits(self):
     """

@@ -520,10 +520,11 @@ class TestController(unittest.TestCase):
     
     with test.runner.get_runner().get_tor_controller() as controller:
       circuit_id = controller.extend_circuit('0')
+      
       # check if our circuit was created
-      self.assertTrue(filter(lambda circ: circ.id == circuit_id, controller.get_circuits()))
+      self.assertIsNotNone(controller.get_circuit(circuit_id, None))
       circuit_id = controller.new_circuit()
-      self.assertTrue(filter(lambda circ: circ.id == circuit_id, controller.get_circuits()))
+      self.assertIsNotNone(controller.get_circuit(circuit_id, None))
       
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, "foo")
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, '0', "thisroutershouldntexistbecausestemexists!@##$%#")
@@ -542,13 +543,11 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       circ_id = controller.new_circuit()
       controller.repurpose_circuit(circ_id, "CONTROLLER")
-      circuits = controller.get_circuits()
-      circuit = filter(lambda circ: circ.id == circ_id, circuits)[0]
+      circuit = controller.get_circuit(circ_id)
       self.assertTrue(circuit.purpose == "CONTROLLER")
       
       controller.repurpose_circuit(circ_id, "GENERAL")
-      circuits = controller.get_circuits()
-      circuit = filter(lambda circ: circ.id == circ_id, circuits)[0]
+      circuit = controller.get_circuit(circ_id)
       self.assertTrue(circuit.purpose == "GENERAL")
       
       self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, 'f934h9f3h4', "fooo")
@@ -751,9 +750,9 @@ class TestController(unittest.TestCase):
       
       controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
       ip = test.util.external_ip('127.0.0.1', socksport)
-      exit_circuit = [c for c in controller.get_circuits() if c.id == circuit_id]
+      exit_circuit = controller.get_circuit(circuit_id)
       self.assertTrue(exit_circuit)
-      exit_ip = controller.get_network_status(exit_circuit[0].path[2][0]).address
+      exit_ip = controller.get_network_status(exit_circuit.path[2][0]).address
       
       self.assertEquals(exit_ip, ip)
       
