@@ -43,7 +43,7 @@ class TestExitPolicy(unittest.TestCase):
     self.assertTrue(policy.can_exit_to("75.119.206.243", 443))
     self.assertTrue(policy.can_exit_to("75.119.206.243", 999))
     
-    policy.set_default_allowed(False)
+    policy._set_default_allowed(False)
     self.assertFalse(policy.can_exit_to("75.119.206.243", 80))
     self.assertTrue(policy.can_exit_to("75.119.206.243", 443))
     self.assertFalse(policy.can_exit_to("75.119.206.243", 999))
@@ -54,7 +54,7 @@ class TestExitPolicy(unittest.TestCase):
     policy = ExitPolicy()
     self.assertTrue(policy.is_exiting_allowed())
     
-    policy.set_default_allowed(False)
+    policy._set_default_allowed(False)
     self.assertFalse(policy.is_exiting_allowed())
   
   def test_can_exit_to(self):

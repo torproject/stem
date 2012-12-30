@@ -23,7 +23,6 @@ exiting to a destination is permissible or not. For instance...
 
   ExitPolicy - Exit policy for a Tor relay
     |  + MicrodescriptorExitPolicy - Microdescriptor exit policy
-    |- set_default_allowed - sets the can_exit_to response when no rules match
     |- can_exit_to - check if exiting to this destination is allowed or not
     |- is_exiting_allowed - check if any exiting is allowed
     |- summary - provides a short label, similar to a microdescriptor
@@ -98,22 +97,6 @@ class ExitPolicy(object):
     
     self._is_allowed_default = True
     self._summary_representation = None
-  
-  def set_default_allowed(self, is_allowed_default):
-    """
-    Generally policies end with either an 'reject \*:\*' or 'accept \*:\*'
-    policy, but if it doesn't then is_allowed_default will determine the
-    default response for our :meth:`~stem.exit_policy.ExitPolicy.can_exit_to`
-    method.
-    
-    Our default, and tor's, is **True**.
-    
-    :param bool is_allowed_default:
-      :meth:`~stem.exit_policy.ExitPolicy.can_exit_to` default when no rules
-      apply
-    """
-    
-    self._is_allowed_default = is_allowed_default
   
   def can_exit_to(self, address = None, port = None):
     """
@@ -231,6 +214,22 @@ class ExitPolicy(object):
     
     return self._summary_representation
   
+  def _set_default_allowed(self, is_allowed_default):
+    """
+    Generally policies end with either an 'reject \*:\*' or 'accept \*:\*'
+    policy, but if it doesn't then is_allowed_default will determine the
+    default response for our :meth:`~stem.exit_policy.ExitPolicy.can_exit_to`
+    method.
+    
+    Our default, and tor's, is **True**.
+    
+    :param bool is_allowed_default:
+      :meth:`~stem.exit_policy.ExitPolicy.can_exit_to` default when no rules
+      apply
+    """
+    
+    self._is_allowed_default = is_allowed_default
+  
   def __iter__(self):
     for rule in self._rules:
       yield rule
@@ -311,7 +310,7 @@ class MicrodescriptorExitPolicy(ExitPolicy):
         raise ValueError(exc_msg)
     
     super(MicrodescriptorExitPolicy, self).__init__(*rules)
-    self.set_default_allowed(not self.is_accept)
+    self._set_default_allowed(not self.is_accept)
   
   def __str__(self):
     return self._policy
