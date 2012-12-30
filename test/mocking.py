@@ -204,26 +204,62 @@ def return_true(): return return_value(True)
 def return_false(): return return_value(False)
 def return_none(): return return_value(None)
 
-def return_for_args(args_to_return_value, default = None):
+def return_for_args(args_to_return_value, default = None, is_method = False):
   """
   Returns a value if the arguments to it match something in a given
   'argument => return value' mapping. Otherwise, a default function
   is called with the arguments.
   
+  The mapped argument is a tuple (not a list) of parameters to a function or
+  method. Positional arguments must be in the order used to call the mocked
+  function, and keyword arguments must be strings of the form 'k=v'. Keyword
+  arguments **must** appear in alphabetical order. For example...
+  
+  ::
+  
+    mocking.mock("get_answer", mocking.return_for_args({
+      ("breakfast_menu",): "spam",
+      ("lunch_menu",): "eggs and spam",
+      (42,): ["life", "universe", "everything"],
+    }))
+    
+    mocking.mock("align_text", mocking.return_for_args({
+      ("Stem", "alignment=left", "size=10"):   "Stem      ",
+      ("Stem", "alignment=center", "size=10"): "   Stem   ",
+      ("Stem", "alignment=right", "size=10"):  "      Stem",
+    }))
+    
+    mocking.mock_method(Controller, "new_circuit", mocking.return_for_args({
+      (): "1",
+      ("path=['718BCEA286B531757ACAFF93AE04910EA73DE617', " + \
+        "'30BAB8EE7606CBD12F3CC269AE976E0153E7A58D', " + \
+        "'2765D8A8C4BBA3F89585A9FFE0E8575615880BEB']",): "2"
+      ("path=['1A', '2B', '3C']", "purpose=controller"): "3"
+    }, is_method = True))
+  
   :param dict args_to_return_value: mapping of arguments to the value we should provide
-  :param functor default: returns the value of this function if the args don't match something that we have, we raise a ValueError by default
+  :param functor default: returns the value of this function if the args don't
+    match something that we have, we raise a ValueError by default
+  :param bool is_method: handles this like a method, removing the 'self'
+    reference
   """
   
-  def _return_value(*args):
-    # strip off the 'self' for mock clases
-    if args and 'MockClass' in str(type(args[0])):
-      args = args[1:] if len(args) > 2 else args[1]
+  def _return_value(*args, **kwargs):
+    # strip off the 'self' if we're mocking a method
+    if args and is_method:
+      args = args[1:] if len(args) > 2 else [args[1]]
+    
+    if kwargs:
+      args.extend(["%s=%s" % (k, kwargs[k]) for k in sorted(kwargs.keys())])
+    
+    args = tuple(args)
     
     if args in args_to_return_value:
       return args_to_return_value[args]
     elif default is None:
       arg_label = ", ".join([str(v) for v in args])
-      raise ValueError("Unrecognized argument sent for return_for_args(). Got '%s' but we only recognize '%s'." % (arg_label, ", ".join(args_to_return_value.keys())))
+      arg_keys = ", ".join([str(v) for v in args_to_return_value.keys()])
+      raise ValueError("Unrecognized argument sent for return_for_args(). Got '%s' but we only recognize '%s'." % (arg_label, arg_keys))
     else:
       return default(args)
   
@@ -274,7 +310,7 @@ def mock(target, mock_call, target_module=None):
     target_function = target.__name__
     MOCK_STATE[mocking_id] = (target_module, target_function, target)
   
-  mock_wrapper = lambda *args: mock_call(*args)
+  mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
   mock_wrapper.__dict__["mock_id"] = mocking_id
   
   # mocks the function with this wrapper
@@ -322,7 +358,7 @@ def mock_method(target_class, method_name, mock_call):
     mocking_id = MOCK_ID.next()
     MOCK_STATE[mocking_id] = (target_class, method_name, target_method)
   
-  mock_wrapper = lambda *args: mock_call(*args)
+  mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
   setattr(mock_wrapper, "mock_id", mocking_id)
   
   # mocks the function with this wrapper
