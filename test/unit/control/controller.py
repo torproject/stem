@@ -77,54 +77,94 @@ class TestControl(unittest.TestCase):
     # EventType.SIGNAL was added in tor version 0.2.3.1-alpha
     self.assertRaises(InvalidRequest, self.controller.add_event_listener, mocking.no_op(), EventType.SIGNAL)
   
-  def test_socks_port_old_tor(self):
+  def test_get_socks_listeners_old(self):
     """
-    Exercises the get_socks_ports method as if talking to an old tor process.
+    Exercises the get_socks_listeners() method as though talking to an old tor
+    instance.
     """
     
     # An old tor raises stem.InvalidArguments for get_info about socks, but
-    #  get_socks_ports returns the socks information, anyway.
+    # get_socks_listeners should work anyway.
+    
     mocking.mock_method(Controller, "get_info", mocking.raise_exception(InvalidArguments))
+    
     mocking.mock_method(Controller, "get_conf", mocking.return_for_args({
       ("SocksPort",): "9050",
       ("SocksListenAddress", "multiple=True"): ["127.0.0.1"]
-    }, method = True))
-    self.assertEqual([('127.0.0.1', 9050)], self.controller.get_socks_ports())
+    }, is_method = True))
+    self.assertEqual([('127.0.0.1', 9050)], self.controller.get_socks_listeners())
     
     # Again, an old tor, but SocksListenAddress overrides the port number.
+    
     mocking.mock_method(Controller, "get_conf", mocking.return_for_args({
       ("SocksPort",): "9050",
       ("SocksListenAddress", "multiple=True"): ["127.0.0.1:1112"]
-    }, method = True))
-    self.assertEqual([('127.0.0.1', 1112)], self.controller.get_socks_ports())
+    }, is_method = True))
+    self.assertEqual([('127.0.0.1', 1112)], self.controller.get_socks_listeners())
     
     # Again, an old tor, but multiple listeners
+    
     mocking.mock_method(Controller, "get_conf", mocking.return_for_args({
       ("SocksPort",): "9050",
       ("SocksListenAddress", "multiple=True"): ["127.0.0.1:1112", "127.0.0.1:1114"]
-    }, method = True))
-    self.assertEqual([('127.0.0.1', 1112), ('127.0.0.1', 1114)], self.controller.get_socks_ports())
+    }, is_method = True))
+    self.assertEqual([('127.0.0.1', 1112), ('127.0.0.1', 1114)], self.controller.get_socks_listeners())
     
     # Again, an old tor, but no SOCKS listeners
+    
     mocking.mock_method(Controller, "get_conf", mocking.return_for_args({
       ("SocksPort",): "0",
       ("SocksListenAddress", "multiple=True"): []
-    }, method = True))
-    self.assertEqual([], self.controller.get_socks_ports())
+    }, is_method = True))
+    self.assertEqual([], self.controller.get_socks_listeners())
+    
+    # Where tor provides invalid ports or addresses
+    
+    mocking.mock_method(Controller, "get_conf", mocking.return_for_args({
+      ("SocksPort",): "blarg",
+      ("SocksListenAddress", "multiple=True"): ["127.0.0.1"]
+    }, is_method = True))
+    self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
+    
+    mocking.mock_method(Controller, "get_conf", mocking.return_for_args({
+      ("SocksPort",): "0",
+      ("SocksListenAddress", "multiple=True"): ["127.0.0.1:abc"]
+    }, is_method = True))
+    self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
+    
+    mocking.mock_method(Controller, "get_conf", mocking.return_for_args({
+      ("SocksPort",): "40",
+      ("SocksListenAddress", "multiple=True"): ["500.0.0.1"]
+    }, is_method = True))
+    self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
   
-  def test_socks_port_new_tor(self):
+  def test_get_socks_listeners_new(self):
     """
-    Exercises the get_socks_ports method as if talking to a newer tor process.
+    Exercises the get_socks_listeners() method as if talking to a newer tor
+    instance.
     """
     
     # multiple SOCKS listeners
     mocking.mock_method(Controller, "get_info", mocking.return_value(
-      "\"127.0.0.1:1112\" \"127.0.0.1:1114\""
+      '"127.0.0.1:1112" "127.0.0.1:1114"'
     ))
     self.assertEqual([('127.0.0.1', 1112), ('127.0.0.1', 1114)],
-        self.controller.get_socks_ports())
+        self.controller.get_socks_listeners())
     
     # no SOCKS listeners
     mocking.mock_method(Controller, "get_info", mocking.return_value(""))
-    self.assertEqual([], self.controller.get_socks_ports())
+    self.assertEqual([], self.controller.get_socks_listeners())
+    
+    # check where GETINFO provides malformed content
+    
+    invalid_responses = (
+      '"127.0.0.1"',        # address only
+      '"1112"',             # port only
+      '"5127.0.0.1:1112"',  # invlaid address
+      '"127.0.0.1:991112"', # invalid port
+    )
+    
+    for response in invalid_responses:
+      mocking.mock_method(Controller, "get_info", mocking.return_value(response))
+      self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
 

@@ -26,6 +26,7 @@ providing its own for interacting at a higher level.
     |- set_options - sets or resets the values of multiple configuration options
     |- load_conf - loads configuration information as if it was in the torrc
     |- save_conf - saves configuration information to the torrc
+    |- get_socks_listeners - provides (address, port) where tor is listening for SOCKS connections
     |- is_feature_enabled - checks if a given controller feature is enabled
     |- enable_feature - enables a controller feature that has been disabled by default
     |- signal - sends a signal to the tor client
@@ -1320,32 +1321,48 @@ class Controller(BaseController):
     else:
       raise stem.ProtocolError("SAVECONF returned unexpected response code")
   
-  def get_socks_ports(self):
+  def get_socks_listeners(self):
     """
-    Returns a list of SOCKS proxy ports open on the controlled tor instance.
+    Provides the SOCKS **(address, port)** tuples that tor has open.
     
-    :returns: list of **(host, port)** tuples or an empty list if there are no
-      SOCKS listeners
+    :returns: list of **(address, port)** tuples for the available SOCKS
+      listeners
+    
+    :raises: :class:`stem.ControllerError` if unable to determine the listeners
     """
+    
+    proxy_addrs = []
     
     try:
-      raw_addrs = self.get_info("net/listeners/socks").split()
-      # remove the surrounding quotes from each listener
-      raw_addrs = [x.replace("\"", "") for x in raw_addrs]
+      for listener in self.get_info("net/listeners/socks").split():
+        if not (listener.startswith('"') and listener.endswith('"')):
+          raise stem.ProtocolError("'GETINFO net/listeners/socks' responses are expected to be quoted: %s" % listener)
+        elif not ':' in listener:
+          raise stem.ProtocolError("'GETINFO net/listeners/socks' had a listener without a colon: %s" % listener)
+        
+        listener = listener[1:-1] # strip quotes
+        addr, port = listener.split(':')
+        proxy_addrs.append((addr, port))
     except stem.InvalidArguments:
-      # tor version is old (pre-tor-0.2.2.26-beta); use get_conf()
+      # tor version is old (pre-tor-0.2.2.26-beta), use get_conf() instead
       socks_port = self.get_conf('SocksPort')
-      raw_addrs = []
+      
       for listener in self.get_conf('SocksListenAddress', multiple = True):
-        if listener.count(':') == 0:
-          listener = listener + ":" + socks_port
-        raw_addrs.append(listener)
-    # both processes above give a list of strings of the form host:port
-    proxy_addrs = []
-    for proxy in raw_addrs:
-      proxy_pair = proxy.split(":")
-      proxy_addrs.append(tuple((proxy_pair[0], int(proxy_pair[1]))))
-    return proxy_addrs
+        if ':' in listener:
+          addr, port = listener.split(':')
+          proxy_addrs.append((addr, port))
+        else:
+          proxy_addrs.append((listener, socks_port))
+    
+    # validate that address/ports are valid, and convert ports to ints
+    
+    for addr, port in proxy_addrs:
+      if not stem.util.connection.is_valid_ip_address(addr):
+        raise stem.ProtocolError("Invalid address for a SOCKS listener: %s" % addr)
+      elif not stem.util.connection.is_valid_port(port):
+        raise stem.ProtocolError("Invalid port for a SOCKS listener: %s" % port)
+    
+    return [(addr, int(port)) for (addr, port) in proxy_addrs]
   
   def is_feature_enabled(self, feature):
     """

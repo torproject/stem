@@ -204,63 +204,61 @@ def return_true(): return return_value(True)
 def return_false(): return return_value(False)
 def return_none(): return return_value(None)
 
-def return_for_args(args_to_return_value, default = None, method = False):
+def return_for_args(args_to_return_value, default = None, is_method = False):
   """
   Returns a value if the arguments to it match something in a given
   'argument => return value' mapping. Otherwise, a default function
   is called with the arguments.
   
-  The mapped argument is a tuple (not a list) of parameters to a function (or
-  method). Positional arguments must be in the order used to call the mocked
-  function and keyword arguments must be strings of the form 'k=v' in
-  alphabetical order.  Some examples:
+  The mapped argument is a tuple (not a list) of parameters to a function or
+  method. Positional arguments must be in the order used to call the mocked
+  function, and keyword arguments must be strings of the form 'k=v'. Keyword
+  arguments **must** appear in alphabetical order. For example...
   
   ::
   
-    Mocked functions can return different types depending on input:
+    mocking.mock("get_answer", mocking.return_for_args({
+      ("breakfast_menu",): "spam",
+      ("lunch_menu",): "eggs and spam",
+      (42,): ["life", "universe", "everything"],
+    }))
     
-      mocking.mock("get_answer", mocking.return_for_args({
-        ("breakfast_menu",): "spam",
-        ("lunch_menu",): "eggs and spam",
-        (42,): ["life", "universe", "everything"],
-      })
-      
-      mocking.mock("align_text", {
-        ("Stem", "alignment=left", "size=10"):   "Stem      ",
-        ("Stem", "alignment=center", "size=10"): "   Stem   ",
-        ("Stem", "alignment=right", "size=10"):  "      Stem",
-      })
+    mocking.mock("align_text", mocking.return_for_args({
+      ("Stem", "alignment=left", "size=10"):   "Stem      ",
+      ("Stem", "alignment=center", "size=10"): "   Stem   ",
+      ("Stem", "alignment=right", "size=10"):  "      Stem",
+    }))
     
-    The mocked method returns one of three circuit ids depending on the input:
-    
-    ::
-    
-      mocking.mock_method(Controller, "new_circuit", mocking.return_for_args({
-        (): "1",
-        ("path=['718BCEA286B531757ACAFF93AE04910EA73DE617', " + \
-          "'30BAB8EE7606CBD12F3CC269AE976E0153E7A58D', " + \
-          "'2765D8A8C4BBA3F89585A9FFE0E8575615880BEB']",): "2"
-        ("path=['1A', '2B', '3C']", "purpose=controller"): "3"
-      }, method = True)
+    mocking.mock_method(Controller, "new_circuit", mocking.return_for_args({
+      (): "1",
+      ("path=['718BCEA286B531757ACAFF93AE04910EA73DE617', " + \
+        "'30BAB8EE7606CBD12F3CC269AE976E0153E7A58D', " + \
+        "'2765D8A8C4BBA3F89585A9FFE0E8575615880BEB']",): "2"
+      ("path=['1A', '2B', '3C']", "purpose=controller"): "3"
+    }, is_method = True))
   
-  :param dict,tuple args_to_return_value: mapping of arguments to the value we should provide
-  :param functor default: returns the value of this function if the args don't match something that we have, we raise a ValueError by default
-  :param bool method: removes the 'self' reference before processing the remainder of the parameters
+  :param dict args_to_return_value: mapping of arguments to the value we should provide
+  :param functor default: returns the value of this function if the args don't
+    match something that we have, we raise a ValueError by default
+  :param bool is_method: handles this like a method, removing the 'self'
+    reference
   """
   
   def _return_value(*args, **kwargs):
-    # strip off the 'self' for mock classes
-    if args and method:
+    # strip off the 'self' if we're mocking a method
+    if args and is_method:
       args = args[1:] if len(args) > 2 else [args[1]]
     
     if kwargs:
-      args.extend(['='.join((str(k),str(kwargs[k]))) for k in sorted(kwargs.keys())])
+      args.extend(["%s=%s" % (k, kwargs[k]) for k in sorted(kwargs.keys())])
+    
     args = tuple(args)
+    
     if args in args_to_return_value:
       return args_to_return_value[args]
     elif default is None:
       arg_label = ", ".join([str(v) for v in args])
-      arg_keys = ";".join([str(v) for v in args_to_return_value.keys()])
+      arg_keys = ", ".join([str(v) for v in args_to_return_value.keys()])
       raise ValueError("Unrecognized argument sent for return_for_args(). Got '%s' but we only recognize '%s'." % (arg_label, arg_keys))
     else:
       return default(args)

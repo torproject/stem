@@ -467,7 +467,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      self.assertEqual([('127.0.0.1', 1112)], controller.get_socks_ports())
+      self.assertEqual([('127.0.0.1', 1112)], controller.get_socks_listeners())
   
   def test_enable_feature(self):
     """
