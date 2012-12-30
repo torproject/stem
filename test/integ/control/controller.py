@@ -589,7 +589,7 @@ class TestController(unittest.TestCase):
       controller.map_address({'1.2.1.2': 'ifconfig.me'})
       
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      s.connect(('127.0.0.1', int(controller.get_conf('SocksPort'))))
+      s.connect(('127.0.0.1', int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])))
       test.util.negotiate_socks(s, '1.2.1.2', 80)
       s.sendall(test.util.ip_request) # make the http request for the ip address
       response = s.recv(1000)
@@ -731,7 +731,7 @@ class TestController(unittest.TestCase):
     
     with runner.get_tor_controller() as controller:
       controller.set_conf("__LeaveStreamsUnattached", "1")
-      socksport = controller.get_conf("SocksPort")
+      socksport = int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])
       circ_status, circ_status_q = "", Queue()
       
       def handle_circ(circuit):
