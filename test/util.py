@@ -3,7 +3,7 @@ import struct
 
 import test.runner
 
-from stem import ProtocolError
+from stem import ProtocolError, SocketError
 
 error_msgs = {
   0x5a: "SOCKS4A request granted",
