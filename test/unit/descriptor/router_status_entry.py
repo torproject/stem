@@ -438,6 +438,20 @@ class TestRouterStatusEntry(unittest.TestCase):
       entry = RouterStatusEntryV3(content, document = mock_document)
       self.assertEquals(expected, entry.microdescriptor_hashes)
     
+    # try with multiple 'm' lines
+    
+    content = get_router_status_entry_v3(content = True)
+    content += "\nm 11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"
+    content += "\nm 31,32 sha512=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"
+    
+    expected = [
+      ([11, 12], {"sha256": "g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"}),
+      ([31, 32], {"sha512": "g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"}),
+    ]
+    
+    entry = RouterStatusEntryV3(content, document = mock_document)
+    self.assertEquals(expected, entry.microdescriptor_hashes)
+    
     # try without a document
     content = get_router_status_entry_v3({'m': "8,9,10,11,12"}, content = True)
     self._expect_invalid_attr(content, "microdescriptor_hashes")

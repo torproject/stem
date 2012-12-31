@@ -312,7 +312,9 @@ class RouterStatusEntryV3(RouterStatusEntry):
         _parse_p_line(self, value, validate)
         del entries['p']
       elif keyword == 'm':
-        _parse_m_line(self, value, validate)
+        for entry, _ in values:
+          _parse_m_line(self, entry, validate)
+        
         del entries['m']
     
     RouterStatusEntry._parse(self, entries, validate)
