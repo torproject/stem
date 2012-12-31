@@ -146,6 +146,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   :var int uptime: uptime when published in seconds
   :var str contact: contact information
   :var stem.exit_policy.ExitPolicy exit_policy: **\*** stated exit policy
+  :var stem.exit_policy.MicrodescriptorExitPolicy exit_policy_v6: **\*** exit policy for IPv6
   :var list family: **\*** nicknames or fingerprints of declared family
   
   :var int average_bandwidth: **\*** average rate it's willing to relay in bytes/s
@@ -212,6 +213,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     self.uptime = None
     self.contact = None
     self.exit_policy = None
+    self.exit_policy_v6 = None
     self.family = []
     
     self.average_bandwidth = None
@@ -472,6 +474,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         self.family = value.split(" ")
       elif keyword == "eventdns":
         self.eventdns = value == "1"
+      elif keyword == "ipv6-policy":
+        self.exit_policy_v6 = stem.exit_policy.MicrodescriptorExitPolicy(value)
       elif keyword == "or-address":
         or_address_entries = [value for (value, _) in values]
         

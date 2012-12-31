@@ -6,8 +6,9 @@ import datetime
 import StringIO
 import unittest
 
-import stem.prereq
 import stem.descriptor.server_descriptor
+import stem.exit_policy
+import stem.prereq
 import test.runner
 
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
@@ -257,6 +258,15 @@ class TestServerDescriptor(unittest.TestCase):
     fingerprint = "4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE45"
     desc_text = get_relay_server_descriptor({"opt fingerprint": fingerprint}, content = True)
     self._expect_invalid_attr(desc_text, "fingerprint", fingerprint.replace(" ", ""))
+  
+  def test_ipv6_policy(self):
+    """
+    Checks a 'ipv6-policy' line.
+    """
+    
+    expected = stem.exit_policy.MicrodescriptorExitPolicy("accept 22-23,53,80,110")
+    desc = get_relay_server_descriptor({"ipv6-policy": "accept 22-23,53,80,110"})
+    self.assertEquals(expected, desc.exit_policy_v6)
   
   def test_minimal_bridge_descriptor(self):
     """
