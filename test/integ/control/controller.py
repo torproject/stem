@@ -725,11 +725,12 @@ class TestController(unittest.TestCase):
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return
     
+    circuit_id, circ_status_q = None, Queue()
+    
     def handle_streamcreated(stream):
       if stream.status == "NEW":
-        controller.attach_stream(int(stream.id), int(circuit_id))
+        controller.attach_stream(stream.id, circuit_id)
     
-    circ_status_q = Queue()
     def handle_circ(circuit):
       circ_status_q.put(circuit)
     
@@ -739,7 +740,7 @@ class TestController(unittest.TestCase):
       controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
       
       try:
-        socksport = int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])
+        socksport = controller.get_socks_listeners()[0][1]
         circ_status = ""
         
         while circ_status != "BUILT":
