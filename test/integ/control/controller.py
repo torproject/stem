@@ -251,7 +251,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller(False) as controller:
-      protocolinfo = controller.protocolinfo()
+      protocolinfo = controller.get_protocolinfo()
       self.assertTrue(isinstance(protocolinfo, stem.response.protocolinfo.ProtocolInfoResponse))
       
       # Doing a sanity test on the ProtocolInfoResponse instance returned.
@@ -518,10 +518,11 @@ class TestController(unittest.TestCase):
     
     with test.runner.get_runner().get_tor_controller() as controller:
       circuit_id = controller.extend_circuit('0')
+      
       # check if our circuit was created
-      self.assertTrue(filter(lambda x: x.split()[0] == circuit_id, controller.get_info('circuit-status').splitlines()))
+      self.assertIsNotNone(controller.get_circuit(circuit_id, None))
       circuit_id = controller.new_circuit()
-      self.assertTrue(filter(lambda x: x.split()[0] == circuit_id, controller.get_info('circuit-status').splitlines()))
+      self.assertIsNotNone(controller.get_circuit(circuit_id, None))
       
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, "foo")
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, '0', "thisroutershouldntexistbecausestemexists!@##$%#")
@@ -538,16 +539,14 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      circuit_id = controller.new_circuit()
-      controller.repurpose_circuit(circuit_id, "CONTROLLER")
-      circuit_output = controller.get_info("circuit-status")
-      circ = filter(re.compile("^%s " % circuit_id).match, circuit_output.splitlines())[0]
-      self.assertTrue("PURPOSE=CONTROLLER" in circ)
+      circ_id = controller.new_circuit()
+      controller.repurpose_circuit(circ_id, "CONTROLLER")
+      circuit = controller.get_circuit(circ_id)
+      self.assertTrue(circuit.purpose == "CONTROLLER")
       
-      controller.repurpose_circuit(circuit_id, "GENERAL")
-      circuit_output = controller.get_info("circuit-status")
-      circ = filter(re.compile("^%s " % circuit_id).match, circuit_output.splitlines())[0]
-      self.assertTrue("PURPOSE=GENERAL" in circ)
+      controller.repurpose_circuit(circ_id, "GENERAL")
+      circuit = controller.get_circuit(circ_id)
+      self.assertTrue(circuit.purpose == "GENERAL")
       
       self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, 'f934h9f3h4', "fooo")
       self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, '4', "fooo")
@@ -563,20 +562,18 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller() as controller:
-      circuit_id = controller.new_circuit()
-      controller.close_circuit(circuit_id)
-      circuit_output = controller.get_info("circuit-status")
-      circ = [x.split()[0] for x in circuit_output.splitlines()]
-      self.assertFalse(circ_id in circ)
+      circ_id = controller.new_circuit()
+      controller.close_circuit(circ_id)
+      circuit_ids = [circ.id for circ in controller.get_circuits()]
+      self.assertFalse(circ_id in circuit_ids)
       
-      circuit_id = controller.new_circuit()
-      controller.close_circuit(circuit_id, "IfUnused")
-      circuit_output = controller.get_info("circuit-status")
-      circ = [x.split()[0] for x in circuit_output.splitlines()]
-      self.assertFalse(circ_id in circ)
+      circ_id = controller.new_circuit()
+      controller.close_circuit(circ_id, "IfUnused")
+      circuit_ids = [circ.id for circ in controller.get_circuits()]
+      self.assertFalse(circ_id in circuit_ids)
       
-      circuit_id = controller.new_circuit()
-      self.assertRaises(stem.InvalidArguments, controller.close_circuit, circuit_id + "1024")
+      circ_id = controller.new_circuit()
+      self.assertRaises(stem.InvalidArguments, controller.close_circuit, str(int(circ_id) + 1024))
       self.assertRaises(stem.InvalidRequest, controller.close_circuit, "")
   
   def test_mapaddress(self):
@@ -589,7 +586,7 @@ class TestController(unittest.TestCase):
       controller.map_address({'1.2.1.2': 'ifconfig.me'})
       
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      s.connect(('127.0.0.1', int(controller.get_conf('SocksPort'))))
+      s.connect(('127.0.0.1', int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])))
       test.util.negotiate_socks(s, '1.2.1.2', 80)
       s.sendall(test.util.ip_request) # make the http request for the ip address
       response = s.recv(1000)
@@ -721,4 +718,46 @@ class TestController(unittest.TestCase):
         
         count += 1
         if count > 10: break
+  
+  def test_attachstream(self):
+    if test.runner.require_control(self): return
+    elif test.runner.require_online(self): return
+    
+    circuit_id = None
+    
+    def handle_streamcreated(stream):
+      if stream.status == "NEW" and circuit_id:
+        controller.attach_stream(stream.id, circuit_id)
+    
+    with test.runner.get_runner().get_tor_controller() as controller:
+      controller.set_conf("__LeaveStreamsUnattached", "1")
+      controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
+      
+      try:
+        circuit_id = controller.new_circuit(await_build = True)
+        socksport = controller.get_socks_listeners()[0][1]
+        
+        ip = test.util.external_ip('127.0.0.1', socksport)
+        exit_circuit = controller.get_circuit(circuit_id)
+        self.assertTrue(exit_circuit)
+        exit_ip = controller.get_network_status(exit_circuit.path[2][0]).address
+        
+        self.assertEquals(exit_ip, ip)
+      finally:
+        controller.remove_event_listener(handle_streamcreated)
+        controller.reset_conf("__LeaveStreamsUnattached")
+  
+  def test_get_circuits(self):
+    """
+    Fetches circuits via the get_circuits() method.
+    """
+    
+    if test.runner.require_control(self): return
+    if test.runner.require_online(self): return
+    
+    runner = test.runner.get_runner()
+    with runner.get_tor_controller() as controller:
+      new_circ = controller.new_circuit()
+      circuits = controller.get_circuits()
+      self.assertTrue(new_circ in [circ.id for circ in circuits])
 

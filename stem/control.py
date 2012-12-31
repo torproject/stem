@@ -13,36 +13,49 @@ providing its own for interacting at a higher level.
     | |- from_port - Provides a Controller based on a port connection.
     | +- from_socket_file - Provides a Controller based on a socket file connection.
     |
-    |- add_event_listener - attaches an event listener to be notified of tor events
-    |- remove_event_listener - removes a listener so it isn't notified of further events
-    |- is_caching_enabled - true if the controller has enabled caching
-    |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
-    |- clear_cache - clears any cached results
+    |- authenticate - authenticates this controller with tor
+    |
     |- get_info - issues a GETINFO query for a parameter
-    |- get_conf - gets the value of a configuration option
-    |- get_conf_mapping - gets the values of multiple configuration options
-    |- set_conf - sets the value of a configuration option
-    |- reset_conf - reverts configuration options to their default values
-    |- set_options - sets or resets the values of multiple configuration options
-    |- load_conf - loads configuration information as if it was in the torrc
-    |- save_conf - saves configuration information to the torrc
-    |- get_socks_listeners - provides (address, port) where tor is listening for SOCKS connections
-    |- is_feature_enabled - checks if a given controller feature is enabled
-    |- enable_feature - enables a controller feature that has been disabled by default
-    |- signal - sends a signal to the tor client
-    |- new_circuit - create new circuits
-    |- extend_circuit - create new circuits and extend existing ones
-    |- close_circuit - close a circuit
-    |- close_stream - close a stream
-    |- repurpose_circuit - change a circuit's purpose
-    |- map_address - maps one address to another such that connections to the original are replaced with the other
     |- get_version - convenience method to get tor version
+    |- get_socks_listeners - provides where tor is listening for SOCKS connections
+    |- get_protocolinfo - information about the controller interface
+    |
     |- get_server_descriptor - querying the server descriptor for a relay
     |- get_server_descriptors - provides all presently available server descriptors
     |- get_network_status - querying the router status entry for a relay
     |- get_network_statuses - provides all preently available router status entries
-    |- authenticate - convenience method to authenticate the controller
-    +- protocolinfo - convenience method to get the protocol info
+    |
+    |- get_conf - gets the value of a configuration option
+    |- get_conf_map - gets the values of multiple configuration options
+    |- set_conf - sets the value of a configuration option
+    |- reset_conf - reverts configuration options to their default values
+    |- set_options - sets or resets the values of multiple configuration options
+    |
+    |- add_event_listener - attaches an event listener to be notified of tor events
+    |- remove_event_listener - removes a listener so it isn't notified of further events
+    |
+    |- is_caching_enabled - true if the controller has enabled caching
+    |- clear_cache - clears any cached results
+    |
+    |- load_conf - loads configuration information as if it was in the torrc
+    |- save_conf - saves configuration information to the torrc
+    |
+    |- is_feature_enabled - checks if a given controller feature is enabled
+    |- enable_feature - enables a controller feature that has been disabled by default
+    |
+    |- get_circuit - provides an active circuit
+    |- get_circuits - provides a list of active circuits
+    |- new_circuit - create new circuits
+    |- extend_circuit - create new circuits and extend existing ones
+    |- repurpose_circuit - change a circuit's purpose
+    |- close_circuit - close a circuit
+    |
+    |- attach_stream - attach a stream to a circuit
+    |- close_stream - close a stream
+    |
+    |- signal - sends a signal to the tor client
+    |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
+    +- map_address - maps one address to another such that connections to the original are replaced with the other
   
   BaseController - Base controller class asynchronous message handling
     |- msg - communicates with the tor process
@@ -127,7 +140,10 @@ import stem.util.connection
 import stem.util.enum
 import stem.version
 
+from stem import CircStatus
+
 from stem.util import log
+import stem.util.tor_tools
 
 # state changes a control socket can have
 
@@ -651,101 +667,14 @@ class Controller(BaseController):
     
     super(Controller, self).close()
   
-  def add_event_listener(self, listener, *events):
+  def authenticate(self, *args, **kwargs):
     """
-    Directs further tor controller events to a given function. The function is
-    expected to take a single argument, which is a
-    :class:`~stem.response.events.Event` subclass. For instance the following
-    would print the bytes sent and received by tor over five seconds...
-    
-    ::
-    
-      import time
-      from stem.control import Controller, EventType
-      
-      def print_bw(event):
-        print "sent: %i, received: %i" % (event.written, event.read)
-      
-      with Controller.from_port(control_port = 9051) as controller:
-        controller.authenticate()
-        controller.add_event_listener(print_bw, EventType.BW)
-        time.sleep(5)
-    
-    :param functor listener: function to be called when an event is received
-    :param stem.control.EventType events: event types to be listened for
-    
-    :raises: :class:`stem.ProtocolError` if unable to set the events
+    A convenience method to authenticate the controller. This is just a
+    pass-through to :func:`stem.connection.authenticate`.
     """
     
-    # first checking that tor supports these event types
-    for event_type in events:
-      event_version = stem.response.events.EVENT_TYPE_TO_CLASS[event_type]._VERSION_ADDED
-      if not self.get_version().meets_requirements(event_version):
-        raise stem.InvalidRequest(552, "%s event requires Tor version %s or later" % (event_type, event_version))
-    
-    with self._event_listeners_lock:
-      for event_type in events:
-        self._event_listeners.setdefault(event_type, []).append(listener)
-      
-      self._attach_listeners()
-  
-  def remove_event_listener(self, listener):
-    """
-    Stops a listener from being notified of further tor events.
-    
-    :param stem.control.EventListener listener: listener to be removed
-    
-    :raises: :class:`stem.ProtocolError` if unable to set the events
-    """
-    
-    with self._event_listeners_lock:
-      event_types_changed = False
-      
-      for event_type, event_listeners in self._event_listeners.items():
-        if listener in event_listeners:
-          event_listeners.remove(listener)
-          
-          if len(event_listeners) == 0:
-            event_types_changed = True
-            del self._event_listeners[event_type]
-      
-      if event_types_changed:
-        response = self.msg("SETEVENTS %s" % " ".join(self._event_listeners.keys()))
-        
-        if not response.is_ok():
-          raise stem.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
-  
-  def is_caching_enabled(self):
-    """
-    **True** if caching has been enabled, **False** otherwise.
-    
-    :returns: bool to indicate if caching is enabled
-    """
-    
-    return self._is_caching_enabled
-  
-  def is_geoip_unavailable(self):
-    """
-    Provides **True** if we've concluded hat our geoip database is unavailable,
-    **False** otherwise. This is determined by having our 'GETINFO
-    ip-to-country/\*' lookups fail so this will default to **False** if we
-    aren't making those queries.
-    
-    Geoip failures will be untracked if caching is disabled.
-    
-    :returns: **bool** to indicate if we've concluded our geoip database to be
-      unavailable or not
-    """
-    
-    return self._geoip_failure_count >= GEOIP_FAILURE_THRESHOLD
-  
-  def clear_cache(self):
-    """
-    Drops any cached results.
-    """
-    
-    self._request_cache = {}
-    self._geoip_failure_count = 0
+    import stem.connection
+    stem.connection.authenticate(self, *args, **kwargs)
   
   def get_info(self, params, default = UNDEFINED):
     """
@@ -846,10 +775,12 @@ class Controller(BaseController):
       if default == UNDEFINED: raise exc
       else: return default
   
-  def get_version(self):
+  def get_version(self, default = UNDEFINED):
     """
     A convenience method to get tor version that current controller is
     connected to.
+    
+    :param object default: response if the query fails
     
     :returns: :class:`~stem.version.Version` of the tor instance that we're
       connected to
@@ -857,127 +788,77 @@ class Controller(BaseController):
     :raises:
       * :class:`stem.ControllerError` if unable to query the version
       * **ValueError** if unable to parse the version
+      
+      An exception is only raised if we weren't provided a default response.
     """
     
-    if not self.is_caching_enabled():
-      return stem.version.Version(self.get_info("version"))
-    elif not "version" in self._request_cache:
-      version = stem.version.Version(self.get_info("version"))
-      self._request_cache["version"] = version
-    
-    return self._request_cache["version"]
+    try:
+      if not self.is_caching_enabled():
+        return stem.version.Version(self.get_info("version"))
+      elif not "version" in self._request_cache:
+        version = stem.version.Version(self.get_info("version"))
+        self._request_cache["version"] = version
+      
+      return self._request_cache["version"]
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else: return default
   
-  def get_server_descriptor(self, relay):
+  def get_socks_listeners(self, default = UNDEFINED):
     """
-    Provides the server descriptor for the relay with the given fingerprint or
-    nickname. If the relay identifier could be either a fingerprint *or*
-    nickname then it's queried as a fingerprint.
+    Provides the SOCKS **(address, port)** tuples that tor has open.
     
-    :param str relay: fingerprint or nickname of the relay to be queried
+    :param object default: response if the query fails
     
-    :returns: :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for the given relay
+    :returns: list of **(address, port)** tuples for the available SOCKS
+      listeners
     
-    :raises:
-      * :class:`stem.ControllerError` if unable to query the descriptor
-      * **ValueError** if **relay** doesn't conform with the pattern for being
-        a fingerprint or nickname
+    :raises: :class:`stem.ControllerError` if unable to determine the listeners
+      and no default was provided
     """
     
-    if stem.util.tor_tools.is_valid_fingerprint(relay):
-      query = "desc/id/%s" % relay
-    elif stem.util.tor_tools.is_valid_nickname(relay):
-      query = "desc/name/%s" % relay
-    else:
-      raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
-    
-    desc_content = self.get_info(query)
-    return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
+    try:
+      proxy_addrs = []
+      
+      try:
+        for listener in self.get_info("net/listeners/socks").split():
+          if not (listener.startswith('"') and listener.endswith('"')):
+            raise stem.ProtocolError("'GETINFO net/listeners/socks' responses are expected to be quoted: %s" % listener)
+          elif not ':' in listener:
+            raise stem.ProtocolError("'GETINFO net/listeners/socks' had a listener without a colon: %s" % listener)
+          
+          listener = listener[1:-1] # strip quotes
+          addr, port = listener.split(':')
+          proxy_addrs.append((addr, port))
+      except stem.InvalidArguments:
+        # tor version is old (pre-tor-0.2.2.26-beta), use get_conf() instead
+        socks_port = self.get_conf('SocksPort')
+        
+        for listener in self.get_conf('SocksListenAddress', multiple = True):
+          if ':' in listener:
+            addr, port = listener.split(':')
+            proxy_addrs.append((addr, port))
+          else:
+            proxy_addrs.append((listener, socks_port))
+      
+      # validate that address/ports are valid, and convert ports to ints
+      
+      for addr, port in proxy_addrs:
+        if not stem.util.connection.is_valid_ip_address(addr):
+          raise stem.ProtocolError("Invalid address for a SOCKS listener: %s" % addr)
+        elif not stem.util.connection.is_valid_port(port):
+          raise stem.ProtocolError("Invalid port for a SOCKS listener: %s" % port)
+      
+      return [(addr, int(port)) for (addr, port) in proxy_addrs]
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else: return default
   
-  def get_server_descriptors(self):
-    """
-    Provides an iterator for all of the server descriptors that tor presently
-    knows about.
-    
-    :returns: iterates over
-      :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for relays in
-      the tor network
-    
-    :raises: :class:`stem.ControllerError` if unable to query tor
-    """
-    
-    # TODO: We should iterate over the descriptors as they're read from the
-    # socket rather than reading the whole thing into memory.
-    
-    desc_content = self.get_info("desc/all-recent")
-    
-    for desc in stem.descriptor.server_descriptor.parse_file(StringIO.StringIO(desc_content)):
-      yield desc
-  
-  def get_network_status(self, relay):
-    """
-    Provides the router status entry for the relay with the given fingerprint
-    or nickname. If the relay identifier could be either a fingerprint *or*
-    nickname then it's queried as a fingerprint.
-    
-    :param str relay: fingerprint or nickname of the relay to be queried
-    
-    :returns: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2`
-      for the given relay
-    
-    :raises:
-      * :class:`stem.ControllerError` if unable to query the descriptor
-      * **ValueError** if **relay** doesn't conform with the patter for being a
-        fingerprint or nickname
-    """
-    
-    if stem.util.tor_tools.is_valid_fingerprint(relay):
-      query = "ns/id/%s" % relay
-    elif stem.util.tor_tools.is_valid_nickname(relay):
-      query = "ns/name/%s" % relay
-    else:
-      raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
-    
-    desc_content = self.get_info(query)
-    return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content)
-  
-  def get_network_statuses(self):
-    """
-    Provides an iterator for all of the router status entries that tor
-    presently knows about.
-    
-    :returns: iterates over
-      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` for
-      relays in the tor network
-    
-    :raises: :class:`stem.ControllerError` if unable to query tor
-    """
-    
-    # TODO: We should iterate over the descriptors as they're read from the
-    # socket rather than reading the whole thing into memeory.
-    
-    desc_content = self.get_info("ns/all")
-    
-    desc_iterator = stem.descriptor.router_status_entry.parse_file(
-      StringIO.StringIO(desc_content),
-      True,
-      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
-    )
-    
-    for desc in desc_iterator:
-      yield desc
-  
-  def authenticate(self, *args, **kwargs):
-    """
-    A convenience method to authenticate the controller. This is just a
-    pass-through to :func:`stem.connection.authenticate`.
-    """
-    
-    import stem.connection
-    stem.connection.authenticate(self, *args, **kwargs)
-  
-  def protocolinfo(self):
+  def get_protocolinfo(self, default = UNDEFINED):
     """
     A convenience method to get the protocol info of the controller.
+    
+    :param object default: response if the query fails
     
     :returns: :class:`~stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
     
@@ -986,10 +867,150 @@ class Controller(BaseController):
         malformed
       * :class:`stem.SocketError` if problems arise in establishing or
         using the socket
+      
+      An exception is only raised if we weren't provided a default response.
     """
     
     import stem.connection
-    return stem.connection.get_protocolinfo(self)
+    
+    try:
+      return stem.connection.get_protocolinfo(self)
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else: return default
+  
+  def get_server_descriptor(self, relay, default = UNDEFINED):
+    """
+    Provides the server descriptor for the relay with the given fingerprint or
+    nickname. If the relay identifier could be either a fingerprint *or*
+    nickname then it's queried as a fingerprint.
+    
+    :param str relay: fingerprint or nickname of the relay to be queried
+    :param object default: response if the query fails
+    
+    :returns: :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for the given relay
+    
+    :raises:
+      * :class:`stem.ControllerError` if unable to query the descriptor
+      * **ValueError** if **relay** doesn't conform with the pattern for being
+        a fingerprint or nickname
+      
+      An exception is only raised if we weren't provided a default response.
+    """
+    
+    try:
+      if stem.util.tor_tools.is_valid_fingerprint(relay):
+        query = "desc/id/%s" % relay
+      elif stem.util.tor_tools.is_valid_nickname(relay):
+        query = "desc/name/%s" % relay
+      else:
+        raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
+      
+      desc_content = self.get_info(query)
+      return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else: return default
+  
+  def get_server_descriptors(self, default = UNDEFINED):
+    """
+    Provides an iterator for all of the server descriptors that tor presently
+    knows about.
+    
+    :param list default: items to provide if the query fails
+    
+    :returns: iterates over
+      :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for relays in
+      the tor network
+    
+    :raises: :class:`stem.ControllerError` if unable to query tor and no
+      default was provided
+    """
+    
+    try:
+      # TODO: We should iterate over the descriptors as they're read from the
+      # socket rather than reading the whole thing into memory.
+      
+      desc_content = self.get_info("desc/all-recent")
+      
+      for desc in stem.descriptor.server_descriptor.parse_file(StringIO.StringIO(desc_content)):
+        yield desc
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else:
+        if entry is not None:
+          for entry in default:
+            yield entry
+  
+  def get_network_status(self, relay, default = UNDEFINED):
+    """
+    Provides the router status entry for the relay with the given fingerprint
+    or nickname. If the relay identifier could be either a fingerprint *or*
+    nickname then it's queried as a fingerprint.
+    
+    :param str relay: fingerprint or nickname of the relay to be queried
+    :param object default: response if the query fails
+    
+    :returns: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2`
+      for the given relay
+    
+    :raises:
+      * :class:`stem.ControllerError` if unable to query the descriptor
+      * **ValueError** if **relay** doesn't conform with the patter for being a
+        fingerprint or nickname
+      
+      An exception is only raised if we weren't provided a default response.
+    """
+    
+    try:
+      if stem.util.tor_tools.is_valid_fingerprint(relay):
+        query = "ns/id/%s" % relay
+      elif stem.util.tor_tools.is_valid_nickname(relay):
+        query = "ns/name/%s" % relay
+      else:
+        raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
+      
+      desc_content = self.get_info(query)
+      return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content)
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else: return default
+  
+  def get_network_statuses(self, default = UNDEFINED):
+    """
+    Provides an iterator for all of the router status entries that tor
+    presently knows about.
+    
+    :param list default: items to provide if the query fails
+    
+    :returns: iterates over
+      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` for
+      relays in the tor network
+    
+    :raises: :class:`stem.ControllerError` if unable to query tor and no
+      default was provided
+    """
+    
+    try:
+      # TODO: We should iterate over the descriptors as they're read from the
+      # socket rather than reading the whole thing into memeory.
+      
+      desc_content = self.get_info("ns/all")
+      
+      desc_iterator = stem.descriptor.router_status_entry.parse_file(
+        StringIO.StringIO(desc_content),
+        True,
+        entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
+      )
+      
+      for desc in desc_iterator:
+        yield desc
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else:
+        if entry is not None:
+          for entry in default:
+            yield entry
   
   def get_conf(self, param, default = UNDEFINED, multiple = False):
     """
@@ -1281,6 +1302,87 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError("Returned unexpected status code: %s" % response.code)
   
+  def add_event_listener(self, listener, *events):
+    """
+    Directs further tor controller events to a given function. The function is
+    expected to take a single argument, which is a
+    :class:`~stem.response.events.Event` subclass. For instance the following
+    would print the bytes sent and received by tor over five seconds...
+    
+    ::
+    
+      import time
+      from stem.control import Controller, EventType
+      
+      def print_bw(event):
+        print "sent: %i, received: %i" % (event.written, event.read)
+      
+      with Controller.from_port(control_port = 9051) as controller:
+        controller.authenticate()
+        controller.add_event_listener(print_bw, EventType.BW)
+        time.sleep(5)
+    
+    :param functor listener: function to be called when an event is received
+    :param stem.control.EventType events: event types to be listened for
+    
+    :raises: :class:`stem.ProtocolError` if unable to set the events
+    """
+    
+    # first checking that tor supports these event types
+    for event_type in events:
+      event_version = stem.response.events.EVENT_TYPE_TO_CLASS[event_type]._VERSION_ADDED
+      if not self.get_version().meets_requirements(event_version):
+        raise stem.InvalidRequest(552, "%s event requires Tor version %s or later" % (event_type, event_version))
+    
+    with self._event_listeners_lock:
+      for event_type in events:
+        self._event_listeners.setdefault(event_type, []).append(listener)
+      
+      self._attach_listeners()
+  
+  def remove_event_listener(self, listener):
+    """
+    Stops a listener from being notified of further tor events.
+    
+    :param stem.control.EventListener listener: listener to be removed
+    
+    :raises: :class:`stem.ProtocolError` if unable to set the events
+    """
+    
+    with self._event_listeners_lock:
+      event_types_changed = False
+      
+      for event_type, event_listeners in self._event_listeners.items():
+        if listener in event_listeners:
+          event_listeners.remove(listener)
+          
+          if len(event_listeners) == 0:
+            event_types_changed = True
+            del self._event_listeners[event_type]
+      
+      if event_types_changed:
+        response = self.msg("SETEVENTS %s" % " ".join(self._event_listeners.keys()))
+        
+        if not response.is_ok():
+          raise stem.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
+  
+  def is_caching_enabled(self):
+    """
+    **True** if caching has been enabled, **False** otherwise.
+    
+    :returns: bool to indicate if caching is enabled
+    """
+    
+    return self._is_caching_enabled
+  
+  def clear_cache(self):
+    """
+    Drops any cached results.
+    """
+    
+    self._request_cache = {}
+    self._geoip_failure_count = 0
+  
   def load_conf(self, configtext):
     """
     Sends the configuration text to Tor and loads it as if it has been read from
@@ -1321,49 +1423,6 @@ class Controller(BaseController):
     else:
       raise stem.ProtocolError("SAVECONF returned unexpected response code")
   
-  def get_socks_listeners(self):
-    """
-    Provides the SOCKS **(address, port)** tuples that tor has open.
-    
-    :returns: list of **(address, port)** tuples for the available SOCKS
-      listeners
-    
-    :raises: :class:`stem.ControllerError` if unable to determine the listeners
-    """
-    
-    proxy_addrs = []
-    
-    try:
-      for listener in self.get_info("net/listeners/socks").split():
-        if not (listener.startswith('"') and listener.endswith('"')):
-          raise stem.ProtocolError("'GETINFO net/listeners/socks' responses are expected to be quoted: %s" % listener)
-        elif not ':' in listener:
-          raise stem.ProtocolError("'GETINFO net/listeners/socks' had a listener without a colon: %s" % listener)
-        
-        listener = listener[1:-1] # strip quotes
-        addr, port = listener.split(':')
-        proxy_addrs.append((addr, port))
-    except stem.InvalidArguments:
-      # tor version is old (pre-tor-0.2.2.26-beta), use get_conf() instead
-      socks_port = self.get_conf('SocksPort')
-      
-      for listener in self.get_conf('SocksListenAddress', multiple = True):
-        if ':' in listener:
-          addr, port = listener.split(':')
-          proxy_addrs.append((addr, port))
-        else:
-          proxy_addrs.append((listener, socks_port))
-    
-    # validate that address/ports are valid, and convert ports to ints
-    
-    for addr, port in proxy_addrs:
-      if not stem.util.connection.is_valid_ip_address(addr):
-        raise stem.ProtocolError("Invalid address for a SOCKS listener: %s" % addr)
-      elif not stem.util.connection.is_valid_port(port):
-        raise stem.ProtocolError("Invalid port for a SOCKS listener: %s" % port)
-    
-    return [(addr, int(port)) for (addr, port) in proxy_addrs]
-  
   def is_feature_enabled(self, feature):
     """
     Checks if a control connection feature is enabled. These features can be
@@ -1387,8 +1446,11 @@ class Controller(BaseController):
       elif feature == "VERBOSE_NAMES":
         defaulted_version = stem.version.Requirement.FEATURE_VERBOSE_NAMES
       
-      if defaulted_version and self.get_version().meets_requirements(defaulted_version):
-        self._enabled_features.append(feature)
+      if defaulted_version:
+        our_version = self.get_version(None)
+        
+        if our_version and our_version.meets_requirements(defaulted_version):
+          self._enabled_features.append(feature)
       
       return feature in self._enabled_features
   
@@ -1426,23 +1488,167 @@ class Controller(BaseController):
     
     self._enabled_features += [entry.upper() for entry in features]
   
-  def signal(self, signal):
+  def get_circuit(self, circuit_id, default = UNDEFINED):
     """
-    Sends a signal to the Tor client.
+    Provides a circuit presently available from tor.
     
-    :param stem.Signal signal: type of signal to be sent
+    :param int circuit_id: circuit to be fetched
+    :param object default: response if the query fails
     
-    :raises: :class:`stem.InvalidArguments` if signal provided wasn't recognized
-    """
+    :returns: :class:`stem.events.CircuitEvent` for the given circuit
     
-    response = self.msg("SIGNAL %s" % signal)
-    stem.response.convert("SINGLELINE", response)
-    
-    if not response.is_ok():
-      if response.code == "552":
-        raise stem.InvalidArguments(response.code, response.message, [signal])
+    :raises:
+      * :class:`stem.ControllerError` if the call fails
+      * ValueError if the circuit doesn't exist
       
-      raise stem.ProtocolError("SIGNAL response contained unrecognized status code: %s" % response.code)
+      An exception is only raised if we weren't provided a default response.
+    """
+    
+    try:
+      for circ in self.get_circuits():
+        if circ.id == circuit_id:
+          return circ
+      
+      raise ValueError("Tor presently does not have a circuit with the id of '%s'" % circuit_id)
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else: return default
+  
+  def get_circuits(self, default = UNDEFINED):
+    """
+    Provides tor's currently available circuits.
+    
+    :param object default: response if the query fails
+    
+    :returns: **list** of :class:`stem.events.CircuitEvent` for our circuits
+    
+    :raises: :class:`stem.ControllerError` if the call fails and no default was provided
+    """
+    
+    try:
+      circuits = []
+      response = self.get_info("circuit-status")
+      
+      for circ in response.splitlines():
+        circ_message = stem.socket.recv_message(StringIO.StringIO("650 CIRC " + circ + "\r\n"))
+        stem.response.convert("EVENT", circ_message, arrived_at = 0)
+        circuits.append(circ_message)
+      
+      return circuits
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else: return default
+  
+  def new_circuit(self, path = None, purpose = "general", await_build = False):
+    """
+    Requests a new circuit. If the path isn't provided, one is automatically
+    selected.
+    
+    :param list,str path: one or more relays to make a circuit through
+    :param str purpose: "general" or "controller"
+    :param bool await_build: blocks until the circuit is built if **True**
+    
+    :returns: str of the circuit id of the newly created circuit
+    
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+    
+    return self.extend_circuit('0', path, purpose, await_build)
+  
+  def extend_circuit(self, circuit_id = "0", path = None, purpose = "general", await_build = False):
+    """
+    Either requests the creation of a new circuit or extends an existing one.
+    
+    When called with a circuit value of zero (the default) a new circuit is
+    created, and when non-zero the circuit with that id is extended. If the
+    path isn't provided, one is automatically selected.
+    
+    A python interpreter session used to create circuits could look like this...
+    
+    ::
+    
+      >>> control.extend_circuit('0', ["718BCEA286B531757ACAFF93AE04910EA73DE617", "30BAB8EE7606CBD12F3CC269AE976E0153E7A58D", "2765D8A8C4BBA3F89585A9FFE0E8575615880BEB"])
+      19
+      >>> control.extend_circuit('0')
+      20
+      >>> print control.get_info('circuit-status')
+      20 EXTENDED $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA=Eskimo BUILD_FLAGS=NEED_CAPACITY PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:51:11.433755
+      19 BUILT $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$30BAB8EE7606CBD12F3CC269AE976E0153E7A58D=Pascal1,$2765D8A8C4BBA3F89585A9FFE0E8575615880BEB=Anthracite PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:50:56.969938
+    
+    :param str circuit_id: id of a circuit to be extended
+    :param list,str path: one or more relays to make a circuit through, this is
+      required if the circuit id is non-zero
+    :param str purpose: "general" or "controller"
+    :param bool await_build: blocks until the circuit is built if **True**
+    
+    :returns: str of the circuit id of the created or extended circuit
+    
+    :raises:
+      :class:`stem.InvalidRequest` if one of the parameters were invalid
+      :class:`stem.CircuitExtensionFailed` if we were waiting for the circuit
+        to build but it failed
+      :class:`stem.ControllerError` if the call fails
+    """
+    
+    # Attaches a temporary listener for CIRC events if we'll be waiting for it
+    # to build. This is icky, but we can't reliably do this via polling since
+    # we then can't get the failure if it can't be created.
+    
+    circ_queue, circ_listener = None, None
+    
+    if await_build:
+      circ_queue = Queue.Queue()
+      
+      def circ_listener(event):
+        circ_queue.put(event)
+      
+      self.add_event_listener(circ_listener, EventType.CIRC)
+    
+    try:
+      # we might accidently get integer circuit ids
+      circuit_id = str(circuit_id)
+      
+      if path is None and circuit_id == '0':
+        path_opt_version = stem.version.Requirement.EXTENDCIRCUIT_PATH_OPTIONAL
+        
+        if not self.get_version().meets_requirements(path_opt_version):
+          raise stem.InvalidRequest(512, "EXTENDCIRCUIT requires the path prior to version %s" % path_opt_version)
+      
+      args = [circuit_id]
+      if type(path) == str: path = [path]
+      if path: args.append(",".join(path))
+      if purpose: args.append("purpose=%s" % purpose)
+      
+      response = self.msg("EXTENDCIRCUIT %s" % " ".join(args))
+      stem.response.convert("SINGLELINE", response)
+      
+      if response.is_ok():
+        try:
+          extended, new_circuit = response.message.split(" ")
+          assert extended == "EXTENDED"
+        except:
+          raise stem.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
+      elif response.code in ('512', '552'):
+        raise stem.InvalidRequest(response.code, response.message)
+      else:
+        raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
+      
+      if await_build:
+        while True:
+          circ = circ_queue.get()
+          
+          if circ.id == new_circuit:
+            if circ.status == CircStatus.BUILT:
+              break
+            elif circ.status == CircStatus.FAILED:
+              raise stem.CircuitExtensionFailed("Circuit failed to be created: %s" % circ.reason, circ)
+            elif circ.status == CircStatus.CLOSED:
+              raise stem.CircuitExtensionFailed("Circuit was closed prior to build", circ)
+      
+      return new_circuit
+    finally:
+      if circ_listener:
+        self.remove_event_listener(circ_listener)
   
   def repurpose_circuit(self, circuit_id, purpose):
     """
@@ -1464,79 +1670,6 @@ class Controller(BaseController):
         raise stem.InvalidRequest(response.code, response.message)
       else:
         raise stem.ProtocolError("SETCIRCUITPURPOSE returned unexpected response code: %s" % response.code)
-  
-  def new_circuit(self, path = None, purpose = "general"):
-    """
-    Requests a new circuit. If the path isn't provided, one is automatically
-    selected.
-    
-    :param list,str path: one or more relays to make a circuit through
-    :param str purpose: "general" or "controller"
-    
-    :returns: str of the circuit id of the newly created circuit
-    """
-    
-    return self.extend_circuit(0, path, purpose)
-  
-  def extend_circuit(self, circuit = "0", path = None, purpose = "general"):
-    """
-    Either requests the creation of a new circuit or extends an existing one.
-    
-    When called with a circuit value of zero (the default) a new circuit is
-    created, and when non-zero the circuit with that id is extended. If the
-    path isn't provided, one is automatically selected.
-    
-    A python interpreter session used to create circuits could look like this...
-    
-    ::
-      
-      >>> control.extend_circuit('0', ["718BCEA286B531757ACAFF93AE04910EA73DE617", "30BAB8EE7606CBD12F3CC269AE976E0153E7A58D", "2765D8A8C4BBA3F89585A9FFE0E8575615880BEB"])
-      19
-      >>> control.extend_circuit('0')
-      20
-      >>> print control.get_info('circuit-status')
-      20 EXTENDED $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA=Eskimo BUILD_FLAGS=NEED_CAPACITY PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:51:11.433755
-      19 BUILT $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$30BAB8EE7606CBD12F3CC269AE976E0153E7A58D=Pascal1,$2765D8A8C4BBA3F89585A9FFE0E8575615880BEB=Anthracite PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:50:56.969938
-    
-    :param str circuit: id of a circuit to be extended
-    :param list,str path: one or more relays to make a circuit through, this is
-      required if the circuit id is non-zero
-    :param str purpose: "general" or "controller"
-    
-    :returns: str of the circuit id of the created or extended circuit
-    
-    :raises: :class:`stem.InvalidRequest` if one of the parameters were invalid
-    """
-    
-    # we might accidently get integer circuit ids
-    circuit = str(circuit)
-    
-    if path is None and circuit == '0':
-      path_opt_version = stem.version.Requirement.EXTENDCIRCUIT_PATH_OPTIONAL
-      
-      if not self.get_version().meets_requirements(path_opt_version):
-        raise stem.InvalidRequest(512, "EXTENDCIRCUIT requires the path prior to version %s" % path_opt_version)
-    
-    args = [circuit]
-    if type(path) == str: path = [path]
-    if path: args.append(",".join(path))
-    if purpose: args.append("purpose=%s" % purpose)
-    
-    response = self.msg("EXTENDCIRCUIT %s" % " ".join(args))
-    stem.response.convert("SINGLELINE", response)
-    
-    if response.is_ok():
-      try:
-        extended, new_circuit = response.message.split(" ")
-        assert extended == "EXTENDED"
-      except:
-        raise stem.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
-    elif response.code in ('512', '552'):
-      raise stem.InvalidRequest(response.code, response.message)
-    else:
-      raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
-    
-    return new_circuit
   
   def close_circuit(self, circuit_id, flag = ''):
     """
@@ -1560,6 +1693,35 @@ class Controller(BaseController):
         raise stem.InvalidRequest(response.code, response.message)
       else:
         raise stem.ProtocolError("CLOSECIRCUIT returned unexpected response code: %s" % response.code)
+  
+  def attach_stream(self, stream_id, circuit_id, exiting_hop = None):
+    """
+    Attaches a stream to a circuit.
+    
+    Note: Tor attaches streams to circuits automatically unless the
+    __LeaveStreamsUnattached configuration variable is set to "1"
+    
+    :param str stream_id: id of the stream that must be attached
+    :param str circuit_id: id of the circuit to which it must be attached
+    :param int exiting_hop: hop in the circuit where traffic should exit
+    
+    :raises:
+      * :class:`stem.InvalidRequest` if the stream or circuit id were unrecognized
+      * :class:`stem.OperationFailed` if the stream couldn't be attached for any other reason
+    """
+    
+    query = "ATTACHSTREAM %s %s" % (stream_id, circuit_id)
+    if exiting_hop: query += " HOP=%s" % exiting_hop
+    response = self.msg(query)
+    stem.response.convert("SINGLELINE", response)
+    
+    if not response.is_ok():
+      if response.code == '552':
+        raise stem.InvalidRequest(response.code, response.message)
+      elif response.code == '551':
+        raise stem.OperationFailed(response.code, response.message)
+      else:
+        raise stem.ProtocolError("ATTACHSTREAM returned unexpected response code: %s" % response.code)
   
   def close_stream(self, stream_id, reason = stem.RelayEndReason.MISC, flag = ''):
     """
@@ -1588,6 +1750,39 @@ class Controller(BaseController):
         raise stem.InvalidRequest(response.code, response.message)
       else:
         raise stem.ProtocolError("CLOSESTREAM returned unexpected response code: %s" % response.code)
+  
+  def signal(self, signal):
+    """
+    Sends a signal to the Tor client.
+    
+    :param stem.Signal signal: type of signal to be sent
+    
+    :raises: :class:`stem.InvalidArguments` if signal provided wasn't recognized
+    """
+    
+    response = self.msg("SIGNAL %s" % signal)
+    stem.response.convert("SINGLELINE", response)
+    
+    if not response.is_ok():
+      if response.code == "552":
+        raise stem.InvalidArguments(response.code, response.message, [signal])
+      
+      raise stem.ProtocolError("SIGNAL response contained unrecognized status code: %s" % response.code)
+  
+  def is_geoip_unavailable(self):
+    """
+    Provides **True** if we've concluded hat our geoip database is unavailable,
+    **False** otherwise. This is determined by having our 'GETINFO
+    ip-to-country/\*' lookups fail so this will default to **False** if we
+    aren't making those queries.
+    
+    Geoip failures will be untracked if caching is disabled.
+    
+    :returns: **bool** to indicate if we've concluded our geoip database to be
+      unavailable or not
+    """
+    
+    return self._geoip_failure_count >= GEOIP_FAILURE_THRESHOLD
   
   def map_address(self, mapping):
     """
