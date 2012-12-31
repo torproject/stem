@@ -1654,7 +1654,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError("CLOSECIRCUIT returned unexpected response code: %s" % response.code)
   
-  def attach_stream(self, stream_id, circuit_id, hop = None):
+  def attach_stream(self, stream_id, circuit_id, exiting_hop = None):
     """
     Attaches a stream to a circuit.
     
@@ -1663,15 +1663,16 @@ class Controller(BaseController):
     
     :param str stream_id: id of the stream that must be attached
     :param str circuit_id: id of the circuit to which it must be attached
-    :param int hop: hop in the circuit that must be used as an exit node
+    :param int exiting_hop: hop in the circuit where traffic should exit
     
     :raises:
       * :class:`stem.InvalidRequest` if the stream or circuit id were unrecognized
       * :class:`stem.OperationFailed` if the stream couldn't be attached for any other reason
     """
     
-    hop_str = " HOP=" + str(hop) if hop else ""
-    response = self.msg("ATTACHSTREAM %s %s%s" % (stream_id, circuit_id, hop_str))
+    query = "ATTACHSTREAM %s %s" % (stream_id, circuit_id)
+    if exiting_hop: query += " HOP=%s" % exiting_hop
+    response = self.msg(query)
     stem.response.convert("SINGLELINE", response)
     
     if not response.is_ok():
