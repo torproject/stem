@@ -722,42 +722,44 @@ class TestController(unittest.TestCase):
         if count > 10: break
   
   def test_attachstream(self):
-    
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return
     
-    runner = test.runner.get_runner()
+    def handle_streamcreated(stream):
+      if stream.status == "NEW":
+        controller.attach_stream(int(stream.id), int(circuit_id))
     
-    with runner.get_tor_controller() as controller:
+    circ_status_q = Queue()
+    def handle_circ(circuit):
+      circ_status_q.put(circuit)
+    
+    with test.runner.get_runner().get_tor_controller() as controller:
       controller.set_conf("__LeaveStreamsUnattached", "1")
-      socksport = int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])
-      circ_status, circ_status_q = "", Queue()
-      
-      def handle_circ(circuit):
-        circ_status_q.put(circuit)
-      
-      def handle_streamcreated(stream):
-        if stream.status == "NEW":
-          controller.attach_stream(int(stream.id), int(circuit_id))
-      
       controller.add_event_listener(handle_circ, stem.control.EventType.CIRC)
-      while circ_status != "BUILT":
-        circuit_id = controller.new_circuit()
-        while not circ_status in ("BUILT", "FAILED"):
-          circ_event = circ_status_q.get()
-          if circ_event.id == circuit_id:
-            circ_status = circ_event.status
-      
       controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
-      ip = test.util.external_ip('127.0.0.1', socksport)
-      exit_circuit = controller.get_circuit(circuit_id)
-      self.assertTrue(exit_circuit)
-      exit_ip = controller.get_network_status(exit_circuit.path[2][0]).address
       
-      self.assertEquals(exit_ip, ip)
-      
-      controller.remove_event_listener(handle_streamcreated)
-      controller.reset_conf("__LeaveStreamsUnattached")
+      try:
+        socksport = int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])
+        circ_status = ""
+        
+        while circ_status != "BUILT":
+          circuit_id = controller.new_circuit()
+          
+          while not circ_status in ("BUILT", "FAILED"):
+            circ_event = circ_status_q.get()
+            if circ_event.id == circuit_id:
+              circ_status = circ_event.status
+        
+        ip = test.util.external_ip('127.0.0.1', socksport)
+        exit_circuit = controller.get_circuit(circuit_id)
+        self.assertTrue(exit_circuit)
+        exit_ip = controller.get_network_status(exit_circuit.path[2][0]).address
+        
+        self.assertEquals(exit_ip, ip)
+      finally:
+        controller.remove_event_listener(handle_circ)
+        controller.remove_event_listener(handle_streamcreated)
+        controller.reset_conf("__LeaveStreamsUnattached")
   
   def test_get_circuits(self):
     """
