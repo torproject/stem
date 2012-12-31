@@ -50,6 +50,11 @@ class TestNetworkStatus(unittest.TestCase):
         for flag in router.flags:
           if not flag in stem.descriptor.Flag:
             raise ValueError("Unrecognized flag type: %s, found on relay %s (%s)" % (flag, router.fingerprint, router.nickname))
+        
+        unrecognized_lines = router.get_unrecognized_lines()
+        
+        if unrecognized_lines:
+          self.fail("Unrecognized descriptor content: %s" % unrecognized_lines)
     
     # Sanity test that there's at least a hundred relays. If that's not the
     # case then this probably isn't a real, complete tor consensus.
@@ -87,6 +92,11 @@ class TestNetworkStatus(unittest.TestCase):
         for flag in router.flags:
           if not flag in stem.descriptor.Flag:
             raise ValueError("Unrecognized flag type: %s, found on microdescriptor relay %s (%s)" % (flag, router.fingerprint, router.nickname))
+        
+        unrecognized_lines = router.get_unrecognized_lines()
+        
+        if unrecognized_lines:
+          self.fail("Unrecognized descriptor content: %s" % unrecognized_lines)
     
     self.assertTrue(count > 100)
   
