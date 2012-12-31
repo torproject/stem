@@ -308,19 +308,20 @@ class MicrodescriptorExitPolicy(ExitPolicy):
     
     policy = policy[1:]
     
-    # convert our port list into ExitPolicyRules
+    # convert our port list into MicroExitPolicyRule
     rules = []
-    rule_format = "accept *:%s" if self.is_accept else "reject *:%s"
     
     for port_entry in policy.split(","):
-      rule_str = rule_format % port_entry
+      if '-' in port_entry:
+        min_port, max_port = port_entry.split('-', 1)
+      else:
+        min_port = max_port = port_entry
       
-      try:
-        rule = ExitPolicyRule(rule_str)
-        rules.append(rule)
-      except ValueError, exc:
-        exc_msg = "Policy '%s' is malformed. %s" % (self._policy, str(exc).replace(rule_str, port_entry))
-        raise ValueError(exc_msg)
+      if not stem.util.connection.is_valid_port(min_port) or \
+         not stem.util.connection.is_valid_port(max_port):
+        raise ValueError("'%s' is an invalid port range" % port_entry)
+      
+      rules.append(MicroExitPolicyRule(self.is_accept, int(min_port), int(max_port)))
     
     super(MicrodescriptorExitPolicy, self).__init__(*rules)
     self._set_default_allowed(not self.is_accept)
@@ -693,4 +694,28 @@ def _address_type_to_int(address_type):
 
 def _int_to_address_type(address_type_int):
   return AddressType[AddressType.keys()[address_type_int]]
+
+class MicroExitPolicyRule(ExitPolicyRule):
+  """
+  Lighter weight ExitPolicyRule derivative for microdescriptors.
+  """
+  
+  def __init__(self, is_accept, min_port, max_port):
+    self.is_accept = is_accept
+    self.address = None # wildcard address
+    self.min_port = min_port
+    self.max_port = max_port
+    self._str_representation = None
+  
+  def is_address_wildcard(self):
+    return True
+    
+  def get_address_type(self):
+    return AddressType.WILDCARD
+  
+  def get_mask(self, cache = True):
+    return None
+  
+  def get_masked_bits(self):
+    return None
 
