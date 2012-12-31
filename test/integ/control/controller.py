@@ -253,7 +253,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     
     with runner.get_tor_controller(False) as controller:
-      protocolinfo = controller.protocolinfo()
+      protocolinfo = controller.get_protocolinfo()
       self.assertTrue(isinstance(protocolinfo, stem.response.protocolinfo.ProtocolInfoResponse))
       
       # Doing a sanity test on the ProtocolInfoResponse instance returned.
