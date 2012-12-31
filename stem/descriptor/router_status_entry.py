@@ -270,6 +270,8 @@ class RouterStatusEntryV3(RouterStatusEntry):
   Information about an individual router stored within a version 3 network
   status document.
   
+  :var dict addresses_v6: **\*** relay's IPv6 OR addresses, this is a mapping
+    of IPv6 addresses to a listing of [(min port, max port)...] it accepts
   :var str digest: **\*** router's digest
   
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
@@ -279,14 +281,16 @@ class RouterStatusEntryV3(RouterStatusEntry):
   
   :var stem.exit_policy.MicrodescriptorExitPolicy exit_policy: router's exit policy
   
-  :var list microdescriptor_hashes: tuples of two values, the list of consensus
-    methods for generating a set of digests and the 'algorithm => digest' mappings
+  :var list microdescriptor_hashes: **\*** tuples of two values, the list of
+    consensus methods for generating a set of digests and the 'algorithm =>
+    digest' mappings
   
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
   
   def __init__(self, content, validate = True, document = None):
+    self.addresses_v6 = {}
     self.digest = None
     
     self.bandwidth = None
@@ -294,7 +298,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
     self.unrecognized_bandwidth_entries = []
     
     self.exit_policy = None
-    self.microdescriptor_hashes = None
+    self.microdescriptor_hashes = []
     
     super(RouterStatusEntryV3, self).__init__(content, validate, document)
   
@@ -305,6 +309,11 @@ class RouterStatusEntryV3(RouterStatusEntry):
       if keyword == 'r':
         _parse_r_line(self, value, validate, True)
         del entries['r']
+      elif keyword == 'a':
+        for entry, _ in values:
+          _parse_a_line(self, entry, validate)
+        
+        del entries['a']
       elif keyword == 'w':
         _parse_w_line(self, value, validate)
         del entries['w']
@@ -449,6 +458,34 @@ def _parse_r_line(desc, value, validate, include_digest = True):
     if validate:
       raise ValueError("Publication time time wasn't parsable: r %s" % value)
 
+def _parse_a_line(desc, value, validate):
+  # "a" SP address ":" portlist
+  # example: a [2001:888:2133:0:82:94:251:204]:9001
+  
+  if not ':' in value:
+    if not validate: return
+    raise ValueError("%s 'a' line must be of the form '[address]:[ports]': a %s" % (desc._name(), value))
+  
+  address, ports = value.rsplit(':', 1)
+  
+  if validate and not stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True):
+    raise ValueError("%s 'a' line must start with an IPv6 address: a %s" % (desc._name(), value))
+  
+  address = address.lstrip('[').rstrip(']')
+  
+  for port_entry in ports.split(','):
+    if '-' in port_entry:
+      min_port, max_port = port_entry.split('-', 1)
+    else:
+      min_port = max_port = port_entry
+    
+    if not stem.util.connection.is_valid_port(min_port) or \
+       not stem.util.connection.is_valid_port(max_port):
+      if not validate: continue
+      raise ValueError("%s 'a' line had an invalid port range (%s): a %s" % (desc._name(), port_entry, value))
+    
+    desc.addresses_v6.setdefault(address, []).append((int(min_port), int(max_port)))
+
 def _parse_s_line(desc, value, validate):
   # "s" Flags
   # example: s Named Running Stable Valid
@@ -555,9 +592,6 @@ def _parse_m_line(desc, value, validate):
     
     hash_name, digest = entry.split('=', 1)
     hashes[hash_name] = digest
-  
-  if desc.microdescriptor_hashes is None:
-    desc.microdescriptor_hashes = []
   
   desc.microdescriptor_hashes.append((methods, hashes))
 

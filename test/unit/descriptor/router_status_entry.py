@@ -82,7 +82,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual(None, entry.measured)
     self.assertEqual([], entry.unrecognized_bandwidth_entries)
     self.assertEqual(None, entry.exit_policy)
-    self.assertEqual(None, entry.microdescriptor_hashes)
+    self.assertEqual([], entry.microdescriptor_hashes)
     self.assertEqual([], entry.get_unrecognized_lines())
   
   def test_minimal_micro_v3(self):
@@ -304,6 +304,51 @@ class TestRouterStatusEntry(unittest.TestCase):
           content = get_router_status_entry_v3({'r': r_line}, content = True)
           self._expect_invalid_attr(content, attr, expected)
   
+  def test_ipv6_addresses(self):
+    """
+    Handles a variety of 'a' lines.
+    """
+    
+    test_values = {
+      "[2607:fcd0:daaa:101::602c:bd62]:443": {
+        '2607:fcd0:daaa:101::602c:bd62': [(443, 443)]},
+      "[2607:fcd0:daaa:101::602c:bd62]:80,443": {
+        '2607:fcd0:daaa:101::602c:bd62': [(80, 80), (443, 443)]},
+      "[2607:fcd0:daaa:101::602c:bd62]:443-512": {
+        '2607:fcd0:daaa:101::602c:bd62': [(443, 512)]},
+    }
+    
+    for a_line, expected in test_values.items():
+      entry = get_router_status_entry_v3({'a': a_line})
+      self.assertEquals(expected, entry.addresses_v6)
+    
+    # includes multiple 'a' lines
+    
+    content = get_router_status_entry_v3(content = True)
+    content += "\na [2607:fcd0:daaa:101::602c:bd62]:80,443"
+    content += "\na [2607:fcd0:daaa:101::602c:bd62]:512-600"
+    content += "\na [1148:fcd0:daaa:101::602c:bd62]:80"
+    
+    expected = {
+      '2607:fcd0:daaa:101::602c:bd62': [(80, 80), (443, 443), (512, 600)],
+      '1148:fcd0:daaa:101::602c:bd62': [(80, 80)],
+    }
+    
+    entry = RouterStatusEntryV3(content)
+    self.assertEquals(expected, entry.addresses_v6)
+    
+    # tries some invalid inputs
+    
+    test_values = (
+      "",
+      "127.0.0.1:80",
+      "[1148:fcd0:daaa:101::602c:bd62]:80000",
+    )
+    
+    for a_line in test_values:
+      content = get_router_status_entry_v3({'a': a_line}, content = True)
+      self._expect_invalid_attr(content, expected_value = {})
+  
   def test_flags(self):
     """
     Handles a variety of flag inputs.
@@ -454,7 +499,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     
     # try without a document
     content = get_router_status_entry_v3({'m': "8,9,10,11,12"}, content = True)
-    self._expect_invalid_attr(content, "microdescriptor_hashes")
+    self._expect_invalid_attr(content, "microdescriptor_hashes", expected_value = [])
     
     # tries some invalid inputs
     test_values = (
