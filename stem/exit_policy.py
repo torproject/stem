@@ -86,16 +86,13 @@ class ExitPolicy(object):
   """
   
   def __init__(self, *rules):
-    self._rules = []
-    
+    # sanity check the types
     for rule in rules:
-      if isinstance(rule, str):
-        self._rules.append(ExitPolicyRule(rule.strip()))
-      elif isinstance(rule, ExitPolicyRule):
-        self._rules.append(rule)
-      else:
+      if not (isinstance(rule, str) or isinstance(rule, ExitPolicyRule)):
         raise TypeError("Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)" % (type(rule), rules))
     
+    self._rules = None          # lazily loaded series of ExitPolicyRule
+    self._input_rules = rules   # input rules, only kept until self._rules is set
     self._is_allowed_default = True
     self._summary_representation = None
   
@@ -111,7 +108,7 @@ class ExitPolicy(object):
     :returns: **True** if exiting to this destination is allowed, **False** otherwise
     """
     
-    for rule in self._rules:
+    for rule in self._get_rules():
       if rule.is_match(address, port):
         return rule.is_accept
     
@@ -124,7 +121,7 @@ class ExitPolicy(object):
     """
     
     rejected_ports = set()
-    for rule in self._rules:
+    for rule in self._get_rules():
       if rule.is_accept:
         for port in xrange(rule.min_port, rule.max_port + 1):
           if not port in rejected_ports:
@@ -161,7 +158,7 @@ class ExitPolicy(object):
       # determines if we're a white-list or blacklist
       is_whitelist = not self._is_allowed_default
       
-      for rule in self._rules:
+      for rule in self._get_rules():
         if rule.is_address_wildcard() and rule.is_port_wildcard():
           is_whitelist = not rule.is_accept
           break
@@ -173,7 +170,7 @@ class ExitPolicy(object):
       
       display_ports, skip_ports = [], set()
       
-      for rule in self._rules:
+      for rule in self._get_rules():
         if not rule.is_address_wildcard(): continue
         elif rule.is_port_wildcard(): break
         
@@ -231,16 +228,31 @@ class ExitPolicy(object):
     
     self._is_allowed_default = is_allowed_default
   
+  def _get_rules(self):
+    if self._rules is None:
+      rules = []
+      
+      for rule in self._input_rules:
+        if isinstance(rule, str):
+          rules.append(ExitPolicyRule(rule.strip()))
+        elif isinstance(rule, ExitPolicyRule):
+          rules.append(rule)
+      
+      self._rules = rules
+      self._input_rules = None
+    
+    return self._rules
+  
   def __iter__(self):
-    for rule in self._rules:
+    for rule in self._get_rules():
       yield rule
   
   def __str__(self):
-    return ', '.join([str(rule) for rule in self._rules])
+    return ', '.join([str(rule) for rule in self._get_rules()])
   
   def __eq__(self, other):
     if isinstance(other, ExitPolicy):
-      return self._rules == list(other)
+      return self._get_rules() == list(other)
     else:
       return False
 
