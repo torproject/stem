@@ -59,6 +59,7 @@ and picks up where it left off if ran again...
   DescriptorReader - Iterator for descriptor data on the local file system
     |- get_processed_files - provides the listing of files that we've processed
     |- set_processed_files - sets our tracking of the files we have processed
+    |- register_read_listener - adds a listener for when files are read
     |- register_skip_listener - adds a listener that's notified of skipped files
     |- start - begins reading descriptor data
     |- stop - stops reading descriptor data
@@ -247,6 +248,7 @@ class DescriptorReader(object):
     
     self._follow_links = follow_links
     self._persistence_path = persistence_path
+    self._read_listeners = []
     self._skip_listeners = []
     self._processed_files = {}
     
@@ -302,6 +304,20 @@ class DescriptorReader(object):
     """
     
     self._processed_files = dict(processed_files)
+  
+  def register_read_listener(self, listener):
+    """
+    Registers a listener for when files are read. This is executed prior to
+    processing files. Listeners are expected to be of the form...
+    
+    ::
+    
+      my_listener(path)
+    
+    :param functor listener: functor to be notified when files are read
+    """
+    
+    self._read_listeners.append(listener)
   
   def register_skip_listener(self, listener):
     """
@@ -464,6 +480,7 @@ class DescriptorReader(object):
   
   def _handle_descriptor_file(self, target, mime_type):
     try:
+      self._notify_read_listeners(target)
       with open(target) as target_file:
         for desc in stem.descriptor.parse_file(target, target_file):
           if self._is_stopped.isSet(): return
@@ -484,6 +501,7 @@ class DescriptorReader(object):
     tar_file = None
     
     try:
+      self._notify_read_listeners(target)
       tar_file = tarfile.open(target)
       
       for tar_entry in tar_file:
@@ -504,6 +522,10 @@ class DescriptorReader(object):
       self._notify_skip_listeners(target, ReadFailed(exc))
     finally:
       if tar_file: tar_file.close()
+  
+  def _notify_read_listeners(self, path):
+    for listener in self._read_listeners:
+      listener(path)
   
   def _notify_skip_listeners(self, path, exception):
     for listener in self._skip_listeners:
