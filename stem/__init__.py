@@ -9,6 +9,7 @@ Library for working with the tor process.
     |- ProtocolError - Malformed socket data.
     |- OperationFailed - Tor was unable to successfully complete the operation.
     |  |- UnsatisfiableRequest - Tor was unable to satisfy a valid request.
+    |  |  +- CircuitExtensionFailed - Attempt to make or extend a circuit failed.
     |  +- InvalidRequest - Invalid request.
     |     +- InvalidArguments - Invalid request parameters.
     +- SocketError - Communication with the socket failed.
@@ -420,6 +421,17 @@ class UnsatisfiableRequest(OperationFailed):
   """
   Exception raised if Tor was unable to process our request.
   """
+
+class CircuitExtensionFailed(UnsatisfiableRequest):
+  """
+  An attempt to create or extend a circuit failed.
+  
+  :var stem.response.CircuitEvent circ: response notifying us of the failure
+  """
+  
+  def __init__(self, message, circ = None):
+    super(CircuitExtensionFailed, self).__init__(message = message)
+    self.circ = circ
 
 class InvalidRequest(OperationFailed):
   """

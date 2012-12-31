@@ -140,6 +140,8 @@ import stem.util.connection
 import stem.util.enum
 import stem.version
 
+from stem import CircStatus
+
 from stem.util import log
 import stem.util.tor_tools
 
@@ -1537,20 +1539,23 @@ class Controller(BaseController):
       if default == UNDEFINED: raise exc
       else: return default
   
-  def new_circuit(self, path = None, purpose = "general"):
+  def new_circuit(self, path = None, purpose = "general", await_build = False):
     """
     Requests a new circuit. If the path isn't provided, one is automatically
     selected.
     
     :param list,str path: one or more relays to make a circuit through
     :param str purpose: "general" or "controller"
+    :param bool await_build: blocks until the circuit is built if **True**
     
     :returns: str of the circuit id of the newly created circuit
+    
+    :raises: :class:`stem.ControllerError` if the call fails
     """
     
-    return self.extend_circuit('0', path, purpose)
+    return self.extend_circuit('0', path, purpose, await_build)
   
-  def extend_circuit(self, circuit_id = "0", path = None, purpose = "general"):
+  def extend_circuit(self, circuit_id = "0", path = None, purpose = "general", await_build = False):
     """
     Either requests the creation of a new circuit or extends an existing one.
     
@@ -1561,7 +1566,7 @@ class Controller(BaseController):
     A python interpreter session used to create circuits could look like this...
     
     ::
-      
+    
       >>> control.extend_circuit('0', ["718BCEA286B531757ACAFF93AE04910EA73DE617", "30BAB8EE7606CBD12F3CC269AE976E0153E7A58D", "2765D8A8C4BBA3F89585A9FFE0E8575615880BEB"])
       19
       >>> control.extend_circuit('0')
@@ -1574,41 +1579,76 @@ class Controller(BaseController):
     :param list,str path: one or more relays to make a circuit through, this is
       required if the circuit id is non-zero
     :param str purpose: "general" or "controller"
+    :param bool await_build: blocks until the circuit is built if **True**
     
     :returns: str of the circuit id of the created or extended circuit
     
-    :raises: :class:`stem.InvalidRequest` if one of the parameters were invalid
+    :raises:
+      :class:`stem.InvalidRequest` if one of the parameters were invalid
+      :class:`stem.CircuitExtensionFailed` if we were waiting for the circuit
+        to build but it failed
+      :class:`stem.ControllerError` if the call fails
     """
     
-    # we might accidently get integer circuit ids
-    circuit_id = str(circuit_id)
+    # Attaches a temporary listener for CIRC events if we'll be waiting for it
+    # to build. This is icky, but we can't reliably do this via polling since
+    # we then can't get the failure if it can't be created.
     
-    if path is None and circuit_id == '0':
-      path_opt_version = stem.version.Requirement.EXTENDCIRCUIT_PATH_OPTIONAL
+    circ_queue, circ_listener = None, None
+    
+    if await_build:
+      circ_queue = Queue.Queue()
       
-      if not self.get_version().meets_requirements(path_opt_version):
-        raise stem.InvalidRequest(512, "EXTENDCIRCUIT requires the path prior to version %s" % path_opt_version)
+      def circ_listener(event):
+        circ_queue.put(event)
+      
+      self.add_event_listener(circ_listener, EventType.CIRC)
     
-    args = [circuit_id]
-    if type(path) == str: path = [path]
-    if path: args.append(",".join(path))
-    if purpose: args.append("purpose=%s" % purpose)
-    
-    response = self.msg("EXTENDCIRCUIT %s" % " ".join(args))
-    stem.response.convert("SINGLELINE", response)
-    
-    if response.is_ok():
-      try:
-        extended, new_circuit = response.message.split(" ")
-        assert extended == "EXTENDED"
-      except:
-        raise stem.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
-    elif response.code in ('512', '552'):
-      raise stem.InvalidRequest(response.code, response.message)
-    else:
-      raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
-    
-    return new_circuit
+    try:
+      # we might accidently get integer circuit ids
+      circuit_id = str(circuit_id)
+      
+      if path is None and circuit_id == '0':
+        path_opt_version = stem.version.Requirement.EXTENDCIRCUIT_PATH_OPTIONAL
+        
+        if not self.get_version().meets_requirements(path_opt_version):
+          raise stem.InvalidRequest(512, "EXTENDCIRCUIT requires the path prior to version %s" % path_opt_version)
+      
+      args = [circuit_id]
+      if type(path) == str: path = [path]
+      if path: args.append(",".join(path))
+      if purpose: args.append("purpose=%s" % purpose)
+      
+      response = self.msg("EXTENDCIRCUIT %s" % " ".join(args))
+      stem.response.convert("SINGLELINE", response)
+      
+      if response.is_ok():
+        try:
+          extended, new_circuit = response.message.split(" ")
+          assert extended == "EXTENDED"
+        except:
+          raise stem.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
+      elif response.code in ('512', '552'):
+        raise stem.InvalidRequest(response.code, response.message)
+      else:
+        raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
+      
+      if await_build:
+        while True:
+          circ = circ_queue.get()
+          
+          if circ.id == new_circuit:
+            if circ.status == CircStatus.BUILT:
+              break
+            elif circ.status == CircStatus.FAILED:
+              raise stem.CircuitExtensionFailed("Circuit failed to be created: %s" % circ.reason, circ)
+            elif circ.status == CircStatus.CLOSED:
+              raise stem.CircuitExtensionFailed("Circuit was closed prior to build", circ)
+      
+      return new_circuit
+    finally:
+      if circ_listener:
+        self.remove_event_listener(circ_listener)
   
   def repurpose_circuit(self, circuit_id, purpose):
     """

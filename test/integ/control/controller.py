@@ -13,8 +13,6 @@ import threading
 import time
 import unittest
 
-from Queue import Queue
-
 import stem.connection
 import stem.control
 import stem.descriptor.reader
@@ -725,31 +723,19 @@ class TestController(unittest.TestCase):
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return
     
-    circuit_id, circ_status_q = None, Queue()
+    circuit_id = None
     
     def handle_streamcreated(stream):
-      if stream.status == "NEW":
+      if stream.status == "NEW" and circuit_id:
         controller.attach_stream(stream.id, circuit_id)
-    
-    def handle_circ(circuit):
-      circ_status_q.put(circuit)
     
     with test.runner.get_runner().get_tor_controller() as controller:
       controller.set_conf("__LeaveStreamsUnattached", "1")
-      controller.add_event_listener(handle_circ, stem.control.EventType.CIRC)
       controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
       
       try:
+        circuit_id = controller.new_circuit(await_build = True)
         socksport = controller.get_socks_listeners()[0][1]
-        circ_status = ""
-        
-        while circ_status != "BUILT":
-          circuit_id = controller.new_circuit()
-          
-          while not circ_status in ("BUILT", "FAILED"):
-            circ_event = circ_status_q.get()
-            if circ_event.id == circuit_id:
-              circ_status = circ_event.status
         
         ip = test.util.external_ip('127.0.0.1', socksport)
         exit_circuit = controller.get_circuit(circuit_id)
@@ -758,7 +744,6 @@ class TestController(unittest.TestCase):
         
         self.assertEquals(exit_ip, ip)
       finally:
-        controller.remove_event_listener(handle_circ)
         controller.remove_event_listener(handle_streamcreated)
         controller.reset_conf("__LeaveStreamsUnattached")
   
