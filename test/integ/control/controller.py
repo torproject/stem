@@ -24,6 +24,7 @@ import test.runner
 import test.util
 
 from stem.control import EventType
+from stem.version import Requirement
 
 class TestController(unittest.TestCase):
   def test_from_port(self):
@@ -515,6 +516,7 @@ class TestController(unittest.TestCase):
   def test_extendcircuit(self):
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return
+    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL): return
     
     with test.runner.get_runner().get_tor_controller() as controller:
       circuit_id = controller.extend_circuit('0')
@@ -535,6 +537,7 @@ class TestController(unittest.TestCase):
     
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return
+    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL): return
     
     runner = test.runner.get_runner()
     
@@ -558,6 +561,7 @@ class TestController(unittest.TestCase):
     
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return
+    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL): return
     
     runner = test.runner.get_runner()
     
@@ -722,6 +726,7 @@ class TestController(unittest.TestCase):
   def test_attachstream(self):
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return
+    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL): return
     
     circuit_id = None
     
@@ -753,7 +758,8 @@ class TestController(unittest.TestCase):
     """
     
     if test.runner.require_control(self): return
-    if test.runner.require_online(self): return
+    elif test.runner.require_online(self): return
+    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL): return
     
     runner = test.runner.get_runner()
     with runner.get_tor_controller() as controller:
