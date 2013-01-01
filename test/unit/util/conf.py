@@ -5,6 +5,9 @@ Unit tests for the stem.util.conf class and functions.
 import unittest
 
 import stem.util.conf
+import stem.util.enum
+
+from stem.util.conf import parse_enum_csv
 
 class TestConf(unittest.TestCase):
   def tearDown(self):
@@ -49,6 +52,53 @@ class TestConf(unittest.TestCase):
     
     test_config.set("list_value", "c", False)
     self.assertEquals(["a", "b", "c"], my_config["list_value"])
+  
+  def test_parse_enum_csv(self):
+    """
+    Tests the parse_enum_csv function.
+    """
+    
+    Insects = stem.util.enum.Enum("BUTTERFLY", "LADYBUG", "CRICKET")
+    
+    # check the case insensitivity
+    
+    self.assertEqual([Insects.LADYBUG], parse_enum_csv("my_option", "ladybug", Insects))
+    self.assertEqual([Insects.LADYBUG], parse_enum_csv("my_option", "Ladybug", Insects))
+    self.assertEqual([Insects.LADYBUG], parse_enum_csv("my_option", "LaDyBuG", Insects))
+    self.assertEqual([Insects.LADYBUG], parse_enum_csv("my_option", "LADYBUG", Insects))
+    
+    # various number of values
+    
+    self.assertEqual([], parse_enum_csv("my_option", "", Insects))
+    self.assertEqual([Insects.LADYBUG], parse_enum_csv("my_option", "ladybug", Insects))
+    
+    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY],
+      parse_enum_csv("my_option", "ladybug, butterfly", Insects))
+    
+    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY, Insects.CRICKET],
+      parse_enum_csv("my_option", "ladybug, butterfly, cricket", Insects))
+    
+    # edge cases for count argument where things are ok
+    
+    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY],
+      parse_enum_csv("my_option", "ladybug, butterfly", Insects, 2))
+    
+    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY],
+      parse_enum_csv("my_option", "ladybug, butterfly", Insects, (1, 2)))
+    
+    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY],
+      parse_enum_csv("my_option", "ladybug, butterfly", Insects, (2, 3)))
+    
+    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY],
+      parse_enum_csv("my_option", "ladybug, butterfly", Insects, (2, 2)))
+    
+    # failure cases
+    
+    self.assertRaises(ValueError, parse_enum_csv, "my_option", "ugabuga", Insects)
+    self.assertRaises(ValueError, parse_enum_csv, "my_option", "ladybug, ugabuga", Insects)
+    self.assertRaises(ValueError, parse_enum_csv, "my_option", "ladybug butterfly", Insects) # no comma
+    self.assertRaises(ValueError, parse_enum_csv, "my_option", "ladybug", Insects, 2)
+    self.assertRaises(ValueError, parse_enum_csv, "my_option", "ladybug", Insects, (2, 3))
   
   def test_clear(self):
     """

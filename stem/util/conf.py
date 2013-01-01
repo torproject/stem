@@ -118,6 +118,7 @@ Alternatively you can get a read-only dictionary that stays in sync with the
 
   config_dict - provides a dictionary that's kept synchronized with a config
   get_config - singleton for getting configurations
+  parse_enum_csv - helper funcion for parsing confguration entries for enums
   
   Config - Custom configuration
     |- load - reads a configuration file
@@ -192,6 +193,63 @@ def get_config(handle):
   
   if not handle in CONFS: CONFS[handle] = Config()
   return CONFS[handle]
+
+def parse_enum_csv(key, value, enumeration, count = None):
+  """
+  Parses a given value as being a comma separated listing of enumeration keys,
+  returning the corresponding enumeration values. This is intended to be a
+  helper for config handlers. The checks this does are case insensitive.
+  
+  The **count** attribute can be used to make assertions based on the number of
+  values. This can be...
+  
+  * None to indicate that there's no restrictions.
+  * An int to indicate that we should have this many values.
+  * An (int, int) tuple to indicate the range that values can be in. This range
+    is inclusive and either can be None to indicate the lack of a lower or
+    upper bound.
+  
+  :param str key: configuration key being looked up
+  :param str value: value to be parsed
+  :param stem.util.enum.Enum enumeration: enumeration the values should be in
+  :param int,tuple count: validates that we have this many items
+  
+  :returns: list with the enumeration values
+  
+  :raises: **ValueError** if the count assertion fails or the **value** entries
+    don't match the enumeration keys
+  """
+  
+  values = [val.upper().strip() for val in value.split(',')]
+  if values == ['']: return []
+  
+  if count is None:
+    pass # no count validateion checks to do
+  elif isinstance(count, int):
+    if len(values) != count:
+      raise ValueError("Config entry '%s' is expected to be %i comma separated values, got '%s'" % (key, count, value))
+  elif isinstance(count, tuple) and len(count) == 2:
+    minimum, maximum = count
+    
+    if minimum is not None and len(values) < minimum:
+      raise ValueError("Config entry '%s' must have at least %i comma separated values, got '%s'" % (key, minimum, value))
+    
+    if maximum is not None and len(values) > maximum:
+      raise ValueError("Config entry '%s' can have at most %i comma separated values, got '%s'" % (key, maximum, value))
+  else:
+    raise ValueError("The count must be None, an int, or two value tuple. Got '%s' (%s)'" % (count, type(count)))
+  
+  result = []
+  enum_keys = [key.upper() for key in enumeration.keys()]
+  enum_values = list(enumeration)
+  
+  for val in values:
+    if val in enum_keys:
+      result.append(enum_values[enum_keys.index(val)])
+    else:
+      raise ValueError("The '%s' entry of config entry '%s' wasn't in the enumeration (expected %s)" % (val, key, ', '.join(enum_keys)))
+  
+  return result
 
 class Config(object):
   """
