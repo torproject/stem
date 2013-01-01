@@ -194,6 +194,22 @@ def get_config(handle):
   if not handle in CONFS: CONFS[handle] = Config()
   return CONFS[handle]
 
+def parse_enum(key, value, enumeration):
+  """
+  Provides the enumeration value for a given key. This is a case insensitive
+  lookup and raises an exception if the enum key doesn't exist.
+  
+  :param str key: configuration key being looked up
+  :param str value: value to be parsed
+  :param stem.util.enum.Enum enumeration: enumeration the values should be in
+  
+  :returns: enumeration value
+  
+  :raises: **ValueError** if the **value** isn't among the enumeration keys
+  """
+  
+  return parse_enum_csv(key, value, enumeration, 1)[0]
+
 def parse_enum_csv(key, value, enumeration, count = None):
   """
   Parses a given value as being a comma separated listing of enumeration keys,

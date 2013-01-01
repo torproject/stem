@@ -7,7 +7,7 @@ import unittest
 import stem.util.conf
 import stem.util.enum
 
-from stem.util.conf import parse_enum_csv
+from stem.util.conf import parse_enum, parse_enum_csv
 
 class TestConf(unittest.TestCase):
   def tearDown(self):
@@ -52,6 +52,16 @@ class TestConf(unittest.TestCase):
     
     test_config.set("list_value", "c", False)
     self.assertEquals(["a", "b", "c"], my_config["list_value"])
+  
+  def test_parse_enum(self):
+    """
+    Tests the parse_enum function.
+    """
+    
+    Insects = stem.util.enum.Enum("BUTTERFLY", "LADYBUG", "CRICKET")
+    self.assertEqual(Insects.LADYBUG, parse_enum("my_option", "ladybug", Insects))
+    self.assertRaises(ValueError, parse_enum, "my_option", "ugabuga", Insects)
+    self.assertRaises(ValueError, parse_enum, "my_option", "ladybug, cricket", Insects)
   
   def test_parse_enum_csv(self):
     """
