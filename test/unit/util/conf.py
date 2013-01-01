@@ -266,24 +266,4 @@ class TestConf(unittest.TestCase):
     
     self.assertEquals(None, test_config.get_value("foo"))
     self.assertEquals("hello", test_config.get_value("foo", "hello"))
-  
-  def test_csv(self):
-    """
-    Tests the get_str_csv and get_int_csv methods.
-    """
-    
-    test_config = stem.util.conf.get_config("unit_testing")
-    test_config.set("str_csv_value", "hello, world")
-    test_config.set("int_csv_value", "1, 2, 3")
-    test_config.set("not_a_csv_value", "blarg I say!")
-    
-    self.assertEquals(["hello", "world"], test_config.get_str_csv("str_csv_value"))
-    self.assertEquals(["1", "2", "3"], test_config.get_str_csv("int_csv_value"))
-    self.assertEquals(["blarg I say!"], test_config.get_str_csv("not_a_csv_value"))
-    self.assertEquals(None, test_config.get_str_csv("not_a_csv_value", count = 5))
-    
-    self.assertEquals(None, test_config.get_int_csv("str_csv_value"))
-    self.assertEquals([1, 2, 3], test_config.get_int_csv("int_csv_value"))
-    self.assertEquals(None, test_config.get_int_csv("int_csv_value", min_value = 4))
-    self.assertEquals(None, test_config.get_int_csv("not_a_csv_value"))
 

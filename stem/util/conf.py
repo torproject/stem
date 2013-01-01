@@ -131,9 +131,7 @@ Alternatively you can get a read-only dictionary that stays in sync with the
     |- set - sets the given key/value pair
     |- unused_keys - provides keys that have never been requested
     |- get - provides the value for a given key, with type inference
-    |- get_value - provides the value for a given key as a string
-    |- get_str_csv - gets a value as a comma separated list of strings
-    +- get_int_csv - gets a value as a comma separated list of integers
+    +- get_value - provides the value for a given key as a string
 """
 
 from __future__ import with_statement
@@ -655,85 +653,4 @@ class Config(object):
         message_id = "stem.util.conf.missing_config_key_%s" % key
         log.log_once(message_id, log.TRACE, "config entry '%s' not found, defaulting to '%s'" % (key, default))
         return default
-  
-  def get_str_csv(self, key, default = None, count = None, sub_key = None):
-    """
-    Fetches the given key as a comma separated value.
-    
-    :param str key: config setting to be fetched, last if multiple exists
-    :param object default: value provided if no such key exists or doesn't
-      match the count
-    :param int count: if set then the default is returned when the number of
-      elements doesn't match this value
-    :param str sub_key: handle the configuration entry as a dictionary and use
-      this key within it
-    
-    :returns: **list** with the stripped values
-    """
-    
-    if sub_key: conf_value = self.get(key, {}).get(sub_key)
-    else: conf_value = self.get_value(key)
-    
-    if conf_value is None: return default
-    elif not conf_value.strip(): return [] # empty string
-    else:
-      conf_comp = [entry.strip() for entry in conf_value.split(",")]
-      
-      # check if the count doesn't match
-      if count is not None and len(conf_comp) != count:
-        msg = "Config entry '%s' is expected to be %i comma separated values" % (key, count)
-        if default is not None and (isinstance(default, list) or isinstance(default, tuple)):
-          defaultStr = ", ".join([str(i) for i in default])
-          msg += ", defaulting to '%s'" % defaultStr
-        
-        log.debug(msg)
-        return default
-      
-      return conf_comp
-  
-  def get_int_csv(self, key, default = None, count = None, min_value = None, max_value = None, sub_key = None):
-    """
-    Fetches the given comma separated value, returning the default if the
-    values aren't integers or don't follow the given constraints.
-    
-    :param str key: config setting to be fetched, last if multiple exists
-    :param object default: value provided if no such key exists, doesn't match
-      the count, values aren't all integers, or doesn't match the bounds
-    :param int count: checks that the number of values matches this if set
-    :param int min_value: checks that all values are over this if set
-    :param int max_value: checks that all values are under this if set
-    :param str sub_key: handle the configuration entry as a dictionary and use
-      this key within it
-    
-    :returns: **list** with the stripped values
-    """
-    
-    conf_comp = self.get_str_csv(key, default, count, sub_key)
-    if conf_comp == default: return default
-    
-    # validates the input, setting the error_msg if there's a problem
-    error_msg = None
-    base_error_msg = "Config entry '%s' is expected to %%s" % key
-    
-    # includes our default value in the message
-    if default is not None and (isinstance(default, list) or isinstance(default, tuple)):
-      default_str = ", ".join([str(i) for i in default])
-      base_error_msg += ", defaulting to '%s'" % default_str
-    
-    for val in conf_comp:
-      if not val.isdigit():
-        error_msg = base_error_msg % "only have integer values"
-        break
-      else:
-        if min_value is not None and int(val) < min_value:
-          error_msg = base_error_msg % "only have values over %i" % min_value
-          break
-        elif max_value is not None and int(val) > max_value:
-          error_msg = base_error_msg % "only have values less than %i" % max_value
-          break
-    
-    if error_msg:
-      log.debug(error_msg)
-      return default
-    else: return [int(val) for val in conf_comp]
 
