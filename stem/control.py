@@ -1495,7 +1495,7 @@ class Controller(BaseController):
     :param int circuit_id: circuit to be fetched
     :param object default: response if the query fails
     
-    :returns: :class:`stem.events.CircuitEvent` for the given circuit
+    :returns: :class:`stem.response.events.CircuitEvent` for the given circuit
     
     :raises:
       * :class:`stem.ControllerError` if the call fails
@@ -1520,7 +1520,7 @@ class Controller(BaseController):
     
     :param object default: response if the query fails
     
-    :returns: **list** of :class:`stem.events.CircuitEvent` for our circuits
+    :returns: **list** of :class:`stem.response.events.CircuitEvent` for our circuits
     
     :raises: :class:`stem.ControllerError` if the call fails and no default was provided
     """
