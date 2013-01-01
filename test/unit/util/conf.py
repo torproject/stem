@@ -129,61 +129,6 @@ class TestConf(unittest.TestCase):
     test_config.clear()
     self.assertEquals([], test_config.keys())
   
-  def test_synchronize(self):
-    """
-    Tests the synchronize method.
-    """
-    
-    my_config = {
-      "bool_value": False,
-      "int_value": 5,
-      "str_value": "hello",
-      "list_value": [],
-      "map_value": {},
-    }
-    
-    test_config = stem.util.conf.get_config("unit_testing")
-    test_config.set("bool_value", "true")
-    test_config.set("int_value", "11")
-    test_config.set("str_value", "world")
-    test_config.set("list_value", "a", False)
-    test_config.set("list_value", "b", False)
-    test_config.set("list_value", "c", False)
-    test_config.set("map_value", "foo => bar")
-    
-    test_config.synchronize(my_config)
-    self.assertEquals(True, my_config["bool_value"])
-    self.assertEquals(11, my_config["int_value"])
-    self.assertEquals("world", my_config["str_value"])
-    self.assertEquals(["a", "b", "c"], my_config["list_value"])
-    self.assertEquals({"foo": "bar"}, my_config["map_value"])
-  
-  def test_synchronize_type_mismatch(self):
-    """
-    Tests the synchronize method when the config file has missing entries or
-    the wrong types.
-    """
-    
-    my_config = {
-      "bool_value": False,
-      "int_value": 5,
-      "str_value": "hello",
-      "list_value": [],
-      "map_value": {},
-    }
-    
-    test_config = stem.util.conf.get_config("unit_testing")
-    test_config.set("bool_value", "hello world")
-    test_config.set("int_value", "11a")
-    test_config.set("map_value", "foo bar")
-    
-    test_config.synchronize(my_config)
-    self.assertEquals(False, my_config["bool_value"])
-    self.assertEquals(5, my_config["int_value"])
-    self.assertEquals("hello", my_config["str_value"])
-    self.assertEquals([], my_config["list_value"])
-    self.assertEquals({}, my_config["map_value"])
-  
   def test_listeners(self):
     """
     Tests the add_listener and clear_listeners methods.

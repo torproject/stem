@@ -35,88 +35,108 @@ For instance...
     "msg.greeting": "Multi-line message exclaiming of the\\nwonder and awe that is pepperjack!",
   }
 
-Configurations are loaded or saved via the :class:`~stem.util.conf.Config`
-class. The :class:`~stem.util.conf.Config` can be be used directly with its
+Configurations are managed via the :class:`~stem.util.conf.Config` class. The
+:class:`~stem.util.conf.Config` can be be used directly with its
 :func:`~stem.util.conf.Config.get` and :func:`~stem.util.conf.Config.set`
 methods, but usually modules will want a local dictionary with just the
-configurations that it cares about. This can be done a couple ways...
+configurations that it cares about.
 
-* **Independent Dictionary**
+To do this use the :func:`~stem.util.conf.config_dict` function. For example...
 
-To simply get a dictionary that has configurations use the
-:func:`~stem.util.conf.Config.synchronize` method. This takes as an argument
-a dictionary with the default values.
+::
 
-For instance, lets say that you had a file at '/home/atagar/user_config'
-with...
+  import getpass
+  from stem.util import conf, connection
+  
+  def config_validator(key, value):
+    if key == "timeout":
+      # require at least a one second timeout
+      return max(1, value)
+    elif key == "endpoint":
+      if not connection.is_valid_ip_address(value):
+        raise ValueError("'%s' isn't a valid IPv4 address" % value)
+    elif key == "port":
+      if not connection.is_valid_port(value):
+        raise ValueError("'%s' isn't a valid port" % value)
+    elif key == "retries":
+      # negative retries really don't make sense
+      return max(0, value)
+  
+  CONFIG = conf.config_dict("ssh_login", {
+    "username": getpass.getuser(),
+    "password": "",
+    "timeout": 10,
+    "endpoint": "263.12.8.0",
+    "port": 22,
+    "reconnect": False,
+    "retries": 3,
+  }, config_validator)
+
+There's several things going on here so lets take it step by step...
+
+* The :func:`~stem.util.conf.config_dict` provides a dictionary that's bound
+  to a given configuration. If the "ssh_proxy_config" configuration changes
+  then so will the contents of CONFIG.
+
+* The dictionary we're passing to :func:`~stem.util.conf.config_dict` provides
+  two important pieces of information: default values and their types. See the
+  Config's :func:`~stem.util.conf.Config.get` method for how these type
+  inferences work.
+
+* The config_validator is a hook we're adding to make sure CONFIG only gets
+  values we think are valid. In this case it ensures that our timeout value
+  is at least one second, and rejects endpoints or ports that are invalid.
+
+Now lets say our user has the following configuration file...
 
 ::
 
   username waddle_doo
-  permissions.ssh true
-  some.extra.stuff foobar
+  password jabberwocky
+  timeout -15
+  port 9000000
+  retries lots
+  reconnect true
+  logging debug
 
-... then run...
-
-::
-
-  >>> from stem.util.conf import get_config
-  >>> my_module_config = {
-  ...   "username": "default",
-  ...   "permissions.ssh": False,
-  ...   "permissions.sudo": False,
-  ... }
-  
-  >>> config = get_config("user_config")
-  >>> config.load("/home/atagar/user_config")
-  >>> config.synchronize(my_module_config)
-  
-  >>> print my_module_config
-  {'username': 'waddle_doo', 'permissions.sudo': False, 'permissions.ssh': True}
-
-The configuration file just contains string mappings, but the
-:class:`~stem.util.conf.Config` attempts to convert those values to be the same
-types as the dictionary's defaults. For more information on how type inferences
-work see the :func:`~stem.util.conf.Config.get` method.
-
-* **Linked Dictionary**
-
-Alternatively you can get a read-only dictionary that stays in sync with the
-:class:`~stem.util.conf.Config` by using the
-:func:`~stem.util.conf.config_dict` function...
+... and we load it as follows...
 
 ::
 
-  >>> # Make a dictionary that watches the 'user_config' configuration for changes.
-  
-  >>> from stem.util.conf import config_dict
-  >>> my_module_config = config_dict("user_config", {
-  ...   "username": "default",
-  ...   "permissions.ssh": False,
-  ...   "permissions.sudo": False,
-  ... })
-  >>> print my_module_config
-  {'username': 'default', 'permissions.sudo': False, 'permissions.ssh': False}
-  
-  >>> # Something (maybe another module) loads the config, causing the
-  >>> # my_module_config above to be updated.
-  
-  >>> from stem.util.conf import get_config
-  >>> config = get_config("user_config")
-  >>> config.load("/home/atagar/user_config")
-  
-  >>> print my_module_config
-  {'username': 'waddle_doo', 'permissions.sudo': False, 'permissions.ssh': True}
-  
-  >>> config.set('username', 'ness')
-  >>> print my_module_config
-  {'username': 'ness', 'permissions.sudo': False, 'permissions.ssh': True}
+  >>> from from stem.util import conf
+  >>> our_config = conf.get_config("ssh_login")
+  >>> our_config.load("/home/atagar/user_config")
+  >>> print CONFIG
+  {
+    "username": "waddle_doo",
+    "password": "jabberwocky",
+    "timeout": 1,
+    "endpoint": "263.12.8.0",
+    "port": 22,
+    "reconnect": True,
+    "retries": 3,
+  }
+
+Here's an expanation of what happened...
+
+* the username, password, and reconnect attributes took the values in the
+  configuration file
+
+* the 'config_validator' we added earlier allows for a minimum timeout of one
+  and rejected the invalid port (with a log message)
+
+* we weren't able to convert the retries' "lots" value to an integer so it kept
+  its default value and logged a warning
+
+* the user didn't supply an endpoint so that remained unchanged
+
+* our CONFIG didn't have a 'logging' attribute so it was ignored
 
 **Module Overview:**
 
 ::
 
-  config_dict - provides a dictionary that's kept synchronized with a config
+  config_dict - provides a dictionary that's kept in sync with our config
   get_config - singleton for getting configurations
   parse_enum_csv - helper funcion for parsing confguration entries for enums
   
@@ -124,7 +144,6 @@ Alternatively you can get a read-only dictionary that stays in sync with the
     |- load - reads a configuration file
     |- save - writes the current configuration to a file
     |- clear - empties our loaded configuration contents
-    |- synchronize - replaces mappings in a dictionary with the config's values
     |- add_listener - notifies the given listener when an update occurs
     |- clear_listeners - removes any attached listeners
     |- keys - provides keys in the loaded configuration
@@ -160,16 +179,27 @@ class _SyncListener(object):
 
 def config_dict(handle, conf_mappings, handler = None):
   """
-  Makes a dictionary that stays synchronized with a configuration. The process
-  for staying in sync is similar to the :class:`~stem.util.conf.Config` class'
-  :func:`~stem.util.conf.Config.synchronize` method, only changing the
-  dictionary's values if we're able to cast to the same type.
+  Makes a dictionary that stays synchronized with a configuration.
+  
+  This takes a dictionary of 'config_key => default_value' mappings and
+  changes the values to reflect our current configuration. This will leave
+  the previous values alone if...
+  
+  * we don't have a value for that config_key
+  * we can't convert our value to be the same type as the default_value
   
   If a handler is provided then this is called just prior to assigning new
   values to the config_dict. The handler function is expected to accept the
   (key, value) for the new values and return what we should actually insert
   into the dictionary. If this returns None then the value is updated as
   normal.
+  
+  For more information about how we convert types see our
+  :func:`~stem.util.conf.Config.get` method.
+  
+  **The dictionary you get from this is manged by the
+  :class:`~stem.util.conf.Config` class and should be treated as being
+  read-only.**
   
   :param str handle: unique identifier for a config instance
   :param dict conf_mappings: config key/value mappings used as our defaults
@@ -286,24 +316,26 @@ class Config(object):
   
   ::
   
-    import stem.util.conf
+    from stem.util import conf
     
     # Configuration values we'll use in this file. These are mappings of
     # configuration keys to the default values we'll use if the user doesn't
     # have something different in their config file (or it doesn't match this
     # type).
     
-    ssh_config = {"login.user": "atagar",
-                  "login.password": "pepperjack_is_awesome!",
-                  "destination.ip": "127.0.0.1",
-                  "destination.port": 22,
-                  "startup.run": []}
+    ssh_config = conf.config_dict("ssh_login", {
+      "login.user": "atagar",
+      "login.password": "pepperjack_is_awesome!",
+      "destination.ip": "127.0.0.1",
+      "destination.port": 22,
+      "startup.run": [],
+    })
     
     # Makes an empty config instance with the handle of 'ssh_login'. This is
     # a singleton so other classes can fetch this same configuration from
     # this handle.
     
-    user_config = stem.util.conf.get_config("ssh_login")
+    user_config = conf.get_config("ssh_login")
     
     # Loads the user's configuration file, warning if this fails.
     
@@ -312,7 +344,7 @@ class Config(object):
     except IOError, exc:
       print "Unable to load the user's config: %s" % exc
     
-    # Replaces the contents of ssh_config with the values from the user's
+    # This replace the contents of ssh_config with the values from the user's
     # config file if...
     #
     # * the key is present in the config file
@@ -338,8 +370,6 @@ class Config(object):
     #
     # Information for what values fail to load and why are reported to
     # 'stem.util.log'.
-    
-    user_config.synchronize(ssh_config)
   """
   
   def __init__(self):
@@ -448,42 +478,6 @@ class Config(object):
       self._raw_contents = []
       self._requested_keys = set()
   
-  def synchronize(self, conf_mappings, limits = None):
-    """
-    This takes a dictionary of 'config_key => default_value' mappings and
-    changes the values to reflect our current configuration. This will leave
-    the previous values alone if...
-    
-    * we don't have a value for that config_key
-    * we can't convert our value to be the same type as the default_value
-    
-    For more information about how we convert types see our
-    :func:`~stem.util.conf.Config.get` method.
-    
-    :param dict conf_mappings: configuration key/value mappings to be revised
-    :param dict limits: mappings of limits on numeric values, expected to be of
-      the form "configKey -> min" or "configKey -> (min, max)"
-    """
-    
-    if limits is None: limits = {}
-    
-    for entry in conf_mappings.keys():
-      val = self.get(entry, conf_mappings[entry])
-      
-      # if this was a numeric value then apply constraints
-      if entry in limits and (isinstance(val, int) or isinstance(val, float)):
-        if isinstance(limits[entry], tuple):
-          val = max(val, limits[entry][0])
-          val = min(val, limits[entry][1])
-        else: val = max(val, limits[entry])
-      
-      # only use this value if it wouldn't change the type of the mapping (this
-      # will only fail if the type isn't either a string or one of the types
-      # recognized by the get method)
-      
-      if type(val) == type(conf_mappings[entry]):
-        conf_mappings[entry] = val
-  
   def add_listener(self, listener, backfill = True):
     """
     Registers the function to be notified of configuration updates. Listeners
@@ -519,9 +513,9 @@ class Config(object):
   def unused_keys(self):
     """
     Provides the configuration keys that have never been provided to a caller
-    via the :func:`~stem.util.conf.Config.get`,
-    :func:`~stem.util.conf.Config.get_value`, or
-    :func:`~stem.util.conf.Config.synchronize` methods.
+    via :func:`~stem.util.conf.config_dict` or the
+    :func:`~stem.util.conf.Config.get` and
+    :func:`~stem.util.conf.Config.get_value` methods.
     
     :returns: **set** of configuration keys we've loaded but have never been requested
     """
