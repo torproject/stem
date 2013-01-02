@@ -51,6 +51,7 @@ providing its own for interacting at a higher level.
     |- close_circuit - close a circuit
     |
     |- attach_stream - attach a stream to a circuit
+    |- get_streams - provides a list of active streams
     |- close_stream - close a stream
     |
     |- signal - sends a signal to the tor client
@@ -1715,6 +1716,25 @@ class Controller(BaseController):
         raise stem.OperationFailed(response.code, response.message)
       else:
         raise stem.ProtocolError("ATTACHSTREAM returned unexpected response code: %s" % response.code)
+  
+  def get_streams(self):
+    """
+    Provides the list of streams tor is currently handling.
+    
+    :returns: list of :class:`stem.events.StreamEvent` objects
+    
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+    
+    streams = []
+    response = self.get_info("stream-status")
+    
+    for stream in response.splitlines():
+      message = stem.socket.recv_message(StringIO.StringIO("650 STREAM " + stream + "\r\n"))
+      stem.response.convert("EVENT", message, arrived_at = 0)
+      streams.append(message)
+    
+    return streams
   
   def close_stream(self, stream_id, reason = stem.RelayEndReason.MISC, flag = ''):
     """

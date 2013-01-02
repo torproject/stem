@@ -20,6 +20,7 @@ import stem.descriptor.router_status_entry
 import stem.response.protocolinfo
 import stem.socket
 import stem.version
+import test.network
 import test.runner
 import test.util
 
@@ -579,6 +580,30 @@ class TestController(unittest.TestCase):
       circ_id = controller.new_circuit()
       self.assertRaises(stem.InvalidArguments, controller.close_circuit, str(int(circ_id) + 1024))
       self.assertRaises(stem.InvalidRequest, controller.close_circuit, "")
+  
+  def test_get_streams(self):
+    """
+    Tests Controller.get_streams().
+    """
+    
+    if test.runner.require_control(self): return
+    elif test.runner.require_online(self): return
+    
+    host = "38.229.72.14"   # www.torproject.org
+    port = 443
+    target = host + ":" + str(port)
+    
+    runner = test.runner.get_runner()
+    with runner.get_tor_controller() as controller:
+      # we only need one proxy port, so take the first
+      socks_listener = controller.get_socks_listeners()[0]
+      with test.network.Socks(socks_listener) as s:
+        s.settimeout(30)
+        s.connect((host, port))
+        streams = controller.get_streams()
+    # Because we do not get a stream id when opening a stream,
+    #  try to match the target for which we asked a stream.
+    self.assertTrue(target in [stream.target for stream in streams])
   
   def test_mapaddress(self):
     if test.runner.require_control(self): return

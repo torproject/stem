@@ -10,6 +10,7 @@ import stem.version
 
 from stem import InvalidArguments, InvalidRequest, ProtocolError
 from stem.control import _parse_circ_path, Controller, EventType
+from stem.response import events
 from test import mocking
 
 class TestControl(unittest.TestCase):
@@ -167,4 +168,32 @@ class TestControl(unittest.TestCase):
     for response in invalid_responses:
       mocking.mock_method(Controller, "get_info", mocking.return_value(response))
       self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
-
+  
+  def test_get_streams(self):
+    """
+    Exercises the get_streams() method.
+    """
+    
+    # get a list of fake, but good looking, streams
+    valid_streams = (
+      ("1", "NEW", "4", "10.10.10.1:80"),
+      ("2", "SUCCEEDED", "4", "10.10.10.1:80"),
+      ("3", "SUCCEEDED", "4", "10.10.10.1:80")
+    )
+    response = []
+    for stream_parts in valid_streams:
+      stream = mocking.get_object(events.StreamEvent)
+      (stream.id, stream.status, stream.circ_id, stream.target) = stream_parts
+      line = "%s\r\n" % " ".join(stream_parts)
+      response.append(line)
+    
+    mocking.mock_method(Controller, "get_info", mocking.return_value(
+      "".join(response)
+    ))
+    streams = self.controller.get_streams()
+    self.assertEqual(len(valid_streams), len(streams))
+    for index in range(len(streams)):
+      self.assertEqual(valid_streams[index][0], streams[index].id)
+      self.assertEqual(valid_streams[index][1], streams[index].status)
+      self.assertEqual(valid_streams[index][2], streams[index].circ_id)
+      self.assertEqual(valid_streams[index][3], streams[index].target)
