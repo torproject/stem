@@ -397,6 +397,12 @@ __all__ = [
 
 import stem.util.enum
 
+# Constant to indicate an undefined argument default. Usually we'd use None for
+# this, but users will commonly provide None as the argument so need something
+# else fairly unique...
+
+UNDEFINED = "<Undefined_ >"
+
 class ControllerError(Exception):
   "Base error for controller communication issues."
 

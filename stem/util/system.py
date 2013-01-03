@@ -28,6 +28,7 @@ import time
 
 import stem.util.proc
 
+from stem import UNDEFINED, CircStatus
 from stem.util import log
 
 # Mapping of commands to if they're available or not. This isn't always
@@ -552,20 +553,18 @@ def expand_path(path, cwd = None):
   
   return relative_path
 
-def call(command, suppress_exc = True):
+def call(command, default = UNDEFINED):
   """
   Issues a command in a subprocess, blocking until completion and returning the
   results. This is not actually ran in a shell so pipes and other shell syntax
   are not permitted.
   
   :param str command: command to be issued
-  :param bool suppress_exc: if **True** then **None** is returned on failure,
-    otherwise this raises the exception
+  :param object default: response if the query fails
   
-  :returns: **list** with the lines of output from the command, **None** in
-    case of failure if suppress_exc is **True**
+  :returns: **list** with the lines of output from the command
   
-  :raises: **OSError** if this fails and suppress_exc is **False**
+  :raises: **OSError** if this fails and no default was provided
   """
   
   try:
@@ -589,6 +588,6 @@ def call(command, suppress_exc = True):
   except OSError, exc:
     log.debug("System call (failed): %s (error: %s)" % (command, exc))
     
-    if suppress_exc: return None
+    if default != UNDEFINED: return default
     else: raise exc
 

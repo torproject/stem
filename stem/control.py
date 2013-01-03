@@ -138,12 +138,11 @@ import stem.response
 import stem.socket
 import stem.util.connection
 import stem.util.enum
+import stem.util.tor_tools
 import stem.version
 
-from stem import CircStatus
-
+from stem import UNDEFINED, CircStatus
 from stem.util import log
-import stem.util.tor_tools
 
 # state changes a control socket can have
 
@@ -176,12 +175,6 @@ EventType = stem.util.enum.UppercaseEnum(
   "CONF_CHANGED",
   "CIRC_MINOR",
 )
-
-# Constant to indicate an undefined argument default. Usually we'd use None for
-# this, but users will commonly provide None as the argument so need something
-# else fairly unique...
-
-UNDEFINED = "<Undefined_ >"
 
 # Configuration options that are fetched by a special key. The keys are
 # lowercase to make case insensitive lookups easier.
