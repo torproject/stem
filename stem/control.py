@@ -1929,7 +1929,7 @@ def _parse_circ_entry(entry):
     fingerprint = fingerprint[1:] # strip off the leading '$'
   
   if nickname is not None and not stem.util.tor_tools.is_valid_nickname(nickname):
-    raise stem.ProtocolError("Nickname in the circuit path is malformed (%s)" % fingerprint)
+    raise stem.ProtocolError("Nickname in the circuit path is malformed (%s)" % nickname)
   
   return (fingerprint, nickname)
 
