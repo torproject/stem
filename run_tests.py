@@ -390,14 +390,18 @@ if __name__ == '__main__':
       
       try:
         # converts the 'target.torrc' csv into a list of test.runner.Torrc enums
+        config_csv = CONFIG["target.torrc"].get(target)
         torrc_opts = []
         
-        for opt in test_config.get_str_csv("target.torrc", [], sub_key = target):
-          if opt in test.runner.Torrc.keys():
-            torrc_opts.append(test.runner.Torrc[opt])
-          else:
-            test.output.print_line("'%s' isn't a test.runner.Torrc enumeration" % opt)
-            sys.exit(1)
+        if config_csv:
+          for opt in config_csv.split(','):
+            opt = opt.strip()
+            
+            if opt in test.runner.Torrc.keys():
+              torrc_opts.append(test.runner.Torrc[opt])
+            else:
+              test.output.print_line("'%s' isn't a test.runner.Torrc enumeration" % opt)
+              sys.exit(1)
         
         integ_runner.start(CONFIG["argument.tor"], extra_torrc_opts = torrc_opts)
         

@@ -80,16 +80,17 @@ class TestConf(unittest.TestCase):
     Checks that the pydoc example is correct.
     """
     
-    ssh_config = {"login.user": "atagar",
-                  "login.password": "pepperjack_is_awesome!",
-                  "destination.ip": "127.0.0.1",
-                  "destination.port": 22,
-                  "startup.run": []}
+    ssh_config = stem.util.conf.config_dict("integ_testing", {
+      "login.user": "atagar",
+      "login.password": "pepperjack_is_awesome!",
+      "destination.ip": "127.0.0.1",
+      "destination.port": 22,
+      "startup.run": [],
+    })
     
     test_config_path = _make_config(EXAMPLE_CONF)
     user_config = stem.util.conf.get_config("integ_testing")
     user_config.load(test_config_path)
-    user_config.synchronize(ssh_config)
     
     self.assertEquals("atagar", ssh_config["login.user"])
     self.assertEquals("pepperjack_is_awesome!", ssh_config["login.password"])
