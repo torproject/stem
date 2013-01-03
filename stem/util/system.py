@@ -513,14 +513,14 @@ def get_bsd_jail_id(pid):
 def expand_path(path, cwd = None):
   """
   Provides an absolute path, expanding tildes with the user's home and
-  appending a current working directory if the path was relative. This is
-  unix-specific and paths never have an ending slash.
+  appending a current working directory if the path was relative.
   
   :param str path: path to be expanded
   :param str cwd: current working directory to expand relative paths with, our
     process' if this is **None**
   
-  :returns: **str** of the path expanded to be an absolute path
+  :returns: **str** of the path expanded to be an absolute path, never with an
+    ending slash
   """
   
   if is_windows():
