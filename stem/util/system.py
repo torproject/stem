@@ -31,11 +31,18 @@ import stem.util.proc
 from stem import UNDEFINED, CircStatus
 from stem.util import log
 
-# Mapping of commands to if they're available or not. This isn't always
-# reliable, failing for some special commands. For these the cache is
-# prepopulated to skip lookups.
+# Mapping of commands to if they're available or not.
 
-CMD_AVAILABLE_CACHE = {"ulimit": True}
+CMD_AVAILABLE_CACHE = {}
+
+# An incomplete listing of commands provided by the shell. Expand this as
+# needed. Some noteworthy things about shell commands...
+#
+# * They're not in the path so is_available() will fail.
+# * subprocess.Popen() without the 'shell = True' argument will fail with...
+#   OSError: [Errno 2] No such file or directory
+
+SHELL_COMMANDS = ['ulimit']
 
 IS_RUNNING_PS_LINUX      = "ps -A co command"
 IS_RUNNING_PS_BSD        = "ps -ao ucomm="
@@ -86,8 +93,9 @@ def is_available(command, cached=True):
   than one command is present (for instance "ls -a | grep foo") then this
   just checks the first.
   
-  Note that many builtin common commands (like cd and ulimit) aren't in the
-  PATH so this lookup will fail for them.
+  Note that shell (like cd and ulimit) aren't in the PATH so this lookup will
+  try to assume that it's available. This only happends for recognized shell
+  commands (those in SHELL_COMMANDS).
   
   :param str command: command to search for
   :param bool cached: makes use of available cached results if **True**
@@ -98,7 +106,11 @@ def is_available(command, cached=True):
   
   if " " in command: command = command.split(" ")[0]
   
-  if cached and command in CMD_AVAILABLE_CACHE:
+  if command in SHELL_COMMANDS:
+    # we can't actually look it up, so hope the shell really provides it...
+    
+    return True
+  elif cached and command in CMD_AVAILABLE_CACHE:
     return CMD_AVAILABLE_CACHE[command]
   else:
     cmd_exists = False
@@ -568,8 +580,10 @@ def call(command, default = UNDEFINED):
   """
   
   try:
+    is_shell_command = command.split(" ")[0] in SHELL_COMMANDS
+    
     start_time = time.time()
-    stdout, stderr = subprocess.Popen(command.split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
+    stdout, stderr = subprocess.Popen(command.split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command).communicate()
     stdout, stderr = stdout.strip(), stderr.strip()
     runtime = time.time() - start_time
     
