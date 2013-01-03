@@ -22,7 +22,7 @@ class TestStrTools(unittest.TestCase):
     self.assertEquals("Hello", str_tools.to_camel_case("HELLO"))
     self.assertEquals("Hello  World", str_tools.to_camel_case("hello__world"))
     self.assertEquals("Hello\tworld", str_tools.to_camel_case("hello\tWORLD"))
-    self.assertEquals("Hello\t\tWorld", str_tools.to_camel_case("hello__world", "\t"))
+    self.assertEquals("Hello\t\tWorld", str_tools.to_camel_case("hello__world", "_", "\t"))
   
   def test_get_size_label(self):
     """

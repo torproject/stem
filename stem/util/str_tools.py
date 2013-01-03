@@ -44,7 +44,7 @@ TIME_UNITS = (
   (1.0, "s", " second"),
 )
 
-def to_camel_case(label, word_divider = " "):
+def to_camel_case(label, divider = "_", joiner = " "):
   """
   Converts the given string to camel case, ie:
   
@@ -54,18 +54,19 @@ def to_camel_case(label, word_divider = " "):
     'I Like Pepperjack!'
   
   :param str label: input string to be converted
-  :param str word_divider: string used to replace underscores
+  :param str divider: word boundary
+  :param str joiner: replacement for word boundaries
   
   :returns: camel cased string
   """
   
   words = []
-  for entry in label.split("_"):
+  for entry in label.split(divider):
     if len(entry) == 0: words.append("")
     elif len(entry) == 1: words.append(entry.upper())
     else: words.append(entry[0].upper() + entry[1:].lower())
   
-  return word_divider.join(words)
+  return joiner.join(words)
 
 def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
   """
