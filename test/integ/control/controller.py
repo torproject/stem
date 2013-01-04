@@ -605,6 +605,35 @@ class TestController(unittest.TestCase):
     #  try to match the target for which we asked a stream.
     self.assertTrue(target in [stream.target for stream in streams])
   
+  def test_close_stream(self):
+    """
+    Tests Controller.close_stream with valid and invalid input.
+    """
+    
+    if test.runner.require_control(self): return
+    elif test.runner.require_online(self): return
+    
+    runner = test.runner.get_runner()
+    
+    with runner.get_tor_controller() as controller:
+      # use the first socks listener
+      socks_listener = controller.get_socks_listeners()[0]
+      with test.network.Socks(socks_listener) as s:
+        s.settimeout(30)
+        s.connect(("www.torproject.org", 443))
+        # There's only one stream right now.  Right?
+        built_stream = controller.get_streams()[0]
+        # Make sure we have the stream for which we asked, otherwise
+        # the next assertion would be a false positive.
+        self.assertEqual([built_stream.id], [stream.id for stream in controller.get_streams()])
+        # Try to close our stream...
+        controller.close_stream(built_stream.id)
+        # ...which means there are zero streams.
+        self.assertEqual([], controller.get_streams())
+      
+      # unknown stream
+      self.assertRaises(stem.InvalidArguments, controller.close_stream, "blarg")
+  
   def test_mapaddress(self):
     if test.runner.require_control(self): return
     elif test.runner.require_online(self): return
