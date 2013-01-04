@@ -88,7 +88,7 @@ class ExitPolicy(object):
   def __init__(self, *rules):
     # sanity check the types
     for rule in rules:
-      if not (isinstance(rule, str) or isinstance(rule, ExitPolicyRule)):
+      if not isinstance(rule, (str, ExitPolicyRule)):
         raise TypeError("Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)" % (type(rule), rules))
     
     self._rules = None          # lazily loaded series of ExitPolicyRule

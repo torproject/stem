@@ -539,7 +539,7 @@ class Config(object):
         else: self._contents[key] = [value]
         
         for listener in self._listeners: listener(self, key)
-      elif isinstance(value, list) or isinstance(value, tuple):
+      elif isinstance(value, (list, tuple)):
         if not overwrite and key in self._contents:
           self._contents[key] += value
         else: self._contents[key] = value
