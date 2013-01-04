@@ -591,19 +591,21 @@ class TestController(unittest.TestCase):
     
     host = "38.229.72.14"   # www.torproject.org
     port = 443
-    target = host + ":" + str(port)
     
     runner = test.runner.get_runner()
     with runner.get_tor_controller() as controller:
       # we only need one proxy port, so take the first
       socks_listener = controller.get_socks_listeners()[0]
+      
       with test.network.Socks(socks_listener) as s:
         s.settimeout(30)
         s.connect((host, port))
         streams = controller.get_streams()
+    
     # Because we do not get a stream id when opening a stream,
     #  try to match the target for which we asked a stream.
-    self.assertTrue(target in [stream.target for stream in streams])
+    
+    self.assertTrue("%s:%s" % (host, port) in [stream.target for stream in streams])
   
   def test_close_stream(self):
     """

@@ -180,20 +180,19 @@ class TestControl(unittest.TestCase):
       ("2", "SUCCEEDED", "4", "10.10.10.1:80"),
       ("3", "SUCCEEDED", "4", "10.10.10.1:80")
     )
-    response = []
-    for stream_parts in valid_streams:
-      stream = mocking.get_object(events.StreamEvent)
-      (stream.id, stream.status, stream.circ_id, stream.target) = stream_parts
-      line = "%s\r\n" % " ".join(stream_parts)
-      response.append(line)
+    
+    responses = ["%s\r\n" % " ".join(entry) for entry in valid_streams]
     
     mocking.mock_method(Controller, "get_info", mocking.return_value(
-      "".join(response)
+      "".join(responses)
     ))
+    
     streams = self.controller.get_streams()
     self.assertEqual(len(valid_streams), len(streams))
-    for index in range(len(streams)):
-      self.assertEqual(valid_streams[index][0], streams[index].id)
-      self.assertEqual(valid_streams[index][1], streams[index].status)
-      self.assertEqual(valid_streams[index][2], streams[index].circ_id)
-      self.assertEqual(valid_streams[index][3], streams[index].target)
+    
+    for index, stream in enumerate(streams):
+      self.assertEqual(valid_streams[index][0], stream.id)
+      self.assertEqual(valid_streams[index][1], stream.status)
+      self.assertEqual(valid_streams[index][2], stream.circ_id)
+      self.assertEqual(valid_streams[index][3], stream.target)
+
