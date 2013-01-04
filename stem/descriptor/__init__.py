@@ -196,7 +196,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   content = None if skip else []
   ending_keyword = None
   
-  if type(keywords) == str: keywords = (keywords,)
+  if isinstance(keywords, str): keywords = (keywords,)
   
   if ignore_first:
     first_line = descriptor_file.readline()

@@ -1467,7 +1467,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidArguments` if features passed were invalid
     """
     
-    if type(features) == str: features = [features]
+    if isinstance(features, str): features = [features]
     response = self.msg("USEFEATURE %s" % " ".join(features))
     stem.response.convert("SINGLELINE", response)
     
@@ -1609,7 +1609,7 @@ class Controller(BaseController):
           raise stem.InvalidRequest(512, "EXTENDCIRCUIT requires the path prior to version %s" % path_opt_version)
       
       args = [circuit_id]
-      if type(path) == str: path = [path]
+      if isinstance(path, str): path = [path]
       if path: args.append(",".join(path))
       if purpose: args.append("purpose=%s" % purpose)
       

@@ -586,7 +586,7 @@ class Config(object):
     :returns: given configuration value with its type inferred with the above rules
     """
     
-    is_multivalue = type(default) in (list, tuple, dict)
+    is_multivalue = isinstance(default, (list, tuple, dict))
     val = self.get_value(key, default, is_multivalue)
     if val == default: return val # don't try to infer undefined values
     
