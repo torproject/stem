@@ -1688,24 +1688,31 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError("CLOSECIRCUIT returned unexpected response code: %s" % response.code)
   
-  def get_streams(self):
+  def get_streams(self, default = UNDEFINED):
     """
     Provides the list of streams tor is currently handling.
     
+    :param object default: response if the query fails
+    
     :returns: list of :class:`stem.events.StreamEvent` objects
     
-    :raises: :class:`stem.ControllerError` if the call fails
+    :raises: :class:`stem.ControllerError` if the call fails and no default was
+      provided
     """
     
-    streams = []
-    response = self.get_info("stream-status")
-    
-    for stream in response.splitlines():
-      message = stem.socket.recv_message(StringIO.StringIO("650 STREAM " + stream + "\r\n"))
-      stem.response.convert("EVENT", message, arrived_at = 0)
-      streams.append(message)
-    
-    return streams
+    try:
+      streams = []
+      response = self.get_info("stream-status")
+      
+      for stream in response.splitlines():
+        message = stem.socket.recv_message(StringIO.StringIO("650 STREAM " + stream + "\r\n"))
+        stem.response.convert("EVENT", message, arrived_at = 0)
+        streams.append(message)
+      
+      return streams
+    except Exception, exc:
+      if default == UNDEFINED: raise exc
+      else: return default
   
   def attach_stream(self, stream_id, circuit_id, exiting_hop = None):
     """
