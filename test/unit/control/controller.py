@@ -16,7 +16,7 @@ from test import mocking
 class TestControl(unittest.TestCase):
   def setUp(self):
     socket = stem.socket.ControlSocket()
-    self.controller = Controller(socket)
+    self.controller = Controller(socket, enable_caching = True)
   
   def tearDown(self):
     mocking.revert_mocking()
