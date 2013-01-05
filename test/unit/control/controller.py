@@ -66,24 +66,6 @@ class TestControl(unittest.TestCase):
       # Turn caching back on before we leave.
       self.controller._is_caching_enabled = True
   
-  def test_event_listening(self):
-    """
-    Exercises the add_event_listener and remove_event_listener methods.
-    """
-    
-    # set up for failure to create any events
-    mocking.mock_method(Controller, "get_version", mocking.return_value(stem.version.Version('0.1.0.14')))
-    self.assertRaises(InvalidRequest, self.controller.add_event_listener, mocking.no_op(), EventType.BW)
-    
-    # set up to only fail newer events
-    mocking.mock_method(Controller, "get_version", mocking.return_value(stem.version.Version('0.2.0.35')))
-    
-    # EventType.BW is one of the earliest events
-    self.controller.add_event_listener(mocking.no_op(), EventType.BW)
-    
-    # EventType.SIGNAL was added in tor version 0.2.3.1-alpha
-    self.assertRaises(InvalidRequest, self.controller.add_event_listener, mocking.no_op(), EventType.SIGNAL)
-  
   def test_get_socks_listeners_old(self):
     """
     Exercises the get_socks_listeners() method as though talking to an old tor
@@ -174,6 +156,24 @@ class TestControl(unittest.TestCase):
     for response in invalid_responses:
       mocking.mock_method(Controller, "get_info", mocking.return_value(response))
       self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
+  
+  def test_event_listening(self):
+    """
+    Exercises the add_event_listener and remove_event_listener methods.
+    """
+    
+    # set up for failure to create any events
+    mocking.mock_method(Controller, "get_version", mocking.return_value(stem.version.Version('0.1.0.14')))
+    self.assertRaises(InvalidRequest, self.controller.add_event_listener, mocking.no_op(), EventType.BW)
+    
+    # set up to only fail newer events
+    mocking.mock_method(Controller, "get_version", mocking.return_value(stem.version.Version('0.2.0.35')))
+    
+    # EventType.BW is one of the earliest events
+    self.controller.add_event_listener(mocking.no_op(), EventType.BW)
+    
+    # EventType.SIGNAL was added in tor version 0.2.3.1-alpha
+    self.assertRaises(InvalidRequest, self.controller.add_event_listener, mocking.no_op(), EventType.SIGNAL)
   
   def test_get_streams(self):
     """
