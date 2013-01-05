@@ -157,6 +157,29 @@ class TestControl(unittest.TestCase):
       mocking.mock_method(Controller, "get_info", mocking.return_value(response))
       self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
   
+  def test_get_protocolinfo(self):
+    """
+    Exercises the get_protocolinfo() method.
+    """
+    
+    # Use the handy mocked protocolinfo response.
+    mocking.mock(stem.connection.get_protocolinfo, mocking.return_value(
+      mocking.get_protocolinfo_response()
+    ))
+    # Compare the str representation of these object, because the class
+    # does not have, nor need, a direct comparison operator.
+    self.assertEqual(str(mocking.get_protocolinfo_response()), str(self.controller.get_protocolinfo()))
+    
+    # Raise an exception in the stem.connection.get_protocolinfo() call.
+    mocking.mock(stem.connection.get_protocolinfo, mocking.raise_exception(ProtocolError))
+    
+    # Get a default value when the call fails.
+    self.assertEqual("default returned",
+        self.controller.get_protocolinfo(default = "default returned"))
+    
+    # No default value, accept the error.
+    self.assertRaises(ProtocolError, self.controller.get_protocolinfo)
+  
   def test_event_listening(self):
     """
     Exercises the add_event_listener and remove_event_listener methods.
