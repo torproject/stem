@@ -5,6 +5,7 @@ integ tests, but a few bits lend themselves to unit testing.
 
 import unittest
 
+import stem.descriptor.router_status_entry
 import stem.socket
 import stem.version
 
@@ -179,6 +180,41 @@ class TestControl(unittest.TestCase):
     
     # No default value, accept the error.
     self.assertRaises(ProtocolError, self.controller.get_protocolinfo)
+  
+  def test_get_network_status(self):
+    """
+    Exercises the get_network_status() method.
+    """
+    
+    # Build a single router status entry.
+    nickname = "Beaver"
+    fingerprint = "/96bKo4soysolMgKn5Hex2nyFSY"
+    desc = "r %s %s u5lTXJKGsLKufRLnSyVqT7TdGYw 2012-12-30 22:02:49 77.223.43.54 9001 0\ns Fast Named Running Stable Valid\nw Bandwidth=75" % (nickname, fingerprint)
+    router = stem.descriptor.router_status_entry.RouterStatusEntryV2(desc)
+    
+    # Always return the same router status entry.
+    mocking.mock_method(Controller, "get_info", mocking.return_value(desc))
+    
+    # Pretend to get the router status entry with its name.
+    self.assertEqual(router, self.controller.get_network_status(nickname))
+    
+    # Pretend to get the router status entry with its fingerprint.
+    hex_fingerprint = stem.descriptor.router_status_entry._decode_fingerprint(fingerprint, False)
+    self.assertEqual(router, self.controller.get_network_status(hex_fingerprint))
+    
+    # Mangle hex fingerprint and try again.
+    hex_fingerprint = hex_fingerprint[2:]
+    self.assertRaises(ValueError, self.controller.get_network_status, hex_fingerprint)
+    
+    # Raise an exception in the get_info() call.
+    mocking.mock_method(Controller, "get_info", mocking.raise_exception(InvalidArguments))
+    
+    # Get a default value when the call fails.
+    self.assertEqual("default returned",
+        self.controller.get_network_status(nickname, default = "default returned"))
+    
+    # No default value, accept the error.
+    self.assertRaises(InvalidArguments, self.controller.get_network_status, nickname)
   
   def test_event_listening(self):
     """
