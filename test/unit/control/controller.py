@@ -21,45 +21,6 @@ class TestControl(unittest.TestCase):
   def tearDown(self):
     mocking.revert_mocking()
   
-  def test_parse_circ_path(self):
-    """
-    Exercises the _parse_circ_path() helper function.
-    """
-    
-    # empty input
-    
-    self.assertEqual([], _parse_circ_path(None))
-    self.assertEqual([], _parse_circ_path(''))
-    
-    # check the pydoc examples
-    
-    pydoc_examples = {
-      '$999A226EBED397F331B612FE1E4CFAE5C1F201BA=piyaz':
-        [('999A226EBED397F331B612FE1E4CFAE5C1F201BA', 'piyaz')],
-      '$E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14':
-        [('E57A476CD4DFBD99B4EE52A100A58610AD6E80B9', None),
-         (None, 'hamburgerphone'),
-         (None, 'PrivacyRepublic14'),
-        ],
-    }
-    
-    for test_input, expected in pydoc_examples.items():
-      self.assertEqual(expected, _parse_circ_path(test_input))
-    
-    # exercise with some invalid inputs
-    
-    malformed_inputs = [
-      '=piyaz', # no fingerprint
-      '999A226EBED397F331B612FE1E4CFAE5C1F201BA=piyaz', # fingerprint missing prefix
-      '$999A226EBED397F331B612FE1E4CFAE5C1F201BAA=piyaz', # fingerprint too long
-      '$999A226EBED397F331B612FE1E4CFAE5C1F201B=piyaz', # fingerprint too short
-      '$999A226EBED397F331B612FE1E4CFAE5C1F201Bz=piyaz', # invalid character in fingerprint
-      '$999A226EBED397F331B612FE1E4CFAE5C1F201BA=', # no nickname
-    ]
-    
-    for test_input in malformed_inputs:
-      self.assertRaises(ProtocolError, _parse_circ_path, test_input)
-  
   def test_event_listening(self):
     """
     Exercises the add_event_listener and remove_event_listener methods.
@@ -195,4 +156,43 @@ class TestControl(unittest.TestCase):
       self.assertEqual(valid_streams[index][1], stream.status)
       self.assertEqual(valid_streams[index][2], stream.circ_id)
       self.assertEqual(valid_streams[index][3], stream.target)
+  
+  def test_parse_circ_path(self):
+    """
+    Exercises the _parse_circ_path() helper function.
+    """
+    
+    # empty input
+    
+    self.assertEqual([], _parse_circ_path(None))
+    self.assertEqual([], _parse_circ_path(''))
+    
+    # check the pydoc examples
+    
+    pydoc_examples = {
+      '$999A226EBED397F331B612FE1E4CFAE5C1F201BA=piyaz':
+        [('999A226EBED397F331B612FE1E4CFAE5C1F201BA', 'piyaz')],
+      '$E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14':
+        [('E57A476CD4DFBD99B4EE52A100A58610AD6E80B9', None),
+         (None, 'hamburgerphone'),
+         (None, 'PrivacyRepublic14'),
+        ],
+    }
+    
+    for test_input, expected in pydoc_examples.items():
+      self.assertEqual(expected, _parse_circ_path(test_input))
+    
+    # exercise with some invalid inputs
+    
+    malformed_inputs = [
+      '=piyaz', # no fingerprint
+      '999A226EBED397F331B612FE1E4CFAE5C1F201BA=piyaz', # fingerprint missing prefix
+      '$999A226EBED397F331B612FE1E4CFAE5C1F201BAA=piyaz', # fingerprint too long
+      '$999A226EBED397F331B612FE1E4CFAE5C1F201B=piyaz', # fingerprint too short
+      '$999A226EBED397F331B612FE1E4CFAE5C1F201Bz=piyaz', # invalid character in fingerprint
+      '$999A226EBED397F331B612FE1E4CFAE5C1F201BA=', # no nickname
+    ]
+    
+    for test_input in malformed_inputs:
+      self.assertRaises(ProtocolError, _parse_circ_path, test_input)
 
