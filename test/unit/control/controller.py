@@ -21,6 +21,51 @@ class TestControl(unittest.TestCase):
   def tearDown(self):
     mocking.revert_mocking()
   
+  def test_get_version(self):
+    """
+    Exercises the get_version() method.
+    """
+    
+    try:
+      # Use one version for first check.
+      version_2_1 = "0.2.1.32"
+      version_2_1_object = stem.version.Version(version_2_1)
+      mocking.mock_method(Controller, "get_info", mocking.return_value(version_2_1))
+      
+      # Return a version with a cold cache.
+      self.assertEqual(version_2_1_object, self.controller.get_version())
+      
+      # Use a different version for second check.
+      version_2_2 = "0.2.2.39"
+      version_2_2_object = stem.version.Version(version_2_2)
+      mocking.mock_method(Controller, "get_info", mocking.return_value(version_2_2))
+      
+      # Return a version with a hot cache, so it will be the old version.
+      self.assertEqual(version_2_1_object, self.controller.get_version())
+      
+      # Turn off caching.
+      self.controller._is_caching_enabled = False
+      # Return a version without caching, so it will be the new version.
+      self.assertEqual(version_2_2_object, self.controller.get_version())
+      
+      # Raise an exception in the get_info() call.
+      mocking.mock_method(Controller, "get_info", mocking.raise_exception(InvalidArguments))
+      
+      # Get a default value when the call fails.
+      self.assertEqual("default returned",
+          self.controller.get_version(default = "default returned"))
+      
+      # No default value, accept the error.
+      self.assertRaises(InvalidArguments, self.controller.get_version)
+      
+      # Give a bad version.  The stem.version.Version ValueError should bubble up.
+      version_A_42 = "0.A.42.spam"
+      mocking.mock_method(Controller, "get_info", mocking.return_value(version_A_42))
+      self.assertRaises(ValueError, self.controller.get_version)
+    finally:
+      # Turn caching back on before we leave.
+      self.controller._is_caching_enabled = True
+  
   def test_event_listening(self):
     """
     Exercises the add_event_listener and remove_event_listener methods.
