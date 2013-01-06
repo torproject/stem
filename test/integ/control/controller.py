@@ -171,16 +171,21 @@ class TestController(unittest.TestCase):
       event_notice.clear()
       event_buffer = []
       
-      # reconnect and check that we get events again
+      # Reconnect and check that we get events again. This is being done by
+      # calling AUTHENTICATE manually so skipping cookie auth.
       
-      controller.connect()
-      password = ""
-      if test.runner.CONTROL_PASSWORD:
-        password = " \"%s\"" % test.runner.CONTROL_PASSWORD
-      controller.msg("AUTHENTICATE%s" % password)
+      tor_options = test.runner.get_runner().get_options()
       
-      event_notice.wait(2)
-      self.assertTrue(len(event_buffer) >= 1)
+      if not test.runner.Torrc.COOKIE in tor_options:
+        controller.connect()
+        
+        if test.runner.Torrc.PASSWORD in tor_options:
+          controller.msg('AUTHENTICATE "%s"' % test.runner.CONTROL_PASSWORD)
+        else:
+          controller.msg('AUTHENTICATE')
+        
+        event_notice.wait(2)
+        self.assertTrue(len(event_buffer) >= 1)
   
   def test_getinfo(self):
     """
