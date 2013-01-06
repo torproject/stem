@@ -1616,16 +1616,15 @@ class Controller(BaseController):
       response = self.msg("EXTENDCIRCUIT %s" % " ".join(args))
       stem.response.convert("SINGLELINE", response)
       
-      if response.is_ok():
-        try:
-          extended, new_circuit = response.message.split(" ")
-          assert extended == "EXTENDED"
-        except:
-          raise stem.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", str(response))
-      elif response.code in ('512', '552'):
+      if response.code in ('512', '552'):
         raise stem.InvalidRequest(response.code, response.message)
-      else:
+      elif not response.is_ok():
         raise stem.ProtocolError("EXTENDCIRCUIT returned unexpected response code: %s" % response.code)
+      
+      if not response.message.startswith("EXTENDED "):
+        raise stem.ProtocolError("EXTENDCIRCUIT response invalid:\n%s", response)
+      
+      new_circuit = response.message.split(" ", 1)[1]
       
       if await_build:
         while True:
