@@ -68,6 +68,7 @@ SINGLE_FIELDS = (
   "hidden-service-dir",
   "protocols",
   "allow-single-hop-exits",
+  "ntor-onion-key",
 )
 
 def parse_file(descriptor_file, validate = True):
@@ -585,6 +586,7 @@ class RelayDescriptor(ServerDescriptor):
   <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_)
   
   :var str onion_key: **\*** key used to encrypt EXTEND cells
+  :var str ntor_onion_key: base64 key used to encrypt EXTEND in the ntor protocol
   :var str signing_key: **\*** relay's long-term identity key
   :var str signature: **\*** signature for this descriptor
   
@@ -593,6 +595,7 @@ class RelayDescriptor(ServerDescriptor):
   
   def __init__(self, raw_contents, validate = True, annotations = None):
     self.onion_key = None
+    self.ntor_onion_key = None
     self.signing_key = None
     self.signature = None
     self._digest = None
@@ -738,6 +741,9 @@ class RelayDescriptor(ServerDescriptor):
         
         self.onion_key = block_contents
         del entries["onion-key"]
+      elif keyword == "ntor-onion-key":
+        self.ntor_onion_key = value
+        del entries["ntor-onion-key"]
       elif keyword == "signing-key":
         if validate and not block_contents:
           raise ValueError("Signing key line must be followed by a public key: %s" % line)

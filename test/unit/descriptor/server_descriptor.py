@@ -268,6 +268,14 @@ class TestServerDescriptor(unittest.TestCase):
     desc = get_relay_server_descriptor({"ipv6-policy": "accept 22-23,53,80,110"})
     self.assertEquals(expected, desc.exit_policy_v6)
   
+  def test_ntor_onion_key(self):
+    """
+    Checks a 'ntor-onion-key' line.
+    """
+    
+    desc = get_relay_server_descriptor({"ntor-onion-key": "Od2Sj3UXFyDjwESLXk6fhatqW9z/oBL/vAKJ+tbDqUU="})
+    self.assertEquals("Od2Sj3UXFyDjwESLXk6fhatqW9z/oBL/vAKJ+tbDqUU=", desc.ntor_onion_key)
+  
   def test_minimal_bridge_descriptor(self):
     """
     Basic sanity check that we can parse a descriptor with minimal attributes.
