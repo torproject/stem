@@ -188,6 +188,8 @@ class TestBaseController(unittest.TestCase):
     Basic check for get_latest_heartbeat().
     """
     
+    if test.runner.require_control(self): return
+    
     # makes a getinfo query, then checks that the heartbeat is close to now
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
