@@ -146,7 +146,7 @@ class TestController(unittest.TestCase):
       # reconnect and check that we get events again
       
       controller.connect()
-      controller.authenticate()
+      controller.authenticate(password = test.runner.CONTROL_PASSWORD)
       
       event_notice.wait(2)
       self.assertTrue(len(event_buffer) >= 1)
@@ -160,7 +160,7 @@ class TestController(unittest.TestCase):
       # reconnect and check that we get events again
       
       controller.connect()
-      stem.connection.authenticate(controller)
+      controller.authenticate(password = test.runner.CONTROL_PASSWORD)
       
       event_notice.wait(2)
       self.assertTrue(len(event_buffer) >= 1)
@@ -174,7 +174,7 @@ class TestController(unittest.TestCase):
       # reconnect and check that we get events again
       
       controller.connect()
-      controller.msg("AUTHENTICATE")
+      controller.authenticate(password = test.runner.CONTROL_PASSWORD)
       
       event_notice.wait(2)
       self.assertTrue(len(event_buffer) >= 1)
