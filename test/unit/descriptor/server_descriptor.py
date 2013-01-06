@@ -264,7 +264,7 @@ class TestServerDescriptor(unittest.TestCase):
     Checks a 'ipv6-policy' line.
     """
     
-    expected = stem.exit_policy.MicrodescriptorExitPolicy("accept 22-23,53,80,110")
+    expected = stem.exit_policy.MicroExitPolicy("accept 22-23,53,80,110")
     desc = get_relay_server_descriptor({"ipv6-policy": "accept 22-23,53,80,110"})
     self.assertEquals(expected, desc.exit_policy_v6)
   

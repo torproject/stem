@@ -279,7 +279,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
   :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting
     information that isn't yet recognized
   
-  :var stem.exit_policy.MicrodescriptorExitPolicy exit_policy: router's exit policy
+  :var stem.exit_policy.MicroExitPolicy exit_policy: router's exit policy
   
   :var list microdescriptor_hashes: **\*** tuples of two values, the list of
     consensus methods for generating a set of digests and the 'algorithm =>
@@ -557,7 +557,7 @@ def _parse_p_line(desc, value, validate):
   # example: p accept 80,110,143,443,993,995,6660-6669,6697,7000-7001
   
   try:
-    desc.exit_policy = stem.exit_policy.MicrodescriptorExitPolicy(value)
+    desc.exit_policy = stem.exit_policy.MicroExitPolicy(value)
   except ValueError, exc:
     if not validate: return
     raise ValueError("%s exit policy is malformed (%s): p %s" % (desc._name(), exc, value))

@@ -7,7 +7,7 @@ import unittest
 
 from stem.descriptor import Flag
 from stem.descriptor.router_status_entry import RouterStatusEntryV3, _decode_fingerprint
-from stem.exit_policy import MicrodescriptorExitPolicy
+from stem.exit_policy import MicroExitPolicy
 from stem.version import Version
 
 from test.mocking import get_router_status_entry_v2, \
@@ -439,8 +439,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
     
     test_values = {
-      "reject 1-65535": MicrodescriptorExitPolicy("reject 1-65535"),
-      "accept 80,110,143,443": MicrodescriptorExitPolicy("accept 80,110,143,443"),
+      "reject 1-65535": MicroExitPolicy("reject 1-65535"),
+      "accept 80,110,143,443": MicroExitPolicy("accept 80,110,143,443"),
     }
     
     for p_line, expected in test_values.items():

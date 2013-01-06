@@ -5,18 +5,18 @@ Unit tests for the stem.exit_policy.ExitPolicy class.
 import unittest
 
 from stem.exit_policy import ExitPolicy, \
-                             MicrodescriptorExitPolicy, \
+                             MicroExitPolicy, \
                              ExitPolicyRule
 
 class TestExitPolicy(unittest.TestCase):
   def test_example(self):
-    # tests the ExitPolicy and MicrodescriptorExitPolicy pydoc examples
+    # tests the ExitPolicy and MicroExitPolicy pydoc examples
     policy = ExitPolicy("accept *:80", "accept *:443", "reject *:*")
     self.assertEquals("accept *:80, accept *:443, reject *:*", str(policy))
     self.assertEquals("accept 80, 443", policy.summary())
     self.assertTrue(policy.can_exit_to("75.119.206.243", 80))
     
-    policy = MicrodescriptorExitPolicy("accept 80,443")
+    policy = MicroExitPolicy("accept 80,443")
     self.assertTrue(policy.can_exit_to("75.119.206.243", 80))
   
   def test_constructor(self):
@@ -145,7 +145,7 @@ class TestExitPolicy(unittest.TestCase):
     
     for policy_arg, expect_success in test_inputs.items():
       try:
-        policy = MicrodescriptorExitPolicy(policy_arg)
+        policy = MicroExitPolicy(policy_arg)
         
         if expect_success:
           self.assertEqual(policy_arg, str(policy))
@@ -158,15 +158,15 @@ class TestExitPolicy(unittest.TestCase):
     # checks that its is_accept attribute is properly set
     
     # single port
-    policy = MicrodescriptorExitPolicy('accept 443')
+    policy = MicroExitPolicy('accept 443')
     self.assertTrue(policy.is_accept)
     
     # multiple ports
-    policy = MicrodescriptorExitPolicy('accept 80,443')
+    policy = MicroExitPolicy('accept 80,443')
     self.assertTrue(policy.is_accept)
     
     # port range
-    policy = MicrodescriptorExitPolicy('reject 1-1024')
+    policy = MicroExitPolicy('reject 1-1024')
     self.assertFalse(policy.is_accept)
   
   def test_microdescriptor_can_exit_to(self):
@@ -178,13 +178,13 @@ class TestExitPolicy(unittest.TestCase):
     }
     
     for policy_arg, attr in test_inputs.items():
-      policy = MicrodescriptorExitPolicy(policy_arg)
+      policy = MicroExitPolicy(policy_arg)
       
       for port, expected_value in attr.items():
         self.assertEqual(expected_value, policy.can_exit_to(port = port))
     
     # address argument should be ignored
-    policy = MicrodescriptorExitPolicy('accept 80,443')
+    policy = MicroExitPolicy('accept 80,443')
     
     self.assertFalse(policy.can_exit_to('127.0.0.1', 79))
     self.assertTrue(policy.can_exit_to('127.0.0.1', 80))

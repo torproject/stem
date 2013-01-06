@@ -4,7 +4,7 @@ exiting to a destination is permissible or not. For instance...
 
 ::
 
-  >>> from stem.exit_policy import ExitPolicy, MicrodescriptorExitPolicy
+  >>> from stem.exit_policy import ExitPolicy, MicroExitPolicy
   >>> policy = ExitPolicy("accept *:80", "accept *:443", "reject *:*")
   >>> print policy
   accept *:80, accept *:443, reject *:*
@@ -13,7 +13,7 @@ exiting to a destination is permissible or not. For instance...
   >>> policy.can_exit_to("75.119.206.243", 80)
   True
   
-  >>> policy = MicrodescriptorExitPolicy("accept 80,443")
+  >>> policy = MicroExitPolicy("accept 80,443")
   >>> print policy
   accept 80,443
   >>> policy.can_exit_to("75.119.206.243", 80)
@@ -22,7 +22,7 @@ exiting to a destination is permissible or not. For instance...
 ::
 
   ExitPolicy - Exit policy for a Tor relay
-    |  + MicrodescriptorExitPolicy - Microdescriptor exit policy
+    |  + MicroExitPolicy - Microdescriptor exit policy
     |- can_exit_to - check if exiting to this destination is allowed or not
     |- is_exiting_allowed - check if any exiting is allowed
     |- summary - provides a short label, similar to a microdescriptor
@@ -256,7 +256,7 @@ class ExitPolicy(object):
     else:
       return False
 
-class MicrodescriptorExitPolicy(ExitPolicy):
+class MicroExitPolicy(ExitPolicy):
   """
   Exit policy provided by the microdescriptors. This is a distilled version of
   a normal :class:`~stem.exit_policy.ExitPolicy` contains, just consisting of a
@@ -323,14 +323,14 @@ class MicrodescriptorExitPolicy(ExitPolicy):
       
       rules.append(MicroExitPolicyRule(self.is_accept, int(min_port), int(max_port)))
     
-    super(MicrodescriptorExitPolicy, self).__init__(*rules)
+    super(MicroExitPolicy, self).__init__(*rules)
     self._set_default_allowed(not self.is_accept)
   
   def __str__(self):
     return self._policy
   
   def __eq__(self, other):
-    if isinstance(other, MicrodescriptorExitPolicy):
+    if isinstance(other, MicroExitPolicy):
       return str(self) == str(other)
     else:
       return False
