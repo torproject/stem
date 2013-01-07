@@ -55,6 +55,7 @@ Flag = stem.util.enum.Enum(
   ("VALID", "Valid"),
 )
 
+
 def parse_file(path, descriptor_file):
   """
   Provides an iterator for the descriptors within a given file.
@@ -111,6 +112,7 @@ def parse_file(path, descriptor_file):
   
   raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
 
+
 def _parse_metrics_file(descriptor_type, major_version, minor_version, descriptor_file):
   # Parses descriptor files from metrics, yielding individual descriptors. This
   # throws a TypeError if the descriptor_type or version isn't recognized.
@@ -140,6 +142,7 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
       yield desc
   else:
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
+
 
 class Descriptor(object):
   """
@@ -175,6 +178,7 @@ class Descriptor(object):
   
   def __str__(self):
     return self._raw_contents
+
 
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):
   """
@@ -241,6 +245,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   else:
     return content
 
+
 def _get_pseudo_pgp_block(remaining_contents):
   """
   Checks if given contents begins with a pseudo-Open-PGP-style block and, if
@@ -275,6 +280,7 @@ def _get_pseudo_pgp_block(remaining_contents):
         return "\n".join(block_lines)
   else:
     return None
+
 
 def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   """

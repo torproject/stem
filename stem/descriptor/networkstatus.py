@@ -165,6 +165,7 @@ BANDWIDTH_WEIGHT_ENTRIES = (
   "Wmb", "Wmd", "Wme", "Wmg", "Wmm",
 )
 
+
 def parse_file(document_file, validate = True, is_microdescriptor = False, document_version = 3):
   """
   Parses a network status and iterates over the RouterStatusEntry in it. The
@@ -223,6 +224,7 @@ def parse_file(document_file, validate = True, is_microdescriptor = False, docum
   for desc in desc_iterator:
     yield desc
 
+
 class NetworkStatusDocument(stem.descriptor.Descriptor):
   """
   Common parent for network status documents.
@@ -234,6 +236,7 @@ class NetworkStatusDocument(stem.descriptor.Descriptor):
   
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
+
 
 class NetworkStatusDocumentV2(NetworkStatusDocument):
   """
@@ -406,6 +409,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     if 'network-status-version' != entries.keys()[0]:
       raise ValueError("Network status document (v2) are expected to start with a 'network-status-version' line:\n%s" % str(self))
 
+
 class NetworkStatusDocumentV3(NetworkStatusDocument):
   """
   Version 3 network status document. This could be either a vote or consensus.
@@ -523,6 +527,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       return 1
     
     return str(self) > str(other)
+
 
 class _DocumentHeader(object):
   def __init__(self, document_file, validate, default_params):
@@ -733,6 +738,7 @@ class _DocumentHeader(object):
       if value < minimum or value > maximum:
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
 
+
 class _DocumentFooter(object):
   def __init__(self, document_file, validate, header):
     self.signatures = []
@@ -796,6 +802,7 @@ class _DocumentFooter(object):
           
           self.signatures.append(DocumentSignature(method, fingerprint, key_digest, block_contents, validate))
 
+
 def _check_for_missing_and_disallowed_fields(header, entries, fields):
   """
   Checks that we have mandatory fields for our type, and that we don't have
@@ -828,6 +835,7 @@ def _check_for_missing_and_disallowed_fields(header, entries, fields):
   if disallowed_fields:
     raise ValueError("Network status document has fields that shouldn't appear in this document type or version: %s" % ', '.join(disallowed_fields))
 
+
 def _check_for_misordered_fields(entries, expected):
   """
   To be valid a network status document's fiends need to appear in a specific
@@ -856,6 +864,7 @@ def _check_for_misordered_fields(entries, expected):
     actual_label = ', '.join(actual)
     expected_label = ', '.join(expected)
     raise ValueError("The fields in a section of the document are misordered. It should be '%s' but was '%s'" % (actual_label, expected_label))
+
 
 def _parse_int_mappings(keyword, value, validate):
   # Parse a series of 'key=value' entries, checking the following:
@@ -894,6 +903,7 @@ def _parse_int_mappings(keyword, value, validate):
       raise ValueError("Unable to parse network status document's '%s' line (%s): %s'" % (keyword, exc, value))
   
   return results
+
 
 class DirectoryAuthority(stem.descriptor.Descriptor):
   """
@@ -1085,6 +1095,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     
     return str(self) > str(other)
 
+
 class KeyCertificate(stem.descriptor.Descriptor):
   """
   Directory key certificate for a v3 network status document.
@@ -1244,6 +1255,7 @@ class KeyCertificate(stem.descriptor.Descriptor):
       return 1
     
     return str(self) > str(other)
+
 
 class DocumentSignature(object):
   """

@@ -44,6 +44,7 @@ TIME_UNITS = (
   (1.0, "s", " second"),
 )
 
+
 def to_camel_case(label, divider = "_", joiner = " "):
   """
   Converts the given string to camel case, ie:
@@ -70,6 +71,7 @@ def to_camel_case(label, divider = "_", joiner = " "):
       words.append(entry[0].upper() + entry[1:].lower())
   
   return joiner.join(words)
+
 
 def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
   """
@@ -103,6 +105,7 @@ def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
   else:
     return _get_label(SIZE_UNITS_BITS, byte_count, decimal, is_long)
 
+
 def get_time_label(seconds, decimal = 0, is_long = False):
   """
   Converts seconds into a time label truncated to its most significant units.
@@ -133,6 +136,7 @@ def get_time_label(seconds, decimal = 0, is_long = False):
   
   return _get_label(TIME_UNITS, seconds, decimal, is_long)
 
+
 def get_time_labels(seconds, is_long = False):
   """
   Provides a list of label conversions for each time unit, starting with its
@@ -161,6 +165,7 @@ def get_time_labels(seconds, is_long = False):
       seconds %= count_per_unit
   
   return time_labels
+
 
 def get_short_time_label(seconds):
   """
@@ -200,6 +205,7 @@ def get_short_time_label(seconds):
     label = "%02i:%s" % (time_comp["hour"], label)
   
   return label
+
 
 def parse_short_time_label(label):
   """
@@ -245,6 +251,7 @@ def parse_short_time_label(label):
   except ValueError:
     raise ValueError("Non-numeric value in time entry: %s" % label)
 
+
 def parse_iso_timestamp(entry):
   """
   Parses the ISO 8601 standard that provides for timestamps like...
@@ -276,6 +283,7 @@ def parse_iso_timestamp(entry):
   
   timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S")
   return timestamp + datetime.timedelta(microseconds = int(microseconds))
+
 
 def _get_label(units, count, decimal, is_long):
   """

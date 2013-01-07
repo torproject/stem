@@ -49,6 +49,7 @@ DataDirectory /home/atagar/.tor
 .
 250 OK"""
 
+
 class TestGetInfoResponse(unittest.TestCase):
   def test_empty_response(self):
     """

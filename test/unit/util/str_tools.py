@@ -7,6 +7,7 @@ import unittest
 
 from stem.util import str_tools
 
+
 class TestStrTools(unittest.TestCase):
   def test_to_camel_case(self):
     """

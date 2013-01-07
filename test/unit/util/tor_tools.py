@@ -6,6 +6,7 @@ import unittest
 
 import stem.util.tor_tools
 
+
 class TestTorTools(unittest.TestCase):
   def test_is_valid_fingerprint(self):
     """

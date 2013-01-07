@@ -100,11 +100,14 @@ Torrc = stem.util.enum.Enum(
 # (test_instance, test_name) tuples that we've registered as having been ran
 RAN_TESTS = []
 
+
 class RunnerStopped(Exception):
   "Raised when we try to use a Runner that doesn't have an active tor instance"
 
+
 class TorInaccessable(Exception):
   "Raised when information is needed from tor but the instance we have is inaccessible"
+
 
 def skip(test_case, message):
   """
@@ -119,6 +122,7 @@ def skip(test_case, message):
   if stem.prereq.is_python_27():
     test_case.skipTest(message)
 
+
 def require_control(test_case):
   """
   Skips the test unless tor provides an endpoint for controllers to attach to.
@@ -131,6 +135,7 @@ def require_control(test_case):
   if not test.runner.get_runner().is_accessible():
     skip(test_case, "(no connection)")
     return True
+
 
 def require_version(test_case, req_version):
   """
@@ -146,6 +151,7 @@ def require_version(test_case, req_version):
     skip(test_case, "(requires %s)" % req_version)
     return True
 
+
 def require_online(test_case):
   """
   Skips the test if we weren't started with the ONLINE target, which indicates
@@ -159,6 +165,7 @@ def require_online(test_case):
   if not CONFIG["integ.target.online"]:
     skip(test_case, "(requires online target)")
     return True
+
 
 def only_run_once(test_case, test_name):
   """
@@ -177,6 +184,7 @@ def only_run_once(test_case, test_name):
     return True
   else:
     RAN_TESTS.append((test_case, test_name))
+
 
 def exercise_controller(test_case, controller):
   """
@@ -199,6 +207,7 @@ def exercise_controller(test_case, controller):
   
   test_case.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
 
+
 def get_runner():
   """
   Singleton for the runtime context of integration tests.
@@ -213,6 +222,7 @@ def get_runner():
   
   return INTEG_RUNNER
 
+
 class _MockChrootFile(object):
   """
   Wrapper around a file object that strips given content from readline()
@@ -226,6 +236,7 @@ class _MockChrootFile(object):
   
   def readline(self):
     return self.wrapped_file.readline().replace(self.strip_text, "")
+
 
 class Runner(object):
   def __init__(self):

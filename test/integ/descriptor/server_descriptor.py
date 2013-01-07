@@ -15,6 +15,7 @@ import stem.version
 import test.integ.descriptor
 import test.runner
 
+
 class TestServerDescriptor(unittest.TestCase):
   def test_metrics_descriptor(self):
     """

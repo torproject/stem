@@ -1,6 +1,7 @@
 import stem.response
 import stem.socket
 
+
 class GetConfResponse(stem.response.ControlMessage):
   """
   Reply for a GETCONF query.

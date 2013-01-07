@@ -36,11 +36,13 @@ LINE_ATTR = {
   LineType.CONTENT: (term.Color.CYAN,),
 }
 
+
 def print_line(msg, *attr):
   if CONFIG["argument.no_color"]:
     print msg
   else:
     print term.format(msg, *attr)
+
 
 def print_noline(msg, *attr):
   if CONFIG["argument.no_color"]:
@@ -48,9 +50,11 @@ def print_noline(msg, *attr):
   else:
     sys.stdout.write(term.format(msg, *attr))
 
+
 def print_divider(msg, is_header = False):
   attr = HEADER_ATTR if is_header else CATEGORY_ATTR
   print_line("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
+
 
 def print_logging(logging_buffer):
   if not logging_buffer.is_empty():
@@ -58,6 +62,7 @@ def print_logging(logging_buffer):
       print_line(entry.replace("\n", "\n  "), term.Color.MAGENTA)
     
     print
+
 
 def print_config(test_config):
   print_divider("TESTING CONFIG", True)
@@ -73,6 +78,7 @@ def print_config(test_config):
     print_line(key_entry + value_entry, term.Color.BLUE)
   
   print
+
 
 def apply_filters(testing_output, *filters):
   """
@@ -111,6 +117,7 @@ def apply_filters(testing_output, *filters):
   
   return "\n".join(results) + "\n"
 
+
 def colorize(line_type, line_content):
   """
   Applies escape sequences so each line is colored according to its type.
@@ -120,6 +127,7 @@ def colorize(line_type, line_content):
     return line_content
   else:
     return term.format(line_content, *LINE_ATTR[line_type])
+
 
 def strip_module(line_type, line_content):
   """
@@ -133,6 +141,7 @@ def strip_module(line_type, line_content):
     line_content = line_content.replace(m.groups()[0], "", 1)
   
   return line_content
+
 
 def align_results(line_type, line_content):
   """
@@ -167,6 +176,7 @@ def align_results(line_type, line_content):
     return "%-61s[%s]" % (line_content, term.format(new_ending))
   else:
     return "%-61s[%s]" % (line_content, term.format(new_ending, term.Attr.BOLD))
+
 
 class ErrorTracker(object):
   """

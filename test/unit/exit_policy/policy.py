@@ -8,6 +8,7 @@ from stem.exit_policy import ExitPolicy, \
                              MicroExitPolicy, \
                              ExitPolicyRule
 
+
 class TestExitPolicy(unittest.TestCase):
   def test_example(self):
     # tests the ExitPolicy and MicroExitPolicy pydoc examples

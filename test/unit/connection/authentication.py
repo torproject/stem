@@ -16,6 +16,7 @@ import stem.connection
 from stem.util import log
 from test import mocking
 
+
 class TestAuthenticate(unittest.TestCase):
   def setUp(self):
     mocking.mock(stem.connection.get_protocolinfo, mocking.no_op())

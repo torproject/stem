@@ -12,6 +12,7 @@ from test.mocking import get_key_certificate, \
                          KEY_CERTIFICATE_HEADER, \
                          KEY_CERTIFICATE_FOOTER
 
+
 class TestKeyCertificate(unittest.TestCase):
   def test_minimal(self):
     """

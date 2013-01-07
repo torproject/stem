@@ -45,8 +45,10 @@ what a beautiful day.
 Why are those arrows",
 coming my way?!?"""
 
+
 def _get_test_config_path():
   return test.runner.get_runner().get_test_dir("integ_test_cfg")
+
 
 def _make_config(contents):
   """
@@ -61,6 +63,7 @@ def _make_config(contents):
   test_conf_file.close()
   
   return test_config_path
+
 
 class TestConf(unittest.TestCase):
   def tearDown(self):

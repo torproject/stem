@@ -210,6 +210,7 @@ GEOIP_FAILURE_THRESHOLD = 5
 # changed to the more conventional is_alive() and current_thread() in python
 # 2.6 and above. We should use that when dropping python 2.5 compatibility.
 
+
 class BaseController(object):
   """
   Controller for the tor process. This is a minimal base class for other
@@ -583,6 +584,7 @@ class BaseController(object):
         
         self._event_notice.wait()
         self._event_notice.clear()
+
 
 class Controller(BaseController):
   """
@@ -1920,6 +1922,7 @@ class Controller(BaseController):
         if not response.is_ok():
           raise stem.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
 
+
 def _parse_circ_path(path):
   """
   Parses a circuit path as a list of **(fingerprint, nickname)** tuples. Tor
@@ -1962,6 +1965,7 @@ def _parse_circ_path(path):
   else:
     return []
 
+
 def _parse_circ_entry(entry):
   """
   Parses a single relay's 'LongName' or 'ServerID'. See the
@@ -1997,6 +2001,7 @@ def _parse_circ_entry(entry):
     raise stem.ProtocolError("Nickname in the circuit path is malformed (%s)" % nickname)
   
   return (fingerprint, nickname)
+
 
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """

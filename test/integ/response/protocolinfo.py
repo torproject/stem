@@ -16,6 +16,7 @@ import test.runner
 from test import mocking
 from test.integ.util.system import filter_system_call
 
+
 class TestProtocolInfo(unittest.TestCase):
   def setUp(self):
     mocking.mock(stem.util.proc.is_available, mocking.return_false())

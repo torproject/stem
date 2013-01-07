@@ -9,6 +9,7 @@ import stem.util.enum
 
 from stem.util.conf import parse_enum, parse_enum_csv
 
+
 class TestConf(unittest.TestCase):
   def tearDown(self):
     # clears the config contents

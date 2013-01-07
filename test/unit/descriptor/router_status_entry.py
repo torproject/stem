@@ -15,6 +15,7 @@ from test.mocking import get_router_status_entry_v2, \
                          get_router_status_entry_micro_v3, \
                          ROUTER_STATUS_ENTRY_V3_HEADER
 
+
 class TestRouterStatusEntry(unittest.TestCase):
   def test_fingerprint_decoding(self):
     """

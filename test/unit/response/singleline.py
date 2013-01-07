@@ -12,6 +12,7 @@ from test import mocking
 MULTILINE_RESPONSE = """250-MULTI
 250 LINE"""
 
+
 class TestSingleLineResponse(unittest.TestCase):
   def test_single_line_response(self):
     message = mocking.get_message("552 NOTOK")

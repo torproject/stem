@@ -161,6 +161,7 @@ from stem.util import log
 
 CONFS = {}  # mapping of identifier to singleton instances of configs
 
+
 class _SyncListener(object):
   def __init__(self, config_dict, interceptor):
     self.config_dict = config_dict
@@ -180,6 +181,7 @@ class _SyncListener(object):
           new_value = interceptor_value
       
       self.config_dict[key] = new_value
+
 
 def config_dict(handle, conf_mappings, handler = None):
   """
@@ -214,6 +216,7 @@ def config_dict(handle, conf_mappings, handler = None):
   selected_config.add_listener(_SyncListener(conf_mappings, handler).update)
   return conf_mappings
 
+
 def get_config(handle):
   """
   Singleton constructor for configuration file instances. If a configuration
@@ -227,6 +230,7 @@ def get_config(handle):
     CONFS[handle] = Config()
   
   return CONFS[handle]
+
 
 def parse_enum(key, value, enumeration):
   """
@@ -243,6 +247,7 @@ def parse_enum(key, value, enumeration):
   """
   
   return parse_enum_csv(key, value, enumeration, 1)[0]
+
 
 def parse_enum_csv(key, value, enumeration, count = None):
   """
@@ -302,6 +307,7 @@ def parse_enum_csv(key, value, enumeration, count = None):
       raise ValueError("The '%s' entry of config entry '%s' wasn't in the enumeration (expected %s)" % (val, key, ', '.join(enum_keys)))
   
   return result
+
 
 class Config(object):
   """

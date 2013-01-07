@@ -133,6 +133,7 @@ SINGLE_FIELDS = (
   "exit-streams-opened",
 )
 
+
 def parse_file(descriptor_file, validate = True):
   """
   Iterates over the extra-info descriptors in a file.
@@ -160,6 +161,7 @@ def parse_file(descriptor_file, validate = True):
       yield RelayExtraInfoDescriptor("".join(extrainfo_content), validate)
     else:
       break  # done parsing file
+
 
 def _parse_timestamp_and_interval(keyword, content):
   """
@@ -193,6 +195,7 @@ def _parse_timestamp_and_interval(keyword, content):
     return timestamp, int(interval), remainder
   except ValueError:
     raise ValueError("%s line's timestamp wasn't parsable: %s" % (keyword, line))
+
 
 class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   """
@@ -791,6 +794,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   def _last_keyword(self):
     return "router-signature"
 
+
 class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Relay extra-info descriptor, constructed from data such as that provided by
@@ -837,6 +841,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
         del entries["router-signature"]
     
     ExtraInfoDescriptor._parse(self, entries, validate)
+
 
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """

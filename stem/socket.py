@@ -39,6 +39,7 @@ import stem.response
 
 from stem.util import log
 
+
 class ControlSocket(object):
   """
   Wrapper for a socket connection that speaks the Tor control protocol. To the
@@ -282,6 +283,7 @@ class ControlSocket(object):
     
     raise NotImplementedError("Unsupported Operation: this should be implemented by the ControlSocket subclass")
 
+
 class ControlPort(ControlSocket):
   """
   Control connection to tor. For more information see tor's ControlPort torrc
@@ -336,6 +338,7 @@ class ControlPort(ControlSocket):
     except socket.error, exc:
       raise stem.SocketError(exc)
 
+
 class ControlSocketFile(ControlSocket):
   """
   Control connection to tor. For more information see tor's ControlSocket torrc
@@ -378,6 +381,7 @@ class ControlSocketFile(ControlSocket):
       return control_socket
     except socket.error, exc:
       raise stem.SocketError(exc)
+
 
 def send_message(control_file, message, raw = False):
   """
@@ -437,6 +441,7 @@ def send_message(control_file, message, raw = False):
     
     log.info("Failed to send message: file has been closed")
     raise stem.SocketClosed("file has been closed")
+
 
 def recv_message(control_file):
   """
@@ -556,6 +561,7 @@ def recv_message(control_file):
       prefix = logging_prefix % "ProtocolError"
       log.warn(prefix + "\"%s\" isn't a recognized divider type" % line)
       raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, line))
+
 
 def send_formatting(message):
   """

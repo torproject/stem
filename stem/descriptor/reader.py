@@ -93,8 +93,10 @@ FINISHED = "DONE"
 # dropping python 2.5 compatibility...
 # http://docs.python.org/library/threading.html#threading.Event.is_set
 
+
 class FileSkipped(Exception):
   "Base error when we can't provide descriptor data from a file."
+
 
 class AlreadyRead(FileSkipped):
   """
@@ -110,6 +112,7 @@ class AlreadyRead(FileSkipped):
     self.last_modified = last_modified
     self.last_modified_when_read = last_modified_when_read
 
+
 class ParsingFailure(FileSkipped):
   """
   File contents could not be parsed as descriptor data.
@@ -120,6 +123,7 @@ class ParsingFailure(FileSkipped):
   def __init__(self, parsing_exception):
     super(ParsingFailure, self).__init__()
     self.exception = parsing_exception
+
 
 class UnrecognizedType(FileSkipped):
   """
@@ -133,6 +137,7 @@ class UnrecognizedType(FileSkipped):
     super(UnrecognizedType, self).__init__()
     self.mime_type = mime_type
 
+
 class ReadFailed(FileSkipped):
   """
   An IOError occurred while trying to read the file.
@@ -145,11 +150,13 @@ class ReadFailed(FileSkipped):
     super(ReadFailed, self).__init__()
     self.exception = read_exception
 
+
 class FileMissing(ReadFailed):
   "File does not exist."
   
   def __init__(self):
     super(FileMissing, self).__init__(None)
+
 
 def load_processed_files(path):
   """
@@ -190,6 +197,7 @@ def load_processed_files(path):
   
   return processed_files
 
+
 def save_processed_files(path, processed_files):
   """
   Persists a dictionary of 'path => last modified timestamp' mappings (as
@@ -221,6 +229,7 @@ def save_processed_files(path, processed_files):
         raise TypeError("Only absolute paths are acceptable: %s" % path)
       
       output_file.write("%s %i\n" % (path, timestamp))
+
 
 class DescriptorReader(object):
   """

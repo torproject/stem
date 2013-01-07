@@ -27,6 +27,7 @@ import test.util
 from stem.control import EventType
 from stem.version import Requirement
 
+
 class TestController(unittest.TestCase):
   def test_from_port(self):
     """

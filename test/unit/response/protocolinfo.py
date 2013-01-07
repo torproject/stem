@@ -48,6 +48,7 @@ RELATIVE_COOKIE_PATH = r"""250-PROTOCOLINFO 1
 250-VERSION Tor="0.2.1.30"
 250 OK"""
 
+
 class TestProtocolInfoResponse(unittest.TestCase):
   def test_convert(self):
     """

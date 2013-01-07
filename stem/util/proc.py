@@ -62,6 +62,7 @@ Stat = stem.util.enum.Enum(
   ("CPU_STIME", "stime"), ("START_TIME", "start time")
 )
 
+
 def is_available():
   """
   Checks if proc information is available on this platform.
@@ -88,6 +89,7 @@ def is_available():
   
   return IS_PROC_AVAILABLE
 
+
 def get_system_start_time():
   """
   Provides the unix time (seconds since epoch) when the system started.
@@ -112,6 +114,7 @@ def get_system_start_time():
   
   return SYS_START_TIME
 
+
 def get_physical_memory():
   """
   Provides the total physical memory on the system in bytes.
@@ -135,6 +138,7 @@ def get_physical_memory():
       raise exc
   
   return SYS_PHYSICAL_MEMORY
+
 
 def get_cwd(pid):
   """
@@ -163,6 +167,7 @@ def get_cwd(pid):
   _log_runtime(parameter, proc_cwd_link, start_time)
   return cwd
 
+
 def get_uid(pid):
   """
   Provides the user ID the given process is running under.
@@ -186,6 +191,7 @@ def get_uid(pid):
     exc = IOError("unable to parse the %s Uid entry: %s" % (status_path, uid_line))
     _log_failure(parameter, exc)
     raise exc
+
 
 def get_memory_usage(pid):
   """
@@ -218,6 +224,7 @@ def get_memory_usage(pid):
     exc = IOError("unable to parse the %s VmRSS and VmSize entries: %s" % (status_path, ", ".join(mem_lines)))
     _log_failure(parameter, exc)
     raise exc
+
 
 def get_stats(pid, *stat_types):
   """
@@ -285,6 +292,7 @@ def get_stats(pid, *stat_types):
   
   _log_runtime(parameter, stat_path, start_time)
   return tuple(results)
+
 
 def get_connections(pid):
   """
@@ -358,6 +366,7 @@ def get_connections(pid):
   _log_runtime(parameter, "/proc/net/[tcp|udp]", start_time)
   return conn
 
+
 def _decode_proc_address_encoding(addr):
   """
   Translates an address entry in the /proc/net/* contents to a human readable
@@ -396,6 +405,7 @@ def _decode_proc_address_encoding(addr):
   
   return (ip, port)
 
+
 def _is_float(*value):
   try:
     for v in value:
@@ -405,8 +415,10 @@ def _is_float(*value):
   except ValueError:
     return False
 
+
 def _get_line(file_path, line_prefix, parameter):
   return _get_lines(file_path, (line_prefix, ), parameter)[line_prefix]
+
 
 def _get_lines(file_path, line_prefixes, parameter):
   """
@@ -451,6 +463,7 @@ def _get_lines(file_path, line_prefixes, parameter):
     _log_failure(parameter, exc)
     raise exc
 
+
 def _log_runtime(parameter, proc_location, start_time):
   """
   Logs a message indicating a successful proc query.
@@ -462,6 +475,7 @@ def _log_runtime(parameter, proc_location, start_time):
   
   runtime = time.time() - start_time
   log.debug("proc call (%s): %s (runtime: %0.4f)" % (parameter, proc_location, runtime))
+
 
 def _log_failure(parameter, exc):
   """

@@ -165,6 +165,7 @@ INTEG_TESTS = (
   test.integ.control.controller.TestController,
 )
 
+
 def load_user_configuration(test_config):
   """
   Parses our commandline arguments, loading our custom test configuration if
@@ -253,6 +254,7 @@ def load_user_configuration(test_config):
     print "'%s' isn't a logging runlevel, use one of the following instead:" % log_config
     print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
     sys.exit(1)
+
 
 def _clean_orphaned_pyc():
   test.output.print_noline("  checking for orphaned .pyc files... ", *test.runner.STATUS_ATTR)

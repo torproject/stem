@@ -14,6 +14,7 @@ from stem.control import _parse_circ_path, Controller, EventType
 from stem.response import events
 from test import mocking
 
+
 class TestControl(unittest.TestCase):
   def setUp(self):
     socket = stem.socket.ControlSocket()

@@ -9,6 +9,7 @@ import test.runner
 from stem.descriptor.networkstatus import DirectoryAuthority
 from test.mocking import get_directory_authority, get_key_certificate, AUTHORITY_HEADER
 
+
 class TestDirectoryAuthority(unittest.TestCase):
   def test_minimal_consensus_authority(self):
     """

@@ -14,6 +14,7 @@ import test.runner
 import stem.socket
 import stem.util.system
 
+
 class StateObserver(object):
   """
   Simple container for listening to ControlSocket state changes and
@@ -33,6 +34,7 @@ class StateObserver(object):
     self.controller = controller
     self.state = state
     self.timestamp = timestamp
+
 
 class TestBaseController(unittest.TestCase):
   def test_connect_repeatedly(self):

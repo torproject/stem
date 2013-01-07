@@ -22,6 +22,7 @@ import datetime
 import stem.descriptor
 import stem.exit_policy
 
+
 def parse_file(document_file, validate, entry_class, entry_keyword = "r", start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
   """
   Reads a range of the document_file containing some number of entry_class
@@ -87,6 +88,7 @@ def parse_file(document_file, validate, entry_class, entry_keyword = "r", start_
         break
     else:
       break
+
 
 class RouterStatusEntry(stem.descriptor.Descriptor):
   """
@@ -226,6 +228,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     
     return str(self) > str(other)
 
+
 class RouterStatusEntryV2(RouterStatusEntry):
   """
   Information about an individual router stored within a version 2 network
@@ -268,6 +271,7 @@ class RouterStatusEntryV2(RouterStatusEntry):
       return 1
     
     return str(self) > str(other)
+
 
 class RouterStatusEntryV3(RouterStatusEntry):
   """
@@ -350,6 +354,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
     
     return str(self) > str(other)
 
+
 class RouterStatusEntryMicroV3(RouterStatusEntry):
   """
   Information about an individual router stored within a microdescriptor
@@ -411,6 +416,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     
     return str(self) > str(other)
 
+
 def _parse_r_line(desc, value, validate, include_digest = True):
   # Parses a RouterStatusEntry's 'r' line. They're very nearly identical for
   # all current entry types (v2, v3, and microdescriptor v3) with one little
@@ -466,6 +472,7 @@ def _parse_r_line(desc, value, validate, include_digest = True):
     if validate:
       raise ValueError("Publication time time wasn't parsable: r %s" % value)
 
+
 def _parse_a_line(desc, value, validate):
   # "a" SP address ":" portlist
   # example: a [2001:888:2133:0:82:94:251:204]:9001
@@ -499,6 +506,7 @@ def _parse_a_line(desc, value, validate):
     
     desc.addresses_v6.setdefault(address, []).append((int(min_port), int(max_port)))
 
+
 def _parse_s_line(desc, value, validate):
   # "s" Flags
   # example: s Named Running Stable Valid
@@ -512,6 +520,7 @@ def _parse_s_line(desc, value, validate):
         raise ValueError("%s had duplicate flags: s %s" % (desc._name(), value))
       elif flag == "":
         raise ValueError("%s had extra whitespace on its 's' line: s %s" % (desc._name(), value))
+
 
 def _parse_v_line(desc, value, validate):
   # "v" version
@@ -529,6 +538,7 @@ def _parse_v_line(desc, value, validate):
     except ValueError, exc:
       if validate:
         raise ValueError("%s has a malformed tor version (%s): v %s" % (desc._name(), exc, value))
+
 
 def _parse_w_line(desc, value, validate):
   # "w" "Bandwidth=" INT ["Measured=" INT]
@@ -572,6 +582,7 @@ def _parse_w_line(desc, value, validate):
     else:
       desc.unrecognized_bandwidth_entries.append(w_entry)
 
+
 def _parse_p_line(desc, value, validate):
   # "p" ("accept" / "reject") PortList
   # p reject 1-65535
@@ -584,6 +595,7 @@ def _parse_p_line(desc, value, validate):
       return
     
     raise ValueError("%s exit policy is malformed (%s): p %s" % (desc._name(), exc, value))
+
 
 def _parse_m_line(desc, value, validate):
   # "m" methods 1*(algorithm "=" digest)
@@ -624,6 +636,7 @@ def _parse_m_line(desc, value, validate):
     hashes[hash_name] = digest
   
   desc.microdescriptor_hashes.append((methods, hashes))
+
 
 def _decode_fingerprint(identity, validate):
   """

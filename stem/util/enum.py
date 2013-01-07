@@ -39,6 +39,7 @@ constructed as simple type listings...
 
 import stem.util.str_tools
 
+
 def UppercaseEnum(*args):
   """
   Provides an :class:`~stem.util.enum.Enum` instance where the values are
@@ -58,6 +59,7 @@ def UppercaseEnum(*args):
   """
   
   return Enum(*[(v, v) for v in args])
+
 
 class Enum(object):
   """

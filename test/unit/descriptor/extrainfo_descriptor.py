@@ -8,6 +8,7 @@ import unittest
 from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor, DirResponse, DirStat
 from test.mocking import get_relay_extrainfo_descriptor, get_bridge_extrainfo_descriptor, CRYPTO_BLOB
 
+
 class TestExtraInfoDescriptor(unittest.TestCase):
   def test_minimal_extrainfo_descriptor(self):
     """

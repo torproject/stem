@@ -4,6 +4,7 @@ import stem.response
 import stem.socket
 import stem.util.tor_tools
 
+
 class AuthChallengeResponse(stem.response.ControlMessage):
   """
   AUTHCHALLENGE query response.

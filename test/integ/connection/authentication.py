@@ -28,6 +28,7 @@ INCORRECT_COOKIE_FAIL = "Authentication failed: Authentication cookie did not ma
 INCORRECT_SAFECOOKIE_FAIL = "Authentication failed: Safe cookie response did not match expected value."
 INCORRECT_PASSWORD_FAIL = "Authentication failed: Password did not match HashedControlPassword value from configuration"
 
+
 def _can_authenticate(auth_type):
   """
   Checks if a given authentication method can authenticate to our control
@@ -55,6 +56,7 @@ def _can_authenticate(auth_type):
     return safecookie_auth
   else:
     return False
+
 
 def _get_auth_failure_message(auth_type):
   """
@@ -95,6 +97,7 @@ def _get_auth_failure_message(auth_type):
       return SAFECOOKIE_AUTHCHALLENGE_FAIL
     
     raise ValueError("No methods of authentication. If this is an open socket then auth shouldn't fail.")
+
 
 class TestAuthenticate(unittest.TestCase):
   def setUp(self):

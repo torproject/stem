@@ -8,6 +8,7 @@ import unittest
 import stem.descriptor.reader
 import test.mocking as mocking
 
+
 class TestDescriptorReader(unittest.TestCase):
   def tearDown(self):
     mocking.revert_mocking()

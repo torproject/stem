@@ -77,12 +77,14 @@ DEDUPLICATION_MESSAGE_IDS = set()
 # could be found for logger "stem"' warning as per...
 # http://docs.python.org/release/3.1.3/library/logging.html#configuring-logging-for-a-library
 
+
 class _NullHandler(logging.Handler):
   def emit(self, record):
     pass
 
 if not LOGGER.handlers:
   LOGGER.addHandler(_NullHandler())
+
 
 def get_logger():
   """
@@ -92,6 +94,7 @@ def get_logger():
   """
   
   return LOGGER
+
 
 def logging_level(runlevel):
   """
@@ -104,6 +107,7 @@ def logging_level(runlevel):
     return LOG_VALUES[runlevel]
   else:
     return logging.FATAL + 5
+
 
 def escape(message):
   """
@@ -119,6 +123,7 @@ def escape(message):
   
   return message
 
+
 def log(runlevel, message):
   """
   Logs a message at the given runlevel.
@@ -129,6 +134,7 @@ def log(runlevel, message):
   
   if runlevel:
     LOGGER.log(LOG_VALUES[runlevel], message)
+
 
 def log_once(message_id, runlevel, message):
   """
@@ -150,23 +156,30 @@ def log_once(message_id, runlevel, message):
 
 # shorter aliases for logging at a runlevel
 
+
 def trace(message):
   log(Runlevel.TRACE, message)
+
 
 def debug(message):
   log(Runlevel.DEBUG, message)
 
+
 def info(message):
   log(Runlevel.INFO, message)
+
 
 def notice(message):
   log(Runlevel.NOTICE, message)
 
+
 def warn(message):
   log(Runlevel.WARN, message)
 
+
 def error(message):
   log(Runlevel.ERROR, message)
+
 
 class LogBuffer(logging.Handler):
   """
@@ -198,6 +211,7 @@ class LogBuffer(logging.Handler):
   def emit(self, record):
     self._buffer.append(record)
 
+
 class _StdoutLogger(logging.Handler):
   def __init__(self, runlevel):
     logging.Handler.__init__(self, level = logging_level(runlevel))
@@ -208,6 +222,7 @@ class _StdoutLogger(logging.Handler):
   
   def emit(self, record):
     print self.formatter.format(record)
+
 
 def log_to_stdout(runlevel):
   """

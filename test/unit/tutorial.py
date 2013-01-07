@@ -8,6 +8,7 @@ import unittest
 
 from test import mocking
 
+
 class TestTutorial(unittest.TestCase):
   def tearDown(self):
     mocking.revert_mocking()

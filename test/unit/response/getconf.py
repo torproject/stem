@@ -35,6 +35,7 @@ INVALID_RESPONSE = """\
 123-FOO
 232 BAR"""
 
+
 class TestGetConfResponse(unittest.TestCase):
   def test_empty_response(self):
     """

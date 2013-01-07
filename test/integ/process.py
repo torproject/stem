@@ -20,6 +20,7 @@ from test import mocking
 
 DATA_DIRECTORY = '/tmp/stem_integ'
 
+
 def _kill_process(process):
   if stem.prereq.is_python_26():
     process.kill()
@@ -27,6 +28,7 @@ def _kill_process(process):
     os.kill(process.pid, signal.SIGTERM)
   
   process.communicate()  # block until its definitely gone
+
 
 class TestProcess(unittest.TestCase):
   def setUp(self):

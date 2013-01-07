@@ -55,6 +55,7 @@ ATTR_ENCODING = {Attr.BOLD: "1", Attr.UNDERLINE: "4", Attr.HILIGHT: "7"}
 CSI = "\x1B[%sm"
 RESET = CSI % "0"
 
+
 def format(msg, *attr):
   """
   Simple terminal text formatting using `ANSI escape sequences

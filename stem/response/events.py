@@ -17,6 +17,7 @@ from stem.util import connection, log, str_tools, tor_tools
 KW_ARG = re.compile("^(.*) ([A-Za-z0-9_]+)=(\S*)$")
 QUOTED_KW_ARG = re.compile("^(.*) ([A-Za-z0-9_]+)=\"(.*)\"$")
 
+
 class Event(stem.response.ControlMessage):
   """
   Base for events we receive asynchronously, as described in section 4.1 of the
@@ -141,6 +142,7 @@ class Event(stem.response.ControlMessage):
           unrecognized_msg = "%s event had an unrecognized %s (%s). Maybe a new addition to the control protocol? Full Event: '%s'" % (self.type, attr, value, self)
           log.log_once(log_id, log.INFO, unrecognized_msg)
 
+
 class AddrMapEvent(Event):
   """
   Event that indicates a new address mapping.
@@ -174,6 +176,7 @@ class AddrMapEvent(Event):
     if self.utc_expiry is not None:
       self.utc_expiry = datetime.datetime.strptime(self.utc_expiry, "%Y-%m-%d %H:%M:%S")
 
+
 class AuthDirNewDescEvent(Event):
   """
   Event specific to directory authorities, indicating that we just received new
@@ -202,6 +205,7 @@ class AuthDirNewDescEvent(Event):
     self.message = lines[2]
     self.descriptor = '\n'.join(lines[3:-1])
 
+
 class BandwidthEvent(Event):
   """
   Event emitted every second with the bytes sent and received by tor.
@@ -225,6 +229,7 @@ class BandwidthEvent(Event):
     
     self.read = long(self.read)
     self.written = long(self.written)
+
 
 class BuildTimeoutSetEvent(Event):
   """
@@ -279,6 +284,7 @@ class BuildTimeoutSetEvent(Event):
           raise stem.ProtocolError("The %s of a BUILDTIMEOUT_SET should be a float: %s" % (param, self))
     
     self._log_if_unrecognized('set_type', stem.TimeoutSetType)
+
 
 class CircuitEvent(Event):
   """
@@ -338,6 +344,7 @@ class CircuitEvent(Event):
     self._log_if_unrecognized('reason', stem.CircClosureReason)
     self._log_if_unrecognized('remote_reason', stem.CircClosureReason)
 
+
 class CircMinorEvent(Event):
   """
   Event providing information about minor changes in our circuits. This was
@@ -392,6 +399,7 @@ class CircMinorEvent(Event):
     self._log_if_unrecognized('hs_state', stem.HiddenServiceState)
     self._log_if_unrecognized('old_purpose', stem.CircPurpose)
     self._log_if_unrecognized('old_hs_state', stem.HiddenServiceState)
+
 
 class ClientsSeenEvent(Event):
   """
@@ -451,6 +459,7 @@ class ClientsSeenEvent(Event):
       
       self.ip_versions = protocol_to_count
 
+
 class ConfChangedEvent(Event):
   """
   Event that indicates that our configuration changed, either in response to a
@@ -485,6 +494,7 @@ class ConfChangedEvent(Event):
       
       self.config[key] = value
 
+
 class DescChangedEvent(Event):
   """
   Event that indicates that our descriptor has changed.
@@ -495,6 +505,7 @@ class DescChangedEvent(Event):
   _VERSION_ADDED = stem.version.Version('0.1.2.2-alpha')
   
   pass
+
 
 class GuardEvent(Event):
   """
@@ -515,6 +526,7 @@ class GuardEvent(Event):
   # https://trac.torproject.org/7619
   
   _POSITIONAL_ARGS = ("guard_type", "name", "status")
+
 
 class LogEvent(Event):
   """
@@ -539,6 +551,7 @@ class LogEvent(Event):
     
     self.message = str(self)[len(self.runlevel) + 1:].rstrip("\nOK")
 
+
 class NetworkStatusEvent(Event):
   """
   Event for when our copy of the consensus has changed. This was introduced in
@@ -560,6 +573,7 @@ class NetworkStatusEvent(Event):
       True,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
     ))
+
 
 class NewConsensusEvent(Event):
   """
@@ -585,6 +599,7 @@ class NewConsensusEvent(Event):
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
     ))
 
+
 class NewDescEvent(Event):
   """
   Event that indicates that a new descriptor is available.
@@ -602,6 +617,7 @@ class NewDescEvent(Event):
   
   def _parse(self):
     self.relays = tuple([stem.control._parse_circ_entry(entry) for entry in str(self).split()[1:]])
+
 
 class ORConnEvent(Event):
   """
@@ -664,6 +680,7 @@ class ORConnEvent(Event):
     self._log_if_unrecognized('status', stem.ORStatus)
     self._log_if_unrecognized('reason', stem.ORClosureReason)
 
+
 class SignalEvent(Event):
   """
   Event that indicates that tor has received and acted upon a signal being sent
@@ -696,6 +713,7 @@ class SignalEvent(Event):
     
     self._log_if_unrecognized('signal', expected_signals)
 
+
 class StatusEvent(Event):
   """
   Notification of a change in tor's state. These are generally triggered for
@@ -725,6 +743,7 @@ class StatusEvent(Event):
       raise ValueError("BUG: Unrecognized status type (%s), likely an EVENT_TYPE_TO_CLASS addition without revising how 'status_type' is assigned." % self.type)
     
     self._log_if_unrecognized('runlevel', stem.Runlevel)
+
 
 class StreamEvent(Event):
   """
@@ -795,6 +814,7 @@ class StreamEvent(Event):
     self._log_if_unrecognized('reason', stem.StreamClosureReason)
     self._log_if_unrecognized('remote_reason', stem.StreamClosureReason)
     self._log_if_unrecognized('purpose', stem.StreamPurpose)
+
 
 class StreamBwEvent(Event):
   """

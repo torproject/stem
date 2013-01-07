@@ -53,6 +53,7 @@ KEY_ARG = re.compile("^(\S+)=")
 CONTROL_ESCAPES = {r"\\": "\\", r"\"": "\"", r"\'": "'",
                    r"\r": "\r", r"\n": "\n", r"\t": "\t"}
 
+
 def convert(response_type, message, **kwargs):
   """
   Converts a :class:`~stem.response.ControlMessage` into a particular kind of
@@ -114,6 +115,7 @@ def convert(response_type, message, **kwargs):
   
   message.__class__ = response_class
   message._parse_message(**kwargs)
+
 
 class ControlMessage(object):
   """
@@ -225,6 +227,7 @@ class ControlMessage(object):
     """
     
     return ControlLine(self._parsed_content[index][2])
+
 
 class ControlLine(str):
   """
@@ -384,6 +387,7 @@ class ControlLine(str):
       self._remainder = remainder
       return (key, next_entry)
 
+
 def _parse_entry(line, quoted, escaped):
   """
   Parses the next entry from the given space separated content.
@@ -425,6 +429,7 @@ def _parse_entry(line, quoted, escaped):
   
   return (next_entry, remainder.lstrip())
 
+
 def _get_quote_indices(line, escaped):
   """
   Provides the indices of the next two quotes in the given content.
@@ -449,6 +454,7 @@ def _get_quote_indices(line, escaped):
     indices.append(quote_index)
   
   return tuple(indices)
+
 
 class SingleLineResponse(ControlMessage):
   """

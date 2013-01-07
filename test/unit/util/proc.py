@@ -9,6 +9,7 @@ import unittest
 from stem.util import proc
 from test import mocking
 
+
 class TestProc(unittest.TestCase):
   def tearDown(self):
     mocking.revert_mocking()

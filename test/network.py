@@ -27,8 +27,10 @@ SOCKS5_NOAUTH_RESPONSE = (0x05, 0x00)
 SOCKS5_CONN_BY_IPV4 = (0x05, 0x01, 0x00, 0x01)
 SOCKS5_CONN_BY_NAME = (0x05, 0x01, 0x00, 0x03)
 
+
 class ProxyError(Exception):
   "Base error for proxy issues."
+
 
 class SocksError(ProxyError):
   """
@@ -58,6 +60,7 @@ class SocksError(ProxyError):
     if self.code in self._ERROR_MESSAGE:
       code = self.code
     return "[%s] %s" % (code, self._ERROR_MESSAGE[code])
+
 
 class Socks(_socket_socket):
   """
@@ -217,6 +220,7 @@ class Socks(_socket_socket):
     """
     
     raise NotImplementedError
+
 
 class SocksPatch(object):
   """

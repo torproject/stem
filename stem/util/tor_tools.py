@@ -32,6 +32,7 @@ FINGERPRINT_PATTERN = re.compile("^%s{40}$" % HEX_DIGIT)
 NICKNAME_PATTERN = re.compile("^[a-zA-Z0-9]{1,19}$")
 CIRC_ID_PATTERN = re.compile("^[a-zA-Z0-9]{1,16}$")
 
+
 def is_valid_fingerprint(entry, check_prefix = False):
   """
   Checks if a string is a properly formatted relay fingerprint. This checks for
@@ -54,6 +55,7 @@ def is_valid_fingerprint(entry, check_prefix = False):
   
   return bool(FINGERPRINT_PATTERN.match(entry))
 
+
 def is_valid_nickname(entry):
   """
   Checks if a string is a valid format for being a nickname.
@@ -68,6 +70,7 @@ def is_valid_nickname(entry):
   
   return bool(NICKNAME_PATTERN.match(entry))
 
+
 def is_valid_circuit_id(entry):
   """
   Checks if a string is a valid format for being a circuit identifier.
@@ -80,6 +83,7 @@ def is_valid_circuit_id(entry):
   
   return bool(CIRC_ID_PATTERN.match(entry))
 
+
 def is_valid_stream_id(entry):
   """
   Checks if a string is a valid format for being a stream identifier.
@@ -89,6 +93,7 @@ def is_valid_stream_id(entry):
   """
   
   return is_valid_circuit_id(entry)
+
 
 def is_hex_digits(entry, count):
   """

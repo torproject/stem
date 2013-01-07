@@ -26,6 +26,7 @@ from stem.util import log
 
 IS_CRYPTO_AVAILABLE = None
 
+
 def check_requirements():
   """
   Checks that we meet the minimum requirements to run stem. If we don't then
@@ -41,6 +42,7 @@ def check_requirements():
   elif major_version < 2 or minor_version < 5:
     raise ImportError("stem requires python version 2.5 or greater")
 
+
 def is_python_26():
   """
   Checks if we're in the 2.6 - 2.x range.
@@ -50,6 +52,7 @@ def is_python_26():
   
   return _check_version(6)
 
+
 def is_python_27():
   """
   Checks if we're in the 2.7 - 2.x range.
@@ -58,6 +61,7 @@ def is_python_27():
   """
   
   return _check_version(7)
+
 
 def is_crypto_available():
   global IS_CRYPTO_AVAILABLE
@@ -76,6 +80,7 @@ def is_crypto_available():
       log.log_once("stem.prereq.is_crypto_available", log.INFO, msg)
   
   return IS_CRYPTO_AVAILABLE
+
 
 def _check_version(minor_req):
   major_version, minor_version = sys.version_info[0:2]

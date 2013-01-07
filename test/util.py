@@ -18,6 +18,7 @@ Accept-Encoding: identity
 
 """
 
+
 def external_ip(host, port):
   """
   Returns the externally visible IP address when using a SOCKS4a proxy.
@@ -50,6 +51,7 @@ def external_ip(host, port):
     return response[response.find("\r\n\r\n"):].strip()
   except Exception, exc:
     return None
+
 
 def negotiate_socks(sock, host, port):
   """

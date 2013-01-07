@@ -1,6 +1,7 @@
 import stem.response
 import stem.socket
 
+
 class MapAddressResponse(stem.response.ControlMessage):
   """
   Reply for a MAPADDRESS query.

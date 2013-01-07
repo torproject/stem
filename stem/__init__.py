@@ -403,11 +403,14 @@ import stem.util.enum
 
 UNDEFINED = "<Undefined_ >"
 
+
 class ControllerError(Exception):
   "Base error for controller communication issues."
 
+
 class ProtocolError(ControllerError):
   "Malformed content from the control socket."
+
 
 class OperationFailed(ControllerError):
   """
@@ -423,10 +426,12 @@ class OperationFailed(ControllerError):
     self.code = code
     self.message = message
 
+
 class UnsatisfiableRequest(OperationFailed):
   """
   Exception raised if Tor was unable to process our request.
   """
+
 
 class CircuitExtensionFailed(UnsatisfiableRequest):
   """
@@ -439,10 +444,12 @@ class CircuitExtensionFailed(UnsatisfiableRequest):
     super(CircuitExtensionFailed, self).__init__(message = message)
     self.circ = circ
 
+
 class InvalidRequest(OperationFailed):
   """
   Exception raised when the request was invalid or malformed.
   """
+
 
 class InvalidArguments(InvalidRequest):
   """
@@ -458,8 +465,10 @@ class InvalidArguments(InvalidRequest):
     super(InvalidArguments, self).__init__(code, message)
     self.arguments = arguments
 
+
 class SocketError(ControllerError):
   "Error arose while communicating with the control socket."
+
 
 class SocketClosed(SocketError):
   "Control socket was closed before completing the message."

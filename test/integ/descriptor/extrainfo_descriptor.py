@@ -14,6 +14,7 @@ import test.runner
 
 from stem.descriptor.extrainfo_descriptor import DirResponse
 
+
 class TestExtraInfoDescriptor(unittest.TestCase):
   def test_metrics_relay_descriptor(self):
     """

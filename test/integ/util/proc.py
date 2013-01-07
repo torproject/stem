@@ -12,6 +12,7 @@ import test.runner
 
 from stem.util import proc
 
+
 class TestProc(unittest.TestCase):
   def test_get_cwd(self):
     """

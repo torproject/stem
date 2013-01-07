@@ -7,6 +7,7 @@ import unittest
 
 from test.mocking import get_network_status_document_v2, NETWORK_STATUS_DOCUMENT_HEADER_V2, NETWORK_STATUS_DOCUMENT_FOOTER_V2
 
+
 class TestNetworkStatusDocument(unittest.TestCase):
   def test_minimal_document(self):
     """

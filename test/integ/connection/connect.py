@@ -9,6 +9,7 @@ import unittest
 import stem.connection
 import test.runner
 
+
 class TestConnect(unittest.TestCase):
   def setUp(self):
     # prevents the function from printing to the real stdout

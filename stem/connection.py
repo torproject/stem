@@ -120,6 +120,7 @@ AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "SAFECOOKIE", "UN
 CLIENT_HASH_CONSTANT = "Tor safe cookie authentication controller-to-server hash"
 SERVER_HASH_CONSTANT = "Tor safe cookie authentication server-to-controller hash"
 
+
 def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. This is very
@@ -145,6 +146,7 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
   
   return _connect(control_port, password, chroot_path, controller)
 
+
 def connect_socket_file(socket_path = "/var/run/tor/control", password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. For more
@@ -166,6 +168,7 @@ def connect_socket_file(socket_path = "/var/run/tor/control", password = None, c
     return None
   
   return _connect(control_socket, password, chroot_path, controller)
+
 
 def _connect(control_socket, password, chroot_path, controller):
   """
@@ -201,6 +204,7 @@ def _connect(control_socket, password, chroot_path, controller):
     control_socket.close()
     print "Unable to authenticate: %s" % exc
     return None
+
 
 def authenticate(controller, password = None, chroot_path = None, protocolinfo_response = None):
   """
@@ -412,6 +416,7 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
   
   raise AssertionError("BUG: Authentication failed without providing a recognized exception: %s" % str(auth_exceptions))
 
+
 def authenticate_none(controller, suppress_ctl_errors = True):
   """
   Authenticates to an open control socket. All control connections need to
@@ -457,6 +462,7 @@ def authenticate_none(controller, suppress_ctl_errors = True):
       raise exc
     else:
       raise OpenAuthRejected("Socket failed (%s)" % exc)
+
 
 def authenticate_password(controller, password, suppress_ctl_errors = True):
   """
@@ -526,6 +532,7 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
       raise exc
     else:
       raise PasswordAuthRejected("Socket failed (%s)" % exc)
+
 
 def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
   """
@@ -604,6 +611,7 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
       raise exc
     else:
       raise CookieAuthRejected("Socket failed (%s)" % exc, cookie_path, False)
+
 
 def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True):
   """
@@ -750,6 +758,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
     else:
       raise CookieAuthRejected(str(auth_response), cookie_path, True, auth_response)
 
+
 def get_protocolinfo(controller):
   """
   Issues a PROTOCOLINFO query to a control socket, getting information about
@@ -815,6 +824,7 @@ def get_protocolinfo(controller):
   
   return protocolinfo_response
 
+
 def _msg(controller, message):
   """
   Sends and receives a message with either a
@@ -826,6 +836,7 @@ def _msg(controller, message):
     return controller.recv()
   else:
     return controller.msg(message)
+
 
 def _read_cookie(cookie_path, is_safecookie):
   """
@@ -868,6 +879,7 @@ def _read_cookie(cookie_path, is_safecookie):
     exc_msg = "Authentication failed: unable to read '%s' (%s)" % (cookie_path, exc)
     raise UnreadableCookieFile(exc_msg, cookie_path, is_safecookie)
 
+
 def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg):
   """
   Attempts to expand a relative cookie path with the given pid resolver. This
@@ -901,6 +913,7 @@ def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg)
   
   protocolinfo_response.cookie_path = cookie_path
 
+
 class AuthenticationFailure(Exception):
   """
   Base error for authentication failures.
@@ -913,6 +926,7 @@ class AuthenticationFailure(Exception):
     super(AuthenticationFailure, self).__init__(message)
     self.auth_response = auth_response
 
+
 class UnrecognizedAuthMethods(AuthenticationFailure):
   """
   All methods for authenticating aren't recognized.
@@ -924,26 +938,34 @@ class UnrecognizedAuthMethods(AuthenticationFailure):
     super(UnrecognizedAuthMethods, self).__init__(message)
     self.unknown_auth_methods = unknown_auth_methods
 
+
 class IncorrectSocketType(AuthenticationFailure):
   "Socket does not speak the control protocol."
+
 
 class OpenAuthFailed(AuthenticationFailure):
   "Failure to authenticate to an open socket."
 
+
 class OpenAuthRejected(OpenAuthFailed):
   "Attempt to connect to an open control socket was rejected."
+
 
 class PasswordAuthFailed(AuthenticationFailure):
   "Failure to authenticate with a password."
 
+
 class PasswordAuthRejected(PasswordAuthFailed):
   "Socket does not support password authentication."
+
 
 class IncorrectPassword(PasswordAuthFailed):
   "Authentication password incorrect."
 
+
 class MissingPassword(PasswordAuthFailed):
   "Password authentication is supported but we weren't provided with one."
+
 
 class CookieAuthFailed(AuthenticationFailure):
   """
@@ -961,17 +983,22 @@ class CookieAuthFailed(AuthenticationFailure):
     self.is_safecookie = is_safecookie
     self.cookie_path = cookie_path
 
+
 class CookieAuthRejected(CookieAuthFailed):
   "Socket does not support password authentication."
+
 
 class IncorrectCookieValue(CookieAuthFailed):
   "Authentication cookie value was rejected."
 
+
 class IncorrectCookieSize(CookieAuthFailed):
   "Aborted because the cookie file is the wrong size."
 
+
 class UnreadableCookieFile(CookieAuthFailed):
   "Error arose in reading the authentication cookie."
+
 
 class AuthChallengeFailed(CookieAuthFailed):
   """
@@ -981,10 +1008,12 @@ class AuthChallengeFailed(CookieAuthFailed):
   def __init__(self, message, cookie_path):
     super(AuthChallengeFailed, self).__init__(message, cookie_path, True)
 
+
 class AuthChallengeUnsupported(AuthChallengeFailed):
   """
   AUTHCHALLENGE isn't implemented.
   """
+
 
 class UnrecognizedAuthChallengeMethod(AuthChallengeFailed):
   """
@@ -997,11 +1026,14 @@ class UnrecognizedAuthChallengeMethod(AuthChallengeFailed):
     super(UnrecognizedAuthChallengeMethod, self).__init__(message, cookie_path)
     self.authchallenge_method = authchallenge_method
 
+
 class AuthSecurityFailure(AuthChallengeFailed):
   "AUTHCHALLENGE response is invalid."
 
+
 class InvalidClientNonce(AuthChallengeFailed):
   "AUTHCHALLENGE request contains an invalid client nonce."
+
 
 class MissingAuthInfo(AuthenticationFailure):
   """
@@ -1009,8 +1041,10 @@ class MissingAuthInfo(AuthenticationFailure):
   These are valid control responses but really shouldn't happen in practice.
   """
 
+
 class NoAuthMethods(MissingAuthInfo):
   "PROTOCOLINFO response didn't have any methods for authenticating."
+
 
 class NoAuthCookie(MissingAuthInfo):
   """

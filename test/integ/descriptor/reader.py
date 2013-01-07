@@ -27,8 +27,10 @@ DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
 
 TAR_DESCRIPTORS = None
 
+
 def _get_processed_files_path():
   return test.runner.get_runner().get_test_dir("descriptor_processed_files")
+
 
 def _make_processed_files_listing(contents):
   """
@@ -43,6 +45,7 @@ def _make_processed_files_listing(contents):
   test_listing_file.close()
   
   return test_listing_path
+
 
 def _get_raw_tar_descriptors():
   global TAR_DESCRIPTORS
@@ -71,12 +74,14 @@ def _get_raw_tar_descriptors():
   
   return TAR_DESCRIPTORS
 
+
 class SkipListener:
   def __init__(self):
     self.results = []  # (path, exception) tuples that we've received
   
   def listener(self, path, exception):
     self.results.append((path, exception))
+
 
 class TestDescriptorReader(unittest.TestCase):
   def tearDown(self):

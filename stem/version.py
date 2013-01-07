@@ -55,6 +55,7 @@ import stem.util.system
 # cache for the get_system_tor_version function
 VERSION_CACHE = {}
 
+
 def get_system_tor_version(tor_cmd = "tor"):
   """
   Queries tor for its version. This is os dependent, only working on linux,
@@ -93,6 +94,7 @@ def get_system_tor_version(tor_cmd = "tor"):
       raise IOError("'%s' didn't have any output" % version_cmd)
   
   return VERSION_CACHE[tor_cmd]
+
 
 class Version(object):
   """
@@ -204,6 +206,7 @@ class Version(object):
       return -1
     else:
       return 0
+
 
 class VersionRequirements(object):
   """

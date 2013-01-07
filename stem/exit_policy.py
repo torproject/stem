@@ -75,6 +75,7 @@ AddressType = stem.util.enum.Enum(("WILDCARD", "Wildcard"), ("IPv4", "IPv4"), ("
 # some use cases where we might want to construct custom policies. Maybe make
 # it a CustomExitPolicyRule subclass?
 
+
 class ExitPolicy(object):
   """
   Policy for the destinations that a relay allows or denies exiting to. This
@@ -259,6 +260,7 @@ class ExitPolicy(object):
     else:
       return False
 
+
 class MicroExitPolicy(ExitPolicy):
   """
   Exit policy provided by the microdescriptors. This is a distilled version of
@@ -337,6 +339,7 @@ class MicroExitPolicy(ExitPolicy):
       return str(self) == str(other)
     else:
       return False
+
 
 class ExitPolicyRule(object):
   """
@@ -698,11 +701,14 @@ class ExitPolicyRule(object):
     else:
       return False
 
+
 def _address_type_to_int(address_type):
   return AddressType.index_of(address_type)
 
+
 def _int_to_address_type(address_type_int):
   return AddressType[AddressType.keys()[address_type_int]]
+
 
 class MicroExitPolicyRule(ExitPolicyRule):
   """

@@ -33,6 +33,7 @@ from test.mocking import support_with, \
                          DOC_SIG, \
                          NETWORK_STATUS_DOCUMENT_FOOTER
 
+
 class TestNetworkStatusDocument(unittest.TestCase):
   def test_minimal_consensus(self):
     """

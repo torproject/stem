@@ -30,6 +30,7 @@ CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
 FULL_IPv4_MASK = "255.255.255.255"
 FULL_IPv6_MASK = "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"
 
+
 def is_valid_ip_address(address):
   """
   Checks if a string is a valid IPv4 address.
@@ -55,6 +56,7 @@ def is_valid_ip_address(address):
       return False  # leading zeros, for instance in "1.2.3.001"
   
   return True
+
 
 def is_valid_ipv6_address(address, allow_brackets = False):
   """
@@ -89,6 +91,7 @@ def is_valid_ipv6_address(address, allow_brackets = False):
   
   return True
 
+
 def is_valid_port(entry, allow_zero = False):
   """
   Checks if a string or int is a valid port number.
@@ -117,6 +120,7 @@ def is_valid_port(entry, allow_zero = False):
     return True
   
   return entry > 0 and entry < 65536
+
 
 def expand_ipv6_address(address):
   """
@@ -156,6 +160,7 @@ def expand_ipv6_address(address):
   
   return address
 
+
 def get_mask(bits):
   """
   Provides the IPv4 mask for a given number of bits, in the dotted-quad format.
@@ -181,6 +186,7 @@ def get_mask(bits):
   # converts each octet into its integer value
   return ".".join([str(int(octet, 2)) for octet in octets])
 
+
 def get_masked_bits(mask):
   """
   Provides the number of bits that an IPv4 subnet mask represents. Note that
@@ -204,6 +210,7 @@ def get_masked_bits(mask):
     return 32 - len(mask_match.groups()[1])
   else:
     raise ValueError("Unable to convert mask to a bit count: %s" % mask)
+
 
 def get_mask_ipv6(bits):
   """
@@ -231,6 +238,7 @@ def get_mask_ipv6(bits):
   # converts each group into its hex value
   return ":".join(["%04x" % int(group, 2) for group in groupings]).upper()
 
+
 def get_binary(value, bits):
   """
   Provides the given value as a binary string, padded with zeros to the given
@@ -242,6 +250,7 @@ def get_binary(value, bits):
   
   # http://www.daniweb.com/code/snippet216539.html
   return "".join([str((value >> y) & 1) for y in range(bits - 1, -1, -1)])
+
 
 def get_address_binary(address):
   """
@@ -260,6 +269,7 @@ def get_address_binary(address):
   else:
     raise ValueError("'%s' is neither an IPv4 or IPv6 address" % address)
 
+
 def hmac_sha256(key, msg):
   """
   Generates a sha256 digest using the given key and message.
@@ -271,6 +281,7 @@ def hmac_sha256(key, msg):
   """
   
   return hmac.new(key, msg, hashlib.sha256).digest()
+
 
 def cryptovariables_equal(x, y):
   """

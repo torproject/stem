@@ -14,6 +14,7 @@ import stem.descriptor.networkstatus
 import stem.version
 import test.integ.descriptor
 
+
 class TestNetworkStatus(unittest.TestCase):
   def test_cached_consensus(self):
     """

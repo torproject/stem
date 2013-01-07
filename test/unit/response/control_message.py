@@ -30,6 +30,7 @@ version -- The current version of Tor.
 250 OK
 """.replace("\n", "\r\n")
 
+
 class TestControlMessage(unittest.TestCase):
   def test_ok_response(self):
     """

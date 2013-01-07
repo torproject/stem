@@ -6,6 +6,7 @@ import unittest
 
 import stem.util.connection
 
+
 class TestConnection(unittest.TestCase):
   def test_is_valid_ip_address(self):
     """

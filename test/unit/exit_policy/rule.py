@@ -6,6 +6,7 @@ import unittest
 
 from stem.exit_policy import AddressType, ExitPolicyRule
 
+
 class TestExitPolicyRule(unittest.TestCase):
   def test_accept_or_reject(self):
     self.assertTrue(ExitPolicyRule("accept *:*").is_accept)

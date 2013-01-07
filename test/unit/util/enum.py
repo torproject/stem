@@ -6,6 +6,7 @@ import unittest
 
 import stem.util.enum
 
+
 class TestEnum(unittest.TestCase):
   def test_enum_examples(self):
     """

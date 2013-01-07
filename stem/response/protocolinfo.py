@@ -5,6 +5,7 @@ import stem.version
 from stem.connection import AuthMethod
 from stem.util import log
 
+
 class ProtocolInfoResponse(stem.response.ControlMessage):
   """
   Version one PROTOCOLINFO query response.

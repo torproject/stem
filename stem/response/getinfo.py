@@ -1,6 +1,7 @@
 import stem.response
 import stem.socket
 
+
 class GetInfoResponse(stem.response.ControlMessage):
   """
   Reply for a GETINFO query.

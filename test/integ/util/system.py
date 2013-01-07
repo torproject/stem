@@ -13,6 +13,7 @@ import test.runner
 
 from test import mocking
 
+
 def filter_system_call(prefixes):
   """
   Provides a functor that passes calls on to the stem.util.system.call()
@@ -27,12 +28,14 @@ def filter_system_call(prefixes):
   
   return _filter_system_call
 
+
 def _has_port():
   """
   True if our test runner has a control port, False otherwise.
   """
   
   return test.runner.Torrc.PORT in test.runner.get_runner().get_options()
+
 
 class TestSystem(unittest.TestCase):
   is_extra_tor_running = None

@@ -15,8 +15,10 @@ import csv
 import stem.descriptor
 import stem.prereq
 
+
 class _ExportDialect(csv.excel):
   lineterminator = '\n'
+
 
 def export_csv(descriptors, included_fields = (), excluded_fields = (), header = True):
   """
@@ -39,6 +41,7 @@ def export_csv(descriptors, included_fields = (), excluded_fields = (), header =
   output_buffer = cStringIO.StringIO()
   export_csv_file(output_buffer, descriptors, included_fields, excluded_fields, header)
   return output_buffer.getvalue()
+
 
 def export_csv_file(output_file, descriptors, included_fields = (), excluded_fields = (), header = True):
   """

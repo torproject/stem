@@ -14,6 +14,7 @@ PROTOCOLINFO_RESPONSE = (
   'OK',
 )
 
+
 class TestControlLine(unittest.TestCase):
   def test_pop_examples(self):
     """

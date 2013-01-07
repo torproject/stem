@@ -25,6 +25,7 @@ from stem.util import system
 # if ran directly then run over everything one level up
 DEFAULT_TARGET = os.path.sep.join(__file__.split(os.path.sep)[:-1])
 
+
 def pep8_issues(base_path = DEFAULT_TARGET):
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
@@ -62,7 +63,7 @@ def pep8_issues(base_path = DEFAULT_TARGET):
   #
   #   Someone else can change this if they really care.
   
-  ignored_issues = "E111,E121,W293,E501,E302,E251,E127"
+  ignored_issues = "E111,E121,W293,E501,E251,E127"
   
   issues = {}
   pep8_output = system.call("pep8 --ignore %s %s" % (ignored_issues, base_path))
@@ -75,6 +76,7 @@ def pep8_issues(base_path = DEFAULT_TARGET):
       issues.setdefault(path, []).append((int(line), issue))
   
   return issues
+
 
 def get_issues(base_path = DEFAULT_TARGET):
   """
@@ -150,6 +152,7 @@ def get_issues(base_path = DEFAULT_TARGET):
       issues[file_path] = file_issues
   
   return issues
+
 
 def _get_files_with_suffix(base_path, suffix = ".py"):
   """

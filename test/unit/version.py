@@ -15,6 +15,7 @@ TOR_VERSION_OUTPUT = """Mar 22 23:09:37.088 [notice] Tor v0.2.2.35 \
 strong anonymity. (Running on Linux i686)
 Tor version 0.2.2.35 (git-73ff13ab3cc9570d)."""
 
+
 class TestVersion(unittest.TestCase):
   def tearDown(self):
     mocking.revert_mocking()

@@ -11,6 +11,7 @@ import stem.socket
 import stem.version
 import test.runner
 
+
 class TestControlMessage(unittest.TestCase):
   def test_unestablished_socket(self):
     """

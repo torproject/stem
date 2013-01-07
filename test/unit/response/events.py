@@ -308,6 +308,7 @@ def _get_event(content):
   stem.response.convert("EVENT", controller_event, arrived_at = 25)
   return controller_event
 
+
 class TestEvents(unittest.TestCase):
   def test_example(self):
     """

@@ -27,6 +27,7 @@ CONTROL_PORT = 2779
 
 STOP_CONFIRMATION = "Would you like to stop the tor instance we made? (y/n, default: n): "
 
+
 def print_usage():
   """
   Provides a welcoming message.
@@ -35,6 +36,7 @@ def print_usage():
   print "Welcome to stem's testing prompt. You currently have a controller available"
   print "via the 'controller' variable."
   print
+
 
 def start():
   """
@@ -50,6 +52,7 @@ def start():
   sys.stdout.write("Starting tor...")
   stem.process.launch_tor_with_config(config = tor_config, completion_percent = 5)
   sys.stdout.write("  done\n\n")
+
 
 def stop(prompt = False):
   """
@@ -69,6 +72,7 @@ def stop(prompt = False):
     
     os.kill(tor_pid, signal.SIGTERM)
 
+
 def is_running():
   """
   Checks if we're likely running a tor instance spawned by this module. This is
@@ -79,6 +83,7 @@ def is_running():
   """
   
   return bool(stem.util.system.get_pid_by_port(CONTROL_PORT))
+
 
 def controller():
   """

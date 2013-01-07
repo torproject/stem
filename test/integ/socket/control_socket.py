@@ -17,6 +17,7 @@ import stem.control
 import stem.socket
 import test.runner
 
+
 class TestControlSocket(unittest.TestCase):
   def test_send_buffered(self):
     """

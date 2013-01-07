@@ -29,6 +29,7 @@ UNRECOGNIZED_KEYS_RESPONSE = "512 syntax error: mapping '2389' is not of expecte
 
 FAILED_RESPONSE = "451 Resource exhausted"
 
+
 class TestMapAddressResponse(unittest.TestCase):
   def test_single_response(self):
     """

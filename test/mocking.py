@@ -192,11 +192,13 @@ NETWORK_STATUS_DOCUMENT_FOOTER = (
   ("directory-signature", "%s %s\n%s" % (DOC_SIG.identity, DOC_SIG.key_digest, DOC_SIG.signature)),
 )
 
+
 def no_op():
   def _no_op(*args):
     pass
   
   return _no_op
+
 
 def return_value(value):
   def _return_value(*args):
@@ -204,14 +206,18 @@ def return_value(value):
   
   return _return_value
 
+
 def return_true():
   return return_value(True)
+
 
 def return_false():
   return return_value(False)
 
+
 def return_none():
   return return_value(None)
+
 
 def return_for_args(args_to_return_value, default = None, is_method = False):
   """
@@ -274,11 +280,13 @@ def return_for_args(args_to_return_value, default = None, is_method = False):
   
   return _return_value
 
+
 def raise_exception(exception):
   def _raise(*args):
     raise exception
   
   return _raise
+
 
 def support_with(obj):
   """
@@ -294,6 +302,7 @@ def support_with(obj):
   obj.__dict__["__enter__"] = return_value(obj)
   obj.__dict__["__exit__"] = no_op()
   return obj
+
 
 def mock(target, mock_call, target_module=None):
   """
@@ -329,6 +338,7 @@ def mock(target, mock_call, target_module=None):
     target_module.__dict__[target_function] = mock_wrapper
   else:
     setattr(target_module, target.__name__, mock_call)
+
 
 def mock_method(target_class, method_name, mock_call):
   """
@@ -375,6 +385,7 @@ def mock_method(target_class, method_name, mock_call):
   # mocks the function with this wrapper
   setattr(target_class, method_name, mock_wrapper)
 
+
 def revert_mocking():
   """
   Reverts any mocking done by this function.
@@ -399,6 +410,7 @@ def revert_mocking():
   
   MOCK_STATE.clear()
 
+
 def get_real_function(function):
   """
   Provides the original, non-mocked implementation for a function or method.
@@ -414,6 +426,7 @@ def get_real_function(function):
     return MOCK_STATE[mocking_id][2]
   else:
     return function
+
 
 def get_all_combinations(attr, include_empty = False):
   """
@@ -451,6 +464,7 @@ def get_all_combinations(attr, include_empty = False):
         seen.add(item)
         yield item
 
+
 def get_object(object_class, methods = None):
   """
   Provides a mock instance of an arbitrary class. Its methods are mocked with
@@ -482,6 +496,7 @@ def get_object(object_class, methods = None):
   
   return mock_class()
 
+
 def get_message(content, reformat = True):
   """
   Provides a ControlMessage with content modified to be parsable. This makes
@@ -504,6 +519,7 @@ def get_message(content, reformat = True):
   
   return stem.socket.recv_message(StringIO.StringIO(content))
 
+
 def get_protocolinfo_response(**attributes):
   """
   Provides a ProtocolInfoResponse, customized with the given attributes. The
@@ -522,6 +538,7 @@ def get_protocolinfo_response(**attributes):
     protocolinfo_response.__dict__[attr] = attributes[attr]
   
   return protocolinfo_response
+
 
 def _get_descriptor_content(attr = None, exclude = (), header_template = (), footer_template = ()):
   """
@@ -595,6 +612,7 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
   
   return "\n".join(header_content + remainder + footer_content)
 
+
 def get_relay_server_descriptor(attr = None, exclude = (), content = False):
   """
   Provides the descriptor content for...
@@ -615,6 +633,7 @@ def get_relay_server_descriptor(attr = None, exclude = (), content = False):
     desc_content = sign_descriptor_content(desc_content)
     return stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate = True)
 
+
 def get_bridge_server_descriptor(attr = None, exclude = (), content = False):
   """
   Provides the descriptor content for...
@@ -633,6 +652,7 @@ def get_bridge_server_descriptor(attr = None, exclude = (), content = False):
     return desc_content
   else:
     return stem.descriptor.server_descriptor.BridgeDescriptor(desc_content, validate = True)
+
 
 def get_relay_extrainfo_descriptor(attr = None, exclude = (), content = False):
   """
@@ -653,6 +673,7 @@ def get_relay_extrainfo_descriptor(attr = None, exclude = (), content = False):
   else:
     return stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(desc_content, validate = True)
 
+
 def get_bridge_extrainfo_descriptor(attr = None, exclude = (), content = False):
   """
   Provides the descriptor content for...
@@ -671,6 +692,7 @@ def get_bridge_extrainfo_descriptor(attr = None, exclude = (), content = False):
     return desc_content
   else:
     return stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(desc_content, validate = True)
+
 
 def get_router_status_entry_v2(attr = None, exclude = (), content = False):
   """
@@ -691,6 +713,7 @@ def get_router_status_entry_v2(attr = None, exclude = (), content = False):
   else:
     return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content, validate = True)
 
+
 def get_router_status_entry_v3(attr = None, exclude = (), content = False):
   """
   Provides the descriptor content for...
@@ -710,6 +733,7 @@ def get_router_status_entry_v3(attr = None, exclude = (), content = False):
   else:
     return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content, validate = True)
 
+
 def get_router_status_entry_micro_v3(attr = None, exclude = (), content = False):
   """
   Provides the descriptor content for...
@@ -728,6 +752,7 @@ def get_router_status_entry_micro_v3(attr = None, exclude = (), content = False)
     return desc_content
   else:
     return stem.descriptor.router_status_entry.RouterStatusEntryMicroV3(desc_content, validate = True)
+
 
 def get_directory_authority(attr = None, exclude = (), is_vote = False, content = False):
   """
@@ -760,6 +785,7 @@ def get_directory_authority(attr = None, exclude = (), is_vote = False, content 
   else:
     return stem.descriptor.networkstatus.DirectoryAuthority(desc_content, validate = True, is_vote = is_vote)
 
+
 def get_key_certificate(attr = None, exclude = (), content = False):
   """
   Provides the descriptor content for...
@@ -778,6 +804,7 @@ def get_key_certificate(attr = None, exclude = (), content = False):
     return desc_content
   else:
     return stem.descriptor.networkstatus.KeyCertificate(desc_content, validate = True)
+
 
 def get_network_status_document_v2(attr = None, exclude = (), routers = None, content = False):
   """
@@ -798,6 +825,7 @@ def get_network_status_document_v2(attr = None, exclude = (), routers = None, co
     return desc_content
   else:
     return stem.descriptor.networkstatus.NetworkStatusDocumentV2(desc_content, validate = True)
+
 
 def get_network_status_document_v3(attr = None, exclude = (), authorities = None, routers = None, content = False):
   """
@@ -849,6 +877,7 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
     return desc_content
   else:
     return stem.descriptor.networkstatus.NetworkStatusDocumentV3(desc_content, validate = True)
+
 
 def sign_descriptor_content(desc_content):
   """

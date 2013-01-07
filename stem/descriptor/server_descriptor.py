@@ -71,6 +71,7 @@ SINGLE_FIELDS = (
   "ntor-onion-key",
 )
 
+
 def parse_file(descriptor_file, validate = True):
   """
   Iterates over the server descriptors in a file.
@@ -128,6 +129,7 @@ def parse_file(descriptor_file, validate = True):
       yield RelayDescriptor(descriptor_text, validate, annotations)
     else:
       break  # done parsing descriptors
+
 
 class ServerDescriptor(stem.descriptor.Descriptor):
   """
@@ -607,6 +609,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   def _last_keyword(self):
     return "router-signature"
 
+
 class RelayDescriptor(ServerDescriptor):
   """
   Server descriptor (`descriptor specification
@@ -805,6 +808,7 @@ class RelayDescriptor(ServerDescriptor):
     key_bytes = base64.b64decode(key_as_string)
     
     return key_bytes
+
 
 class BridgeDescriptor(ServerDescriptor):
   """

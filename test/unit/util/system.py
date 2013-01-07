@@ -56,6 +56,7 @@ GET_PID_BY_PORT_LSOF_RESULTS = [
   "tor     1745 atagar    6u  IPv4  14229      0t0  TCP 127.0.0.1:9051 (LISTEN)",
   "apache   329 atagar    6u  IPv4  14229      0t0  TCP 127.0.0.1:80 (LISTEN)"]
 
+
 def mock_call(base_cmd, responses):
   """
   Provides mocking for the system module's call function. There are a couple
@@ -92,6 +93,7 @@ def mock_call(base_cmd, responses):
           return responses[cmd_completion]
   
   return functools.partial(_mock_call, base_cmd, responses)
+
 
 class TestSystem(unittest.TestCase):
   def setUp(self):

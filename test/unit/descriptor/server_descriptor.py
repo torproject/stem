@@ -18,6 +18,7 @@ from test.mocking import get_relay_server_descriptor, \
                          CRYPTO_BLOB, \
                          sign_descriptor_content
 
+
 class TestServerDescriptor(unittest.TestCase):
   def test_minimal_relay_descriptor(self):
     """

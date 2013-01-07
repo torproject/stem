@@ -59,6 +59,7 @@ GET_CWD_PWDX = "pwdx %s"
 GET_CWD_LSOF = "lsof -a -p %s -d cwd -Fn"
 GET_BSD_JAIL_ID_PS = "ps -p %s -o jid"
 
+
 def is_windows():
   """
   Checks if we are running on Windows.
@@ -67,6 +68,7 @@ def is_windows():
   """
   
   return platform.system() == "Windows"
+
 
 def is_mac():
   """
@@ -77,6 +79,7 @@ def is_mac():
   
   return platform.system() == "Darwin"
 
+
 def is_bsd():
   """
   Checks if we are within the BSD family of operating systems. This presently
@@ -86,6 +89,7 @@ def is_bsd():
   """
   
   return platform.system() in ("Darwin", "FreeBSD", "OpenBSD")
+
 
 def is_available(command, cached=True):
   """
@@ -128,6 +132,7 @@ def is_available(command, cached=True):
     CMD_AVAILABLE_CACHE[command] = cmd_exists
     return cmd_exists
 
+
 def is_running(command):
   """
   Checks for if a process with a given name is running or not.
@@ -168,6 +173,7 @@ def is_running(command):
       return command in command_listing
   
   return None
+
 
 def get_pid_by_name(process_name):
   """
@@ -287,6 +293,7 @@ def get_pid_by_name(process_name):
   
   log.debug("failed to resolve a pid for '%s'" % process_name)
   return None
+
 
 def get_pid_by_port(port):
   """
@@ -411,6 +418,7 @@ def get_pid_by_port(port):
   
   return None  # all queries failed
 
+
 def get_pid_by_open_file(path):
   """
   Attempts to determine the process id for a process with the given open file,
@@ -447,6 +455,7 @@ def get_pid_by_open_file(path):
         return int(pid)
   
   return None  # all queries failed
+
 
 def get_cwd(pid):
   """
@@ -515,6 +524,7 @@ def get_cwd(pid):
   
   return None  # all queries failed
 
+
 def get_bsd_jail_id(pid):
   """
   Gets the jail id for a process. These seem to only exist for FreeBSD (this
@@ -548,6 +558,7 @@ def get_bsd_jail_id(pid):
     log.debug("get_bsd_jail_id(%s): jail ids do not exist on %s" % (pid, os_name))
   
   return 0
+
 
 def expand_path(path, cwd = None):
   """
@@ -592,6 +603,7 @@ def expand_path(path, cwd = None):
       relative_path = os.path.join(cwd, relative_path)
   
   return relative_path
+
 
 def call(command, default = UNDEFINED):
   """

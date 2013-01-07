@@ -29,6 +29,7 @@ import stem.util.system
 NO_TORRC = "<no torrc>"
 DEFAULT_INIT_TIMEOUT = 90
 
+
 def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
   """
   Initializes a tor process. This blocks until initialization completes or we
@@ -170,6 +171,7 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
         
         last_problem = msg
 
+
 def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
   """
   Initializes a tor process, like :func:`~stem.process.launch_tor`, but with a
@@ -229,6 +231,7 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
       os.remove(torrc_path)
     except:
       pass
+
 
 def _get_pid():
   return str(os.getpid())
