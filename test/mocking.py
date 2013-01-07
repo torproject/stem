@@ -862,7 +862,7 @@ def sign_descriptor_content(desc_content):
     public_key_string =  public_key_string [:64] + "\n" +public_key_string[64:128] +"\n" +public_key_string[128:]
     
     # generate the new signing key string
-    signing_key_token = "\nsigning-key\n" #note the trailing '\n' is important here so as not to match the string elsewhere
+    signing_key_token = "\nsigning-key\n" # note the trailing '\n' is important here so as not to match the string elsewhere
     signing_key_token_start = "-----BEGIN RSA PUBLIC KEY-----\n"
     signing_key_token_end = "\n-----END RSA PUBLIC KEY-----\n"
     new_sk = signing_key_token+ signing_key_token_start+public_key_string+signing_key_token_end
