@@ -1676,7 +1676,7 @@ class Controller(BaseController):
     :raises: :class:`stem.InvalidRequest` if not enough information is provided
     """
     
-    response = self.msg("CLOSECIRCUIT %s %s"% (str(circuit_id), flag))
+    response = self.msg("CLOSECIRCUIT %s %s" % (circuit_id, flag))
     stem.response.convert("SINGLELINE", response)
     
     if not response.is_ok():
@@ -1757,7 +1757,7 @@ class Controller(BaseController):
     # there's a single value offset between RelayEndReason.index_of() and the
     # value that tor expects since tor's value starts with the index of one
     
-    response = self.msg("CLOSESTREAM %s %s %s"% (stream_id, stem.RelayEndReason.index_of(reason) + 1, flag))
+    response = self.msg("CLOSESTREAM %s %s %s" % (stream_id, stem.RelayEndReason.index_of(reason) + 1, flag))
     stem.response.convert("SINGLELINE", response)
     
     if not response.is_ok():
