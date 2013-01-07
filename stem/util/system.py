@@ -44,20 +44,20 @@ CMD_AVAILABLE_CACHE = {}
 
 SHELL_COMMANDS = ['ulimit']
 
-IS_RUNNING_PS_LINUX      = "ps -A co command"
-IS_RUNNING_PS_BSD        = "ps -ao ucomm="
-GET_PID_BY_NAME_PGREP    = "pgrep -x %s"
-GET_PID_BY_NAME_PIDOF    = "pidof %s"
+IS_RUNNING_PS_LINUX = "ps -A co command"
+IS_RUNNING_PS_BSD = "ps -ao ucomm="
+GET_PID_BY_NAME_PGREP = "pgrep -x %s"
+GET_PID_BY_NAME_PIDOF = "pidof %s"
 GET_PID_BY_NAME_PS_LINUX = "ps -o pid -C %s"
-GET_PID_BY_NAME_PS_BSD   = "ps axc"
-GET_PID_BY_NAME_LSOF     = "lsof -tc %s"
-GET_PID_BY_PORT_NETSTAT  = "netstat -npltu"
+GET_PID_BY_NAME_PS_BSD = "ps axc"
+GET_PID_BY_NAME_LSOF = "lsof -tc %s"
+GET_PID_BY_PORT_NETSTAT = "netstat -npltu"
 GET_PID_BY_PORT_SOCKSTAT = "sockstat -4l -P tcp -p %s"
-GET_PID_BY_PORT_LSOF     = "lsof -wnP -iTCP -sTCP:LISTEN"
-GET_PID_BY_FILE_LSOF     = "lsof -tw %s"
-GET_CWD_PWDX             = "pwdx %s"
-GET_CWD_LSOF             = "lsof -a -p %s -d cwd -Fn"
-GET_BSD_JAIL_ID_PS       = "ps -p %s -o jid"
+GET_PID_BY_PORT_LSOF = "lsof -wnP -iTCP -sTCP:LISTEN"
+GET_PID_BY_FILE_LSOF = "lsof -tw %s"
+GET_CWD_PWDX = "pwdx %s"
+GET_CWD_LSOF = "lsof -a -p %s -d cwd -Fn"
+GET_BSD_JAIL_ID_PS = "ps -p %s -o jid"
 
 def is_windows():
   """

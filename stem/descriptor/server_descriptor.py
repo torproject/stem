@@ -350,11 +350,11 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         elif not (router_comp[2].isdigit() and router_comp[3].isdigit() and router_comp[4].isdigit()):
           continue
         
-        self.nickname   = router_comp[0]
-        self.address    = router_comp[1]
-        self.or_port    = int(router_comp[2])
+        self.nickname = router_comp[0]
+        self.address = router_comp[1]
+        self.or_port = int(router_comp[2])
         self.socks_port = None if router_comp[3] == '0' else int(router_comp[3])
-        self.dir_port   = None if router_comp[4] == '0' else int(router_comp[4])
+        self.dir_port = None if router_comp[4] == '0' else int(router_comp[4])
       elif keyword == "bandwidth":
         # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
         bandwidth_comp = value.split()
@@ -373,8 +373,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
           if not validate: continue
           raise ValueError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
         
-        self.average_bandwidth  = int(bandwidth_comp[0])
-        self.burst_bandwidth    = int(bandwidth_comp[1])
+        self.average_bandwidth = int(bandwidth_comp[0])
+        self.burst_bandwidth = int(bandwidth_comp[1])
         self.observed_bandwidth = int(bandwidth_comp[2])
       elif keyword == "platform":
         # "platform" string

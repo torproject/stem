@@ -34,11 +34,11 @@ try:
 except ImportError:
   from stem.util.ordereddict import OrderedDict
 
-KEYWORD_CHAR    = "a-zA-Z0-9-"
-WHITESPACE      = " \t"
-KEYWORD_LINE    = re.compile("^([%s]+)(?:[%s]+(.*))?$" % (KEYWORD_CHAR, WHITESPACE))
+KEYWORD_CHAR = "a-zA-Z0-9-"
+WHITESPACE = " \t"
+KEYWORD_LINE = re.compile("^([%s]+)(?:[%s]+(.*))?$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHITESPACE))
-PGP_BLOCK_END   = "-----END %s-----"
+PGP_BLOCK_END = "-----END %s-----"
 
 Flag = stem.util.enum.Enum(
   ("AUTHORITY", "Authority"),
