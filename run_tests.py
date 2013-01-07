@@ -466,9 +466,12 @@ if __name__ == '__main__':
   style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "run_tests.py")))
   
   if CONFIG["argument.style"]:
-    style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "stem")))
-    style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "test")))
-    style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "run_tests.py")))
+    if system.is_available("pep8"):
+      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "stem")))
+      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "test")))
+      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "run_tests.py")))
+    else:
+      test.output.print_line("Style checks require pep8. Please install it from 'http://pypi.python.org/pypi/pep8'.")
   
   if style_issues:
     test.output.print_line("STYLE ISSUES", term.Color.BLUE, term.Attr.BOLD)
