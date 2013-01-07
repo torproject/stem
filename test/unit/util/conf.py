@@ -82,25 +82,37 @@ class TestConf(unittest.TestCase):
     self.assertEqual([], parse_enum_csv("my_option", "", Insects))
     self.assertEqual([Insects.LADYBUG], parse_enum_csv("my_option", "ladybug", Insects))
     
-    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY],
-      parse_enum_csv("my_option", "ladybug, butterfly", Insects))
+    self.assertEqual(
+      [Insects.LADYBUG, Insects.BUTTERFLY],
+      parse_enum_csv("my_option", "ladybug, butterfly", Insects)
+    )
     
-    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY, Insects.CRICKET],
-      parse_enum_csv("my_option", "ladybug, butterfly, cricket", Insects))
+    self.assertEqual(
+      [Insects.LADYBUG, Insects.BUTTERFLY, Insects.CRICKET],
+      parse_enum_csv("my_option", "ladybug, butterfly, cricket", Insects)
+    )
     
     # edge cases for count argument where things are ok
     
-    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY],
-      parse_enum_csv("my_option", "ladybug, butterfly", Insects, 2))
+    self.assertEqual(
+      [Insects.LADYBUG, Insects.BUTTERFLY],
+      parse_enum_csv("my_option", "ladybug, butterfly", Insects, 2)
+    )
     
-    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY],
-      parse_enum_csv("my_option", "ladybug, butterfly", Insects, (1, 2)))
+    self.assertEqual(
+      [Insects.LADYBUG, Insects.BUTTERFLY],
+      parse_enum_csv("my_option", "ladybug, butterfly", Insects, (1, 2))
+    )
     
-    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY],
-      parse_enum_csv("my_option", "ladybug, butterfly", Insects, (2, 3)))
+    self.assertEqual(
+      [Insects.LADYBUG, Insects.BUTTERFLY],
+      parse_enum_csv("my_option", "ladybug, butterfly", Insects, (2, 3))
+    )
     
-    self.assertEqual([Insects.LADYBUG, Insects.BUTTERFLY],
-      parse_enum_csv("my_option", "ladybug, butterfly", Insects, (2, 2)))
+    self.assertEqual(
+      [Insects.LADYBUG, Insects.BUTTERFLY],
+      parse_enum_csv("my_option", "ladybug, butterfly", Insects, (2, 2))
+    )
     
     # failure cases
     

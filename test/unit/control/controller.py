@@ -53,8 +53,10 @@ class TestControl(unittest.TestCase):
       mocking.mock_method(Controller, "get_info", mocking.raise_exception(InvalidArguments))
       
       # Get a default value when the call fails.
-      self.assertEqual("default returned",
-          self.controller.get_version(default = "default returned"))
+      self.assertEqual(
+        "default returned",
+        self.controller.get_version(default = "default returned")
+      )
       
       # No default value, accept the error.
       self.assertRaises(InvalidArguments, self.controller.get_version)
@@ -138,8 +140,11 @@ class TestControl(unittest.TestCase):
     mocking.mock_method(Controller, "get_info", mocking.return_value(
       '"127.0.0.1:1112" "127.0.0.1:1114"'
     ))
-    self.assertEqual([('127.0.0.1', 1112), ('127.0.0.1', 1114)],
-        self.controller.get_socks_listeners())
+    
+    self.assertEqual(
+      [('127.0.0.1', 1112), ('127.0.0.1', 1114)],
+      self.controller.get_socks_listeners()
+    )
     
     # no SOCKS listeners
     mocking.mock_method(Controller, "get_info", mocking.return_value(""))
@@ -175,8 +180,11 @@ class TestControl(unittest.TestCase):
     mocking.mock(stem.connection.get_protocolinfo, mocking.raise_exception(ProtocolError))
     
     # Get a default value when the call fails.
-    self.assertEqual("default returned",
-        self.controller.get_protocolinfo(default = "default returned"))
+    
+    self.assertEqual(
+      "default returned",
+      self.controller.get_protocolinfo(default = "default returned")
+    )
     
     # No default value, accept the error.
     self.assertRaises(ProtocolError, self.controller.get_protocolinfo)
@@ -210,8 +218,11 @@ class TestControl(unittest.TestCase):
     mocking.mock_method(Controller, "get_info", mocking.raise_exception(InvalidArguments))
     
     # Get a default value when the call fails.
-    self.assertEqual("default returned",
-        self.controller.get_network_status(nickname, default = "default returned"))
+    
+    self.assertEqual(
+      "default returned",
+      self.controller.get_network_status(nickname, default = "default returned")
+    )
     
     # No default value, accept the error.
     self.assertRaises(InvalidArguments, self.controller.get_network_status, nickname)

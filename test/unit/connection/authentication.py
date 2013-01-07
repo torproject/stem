@@ -62,14 +62,16 @@ class TestAuthenticate(unittest.TestCase):
     stem_logger.setLevel(log.logging_level(None))
     
     # exceptions that the authentication functions are documented to raise
-    all_auth_none_exc = (None,
-      stem.connection.OpenAuthRejected(None))
     
-    all_auth_password_exc = (None,
+    all_auth_none_exc = (None, stem.connection.OpenAuthRejected(None))
+    
+    all_auth_password_exc = (
+      None,
       stem.connection.PasswordAuthRejected(None),
       stem.connection.IncorrectPassword(None))
     
-    all_auth_cookie_exc = (None,
+    all_auth_cookie_exc = (
+      None,
       stem.connection.IncorrectCookieSize(None, False, None),
       stem.connection.UnreadableCookieFile(None, False, None),
       stem.connection.CookieAuthRejected(None, False, None),

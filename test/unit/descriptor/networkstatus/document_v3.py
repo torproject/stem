@@ -41,7 +41,8 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     document = get_network_status_document_v3()
     
-    expected_known_flags = [Flag.AUTHORITY, Flag.BADEXIT, Flag.EXIT,
+    expected_known_flags = [
+      Flag.AUTHORITY, Flag.BADEXIT, Flag.EXIT,
       Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING,
       Flag.STABLE, Flag.UNNAMED, Flag.V2DIR, Flag.VALID]
     
@@ -75,7 +76,8 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     document = get_network_status_document_v3({"vote-status": "vote"})
     
-    expected_known_flags = [Flag.AUTHORITY, Flag.BADEXIT, Flag.EXIT,
+    expected_known_flags = [
+      Flag.AUTHORITY, Flag.BADEXIT, Flag.EXIT,
       Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING,
       Flag.STABLE, Flag.UNNAMED, Flag.V2DIR, Flag.VALID]
     

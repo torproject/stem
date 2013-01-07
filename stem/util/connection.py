@@ -278,6 +278,7 @@ def cryptovariables_equal(x, y):
   :returns: **True** if both strings are equal, **False** otherwise.
   """
   
-  return (hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
-      hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
+  return (
+    hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
+    hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
 

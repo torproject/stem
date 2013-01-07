@@ -132,8 +132,9 @@ class TestNetworkStatus(unittest.TestCase):
       "0.2.3.19-rc",
     )]
     
-    expected_flags = set(["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir",
-      "Named", "Running", "Stable", "Unnamed", "V2Dir", "Valid"])
+    expected_flags = set(
+      ["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir",
+       "Named", "Running", "Stable", "Unnamed", "V2Dir", "Valid"])
     
     expected_bandwidth_weights = {
       "Wbd": 3335, "Wbe": 0, "Wbg": 3536, "Wbm": 10000, "Wdb": 10000,
@@ -305,8 +306,9 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
     Checks that vote documents are properly parsed.
     """
     
-    expected_flags = set(["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir",
-      "Running", "Stable", "V2Dir", "Valid"])
+    expected_flags = set(
+      ["Authority", "BadExit", "Exit", "Fast", "Guard", "HSDir",
+       "Running", "Stable", "V2Dir", "Valid"])
     
     expected_identity_key = """-----BEGIN RSA PUBLIC KEY-----
 MIIBigKCAYEA6uSmsoxj2MiJ3qyZq0qYXlRoG8o82SNqg+22m+t1c7MlQOZWPJYn

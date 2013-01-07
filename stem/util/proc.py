@@ -55,8 +55,10 @@ CLOCK_TICKS = None
 try: CLOCK_TICKS = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
 except AttributeError: pass
 
-Stat = stem.util.enum.Enum(("COMMAND", "command"), ("CPU_UTIME", "utime"),
-                 ("CPU_STIME", "stime"), ("START_TIME", "start time"))
+Stat = stem.util.enum.Enum(
+  ("COMMAND", "command"), ("CPU_UTIME", "utime"),
+  ("CPU_STIME", "stime"), ("START_TIME", "start time")
+)
 
 def is_available():
   """

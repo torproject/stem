@@ -678,15 +678,17 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
     if not suppress_ctl_errors: raise exc
     else: raise AuthChallengeFailed("Unable to parse AUTHCHALLENGE response: %s" % exc, cookie_path)
   
-  expected_server_hash = stem.util.connection.hmac_sha256(SERVER_HASH_CONSTANT,
-      cookie_data + client_nonce + authchallenge_response.server_nonce)
+  expected_server_hash = stem.util.connection.hmac_sha256(
+    SERVER_HASH_CONSTANT,
+    cookie_data + client_nonce + authchallenge_response.server_nonce)
   
   if not stem.util.connection.cryptovariables_equal(authchallenge_response.server_hash, expected_server_hash):
     raise AuthSecurityFailure("Tor provided the wrong server nonce", cookie_path)
   
   try:
-    client_hash = stem.util.connection.hmac_sha256(CLIENT_HASH_CONSTANT,
-        cookie_data + client_nonce + authchallenge_response.server_nonce)
+    client_hash = stem.util.connection.hmac_sha256(
+      CLIENT_HASH_CONSTANT,
+      cookie_data + client_nonce + authchallenge_response.server_nonce)
     auth_response = _msg(controller, "AUTHENTICATE %s" % (binascii.b2a_hex(client_hash)))
   except stem.ControllerError, exc:
     try: controller.connect()
