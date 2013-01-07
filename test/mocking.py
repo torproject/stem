@@ -859,7 +859,7 @@ def sign_descriptor_content(desc_content):
     public_key_string = base64.b64encode(seq_as_string)
     
     # split public key into lines 64 characters long
-    public_key_string =  public_key_string [:64] + "\n" + public_key_string[64:128] + "\n" + public_key_string[128:]
+    public_key_string = public_key_string [:64] + "\n" + public_key_string[64:128] + "\n" + public_key_string[128:]
     
     # generate the new signing key string
     
