@@ -126,7 +126,7 @@ def parse_file(descriptor_file, validate = True):
       
       descriptor_text = "".join(descriptor_content)
       yield RelayDescriptor(descriptor_text, validate, annotations)
-    else: break # done parsing descriptors
+    else: break  # done parsing descriptors
 
 class ServerDescriptor(stem.descriptor.Descriptor):
   """
@@ -242,7 +242,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     self._unrecognized_lines = []
     
     self._annotation_lines = annotations if annotations else []
-    self._annotation_dict = None # cached breakdown of key/value mappings
+    self._annotation_dict = None  # cached breakdown of key/value mappings
     
     # A descriptor contains a series of 'keyword lines' which are simply a
     # keyword followed by an optional value. Lines can also be followed by a
@@ -325,7 +325,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
       # most just work with the first (and only) value
       value, block_contents = values[0]
       
-      line = "%s %s" % (keyword, value) # original line
+      line = "%s %s" % (keyword, value)  # original line
       if block_contents: line += "\n%s" % block_contents
       
       if keyword == "router":
@@ -490,7 +490,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
           div = entry.rfind(":")
           address, ports = entry[:div], entry[div + 1:]
           is_ipv6 = address.startswith("[") and address.endswith("]")
-          if is_ipv6: address = address[1:-1] # remove brackets
+          if is_ipv6: address = address[1:-1]  # remove brackets
           
           if not ((not is_ipv6 and stem.util.connection.is_valid_ip_address(address)) or
                  (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
@@ -669,7 +669,7 @@ class RelayDescriptor(ServerDescriptor):
     seq = asn1.DerSequence()
     seq.decode(key_as_der)
     modulus = seq[0]
-    public_exponent = seq[1] # should always be 65537
+    public_exponent = seq[1]  # should always be 65537
     
     sig_as_bytes = RelayDescriptor._get_key_bytes(self.signature)
     
@@ -727,7 +727,7 @@ class RelayDescriptor(ServerDescriptor):
       raise ValueError("Decrypted digest does not match local digest")
   
   def _parse(self, entries, validate):
-    entries = dict(entries) # shallow copy since we're destructive
+    entries = dict(entries)  # shallow copy since we're destructive
     
     # handles fields only in server descriptors
     

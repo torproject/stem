@@ -169,7 +169,7 @@ class _SyncListener(object):
   def update(self, config, key):
     if key in self.config_dict:
       new_value = config.get(key, self.config_dict[key])
-      if new_value == self.config_dict[key]: return # no change
+      if new_value == self.config_dict[key]: return  # no change
       
       if self.interceptor:
         interceptor_value = self.interceptor(key, new_value)
@@ -268,7 +268,7 @@ def parse_enum_csv(key, value, enumeration, count = None):
   if values == ['']: return []
   
   if count is None:
-    pass # no count validateion checks to do
+    pass  # no count validateion checks to do
   elif isinstance(count, int):
     if len(values) != count:
       raise ValueError("Config entry '%s' is expected to be %i comma separated values, got '%s'" % (key, count, value))
@@ -432,8 +432,8 @@ class Config(object):
             multiline_buffer = []
             
             while remainder and remainder[0].lstrip().startswith("|"):
-              content = remainder.pop(0).lstrip()[1:] # removes '\s+|' prefix
-              content = content.rstrip("\n")          # trailing newline
+              content = remainder.pop(0).lstrip()[1:]  # removes '\s+|' prefix
+              content = content.rstrip("\n")           # trailing newline
               multiline_buffer.append(content)
             
             if multiline_buffer:
@@ -588,7 +588,7 @@ class Config(object):
     
     is_multivalue = isinstance(default, (list, tuple, dict))
     val = self.get_value(key, default, is_multivalue)
-    if val == default: return val # don't try to infer undefined values
+    if val == default: return val  # don't try to infer undefined values
     
     if isinstance(default, bool):
       if val.lower() == "true": val = True
@@ -607,7 +607,7 @@ class Config(object):
         log.debug("Config entry '%s' is expected to be a float, defaulting to '%f'" % (key, default))
         val = default
     elif isinstance(default, list):
-      pass # nothing special to do (already a list)
+      pass  # nothing special to do (already a list)
     elif isinstance(default, tuple):
       val = tuple(val)
     elif isinstance(default, dict):

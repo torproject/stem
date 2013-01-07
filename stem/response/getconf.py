@@ -39,7 +39,7 @@ class GetConfResponse(stem.response.ControlMessage):
       line = remaining_lines.pop(0)
       
       if line.is_next_mapping(quoted = False):
-        key, value = line.split("=", 1) # TODO: make this part of the ControlLine?
+        key, value = line.split("=", 1)  # TODO: make this part of the ControlLine?
       elif line.is_next_mapping(quoted = True):
         # TODO: doesn't seem to occur yet in practice...
         # https://trac.torproject.org/6172

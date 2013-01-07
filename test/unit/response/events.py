@@ -10,7 +10,7 @@ import stem.response
 import stem.response.events
 import stem.util.log
 
-from stem import * # enums and exceptions
+from stem import *  # enums and exceptions
 from test import mocking
 
 # ADDRMAP event

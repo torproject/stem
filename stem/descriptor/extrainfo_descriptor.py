@@ -158,7 +158,7 @@ def parse_file(descriptor_file, validate = True):
     
     if extrainfo_content:
       yield RelayExtraInfoDescriptor("".join(extrainfo_content), validate)
-    else: break # done parsing file
+    else: break  # done parsing file
 
 def _parse_timestamp_and_interval(keyword, content):
   """
@@ -180,7 +180,7 @@ def _parse_timestamp_and_interval(keyword, content):
     raise ValueError("Malformed %s line: %s" % (keyword, line))
   
   timestamp_str, interval, remainder = content_match.groups()
-  if remainder: remainder = remainder[1:] # remove leading space
+  if remainder: remainder = remainder[1:]  # remove leading space
   
   if not interval.isdigit():
     raise ValueError("%s line's interval wasn't a number: %s" % (keyword, line))
@@ -423,7 +423,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     for keyword, values in entries.items():
       # most just work with the first (and only) value
       value, _ = values[0]
-      line = "%s %s" % (keyword, value) # original line
+      line = "%s %s" % (keyword, value)  # original line
       
       if keyword == "extra-info":
         # "extra-info" Nickname Fingerprint
@@ -800,13 +800,13 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
     return self._digest
   
   def _parse(self, entries, validate):
-    entries = dict(entries) # shallow copy since we're destructive
+    entries = dict(entries)  # shallow copy since we're destructive
     
     # handles fields only in server descriptors
     for keyword, values in entries.items():
       value, block_contents = values[0]
       
-      line = "%s %s" % (keyword, value) # original line
+      line = "%s %s" % (keyword, value)  # original line
       if block_contents: line += "\n%s" % block_contents
       
       if keyword == "router-signature":
@@ -836,12 +836,12 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
     return self._digest
   
   def _parse(self, entries, validate):
-    entries = dict(entries) # shallow copy since we're destructive
+    entries = dict(entries)  # shallow copy since we're destructive
     
     # handles fields only in server descriptors
     for keyword, values in entries.items():
       value, _ = values[0]
-      line = "%s %s" % (keyword, value) # original line
+      line = "%s %s" % (keyword, value)  # original line
       
       if keyword == "router-digest":
         if validate and not stem.util.tor_tools.is_hex_digits(value, 40):

@@ -173,7 +173,7 @@ def load_processed_files(path):
     for line in input_file.readlines():
       line = line.strip()
       
-      if not line: continue # skip blank lines
+      if not line: continue  # skip blank lines
       
       if not " " in line:
         raise TypeError("Malformed line: %s" % line)

@@ -143,8 +143,8 @@ class TestStrTools(unittest.TestCase):
       None,
       32,
       'hello world',
-      '2012-11-08T16:48:41.42025',   # too few microsecond digits
-      '2012-11-08T16:48:41.4202511', # too many microsecond digits
+      '2012-11-08T16:48:41.42025',    # too few microsecond digits
+      '2012-11-08T16:48:41.4202511',  # too many microsecond digits
       '2012-11-08T16:48',
     ]
     

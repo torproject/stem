@@ -23,7 +23,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     descriptor_path = test.integ.descriptor.get_resource("extrainfo_relay_descriptor")
     
     descriptor_file = open(descriptor_path)
-    descriptor_file.readline() # strip header
+    descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     
@@ -74,7 +74,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     descriptor_path = test.integ.descriptor.get_resource("extrainfo_bridge_descriptor")
     
     descriptor_file = open(descriptor_path)
-    descriptor_file.readline() # strip header
+    descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
     

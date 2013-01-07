@@ -234,7 +234,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
     consensus_path = test.integ.descriptor.get_resource("cached-consensus-v2")
     
     with open(consensus_path) as descriptor_file:
-      descriptor_file.readline() # strip header
+      descriptor_file.readline()  # strip header
       document = stem.descriptor.networkstatus.NetworkStatusDocumentV2(descriptor_file.read())
       
       self.assertEquals(2, document.version)

@@ -317,7 +317,7 @@ def get_connections(pid):
   for proc_file_path in ("/proc/net/tcp", "/proc/net/udp"):
     try:
       proc_file = open(proc_file_path)
-      proc_file.readline() # skip the first line
+      proc_file.readline()  # skip the first line
       
       for line in proc_file:
         _, l_addr, f_addr, status, _, _, _, _, _, inode = line.split()[:10]
@@ -411,7 +411,7 @@ def _get_lines(file_path, line_prefixes, parameter):
     proc_file, results = open(file_path), {}
     
     for line in proc_file:
-      if not remaining_prefixes: break # found everything we're looking for
+      if not remaining_prefixes: break  # found everything we're looking for
       
       for prefix in remaining_prefixes:
         if line.startswith(prefix):

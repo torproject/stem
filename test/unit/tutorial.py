@@ -51,7 +51,7 @@ class TestTutorial(unittest.TestCase):
       '__exit__': mocking.no_op(),
       '__iter__': mocking.return_value(iter((
         exit_descriptor,
-        mocking.get_relay_server_descriptor(), # non-exit
+        mocking.get_relay_server_descriptor(),  # non-exit
         exit_descriptor,
         exit_descriptor,
       )))

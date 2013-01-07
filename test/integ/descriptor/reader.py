@@ -60,7 +60,7 @@ def _get_raw_tar_descriptors():
       for tar_entry in tar_file:
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
-          entry.readline() # strip header
+          entry.readline()  # strip header
           raw_descriptors.append(entry.read())
           entry.close()
     finally:
@@ -72,7 +72,7 @@ def _get_raw_tar_descriptors():
 
 class SkipListener:
   def __init__(self):
-    self.results = [] # (path, exception) tuples that we've received
+    self.results = []  # (path, exception) tuples that we've received
   
   def listener(self, path, exception):
     self.results.append((path, exception))
@@ -122,7 +122,7 @@ class TestDescriptorReader(unittest.TestCase):
       test.runner.skip(self, "(chmod not functional)")
     
     test_listing_path = _make_processed_files_listing(BASIC_LISTING)
-    os.chmod(test_listing_path, 0077) # remove read permissions
+    os.chmod(test_listing_path, 0077)  # remove read permissions
     self.assertRaises(IOError, stem.descriptor.reader.load_processed_files, test_listing_path)
   
   def test_save_processed_files(self):
@@ -168,7 +168,7 @@ class TestDescriptorReader(unittest.TestCase):
     
     descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
     with open(descriptor_path) as descriptor_file:
-      descriptor_file.readline() # strip header
+      descriptor_file.readline()  # strip header
       descriptor_entries.append(descriptor_file.read())
     
     # running this test multiple times to flush out concurrency issues
@@ -335,7 +335,7 @@ class TestDescriptorReader(unittest.TestCase):
         expected_results[path] = last_modified
     
     reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA)
-    with reader: list(reader) # iterates over all of the descriptors
+    with reader: list(reader)  # iterates over all of the descriptors
     
     self.assertEquals(expected_results, reader.get_processed_files())
   
@@ -349,12 +349,12 @@ class TestDescriptorReader(unittest.TestCase):
     reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA)
     reader.register_skip_listener(skip_listener.listener)
     
-    with reader: list(reader) # iterates over all of the descriptors
+    with reader: list(reader)  # iterates over all of the descriptors
     
     self.assertEqual(4, len(skip_listener.results))
     
     for skip_path, skip_exception in skip_listener.results:
-      if skip_path.endswith(".swp"): continue # skip vim temp files
+      if skip_path.endswith(".swp"): continue  # skip vim temp files
       
       if not os.path.basename(skip_path) in ("riddle", "tiny.png", "vote", "new_metrics_type"):
         self.fail("Unexpected non-descriptor content: %s" % skip_path)
@@ -378,7 +378,7 @@ class TestDescriptorReader(unittest.TestCase):
     reader.set_processed_files(initial_processed_files)
     
     self.assertEquals(initial_processed_files, reader.get_processed_files())
-    with reader: list(reader) # iterates over all of the descriptors
+    with reader: list(reader)  # iterates over all of the descriptors
     
     self.assertEquals(1, len(skip_listener.results))
     
@@ -405,7 +405,7 @@ class TestDescriptorReader(unittest.TestCase):
       skip_listener = SkipListener()
       reader = stem.descriptor.reader.DescriptorReader(test_path)
       reader.register_skip_listener(skip_listener.listener)
-      with reader: list(reader) # iterates over all of the descriptors
+      with reader: list(reader)  # iterates over all of the descriptors
       
       self.assertEqual(1, len(skip_listener.results))
       
@@ -432,12 +432,12 @@ class TestDescriptorReader(unittest.TestCase):
       test_file.write("test data for test_skip_listener_unrecognized_type()")
       test_file.close()
       
-      os.chmod(test_path, 0077) # remove read permissions
+      os.chmod(test_path, 0077)  # remove read permissions
       
       skip_listener = SkipListener()
       reader = stem.descriptor.reader.DescriptorReader(test_path)
       reader.register_skip_listener(skip_listener.listener)
-      with reader: list(reader) # iterates over all of the descriptors
+      with reader: list(reader)  # iterates over all of the descriptors
       
       self.assertEqual(1, len(skip_listener.results))
       
@@ -459,7 +459,7 @@ class TestDescriptorReader(unittest.TestCase):
     skip_listener = SkipListener()
     reader = stem.descriptor.reader.DescriptorReader(test_path)
     reader.register_skip_listener(skip_listener.listener)
-    with reader: list(reader) # iterates over all of the descriptors
+    with reader: list(reader)  # iterates over all of the descriptors
     
     self.assertEqual(1, len(skip_listener.results))
     
@@ -477,7 +477,7 @@ class TestDescriptorReader(unittest.TestCase):
     skip_listener = SkipListener()
     reader = stem.descriptor.reader.DescriptorReader(test_path)
     reader.register_skip_listener(skip_listener.listener)
-    with reader: list(reader) # iterates over all of the descriptors
+    with reader: list(reader)  # iterates over all of the descriptors
     
     self.assertEqual(1, len(skip_listener.results))
     

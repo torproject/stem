@@ -118,7 +118,7 @@ class TestConf(unittest.TestCase):
     
     self.assertRaises(ValueError, parse_enum_csv, "my_option", "ugabuga", Insects)
     self.assertRaises(ValueError, parse_enum_csv, "my_option", "ladybug, ugabuga", Insects)
-    self.assertRaises(ValueError, parse_enum_csv, "my_option", "ladybug butterfly", Insects) # no comma
+    self.assertRaises(ValueError, parse_enum_csv, "my_option", "ladybug butterfly", Insects)  # no comma
     self.assertRaises(ValueError, parse_enum_csv, "my_option", "ladybug", Insects, 2)
     self.assertRaises(ValueError, parse_enum_csv, "my_option", "ladybug", Insects, (2, 3))
   

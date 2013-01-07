@@ -49,7 +49,7 @@ def is_valid_ip_address(address):
     if not entry.isdigit() or int(entry) < 0 or int(entry) > 255:
       return False
     elif entry[0] == "0" and len(entry) > 1:
-      return False # leading zeros, for instance in "1.2.3.001"
+      return False  # leading zeros, for instance in "1.2.3.001"
   
   return True
 
@@ -74,11 +74,11 @@ def is_valid_ipv6_address(address, allow_brackets = False):
   colon_count = address.count(":")
   
   if colon_count > 7:
-    return False # too many groups
+    return False  # too many groups
   elif colon_count != 7 and not "::" in address:
-    return False # not enough groups and none are collapsed
+    return False  # not enough groups and none are collapsed
   elif address.count("::") > 1 or ":::" in address:
-    return False # multiple groupings of zeros can't be collapsed
+    return False  # multiple groupings of zeros can't be collapsed
   
   for entry in address.split(":"):
     if not re.match("^[0-9a-fA-f]{0,4}$", entry):
@@ -106,7 +106,7 @@ def is_valid_port(entry, allow_zero = False):
     if not entry.isdigit():
       return False
     elif entry[0] == "0" and len(entry) > 1:
-      return False # leading zeros, ex "001"
+      return False  # leading zeros, ex "001"
     
     entry = int(entry)
   

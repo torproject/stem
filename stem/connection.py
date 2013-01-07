@@ -370,7 +370,7 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
         else:
           authenticate_cookie(controller, cookie_path, False)
       
-      return # success!
+      return  # success!
     except OpenAuthRejected, exc:
       auth_exceptions.append(exc)
     except IncorrectPassword, exc:

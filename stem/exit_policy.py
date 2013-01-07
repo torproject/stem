@@ -188,7 +188,7 @@ class ExitPolicy(object):
       if display_ports:
         display_ranges, temp_range = [], []
         display_ports.sort()
-        display_ports.append(None) # ending item to include last range in loop
+        display_ports.append(None)  # ending item to include last range in loop
         
         for port in display_ports:
           if not temp_range or temp_range[-1] + 1 == port:
@@ -702,7 +702,7 @@ class MicroExitPolicyRule(ExitPolicyRule):
   
   def __init__(self, is_accept, min_port, max_port):
     self.is_accept = is_accept
-    self.address = None # wildcard address
+    self.address = None  # wildcard address
     self.min_port = min_port
     self.max_port = max_port
     self._str_representation = None

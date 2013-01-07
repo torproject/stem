@@ -459,7 +459,7 @@ def get_object(object_class, methods = None):
     if method_name in methods:
       mock_methods[method_name] = methods[method_name]
     elif method_name.startswith('__') and method_name.endswith('__'):
-      pass # messing with most private methods makes for a broken mock object
+      pass  # messing with most private methods makes for a broken mock object
     else:
       mock_methods[method_name] = raise_exception(ValueError("Unexpected call of '%s' on a mock object" % method_name))
   
@@ -548,7 +548,7 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
   
   header_content, footer_content = [], []
   if attr is None: attr = {}
-  attr = dict(attr) # shallow copy since we're destructive
+  attr = dict(attr)  # shallow copy since we're destructive
   
   for content, template in ((header_content, header_template),
                            (footer_content, footer_template)):
@@ -863,7 +863,7 @@ def sign_descriptor_content(desc_content):
     
     # generate the new signing key string
     
-    signing_key_token = "\nsigning-key\n" # note the trailing '\n' is important here so as not to match the string elsewhere
+    signing_key_token = "\nsigning-key\n"  # note the trailing '\n' is important here so as not to match the string elsewhere
     signing_key_token_start = "-----BEGIN RSA PUBLIC KEY-----\n"
     signing_key_token_end = "\n-----END RSA PUBLIC KEY-----\n"
     new_sk = signing_key_token + signing_key_token_start + public_key_string + signing_key_token_end

@@ -211,7 +211,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
       break
     
     line = descriptor_file.readline()
-    if not line: break # EOF
+    if not line: break  # EOF
     
     line_match = KEYWORD_LINE.match(line)
     
@@ -252,7 +252,7 @@ def _get_pseudo_pgp_block(remaining_contents):
   """
   
   if not remaining_contents:
-    return None # nothing left
+    return None  # nothing left
   
   block_match = PGP_BLOCK_START.match(remaining_contents[0])
   
@@ -300,7 +300,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
   """
   
   entries = OrderedDict()
-  extra_entries = [] # entries with a keyword in extra_keywords
+  extra_entries = []  # entries with a keyword in extra_keywords
   remaining_lines = raw_contents.split("\n")
   
   while remaining_lines:

@@ -170,7 +170,7 @@ class TestControlMessage(unittest.TestCase):
     # checks that the contents match the input
     message_lines = str(message).splitlines()
     controller_lines = controller_reply.split("\r\n")
-    controller_lines.pop() # the ControlMessage won't have a trailing newline
+    controller_lines.pop()  # the ControlMessage won't have a trailing newline
     
     while controller_lines:
       line = controller_lines.pop(0)

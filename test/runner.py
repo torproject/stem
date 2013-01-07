@@ -332,7 +332,7 @@ class Runner(object):
             test.output.print_line("failed (unable to call kill() in python 2.5)", *ERROR_ATTR)
         except OSError: pass
         
-        self._tor_process.communicate() # blocks until the process is done
+        self._tor_process.communicate()  # blocks until the process is done
       
       # if we've made a temporary data directory then clean it up
       if self._test_dir and CONFIG["integ.test_directory"] == "":

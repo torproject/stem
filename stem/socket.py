@@ -183,7 +183,7 @@ class ControlSocket(object):
         try:
           self._connect()
         except stem.SocketError:
-          self._connect() # single retry
+          self._connect()  # single retry
   
   def close(self):
     """
@@ -482,7 +482,7 @@ def recv_message(control_file):
       log.info(prefix + "no CRLF linebreak, \"%s\"" % log.escape(line))
       raise stem.ProtocolError("All lines should end with CRLF")
     
-    line = line[:-2] # strips off the CRLF
+    line = line[:-2]  # strips off the CRLF
     status_code, divider, content = line[:3], line[3], line[4:]
     
     if divider == "-":
@@ -514,9 +514,9 @@ def recv_message(control_file):
           log.info(prefix + "CRLF linebreaks missing from a data reply, \"%s\"" % log.escape(raw_content))
           raise stem.ProtocolError("All lines should end with CRLF")
         elif line == ".\r\n":
-          break # data block termination
+          break  # data block termination
         
-        line = line[:-2] # strips off the CRLF
+        line = line[:-2]  # strips off the CRLF
         
         # lines starting with a period are escaped by a second period (as per
         # section 2.4 of the control-spec)

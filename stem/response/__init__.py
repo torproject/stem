@@ -285,7 +285,7 @@ class ControlLine(str):
       **False** otherwise
     """
     
-    remainder = self._remainder # temp copy to avoid locking
+    remainder = self._remainder  # temp copy to avoid locking
     key_match = KEY_ARG.match(remainder)
     
     if key_match:
@@ -297,9 +297,9 @@ class ControlLine(str):
         start_quote, end_quote = _get_quote_indices(remainder, escaped)
         return start_quote == key_match.end() and end_quote != -1
       else:
-        return True # we just needed to check for the key
+        return True  # we just needed to check for the key
     else:
-      return False # doesn't start with a key
+      return False  # doesn't start with a key
   
   def peek_key(self):
     """

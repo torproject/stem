@@ -190,8 +190,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     
     test_values = (
       "",
-      "saberrider2008ReallyLongNickname", # too long
-      "$aberrider2008", # invalid characters
+      "saberrider2008ReallyLongNickname",  # too long
+      "$aberrider2008",  # invalid characters
     )
     
     for value in test_values:
@@ -474,7 +474,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     }
     
     # we need a document that's a vote
-    mock_document = lambda x: x # just need anything with a __dict__
+    mock_document = lambda x: x  # just need anything with a __dict__
     mock_document.__dict__["is_vote"] = True
     mock_document.__dict__["is_consensus"] = False
     

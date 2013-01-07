@@ -26,7 +26,7 @@ def _kill_process(process):
   elif not stem.util.system.is_windows():
     os.kill(process.pid, signal.SIGTERM)
   
-  process.communicate() # block until its definitely gone
+  process.communicate()  # block until its definitely gone
 
 class TestProcess(unittest.TestCase):
   def setUp(self):
@@ -136,7 +136,7 @@ class TestProcess(unittest.TestCase):
     
     for seconds_waited in xrange(30):
       if tor_process.poll() == 0:
-        return # tor exited
+        return  # tor exited
       
       time.sleep(1)
     
@@ -171,7 +171,7 @@ class TestProcess(unittest.TestCase):
     # give tor a few seconds to quit
     for seconds_waited in xrange(5):
       if tor_process.poll() == 0:
-        return # tor exited
+        return  # tor exited
       
       time.sleep(1)
     

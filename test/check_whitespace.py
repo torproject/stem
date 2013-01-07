@@ -54,7 +54,7 @@ def pep8_issues(base_path = DEFAULT_TARGET):
   #   Pep8 only works with this one if we have four space indents (its
   #   detection is based on multiples of four).
   
-  ignored_issues = "E111,E121,W293,E501,E302,E701,E251,E261,E127"
+  ignored_issues = "E111,E121,W293,E501,E302,E701,E251,E127"
   
   issues = {}
   pep8_output = system.call("pep8 --ignore %s %s" % (ignored_issues, base_path))

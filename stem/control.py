@@ -226,7 +226,7 @@ class BaseController(object):
     self._socket = control_socket
     self._msg_lock = threading.RLock()
     
-    self._status_listeners = [] # tuples of the form (callback, spawn_thread)
+    self._status_listeners = []  # tuples of the form (callback, spawn_thread)
     self._status_listeners_lock = threading.RLock()
     
     # queues where incoming messages are directed
@@ -249,7 +249,7 @@ class BaseController(object):
     self._socket._connect = self._connect
     self._socket._close = self._close
     
-    self._last_heartbeat = 0.0 # timestamp for when we last heard from tor
+    self._last_heartbeat = 0.0  # timestamp for when we last heard from tor
     
     if self._socket.is_alive():
       self._launch_threads()
@@ -293,7 +293,7 @@ class BaseController(object):
           response = self._reply_queue.get_nowait()
           
           if isinstance(response, stem.SocketClosed):
-            pass # this is fine
+            pass  # this is fine
           elif isinstance(response, stem.ProtocolError):
             log.info("Tor provided a malformed message (%s)" % response)
           elif isinstance(response, stem.ControllerError):
@@ -735,7 +735,7 @@ class Controller(BaseController):
       
       if self.is_caching_enabled():
         for key, value in response.entries.items():
-          key = key.lower() # make case insensitive
+          key = key.lower()  # make case insensitive
           
           if key in CACHEABLE_GETINFO_PARAMS:
             self._request_cache["getinfo.%s" % key] = value
@@ -821,7 +821,7 @@ class Controller(BaseController):
           elif not ':' in listener:
             raise stem.ProtocolError("'GETINFO net/listeners/socks' had a listener without a colon: %s" % listener)
           
-          listener = listener[1:-1] # strip quotes
+          listener = listener[1:-1]  # strip quotes
           addr, port = listener.split(':')
           proxy_addrs.append((addr, port))
       except stem.InvalidArguments:
@@ -1945,7 +1945,7 @@ def _parse_circ_entry(entry):
     if not stem.util.tor_tools.is_valid_fingerprint(fingerprint, True):
       raise stem.ProtocolError("Fingerprint in the circuit path is malformed (%s)" % fingerprint)
     
-    fingerprint = fingerprint[1:] # strip off the leading '$'
+    fingerprint = fingerprint[1:]  # strip off the leading '$'
   
   if nickname is not None and not stem.util.tor_tools.is_valid_nickname(nickname):
     raise stem.ProtocolError("Nickname in the circuit path is malformed (%s)" % nickname)

@@ -153,10 +153,10 @@ class TestControl(unittest.TestCase):
     # check where GETINFO provides malformed content
     
     invalid_responses = (
-      '"127.0.0.1"',        # address only
-      '"1112"',             # port only
-      '"5127.0.0.1:1112"',  # invlaid address
-      '"127.0.0.1:991112"', # invalid port
+      '"127.0.0.1"',         # address only
+      '"1112"',              # port only
+      '"5127.0.0.1:1112"',   # invlaid address
+      '"127.0.0.1:991112"',  # invalid port
     )
     
     for response in invalid_responses:
@@ -301,12 +301,12 @@ class TestControl(unittest.TestCase):
     # exercise with some invalid inputs
     
     malformed_inputs = [
-      '=piyaz', # no fingerprint
-      '999A226EBED397F331B612FE1E4CFAE5C1F201BA=piyaz', # fingerprint missing prefix
-      '$999A226EBED397F331B612FE1E4CFAE5C1F201BAA=piyaz', # fingerprint too long
-      '$999A226EBED397F331B612FE1E4CFAE5C1F201B=piyaz', # fingerprint too short
-      '$999A226EBED397F331B612FE1E4CFAE5C1F201Bz=piyaz', # invalid character in fingerprint
-      '$999A226EBED397F331B612FE1E4CFAE5C1F201BA=', # no nickname
+      '=piyaz',  # no fingerprint
+      '999A226EBED397F331B612FE1E4CFAE5C1F201BA=piyaz',  # fingerprint missing prefix
+      '$999A226EBED397F331B612FE1E4CFAE5C1F201BAA=piyaz',  # fingerprint too long
+      '$999A226EBED397F331B612FE1E4CFAE5C1F201B=piyaz',  # fingerprint too short
+      '$999A226EBED397F331B612FE1E4CFAE5C1F201Bz=piyaz',  # invalid character in fingerprint
+      '$999A226EBED397F331B612FE1E4CFAE5C1F201BA=',  # no nickname
     ]
     
     for test_input in malformed_inputs:

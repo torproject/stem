@@ -322,7 +322,7 @@ def get_pid_by_port(port):
       results = [r for r in results if "127.0.0.1:%s" % port in r]
       
       if len(results) == 1 and len(results[0].split()) == 7:
-        results = results[0].split()[6] # process field (ex. "7184/tor")
+        results = results[0].split()[6]  # process field (ex. "7184/tor")
         pid = results[:results.find("/")]
         if pid.isdigit(): return int(pid)
   
@@ -390,7 +390,7 @@ def get_pid_by_port(port):
         pid = results[0].split()[1]
         if pid.isdigit(): return int(pid)
   
-  return None # all queries failed
+  return None  # all queries failed
 
 def get_pid_by_open_file(path):
   """
@@ -425,7 +425,7 @@ def get_pid_by_open_file(path):
       pid = results[0].strip()
       if pid.isdigit(): return int(pid)
   
-  return None # all queries failed
+  return None  # all queries failed
 
 def get_cwd(pid):
   """
@@ -489,7 +489,7 @@ def get_cwd(pid):
     else:
       log.debug("%s we got unexpected output from lsof: %s" % (logging_prefix, results))
   
-  return None # all queries failed
+  return None  # all queries failed
 
 def get_bsd_jail_id(pid):
   """

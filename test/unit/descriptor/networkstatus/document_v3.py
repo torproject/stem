@@ -163,7 +163,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
           if is_mandatory and ((is_consensus and in_consensus) or (is_vote and in_votes)):
             content = get_network_status_document_v3(attr, exclude = (field,), content = True)
             self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
-            NetworkStatusDocumentV3(content, False) # constructs without validation
+            NetworkStatusDocumentV3(content, False)  # constructs without validation
   
   def test_unrecognized_line(self):
     """
@@ -193,7 +193,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
         
         content = "\n".join(test_lines)
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
-        NetworkStatusDocumentV3(content, False) # constructs without validation
+        NetworkStatusDocumentV3(content, False)  # constructs without validation
   
   def test_duplicate_fields(self):
     """
@@ -220,7 +220,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
         
         content = "\n".join(test_lines)
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
-        NetworkStatusDocumentV3(content, False) # constructs without validation
+        NetworkStatusDocumentV3(content, False)  # constructs without validation
   
   def test_version(self):
     """
@@ -293,7 +293,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
       ("   ", []),
       ("1 2 3 a 5", [1, 2, 3, 5]),
       ("1 2 3 4.0 5", [1, 2, 3, 5]),
-      ("2 3 4", [2, 3, 4]), # spec says version one must be included
+      ("2 3 4", [2, 3, 4]),  # spec says version one must be included
     )
     
     for test_value, expected_consensus_methods in test_values:
@@ -693,7 +693,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
         
         content = get_network_status_document_v3({"directory-signature": "%s %s\n%s" % tuple(attrs)}, content = True)
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
-        NetworkStatusDocumentV3(content, False) # checks that it's still parsable without validation
+        NetworkStatusDocumentV3(content, False)  # checks that it's still parsable without validation
   
   def test_with_router_status_entries(self):
     """

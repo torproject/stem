@@ -310,7 +310,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     for keyword, values in entries.items():
       value, block_contents = values[0]
       
-      line = "%s %s" % (keyword, value) # original line
+      line = "%s %s" % (keyword, value)  # original line
       if block_contents: line += "\n%s" % block_contents
       
       if keyword == "network-status-version":
@@ -729,7 +729,7 @@ class _DocumentFooter(object):
     if validate and content and not header.meets_consensus_method(9):
       raise ValueError("Network status document's footer should only appear in consensus-method 9 or later")
     elif not content and not header.meets_consensus_method(9):
-      return # footer is optional and there's nothing to parse
+      return  # footer is optional and there's nothing to parse
     
     entries = stem.descriptor._get_descriptor_components(content, validate)
     self._parse(entries, validate, header)
@@ -773,7 +773,7 @@ class _DocumentFooter(object):
             raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST\\nSIGNATURE', got:\n%s\n%s" % (sig_value, block_contents))
           
           if sig_value.count(" ") == 1:
-            method = 'sha1' # default if none was provided
+            method = 'sha1'  # default if none was provided
             fingerprint, key_digest = sig_value.split(" ", 1)
           else:
             method, fingerprint, key_digest = sig_value.split(" ", 2)
