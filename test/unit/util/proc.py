@@ -33,7 +33,7 @@ class TestProc(unittest.TestCase):
       ('/proc/meminfo', 'MemTotal:', 'system physical memory'): 'MemTotal:       12345 kB',
     }))
     
-    self.assertEquals((12345*1024), proc.get_physical_memory())
+    self.assertEquals((12345 * 1024), proc.get_physical_memory())
   
   def test_get_cwd(self):
     """
@@ -70,7 +70,7 @@ class TestProc(unittest.TestCase):
     }))
     
     self.assertEqual((0, 0), proc.get_memory_usage(0))
-    self.assertEqual((100*1024, 1800*1024), proc.get_memory_usage(1111))
+    self.assertEqual((100 * 1024, 1800 * 1024), proc.get_memory_usage(1111))
   
   def test_get_stats(self):
     """

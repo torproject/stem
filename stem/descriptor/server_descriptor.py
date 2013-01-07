@@ -488,7 +488,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
             else: raise ValueError("or-address line missing a colon: %s" % line)
           
           div = entry.rfind(":")
-          address, ports = entry[:div], entry[div+1:]
+          address, ports = entry[:div], entry[div + 1:]
           is_ipv6 = address.startswith("[") and address.endswith("]")
           if is_ipv6: address = address[1:-1] # remove brackets
           
@@ -715,7 +715,7 @@ class RelayDescriptor(ServerDescriptor):
     except ValueError:
       raise ValueError("Verification failed, seperator not found")
     
-    digest = decrypted_bytes[seperator_index+1:]
+    digest = decrypted_bytes[seperator_index + 1:]
     
     # The local digest is stored in uppercase hex;
     #  - so decode it from hex

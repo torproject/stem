@@ -880,7 +880,7 @@ def sign_descriptor_content(desc_content):
     grouped_fingerprint = ""
     
     for x in range(0, len(key_hash), 4):
-      grouped_fingerprint += " " + key_hash[x:x+4]
+      grouped_fingerprint += " " + key_hash[x:x + 4]
       fingerprint_token = "\nfingerprint"
       new_fp = fingerprint_token + grouped_fingerprint
       
@@ -894,8 +894,8 @@ def sign_descriptor_content(desc_content):
     # if the descriptor does not already contain a fingerprint do not add one
     
     if ft_start >= 0:
-      ft_end = desc_content.find("\n", ft_start+1)
-      desc_content = desc_content[:ft_start]+new_fp+desc_content[ft_end:]
+      ft_end = desc_content.find("\n", ft_start + 1)
+      desc_content = desc_content[:ft_start] + new_fp + desc_content[ft_end:]
     
     # create a temporary object to use to calculate the digest
     
