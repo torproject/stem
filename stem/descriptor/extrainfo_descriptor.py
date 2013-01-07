@@ -645,8 +645,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           stats = remainder.split(",")
           
           if len(stats) != 4 or not \
-            (stats[0].isdigit() and stats[1].isdigit() and \
-             stats[2].isdigit() and stats[3].isdigit()):
+            (stats[0].isdigit() and stats[1].isdigit() and stats[2].isdigit() and stats[3].isdigit()):
             raise ValueError("conn-bi-direct line should end with four numeric values: %s" % line)
           
           self.conn_bi_direct_end = timestamp

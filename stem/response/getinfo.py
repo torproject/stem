@@ -31,8 +31,7 @@ class GetInfoResponse(stem.response.ControlMessage):
           unrecognized_keywords.append(line[18:-1])
       
       if unrecognized_keywords:
-        raise stem.InvalidArguments("552", "GETINFO request contained unrecognized keywords: %s\n" \
-            % ', '.join(unrecognized_keywords), unrecognized_keywords)
+        raise stem.InvalidArguments("552", "GETINFO request contained unrecognized keywords: %s\n" % ', '.join(unrecognized_keywords), unrecognized_keywords)
       else:
         raise stem.ProtocolError("GETINFO response didn't have an OK status:\n%s" % self)
     
