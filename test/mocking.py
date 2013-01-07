@@ -859,7 +859,7 @@ def sign_descriptor_content(desc_content):
     public_key_string = base64.b64encode(seq_as_string)
     
     # split public key into lines 64 characters long
-    public_key_string = public_key_string [:64] + "\n" + public_key_string[64:128] + "\n" + public_key_string[128:]
+    public_key_string = public_key_string[:64] + "\n" + public_key_string[64:128] + "\n" + public_key_string[128:]
     
     # generate the new signing key string
     
@@ -925,7 +925,7 @@ def sign_descriptor_content(desc_content):
     (signature, ) = private_key.sign(digestBuffer, None)
     signature_as_bytes = long_to_bytes(signature, 128)
     signature_base64 = base64.b64encode(signature_as_bytes)
-    signature_base64 = signature_base64 [:64] + "\n" + signature_base64[64:128] + "\n" + signature_base64[128:]
+    signature_base64 = signature_base64[:64] + "\n" + signature_base64[64:128] + "\n" + signature_base64[128:]
     
     # update the descriptor string with the new signature
     
