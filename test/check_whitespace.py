@@ -20,8 +20,46 @@ from __future__ import with_statement
 import re
 import os
 
+from stem.util import system
+
 # if ran directly then run over everything one level up
 DEFAULT_TARGET = os.path.sep.join(__file__.split(os.path.sep)[:-1])
+
+def pep8_issues(base_path = DEFAULT_TARGET):
+  """
+  Checks for stylistic issues that are an issue according to the parts of PEP8
+  we conform to.
+  
+  :param str base_path: directory to be iterated over
+  
+  :returns: dict of the form ``path => [(line_number, message)...]``
+  """
+  
+  # pep8 give output of the form...
+  #
+  #   FILE:LINE:CHARACTER ISSUE
+  #
+  # ... for instance...
+  #
+  #   ./test/mocking.py:868:31: E225 missing whitespace around operator
+  
+  # TODO: Presently this is a list of all issues pep8 complains about in stem.
+  # We're gonna trim these down by cateogry but include the pep8 checks to
+  # prevent regression.
+  
+  ignored_issues = "E111,E121,W293,E501,E302,E701,E251,E261,W391,E127,E241,E128,E226,E231,E202,E201,E203,E124,E211,E222,E225,E221,E126,E262,E271,E502,E303,E711"
+  
+  issues = {}
+  pep8_output = system.call("pep8 --ignore %s %s" % (ignored_issues, base_path))
+  
+  for line in pep8_output:
+    line_match = re.match("^(.*):(\d+):(\d+): (.*)$", line)
+    
+    if line_match:
+      path, line, _, issue = line_match.groups()
+      issues.setdefault(path, []).append((int(line), issue))
+  
+  return issues
 
 def get_issues(base_path = DEFAULT_TARGET):
   """

@@ -69,13 +69,14 @@ import test.integ.util.proc
 import test.integ.util.system
 import test.integ.version
 
-OPT = "uit:l:c:h"
-OPT_EXPANDED = ["unit", "integ", "targets=", "test=", "log=", "tor=", "config=", "help"]
+OPT = "uist:l:c:h"
+OPT_EXPANDED = ["unit", "integ", "style", "targets=", "test=", "log=", "tor=", "config=", "help"]
 DIVIDER = "=" * 70
 
 CONFIG = stem.util.conf.config_dict("test", {
   "argument.unit": False,
   "argument.integ": False,
+  "argument.style": False,
   "argument.test": "",
   "argument.log": None,
   "argument.tor": "tor",
@@ -189,6 +190,8 @@ def load_user_configuration(test_config):
       arg_overrides["argument.unit"] = "true"
     elif opt in ("-i", "--integ"):
       arg_overrides["argument.integ"] = "true"
+    elif opt in ("-s", "--style"):
+      arg_overrides["argument.style"] = "true"
     elif opt in ("-c", "--config"):
       config_path = os.path.abspath(arg)
     elif opt in ("-t", "--targets"):
@@ -458,17 +461,22 @@ if __name__ == '__main__':
     # TODO: note unused config options afterward?
   
   base_path = os.path.sep.join(__file__.split(os.path.sep)[:-1])
-  whitespace_issues = test.check_whitespace.get_issues(os.path.join(base_path, "stem"))
-  whitespace_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "test")))
-  whitespace_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "run_tests.py")))
+  style_issues = test.check_whitespace.get_issues(os.path.join(base_path, "stem"))
+  style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "test")))
+  style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "run_tests.py")))
   
-  if whitespace_issues:
-    test.output.print_line("WHITESPACE ISSUES", term.Color.BLUE, term.Attr.BOLD)
+  if CONFIG["argument.style"]:
+    style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "stem")))
+    style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "test")))
+    style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "run_tests.py")))
+  
+  if style_issues:
+    test.output.print_line("STYLE ISSUES", term.Color.BLUE, term.Attr.BOLD)
     
-    for file_path in whitespace_issues:
+    for file_path in style_issues:
       test.output.print_line("* %s" % file_path, term.Color.BLUE, term.Attr.BOLD)
       
-      for line_number, msg in whitespace_issues[file_path]:
+      for line_number, msg in style_issues[file_path]:
         line_count = "%-4s" % line_number
         test.output.print_line("  line %s - %s" % (line_count, msg))
       
