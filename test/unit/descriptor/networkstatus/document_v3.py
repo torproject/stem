@@ -20,8 +20,9 @@ from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, \
                                           NetworkStatusDocumentV3, \
                                           parse_file
 
-from stem.descriptor.router_status_entry import RouterStatusEntryV3, \
-                                                RouterStatusEntryMicroV3
+from stem.descriptor.router_status_entry import \
+                                          RouterStatusEntryV3, \
+                                          RouterStatusEntryMicroV3
 
 from test.mocking import support_with, \
                          get_router_status_entry_v3, \
