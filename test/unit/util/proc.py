@@ -66,7 +66,7 @@ class TestProc(unittest.TestCase):
     
     mocking.mock(proc._get_lines, mocking.return_for_args({
       ('/proc/1111/status', ('VmRSS:', 'VmSize:'), 'memory usage'):
-        {'VmRSS:':'VmRSS: 100 kB', 'VmSize:':'VmSize: 1800 kB'}
+        {'VmRSS:': 'VmRSS: 100 kB', 'VmSize:': 'VmSize: 1800 kB'}
     }))
     
     self.assertEqual((0, 0), proc.get_memory_usage(0))

@@ -347,7 +347,7 @@ class TestEvents(unittest.TestCase):
     event = _get_event('650 NONE SOLID "NON SENSE" condition=MEH quoted="1 2 3"')
     self.assertEqual("NONE", event.type)
     self.assertEqual(["SOLID", '"NON', 'SENSE"'], event.positional_args)
-    self.assertEqual({"condition":"MEH", "quoted":"1 2 3"}, event.keyword_args)
+    self.assertEqual({"condition": "MEH", "quoted": "1 2 3"}, event.keyword_args)
   
   def test_log_events(self):
     event = _get_event("650 DEBUG connection_edge_process_relay_cell(): Got an extended cell! Yay.")
@@ -515,7 +515,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(CIRC_EXTENDED_OLD.lstrip("650 "), str(event))
     self.assertEqual("1", event.id)
     self.assertEqual(CircStatus.EXTENDED, event.status)
-    self.assertEqual((("E57A476CD4DFBD99B4EE52A100A58610AD6E80B9", None), (None,"hamburgerphone")), event.path)
+    self.assertEqual((("E57A476CD4DFBD99B4EE52A100A58610AD6E80B9", None), (None, "hamburgerphone")), event.path)
     self.assertEqual(None, event.build_flags)
     self.assertEqual(None, event.purpose)
     self.assertEqual(None, event.hs_state)
@@ -530,7 +530,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(CIRC_BUILT_OLD.lstrip("650 "), str(event))
     self.assertEqual("1", event.id)
     self.assertEqual(CircStatus.BUILT, event.status)
-    self.assertEqual((("E57A476CD4DFBD99B4EE52A100A58610AD6E80B9", None), (None,"hamburgerphone"), (None, "PrivacyRepublic14")), event.path)
+    self.assertEqual((("E57A476CD4DFBD99B4EE52A100A58610AD6E80B9", None), (None, "hamburgerphone"), (None, "PrivacyRepublic14")), event.path)
     self.assertEqual(None, event.build_flags)
     self.assertEqual(None, event.purpose)
     self.assertEqual(None, event.hs_state)
