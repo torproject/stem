@@ -173,7 +173,8 @@ def load_processed_files(path):
     for line in input_file.readlines():
       line = line.strip()
       
-      if not line: continue  # skip blank lines
+      if not line:
+        continue  # skip blank lines
       
       if not " " in line:
         raise TypeError("Malformed line: %s" % line)
@@ -208,8 +209,11 @@ def save_processed_files(path, processed_files):
   # makes the parent directory if it doesn't already exist
   try:
     path_dir = os.path.dirname(path)
-    if not os.path.exists(path_dir): os.makedirs(path_dir)
-  except OSError, exc: raise IOError(exc)
+    
+    if not os.path.exists(path_dir):
+      os.makedirs(path_dir)
+  except OSError, exc:
+    raise IOError(exc)
   
   with open(path, "w") as output_file:
     for path, timestamp in processed_files.items():
@@ -243,8 +247,10 @@ class DescriptorReader(object):
   """
   
   def __init__(self, target, follow_links = False, buffer_size = 100, persistence_path = None):
-    if isinstance(target, str): self._targets = [target]
-    else: self._targets = target
+    if isinstance(target, str):
+      self._targets = [target]
+    else:
+      self._targets = target
     
     self._follow_links = follow_links
     self._persistence_path = persistence_path
@@ -270,7 +276,8 @@ class DescriptorReader(object):
       try:
         processed_files = load_processed_files(self._persistence_path)
         self.set_processed_files(processed_files)
-      except: pass
+      except:
+        pass
   
   def get_processed_files(self):
     """
@@ -371,10 +378,12 @@ class DescriptorReader(object):
       self._iter_notice.set()
       
       # clears our queue to unblock enqueue calls
+      
       try:
         while True:
           self._unreturned_descriptors.get_nowait()
-      except Queue.Empty: pass
+      except Queue.Empty:
+        pass
       
       self._reader_thread.join()
       self._reader_thread = None
@@ -383,7 +392,8 @@ class DescriptorReader(object):
         try:
           processed_files = self.get_processed_files()
           save_processed_files(self._persistence_path, processed_files)
-        except: pass
+        except:
+          pass
   
   def _read_descriptor_files(self):
     new_processed_files = {}
@@ -419,8 +429,10 @@ class DescriptorReader(object):
         try:
           descriptor = self._unreturned_descriptors.get_nowait()
           
-          if descriptor == FINISHED: break
-          else: yield descriptor
+          if descriptor == FINISHED:
+            break
+          else:
+            yield descriptor
         except Queue.Empty:
           self._iter_notice.wait()
           self._iter_notice.clear()
@@ -431,7 +443,8 @@ class DescriptorReader(object):
         self._handle_file(os.path.join(root, filename), new_processed_files)
         
         # this can take a while if, say, we're including the root directory
-        if self._is_stopped.isSet(): return
+        if self._is_stopped.isSet():
+          return
   
   def _handle_file(self, target, new_processed_files):
     # This is a file. Register its last modified timestamp and check if
@@ -452,7 +465,8 @@ class DescriptorReader(object):
     # Block devices and such are never descriptors, and can cause us to block
     # for quite a while so skipping anything that isn't a regular file.
     
-    if not os.path.isfile(target): return
+    if not os.path.isfile(target):
+      return
     
     # The mimetypes module only checks the file extension. To actually
     # check the content (like the 'file' command) we'd need something like
@@ -483,7 +497,9 @@ class DescriptorReader(object):
       self._notify_read_listeners(target)
       with open(target) as target_file:
         for desc in stem.descriptor.parse_file(target, target_file):
-          if self._is_stopped.isSet(): return
+          if self._is_stopped.isSet():
+            return
+          
           self._unreturned_descriptors.put(desc)
           self._iter_notice.set()
     except TypeError, exc:
@@ -509,7 +525,9 @@ class DescriptorReader(object):
           entry = tar_file.extractfile(tar_entry)
           
           for desc in stem.descriptor.parse_file(target, entry):
-            if self._is_stopped.isSet(): return
+            if self._is_stopped.isSet():
+              return
+            
             self._unreturned_descriptors.put(desc)
             self._iter_notice.set()
           
@@ -521,7 +539,8 @@ class DescriptorReader(object):
     except IOError, exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
     finally:
-      if tar_file: tar_file.close()
+      if tar_file:
+        tar_file.close()
   
   def _notify_read_listeners(self, path):
     for listener in self._read_listeners:

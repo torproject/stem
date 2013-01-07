@@ -21,7 +21,9 @@ class TestNetworkStatus(unittest.TestCase):
     """
     
     # lengthy test and uneffected by targets, so only run once
-    if test.runner.only_run_once(self, "test_cached_consensus"): return
+    
+    if test.runner.only_run_once(self, "test_cached_consensus"):
+      return
     
     consensus_path = test.runner.get_runner().get_test_dir("cached-consensus")
     
@@ -67,7 +69,9 @@ class TestNetworkStatus(unittest.TestCase):
     """
     
     # lengthy test and uneffected by targets, so only run once
-    if test.runner.only_run_once(self, "test_cached_microdesc_consensus"): return
+    
+    if test.runner.only_run_once(self, "test_cached_microdesc_consensus"):
+      return
     
     consensus_path = test.runner.get_runner().get_test_dir("cached-microdesc-consensus")
     

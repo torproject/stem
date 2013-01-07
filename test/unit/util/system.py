@@ -82,8 +82,10 @@ def mock_call(base_cmd, responses):
   
   def _mock_call(base_cmd, responses, command):
     if isinstance(responses, list):
-      if base_cmd == command: return responses
-      else: return None
+      if base_cmd == command:
+        return responses
+      else:
+        return None
     else:
       for cmd_completion in responses:
         if command == base_cmd % cmd_completion:

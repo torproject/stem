@@ -103,7 +103,9 @@ class Event(stem.response.ControlMessage):
               raise stem.ProtocolError("The %s value should be quoted, but didn't have an ending quote: %s" % (attr_name, self))
             
             attr_values.append(positional.pop(0))
-            if attr_values[-1].endswith('"'): break
+            
+            if attr_values[-1].endswith('"'):
+              break
           
           attr_value = " ".join(attr_values)[1:-1]
         else:

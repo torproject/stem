@@ -52,8 +52,10 @@ IS_PROC_AVAILABLE, SYS_START_TIME, SYS_PHYSICAL_MEMORY = None, None, None
 CLOCK_TICKS = None
 
 # os.sysconf is only defined on unix
-try: CLOCK_TICKS = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
-except AttributeError: pass
+try:
+  CLOCK_TICKS = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
+except AttributeError:
+  pass
 
 Stat = stem.util.enum.Enum(
   ("COMMAND", "command"), ("CPU_UTIME", "utime"),
@@ -148,9 +150,11 @@ def get_cwd(pid):
   start_time, parameter = time.time(), "cwd"
   proc_cwd_link = "/proc/%s/cwd" % pid
   
-  if pid == 0: cwd = ""
+  if pid == 0:
+    cwd = ""
   else:
-    try: cwd = os.readlink(proc_cwd_link)
+    try:
+      cwd = os.readlink(proc_cwd_link)
     except OSError:
       exc = IOError("unable to read %s" % proc_cwd_link)
       _log_failure(parameter, exc)
@@ -196,7 +200,9 @@ def get_memory_usage(pid):
   """
   
   # checks if this is the kernel process
-  if pid == 0: return (0, 0)
+  
+  if pid == 0:
+    return (0, 0)
   
   start_time, parameter = time.time(), "memory usage"
   status_path = "/proc/%s/status" % pid
@@ -253,16 +259,23 @@ def get_stats(pid, *stat_types):
   results = []
   for stat_type in stat_types:
     if stat_type == Stat.COMMAND:
-      if pid == 0: results.append("sched")
-      else: results.append(stat_comp[1])
+      if pid == 0:
+        results.append("sched")
+      else:
+        results.append(stat_comp[1])
     elif stat_type == Stat.CPU_UTIME:
-      if pid == 0: results.append("0")
-      else: results.append(str(float(stat_comp[13]) / CLOCK_TICKS))
+      if pid == 0:
+        results.append("0")
+      else:
+        results.append(str(float(stat_comp[13]) / CLOCK_TICKS))
     elif stat_type == Stat.CPU_STIME:
-      if pid == 0: results.append("0")
-      else: results.append(str(float(stat_comp[14]) / CLOCK_TICKS))
+      if pid == 0:
+        results.append("0")
+      else:
+        results.append(str(float(stat_comp[14]) / CLOCK_TICKS))
     elif stat_type == Stat.START_TIME:
-      if pid == 0: return get_system_start_time()
+      if pid == 0:
+        return get_system_start_time()
       else:
         # According to documentation, starttime is in field 21 and the unit is
         # jiffies (clock ticks). We divide it for clock ticks, then add the
@@ -288,7 +301,8 @@ def get_connections(pid):
   :raises: **IOError** if it can't be determined
   """
   
-  if pid == 0: return []
+  if pid == 0:
+    return []
   
   # fetches the inode numbers for socket file descriptors
   start_time, parameter = time.time(), "process connections"
@@ -384,7 +398,9 @@ def _decode_proc_address_encoding(addr):
 
 def _is_float(*value):
   try:
-    for v in value: float(v)
+    for v in value:
+      float(v)
+    
     return True
   except ValueError:
     return False
@@ -411,7 +427,8 @@ def _get_lines(file_path, line_prefixes, parameter):
     proc_file, results = open(file_path), {}
     
     for line in proc_file:
-      if not remaining_prefixes: break  # found everything we're looking for
+      if not remaining_prefixes:
+        break  # found everything we're looking for
       
       for prefix in remaining_prefixes:
         if line.startswith(prefix):

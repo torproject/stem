@@ -426,7 +426,8 @@ class BaseController(object):
       for listener, spawn in self._status_listeners:
         if listener != callback:
           new_listeners.append((listener, spawn))
-        else: is_changed = True
+        else:
+          is_changed = True
       
       self._status_listeners = new_listeners
       return is_changed
@@ -577,7 +578,8 @@ class BaseController(object):
         event_message = self._event_queue.get_nowait()
         self._handle_event(event_message)
       except Queue.Empty:
-        if not self.is_alive(): break
+        if not self.is_alive():
+          break
         
         self._event_notice.wait()
         self._event_notice.clear()
@@ -656,8 +658,10 @@ class Controller(BaseController):
   def close(self):
     # making a best-effort attempt to quit before detaching the socket
     if self.is_alive():
-      try: self.msg("QUIT")
-      except: pass
+      try:
+        self.msg("QUIT")
+      except:
+        pass
     
     super(Controller, self).close()
   
@@ -703,7 +707,9 @@ class Controller(BaseController):
       is_multiple = False
       params = set([params])
     else:
-      if not params: return {}
+      if not params:
+        return {}
+      
       is_multiple = True
       params = set(params)
     
@@ -718,14 +724,17 @@ class Controller(BaseController):
         # the geoip database already looks to be unavailable - abort the request
         if default == UNDEFINED:
           raise stem.ProtocolError("Tor geoip database is unavailable")
-        else: return default
+        else:
+          return default
     
     # if everything was cached then short circuit making the query
     if not params:
       log.trace("GETINFO %s (cache fetch)" % " ".join(reply.keys()))
       
-      if is_multiple: return reply
-      else: return reply.values()[0]
+      if is_multiple:
+        return reply
+      else:
+        return reply.values()[0]
     
     try:
       response = self.msg("GETINFO %s" % " ".join(params))
@@ -766,8 +775,10 @@ class Controller(BaseController):
       
       log.debug("GETINFO %s (failed: %s)" % (" ".join(params), exc))
       
-      if default == UNDEFINED: raise exc
-      else: return default
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
   
   def get_version(self, default = UNDEFINED):
     """
@@ -795,8 +806,10 @@ class Controller(BaseController):
       
       return self._request_cache["version"]
     except Exception, exc:
-      if default == UNDEFINED: raise exc
-      else: return default
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
   
   def get_socks_listeners(self, default = UNDEFINED):
     """
@@ -845,8 +858,10 @@ class Controller(BaseController):
       
       return [(addr, int(port)) for (addr, port) in proxy_addrs]
     except Exception, exc:
-      if default == UNDEFINED: raise exc
-      else: return default
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
   
   def get_protocolinfo(self, default = UNDEFINED):
     """
@@ -870,8 +885,10 @@ class Controller(BaseController):
     try:
       return stem.connection.get_protocolinfo(self)
     except Exception, exc:
-      if default == UNDEFINED: raise exc
-      else: return default
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
   
   def get_server_descriptor(self, relay, default = UNDEFINED):
     """
@@ -903,8 +920,10 @@ class Controller(BaseController):
       desc_content = self.get_info(query)
       return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
     except Exception, exc:
-      if default == UNDEFINED: raise exc
-      else: return default
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
   
   def get_server_descriptors(self, default = UNDEFINED):
     """
@@ -930,7 +949,8 @@ class Controller(BaseController):
       for desc in stem.descriptor.server_descriptor.parse_file(StringIO.StringIO(desc_content)):
         yield desc
     except Exception, exc:
-      if default == UNDEFINED: raise exc
+      if default == UNDEFINED:
+        raise exc
       else:
         if entry is not None:
           for entry in default:
@@ -967,8 +987,10 @@ class Controller(BaseController):
       desc_content = self.get_info(query)
       return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content)
     except Exception, exc:
-      if default == UNDEFINED: raise exc
-      else: return default
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
   
   def get_network_statuses(self, default = UNDEFINED):
     """
@@ -1000,7 +1022,8 @@ class Controller(BaseController):
       for desc in desc_iterator:
         yield desc
     except Exception, exc:
-      if default == UNDEFINED: raise exc
+      if default == UNDEFINED:
+        raise exc
       else:
         if entry is not None:
           for entry in default:
@@ -1104,7 +1127,9 @@ class Controller(BaseController):
     
     # remove strings which contain only whitespace
     params = filter(lambda entry: entry.strip(), params)
-    if params == []: return {}
+    
+    if params == []:
+      return {}
     
     # translate context sensitive options
     lookup_params = set([MAPPED_CONFIG_KEYS.get(entry, entry) for entry in params])
@@ -1154,8 +1179,10 @@ class Controller(BaseController):
     except stem.ControllerError, exc:
       log.debug("GETCONF %s (failed: %s)" % (" ".join(lookup_params), exc))
       
-      if default != UNDEFINED: return dict((param, default) for param in params)
-      else: raise exc
+      if default != UNDEFINED:
+        return dict((param, default) for param in params)
+      else:
+        raise exc
   
   def _get_conf_dict_to_response(self, config_dict, default, multiple):
     """
@@ -1467,15 +1494,19 @@ class Controller(BaseController):
       * :class:`stem.InvalidArguments` if features passed were invalid
     """
     
-    if isinstance(features, str): features = [features]
+    if isinstance(features, str):
+      features = [features]
+    
     response = self.msg("USEFEATURE %s" % " ".join(features))
     stem.response.convert("SINGLELINE", response)
     
     if not response.is_ok():
       if response.code == "552":
         invalid_feature = []
+        
         if response.message.startswith("Unrecognized feature \""):
           invalid_feature = [response.message[22:response.message.find("\"", 22)]]
+        
         raise stem.InvalidArguments(response.code, response.message, invalid_feature)
       
       raise stem.ProtocolError("USEFEATURE provided an invalid response code: %s" % response.code)
@@ -1505,8 +1536,10 @@ class Controller(BaseController):
       
       raise ValueError("Tor presently does not have a circuit with the id of '%s'" % circuit_id)
     except Exception, exc:
-      if default == UNDEFINED: raise exc
-      else: return default
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
   
   def get_circuits(self, default = UNDEFINED):
     """
@@ -1530,8 +1563,10 @@ class Controller(BaseController):
       
       return circuits
     except Exception, exc:
-      if default == UNDEFINED: raise exc
-      else: return default
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
   
   def new_circuit(self, path = None, purpose = "general", await_build = False):
     """
@@ -1609,9 +1644,15 @@ class Controller(BaseController):
           raise stem.InvalidRequest(512, "EXTENDCIRCUIT requires the path prior to version %s" % path_opt_version)
       
       args = [circuit_id]
-      if isinstance(path, str): path = [path]
-      if path: args.append(",".join(path))
-      if purpose: args.append("purpose=%s" % purpose)
+      
+      if isinstance(path, str):
+        path = [path]
+      
+      if path:
+        args.append(",".join(path))
+      
+      if purpose:
+        args.append("purpose=%s" % purpose)
       
       response = self.msg("EXTENDCIRCUIT %s" % " ".join(args))
       stem.response.convert("SINGLELINE", response)
@@ -1710,8 +1751,10 @@ class Controller(BaseController):
       
       return streams
     except Exception, exc:
-      if default == UNDEFINED: raise exc
-      else: return default
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
   
   def attach_stream(self, stream_id, circuit_id, exiting_hop = None):
     """
@@ -1730,7 +1773,10 @@ class Controller(BaseController):
     """
     
     query = "ATTACHSTREAM %s %s" % (stream_id, circuit_id)
-    if exiting_hop: query += " HOP=%s" % exiting_hop
+    
+    if exiting_hop:
+      query += " HOP=%s" % exiting_hop
+    
     response = self.msg(query)
     stem.response.convert("SINGLELINE", response)
     
@@ -1976,5 +2022,7 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
         if entry.lower() == key.lower():
           return entry
   
-  if default != UNDEFINED: return default
-  else: raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
+  if default != UNDEFINED:
+    return default
+  else:
+    raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))

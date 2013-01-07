@@ -82,7 +82,9 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
   
   # starts a tor subprocess, raising an OSError if it fails
   runtime_args, temp_file = [tor_cmd], None
-  if args: runtime_args += args
+  
+  if args:
+    runtime_args += args
   
   if torrc_path:
     if torrc_path == NO_TORRC:
@@ -100,8 +102,10 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
     def timeout_handler(signum, frame):
       # terminates the uninitialized tor process and raise on timeout
       if temp_file:
-        try: os.remove(temp_file)
-        except: pass
+        try:
+          os.remove(temp_file)
+        except:
+          pass
       
       # We can't kill the subprocess on python 2.5 running Windows without the
       # win32process module...
@@ -126,7 +130,8 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
     
     # this will provide empty results if the process is terminated
     if not init_line:
-      if timeout: signal.alarm(0)  # stop alarm
+      if timeout:
+        signal.alarm(0)  # stop alarm
       
       # ... but best make sure
       if stem.prereq.is_python_26():
@@ -137,25 +142,32 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
       raise OSError("Process terminated: %s" % last_problem)
     
     # provide the caller with the initialization message if they want it
-    if init_msg_handler: init_msg_handler(init_line)
+    
+    if init_msg_handler:
+      init_msg_handler(init_line)
     
     # return the process if we're done with bootstrapping
     bootstrap_match = bootstrap_line.search(init_line)
     problem_match = problem_line.search(init_line)
     
     if bootstrap_match and int(bootstrap_match.groups()[0]) >= completion_percent:
-      if timeout: signal.alarm(0)  # stop alarm
+      if timeout:
+        signal.alarm(0)  # stop alarm
       
       if temp_file:
-        try: os.remove(temp_file)
-        except: pass
+        try:
+          os.remove(temp_file)
+        except:
+          pass
       
       return tor_process
     elif problem_match:
       runlevel, msg = problem_match.groups()
       
       if not "see warnings above" in msg:
-        if ": " in msg: msg = msg.split(": ")[-1].strip()
+        if ": " in msg:
+          msg = msg.split(": ")[-1].strip()
+        
         last_problem = msg
 
 def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
@@ -213,8 +225,10 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
     
     return launch_tor(tor_cmd, args, torrc_path, completion_percent, init_msg_handler, timeout, take_ownership)
   finally:
-    try: os.remove(torrc_path)
-    except: pass
+    try:
+      os.remove(torrc_path)
+    except:
+      pass
 
 def _get_pid():
   return str(os.getpid())

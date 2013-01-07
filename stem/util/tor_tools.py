@@ -47,7 +47,9 @@ def is_valid_fingerprint(entry, check_prefix = False):
   if not isinstance(entry, str):
     return False
   elif check_prefix:
-    if not entry or entry[0] != "$": return False
+    if not entry or entry[0] != "$":
+      return False
+    
     entry = entry[1:]
   
   return bool(FINGERPRINT_PATTERN.match(entry))

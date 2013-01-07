@@ -62,9 +62,12 @@ def to_camel_case(label, divider = "_", joiner = " "):
   
   words = []
   for entry in label.split(divider):
-    if len(entry) == 0: words.append("")
-    elif len(entry) == 1: words.append(entry.upper())
-    else: words.append(entry[0].upper() + entry[1:].lower())
+    if len(entry) == 0:
+      words.append("")
+    elif len(entry) == 1:
+      words.append(entry.upper())
+    else:
+      words.append(entry[0].upper() + entry[1:].lower())
   
   return joiner.join(words)
 
@@ -95,8 +98,10 @@ def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
   :returns: **str** with human readable representation of the size
   """
   
-  if is_bytes: return _get_label(SIZE_UNITS_BYTES, byte_count, decimal, is_long)
-  else: return _get_label(SIZE_UNITS_BITS, byte_count, decimal, is_long)
+  if is_bytes:
+    return _get_label(SIZE_UNITS_BYTES, byte_count, decimal, is_long)
+  else:
+    return _get_label(SIZE_UNITS_BITS, byte_count, decimal, is_long)
 
 def get_time_label(seconds, decimal = 0, is_long = False):
   """

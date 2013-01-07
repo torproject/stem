@@ -22,7 +22,8 @@ class GetConfResponse(stem.response.ControlMessage):
     self.entries = {}
     remaining_lines = list(self)
     
-    if self.content() == [("250", " ", "OK")]: return
+    if self.content() == [("250", " ", "OK")]:
+      return
     
     if not self.is_ok():
       unrecognized_keywords = []

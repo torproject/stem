@@ -30,7 +30,8 @@ class TestProtocolInfo(unittest.TestCase):
     connection.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     control_socket = test.runner.get_runner().get_tor_socket(False)
     control_socket.send("PROTOCOLINFO 1")
@@ -58,7 +59,8 @@ class TestProtocolInfo(unittest.TestCase):
     with the 'RELATIVE' target.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
       cwd_by_port_lookup_prefixes = (
@@ -93,7 +95,8 @@ class TestProtocolInfo(unittest.TestCase):
     re-establish it.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     with test.runner.get_runner().get_tor_socket(False) as control_socket:
       for _ in range(5):
@@ -106,7 +109,8 @@ class TestProtocolInfo(unittest.TestCase):
     already disconnected it.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     with test.runner.get_runner().get_tor_socket(False) as control_socket:
       # makes a couple protocolinfo queries outside of get_protocolinfo first

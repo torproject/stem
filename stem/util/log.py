@@ -78,7 +78,8 @@ DEDUPLICATION_MESSAGE_IDS = set()
 # http://docs.python.org/release/3.1.3/library/logging.html#configuring-logging-for-a-library
 
 class _NullHandler(logging.Handler):
-  def emit(self, record): pass
+  def emit(self, record):
+    pass
 
 if not LOGGER.handlers:
   LOGGER.addHandler(_NullHandler())
@@ -99,8 +100,10 @@ def logging_level(runlevel):
   :param stem.util.log.Runlevel runlevel: runlevel to be returned, no logging if **None**
   """
   
-  if runlevel: return LOG_VALUES[runlevel]
-  else: return logging.FATAL + 5
+  if runlevel:
+    return LOG_VALUES[runlevel]
+  else:
+    return logging.FATAL + 5
 
 def escape(message):
   """
@@ -146,12 +149,24 @@ def log_once(message_id, runlevel, message):
     log(runlevel, message)
 
 # shorter aliases for logging at a runlevel
-def trace(message): log(Runlevel.TRACE, message)
-def debug(message): log(Runlevel.DEBUG, message)
-def info(message): log(Runlevel.INFO, message)
-def notice(message): log(Runlevel.NOTICE, message)
-def warn(message): log(Runlevel.WARN, message)
-def error(message): log(Runlevel.ERROR, message)
+
+def trace(message):
+  log(Runlevel.TRACE, message)
+
+def debug(message):
+  log(Runlevel.DEBUG, message)
+
+def info(message):
+  log(Runlevel.INFO, message)
+
+def notice(message):
+  log(Runlevel.NOTICE, message)
+
+def warn(message):
+  log(Runlevel.WARN, message)
+
+def error(message):
+  log(Runlevel.ERROR, message)
 
 class LogBuffer(logging.Handler):
   """

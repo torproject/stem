@@ -152,7 +152,8 @@ class TestExitPolicy(unittest.TestCase):
         else:
           self.fail()
       except ValueError:
-        if expect_success: self.fail()
+        if expect_success:
+          self.fail()
   
   def test_microdescriptor_attributes(self):
     # checks that its is_accept attribute is properly set

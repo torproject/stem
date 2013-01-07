@@ -158,7 +158,8 @@ def parse_file(descriptor_file, validate = True):
     
     if extrainfo_content:
       yield RelayExtraInfoDescriptor("".join(extrainfo_content), validate)
-    else: break  # done parsing file
+    else:
+      break  # done parsing file
 
 def _parse_timestamp_and_interval(keyword, content):
   """
@@ -180,7 +181,9 @@ def _parse_timestamp_and_interval(keyword, content):
     raise ValueError("Malformed %s line: %s" % (keyword, line))
   
   timestamp_str, interval, remainder = content_match.groups()
-  if remainder: remainder = remainder[1:]  # remove leading space
+  
+  if remainder:
+    remainder = remainder[1:]  # remove leading space
   
   if not interval.isdigit():
     raise ValueError("%s line's interval wasn't a number: %s" % (keyword, line))
@@ -430,7 +433,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         extra_info_comp = value.split()
         
         if len(extra_info_comp) < 2:
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Extra-info line must have two values: %s" % line)
         
         if validate:
@@ -527,8 +532,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         if value:
           for entry in value.split(","):
             if not "=" in entry:
-              if validate: raise ValueError(error_msg)
-              else: continue
+              if validate:
+                raise ValueError(error_msg)
+              else:
+                continue
             
             status, count = entry.split("=", 1)
             
@@ -562,7 +569,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         # "<keyword>" num%
         
         try:
-          if not value.endswith("%"): raise ValueError()
+          if not value.endswith("%"):
+            raise ValueError()
+          
           percentage = float(value[:-1]) / 100
           
           # Bug lets these be above 100%, however they're soon going away...
@@ -593,7 +602,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
               
               entries.append(float(entry))
             except ValueError:
-              if validate: raise ValueError("Non-numeric entry in %s listing: %s" % (keyword, line))
+              if validate:
+                raise ValueError("Non-numeric entry in %s listing: %s" % (keyword, line))
         
         if keyword == "cell-processed-cells":
           self.cell_processed_cells = entries
@@ -636,7 +646,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             self.dir_stats_end = timestamp
             self.dir_stats_interval = interval
         except ValueError, exc:
-          if validate: raise exc
+          if validate:
+            raise exc
       elif keyword == "conn-bi-direct":
         # "conn-bi-direct" YYYY-MM-DD HH:MM:SS (NSEC s) BELOW,READ,WRITE,BOTH
         
@@ -655,7 +666,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           self.conn_bi_direct_write = int(stats[2])
           self.conn_bi_direct_both = int(stats[3])
         except ValueError, exc:
-          if validate: raise exc
+          if validate:
+            raise exc
       elif keyword in ("read-history", "write-history", "dirreq-read-history", "dirreq-write-history"):
         # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s) NUM,NUM,NUM,NUM,NUM...
         try:
@@ -685,7 +697,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             self.dir_write_history_interval = interval
             self.dir_write_history_values = history_values
         except ValueError, exc:
-          if validate: raise exc
+          if validate:
+            raise exc
       elif keyword in ("exit-kibibytes-written", "exit-kibibytes-read", "exit-streams-opened"):
         # "<keyword>" port=N,port=N,...
         
@@ -695,13 +708,16 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         if value:
           for entry in value.split(","):
             if not "=" in entry:
-              if validate: raise ValueError(error_msg)
-              else: continue
+              if validate:
+                raise ValueError(error_msg)
+              else:
+                continue
             
             port, stat = entry.split("=", 1)
             
             if (port == 'other' or stem.util.connection.is_valid_port(port)) and stat.isdigit():
-              if port != 'other': port = int(port)
+              if port != 'other':
+                port = int(port)
               port_mappings[port] = int(stat)
             elif validate:
               raise ValueError(error_msg)
@@ -727,8 +743,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         if value:
           for entry in value.split(","):
             if not "=" in entry:
-              if validate: raise ValueError(error_msg)
-              else: continue
+              if validate:
+                raise ValueError(error_msg)
+              else:
+                continue
             
             locale, count = entry.split("=", 1)
             
@@ -807,7 +825,9 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
       value, block_contents = values[0]
       
       line = "%s %s" % (keyword, value)  # original line
-      if block_contents: line += "\n%s" % block_contents
+      
+      if block_contents:
+        line += "\n%s" % block_contents
       
       if keyword == "router-signature":
         if validate and not block_contents:

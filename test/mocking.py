@@ -193,16 +193,25 @@ NETWORK_STATUS_DOCUMENT_FOOTER = (
 )
 
 def no_op():
-  def _no_op(*args): pass
+  def _no_op(*args):
+    pass
+  
   return _no_op
 
 def return_value(value):
-  def _return_value(*args): return value
+  def _return_value(*args):
+    return value
+  
   return _return_value
 
-def return_true(): return return_value(True)
-def return_false(): return return_value(False)
-def return_none(): return return_value(None)
+def return_true():
+  return return_value(True)
+
+def return_false():
+  return return_value(False)
+
+def return_none():
+  return return_value(None)
 
 def return_for_args(args_to_return_value, default = None, is_method = False):
   """
@@ -266,7 +275,9 @@ def return_for_args(args_to_return_value, default = None, is_method = False):
   return _return_value
 
 def raise_exception(exception):
-  def _raise(*args): raise exception
+  def _raise(*args):
+    raise exception
+  
   return _raise
 
 def support_with(obj):
@@ -425,7 +436,8 @@ def get_all_combinations(attr, include_empty = False):
   # * itertools.product(attr, attr) => all two-element combinations
   # * ... etc
   
-  if include_empty: yield ()
+  if include_empty:
+    yield ()
   
   seen = set()
   for index in xrange(1, len(attr) + 1):
@@ -485,7 +497,9 @@ def get_message(content, reformat = True):
   """
   
   if reformat:
-    if not content.endswith("\n"): content += "\n"
+    if not content.endswith("\n"):
+      content += "\n"
+    
     content = content.replace("\n", "\r\n")
   
   return stem.socket.recv_message(StringIO.StringIO(content))
@@ -547,18 +561,23 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
   """
   
   header_content, footer_content = [], []
-  if attr is None: attr = {}
+  
+  if attr is None:
+    attr = {}
+  
   attr = dict(attr)  # shallow copy since we're destructive
   
   for content, template in ((header_content, header_template),
                            (footer_content, footer_template)):
     for keyword, value in template:
-      if keyword in exclude: continue
+      if keyword in exclude:
+        continue
       elif keyword in attr:
         value = attr[keyword]
         del attr[keyword]
       
-      if value is None: continue
+      if value is None:
+        continue
       elif value == "":
         content.append(keyword)
       elif keyword == "onion-key" or keyword == "signing-key" or keyword == "router-signature":
@@ -569,8 +588,10 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
   remainder = []
   
   for k, v in attr.items():
-    if v: remainder.append("%s %s" % (k, v))
-    else: remainder.append(k)
+    if v:
+      remainder.append("%s %s" % (k, v))
+    else:
+      remainder.append(k)
   
   return "\n".join(header_content + remainder + footer_content)
 

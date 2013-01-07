@@ -188,10 +188,13 @@ def _connect(control_socket, password, chroot_path, controller):
     else:
       return controller(control_socket)
   except MissingPassword:
-    assert password is None, "BUG: authenticate raised MissingPassword despite getting one"
+    if password is None:
+      raise ValueError("BUG: authenticate raised MissingPassword despite getting one")
     
-    try: password = getpass.getpass("Controller password: ")
-    except KeyboardInterrupt: return None
+    try:
+      password = getpass.getpass("Controller password: ")
+    except KeyboardInterrupt:
+      return None
     
     return _connect(control_socket, password, chroot_path, controller)
   except AuthenticationFailure, exc:
@@ -352,7 +355,8 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
   
   # iterating over AuthMethods so we can try them in this order
   for auth_type in (AuthMethod.NONE, AuthMethod.PASSWORD, AuthMethod.SAFECOOKIE, AuthMethod.COOKIE):
-    if not auth_type in auth_methods: continue
+    if not auth_type in auth_methods:
+      continue
     
     try:
       if auth_type == AuthMethod.NONE:
@@ -437,16 +441,22 @@ def authenticate_none(controller, suppress_ctl_errors = True):
     
     # if we got anything but an OK response then error
     if str(auth_response) != "OK":
-      try: controller.connect()
-      except: pass
+      try:
+        controller.connect()
+      except:
+        pass
       
       raise OpenAuthRejected(str(auth_response), auth_response)
   except stem.ControllerError, exc:
-    try: controller.connect()
-    except: pass
+    try:
+      controller.connect()
+    except:
+      pass
     
-    if not suppress_ctl_errors: raise exc
-    else: raise OpenAuthRejected("Socket failed (%s)" % exc)
+    if not suppress_ctl_errors:
+      raise exc
+    else:
+      raise OpenAuthRejected("Socket failed (%s)" % exc)
 
 def authenticate_password(controller, password, suppress_ctl_errors = True):
   """
@@ -493,8 +503,10 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
     
     # if we got anything but an OK response then error
     if str(auth_response) != "OK":
-      try: controller.connect()
-      except: pass
+      try:
+        controller.connect()
+      except:
+        pass
       
       # all we have to go on is the error message from tor...
       # Password did not match HashedControlPassword value value from configuration...
@@ -505,11 +517,15 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
       else:
         raise PasswordAuthRejected(str(auth_response), auth_response)
   except stem.ControllerError, exc:
-    try: controller.connect()
-    except: pass
+    try:
+      controller.connect()
+    except:
+      pass
     
-    if not suppress_ctl_errors: raise exc
-    else: raise PasswordAuthRejected("Socket failed (%s)" % exc)
+    if not suppress_ctl_errors:
+      raise exc
+    else:
+      raise PasswordAuthRejected("Socket failed (%s)" % exc)
 
 def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
   """
@@ -564,8 +580,10 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
     
     # if we got anything but an OK response then error
     if str(auth_response) != "OK":
-      try: controller.connect()
-      except: pass
+      try:
+        controller.connect()
+      except:
+        pass
       
       # all we have to go on is the error message from tor...
       # ... Authentication cookie did not match expected value.
@@ -577,11 +595,15 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
       else:
         raise CookieAuthRejected(str(auth_response), cookie_path, False, auth_response)
   except stem.ControllerError, exc:
-    try: controller.connect()
-    except: pass
+    try:
+      controller.connect()
+    except:
+      pass
     
-    if not suppress_ctl_errors: raise exc
-    else: raise CookieAuthRejected("Socket failed (%s)" % exc, cookie_path, False)
+    if not suppress_ctl_errors:
+      raise exc
+    else:
+      raise CookieAuthRejected("Socket failed (%s)" % exc, cookie_path, False)
 
 def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True):
   """
@@ -651,10 +673,13 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
     authchallenge_response = _msg(controller, "AUTHCHALLENGE SAFECOOKIE %s" % client_nonce_hex)
     
     if not authchallenge_response.is_ok():
-      try: controller.connect()
-      except: pass
+      try:
+        controller.connect()
+      except:
+        pass
       
       authchallenge_response_str = str(authchallenge_response)
+      
       if "Authentication required." in authchallenge_response_str:
         raise AuthChallengeUnsupported("SAFECOOKIE authentication isn't supported", cookie_path)
       elif "AUTHCHALLENGE only supports" in authchallenge_response_str:
@@ -666,17 +691,23 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
       else:
         raise AuthChallengeFailed(authchallenge_response, cookie_path)
   except stem.ControllerError, exc:
-    try: controller.connect()
-    except: pass
+    try:
+      controller.connect()
+    except:
+      pass
     
-    if not suppress_ctl_errors: raise exc
-    else: raise AuthChallengeFailed("Socket failed (%s)" % exc, cookie_path, True)
+    if not suppress_ctl_errors:
+      raise exc
+    else:
+      raise AuthChallengeFailed("Socket failed (%s)" % exc, cookie_path, True)
   
   try:
     stem.response.convert("AUTHCHALLENGE", authchallenge_response)
   except stem.ProtocolError, exc:
-    if not suppress_ctl_errors: raise exc
-    else: raise AuthChallengeFailed("Unable to parse AUTHCHALLENGE response: %s" % exc, cookie_path)
+    if not suppress_ctl_errors:
+      raise exc
+    else:
+      raise AuthChallengeFailed("Unable to parse AUTHCHALLENGE response: %s" % exc, cookie_path)
   
   expected_server_hash = stem.util.connection.hmac_sha256(
     SERVER_HASH_CONSTANT,
@@ -689,18 +720,25 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
     client_hash = stem.util.connection.hmac_sha256(
       CLIENT_HASH_CONSTANT,
       cookie_data + client_nonce + authchallenge_response.server_nonce)
+    
     auth_response = _msg(controller, "AUTHENTICATE %s" % (binascii.b2a_hex(client_hash)))
   except stem.ControllerError, exc:
-    try: controller.connect()
-    except: pass
+    try:
+      controller.connect()
+    except:
+      pass
     
-    if not suppress_ctl_errors: raise exc
-    else: raise CookieAuthRejected("Socket failed (%s)" % exc, cookie_path, True, auth_response)
+    if not suppress_ctl_errors:
+      raise exc
+    else:
+      raise CookieAuthRejected("Socket failed (%s)" % exc, cookie_path, True, auth_response)
   
   # if we got anything but an OK response then err
   if not auth_response.is_ok():
-    try: controller.connect()
-    except: pass
+    try:
+      controller.connect()
+    except:
+      pass
     
     # all we have to go on is the error message from tor...
     # ... Safe cookie response did not match expected value
@@ -841,10 +879,14 @@ def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg)
   if cookie_path and not os.path.isabs(cookie_path):
     try:
       tor_pid = pid_resolver(pid_resolution_arg)
-      if not tor_pid: raise IOError("pid lookup failed")
+      
+      if not tor_pid:
+        raise IOError("pid lookup failed")
       
       tor_cwd = stem.util.system.get_cwd(tor_pid)
-      if not tor_cwd: raise IOError("cwd lookup failed")
+      
+      if not tor_cwd:
+        raise IOError("cwd lookup failed")
       
       cookie_path = stem.util.system.expand_path(cookie_path, tor_cwd)
     except IOError, exc:

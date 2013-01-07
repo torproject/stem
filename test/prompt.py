@@ -63,7 +63,9 @@ def stop(prompt = False):
   if tor_pid:
     if prompt:
       response = raw_input("\n" + STOP_CONFIRMATION)
-      if not response.lower() in ("y", "yes"): return
+      
+      if not response.lower() in ("y", "yes"):
+        return
     
     os.kill(tor_pid, signal.SIGTERM)
 
@@ -84,7 +86,9 @@ def controller():
   already running.
   """
   
-  if not is_running(): start()
+  if not is_running():
+    start()
+  
   controller = stem.control.Controller.from_port(control_port = CONTROL_PORT)
   controller.authenticate()
   return controller

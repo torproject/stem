@@ -126,7 +126,8 @@ def parse_file(descriptor_file, validate = True):
       
       descriptor_text = "".join(descriptor_content)
       yield RelayDescriptor(descriptor_text, validate, annotations)
-    else: break  # done parsing descriptors
+    else:
+      break  # done parsing descriptors
 
 class ServerDescriptor(stem.descriptor.Descriptor):
   """
@@ -257,7 +258,9 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     
     self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
     self._parse(entries, validate)
-    if validate: self._check_constraints(entries)
+    
+    if validate:
+      self._check_constraints(entries)
   
   def digest(self):
     """
@@ -292,7 +295,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         if " " in line:
           key, value = line.split(" ", 1)
           annotation_dict[key] = value
-        else: annotation_dict[line] = None
+        else:
+          annotation_dict[line] = None
       
       self._annotation_dict = annotation_dict
     
@@ -326,14 +330,18 @@ class ServerDescriptor(stem.descriptor.Descriptor):
       value, block_contents = values[0]
       
       line = "%s %s" % (keyword, value)  # original line
-      if block_contents: line += "\n%s" % block_contents
+      
+      if block_contents:
+        line += "\n%s" % block_contents
       
       if keyword == "router":
         # "router" nickname address ORPort SocksPort DirPort
         router_comp = value.split()
         
         if len(router_comp) < 5:
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Router line must have five values: %s" % line)
         
         if validate:
@@ -360,17 +368,24 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         bandwidth_comp = value.split()
         
         if len(bandwidth_comp) < 3:
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Bandwidth line must have three values: %s" % line)
-        
-        if not bandwidth_comp[0].isdigit():
-          if not validate: continue
+        elif not bandwidth_comp[0].isdigit():
+          if not validate:
+            continue
+          
           raise ValueError("Bandwidth line's average rate isn't numeric: %s" % bandwidth_comp[0])
         elif not bandwidth_comp[1].isdigit():
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Bandwidth line's burst rate isn't numeric: %s" % bandwidth_comp[1])
         elif not bandwidth_comp[2].isdigit():
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
         
         self.average_bandwidth = int(bandwidth_comp[0])
@@ -395,7 +410,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
           
           try:
             self.tor_version = stem.version.Version(version_str)
-          except ValueError: pass
+          except ValueError:
+            pass
       elif keyword == "published":
         # "published" YYYY-MM-DD HH:MM:SS
         
@@ -458,7 +474,9 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         try:
           self.uptime = int(value)
         except ValueError:
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Uptime line must have an integer value: %s" % value)
       elif keyword == "contact":
         self.contact = value
@@ -484,23 +502,31 @@ class ServerDescriptor(stem.descriptor.Descriptor):
           line = "%s %s" % (keyword, entry)
           
           if not ":" in entry:
-            if not validate: continue
-            else: raise ValueError("or-address line missing a colon: %s" % line)
+            if not validate:
+              continue
+            else:
+              raise ValueError("or-address line missing a colon: %s" % line)
           
           div = entry.rfind(":")
           address, ports = entry[:div], entry[div + 1:]
           is_ipv6 = address.startswith("[") and address.endswith("]")
-          if is_ipv6: address = address[1:-1]  # remove brackets
+          
+          if is_ipv6:
+            address = address[1:-1]  # remove brackets
           
           if not ((not is_ipv6 and stem.util.connection.is_valid_ip_address(address)) or
                  (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
-            if not validate: continue
-            else: raise ValueError("or-address line has a malformed address: %s" % line)
+            if not validate:
+              continue
+            else:
+              raise ValueError("or-address line has a malformed address: %s" % line)
           
           for port in ports.split(","):
             if not stem.util.connection.is_valid_port(port):
-              if not validate: break
-              else: raise ValueError("or-address line has malformed ports: %s" % line)
+              if not validate:
+                break
+              else:
+                raise ValueError("or-address line has malformed ports: %s" % line)
             
             self.address_alt.append((address, int(port), is_ipv6))
       elif keyword in ("read-history", "write-history"):
@@ -525,7 +551,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
             self.write_history_interval = interval
             self.write_history_values = history_values
         except ValueError, exc:
-          if validate: raise exc
+          if validate:
+            raise exc
       else:
         self._unrecognized_lines.append(line)
     

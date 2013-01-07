@@ -73,7 +73,8 @@ class Enum(object):
         key, val = entry, stem.util.str_tools.to_camel_case(entry)
       elif isinstance(entry, tuple) and len(entry) == 2:
         key, val = entry
-      else: raise ValueError("Unrecognized input: %s" % args)
+      else:
+        raise ValueError("Unrecognized input: %s" % args)
       
       keys.append(key)
       values.append(val)

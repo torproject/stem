@@ -208,7 +208,9 @@ def load_user_configuration(test_config):
           sys.exit(1)
         else:
           target_config = test_config.get("target.config", {}).get(target)
-          if target_config: arg_overrides[target_config] = "true"
+          
+          if target_config:
+            arg_overrides[target_config] = "true"
     elif opt in ("-l", "--test"):
       arg_overrides["argument.test"] = arg
     elif opt in ("-l", "--log"):
@@ -304,7 +306,8 @@ if __name__ == '__main__':
   our_level = stem.util.log.logging_level(CONFIG["argument.log"])
   info_level = stem.util.log.logging_level(stem.util.log.INFO)
   
-  if our_level <= info_level: test.output.print_config(test_config)
+  if our_level <= info_level:
+    test.output.print_config(test_config)
   
   error_tracker = test.output.ErrorTracker()
   output_filters = (
@@ -388,7 +391,9 @@ if __name__ == '__main__':
           skip_targets.append(target)
     
     for target in integ_run_targets:
-      if target in skip_targets: continue
+      if target in skip_targets:
+        continue
+      
       error_tracker.set_category(target)
       
       try:
@@ -486,8 +491,11 @@ if __name__ == '__main__':
       print
   
   runtime = time.time() - start_time
-  if runtime < 1: runtime_label = "(%0.1f seconds)" % runtime
-  else: runtime_label = "(%i seconds)" % runtime
+  
+  if runtime < 1:
+    runtime_label = "(%0.1f seconds)" % runtime
+  else:
+    runtime_label = "(%i seconds)" % runtime
   
   if testing_failed or error_tracker.has_error_occured():
     test.output.print_line("TESTING FAILED %s" % runtime_label, *ERROR_ATTR)

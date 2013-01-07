@@ -39,10 +39,13 @@ def is_valid_ip_address(address):
   :returns: **True** if input is a valid IPv4 address, **False** otherwise
   """
   
-  if not isinstance(address, str): return False
+  if not isinstance(address, str):
+    return False
   
   # checks if theres four period separated values
-  if address.count(".") != 3: return False
+  
+  if address.count(".") != 3:
+    return False
   
   # checks that each value in the octet are decimal values between 0-255
   for entry in address.split("."):
@@ -110,7 +113,8 @@ def is_valid_port(entry, allow_zero = False):
     
     entry = int(entry)
   
-  if allow_zero and entry == 0: return True
+  if allow_zero and entry == 0:
+    return True
   
   return entry > 0 and entry < 65536
 

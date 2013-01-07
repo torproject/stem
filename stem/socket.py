@@ -75,12 +75,17 @@ class ControlSocket(object):
     
     with self._send_lock:
       try:
-        if not self.is_alive(): raise stem.SocketClosed()
+        if not self.is_alive():
+          raise stem.SocketClosed()
+        
         send_message(self._socket_file, message, raw)
       except stem.SocketClosed, exc:
         # if send_message raises a SocketClosed then we should properly shut
         # everything down
-        if self.is_alive(): self.close()
+        
+        if self.is_alive():
+          self.close()
+        
         raise exc
   
   def recv(self):
@@ -102,7 +107,9 @@ class ControlSocket(object):
         
         socket_file = self._socket_file
         
-        if not socket_file: raise stem.SocketClosed()
+        if not socket_file:
+          raise stem.SocketClosed()
+        
         return recv_message(socket_file)
       except stem.SocketClosed, exc:
         # If recv_message raises a SocketClosed then we should properly shut
@@ -168,7 +175,8 @@ class ControlSocket(object):
       # longer alive it'll be safe to acquire the recv lock because recv()
       # calls no longer block (raising SocketClosed instead).
       
-      if self.is_alive(): self.close()
+      if self.is_alive():
+        self.close()
       
       with self._recv_lock:
         self._socket = self._make_socket()
@@ -200,20 +208,26 @@ class ControlSocket(object):
         # if we haven't yet established a connection then this raises an error
         # socket.error: [Errno 107] Transport endpoint is not connected
         
-        try: self._socket.shutdown(socket.SHUT_RDWR)
-        except socket.error: pass
+        try:
+          self._socket.shutdown(socket.SHUT_RDWR)
+        except socket.error:
+          pass
         
         # Suppressing unexpected exceptions from close. For instance, if the
         # socket's file has already been closed then with python 2.7 that raises
         # with...
         # error: [Errno 32] Broken pipe
         
-        try: self._socket.close()
-        except: pass
+        try:
+          self._socket.close()
+        except:
+          pass
       
       if self._socket_file:
-        try: self._socket_file.close()
-        except: pass
+        try:
+          self._socket_file.close()
+        except:
+          pass
       
       self._socket = None
       self._socket_file = None
@@ -290,7 +304,8 @@ class ControlPort(ControlSocket):
     self._control_addr = control_addr
     self._control_port = control_port
     
-    if connect: self.connect()
+    if connect:
+      self.connect()
   
   def get_address(self):
     """
@@ -341,7 +356,8 @@ class ControlSocketFile(ControlSocket):
     super(ControlSocketFile, self).__init__()
     self._socket_path = socket_path
     
-    if connect: self.connect()
+    if connect:
+      self.connect()
   
   def get_socket_path(self):
     """
@@ -395,7 +411,8 @@ def send_message(control_file, message, raw = False):
     * :class:`stem.SocketClosed` if the socket is known to be shut down
   """
   
-  if not raw: message = send_formatting(message)
+  if not raw:
+    message = send_formatting(message)
   
   try:
     control_file.write(message)
@@ -441,7 +458,8 @@ def recv_message(control_file):
   logging_prefix = "Error while receiving a control message (%s): "
   
   while True:
-    try: line = control_file.readline()
+    try:
+      line = control_file.readline()
     except AttributeError:
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
@@ -501,7 +519,8 @@ def recv_message(control_file):
       # get a line with just a period
       
       while True:
-        try: line = control_file.readline()
+        try:
+          line = control_file.readline()
         except socket.error, exc:
           prefix = logging_prefix % "SocketClosed"
           log.info(prefix + "received an exception while mid-way through a data reply (exception: \"%s\", read content: \"%s\")" % (exc, log.escape(raw_content)))
@@ -520,7 +539,9 @@ def recv_message(control_file):
         
         # lines starting with a period are escaped by a second period (as per
         # section 2.4 of the control-spec)
-        if line.startswith(".."): line = line[1:]
+        
+        if line.startswith(".."):
+          line = line[1:]
         
         # appends to previous content, using a newline rather than CRLF
         # separator (more conventional for multi-line string content outside

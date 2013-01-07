@@ -171,11 +171,14 @@ class ExitPolicy(object):
       display_ports, skip_ports = [], set()
       
       for rule in self._get_rules():
-        if not rule.is_address_wildcard(): continue
-        elif rule.is_port_wildcard(): break
+        if not rule.is_address_wildcard():
+          continue
+        elif rule.is_port_wildcard():
+          break
         
         for port in xrange(rule.min_port, rule.max_port + 1):
-          if port in skip_ports: continue
+          if port in skip_ports:
+            continue
           
           # if accept + white-list or reject + blacklist then add
           if rule.is_accept == is_whitelist:
@@ -447,9 +450,11 @@ class ExitPolicyRule(object):
       address_type = self.get_address_type()
       
       if stem.util.connection.is_valid_ip_address(address):
-        if address_type == AddressType.IPv6: return False
+        if address_type == AddressType.IPv6:
+          return False
       elif stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True):
-        if address_type == AddressType.IPv4: return False
+        if address_type == AddressType.IPv4:
+          return False
         
         address = address.lstrip("[").rstrip("]")
       else:
@@ -468,7 +473,9 @@ class ExitPolicyRule(object):
       else:
         comparison_addr_bin = int(stem.util.connection.get_address_binary(address), 2)
         comparison_addr_bin &= self._get_mask_bin()
-        if self._get_address_bin() != comparison_addr_bin: return False
+        
+        if self._get_address_bin() != comparison_addr_bin:
+          return False
     
     if not self.is_port_wildcard():
       if port is None:
@@ -510,7 +517,9 @@ class ExitPolicyRule(object):
       elif address_type == AddressType.IPv6:
         mask = stem.util.connection.get_mask_ipv6(self._masked_bits)
       
-      if not cache: return mask
+      if not cache:
+        return mask
+      
       self._mask = mask
     
     return self._mask

@@ -104,7 +104,8 @@ def is_available(command, cached=True):
     PATH, **False** otherwise
   """
   
-  if " " in command: command = command.split(" ")[0]
+  if " " in command:
+    command = command.split(" ")[0]
   
   if command in SHELL_COMMANDS:
     # we can't actually look it up, so hope the shell really provides it...
@@ -116,7 +117,9 @@ def is_available(command, cached=True):
     cmd_exists = False
     for path in os.environ["PATH"].split(os.pathsep):
       cmd_path = os.path.join(path, command)
-      if is_windows(): cmd_path += ".exe"
+      
+      if is_windows():
+        cmd_path += ".exe"
       
       if os.path.exists(cmd_path) and os.access(cmd_path, os.X_OK):
         cmd_exists = True
@@ -198,7 +201,9 @@ def get_pid_by_name(process_name):
     
     if results and len(results) == 1:
       pid = results[0].strip()
-      if pid.isdigit(): return int(pid)
+      
+      if pid.isdigit():
+        return int(pid)
   
   # attempts to resolve using pidof, failing if:
   # - we're running on bsd (command unavailable)
@@ -212,7 +217,9 @@ def get_pid_by_name(process_name):
     
     if results and len(results) == 1 and len(results[0].split()) == 1:
       pid = results[0].strip()
-      if pid.isdigit(): return int(pid)
+      
+      if pid.isdigit():
+        return int(pid)
   
   # attempts to resolve using ps, failing if:
   # - system's ps variant doesn't handle these flags (none known at the moment)
@@ -237,7 +244,9 @@ def get_pid_by_name(process_name):
       
       if results and len(results) == 2:
         pid = results[1].strip()
-        if pid.isdigit(): return int(pid)
+        
+        if pid.isdigit():
+          return int(pid)
     
     if is_bsd():
       # bsd variant of ps
@@ -249,7 +258,9 @@ def get_pid_by_name(process_name):
         
         if len(results) == 1 and len(results[0].split()) > 0:
           pid = results[0].split()[0]
-          if pid.isdigit(): return int(pid)
+          
+          if pid.isdigit():
+            return int(pid)
   
   # resolves using lsof which works on both Linux and BSD, only failing if:
   # - lsof is unavailable (not included by default on OpenBSD)
@@ -270,7 +281,9 @@ def get_pid_by_name(process_name):
     
     if results and len(results) == 1:
       pid = results[0].strip()
-      if pid.isdigit(): return int(pid)
+      
+      if pid.isdigit():
+        return int(pid)
   
   log.debug("failed to resolve a pid for '%s'" % process_name)
   return None
@@ -324,7 +337,9 @@ def get_pid_by_port(port):
       if len(results) == 1 and len(results[0].split()) == 7:
         results = results[0].split()[6]  # process field (ex. "7184/tor")
         pid = results[:results.find("/")]
-        if pid.isdigit(): return int(pid)
+        
+        if pid.isdigit():
+          return int(pid)
   
   # attempts to resolve using sockstat, failing if:
   # - sockstat doesn't accept the -4 flag (BSD only)
@@ -358,7 +373,9 @@ def get_pid_by_port(port):
       
       if len(results) == 1:
         pid = results[0].split()[2]
-        if pid.isdigit(): return int(pid)
+        
+        if pid.isdigit():
+          return int(pid)
   
   # resolves using lsof which works on both Linux and BSD, only failing if:
   # - lsof is unavailable (not included by default on OpenBSD)
@@ -388,7 +405,9 @@ def get_pid_by_port(port):
       
       if len(results) == 1:
         pid = results[0].split()[1]
-        if pid.isdigit(): return int(pid)
+        
+        if pid.isdigit():
+          return int(pid)
   
   return None  # all queries failed
 
@@ -423,7 +442,9 @@ def get_pid_by_open_file(path):
     
     if results and len(results) == 1:
       pid = results[0].strip()
-      if pid.isdigit(): return int(pid)
+      
+      if pid.isdigit():
+        return int(pid)
   
   return None  # all queries failed
 
@@ -438,8 +459,10 @@ def get_cwd(pid):
   
   # try fetching via the proc contents if it's available
   if stem.util.proc.is_available():
-    try: return stem.util.proc.get_cwd(pid)
-    except IOError: pass
+    try:
+      return stem.util.proc.get_cwd(pid)
+    except IOError:
+      pass
   
   # Fall back to a pwdx query. This isn't available on BSD.
   logging_prefix = "get_cwd(%s):" % pid
@@ -485,7 +508,8 @@ def get_cwd(pid):
       # p2683
       # n/proc/2683/cwd (readlink: Permission denied)
       
-      if not " " in lsof_result: return lsof_result
+      if not " " in lsof_result:
+        return lsof_result
     else:
       log.debug("%s we got unexpected output from lsof: %s" % (logging_prefix, results))
   
@@ -513,7 +537,9 @@ def get_bsd_jail_id(pid):
   
   if ps_output and len(ps_output) == 2 and len(ps_output[1].split()) == 1:
     jid = ps_output[1].strip()
-    if jid.isdigit(): return int(jid)
+    
+    if jid.isdigit():
+      return int(jid)
   
   os_name = platform.system()
   if os_name == "FreeBSD":
@@ -549,7 +575,9 @@ def expand_path(path, cwd = None):
     relative_path = os.path.expanduser(relative_path)
   else:
     # relative path, expand with the cwd
-    if not cwd: cwd = os.getcwd()
+    
+    if not cwd:
+      cwd = os.getcwd()
     
     # we'll be dealing with both "my/path/" and "./my/path" entries, so
     # cropping the later
@@ -597,10 +625,14 @@ def call(command, default = UNDEFINED):
     elif stderr:
       log.trace(trace_prefix + ", stderr:\n%s" % stderr)
     
-    if stdout: return stdout.splitlines()
-    else: return []
+    if stdout:
+      return stdout.splitlines()
+    else:
+      return []
   except OSError, exc:
     log.debug("System call (failed): %s (error: %s)" % (command, exc))
     
-    if default != UNDEFINED: return default
-    else: raise exc
+    if default != UNDEFINED:
+      return default
+    else:
+      raise exc

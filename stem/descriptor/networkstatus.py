@@ -303,7 +303,10 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     document_content += "\n" + document_file.read()
     
     entries = stem.descriptor._get_descriptor_components(document_content, validate)
-    if validate: self._check_constraints(entries)
+    
+    if validate:
+      self._check_constraints(entries)
+    
     self._parse(entries, validate)
   
   def _parse(self, entries, validate):
@@ -311,11 +314,15 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
       value, block_contents = values[0]
       
       line = "%s %s" % (keyword, value)  # original line
-      if block_contents: line += "\n%s" % block_contents
+      
+      if block_contents:
+        line += "\n%s" % block_contents
       
       if keyword == "network-status-version":
         if not value.isdigit():
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Network status document has a non-numeric version: %s" % line)
         
         self.version = int(value)
@@ -326,7 +333,9 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
         dir_source_comp = value.split()
         
         if len(dir_source_comp) < 3:
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("The 'dir-source' line of a v2 network status document must have three values: %s" % line)
         
         if validate:
@@ -569,7 +578,9 @@ class _DocumentHeader(object):
           version, flavor = value, None
         
         if not version.isdigit():
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Network status document has a non-numeric version: %s" % line)
         
         self.version = int(version)
@@ -663,11 +674,14 @@ class _DocumentHeader(object):
         # Parameters ::= Parameter | Parameters SP Parameter
         
         # should only appear in consensus-method 7 or later
+        
         if validate and not self.meets_consensus_method(7):
           raise ValueError("A network status document's 'params' line should only appear in consensus-method 7 or later")
         
         # skip if this is a blank line
-        if value == "": continue
+        
+        if value == "":
+          continue
         
         self.params.update(_parse_int_mappings(keyword, value, validate))
         
@@ -769,7 +783,9 @@ class _DocumentFooter(object):
       elif keyword == "directory-signature":
         for sig_value, block_contents in values:
           if not sig_value.count(" ") in (1, 2) or not block_contents:
-            if not validate: continue
+            if not validate:
+              continue
+            
             raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST\\nSIGNATURE', got:\n%s\n%s" % (sig_value, block_contents))
           
           if sig_value.count(" ") == 1:
@@ -872,7 +888,9 @@ def _parse_int_mappings(keyword, value, validate):
       results[entry_key] = entry_value
       seen_keys.append(entry_key)
     except ValueError, exc:
-      if not validate: continue
+      if not validate:
+        continue
+      
       raise ValueError("Unable to parse network status document's '%s' line (%s): %s'" % (keyword, exc, value))
   
   return results
@@ -999,7 +1017,9 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
         dir_source_comp = value.split(" ")
         
         if len(dir_source_comp) < 6:
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Authority entry's 'dir-source' line must have six values: %s" % line)
         
         if validate:
@@ -1139,7 +1159,9 @@ class KeyCertificate(stem.descriptor.Descriptor):
         # "dir-key-certificate-version" version
         
         if not value.isdigit():
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Key certificate has a non-integer version: %s" % line)
         
         self.version = int(value)
@@ -1150,7 +1172,9 @@ class KeyCertificate(stem.descriptor.Descriptor):
         # "dir-address" IPPort
         
         if not ':' in value:
-          if not validate: continue
+          if not validate:
+            continue
+          
           raise ValueError("Key certificate's 'dir-address' is expected to be of the form ADDRESS:PORT: %s" % line)
         
         address, dirport = value.split(':', 1)
@@ -1255,7 +1279,9 @@ class DocumentSignature(object):
       return 1
     
     for attr in ("identity", "key_digest", "signature"):
-      if getattr(self, attr) > getattr(other, attr): return 1
-      elif getattr(self, attr) < getattr(other, attr): return -1
+      if getattr(self, attr) > getattr(other, attr):
+        return 1
+      elif getattr(self, attr) < getattr(other, attr):
+        return -1
     
     return 0

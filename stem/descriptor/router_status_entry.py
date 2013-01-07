@@ -83,7 +83,8 @@ def parse_file(document_file, validate, entry_class, entry_keyword = "r", start_
       yield entry_class(desc_content, validate, *extra_args)
       
       # check if we stopped at the end of the section
-      if ending_keyword in section_end_keywords: break
+      if ending_keyword in section_end_keywords:
+        break
     else:
       break
 
@@ -139,7 +140,10 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     self._unrecognized_lines = []
     
     entries = stem.descriptor._get_descriptor_components(content, validate)
-    if validate: self._check_constraints(entries)
+    
+    if validate:
+      self._check_constraints(entries)
+    
     self._parse(entries, validate)
   
   def _parse(self, entries, validate):
@@ -427,7 +431,8 @@ def _parse_r_line(desc, value, validate, include_digest = True):
     r_comp.insert(2, None)
   
   if len(r_comp) < 8:
-    if not validate: return
+    if not validate:
+      return
     
     expected_field_count = 'eight' if include_digest else 'seven'
     raise ValueError("%s 'r' line must have %s values: r %s" % (desc._name(), expected_field_count, value))
@@ -446,7 +451,10 @@ def _parse_r_line(desc, value, validate, include_digest = True):
   
   desc.nickname = r_comp[0]
   desc.fingerprint = _decode_fingerprint(r_comp[1], validate)
-  if include_digest: desc.digest = r_comp[2]
+  
+  if include_digest:
+    desc.digest = r_comp[2]
+  
   desc.address = r_comp[5]
   desc.or_port = int(r_comp[6])
   desc.dir_port = None if r_comp[7] == '0' else int(r_comp[7])
@@ -463,7 +471,9 @@ def _parse_a_line(desc, value, validate):
   # example: a [2001:888:2133:0:82:94:251:204]:9001
   
   if not ':' in value:
-    if not validate: return
+    if not validate:
+      return
+    
     raise ValueError("%s 'a' line must be of the form '[address]:[ports]': a %s" % (desc._name(), value))
   
   address, ports = value.rsplit(':', 1)
@@ -481,7 +491,10 @@ def _parse_a_line(desc, value, validate):
     
     if not stem.util.connection.is_valid_port(min_port) or \
        not stem.util.connection.is_valid_port(max_port):
-      if not validate: continue
+      
+      if not validate:
+        continue
+      
       raise ValueError("%s 'a' line had an invalid port range (%s): a %s" % (desc._name(), port_entry, value))
     
     desc.addresses_v6.setdefault(address, []).append((int(min_port), int(max_port)))
@@ -524,10 +537,14 @@ def _parse_w_line(desc, value, validate):
   w_comp = value.split(" ")
   
   if len(w_comp) < 1:
-    if not validate: return
+    if not validate:
+      return
+    
     raise ValueError("%s 'w' line is blank: w %s" % (desc._name(), value))
   elif not w_comp[0].startswith("Bandwidth="):
-    if not validate: return
+    if not validate:
+      return
+    
     raise ValueError("%s 'w' line needs to start with a 'Bandwidth=' entry: w %s" % (desc._name(), value))
   
   for w_entry in w_comp:
@@ -538,13 +555,17 @@ def _parse_w_line(desc, value, validate):
     
     if w_key == "Bandwidth":
       if not (w_value and w_value.isdigit()):
-        if not validate: return
+        if not validate:
+          return
+        
         raise ValueError("%s 'Bandwidth=' entry needs to have a numeric value: w %s" % (desc._name(), value))
       
       desc.bandwidth = int(w_value)
     elif w_key == "Measured":
       if not (w_value and w_value.isdigit()):
-        if not validate: return
+        if not validate:
+          return
+        
         raise ValueError("%s 'Measured=' entry needs to have a numeric value: w %s" % (desc._name(), value))
       
       desc.measured = int(w_value)
@@ -559,7 +580,9 @@ def _parse_p_line(desc, value, validate):
   try:
     desc.exit_policy = stem.exit_policy.MicroExitPolicy(value)
   except ValueError, exc:
-    if not validate: return
+    if not validate:
+      return
+    
     raise ValueError("%s exit policy is malformed (%s): p %s" % (desc._name(), exc, value))
 
 def _parse_m_line(desc, value, validate):
@@ -569,25 +592,32 @@ def _parse_m_line(desc, value, validate):
   m_comp = value.split(" ")
   
   if not (desc.document and desc.document.is_vote):
-    if not validate: return
+    if not validate:
+      return
     
     vote_status = "vote" if desc.document else "<undefined document>"
     raise ValueError("%s 'm' line should only appear in votes (appeared in a %s): m %s" % (desc._name(), vote_status, value))
   elif len(m_comp) < 1:
-    if not validate: return
+    if not validate:
+      return
+    
     raise ValueError("%s 'm' line needs to start with a series of methods: m %s" % (desc._name(), value))
   
   try:
     methods = [int(entry) for entry in m_comp[0].split(",")]
   except ValueError:
-    if not validate: return
+    if not validate:
+      return
+    
     raise ValueError("%s microdescriptor methods should be a series of comma separated integers: m %s" % (desc._name(), value))
   
   hashes = {}
   
   for entry in m_comp[1:]:
     if not '=' in entry:
-      if not validate: continue
+      if not validate:
+        continue
+      
       raise ValueError("%s can only have a series of 'algorithm=digest' mappings after the methods: m %s" % (desc._name(), value))
     
     hash_name, digest = entry.split('=', 1)
@@ -622,7 +652,9 @@ def _decode_fingerprint(identity, validate):
   try:
     identity_decoded = base64.b64decode(identity)
   except TypeError:
-    if not validate: return None
+    if not validate:
+      return None
+    
     raise ValueError("Unable to decode identity string '%s'" % identity)
   
   for char in identity_decoded:
@@ -639,7 +671,9 @@ def _decode_fingerprint(identity, validate):
     fingerprint += hex(ord(char))[2:].zfill(2).upper()
   
   if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
-    if not validate: return None
+    if not validate:
+      return None
+    
     raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
   
   return fingerprint

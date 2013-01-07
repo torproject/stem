@@ -208,7 +208,8 @@ class TestRouterStatusEntry(unittest.TestCase):
       # is that our validation doesn't catch the new SP restriction on V3
       # entries.
       
-      if value == "": value = None
+      if value == "":
+        value = None
       
       self._expect_invalid_attr(content, "nickname", value)
   

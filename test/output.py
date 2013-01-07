@@ -37,12 +37,16 @@ LINE_ATTR = {
 }
 
 def print_line(msg, *attr):
-  if CONFIG["argument.no_color"]: print msg
-  else: print term.format(msg, *attr)
+  if CONFIG["argument.no_color"]:
+    print msg
+  else:
+    print term.format(msg, *attr)
 
 def print_noline(msg, *attr):
-  if CONFIG["argument.no_color"]: sys.stdout.write(msg)
-  else: sys.stdout.write(term.format(msg, *attr))
+  if CONFIG["argument.no_color"]:
+    sys.stdout.write(msg)
+  else:
+    sys.stdout.write(term.format(msg, *attr))
 
 def print_divider(msg, is_header = False):
   attr = HEADER_ATTR if is_header else CATEGORY_ATTR
@@ -98,7 +102,9 @@ def apply_filters(testing_output, *filters):
     
     for result_filter in filters:
       line = result_filter(line_type, line)
-      if line is None: break
+      
+      if line is None:
+        break
     
     if line is not None:
       results.append(line)
@@ -110,8 +116,10 @@ def colorize(line_type, line_content):
   Applies escape sequences so each line is colored according to its type.
   """
   
-  if CONFIG["argument.no_color"]: return line_content
-  else: return term.format(line_content, *LINE_ATTR[line_type])
+  if CONFIG["argument.no_color"]:
+    return line_content
+  else:
+    return term.format(line_content, *LINE_ATTR[line_type])
 
 def strip_module(line_type, line_content):
   """
@@ -120,7 +128,10 @@ def strip_module(line_type, line_content):
   """
   
   m = re.match(".*( \(.*?\)).*", line_content)
-  if m: line_content = line_content.replace(m.groups()[0], "", 1)
+  
+  if m:
+    line_content = line_content.replace(m.groups()[0], "", 1)
+  
   return line_content
 
 def align_results(line_type, line_content):
@@ -129,7 +140,8 @@ def align_results(line_type, line_content):
   a bold attribute.
   """
   
-  if line_type == LineType.CONTENT: return line_content
+  if line_type == LineType.CONTENT:
+    return line_content
   
   # strip our current ending
   for ending in LINE_ENDINGS:

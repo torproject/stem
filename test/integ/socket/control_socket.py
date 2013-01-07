@@ -23,7 +23,8 @@ class TestControlSocket(unittest.TestCase):
     Sends multiple requests before receiving back any of the replies.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     runner = test.runner.get_runner()
     tor_version = runner.get_tor_version()
@@ -42,7 +43,8 @@ class TestControlSocket(unittest.TestCase):
     Sends a message after we've closed the connection.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       self.assertTrue(control_socket.is_alive())
@@ -61,7 +63,8 @@ class TestControlSocket(unittest.TestCase):
     call. With a file socket, however, we'll also fail when calling send().
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send("QUIT")
@@ -83,7 +86,8 @@ class TestControlSocket(unittest.TestCase):
     Receives a message after we've closed the connection.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       self.assertTrue(control_socket.is_alive())
@@ -98,7 +102,8 @@ class TestControlSocket(unittest.TestCase):
     end.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send("QUIT")
@@ -117,7 +122,8 @@ class TestControlSocket(unittest.TestCase):
     Checks that we can reconnect, use, and disconnect a socket repeatedly.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     with test.runner.get_runner().get_tor_socket(False) as control_socket:
       for _ in range(10):

@@ -45,7 +45,8 @@ class TestProcess(unittest.TestCase):
       test.runner.skip(self, "(unable to kill subprocesses)")
       return
     
-    if test.runner.only_run_once(self, "test_launch_tor_with_config"): return
+    if test.runner.only_run_once(self, "test_launch_tor_with_config"):
+      return
     
     # Launch tor without a torrc, but with a control port. Confirms that this
     # works by checking that we're still able to access the new instance.
@@ -71,7 +72,9 @@ class TestProcess(unittest.TestCase):
       getconf_response = control_socket.recv()
       self.assertEquals("ControlPort=2778", str(getconf_response))
     finally:
-      if control_socket: control_socket.close()
+      if control_socket:
+        control_socket.close()
+      
       _kill_process(tor_process)
   
   def test_launch_tor_with_timeout(self):
@@ -83,7 +86,8 @@ class TestProcess(unittest.TestCase):
       test.runner.skip(self, "(unable to kill subprocesses)")
       return
     
-    if test.runner.only_run_once(self, "test_launch_tor_with_timeout"): return
+    if test.runner.only_run_once(self, "test_launch_tor_with_timeout"):
+      return
     
     runner = test.runner.get_runner()
     start_time = time.time()
@@ -106,8 +110,10 @@ class TestProcess(unittest.TestCase):
     elif not stem.util.system.is_available("sleep"):
       test.runner.skip(self, "('sleep' command is unavailable)")
       return
-    elif test.runner.only_run_once(self, "test_take_ownership_via_pid"): return
-    elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP): return
+    elif test.runner.only_run_once(self, "test_take_ownership_via_pid"):
+      return
+    elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP):
+      return
     
     # Have os.getpid provide the pid of a process we can safely kill. I hate
     # needing to a _get_pid() helper but after much head scratching I haven't
@@ -148,8 +154,10 @@ class TestProcess(unittest.TestCase):
     connects, then disconnects..
     """
     
-    if test.runner.only_run_once(self, "test_take_ownership_via_controller"): return
-    elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP): return
+    if test.runner.only_run_once(self, "test_take_ownership_via_controller"):
+      return
+    elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP):
+      return
     
     tor_process = stem.process.launch_tor_with_config(
       tor_cmd = test.runner.get_runner().get_tor_command(),

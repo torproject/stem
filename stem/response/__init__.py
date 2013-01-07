@@ -137,7 +137,8 @@ class ControlMessage(object):
     """
     
     for code, _, _ in self._parsed_content:
-      if code == "250": return True
+      if code == "250":
+        return True
     
     return False
   
@@ -367,7 +368,9 @@ class ControlLine(str):
     """
     
     with self._remainder_lock:
-      if self.is_empty(): raise IndexError("no remaining content to parse")
+      if self.is_empty():
+        raise IndexError("no remaining content to parse")
+      
       key_match = KEY_ARG.match(self._remainder)
       
       if not key_match:
@@ -411,8 +414,10 @@ def _parse_entry(line, quoted, escaped):
     next_entry, remainder = remainder[1:end_quote], remainder[end_quote + 1:]
   else:
     # non-quoted value, just need to check if there's more data afterward
-    if " " in remainder: next_entry, remainder = remainder.split(" ", 1)
-    else: next_entry, remainder = remainder, ""
+    if " " in remainder:
+      next_entry, remainder = remainder.split(" ", 1)
+    else:
+      next_entry, remainder = remainder, ""
   
   if escaped:
     for esc_sequence, replacement in CONTROL_ESCAPES.items():

@@ -62,7 +62,7 @@ def pep8_issues(base_path = DEFAULT_TARGET):
   #
   #   Someone else can change this if they really care.
   
-  ignored_issues = "E111,E121,W293,E501,E302,E701,E251,E127"
+  ignored_issues = "E111,E121,W293,E501,E302,E251,E127"
   
   issues = {}
   pep8_output = system.call("pep8 --ignore %s %s" % (ignored_issues, base_path))
@@ -92,7 +92,9 @@ def get_issues(base_path = DEFAULT_TARGET):
   issues = {}
   
   for file_path in _get_files_with_suffix(base_path):
-    with open(file_path) as f: file_contents = f.read()
+    with open(file_path) as f:
+      file_contents = f.read()
+    
     lines, file_issues, prev_indent = file_contents.split("\n"), [], 0
     has_with_import, given_with_warning = False, False
     is_block_comment = False

@@ -147,7 +147,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
     
     # lengthy test and uneffected by targets, so only run once
-    if test.runner.only_run_once(self, "test_cached_descriptor"): return
+    
+    if test.runner.only_run_once(self, "test_cached_descriptor"):
+      return
     
     descriptor_path = test.runner.get_runner().get_test_dir("cached-descriptors")
     

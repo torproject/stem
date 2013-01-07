@@ -207,7 +207,10 @@ def get_runner():
   """
   
   global INTEG_RUNNER
-  if not INTEG_RUNNER: INTEG_RUNNER = Runner()
+  
+  if not INTEG_RUNNER:
+    INTEG_RUNNER = Runner()
+  
   return INTEG_RUNNER
 
 class _MockChrootFile(object):
@@ -255,7 +258,9 @@ class Runner(object):
     with self._runner_lock:
       # if we're holding on to a tor process (running or not) then clean up after
       # it so we can start a fresh instance
-      if self._tor_process: self.stop()
+      
+      if self._tor_process:
+        self.stop()
       
       test.output.print_line("Setting up a test instance...", *STATUS_ATTR)
       
@@ -273,7 +278,9 @@ class Runner(object):
       
       if CONFIG["integ.target.relative_data_dir"]:
         tor_cwd = os.path.dirname(self._test_dir)
-        if not os.path.exists(tor_cwd): os.makedirs(tor_cwd)
+        
+        if not os.path.exists(tor_cwd):
+          os.makedirs(tor_cwd)
         
         os.chdir(tor_cwd)
         data_dir_path = "./%s" % os.path.basename(self._test_dir)
@@ -330,7 +337,8 @@ class Runner(object):
             os.kill(self._tor_process.pid, signal.SIGTERM)
           else:
             test.output.print_line("failed (unable to call kill() in python 2.5)", *ERROR_ATTR)
-        except OSError: pass
+        except OSError:
+          pass
         
         self._tor_process.communicate()  # blocks until the process is done
       
@@ -508,7 +516,8 @@ class Runner(object):
       control_socket = stem.socket.ControlPort(control_port = CONTROL_PORT)
     elif Torrc.SOCKET in self._custom_opts:
       control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
-    else: raise TorInaccessable("Unable to connect to tor")
+    else:
+      raise TorInaccessable("Unable to connect to tor")
     
     if authenticate:
       stem.connection.authenticate(control_socket, CONTROL_PASSWORD, self.get_chroot())
@@ -547,7 +556,9 @@ class Runner(object):
       
       tor_version = list(version_response)[0]
       tor_version = tor_version[8:]
-      if " " in tor_version: tor_version = tor_version.split(' ', 1)[0]
+      
+      if " " in tor_version:
+        tor_version = tor_version.split(' ', 1)[0]
       
       return stem.version.Version(tor_version)
     except TorInaccessable:
@@ -575,7 +586,8 @@ class Runner(object):
     with self._runner_lock:
       if self.is_running():
         return self.__dict__[attr]
-      else: raise RunnerStopped()
+      else:
+        raise RunnerStopped()
   
   def _run_setup(self):
     """

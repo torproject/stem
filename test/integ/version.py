@@ -37,7 +37,8 @@ class TestVersion(unittest.TestCase):
     test instance provides.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     runner = test.runner.get_runner()
     system_tor_version = stem.version.get_system_tor_version(runner.get_tor_command())
@@ -49,7 +50,8 @@ class TestVersion(unittest.TestCase):
     we can parse it.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     control_socket = test.runner.get_runner().get_tor_socket()
     control_socket.send("GETINFO version")

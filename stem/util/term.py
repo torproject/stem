@@ -84,8 +84,11 @@ def format(msg, *attr):
     encoding = FG_ENCODING.get(text_attr, encoding)
     encoding = BG_ENCODING.get(text_attr, encoding)
     encoding = ATTR_ENCODING.get(text_attr, encoding)
-    if encoding: encodings.append(encoding)
+    
+    if encoding:
+      encodings.append(encoding)
   
   if encodings:
     return (CSI % ";".join(encodings)) + msg + RESET
-  else: return msg
+  else:
+    return msg

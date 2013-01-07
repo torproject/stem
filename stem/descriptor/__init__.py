@@ -196,7 +196,8 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   content = None if skip else []
   ending_keyword = None
   
-  if isinstance(keywords, str): keywords = (keywords,)
+  if isinstance(keywords, str):
+    keywords = (keywords,)
   
   if ignore_first:
     first_line = descriptor_file.readline()
@@ -211,7 +212,9 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
       break
     
     line = descriptor_file.readline()
-    if not line: break  # EOF
+    
+    if not line:
+      break  # EOF
     
     line_match = KEYWORD_LINE.match(line)
     
@@ -314,27 +317,35 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     # ... and server descriptors end with an extra newline. But other documents
     # don't say how blank lines should be handled so globally ignoring them.
     
-    if not line: continue
+    if not line:
+      continue
     
     # Some lines have an 'opt ' for backward compatibility. They should be
     # ignored. This prefix is being removed in...
     # https://trac.torproject.org/projects/tor/ticket/5124
     
-    if line.startswith("opt "): line = line[4:]
+    if line.startswith("opt "):
+      line = line[4:]
     
     line_match = KEYWORD_LINE.match(line)
     
     if not line_match:
-      if not validate: continue
+      if not validate:
+        continue
+      
       raise ValueError("Line contains invalid characters: %s" % line)
     
     keyword, value = line_match.groups()
-    if value is None: value = ''
+    
+    if value is None:
+      value = ''
     
     try:
       block_contents = _get_pseudo_pgp_block(remaining_lines)
     except ValueError, exc:
-      if not validate: continue
+      if not validate:
+        continue
+      
       raise exc
     
     if keyword in extra_keywords:

@@ -17,7 +17,8 @@ class TestControlMessage(unittest.TestCase):
     Checks message parsing when we have a valid but unauthenticated socket.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     # If an unauthenticated connection gets a message besides AUTHENTICATE or
     # PROTOCOLINFO then tor will give an 'Authentication required.' message and
@@ -59,7 +60,8 @@ class TestControlMessage(unittest.TestCase):
     Parses the response for a command which doesn't exist.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send("blarg")
@@ -74,7 +76,8 @@ class TestControlMessage(unittest.TestCase):
     Parses the response for a GETINFO query which doesn't exist.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send("GETINFO blarg")
@@ -89,7 +92,8 @@ class TestControlMessage(unittest.TestCase):
     Parses the 'GETINFO config-file' response.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     runner = test.runner.get_runner()
     torrc_dst = runner.get_torrc_path()
@@ -152,7 +156,8 @@ class TestControlMessage(unittest.TestCase):
     Issues 'SETEVENTS BW' and parses a couple events.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send("SETEVENTS BW")

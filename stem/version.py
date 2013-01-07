@@ -125,9 +125,14 @@ class Version(object):
       # The patch and status matches are optional (may be None) and have an extra
       # proceeding period or dash if they exist. Stripping those off.
       
-      if patch: patch = int(patch[1:])
-      if status: status = status[1:]
-      if extra: extra = extra[2:-1]
+      if patch:
+        patch = int(patch[1:])
+      
+      if status:
+        status = status[1:]
+      
+      if extra:
+        extra = extra[2:-1]
       
       self.major = int(major)
       self.minor = int(minor)
@@ -140,7 +145,8 @@ class Version(object):
         self.git_commit = extra[4:]
       else:
         self.git_commit = None
-    else: raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
+    else:
+      raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
   
   def meets_requirements(self, requirements):
     """
@@ -155,7 +161,8 @@ class Version(object):
       return self >= requirements
     else:
       for rule in requirements.rules:
-        if rule(self): return True
+        if rule(self):
+          return True
       
       return False
   
@@ -178,8 +185,10 @@ class Version(object):
       my_version = max(0, self.__dict__[attr])
       other_version = max(0, other.__dict__[attr])
       
-      if my_version > other_version: return 1
-      elif my_version < other_version: return -1
+      if my_version > other_version:
+        return 1
+      elif my_version < other_version:
+        return -1
     
     # According to the version spec...
     #
@@ -189,9 +198,12 @@ class Version(object):
     my_status = self.status if self.status else ""
     other_status = other.status if other.status else ""
     
-    if my_status > other_status: return 1
-    elif my_status < other_status: return -1
-    else: return 0
+    if my_status > other_status:
+      return 1
+    elif my_status < other_status:
+      return -1
+    else:
+      return 0
 
 class VersionRequirements(object):
   """

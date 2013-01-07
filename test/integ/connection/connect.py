@@ -23,7 +23,8 @@ class TestConnect(unittest.TestCase):
     Basic sanity checks for the connect_port function.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     runner = test.runner.get_runner()
     
@@ -44,7 +45,8 @@ class TestConnect(unittest.TestCase):
     Basic sanity checks for the connect_socket_file function.
     """
     
-    if test.runner.require_control(self): return
+    if test.runner.require_control(self):
+      return
     
     runner = test.runner.get_runner()
     

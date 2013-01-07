@@ -169,11 +169,15 @@ class _SyncListener(object):
   def update(self, config, key):
     if key in self.config_dict:
       new_value = config.get(key, self.config_dict[key])
-      if new_value == self.config_dict[key]: return  # no change
+      
+      if new_value == self.config_dict[key]:
+        return  # no change
       
       if self.interceptor:
         interceptor_value = self.interceptor(key, new_value)
-        if interceptor_value: new_value = interceptor_value
+        
+        if interceptor_value:
+          new_value = interceptor_value
       
       self.config_dict[key] = new_value
 
@@ -219,7 +223,9 @@ def get_config(handle):
   :param str handle: unique identifier used to access this config instance
   """
   
-  if not handle in CONFS: CONFS[handle] = Config()
+  if not handle in CONFS:
+    CONFS[handle] = Config()
+  
   return CONFS[handle]
 
 def parse_enum(key, value, enumeration):
@@ -265,7 +271,9 @@ def parse_enum_csv(key, value, enumeration, count = None):
   """
   
   values = [val.upper().strip() for val in value.split(',')]
-  if values == ['']: return []
+  
+  if values == ['']:
+    return []
   
   if count is None:
     pass  # no count validateion checks to do
@@ -415,7 +423,10 @@ class Config(object):
         
         # strips any commenting or excess whitespace
         comment_start = line.find("#")
-        if comment_start != -1: line = line[:comment_start]
+        
+        if comment_start != -1:
+          line = line[:comment_start]
+        
         line = line.strip()
         
         # parse the key/value pair
@@ -463,7 +474,8 @@ class Config(object):
         for entry_key in sorted(self.keys()):
           for entry_value in self.get_value(entry_key, multiple = True):
             # check for multi line entries
-            if "\n" in entry_value: entry_value = "\n|" + entry_value.replace("\n", "\n|")
+            if "\n" in entry_value:
+              entry_value = "\n|" + entry_value.replace("\n", "\n|")
             
             output_file.write('%s %s\n' % (entry_key, entry_value))
   
@@ -535,16 +547,21 @@ class Config(object):
     
     with self._contents_lock:
       if isinstance(value, str):
-        if not overwrite and key in self._contents: self._contents[key].append(value)
-        else: self._contents[key] = [value]
+        if not overwrite and key in self._contents:
+          self._contents[key].append(value)
+        else:
+          self._contents[key] = [value]
         
-        for listener in self._listeners: listener(self, key)
+        for listener in self._listeners:
+          listener(self, key)
       elif isinstance(value, (list, tuple)):
         if not overwrite and key in self._contents:
           self._contents[key] += value
-        else: self._contents[key] = value
+        else:
+          self._contents[key] = value
         
-        for listener in self._listeners: listener(self, key)
+        for listener in self._listeners:
+          listener(self, key)
       else:
         raise ValueError("Config.set() only accepts str, list, or tuple. Provided value was a '%s'" % type(value))
   
@@ -588,21 +605,27 @@ class Config(object):
     
     is_multivalue = isinstance(default, (list, tuple, dict))
     val = self.get_value(key, default, is_multivalue)
-    if val == default: return val  # don't try to infer undefined values
+    
+    if val == default:
+      return val  # don't try to infer undefined values
     
     if isinstance(default, bool):
-      if val.lower() == "true": val = True
-      elif val.lower() == "false": val = False
+      if val.lower() == "true":
+        val = True
+      elif val.lower() == "false":
+        val = False
       else:
         log.debug("Config entry '%s' is expected to be a boolean, defaulting to '%s'" % (key, str(default)))
         val = default
     elif isinstance(default, int):
-      try: val = int(val)
+      try:
+        val = int(val)
       except ValueError:
         log.debug("Config entry '%s' is expected to be an integer, defaulting to '%i'" % (key, default))
         val = default
     elif isinstance(default, float):
-      try: val = float(val)
+      try:
+        val = float(val)
       except ValueError:
         log.debug("Config entry '%s' is expected to be a float, defaulting to '%f'" % (key, default))
         val = default
