@@ -277,9 +277,10 @@ class TestControl(unittest.TestCase):
       '$999A226EBED397F331B612FE1E4CFAE5C1F201BA=piyaz':
         [('999A226EBED397F331B612FE1E4CFAE5C1F201BA', 'piyaz')],
       '$E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14':
-        [('E57A476CD4DFBD99B4EE52A100A58610AD6E80B9', None),
-         (None, 'hamburgerphone'),
-         (None, 'PrivacyRepublic14'),
+        [
+          ('E57A476CD4DFBD99B4EE52A100A58610AD6E80B9', None),
+          (None, 'hamburgerphone'),
+          (None, 'PrivacyRepublic14'),
         ],
     }
     
