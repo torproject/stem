@@ -63,7 +63,7 @@ class TestMapAddressResponse(unittest.TestCase):
     
     control_message = mocking.get_message(UNRECOGNIZED_KEYS_RESPONSE)
     self.assertRaises(stem.InvalidRequest, stem.response.convert, "MAPADDRESS", control_message)
-    expected = { "23": "324" }
+    expected = {"23": "324"}
     
     control_message = mocking.get_message(PARTIAL_FAILURE_RESPONSE)
     stem.response.convert("MAPADDRESS", control_message)
