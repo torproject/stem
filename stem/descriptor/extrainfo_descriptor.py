@@ -524,7 +524,6 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         key_type = "STATUS" if is_response_stats else "STAT"
         error_msg = "%s lines should contain %s=COUNT mappings: %s" % (keyword, key_type, line)
         
-        
         if value:
           for entry in value.split(","):
             if not "=" in entry:
