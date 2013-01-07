@@ -537,4 +537,3 @@ class DescriptorReader(object):
   
   def __exit__(self, exit_type, value, traceback):
     self.stop()
-

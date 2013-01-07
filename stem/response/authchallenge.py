@@ -49,4 +49,3 @@ class AuthChallengeResponse(stem.response.ControlMessage):
       self.server_nonce = binascii.a2b_hex(value)
     else:
       raise stem.ProtocolError("Missing SERVERNONCE mapping: %s" % line)
-

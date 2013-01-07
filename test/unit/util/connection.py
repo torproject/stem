@@ -154,4 +154,3 @@ class TestConnection(unittest.TestCase):
     
     self.assertRaises(ValueError, stem.util.connection.get_address_binary, "")
     self.assertRaises(ValueError, stem.util.connection.get_address_binary, "blarg")
-

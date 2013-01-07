@@ -323,4 +323,3 @@ class TestSystem(unittest.TestCase):
     self.assertEquals("C:\\tmp", system.expand_path(".\\", "C:\\tmp"))
     self.assertEquals("C:\\tmp\\foo", system.expand_path("foo", "C:\\tmp"))
     self.assertEquals("C:\\tmp\\foo", system.expand_path(".\\foo", "C:\\tmp"))
-

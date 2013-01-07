@@ -314,4 +314,3 @@ def _get_label(units, count, decimal, is_long):
         return count_label + long_label + ("s" if is_plural else "")
       else:
         return count_label + short_label
-

@@ -311,4 +311,3 @@ class TestControl(unittest.TestCase):
     
     for test_input in malformed_inputs:
       self.assertRaises(ProtocolError, _parse_circ_path, test_input)
-

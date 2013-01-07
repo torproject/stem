@@ -936,4 +936,3 @@ def sign_descriptor_content(desc_content):
     desc_content = desc_content[:rst_start] + router_signature_token + router_signature_start + signature_base64 + router_signature_end
     
     return desc_content
-

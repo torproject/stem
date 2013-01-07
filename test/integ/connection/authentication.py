@@ -394,4 +394,3 @@ class TestAuthenticate(unittest.TestCase):
           self.assertEqual(failure_msg, str(exc))
         
         raise exc
-

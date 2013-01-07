@@ -169,4 +169,3 @@ class TestControlMessage(unittest.TestCase):
         self.assertTrue(re.match("BW [0-9]+ [0-9]+", str(bw_event)))
         self.assertTrue(re.match("650 BW [0-9]+ [0-9]+\r\n", bw_event.raw_content()))
         self.assertEquals(("650", " "), bw_event.content()[0][:2])
-

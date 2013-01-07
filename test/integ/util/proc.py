@@ -101,4 +101,3 @@ class TestProc(unittest.TestCase):
           return
       
       self.fail()
-

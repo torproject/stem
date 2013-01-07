@@ -411,4 +411,3 @@ class TestServerDescriptor(unittest.TestCase):
     else:
       # check a default attribute
       self.assertEquals("caerSidi", desc.nickname)
-

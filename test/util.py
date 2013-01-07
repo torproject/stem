@@ -75,4 +75,3 @@ def negotiate_socks(sock, host, port):
     raise ProtocolError(error_msgs.get(response[1], "SOCKS server returned unrecognized error code"))
   
   return [socket.inet_ntoa(response[4:]), struct.unpack("!H", response[2:4])[0]]
-

@@ -188,4 +188,3 @@ class TestExitPolicy(unittest.TestCase):
     
     self.assertFalse(policy.can_exit_to('127.0.0.1', 79))
     self.assertTrue(policy.can_exit_to('127.0.0.1', 80))
-

@@ -425,4 +425,3 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEquals("27B6B5996C426270A5C95488AA5BCEB6BCC86956", signature.identity)
       self.assertEquals("D5C30C15BB3F1DA27669C2D88439939E8F418FCF", signature.key_digest)
       self.assertEquals(expected_signature, signature.signature)
-

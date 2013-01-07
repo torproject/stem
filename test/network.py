@@ -245,4 +245,3 @@ class SocksPatch(object):
   
   def __exit__(self, exit_type, value, traceback):
     socket.socket = _socket_socket
-

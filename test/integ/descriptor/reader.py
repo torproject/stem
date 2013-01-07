@@ -485,4 +485,3 @@ class TestDescriptorReader(unittest.TestCase):
     self.assertEqual(test_path, skipped_path)
     self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
     self.assertEqual((None, None), skip_exception.mime_type)
-

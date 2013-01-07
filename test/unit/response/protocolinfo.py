@@ -184,4 +184,3 @@ class TestProtocolInfoResponse(unittest.TestCase):
     
     # reset system call mocking
     mocking.revert_mocking()
-

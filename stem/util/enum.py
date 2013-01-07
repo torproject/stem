@@ -166,4 +166,3 @@ class Enum(object):
     
     for entry in self._values:
       yield entry
-

@@ -169,4 +169,3 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
           # failing to get our attention if it does.
           
           self.fail("Unrecognized descriptor content: %s" % unrecognized_lines)
-

@@ -102,4 +102,3 @@ class TestExport(unittest.TestCase):
     server_desc = get_relay_server_descriptor()
     bridge_desc = get_bridge_server_descriptor()
     self.assertRaises(ValueError, export_csv, (server_desc, bridge_desc))
-

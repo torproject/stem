@@ -503,4 +503,3 @@ class TestExtraInfoDescriptor(unittest.TestCase):
       self.assertEquals("ninja", desc.nickname)
     
     return desc
-

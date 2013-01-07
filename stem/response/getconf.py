@@ -53,4 +53,3 @@ class GetConfResponse(stem.response.ControlMessage):
       
       if value is not None:
         self.entries[key].append(value)
-

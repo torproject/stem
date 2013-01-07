@@ -689,4 +689,3 @@ class Runner(object):
     except OSError, exc:
       test.output.print_line("  failed to start tor: %s\n" % exc, *ERROR_ATTR)
       raise exc
-

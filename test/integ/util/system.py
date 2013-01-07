@@ -393,4 +393,3 @@ class TestSystem(unittest.TestCase):
     self.assertEquals(home_dir, stem.util.system.expand_path("~/"))
     self.assertEquals(home_dir, stem.util.system.expand_path("~%s" % username))
     self.assertEquals(os.path.join(home_dir, "foo"), stem.util.system.expand_path("~%s/foo" % username))
-

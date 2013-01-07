@@ -197,4 +197,3 @@ class ErrorTracker(object):
   def __iter__(self):
     for error_line in self._errors:
       yield error_line
-

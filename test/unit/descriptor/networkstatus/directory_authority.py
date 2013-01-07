@@ -247,4 +247,3 @@ class TestDirectoryAuthority(unittest.TestCase):
     
     authority = DirectoryAuthority(content, False, True)
     self.assertEqual('turtles', authority.nickname)
-

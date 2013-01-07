@@ -133,4 +133,3 @@ class TestConf(unittest.TestCase):
     self.assertEquals("yup, I'm there", test_config.get_value("single_value"))
     self.assertEquals(["a", "b", "c"], test_config.get_value("multiple_values", multiple = True))
     self.assertEquals(HERALD_POEM, test_config.get_value("multiline_value"))
-

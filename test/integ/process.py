@@ -176,4 +176,3 @@ class TestProcess(unittest.TestCase):
       time.sleep(1)
     
     self.fail("tor didn't quit after the controller that owned it disconnected")
-

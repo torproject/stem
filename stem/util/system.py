@@ -604,4 +604,3 @@ def call(command, default = UNDEFINED):
     
     if default != UNDEFINED: return default
     else: raise exc
-

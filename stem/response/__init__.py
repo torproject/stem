@@ -480,4 +480,3 @@ class SingleLineResponse(ControlMessage):
       raise stem.ProtocolError("Received empty response")
     else:
       self.code, _, self.message = content[0]
-

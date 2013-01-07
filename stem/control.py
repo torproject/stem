@@ -1978,4 +1978,3 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   
   if default != UNDEFINED: return default
   else: raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
-

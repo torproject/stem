@@ -501,4 +501,3 @@ if __name__ == '__main__':
   else:
     test.output.print_line("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
     print
-

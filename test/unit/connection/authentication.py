@@ -154,4 +154,3 @@ class TestAuthenticate(unittest.TestCase):
     
     # revert logging back to normal
     stem_logger.setLevel(log.logging_level(log.TRACE))
-

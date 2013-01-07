@@ -150,4 +150,3 @@ class TestStrTools(unittest.TestCase):
     
     for arg in invalid_input:
       self.assertRaises(ValueError, str_tools.parse_iso_timestamp, arg)
-

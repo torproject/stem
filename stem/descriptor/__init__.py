@@ -346,4 +346,3 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     return entries, extra_entries
   else:
     return entries
-

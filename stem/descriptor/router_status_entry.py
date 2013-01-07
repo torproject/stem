@@ -643,4 +643,3 @@ def _decode_fingerprint(identity, validate):
     raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
   
   return fingerprint
-

@@ -88,4 +88,3 @@ def controller():
   controller = stem.control.Controller.from_port(control_port = CONTROL_PORT)
   controller.authenticate()
   return controller
-

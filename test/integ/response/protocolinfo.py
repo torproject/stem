@@ -151,4 +151,3 @@ class TestProtocolInfo(unittest.TestCase):
     self.assertEqual((), protocolinfo_response.unknown_auth_methods)
     self.assertEqual(tuple(auth_methods), protocolinfo_response.auth_methods)
     self.assertEqual(auth_cookie_path, protocolinfo_response.cookie_path)
-

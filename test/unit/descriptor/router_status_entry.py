@@ -526,4 +526,3 @@ class TestRouterStatusEntry(unittest.TestCase):
       self.assertEquals(expected_value, getattr(entry, attr))
     else:
       self.assertEquals("caerSidi", entry.nickname)
-

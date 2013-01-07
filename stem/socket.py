@@ -563,4 +563,3 @@ def send_formatting(message):
     return "+%s\r\n.\r\n" % message.replace("\n", "\r\n")
   else:
     return message + "\r\n"
-

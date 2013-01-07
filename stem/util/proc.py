@@ -455,4 +455,3 @@ def _log_failure(parameter, exc):
   """
   
   log.debug("proc call failed (%s): %s" % (parameter, exc))
-

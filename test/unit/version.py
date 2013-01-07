@@ -257,4 +257,3 @@ class TestVersion(unittest.TestCase):
     """
     
     self.assertEqual(version, str(Version(version)))
-

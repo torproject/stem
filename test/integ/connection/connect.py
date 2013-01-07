@@ -59,4 +59,3 @@ class TestConnect(unittest.TestCase):
       control_socket.close()
     else:
       self.assertEquals(control_socket, None)
-

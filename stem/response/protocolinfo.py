@@ -116,4 +116,3 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
     
     self.auth_methods = tuple(auth_methods)
     self.unknown_auth_methods = tuple(unknown_auth_methods)
-

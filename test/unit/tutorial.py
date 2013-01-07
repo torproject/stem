@@ -85,4 +85,3 @@ class TestTutorial(unittest.TestCase):
           return
     
     self.assertEqual(4, count)
-

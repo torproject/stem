@@ -281,4 +281,3 @@ def cryptovariables_equal(x, y):
   return (
     hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
     hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
-

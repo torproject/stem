@@ -168,4 +168,3 @@ class TestProc(unittest.TestCase):
     ]
     
     self.assertEquals(expected_results, proc.get_connections(pid))
-

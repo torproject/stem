@@ -718,4 +718,3 @@ class MicroExitPolicyRule(ExitPolicyRule):
   
   def get_masked_bits(self):
     return None
-

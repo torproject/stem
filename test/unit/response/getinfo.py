@@ -136,4 +136,3 @@ class TestGetInfoResponse(unittest.TestCase):
     
     control_message = mocking.get_message(MISSING_MULTILINE_NEWLINE)
     self.assertRaises(stem.ProtocolError, stem.response.convert, "GETINFO", control_message)
-

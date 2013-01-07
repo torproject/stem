@@ -89,4 +89,3 @@ def format(msg, *attr):
   if encodings:
     return (CSI % ";".join(encodings)) + msg + RESET
   else: return msg
-

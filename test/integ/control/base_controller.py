@@ -252,4 +252,3 @@ class TestBaseController(unittest.TestCase):
       self.assertTrue(state_observer.timestamp < time.time())
       self.assertTrue(state_observer.timestamp > time.time() - 1.0)
       state_observer.reset()
-

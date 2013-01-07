@@ -223,4 +223,3 @@ class TestConf(unittest.TestCase):
     
     self.assertEquals(None, test_config.get_value("foo"))
     self.assertEquals("hello", test_config.get_value("foo", "hello"))
-

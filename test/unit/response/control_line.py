@@ -164,4 +164,3 @@ class TestControlLine(unittest.TestCase):
     line = stem.response.ControlLine(cookie_file_entry)
     self.assertEquals(line.pop_mapping(True, True), ('COOKIEFILE', r'/tmp/my data\"dir//control_auth_cookie'))
     self.assertTrue(line.is_empty())
-

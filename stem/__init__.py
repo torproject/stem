@@ -650,4 +650,3 @@ TimeoutSetType = stem.util.enum.UppercaseEnum(
   "DISCARD",
   "RESUME",
 )
-

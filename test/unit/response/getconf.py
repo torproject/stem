@@ -113,4 +113,3 @@ class TestGetConfResponse(unittest.TestCase):
     
     control_message = mocking.get_message(INVALID_RESPONSE)
     self.assertRaises(stem.ProtocolError, stem.response.convert, "GETCONF", control_message)
-

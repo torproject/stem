@@ -852,4 +852,3 @@ EVENT_TYPE_TO_CLASS = {
   # accounting for a bug in tor 0.2.0.22
   "STATUS_SEVER": StatusEvent,
 }
-

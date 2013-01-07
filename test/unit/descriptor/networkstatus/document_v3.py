@@ -802,4 +802,3 @@ class TestNetworkStatusDocument(unittest.TestCase):
     
     document = NetworkStatusDocumentV3(content, validate = False)
     self.assertEquals((DirectoryAuthority(authority_content, False, True),), document.directory_authorities)
-

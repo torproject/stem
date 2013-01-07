@@ -190,4 +190,3 @@ class TestKeyCertificate(unittest.TestCase):
       
       certificate = KeyCertificate(content, False)
       self.assertEquals(None, getattr(certificate, attr))
-

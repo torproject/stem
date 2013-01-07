@@ -647,4 +647,3 @@ class Config(object):
         message_id = "stem.util.conf.missing_config_key_%s" % key
         log.log_once(message_id, log.TRACE, "config entry '%s' not found, defaulting to '%s'" % (key, default))
         return default
-

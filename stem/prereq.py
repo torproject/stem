@@ -86,4 +86,3 @@ def _check_version(minor_req):
     return False
   
   return True
-

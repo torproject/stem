@@ -80,4 +80,3 @@ class TestTorTools(unittest.TestCase):
     
     for circuit_id in invalid_circuit_ids:
       self.assertFalse(stem.util.tor_tools.is_valid_circuit_id(circuit_id))
-

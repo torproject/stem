@@ -46,4 +46,3 @@ class TestEnum(unittest.TestCase):
     
     # keys method
     self.assertEquals(("ANT", "WASP", "LADYBUG", "FIREFLY"), insects.keys())
-

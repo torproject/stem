@@ -98,4 +98,3 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
       raise ValueError("To export a descriptor CSV all of the descriptors must be of the same type. First descriptor was a %s but we later got a %s." % (descriptor_type_label, type(desc)))
     
     writer.writerow(vars(desc))
-

@@ -93,4 +93,3 @@ class TestDescriptorReader(unittest.TestCase):
     mocking.support_with(test_content)
     mocking.mock(open, mocking.return_value(test_content))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")
-

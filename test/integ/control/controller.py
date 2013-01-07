@@ -832,4 +832,3 @@ class TestController(unittest.TestCase):
       new_circ = controller.new_circuit()
       circuits = controller.get_circuits()
       self.assertTrue(new_circ in [circ.id for circ in circuits])
-

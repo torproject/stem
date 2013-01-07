@@ -29,4 +29,3 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEquals([], document.options)
     self.assertEquals("moria2", document.signing_authority)
     self.assertEquals(NETWORK_STATUS_DOCUMENT_FOOTER_V2[0][1][7:], document.signature)
-

@@ -880,4 +880,3 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   
   def _last_keyword(self):
     return None
-

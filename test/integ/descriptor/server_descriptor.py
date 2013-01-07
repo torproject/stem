@@ -313,4 +313,3 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(stem.exit_policy.ExitPolicy("reject *:*"), desc.exit_policy)
     self.assertEquals("006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4", desc.digest())
     self.assertEquals([], desc.get_unrecognized_lines())
-

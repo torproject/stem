@@ -36,4 +36,3 @@ class MapAddressResponse(stem.response.ControlMessage):
           self.entries[key] = value
         except ValueError:
           raise stem.ProtocolError(None, "MAPADDRESS returned '%s', which isn't a mapping" % message)
-

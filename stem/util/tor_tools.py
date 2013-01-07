@@ -100,4 +100,3 @@ def is_hex_digits(entry, count):
   """
   
   return bool(re.match("^%s{%i}$" % (HEX_DIGIT, count), entry))
-

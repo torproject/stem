@@ -218,4 +218,3 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
 
 def _get_pid():
   return str(os.getpid())
-

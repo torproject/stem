@@ -266,4 +266,3 @@ Requirement = stem.util.enum.Enum(
   ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),
   ("FEATURE_EXTENDED_EVENTS", Version("0.2.2.1-alpha")),
 )
-

@@ -1118,4 +1118,3 @@ class TestEvents(unittest.TestCase):
     self.assertTrue("STATUS_GENERAL event had an unrecognized runlevel" in logged_events[0])
     
     stem_logger.removeHandler(logging_buffer)
-

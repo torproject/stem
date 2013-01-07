@@ -202,4 +202,3 @@ def log_to_stdout(runlevel):
   """
   
   get_logger().addHandler(_StdoutLogger(runlevel))
-

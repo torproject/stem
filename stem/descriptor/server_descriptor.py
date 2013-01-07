@@ -888,4 +888,3 @@ class BridgeDescriptor(ServerDescriptor):
       return 1
     
     return str(self).strip() > str(other).strip()
-

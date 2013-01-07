@@ -14,4 +14,3 @@ def get_resource(filename):
   """
   
   return os.path.join(DESCRIPTOR_TEST_DATA, filename)
-

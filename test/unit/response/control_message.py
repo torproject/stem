@@ -182,4 +182,3 @@ class TestControlMessage(unittest.TestCase):
       self.assertTrue(line.endswith(message_lines.pop(0)))
     
     return message
-

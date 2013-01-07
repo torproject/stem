@@ -1259,4 +1259,3 @@ class DocumentSignature(object):
       elif getattr(self, attr) < getattr(other, attr): return -1
     
     return 0
-

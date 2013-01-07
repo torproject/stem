@@ -322,4 +322,3 @@ class TestExitPolicyRule(unittest.TestCase):
       
       for match_args, expected_result in matches.items():
         self.assertEquals(expected_result, rule.is_match(*match_args))
-

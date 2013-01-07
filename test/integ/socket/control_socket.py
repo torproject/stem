@@ -127,4 +127,3 @@ class TestControlSocket(unittest.TestCase):
         control_socket.close()
         self.assertRaises(stem.SocketClosed, control_socket.send, "PROTOCOLINFO 1")
         control_socket.connect()
-
