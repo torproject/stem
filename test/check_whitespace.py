@@ -53,6 +53,14 @@ def pep8_issues(base_path = DEFAULT_TARGET):
   #
   #   Pep8 only works with this one if we have four space indents (its
   #   detection is based on multiples of four).
+  #
+  # * E251 no spaces around keyword / parameter equals
+  #
+  #   This one I dislike a great deal. It makes keyword arguments different
+  #   from assignments which looks... aweful. I'm not sure what PEP8's author
+  #   was on when he wrote this one but it's stupid.
+  #
+  #   Someone else can change this if they really care.
   
   ignored_issues = "E111,E121,W293,E501,E302,E701,E251,E127"
   
