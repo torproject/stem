@@ -34,24 +34,15 @@ def pep8_issues(base_path = DEFAULT_TARGET):
   :returns: dict of the form ``path => [(line_number, message)...]``
   """
 
-  # pep8 give output of the form...
+  # The pep8 command give output of the form...
   #
   #   FILE:LINE:CHARACTER ISSUE
   #
   # ... for instance...
   #
   #   ./test/mocking.py:868:31: E225 missing whitespace around operator
-
-  # TODO: Presently this is a list of all issues pep8 complains about in stem.
-  # We're gonna trim these down by cateogry but include the pep8 checks to
-  # prevent regression.
-
+  #
   # Ignoring the following compliance issues.
-  #
-  # * E127 continuation line over-indented for visual indent
-  #
-  #   Pep8 only works with this one if we have four space indents (its
-  #   detection is based on multiples of four).
   #
   # * E251 no spaces around keyword / parameter equals
   #
@@ -67,8 +58,17 @@ def pep8_issues(base_path = DEFAULT_TARGET):
   #   things far less readable, encouraging bad practices like abbreviated
   #   variable names.
   #
-  #   If the code fits on my tiny netbook screen then it's probably narrow
-  #   enough.
+  #   If the code fits on my tiny netbook screen then it's narrow enough.
+  #
+  # * E111 and E121 four space indentations
+  #
+  #   Ahhh, indentation. The holy war that'll never die. Sticking with two
+  #   space indentations since it leads to shorter lines.
+  #
+  # * E127 continuation line over-indented for visual indent
+  #
+  #   Pep8 only works with this one if we have four space indents (its
+  #   detection is based on multiples of four).
 
   ignored_issues = "E111,E121,E501,E251,E127"
 
