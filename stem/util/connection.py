@@ -172,7 +172,7 @@ def get_mask(bits):
   mask_bin = get_binary(2 ** bits - 1, 32)[::-1]
   
   # breaks it into eight character groupings
-  octets = [mask_bin[8 * i : 8 * (i + 1)] for i in xrange(4)]
+  octets = [mask_bin[8 * i:8 * (i + 1)] for i in xrange(4)]
   
   # converts each octet into its integer value
   return ".".join([str(int(octet, 2)) for octet in octets])
@@ -222,7 +222,7 @@ def get_mask_ipv6(bits):
   mask_bin = get_binary(2 ** bits - 1, 128)[::-1]
   
   # breaks it into sixteen character groupings
-  groupings = [mask_bin[16 * i : 16 * (i + 1)] for i in xrange(8)]
+  groupings = [mask_bin[16 * i:16 * (i + 1)] for i in xrange(8)]
   
   # converts each group into its hex value
   return ":".join(["%04x" % int(group, 2) for group in groupings]).upper()

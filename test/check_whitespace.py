@@ -47,7 +47,7 @@ def pep8_issues(base_path = DEFAULT_TARGET):
   # We're gonna trim these down by cateogry but include the pep8 checks to
   # prevent regression.
   
-  ignored_issues = "E111,E121,W293,E501,E302,E701,E251,E261,W391,E127,E241,E128,E226,E231,E202,E201,E203"
+  ignored_issues = "E111,E121,W293,E501,E302,E701,E251,E261,W391,E127,E241,E128,E226,E231,E202,E201"
   
   issues = {}
   pep8_output = system.call("pep8 --ignore %s %s" % (ignored_issues, base_path))

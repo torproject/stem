@@ -139,7 +139,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     stem.response.convert("PROTOCOLINFO", control_message)
     
     self.assertEquals(5, control_message.protocol_version)
-    self.assertEquals(None , control_message.tor_version)
+    self.assertEquals(None, control_message.tor_version)
     self.assertEquals((), control_message.auth_methods)
     self.assertEquals((), control_message.unknown_auth_methods)
     self.assertEquals(None, control_message.cookie_path)

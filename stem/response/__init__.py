@@ -408,7 +408,7 @@ def _parse_entry(line, quoted, escaped):
     if start_quote != 0 or end_quote == -1:
       raise ValueError("the next entry isn't a quoted value: " + line)
     
-    next_entry, remainder = remainder[1 : end_quote], remainder[end_quote + 1:]
+    next_entry, remainder = remainder[1:end_quote], remainder[end_quote + 1:]
   else:
     # non-quoted value, just need to check if there's more data afterward
     if " " in remainder: next_entry, remainder = remainder.split(" ", 1)
