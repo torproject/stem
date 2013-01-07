@@ -47,6 +47,13 @@ def pep8_issues(base_path = DEFAULT_TARGET):
   # We're gonna trim these down by cateogry but include the pep8 checks to
   # prevent regression.
   
+  # Ignoring the following compliance issues.
+  #
+  # * E127 continuation line over-indented for visual indent
+  #
+  #   Pep8 only works with this one if we have four space indents (its
+  #   detection is based on multiples of four).
+  
   ignored_issues = "E111,E121,W293,E501,E302,E701,E251,E261,W391,E127"
   
   issues = {}
