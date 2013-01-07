@@ -146,12 +146,12 @@ def log_once(message_id, runlevel, message):
     log(runlevel, message)
 
 # shorter aliases for logging at a runlevel
-def trace(message):  log(Runlevel.TRACE, message)
-def debug(message):  log(Runlevel.DEBUG, message)
-def info(message):   log(Runlevel.INFO, message)
+def trace(message): log(Runlevel.TRACE, message)
+def debug(message): log(Runlevel.DEBUG, message)
+def info(message): log(Runlevel.INFO, message)
 def notice(message): log(Runlevel.NOTICE, message)
-def warn(message):   log(Runlevel.WARN, message)
-def error(message):  log(Runlevel.ERROR, message)
+def warn(message): log(Runlevel.WARN, message)
+def error(message): log(Runlevel.ERROR, message)
 
 class LogBuffer(logging.Handler):
   """

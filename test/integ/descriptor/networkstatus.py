@@ -126,9 +126,18 @@ class TestNetworkStatus(unittest.TestCase):
     
     # the document's expected client and server versions are the same
     expected_versions = [stem.version.Version(v) for v in (
-      "0.2.2.35",         "0.2.2.36",         "0.2.2.37",         "0.2.3.10-alpha",
-      "0.2.3.11-alpha",   "0.2.3.12-alpha",   "0.2.3.13-alpha",   "0.2.3.14-alpha",
-      "0.2.3.15-alpha",   "0.2.3.16-alpha",   "0.2.3.17-beta",    "0.2.3.18-rc",
+      "0.2.2.35",
+      "0.2.2.36",
+      "0.2.2.37",
+      "0.2.3.10-alpha",
+      "0.2.3.11-alpha",
+      "0.2.3.12-alpha",
+      "0.2.3.13-alpha",
+      "0.2.3.14-alpha",
+      "0.2.3.15-alpha",
+      "0.2.3.16-alpha",
+      "0.2.3.17-beta",
+      "0.2.3.18-rc",
       "0.2.3.19-rc",
     )]
     

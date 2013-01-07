@@ -50,8 +50,8 @@ KEY_ARG = re.compile("^(\S+)=")
 # - logged messages about bugs
 # - the 'getinfo_helper_listeners' function of control.c
 
-CONTROL_ESCAPES = {r"\\": "\\",  r"\"": "\"",   r"\'": "'",
-                   r"\r": "\r",  r"\n": "\n",   r"\t": "\t"}
+CONTROL_ESCAPES = {r"\\": "\\", r"\"": "\"", r"\'": "'",
+                   r"\r": "\r", r"\n": "\n", r"\t": "\t"}
 
 def convert(response_type, message, **kwargs):
   """
