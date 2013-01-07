@@ -32,72 +32,78 @@ FINGERPRINT_PATTERN = re.compile("^%s{40}$" % HEX_DIGIT)
 NICKNAME_PATTERN = re.compile("^[a-zA-Z0-9]{1,19}$")
 CIRC_ID_PATTERN = re.compile("^[a-zA-Z0-9]{1,16}$")
 
+
 def is_valid_fingerprint(entry, check_prefix = False):
   """
   Checks if a string is a properly formatted relay fingerprint. This checks for
   a '$' prefix if check_prefix is true, otherwise this only validates the hex
   digits.
-  
+
   :param str entry: string to be checked
   :param bool check_prefix: checks for a '$' prefix
-  
+
   :returns: **True** if the string could be a relay fingerprint, **False** otherwise
   """
-  
+
   if not isinstance(entry, str):
     return False
   elif check_prefix:
-    if not entry or entry[0] != "$": return False
+    if not entry or entry[0] != "$":
+      return False
+
     entry = entry[1:]
-  
+
   return bool(FINGERPRINT_PATTERN.match(entry))
+
 
 def is_valid_nickname(entry):
   """
   Checks if a string is a valid format for being a nickname.
-  
+
   :param str entry: string to be checked
-  
+
   :returns: **True** if the string could be a nickname, **False** otherwise
   """
-  
+
   if not isinstance(entry, str):
     return False
-  
+
   return bool(NICKNAME_PATTERN.match(entry))
+
 
 def is_valid_circuit_id(entry):
   """
   Checks if a string is a valid format for being a circuit identifier.
-  
+
   :returns: **True** if the string could be a circuit id, **False** otherwise
   """
-  
+
   if not isinstance(entry, str):
     return False
-  
+
   return bool(CIRC_ID_PATTERN.match(entry))
+
 
 def is_valid_stream_id(entry):
   """
   Checks if a string is a valid format for being a stream identifier.
   Currently, this is just an alias to :func:`~stem.util.tor_tools.is_valid_circuit_id`.
-  
+
   :returns: **True** if the string could be a stream id, **False** otherwise
   """
-  
+
   return is_valid_circuit_id(entry)
+
 
 def is_hex_digits(entry, count):
   """
   Checks if a string is the given number of hex digits. Digits represented by
   letters are case insensitive.
-  
+
   :param str entry: string to be checked
   :param int count: number of hex digits to be checked for
-  
+
   :returns: **True** if the string matches this number
   """
-  
-  return bool(re.match("^%s{%i}$" % (HEX_DIGIT, count), entry))
 
+  return bool(re.match("^%s{%i}$" % (HEX_DIGIT, count), entry))

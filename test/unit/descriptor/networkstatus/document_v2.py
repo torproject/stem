@@ -7,14 +7,15 @@ import unittest
 
 from test.mocking import get_network_status_document_v2, NETWORK_STATUS_DOCUMENT_HEADER_V2, NETWORK_STATUS_DOCUMENT_FOOTER_V2
 
+
 class TestNetworkStatusDocument(unittest.TestCase):
   def test_minimal_document(self):
     """
     Parses a minimal v2 network status document.
     """
-    
+
     document = get_network_status_document_v2()
-    
+
     self.assertEquals((), document.routers)
     self.assertEquals(2, document.version)
     self.assertEquals("18.244.0.114", document.hostname)
@@ -29,4 +30,3 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEquals([], document.options)
     self.assertEquals("moria2", document.signing_authority)
     self.assertEquals(NETWORK_STATUS_DOCUMENT_FOOTER_V2[0][1][7:], document.signature)
-

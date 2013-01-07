@@ -9,7 +9,7 @@ Functions to aid library logging. The default logging
   get_logger - provides the stem's Logger instance
   logging_level - converts a runlevel to its logging number
   escape - escapes special characters in a message in preparation for logging
-  
+
   log - logs a message at the given runlevel
   log_once - logs a message, deduplicating if it has already been logged
   trace - logs a message at the TRACE runlevel
@@ -18,17 +18,17 @@ Functions to aid library logging. The default logging
   notice - logs a message at the NOTICE runlevel
   warn - logs a message at the WARN runlevel
   error - logs a message at the ERROR runlevel
-  
+
   LogBuffer - Buffers logged events so they can be iterated over.
     |- is_empty - checks if there's events in our buffer
     +- __iter__ - iterates over and removes the buffered events
-  
+
   log_to_stdout - reports further logged events to stdout
 
 .. data:: Runlevel (enum)
-  
+
   Enumeration for logging runlevels.
-  
+
   ========== ===========
   Runlevel   Description
   ========== ===========
@@ -77,68 +77,77 @@ DEDUPLICATION_MESSAGE_IDS = set()
 # could be found for logger "stem"' warning as per...
 # http://docs.python.org/release/3.1.3/library/logging.html#configuring-logging-for-a-library
 
+
 class _NullHandler(logging.Handler):
-  def emit(self, record): pass
+  def emit(self, record):
+    pass
 
 if not LOGGER.handlers:
   LOGGER.addHandler(_NullHandler())
 
+
 def get_logger():
   """
   Provides the stem logger.
-  
+
   :return: **logging.Logger** for stem
   """
-  
+
   return LOGGER
+
 
 def logging_level(runlevel):
   """
   Translates a runlevel into the value expected by the logging module.
-  
+
   :param stem.util.log.Runlevel runlevel: runlevel to be returned, no logging if **None**
   """
-  
-  if runlevel: return LOG_VALUES[runlevel]
-  else: return logging.FATAL + 5
+
+  if runlevel:
+    return LOG_VALUES[runlevel]
+  else:
+    return logging.FATAL + 5
+
 
 def escape(message):
   """
   Escapes specific sequences for logging (newlines, tabs, carriage returns).
-  
+
   :param str message: string to be escaped
-  
+
   :returns: str that is escaped
   """
-  
+
   for pattern, replacement in (("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")):
     message = message.replace(pattern, replacement)
-  
+
   return message
+
 
 def log(runlevel, message):
   """
   Logs a message at the given runlevel.
-  
+
   :param stem.util.log.Runlevel runlevel: runlevel to log the message at, logging is skipped if **None**
   :param str message: message to be logged
   """
-  
+
   if runlevel:
     LOGGER.log(LOG_VALUES[runlevel], message)
+
 
 def log_once(message_id, runlevel, message):
   """
   Logs a message at the given runlevel. If a message with this ID has already
   been logged then this is a no-op.
-  
+
   :param str message_id: unique message identifier to deduplicate on
   :param stem.util.log.Runlevel runlevel: runlevel to log the message at, logging is skipped if **None**
   :param str message: message to be logged
-  
+
   :returns: **True** if we log the message, **False** otherwise
   """
-  
+
   if not runlevel or message_id in DEDUPLICATION_MESSAGE_IDS:
     return False
   else:
@@ -146,60 +155,80 @@ def log_once(message_id, runlevel, message):
     log(runlevel, message)
 
 # shorter aliases for logging at a runlevel
-def trace(message):  log(Runlevel.TRACE, message)
-def debug(message):  log(Runlevel.DEBUG, message)
-def info(message):   log(Runlevel.INFO, message)
-def notice(message): log(Runlevel.NOTICE, message)
-def warn(message):   log(Runlevel.WARN, message)
-def error(message):  log(Runlevel.ERROR, message)
+
+
+def trace(message):
+  log(Runlevel.TRACE, message)
+
+
+def debug(message):
+  log(Runlevel.DEBUG, message)
+
+
+def info(message):
+  log(Runlevel.INFO, message)
+
+
+def notice(message):
+  log(Runlevel.NOTICE, message)
+
+
+def warn(message):
+  log(Runlevel.WARN, message)
+
+
+def error(message):
+  log(Runlevel.ERROR, message)
+
 
 class LogBuffer(logging.Handler):
   """
   Basic log handler that listens for stem events and stores them so they can be
   read later. Log entries are cleared as they are read.
   """
-  
+
   def __init__(self, runlevel):
     # TODO: At least in python 2.5 logging.Handler has a bug in that it doesn't
     # extend object, causing our super() call to fail. When we drop python 2.5
     # support we should switch back to using super() instead.
     #super(LogBuffer, self).__init__(level = logging_level(runlevel))
-    
+
     logging.Handler.__init__(self, level = logging_level(runlevel))
-    
+
     self.formatter = logging.Formatter(
       fmt = '%(asctime)s [%(levelname)s] %(message)s',
       datefmt = '%m/%d/%Y %H:%M:%S')
-    
+
     self._buffer = []
-  
+
   def is_empty(self):
     return not bool(self._buffer)
-  
+
   def __iter__(self):
     while self._buffer:
       yield self.formatter.format(self._buffer.pop(0))
-  
+
   def emit(self, record):
     self._buffer.append(record)
+
 
 class _StdoutLogger(logging.Handler):
   def __init__(self, runlevel):
     logging.Handler.__init__(self, level = logging_level(runlevel))
-    
+
     self.formatter = logging.Formatter(
       fmt = '%(asctime)s [%(levelname)s] %(message)s',
       datefmt = '%m/%d/%Y %H:%M:%S')
-  
+
   def emit(self, record):
     print self.formatter.format(record)
+
 
 def log_to_stdout(runlevel):
   """
   Logs further events to stdout.
-  
+
   :param stem.util.log.Runlevel runlevel: minimum runlevel a message needs to be to be logged
   """
-  
-  get_logger().addHandler(_StdoutLogger(runlevel))
 
+  get_logger().addHandler(_StdoutLogger(runlevel))

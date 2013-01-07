@@ -10,4 +10,3 @@ __all__ = [
   "router_status_entry",
   "server_descriptor",
 ]
-
