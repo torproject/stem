@@ -35,50 +35,50 @@ class TestMapAddressResponse(unittest.TestCase):
     """
     Parses a MAPADDRESS reply response with a single address mapping.
     """
-    
+
     control_message = mocking.get_message(SINGLE_RESPONSE)
     stem.response.convert("MAPADDRESS", control_message)
     self.assertEqual({"foo": "bar"}, control_message.entries)
-  
+
   def test_batch_response(self):
     """
     Parses a MAPADDRESS reply with multiple address mappings
     """
-    
+
     control_message = mocking.get_message(BATCH_RESPONSE)
     stem.response.convert("MAPADDRESS", control_message)
-    
+
     expected = {
       "foo": "bar",
       "baz": "quux",
       "gzzz": "bzz",
       "120.23.23.2": "torproject.org"
     }
-    
+
     self.assertEqual(expected, control_message.entries)
-  
+
   def test_invalid_requests(self):
     """
     Parses a MAPADDRESS replies that contain an error code due to hostname syntax errors.
     """
-    
+
     control_message = mocking.get_message(UNRECOGNIZED_KEYS_RESPONSE)
     self.assertRaises(stem.InvalidRequest, stem.response.convert, "MAPADDRESS", control_message)
     expected = {"23": "324"}
-    
+
     control_message = mocking.get_message(PARTIAL_FAILURE_RESPONSE)
     stem.response.convert("MAPADDRESS", control_message)
     self.assertEqual(expected, control_message.entries)
-  
+
   def test_invalid_response(self):
     """
     Parses a malformed MAPADDRESS reply that contains an invalid response code.
     This is a proper controller message, but malformed according to the
     MAPADDRESS's spec.
     """
-    
+
     control_message = mocking.get_message(INVALID_EMPTY_RESPONSE)
     self.assertRaises(stem.ProtocolError, stem.response.convert, "MAPADDRESS", control_message)
-    
+
     control_message = mocking.get_message(INVALID_RESPONSE)
     self.assertRaises(stem.ProtocolError, stem.response.convert, "MAPADDRESS", control_message)

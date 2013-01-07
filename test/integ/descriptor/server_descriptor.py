@@ -21,14 +21,14 @@ class TestServerDescriptor(unittest.TestCase):
     """
     Parses and checks our results against a server descriptor from metrics.
     """
-    
+
     descriptor_path = test.integ.descriptor.get_resource("example_descriptor")
-    
+
     descriptor_file = open(descriptor_path)
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
-    
+
     expected_family = [
       "$0CE3CFB1E9CC47B63EA8869813BF6FAB7D4540C1",
       "$1FD187E8F69A9B74C9202DC16A25B9E7744AB9F6",
@@ -39,25 +39,25 @@ class TestServerDescriptor(unittest.TestCase):
       "$E0BD57A11F00041A9789577C53A1B784473669E4",
       "$E5E3E9A472EAF7BE9682B86E92305DB4C71048EF",
     ]
-    
+
     expected_onion_key = """-----BEGIN RSA PUBLIC KEY-----
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
 skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 -----END RSA PUBLIC KEY-----"""
-    
+
     expected_signing_key = """-----BEGIN RSA PUBLIC KEY-----
 MIGJAoGBAKwvOXyztVKnuYvpTKt+nS3XIKeO8dVungi8qGoeS+6gkR6lDtGfBTjd
 uE9UIkdAl9zi8/1Ic2wsUNHE9jiS0VgeupITGZY8YOyMJJ/xtV1cqgiWhq1dUYaq
 51TOtUogtAPgXPh4J+V8HbFFIcCzIh3qCO/xXo+DSHhv7SSif1VpAgMBAAE=
 -----END RSA PUBLIC KEY-----"""
-    
+
     expected_signature = """-----BEGIN SIGNATURE-----
 dskLSPz8beUW7bzwDjR6EVNGpyoZde83Ejvau+5F2c6cGnlu91fiZN3suE88iE6e
 758b9ldq5eh5mapb8vuuV3uO+0Xsud7IEOqfxdkmk0GKnUX8ouru7DSIUzUL0zqq
 Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 -----END SIGNATURE-----"""
-    
+
     desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
     self.assertEquals("caerSidi", desc.nickname)
     self.assertEquals("A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB", desc.fingerprint)
@@ -88,19 +88,19 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(expected_signature, desc.signature)
     self.assertEquals([], desc.get_unrecognized_lines())
     self.assertEquals("2C7B27BEAB04B4E2459D89CA6D5CD1CC5F95A689", desc.digest())
-  
+
   def test_old_descriptor(self):
     """
     Parses a relay server descriptor from 2005.
     """
-    
+
     descriptor_path = test.integ.descriptor.get_resource("old_descriptor")
-    
+
     descriptor_file = open(descriptor_path)
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
-    
+
     desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
     self.assertEquals("krypton", desc.nickname)
     self.assertEquals("3E2F63E2356F52318B536A12B6445373808A5D6C", desc.fingerprint)
@@ -130,34 +130,34 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(datetime.datetime(2005, 12, 16, 18, 0, 48), desc.write_history_end)
     self.assertEquals(900, desc.write_history_interval)
     self.assertEquals([], desc.get_unrecognized_lines())
-    
+
     # The read-history and write-history lines are pretty long so just checking
     # the initial contents for the line and parsed values.
-    
+
     read_values_start = [20774, 489973, 510022, 511163, 20949]
     self.assertEquals(read_values_start, desc.read_history_values[:5])
-    
+
     write_values_start = [81, 8848, 8927, 8927, 83, 8848, 8931, 8929, 81, 8846]
     self.assertEquals(write_values_start, desc.write_history_values[:10])
-  
+
   def test_cached_descriptor(self):
     """
     Parses the cached descriptor file in our data directory, checking that it
     doesn't raise any validation issues and looking for unrecognized descriptor
     additions.
     """
-    
+
     # lengthy test and uneffected by targets, so only run once
-    
+
     if test.runner.only_run_once(self, "test_cached_descriptor"):
       return
-    
+
     descriptor_path = test.runner.get_runner().get_test_dir("cached-descriptors")
-    
+
     if not os.path.exists(descriptor_path):
       test.runner.skip(self, "(no cached descriptors)")
       return
-    
+
     with open(descriptor_path) as descriptor_file:
       for desc in stem.descriptor.server_descriptor.parse_file(descriptor_file):
         # the following attributes should be deprecated, and not appear in the wild
@@ -165,32 +165,32 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
         self.assertEquals(None, desc.write_history_end)
         self.assertEquals(None, desc.eventdns)
         self.assertEquals(None, desc.socks_port)
-        
+
         unrecognized_lines = desc.get_unrecognized_lines()
-        
+
         if unrecognized_lines:
           # TODO: This isn't actually a problem, and rather than failing we
           # should alert the user about these entries at the end of the tests
           # (along with new events, getinfo options, and such). For now though
           # there doesn't seem to be anything in practice to trigger this so
           # failing to get our attention if it does.
-          
+
           self.fail("Unrecognized descriptor content: %s" % unrecognized_lines)
-  
+
   def test_non_ascii_descriptor(self):
     """
     Parses a descriptor with non-ascii content.
     """
-    
+
     descriptor_path = test.integ.descriptor.get_resource("non-ascii_descriptor")
-    
+
     descriptor_file = open(descriptor_path)
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
-    
+
     expected_contact = "2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf"
-    
+
     desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
     self.assertEquals("torrelay389752132", desc.nickname)
     self.assertEquals("5D47E91A1F7421A4E3255F4D04E534E9A21407BB", desc.fingerprint)
@@ -217,78 +217,78 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(84275, desc.observed_bandwidth)
     self.assertEquals(stem.exit_policy.ExitPolicy("reject *:*"), desc.exit_policy)
     self.assertEquals([], desc.get_unrecognized_lines())
-  
+
   def test_cr_in_contact_line(self):
     """
     Parses a descriptor with a huge contact line containing anomalous carriage
     returns ('\r' entries).
     """
-    
+
     descriptor_path = test.integ.descriptor.get_resource("cr_in_contact_line")
-    
+
     descriptor_file = open(descriptor_path)
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
-    
+
     desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
-    
+
     self.assertEquals("pogonip", desc.nickname)
     self.assertEquals("6DABD62BC65D4E6FE620293157FC76968DAB9C9B", desc.fingerprint)
     self.assertEquals("75.5.248.48", desc.address)
-    
+
     # the contact info block is huge so just checking the start and end,
     # including some of the embedded carriage returns
-    
+
     contact_start = "jie1 at pacbell dot net -----BEGIN PGP PUBLIC KEY BLOCK-----\rVersion:"
     contact_end = "YFRk3NhCY=\r=Xaw3\r-----END PGP PUBLIC KEY BLOCK-----"
-    
+
     self.assertTrue(desc.contact.startswith(contact_start))
     self.assertTrue(desc.contact.endswith(contact_end))
-  
+
   def test_negative_uptime(self):
     """
     Parses a descriptor where we are tolerant of a negative uptime, and another
     where we shouldn't be.
     """
-    
+
     descriptor_path = test.integ.descriptor.get_resource("negative_uptime")
-    
+
     descriptor_file = open(descriptor_path)
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
-    
+
     desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
-    
+
     self.assertEquals("TipTor", desc.nickname)
     self.assertEquals("137962D4931DBF08A24E843288B8A155D6D2AEDD", desc.fingerprint)
     self.assertEquals("62.99.247.83", desc.address)
-    
+
     # modify the relay version so it's after when the negative uptime bug
     # should appear
-    
+
     descriptor_contents = descriptor_contents.replace("Tor 0.1.1.25", "Tor 0.1.2.7")
     self.assertRaises(ValueError, stem.descriptor.server_descriptor.RelayDescriptor, descriptor_contents)
-  
+
   def test_bridge_descriptor(self):
     """
     Parses a bridge descriptor.
     """
-    
+
     descriptor_path = test.integ.descriptor.get_resource("bridge_descriptor")
-    
+
     descriptor_file = open(descriptor_path)
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
-    
+
     expected_family = [
       "$CE396C72A3D0880F74C064FEA79D68C15BD380B9",
       "$AB8B00C00B1347BA80A88E548FAC9EDF701D7D0E",
       "$8C8A470D7C23151665A7B84E75E89FCC205A3304",
     ]
-    
+
     desc = stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_contents)
     self.assertEquals("Unnamed", desc.nickname)
     self.assertEquals("AE54E28ED069CDF45F3009F963EE3B3D6FA26A2E", desc.fingerprint)

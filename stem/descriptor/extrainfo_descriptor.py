@@ -32,9 +32,9 @@ Extra-info descriptors are available from a few sources...
     +- get_unrecognized_lines - lines with unrecognized content
 
 .. data:: DirResponse (enum)
-  
+
   Enumeration for known statuses for ExtraInfoDescriptor's dir_*_responses.
-  
+
   =================== ===========
   DirResponse         Description
   =================== ===========
@@ -47,10 +47,10 @@ Extra-info descriptors are available from a few sources...
   =================== ===========
 
 .. data:: DirStat (enum)
-  
+
   Enumeration for known stats for ExtraInfoDescriptor's dir_*_direct_dl and
   dir_*_tunneled_dl.
-  
+
   ===================== ===========
   DirStat               Description
   ===================== ===========
@@ -137,26 +137,26 @@ SINGLE_FIELDS = (
 def parse_file(descriptor_file, validate = True):
   """
   Iterates over the extra-info descriptors in a file.
-  
+
   :param file descriptor_file: file with descriptor content
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
-  
+
   :returns: iterator for :class:`~stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor`
     instances in the file
-  
+
   :raises:
     * **ValueError** if the contents is malformed and validate is **True**
     * **IOError** if the file can't be read
   """
-  
+
   while True:
     extrainfo_content = stem.descriptor._read_until_keywords("router-signature", descriptor_file)
-    
+
     # we've reached the 'router-signature', now include the pgp style block
     block_end_prefix = stem.descriptor.PGP_BLOCK_END.split(' ', 1)[0]
     extrainfo_content += stem.descriptor._read_until_keywords(block_end_prefix, descriptor_file, True)
-    
+
     if extrainfo_content:
       yield RelayExtraInfoDescriptor("".join(extrainfo_content), validate)
     else:
@@ -166,30 +166,30 @@ def parse_file(descriptor_file, validate = True):
 def _parse_timestamp_and_interval(keyword, content):
   """
   Parses a 'YYYY-MM-DD HH:MM:SS (NSEC s) *' entry.
-  
+
   :param str keyword: line's keyword
   :param str content: line content to be parsed
-  
+
   :returns: **tuple** of the form (timestamp (**datetime**), interval
     (**int**), remaining content (**str**))
-  
+
   :raises: **ValueError** if the content is malformed
   """
-  
+
   line = "%s %s" % (keyword, content)
   content_match = re.match("^(.*) \(([0-9]+) s\)( .*)?$", content)
-  
+
   if not content_match:
     raise ValueError("Malformed %s line: %s" % (keyword, line))
-  
+
   timestamp_str, interval, remainder = content_match.groups()
-  
+
   if remainder:
     remainder = remainder[1:]  # remove leading space
-  
+
   if not interval.isdigit():
     raise ValueError("%s line's interval wasn't a number: %s" % (keyword, line))
-  
+
   try:
     timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
     return timestamp, int(interval), remainder
@@ -200,7 +200,7 @@ def _parse_timestamp_and_interval(keyword, content):
 class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   """
   Extra-info descriptor document.
-  
+
   :var str nickname: **\*** relay's nickname
   :var str fingerprint: **\*** identity key fingerprint
   :var datetime published: **\*** time in UTC when this descriptor was made
@@ -209,37 +209,37 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var dict transport: **\*** mapping of transport methods to their (address,
     port, args) tuple, these usually appear on bridges in which case all of
     those are **None**
-  
+
   **Bi-directional connection usage:**
-  
+
   :var datetime conn_bi_direct_end: end of the sampling interval
   :var int conn_bi_direct_interval: seconds per interval
   :var int conn_bi_direct_below: connections that read/wrote less than 20 KiB
   :var int conn_bi_direct_read: connections that read at least 10x more than wrote
   :var int conn_bi_direct_write: connections that wrote at least 10x more than read
   :var int conn_bi_direct_both: remaining connections
-  
+
   **Bytes read/written for relayed traffic:**
-  
+
   :var datetime read_history_end: end of the sampling interval
   :var int read_history_interval: seconds per interval
   :var list read_history_values: bytes read during each interval
-  
+
   :var datetime write_history_end: end of the sampling interval
   :var int write_history_interval: seconds per interval
   :var list write_history_values: bytes written during each interval
-  
+
   **Cell relaying statistics:**
-  
+
   :var datetime cell_stats_end: end of the period when stats were gathered
   :var int cell_stats_interval: length in seconds of the interval
   :var list cell_processed_cells: measurement of processed cells per circuit
   :var list cell_queued_cells: measurement of queued cells per circuit
   :var list cell_time_in_queue: mean enqueued time in milliseconds for cells
   :var int cell_circuits_per_decile: mean number of circuits in a decile
-  
+
   **Directory Mirror Attributes:**
-  
+
   :var datetime dir_stats_end: end of the period when stats were gathered
   :var int dir_stats_interval: length in seconds of the interval
   :var dict dir_v2_ips: mapping of locales to rounded count of requester ips
@@ -248,102 +248,102 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
   :var float dir_v3_share: percent of total directory traffic it expects to serve
   :var dict dir_v2_requests: mapping of locales to rounded count of requests
   :var dict dir_v3_requests: mapping of locales to rounded count of requests
-  
+
   :var dict dir_v2_responses: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirResponse` to their rounded count
   :var dict dir_v3_responses: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirResponse` to their rounded count
   :var dict dir_v2_responses_unknown: mapping of unrecognized statuses to their count
   :var dict dir_v3_responses_unknown: mapping of unrecognized statuses to their count
-  
+
   :var dict dir_v2_direct_dl: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirStat` to measurement over DirPort
   :var dict dir_v3_direct_dl: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirStat` to measurement over DirPort
   :var dict dir_v2_direct_dl_unknown: mapping of unrecognized stats to their measurement
   :var dict dir_v3_direct_dl_unknown: mapping of unrecognized stats to their measurement
-  
+
   :var dict dir_v2_tunneled_dl: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirStat` to measurement over ORPort
   :var dict dir_v3_tunneled_dl: mapping of :data:`~stem.descriptor.extrainfo_descriptor.DirStat` to measurement over ORPort
   :var dict dir_v2_tunneled_dl_unknown: mapping of unrecognized stats to their measurement
   :var dict dir_v3_tunneled_dl_unknown: mapping of unrecognized stats to their measurement
-  
+
   **Bytes read/written for directory mirroring:**
-  
+
   :var datetime dir_read_history_end: end of the sampling interval
   :var int dir_read_history_interval: seconds per interval
   :var list dir_read_history_values: bytes read during each interval
-  
+
   :var datetime dir_write_history_end: end of the sampling interval
   :var int dir_write_history_interval: seconds per interval
   :var list dir_write_history_values: bytes read during each interval
-  
+
   **Guard Attributes:**
-  
+
   :var datetime entry_stats_end: end of the period when stats were gathered
   :var int entry_stats_interval: length in seconds of the interval
   :var dict entry_ips: mapping of locales to rounded count of unique user ips
-  
+
   **Exit Attributes:**
-  
+
   :var datetime exit_stats_end: end of the period when stats were gathered
   :var int exit_stats_interval: length in seconds of the interval
   :var dict exit_kibibytes_written: traffic per port (keys are ints or 'other')
   :var dict exit_kibibytes_read: traffic per port (keys are ints or 'other')
   :var dict exit_streams_opened: streams per port (keys are ints or 'other')
-  
+
   **Bridge Attributes:**
-  
+
   :var datetime bridge_stats_end: end of the period when stats were gathered
   :var int bridge_stats_interval: length in seconds of the interval
   :var dict bridge_ips: mapping of locales to rounded count of unique user ips
   :var datetime geoip_start_time: replaced by bridge_stats_end (deprecated)
   :var dict geoip_client_origins: replaced by bridge_ips (deprecated)
-  
+
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
-  
+
   def __init__(self, raw_contents, validate = True):
     """
     Extra-info descriptor constructor. By default this validates the
     descriptor's content as it's parsed. This validation can be disabled to
     either improve performance or be accepting of malformed data.
-    
+
     :param str raw_contents: extra-info content provided by the relay
     :param bool validate: checks the validity of the extra-info descriptor if
       **True**, skips these checks otherwise
-    
+
     :raises: **ValueError** if the contents is malformed and validate is True
     """
-    
+
     super(ExtraInfoDescriptor, self).__init__(raw_contents)
-    
+
     self.nickname = None
     self.fingerprint = None
     self.published = None
     self.geoip_db_digest = None
     self.geoip6_db_digest = None
     self.transport = {}
-    
+
     self.conn_bi_direct_end = None
     self.conn_bi_direct_interval = None
     self.conn_bi_direct_below = None
     self.conn_bi_direct_read = None
     self.conn_bi_direct_write = None
     self.conn_bi_direct_both = None
-    
+
     self.read_history_end = None
     self.read_history_interval = None
     self.read_history_values = None
-    
+
     self.write_history_end = None
     self.write_history_interval = None
     self.write_history_values = None
-    
+
     self.cell_stats_end = None
     self.cell_stats_interval = None
     self.cell_processed_cells = None
     self.cell_queued_cells = None
     self.cell_time_in_queue = None
     self.cell_circuits_per_decile = None
-    
+
     self.dir_stats_end = None
     self.dir_stats_interval = None
     self.dir_v2_ips = None
@@ -364,104 +364,104 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     self.dir_v3_tunneled_dl = None
     self.dir_v2_tunneled_dl_unknown = None
     self.dir_v3_tunneled_dl_unknown = None
-    
+
     self.dir_read_history_end = None
     self.dir_read_history_interval = None
     self.dir_read_history_values = None
-    
+
     self.dir_write_history_end = None
     self.dir_write_history_interval = None
     self.dir_write_history_values = None
-    
+
     self.entry_stats_end = None
     self.entry_stats_interval = None
     self.entry_ips = None
-    
+
     self.exit_stats_end = None
     self.exit_stats_interval = None
     self.exit_kibibytes_written = None
     self.exit_kibibytes_read = None
     self.exit_streams_opened = None
-    
+
     self.bridge_stats_end = None
     self.bridge_stats_interval = None
     self.bridge_ips = None
     self.geoip_start_time = None
     self.geoip_client_origins = None
-    
+
     self._unrecognized_lines = []
-    
+
     entries = stem.descriptor._get_descriptor_components(raw_contents, validate)
-    
+
     if validate:
       for keyword in self._required_fields():
         if not keyword in entries:
           raise ValueError("Extra-info descriptor must have a '%s' entry" % keyword)
-      
+
       for keyword in self._required_fields() + SINGLE_FIELDS:
         if keyword in entries and len(entries[keyword]) > 1:
           raise ValueError("The '%s' entry can only appear once in an extra-info descriptor" % keyword)
-      
+
       expected_first_keyword = self._first_keyword()
       if expected_first_keyword and expected_first_keyword != entries.keys()[0]:
         raise ValueError("Extra-info descriptor must start with a '%s' entry" % expected_first_keyword)
-      
+
       expected_last_keyword = self._last_keyword()
       if expected_last_keyword and expected_last_keyword != entries.keys()[-1]:
         raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
-    
+
     self._parse(entries, validate)
-  
+
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
-  
+
   def _parse(self, entries, validate):
     """
     Parses a series of 'keyword => (value, pgp block)' mappings and applies
     them as attributes.
-    
+
     :param dict entries: descriptor contents to be applied
     :param bool validate: checks the validity of descriptor content if True
-    
+
     :raises: **ValueError** if an error occurs in validation
     """
-    
+
     for keyword, values in entries.items():
       # most just work with the first (and only) value
       value, _ = values[0]
       line = "%s %s" % (keyword, value)  # original line
-      
+
       if keyword == "extra-info":
         # "extra-info" Nickname Fingerprint
         extra_info_comp = value.split()
-        
+
         if len(extra_info_comp) < 2:
           if not validate:
             continue
-          
+
           raise ValueError("Extra-info line must have two values: %s" % line)
-        
+
         if validate:
           if not stem.util.tor_tools.is_valid_nickname(extra_info_comp[0]):
             raise ValueError("Extra-info line entry isn't a valid nickname: %s" % extra_info_comp[0])
           elif not stem.util.tor_tools.is_valid_fingerprint(extra_info_comp[1]):
             raise ValueError("Tor relay fingerprints consist of forty hex digits: %s" % extra_info_comp[1])
-        
+
         self.nickname = extra_info_comp[0]
         self.fingerprint = extra_info_comp[1]
       elif keyword == "geoip-db-digest":
         # "geoip-db-digest" Digest
-        
+
         if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
           raise ValueError("Geoip digest line had an invalid sha1 digest: %s" % line)
-        
+
         self.geoip_db_digest = value
       elif keyword == "geoip6-db-digest":
         # "geoip6-db-digest" Digest
-        
+
         if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
           raise ValueError("Geoip v6 digest line had an invalid sha1 digest: %s" % line)
-        
+
         self.geoip6_db_digest = value
       elif keyword == "transport":
         # "transport" transportname address:port [arglist]
@@ -471,67 +471,67 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         # These entries really only make sense for bridges, but have been seen
         # on non-bridges in the wild when the relay operator configured it this
         # way.
-        
+
         name, address, port, args = None, None, None, None
-        
+
         if not ' ' in value:
           # scrubbed
           name = value
         else:
           # not scrubbed
           value_comp = value.split()
-          
+
           if len(value_comp) < 1:
             raise ValueError("Transport line is missing its transport name: %s" % line)
           else:
             name = value_comp[0]
-          
+
           if len(value_comp) < 2:
             raise ValueError("Transport line is missing its address:port value: %s" % line)
           elif not ":" in value_comp[1]:
             raise ValueError("Transport line's address:port entry is missing a colon: %s" % line)
           else:
             address, port_str = value_comp[1].split(':', 1)
-            
+
             if not stem.util.connection.is_valid_ip_address(address) or \
                    stem.util.connection.is_valid_ipv6_address(address):
               raise ValueError("Transport line has a malformed address: %s" % line)
             elif not stem.util.connection.is_valid_port(port_str):
               raise ValueError("Transport line has a malformed port: %s" % line)
-            
+
             port = int(port_str)
-          
+
           if len(value_comp) >= 3:
             args = value_comp[2:]
           else:
             args = []
-        
+
         self.transport[name] = (address, port, args)
       elif keyword == "cell-circuits-per-decile":
         # "cell-circuits-per-decile" num
-        
+
         if not value.isdigit():
           if validate:
             raise ValueError("Non-numeric cell-circuits-per-decile value: %s" % line)
           else:
             continue
-        
+
         stat = int(value)
-        
+
         if validate and stat < 0:
           raise ValueError("Negative cell-circuits-per-decile value: %s" % line)
-        
+
         self.cell_circuits_per_decile = stat
       elif keyword in ("dirreq-v2-resp", "dirreq-v3-resp", "dirreq-v2-direct-dl", "dirreq-v3-direct-dl", "dirreq-v2-tunneled-dl", "dirreq-v3-tunneled-dl"):
         recognized_counts = {}
         unrecognized_counts = {}
-        
+
         is_response_stats = keyword in ("dirreq-v2-resp", "dirreq-v3-resp")
         key_set = DirResponse if is_response_stats else DirStat
-        
+
         key_type = "STATUS" if is_response_stats else "STAT"
         error_msg = "%s lines should contain %s=COUNT mappings: %s" % (keyword, key_type, line)
-        
+
         if value:
           for entry in value.split(","):
             if not "=" in entry:
@@ -539,9 +539,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
                 raise ValueError(error_msg)
               else:
                 continue
-            
+
             status, count = entry.split("=", 1)
-            
+
             if count.isdigit():
               if status in key_set:
                 recognized_counts[status] = int(count)
@@ -549,7 +549,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
                 unrecognized_counts[status] = int(count)
             elif validate:
               raise ValueError(error_msg)
-        
+
         if keyword == "dirreq-v2-resp":
           self.dir_v2_responses = recognized_counts
           self.dir_v2_responses_unknown = unrecognized_counts
@@ -570,19 +570,19 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           self.dir_v3_tunneled_dl_unknown = unrecognized_counts
       elif keyword in ("dirreq-v2-share", "dirreq-v3-share"):
         # "<keyword>" num%
-        
+
         try:
           if not value.endswith("%"):
             raise ValueError()
-          
+
           percentage = float(value[:-1]) / 100
-          
+
           # Bug lets these be above 100%, however they're soon going away...
           # https://lists.torproject.org/pipermail/tor-dev/2012-June/003679.html
-          
+
           if validate and percentage < 0:
             raise ValueError("Negative percentage value: %s" % line)
-          
+
           if keyword == "dirreq-v2-share":
             self.dir_v2_share = percentage
           elif keyword == "dirreq-v3-share":
@@ -592,9 +592,9 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             raise ValueError("Value can't be parsed as a percentage: %s" % line)
       elif keyword in ("cell-processed-cells", "cell-queued-cells", "cell-time-in-queue"):
         # "<keyword>" num,...,num
-        
+
         entries = []
-        
+
         if value:
           for entry in value.split(","):
             try:
@@ -602,12 +602,12 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
               # always be positive, but this is not always the case in
               # practice...
               # https://trac.torproject.org/projects/tor/ticket/5849
-              
+
               entries.append(float(entry))
             except ValueError:
               if validate:
                 raise ValueError("Non-numeric entry in %s listing: %s" % (keyword, line))
-        
+
         if keyword == "cell-processed-cells":
           self.cell_processed_cells = entries
         elif keyword == "cell-queued-cells":
@@ -616,10 +616,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           self.cell_time_in_queue = entries
       elif keyword in ("published", "geoip-start-time"):
         # "<keyword>" YYYY-MM-DD HH:MM:SS
-        
+
         try:
           timestamp = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-          
+
           if keyword == "published":
             self.published = timestamp
           elif keyword == "geoip-start-time":
@@ -629,10 +629,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             raise ValueError("Timestamp on %s line wasn't parsable: %s" % (keyword, line))
       elif keyword in ("cell-stats-end", "entry-stats-end", "exit-stats-end", "bridge-stats-end", "dirreq-stats-end"):
         # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
-        
+
         try:
           timestamp, interval, _ = _parse_timestamp_and_interval(keyword, value)
-          
+
           if keyword == "cell-stats-end":
             self.cell_stats_end = timestamp
             self.cell_stats_interval = interval
@@ -653,15 +653,15 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             raise exc
       elif keyword == "conn-bi-direct":
         # "conn-bi-direct" YYYY-MM-DD HH:MM:SS (NSEC s) BELOW,READ,WRITE,BOTH
-        
+
         try:
           timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
           stats = remainder.split(",")
-          
+
           if len(stats) != 4 or not \
             (stats[0].isdigit() and stats[1].isdigit() and stats[2].isdigit() and stats[3].isdigit()):
             raise ValueError("conn-bi-direct line should end with four numeric values: %s" % line)
-          
+
           self.conn_bi_direct_end = timestamp
           self.conn_bi_direct_interval = interval
           self.conn_bi_direct_below = int(stats[0])
@@ -676,13 +676,13 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         try:
           timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
           history_values = []
-          
+
           if remainder:
             try:
               history_values = [int(entry) for entry in remainder.split(",")]
             except ValueError:
               raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
-          
+
           if keyword == "read-history":
             self.read_history_end = timestamp
             self.read_history_interval = interval
@@ -704,10 +704,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             raise exc
       elif keyword in ("exit-kibibytes-written", "exit-kibibytes-read", "exit-streams-opened"):
         # "<keyword>" port=N,port=N,...
-        
+
         port_mappings = {}
         error_msg = "Entries in %s line should only be PORT=N entries: %s" % (keyword, line)
-        
+
         if value:
           for entry in value.split(","):
             if not "=" in entry:
@@ -715,16 +715,16 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
                 raise ValueError(error_msg)
               else:
                 continue
-            
+
             port, stat = entry.split("=", 1)
-            
+
             if (port == 'other' or stem.util.connection.is_valid_port(port)) and stat.isdigit():
               if port != 'other':
                 port = int(port)
               port_mappings[port] = int(stat)
             elif validate:
               raise ValueError(error_msg)
-        
+
         if keyword == "exit-kibibytes-written":
           self.exit_kibibytes_written = port_mappings
         elif keyword == "exit-kibibytes-read":
@@ -739,10 +739,10 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         #   A1,"Anonymous Proxy"
         #   A2,"Satellite Provider"
         #   ??,"Unknown"
-        
+
         locale_usage = {}
         error_msg = "Entries in %s line should only be CC=N entries: %s" % (keyword, line)
-        
+
         if value:
           for entry in value.split(","):
             if not "=" in entry:
@@ -750,14 +750,14 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
                 raise ValueError(error_msg)
               else:
                 continue
-            
+
             locale, count = entry.split("=", 1)
-            
+
             if re.match("^[a-zA-Z0-9\?]{2}$", locale) and count.isdigit():
               locale_usage[locale] = int(count)
             elif validate:
               raise ValueError(error_msg)
-        
+
         if keyword == "dirreq-v2-ips":
           self.dir_v2_ips = locale_usage
         elif keyword == "dirreq-v3-ips":
@@ -774,23 +774,23 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           self.bridge_ips = locale_usage
       else:
         self._unrecognized_lines.append(line)
-  
+
   def digest(self):
     """
     Provides the hex encoded sha1 of our content. This value is part of the
     server descriptor entry for this relay.
-    
+
     :returns: **str** with the digest value for this server descriptor
     """
-    
+
     raise NotImplementedError("Unsupported Operation: this should be implemented by the ExtraInfoDescriptor subclass")
-  
+
   def _required_fields(self):
     return REQUIRED_FIELDS
-  
+
   def _first_keyword(self):
     return "extra-info"
-  
+
   def _last_keyword(self):
     return "router-signature"
 
@@ -800,46 +800,46 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   Relay extra-info descriptor, constructed from data such as that provided by
   "GETINFO extra-info/digest/\*", cached descriptors, and metrics
   (`specification <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_).
-  
+
   :var str signature: **\*** signature for this extrainfo descriptor
-  
+
   **\*** attribute is required when we're parsed with validation
   """
-  
+
   def __init__(self, raw_contents, validate = True):
     self.signature = None
     self._digest = None
-    
+
     super(RelayExtraInfoDescriptor, self).__init__(raw_contents, validate)
-  
+
   def digest(self):
     if self._digest is None:
       # our digest is calculated from everything except our signature
       raw_content, ending = str(self), "\nrouter-signature\n"
       raw_content = raw_content[:raw_content.find(ending) + len(ending)]
       self._digest = hashlib.sha1(raw_content).hexdigest().upper()
-    
+
     return self._digest
-  
+
   def _parse(self, entries, validate):
     entries = dict(entries)  # shallow copy since we're destructive
-    
+
     # handles fields only in server descriptors
     for keyword, values in entries.items():
       value, block_contents = values[0]
-      
+
       line = "%s %s" % (keyword, value)  # original line
-      
+
       if block_contents:
         line += "\n%s" % block_contents
-      
+
       if keyword == "router-signature":
         if validate and not block_contents:
           raise ValueError("Router signature line must be followed by a signature block: %s" % line)
-        
+
         self.signature = block_contents
         del entries["router-signature"]
-    
+
     ExtraInfoDescriptor._parse(self, entries, validate)
 
 
@@ -847,61 +847,61 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Bridge extra-info descriptor (`bridge descriptor specification
   <https://metrics.torproject.org/formats.html#bridgedesc>`_)
-  
+
   :var dict ip_versions: mapping of ip protocols to a rounded count for the number of users
   """
-  
+
   def __init__(self, raw_contents, validate = True):
     self.ip_versions = None
     self._digest = None
-    
+
     super(BridgeExtraInfoDescriptor, self).__init__(raw_contents, validate)
-  
+
   def digest(self):
     return self._digest
-  
+
   def _parse(self, entries, validate):
     entries = dict(entries)  # shallow copy since we're destructive
-    
+
     # handles fields only in server descriptors
     for keyword, values in entries.items():
       value, _ = values[0]
       line = "%s %s" % (keyword, value)  # original line
-      
+
       if keyword == "router-digest":
         if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
           raise ValueError("Router digest line had an invalid sha1 digest: %s" % line)
-        
+
         self._digest = value
         del entries["router-digest"]
       elif keyword == "bridge-ip-versions":
         self.ip_versions = {}
-        
+
         for entry in value.split(','):
           if not '=' in entry:
             raise stem.ProtocolError("The bridge-ip-versions should be a comma separated listing of '<protocol>=<count>' mappings: %s" % line)
-          
+
           protocol, count = entry.split('=', 1)
-          
+
           if not count.isdigit():
             raise stem.ProtocolError("IP protocol count was non-numeric (%s): %s" % (count, line))
-          
+
           self.ip_versions[protocol] = int(count)
-        
+
         del entries["bridge-ip-versions"]
-    
+
     ExtraInfoDescriptor._parse(self, entries, validate)
-  
+
   def _required_fields(self):
     excluded_fields = (
       "router-signature",
     )
-    
+
     included_fields = (
       "router-digest",
     )
-    
+
     return included_fields + filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
-  
+
   def _last_keyword(self):
     return None

@@ -13,5 +13,5 @@ def get_resource(filename):
   """
   Provides the path for a file in our descriptor data directory.
   """
-  
+
   return os.path.join(DESCRIPTOR_TEST_DATA, filename)

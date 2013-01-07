@@ -16,9 +16,9 @@ Library for working with the tor process.
        +- SocketClosed - Socket has been shut down.
 
 .. data:: Runlevel (enum)
-  
+
   Rating of importance used for event logging.
-  
+
   =========== ===========
   Runlevel    Description
   =========== ===========
@@ -30,9 +30,9 @@ Library for working with the tor process.
   =========== ===========
 
 .. data:: Signal (enum)
-  
+
   Signals that the tor process will accept.
-  
+
   ========================= ===========
   Signal                    Description
   ========================= ===========
@@ -46,9 +46,9 @@ Library for working with the tor process.
   ========================= ===========
 
 .. data:: CircStatus (enum)
-  
+
   Statuses that a circuit can be in. Tor may provide statuses not in this enum.
-  
+
   ============ ===========
   CircStatus   Description
   ============ ===========
@@ -60,10 +60,10 @@ Library for working with the tor process.
   ============ ===========
 
 .. data:: CircBuildFlag (enum)
-  
+
   Attributes about how a circuit is built. These were introduced in tor version
   0.2.3.11. Tor may provide flags not in this enum.
-  
+
   ================= ===========
   CircBuildFlag     Description
   ================= ===========
@@ -74,10 +74,10 @@ Library for working with the tor process.
   ================= ===========
 
 .. data:: CircPurpose (enum)
-  
+
   Description of what a circuit is intended for. These were introduced in tor
   version 0.2.1.6. Tor may provide purposes not in this enum.
-  
+
   ==================== ===========
   CircPurpose          Description
   ==================== ===========
@@ -92,10 +92,10 @@ Library for working with the tor process.
   ==================== ===========
 
 .. data:: CircClosureReason (enum)
-  
+
   Reason that a circuit is being closed or failed to be established. Tor may
   provide reasons not in this enum.
-  
+
   ========================= ===========
   CircClosureReason         Description
   ========================= ===========
@@ -117,10 +117,10 @@ Library for working with the tor process.
   ========================= ===========
 
 .. data:: CircEvent (enum)
-  
+
   Type of change reflected in a circuit by a CIRC_MINOR event. Tor may provide
   event types not in this enum.
-  
+
   ===================== ===========
   CircEvent             Description
   ===================== ===========
@@ -129,12 +129,12 @@ Library for working with the tor process.
   ===================== ===========
 
 .. data:: HiddenServiceState (enum)
-  
+
   State that a hidden service circuit can have. These were introduced in tor
   version 0.2.3.11. Tor may provide states not in this enum.
-  
+
   Enumerations fall into four groups based on their prefix...
-  
+
   ======= ===========
   Prefix  Description
   ======= ===========
@@ -143,7 +143,7 @@ Library for working with the tor process.
   HSSI_*  service-side introduction-point
   HSSR_*  service-side rendezvous-point
   ======= ===========
-  
+
   ============================= ===========
   HiddenServiceState            Description
   ============================= ===========
@@ -161,9 +161,9 @@ Library for working with the tor process.
   ============================= ===========
 
 .. data:: RelayEndReason (enum)
-  
+
   Reasons why the stream is to be closed.
-  
+
   =================== ===========
   RelayEndReason      Description
   =================== ===========
@@ -184,10 +184,10 @@ Library for working with the tor process.
   =================== ===========
 
 .. data:: StreamStatus (enum)
-  
+
   State that a stream going through tor can have. Tor may provide states not in
   this enum.
-  
+
   ================= ===========
   StreamStatus      Description
   ================= ===========
@@ -203,11 +203,11 @@ Library for working with the tor process.
   ================= ===========
 
 .. data:: StreamClosureReason (enum)
-  
+
   Reason that a stream is being closed or failed to be established. This
   includes all values in the :data:`~stem.RelayEndReason` enumeration as
   well as the following. Tor may provide reasons not in this enum.
-  
+
   ===================== ===========
   StreamClosureReason   Description
   ===================== ===========
@@ -216,10 +216,10 @@ Library for working with the tor process.
   ===================== ===========
 
 .. data:: StreamSource (enum)
-  
+
   Cause of a stream being remapped to another address. Tor may provide sources
   not in this enum.
-  
+
   ============= ===========
   StreamSource  Description
   ============= ===========
@@ -228,10 +228,10 @@ Library for working with the tor process.
   ============= ===========
 
 .. data:: StreamPurpose (enum)
-  
+
   Purpsoe of the stream. This is only provided with new streams and tor may
   provide purposes not in this enum.
-  
+
   ================= ===========
   StreamPurpose     Description
   ================= ===========
@@ -243,10 +243,10 @@ Library for working with the tor process.
   ================= ===========
 
 .. data:: ORStatus (enum)
-  
+
   State that an OR connection can have. Tor may provide states not in this
   enum.
-  
+
   =============== ===========
   ORStatus        Description
   =============== ===========
@@ -258,10 +258,10 @@ Library for working with the tor process.
   =============== ===========
 
 .. data:: ORClosureReason (enum)
-  
+
   Reason that an OR connection is being closed or failed to be established. Tor
   may provide reasons not in this enum.
-  
+
   =================== ===========
   ORClosureReason     Description
   =================== ===========
@@ -277,10 +277,10 @@ Library for working with the tor process.
   =================== ===========
 
 .. data:: AuthDescriptorAction (enum)
-  
+
   Actions that directory authorities might take with relay descriptors. Tor may
   provide reasons not in this enum.
-  
+
   ===================== ===========
   AuthDescriptorAction  Description
   ===================== ===========
@@ -290,9 +290,9 @@ Library for working with the tor process.
   ===================== ===========
 
 .. data:: StatusType (enum)
-  
+
   Sources for tor status events. Tor may provide types not in this enum.
-  
+
   ============= ===========
   StatusType    Description
   ============= ===========
@@ -302,12 +302,12 @@ Library for working with the tor process.
   ============= ===========
 
 .. data:: GuardType (enum)
-  
+
   Use a guard relay can be for. Tor may provide types not in this enum.
-  
+
   Enum descriptions are pending...
   https://trac.torproject.org/7619
-  
+
   =========== ===========
   GuardType   Description
   =========== ===========
@@ -315,12 +315,12 @@ Library for working with the tor process.
   =========== ===========
 
 .. data:: GuardStatus (enum)
-  
+
   Status a guard relay can have. Tor may provide types not in this enum.
-  
+
   Enum descriptions are pending...
   https://trac.torproject.org/7619
-  
+
   ============= ===========
   GuardStatus   Description
   ============= ===========
@@ -333,10 +333,10 @@ Library for working with the tor process.
   ============= ===========
 
 .. data:: TimeoutSetType (enum)
-  
+
   Way in which the timeout value of a circuit is changing. Tor may provide
   types not in this enum.
-  
+
   =============== ===========
   TimeoutSetType  Description
   =============== ===========
@@ -415,12 +415,12 @@ class ProtocolError(ControllerError):
 class OperationFailed(ControllerError):
   """
   Base exception class for failed operations that return an error code
-  
+
   :var str code: error code returned by Tor
   :var str message: error message returned by Tor or a human readable error
     message
   """
-  
+
   def __init__(self, code = None, message = None):
     super(ControllerError, self).__init__(message)
     self.code = code
@@ -436,10 +436,10 @@ class UnsatisfiableRequest(OperationFailed):
 class CircuitExtensionFailed(UnsatisfiableRequest):
   """
   An attempt to create or extend a circuit failed.
-  
+
   :var stem.response.CircuitEvent circ: response notifying us of the failure
   """
-  
+
   def __init__(self, message, circ = None):
     super(CircuitExtensionFailed, self).__init__(message = message)
     self.circ = circ
@@ -454,13 +454,13 @@ class InvalidRequest(OperationFailed):
 class InvalidArguments(InvalidRequest):
   """
   Exception class for requests which had invalid arguments.
-  
+
   :var str code: error code returned by Tor
   :var str message: error message returned by Tor or a human readable error
     message
   :var list arguments: a list of arguments which were invalid
   """
-  
+
   def __init__(self, code = None, message = None, arguments = None):
     super(InvalidArguments, self).__init__(code, message)
     self.arguments = arguments

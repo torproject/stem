@@ -7,13 +7,13 @@ about the tor test instance they're running against.
 
   RunnerStopped - Runner doesn't have an active tor instance
   TorInaccessable - Tor can't be queried for the information
-  
+
   skip - skips the current test if we can
   require_control - skips the test unless tor provides a controller endpoint
   require_version - skips the test unless we meet a tor version requirement
   require_online - skips unless targets allow for online tests
   exercise_controller - basic sanity check that a controller connection can be used
-  
+
   get_runner - Singleton for fetching our runtime context.
   Runner - Runtime context for our integration tests.
     |- start - prepares and starts a tor instance for our tests to run against
@@ -114,11 +114,11 @@ def skip(test_case, message):
   Skips the test if we can. The capability for skipping tests was added in
   python 2.7 so callers should return after this, so they report 'success' if
   this method is unavailable.
-  
+
   :param unittest.TestCase test_case: test being ran
   :param str message: message to skip the test with
   """
-  
+
   if stem.prereq.is_python_27():
     test_case.skipTest(message)
 
@@ -126,12 +126,12 @@ def skip(test_case, message):
 def require_control(test_case):
   """
   Skips the test unless tor provides an endpoint for controllers to attach to.
-  
+
   :param unittest.TestCase test_case: test being ran
-  
+
   :returns: True if test should be skipped, False otherwise
   """
-  
+
   if not test.runner.get_runner().is_accessible():
     skip(test_case, "(no connection)")
     return True
@@ -140,13 +140,13 @@ def require_control(test_case):
 def require_version(test_case, req_version):
   """
   Skips the test unless we meet the required version.
-  
+
   :param unittest.TestCase test_case: test being ran
   :param stem.version.Version req_version: required tor version for the test
-  
+
   :returns: True if test should be skipped, False otherwise
   """
-  
+
   if get_runner().get_tor_version() < req_version:
     skip(test_case, "(requires %s)" % req_version)
     return True
@@ -156,12 +156,12 @@ def require_online(test_case):
   """
   Skips the test if we weren't started with the ONLINE target, which indicates
   that tests requiring network connectivity should run.
-  
+
   :param unittest.TestCase test_case: test being ran
-  
+
   :returns: True if test should be skipped, False otherwise
   """
-  
+
   if not CONFIG["integ.target.online"]:
     skip(test_case, "(requires online target)")
     return True
@@ -172,13 +172,13 @@ def only_run_once(test_case, test_name):
   Skips the test if it has ran before. If it hasn't then flags it as being ran.
   This is useful to prevent lengthy tests that are independent of integ targets
   from being run repeatedly with ``RUN_ALL``.
-  
+
   :param unittest.TestCase test_case: test being ran
   :param str test_name: name of the test being ran
-  
+
   :returns: True if test should be skipped, False otherwise
   """
-  
+
   if (test_case, test_name) in RAN_TESTS:
     skip(test_case, "(already ran)")
     return True
@@ -191,35 +191,35 @@ def exercise_controller(test_case, controller):
   Checks that we can now use the socket by issuing a 'GETINFO config-file'
   query. Controller can be either a :class:`stem.socket.ControlSocket` or
   :class:`stem.control.BaseController`.
-  
+
   :param unittest.TestCase test_case: test being ran
   :param controller: tor controller connection to be authenticated
   """
-  
+
   runner = get_runner()
   torrc_path = runner.get_torrc_path()
-  
+
   if isinstance(controller, stem.socket.ControlSocket):
     controller.send("GETINFO config-file")
     config_file_response = controller.recv()
   else:
     config_file_response = controller.msg("GETINFO config-file")
-  
+
   test_case.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
 
 
 def get_runner():
   """
   Singleton for the runtime context of integration tests.
-  
+
   :returns: :class:`test.runner.Runner` with context for our integration tests
   """
-  
+
   global INTEG_RUNNER
-  
+
   if not INTEG_RUNNER:
     INTEG_RUNNER = Runner()
-  
+
   return INTEG_RUNNER
 
 
@@ -229,11 +229,11 @@ class _MockChrootFile(object):
   responses. This is used to simulate a chroot setup by removing the prefix
   directory from the paths we report.
   """
-  
+
   def __init__(self, wrapped_file, strip_text):
     self.wrapped_file = wrapped_file
     self.strip_text = strip_text
-  
+
   def readline(self):
     return self.wrapped_file.readline().replace(self.strip_text, "")
 
@@ -241,7 +241,7 @@ class _MockChrootFile(object):
 class Runner(object):
   def __init__(self):
     self._runner_lock = threading.RLock()
-    
+
     # runtime attributes, set by the start method
     self._test_dir = ""
     self._tor_cmd = None
@@ -250,97 +250,97 @@ class Runner(object):
     self._custom_opts = None
     self._tor_process = None
     self._chroot_path = None
-    
+
     # set if we monkey patch stem.socket.recv_message()
-    
+
     self._original_recv_message = None
-  
+
   def start(self, tor_cmd, extra_torrc_opts):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
-    
+
     :param str tor_cmd: command to start tor with
     :param list extra_torrc_opts: additional torrc options for our test instance
-    
+
     :raises: OSError if unable to run test preparations or start tor
     """
-    
+
     with self._runner_lock:
       # if we're holding on to a tor process (running or not) then clean up after
       # it so we can start a fresh instance
-      
+
       if self._tor_process:
         self.stop()
-      
+
       test.output.print_line("Setting up a test instance...", *STATUS_ATTR)
-      
+
       # if 'test_directory' is unset then we make a new data directory in /tmp
       # and clean it up when we're done
-      
+
       config_test_dir = CONFIG["integ.test_directory"]
-      
+
       if config_test_dir:
         self._test_dir = stem.util.system.expand_path(config_test_dir, STEM_BASE)
       else:
         self._test_dir = tempfile.mktemp("-stem-integ")
-      
+
       original_cwd, data_dir_path = os.getcwd(), self._test_dir
-      
+
       if CONFIG["integ.target.relative_data_dir"]:
         tor_cwd = os.path.dirname(self._test_dir)
-        
+
         if not os.path.exists(tor_cwd):
           os.makedirs(tor_cwd)
-        
+
         os.chdir(tor_cwd)
         data_dir_path = "./%s" % os.path.basename(self._test_dir)
-      
+
       self._tor_cmd = tor_cmd
       self._custom_opts = extra_torrc_opts
       self._torrc_contents = BASE_TORRC % data_dir_path
-      
+
       if extra_torrc_opts:
         self._torrc_contents += "\n".join(extra_torrc_opts) + "\n"
-      
+
       try:
         self._tor_cwd = os.getcwd()
         self._run_setup()
         self._start_tor(tor_cmd)
-        
+
         # strip the testing directory from recv_message responses if we're
         # simulating a chroot setup
-        
+
         if CONFIG["integ.target.chroot"] and not self._original_recv_message:
           # TODO: when we have a function for telling stem the chroot we'll
           # need to set that too
-          
+
           self._original_recv_message = stem.socket.recv_message
           self._chroot_path = data_dir_path
-          
+
           def _chroot_recv_message(control_file):
             return self._original_recv_message(_MockChrootFile(control_file, data_dir_path))
-          
+
           stem.socket.recv_message = _chroot_recv_message
-        
+
         # revert our cwd back to normal
         if CONFIG["integ.target.relative_data_dir"]:
           os.chdir(original_cwd)
       except OSError, exc:
         raise exc
-  
+
   def stop(self):
     """
     Stops our tor test instance and cleans up any temporary resources.
     """
-    
+
     with self._runner_lock:
       test.output.print_noline("Shutting down tor... ", *STATUS_ATTR)
-      
+
       if self._tor_process:
         # if the tor process has stopped on its own then the following raises
         # an OSError ([Errno 3] No such process)
-        
+
         try:
           if stem.prereq.is_python_26():
             self._tor_process.kill()
@@ -350,267 +350,267 @@ class Runner(object):
             test.output.print_line("failed (unable to call kill() in python 2.5)", *ERROR_ATTR)
         except OSError:
           pass
-        
+
         self._tor_process.communicate()  # blocks until the process is done
-      
+
       # if we've made a temporary data directory then clean it up
       if self._test_dir and CONFIG["integ.test_directory"] == "":
         shutil.rmtree(self._test_dir, ignore_errors = True)
-      
+
       # reverts any mocking of stem.socket.recv_message
       if self._original_recv_message:
         stem.socket.recv_message = self._original_recv_message
         self._original_recv_message = None
-      
+
       self._test_dir = ""
       self._tor_cmd = None
       self._tor_cwd = ""
       self._torrc_contents = ""
       self._custom_opts = None
       self._tor_process = None
-      
+
       test.output.print_line("done", *STATUS_ATTR)
-  
+
   def is_running(self):
     """
     Checks if we're running a tor test instance and that it's alive.
-    
+
     :returns: True if we have a running tor test instance, False otherwise
     """
-    
+
     with self._runner_lock:
       # Check for an unexpected shutdown by calling subprocess.Popen.poll(),
       # which returns the exit code or None if we're still running.
-      
+
       if self._tor_process and self._tor_process.poll() is not None:
         # clean up the temporary resources and note the unexpected shutdown
         self.stop()
         test.output.print_line("tor shut down unexpectedly", *ERROR_ATTR)
-      
+
       return bool(self._tor_process)
-  
+
   def is_accessible(self):
     """
     Checks if our tor instance has a method of being connected to or not.
-    
+
     :returns: True if tor has a control socket or port, False otherwise
     """
-    
+
     return Torrc.PORT in self._custom_opts or Torrc.SOCKET in self._custom_opts
-  
+
   def is_ptraceable(self):
     """
     Checks if tor's 'DisableDebuggerAttachment' option is set. This feature has
     a lot of adverse side effects
     (`ticket <https://trac.torproject.org/projects/tor/ticket/3313>`_).
-    
+
     :returns: True if debugger attachment is allowed, False otherwise
     """
-    
+
     # If we're running a tor version where ptrace is disabled and we didn't
     # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
-    
+
     tor_version = self.get_tor_version()
     has_option = tor_version >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
     return not has_option or Torrc.PTRACE in self.get_options()
-  
+
   def get_options(self):
     """
     Provides the custom torrc options our tor instance is running with.
-    
+
     :returns: list of Torrc enumerations being used by our test instance
     """
-    
+
     return self._custom_opts
-  
+
   def get_test_dir(self, resource = None):
     """
     Provides the absolute path for our testing directory or a file within it.
-    
+
     :param str resource: file within our test directory to provide the path for
-    
+
     :returns: str with our test directory's absolute path or that of a file within it
-    
+
     :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
-    
+
     if resource:
       return os.path.join(self._get("_test_dir"), resource)
     else:
       return self._get("_test_dir")
-  
+
   def get_torrc_path(self, ignore_chroot = False):
     """
     Provides the absolute path for where our testing torrc resides.
-    
+
     :param bool ignore_chroot: provides the real path, rather than the one that tor expects if True
-    
+
     :returns: str with our torrc path
-    
+
     :raises: RunnerStopped if we aren't running
     """
-    
+
     test_dir = self._get("_test_dir")
     torrc_path = os.path.join(test_dir, "torrc")
-    
+
     if not ignore_chroot and self._chroot_path and torrc_path.startswith(self._chroot_path):
       torrc_path = torrc_path[len(self._chroot_path):]
-    
+
     return torrc_path
-  
+
   def get_torrc_contents(self):
     """
     Provides the contents of our torrc.
-    
+
     :returns: str with the contents of our torrc, lines are newline separated
-    
+
     :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
-    
+
     return self._get("_torrc_contents")
-  
+
   def get_auth_cookie_path(self):
     """
     Provides the absolute path for our authentication cookie if we have one.
     If running with an emulated chroot this is uneffected, still providing the
     real path.
-    
+
     :returns: str with our auth cookie path
-    
+
     :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
-    
+
     test_dir = self._get("_test_dir")
     return os.path.join(test_dir, "control_auth_cookie")
-  
+
   def get_tor_cwd(self):
     """
     Provides the current working directory of our tor process.
     """
-    
+
     return self._get("_tor_cwd")
-  
+
   def get_chroot(self):
     """
     Provides the path we're using to emulate a chroot environment. This is None
     if we aren't emulating a chroot setup.
-    
+
     :returns: str with the path of our emulated chroot
     """
-    
+
     return self._chroot_path
-  
+
   def get_pid(self):
     """
     Provides the process id of the tor process.
-    
+
     :returns: int pid for the tor process
-    
+
     :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
-    
+
     tor_process = self._get("_tor_process")
     return tor_process.pid
-  
+
   def get_tor_socket(self, authenticate = True):
     """
     Provides a socket connected to our tor test instance.
-    
+
     :param bool authenticate: if True then the socket is authenticated
-    
+
     :returns: :class:`stem.socket.ControlSocket` connected with our testing instance
-    
+
     :raises: :class:`test.runner.TorInaccessable` if tor can't be connected to
     """
-    
+
     if Torrc.PORT in self._custom_opts:
       control_socket = stem.socket.ControlPort(control_port = CONTROL_PORT)
     elif Torrc.SOCKET in self._custom_opts:
       control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
     else:
       raise TorInaccessable("Unable to connect to tor")
-    
+
     if authenticate:
       stem.connection.authenticate(control_socket, CONTROL_PASSWORD, self.get_chroot())
-    
+
     return control_socket
-  
+
   def get_tor_controller(self, authenticate = True):
     """
     Provides a controller connected to our tor test instance.
-    
+
     :param bool authenticate: if True then the socket is authenticated
-    
+
     :returns: :class:`stem.socket.Controller` connected with our testing instance
-    
+
     :raises: :class: `test.runner.TorInaccessable` if tor can't be connected to
     """
-    
+
     control_socket = self.get_tor_socket(authenticate)
     return stem.control.Controller(control_socket)
-  
+
   def get_tor_version(self):
     """
     Queries our test instance for tor's version.
-    
+
     :returns: :class:`stem.version.Version` for our test instance
     """
-    
+
     try:
       # TODO: replace with higher level functions when we've completed a basic
       # controller class
       control_socket = self.get_tor_socket()
-      
+
       control_socket.send("GETINFO version")
       version_response = control_socket.recv()
       control_socket.close()
-      
+
       tor_version = list(version_response)[0]
       tor_version = tor_version[8:]
-      
+
       if " " in tor_version:
         tor_version = tor_version.split(' ', 1)[0]
-      
+
       return stem.version.Version(tor_version)
     except TorInaccessable:
       return stem.version.get_system_tor_version(self.get_tor_command())
-  
+
   def get_tor_command(self):
     """
     Provides the command used to run our tor instance.
     """
-    
+
     return self._get("_tor_cmd")
-  
+
   def _get(self, attr):
     """
     Fetches one of our attributes in a thread safe manner, raising if we aren't
     running.
-    
+
     :param str attr: class variable that we want to fetch
-    
+
     :returns: value of the fetched variable
-    
+
     :returns: :class:`test.runner.RunnerStopped` if we aren't running
     """
-    
+
     with self._runner_lock:
       if self.is_running():
         return self.__dict__[attr]
       else:
         raise RunnerStopped()
-  
+
   def _run_setup(self):
     """
     Makes a temporary runtime resources of our integration test instance.
-    
+
     :raises: OSError if unsuccessful
     """
-    
+
     # makes a temporary data directory if needed
     try:
       test.output.print_noline("  making test directory (%s)... " % self._test_dir, *STATUS_ATTR)
-      
+
       if os.path.exists(self._test_dir):
         test.output.print_line("skipped", *STATUS_ATTR)
       else:
@@ -619,94 +619,94 @@ class Runner(object):
     except OSError, exc:
       test.output.print_line("failed (%s)" % exc, *ERROR_ATTR)
       raise exc
-    
+
     # Makes a directory for the control socket if needed. As of, at least, Tor
     # 0.2.3.10 it checks during startup that the directory a control socket
     # resides in is only accessible by the tor user (and refuses to finish
     # starting if it isn't).
-    
+
     if Torrc.SOCKET in self._custom_opts:
       try:
         socket_dir = os.path.dirname(CONTROL_SOCKET_PATH)
         test.output.print_noline("  making control socket directory (%s)... " % socket_dir, *STATUS_ATTR)
-        
+
         if os.path.exists(socket_dir) and stat.S_IMODE(os.stat(socket_dir).st_mode) == 0700:
           test.output.print_line("skipped", *STATUS_ATTR)
         else:
           if not os.path.exists(socket_dir):
             os.makedirs(socket_dir)
-          
+
           os.chmod(socket_dir, 0700)
           test.output.print_line("done", *STATUS_ATTR)
       except OSError, exc:
         test.output.print_line("failed (%s)" % exc, *ERROR_ATTR)
         raise exc
-    
+
     # configures logging
     logging_path = CONFIG["integ.log"]
-    
+
     if logging_path:
       logging_path = stem.util.system.expand_path(logging_path, STEM_BASE)
       test.output.print_noline("  configuring logger (%s)... " % logging_path, *STATUS_ATTR)
-      
+
       # delete the old log
       if os.path.exists(logging_path):
         os.remove(logging_path)
-      
+
       logging.basicConfig(
         filename = logging_path,
         level = logging.DEBUG,
         format = '%(asctime)s [%(levelname)s] %(message)s',
         datefmt = '%D %H:%M:%S',
       )
-      
+
       test.output.print_line("done", *STATUS_ATTR)
     else:
       test.output.print_line("  configuring logger... skipped", *STATUS_ATTR)
-    
+
     # writes our testing torrc
     torrc_dst = os.path.join(self._test_dir, "torrc")
     try:
       test.output.print_noline("  writing torrc (%s)... " % torrc_dst, *STATUS_ATTR)
-      
+
       torrc_file = open(torrc_dst, "w")
       torrc_file.write(self._torrc_contents)
       torrc_file.close()
-      
+
       test.output.print_line("done", *STATUS_ATTR)
-      
+
       for line in self._torrc_contents.strip().splitlines():
         test.output.print_line("    %s" % line.strip(), *SUBSTATUS_ATTR)
-      
+
       print
     except Exception, exc:
       test.output.print_line("failed (%s)\n" % exc, *ERROR_ATTR)
       raise OSError(exc)
-  
+
   def _start_tor(self, tor_cmd):
     """
     Initializes a tor process. This blocks until initialization completes or we
     error out.
-    
+
     :param str tor_cmd: command to start tor with
-    
+
     :raises: OSError if we either fail to create the tor process or reached a timeout without success
     """
-    
+
     test.output.print_line("Starting tor...\n", *STATUS_ATTR)
     start_time = time.time()
-    
+
     try:
       # wait to fully complete if we're running tests with network activity,
       # otherwise finish after local bootstraping
       complete_percent = 100 if CONFIG["integ.target.online"] else 5
-      
+
       # prints output from tor's stdout while it starts up
       print_init_line = lambda line: test.output.print_line("  %s" % line, *SUBSTATUS_ATTR)
-      
+
       torrc_dst = os.path.join(self._test_dir, "torrc")
       self._tor_process = stem.process.launch_tor(tor_cmd, None, torrc_dst, complete_percent, print_init_line)
-      
+
       runtime = time.time() - start_time
       test.output.print_line("  done (%i seconds)\n" % runtime, *STATUS_ATTR)
     except OSError, exc:

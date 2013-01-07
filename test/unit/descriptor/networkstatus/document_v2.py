@@ -13,9 +13,9 @@ class TestNetworkStatusDocument(unittest.TestCase):
     """
     Parses a minimal v2 network status document.
     """
-    
+
     document = get_network_status_document_v2()
-    
+
     self.assertEquals((), document.routers)
     self.assertEquals(2, document.version)
     self.assertEquals("18.244.0.114", document.hostname)

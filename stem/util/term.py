@@ -9,9 +9,9 @@ Utilities for working with the terminal.
 
 .. data:: Color (enum)
 .. data:: BgColor (enum)
-  
+
   Enumerations for foreground or background terminal color.
-  
+
   =========== ===========
   Color       Description
   =========== ===========
@@ -26,9 +26,9 @@ Utilities for working with the terminal.
   =========== ===========
 
 .. data:: Attr (enum)
-  
+
   Enumerations of terminal text attributes.
-  
+
   ============= ===========
   Attr          Description
   ============= ===========
@@ -61,34 +61,34 @@ def format(msg, *attr):
   Simple terminal text formatting using `ANSI escape sequences
   <https://secure.wikimedia.org/wikipedia/en/wiki/ANSI_escape_code#CSI_codes>`_.
   The following are some toolkits providing similar capabilities:
-  
+
   * `django.utils.termcolors <https://code.djangoproject.com/browser/django/trunk/django/utils/termcolors.py>`_
   * `termcolor <http://pypi.python.org/pypi/termcolor>`_
   * `colorama <http://pypi.python.org/pypi/colorama>`_
-  
+
   :param str msg: string to be formatted
   :param str attr: text attributes, this can be :data:`~stem.util.term.Color`, :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` enums
     and are case insensitive (so strings like "red" are fine)
-  
+
   :returns: **str** wrapped with ANSI escape encodings, starting with the given
     attributes and ending with a reset
   """
-  
+
   # if we have reset sequences in the message then apply our attributes
   # after each of them
   if RESET in msg:
     return "".join([format(comp, *attr) for comp in msg.split(RESET)])
-  
+
   encodings = []
   for text_attr in attr:
     text_attr, encoding = stem.util.str_tools.to_camel_case(text_attr), None
     encoding = FG_ENCODING.get(text_attr, encoding)
     encoding = BG_ENCODING.get(text_attr, encoding)
     encoding = ATTR_ENCODING.get(text_attr, encoding)
-    
+
     if encoding:
       encodings.append(encoding)
-  
+
   if encodings:
     return (CSI % ";".join(encodings)) + msg + RESET
   else:

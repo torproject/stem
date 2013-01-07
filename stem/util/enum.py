@@ -27,7 +27,7 @@ constructed as simple type listings...
 ::
 
   UppercaseEnum - Provides an enum instance with capitalized values
-  
+
   Enum - Provides a basic, ordered  enumeration
     |- keys - string representation of our enum keys
     |- index_of - index of an enum value
@@ -45,19 +45,19 @@ def UppercaseEnum(*args):
   Provides an :class:`~stem.util.enum.Enum` instance where the values are
   identical to the keys. Since the keys are uppercase by convention this means
   the values are too. For instance...
-  
+
   ::
-  
+
     >>> from stem.util import enum
     >>> runlevels = enum.UppercaseEnum("DEBUG", "INFO", "NOTICE", "WARN", "ERROR")
     >>> runlevels.DEBUG
     'DEBUG'
-  
+
   :param list args: enum keys to initialize with
-  
+
   :returns: :class:`~stem.util.enum.Enum` instance with the given keys
   """
-  
+
   return Enum(*[(v, v) for v in args])
 
 
@@ -65,11 +65,11 @@ class Enum(object):
   """
   Basic enumeration.
   """
-  
+
   def __init__(self, *args):
     # ordered listings of our keys and values
     keys, values = [], []
-    
+
     for entry in args:
       if isinstance(entry, str):
         key, val = entry, stem.util.str_tools.to_camel_case(entry)
@@ -77,95 +77,95 @@ class Enum(object):
         key, val = entry
       else:
         raise ValueError("Unrecognized input: %s" % args)
-      
+
       keys.append(key)
       values.append(val)
       self.__dict__[key] = val
-    
+
     self._keys = tuple(keys)
     self._values = tuple(values)
-  
+
   def keys(self):
     """
     Provides an ordered listing of the enumeration keys in this set.
-    
+
     :returns: **tuple** with our enum keys
     """
-    
+
     return self._keys
-  
+
   def index_of(self, value):
     """
     Provides the index of the given value in the collection.
-    
+
     :param str value: entry to be looked up
-    
+
     :returns: **int** index of the given entry
-    
+
     :raises: **ValueError** if no such element exists
     """
-    
+
     return self._values.index(value)
-  
+
   def next(self, value):
     """
     Provides the next enumeration after the given value.
-    
+
     :param str value: enumeration for which to get the next entry
-    
+
     :returns: enum value following the given entry
-    
+
     :raises: **ValueError** if no such element exists
     """
-    
+
     if not value in self._values:
       raise ValueError("No such enumeration exists: %s (options: %s)" % (value, ", ".join(self._values)))
-    
+
     # TODO: python 2.5 lacks an index method on tuples, when we drop support
     # we can drop this hack
     next_index = (list(self._values).index(value) + 1) % len(self._values)
     return self._values[next_index]
-  
+
   def previous(self, value):
     """
     Provides the previous enumeration before the given value.
-    
+
     :param str value: enumeration for which to get the previous entry
-    
+
     :returns: enum value proceeding the given entry
-    
+
     :raises: **ValueError** if no such element exists
     """
-    
+
     if not value in self._values:
       raise ValueError("No such enumeration exists: %s (options: %s)" % (value, ", ".join(self._values)))
-    
+
     # TODO: python 2.5 lacks an index method on tuples, when we drop support
     # we can drop this hack
     prev_index = (list(self._values).index(value) - 1) % len(self._values)
     return self._values[prev_index]
-  
+
   def __getitem__(self, item):
     """
     Provides the values for the given key.
-    
+
     :param str item: key to be looked up
-    
+
     :returns: **str** with the value for the given key
-    
+
     :raises: **ValueError** if the key doesn't exist
     """
-    
+
     if item in self.__dict__:
       return self.__dict__[item]
     else:
       keys = ", ".join(self.keys())
       raise ValueError("'%s' isn't among our enumeration keys, which includes: %s" % (item, keys))
-  
+
   def __iter__(self):
     """
     Provides an ordered listing of the enums in this set.
     """
-    
+
     for entry in self._values:
       yield entry
