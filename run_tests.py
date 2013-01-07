@@ -296,7 +296,7 @@ if __name__ == '__main__':
   
   load_user_configuration(test_config)
   
-  if not CONFIG["argument.unit"] and not CONFIG["argument.integ"]:
+  if not CONFIG["argument.unit"] and not CONFIG["argument.integ"] and not CONFIG["argument.style"]:
     test.output.print_line("Nothing to run (for usage provide --help)\n")
     sys.exit()
   
