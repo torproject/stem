@@ -183,7 +183,7 @@ def _connect(control_socket, password, chroot_path, controller):
   try:
     authenticate(control_socket, password, chroot_path)
     
-    if controller == None:
+    if controller is None:
       return control_socket
     else:
       return controller(control_socket)
