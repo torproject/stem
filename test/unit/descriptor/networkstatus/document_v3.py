@@ -787,6 +787,21 @@ class TestNetworkStatusDocument(unittest.TestCase):
           document = NetworkStatusDocumentV3(content, validate = False)
           self.assertEquals((authority1, authority2), document.directory_authorities)
 
+  def test_with_legacy_directory_authorities(self):
+    """
+    Includes both normal authorities and those following the '-legacy' format.
+    """
+
+    legacy_content = "dir-source gabelmoo-legacy 81349FC1F2DBA2C2C11B45CB9706637D480AB913 212.112.245.170 212.112.245.170 80 443"
+
+    authority1 = get_directory_authority({'contact': 'doctor jekyll'}, is_vote = False)
+    authority2 = DirectoryAuthority(legacy_content, validate = True, is_vote = False)
+    authority3 = get_directory_authority({'contact': 'mister hyde'}, is_vote = False)
+
+    document = get_network_status_document_v3({"vote-status": "consensus"}, authorities = (authority1, authority2, authority3))
+
+    self.assertEquals((authority1, authority2, authority3), document.directory_authorities)
+
   def test_authority_validation_flag_propagation(self):
     """
     Includes invalid certificate content in an authority entry. This is testing

@@ -909,17 +909,24 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
   """
   Directory authority information obtained from a v3 network status document.
 
+  Authorities can optionally use a legacy format. These are no longer found in
+  practice, but have the following differences...
+
+  * The authority's nickname ends with '-legacy'.
+  * There's no **contact** or **vote_digest** attribute.
+
   :var str nickname: **\*** authority's nickname
   :var str fingerprint: **\*** authority's fingerprint
   :var str hostname: **\*** hostname of the authority
   :var str address: **\*** authority's IP address
   :var int dir_port: **\*** authority's DirPort
   :var int or_port: **\*** authority's ORPort
-  :var str contact: **\*** contact information
+  :var bool is_legacy: **\*** if the authority's using the legacy format
+  :var str contact: contact information, this is included if is_legacy is **False**
 
   **Consensus Attributes:**
 
-  :var str vote_digest: **\*** digest of the authority that contributed to the consensus
+  :var str vote_digest: digest of the authority that contributed to the consensus, this is included if is_legacy is **False**
 
   **Vote Attributes:**
 
@@ -950,6 +957,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     self.address = None
     self.dir_port = None
     self.or_port = None
+    self.is_legacy = False
     self.contact = None
 
     self.vote_digest = None
@@ -990,7 +998,15 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     # check that we have mandatory fields
 
     if validate:
-      required_fields, excluded_fields = ["dir-source", "contact"], []
+      is_legacy, dir_source_entry = False, entries.get("dir-source")
+
+      if dir_source_entry:
+        is_legacy = dir_source_entry[0][0].split()[0].endswith("-legacy")
+
+      required_fields, excluded_fields = ["dir-source"], []
+
+      if not is_legacy:
+        required_fields += ["contact"]
 
       if is_vote:
         if not key_cert_content:
@@ -1001,7 +1017,9 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
         if key_cert_content:
           raise ValueError("Authority consensus entries shouldn't have a key certificate:\n%s" % content)
 
-        required_fields += ["vote-digest"]
+        if not is_legacy:
+          required_fields += ["vote-digest"]
+
         excluded_fields += ["legacy-dir-key"]
 
       for keyword in required_fields:
@@ -1033,7 +1051,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
           raise ValueError("Authority entry's 'dir-source' line must have six values: %s" % line)
 
         if validate:
-          if not stem.util.tor_tools.is_valid_nickname(dir_source_comp[0]):
+          if not stem.util.tor_tools.is_valid_nickname(dir_source_comp[0].rstrip('-legacy')):
             raise ValueError("Authority's nickname is invalid: %s" % dir_source_comp[0])
           elif not stem.util.tor_tools.is_valid_fingerprint(dir_source_comp[1]):
             raise ValueError("Authority's fingerprint is invalid: %s" % dir_source_comp[1])
@@ -1055,6 +1073,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
         self.address = dir_source_comp[3]
         self.dir_port = None if dir_source_comp[4] == '0' else int(dir_source_comp[4])
         self.or_port = int(dir_source_comp[5])
+        self.is_legacy = self.nickname.endswith("-legacy")
       elif keyword == 'contact':
         # "contact" string
 

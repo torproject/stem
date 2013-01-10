@@ -22,6 +22,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     self.assertEqual("76.73.17.194", authority.address)
     self.assertEqual(9030, authority.dir_port)
     self.assertEqual(9090, authority.or_port)
+    self.assertEqual(False, authority.is_legacy)
     self.assertEqual("Mike Perry <email>", authority.contact)
     self.assertEqual("0B6D1E9A300B895AA2D0B427F92917B6995C3C1C", authority.vote_digest)
     self.assertEqual(None, authority.legacy_dir_key)
@@ -41,6 +42,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     self.assertEqual("76.73.17.194", authority.address)
     self.assertEqual(9030, authority.dir_port)
     self.assertEqual(9090, authority.or_port)
+    self.assertEqual(False, authority.is_legacy)
     self.assertEqual("Mike Perry <email>", authority.contact)
     self.assertEqual(None, authority.vote_digest)
     self.assertEqual(None, authority.legacy_dir_key)
@@ -54,6 +56,27 @@ class TestDirectoryAuthority(unittest.TestCase):
 
     authority = get_directory_authority({"pepperjack": "is oh so tasty!"})
     self.assertEquals(["pepperjack is oh so tasty!"], authority.get_unrecognized_lines())
+
+  def test_legacy_authority(self):
+    """
+    Parses an authority using the '-legacy' format.
+    """
+
+    content = "dir-source gabelmoo-legacy 81349FC1F2DBA2C2C11B45CB9706637D480AB913 212.112.245.170 212.112.245.170 80 443"
+    authority = DirectoryAuthority(content, is_vote = False)
+
+    self.assertEqual("gabelmoo-legacy", authority.nickname)
+    self.assertEqual("81349FC1F2DBA2C2C11B45CB9706637D480AB913", authority.fingerprint)
+    self.assertEqual("212.112.245.170", authority.hostname)
+    self.assertEqual("212.112.245.170", authority.address)
+    self.assertEqual(80, authority.dir_port)
+    self.assertEqual(443, authority.or_port)
+    self.assertEqual(True, authority.is_legacy)
+    self.assertEqual(None, authority.contact)
+    self.assertEqual(None, authority.vote_digest)
+    self.assertEqual(None, authority.legacy_dir_key)
+    self.assertEqual(None, authority.key_certificate)
+    self.assertEqual([], authority.get_unrecognized_lines())
 
   def test_first_line(self):
     """
