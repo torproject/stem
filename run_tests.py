@@ -467,10 +467,22 @@ if __name__ == '__main__':
 
     # TODO: note unused config options afterward?
 
-  base_path = os.path.sep.join(__file__.split(os.path.sep)[:-1])
+  base_path = os.path.sep.join(__file__.split(os.path.sep)[:-1]).lstrip("./")
   style_issues = test.check_whitespace.get_issues(os.path.join(base_path, "stem"))
   style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "test")))
   style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "run_tests.py")))
+
+  # If we're doing some sort of testing (unit or integ) and pyflakes is
+  # available then use it. Its static checks are pretty quick so there's not
+  # much overhead in including it with all tests.
+
+  if CONFIG["argument.unit"] or CONFIG["argument.integ"]:
+    if system.is_available("pyflakes"):
+      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "stem")))
+      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "test")))
+      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "run_tests.py")))
+    else:
+      test.output.print_line("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", *ERROR_ATTR)
 
   if CONFIG["argument.style"]:
     if system.is_available("pep8"):
@@ -478,7 +490,7 @@ if __name__ == '__main__':
       style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "test")))
       style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "run_tests.py")))
     else:
-      test.output.print_line("Style checks require pep8. Please install it from 'http://pypi.python.org/pypi/pep8'.")
+      test.output.print_line("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", *ERROR_ATTR)
 
   if style_issues:
     test.output.print_line("STYLE ISSUES", term.Color.BLUE, term.Attr.BOLD)

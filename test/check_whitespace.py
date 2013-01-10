@@ -18,10 +18,17 @@ from __future__ import with_statement
 import re
 import os
 
-from stem.util import system
+from stem.util import conf, system
 
 # if ran directly then run over everything one level up
 DEFAULT_TARGET = os.path.sep.join(__file__.split(os.path.sep)[:-1])
+
+# mapping of files to the issues that should be ignored
+PYFLAKES_IGNORE = None
+
+CONFIG = conf.config_dict("test", {
+  "pyflakes.ignore": []
+})
 
 
 def pep8_issues(base_path = DEFAULT_TARGET):
@@ -81,6 +88,51 @@ def pep8_issues(base_path = DEFAULT_TARGET):
     if line_match:
       path, line, _, issue = line_match.groups()
       issues.setdefault(path, []).append((int(line), issue))
+
+  return issues
+
+
+def pyflakes_issues(base_path = DEFAULT_TARGET):
+  """
+  Checks for issues via pyflakes. False positives can be whitelisted via our
+  test configuration.
+
+  :param str base_path: directory to be iterated over
+
+  :returns: dict of the form ``path => [(line_number, message)...]``
+  """
+
+  global PYFLAKES_IGNORE
+
+  if PYFLAKES_IGNORE is None:
+    pyflakes_ignore = {}
+
+    for line in CONFIG["pyflakes.ignore"]:
+      path, issue = line.split("=>")
+      pyflakes_ignore.setdefault(path.strip(), []).append(issue.strip())
+
+    PYFLAKES_IGNORE = pyflakes_ignore
+
+  # Pyflakes issues are of the form...
+  #
+  #   FILE:LINE: ISSUE
+  #
+  # ... for instance...
+  #
+  #   stem/prereq.py:73: 'long_to_bytes' imported but unused
+  #   stem/control.py:957: undefined name 'entry'
+
+  issues = {}
+  pyflakes_output = system.call("pyflakes %s" % base_path)
+
+  for line in pyflakes_output:
+    line_match = re.match("^(.*):(\d+): (.*)$", line)
+
+    if line_match:
+      path, line, issue = line_match.groups()
+
+      if not issue in PYFLAKES_IGNORE.get(path, []):
+        issues.setdefault(path, []).append((int(line), issue))
 
   return issues
 
