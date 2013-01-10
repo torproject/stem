@@ -26,7 +26,7 @@ Download
        For those wanting to live on the bleeding edge or contribute to stem,
        its git repository can be fetched with...
 
-       `git clone git://git.torproject.org/stem.git <https://gitweb.torproject.org/stem.git>`_
+       `git clone https://git.torproject.org/stem.git <https://gitweb.torproject.org/stem.git>`_
 
    * - .. image:: /_static/section/debian.png
      - .. image:: /_static/label/debian.png
