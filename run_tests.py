@@ -69,8 +69,8 @@ import test.integ.util.proc
 import test.integ.util.system
 import test.integ.version
 
-OPT = "uist:l:c:h"
-OPT_EXPANDED = ["unit", "integ", "style", "targets=", "test=", "log=", "tor=", "config=", "help"]
+OPT = "auist:l:c:h"
+OPT_EXPANDED = ["all", "unit", "integ", "style", "targets=", "test=", "log=", "tor=", "config=", "help"]
 DIVIDER = "=" * 70
 
 CONFIG = stem.util.conf.config_dict("test", {
@@ -187,7 +187,11 @@ def load_user_configuration(test_config):
     arg_overrides["argument.no_color"] = "true"
 
   for opt, arg in opts:
-    if opt in ("-u", "--unit"):
+    if opt in ("-a", "--all"):
+      arg_overrides["argument.unit"] = "true"
+      arg_overrides["argument.integ"] = "true"
+      arg_overrides["argument.style"] = "true"
+    elif opt in ("-u", "--unit"):
       arg_overrides["argument.unit"] = "true"
     elif opt in ("-i", "--integ"):
       arg_overrides["argument.integ"] = "true"
