@@ -4,8 +4,6 @@ Unit tests for the DirectoryAuthority of stem.descriptor.networkstatus.
 
 import unittest
 
-import test.runner
-
 from stem.descriptor.networkstatus import DirectoryAuthority
 from test.mocking import get_directory_authority, get_key_certificate, AUTHORITY_HEADER
 

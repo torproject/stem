@@ -954,7 +954,7 @@ class Controller(BaseController):
       if default == UNDEFINED:
         raise exc
       else:
-        if entry is not None:
+        if default is not None:
           for entry in default:
             yield entry
 
@@ -1027,7 +1027,7 @@ class Controller(BaseController):
       if default == UNDEFINED:
         raise exc
       else:
-        if entry is not None:
+        if default is not None:
           for entry in default:
             yield entry
 

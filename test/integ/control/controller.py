@@ -5,12 +5,10 @@ Integration tests for the stem.control.Controller class.
 from __future__ import with_statement
 
 import os
-import re
 import shutil
 import socket
 import tempfile
 import threading
-import time
 import unittest
 
 import stem.connection
@@ -307,13 +305,13 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      socket = controller.get_socket()
+      control_socket = controller.get_socket()
 
-      if isinstance(socket, stem.socket.ControlPort):
-        connection_value = str(socket.get_port())
+      if isinstance(control_socket, stem.socket.ControlPort):
+        connection_value = str(control_socket.get_port())
         config_key = "ControlPort"
-      elif isinstance(socket, stem.socket.ControlSocketFile):
-        connection_value = str(socket.get_socket_path())
+      elif isinstance(control_socket, stem.socket.ControlSocketFile):
+        connection_value = str(control_socket.get_socket_path())
         config_key = "ControlSocket"
 
       # successful single query

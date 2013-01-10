@@ -179,21 +179,6 @@ def get_issues(base_path = DEFAULT_TARGET):
         file_issues.append((index + 1, "contains a windows newline"))
       elif content != content.rstrip():
         file_issues.append((index + 1, "line has trailing whitespace"))
-      elif content == '':
-        # empty line, check its indentation against the previous and next line
-        # with content
-
-        next_indent = 0
-
-        for future_index in xrange(index + 1, len(lines)):
-          future_whitespace, future_content = re.match("^(\s*)(.*)$", lines[future_index]).groups()
-
-          if future_content:
-            next_indent = len(future_whitespace)
-            break
-      else:
-        # we had content and it's fine, making a note of its indentation
-        prev_indent = len(whitespace)
 
     if file_issues:
       issues[file_path] = file_issues

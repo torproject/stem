@@ -28,7 +28,7 @@ import time
 
 import stem.util.proc
 
-from stem import UNDEFINED, CircStatus
+from stem import UNDEFINED
 from stem.util import log
 
 # Mapping of commands to if they're available or not.

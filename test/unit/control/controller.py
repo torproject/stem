@@ -11,7 +11,6 @@ import stem.version
 
 from stem import InvalidArguments, InvalidRequest, ProtocolError
 from stem.control import _parse_circ_path, Controller, EventType
-from stem.response import events
 from test import mocking
 
 

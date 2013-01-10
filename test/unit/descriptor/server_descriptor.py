@@ -9,7 +9,6 @@ import unittest
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.prereq
-import test.runner
 
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 

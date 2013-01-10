@@ -1,8 +1,6 @@
 import socket
 import struct
 
-import test.runner
-
 from stem import ProtocolError, SocketError
 
 error_msgs = {
