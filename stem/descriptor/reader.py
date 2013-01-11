@@ -108,7 +108,7 @@ class AlreadyRead(FileSkipped):
   """
 
   def __init__(self, last_modified, last_modified_when_read):
-    super(AlreadyRead, self).__init__()
+    super(AlreadyRead, self).__init__("File has already been read since it was last modified. modification time: %s, last read: %s" % (last_modified, last_modified_when_read))
     self.last_modified = last_modified
     self.last_modified_when_read = last_modified_when_read
 
@@ -121,7 +121,7 @@ class ParsingFailure(FileSkipped):
   """
 
   def __init__(self, parsing_exception):
-    super(ParsingFailure, self).__init__()
+    super(ParsingFailure, self).__init__(parsing_exception)
     self.exception = parsing_exception
 
 
@@ -134,7 +134,7 @@ class UnrecognizedType(FileSkipped):
   """
 
   def __init__(self, mime_type):
-    super(UnrecognizedType, self).__init__()
+    super(UnrecognizedType, self).__init__("Unrecognized mime type: %s (%s)" % mime_type)
     self.mime_type = mime_type
 
 
@@ -147,7 +147,7 @@ class ReadFailed(FileSkipped):
   """
 
   def __init__(self, read_exception):
-    super(ReadFailed, self).__init__()
+    super(ReadFailed, self).__init__(read_exception)
     self.exception = read_exception
 
 
@@ -155,7 +155,7 @@ class FileMissing(ReadFailed):
   "File does not exist."
 
   def __init__(self):
-    super(FileMissing, self).__init__(None)
+    super(FileMissing, self).__init__("File does not exist")
 
 
 def load_processed_files(path):
