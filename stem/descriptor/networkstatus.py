@@ -115,7 +115,7 @@ HEADER_STATUS_DOCUMENT_FIELDS = (
 )
 
 FOOTER_STATUS_DOCUMENT_FIELDS = (
-  ("directory-footer", True, True, True),
+  ("directory-footer", True, True, False),
   ("bandwidth-weights", False, True, False),
   ("directory-signature", True, True, True),
 )
@@ -482,7 +482,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       validate,
       entry_class = DirectoryAuthority,
       entry_keyword = AUTH_START,
-      section_end_keywords = (ROUTERS_START, FOOTER_START),
+      section_end_keywords = (ROUTERS_START, FOOTER_START, V2_FOOTER_START),
       extra_args = (self._header.is_vote,),
     ))
 
@@ -496,7 +496,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       validate,
       entry_class = router_type,
       entry_keyword = ROUTERS_START,
-      section_end_keywords = (FOOTER_START,),
+      section_end_keywords = (FOOTER_START, V2_FOOTER_START),
       extra_args = (self,),
     ))
 
@@ -746,15 +746,25 @@ class _DocumentFooter(object):
     self._unrecognized_lines = []
 
     content = document_file.read()
-    if validate and content and not header.meets_consensus_method(9):
-      raise ValueError("Network status document's footer should only appear in consensus-method 9 or later")
-    elif not content and not header.meets_consensus_method(9):
+
+    if not content:
       return  # footer is optional and there's nothing to parse
 
     entries = stem.descriptor._get_descriptor_components(content, validate)
     self._parse(entries, validate, header)
 
     if validate:
+      # Check that the footer has the right initial line. Prior to consensus
+      # method 9 it's a 'directory-signature' and after that footers start with
+      # 'directory-footer'.
+
+      if header.meets_consensus_method(9):
+        if entries.keys()[0] != 'directory-footer':
+          raise ValueError("Network status document's footer should start with a 'directory-footer' line in consensus-method 9 or later")
+      else:
+        if entries.keys()[0] != 'directory-signature':
+          raise ValueError("Network status document's footer should start with a 'directory-signature' line prior to consensus-method 9")
+
       _check_for_missing_and_disallowed_fields(header, entries, FOOTER_STATUS_DOCUMENT_FIELDS)
       _check_for_misordered_fields(entries, FOOTER_FIELDS)
 

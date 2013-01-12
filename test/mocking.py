@@ -864,12 +864,30 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
 
   # inject the authorities and/or routers between the header and footer
   if authorities:
-    footer_div = desc_content.find("\ndirectory-footer") + 1
+    if "directory-footer" in desc_content:
+      footer_div = desc_content.find("\ndirectory-footer") + 1
+    elif "directory-signature" in desc_content:
+      footer_div = desc_content.find("\ndirectory-signature") + 1
+    else:
+      if routers:
+        desc_content += "\n"
+
+      footer_div = len(desc_content) + 1
+
     authority_content = "\n".join([str(a) for a in authorities]) + "\n"
     desc_content = desc_content[:footer_div] + authority_content + desc_content[footer_div:]
 
   if routers:
-    footer_div = desc_content.find("\ndirectory-footer") + 1
+    if "directory-footer" in desc_content:
+      footer_div = desc_content.find("\ndirectory-footer") + 1
+    elif "directory-signature" in desc_content:
+      footer_div = desc_content.find("\ndirectory-signature") + 1
+    else:
+      if routers:
+        desc_content += "\n"
+
+      footer_div = len(desc_content) + 1
+
     router_content = "\n".join([str(r) for r in routers]) + "\n"
     desc_content = desc_content[:footer_div] + router_content + desc_content[footer_div:]
 

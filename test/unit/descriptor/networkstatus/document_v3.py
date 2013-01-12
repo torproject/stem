@@ -549,6 +549,23 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual([], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
 
+    # Prior to conensus method 9 votes can still have a signature in their
+    # footer...
+    #
+    # https://trac.torproject.org/7932
+
+    document = get_network_status_document_v3(
+      {
+        "vote-status": "vote",
+        "consensus-methods": "1 8",
+      },
+      exclude = ("directory-footer",),
+      authorities = (get_directory_authority(is_vote = True),)
+    )
+
+    self.assertEqual([DOC_SIG], document.signatures)
+    self.assertEqual([], document.get_unrecognized_lines())
+
   def test_footer_with_value(self):
     """
     Tries to parse a descriptor with content on the 'directory-footer' line.
