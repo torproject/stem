@@ -384,7 +384,7 @@ class TestSystem(unittest.TestCase):
 
   def test_expand_path(self):
     """
-    Exercises the stem.expand_path method with actual runtime data.
+    Exercises the expand_path() method with actual runtime data.
     """
 
     self.assertEquals(os.getcwd(), stem.util.system.expand_path("."))
@@ -396,3 +396,17 @@ class TestSystem(unittest.TestCase):
     self.assertEquals(home_dir, stem.util.system.expand_path("~/"))
     self.assertEquals(home_dir, stem.util.system.expand_path("~%s" % username))
     self.assertEquals(os.path.join(home_dir, "foo"), stem.util.system.expand_path("~%s/foo" % username))
+
+  def test_set_process_name(self):
+    """
+    Exercises the get_process_name() and set_process_name() methods.
+    """
+
+    initial_name = stem.util.system.get_process_name()
+    self.assertTrue("run_tests.py" in initial_name)
+
+    try:
+      stem.util.system.set_process_name("stem_integ")
+      self.assertEqual("stem_integ", stem.util.system.get_process_name())
+    finally:
+      stem.util.system.set_process_name(initial_name)

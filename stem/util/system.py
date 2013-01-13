@@ -10,6 +10,7 @@ best-effort, providing **None** if the lookup fails.
   is_windows - checks if we're running on windows
   is_mac - checks if we're running on a mac
   is_bsd - checks if we're running on the bsd family of operating systems
+
   is_available - determines if a command is available on this system
   is_running - determines if a given process is running
   get_pid_by_name - gets the pid for a process by the given name
@@ -19,8 +20,13 @@ best-effort, providing **None** if the lookup fails.
   get_bsd_jail_id - provides the BSD jail id a given process is running within
   expand_path - expands relative paths and ~ entries
   call - runs the given system command and provides back the results
+
+  get_process_name - provides our process' name
+  set_process_name - changes our process' name
 """
 
+import ctypes
+import ctypes.util
 import os
 import platform
 import subprocess
@@ -58,6 +64,34 @@ GET_PID_BY_FILE_LSOF = "lsof -tw %s"
 GET_CWD_PWDX = "pwdx %s"
 GET_CWD_LSOF = "lsof -a -p %s -d cwd -Fn"
 GET_BSD_JAIL_ID_PS = "ps -p %s -o jid"
+
+# flag for setting the process name, found in '/usr/include/linux/prctl.h'
+
+PR_SET_NAME = 15
+
+argc_t = ctypes.POINTER(ctypes.c_char_p)
+
+Py_GetArgcArgv = ctypes.pythonapi.Py_GetArgcArgv
+Py_GetArgcArgv.restype = None
+Py_GetArgcArgv.argtypes = [
+  ctypes.POINTER(ctypes.c_int),
+  ctypes.POINTER(argc_t),
+]
+
+# This is both a cache for get_process_name() and tracks what we've changed our
+# process name to.
+
+_PROCESS_NAME = None
+
+# Length of our original process name.
+#
+# The original author our process renaming is based on did a memset for 256,
+# while Jake did it for the original process name length (capped at 1608). I'm
+# not sure of the reasons for either of these limits, but setting it to
+# anything higher than our original name length should be pointless, so opting
+# for Jake's limit.
+
+_MAX_NAME_LENGTH = -1
 
 
 def is_windows():
@@ -648,3 +682,133 @@ def call(command, default = UNDEFINED):
       return default
     else:
       raise exc
+
+
+def get_process_name():
+  """
+  Provides the present name of our process.
+
+  :returns: **str** with the present name of our process
+  """
+
+  global _PROCESS_NAME, _MAX_NAME_LENGTH
+
+  if _PROCESS_NAME is None:
+    # Example output...
+    #
+    #   COMMAND
+    #   python run_tests.py --unit
+
+    ps_output = call("ps -p %i -o args" % os.getpid(), [])
+
+    if len(ps_output) == 2 and ps_output[0] == "COMMAND":
+      _PROCESS_NAME = ps_output[1]
+    else:
+      # Falling back on using ctypes to get our argv. Unfortunately the simple
+      # method for getting this...
+      #
+      #   " ".join(["python"] + sys.argv)
+      #
+      # ... doesn't do the trick since this will miss interpretor arguments.
+      #
+      #   python -W ignore::DeprecationWarning my_script.py
+
+      args, argc = [], argc_t()
+
+      for i in xrange(100):
+        if argc[i] is None:
+          break
+
+        args.append(str(argc[i]))
+
+      _PROCESS_NAME = " ".join(args)
+
+    _MAX_NAME_LENGTH = len(_PROCESS_NAME)
+
+  return _PROCESS_NAME
+
+
+def set_process_name(process_name):
+  """
+  Renames our current process from "python <args>" to a custom name. This is
+  best-effort, not necessarily working on all platforms.
+
+  :param str process_name: new name for our process
+  """
+
+  # This is mostly based on...
+  #
+  # http://www.rhinocerus.net/forum/lang-python/569677-setting-program-name-like-0-perl.html#post2272369
+  #
+  # ... and an adaptation by Jake...
+  #
+  # https://github.com/ioerror/chameleon
+  #
+  # A cleaner implementation is available at...
+  #
+  # https://github.com/cream/libs/blob/b38970e2a6f6d2620724c828808235be0445b799/cream/util/procname.py
+  #
+  # but I'm not quite clear on their implementation, and it only does targeted
+  # argument replacement (ie, replace argv[0], argv[1], etc but with a string
+  # the same size).
+
+  _set_argv(process_name)
+
+  if platform.system() == "Linux":
+    _set_prctl_name(process_name)
+  elif platform.system() in ("Darwin", "FreeBSD", "OpenBSD"):
+    _set_proc_title(process_name)
+
+
+def _set_argv(process_name):
+  """
+  Overwrites our argv in a similar fashion to how it's done in C with:
+  strcpy(argv[0], "new_name");
+  """
+
+  global _PROCESS_NAME
+
+  # both gets the current process name and initializes _MAX_NAME_LENGTH
+
+  current_name = get_process_name()
+
+  argv, argc = ctypes.c_int(0), argc_t()
+  Py_GetArgcArgv(argv, ctypes.pointer(argc))
+
+  if len(process_name) > _MAX_NAME_LENGTH:
+    raise IOError("Can't rename process to something longer than our initial name (this would overwrite memory used for the env)")
+
+  # space we need to clear
+  zero_size = max(len(current_name), len(process_name))
+
+  ctypes.memset(argc.contents, 0, zero_size + 1)  # null terminate the string's end
+  ctypes.memmove(argc.contents, process_name, len(process_name))
+  _PROCESS_NAME = process_name
+
+
+def _set_prctl_name(process_name):
+  """
+  Sets the prctl name, which is used by top and killall. This appears to be
+  Linux specific and has the max of 15 characters.
+
+  This is from...
+  http://stackoverflow.com/questions/564695/is-there-a-way-to-change-effective-process-name-in-python/923034#923034
+  """
+
+  libc = ctypes.CDLL(ctypes.util.find_library("c"))
+  name_buffer = ctypes.create_string_buffer(len(process_name) + 1)
+  name_buffer.value = process_name
+  libc.prctl(PR_SET_NAME, ctypes.byref(name_buffer), 0, 0, 0)
+
+
+def _set_proc_title(process_name):
+  """
+  BSD specific calls (should be compataible with both FreeBSD and OpenBSD:
+  http://fxr.watson.org/fxr/source/gen/setproctitle.c?v=FREEBSD-LIBC
+  http://www.rootr.net/man/man/setproctitle/3
+  """
+
+  libc = ctypes.CDLL(ctypes.util.find_library("c"))
+  name_buffer = ctypes.create_string_buffer(len(process_name) + 1)
+  name_buffer.value = process_name
+  libc.setproctitle(ctypes.byref(name_buffer))
