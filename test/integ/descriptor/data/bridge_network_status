@@ -1,0 +1,18 @@
+@type bridge-network-status 1.0
+published 2012-06-01 04:07:04
+r Unnamed ABSiBVJ42z6w5Z6nAXQUFq8YVVg FI74aFuNJZZQrgln0f+OaocMd0M 2012-05-31 15:57:00 10.97.236.247 443 0
+s Valid
+w Bandwidth=55
+p reject 1-65535
+r TolFuin AFn9TveYjdtZEsgh7QsWp3qC5kU 1Sw8RPx2Tq/w+VHL+pZipiJUG5k 2012-05-31 18:12:39 10.99.47.37 80 0
+s Fast Guard Running Stable Valid
+w Bandwidth=32
+p reject 1-65535
+r sidvic AGzeXR+V8NSBE3wTE4m7gBYbjWM 7enyDQ20UjliwCPN2JmTl6zrCdM 2012-05-31 22:56:12 10.145.17.182 80 0
+s Fast Guard Running Stable Valid
+w Bandwidth=56
+p reject 1-65535
+r AntoniusBlock ANk5reA3WwTV62ZpyMo+NWtrvAw gEgv8I1E4LWrs394Xx/cRYQUL5A 2012-05-31 17:21:20 10.95.68.0 443 0
+s Fast Guard Running Stable Valid
+w Bandwidth=55
+p reject 1-65535
