@@ -25,6 +25,7 @@ import test.unit.connection.authentication
 import test.unit.control.controller
 import test.unit.descriptor.export
 import test.unit.descriptor.extrainfo_descriptor
+import test.unit.descriptor.networkstatus.bridge_document
 import test.unit.descriptor.networkstatus.directory_authority
 import test.unit.descriptor.networkstatus.document_v2
 import test.unit.descriptor.networkstatus.document_v3
@@ -129,6 +130,7 @@ UNIT_TESTS = (
   test.unit.descriptor.networkstatus.key_certificate.TestKeyCertificate,
   test.unit.descriptor.networkstatus.document_v2.TestNetworkStatusDocument,
   test.unit.descriptor.networkstatus.document_v3.TestNetworkStatusDocument,
+  test.unit.descriptor.networkstatus.bridge_document.TestBridgeNetworkStatusDocument,
   test.unit.exit_policy.rule.TestExitPolicyRule,
   test.unit.exit_policy.policy.TestExitPolicy,
   test.unit.version.TestVersion,

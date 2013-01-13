@@ -166,18 +166,18 @@ BANDWIDTH_WEIGHT_ENTRIES = (
 )
 
 
-def parse_file(document_file, validate = True, is_microdescriptor = False, document_version = 3):
+def parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False):
   """
   Parses a network status and iterates over the RouterStatusEntry in it. The
   document that these instances reference have an empty 'routers' attribute to
   allow for limited memory usage.
 
   :param file document_file: file with network status document content
+  :param class document_type: NetworkStatusDocument subclass
   :param bool validate: checks the validity of the document's contents if
     **True**, skips these checks otherwise
   :param bool is_microdescriptor: **True** if this is for a microdescriptor
     consensus, **False** otherwise
-  :param int document_version: network status document version
 
   :returns: :class:`stem.descriptor.networkstatus.NetworkStatusDocument` object
 
@@ -186,6 +186,11 @@ def parse_file(document_file, validate = True, is_microdescriptor = False, docum
       malformed and validate is **True**
     * **IOError** if the file can't be read
   """
+
+  # we can't properly default this since NetworkStatusDocumentV3 isn't defined yet
+
+  if document_type is None:
+    document_type = NetworkStatusDocumentV3
 
   # getting the document without the routers section
 
@@ -198,18 +203,19 @@ def parse_file(document_file, validate = True, is_microdescriptor = False, docum
   footer = document_file.readlines()
   document_content = "".join(header + footer)
 
-  if document_version == 2:
+  if document_type == NetworkStatusDocumentV2:
     document_type = NetworkStatusDocumentV2
-    router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
-  elif document_version == 3:
-    document_type = NetworkStatusDocumentV3
-
+    router_type = stem.descriptor.router_status_entry.RouterStatusEntryV2
+  elif document_type == NetworkStatusDocumentV3:
     if not is_microdescriptor:
       router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
     else:
       router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
+  elif document_type == BridgeNetworkStatusDocument:
+    document_type = BridgeNetworkStatusDocument
+    router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
   else:
-    raise ValueError("Document version %i isn't recognized (only able to parse v2 or v3)" % document_version)
+    raise ValueError("Document type %i isn't recognized (only able to parse v2, v3, and bridge)" % document_type)
 
   desc_iterator = stem.descriptor.router_status_entry.parse_file(
     document_file,
@@ -1326,3 +1332,42 @@ class DocumentSignature(object):
         return -1
 
     return 0
+
+
+class BridgeNetworkStatusDocument(NetworkStatusDocument):
+  """
+  Network status document containing bridges. This is only available through
+  the metrics site.
+
+  :var tuple routers: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
+    contained in the document
+  :var datetime published: time when the document was published
+  """
+
+  def __init__(self, raw_content, validate = True):
+    super(BridgeNetworkStatusDocument, self).__init__(raw_content)
+
+    self.routers = None
+    self.published = None
+
+    document_file = StringIO.StringIO(raw_content)
+
+    published_line = document_file.readline()
+
+    if published_line.startswith("published "):
+      published_line = published_line.split(" ", 1)[1].strip()
+
+      try:
+        self.published = datetime.datetime.strptime(published_line, "%Y-%m-%d %H:%M:%S")
+      except ValueError:
+        if validate:
+          raise ValueError("Bridge network status document's 'published' time wasn't parsable: %s" % published_line)
+    elif validate:
+      raise ValueError("Bridge network status documents must start with a 'published' line:\n%s" % raw_content)
+
+    self.routers = tuple(stem.descriptor.router_status_entry.parse_file(
+      document_file,
+      validate,
+      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
+      extra_args = (self,),
+    ))

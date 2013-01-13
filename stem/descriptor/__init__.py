@@ -131,14 +131,25 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     # https://trac.torproject.org/6257
 
     yield stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
-  elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
-    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file):
-      yield desc
   elif descriptor_type == "network-status-2" and major_version == 1:
-    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, document_version = 2):
+    document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV2
+
+    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, document_type):
+      yield desc
+  elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
+    document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
+
+    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, document_type):
       yield desc
   elif descriptor_type == "network-status-microdesc-consensus-3" and major_version == 1:
-    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, is_microdescriptor = True):
+    document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
+
+    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, document_type, is_microdescriptor = True):
+      yield desc
+  elif descriptor_type == "bridge-network-status" and major_version == 1:
+    document_type = stem.descriptor.networkstatus.BridgeNetworkStatusDocument
+
+    for desc in stem.descriptor.networkstatus.parse_file(descriptor_file, document_type):
       yield desc
   else:
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))

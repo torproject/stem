@@ -40,7 +40,9 @@ class TestNetworkStatus(unittest.TestCase):
 
     count = 0
     with open(consensus_path) as descriptor_file:
-      for router in stem.descriptor.networkstatus.parse_file(descriptor_file):
+      document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
+
+      for router in stem.descriptor.networkstatus.parse_file(descriptor_file, document_type):
         count += 1
 
         # We should have constant memory usage. Fail if we're using over 200 MB.
@@ -85,7 +87,9 @@ class TestNetworkStatus(unittest.TestCase):
 
     count = 0
     with open(consensus_path) as descriptor_file:
-      for router in stem.descriptor.networkstatus.parse_file(descriptor_file, is_microdescriptor = True):
+      document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
+
+      for router in stem.descriptor.networkstatus.parse_file(descriptor_file, document_type, is_microdescriptor = True):
         count += 1
 
         if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 200000:
@@ -122,6 +126,25 @@ class TestNetworkStatus(unittest.TestCase):
       self.assertEquals(datetime.datetime(2012, 7, 12, 4, 1, 55), router.published)
       self.assertEquals("178.218.213.229", router.address)
       self.assertEquals(80, router.or_port)
+      self.assertEquals(None, router.dir_port)
+
+  def test_metrics_bridge_consensus(self):
+    """
+    Checks if the bridge documents from Metrics are parsed properly.
+    """
+
+    consensus_path = test.integ.descriptor.get_resource("bridge_network_status")
+
+    with open(consensus_path) as descriptor_file:
+      descriptors = stem.descriptor.parse_file(consensus_path, descriptor_file)
+
+      router = next(descriptors)
+      self.assertEquals("Unnamed", router.nickname)
+      self.assertEquals("0014A2055278DB3EB0E59EA701741416AF185558", router.fingerprint)
+      self.assertEquals("FI74aFuNJZZQrgln0f+OaocMd0M", router.digest)
+      self.assertEquals(datetime.datetime(2012, 5, 31, 15, 57, 0), router.published)
+      self.assertEquals("10.97.236.247", router.address)
+      self.assertEquals(443, router.or_port)
       self.assertEquals(None, router.dir_port)
 
   def test_consensus_v3(self):
