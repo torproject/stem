@@ -56,9 +56,21 @@ import stem.util.enum
 
 AddressType = stem.util.enum.Enum(("WILDCARD", "Wildcard"), ("IPv4", "IPv4"), ("IPv6", "IPv6"))
 
-# TODO: The ExitPolicyRule's exitpatterns are used everywhere except the torrc.
-# This is fine for now, but we should add a subclass to handle those slight
-# differences later if we want to provide the ability to parse torrcs.
+# Addresses aliased by the 'private' policy. From the tor man page...
+#
+# To specify all internal and link-local networks (including 0.0.0.0/8,
+# 169.254.0.0/16, 127.0.0.0/8, 192.168.0.0/16, 10.0.0.0/8, and 172.16.0.0/12),
+# you can use the "private" alias instead of an address.
+
+PRIVATE_ADDRESSES = (
+  "0.0.0.0/8",
+  "169.254.0.0/16",
+  "127.0.0.0/8",
+  "192.168.0.0/16",
+  "10.0.0.0/8",
+  "172.16.0.0/12",
+)
+
 
 # TODO: The ExitPolicyRule could easily be a mutable class if we did the
 # following...
@@ -74,6 +86,46 @@ AddressType = stem.util.enum.Enum(("WILDCARD", "Wildcard"), ("IPv4", "IPv4"), ("
 # reflects something they... well, can't modify). However, I can think of
 # some use cases where we might want to construct custom policies. Maybe make
 # it a CustomExitPolicyRule subclass?
+
+def get_config_policy(rules):
+  """
+  Converts an ExitPolicy found in a torrc to a proper exit pattern. This
+  accounts for...
+
+  * ports being optional
+  * the 'private' keyword
+
+  :param str,list rules: comma separated rules or list to be converted
+
+  :returns: **list** of :class:`~stem.exit_policy.ExitPolicyRule`
+
+  :raises: **ValueError** if input isn't a valid tor exit policy
+  """
+
+  if isinstance(rules, str):
+    rules = rules.split(',')
+
+  result = []
+
+  for rule in rules:
+    rule = rule.strip()
+
+    if not rule:
+      continue
+
+    if not ':' in rule:
+      rule = "%s:*" % rule
+
+    if 'private' in rule:
+      acceptance = rule.split(' ', 1)[0]
+      port = rule.split(':', 1)[1]
+
+      for private_addr in PRIVATE_ADDRESSES:
+        result.append(ExitPolicyRule("%s %s:%s" % (acceptance, private_addr, port)))
+    else:
+      result.append(ExitPolicyRule(rule))
+
+  return result
 
 
 class ExitPolicy(object):

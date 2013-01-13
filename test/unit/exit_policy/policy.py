@@ -4,7 +4,8 @@ Unit tests for the stem.exit_policy.ExitPolicy class.
 
 import unittest
 
-from stem.exit_policy import ExitPolicy, \
+from stem.exit_policy import get_config_policy, \
+                             ExitPolicy, \
                              MicroExitPolicy, \
                              ExitPolicyRule
 
@@ -190,3 +191,44 @@ class TestExitPolicy(unittest.TestCase):
 
     self.assertFalse(policy.can_exit_to('127.0.0.1', 79))
     self.assertTrue(policy.can_exit_to('127.0.0.1', 80))
+
+  def test_get_config_policy(self):
+    test_inputs = {
+      "": [],
+      "reject *": [
+        ExitPolicyRule('reject *:*'),
+      ],
+      "reject *:*": [
+        ExitPolicyRule('reject *:*'),
+      ],
+      "reject private": [
+        ExitPolicyRule('reject 0.0.0.0/8:*'),
+        ExitPolicyRule('reject 169.254.0.0/16:*'),
+        ExitPolicyRule('reject 127.0.0.0/8:*'),
+        ExitPolicyRule('reject 192.168.0.0/16:*'),
+        ExitPolicyRule('reject 10.0.0.0/8:*'),
+        ExitPolicyRule('reject 172.16.0.0/12:*'),
+      ],
+      "accept *:80, reject *": [
+        ExitPolicyRule('accept *:80'),
+        ExitPolicyRule('reject *:*'),
+      ],
+      "  accept *:80,     reject *   ": [
+        ExitPolicyRule('accept *:80'),
+        ExitPolicyRule('reject *:*'),
+      ],
+    }
+
+    for test_input, expected in test_inputs.items():
+      self.assertEqual(expected, get_config_policy(test_input))
+
+    test_inputs = (
+      "blarg",
+      "accept *:*:*",
+      "acceptt *:80",
+      "accept 257.0.0.1:80",
+      "accept *:999999",
+    )
+
+    for test_input in test_inputs:
+      self.assertRaises(ValueError, get_config_policy, test_input)
