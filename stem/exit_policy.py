@@ -38,6 +38,8 @@ exiting to a destination is permissible or not. For instance...
     |- get_masked_bits - provides the bit representation of our mask
     +- __str__ - string representation for this rule
 
+  get_config_policy - provides the ExitPolicy based on torrc rules
+
 .. data:: AddressType (enum)
 
   Enumerations for IP address types that can be in an exit policy.

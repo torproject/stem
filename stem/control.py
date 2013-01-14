@@ -16,7 +16,8 @@ providing its own for interacting at a higher level.
     |- authenticate - authenticates this controller with tor
     |
     |- get_info - issues a GETINFO query for a parameter
-    |- get_version - convenience method to get tor version
+    |- get_version - provides our tor version
+    |- get_exit_policy - provides our exit policy
     |- get_socks_listeners - provides where tor is listening for SOCKS connections
     |- get_protocolinfo - information about the controller interface
     |
@@ -135,6 +136,7 @@ import time
 
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
+import stem.exit_policy
 import stem.response
 import stem.socket
 import stem.util.connection
@@ -813,6 +815,50 @@ class Controller(BaseController):
       else:
         return default
 
+  def get_exit_policy(self, default = UNDEFINED):
+    """
+    Effective ExitPolicy for our relay. This accounts for
+    ExitPolicyRejectPrivate and default policies.
+
+    :param object default: response if the query fails
+
+    :returns: :class:`~stem.exit_policy.ExitPolicy` of the tor instance that
+      we're connected to
+
+    :raises:
+      * :class:`stem.ControllerError` if unable to query the policy
+      * **ValueError** if unable to parse the policy
+
+      An exception is only raised if we weren't provided a default response.
+    """
+
+    with self._msg_lock:
+      try:
+        if not "exit_policy" in self._request_cache:
+          policy = []
+
+          if self.get_conf("ExitPolicyRejectPrivate") == "1":
+            policy.append("reject private:*")
+
+            public_addr = self.get_info("address", None)
+
+            if public_addr:
+              policy.append("reject %s:*" % public_addr)
+
+          for policy_line in self.get_conf("ExitPolicy", multiple = True):
+            policy += policy_line.split(",")
+
+          policy += self.get_info("exit-policy/default").split(",")
+
+          self._request_cache["exit_policy"] = stem.exit_policy.get_config_policy(policy)
+
+        return self._request_cache["exit_policy"]
+      except Exception, exc:
+        if default == UNDEFINED:
+          raise exc
+        else:
+          return default
+
   def get_socks_listeners(self, default = UNDEFINED):
     """
     Provides the SOCKS **(address, port)** tuples that tor has open.
@@ -1312,6 +1358,9 @@ class Controller(BaseController):
             self._request_cache[cache_key] = [value]
           else:
             self._request_cache[cache_key] = value
+
+          if param.lower() == "exitpolicy" and "exit_policy" in self._request_cache:
+            del self._request_cache["exit_policy"]
     else:
       log.debug("%s (failed, code: %s, message: %s)" % (query, response.code, response.message))
 
