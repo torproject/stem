@@ -37,6 +37,11 @@ class TestExitPolicy(unittest.TestCase):
     policy = ExitPolicy(*"accept *:80, accept *:443, reject *:*".split(","))
     self.assertEquals(expected_policy, policy)
 
+    # checks that we truncate after getting a catch-all policy
+
+    policy = ExitPolicy(*"accept *:80, accept *:443, reject *:*, accept *:20-50".split(","))
+    self.assertEquals(expected_policy, policy)
+
   def test_set_default_allowed(self):
     policy = ExitPolicy('reject *:80', 'accept *:443')
 

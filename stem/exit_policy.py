@@ -290,9 +290,12 @@ class ExitPolicy(object):
 
       for rule in self._input_rules:
         if isinstance(rule, str):
-          rules.append(ExitPolicyRule(rule.strip()))
-        elif isinstance(rule, ExitPolicyRule):
-          rules.append(rule)
+          rule = ExitPolicyRule(rule.strip())
+
+        rules.append(rule)
+
+        if rule.is_address_wildcard() and rule.is_port_wildcard():
+          break  # this is a catch-all, no reason to include more
 
       self._rules = rules
       self._input_rules = None
