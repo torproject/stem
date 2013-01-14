@@ -287,15 +287,40 @@ class ExitPolicy(object):
   def _get_rules(self):
     if self._rules is None:
       rules = []
+      is_all_accept, is_all_reject = True, True
 
       for rule in self._input_rules:
         if isinstance(rule, str):
           rule = ExitPolicyRule(rule.strip())
 
+        if rule.is_accept:
+          is_all_reject = False
+        else:
+          is_all_accept = False
+
         rules.append(rule)
 
         if rule.is_address_wildcard() and rule.is_port_wildcard():
           break  # this is a catch-all, no reason to include more
+
+      # If we only have one kind of entry *and* end with a wildcard then
+      # we might as well use the simpler version. For instance...
+      #
+      #   reject *:80, reject *:443, reject *:*
+      #
+      # ... could also be represented as simply...
+      #
+      #   reject *:*
+      #
+      # This mostly comes up with reject-all policies because the
+      # 'reject private:*' appends an extra seven rules that have no
+      # effect.
+
+      if rules and (rules[-1].is_address_wildcard() and rules[-1].is_port_wildcard()):
+        if is_all_accept:
+          rules = [ExitPolicyRule("accept *:*")]
+        elif is_all_reject:
+          rules = [ExitPolicyRule("reject *:*")]
 
       self._rules = rules
       self._input_rules = None
