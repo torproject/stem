@@ -97,7 +97,7 @@ def get_config_policy(rules):
 
   :param str,list rules: comma separated rules or list to be converted
 
-  :returns: **list** of :class:`~stem.exit_policy.ExitPolicyRule`
+  :returns: :class:`~stem.exit_policy.ExitPolicy` reflected by the rules
 
   :raises: **ValueError** if input isn't a valid tor exit policy
   """
@@ -125,7 +125,7 @@ def get_config_policy(rules):
     else:
       result.append(ExitPolicyRule(rule))
 
-  return result
+  return ExitPolicy(*result)
 
 
 class ExitPolicy(object):

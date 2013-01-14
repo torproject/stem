@@ -199,29 +199,25 @@ class TestExitPolicy(unittest.TestCase):
 
   def test_get_config_policy(self):
     test_inputs = {
-      "": [],
-      "reject *": [
-        ExitPolicyRule('reject *:*'),
-      ],
-      "reject *:*": [
-        ExitPolicyRule('reject *:*'),
-      ],
-      "reject private": [
-        ExitPolicyRule('reject 0.0.0.0/8:*'),
-        ExitPolicyRule('reject 169.254.0.0/16:*'),
-        ExitPolicyRule('reject 127.0.0.0/8:*'),
-        ExitPolicyRule('reject 192.168.0.0/16:*'),
-        ExitPolicyRule('reject 10.0.0.0/8:*'),
-        ExitPolicyRule('reject 172.16.0.0/12:*'),
-      ],
-      "accept *:80, reject *": [
-        ExitPolicyRule('accept *:80'),
-        ExitPolicyRule('reject *:*'),
-      ],
-      "  accept *:80,     reject *   ": [
-        ExitPolicyRule('accept *:80'),
-        ExitPolicyRule('reject *:*'),
-      ],
+      "": ExitPolicy(),
+      "reject *": ExitPolicy('reject *:*'),
+      "reject *:*": ExitPolicy('reject *:*'),
+      "reject private": ExitPolicy(
+        'reject 0.0.0.0/8:*',
+        'reject 169.254.0.0/16:*',
+        'reject 127.0.0.0/8:*',
+        'reject 192.168.0.0/16:*',
+        'reject 10.0.0.0/8:*',
+        'reject 172.16.0.0/12:*',
+      ),
+      "accept *:80, reject *": ExitPolicy(
+        'accept *:80',
+        'reject *:*',
+      ),
+      "  accept *:80,     reject *   ": ExitPolicy(
+        'accept *:80',
+        'reject *:*',
+      ),
     }
 
     for test_input, expected in test_inputs.items():
