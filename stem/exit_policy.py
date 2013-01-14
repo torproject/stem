@@ -150,6 +150,7 @@ class ExitPolicy(object):
     self._input_rules = rules   # input rules, only kept until self._rules is set
     self._is_allowed_default = True
     self._summary_representation = None
+    self._can_exit_to_cache = {}
 
   def can_exit_to(self, address = None, port = None):
     """
@@ -163,11 +164,17 @@ class ExitPolicy(object):
     :returns: **True** if exiting to this destination is allowed, **False** otherwise
     """
 
-    for rule in self._get_rules():
-      if rule.is_match(address, port):
-        return rule.is_accept
+    if not (address, port) in self._can_exit_to_cache:
+      result = self._is_allowed_default
 
-    return self._is_allowed_default
+      for rule in self._get_rules():
+        if rule.is_match(address, port):
+          result = rule.is_accept
+          break
+
+      self._can_exit_to_cache[(address, port)] = result
+
+    return self._can_exit_to_cache[(address, port)]
 
   def is_exiting_allowed(self):
     """
@@ -285,6 +292,7 @@ class ExitPolicy(object):
     """
 
     self._is_allowed_default = is_allowed_default
+    self._can_exit_to_cache = {}
 
   def _get_rules(self):
     if self._rules is None:
