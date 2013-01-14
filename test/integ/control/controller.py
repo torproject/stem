@@ -23,6 +23,7 @@ import test.runner
 import test.util
 
 from stem.control import EventType
+from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
 
 
@@ -246,6 +247,40 @@ class TestController(unittest.TestCase):
       version = controller.get_version()
       self.assertTrue(isinstance(version, stem.version.Version))
       self.assertEqual(version, runner.get_tor_version())
+
+  def test_get_exit_policy(self):
+    """
+    Sanity test for get_exit_policy(). We have the default policy (no
+    ExitPolicy set) which is a little... long due to the boilerplate.
+    """
+
+    if test.runner.require_control(self):
+      return
+
+    expected = ExitPolicy(
+      'reject 0.0.0.0/8:*',
+      'reject 169.254.0.0/16:*',
+      'reject 127.0.0.0/8:*',
+      'reject 192.168.0.0/16:*',
+      'reject 10.0.0.0/8:*',
+      'reject 172.16.0.0/12:*',
+      'reject *:25',
+      'reject *:119',
+      'reject *:135-139',
+      'reject *:445',
+      'reject *:563',
+      'reject *:1214',
+      'reject *:4661-4666',
+      'reject *:6346-6429',
+      'reject *:6699',
+      'reject *:6881-6999',
+      'accept *:*',
+    )
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      self.assertEqual(expected, controller.get_exit_policy())
 
   def test_authenticate(self):
     """

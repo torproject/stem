@@ -38,6 +38,8 @@ exiting to a destination is permissible or not. For instance...
     |- get_masked_bits - provides the bit representation of our mask
     +- __str__ - string representation for this rule
 
+  get_config_policy - provides the ExitPolicy based on torrc rules
+
 .. data:: AddressType (enum)
 
   Enumerations for IP address types that can be in an exit policy.
@@ -56,9 +58,21 @@ import stem.util.enum
 
 AddressType = stem.util.enum.Enum(("WILDCARD", "Wildcard"), ("IPv4", "IPv4"), ("IPv6", "IPv6"))
 
-# TODO: The ExitPolicyRule's exitpatterns are used everywhere except the torrc.
-# This is fine for now, but we should add a subclass to handle those slight
-# differences later if we want to provide the ability to parse torrcs.
+# Addresses aliased by the 'private' policy. From the tor man page...
+#
+# To specify all internal and link-local networks (including 0.0.0.0/8,
+# 169.254.0.0/16, 127.0.0.0/8, 192.168.0.0/16, 10.0.0.0/8, and 172.16.0.0/12),
+# you can use the "private" alias instead of an address.
+
+PRIVATE_ADDRESSES = (
+  "0.0.0.0/8",
+  "169.254.0.0/16",
+  "127.0.0.0/8",
+  "192.168.0.0/16",
+  "10.0.0.0/8",
+  "172.16.0.0/12",
+)
+
 
 # TODO: The ExitPolicyRule could easily be a mutable class if we did the
 # following...
@@ -74,6 +88,46 @@ AddressType = stem.util.enum.Enum(("WILDCARD", "Wildcard"), ("IPv4", "IPv4"), ("
 # reflects something they... well, can't modify). However, I can think of
 # some use cases where we might want to construct custom policies. Maybe make
 # it a CustomExitPolicyRule subclass?
+
+def get_config_policy(rules):
+  """
+  Converts an ExitPolicy found in a torrc to a proper exit pattern. This
+  accounts for...
+
+  * ports being optional
+  * the 'private' keyword
+
+  :param str,list rules: comma separated rules or list to be converted
+
+  :returns: :class:`~stem.exit_policy.ExitPolicy` reflected by the rules
+
+  :raises: **ValueError** if input isn't a valid tor exit policy
+  """
+
+  if isinstance(rules, str):
+    rules = rules.split(',')
+
+  result = []
+
+  for rule in rules:
+    rule = rule.strip()
+
+    if not rule:
+      continue
+
+    if not ':' in rule:
+      rule = "%s:*" % rule
+
+    if 'private' in rule:
+      acceptance = rule.split(' ', 1)[0]
+      port = rule.split(':', 1)[1]
+
+      for private_addr in PRIVATE_ADDRESSES:
+        result.append(ExitPolicyRule("%s %s:%s" % (acceptance, private_addr, port)))
+    else:
+      result.append(ExitPolicyRule(rule))
+
+  return ExitPolicy(*result)
 
 
 class ExitPolicy(object):
@@ -235,12 +289,40 @@ class ExitPolicy(object):
   def _get_rules(self):
     if self._rules is None:
       rules = []
+      is_all_accept, is_all_reject = True, True
 
       for rule in self._input_rules:
         if isinstance(rule, str):
-          rules.append(ExitPolicyRule(rule.strip()))
-        elif isinstance(rule, ExitPolicyRule):
-          rules.append(rule)
+          rule = ExitPolicyRule(rule.strip())
+
+        if rule.is_accept:
+          is_all_reject = False
+        else:
+          is_all_accept = False
+
+        rules.append(rule)
+
+        if rule.is_address_wildcard() and rule.is_port_wildcard():
+          break  # this is a catch-all, no reason to include more
+
+      # If we only have one kind of entry *and* end with a wildcard then
+      # we might as well use the simpler version. For instance...
+      #
+      #   reject *:80, reject *:443, reject *:*
+      #
+      # ... could also be represented as simply...
+      #
+      #   reject *:*
+      #
+      # This mostly comes up with reject-all policies because the
+      # 'reject private:*' appends an extra seven rules that have no
+      # effect.
+
+      if rules and (rules[-1].is_address_wildcard() and rules[-1].is_port_wildcard()):
+        if is_all_accept:
+          rules = [ExitPolicyRule("accept *:*")]
+        elif is_all_reject:
+          rules = [ExitPolicyRule("reject *:*")]
 
       self._rules = rules
       self._input_rules = None

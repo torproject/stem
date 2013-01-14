@@ -11,6 +11,7 @@ import stem.version
 
 from stem import InvalidArguments, InvalidRequest, ProtocolError
 from stem.control import _parse_circ_path, Controller, EventType
+from stem.exit_policy import ExitPolicy
 from test import mocking
 
 
@@ -68,6 +69,48 @@ class TestControl(unittest.TestCase):
     finally:
       # Turn caching back on before we leave.
       self.controller._is_caching_enabled = True
+
+  def test_get_exit_policy(self):
+    """
+    Exercises the get_exit_policy() method.
+    """
+
+    mocking.mock_method(Controller, "get_conf", mocking.return_for_args({
+      ("ExitPolicyRejectPrivate",): "1",
+      ("ExitPolicy", "multiple=True"): ["accept *:80,   accept *:443", "accept 43.5.5.5,reject *:22"]
+    }, is_method = True))
+
+    mocking.mock_method(Controller, "get_info", mocking.return_for_args({
+      ("address", None): "123.45.67.89",
+      ("exit-policy/default",): "reject *:25,reject *:119,reject *:135-139,reject *:445,reject *:563,reject *:1214,reject *:4661-4666,reject *:6346-6429,reject *:6699,reject *:6881-6999,accept *:*"
+    }, is_method = True))
+
+    expected = ExitPolicy(
+      'reject 0.0.0.0/8:*',  # private entries
+      'reject 169.254.0.0/16:*',
+      'reject 127.0.0.0/8:*',
+      'reject 192.168.0.0/16:*',
+      'reject 10.0.0.0/8:*',
+      'reject 172.16.0.0/12:*',
+      'reject 123.45.67.89:*',  # relay's public address
+      'accept *:80',  # finally we get to our ExitPolicy
+      'accept *:443',
+      'accept 43.5.5.5:*',
+      'reject *:22',
+      'reject *:25',  # default policy
+      'reject *:119',
+      'reject *:135-139',
+      'reject *:445',
+      'reject *:563',
+      'reject *:1214',
+      'reject *:4661-4666',
+      'reject *:6346-6429',
+      'reject *:6699',
+      'reject *:6881-6999',
+      'accept *:*',
+    )
+
+    self.assertEqual(expected, self.controller.get_exit_policy())
 
   def test_get_socks_listeners_old(self):
     """

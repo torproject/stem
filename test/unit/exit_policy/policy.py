@@ -4,7 +4,8 @@ Unit tests for the stem.exit_policy.ExitPolicy class.
 
 import unittest
 
-from stem.exit_policy import ExitPolicy, \
+from stem.exit_policy import get_config_policy, \
+                             ExitPolicy, \
                              MicroExitPolicy, \
                              ExitPolicyRule
 
@@ -35,6 +36,16 @@ class TestExitPolicy(unittest.TestCase):
 
     policy = ExitPolicy(*"accept *:80, accept *:443, reject *:*".split(","))
     self.assertEquals(expected_policy, policy)
+
+    # checks that we truncate after getting a catch-all policy
+
+    policy = ExitPolicy(*"accept *:80, accept *:443, reject *:*, accept *:20-50".split(","))
+    self.assertEquals(expected_policy, policy)
+
+    # checks that we compress redundant policies
+
+    policy = ExitPolicy(*"reject *:80, reject *:443, reject *:*".split(","))
+    self.assertEquals(ExitPolicy("reject *:*"), policy)
 
   def test_set_default_allowed(self):
     policy = ExitPolicy('reject *:80', 'accept *:443')
@@ -190,3 +201,40 @@ class TestExitPolicy(unittest.TestCase):
 
     self.assertFalse(policy.can_exit_to('127.0.0.1', 79))
     self.assertTrue(policy.can_exit_to('127.0.0.1', 80))
+
+  def test_get_config_policy(self):
+    test_inputs = {
+      "": ExitPolicy(),
+      "reject *": ExitPolicy('reject *:*'),
+      "reject *:*": ExitPolicy('reject *:*'),
+      "reject private": ExitPolicy(
+        'reject 0.0.0.0/8:*',
+        'reject 169.254.0.0/16:*',
+        'reject 127.0.0.0/8:*',
+        'reject 192.168.0.0/16:*',
+        'reject 10.0.0.0/8:*',
+        'reject 172.16.0.0/12:*',
+      ),
+      "accept *:80, reject *": ExitPolicy(
+        'accept *:80',
+        'reject *:*',
+      ),
+      "  accept *:80,     reject *   ": ExitPolicy(
+        'accept *:80',
+        'reject *:*',
+      ),
+    }
+
+    for test_input, expected in test_inputs.items():
+      self.assertEqual(expected, get_config_policy(test_input))
+
+    test_inputs = (
+      "blarg",
+      "accept *:*:*",
+      "acceptt *:80",
+      "accept 257.0.0.1:80",
+      "accept *:999999",
+    )
+
+    for test_input in test_inputs:
+      self.assertRaises(ValueError, get_config_policy, test_input)
