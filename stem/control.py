@@ -454,7 +454,7 @@ class BaseController(object):
 
   def _connect(self):
     self._launch_threads()
-    self._notify_status_listeners(State.INIT, True)
+    self._notify_status_listeners(State.INIT)
     self._socket_connect()
 
   def _close(self):
@@ -470,7 +470,7 @@ class BaseController(object):
       if t and t.isAlive() and threading.currentThread() != t:
         t.join()
 
-    self._notify_status_listeners(State.CLOSED, False)
+    self._notify_status_listeners(State.CLOSED)
     self._socket_close()
 
   def _post_authentication(self):
@@ -478,23 +478,11 @@ class BaseController(object):
 
     pass
 
-  def _notify_status_listeners(self, state, expect_alive = None):
+  def _notify_status_listeners(self, state):
     """
     Informs our status listeners that a state change occurred.
 
-    States imply that our socket is either alive or not, which may not hold
-    true when multiple events occur in quick succession. For instance, a
-    sighup could cause two events (**State.RESET** for the sighup and
-    **State.CLOSE** if it causes tor to crash). However, there's no guarantee
-    of the order in which they occur, and it would be bad if listeners got the
-    **State.RESET** last, implying that we were alive.
-
-    If set, the expect_alive flag will discard our event if it conflicts with
-    our current :func:`~stem.control.BaseController.is_alive` state.
-
     :param stem.control.State state: state change that has occurred
-    :param bool expect_alive: discard event if it conflicts with our
-      :func:`~stem.control.BaseController.is_alive` state
     """
 
     # Any changes to our is_alive() state happen under the send lock, so we
@@ -503,6 +491,20 @@ class BaseController(object):
     # TODO: when we drop python 2.5 compatibility we can simplify this
     with self._socket._get_send_lock():
       with self._status_listeners_lock:
+        # States imply that our socket is either alive or not, which may not
+        # hold true when multiple events occur in quick succession. For
+        # instance, a sighup could cause two events (State.RESET for the sighup
+        # and State.CLOSE if it causes tor to crash). However, there's no
+        # guarantee of the order in which they occur, and it would be bad if
+        # listeners got the State.RESET last, implying that we were alive.
+
+        expect_alive = None
+
+        if state in (State.INIT, State.RESET):
+          expect_alive = True
+        elif state == State.CLOSED:
+          expect_alive = False
+
         change_timestamp = time.time()
 
         if expect_alive is not None and expect_alive != self.is_alive():
