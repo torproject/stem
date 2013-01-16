@@ -264,6 +264,7 @@ class TestController(unittest.TestCase):
       'reject 192.168.0.0/16:*',
       'reject 10.0.0.0/8:*',
       'reject 172.16.0.0/12:*',
+      # this is where 'reject [public_addr]:*' may or may not be
       'reject *:25',
       'reject *:119',
       'reject *:135-139',
@@ -280,7 +281,17 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      self.assertEqual(expected, controller.get_exit_policy())
+      # We can't simply compare the policies because the tor policy may or may
+      # not have a reject entry for our public address. Hence, stripping it
+      # from the policy's string, then comparing those.
+
+      policy_str = str(controller.get_exit_policy())
+
+      public_addr_start = policy_str.find('reject 172.16.0.0/12:*') + 22
+      public_addr_end = policy_str.find(', reject *:25')
+
+      policy_str = policy_str[:public_addr_start] + policy_str[public_addr_end:]
+      self.assertEqual(str(expected), policy_str)
 
   def test_authenticate(self):
     """
