@@ -34,16 +34,28 @@ easily parsed and compared, for instance...
   ===================================== ===========
   Requirement                           Description
   ===================================== ===========
-  **AUTH_SAFECOOKIE**                   'SAFECOOKIE' authentication method
+  **AUTH_SAFECOOKIE**                   SAFECOOKIE authentication method
+  **EVENT_AUTHDIR_NEWDESCS**            AUTHDIR_NEWDESC events
+  **EVENT_BUILDTIMEOUT_SET**            BUILDTIMEOUT_SET events
+  **EVENT_CIRC_MINOR**                  CIRC_MINOR events
+  **EVENT_CLIENTS_SEEN**                CLIENTS_SEEN events
+  **EVENT_CONF_CHANGED**                CONF_CHANGED events
+  **EVENT_DESCCHANGED**                 DESCCHANGED events
+  **EVENT_GUARD**                       GUARD events
+  **EVENT_NEWCONSENSUS**                NEWCONSENSUS events
+  **EVENT_NS**                          NS events
+  **EVENT_SIGNAL**                      SIGNAL events
+  **EVENT_STATUS**                      STATUS_GENERAL, STATUS_CLIENT, and STATUS_SERVER events
+  **EVENT_STREAM_BW**                   STREAM_BW events
+  **EXTENDCIRCUIT_PATH_OPTIONAL**       EXTENDCIRCUIT queries can omit the path if the circuit is zero
+  **FEATURE_EXTENDED_EVENTS**           'EXTENDED_EVENTS' optional feature
+  **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
   **GETINFO_CONFIG_TEXT**               'GETINFO config-text' query
-  **EXTENDCIRCUIT_PATH_OPTIONAL**       'EXTENDCIRCUIT' queries can omit the path if the circuit is zero
-  **LOADCONF**                          'LOADCONF' requests
-  **TAKEOWNERSHIP**                     'TAKEOWNERSHIP' requests
+  **LOADCONF**                          LOADCONF requests
+  **TAKEOWNERSHIP**                     TAKEOWNERSHIP requests
   **TORRC_CONTROL_SOCKET**              'ControlSocket <path>' config option
   **TORRC_PORT_FORWARDING**             'PortForwarding' config option
   **TORRC_DISABLE_DEBUGGER_ATTACHMENT** 'DisableDebuggerAttachment' config option
-  **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
-  **FEATURE_EXTENDED_EVENTS**           'EXTENDED_EVENTS' optional feature
   ===================================== ===========
 """
 
@@ -271,13 +283,25 @@ safecookie_req.greater_than(Version("0.2.3.13"))
 
 Requirement = stem.util.enum.Enum(
   ("AUTH_SAFECOOKIE", safecookie_req),
-  ("GETINFO_CONFIG_TEXT", Version("0.2.2.7-alpha")),
+  ("EVENT_AUTHDIR_NEWDESCS", Version('0.1.1.10-alpha')),
+  ("EVENT_BUILDTIMEOUT_SET", Version('0.2.2.7-alpha')),
+  ("EVENT_CIRC_MINOR", Version('0.2.3.11-alpha')),
+  ("EVENT_CLIENTS_SEEN", Version('0.2.1.10-alpha')),
+  ("EVENT_CONF_CHANGED", Version('0.2.3.3-alpha')),
+  ("EVENT_DESCCHANGED", Version('0.1.2.2-alpha')),
+  ("EVENT_GUARD", Version('0.1.2.5-alpha')),
+  ("EVENT_NS", Version('0.1.2.3-alpha')),
+  ("EVENT_NEWCONSENSUS", Version('0.2.1.13-alpha')),
+  ("EVENT_SIGNAL", Version('0.2.3.1-alpha')),
+  ("EVENT_STATUS", Version('0.1.2.3-alpha')),
+  ("EVENT_STREAM_BW", Version('0.1.2.8-beta')),
   ("EXTENDCIRCUIT_PATH_OPTIONAL", Version("0.2.2.9")),
+  ("FEATURE_EXTENDED_EVENTS", Version("0.2.2.1-alpha")),
+  ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),
+  ("GETINFO_CONFIG_TEXT", Version("0.2.2.7-alpha")),
   ("LOADCONF", Version("0.2.1.1")),
   ("TAKEOWNERSHIP", Version("0.2.2.28-beta")),
   ("TORRC_CONTROL_SOCKET", Version("0.2.0.30")),
   ("TORRC_PORT_FORWARDING", Version("0.2.3.1-alpha")),
   ("TORRC_DISABLE_DEBUGGER_ATTACHMENT", Version("0.2.3.9")),
-  ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),
-  ("FEATURE_EXTENDED_EVENTS", Version("0.2.2.1-alpha")),
 )

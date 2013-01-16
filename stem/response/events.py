@@ -147,6 +147,9 @@ class AddrMapEvent(Event):
   """
   Event that indicates a new address mapping.
 
+  The ADDRMAP event was one of the first Control Protocol V1 events and was
+  introduced in tor version 0.1.1.1-alpha.
+
   :var str hostname: address being resolved
   :var str destination: destionation of the resolution, this is usually an ip,
     but could be a hostname if TrackHostExits is enabled or **NONE** if the
@@ -154,9 +157,6 @@ class AddrMapEvent(Event):
   :var datetime expiry: expiration time of the resolution in local time
   :var str error: error code if the resolution failed
   :var datetime utc_expiry: expiration time of the resolution in UTC
-
-  The ADDRMAP event was one of the first Control Protocol V1 events and was
-  introduced in tor version 0.1.1.1-alpha.
   """
 
   _POSITIONAL_ARGS = ("hostname", "destination", "expiry")
@@ -183,15 +183,15 @@ class AuthDirNewDescEvent(Event):
   descriptors. The descriptor type contained within this event is unspecified
   so the descriptor contents are left unparsed.
 
+  The AUTHDIR_NEWDESCS event was introduced in tor version 0.1.1.10-alpha.
+
   :var stem.AuthDescriptorAction action: what is being done with the descriptor
   :var str message: explanation of why we chose this action
   :var str descriptor: content of the descriptor
-
-  The AUTHDIR_NEWDESCS event was introduced in tor version 0.1.1.10-alpha.
   """
 
   _SKIP_PARSING = True
-  _VERSION_ADDED = stem.version.Version('0.1.1.10-alpha')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_AUTHDIR_NEWDESCS
 
   def _parse(self):
     lines = str(self).split('\n')
@@ -210,11 +210,11 @@ class BandwidthEvent(Event):
   """
   Event emitted every second with the bytes sent and received by tor.
 
-  :var long read: bytes received by tor that second
-  :var long written: bytes sent by tor that second
-
   The BW event was one of the first Control Protocol V1 events and was
   introduced in tor version 0.1.1.1-alpha.
+
+  :var long read: bytes received by tor that second
+  :var long written: bytes sent by tor that second
   """
 
   _POSITIONAL_ARGS = ("read", "written")
@@ -236,6 +236,8 @@ class BuildTimeoutSetEvent(Event):
   Event indicating that the timeout value for a circuit has changed. This was
   first added in tor version 0.2.2.7.
 
+  The BUILDTIMEOUT_SET event was introduced in tor version 0.2.2.7-alpha.
+
   :var stem.TimeoutSetType set_type: way in which the timeout is changing
   :var int total_times: circuit build times tor used to determine the timeout
   :var int timeout: circuit timeout value in milliseconds
@@ -245,8 +247,6 @@ class BuildTimeoutSetEvent(Event):
   :var float timeout_rate: ratio of circuits that have time out
   :var int close_timeout: duration to keep measurement circuits in milliseconds
   :var float close_rate: ratio of measurement circuits that are closed
-
-  The BUILDTIMEOUT_SET event was introduced in tor version 0.2.2.7-alpha.
   """
 
   _POSITIONAL_ARGS = ("set_type",)
@@ -260,7 +260,7 @@ class BuildTimeoutSetEvent(Event):
     "CLOSE_MS": "close_timeout",
     "CLOSE_RATE": "close_rate",
   }
-  _VERSION_ADDED = stem.version.Version('0.2.2.7-alpha')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_BUILDTIMEOUT_SET
 
   def _parse(self):
     # convert our integer and float parameters
@@ -294,6 +294,9 @@ class CircuitEvent(Event):
   VERBOSE_NAMES feature isn't enabled. The option was first introduced in tor
   version 0.1.2.2, and on by default after 0.2.2.1.
 
+  The CIRC event was one of the first Control Protocol V1 events and was
+  introduced in tor version 0.1.1.1-alpha.
+
   :var str id: circuit identifier
   :var stem.CircStatus status: reported status for the circuit
   :var tuple path: relays involved in the circuit, these are
@@ -306,9 +309,6 @@ class CircuitEvent(Event):
   :var datetime created: time when the circuit was created or cannibalized
   :var stem.CircClosureReason reason: reason for the circuit to be closed
   :var stem.CircClosureReason remote_reason: remote side's reason for the circuit to be closed
-
-  The CIRC event was one of the first Control Protocol V1 events and was
-  introduced in tor version 0.1.1.1-alpha.
   """
 
   _POSITIONAL_ARGS = ("id", "status", "path")
@@ -350,6 +350,8 @@ class CircMinorEvent(Event):
   Event providing information about minor changes in our circuits. This was
   first added in tor version 0.2.3.11.
 
+  The CIRC_MINOR event was introduced in tor version 0.2.3.11-alpha.
+
   :var str id: circuit identifier
   :var stem.CircEvent event: type of change in the circuit
   :var tuple path: relays involved in the circuit, these are
@@ -362,8 +364,6 @@ class CircMinorEvent(Event):
   :var datetime created: time when the circuit was created or cannibalized
   :var stem.CircPurpose old_purpose: prior purpose for the circuit
   :var stem.HiddenServiceState old_hs_state: prior status as a hidden service circuit
-
-  The CIRC_MINOR event was introduced in tor version 0.2.3.11-alpha.
   """
 
   _POSITIONAL_ARGS = ("id", "event", "path")
@@ -376,7 +376,7 @@ class CircMinorEvent(Event):
     "OLD_PURPOSE": "old_purpose",
     "OLD_HS_STATE": "old_hs_state",
   }
-  _VERSION_ADDED = stem.version.Version('0.2.3.11-alpha')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_CIRC_MINOR
 
   def _parse(self):
     self.path = tuple(stem.control._parse_circ_path(self.path))
@@ -405,11 +405,11 @@ class ClientsSeenEvent(Event):
   """
   Periodic event on bridge relays that provides a summary of our users.
 
+  The CLIENTS_SEEN event was introduced in tor version 0.2.1.10-alpha.
+
   :var datetime start_time: time in UTC that we started collecting these stats
   :var dict locales: mapping of country codes to a rounded count for the number of users
   :var dict ip_versions: mapping of ip protocols to a rounded count for the number of users
-
-  The CLIENTS_SEEN event was introduced in tor version 0.2.1.10-alpha.
   """
 
   _KEYWORD_ARGS = {
@@ -417,7 +417,7 @@ class ClientsSeenEvent(Event):
     "CountrySummary": "locales",
     "IPVersions": "ip_versions",
   }
-  _VERSION_ADDED = stem.version.Version('0.2.1.10-alpha')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_CLIENTS_SEEN
 
   def _parse(self):
     if self.start_time is not None:
@@ -465,14 +465,14 @@ class ConfChangedEvent(Event):
   Event that indicates that our configuration changed, either in response to a
   SETCONF or RELOAD signal.
 
+  The CONF_CHANGED event was introduced in tor version 0.2.3.3-alpha.
+
   :var dict config: mapping of configuration options to their new values
     (**None** if the option is being unset)
-
-  The CONF_CHANGED event was introduced in tor version 0.2.3.3-alpha.
   """
 
   _SKIP_PARSING = True
-  _VERSION_ADDED = stem.version.Version('0.2.3.3-alpha')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_CONF_CHANGED
 
   def _parse(self):
     self.config = {}
@@ -502,23 +502,21 @@ class DescChangedEvent(Event):
   The DESCCHANGED event was introduced in tor version 0.1.2.2-alpha.
   """
 
-  _VERSION_ADDED = stem.version.Version('0.1.2.2-alpha')
-
-  pass
+  _VERSION_ADDED = stem.version.Requirement.EVENT_DESCCHANGED
 
 
 class GuardEvent(Event):
   """
   Event that indicates that our guard relays have changed.
 
+  The GUARD event was introduced in tor version 0.1.2.5-alpha.
+
   :var stem.GuardType guard_type: purpose the guard relay is for
   :var str name: nickname or fingerprint of the guard relay
   :var stem.GuardStatus status: status of the guard relay
-
-  The GUARD event was introduced in tor version 0.1.2.5-alpha.
   """
 
-  _VERSION_ADDED = stem.version.Version('0.1.2.5-alpha')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_GUARD
 
   # TODO: We should replace the 'name' field with a fingerprint or nickname
   # attribute once we know what it can be...
@@ -533,11 +531,11 @@ class LogEvent(Event):
   Tor logging event. These are the most visible kind of event since, by
   default, tor logs at the NOTICE :data:`~stem.Runlevel` to stdout.
 
-  :var stem.Runlevel runlevel: runlevel of the logged message
-  :var str message: logged message
-
   The logging events were some of the first Control Protocol V1 events
   and were introduced in tor version 0.1.1.1-alpha.
+
+  :var stem.Runlevel runlevel: runlevel of the logged message
+  :var str message: logged message
   """
 
   _SKIP_PARSING = True
@@ -557,13 +555,13 @@ class NetworkStatusEvent(Event):
   Event for when our copy of the consensus has changed. This was introduced in
   tor version 0.1.2.3.
 
-  :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
-
   The NS event was introduced in tor version 0.1.2.3-alpha.
+
+  :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
   """
 
   _SKIP_PARSING = True
-  _VERSION_ADDED = stem.version.Version('0.1.2.3-alpha')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_NS
 
   def _parse(self):
     content = str(self).lstrip("NS\n")
@@ -582,13 +580,13 @@ class NewConsensusEvent(Event):
   the whole consensus so anything not listed is implicitly no longer
   recommended.
 
-  :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
-
   The NEWCONSENSUS event was introduced in tor version 0.2.1.13-alpha.
+
+  :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
   """
 
   _SKIP_PARSING = True
-  _VERSION_ADDED = stem.version.Version('0.2.1.13-alpha')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_NEWCONSENSUS
 
   def _parse(self):
     content = str(self).lstrip("NEWCONSENSUS\n")
@@ -608,11 +606,11 @@ class NewDescEvent(Event):
   VERBOSE_NAMES feature isn't enabled. The option was first introduced in tor
   version 0.1.2.2, and on by default after 0.2.2.1.
 
-  :var tuple relays: **(fingerprint, nickname)** tuples for the relays with
-    new descriptors
-
   The NEWDESC event was one of the first Control Protocol V1 events and was
   introduced in tor version 0.1.1.1-alpha.
+
+  :var tuple relays: **(fingerprint, nickname)** tuples for the relays with
+    new descriptors
   """
 
   def _parse(self):
@@ -631,6 +629,9 @@ class ORConnEvent(Event):
 
   The derived 'endpoint_*' attributes are generally more useful.
 
+  The ORCONN event was one of the first Control Protocol V1 events and was
+  introduced in tor version 0.1.1.1-alpha.
+
   :var str endpoint: relay that the event concerns
   :var str endpoint_fingerprint: endpoint's finterprint if it was provided
   :var str endpoint_nickname: endpoint's nickname if it was provided
@@ -639,9 +640,6 @@ class ORConnEvent(Event):
   :var stem.ORStatus status: state of the connection
   :var stem.ORClosureReason reason: reason for the connection to be closed
   :var int circ_count: number of established and pending circuits
-
-  The ORCONN event was one of the first Control Protocol V1 events and was
-  introduced in tor version 0.1.1.1-alpha.
   """
 
   _POSITIONAL_ARGS = ("endpoint", "status")
@@ -693,13 +691,13 @@ class SignalEvent(Event):
   * NEWNYM
   * CLEARDNSCACHE
 
-  :var stem.Signal signal: signal that tor received
-
   The SIGNAL event was introduced in tor version 0.2.3.1-alpha.
+
+  :var stem.Signal signal: signal that tor received
   """
 
   _POSITIONAL_ARGS = ("signal",)
-  _VERSION_ADDED = stem.version.Version('0.2.3.1-alpha')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_SIGNAL
 
   def _parse(self):
     # log if we recieved an unrecognized signal
@@ -721,16 +719,16 @@ class StatusEvent(Event):
   However, unlike :class:`~stem.response.events.LogEvent` these contain well
   formed data.
 
+  The STATUS_GENERAL, STATUS_CLIENT, STATUS_SERVER events were introduced
+  in tor version 0.1.2.3-alpha.
+
   :var stem.StatusType status_type: category of the status event
   :var stem.Runlevel runlevel: runlevel of the logged message
   :var str message: logged message
-
-  The STATUS_GENERAL, STATUS_CLIENT, STATUS_SERVER events were introduced
-  in tor version 0.1.2.3-alpha.
   """
 
   _POSITIONAL_ARGS = ("runlevel", "action")
-  _VERSION_ADDED = stem.version.Version('0.1.2.3-alpha')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_STATUS
 
   def _parse(self):
     if self.type == 'STATUS_GENERAL':
@@ -749,6 +747,9 @@ class StreamEvent(Event):
   """
   Event that indicates that a stream has changed.
 
+  The STREAM event was one of the first Control Protocol V1 events and was
+  introduced in tor version 0.1.1.1-alpha.
+
   :var str id: stream identifier
   :var stem.StreamStatus status: reported status for the stream
   :var str circ_id: circuit that the stream is attached to
@@ -762,9 +763,6 @@ class StreamEvent(Event):
   :var str source_address: requester address (ip or hostname)
   :var int source_port: requester port
   :var stem.StreamPurpose purpose: purpose for the stream
-
-  The STREAM event was one of the first Control Protocol V1 events and was
-  introduced in tor version 0.1.1.1-alpha.
   """
 
   _POSITIONAL_ARGS = ("id", "status", "circ_id", "target")
@@ -821,15 +819,15 @@ class StreamBwEvent(Event):
   Event (emitted approximately every second) with the bytes sent and received
   by the application since the last such event on this stream.
 
+  The STREAM_BW event was introduced in tor version 0.1.2.8-beta.
+
   :var str id: stream identifier
   :var long written: bytes sent by the application
   :var long read: bytes received by the application
-
-  The STREAM_BW event was introduced in tor version 0.1.2.8-beta.
   """
 
   _POSITIONAL_ARGS = ("id", "written", "read")
-  _VERSION_ADDED = stem.version.Version('0.1.2.8-beta')
+  _VERSION_ADDED = stem.version.Requirement.EVENT_STREAM_BW
 
   def _parse(self):
     if not tor_tools.is_valid_stream_id(self.id):
