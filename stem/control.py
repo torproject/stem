@@ -139,6 +139,7 @@ import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.response
+import stem.response.events
 import stem.socket
 import stem.util.connection
 import stem.util.enum
@@ -1420,16 +1421,24 @@ class Controller(BaseController):
     """
 
     # first checking that tor supports these event types
-    for event_type in events:
-      event_version = stem.response.events.EVENT_TYPE_TO_CLASS[event_type]._VERSION_ADDED
-      if not self.get_version().meets_requirements(event_version):
-        raise stem.InvalidRequest(552, "%s event requires Tor version %s or later" % (event_type, event_version))
-
     with self._event_listeners_lock:
+      if self.is_authenticated():
+        for event_type in events:
+          event_version = stem.response.events.EVENT_TYPE_TO_CLASS[event_type]._VERSION_ADDED
+
+          if not self.get_version().meets_requirements(event_version):
+            raise stem.InvalidRequest(552, "%s event requires Tor version %s or later" % (event_type, event_version))
+
       for event_type in events:
         self._event_listeners.setdefault(event_type, []).append(listener)
 
-      self._attach_listeners()
+      failed_events = self._attach_listeners()[1]
+
+      # restricted the failures to just things we requested
+      failed_events = set(failed_events).intersection(set(events))
+
+      if failed_events:
+        raise stem.ProtocolError("SETEVENTS rejected %s" % ", ".join(failed_events))
 
   def remove_event_listener(self, listener):
     """
@@ -1949,10 +1958,19 @@ class Controller(BaseController):
 
     # try to re-attach event listeners to the new instance
 
-    try:
-      self._attach_listeners()
-    except stem.ProtocolError, exc:
-      log.warn("We were unable to re-attach our event listeners to the new tor instance (%s)" % exc)
+    with self._event_listeners_lock:
+      try:
+        failed_events = self._attach_listeners()[1]
+
+        if failed_events:
+          # remove our listeners for these so we don't keep failing
+          for event_type in failed_events:
+            del self._event_listeners[event_type]
+
+          logging_id = "stem.controller.event_reattach-%s" % "-".join(failed_events)
+          log.log_once(logging_id, log.WARN, "We were unable to re-attach our event listeners to the new tor instance for: %s" % ", ".join(failed_events))
+      except stem.ProtocolError, exc:
+        log.warn("Unable to issue the SETEVENTS request to re-attach our listeners (%s)" % exc)
 
     # issue TAKEOWNERSHIP if we're the owning process for this tor instance
 
@@ -1983,14 +2001,47 @@ class Controller(BaseController):
             listener(event_message)
 
   def _attach_listeners(self):
-    # issues the SETEVENTS call for our event listeners
+    """
+    Attempts to subscribe to the self._event_listeners events from tor. This is
+    a no-op if we're not presently authenticated.
+
+    :returns: tuple of the form (set_events, failed_events)
+
+    :raises: :class:`stem.ControllerError` if unable to make our request to tor
+    """
+
+    set_events, failed_events = [], []
 
     with self._event_listeners_lock:
-      if self.is_alive():
+      if self.is_authenticated():
+        # try to set them all
         response = self.msg("SETEVENTS %s" % " ".join(self._event_listeners.keys()))
 
-        if not response.is_ok():
-          raise stem.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
+        if response.is_ok():
+          set_events = self._event_listeners.keys()
+        else:
+          # One of the following likely happened...
+          #
+          # * Our user attached listeners before having an authenticated
+          #   connection, so we couldn't check if we met the version
+          #   requirement.
+          #
+          # * User attached listeners to one tor instance, then connected us to
+          #   an older tor instancce.
+          #
+          # * Some other controller hiccup (far less likely).
+          #
+          # See if we can set some subset of our events.
+
+          for event in self._event_listeners.keys():
+            response = self.msg("SETEVENTS %s" % " ".join(set_events + [event]))
+
+            if response.is_ok():
+              set_events.append(event)
+            else:
+              failed_events.append(event)
+
+    return (set_events, failed_events)
 
 
 def _parse_circ_path(path):

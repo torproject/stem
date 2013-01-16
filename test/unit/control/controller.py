@@ -18,7 +18,10 @@ from test import mocking
 class TestControl(unittest.TestCase):
   def setUp(self):
     socket = stem.socket.ControlSocket()
+
+    mocking.mock_method(Controller, "add_event_listener", mocking.no_op())
     self.controller = Controller(socket, enable_caching = True)
+    mocking.revert_mocking()
 
   def tearDown(self):
     mocking.revert_mocking()
@@ -276,6 +279,8 @@ class TestControl(unittest.TestCase):
     """
 
     # set up for failure to create any events
+    mocking.mock_method(Controller, "is_authenticated", mocking.return_true())
+    mocking.mock_method(Controller, "_attach_listeners", mocking.return_value(([], [])))
     mocking.mock_method(Controller, "get_version", mocking.return_value(stem.version.Version('0.1.0.14')))
     self.assertRaises(InvalidRequest, self.controller.add_event_listener, mocking.no_op(), EventType.BW)
 
