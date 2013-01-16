@@ -62,6 +62,7 @@ providing its own for interacting at a higher level.
   BaseController - Base controller class asynchronous message handling
     |- msg - communicates with the tor process
     |- is_alive - reports if our connection to tor is open or closed
+    |- is_authenticated - checks if we're authenticated to tor
     |- connect - connects or reconnects to tor
     |- close - shuts down our connection to the tor process
     |- get_socket - provides the socket used for control communication
@@ -253,6 +254,7 @@ class BaseController(object):
     self._socket._close = self._close
 
     self._last_heartbeat = 0.0  # timestamp for when we last heard from tor
+    self._is_authenticated = False
 
     if self._socket.is_alive():
       self._launch_threads()
@@ -345,6 +347,19 @@ class BaseController(object):
     """
 
     return self._socket.is_alive()
+
+  def is_authenticated(self):
+    """
+    Checks if our socket is both connected and authenticated.
+
+    :returns: **bool** that's **True** if our socket is authenticated to tor
+      and **False** otherwise
+    """
+
+    if self.is_alive():
+      return self._is_authenticated
+
+    return False
 
   def connect(self):
     """
@@ -456,6 +471,7 @@ class BaseController(object):
     self._launch_threads()
     self._notify_status_listeners(State.INIT)
     self._socket_connect()
+    self._is_authenticated = False
 
   def _close(self):
     # Our is_alive() state is now false. Our reader thread should already be
@@ -463,6 +479,7 @@ class BaseController(object):
     # too so it can end.
 
     self._event_notice.set()
+    self._is_authenticated = False
 
     # joins on our threads if it's safe to do so
 
@@ -476,7 +493,7 @@ class BaseController(object):
   def _post_authentication(self):
     # actions to be taken after we have a newly authenticated connection
 
-    pass
+    self._is_authenticated = True
 
   def _notify_status_listeners(self, state):
     """
@@ -1928,6 +1945,8 @@ class Controller(BaseController):
     return response.entries
 
   def _post_authentication(self):
+    super(Controller, self)._post_authentication()
+
     # try to re-attach event listeners to the new instance
 
     try:
@@ -1950,7 +1969,7 @@ class Controller(BaseController):
         try:
           self.reset_conf("__OwningControllerProcess")
         except stem.ControllerError, exc:
-          log.warn("We were unable to reset tor's __OwningControllerProcess configuration. It will continue to periodically check if our pid exists. (%s)" % response)
+          log.warn("We were unable to reset tor's __OwningControllerProcess configuration. It will continue to periodically check if our pid exists. (%s)" % exc)
       else:
         log.warn("We were unable assert ownership of tor through TAKEOWNERSHIP, despite being configured to be the owning process through __OwningControllerProcess. (%s)" % response)
 

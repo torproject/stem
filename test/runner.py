@@ -546,8 +546,13 @@ class Runner(object):
     :raises: :class: `test.runner.TorInaccessable` if tor can't be connected to
     """
 
-    control_socket = self.get_tor_socket(authenticate)
-    return stem.control.Controller(control_socket)
+    control_socket = self.get_tor_socket(False)
+    controller = stem.control.Controller(control_socket)
+
+    if authenticate:
+      controller.authenticate(password = CONTROL_PASSWORD, chroot_path = self.get_chroot())
+
+    return controller
 
   def get_tor_version(self):
     """
