@@ -9,6 +9,7 @@ import shutil
 import socket
 import tempfile
 import threading
+import time
 import unittest
 
 import stem.connection
@@ -22,7 +23,8 @@ import test.network
 import test.runner
 import test.util
 
-from stem.control import EventType
+from stem import Signal
+from stem.control import EventType, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
 
@@ -55,6 +57,44 @@ class TestController(unittest.TestCase):
         self.assertTrue(isinstance(controller, stem.control.Controller))
     else:
       self.assertRaises(stem.SocketError, stem.control.Controller.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
+
+  def test_reset_notification(self):
+    """
+    Checks that a notificiation listener is... well, notified of SIGHUPs.
+    """
+
+    if test.runner.require_control(self):
+      return
+    elif test.runner.require_version(self, stem.version.Requirement.EVENT_SIGNAL):
+      return
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      received_events = []
+
+      def status_listener(my_controller, state, timestamp):
+        received_events.append((my_controller, state, timestamp))
+
+      controller.add_status_listener(status_listener)
+
+      before = time.time()
+      controller.signal(Signal.HUP)
+
+      # I really hate adding a sleep here, but signal() is non-blocking.
+      while len(received_events) == 0:
+        if (time.time() - before) > 2:
+          self.fail("We've waited a couple seconds for SIGHUP to generate an event, but it didn't come")
+
+        time.sleep(0.1)
+
+      after = time.time()
+
+      self.assertEqual(1, len(received_events))
+
+      state_controller, state_type, state_timestamp = received_events[0]
+
+      self.assertEqual(controller, state_controller)
+      self.assertEqual(State.RESET, state_type)
+      self.assertTrue(state_timestamp > before and state_timestamp < after)
 
   def test_event_handling(self):
     """

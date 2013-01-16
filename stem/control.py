@@ -146,7 +146,7 @@ import stem.util.enum
 import stem.util.tor_tools
 import stem.version
 
-from stem import UNDEFINED, CircStatus
+from stem import UNDEFINED, CircStatus, Signal
 from stem.util import log
 
 # state changes a control socket can have
@@ -674,6 +674,12 @@ class Controller(BaseController):
     # number of sequential 'GETINFO ip-to-country/*' lookups that have failed
     self._geoip_failure_count = 0
     self._enabled_features = []
+
+    def _sighup_listener(event):
+      if event.signal == Signal.RELOAD:
+        self._notify_status_listeners(State.RESET)
+
+    self.add_event_listener(_sighup_listener, EventType.SIGNAL)
 
   def connect(self):
     super(Controller, self).connect()
