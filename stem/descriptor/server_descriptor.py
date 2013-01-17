@@ -12,7 +12,6 @@ etc). This information is provided from a few sources...
 
 ::
 
-  parse_file - Iterates over the server descriptors in a file.
   ServerDescriptor - Tor server descriptor.
     |- RelayDescriptor - Server descriptor for a relay.
     |  +- is_valid - checks the signature against the descriptor content
@@ -72,7 +71,7 @@ SINGLE_FIELDS = (
 )
 
 
-def parse_file(descriptor_file, validate = True):
+def _parse_file(descriptor_file, validate = True):
   """
   Iterates over the server descriptors in a file.
 

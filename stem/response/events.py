@@ -566,7 +566,7 @@ class NetworkStatusEvent(Event):
   def _parse(self):
     content = str(self).lstrip("NS\n")
 
-    self.desc = list(stem.descriptor.router_status_entry.parse_file(
+    self.desc = list(stem.descriptor.router_status_entry._parse_file(
       StringIO.StringIO(content),
       True,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
@@ -591,7 +591,7 @@ class NewConsensusEvent(Event):
   def _parse(self):
     content = str(self).lstrip("NEWCONSENSUS\n")
 
-    self.desc = list(stem.descriptor.router_status_entry.parse_file(
+    self.desc = list(stem.descriptor.router_status_entry._parse_file(
       StringIO.StringIO(content),
       True,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,

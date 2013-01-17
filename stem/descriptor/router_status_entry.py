@@ -23,7 +23,7 @@ import stem.descriptor
 import stem.exit_policy
 
 
-def parse_file(document_file, validate, entry_class, entry_keyword = "r", start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
+def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
   """
   Reads a range of the document_file containing some number of entry_class
   instances. We deliminate the entry_class entries by the keyword on their

@@ -36,29 +36,27 @@ constructor. Router entries are assigned to its 'routers' attribute...
   for router in consensus.routers:
     print router.nickname
 
-* :func:`stem.descriptor.networkstatus.parse_file`
+* :func:`stem.descriptor.parse_file`
 
-Alternatively, the :func:`~stem.descriptor.networkstatus.parse_file` function
-provides an iterator for a document's routers. Those routers refer to a 'thin'
-document, which doesn't have a 'routers' attribute. This allows for lower
-memory usage and upfront runtime.
+Alternatively, the :func:`~stem.descriptor.parse_file` function provides an
+iterator for a document's routers. Those routers refer to a 'thin' document,
+which doesn't have a 'routers' attribute. This allows for lower memory usage
+and upfront runtime.
 
 ::
 
-  from stem.descriptor.networkstatus import parse_file
+  from stem.descriptor import parse_file
 
   with open('.tor/cached-consensus', 'r') as consensus_file:
     # Processes the routers as we read them in. The routers refer to a document
     # with an unset 'routers' attribute.
 
-    for router in parse_file(consensus_file):
+    for router in parse_file(consensus_file, ('network-status-consensus-3', 1, 0)):
       print router.nickname
 
 **Module Overview:**
 
 ::
-
-  parse_file - parses a network status file, providing an iterator for its routers
 
   NetworkStatusDocument - Network status document
     |- NetworkStatusDocumentV2 - Version 2 network status document
@@ -166,7 +164,7 @@ BANDWIDTH_WEIGHT_ENTRIES = (
 )
 
 
-def parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False):
+def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False):
   """
   Parses a network status and iterates over the RouterStatusEntry in it. The
   document that these instances reference have an empty 'routers' attribute to
@@ -217,7 +215,7 @@ def parse_file(document_file, document_type = None, validate = True, is_microdes
   else:
     raise ValueError("Document type %i isn't recognized (only able to parse v2, v3, and bridge)" % document_type)
 
-  desc_iterator = stem.descriptor.router_status_entry.parse_file(
+  desc_iterator = stem.descriptor.router_status_entry._parse_file(
     document_file,
     validate,
     entry_class = router_type,
@@ -300,7 +298,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     document_file = StringIO.StringIO(raw_content)
     document_content = "".join(stem.descriptor._read_until_keywords((ROUTERS_START, V2_FOOTER_START), document_file))
 
-    self.routers = tuple(stem.descriptor.router_status_entry.parse_file(
+    self.routers = tuple(stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
@@ -483,7 +481,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       else:
         self._unrecognized_lines += value
 
-    self.directory_authorities = tuple(stem.descriptor.router_status_entry.parse_file(
+    self.directory_authorities = tuple(stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
       entry_class = DirectoryAuthority,
@@ -497,7 +495,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     else:
       router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
 
-    self.routers = tuple(stem.descriptor.router_status_entry.parse_file(
+    self.routers = tuple(stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
       entry_class = router_type,
@@ -1365,7 +1363,7 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
     elif validate:
       raise ValueError("Bridge network status documents must start with a 'published' line:\n%s" % raw_content)
 
-    self.routers = tuple(stem.descriptor.router_status_entry.parse_file(
+    self.routers = tuple(stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,

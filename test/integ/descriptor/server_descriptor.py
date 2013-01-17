@@ -159,7 +159,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       return
 
     with open(descriptor_path) as descriptor_file:
-      for desc in stem.descriptor.server_descriptor.parse_file(descriptor_file):
+      for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file):
         # the following attributes should be deprecated, and not appear in the wild
         self.assertEquals(None, desc.read_history_end)
         self.assertEquals(None, desc.write_history_end)

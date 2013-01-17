@@ -23,7 +23,6 @@ Extra-info descriptors are available from a few sources...
 
 ::
 
-  parse_file - Iterates over the extra-info descriptors in a file.
   ExtraInfoDescriptor - Tor extra-info descriptor.
     |  |- RelayExtraInfoDescriptor - Extra-info descriptor for a relay.
     |  +- BridgeExtraInfoDescriptor - Extra-info descriptor for a bridge.
@@ -134,7 +133,7 @@ SINGLE_FIELDS = (
 )
 
 
-def parse_file(descriptor_file, validate = True):
+def _parse_file(descriptor_file, validate = True):
   """
   Iterates over the extra-info descriptors in a file.
 

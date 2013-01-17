@@ -151,7 +151,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       return
 
     with open(descriptor_path) as descriptor_file:
-      for desc in stem.descriptor.extrainfo_descriptor.parse_file(descriptor_file):
+      for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file):
         unrecognized_lines = desc.get_unrecognized_lines()
 
         if desc.dir_v2_responses_unknown:

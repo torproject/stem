@@ -1020,7 +1020,7 @@ class Controller(BaseController):
 
       desc_content = self.get_info("desc/all-recent")
 
-      for desc in stem.descriptor.server_descriptor.parse_file(StringIO.StringIO(desc_content)):
+      for desc in stem.descriptor.server_descriptor._parse_file(StringIO.StringIO(desc_content)):
         yield desc
     except Exception, exc:
       if default == UNDEFINED:
@@ -1087,7 +1087,7 @@ class Controller(BaseController):
 
       desc_content = self.get_info("ns/all")
 
-      desc_iterator = stem.descriptor.router_status_entry.parse_file(
+      desc_iterator = stem.descriptor.router_status_entry._parse_file(
         StringIO.StringIO(desc_content),
         True,
         entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,

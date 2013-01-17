@@ -18,7 +18,7 @@ from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, \
                                           BANDWIDTH_WEIGHT_ENTRIES, \
                                           DirectoryAuthority, \
                                           NetworkStatusDocumentV3, \
-                                          parse_file
+                                          _parse_file
 
 from stem.descriptor.router_status_entry import \
                                           RouterStatusEntryV3, \
@@ -123,15 +123,15 @@ class TestNetworkStatusDocument(unittest.TestCase):
     for router in consensus.routers:
       self.assertEqual('caerSidi', router.nickname)
 
-    # second example: using parse_file
+    # second example: using _parse_file
 
     with support_with(StringIO.StringIO(content)) as consensus_file:
-      for router in parse_file(consensus_file):
+      for router in _parse_file(consensus_file):
         self.assertEqual('caerSidi', router.nickname)
 
   def test_parse_file(self):
     """
-    Try parsing a document via the parse_file() function.
+    Try parsing a document via the _parse_file() function.
     """
 
     entry1 = get_router_status_entry_v3({'s': "Fast"})
@@ -144,7 +144,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     expected_document = get_network_status_document_v3()
 
     descriptor_file = StringIO.StringIO(content)
-    entries = list(parse_file(descriptor_file))
+    entries = list(_parse_file(descriptor_file))
 
     self.assertEquals(entry1, entries[0])
     self.assertEquals(entry2, entries[1])

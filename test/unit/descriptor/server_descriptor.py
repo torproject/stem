@@ -208,8 +208,8 @@ class TestServerDescriptor(unittest.TestCase):
     desc_text = sign_descriptor_content(desc_text)
     desc_text += "\ntrailing text that should be ignored, ho hum"
 
-    # running parse_file should provide an iterator with a single descriptor
-    desc_iter = stem.descriptor.server_descriptor.parse_file(StringIO.StringIO(desc_text))
+    # running _parse_file should provide an iterator with a single descriptor
+    desc_iter = stem.descriptor.server_descriptor._parse_file(StringIO.StringIO(desc_text))
     desc_entries = list(desc_iter)
     self.assertEquals(1, len(desc_entries))
     desc = desc_entries[0]

@@ -505,7 +505,7 @@ class DescriptorReader(object):
     try:
       self._notify_read_listeners(target)
       with open(target) as target_file:
-        for desc in stem.descriptor.parse_file(target, target_file):
+        for desc in stem.descriptor.parse_file(target_file, path = target):
           if self._is_stopped.isSet():
             return
 
@@ -533,7 +533,7 @@ class DescriptorReader(object):
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
 
-          for desc in stem.descriptor.parse_file(target, entry):
+          for desc in stem.descriptor.parse_file(entry, path = target):
             if self._is_stopped.isSet():
               return
 

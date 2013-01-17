@@ -9,6 +9,7 @@ import os
 import resource
 import unittest
 
+import stem
 import stem.descriptor
 import stem.descriptor.networkstatus
 import stem.version
@@ -42,7 +43,7 @@ class TestNetworkStatus(unittest.TestCase):
     with open(consensus_path) as descriptor_file:
       document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 
-      for router in stem.descriptor.networkstatus.parse_file(descriptor_file, document_type):
+      for router in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type):
         count += 1
 
         # We should have constant memory usage. Fail if we're using over 200 MB.
@@ -53,7 +54,7 @@ class TestNetworkStatus(unittest.TestCase):
         # TODO: this should be a 'new capability' check later rather than
         # failing the tests
         for flag in router.flags:
-          if not flag in stem.descriptor.Flag:
+          if not flag in stem.Flag:
             raise ValueError("Unrecognized flag type: %s, found on relay %s (%s)" % (flag, router.fingerprint, router.nickname))
 
         unrecognized_lines = router.get_unrecognized_lines()
@@ -89,7 +90,7 @@ class TestNetworkStatus(unittest.TestCase):
     with open(consensus_path) as descriptor_file:
       document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 
-      for router in stem.descriptor.networkstatus.parse_file(descriptor_file, document_type, is_microdescriptor = True):
+      for router in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, is_microdescriptor = True):
         count += 1
 
         if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 200000:
@@ -99,7 +100,7 @@ class TestNetworkStatus(unittest.TestCase):
         # TODO: this should be a 'new capability' check later rather than
         # failing the tests
         for flag in router.flags:
-          if not flag in stem.descriptor.Flag:
+          if not flag in stem.Flag:
             raise ValueError("Unrecognized flag type: %s, found on microdescriptor relay %s (%s)" % (flag, router.fingerprint, router.nickname))
 
         unrecognized_lines = router.get_unrecognized_lines()
@@ -117,7 +118,7 @@ class TestNetworkStatus(unittest.TestCase):
     consensus_path = test.integ.descriptor.get_resource("metrics_consensus")
 
     with open(consensus_path) as descriptor_file:
-      descriptors = stem.descriptor.parse_file(consensus_path, descriptor_file)
+      descriptors = stem.descriptor.parse_file(descriptor_file, path = consensus_path)
 
       router = next(descriptors)
       self.assertEquals("sumkledi", router.nickname)
@@ -136,7 +137,7 @@ class TestNetworkStatus(unittest.TestCase):
     consensus_path = test.integ.descriptor.get_resource("bridge_network_status")
 
     with open(consensus_path) as descriptor_file:
-      descriptors = stem.descriptor.parse_file(consensus_path, descriptor_file)
+      descriptors = stem.descriptor.parse_file(descriptor_file, path = consensus_path)
 
       router = next(descriptors)
       self.assertEquals("Unnamed", router.nickname)
@@ -327,7 +328,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
     vote_path = test.integ.descriptor.get_resource("metrics_vote")
 
     with open(vote_path) as descriptor_file:
-      descriptors = stem.descriptor.parse_file(vote_path, descriptor_file)
+      descriptors = stem.descriptor.parse_file(descriptor_file, path = vote_path)
 
       router = next(descriptors)
       self.assertEquals("sumkledi", router.nickname)
