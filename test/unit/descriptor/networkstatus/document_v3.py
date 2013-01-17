@@ -10,7 +10,7 @@ import unittest
 
 import stem.version
 
-from stem.descriptor import Flag
+from stem import Flag
 
 from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, \
                                           FOOTER_STATUS_DOCUMENT_FIELDS, \

@@ -438,7 +438,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     signatures from all authorities
   :var list client_versions: list of recommended client tor versions
   :var list server_versions: list of recommended server tor versions
-  :var list known_flags: **\*** list of known router flags
+  :var list known_flags: **\*** list of :data:`~stem.Flag` for the router's flags
   :var list params: **\*** dict of parameter(**str**) => value(**int**) mappings
   :var list directory_authorities: **\*** list of :class:`~stem.descriptor.networkstatus.DirectoryAuthority`
     objects that have generated this document

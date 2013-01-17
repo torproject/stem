@@ -104,7 +104,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
   :var int or_port: **\*** router's ORPort
   :var int dir_port: **\*** router's DirPort
 
-  :var list flags: **\*** list of status flags
+  :var list flags: **\*** list of :data:`~stem.Flag` associated with the relay
 
   :var stem.version.Version version: parsed version of tor, this is **None** if
     the relay's using a new versioning scheme

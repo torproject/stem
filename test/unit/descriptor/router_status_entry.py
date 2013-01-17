@@ -5,7 +5,7 @@ Unit tests for stem.descriptor.router_status_entry.
 import datetime
 import unittest
 
-from stem.descriptor import Flag
+from stem import Flag
 from stem.descriptor.router_status_entry import RouterStatusEntryV3, _decode_fingerprint
 from stem.exit_policy import MicroExitPolicy
 from stem.version import Version
