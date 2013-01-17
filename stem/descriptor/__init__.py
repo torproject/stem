@@ -10,6 +10,30 @@ Package for parsing and processing descriptor data.
     |- get_path - location of the descriptor on disk if it came from a file
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
+
+.. data:: Flag (enum)
+
+  Flag assigned to tor relays by the authorities to indicate various
+  characteristics.
+
+  ================= ===========
+  Flag              Description
+  ================= ===========
+  **AUTHORITY**     relay is a directory authority
+  **BADEXIT**       relay shouldn't be used as an exit due to being either problematic or malicious (`https://trac.torproject.org/projects/tor/wiki/doc/badRelays`_)
+  **BADDIRECTORY**  relay shouldn't be used for directory information
+  **EXIT**          relay's exit policy makes it more useful as an exit rather than middle hop
+  **FAST**          relay's suitable for high-bandwidth circuits
+  **GUARD**         relay's suitable for being an entry guard (first hop)
+  **HSDIR**         relay is being used as a v2 hidden service directory
+  **NAMED**         relay can be referred to by its nickname
+  **RUNNING**       relay is currently usable
+  **STABLE**        relay's suitable for long-lived circuits
+  **UNNAMED**       relay isn't presently bound to a nickname
+  **V2DIR**         relay supports the v2 directory protocol
+  **V3DIR**         relay supports the v3 directory protocol
+  **VALID**         relay has been validated
+  ================= ===========
 """
 
 __all__ = [
@@ -43,6 +67,7 @@ PGP_BLOCK_END = "-----END %s-----"
 Flag = stem.util.enum.Enum(
   ("AUTHORITY", "Authority"),
   ("BADEXIT", "BadExit"),
+  ("BADDIRECTORY", "BadDirectory"),
   ("EXIT", "Exit"),
   ("FAST", "Fast"),
   ("GUARD", "Guard"),
@@ -52,6 +77,7 @@ Flag = stem.util.enum.Enum(
   ("STABLE", "Stable"),
   ("UNNAMED", "Unnamed"),
   ("V2DIR", "V2Dir"),
+  ("V3DIR", "V3Dir"),
   ("VALID", "Valid"),
 )
 
