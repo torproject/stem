@@ -59,7 +59,7 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
   :class:`~stem.descriptor.reader.DescriptorReader`.
 
   :param file descriptor_file: opened file with the descriptor contents
-  :param tuple descriptor_type: tuple of the form **(type, major_version, minor_version)** as per `https://metrics.torproject.org/formats.html#descriptortypes`_
+  :param tuple descriptor_type: tuple of the form **(type, major_version, minor_version)** as per the `metrics site <https://metrics.torproject.org/formats.html#descriptortypes>`_
   :param str path: absolute path to the file's location on disk
 
   :returns: iterator for :class:`stem.descriptor.Descriptor` instances in the file
