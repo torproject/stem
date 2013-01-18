@@ -59,7 +59,7 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
   :class:`~stem.descriptor.reader.DescriptorReader`.
 
   :param file descriptor_file: opened file with the descriptor contents
-  :param tuple descriptor_type: tuple of the form **(type, major_version, minor_version)** as per the `metrics site <https://metrics.torproject.org/formats.html#descriptortypes>`_
+  :param str descriptor_type: `descriptor type <https://metrics.torproject.org/formats.html#descriptortypes>`_
   :param str path: absolute path to the file's location on disk
 
   :returns: iterator for :class:`stem.descriptor.Descriptor` instances in the file
@@ -85,18 +85,13 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
   file_parser = None
 
   if descriptor_type is not None:
-    if len(descriptor_type) != 3:
-      raise ValueError("The descriptor_type must be a tuple of the form (type, major_version, minor_version)")
+    descriptor_type_match = re.match("^(\S+) (\d+).(\d+)$", descriptor_type)
 
-    desc_type, major_version, minor_version = descriptor_type
-
-    try:
-      major_version = int(major_version)
-      minor_version = int(minor_version)
-    except ValueError:
-      raise ValueError("The descriptor_type's major and minor versions must be integers")
-
-    file_parser = lambda f: _parse_metrics_file(desc_type, major_version, minor_version, f)
+    if descriptor_type_match:
+      desc_type, major_version, minor_version = descriptor_type_match.groups()
+      file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f)
+    else:
+      raise ValueError("The descriptor_type must be of the form '<type> <major_version>.<minor_version>'")
   elif filename == "cached-descriptors":
     file_parser = stem.descriptor.server_descriptor._parse_file
   elif filename == "cached-extrainfo":

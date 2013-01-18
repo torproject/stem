@@ -51,7 +51,7 @@ and upfront runtime.
     # Processes the routers as we read them in. The routers refer to a document
     # with an unset 'routers' attribute.
 
-    for router in parse_file(consensus_file, ('network-status-consensus-3', 1, 0)):
+    for router in parse_file(consensus_file, 'network-status-consensus-3 1.0'):
       print router.nickname
 
 **Module Overview:**
