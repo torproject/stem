@@ -68,7 +68,7 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
   extra-info 1.0                        :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
   directory 1.0                         **unsupported**
   network-status-2 1.0                  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV2`)
-  dir-key-certificate-3 1.0             **unsupported**
+  dir-key-certificate-3 1.0             :class:`~stem.descriptor.networkstatus.KeyCertificate`
   network-status-consensus-3 1.0        :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
   network-status-vote-3 1.0             :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
   network-status-microdesc-consensus-3  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
@@ -168,6 +168,8 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
 
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type):
       yield desc
+  elif descriptor_type == "dir-key-certificate-3" and major_version == 1:
+    yield stem.descriptor.networkstatus.KeyCertificate(descriptor_file.read())
   elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 
