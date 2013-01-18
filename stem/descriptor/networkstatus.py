@@ -60,7 +60,8 @@ and upfront runtime.
 
   NetworkStatusDocument - Network status document
     |- NetworkStatusDocumentV2 - Version 2 network status document
-    +- NetworkStatusDocumentV3 - Version 3 network status document
+    |- NetworkStatusDocumentV3 - Version 3 network status document
+    +- BridgeNetworkStatusDocument - Version 3 network status document for bridges
 
   DocumentSignature - Signature of a document by a directory authority
   DirectoryAuthority - Directory authority as defined in a v3 network status document

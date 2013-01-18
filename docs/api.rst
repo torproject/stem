@@ -20,6 +20,10 @@ Controller
 Descriptors
 -----------
 
+To read descriptors from disk use :func:`~stem.descriptor.__init__.parse_file` for
+individual files and `stem.descriptor.reader
+<api/descriptor/reader.html>`_ for batches.
+
 * **Classes**
 
  * `stem.descriptor <api/descriptor/descriptor.html>`_ - Base class for descriptors.

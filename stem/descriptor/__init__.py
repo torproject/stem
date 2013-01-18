@@ -43,7 +43,7 @@ PGP_BLOCK_END = "-----END %s-----"
 def parse_file(descriptor_file, descriptor_type = None, path = None):
   """
   Simple function to read the descriptor contents from a file, providing an
-  iterator for its :class:`~stem.descriptor.Descriptor` contents.
+  iterator for its :class:`~stem.descriptor.__init__.Descriptor` contents.
 
   If you don't provide a **descriptor_type** argument then this automatically
   tries to determine the descriptor type based on the following...
@@ -52,17 +52,39 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
     instance, tor's 'cached-descriptors' contains server descriptors.
 
   * The @type annotation on the first line. These are generally only found in
-    the descriptor archives from 'https://metrics.torproject.org'.
+    the `descriptor archives <https://metrics.torproject.org>`_.
 
   This is a handy function for simple usage, but if you're reading multiple
   descriptor files you might want to consider the
   :class:`~stem.descriptor.reader.DescriptorReader`.
 
+  Descriptor types include the following, including further minor versions (ie.
+  if we support 1.0 then we also support 1.1 and above)...
+
+  ===================================== =====
+  Descriptor Type                       Class
+  ===================================== =====
+  server-descriptor 1.0                 :class:`~stem.descriptor.server_descriptor.RelayDescriptor`
+  extra-info 1.0                        :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
+  directory 1.0                         **unsupported**
+  network-status-2 1.0                  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV2`)
+  dir-key-certificate-3 1.0             **unsupported**
+  network-status-consensus-3 1.0        :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
+  network-status-vote-3 1.0             :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
+  network-status-microdesc-consensus-3  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
+  bridge-network-status 1.0             :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.BridgeNetworkStatusDocument`)
+  bridge-server-descriptor 1.0          :class:`~stem.descriptor.server_descriptor.BridgeDescriptor`
+  bridge-extra-info 1.0                 :class:`~stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor`
+  torperf 1.0                           **unsupported**
+  bridge-pool-assignment 1.0            **unsupported**
+  tordnsel 1.0                          **unsupported**
+  ===================================== =====
+
   :param file descriptor_file: opened file with the descriptor contents
-  :param str descriptor_type: `descriptor type <https://metrics.torproject.org/formats.html#descriptortypes>`_
+  :param str descriptor_type: `descriptor type <https://metrics.torproject.org/formats.html#descriptortypes>`_, this is guessed if not provided
   :param str path: absolute path to the file's location on disk
 
-  :returns: iterator for :class:`stem.descriptor.Descriptor` instances in the file
+  :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor` instances in the file
 
   :raises:
     * **TypeError** if we can't match the contents of the file to a descriptor type
