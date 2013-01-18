@@ -8,6 +8,7 @@ import datetime
 import StringIO
 import unittest
 
+import stem.descriptor
 import stem.version
 
 from stem import Flag
@@ -123,10 +124,10 @@ class TestNetworkStatusDocument(unittest.TestCase):
     for router in consensus.routers:
       self.assertEqual('caerSidi', router.nickname)
 
-    # second example: using _parse_file
+    # second example: using stem.descriptor.parse_file
 
     with support_with(StringIO.StringIO(content)) as consensus_file:
-      for router in _parse_file(consensus_file):
+      for router in stem.descriptor.parse_file(consensus_file, 'network-status-consensus-3 1.0'):
         self.assertEqual('caerSidi', router.nickname)
 
   def test_parse_file(self):
