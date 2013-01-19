@@ -48,11 +48,11 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
   If you don't provide a **descriptor_type** argument then this automatically
   tries to determine the descriptor type based on the following...
 
-  * The filename if it matches something from tor's data directory. For
-    instance, tor's 'cached-descriptors' contains server descriptors.
-
   * The @type annotation on the first line. These are generally only found in
     the `descriptor archives <https://metrics.torproject.org>`_.
+
+  * The filename if it matches something from tor's data directory. For
+    instance, tor's 'cached-descriptors' contains server descriptors.
 
   This is a handy function for simple usage, but if you're reading multiple
   descriptor files you might want to consider the
@@ -101,7 +101,12 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
   # by an annotation on their first line...
   # https://trac.torproject.org/5651
 
-  # Cached descriptor handling. These contain multiple descriptors per file.
+  initial_position = descriptor_file.tell()
+  first_line = descriptor_file.readline().strip()
+  metrics_header_match = re.match("^@type (\S+) (\d+).(\d+)$", first_line)
+
+  if not metrics_header_match:
+    descriptor_file.seek(initial_position)
 
   filename = '<undefined>' if path is None else os.path.basename(path)
   file_parser = None
@@ -114,22 +119,22 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
       file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f)
     else:
       raise ValueError("The descriptor_type must be of the form '<type> <major_version>.<minor_version>'")
-  elif filename == "cached-descriptors":
-    file_parser = stem.descriptor.server_descriptor._parse_file
-  elif filename == "cached-extrainfo":
-    file_parser = stem.descriptor.extrainfo_descriptor._parse_file
-  elif filename == "cached-consensus":
-    file_parser = stem.descriptor.networkstatus._parse_file
-  elif filename == "cached-microdesc-consensus":
-    file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, is_microdescriptor = True)
-  else:
+  elif metrics_header_match:
     # Metrics descriptor handling
-    first_line, desc = descriptor_file.readline().strip(), None
-    metrics_header_match = re.match("^@type (\S+) (\d+).(\d+)$", first_line)
 
-    if metrics_header_match:
-      desc_type, major_version, minor_version = metrics_header_match.groups()
-      file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f)
+    desc_type, major_version, minor_version = metrics_header_match.groups()
+    file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f)
+  else:
+    # Cached descriptor handling. These contain multiple descriptors per file.
+
+    if filename == "cached-descriptors":
+      file_parser = stem.descriptor.server_descriptor._parse_file
+    elif filename == "cached-extrainfo":
+      file_parser = stem.descriptor.extrainfo_descriptor._parse_file
+    elif filename == "cached-consensus":
+      file_parser = stem.descriptor.networkstatus._parse_file
+    elif filename == "cached-microdesc-consensus":
+      file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, is_microdescriptor = True)
 
   if file_parser:
     for desc in file_parser(descriptor_file):

@@ -117,17 +117,21 @@ class TestNetworkStatus(unittest.TestCase):
 
     consensus_path = test.integ.descriptor.get_resource("metrics_consensus")
 
-    with open(consensus_path) as descriptor_file:
-      descriptors = stem.descriptor.parse_file(descriptor_file, path = consensus_path)
+    for specify_type in (True, False):
+      with open(consensus_path) as descriptor_file:
+        if specify_type:
+          descriptors = stem.descriptor.parse_file(descriptor_file, "network-status-consensus-3 1.0", path = consensus_path)
+        else:
+          descriptors = stem.descriptor.parse_file(descriptor_file, path = consensus_path)
 
-      router = next(descriptors)
-      self.assertEquals("sumkledi", router.nickname)
-      self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
-      self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router.digest)
-      self.assertEquals(datetime.datetime(2012, 7, 12, 4, 1, 55), router.published)
-      self.assertEquals("178.218.213.229", router.address)
-      self.assertEquals(80, router.or_port)
-      self.assertEquals(None, router.dir_port)
+        router = next(descriptors)
+        self.assertEquals("sumkledi", router.nickname)
+        self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
+        self.assertEquals("8mCr8Sl7RF4ENU4jb0FZFA/3do8", router.digest)
+        self.assertEquals(datetime.datetime(2012, 7, 12, 4, 1, 55), router.published)
+        self.assertEquals("178.218.213.229", router.address)
+        self.assertEquals(80, router.or_port)
+        self.assertEquals(None, router.dir_port)
 
   def test_metrics_bridge_consensus(self):
     """
