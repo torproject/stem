@@ -677,6 +677,7 @@ class Controller(BaseController):
 
     def _sighup_listener(event):
       if event.signal == Signal.RELOAD:
+        self.clear_cache()
         self._notify_status_listeners(State.RESET)
 
     self.add_event_listener(_sighup_listener, EventType.SIGNAL)
@@ -692,6 +693,8 @@ class Controller(BaseController):
         self.msg("QUIT")
       except:
         pass
+
+      self.clear_cache()
 
     super(Controller, self).close()
 

@@ -63,6 +63,7 @@ and upfront runtime.
     |- NetworkStatusDocumentV3 - Version 3 network status document
     +- BridgeNetworkStatusDocument - Version 3 network status document for bridges
 
+  KeyCertificate - Certificate used to authenticate an authority
   DocumentSignature - Signature of a document by a directory authority
   DirectoryAuthority - Directory authority as defined in a v3 network status document
 """
