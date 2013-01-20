@@ -71,12 +71,18 @@ PR_SET_NAME = 15
 
 argc_t = ctypes.POINTER(ctypes.c_char_p)
 
-Py_GetArgcArgv = ctypes.pythonapi.Py_GetArgcArgv
-Py_GetArgcArgv.restype = None
-Py_GetArgcArgv.argtypes = [
-  ctypes.POINTER(ctypes.c_int),
-  ctypes.POINTER(argc_t),
-]
+# The following can fail with pypy...
+# AttributeError: No symbol Py_GetArgcArgv found in library <None>
+
+try:
+  Py_GetArgcArgv = ctypes.pythonapi.Py_GetArgcArgv
+  Py_GetArgcArgv.restype = None
+  Py_GetArgcArgv.argtypes = [
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.POINTER(argc_t),
+  ]
+except:
+  Py_GetArgcArgv = None
 
 # This is both a cache for get_process_name() and tracks what we've changed our
 # process name to.
@@ -765,6 +771,9 @@ def _set_argv(process_name):
   Overwrites our argv in a similar fashion to how it's done in C with:
   strcpy(argv[0], "new_name");
   """
+
+  if Py_GetArgcArgv is None:
+    return
 
   global _PROCESS_NAME
 
