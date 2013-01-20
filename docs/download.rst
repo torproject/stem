@@ -13,6 +13,9 @@ Download
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
      License: GPL v2
      File: NuoveXT/128x128/apps/debian-logo.png
+   
+   * Arch Linux
+     Source: https://en.wikipedia.org/wiki/File:Archlinux-official-fullcolour.svg
 
 .. list-table::
    :widths: 1 10
@@ -33,6 +36,14 @@ Download
 
        **Coming soon-ish**
 
-       Stem is very much in beta and, as such, there have yet to be any
-       releases. Check back later!
+       Initial release should be in March.
+
+   * - .. image:: /_static/section/archlinux.png
+          :target: https://aur.archlinux.org/packages/stem-git/
+
+     - .. image:: /_static/label/archlinux.png
+
+       Package maintained by Sjon for Arch Linux.
+
+       `https://aur.archlinux.org/packages/stem-git/ <https://aur.archlinux.org/packages/stem-git/>`_
 
