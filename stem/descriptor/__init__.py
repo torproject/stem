@@ -40,7 +40,7 @@ PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHIT
 PGP_BLOCK_END = "-----END %s-----"
 
 
-def parse_file(descriptor_file, descriptor_type = None, path = None):
+def parse_file(descriptor_file, descriptor_type = None, path = None, validate = True):
   """
   Simple function to read the descriptor contents from a file, providing an
   iterator for its :class:`~stem.descriptor.__init__.Descriptor` contents.
@@ -83,6 +83,8 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
   :param file descriptor_file: opened file with the descriptor contents
   :param str descriptor_type: `descriptor type <https://metrics.torproject.org/formats.html#descriptortypes>`_, this is guessed if not provided
   :param str path: absolute path to the file's location on disk
+  :param bool validate: checks the validity of the descriptor's content if
+    **True**, skips these checks otherwise
 
   :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor` instances in the file
 
@@ -116,25 +118,25 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
 
     if descriptor_type_match:
       desc_type, major_version, minor_version = descriptor_type_match.groups()
-      file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f)
+      file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f, validate)
     else:
       raise ValueError("The descriptor_type must be of the form '<type> <major_version>.<minor_version>'")
   elif metrics_header_match:
     # Metrics descriptor handling
 
     desc_type, major_version, minor_version = metrics_header_match.groups()
-    file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f)
+    file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f, validate)
   else:
     # Cached descriptor handling. These contain multiple descriptors per file.
 
     if filename == "cached-descriptors":
-      file_parser = stem.descriptor.server_descriptor._parse_file
+      file_parser = lambda f: stem.descriptor.server_descriptor._parse_file(f, validate = validate)
     elif filename == "cached-extrainfo":
-      file_parser = stem.descriptor.extrainfo_descriptor._parse_file
+      file_parser = lambda f: stem.descriptor.extrainfo_descriptor._parse_file(f, validate = validate)
     elif filename == "cached-consensus":
-      file_parser = stem.descriptor.networkstatus._parse_file
+      file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, validate = validate)
     elif filename == "cached-microdesc-consensus":
-      file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, is_microdescriptor = True)
+      file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, is_microdescriptor = True, validate = validate)
 
   if file_parser:
     for desc in file_parser(descriptor_file):
@@ -150,7 +152,7 @@ def parse_file(descriptor_file, descriptor_type = None, path = None):
   raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
 
 
-def _parse_metrics_file(descriptor_type, major_version, minor_version, descriptor_file):
+def _parse_metrics_file(descriptor_type, major_version, minor_version, descriptor_file, validate):
   # Parses descriptor files from metrics, yielding individual descriptors. This
   # throws a TypeError if the descriptor_type or version isn't recognized.
   import stem.descriptor.server_descriptor
@@ -158,41 +160,41 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
   import stem.descriptor.networkstatus
 
   if descriptor_type == "server-descriptor" and major_version == 1:
-    for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = False):
+    for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = False, validate = validate):
       yield desc
   elif descriptor_type == "bridge-server-descriptor" and major_version == 1:
-    for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = True):
+    for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = True, validate = validate):
       yield desc
   elif descriptor_type == "extra-info" and major_version == 1:
-    for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = False):
+    for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = False, validate = validate):
       yield desc
   elif descriptor_type == "bridge-extra-info" and major_version == 1:
     # version 1.1 introduced a 'transport' field...
     # https://trac.torproject.org/6257
 
-    for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = True):
+    for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = True, validate = validate):
       yield desc
   elif descriptor_type == "network-status-2" and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV2
 
-    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type):
+    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate):
       yield desc
   elif descriptor_type == "dir-key-certificate-3" and major_version == 1:
-    yield stem.descriptor.networkstatus.KeyCertificate(descriptor_file.read())
+    yield stem.descriptor.networkstatus.KeyCertificate(descriptor_file.read(), validate = validate)
   elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 
-    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type):
+    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate):
       yield desc
   elif descriptor_type == "network-status-microdesc-consensus-3" and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 
-    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, is_microdescriptor = True):
+    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, is_microdescriptor = True, validate = validate):
       yield desc
   elif descriptor_type == "bridge-network-status" and major_version == 1:
     document_type = stem.descriptor.networkstatus.BridgeNetworkStatusDocument
 
-    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type):
+    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate):
       yield desc
   else:
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
