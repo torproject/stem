@@ -71,11 +71,12 @@ SINGLE_FIELDS = (
 )
 
 
-def _parse_file(descriptor_file, validate = True):
+def _parse_file(descriptor_file, is_bridge = False, validate = True):
   """
   Iterates over the server descriptors in a file.
 
   :param file descriptor_file: file with descriptor content
+  :param bool is_bridge: parses the file as being a bridge descriptor
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
 
@@ -125,7 +126,11 @@ def _parse_file(descriptor_file, validate = True):
       annotations = map(str.strip, annotations)
 
       descriptor_text = "".join(descriptor_content)
-      yield RelayDescriptor(descriptor_text, validate, annotations)
+
+      if is_bridge:
+        yield BridgeDescriptor(descriptor_text, validate, annotations)
+      else:
+        yield RelayDescriptor(descriptor_text, validate, annotations)
     else:
       break  # done parsing descriptors
 

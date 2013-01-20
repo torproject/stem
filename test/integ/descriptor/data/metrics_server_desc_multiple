@@ -1,0 +1,87 @@
+@type server-descriptor 1.0
+router anonion 31.54.58.167 443 0 0
+platform Tor 0.2.3.22-rc on Windows XP
+opt protocols Link 1 2 Circuit 1
+published 2012-09-17 07:28:01
+opt fingerprint 9A5E C5BB 8665 17E5 3962 AF4D 3E77 6536 694B 069E
+uptime 0
+bandwidth 8388608 8388608 442368
+opt extra-info-digest 0DED759EDA005BFD735E91D3E2DBF22D2D685F12
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAM+vu//ysOgcbCwri0RnunH8xNwswnTPbbusad7im2lXJuPjMbTFlkcn
+3yPxbL1aD3p/PHPfLKOOPcFDVlCma/N8tJ6CEeJn6pZcrvgsU/d1EASQyrhpXFgL
+oH/+zfg4ir52dZp4gS03P16i9m4HB4YTewo62cIuZoZKq1smReMzAgMBAAE=
+-----END RSA PUBLIC KEY-----
+signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALSrtq1TqL5TImtctKm/5CvZHb54n5JpkmD8jtmdajgpHF0eaSaaw/Qw
+IKaoQn17etuGzbeXF1vgphv2T4xyIm04MiLOszbLGXK1Fsa5uAO+qs1bIy6mLpwg
+XrYhyuddYyw1s4U5ZNBNK/0rlwo7hoIZjxcej0AvTGewFx+Rv6UlAgMBAAE=
+-----END RSA PUBLIC KEY-----
+opt hidden-service-dir
+contact anonion at nym dot hush dot com
+reject 0.0.0.0/8:*
+reject 169.254.0.0/16:*
+reject 127.0.0.0/8:*
+reject 192.168.0.0/16:*
+reject 10.0.0.0/8:*
+reject 172.16.0.0/12:*
+reject 31.54.58.167:*
+accept *:53
+accept *:80
+accept *:443
+accept *:3128
+accept *:8080
+accept *:8000
+accept *:50
+accept *:51
+accept *:389
+accept *:636
+accept *:2123
+accept *:2152
+accept *:11370
+accept *:11371
+accept *:2301
+accept *:2381
+accept *:6518
+accept *:9100
+accept *:1433
+accept *:1434
+accept *:3389
+accept *:5901
+reject *:*
+router-signature
+-----BEGIN SIGNATURE-----
+XzcWkD6QV6CHtcdKuM6mVGGl+m9JsmLtYhpPMxRANxbRLMLaI1+XkO58QS0zvl6f
+0vhmifJhJSu+FV+mOkg/aCsPyleSMd8vLOjCzhVv0yCzcn252ujsjGc0HrmyPE1R
+p2bQE2u2SpgLKw6oylyr6qLcZkGIWDYhnnyZTg2lXm8=
+-----END SIGNATURE-----
+router Unnamed 122.60.235.157 9001 0 0
+platform Tor 0.2.2.37 (git-fce6eb1c44e87bc2) on Darwin x86_64
+opt protocols Link 1 2 Circuit 1
+published 2012-09-17 14:57:28
+opt fingerprint 5366 F1D1 9875 9F88 94EA 6E5F F768 C667 F59A FD24
+uptime 542717
+bandwidth 32768 65536 58012
+opt extra-info-digest 33C8C462BFA5A9C6E825A0A717BD63072AB68E59
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAKCt4oloDEzaHKzuljXGIJujbTbQfl/XZPjc/84eWp8Ka2Vmpa9DL3cV
++bO3wttgA6ZtkGUB6d6AHcfOoRT7tP/wBeQSHSDxh9OmKzGKZiHB76HNxVny8aJd
+ngVPgMmolXajdnzCIAIRLdUW6SHvIinyeghLuVSwLZU+eEN5XSXrAgMBAAE=
+-----END RSA PUBLIC KEY-----
+signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAJ5avJflNjXZjGukC0aACUeTMHsQEHsQKCFPwXFVBCX6gDmrfivqT+EB
+efT8XTktk44EFJbCAWj65kuj+aoXBfUvrr21at4WAEJ33BgmitwCrzwkKWVX/wLM
++NMIGObvs88HYyaTsoyZ/TToLE5nPQJj77bNyabHgNvYEXyFxooJAgMBAAE=
+-----END RSA PUBLIC KEY-----
+opt hidden-service-dir
+reject *:*
+router-signature
+-----BEGIN SIGNATURE-----
+m0Q/dr4HvyGShKG8DdKyabcTO4lZtGMXNGX+TEM1D43+5mw4D5UgiIdaK9a2tMQA
+sBGFCymv3ZHpmPRtOhSMRafwcZDYXeCSdvZXmfGzpyIRrBde3uRIJj97eqA+oOHd
+5TlnK2Z0tF+M1bUD0xYHOde5a/lAaiQaw5+mley6i6M=
+-----END SIGNATURE-----

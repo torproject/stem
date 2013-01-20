@@ -158,16 +158,20 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
   import stem.descriptor.networkstatus
 
   if descriptor_type == "server-descriptor" and major_version == 1:
-    yield stem.descriptor.server_descriptor.RelayDescriptor(descriptor_file.read())
+    for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = False):
+      yield desc
   elif descriptor_type == "bridge-server-descriptor" and major_version == 1:
-    yield stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_file.read())
+    for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = True):
+      yield desc
   elif descriptor_type == "extra-info" and major_version == 1:
-    yield stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_file.read())
+    for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = False):
+      yield desc
   elif descriptor_type == "bridge-extra-info" and major_version == 1:
     # version 1.1 introduced a 'transport' field...
     # https://trac.torproject.org/6257
 
-    yield stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_file.read())
+    for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = True):
+      yield desc
   elif descriptor_type == "network-status-2" and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV2
 

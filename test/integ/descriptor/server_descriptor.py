@@ -9,6 +9,7 @@ import os
 import unittest
 
 import stem.control
+import stem.descriptor
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.version
@@ -88,6 +89,24 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(expected_signature, desc.signature)
     self.assertEquals([], desc.get_unrecognized_lines())
     self.assertEquals("2C7B27BEAB04B4E2459D89CA6D5CD1CC5F95A689", desc.digest())
+
+  def test_metrics_descriptor_multiple(self):
+    """
+    Parses and checks our results against a server descriptor from metrics.
+    """
+
+    descriptor_path = test.integ.descriptor.get_resource("metrics_server_desc_multiple")
+
+    with open(descriptor_path) as descriptor_file:
+      descriptors = list(stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"))
+
+      self.assertEquals(2, len(descriptors))
+
+      self.assertEquals("anonion", descriptors[0].nickname)
+      self.assertEquals("9A5EC5BB866517E53962AF4D3E776536694B069E", descriptors[0].fingerprint)
+
+      self.assertEquals("Unnamed", descriptors[1].nickname)
+      self.assertEquals("5366F1D198759F8894EA6E5FF768C667F59AFD24", descriptors[1].fingerprint)
 
   def test_old_descriptor(self):
     """

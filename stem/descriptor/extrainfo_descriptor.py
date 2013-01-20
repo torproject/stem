@@ -133,11 +133,12 @@ SINGLE_FIELDS = (
 )
 
 
-def _parse_file(descriptor_file, validate = True):
+def _parse_file(descriptor_file, is_bridge = False, validate = True):
   """
   Iterates over the extra-info descriptors in a file.
 
   :param file descriptor_file: file with descriptor content
+  :param bool is_bridge: parses the file as being a bridge descriptor
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
 
@@ -157,7 +158,10 @@ def _parse_file(descriptor_file, validate = True):
     extrainfo_content += stem.descriptor._read_until_keywords(block_end_prefix, descriptor_file, True)
 
     if extrainfo_content:
-      yield RelayExtraInfoDescriptor("".join(extrainfo_content), validate)
+      if is_bridge:
+        yield BridgeExtraInfoDescriptor("".join(extrainfo_content), validate)
+      else:
+        yield RelayExtraInfoDescriptor("".join(extrainfo_content), validate)
     else:
       break  # done parsing file
 
