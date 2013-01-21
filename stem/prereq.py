@@ -37,9 +37,7 @@ def check_requirements():
 
   major_version, minor_version = sys.version_info[0:2]
 
-  if major_version > 2:
-    raise ImportError("stem isn't compatible beyond the python 2.x series")
-  elif major_version < 2 or minor_version < 5:
+  if major_version < 2 or (major_version == 2 and minor_version < 5):
     raise ImportError("stem requires python version 2.5 or greater")
 
 
