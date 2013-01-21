@@ -247,6 +247,8 @@ class DescriptorReader(object):
   :func:`~stem.descriptor.reader.save_processed_files` functions instead.
 
   :param str,list target: path or list of paths for files or directories to be read from
+  :param bool validate: checks the validity of the descriptor's content if
+    **True**, skips these checks otherwise
   :param bool follow_links: determines if we'll follow symlinks when traversing
     directories (requires python 2.6)
   :param int buffer_size: descriptors we'll buffer before waiting for some to
@@ -255,12 +257,13 @@ class DescriptorReader(object):
     listings from this path, errors are ignored
   """
 
-  def __init__(self, target, follow_links = False, buffer_size = 100, persistence_path = None):
+  def __init__(self, target, validate = True, follow_links = False, buffer_size = 100, persistence_path = None):
     if isinstance(target, str):
       self._targets = [target]
     else:
       self._targets = target
 
+    self._validate = validate
     self._follow_links = follow_links
     self._persistence_path = persistence_path
     self._read_listeners = []
@@ -505,7 +508,7 @@ class DescriptorReader(object):
     try:
       self._notify_read_listeners(target)
       with open(target) as target_file:
-        for desc in stem.descriptor.parse_file(target_file, path = target):
+        for desc in stem.descriptor.parse_file(target_file, validate = self._validate, path = target):
           if self._is_stopped.isSet():
             return
 
@@ -533,7 +536,7 @@ class DescriptorReader(object):
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
 
-          for desc in stem.descriptor.parse_file(entry, path = target):
+          for desc in stem.descriptor.parse_file(entry, validate = self._validate, path = target):
             if self._is_stopped.isSet():
               return
 
