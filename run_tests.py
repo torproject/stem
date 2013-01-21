@@ -371,7 +371,7 @@ if __name__ == '__main__':
       exit_status = os.system("python3 %s %s" % (python3_runner, " ".join(sys.argv[1:])))
       sys.exit(exit_status)
     else:
-      sys.exit(1) # failed to do python3 setup
+      sys.exit(1)  # failed to do python3 setup
 
   if not CONFIG["argument.unit"] and not CONFIG["argument.integ"] and not CONFIG["argument.style"]:
     test.output.print_line("Nothing to run (for usage provide --help)\n")
