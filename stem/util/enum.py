@@ -89,10 +89,10 @@ class Enum(object):
     """
     Provides an ordered listing of the enumeration keys in this set.
 
-    :returns: **tuple** with our enum keys
+    :returns: **list** with our enum keys
     """
 
-    return self._keys
+    return list(self._keys)
 
   def index_of(self, value):
     """
