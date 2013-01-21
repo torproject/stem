@@ -47,8 +47,10 @@ def print_line(msg, *attr):
 def print_noline(msg, *attr):
   if CONFIG["argument.no_color"]:
     sys.stdout.write(msg)
+    sys.stdout.flush()
   else:
     sys.stdout.write(term.format(msg, *attr))
+    sys.stdout.flush()
 
 
 def print_divider(msg, is_header = False):

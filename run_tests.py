@@ -6,6 +6,7 @@ Runs unit and integration tests. For usage information run this with '--help'.
 
 import getopt
 import os
+import shutil
 import StringIO
 import sys
 import threading
@@ -71,13 +72,15 @@ import test.integ.util.system
 import test.integ.version
 
 OPT = "auist:l:c:h"
-OPT_EXPANDED = ["all", "unit", "integ", "style", "targets=", "test=", "log=", "tor=", "config=", "help"]
+OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=", "test=", "log=", "tor=", "config=", "help"]
 DIVIDER = "=" * 70
 
 CONFIG = stem.util.conf.config_dict("test", {
   "argument.unit": False,
   "argument.integ": False,
   "argument.style": False,
+  "argument.python3": False,
+  "argument.python3_clean": False,
   "argument.test": "",
   "argument.log": None,
   "argument.tor": "tor",
@@ -87,6 +90,7 @@ CONFIG = stem.util.conf.config_dict("test", {
   "target.description": {},
   "target.prereq": {},
   "target.torrc": {},
+  "integ.test_directory": "./test/data",
 })
 
 Target = stem.util.enum.UppercaseEnum(
@@ -199,6 +203,10 @@ def load_user_configuration(test_config):
       arg_overrides["argument.integ"] = "true"
     elif opt in ("-s", "--style"):
       arg_overrides["argument.style"] = "true"
+    elif opt == "--python3":
+      arg_overrides["argument.python3"] = "true"
+    elif opt == "--clean":
+      arg_overrides["argument.python3_clean"] = "true"
     elif opt in ("-c", "--config"):
       config_path = os.path.abspath(arg)
     elif opt in ("-t", "--targets"):
@@ -281,6 +289,55 @@ def _clean_orphaned_pyc():
       test.output.print_line("    removing %s" % pyc_file, *test.runner.ERROR_ATTR)
       os.remove(pyc_file)
 
+
+def _python3_setup(python3_destination):
+  # Python 2.7.3 added some nice capabilities to 2to3, like '--output-dir'...
+  #
+  #   http://docs.python.org/2/library/2to3.html
+  #
+  # ... but I'm using 2.7.1, and it's pretty easy to make it work without
+  # requiring a bleeding edge interpretor.
+
+  test.output.print_divider("EXPORTING TO PYTHON 3", True)
+
+  if CONFIG["argument.python3_clean"]:
+    shutil.rmtree(python3_destination, ignore_errors = True)
+
+  if os.path.exists(python3_destination):
+    test.output.print_line("Reusing '%s'. Run again with '--clean' if you want to recreate the python3 export." % python3_destination, *test.runner.ERROR_ATTR)
+    print
+    return True
+
+  os.makedirs(python3_destination)
+
+  try:
+    # skips the python3 destination (to avoid an infinite loop)
+    def _ignore(src, names):
+      if src == os.path.normpath(python3_destination):
+        return names
+      else:
+        return []
+
+    test.output.print_noline("  copying stem to '%s'... " % python3_destination, *test.runner.STATUS_ATTR)
+    shutil.copytree('stem', os.path.join(python3_destination, 'stem'))
+    shutil.copytree('test', os.path.join(python3_destination, 'test'), ignore = _ignore)
+    shutil.copy('run_tests.py', os.path.join(python3_destination, 'run_tests.py'))
+    test.output.print_line("done", *test.runner.STATUS_ATTR)
+  except OSError, exc:
+    test.output.print_line("failed\n%s" % exc, *test.runner.ERROR_ATTR)
+    return False
+
+  try:
+    test.output.print_noline("  running 2to3... ", *test.runner.STATUS_ATTR)
+    system.call("2to3 --write --nobackups --no-diffs %s" % python3_destination)
+    test.output.print_line("done", *test.runner.STATUS_ATTR)
+  except OSError, exc:
+    test.output.print_line("failed\n%s" % exc, *test.runner.ERROR_ATTR)
+    return False
+
+  return True
+
+
 if __name__ == '__main__':
   try:
     stem.prereq.check_requirements()
@@ -305,6 +362,16 @@ if __name__ == '__main__':
   test_config.load(settings_path)
 
   load_user_configuration(test_config)
+
+  if CONFIG["argument.python3"] and sys.version_info.major != 3:
+    python3_destination = os.path.join(CONFIG["integ.test_directory"], "python3")
+
+    if _python3_setup(python3_destination):
+      python3_runner = os.path.join(python3_destination, "run_tests.py")
+      exit_status = os.system("python3 %s %s" % (python3_runner, " ".join(sys.argv[1:])))
+      sys.exit(exit_status)
+    else:
+      sys.exit(1) # failed to do python3 setup
 
   if not CONFIG["argument.unit"] and not CONFIG["argument.integ"] and not CONFIG["argument.style"]:
     test.output.print_line("Nothing to run (for usage provide --help)\n")
