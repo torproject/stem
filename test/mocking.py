@@ -58,6 +58,7 @@ import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.networkstatus
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
+import stem.prereq
 import stem.response
 import stem.socket
 
@@ -401,7 +402,16 @@ def revert_mocking():
   for mock_id in mock_ids:
     module, function, impl = MOCK_STATE[mock_id]
 
-    if module == __builtin__:
+    # Python 3.x renamed __builtin__ to builtins. Ideally we'd account for
+    # this with a simple 'import __builtin__ as builtins' but that somehow
+    # makes the following check fail. Haven't a clue why.
+
+    if stem.prereq.is_python_3():
+      builtin_module = builtins
+    else:
+      builtin_module = __builtin__
+
+    if module == builtin_module:
       setattr(__builtin__, function, impl)
     else:
       setattr(module, function, impl)
