@@ -16,6 +16,7 @@ series). Other requirements for complete functionality are...
 
   is_python_26 - checks if python 2.6 or later is available
   is_python_27 - checks if python 2.7 or later is available
+  is_python_3 - checks if python 3.0 or later is available
 
   is_rsa_available - checks if the rsa module is available
 """
@@ -59,6 +60,16 @@ def is_python_27():
   """
 
   return _check_version(7)
+
+
+def is_python_3():
+  """
+  Checks if we're in the 3.0 - 3.x range.
+
+  :returns: bool that is True if we meet this requirement and False otherwise
+  """
+
+  return sys.version_info[0] == 3
 
 
 def is_crypto_available():
