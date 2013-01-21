@@ -880,16 +880,17 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
       elif keyword == "bridge-ip-versions":
         self.ip_versions = {}
 
-        for entry in value.split(','):
-          if not '=' in entry:
-            raise stem.ProtocolError("The bridge-ip-versions should be a comma separated listing of '<protocol>=<count>' mappings: %s" % line)
+        if value:
+          for entry in value.split(','):
+            if not '=' in entry:
+              raise stem.ProtocolError("The bridge-ip-versions should be a comma separated listing of '<protocol>=<count>' mappings: %s" % line)
 
-          protocol, count = entry.split('=', 1)
+            protocol, count = entry.split('=', 1)
 
-          if not count.isdigit():
-            raise stem.ProtocolError("IP protocol count was non-numeric (%s): %s" % (count, line))
+            if not count.isdigit():
+              raise stem.ProtocolError("IP protocol count was non-numeric (%s): %s" % (count, line))
 
-          self.ip_versions[protocol] = int(count)
+            self.ip_versions[protocol] = int(count)
 
         del entries["bridge-ip-versions"]
 

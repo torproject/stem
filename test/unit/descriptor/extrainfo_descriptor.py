@@ -468,6 +468,9 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     desc = get_bridge_extrainfo_descriptor({"bridge-ip-versions": "v4=16,v6=40"})
     self.assertEquals({'v4': 16, 'v6': 40}, desc.ip_versions)
 
+    desc = get_bridge_extrainfo_descriptor({"bridge-ip-versions": ""})
+    self.assertEquals({}, desc.ip_versions)
+
     desc_text = get_bridge_extrainfo_descriptor({"bridge-ip-versions": "v4=24.5"}, content = True)
     self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text)
 
