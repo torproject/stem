@@ -528,11 +528,20 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     return self._header.meets_consensus_method(method)
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, NetworkStatusDocumentV3):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class _DocumentHeader(object):
@@ -1124,11 +1133,20 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
 
     return self._unrecognized_lines
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, DirectoryAuthority):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class KeyCertificate(stem.descriptor.Descriptor):
@@ -1285,11 +1303,20 @@ class KeyCertificate(stem.descriptor.Descriptor):
 
     return self._unrecognized_lines
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, KeyCertificate):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class DocumentSignature(object):
@@ -1321,17 +1348,24 @@ class DocumentSignature(object):
     self.key_digest = key_digest
     self.signature = signature
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, DocumentSignature):
-      return 1
+      return False
 
     for attr in ("identity", "key_digest", "signature"):
-      if getattr(self, attr) > getattr(other, attr):
-        return 1
-      elif getattr(self, attr) < getattr(other, attr):
-        return -1
+      if getattr(self, attr) != getattr(other, attr):
+        return method(getattr(self, attr), getattr(other, attr))
 
-    return 0
+    return method(True, True)  # we're equal
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class BridgeNetworkStatusDocument(NetworkStatusDocument):

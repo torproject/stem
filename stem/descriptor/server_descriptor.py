@@ -793,11 +793,20 @@ class RelayDescriptor(ServerDescriptor):
 
     ServerDescriptor._parse(self, entries, validate)
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, RelayDescriptor):
-      return 1
+      return False
 
-    return str(self).strip() > str(other).strip()
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
   @staticmethod
   def _get_key_bytes(key_string):
@@ -918,8 +927,17 @@ class BridgeDescriptor(ServerDescriptor):
   def _last_keyword(self):
     return None
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, BridgeDescriptor):
-      return 1
+      return False
 
-    return str(self).strip() > str(other).strip()
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)

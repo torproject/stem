@@ -222,11 +222,20 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
 
     return list(self._unrecognized_lines)
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntry):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class RouterStatusEntryV2(RouterStatusEntry):
@@ -266,11 +275,20 @@ class RouterStatusEntryV2(RouterStatusEntry):
   def _single_fields(self):
     return ('r', 's', 'v')
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntryV2):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class RouterStatusEntryV3(RouterStatusEntry):
@@ -348,11 +366,20 @@ class RouterStatusEntryV3(RouterStatusEntry):
   def _single_fields(self):
     return ('r', 's', 'v', 'w', 'p')
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntryV3):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class RouterStatusEntryMicroV3(RouterStatusEntry):
@@ -410,11 +437,20 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   def _single_fields(self):
     return ('r', 's', 'v', 'w', 'm')
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntryMicroV3):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 def _parse_r_line(desc, value, validate, include_digest = True):

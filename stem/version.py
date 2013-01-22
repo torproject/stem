@@ -18,9 +18,7 @@ easily parsed and compared, for instance...
   get_system_tor_version - gets the version of our system's tor installation
 
   Version - Tor versioning information
-    |- meets_requirements - checks if this version meets the given requirements
-    |- __str__ - string representation
-    +- __cmp__ - compares with another Version
+    +- meets_requirements - checks if this version meets the given requirements
 
   VersionRequirements - Series of version requirements
     |- greater_than - adds rule that matches if we're greater than a version
@@ -187,22 +185,20 @@ class Version(object):
 
     return self.version_str
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     """
     Compares version ordering according to the spec.
     """
 
     if not isinstance(other, Version):
-      return 1  # this is also used for equality checks
+      return False
 
     for attr in ("major", "minor", "micro", "patch"):
       my_version = max(0, self.__dict__[attr])
       other_version = max(0, other.__dict__[attr])
 
-      if my_version > other_version:
-        return 1
-      elif my_version < other_version:
-        return -1
+      if my_version != other_version:
+        return method(my_version, other_version)
 
     # According to the version spec...
     #
@@ -212,12 +208,16 @@ class Version(object):
     my_status = self.status if self.status else ""
     other_status = other.status if other.status else ""
 
-    if my_status > other_status:
-      return 1
-    elif my_status < other_status:
-      return -1
-    else:
-      return 0
+    return method(my_status, other_status)
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class VersionRequirements(object):
