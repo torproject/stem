@@ -54,7 +54,7 @@ Library for working with the tor process.
   Flag              Description
   ================= ===========
   **AUTHORITY**     relay is a directory authority
-  **BADEXIT**       relay shouldn't be used as an exit due to being either problematic or malicious (`https://trac.torproject.org/projects/tor/wiki/doc/badRelays`_)
+  **BADEXIT**       relay shouldn't be used as an exit due to being either problematic or malicious (`wiki <https://trac.torproject.org/projects/tor/wiki/doc/badRelays>`_)
   **BADDIRECTORY**  relay shouldn't be used for directory information
   **EXIT**          relay's exit policy makes it more useful as an exit rather than middle hop
   **FAST**          relay's suitable for high-bandwidth circuits
