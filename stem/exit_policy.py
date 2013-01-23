@@ -580,9 +580,9 @@ class ExitPolicyRule(object):
 
   def get_address_type(self):
     """
-    Provides the :data:`~stem.exit_policy.AddressType: for our policy.
+    Provides the :data:`~stem.exit_policy.AddressType` for our policy.
 
-    :returns: :data:`~stem.exit_policy.AddressType: for the type of address that we have
+    :returns: :data:`~stem.exit_policy.AddressType` for the type of address that we have
     """
 
     return _int_to_address_type(self._address_type)
