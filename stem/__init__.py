@@ -393,6 +393,7 @@ __all__ = [
   "ProtocolError",
   "OperationFailed",
   "UnsatisfiableRequest",
+  "CircuitExtensionFailed",
   "InvalidRequest",
   "InvalidArguments",
   "SocketError",

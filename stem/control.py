@@ -1701,10 +1701,10 @@ class Controller(BaseController):
     :returns: str of the circuit id of the created or extended circuit
 
     :raises:
-      :class:`stem.InvalidRequest` if one of the parameters were invalid
-      :class:`stem.CircuitExtensionFailed` if we were waiting for the circuit
+      * :class:`stem.InvalidRequest` if one of the parameters were invalid
+      * :class:`stem.CircuitExtensionFailed` if we were waiting for the circuit
         to build but it failed
-      :class:`stem.ControllerError` if the call fails
+      * :class:`stem.ControllerError` if the call fails
     """
 
     # Attaches a temporary listener for CIRC events if we'll be waiting for it
