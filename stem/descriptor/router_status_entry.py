@@ -95,7 +95,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
   Information about an individual router stored within a network status
   document. This is the common parent for concrete status entry types.
 
-  :var NetworkStatusDocument document: **\*** document that this descriptor came from
+  :var stem.descriptor.networkstatus.NetworkStatusDocument document: **\*** document that this descriptor came from
 
   :var str nickname: **\*** router's nickname
   :var str fingerprint: **\*** router's fingerprint
