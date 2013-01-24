@@ -439,7 +439,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var list client_versions: list of recommended client tor versions
   :var list server_versions: list of recommended server tor versions
   :var list known_flags: **\*** list of :data:`~stem.Flag` for the router's flags
-  :var list params: **\*** dict of parameter(**str**) => value(**int**) mappings
+  :var dict params: **\*** dict of parameter(**str**) => value(**int**) mappings
   :var list directory_authorities: **\*** list of :class:`~stem.descriptor.networkstatus.DirectoryAuthority`
     objects that have generated this document
   :var list signatures: **\*** :class:`~stem.descriptor.networkstatus.DocumentSignature`
