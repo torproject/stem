@@ -213,7 +213,7 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
       router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
   elif document_type == BridgeNetworkStatusDocument:
     document_type = BridgeNetworkStatusDocument
-    router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
+    router_type = stem.descriptor.router_status_entry.RouterStatusEntryV2
   else:
     raise ValueError("Document type %i isn't recognized (only able to parse v2, v3, and bridge)" % document_type)
 
@@ -1339,7 +1339,7 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
   Network status document containing bridges. This is only available through
   the metrics site.
 
-  :var tuple routers: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
+  :var tuple routers: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2`
     contained in the document
   :var datetime published: time when the document was published
   """
@@ -1368,6 +1368,6 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
     self.routers = tuple(stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
-      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
+      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
       extra_args = (self,),
     ))
