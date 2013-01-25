@@ -1352,7 +1352,7 @@ class DocumentSignature(object):
     if not isinstance(other, DocumentSignature):
       return False
 
-    for attr in ("identity", "key_digest", "signature"):
+    for attr in ("method", "identity", "key_digest", "signature"):
       if getattr(self, attr) != getattr(other, attr):
         return method(getattr(self, attr), getattr(other, attr))
 
