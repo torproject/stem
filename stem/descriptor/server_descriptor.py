@@ -36,6 +36,7 @@ import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
 import stem.prereq
 import stem.util.connection
+import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
 
@@ -818,7 +819,7 @@ class RelayDescriptor(ServerDescriptor):
 
     # get the key representation in bytes
 
-    key_bytes = base64.b64decode(key_as_string)
+    key_bytes = base64.b64decode(stem.util.str_tools.to_bytes(key_as_string))
 
     return key_bytes
 

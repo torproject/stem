@@ -5,6 +5,7 @@ Toolkit for various string activity.
 
 ::
 
+  to_bytes - normalizes string ASCII bytes
   to_camel_case - converts a string to camel case
   get_size_label - human readable label for a number of bytes
   get_time_label - human readable label for a number of seconds
@@ -16,6 +17,8 @@ Toolkit for various string activity.
 """
 
 import datetime
+
+import stem.prereq
 
 # label conversion tuples of the form...
 # (bits / bytes / seconds, short label, long label)
@@ -43,6 +46,31 @@ TIME_UNITS = (
   (60.0, "m", " minute"),
   (1.0, "s", " second"),
 )
+
+if stem.prereq.is_python_3():
+  import codecs
+
+  def _to_bytes(msg):
+    return codecs.latin_1_encode(msg)[0]
+else:
+  def _to_bytes(msg):
+    return msg
+
+
+def to_bytes(msg):
+  """
+  Provides the ASCII bytes for the given string. This is purely to provide
+  python 3 compatability, normalizing the unicode/ASCII change in the version
+  bump. For an explanation of this see...
+
+  http://python3porting.com/problems.html#nicer-solutions
+
+  :param msg label: string to be converted
+
+  :returns: ASCII bytes for string
+  """
+
+  return _to_bytes(msg)
 
 
 def to_camel_case(label, divider = "_", joiner = " "):

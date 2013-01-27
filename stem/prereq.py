@@ -23,8 +23,6 @@ series). Other requirements for complete functionality are...
 
 import sys
 
-from stem.util import log
-
 IS_CRYPTO_AVAILABLE = None
 
 
@@ -76,6 +74,8 @@ def is_crypto_available():
   global IS_CRYPTO_AVAILABLE
 
   if IS_CRYPTO_AVAILABLE is None:
+    from stem.util import log
+
     try:
       from Crypto.PublicKey import RSA
       from Crypto.Util import asn1

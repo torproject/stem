@@ -21,6 +21,7 @@ import datetime
 
 import stem.descriptor
 import stem.exit_policy
+import stem.util.str_tools
 
 
 def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
@@ -699,7 +700,7 @@ def _decode_fingerprint(identity, validate):
   fingerprint = ""
 
   try:
-    identity_decoded = base64.b64decode(identity)
+    identity_decoded = base64.b64decode(stem.util.str_tools.to_bytes(identity))
   except TypeError:
     if not validate:
       return None
@@ -717,7 +718,8 @@ def _decode_fingerprint(identity, validate):
     # >>> '0xa'[2:].zfill(2).upper()
     # '0A'
 
-    fingerprint += hex(ord(char))[2:].zfill(2).upper()
+    char_int = char if isinstance(char, int) else ord(char)
+    fingerprint += hex(char_int)[2:].zfill(2).upper()
 
   if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
     if not validate:
