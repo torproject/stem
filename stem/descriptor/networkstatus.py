@@ -578,7 +578,12 @@ class _DocumentHeader(object):
       _check_for_misordered_fields(entries, HEADER_FIELDS)
 
   def meets_consensus_method(self, method):
-    return bool(self.consensus_method >= method or filter(lambda x: x >= method, self.consensus_methods))
+    if self.consensus_method is not None:
+      return self.consensus_method >= method
+    elif self.consensus_methods is not None:
+      return bool(filter(lambda x: x >= method, self.consensus_methods))
+    else:
+      return False  # malformed document
 
   def _parse(self, entries, validate):
     for keyword, values in entries.items():
