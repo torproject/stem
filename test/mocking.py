@@ -300,8 +300,12 @@ def support_with(obj):
   :returns: input object
   """
 
-  obj.__dict__["__enter__"] = return_value(obj)
-  obj.__dict__["__exit__"] = no_op()
+  if not hasattr(obj, "__enter__"):
+    setattr(obj, "__enter__", return_value(obj))
+
+  if not hasattr(obj, "__exit__"):
+    setattr(obj, "__exit__", no_op())
+
   return obj
 
 
@@ -320,9 +324,9 @@ def mock(target, mock_call, target_module=None):
   :param module target_module: module that this is mocking, this defaults to the inspected value
   """
 
-  if hasattr(target, "__dict__") and "mock_id" in target.__dict__:
+  if hasattr(target, "mock_id"):
     # we're overriding an already mocked function
-    mocking_id = target.__dict__["mock_id"]
+    mocking_id = getattr(target, "mock_id")
     target_module, target_function, _ = MOCK_STATE[mocking_id]
   else:
     # this is a new mocking, save the original state
@@ -332,13 +336,11 @@ def mock(target, mock_call, target_module=None):
     MOCK_STATE[mocking_id] = (target_module, target_function, target)
 
   mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
-  mock_wrapper.__dict__["mock_id"] = mocking_id
+  setattr(mock_wrapper, "mock_id", mocking_id)
 
   # mocks the function with this wrapper
-  if hasattr(target, "__dict__"):
-    target_module.__dict__[target_function] = mock_wrapper
-  else:
-    setattr(target_module, target.__name__, mock_call)
+
+  setattr(target_module, target_function, mock_wrapper)
 
 
 def mock_method(target_class, method_name, mock_call):
@@ -371,7 +373,7 @@ def mock_method(target_class, method_name, mock_call):
 
   target_method = getattr(target_class, method_name)
 
-  if "mock_id" in target_method.__dict__:
+  if hasattr(target_method, "mock_id"):
     # we're overriding an already mocked method
     mocking_id = target_method.mock_id
     _, target_method, _ = MOCK_STATE[mocking_id]
@@ -431,8 +433,8 @@ def get_real_function(function):
   :returns: original implementation of the function
   """
 
-  if "mock_id" in function.__dict__:
-    mocking_id = function.__dict__["mock_id"]
+  if hasattr(function, "mock_id"):
+    mocking_id = getattr(function, "mock_id")
     return MOCK_STATE[mocking_id][2]
   else:
     return function
@@ -545,7 +547,7 @@ def get_protocolinfo_response(**attributes):
   stem.response.convert("PROTOCOLINFO", protocolinfo_response)
 
   for attr in attributes:
-    protocolinfo_response.__dict__[attr] = attributes[attr]
+    setattr(protocolinfo_response, attr, attributes[attr])
 
   return protocolinfo_response
 

@@ -80,7 +80,7 @@ class Enum(object):
 
       keys.append(key)
       values.append(val)
-      self.__dict__[key] = val
+      setattr(self, key, val)
 
     self._keys = tuple(keys)
     self._values = tuple(values)
@@ -156,8 +156,8 @@ class Enum(object):
     :raises: **ValueError** if the key doesn't exist
     """
 
-    if item in self.__dict__:
-      return self.__dict__[item]
+    if item in vars(self):
+      return getattr(self, item)
     else:
       keys = ", ".join(self.keys())
       raise ValueError("'%s' isn't among our enumeration keys, which includes: %s" % (item, keys))
