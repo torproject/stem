@@ -118,14 +118,14 @@ class TestVersion(unittest.TestCase):
   def test_nonversion_comparison(self):
     """
     Checks that we can be compared with other types.
+
+    In python 3 on only equality comparisons work, greater than and less than
+    comparisons result in a TypeError.
     """
 
     test_version = Version("0.1.2.3")
     self.assertNotEqual(test_version, None)
-    self.assertTrue(test_version > None)
-
     self.assertNotEqual(test_version, 5)
-    self.assertTrue(test_version > 5)
 
   def test_string(self):
     """
