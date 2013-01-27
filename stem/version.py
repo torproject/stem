@@ -194,8 +194,14 @@ class Version(object):
       return False
 
     for attr in ("major", "minor", "micro", "patch"):
-      my_version = max(0, self.__dict__[attr])
-      other_version = max(0, other.__dict__[attr])
+      my_version = getattr(self, attr)
+      other_version = getattr(other, attr)
+
+      if my_version is None:
+        my_version = 0
+
+      if other_version is None:
+        other_version = 0
 
       if my_version != other_version:
         return method(my_version, other_version)
