@@ -127,7 +127,14 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
   last_problem = "Timed out"
 
   while True:
-    init_line = tor_process.stdout.readline().strip()
+    # Tor's stdout will be read as ASCII bytes. This is fine for python 2, but
+    # in python 3 that means it'll mismatch with other operations (for instance
+    # the bootstrap_line.search() call later will fail).
+    #
+    # It seems like python 2.x is perfectly happy for this to be unicode, so
+    # normalizing to that.
+
+    init_line = tor_process.stdout.readline().decode("utf-8", "replace").strip()
 
     # this will provide empty results if the process is terminated
     if not init_line:
