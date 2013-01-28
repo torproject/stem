@@ -472,9 +472,14 @@ def recv_message(control_file):
       prefix = logging_prefix % "SocketClosed"
       log.info(prefix + "socket file has been closed")
       raise stem.SocketClosed("socket file has been closed")
-    except socket.error, exc:
-      # when disconnected we get...
-      # socket.error: [Errno 107] Transport endpoint is not connected
+    except (socket.error, ValueError), exc:
+      # When disconnected we get...
+      #
+      # Python 2:
+      #   socket.error: [Errno 107] Transport endpoint is not connected
+      #
+      # Python 3:
+      #   ValueError: I/O operation on closed file.
 
       prefix = logging_prefix % "SocketClosed"
       log.info(prefix + "received exception \"%s\"" % exc)
