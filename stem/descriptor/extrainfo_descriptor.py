@@ -897,15 +897,15 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
     ExtraInfoDescriptor._parse(self, entries, validate)
 
   def _required_fields(self):
-    excluded_fields = (
+    excluded_fields = [
       "router-signature",
-    )
+    ]
 
-    included_fields = (
+    included_fields = [
       "router-digest",
-    )
+    ]
 
-    return included_fields + filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
+    return tuple(included_fields + [f for f in REQUIRED_FIELDS if not f in excluded_fields])
 
   def _last_keyword(self):
     return None

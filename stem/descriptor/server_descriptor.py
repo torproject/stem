@@ -910,17 +910,17 @@ class BridgeDescriptor(ServerDescriptor):
     # bridge required fields are the same as a relay descriptor, minus items
     # excluded according to the format page
 
-    excluded_fields = (
+    excluded_fields = [
       "onion-key",
       "signing-key",
       "router-signature",
-    )
+    ]
 
-    included_fields = (
+    included_fields = [
       "router-digest",
-    )
+    ]
 
-    return included_fields + filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
+    return tuple(included_fields + [f for f in REQUIRED_FIELDS if not f in excluded_fields])
 
   def _single_fields(self):
     return self._required_fields() + SINGLE_FIELDS
