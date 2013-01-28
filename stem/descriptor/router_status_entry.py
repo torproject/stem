@@ -17,6 +17,7 @@ sources...
 """
 
 import base64
+import binascii
 import datetime
 
 import stem.descriptor
@@ -701,7 +702,7 @@ def _decode_fingerprint(identity, validate):
 
   try:
     identity_decoded = base64.b64decode(stem.util.str_tools.to_bytes(identity))
-  except TypeError:
+  except (TypeError, binascii.Error):
     if not validate:
       return None
 
