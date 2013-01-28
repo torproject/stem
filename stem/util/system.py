@@ -33,6 +33,7 @@ import subprocess
 import time
 
 import stem.util.proc
+import stem.util.str_tools
 
 from stem import UNDEFINED
 from stem.util import log
@@ -806,7 +807,7 @@ def _set_prctl_name(process_name):
 
   libc = ctypes.CDLL(ctypes.util.find_library("c"))
   name_buffer = ctypes.create_string_buffer(len(process_name) + 1)
-  name_buffer.value = process_name
+  name_buffer.value = stem.util.str_tools.to_bytes(process_name)
   libc.prctl(PR_SET_NAME, ctypes.byref(name_buffer), 0, 0, 0)
 
 
