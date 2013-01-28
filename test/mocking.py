@@ -52,7 +52,6 @@ import hashlib
 import inspect
 import itertools
 import StringIO
-import __builtin__
 
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.networkstatus
@@ -409,12 +408,14 @@ def revert_mocking():
     # makes the following check fail. Haven't a clue why.
 
     if stem.prereq.is_python_3():
+      import builtins
       builtin_module = builtins
     else:
+      import __builtin__
       builtin_module = __builtin__
 
     if module == builtin_module:
-      setattr(__builtin__, function, impl)
+      setattr(builtin_module, function, impl)
     else:
       setattr(module, function, impl)
 

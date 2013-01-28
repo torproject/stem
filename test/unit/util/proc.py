@@ -6,6 +6,8 @@ import os
 import StringIO
 import unittest
 
+import stem.prereq
+
 from stem.util import proc
 from test import mocking
 
@@ -155,10 +157,18 @@ class TestProc(unittest.TestCase):
     tcp = '\n 0: 11111111:1111 22222222:2222 01 44444444:44444444 55:55555555 66666666 1111 8 99999999'
     udp = '\n A: BBBBBBBB:BBBB CCCCCCCC:CCCC DD EEEEEEEE:EEEEEEEE FF:FFFFFFFF GGGGGGGG 1111 H IIIIIIII'
 
-    mocking.mock(open, mocking.return_for_args({
-      ('/proc/net/tcp',): StringIO.StringIO(tcp),
-      ('/proc/net/udp',): StringIO.StringIO(udp)
-    }))
+    if stem.prereq.is_python_3():
+      import builtins
+
+      mocking.mock(builtins.open, mocking.return_for_args({
+        ('/proc/net/tcp',): StringIO.StringIO(tcp),
+        ('/proc/net/udp',): StringIO.StringIO(udp)
+      }), builtins)
+    else:
+      mocking.mock(open, mocking.return_for_args({
+        ('/proc/net/tcp',): StringIO.StringIO(tcp),
+        ('/proc/net/udp',): StringIO.StringIO(udp)
+      }))
 
     # tests the edge case of pid = 0
     self.assertEquals([], proc.get_connections(0))
