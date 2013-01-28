@@ -488,11 +488,16 @@ class DescriptorReader(object):
 
     # Checking if it's a tar file may fail due to permissions so failing back
     # to the mime type...
-    # IOError: [Errno 13] Permission denied: '/vmlinuz.old'
+    #
+    #   IOError: [Errno 13] Permission denied: '/vmlinuz.old'
+    #
+    # With python 3 insuffient permissions raises an AttributeError instead...
+    #
+    #   http://bugs.python.org/issue17059
 
     try:
       is_tar = tarfile.is_tarfile(target)
-    except IOError:
+    except (IOError, AttributeError):
       is_tar = target_type[0] == 'application/x-tar'
 
     if target_type[0] in (None, 'text/plain'):
