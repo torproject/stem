@@ -181,7 +181,7 @@ class ControlSocket(object):
 
       with self._recv_lock:
         self._socket = self._make_socket()
-        self._socket_file = self._socket.makefile()
+        self._socket_file = self._socket.makefile(mode = "rw")
         self._is_alive = True
 
         # It's possible for this to have a transient failure...
