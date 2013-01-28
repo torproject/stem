@@ -110,7 +110,7 @@ class TestSystem(unittest.TestCase):
     """
 
     # mock response with a linux and bsd resolver
-    running_commands = ["irssi", "moc", "tor", "ps", "  firefox  "]
+    running_commands = [u"irssi", u"moc", u"tor", u"ps", u"  firefox  "]
 
     for ps_cmd in (system.IS_RUNNING_PS_LINUX, system.IS_RUNNING_PS_BSD):
       mocking.mock(system.call, mock_call(ps_cmd, running_commands))

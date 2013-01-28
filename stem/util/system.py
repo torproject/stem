@@ -209,7 +209,7 @@ def is_running(command):
       command_listing = call(secondary_resolver)
 
     if command_listing:
-      command_listing = map(str.strip, command_listing)
+      command_listing = map(unicode.strip, command_listing)
       return command in command_listing
 
   return None
@@ -678,7 +678,7 @@ def call(command, default = UNDEFINED):
       log.trace(trace_prefix + ", stderr:\n%s" % stderr)
 
     if stdout:
-      return stdout.splitlines()
+      return stdout.decode("utf-8", "replace").splitlines()
     else:
       return []
   except OSError, exc:
