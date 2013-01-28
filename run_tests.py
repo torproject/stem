@@ -271,6 +271,16 @@ def load_user_configuration(test_config):
 
 
 def _clean_orphaned_pyc():
+  # If we're running python 3 then the *.pyc files are no longer bundled with
+  # the *.py. Rather, they're in a __pycache__ directory.
+  #
+  # At the moment there's no point in checking for orphaned bytecode with
+  # python 3 because it's an exported copy of the python 2 codebase, so
+  # skipping.
+
+  if CONFIG["argument.python3"]:
+    return
+
   test.output.print_noline("  checking for orphaned .pyc files... ", *test.runner.STATUS_ATTR)
 
   orphaned_pyc = []
