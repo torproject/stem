@@ -104,7 +104,7 @@ def get_config_policy(rules):
   :raises: **ValueError** if input isn't a valid tor exit policy
   """
 
-  if isinstance(rules, str):
+  if isinstance(rules, (str, unicode)):
     rules = rules.split(',')
 
   result = []
@@ -143,7 +143,7 @@ class ExitPolicy(object):
   def __init__(self, *rules):
     # sanity check the types
     for rule in rules:
-      if not isinstance(rule, (str, ExitPolicyRule)):
+      if not isinstance(rule, (str, unicode, ExitPolicyRule)):
         raise TypeError("Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)" % (type(rule), rules))
 
     self._rules = None          # lazily loaded series of ExitPolicyRule
@@ -300,7 +300,7 @@ class ExitPolicy(object):
       is_all_accept, is_all_reject = True, True
 
       for rule in self._input_rules:
-        if isinstance(rule, str):
+        if isinstance(rule, (str, unicode)):
           rule = ExitPolicyRule(rule.strip())
 
         if rule.is_accept:

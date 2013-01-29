@@ -64,7 +64,7 @@ def _get_raw_tar_descriptors():
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
           entry.readline()  # strip header
-          raw_descriptors.append(entry.read())
+          raw_descriptors.append(entry.read().decode("utf-8", "replace"))
           entry.close()
     finally:
       if tar_file:

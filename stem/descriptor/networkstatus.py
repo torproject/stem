@@ -1343,10 +1343,10 @@ class DocumentSignature(object):
 
     if validate:
       if not stem.util.tor_tools.is_valid_fingerprint(identity):
-        raise ValueError("Malformed fingerprint (%s) in the document signature" % (identity))
+        raise ValueError("Malformed fingerprint (%s) in the document signature" % identity)
 
       if not stem.util.tor_tools.is_valid_fingerprint(key_digest):
-        raise ValueError("Malformed key digest (%s) in the document signature" % (key_digest))
+        raise ValueError("Malformed key digest (%s) in the document signature" % key_digest)
 
     self.method = method
     self.identity = identity

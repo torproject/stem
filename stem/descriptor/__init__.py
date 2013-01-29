@@ -27,6 +27,8 @@ __all__ = [
 import os
 import re
 
+import stem.prereq
+
 try:
   # added in python 2.7
   from collections import OrderedDict
@@ -96,6 +98,10 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
   import stem.descriptor.server_descriptor
   import stem.descriptor.extrainfo_descriptor
   import stem.descriptor.networkstatus
+
+  # attempt to read content as unicode
+
+  descriptor_file = _UnicodeReader(descriptor_file)
 
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
@@ -234,6 +240,65 @@ class Descriptor(object):
 
   def __str__(self):
     return self._raw_contents
+
+
+class _UnicodeReader(object):
+  """
+  File-like object that wraps another file. This replaces read ASCII bytes with
+  unicode content. This only supports read operations.
+  """
+
+  def __init__(self, wrapped_file):
+    self.wrapped_file = wrapped_file
+
+  def close(self):
+    return self.wrapped_file.close()
+
+  def getvalue(self):
+    return self.wrapped_file.getvalue()
+
+  def isatty(self):
+    return self.wrapped_file.isatty()
+
+  def next(self):
+    return self.wrapped_file.next()
+
+  def read(self, n = -1):
+    return self._to_unicode(self.wrapped_file.read(n))
+
+  def readline(self):
+    return self._to_unicode(self.wrapped_file.readline())
+
+  def readlines(self, sizehint = 0):
+    # being careful to do in-place conversion so we don't accidently double our
+    # memory usage
+
+    results = self.wrapped_file.readlines(sizehint)
+
+    for i in xrange(len(results)):
+      results[i] = self._to_unicode(results[i])
+
+    return results
+
+  def seek(self, pos, mode = 0):
+    return self.wrapped_file.seek(pos, mode)
+
+  def tell(self):
+    return self.wrapped_file.tell()
+
+  def _to_unicode(self, msg):
+    if msg is None:
+      return msg
+
+    if stem.prereq.is_python_3():
+      is_unicode = isinstance(msg, str)
+    else:
+      is_unicode = isinstance(msg, unicode)
+
+    if is_unicode:
+      return msg
+    else:
+      return msg.decode("utf-8", "replace")
 
 
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):
