@@ -51,7 +51,10 @@ if stem.prereq.is_python_3():
   import codecs
 
   def _to_bytes(msg):
-    return codecs.latin_1_encode(msg)[0]
+    if isinstance(msg, str):
+      return codecs.latin_1_encode(msg)[0]
+    else:
+      return msg
 else:
   def _to_bytes(msg):
     return msg
