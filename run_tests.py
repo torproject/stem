@@ -412,6 +412,13 @@ if __name__ == '__main__':
 
   load_user_configuration(test_config)
 
+  # check that we have 2to3 and python3 available in our PATH
+  if CONFIG["argument.python3"]:
+    for required_cmd in ("2to3", "python3"):
+      if not system.is_available(required_cmd):
+        test.output.print_line("Unable to test python 3 because %s isn't in your path" % required_cmd, *test.runner.ERROR_ATTR)
+        sys.exit(1)
+
   if CONFIG["argument.python3"] and sys.version_info.major != 3:
     python3_destination = os.path.join(CONFIG["integ.test_directory"], "python3")
 
