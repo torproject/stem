@@ -42,7 +42,7 @@ def check_requirements():
 
 def is_python_26():
   """
-  Checks if we're in the 2.6 - 2.x range.
+  Checks if we're running python 2.6 or above.
 
   :returns: bool that is True if we meet this requirement and False otherwise
   """
@@ -52,7 +52,7 @@ def is_python_26():
 
 def is_python_27():
   """
-  Checks if we're in the 2.7 - 2.x range.
+  Checks if we're running python 2.7 or above.
 
   :returns: bool that is True if we meet this requirement and False otherwise
   """
@@ -95,7 +95,7 @@ def _check_version(minor_req):
   major_version, minor_version = sys.version_info[0:2]
 
   if major_version > 2:
-    return False
+    return True
   elif major_version < 2 or minor_version < minor_req:
     return False
 
