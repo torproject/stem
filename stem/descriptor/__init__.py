@@ -82,6 +82,16 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
   tordnsel 1.0                          **unsupported**
   ===================================== =====
 
+  If you're using python 3 then beware of the open() function's universal
+  newline translation. By default open() converts all common line endings (NL,
+  CR, and CRNL) into NL. In some edge cases this can cause us to misparse
+  content. To disable newline translation set the **newline** to an empty
+  string. For example...
+
+  ::
+
+    my_descriptor_file = open(descrptor_path, newline='')
+
   :param file descriptor_file: opened file with the descriptor contents
   :param str descriptor_type: `descriptor type <https://metrics.torproject.org/formats.html#descriptortypes>`_, this is guessed if not provided
   :param str path: absolute path to the file's location on disk
