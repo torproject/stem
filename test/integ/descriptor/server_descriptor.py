@@ -13,8 +13,9 @@ import stem.descriptor
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.version
-import test.integ.descriptor
 import test.runner
+
+from test.integ.descriptor import open_desc
 
 
 class TestServerDescriptor(unittest.TestCase):
@@ -23,9 +24,7 @@ class TestServerDescriptor(unittest.TestCase):
     Parses and checks our results against a server descriptor from metrics.
     """
 
-    descriptor_path = test.integ.descriptor.get_resource("example_descriptor")
-
-    descriptor_file = open(descriptor_path)
+    descriptor_file = open_desc("example_descriptor")
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
@@ -95,9 +94,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses and checks our results against a server descriptor from metrics.
     """
 
-    descriptor_path = test.integ.descriptor.get_resource("metrics_server_desc_multiple")
-
-    with open(descriptor_path) as descriptor_file:
+    with open_desc("metrics_server_desc_multiple") as descriptor_file:
       descriptors = list(stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"))
 
       self.assertEquals(2, len(descriptors))
@@ -113,9 +110,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a relay server descriptor from 2005.
     """
 
-    descriptor_path = test.integ.descriptor.get_resource("old_descriptor")
-
-    descriptor_file = open(descriptor_path)
+    descriptor_file = open_desc("old_descriptor")
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
@@ -177,7 +172,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       test.runner.skip(self, "(no cached descriptors)")
       return
 
-    with open(descriptor_path) as descriptor_file:
+    with open_desc(descriptor_path, absolute = True) as descriptor_file:
       for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file):
         # the following attributes should be deprecated, and not appear in the wild
         self.assertEquals(None, desc.read_history_end)
@@ -201,9 +196,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a descriptor with non-ascii content.
     """
 
-    descriptor_path = test.integ.descriptor.get_resource("non-ascii_descriptor")
-
-    descriptor_file = open(descriptor_path)
+    descriptor_file = open_desc("non-ascii_descriptor")
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
@@ -243,9 +236,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     returns ('\r' entries).
     """
 
-    descriptor_path = test.integ.descriptor.get_resource("cr_in_contact_line")
-
-    descriptor_file = open(descriptor_path)
+    descriptor_file = open_desc("cr_in_contact_line")
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
@@ -271,9 +262,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     where we shouldn't be.
     """
 
-    descriptor_path = test.integ.descriptor.get_resource("negative_uptime")
-
-    descriptor_file = open(descriptor_path)
+    descriptor_file = open_desc("negative_uptime")
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
@@ -295,9 +284,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a bridge descriptor.
     """
 
-    descriptor_path = test.integ.descriptor.get_resource("bridge_descriptor")
-
-    descriptor_file = open(descriptor_path)
+    descriptor_file = open_desc("bridge_descriptor")
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
