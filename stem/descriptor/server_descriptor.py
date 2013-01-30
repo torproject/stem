@@ -663,7 +663,7 @@ class RelayDescriptor(ServerDescriptor):
 
       if start >= 0 and sig_start > 0 and end > start:
         for_digest = raw_descriptor[start:end]
-        digest_hash = hashlib.sha1(for_digest)
+        digest_hash = hashlib.sha1(stem.util.str_tools.to_bytes(for_digest))
         self._digest = digest_hash.hexdigest().upper()
       else:
         raise ValueError("unable to calculate digest for descriptor")
@@ -684,7 +684,7 @@ class RelayDescriptor(ServerDescriptor):
     if self.fingerprint:
       # calculate the signing key hash
 
-      key_der_as_hash = hashlib.sha1(key_as_bytes).hexdigest()
+      key_der_as_hash = hashlib.sha1(stem.util.str_tools.to_bytes(key_as_bytes)).hexdigest()
 
       if key_der_as_hash != self.fingerprint.lower():
         log.warn("Signing key hash: %s != fingerprint: %s" % (key_der_as_hash, self.fingerprint.lower()))
