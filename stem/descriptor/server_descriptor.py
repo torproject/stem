@@ -124,7 +124,7 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True):
 
     if descriptor_content:
       # strip newlines from annotations
-      annotations = map(str.strip, annotations)
+      annotations = map(unicode.strip, annotations)
 
       descriptor_text = "".join(descriptor_content)
 

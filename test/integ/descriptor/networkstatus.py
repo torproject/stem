@@ -15,7 +15,7 @@ import stem.descriptor.networkstatus
 import stem.version
 import test.runner
 
-from test.integ.descriptor import get_resource, open_desc
+from test.integ.descriptor import get_resource
 
 
 class TestNetworkStatus(unittest.TestCase):
@@ -42,7 +42,7 @@ class TestNetworkStatus(unittest.TestCase):
       return
 
     count = 0
-    with open_desc(consensus_path, absolute = True) as descriptor_file:
+    with open(consensus_path, 'rb') as descriptor_file:
       document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 
       for router in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type):
@@ -89,7 +89,7 @@ class TestNetworkStatus(unittest.TestCase):
       return
 
     count = 0
-    with open_desc(consensus_path, absolute = True) as descriptor_file:
+    with open(consensus_path, 'rb') as descriptor_file:
       document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 
       for router in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, is_microdescriptor = True):
@@ -120,7 +120,7 @@ class TestNetworkStatus(unittest.TestCase):
     consensus_path = get_resource("metrics_consensus")
 
     for specify_type in (True, False):
-      with open_desc(consensus_path, absolute = True) as descriptor_file:
+      with open(consensus_path, 'rb') as descriptor_file:
         if specify_type:
           descriptors = stem.descriptor.parse_file(descriptor_file, "network-status-consensus-3 1.0", path = consensus_path)
         else:
@@ -142,7 +142,7 @@ class TestNetworkStatus(unittest.TestCase):
 
     consensus_path = get_resource("bridge_network_status")
 
-    with open_desc(consensus_path, absolute = True) as descriptor_file:
+    with open(consensus_path, 'rb') as descriptor_file:
       descriptors = stem.descriptor.parse_file(descriptor_file, path = consensus_path)
 
       router = next(descriptors)
@@ -245,7 +245,7 @@ mfWcW0b+jsrXcJoCxV5IrwCDF3u1aC3diwZY6yiG186pwWbOwE41188XI2DeYPwE
 I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
 -----END SIGNATURE-----"""
 
-    with open_desc("cached-consensus") as descriptor_file:
+    with open(get_resource("cached-consensus"), 'rb') as descriptor_file:
       document = stem.descriptor.networkstatus.NetworkStatusDocumentV3(descriptor_file.read(), default_params = False)
 
       self.assertEquals(3, document.version)
@@ -316,7 +316,7 @@ nTA+fD8JQqpPtb8b0SnG9kwy75eS//sRu7TErie2PzGMxrf9LH0LAgMBAAE=
 TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
 -----END SIGNATURE-----"""
 
-    with open_desc("cached-consensus-v2") as descriptor_file:
+    with open(get_resource("cached-consensus-v2"), 'rb') as descriptor_file:
       descriptor_file.readline()  # strip header
       document = stem.descriptor.networkstatus.NetworkStatusDocumentV2(descriptor_file.read())
 
@@ -381,7 +381,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
 
     vote_path = get_resource("metrics_vote")
 
-    with open_desc(vote_path, absolute = True) as descriptor_file:
+    with open(vote_path, 'rb') as descriptor_file:
       descriptors = stem.descriptor.parse_file(descriptor_file, path = vote_path)
 
       router = next(descriptors)
@@ -443,7 +443,7 @@ JZ/1HL9sHyZfo6bwaC6YSM9PNiiY6L7rnGpS7UkHiFI+M96VCMorvjm5YPs3FioJ
 DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 -----END SIGNATURE-----"""
 
-    with open_desc("vote") as descriptor_file:
+    with open(get_resource("vote"), 'rb') as descriptor_file:
       document = stem.descriptor.networkstatus.NetworkStatusDocumentV3(descriptor_file.read(), default_params = False)
 
       self.assertEquals(3, document.version)

@@ -513,12 +513,7 @@ class DescriptorReader(object):
     try:
       self._notify_read_listeners(target)
 
-      if stem.prereq.is_python_3():
-        target_file = open(target, newline = '')
-      else:
-        target_file = open(target)
-
-      with target_file as target_file:
+      with open(target, 'rb') as target_file:
         for desc in stem.descriptor.parse_file(target_file, validate = self._validate, path = target):
           if self._is_stopped.isSet():
             return

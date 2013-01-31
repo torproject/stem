@@ -72,6 +72,7 @@ else:
     else:
       return msg
 
+
 def to_bytes(msg):
   """
   Provides the ASCII bytes for the given string. This is purely to provide

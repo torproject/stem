@@ -12,7 +12,7 @@ import stem.descriptor.extrainfo_descriptor
 import test.runner
 
 from stem.descriptor.extrainfo_descriptor import DirResponse
-from test.integ.descriptor import open_desc
+from test.integ.descriptor import get_resource
 
 
 class TestExtraInfoDescriptor(unittest.TestCase):
@@ -21,7 +21,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     Parses and checks our results against an extrainfo descriptor from metrics.
     """
 
-    descriptor_file = open_desc("extrainfo_relay_descriptor")
+    descriptor_file = open(get_resource("extrainfo_relay_descriptor"), 'rb')
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
@@ -70,7 +70,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     metrics.
     """
 
-    descriptor_file = open_desc("extrainfo_bridge_descriptor")
+    descriptor_file = open(get_resource("extrainfo_bridge_descriptor"), 'rb')
     descriptor_file.readline()  # strip header
     descriptor_contents = descriptor_file.read()
     descriptor_file.close()
@@ -146,7 +146,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       test.runner.skip(self, "(no cached descriptors)")
       return
 
-    with open_desc(descriptor_path, absolute = True) as descriptor_file:
+    with open(descriptor_path, 'rb') as descriptor_file:
       for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file):
         unrecognized_lines = desc.get_unrecognized_lines()
 

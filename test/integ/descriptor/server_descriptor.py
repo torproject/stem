@@ -12,11 +12,10 @@ import stem.control
 import stem.descriptor
 import stem.descriptor.server_descriptor
 import stem.exit_policy
-import stem.util.str_tools
 import stem.version
 import test.runner
 
-from test.integ.descriptor import open_desc
+from test.integ.descriptor import get_resource
 
 
 class TestServerDescriptor(unittest.TestCase):
@@ -25,10 +24,7 @@ class TestServerDescriptor(unittest.TestCase):
     Parses and checks our results against a server descriptor from metrics.
     """
 
-    descriptor_file = open_desc("example_descriptor")
-    descriptor_file.readline()  # strip header
-    descriptor_contents = descriptor_file.read()
-    descriptor_file.close()
+    descriptor_file = open(get_resource("example_descriptor"), 'rb')
 
     expected_family = [
       "$0CE3CFB1E9CC47B63EA8869813BF6FAB7D4540C1",
@@ -59,7 +55,7 @@ dskLSPz8beUW7bzwDjR6EVNGpyoZde83Ejvau+5F2c6cGnlu91fiZN3suE88iE6e
 Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 -----END SIGNATURE-----"""
 
-    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
+    desc = next(stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"))
     self.assertEquals("caerSidi", desc.nickname)
     self.assertEquals("A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB", desc.fingerprint)
     self.assertEquals("71.35.133.197", desc.address)
@@ -95,7 +91,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses and checks our results against a server descriptor from metrics.
     """
 
-    with open_desc("metrics_server_desc_multiple") as descriptor_file:
+    with open(get_resource("metrics_server_desc_multiple"), 'rb') as descriptor_file:
       descriptors = list(stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"))
 
       self.assertEquals(2, len(descriptors))
@@ -111,12 +107,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a relay server descriptor from 2005.
     """
 
-    descriptor_file = open_desc("old_descriptor")
-    descriptor_file.readline()  # strip header
-    descriptor_contents = descriptor_file.read()
-    descriptor_file.close()
+    descriptor_file = open(get_resource("old_descriptor"), 'rb')
 
-    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
+    desc = next(stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"))
     self.assertEquals("krypton", desc.nickname)
     self.assertEquals("3E2F63E2356F52318B536A12B6445373808A5D6C", desc.fingerprint)
     self.assertEquals("212.37.39.59", desc.address)
@@ -173,8 +166,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       test.runner.skip(self, "(no cached descriptors)")
       return
 
-    with open_desc(descriptor_path, absolute = True) as descriptor_file:
-      for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file):
+    with open(descriptor_path, 'rb') as descriptor_file:
+      for desc in stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"):
         # the following attributes should be deprecated, and not appear in the wild
         self.assertEquals(None, desc.read_history_end)
         self.assertEquals(None, desc.write_history_end)
@@ -197,14 +190,11 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a descriptor with non-ascii content.
     """
 
-    descriptor_file = open_desc("non-ascii_descriptor")
-    descriptor_file.readline()  # strip header
-    descriptor_contents = stem.util.str_tools.to_unicode(descriptor_file.read())
-    descriptor_file.close()
+    descriptor_file = open(get_resource("non-ascii_descriptor"), 'rb')
 
     expected_contact = b"2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf".decode("utf-8", "replace")
 
-    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
+    desc = next(stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"))
     self.assertEquals("torrelay389752132", desc.nickname)
     self.assertEquals("5D47E91A1F7421A4E3255F4D04E534E9A21407BB", desc.fingerprint)
     self.assertEquals("130.243.230.116", desc.address)
@@ -237,12 +227,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     returns ('\r' entries).
     """
 
-    descriptor_file = open_desc("cr_in_contact_line")
-    descriptor_file.readline()  # strip header
-    descriptor_contents = descriptor_file.read()
-    descriptor_file.close()
-
-    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
+    descriptor_file = open(get_resource("cr_in_contact_line"), 'rb')
+    desc = next(stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"))
 
     self.assertEquals("pogonip", desc.nickname)
     self.assertEquals("6DABD62BC65D4E6FE620293157FC76968DAB9C9B", desc.fingerprint)
@@ -263,12 +249,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     where we shouldn't be.
     """
 
-    descriptor_file = open_desc("negative_uptime")
-    descriptor_file.readline()  # strip header
-    descriptor_contents = descriptor_file.read()
-    descriptor_file.close()
-
-    desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
+    descriptor_file = open(get_resource("negative_uptime"), 'rb')
+    desc = next(stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"))
 
     self.assertEquals("TipTor", desc.nickname)
     self.assertEquals("137962D4931DBF08A24E843288B8A155D6D2AEDD", desc.fingerprint)
@@ -277,7 +259,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     # modify the relay version so it's after when the negative uptime bug
     # should appear
 
-    descriptor_contents = descriptor_contents.replace("Tor 0.1.1.25", "Tor 0.1.2.7")
+    descriptor_contents = str(desc).replace("Tor 0.1.1.25", "Tor 0.1.2.7")
     self.assertRaises(ValueError, stem.descriptor.server_descriptor.RelayDescriptor, descriptor_contents)
 
   def test_bridge_descriptor(self):
@@ -285,10 +267,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a bridge descriptor.
     """
 
-    descriptor_file = open_desc("bridge_descriptor")
-    descriptor_file.readline()  # strip header
-    descriptor_contents = descriptor_file.read()
-    descriptor_file.close()
+    descriptor_file = open(get_resource("bridge_descriptor"), 'rb')
 
     expected_family = [
       "$CE396C72A3D0880F74C064FEA79D68C15BD380B9",
@@ -296,7 +275,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       "$8C8A470D7C23151665A7B84E75E89FCC205A3304",
     ]
 
-    desc = stem.descriptor.server_descriptor.BridgeDescriptor(descriptor_contents)
+    desc = next(stem.descriptor.parse_file(descriptor_file, "bridge-server-descriptor 1.0"))
     self.assertEquals("Unnamed", desc.nickname)
     self.assertEquals("AE54E28ED069CDF45F3009F963EE3B3D6FA26A2E", desc.fingerprint)
     self.assertEquals("10.45.227.253", desc.address)
