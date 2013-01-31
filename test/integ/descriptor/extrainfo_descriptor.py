@@ -8,7 +8,7 @@ import datetime
 import os
 import unittest
 
-import stem.descriptor.extrainfo_descriptor
+import stem.descriptor
 import test.runner
 
 from stem.descriptor.extrainfo_descriptor import DirResponse
@@ -22,9 +22,6 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     """
 
     descriptor_file = open(get_resource("extrainfo_relay_descriptor"), 'rb')
-    descriptor_file.readline()  # strip header
-    descriptor_contents = descriptor_file.read()
-    descriptor_file.close()
 
     expected_signature = """-----BEGIN SIGNATURE-----
 K5FSywk7qvw/boA4DQcqkls6Ize5vcBYfhQ8JnOeRQC9+uDxbnpm3qaYN9jZ8myj
@@ -32,7 +29,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 7LZqklu+gVvhMKREpchVqlAwXkWR44VENm24Hs+mT3M=
 -----END SIGNATURE-----"""
 
-    desc = stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor(descriptor_contents)
+    desc = next(stem.descriptor.parse_file(descriptor_file, "extra-info 1.0"))
     self.assertEquals("NINJA", desc.nickname)
     self.assertEquals("B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48", desc.fingerprint)
     self.assertEquals(datetime.datetime(2012, 5, 5, 17, 3, 50), desc.published)
@@ -71,9 +68,6 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     """
 
     descriptor_file = open(get_resource("extrainfo_bridge_descriptor"), 'rb')
-    descriptor_file.readline()  # strip header
-    descriptor_contents = descriptor_file.read()
-    descriptor_file.close()
 
     expected_dir_v2_responses = {
       DirResponse.OK: 0,
@@ -92,7 +86,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       DirResponse.BUSY: 0,
     }
 
-    desc = stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(descriptor_contents)
+    desc = next(stem.descriptor.parse_file(descriptor_file, "bridge-extra-info 1.0"))
     self.assertEquals("ec2bridgereaac65a3", desc.nickname)
     self.assertEquals("1EC248422B57D9C0BD751892FE787585407479A4", desc.fingerprint)
     self.assertEquals(datetime.datetime(2012, 6, 8, 2, 21, 27), desc.published)
@@ -147,7 +141,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       return
 
     with open(descriptor_path, 'rb') as descriptor_file:
-      for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file):
+      for desc in stem.descriptor.parse_file(descriptor_file, "extra-info 1.0"):
         unrecognized_lines = desc.get_unrecognized_lines()
 
         if desc.dir_v2_responses_unknown:
