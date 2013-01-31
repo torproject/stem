@@ -28,6 +28,7 @@ import os
 import re
 
 import stem.prereq
+import stem.util.str_tools
 
 try:
   # added in python 2.7
@@ -274,10 +275,10 @@ class _UnicodeReader(object):
     return self.wrapped_file.next()
 
   def read(self, n = -1):
-    return self._to_unicode(self.wrapped_file.read(n))
+    return stem.util.str_tools.to_unicode(self.wrapped_file.read(n))
 
   def readline(self):
-    return self._to_unicode(self.wrapped_file.readline())
+    return stem.util.str_tools.to_unicode(self.wrapped_file.readline())
 
   def readlines(self, sizehint = 0):
     # being careful to do in-place conversion so we don't accidently double our
@@ -286,7 +287,7 @@ class _UnicodeReader(object):
     results = self.wrapped_file.readlines(sizehint)
 
     for i in xrange(len(results)):
-      results[i] = self._to_unicode(results[i])
+      results[i] = stem.util.str_tools.to_unicode(results[i])
 
     return results
 
@@ -295,20 +296,6 @@ class _UnicodeReader(object):
 
   def tell(self):
     return self.wrapped_file.tell()
-
-  def _to_unicode(self, msg):
-    if msg is None:
-      return msg
-
-    if stem.prereq.is_python_3():
-      is_unicode = isinstance(msg, str)
-    else:
-      is_unicode = isinstance(msg, unicode)
-
-    if is_unicode:
-      return msg
-    else:
-      return msg.decode("utf-8", "replace")
 
 
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):

@@ -12,6 +12,7 @@ import stem.control
 import stem.descriptor
 import stem.descriptor.server_descriptor
 import stem.exit_policy
+import stem.util.str_tools
 import stem.version
 import test.runner
 
@@ -198,10 +199,10 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     descriptor_file = open_desc("non-ascii_descriptor")
     descriptor_file.readline()  # strip header
-    descriptor_contents = descriptor_file.read()
+    descriptor_contents = stem.util.str_tools.to_unicode(descriptor_file.read())
     descriptor_file.close()
 
-    expected_contact = "2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf"
+    expected_contact = b"2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf".decode("utf-8", "replace")
 
     desc = stem.descriptor.server_descriptor.RelayDescriptor(descriptor_contents)
     self.assertEquals("torrelay389752132", desc.nickname)
