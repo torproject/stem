@@ -64,24 +64,24 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
   Descriptor types include the following, including further minor versions (ie.
   if we support 1.0 then we also support 1.1 and above)...
 
-  ===================================== =====
-  Descriptor Type                       Class
-  ===================================== =====
-  server-descriptor 1.0                 :class:`~stem.descriptor.server_descriptor.RelayDescriptor`
-  extra-info 1.0                        :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
-  directory 1.0                         **unsupported**
-  network-status-2 1.0                  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV2`)
-  dir-key-certificate-3 1.0             :class:`~stem.descriptor.networkstatus.KeyCertificate`
-  network-status-consensus-3 1.0        :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
-  network-status-vote-3 1.0             :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
-  network-status-microdesc-consensus-3  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
-  bridge-network-status 1.0             :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.BridgeNetworkStatusDocument`)
-  bridge-server-descriptor 1.0          :class:`~stem.descriptor.server_descriptor.BridgeDescriptor`
-  bridge-extra-info 1.0                 :class:`~stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor`
-  torperf 1.0                           **unsupported**
-  bridge-pool-assignment 1.0            **unsupported**
-  tordnsel 1.0                          **unsupported**
-  ===================================== =====
+  ========================================= =====
+  Descriptor Type                           Class
+  ========================================= =====
+  server-descriptor 1.0                     :class:`~stem.descriptor.server_descriptor.RelayDescriptor`
+  extra-info 1.0                            :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
+  directory 1.0                             **unsupported**
+  network-status-2 1.0                      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV2`)
+  dir-key-certificate-3 1.0                 :class:`~stem.descriptor.networkstatus.KeyCertificate`
+  network-status-consensus-3 1.0            :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
+  network-status-vote-3 1.0                 :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
+  network-status-microdesc-consensus-3 1.0  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
+  bridge-network-status 1.0                 :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.BridgeNetworkStatusDocument`)
+  bridge-server-descriptor 1.0              :class:`~stem.descriptor.server_descriptor.BridgeDescriptor`
+  bridge-extra-info 1.0                     :class:`~stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor`
+  torperf 1.0                               **unsupported**
+  bridge-pool-assignment 1.0                **unsupported**
+  tordnsel 1.0                              **unsupported**
+  ========================================= =====
 
   If you're using **python 3** then beware of the open() function's universal
   newline translation. By default open() converts all common line endings (NL,
