@@ -583,7 +583,18 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
   cookie_data = _read_cookie(cookie_path, False)
 
   try:
-    msg = "AUTHENTICATE %s" % binascii.b2a_hex(stem.util.str_tools.to_bytes(cookie_data))
+    # binascii.b2a_hex() takes a byte string and returns one too. With python 3
+    # this is a problem because string formatting for byte strings includes the
+    # b'' wrapper...
+    #
+    #   >>> "AUTHENTICATE %s" % b'content'
+    #   "AUTHENTICATE b'content'"
+    #
+    # This seems dumb but oh well. Converting the result to unicode so it won't
+    # misbehave.
+
+    auth_token_hex = binascii.b2a_hex(stem.util.str_tools.to_bytes(cookie_data))
+    msg = "AUTHENTICATE %s" % stem.util.str_tools.to_unicode(auth_token_hex)
     auth_response = _msg(controller, msg)
 
     # if we got anything but an OK response then error
