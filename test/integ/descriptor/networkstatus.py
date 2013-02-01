@@ -43,9 +43,7 @@ class TestNetworkStatus(unittest.TestCase):
 
     count = 0
     with open(consensus_path, 'rb') as descriptor_file:
-      document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
-
-      for router in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type):
+      for router in stem.descriptor.parse_file(descriptor_file, "network-status-consensus-3 1.0", path = consensus_path):
         count += 1
 
         # We should have constant memory usage. Fail if we're using over 200 MB.
@@ -90,9 +88,7 @@ class TestNetworkStatus(unittest.TestCase):
 
     count = 0
     with open(consensus_path, 'rb') as descriptor_file:
-      document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
-
-      for router in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, is_microdescriptor = True):
+      for router in stem.descriptor.parse_file(descriptor_file, "network-status-microdesc-consensus-3 1.0", path = consensus_path):
         count += 1
 
         if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 200000:
@@ -143,9 +139,7 @@ class TestNetworkStatus(unittest.TestCase):
     consensus_path = get_resource("bridge_network_status")
 
     with open(consensus_path, 'rb') as descriptor_file:
-      descriptors = stem.descriptor.parse_file(descriptor_file, path = consensus_path)
-
-      router = next(descriptors)
+      router = next(stem.descriptor.parse_file(descriptor_file, path = consensus_path))
       self.assertEquals("Unnamed", router.nickname)
       self.assertEquals("0014A2055278DB3EB0E59EA701741416AF185558", router.fingerprint)
       self.assertEquals("FI74aFuNJZZQrgln0f+OaocMd0M", router.digest)
@@ -191,9 +185,7 @@ GM9hAsAMRX9Ogqhq5UjDNqEsvDKuyVeyh7unSZEOip9Zr6K/+7VsVPNb8vfBRBjo
     cert_path = get_resource("metrics_cert")
 
     with open(cert_path) as cert_file:
-      certs = stem.descriptor.parse_file(cert_file, path = cert_path)
-
-      cert = next(certs)
+      cert = next(stem.descriptor.parse_file(cert_file, path = cert_path))
       self.assertEquals(3, cert.version)
       self.assertEquals(None, cert.address)
       self.assertEquals(None, cert.dir_port)
