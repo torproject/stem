@@ -477,8 +477,8 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     # we need a document that's a vote
     mock_document = lambda x: x  # just need anything with a __dict__
-    mock_document.__dict__["is_vote"] = True
-    mock_document.__dict__["is_consensus"] = False
+    setattr(mock_document, "is_vote", True)
+    setattr(mock_document, "is_consensus", False)
 
     for m_line, expected in test_values.items():
       content = get_router_status_entry_v3({'m': m_line}, content = True)

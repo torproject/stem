@@ -64,7 +64,7 @@ def _get_raw_tar_descriptors():
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
           entry.readline()  # strip header
-          raw_descriptors.append(entry.read())
+          raw_descriptors.append(entry.read().decode("utf-8", "replace"))
           entry.close()
     finally:
       if tar_file:
@@ -363,16 +363,23 @@ class TestDescriptorReader(unittest.TestCase):
     reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA)
     reader.register_skip_listener(skip_listener.listener)
 
+    expected_skip_files = ("riddle", "tiny.png", "vote", "new_metrics_type")
+
     with reader:
       list(reader)  # iterates over all of the descriptors
 
-    self.assertEqual(4, len(skip_listener.results))
+    # strip anything with a .swp suffix (vim tmp files)
+
+    skip_listener.results = [(path, exc) for (path, exc) in skip_listener.results if not path.endswith(".swp")]
+
+    if len(skip_listener.results) != len(expected_skip_files):
+      expected_label = ",\n  ".join(expected_skip_files)
+      results_label = ",\n  ".join(["%s (%s)" % (path, exc) for (path, exc) in skip_listener.results])
+
+      self.fail("Skipped files that we should have been able to parse.\n\nExpected:\n  %s\n\nResult:\n  %s" % (expected_label, results_label))
 
     for skip_path, skip_exception in skip_listener.results:
-      if skip_path.endswith(".swp"):
-        continue  # skip vim temp files
-
-      if not os.path.basename(skip_path) in ("riddle", "tiny.png", "vote", "new_metrics_type"):
+      if not os.path.basename(skip_path) in expected_skip_files:
         self.fail("Unexpected non-descriptor content: %s" % skip_path)
 
       self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))

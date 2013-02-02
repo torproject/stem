@@ -71,9 +71,9 @@ class TestProc(unittest.TestCase):
     command, utime, stime, start_time = proc.get_stats(tor_pid, 'command', 'utime', 'stime', 'start time')
 
     self.assertEquals('tor', command)
-    self.assertTrue(utime > 0)
-    self.assertTrue(stime > 0)
-    self.assertTrue(start_time > proc.get_system_start_time())
+    self.assertTrue(float(utime) > 0)
+    self.assertTrue(float(stime) > 0)
+    self.assertTrue(float(start_time) > proc.get_system_start_time())
 
   def test_get_connections(self):
     """

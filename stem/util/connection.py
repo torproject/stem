@@ -40,7 +40,7 @@ def is_valid_ip_address(address):
   :returns: **True** if input is a valid IPv4 address, **False** otherwise
   """
 
-  if not isinstance(address, str):
+  if not isinstance(address, (str, unicode)):
     return False
 
   # checks if theres four period separated values
@@ -108,7 +108,7 @@ def is_valid_port(entry, allow_zero = False):
         return False
 
     return True
-  elif isinstance(entry, str):
+  elif isinstance(entry, (str, unicode)):
     if not entry.isdigit():
       return False
     elif entry[0] == "0" and len(entry) > 1:

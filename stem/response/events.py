@@ -564,7 +564,7 @@ class NetworkStatusEvent(Event):
   _VERSION_ADDED = stem.version.Requirement.EVENT_NS
 
   def _parse(self):
-    content = str(self).lstrip("NS\n")
+    content = str(self).lstrip("NS\n").rstrip("\nOK")
 
     self.desc = list(stem.descriptor.router_status_entry._parse_file(
       StringIO.StringIO(content),
@@ -589,7 +589,7 @@ class NewConsensusEvent(Event):
   _VERSION_ADDED = stem.version.Requirement.EVENT_NEWCONSENSUS
 
   def _parse(self):
-    content = str(self).lstrip("NEWCONSENSUS\n")
+    content = str(self).lstrip("NEWCONSENSUS\n").rstrip("\nOK")
 
     self.desc = list(stem.descriptor.router_status_entry._parse_file(
       StringIO.StringIO(content),

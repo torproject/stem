@@ -6,7 +6,19 @@ import StringIO
 import unittest
 
 import stem.descriptor.reader
+import stem.prereq
 import test.mocking as mocking
+
+
+def _mock_open(content):
+  test_content = StringIO.StringIO(content)
+  mocking.support_with(test_content)
+
+  if stem.prereq.is_python_3():
+    import builtins
+    mocking.mock(builtins.open, mocking.return_value(test_content), builtins)
+  else:
+    mocking.mock(open, mocking.return_value(test_content))
 
 
 class TestDescriptorReader(unittest.TestCase):
@@ -36,9 +48,7 @@ class TestDescriptorReader(unittest.TestCase):
       "/dir/after empty line": 12345,
     }
 
-    test_content = StringIO.StringIO("\n".join(test_lines))
-    mocking.support_with(test_content)
-    mocking.mock(open, mocking.return_value(test_content))
+    _mock_open("\n".join(test_lines))
     self.assertEquals(expected_value, stem.descriptor.reader.load_processed_files(""))
 
   def test_load_processed_files_empty(self):
@@ -46,9 +56,7 @@ class TestDescriptorReader(unittest.TestCase):
     Tests the load_processed_files() function with an empty file.
     """
 
-    test_content = StringIO.StringIO("")
-    mocking.support_with(test_content)
-    mocking.mock(open, mocking.return_value(test_content))
+    _mock_open("")
     self.assertEquals({}, stem.descriptor.reader.load_processed_files(""))
 
   def test_load_processed_files_no_file(self):
@@ -57,9 +65,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is missing the file path.
     """
 
-    test_content = StringIO.StringIO(" 12345")
-    mocking.support_with(test_content)
-    mocking.mock(open, mocking.return_value(test_content))
+    _mock_open(" 12345")
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")
 
   def test_load_processed_files_no_timestamp(self):
@@ -68,9 +74,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is missing the timestamp.
     """
 
-    test_content = StringIO.StringIO("/dir/file ")
-    mocking.support_with(test_content)
-    mocking.mock(open, mocking.return_value(test_content))
+    _mock_open("/dir/file ")
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")
 
   def test_load_processed_files_malformed_file(self):
@@ -79,9 +83,7 @@ class TestDescriptorReader(unittest.TestCase):
     it has an invalid file path.
     """
 
-    test_content = StringIO.StringIO("not_an_absolute_file 12345")
-    mocking.support_with(test_content)
-    mocking.mock(open, mocking.return_value(test_content))
+    _mock_open("not_an_absolute_file 12345")
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")
 
   def test_load_processed_files_malformed_timestamp(self):
@@ -90,7 +92,5 @@ class TestDescriptorReader(unittest.TestCase):
     it has a non-numeric timestamp.
     """
 
-    test_content = StringIO.StringIO("/dir/file 123a")
-    mocking.support_with(test_content)
-    mocking.mock(open, mocking.return_value(test_content))
+    _mock_open("/dir/file 123a")
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")

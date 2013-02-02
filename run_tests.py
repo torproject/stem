@@ -6,6 +6,7 @@ Runs unit and integration tests. For usage information run this with '--help'.
 
 import getopt
 import os
+import shutil
 import StringIO
 import sys
 import threading
@@ -71,13 +72,15 @@ import test.integ.util.system
 import test.integ.version
 
 OPT = "auist:l:c:h"
-OPT_EXPANDED = ["all", "unit", "integ", "style", "targets=", "test=", "log=", "tor=", "config=", "help"]
+OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=", "test=", "log=", "tor=", "config=", "help"]
 DIVIDER = "=" * 70
 
 CONFIG = stem.util.conf.config_dict("test", {
   "argument.unit": False,
   "argument.integ": False,
   "argument.style": False,
+  "argument.python3": False,
+  "argument.python3_clean": False,
   "argument.test": "",
   "argument.log": None,
   "argument.tor": "tor",
@@ -87,6 +90,7 @@ CONFIG = stem.util.conf.config_dict("test", {
   "target.description": {},
   "target.prereq": {},
   "target.torrc": {},
+  "integ.test_directory": "./test/data",
 })
 
 Target = stem.util.enum.UppercaseEnum(
@@ -199,6 +203,10 @@ def load_user_configuration(test_config):
       arg_overrides["argument.integ"] = "true"
     elif opt in ("-s", "--style"):
       arg_overrides["argument.style"] = "true"
+    elif opt == "--python3":
+      arg_overrides["argument.python3"] = "true"
+    elif opt == "--clean":
+      arg_overrides["argument.python3_clean"] = "true"
     elif opt in ("-c", "--config"):
       config_path = os.path.abspath(arg)
     elif opt in ("-t", "--targets"):
@@ -269,6 +277,16 @@ def _clean_orphaned_pyc():
 
   for base_dir in ('stem', 'test', 'run_tests.py'):
     for pyc_path in test.check_whitespace._get_files_with_suffix(base_dir, ".pyc"):
+      # If we're running python 3 then the *.pyc files are no longer bundled
+      # with the *.py. Rather, they're in a __pycache__ directory.
+      #
+      # At the moment there's no point in checking for orphaned bytecode with
+      # python 3 because it's an exported copy of the python 2 codebase, so
+      # skipping.
+
+      if "__pycache__" in pyc_path:
+        continue
+
       if not os.path.exists(pyc_path[:-1]):
         orphaned_pyc.append(pyc_path)
 
@@ -280,6 +298,94 @@ def _clean_orphaned_pyc():
     for pyc_file in orphaned_pyc:
       test.output.print_line("    removing %s" % pyc_file, *test.runner.ERROR_ATTR)
       os.remove(pyc_file)
+
+
+def _python3_setup(python3_destination):
+  # Python 2.7.3 added some nice capabilities to 2to3, like '--output-dir'...
+  #
+  #   http://docs.python.org/2/library/2to3.html
+  #
+  # ... but I'm using 2.7.1, and it's pretty easy to make it work without
+  # requiring a bleeding edge interpretor.
+
+  test.output.print_divider("EXPORTING TO PYTHON 3", True)
+
+  if CONFIG["argument.python3_clean"]:
+    shutil.rmtree(python3_destination, ignore_errors = True)
+
+  if os.path.exists(python3_destination):
+    test.output.print_line("Reusing '%s'. Run again with '--clean' if you want to recreate the python3 export." % python3_destination, *test.runner.ERROR_ATTR)
+    print
+    return True
+
+  os.makedirs(python3_destination)
+
+  try:
+    # skips the python3 destination (to avoid an infinite loop)
+    def _ignore(src, names):
+      if src == os.path.normpath(python3_destination):
+        return names
+      else:
+        return []
+
+    test.output.print_noline("  copying stem to '%s'... " % python3_destination, *test.runner.STATUS_ATTR)
+    shutil.copytree('stem', os.path.join(python3_destination, 'stem'))
+    shutil.copytree('test', os.path.join(python3_destination, 'test'), ignore = _ignore)
+    shutil.copy('run_tests.py', os.path.join(python3_destination, 'run_tests.py'))
+    test.output.print_line("done", *test.runner.STATUS_ATTR)
+  except OSError, exc:
+    test.output.print_line("failed\n%s" % exc, *test.runner.ERROR_ATTR)
+    return False
+
+  try:
+    test.output.print_noline("  running 2to3... ", *test.runner.STATUS_ATTR)
+    system.call("2to3 --write --nobackups --no-diffs %s" % python3_destination)
+    test.output.print_line("done", *test.runner.STATUS_ATTR)
+  except OSError, exc:
+    test.output.print_line("failed\n%s" % exc, *test.runner.ERROR_ATTR)
+    return False
+
+  return True
+
+
+def _print_style_issues():
+  base_path = os.path.sep.join(__file__.split(os.path.sep)[:-1]).lstrip("./")
+  style_issues = test.check_whitespace.get_issues(os.path.join(base_path, "stem"))
+  style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "test")))
+  style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "run_tests.py")))
+
+  # If we're doing some sort of testing (unit or integ) and pyflakes is
+  # available then use it. Its static checks are pretty quick so there's not
+  # much overhead in including it with all tests.
+
+  if CONFIG["argument.unit"] or CONFIG["argument.integ"]:
+    if system.is_available("pyflakes"):
+      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "stem")))
+      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "test")))
+      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "run_tests.py")))
+    else:
+      test.output.print_line("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", *ERROR_ATTR)
+
+  if CONFIG["argument.style"]:
+    if system.is_available("pep8"):
+      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "stem")))
+      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "test")))
+      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "run_tests.py")))
+    else:
+      test.output.print_line("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", *ERROR_ATTR)
+
+  if style_issues:
+    test.output.print_line("STYLE ISSUES", term.Color.BLUE, term.Attr.BOLD)
+
+    for file_path in style_issues:
+      test.output.print_line("* %s" % file_path, term.Color.BLUE, term.Attr.BOLD)
+
+      for line_number, msg in style_issues[file_path]:
+        line_count = "%-4s" % line_number
+        test.output.print_line("  line %s - %s" % (line_count, msg))
+
+      print
+
 
 if __name__ == '__main__':
   try:
@@ -305,6 +411,23 @@ if __name__ == '__main__':
   test_config.load(settings_path)
 
   load_user_configuration(test_config)
+
+  # check that we have 2to3 and python3 available in our PATH
+  if CONFIG["argument.python3"]:
+    for required_cmd in ("2to3", "python3"):
+      if not system.is_available(required_cmd):
+        test.output.print_line("Unable to test python 3 because %s isn't in your path" % required_cmd, *test.runner.ERROR_ATTR)
+        sys.exit(1)
+
+  if CONFIG["argument.python3"] and sys.version_info.major != 3:
+    python3_destination = os.path.join(CONFIG["integ.test_directory"], "python3")
+
+    if _python3_setup(python3_destination):
+      python3_runner = os.path.join(python3_destination, "run_tests.py")
+      exit_status = os.system("python3 %s %s" % (python3_runner, " ".join(sys.argv[1:])))
+      sys.exit(exit_status)
+    else:
+      sys.exit(1)  # failed to do python3 setup
 
   if not CONFIG["argument.unit"] and not CONFIG["argument.integ"] and not CONFIG["argument.style"]:
     test.output.print_line("Nothing to run (for usage provide --help)\n")
@@ -473,42 +596,8 @@ if __name__ == '__main__':
 
     # TODO: note unused config options afterward?
 
-  base_path = os.path.sep.join(__file__.split(os.path.sep)[:-1]).lstrip("./")
-  style_issues = test.check_whitespace.get_issues(os.path.join(base_path, "stem"))
-  style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "test")))
-  style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "run_tests.py")))
-
-  # If we're doing some sort of testing (unit or integ) and pyflakes is
-  # available then use it. Its static checks are pretty quick so there's not
-  # much overhead in including it with all tests.
-
-  if CONFIG["argument.unit"] or CONFIG["argument.integ"]:
-    if system.is_available("pyflakes"):
-      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "stem")))
-      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "test")))
-      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "run_tests.py")))
-    else:
-      test.output.print_line("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", *ERROR_ATTR)
-
-  if CONFIG["argument.style"]:
-    if system.is_available("pep8"):
-      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "stem")))
-      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "test")))
-      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "run_tests.py")))
-    else:
-      test.output.print_line("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", *ERROR_ATTR)
-
-  if style_issues:
-    test.output.print_line("STYLE ISSUES", term.Color.BLUE, term.Attr.BOLD)
-
-    for file_path in style_issues:
-      test.output.print_line("* %s" % file_path, term.Color.BLUE, term.Attr.BOLD)
-
-      for line_number, msg in style_issues[file_path]:
-        line_count = "%-4s" % line_number
-        test.output.print_line("  line %s - %s" % (line_count, msg))
-
-      print
+  if not stem.prereq.is_python_3():
+    _print_style_issues()
 
   runtime = time.time() - start_time
 

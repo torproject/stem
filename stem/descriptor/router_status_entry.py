@@ -17,10 +17,12 @@ sources...
 """
 
 import base64
+import binascii
 import datetime
 
 import stem.descriptor
 import stem.exit_policy
+import stem.util.str_tools
 
 
 def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
@@ -222,11 +224,20 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
 
     return list(self._unrecognized_lines)
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntry):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class RouterStatusEntryV2(RouterStatusEntry):
@@ -266,11 +277,20 @@ class RouterStatusEntryV2(RouterStatusEntry):
   def _single_fields(self):
     return ('r', 's', 'v')
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntryV2):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class RouterStatusEntryV3(RouterStatusEntry):
@@ -348,11 +368,20 @@ class RouterStatusEntryV3(RouterStatusEntry):
   def _single_fields(self):
     return ('r', 's', 'v', 'w', 'p')
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntryV3):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class RouterStatusEntryMicroV3(RouterStatusEntry):
@@ -410,11 +439,20 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   def _single_fields(self):
     return ('r', 's', 'v', 'w', 'm')
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntryMicroV3):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 def _parse_r_line(desc, value, validate, include_digest = True):
@@ -663,8 +701,8 @@ def _decode_fingerprint(identity, validate):
   fingerprint = ""
 
   try:
-    identity_decoded = base64.b64decode(identity)
-  except TypeError:
+    identity_decoded = base64.b64decode(stem.util.str_tools.to_bytes(identity))
+  except (TypeError, binascii.Error):
     if not validate:
       return None
 
@@ -681,7 +719,8 @@ def _decode_fingerprint(identity, validate):
     # >>> '0xa'[2:].zfill(2).upper()
     # '0A'
 
-    fingerprint += hex(ord(char))[2:].zfill(2).upper()
+    char_int = char if isinstance(char, int) else ord(char)
+    fingerprint += hex(char_int)[2:].zfill(2).upper()
 
   if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
     if not validate:

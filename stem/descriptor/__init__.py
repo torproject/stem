@@ -27,6 +27,9 @@ __all__ = [
 import os
 import re
 
+import stem.prereq
+import stem.util.str_tools
+
 try:
   # added in python 2.7
   from collections import OrderedDict
@@ -61,24 +64,43 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
   Descriptor types include the following, including further minor versions (ie.
   if we support 1.0 then we also support 1.1 and above)...
 
-  ===================================== =====
-  Descriptor Type                       Class
-  ===================================== =====
-  server-descriptor 1.0                 :class:`~stem.descriptor.server_descriptor.RelayDescriptor`
-  extra-info 1.0                        :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
-  directory 1.0                         **unsupported**
-  network-status-2 1.0                  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV2`)
-  dir-key-certificate-3 1.0             :class:`~stem.descriptor.networkstatus.KeyCertificate`
-  network-status-consensus-3 1.0        :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
-  network-status-vote-3 1.0             :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
-  network-status-microdesc-consensus-3  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
-  bridge-network-status 1.0             :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.BridgeNetworkStatusDocument`)
-  bridge-server-descriptor 1.0          :class:`~stem.descriptor.server_descriptor.BridgeDescriptor`
-  bridge-extra-info 1.0                 :class:`~stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor`
-  torperf 1.0                           **unsupported**
-  bridge-pool-assignment 1.0            **unsupported**
-  tordnsel 1.0                          **unsupported**
-  ===================================== =====
+  ========================================= =====
+  Descriptor Type                           Class
+  ========================================= =====
+  server-descriptor 1.0                     :class:`~stem.descriptor.server_descriptor.RelayDescriptor`
+  extra-info 1.0                            :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
+  directory 1.0                             **unsupported**
+  network-status-2 1.0                      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV2`)
+  dir-key-certificate-3 1.0                 :class:`~stem.descriptor.networkstatus.KeyCertificate`
+  network-status-consensus-3 1.0            :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
+  network-status-vote-3 1.0                 :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
+  network-status-microdesc-consensus-3 1.0  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
+  bridge-network-status 1.0                 :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.BridgeNetworkStatusDocument`)
+  bridge-server-descriptor 1.0              :class:`~stem.descriptor.server_descriptor.BridgeDescriptor`
+  bridge-extra-info 1.0                     :class:`~stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor`
+  torperf 1.0                               **unsupported**
+  bridge-pool-assignment 1.0                **unsupported**
+  tordnsel 1.0                              **unsupported**
+  ========================================= =====
+
+  If you're using **python 3** then beware of the open() function's universal
+  newline translation. By default open() converts all common line endings (NL,
+  CR, and CRNL) into NL. In some edge cases this can cause us to misparse
+  content. To disable newline translation set the **newline** to an empty
+  string. For example...
+
+  ::
+
+    my_descriptor_file = open(descrptor_path, newline='')
+
+  What's more, python 3's read performance in **text mode** is deplorably bad
+  (my testing with python 3.2 shows it to be 33x slower). Using **binary mode**
+  is strongly suggested. If you do this then newline translation is
+  automatically disabled...
+
+  ::
+
+    my_descriptor_file = open(descriptor_path, 'rb')
 
   :param file descriptor_file: opened file with the descriptor contents
   :param str descriptor_type: `descriptor type <https://metrics.torproject.org/formats.html#descriptortypes>`_, this is guessed if not provided
@@ -96,6 +118,10 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
   import stem.descriptor.server_descriptor
   import stem.descriptor.extrainfo_descriptor
   import stem.descriptor.networkstatus
+
+  # attempt to read content as unicode
+
+  descriptor_file = _UnicodeReader(descriptor_file)
 
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
@@ -234,6 +260,51 @@ class Descriptor(object):
 
   def __str__(self):
     return self._raw_contents
+
+
+class _UnicodeReader(object):
+  """
+  File-like object that wraps another file. This replaces read ASCII bytes with
+  unicode content. This only supports read operations.
+  """
+
+  def __init__(self, wrapped_file):
+    self.wrapped_file = wrapped_file
+
+  def close(self):
+    return self.wrapped_file.close()
+
+  def getvalue(self):
+    return self.wrapped_file.getvalue()
+
+  def isatty(self):
+    return self.wrapped_file.isatty()
+
+  def next(self):
+    return self.wrapped_file.next()
+
+  def read(self, n = -1):
+    return stem.util.str_tools.to_unicode(self.wrapped_file.read(n))
+
+  def readline(self):
+    return stem.util.str_tools.to_unicode(self.wrapped_file.readline())
+
+  def readlines(self, sizehint = 0):
+    # being careful to do in-place conversion so we don't accidently double our
+    # memory usage
+
+    results = self.wrapped_file.readlines(sizehint)
+
+    for i in xrange(len(results)):
+      results[i] = stem.util.str_tools.to_unicode(results[i])
+
+    return results
+
+  def seek(self, pos, mode = 0):
+    return self.wrapped_file.seek(pos, mode)
+
+  def tell(self):
+    return self.wrapped_file.tell()
 
 
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):

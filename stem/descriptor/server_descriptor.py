@@ -36,6 +36,7 @@ import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
 import stem.prereq
 import stem.util.connection
+import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
 
@@ -123,7 +124,7 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True):
 
     if descriptor_content:
       # strip newlines from annotations
-      annotations = map(str.strip, annotations)
+      annotations = map(unicode.strip, annotations)
 
       descriptor_text = "".join(descriptor_content)
 
@@ -662,7 +663,7 @@ class RelayDescriptor(ServerDescriptor):
 
       if start >= 0 and sig_start > 0 and end > start:
         for_digest = raw_descriptor[start:end]
-        digest_hash = hashlib.sha1(for_digest)
+        digest_hash = hashlib.sha1(stem.util.str_tools.to_bytes(for_digest))
         self._digest = digest_hash.hexdigest().upper()
       else:
         raise ValueError("unable to calculate digest for descriptor")
@@ -683,7 +684,7 @@ class RelayDescriptor(ServerDescriptor):
     if self.fingerprint:
       # calculate the signing key hash
 
-      key_der_as_hash = hashlib.sha1(key_as_bytes).hexdigest()
+      key_der_as_hash = hashlib.sha1(stem.util.str_tools.to_bytes(key_as_bytes)).hexdigest()
 
       if key_der_as_hash != self.fingerprint.lower():
         log.warn("Signing key hash: %s != fingerprint: %s" % (key_der_as_hash, self.fingerprint.lower()))
@@ -793,11 +794,20 @@ class RelayDescriptor(ServerDescriptor):
 
     ServerDescriptor._parse(self, entries, validate)
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, RelayDescriptor):
-      return 1
+      return False
 
-    return str(self).strip() > str(other).strip()
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
   @staticmethod
   def _get_key_bytes(key_string):
@@ -809,7 +819,7 @@ class RelayDescriptor(ServerDescriptor):
 
     # get the key representation in bytes
 
-    key_bytes = base64.b64decode(key_as_string)
+    key_bytes = base64.b64decode(stem.util.str_tools.to_bytes(key_as_string))
 
     return key_bytes
 
@@ -900,17 +910,17 @@ class BridgeDescriptor(ServerDescriptor):
     # bridge required fields are the same as a relay descriptor, minus items
     # excluded according to the format page
 
-    excluded_fields = (
+    excluded_fields = [
       "onion-key",
       "signing-key",
       "router-signature",
-    )
+    ]
 
-    included_fields = (
+    included_fields = [
       "router-digest",
-    )
+    ]
 
-    return included_fields + filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
+    return tuple(included_fields + [f for f in REQUIRED_FIELDS if not f in excluded_fields])
 
   def _single_fields(self):
     return self._required_fields() + SINGLE_FIELDS
@@ -918,8 +928,17 @@ class BridgeDescriptor(ServerDescriptor):
   def _last_keyword(self):
     return None
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, BridgeDescriptor):
-      return 1
+      return False
 
-    return str(self).strip() > str(other).strip()
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)

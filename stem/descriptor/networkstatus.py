@@ -73,6 +73,7 @@ import StringIO
 
 import stem.descriptor
 import stem.descriptor.router_status_entry
+import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
 
@@ -274,6 +275,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   """
 
   def __init__(self, raw_content, validate = True):
+    raw_content = stem.util.str_tools.to_unicode(raw_content)
     super(NetworkStatusDocumentV2, self).__init__(raw_content)
 
     self.version = None
@@ -471,6 +473,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     :raises: **ValueError** if the document is invalid
     """
 
+    raw_content = stem.util.str_tools.to_unicode(raw_content)
     super(NetworkStatusDocumentV3, self).__init__(raw_content)
     document_file = StringIO.StringIO(raw_content)
 
@@ -528,11 +531,20 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     return self._header.meets_consensus_method(method)
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, NetworkStatusDocumentV3):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class _DocumentHeader(object):
@@ -569,7 +581,12 @@ class _DocumentHeader(object):
       _check_for_misordered_fields(entries, HEADER_FIELDS)
 
   def meets_consensus_method(self, method):
-    return bool(self.consensus_method >= method or filter(lambda x: x >= method, self.consensus_methods))
+    if self.consensus_method is not None:
+      return self.consensus_method >= method
+    elif self.consensus_methods is not None:
+      return bool(filter(lambda x: x >= method, self.consensus_methods))
+    else:
+      return False  # malformed document
 
   def _parse(self, entries, validate):
     for keyword, values in entries.items():
@@ -1124,11 +1141,20 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
 
     return self._unrecognized_lines
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, DirectoryAuthority):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class KeyCertificate(stem.descriptor.Descriptor):
@@ -1285,11 +1311,20 @@ class KeyCertificate(stem.descriptor.Descriptor):
 
     return self._unrecognized_lines
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, KeyCertificate):
-      return 1
+      return False
 
-    return str(self) > str(other)
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class DocumentSignature(object):
@@ -1311,27 +1346,34 @@ class DocumentSignature(object):
 
     if validate:
       if not stem.util.tor_tools.is_valid_fingerprint(identity):
-        raise ValueError("Malformed fingerprint (%s) in the document signature" % (identity))
+        raise ValueError("Malformed fingerprint (%s) in the document signature" % identity)
 
       if not stem.util.tor_tools.is_valid_fingerprint(key_digest):
-        raise ValueError("Malformed key digest (%s) in the document signature" % (key_digest))
+        raise ValueError("Malformed key digest (%s) in the document signature" % key_digest)
 
     self.method = method
     self.identity = identity
     self.key_digest = key_digest
     self.signature = signature
 
-  def __cmp__(self, other):
+  def _compare(self, other, method):
     if not isinstance(other, DocumentSignature):
-      return 1
+      return False
 
-    for attr in ("identity", "key_digest", "signature"):
-      if getattr(self, attr) > getattr(other, attr):
-        return 1
-      elif getattr(self, attr) < getattr(other, attr):
-        return -1
+    for attr in ("method", "identity", "key_digest", "signature"):
+      if getattr(self, attr) != getattr(other, attr):
+        return method(getattr(self, attr), getattr(other, attr))
 
-    return 0
+    return method(True, True)  # we're equal
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class BridgeNetworkStatusDocument(NetworkStatusDocument):

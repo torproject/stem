@@ -27,7 +27,8 @@ DEFAULT_TARGET = os.path.sep.join(__file__.split(os.path.sep)[:-1])
 PYFLAKES_IGNORE = None
 
 CONFIG = conf.config_dict("test", {
-  "pyflakes.ignore": []
+  "pyflakes.ignore": [],
+  "integ.test_directory": "./test/data",
 })
 
 
@@ -87,7 +88,9 @@ def pep8_issues(base_path = DEFAULT_TARGET):
 
     if line_match:
       path, line, _, issue = line_match.groups()
-      issues.setdefault(path, []).append((int(line), issue))
+
+      if not _is_test_data(path):
+        issues.setdefault(path, []).append((int(line), issue))
 
   return issues
 
@@ -131,7 +134,7 @@ def pyflakes_issues(base_path = DEFAULT_TARGET):
     if line_match:
       path, line, issue = line_match.groups()
 
-      if not issue in PYFLAKES_IGNORE.get(path, []):
+      if not _is_test_data(path) and not issue in PYFLAKES_IGNORE.get(path, []):
         issues.setdefault(path, []).append((int(line), issue))
 
   return issues
@@ -153,6 +156,9 @@ def get_issues(base_path = DEFAULT_TARGET):
   issues = {}
 
   for file_path in _get_files_with_suffix(base_path):
+    if _is_test_data(file_path):
+      continue
+
     with open(file_path) as f:
       file_contents = f.read()
 
@@ -184,6 +190,10 @@ def get_issues(base_path = DEFAULT_TARGET):
       issues[file_path] = file_issues
 
   return issues
+
+
+def _is_test_data(path):
+  return os.path.normpath(path).startswith(os.path.normpath(CONFIG["integ.test_directory"]))
 
 
 def _get_files_with_suffix(base_path, suffix = ".py"):

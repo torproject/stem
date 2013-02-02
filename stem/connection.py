@@ -110,6 +110,7 @@ import stem.response
 import stem.socket
 import stem.util.connection
 import stem.util.enum
+import stem.util.str_tools
 import stem.util.system
 import stem.version
 
@@ -582,7 +583,18 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
   cookie_data = _read_cookie(cookie_path, False)
 
   try:
-    msg = "AUTHENTICATE %s" % binascii.b2a_hex(cookie_data)
+    # binascii.b2a_hex() takes a byte string and returns one too. With python 3
+    # this is a problem because string formatting for byte strings includes the
+    # b'' wrapper...
+    #
+    #   >>> "AUTHENTICATE %s" % b'content'
+    #   "AUTHENTICATE b'content'"
+    #
+    # This seems dumb but oh well. Converting the result to unicode so it won't
+    # misbehave.
+
+    auth_token_hex = binascii.b2a_hex(stem.util.str_tools.to_bytes(cookie_data))
+    msg = "AUTHENTICATE %s" % stem.util.str_tools.to_unicode(auth_token_hex)
     auth_response = _msg(controller, msg)
 
     # if we got anything but an OK response then error
@@ -677,7 +689,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
   client_nonce = os.urandom(32)
 
   try:
-    client_nonce_hex = binascii.b2a_hex(client_nonce)
+    client_nonce_hex = binascii.b2a_hex(stem.util.str_tools.to_bytes(client_nonce))
     authchallenge_response = _msg(controller, "AUTHCHALLENGE SAFECOOKIE %s" % client_nonce_hex)
 
     if not authchallenge_response.is_ok():
@@ -729,7 +741,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
       CLIENT_HASH_CONSTANT,
       cookie_data + client_nonce + authchallenge_response.server_nonce)
 
-    auth_response = _msg(controller, "AUTHENTICATE %s" % (binascii.b2a_hex(client_hash)))
+    auth_response = _msg(controller, "AUTHENTICATE %s" % (binascii.b2a_hex(stem.util.str_tools.to_bytes(client_hash))))
   except stem.ControllerError, exc:
     try:
       controller.connect()
@@ -873,7 +885,7 @@ def _read_cookie(cookie_path, is_safecookie):
     raise IncorrectCookieSize(exc_msg, cookie_path, is_safecookie)
 
   try:
-    with file(cookie_path, 'rb', 0) as f:
+    with open(cookie_path, 'rb', 0) as f:
       return f.read()
   except IOError, exc:
     exc_msg = "Authentication failed: unable to read '%s' (%s)" % (cookie_path, exc)

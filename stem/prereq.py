@@ -16,13 +16,12 @@ series). Other requirements for complete functionality are...
 
   is_python_26 - checks if python 2.6 or later is available
   is_python_27 - checks if python 2.7 or later is available
+  is_python_3 - checks if python 3.0 or later is available
 
   is_rsa_available - checks if the rsa module is available
 """
 
 import sys
-
-from stem.util import log
 
 IS_CRYPTO_AVAILABLE = None
 
@@ -37,15 +36,13 @@ def check_requirements():
 
   major_version, minor_version = sys.version_info[0:2]
 
-  if major_version > 2:
-    raise ImportError("stem isn't compatible beyond the python 2.x series")
-  elif major_version < 2 or minor_version < 5:
+  if major_version < 2 or (major_version == 2 and minor_version < 5):
     raise ImportError("stem requires python version 2.5 or greater")
 
 
 def is_python_26():
   """
-  Checks if we're in the 2.6 - 2.x range.
+  Checks if we're running python 2.6 or above.
 
   :returns: bool that is True if we meet this requirement and False otherwise
   """
@@ -55,7 +52,7 @@ def is_python_26():
 
 def is_python_27():
   """
-  Checks if we're in the 2.7 - 2.x range.
+  Checks if we're running python 2.7 or above.
 
   :returns: bool that is True if we meet this requirement and False otherwise
   """
@@ -63,10 +60,22 @@ def is_python_27():
   return _check_version(7)
 
 
+def is_python_3():
+  """
+  Checks if we're in the 3.0 - 3.x range.
+
+  :returns: bool that is True if we meet this requirement and False otherwise
+  """
+
+  return sys.version_info[0] == 3
+
+
 def is_crypto_available():
   global IS_CRYPTO_AVAILABLE
 
   if IS_CRYPTO_AVAILABLE is None:
+    from stem.util import log
+
     try:
       from Crypto.PublicKey import RSA
       from Crypto.Util import asn1
@@ -86,7 +95,7 @@ def _check_version(minor_req):
   major_version, minor_version = sys.version_info[0:2]
 
   if major_version > 2:
-    return False
+    return True
   elif major_version < 2 or minor_version < minor_req:
     return False
 

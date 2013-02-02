@@ -45,7 +45,7 @@ def is_valid_fingerprint(entry, check_prefix = False):
   :returns: **True** if the string could be a relay fingerprint, **False** otherwise
   """
 
-  if not isinstance(entry, str):
+  if not isinstance(entry, (str, unicode)):
     return False
   elif check_prefix:
     if not entry or entry[0] != "$":
@@ -65,7 +65,7 @@ def is_valid_nickname(entry):
   :returns: **True** if the string could be a nickname, **False** otherwise
   """
 
-  if not isinstance(entry, str):
+  if not isinstance(entry, (str, unicode)):
     return False
 
   return bool(NICKNAME_PATTERN.match(entry))
@@ -78,7 +78,7 @@ def is_valid_circuit_id(entry):
   :returns: **True** if the string could be a circuit id, **False** otherwise
   """
 
-  if not isinstance(entry, str):
+  if not isinstance(entry, (str, unicode)):
     return False
 
   return bool(CIRC_ID_PATTERN.match(entry))

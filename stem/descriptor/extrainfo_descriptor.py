@@ -71,6 +71,7 @@ import re
 import stem.descriptor
 import stem.util.connection
 import stem.util.enum
+import stem.util.str_tools
 
 # known statuses for dirreq-v2-resp and dirreq-v3-resp...
 DirResponse = stem.util.enum.Enum(
@@ -820,7 +821,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
       # our digest is calculated from everything except our signature
       raw_content, ending = str(self), "\nrouter-signature\n"
       raw_content = raw_content[:raw_content.find(ending) + len(ending)]
-      self._digest = hashlib.sha1(raw_content).hexdigest().upper()
+      self._digest = hashlib.sha1(stem.util.str_tools.to_bytes(raw_content)).hexdigest().upper()
 
     return self._digest
 
@@ -897,15 +898,15 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
     ExtraInfoDescriptor._parse(self, entries, validate)
 
   def _required_fields(self):
-    excluded_fields = (
+    excluded_fields = [
       "router-signature",
-    )
+    ]
 
-    included_fields = (
+    included_fields = [
       "router-digest",
-    )
+    ]
 
-    return included_fields + filter(lambda e: not e in excluded_fields, REQUIRED_FIELDS)
+    return tuple(included_fields + [f for f in REQUIRED_FIELDS if not f in excluded_fields])
 
   def _last_keyword(self):
     return None
