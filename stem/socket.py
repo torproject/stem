@@ -37,6 +37,7 @@ import threading
 
 import stem.prereq
 import stem.response
+import stem.util.str_tools
 
 from stem.util import log
 
@@ -182,12 +183,7 @@ class ControlSocket(object):
 
       with self._recv_lock:
         self._socket = self._make_socket()
-
-        if stem.prereq.is_python_3():
-          self._socket_file = self._socket.makefile(mode = "rw", newline = "")
-        else:
-          self._socket_file = self._socket.makefile(mode = "rw")
-
+        self._socket_file = self._socket.makefile(mode = "rwb")
         self._is_alive = True
 
         # It's possible for this to have a transient failure...
@@ -425,7 +421,7 @@ def send_message(control_file, message, raw = False):
     message = send_formatting(message)
 
   try:
-    control_file.write(message)
+    control_file.write(stem.util.str_tools.to_bytes(message))
     control_file.flush()
 
     log_message = message.replace("\r\n", "\n").rstrip()
@@ -471,6 +467,9 @@ def recv_message(control_file):
   while True:
     try:
       line = control_file.readline()
+
+      if stem.prereq.is_python_3():
+        line = stem.util.str_tools.to_unicode(line)
     except AttributeError:
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
@@ -537,6 +536,9 @@ def recv_message(control_file):
       while True:
         try:
           line = control_file.readline()
+
+          if stem.prereq.is_python_3():
+            line = stem.util.str_tools.to_unicode(line)
         except socket.error, exc:
           prefix = logging_prefix % "SocketClosed"
           log.info(prefix + "received an exception while mid-way through a data reply (exception: \"%s\", read content: \"%s\")" % (exc, log.escape(raw_content)))

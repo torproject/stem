@@ -568,7 +568,7 @@ class TestController(unittest.TestCase):
         controller.set_conf("ContactInfo", "confsaved")
         controller.save_conf()
 
-        with file(runner.get_torrc_path()) as torrcfile:
+        with open(runner.get_torrc_path()) as torrcfile:
           self.assertTrue("\nContactInfo confsaved\n" in torrcfile.read())
       finally:
         controller.load_conf(oldconf)
