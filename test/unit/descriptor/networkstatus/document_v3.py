@@ -130,6 +130,29 @@ class TestNetworkStatusDocument(unittest.TestCase):
       for router in stem.descriptor.parse_file(consensus_file, 'network-status-consensus-3 1.0'):
         self.assertEqual('caerSidi', router.nickname)
 
+  def test_handlers(self):
+    """
+    Try parsing a document with DocumentHandler.DOCUMENT and
+    DocumentHandler.BARE_DOCUMENT.
+    """
+
+    # Simple sanity check that they provide the right type, and that the
+    # document includes or excludes the router status entries as appropriate.
+
+    entry1 = get_router_status_entry_v3({'s': "Fast"})
+    entry2 = get_router_status_entry_v3({'s': "Valid"})
+    content = get_network_status_document_v3(routers = (entry1, entry2), content = True)
+
+    descriptors = list(stem.descriptor.parse_file(StringIO.StringIO(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.DOCUMENT))
+    self.assertEqual(1, len(descriptors))
+    self.assertTrue(isinstance(descriptors[0], NetworkStatusDocumentV3))
+    self.assertEqual(2, len(descriptors[0].routers))
+
+    descriptors = list(stem.descriptor.parse_file(StringIO.StringIO(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.BARE_DOCUMENT))
+    self.assertEqual(1, len(descriptors))
+    self.assertTrue(isinstance(descriptors[0], NetworkStatusDocumentV3))
+    self.assertEqual(0, len(descriptors[0].routers))
+
   def test_parse_file(self):
     """
     Try parsing a document via the _parse_file() function.

@@ -11,6 +11,24 @@ Package for parsing and processing descriptor data.
     |- get_path - location of the descriptor on disk if it came from a file
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
+
+.. data:: DocumentHandler (enum)
+
+  Ways in which we can parse a
+  :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`.
+
+  Both **ENTRIES** and **BARE_DOCUMENT** have a 'thin' document, which doesn't
+  have a populated **routers** attribute. This allows for lower memory usage
+  and upfront runtime. However, if read time and memory aren't a concern then
+  **DOCUMENT** can provide you with a fully populated document.
+
+  =================== ===========
+  DocumentHandler     Description
+  =================== ===========
+  **ENTRIES**         Iterates over the contained :class:`~stem.descriptor.router_status_entry.RouterStatusEntry`. Each has a reference to the bare document it came from (through its **document** attribute).
+  **DOCUMENT**        :class:`~stem.descriptor.networkstatus.NetworkStatusDocument` with the :class:`~stem.descriptor.router_status_entry.RouterStatusEntry` it contains (through its **routers** attribute).
+  **BARE_DOCUMENT**   :class:`~stem.descriptor.networkstatus.NetworkStatusDocument` **without** a reference to its contents (the :class:`~stem.descriptor.router_status_entry.RouterStatusEntry` are unread).
+  =================== ===========
 """
 
 __all__ = [
@@ -28,6 +46,7 @@ import os
 import re
 
 import stem.prereq
+import stem.util.enum
 import stem.util.str_tools
 
 try:
@@ -42,8 +61,14 @@ KEYWORD_LINE = re.compile("^([%s]+)(?:[%s]+(.*))?$" % (KEYWORD_CHAR, WHITESPACE)
 PGP_BLOCK_START = re.compile("^-----BEGIN ([%s%s]+)-----$" % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END = "-----END %s-----"
 
+DocumentHandler = stem.util.enum.UppercaseEnum(
+  "ENTRIES",
+  "DOCUMENT",
+  "BARE_DOCUMENT",
+)
 
-def parse_file(descriptor_file, descriptor_type = None, path = None, validate = True):
+
+def parse_file(descriptor_file, descriptor_type = None, path = None, validate = True, document_handler = DocumentHandler.ENTRIES):
   """
   Simple function to read the descriptor contents from a file, providing an
   iterator for its :class:`~stem.descriptor.__init__.Descriptor` contents.
@@ -84,7 +109,7 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
   ========================================= =====
 
   If you're using **python 3** then beware that the open() function defaults to
-  using **text mode**. **Binary mode** is strongly suggested because it's both
+  using text mode. **Binary mode** is strongly suggested because it's both
   faster (by my testing by about 33x) and doesn't do universal newline
   translation which can make us misparse the document.
 
@@ -97,6 +122,8 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
   :param str path: absolute path to the file's location on disk
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
+  :param stem.descriptor.__init__.DocumentHandler document_handler: method in
+    which to parse :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
 
   :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor` instances in the file
 
@@ -134,14 +161,14 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
 
     if descriptor_type_match:
       desc_type, major_version, minor_version = descriptor_type_match.groups()
-      file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f, validate)
+      file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f, validate, document_handler)
     else:
       raise ValueError("The descriptor_type must be of the form '<type> <major_version>.<minor_version>'")
   elif metrics_header_match:
     # Metrics descriptor handling
 
     desc_type, major_version, minor_version = metrics_header_match.groups()
-    file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f, validate)
+    file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f, validate, document_handler)
   else:
     # Cached descriptor handling. These contain multiple descriptors per file.
 
@@ -150,9 +177,9 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
     elif filename == "cached-extrainfo":
       file_parser = lambda f: stem.descriptor.extrainfo_descriptor._parse_file(f, validate = validate)
     elif filename == "cached-consensus":
-      file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, validate = validate)
+      file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, validate = validate, document_handler = document_handler)
     elif filename == "cached-microdesc-consensus":
-      file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, is_microdescriptor = True, validate = validate)
+      file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, is_microdescriptor = True, validate = validate, document_handler = document_handler)
 
   if file_parser:
     for desc in file_parser(descriptor_file):
@@ -168,7 +195,7 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
   raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
 
 
-def _parse_metrics_file(descriptor_type, major_version, minor_version, descriptor_file, validate):
+def _parse_metrics_file(descriptor_type, major_version, minor_version, descriptor_file, validate, document_handler):
   # Parses descriptor files from metrics, yielding individual descriptors. This
   # throws a TypeError if the descriptor_type or version isn't recognized.
   import stem.descriptor.server_descriptor
@@ -193,24 +220,24 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
   elif descriptor_type == "network-status-2" and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV2
 
-    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate):
+    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler):
       yield desc
   elif descriptor_type == "dir-key-certificate-3" and major_version == 1:
     yield stem.descriptor.networkstatus.KeyCertificate(descriptor_file.read(), validate = validate)
   elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 
-    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate):
+    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler):
       yield desc
   elif descriptor_type == "network-status-microdesc-consensus-3" and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 
-    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, is_microdescriptor = True, validate = validate):
+    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, is_microdescriptor = True, validate = validate, document_handler = document_handler):
       yield desc
   elif descriptor_type == "bridge-network-status" and major_version == 1:
     document_type = stem.descriptor.networkstatus.BridgeNetworkStatusDocument
 
-    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate):
+    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler):
       yield desc
   else:
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))

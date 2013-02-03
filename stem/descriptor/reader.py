@@ -255,9 +255,11 @@ class DescriptorReader(object):
     be read, this is unbounded if zero
   :param str persistence_path: if set we will load and save processed file
     listings from this path, errors are ignored
+  :param stem.descriptor.__init__.DocumentHandler document_handler: method in
+    which to parse :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
   """
 
-  def __init__(self, target, validate = True, follow_links = False, buffer_size = 100, persistence_path = None):
+  def __init__(self, target, validate = True, follow_links = False, buffer_size = 100, persistence_path = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
     if isinstance(target, str):
       self._targets = [target]
     else:
@@ -266,6 +268,7 @@ class DescriptorReader(object):
     self._validate = validate
     self._follow_links = follow_links
     self._persistence_path = persistence_path
+    self._document_handler = document_handler
     self._read_listeners = []
     self._skip_listeners = []
     self._processed_files = {}
@@ -514,7 +517,7 @@ class DescriptorReader(object):
       self._notify_read_listeners(target)
 
       with open(target, 'rb') as target_file:
-        for desc in stem.descriptor.parse_file(target_file, validate = self._validate, path = target):
+        for desc in stem.descriptor.parse_file(target_file, validate = self._validate, path = target, document_handler = self._document_handler):
           if self._is_stopped.isSet():
             return
 
@@ -542,7 +545,7 @@ class DescriptorReader(object):
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
 
-          for desc in stem.descriptor.parse_file(entry, validate = self._validate, path = target):
+          for desc in stem.descriptor.parse_file(entry, validate = self._validate, path = target, document_handler = self._document_handler):
             if self._is_stopped.isSet():
               return
 

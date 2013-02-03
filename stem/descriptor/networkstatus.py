@@ -15,43 +15,18 @@ dir-spec. Documents can be obtained from a few sources...
 
 Of these, the router status entry section can be quite large (on the order of
 hundreds of kilobytes). As such we provide a couple of methods for reading
-network status documents...
-
-* :class:`stem.descriptor.networkstatus.NetworkStatusDocumentV3` constructor
-
-If read time and memory aren't a concern then you can simply use the document
-constructor. Router entries are assigned to its 'routers' attribute...
+network status documents through :func:`~stem.descriptor.__init__.parse_file`.
+For more information see :func:`~stem.descriptor.__init__.DocumentHandler`...
 
 ::
 
-  from stem.descriptor.networkstatus import NetworkStatusDocumentV3
+  from stem.descriptor import parse_file, DocumentHandler
 
-  # Reads the full consensus into memory twice (both for the parsed and
-  # unparsed contents).
-
-  consensus_file = open('.tor/cached-consensus', 'r')
-  consensus = NetworkStatusDocumentV3(consensus_file.read())
-  consensus_file.close()
-
-  for router in consensus.routers:
-    print router.nickname
-
-* :func:`stem.descriptor.parse_file`
-
-Alternatively, the :func:`~stem.descriptor.parse_file` function provides an
-iterator for a document's routers. Those routers refer to a 'thin' document,
-which doesn't have a 'routers' attribute. This allows for lower memory usage
-and upfront runtime.
-
-::
-
-  from stem.descriptor import parse_file
-
-  with open('.tor/cached-consensus', 'r') as consensus_file:
+  with open('.tor/cached-consensus', 'rb') as consensus_file:
     # Processes the routers as we read them in. The routers refer to a document
     # with an unset 'routers' attribute.
 
-    for router in parse_file(consensus_file, 'network-status-consensus-3 1.0'):
+    for router in parse_file(consensus_file, 'network-status-consensus-3 1.0', document_handler = DocumentHandler.ENTRIES):
       print router.nickname
 
 **Module Overview:**
@@ -167,7 +142,7 @@ BANDWIDTH_WEIGHT_ENTRIES = (
 )
 
 
-def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False):
+def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
   """
   Parses a network status and iterates over the RouterStatusEntry in it. The
   document that these instances reference have an empty 'routers' attribute to
@@ -179,6 +154,8 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
     **True**, skips these checks otherwise
   :param bool is_microdescriptor: **True** if this is for a microdescriptor
     consensus, **False** otherwise
+  :param stem.descriptor.__init__.DocumentHandler document_handler: method in
+    which to parse :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
 
   :returns: :class:`stem.descriptor.networkstatus.NetworkStatusDocument` object
 
@@ -192,17 +169,6 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
 
   if document_type is None:
     document_type = NetworkStatusDocumentV3
-
-  # getting the document without the routers section
-
-  header = stem.descriptor._read_until_keywords((ROUTERS_START, FOOTER_START, V2_FOOTER_START), document_file)
-
-  routers_start = document_file.tell()
-  stem.descriptor._read_until_keywords((FOOTER_START, V2_FOOTER_START), document_file, skip = True)
-  routers_end = document_file.tell()
-
-  footer = document_file.readlines()
-  document_content = "".join(header + footer)
 
   if document_type == NetworkStatusDocumentV2:
     document_type = NetworkStatusDocumentV2
@@ -218,18 +184,38 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
   else:
     raise ValueError("Document type %i isn't recognized (only able to parse v2, v3, and bridge)" % document_type)
 
-  desc_iterator = stem.descriptor.router_status_entry._parse_file(
-    document_file,
-    validate,
-    entry_class = router_type,
-    entry_keyword = ROUTERS_START,
-    start_position = routers_start,
-    end_position = routers_end,
-    extra_args = (document_type(document_content, validate),),
-  )
+  if document_handler == stem.descriptor.DocumentHandler.DOCUMENT:
+    yield document_type(document_file.read(), validate)
+    return
 
-  for desc in desc_iterator:
-    yield desc
+  # getting the document without the routers section
+
+  header = stem.descriptor._read_until_keywords((ROUTERS_START, FOOTER_START, V2_FOOTER_START), document_file)
+
+  routers_start = document_file.tell()
+  stem.descriptor._read_until_keywords((FOOTER_START, V2_FOOTER_START), document_file, skip = True)
+  routers_end = document_file.tell()
+
+  footer = document_file.readlines()
+  document_content = "".join(header + footer)
+
+  if document_handler == stem.descriptor.DocumentHandler.BARE_DOCUMENT:
+    yield document_type(document_content, validate)
+  elif document_handler == stem.descriptor.DocumentHandler.ENTRIES:
+    desc_iterator = stem.descriptor.router_status_entry._parse_file(
+      document_file,
+      validate,
+      entry_class = router_type,
+      entry_keyword = ROUTERS_START,
+      start_position = routers_start,
+      end_position = routers_end,
+      extra_args = (document_type(document_content, validate),),
+    )
+
+    for desc in desc_iterator:
+      yield desc
+  else:
+    raise ValueError("Unrecognized document_handler: %s" % document_handler)
 
 
 class NetworkStatusDocument(stem.descriptor.Descriptor):
