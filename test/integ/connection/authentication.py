@@ -43,7 +43,7 @@ def _can_authenticate(auth_type):
   tor_options = runner.get_options()
   password_auth = test.runner.Torrc.PASSWORD in tor_options
   cookie_auth = test.runner.Torrc.COOKIE in tor_options
-  safecookie_auth = cookie_auth and runner.get_tor_version().meets_requirements(stem.version.Requirement.AUTH_SAFECOOKIE)
+  safecookie_auth = cookie_auth and runner.get_tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE
 
   if not password_auth and not cookie_auth:
     # open socket, anything but safecookie will work
@@ -104,7 +104,7 @@ class TestAuthenticate(unittest.TestCase):
     self.cookie_auth_methods = [stem.connection.AuthMethod.COOKIE]
 
     tor_version = test.runner.get_runner().get_tor_version()
-    if tor_version.meets_requirements(stem.version.Requirement.AUTH_SAFECOOKIE):
+    if tor_version >= stem.version.Requirement.AUTH_SAFECOOKIE:
       self.cookie_auth_methods.append(stem.connection.AuthMethod.SAFECOOKIE)
 
   def test_authenticate_general_socket(self):

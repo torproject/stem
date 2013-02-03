@@ -8,7 +8,7 @@ easily parsed and compared, for instance...
   >>> my_version = get_system_tor_version()
   >>> print my_version
   0.2.1.30
-  >>> my_version.meets_requirements(Requirement.CONTROL_SOCKET)
+  >>> my_version >= Requirement.CONTROL_SOCKET
   True
 
 **Module Overview:**
@@ -18,12 +18,6 @@ easily parsed and compared, for instance...
   get_system_tor_version - gets the version of our system's tor installation
 
   Version - Tor versioning information
-    +- meets_requirements - checks if this version meets the given requirements
-
-  VersionRequirements - Series of version requirements
-    |- greater_than - adds rule that matches if we're greater than a version
-    |- less_than    - adds rule that matches if we're less than a version
-    +- in_range     - adds rule that matches if we're within a given version range
 
 .. data:: Requirement (enum)
 
@@ -160,24 +154,6 @@ class Version(object):
     else:
       raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
 
-  def meets_requirements(self, requirements):
-    """
-    Checks if this version meets the requirements for a given feature. We can
-    be compared to either a :class:`~stem.version.Version` or
-    :class:`~stem.version.VersionRequirements`.
-
-    :param requirements: requirements to be checked for
-    """
-
-    if isinstance(requirements, Version):
-      return self >= requirements
-    else:
-      for rule in requirements.rules:
-        if rule(self):
-          return True
-
-      return False
-
   def __str__(self):
     """
     Provides the string used to construct the version.
@@ -219,14 +195,34 @@ class Version(object):
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
+  def __gt__(self, other):
+    """
+    Checks if this version meets the requirements for a given feature. We can
+    be compared to either a :class:`~stem.version.Version` or
+    :class:`~stem.version._VersionRequirements`.
+    """
 
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
+    if isinstance(other, _VersionRequirements):
+      for rule in other.rules:
+        if rule(self):
+          return True
+
+      return False
+
+    return self._compare(other, lambda s, o: s > o)
+
+  def __ge__(self, other):
+    if isinstance(other, _VersionRequirements):
+      for rule in other.rules:
+        if rule(self):
+          return True
+
+      return False
+
+    return self._compare(other, lambda s, o: s >= o)
 
 
-class VersionRequirements(object):
+class _VersionRequirements(object):
   """
   Series of version constraints that can be compared to. For instance, this
   allows for comparisons like 'if I'm greater than version X in the 0.2.2
@@ -283,7 +279,7 @@ class VersionRequirements(object):
 
     self.rules.append(new_rule)
 
-safecookie_req = VersionRequirements()
+safecookie_req = _VersionRequirements()
 safecookie_req.in_range(Version("0.2.2.36"), Version("0.2.3.0"))
 safecookie_req.greater_than(Version("0.2.3.13"))
 

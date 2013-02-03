@@ -1435,7 +1435,7 @@ class Controller(BaseController):
         for event_type in events:
           event_version = stem.response.events.EVENT_TYPE_TO_CLASS[event_type]._VERSION_ADDED
 
-          if not self.get_version().meets_requirements(event_version):
+          if self.get_version() < event_version:
             raise stem.InvalidRequest(552, "%s event requires Tor version %s or later" % (event_type, event_version))
 
       for event_type in events:
@@ -1558,7 +1558,7 @@ class Controller(BaseController):
       if defaulted_version:
         our_version = self.get_version(None)
 
-        if our_version and our_version.meets_requirements(defaulted_version):
+        if our_version and our_version >= defaulted_version:
           self._enabled_features.append(feature)
 
       return feature in self._enabled_features
@@ -1728,7 +1728,7 @@ class Controller(BaseController):
       if path is None and circuit_id == '0':
         path_opt_version = stem.version.Requirement.EXTENDCIRCUIT_PATH_OPTIONAL
 
-        if not self.get_version().meets_requirements(path_opt_version):
+        if not self.get_version() >= path_opt_version:
           raise stem.InvalidRequest(512, "EXTENDCIRCUIT requires the path prior to version %s" % path_opt_version)
 
       args = [circuit_id]

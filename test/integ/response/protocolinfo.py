@@ -138,7 +138,7 @@ class TestProtocolInfo(unittest.TestCase):
     if test.runner.Torrc.COOKIE in tor_options:
       auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
 
-      if tor_version.meets_requirements(stem.version.Requirement.AUTH_SAFECOOKIE):
+      if tor_version >= stem.version.Requirement.AUTH_SAFECOOKIE:
         auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
 
       chroot_path = runner.get_chroot()

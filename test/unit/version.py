@@ -142,62 +142,62 @@ class TestVersion(unittest.TestCase):
     Checks a VersionRequirements with a single greater_than rule.
     """
 
-    requirements = stem.version.VersionRequirements()
+    requirements = stem.version._VersionRequirements()
     requirements.greater_than(Version("0.2.2.36"))
 
-    self.assertTrue(Version("0.2.2.36").meets_requirements(requirements))
-    self.assertTrue(Version("0.2.2.37").meets_requirements(requirements))
-    self.assertTrue(Version("0.2.3.36").meets_requirements(requirements))
-    self.assertFalse(Version("0.2.2.35").meets_requirements(requirements))
-    self.assertFalse(Version("0.2.1.38").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.2.36") >= requirements)
+    self.assertTrue(Version("0.2.2.37") >= requirements)
+    self.assertTrue(Version("0.2.3.36") >= requirements)
+    self.assertFalse(Version("0.2.2.35") >= requirements)
+    self.assertFalse(Version("0.2.1.38") >= requirements)
 
-    requirements = stem.version.VersionRequirements()
+    requirements = stem.version._VersionRequirements()
     requirements.greater_than(Version("0.2.2.36"), False)
 
-    self.assertFalse(Version("0.2.2.35").meets_requirements(requirements))
-    self.assertFalse(Version("0.2.2.36").meets_requirements(requirements))
-    self.assertTrue(Version("0.2.2.37").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.2.35") >= requirements)
+    self.assertFalse(Version("0.2.2.36") >= requirements)
+    self.assertTrue(Version("0.2.2.37") >= requirements)
 
   def test_requirements_less_than(self):
     """
     Checks a VersionRequirements with a single less_than rule.
     """
 
-    requirements = stem.version.VersionRequirements()
+    requirements = stem.version._VersionRequirements()
     requirements.less_than(Version("0.2.2.36"))
 
-    self.assertTrue(Version("0.2.2.36").meets_requirements(requirements))
-    self.assertTrue(Version("0.2.2.35").meets_requirements(requirements))
-    self.assertTrue(Version("0.2.1.38").meets_requirements(requirements))
-    self.assertFalse(Version("0.2.2.37").meets_requirements(requirements))
-    self.assertFalse(Version("0.2.3.36").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.2.36") >= requirements)
+    self.assertTrue(Version("0.2.2.35") >= requirements)
+    self.assertTrue(Version("0.2.1.38") >= requirements)
+    self.assertFalse(Version("0.2.2.37") >= requirements)
+    self.assertFalse(Version("0.2.3.36") >= requirements)
 
-    requirements = stem.version.VersionRequirements()
+    requirements = stem.version._VersionRequirements()
     requirements.less_than(Version("0.2.2.36"), False)
 
-    self.assertFalse(Version("0.2.2.37").meets_requirements(requirements))
-    self.assertFalse(Version("0.2.2.36").meets_requirements(requirements))
-    self.assertTrue(Version("0.2.2.35").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.2.37") >= requirements)
+    self.assertFalse(Version("0.2.2.36") >= requirements)
+    self.assertTrue(Version("0.2.2.35") >= requirements)
 
   def test_requirements_in_range(self):
     """
     Checks a VersionRequirements with a single in_range rule.
     """
 
-    requirements = stem.version.VersionRequirements()
+    requirements = stem.version._VersionRequirements()
     requirements.in_range(Version("0.2.2.36"), Version("0.2.2.38"))
 
-    self.assertFalse(Version("0.2.2.35").meets_requirements(requirements))
-    self.assertTrue(Version("0.2.2.36").meets_requirements(requirements))
-    self.assertTrue(Version("0.2.2.37").meets_requirements(requirements))
-    self.assertFalse(Version("0.2.2.38").meets_requirements(requirements))
+    self.assertFalse(Version("0.2.2.35") >= requirements)
+    self.assertTrue(Version("0.2.2.36") >= requirements)
+    self.assertTrue(Version("0.2.2.37") >= requirements)
+    self.assertFalse(Version("0.2.2.38") >= requirements)
 
     # rule for 'anything in the 0.2.2.x series'
-    requirements = stem.version.VersionRequirements()
+    requirements = stem.version._VersionRequirements()
     requirements.in_range(Version("0.2.2.0"), Version("0.2.3.0"))
 
     for index in xrange(0, 100):
-      self.assertTrue(Version("0.2.2.%i" % index).meets_requirements(requirements))
+      self.assertTrue(Version("0.2.2.%i" % index) >= requirements)
 
   def test_requirements_multiple_rules(self):
     """
@@ -205,15 +205,15 @@ class TestVersion(unittest.TestCase):
     """
 
     # rule to say 'anything but the 0.2.2.x series'
-    requirements = stem.version.VersionRequirements()
+    requirements = stem.version._VersionRequirements()
     requirements.greater_than(Version("0.2.3.0"))
     requirements.less_than(Version("0.2.2.0"), False)
 
-    self.assertTrue(Version("0.2.3.0").meets_requirements(requirements))
-    self.assertFalse(Version("0.2.2.0").meets_requirements(requirements))
+    self.assertTrue(Version("0.2.3.0") >= requirements)
+    self.assertFalse(Version("0.2.2.0") >= requirements)
 
     for index in xrange(0, 100):
-      self.assertFalse(Version("0.2.2.%i" % index).meets_requirements(requirements))
+      self.assertFalse(Version("0.2.2.%i" % index) >= requirements)
 
   def assert_versions_match(self, version, major, minor, micro, patch, status, extra):
     """
