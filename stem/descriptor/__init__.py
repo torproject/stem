@@ -83,20 +83,10 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
   tordnsel 1.0                              **unsupported**
   ========================================= =====
 
-  If you're using **python 3** then beware of the open() function's universal
-  newline translation. By default open() converts all common line endings (NL,
-  CR, and CRNL) into NL. In some edge cases this can cause us to misparse
-  content. To disable newline translation set the **newline** to an empty
-  string. For example...
-
-  ::
-
-    my_descriptor_file = open(descrptor_path, newline='')
-
-  What's more, python 3's read performance in **text mode** is deplorably bad
-  (my testing with python 3.2 shows it to be 33x slower). Using **binary mode**
-  is strongly suggested. If you do this then newline translation is
-  automatically disabled...
+  If you're using **python 3** then beware that the open() function defaults to
+  using **text mode**. **Binary mode** is strongly suggested because it's both
+  faster (by my testing by about 33x) and doesn't do universal newline
+  translation which can make us misparse the document.
 
   ::
 
