@@ -19,9 +19,9 @@ import stem.util.enum
 
 from stem.util import log, system, term
 
-import test.check_whitespace
 import test.output
 import test.runner
+import test.static_checks
 import test.unit.connection.authentication
 import test.unit.control.controller
 import test.unit.descriptor.export
@@ -276,7 +276,7 @@ def _clean_orphaned_pyc():
   orphaned_pyc = []
 
   for base_dir in ('stem', 'test', 'run_tests.py'):
-    for pyc_path in test.check_whitespace._get_files_with_suffix(base_dir, ".pyc"):
+    for pyc_path in test.static_checks._get_files_with_suffix(base_dir, ".pyc"):
       # If we're running python 3 then the *.pyc files are no longer bundled
       # with the *.py. Rather, they're in a __pycache__ directory.
       #
@@ -350,9 +350,9 @@ def _python3_setup(python3_destination):
 
 def _print_style_issues():
   base_path = os.path.sep.join(__file__.split(os.path.sep)[:-1]).lstrip("./")
-  style_issues = test.check_whitespace.get_issues(os.path.join(base_path, "stem"))
-  style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "test")))
-  style_issues.update(test.check_whitespace.get_issues(os.path.join(base_path, "run_tests.py")))
+  style_issues = test.static_checks.get_issues(os.path.join(base_path, "stem"))
+  style_issues.update(test.static_checks.get_issues(os.path.join(base_path, "test")))
+  style_issues.update(test.static_checks.get_issues(os.path.join(base_path, "run_tests.py")))
 
   # If we're doing some sort of testing (unit or integ) and pyflakes is
   # available then use it. Its static checks are pretty quick so there's not
@@ -360,17 +360,17 @@ def _print_style_issues():
 
   if CONFIG["argument.unit"] or CONFIG["argument.integ"]:
     if system.is_available("pyflakes"):
-      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "stem")))
-      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "test")))
-      style_issues.update(test.check_whitespace.pyflakes_issues(os.path.join(base_path, "run_tests.py")))
+      style_issues.update(test.static_checks.pyflakes_issues(os.path.join(base_path, "stem")))
+      style_issues.update(test.static_checks.pyflakes_issues(os.path.join(base_path, "test")))
+      style_issues.update(test.static_checks.pyflakes_issues(os.path.join(base_path, "run_tests.py")))
     else:
       test.output.print_line("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", *ERROR_ATTR)
 
   if CONFIG["argument.style"]:
     if system.is_available("pep8"):
-      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "stem")))
-      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "test")))
-      style_issues.update(test.check_whitespace.pep8_issues(os.path.join(base_path, "run_tests.py")))
+      style_issues.update(test.static_checks.pep8_issues(os.path.join(base_path, "stem")))
+      style_issues.update(test.static_checks.pep8_issues(os.path.join(base_path, "test")))
+      style_issues.update(test.static_checks.pep8_issues(os.path.join(base_path, "run_tests.py")))
     else:
       test.output.print_line("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", *ERROR_ATTR)
 
