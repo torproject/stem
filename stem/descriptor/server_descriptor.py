@@ -514,8 +514,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
             else:
               raise ValueError("or-address line missing a colon: %s" % line)
 
-          div = entry.rfind(":")
-          address, ports = entry[:div], entry[div + 1:]
+          address, ports = entry.rsplit(':', 1)
           is_ipv6 = address.startswith("[") and address.endswith("]")
 
           if is_ipv6:
@@ -531,7 +530,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
           for port in ports.split(","):
             if not stem.util.connection.is_valid_port(port):
               if not validate:
-                break
+                continue
               else:
                 raise ValueError("or-address line has malformed ports: %s" % line)
 

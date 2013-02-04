@@ -312,10 +312,11 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = {
-      "[2607:fcd0:daaa:101::602c:bd62]:443": {
-        '2607:fcd0:daaa:101::602c:bd62': (443,)},
-      "[2607:fcd0:daaa:101::602c:bd62]:80,443": {
-        '2607:fcd0:daaa:101::602c:bd62': (80, 443)},
+      "[2607:fcd0:daaa:101::602c:bd62]:443": [
+        ('2607:fcd0:daaa:101::602c:bd62', 443, True)],
+      "[2607:fcd0:daaa:101::602c:bd62]:80,443": [
+        ('2607:fcd0:daaa:101::602c:bd62', 80, True),
+        ('2607:fcd0:daaa:101::602c:bd62', 443, True)]
     }
 
     for a_line, expected in test_values.items():
@@ -328,10 +329,11 @@ class TestRouterStatusEntry(unittest.TestCase):
     content += "\na [2607:fcd0:daaa:101::602c:bd62]:80,443"
     content += "\na [1148:fcd0:daaa:101::602c:bd62]:80"
 
-    expected = {
-      '2607:fcd0:daaa:101::602c:bd62': (80, 443),
-      '1148:fcd0:daaa:101::602c:bd62': (80,),
-    }
+    expected = [
+      ('2607:fcd0:daaa:101::602c:bd62', 80, True),
+      ('2607:fcd0:daaa:101::602c:bd62', 443, True),
+      ('1148:fcd0:daaa:101::602c:bd62', 80, True),
+    ]
 
     entry = RouterStatusEntryV3(content)
     self.assertEquals(expected, entry.addresses_v6)
@@ -340,7 +342,6 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     test_values = (
       "",
-      "127.0.0.1:80",
       "[1148:fcd0:daaa:101::602c:bd62]:80000",
     )
 

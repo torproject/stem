@@ -298,8 +298,8 @@ class RouterStatusEntryV3(RouterStatusEntry):
   Information about an individual router stored within a version 3 network
   status document.
 
-  :var dict addresses_v6: **\*** relay's IPv6 OR addresses, this is a mapping
-    of IPv6 addresses to a tuple with the ports it accepts
+  :var list addresses_v6: **\*** relay's OR addresses, this is a tuple listing
+    of the form (address (**str**), port (**int**), is_ipv6 (**bool**))
   :var str digest: **\*** router's digest
 
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
@@ -318,7 +318,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
   """
 
   def __init__(self, content, validate = True, document = None):
-    self.addresses_v6 = {}
+    self.addresses_v6 = []
     self.digest = None
 
     self.bandwidth = None
@@ -521,21 +521,27 @@ def _parse_a_line(desc, value, validate):
 
     raise ValueError("%s 'a' line must be of the form '[address]:[ports]': a %s" % (desc._name(), value))
 
-  address, port_label = value.rsplit(':', 1)
+  address, ports = value.rsplit(':', 1)
+  is_ipv6 = address.startswith("[") and address.endswith("]")
 
-  if validate and not stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True):
-    raise ValueError("%s 'a' line must start with an IPv6 address: a %s" % (desc._name(), value))
+  if is_ipv6:
+    address = address[1:-1]  # remove brackets
 
-  address = address.lstrip('[').rstrip(']')
-  ports = []
+  if not ((not is_ipv6 and stem.util.connection.is_valid_ip_address(address)) or
+          (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
+    if not validate:
+      return
+    else:
+      raise ValueError("%s 'a' line must start with an IPv6 address: a %s" % (desc._name(), value))
 
-  for port in port_label.split(','):
-    if stem.util.connection.is_valid_port(port):
-      ports.append(int(port))
-    elif validate:
-      raise ValueError("%s 'a' line had an invalid port (%s): a %s" % (desc._name(), port, value))
+  for port in ports.split(','):
+    if not stem.util.connection.is_valid_port(port):
+      if not validate:
+        continue
+      else:
+        raise ValueError("%s 'a' line had an invalid port (%s): a %s" % (desc._name(), port, value))
 
-  desc.addresses_v6[address] = tuple(ports)
+    desc.addresses_v6.append((address, int(port), is_ipv6))
 
 
 def _parse_s_line(desc, value, validate):
