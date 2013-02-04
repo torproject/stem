@@ -299,7 +299,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
   status document.
 
   :var dict addresses_v6: **\*** relay's IPv6 OR addresses, this is a mapping
-    of IPv6 addresses to a listing of [(min port, max port)...] it accepts
+    of IPv6 addresses to a tuple with the ports it accepts
   :var str digest: **\*** router's digest
 
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
@@ -521,28 +521,21 @@ def _parse_a_line(desc, value, validate):
 
     raise ValueError("%s 'a' line must be of the form '[address]:[ports]': a %s" % (desc._name(), value))
 
-  address, ports = value.rsplit(':', 1)
+  address, port_label = value.rsplit(':', 1)
 
   if validate and not stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True):
     raise ValueError("%s 'a' line must start with an IPv6 address: a %s" % (desc._name(), value))
 
   address = address.lstrip('[').rstrip(']')
+  ports = []
 
-  for port_entry in ports.split(','):
-    if '-' in port_entry:
-      min_port, max_port = port_entry.split('-', 1)
-    else:
-      min_port = max_port = port_entry
+  for port in port_label.split(','):
+    if stem.util.connection.is_valid_port(port):
+      ports.append(int(port))
+    elif validate:
+      raise ValueError("%s 'a' line had an invalid port (%s): a %s" % (desc._name(), port, value))
 
-    if not stem.util.connection.is_valid_port(min_port) or \
-       not stem.util.connection.is_valid_port(max_port):
-
-      if not validate:
-        continue
-
-      raise ValueError("%s 'a' line had an invalid port range (%s): a %s" % (desc._name(), port_entry, value))
-
-    desc.addresses_v6.setdefault(address, []).append((int(min_port), int(max_port)))
+  desc.addresses_v6[address] = tuple(ports)
 
 
 def _parse_s_line(desc, value, validate):

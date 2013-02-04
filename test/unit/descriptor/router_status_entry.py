@@ -313,11 +313,9 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     test_values = {
       "[2607:fcd0:daaa:101::602c:bd62]:443": {
-        '2607:fcd0:daaa:101::602c:bd62': [(443, 443)]},
+        '2607:fcd0:daaa:101::602c:bd62': (443,)},
       "[2607:fcd0:daaa:101::602c:bd62]:80,443": {
-        '2607:fcd0:daaa:101::602c:bd62': [(80, 80), (443, 443)]},
-      "[2607:fcd0:daaa:101::602c:bd62]:443-512": {
-        '2607:fcd0:daaa:101::602c:bd62': [(443, 512)]},
+        '2607:fcd0:daaa:101::602c:bd62': (80, 443)},
     }
 
     for a_line, expected in test_values.items():
@@ -328,12 +326,11 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     content = get_router_status_entry_v3(content = True)
     content += "\na [2607:fcd0:daaa:101::602c:bd62]:80,443"
-    content += "\na [2607:fcd0:daaa:101::602c:bd62]:512-600"
     content += "\na [1148:fcd0:daaa:101::602c:bd62]:80"
 
     expected = {
-      '2607:fcd0:daaa:101::602c:bd62': [(80, 80), (443, 443), (512, 600)],
-      '1148:fcd0:daaa:101::602c:bd62': [(80, 80)],
+      '2607:fcd0:daaa:101::602c:bd62': (80, 443),
+      '1148:fcd0:daaa:101::602c:bd62': (80,),
     }
 
     entry = RouterStatusEntryV3(content)
