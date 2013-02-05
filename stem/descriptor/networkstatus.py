@@ -87,6 +87,7 @@ HEADER_STATUS_DOCUMENT_FIELDS = (
   ("client-versions", True, True, False),
   ("server-versions", True, True, False),
   ("known-flags", True, True, True),
+  ("flag-thresholds", True, False, False),
   ("params", True, True, False),
 )
 
@@ -442,6 +443,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   :var list consensus_methods: list of ints for the supported method versions
   :var datetime published: time when the document was published
+  :var dict flag_thresholds: **\*** mapping of internal performance thresholds used while making the vote
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
@@ -551,6 +553,7 @@ class _DocumentHeader(object):
     self.client_versions = []
     self.server_versions = []
     self.known_flags = []
+    self.flag_thresholds = {}
     self.params = dict(DEFAULT_PARAMS) if default_params else {}
 
     self._unrecognized_lines = []
@@ -681,6 +684,24 @@ class _DocumentHeader(object):
 
         # simply fetches the entries, excluding empty strings
         self.known_flags = [entry for entry in value.split(" ") if entry]
+      elif keyword == "flag-thresholds":
+        # "flag-thresholds" SP THRESHOLDS
+        #
+        # TODO: format is being discussed on...
+        #   https://trac.torproject.org/8165
+
+        value = value.strip()
+
+        if value:
+          for entry in value.split(" "):
+            if not '=' in entry:
+              if not validate:
+                continue
+
+              raise ValueError("Network status document's '%s' line is expected to be space separated key=value mappings, got: %s" % (keyword, line))
+
+            entry_key, entry_value = entry.split("=", 1)
+            self.flag_thresholds[entry_key] = entry_value
       elif keyword == "params":
         # "params" [Parameters]
         # Parameter ::= Keyword '=' Int32

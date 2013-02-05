@@ -65,6 +65,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual([], document.client_versions)
     self.assertEqual([], document.server_versions)
     self.assertEqual(expected_known_flags, document.known_flags)
+    self.assertEqual({}, document.flag_thresholds)
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual((), document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
@@ -98,6 +99,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual([], document.client_versions)
     self.assertEqual([], document.server_versions)
     self.assertEqual(expected_known_flags, document.known_flags)
+    self.assertEqual({}, document.flag_thresholds)
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual((), document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
@@ -471,6 +473,56 @@ class TestNetworkStatusDocument(unittest.TestCase):
     for test_value, expected_value in test_values:
       document = get_network_status_document_v3({"known-flags": test_value})
       self.assertEquals(expected_value, document.known_flags)
+
+  def test_flag_thresholds(self):
+    """
+    Parses the flag-thresholds entry.
+    """
+
+    test_values = (
+      ("", {}),
+      ("fast-speed=40960", {u"fast-speed": u"40960"}),   # numeric value
+      ("guard-wfu=94.669%", {u"guard-wfu": u"94.669%"}), # percentage value
+      ("guard-wfu=94.669% guard-tk=691200", {u"guard-wfu": u"94.669%", u"guard-tk": u"691200"}), # multiple values
+    )
+
+    for test_value, expected_value in test_values:
+      document = get_network_status_document_v3({"vote-status": "vote", "flag-thresholds": test_value})
+      self.assertEquals(expected_value, document.flag_thresholds)
+
+    # parses a full entry found in an actual vote
+
+    full_line = "stable-uptime=693369 stable-mtbf=153249 fast-speed=40960 guard-wfu=94.669% guard-tk=691200 guard-bw-inc-exits=174080 guard-bw-exc-exits=184320 enough-mtbf=1"
+
+    expected_value = {
+      u"stable-uptime": u"693369",
+      u"stable-mtbf": u"153249",
+      u"fast-speed": u"40960",
+      u"guard-wfu": u"94.669%",
+      u"guard-tk": u"691200",
+      u"guard-bw-inc-exits": u"174080",
+      u"guard-bw-exc-exits": u"184320",
+      u"enough-mtbf": u"1",
+    }
+
+    document = get_network_status_document_v3({"vote-status": "vote", "flag-thresholds": full_line})
+    self.assertEquals(expected_value, document.flag_thresholds)
+
+    # TODO: At present our validation is pretty permissive since the field
+    # doesn't yet have a formal specificiation. We should expand this test when
+    # it does.
+
+    test_values = (
+      "stable-uptime 693369", # not a key=value mapping
+      #"stable-uptime=693369\tstable-mtbf=153249", # non-space divider
+    )
+
+    for test_value in test_values:
+      content = get_network_status_document_v3({"vote-status": "vote", "flag-thresholds": test_value}, content = True)
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+
+      document = NetworkStatusDocumentV3(content, False)
+      self.assertEquals({}, document.flag_thresholds)
 
   def test_params(self):
     """
