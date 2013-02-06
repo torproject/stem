@@ -87,7 +87,7 @@ INTEG_RUNNER = None
 # control authentication options and attributes
 CONTROL_PASSWORD = "pw"
 CONTROL_PORT = 1111
-CONTROL_SOCKET_PATH = "/tmp/stem_integ/socket"
+CONTROL_SOCKET_PATH = tempfile.mkstemp()[1]
 
 Torrc = stem.util.enum.Enum(
   ("PORT", "ControlPort %i" % CONTROL_PORT),

@@ -3,8 +3,10 @@ Tests the stem.process functions with various use cases.
 """
 
 import os
+import shutil
 import signal
 import subprocess
+import tempfile
 import time
 import unittest
 
@@ -16,8 +18,6 @@ import stem.version
 import test.runner
 
 from test import mocking
-
-DATA_DIRECTORY = '/tmp/stem_integ'
 
 
 def _kill_process(process):
@@ -31,11 +31,11 @@ def _kill_process(process):
 
 class TestProcess(unittest.TestCase):
   def setUp(self):
-    if not os.path.exists(DATA_DIRECTORY):
-      os.makedirs(DATA_DIRECTORY)
+    self.data_directory = tempfile.mkdtemp()
 
   def tearDown(self):
     mocking.revert_mocking()
+    shutil.rmtree(self.data_directory)
 
   def test_launch_tor_with_config(self):
     """
@@ -58,7 +58,7 @@ class TestProcess(unittest.TestCase):
       config = {
         'SocksPort': '2777',
         'ControlPort': '2778',
-        'DataDirectory': DATA_DIRECTORY,
+        'DataDirectory': self.data_directory,
       },
       completion_percent = 5
     )
@@ -92,7 +92,7 @@ class TestProcess(unittest.TestCase):
 
     runner = test.runner.get_runner()
     start_time = time.time()
-    config = {'SocksPort': '2777', 'DataDirectory': DATA_DIRECTORY}
+    config = {'SocksPort': '2777', 'DataDirectory': self.data_directory}
     self.assertRaises(OSError, stem.process.launch_tor_with_config, config, runner.get_tor_command(), 100, None, 2)
     runtime = time.time() - start_time
 
@@ -128,7 +128,7 @@ class TestProcess(unittest.TestCase):
       config = {
         'SocksPort': '2777',
         'ControlPort': '2778',
-        'DataDirectory': DATA_DIRECTORY,
+        'DataDirectory': self.data_directory,
       },
       completion_percent = 5,
       take_ownership = True,
@@ -165,7 +165,7 @@ class TestProcess(unittest.TestCase):
       config = {
         'SocksPort': '2777',
         'ControlPort': '2778',
-        'DataDirectory': DATA_DIRECTORY,
+        'DataDirectory': self.data_directory,
       },
       completion_percent = 5,
       take_ownership = True,
