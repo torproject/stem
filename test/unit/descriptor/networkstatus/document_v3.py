@@ -481,9 +481,9 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     test_values = (
       ("", {}),
-      ("fast-speed=40960", {u"fast-speed": u"40960"}),   # numeric value
-      ("guard-wfu=94.669%", {u"guard-wfu": u"94.669%"}), # percentage value
-      ("guard-wfu=94.669% guard-tk=691200", {u"guard-wfu": u"94.669%", u"guard-tk": u"691200"}), # multiple values
+      ("fast-speed=40960", {u"fast-speed": u"40960"}),    # numeric value
+      ("guard-wfu=94.669%", {u"guard-wfu": u"94.669%"}),  # percentage value
+      ("guard-wfu=94.669% guard-tk=691200", {u"guard-wfu": u"94.669%", u"guard-tk": u"691200"}),  # multiple values
     )
 
     for test_value, expected_value in test_values:
@@ -513,7 +513,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     # it does.
 
     test_values = (
-      "stable-uptime 693369", # not a key=value mapping
+      "stable-uptime 693369",  # not a key=value mapping
       #"stable-uptime=693369\tstable-mtbf=153249", # non-space divider
     )
 
