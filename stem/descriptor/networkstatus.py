@@ -443,7 +443,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   :var list consensus_methods: list of ints for the supported method versions
   :var datetime published: time when the document was published
-  :var dict flag_thresholds: **\*** mapping of internal performance thresholds used while making the vote
+  :var dict flag_thresholds: **\*** mapping of internal performance thresholds used while making the vote, values are **ints** or **floats**
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
@@ -686,9 +686,6 @@ class _DocumentHeader(object):
         self.known_flags = [entry for entry in value.split(" ") if entry]
       elif keyword == "flag-thresholds":
         # "flag-thresholds" SP THRESHOLDS
-        #
-        # TODO: format is being discussed on...
-        #   https://trac.torproject.org/8165
 
         value = value.strip()
 
@@ -701,7 +698,21 @@ class _DocumentHeader(object):
               raise ValueError("Network status document's '%s' line is expected to be space separated key=value mappings, got: %s" % (keyword, line))
 
             entry_key, entry_value = entry.split("=", 1)
-            self.flag_thresholds[entry_key] = entry_value
+
+            try:
+              if entry_value.endswith("%"):
+                # opting for string manipulation rather than just
+                # 'float(entry_value) / 100' because floating point arithmetic
+                # will lose precision
+
+                self.flag_thresholds[entry_key] = float("0." + entry_value[:-1].replace('.', '', 1))
+              elif '.' in entry_value:
+                self.flag_thresholds[entry_key] = float(entry_value)
+              else:
+                self.flag_thresholds[entry_key] = int(entry_value)
+            except ValueError:
+              if validate:
+                raise ValueError("Network status document's '%s' line is expected to have float values, got: %s" % (keyword, line))
       elif keyword == "params":
         # "params" [Parameters]
         # Parameter ::= Keyword '=' Int32

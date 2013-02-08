@@ -481,9 +481,9 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     test_values = (
       ("", {}),
-      ("fast-speed=40960", {u"fast-speed": u"40960"}),    # numeric value
-      ("guard-wfu=94.669%", {u"guard-wfu": u"94.669%"}),  # percentage value
-      ("guard-wfu=94.669% guard-tk=691200", {u"guard-wfu": u"94.669%", u"guard-tk": u"691200"}),  # multiple values
+      ("fast-speed=40960", {u"fast-speed": 40960}),    # numeric value
+      ("guard-wfu=94.669%", {u"guard-wfu": 0.94669}),  # percentage value
+      ("guard-wfu=94.669% guard-tk=691200", {u"guard-wfu": 0.94669, u"guard-tk": 691200}),  # multiple values
     )
 
     for test_value, expected_value in test_values:
@@ -495,26 +495,24 @@ class TestNetworkStatusDocument(unittest.TestCase):
     full_line = "stable-uptime=693369 stable-mtbf=153249 fast-speed=40960 guard-wfu=94.669% guard-tk=691200 guard-bw-inc-exits=174080 guard-bw-exc-exits=184320 enough-mtbf=1"
 
     expected_value = {
-      u"stable-uptime": u"693369",
-      u"stable-mtbf": u"153249",
-      u"fast-speed": u"40960",
-      u"guard-wfu": u"94.669%",
-      u"guard-tk": u"691200",
-      u"guard-bw-inc-exits": u"174080",
-      u"guard-bw-exc-exits": u"184320",
-      u"enough-mtbf": u"1",
+      u"stable-uptime": 693369,
+      u"stable-mtbf": 153249,
+      u"fast-speed": 40960,
+      u"guard-wfu": 0.94669,
+      u"guard-tk": 691200,
+      u"guard-bw-inc-exits": 174080,
+      u"guard-bw-exc-exits": 184320,
+      u"enough-mtbf": 1,
     }
 
     document = get_network_status_document_v3({"vote-status": "vote", "flag-thresholds": full_line})
     self.assertEquals(expected_value, document.flag_thresholds)
 
-    # TODO: At present our validation is pretty permissive since the field
-    # doesn't yet have a formal specificiation. We should expand this test when
-    # it does.
-
     test_values = (
-      "stable-uptime 693369",  # not a key=value mapping
-      #"stable-uptime=693369\tstable-mtbf=153249", # non-space divider
+      "stable-uptime 693369",   # not a key=value mapping
+      "stable-uptime=a693369",  # non-numeric value
+      "guard-wfu=94.669%%",     # double quote
+      "stable-uptime=693369\tstable-mtbf=153249",  # non-space divider
     )
 
     for test_value in test_values:
