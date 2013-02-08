@@ -754,7 +754,7 @@ class StreamEvent(Event):
   :var stem.StreamStatus status: reported status for the stream
   :var str circ_id: circuit that the stream is attached to
   :var str target: destination of the stream
-  :var str target_address: destination address (ip or hostname)
+  :var str target_address: destination address (ip, hostname, or '(Tor_internal)')
   :var int target_port: destination port
   :var stem.StreamClosureReason reason: reason for the stream to be closed
   :var stem.StreamClosureReason remote_reason: remote side's reason for the stream to be closed
