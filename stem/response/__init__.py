@@ -22,6 +22,8 @@ Parses replies from the control socket.
     |- peek_key - provides the key of the next entry
     |- pop - removes and returns the next entry
     +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
+
+  SingleLineResponse - Simple tor response only including a single line of information.
 """
 
 from __future__ import with_statement
@@ -35,6 +37,7 @@ __all__ = [
   "convert",
   "ControlMessage",
   "ControlLine",
+  "SingleLineResponse",
 ]
 
 import re
@@ -72,7 +75,7 @@ def convert(response_type, message, **kwargs):
   **EVENT**           :class:`stem.response.events.Event` subclass
   **PROTOCOLINFO**    :class:`stem.response.protocolinfo.ProtocolInfoResponse`
   **AUTHCHALLENGE**   :class:`stem.response.authchallenge.AuthChallengeResponse`
-  **SINGLELINE**      :class:`stem.response.__init__.SingleLineResponse`
+  **SINGLELINE**      :class:`stem.response.SingleLineResponse`
   =================== =====
 
   :param str response_type: type of tor response to convert to
