@@ -37,6 +37,7 @@ __all__ = [
 ]
 
 import re
+import StringIO
 import threading
 
 import stem.socket
@@ -123,6 +124,19 @@ class ControlMessage(object):
   individual message components stripped of protocol formatting. Messages are
   never empty.
   """
+
+  def from_str(content):
+    """
+    Provides a ControlMessage for the given content.
+
+    :param str content: message to construct the message from
+
+    :returns: stem.response.ControlMessage instance
+    """
+
+    return stem.socket.recv_message(StringIO.StringIO(content))
+
+  from_str = staticmethod(from_str)
 
   def __init__(self, parsed_content, raw_content):
     if not parsed_content:

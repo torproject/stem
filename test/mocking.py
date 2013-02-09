@@ -24,7 +24,7 @@ calling :func:`test.mocking.revert_mocking`.
     raise_exception - raises an exception when called
 
   Instance Constructors
-    get_message                     - stem.socket.ControlMessage
+    get_message                     - stem.response.ControlMessage
     get_protocolinfo_response       - stem.response.protocolinfo.ProtocolInfoResponse
 
     stem.descriptor.server_descriptor
@@ -51,7 +51,6 @@ import base64
 import hashlib
 import inspect
 import itertools
-import StringIO
 
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.networkstatus
@@ -59,7 +58,6 @@ import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.prereq
 import stem.response
-import stem.socket
 
 # Once we've mocked a function we can't rely on its __module__ or __name__
 # attributes, so instead we associate a unique 'mock_id' attribute that maps
@@ -530,7 +528,7 @@ def get_message(content, reformat = True):
 
     content = content.replace("\n", "\r\n")
 
-  return stem.socket.recv_message(StringIO.StringIO(content))
+  return stem.response.ControlMessage.from_str(content)
 
 
 def get_protocolinfo_response(**attributes):
