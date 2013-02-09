@@ -8,6 +8,7 @@ Parses replies from the control socket.
   convert - translates a ControlMessage into a particular response subclass
 
   ControlMessage - Message that's read from the control socket.
+    |- from_str - provides a ControlMessage for the given string
     |- content - provides the parsed message content
     |- raw_content - unparsed socket data
     |- __str__ - content stripped of protocol formatting
@@ -62,17 +63,17 @@ def convert(response_type, message, **kwargs):
   :class:`~stem.response.ControlMessage` to a subclass for its response type.
   Recognized types include...
 
-    * **\*** GETINFO
-    * **\*** GETCONF
-    * **&** **^** MAPADDRESS
-    * EVENT
-    * PROTOCOLINFO
-    * AUTHCHALLENGE
-    * SINGLELINE
-
-  * **\*** can raise a :class:`stem.InvalidArguments` exception
-  * **^** can raise a :class:`stem.InvalidRequest` exception
-  * **&** can raise a :class:`stem.OperationFailed` exception
+  =================== =====
+  response_type       Class
+  =================== =====
+  **GETINFO**         :class:`stem.response.getinfo.GetInfoResponse`
+  **GETCONF**         :class:`stem.response.getconf.GetConfResponse`
+  **MAPADDRESS**      :class:`stem.response.mapaddress.MapAddressResponse`
+  **EVENT**           :class:`stem.response.events.Event` subclass
+  **PROTOCOLINFO**    :class:`stem.response.protocolinfo.ProtocolInfoResponse`
+  **AUTHCHALLENGE**   :class:`stem.response.authchallenge.AuthChallengeResponse`
+  **SINGLELINE**      :class:`stem.response.__init__.SingleLineResponse`
+  =================== =====
 
   :param str response_type: type of tor response to convert to
   :param stem.response.ControlMessage message: message to be converted
@@ -82,9 +83,13 @@ def convert(response_type, message, **kwargs):
     * :class:`stem.ProtocolError` the message isn't a proper response of
       that type
     * :class:`stem.InvalidArguments` the arguments given as input are
-      invalid
+      invalid, this is can only be raised if the response_type is: **GETINFO**,
+      **GETCONF**
     * :class:`stem.InvalidRequest` the arguments given as input are
-      invalid
+      invalid, this is can only be raised if the response_type is:
+      **MAPADDRESS**
+    * :class:`stem.OperationFailed` if the action the event represents failed,
+      this is can only be raised if the response_type is: **MAPADDRESS**
     * **TypeError** if argument isn't a :class:`~stem.response.ControlMessage`
       or response_type isn't supported
   """
