@@ -30,10 +30,11 @@ class Event(stem.response.ControlMessage):
   :var dict keyword_args: key/value arguments of the event
   """
 
-  _POSITIONAL_ARGS = ()   # attribute names for recognized positional arguments
-  _KEYWORD_ARGS = {}      # map of 'keyword => attribute' for recognized attributes
-  _QUOTED = ()            # positional arguments that are quoted
-  _SKIP_PARSING = False   # skip parsing contents into our positional_args and keyword_args
+  _POSITIONAL_ARGS = ()    # attribute names for recognized positional arguments
+  _KEYWORD_ARGS = {}       # map of 'keyword => attribute' for recognized attributes
+  _QUOTED = ()             # positional arguments that are quoted
+  _OPTIONALLY_QUOTED = ()  # positional arguments that may or may not be quoted
+  _SKIP_PARSING = False    # skip parsing contents into our positional_args and keyword_args
   _VERSION_ADDED = stem.version.Version('0.1.1.1-alpha')  # minimum version with control-spec V1 event support
 
   def _parse_message(self, arrived_at):
@@ -93,7 +94,7 @@ class Event(stem.response.ControlMessage):
       attr_value = None
 
       if positional:
-        if attr_name in self._QUOTED:
+        if attr_name in self._QUOTED or (attr_name in self._OPTIONALLY_QUOTED and positional[0].startswith('"')):
           attr_values = [positional.pop(0)]
 
           if not attr_values[0].startswith('"'):
@@ -164,14 +165,20 @@ class AddrMapEvent(Event):
     "error": "error",
     "EXPIRES": "utc_expiry",
   }
-  _QUOTED = ("expiry")
+  _OPTIONALLY_QUOTED = ("expiry")
 
   def _parse(self):
     if self.destination == "<error>":
       self.destination = None
 
     if self.expiry is not None:
-      self.expiry = datetime.datetime.strptime(self.expiry, "%Y-%m-%d %H:%M:%S")
+      if self.expiry == "NEVER":
+        self.expiry = None
+      else:
+        try:
+          self.expiry = datetime.datetime.strptime(self.expiry, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+          raise stem.ProtocolError("Unable to parse date in ADDRMAP event: %s" % self)
 
     if self.utc_expiry is not None:
       self.utc_expiry = datetime.datetime.strptime(self.utc_expiry, "%Y-%m-%d %H:%M:%S")

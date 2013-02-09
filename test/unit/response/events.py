@@ -18,6 +18,8 @@ from test import mocking
 ADDRMAP = '650 ADDRMAP www.atagar.com 75.119.206.243 "2012-11-19 00:50:13" \
 EXPIRES="2012-11-19 08:50:13"'
 
+ADDRMAP_NO_EXPIRATION = '650 ADDRMAP www.atagar.com 75.119.206.243 NEVER'
+
 ADDRMAP_ERROR_EVENT = '650 ADDRMAP www.atagar.com <error> "2012-11-19 00:50:13" \
 error=yes EXPIRES="2012-11-19 08:50:13"'
 
@@ -379,6 +381,16 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 11, 19, 0, 50, 13), event.expiry)
     self.assertEqual(None, event.error)
     self.assertEqual(datetime.datetime(2012, 11, 19, 8, 50, 13), event.utc_expiry)
+
+    event = _get_event(ADDRMAP_NO_EXPIRATION)
+
+    self.assertTrue(isinstance(event, stem.response.events.AddrMapEvent))
+    self.assertEqual(ADDRMAP_NO_EXPIRATION.lstrip("650 "), str(event))
+    self.assertEqual("www.atagar.com", event.hostname)
+    self.assertEqual("75.119.206.243", event.destination)
+    self.assertEqual(None, event.expiry)
+    self.assertEqual(None, event.error)
+    self.assertEqual(None, event.utc_expiry)
 
     event = _get_event(ADDRMAP_ERROR_EVENT)
 
