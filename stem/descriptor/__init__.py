@@ -68,7 +68,7 @@ DocumentHandler = stem.util.enum.UppercaseEnum(
 )
 
 
-def parse_file(descriptor_file, descriptor_type = None, path = None, validate = True, document_handler = DocumentHandler.ENTRIES):
+def parse_file(descriptor_file, descriptor_type = None, validate = True, document_handler = DocumentHandler.ENTRIES):
   """
   Simple function to read the descriptor contents from a file, providing an
   iterator for its :class:`~stem.descriptor.__init__.Descriptor` contents.
@@ -120,7 +120,6 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
 
   :param file descriptor_file: opened file with the descriptor contents
   :param str descriptor_type: `descriptor type <https://metrics.torproject.org/formats.html#descriptortypes>`_, this is guessed if not provided
-  :param str path: absolute path to the file's location on disk
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
   :param stem.descriptor.__init__.DocumentHandler document_handler: method in
@@ -154,7 +153,7 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
   if not metrics_header_match:
     descriptor_file.seek(initial_position)
 
-  filename = '<undefined>' if path is None else os.path.basename(path)
+  filename = '<undefined>' if descriptor_file.name is None else os.path.basename(descriptor_file.name)
   file_parser = None
 
   if descriptor_type is not None:
@@ -184,8 +183,8 @@ def parse_file(descriptor_file, descriptor_type = None, path = None, validate = 
 
   if file_parser:
     for desc in file_parser(descriptor_file):
-      if path is not None:
-        desc._set_path(path)
+      if descriptor_file.name is not None:
+        desc._set_path(os.path.abspath(descriptor_file.name))
 
       yield desc
 
@@ -288,6 +287,7 @@ class _UnicodeReader(object):
 
   def __init__(self, wrapped_file):
     self.wrapped_file = wrapped_file
+    self.name = getattr(wrapped_file, 'name', None)
 
   def close(self):
     return self.wrapped_file.close()

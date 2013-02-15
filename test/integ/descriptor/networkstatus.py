@@ -43,7 +43,7 @@ class TestNetworkStatus(unittest.TestCase):
 
     count = 0
     with open(consensus_path, 'rb') as descriptor_file:
-      for router in stem.descriptor.parse_file(descriptor_file, "network-status-consensus-3 1.0", path = consensus_path):
+      for router in stem.descriptor.parse_file(descriptor_file, "network-status-consensus-3 1.0"):
         count += 1
 
         # We should have constant memory usage. Fail if we're using over 200 MB.
@@ -88,7 +88,7 @@ class TestNetworkStatus(unittest.TestCase):
 
     count = 0
     with open(consensus_path, 'rb') as descriptor_file:
-      for router in stem.descriptor.parse_file(descriptor_file, "network-status-microdesc-consensus-3 1.0", path = consensus_path):
+      for router in stem.descriptor.parse_file(descriptor_file, "network-status-microdesc-consensus-3 1.0"):
         count += 1
 
         if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 200000:
@@ -118,9 +118,9 @@ class TestNetworkStatus(unittest.TestCase):
     for specify_type in (True, False):
       with open(consensus_path, 'rb') as descriptor_file:
         if specify_type:
-          descriptors = stem.descriptor.parse_file(descriptor_file, "network-status-consensus-3 1.0", path = consensus_path)
+          descriptors = stem.descriptor.parse_file(descriptor_file, "network-status-consensus-3 1.0")
         else:
-          descriptors = stem.descriptor.parse_file(descriptor_file, path = consensus_path)
+          descriptors = stem.descriptor.parse_file(descriptor_file)
 
         router = next(descriptors)
         self.assertEquals("sumkledi", router.nickname)
@@ -139,7 +139,7 @@ class TestNetworkStatus(unittest.TestCase):
     consensus_path = get_resource("bridge_network_status")
 
     with open(consensus_path, 'rb') as descriptor_file:
-      router = next(stem.descriptor.parse_file(descriptor_file, path = consensus_path))
+      router = next(stem.descriptor.parse_file(descriptor_file))
       self.assertEquals("Unnamed", router.nickname)
       self.assertEquals("0014A2055278DB3EB0E59EA701741416AF185558", router.fingerprint)
       self.assertEquals("FI74aFuNJZZQrgln0f+OaocMd0M", router.digest)
@@ -185,7 +185,7 @@ GM9hAsAMRX9Ogqhq5UjDNqEsvDKuyVeyh7unSZEOip9Zr6K/+7VsVPNb8vfBRBjo
     cert_path = get_resource("metrics_cert")
 
     with open(cert_path) as cert_file:
-      cert = next(stem.descriptor.parse_file(cert_file, path = cert_path))
+      cert = next(stem.descriptor.parse_file(cert_file))
       self.assertEquals(3, cert.version)
       self.assertEquals(None, cert.address)
       self.assertEquals(None, cert.dir_port)
@@ -374,7 +374,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
     vote_path = get_resource("metrics_vote")
 
     with open(vote_path, 'rb') as descriptor_file:
-      descriptors = stem.descriptor.parse_file(descriptor_file, path = vote_path)
+      descriptors = stem.descriptor.parse_file(descriptor_file)
 
       router = next(descriptors)
       self.assertEquals("sumkledi", router.nickname)
