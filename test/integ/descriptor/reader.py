@@ -266,6 +266,24 @@ class TestDescriptorReader(unittest.TestCase):
     with reader:
       self.assertEqual(0, len(list(reader)))
 
+  def test_archived_paths(self):
+    """
+    Checks the get_path() and get_archive_path() for a tarball.
+    """
+
+    expected_archive_paths = (
+      "descriptor_archive/0/2/02c311d3d789f3f55c0880b5c85f3c196343552c",
+      "descriptor_archive/1/b/1bb798cae15e21479db0bc700767eee4733e9d4a",
+      "descriptor_archive/1/b/1ef75fef564180d8b3f72c6f8635ff0cd855f92c",
+    )
+
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar")
+
+    with stem.descriptor.reader.DescriptorReader(test_path) as reader:
+      for desc in reader:
+        self.assertEqual(test_path, desc.get_path())
+        self.assertTrue(desc.get_archive_path() in expected_archive_paths)
+
   def test_archived_uncompressed(self):
     """
     Checks that we can read descriptors from an uncompressed archive.

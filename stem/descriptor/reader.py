@@ -545,10 +545,19 @@ class DescriptorReader(object):
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
 
+          # The parse_file() function uses the 'name' attribute to figure out
+          # the file that it came from. In the case of TarInfo instances the
+          # 'name' is the path within the archive. We'll want that for
+          # _set_archive_path().
+
+          archive_path = entry.name
+          entry.name = target
+
           for desc in stem.descriptor.parse_file(entry, validate = self._validate, document_handler = self._document_handler):
             if self._is_stopped.isSet():
               return
 
+            desc._set_archive_path(archive_path)
             self._unreturned_descriptors.put(desc)
             self._iter_notice.set()
 

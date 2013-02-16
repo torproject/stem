@@ -9,6 +9,7 @@ Package for parsing and processing descriptor data.
 
   Descriptor - Common parent for all descriptor file types.
     |- get_path - location of the descriptor on disk if it came from a file
+    |- get_archive_path - location of the descriptor within the archive it came from
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
 
@@ -250,6 +251,7 @@ class Descriptor(object):
 
   def __init__(self, contents):
     self._path = None
+    self._archive_path = None
     self._raw_contents = contents
 
   def get_path(self):
@@ -260,6 +262,18 @@ class Descriptor(object):
     """
 
     return self._path
+
+  def get_archive_path(self):
+    """
+    If this descriptor came from an archive then provides its path within the
+    archive. This is only set if the descriptor came from a
+    :class:`~stem.descriptor.reader.DescriptorReader`, and is **None** if this
+    descriptor didn't come from an archive.
+
+    :returns: **str** with the descriptor's path within the archive
+    """
+
+    return self._archive_path
 
   def get_unrecognized_lines(self):
     """
@@ -274,6 +288,9 @@ class Descriptor(object):
 
   def _set_path(self, path):
     self._path = path
+
+  def _set_archive_path(self, path):
+    self._archive_path = path
 
   def __str__(self):
     return self._raw_contents
