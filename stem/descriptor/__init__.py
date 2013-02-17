@@ -297,7 +297,10 @@ class Descriptor(object):
     self._archive_path = path
 
   def __str__(self):
-    return self._raw_contents
+    if stem.prereq.is_python_3():
+      return self._raw_contents
+    else:
+      return str(stem.util.str_tools.to_bytes(self._raw_contents))
 
 
 class _UnicodeReader(object):

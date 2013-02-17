@@ -20,6 +20,7 @@ Toolkit for various string activity.
   parse_iso_timestamp - parses an ISO timestamp as a datetime value
 """
 
+import codecs
 import datetime
 
 import stem.prereq
@@ -52,11 +53,9 @@ TIME_UNITS = (
 )
 
 if stem.prereq.is_python_3():
-  import codecs
-
   def _to_bytes(msg):
     if isinstance(msg, str):
-      return codecs.latin_1_encode(msg)[0]
+      return codecs.latin_1_encode(msg, "replace")[0]
     else:
       return msg
 
@@ -67,7 +66,10 @@ if stem.prereq.is_python_3():
       return msg
 else:
   def _to_bytes(msg):
-    return msg
+    if msg is not None and isinstance(msg, unicode):
+      return codecs.latin_1_encode(msg, "replace")[0]
+    else:
+      return msg
 
   def _to_unicode(msg):
     if msg is not None and not isinstance(msg, unicode):
@@ -84,7 +86,7 @@ def to_bytes(msg):
 
   http://python3porting.com/problems.html#nicer-solutions
 
-  :param msg label: string to be converted
+  :param str,unicode msg: string to be converted
 
   :returns: ASCII bytes for string
   """
@@ -98,7 +100,7 @@ def to_unicode(msg):
   provide python 3 compatability, normalizing the unicode/ASCII change in the
   version bump.
 
-  :param msg label: string to be converted
+  :param str,unicode msg: string to be converted
 
   :returns: unicode conversion
   """

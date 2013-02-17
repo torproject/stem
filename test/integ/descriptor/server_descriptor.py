@@ -221,6 +221,13 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(stem.exit_policy.ExitPolicy("reject *:*"), desc.exit_policy)
     self.assertEquals([], desc.get_unrecognized_lines())
 
+    # Make sure that we can get a string representation for this descriptor
+    # (having unicode content risks a UnicodeEncodeError)...
+    #
+    # https://trac.torproject.org/8265
+
+    self.assertTrue(isinstance(str(desc), str))
+
   def test_cr_in_contact_line(self):
     """
     Parses a descriptor with a huge contact line containing anomalous carriage
