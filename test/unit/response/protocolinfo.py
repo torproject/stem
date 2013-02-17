@@ -151,8 +151,6 @@ class TestProtocolInfoResponse(unittest.TestCase):
     succeeds and fails.
     """
 
-    # TODO: move into stem.connection unit tests?
-
     # we need to mock both pid and cwd lookups since the general cookie
     # expanion works by...
     # - resolving the pid of the "tor" process

@@ -401,10 +401,6 @@ def get_pid_by_port(port):
   #   p - only includes results if the local or foreign port match this
   #
   # example output:
-  #   # TODO: We need an example for the actual command we're using. I'm
-  #   # suspecting that replacing the grep with checking the local port works,
-  #   # but should double check.
-  #
   #   # sockstat -4 | grep tor
   #   _tor     tor        4397  7  tcp4   51.64.7.84:9050    *:*
   #   _tor     tor        4397  8  udp4   51.64.7.84:53      *:*

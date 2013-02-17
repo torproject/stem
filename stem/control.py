@@ -662,15 +662,6 @@ class Controller(BaseController):
     self._event_listeners = {}
     self._event_listeners_lock = threading.RLock()
 
-    # TODO: We want the capability of taking post-authentication actions, for
-    # instance to call SETEVENTS so our event listeners will work on new
-    # connections. The trouble is that the user could do this by a variety of
-    # methods (authenticate(), msg(), stem.connection.authenticete(), etc)...
-    #
-    # When we get it figured out we should add the pydoc comment:
-    # If a new control connection is initialized then this listener will be
-    # reattached.
-
     # number of sequential 'GETINFO ip-to-country/*' lookups that have failed
     self._geoip_failure_count = 0
     self._enabled_features = []
@@ -1020,6 +1011,8 @@ class Controller(BaseController):
     try:
       # TODO: We should iterate over the descriptors as they're read from the
       # socket rather than reading the whole thing into memory.
+      #
+      # https://trac.torproject.org/8248
 
       desc_content = self.get_info("desc/all-recent")
 
@@ -1087,6 +1080,8 @@ class Controller(BaseController):
     try:
       # TODO: We should iterate over the descriptors as they're read from the
       # socket rather than reading the whole thing into memeory.
+      #
+      # https://trac.torproject.org/8248
 
       desc_content = self.get_info("ns/all")
 
@@ -1422,6 +1417,9 @@ class Controller(BaseController):
         controller.authenticate()
         controller.add_event_listener(print_bw, EventType.BW)
         time.sleep(5)
+
+    If a new control connection is initialized then this listener will be
+    reattached.
 
     :param functor listener: function to be called when an event is received
     :param stem.control.EventType events: event types to be listened for

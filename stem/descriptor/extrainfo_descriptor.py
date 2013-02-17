@@ -602,10 +602,8 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         if value:
           for entry in value.split(","):
             try:
-              # TODO: The description of the values sound like they should
-              # always be positive, but this is not always the case in
-              # practice...
-              # https://trac.torproject.org/projects/tor/ticket/5849
+              # Values should be positive but as discussed in ticket #5849
+              # there was a bug around this. It was fixed in tor 0.2.2.1.
 
               entries.append(float(entry))
             except ValueError:
