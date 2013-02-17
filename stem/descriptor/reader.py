@@ -553,19 +553,20 @@ class DescriptorReader(object):
           archive_path = entry.name
           entry.name = target
 
-          for desc in stem.descriptor.parse_file(entry, validate = self._validate, document_handler = self._document_handler):
-            if self._is_stopped.isSet():
-              return
+          try:
+            for desc in stem.descriptor.parse_file(entry, validate = self._validate, document_handler = self._document_handler):
+              if self._is_stopped.isSet():
+                return
 
-            desc._set_archive_path(archive_path)
-            self._unreturned_descriptors.put(desc)
-            self._iter_notice.set()
-
-          entry.close()
-    except TypeError, exc:
-      self._notify_skip_listeners(target, ParsingFailure(exc))
-    except ValueError, exc:
-      self._notify_skip_listeners(target, ParsingFailure(exc))
+              desc._set_archive_path(archive_path)
+              self._unreturned_descriptors.put(desc)
+              self._iter_notice.set()
+          except TypeError, exc:
+            self._notify_skip_listeners(target, ParsingFailure(exc))
+          except ValueError, exc:
+            self._notify_skip_listeners(target, ParsingFailure(exc))
+          finally:
+            entry.close()
     except IOError, exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
     finally:
