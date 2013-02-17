@@ -1,3 +1,7 @@
+# Copyright 2012-2013, Damian Johnson
+# Copyright 2013, Sean Robinson
+# See LICENSE for licensing information
+
 """
 Representation of tor exit policies. These can be easily used to check if
 exiting to a destination is permissible or not. For instance...

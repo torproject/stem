@@ -1,3 +1,7 @@
+# Copyright 2012-2013, Damian Johnson
+# Copyright 2013, Sean Robinson
+# See LICENSE for licensing information
+
 """
 Package for parsing and processing descriptor data.
 

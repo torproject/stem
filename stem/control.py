@@ -1,3 +1,7 @@
+# Copyright 2011-2013, Damian Johnson
+# Copyright 2012-2013, Sean Robinson
+# See LICENSE for licensing information
+
 """
 Classes for interacting with the tor control socket.
 

@@ -1,3 +1,6 @@
+# Copyright 2011-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Variety of filters for the python unit testing output, which can be chained
 together for improved readability.

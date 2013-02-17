@@ -1,3 +1,6 @@
+# Copyright 2011-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Helper functions for working with the underlying system. These are mostly os
 dependent, only working on linux, osx, and bsd. In almost all cases they're

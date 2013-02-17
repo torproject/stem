@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Copyright 2012-2013, Damian Johnson
+# See LICENSE for licensing information
 
 from stem import __version__, \
                  __author__, \

@@ -1,3 +1,6 @@
+# Copyright 2011-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Utilities for working with the terminal.
 

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Copyright 2011-2013, Damian Johnson
+# See LICENSE for licensing information
 
 """
 Runs unit and integration tests. For usage information run this with '--help'.

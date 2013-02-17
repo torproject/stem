@@ -1,3 +1,6 @@
+# Copyright 2012-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Checks for stem dependencies. We require python 2.5 or greater (in the 2.x
 series). Other requirements for complete functionality are...

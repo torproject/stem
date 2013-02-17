@@ -1,3 +1,6 @@
+# Copyright 2012-2013, Damian Johnson
+# See LICENSE for licensing information
+
 import binascii
 
 import stem.response

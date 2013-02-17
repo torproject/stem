@@ -1,3 +1,6 @@
+# Copyright 2012-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Connection and networking based utility functions. This will likely be expanded
 later to have all of `arm's functions

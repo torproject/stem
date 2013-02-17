@@ -1,3 +1,7 @@
+# Copyright 2011-2013, Damian Johnson
+# Copyright 2012, Sean Robinson
+# See LICENSE for licensing information
+
 """
 Supports message based communication with sockets speaking the tor control
 protocol. This lets users send messages as basic strings and receive responses

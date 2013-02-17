@@ -1,3 +1,7 @@
+# Copyright 2011-2013, Damian Johnson
+# Copyright 2012, Sean Robinson
+# See LICENSE for licensing information
+
 """
 Runtime context for the integration tests. This is used both by the test runner
 to start and stop tor, and by the integration tests themselves for information

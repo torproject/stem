@@ -1,3 +1,6 @@
+# Copyright 2011-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Helper functions for querying process and system information from the /proc
 contents. Fetching information this way provides huge performance benefits

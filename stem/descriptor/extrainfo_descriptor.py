@@ -1,3 +1,7 @@
+# Copyright 2012-2013, Damian Johnson
+# Copyright 2012, Sean Robinson
+# See LICENSE for licensing information
+
 """
 Parsing for Tor extra-info descriptors. These are published by relays whenever
 their server descriptor is published and have a similar format. However, unlike

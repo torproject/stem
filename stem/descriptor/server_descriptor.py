@@ -1,3 +1,6 @@
+# Copyright 2012-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Parsing for Tor server descriptors, which contains the infrequently changing
 information about a Tor relay (contact information, exit policy, public keys,

@@ -1,3 +1,6 @@
+# Copyright 2012-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Utilities for reading descriptors from local directories and archives. This is
 mostly done through the :class:`~stem.descriptor.reader.DescriptorReader`

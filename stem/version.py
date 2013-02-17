@@ -1,3 +1,6 @@
+# Copyright 2011-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Tor versioning information and requirements for its features. These can be
 easily parsed and compared, for instance...

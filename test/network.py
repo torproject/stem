@@ -1,3 +1,7 @@
+# Copyright 2012-2013, Damian Johnson
+# Copyright 2012, Sean Robinson
+# See LICENSE for licensing information
+
 """
 Helper functions and classes to support tests which need to connect through
 the tor network.

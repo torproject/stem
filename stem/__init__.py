@@ -1,3 +1,7 @@
+# Copyright 2011-2013, Damian Johnson
+# Copyright 2012, Sean Robinson
+# See LICENSE for licensing information
+
 """
 Library for working with the tor process.
 

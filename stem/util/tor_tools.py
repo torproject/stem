@@ -1,3 +1,7 @@
+# Copyright 2012-2013, Damian Johnson
+# Copyright 2012, Sean Robinson
+# See LICENSE for licensing information
+
 """
 Miscellaneous utility functions for working with tor.
 

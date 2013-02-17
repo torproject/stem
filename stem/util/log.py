@@ -1,3 +1,6 @@
+# Copyright 2011-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Functions to aid library logging. The default logging
 :data:`~stem.util.log.Runlevel` is usually NOTICE and above.

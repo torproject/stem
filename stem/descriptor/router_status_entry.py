@@ -1,3 +1,6 @@
+# Copyright 2012-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Parsing for router status entries, the information for individual routers
 within a network status document. This information is provided from a few

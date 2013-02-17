@@ -1,3 +1,6 @@
+# Copyright 2012-2013, Damian Johnson
+# See LICENSE for licensing information
+
 """
 Parsing for Tor network status documents. This supports both the v2 and v3
 dir-spec. Documents can be obtained from a few sources...

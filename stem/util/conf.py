@@ -1,3 +1,7 @@
+# Copyright 2011-2013, Damian Johnson
+# Copyright 2013, Sean Robinson
+# See LICENSE for licensing information
+
 """
 Handlers for text configuration files. Configurations are simple string to
 string mappings, with the configuration files using the following rules...
