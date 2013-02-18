@@ -21,7 +21,7 @@ Download
    :widths: 1 10
    :header-rows: 0
 
-   * - .. image:: /_static/section/git.png
+   * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
 
      - .. image:: /_static/label/git.png
@@ -31,14 +31,14 @@ Download
 
        `git clone https://git.torproject.org/stem.git <https://gitweb.torproject.org/stem.git>`_
 
-   * - .. image:: /_static/section/debian.png
+   * - .. image:: /_static/section/download/debian.png
      - .. image:: /_static/label/debian.png
 
        **Coming soon-ish**
 
        Initial release should be in March.
 
-   * - .. image:: /_static/section/archlinux.png
+   * - .. image:: /_static/section/download/archlinux.png
           :target: https://aur.archlinux.org/packages/stem-git/
 
      - .. image:: /_static/label/archlinux.png
