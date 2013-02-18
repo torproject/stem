@@ -722,7 +722,15 @@ def get_process_name():
       args, argc = [], argc_t()
 
       for i in xrange(100):
-        if argc[i] is None:
+        # The ending index can be either None or raise a ValueError when
+        # accessed...
+        #
+        # ValueError: NULL pointer access
+
+        try:
+          if argc[i] is None:
+            break
+        except ValueError:
           break
 
         args.append(str(argc[i]))
