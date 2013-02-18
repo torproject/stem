@@ -828,4 +828,11 @@ def _set_proc_title(process_name):
   libc = ctypes.CDLL(ctypes.util.find_library("c"))
   name_buffer = ctypes.create_string_buffer(len(process_name) + 1)
   name_buffer.value = process_name
-  libc.setproctitle(ctypes.byref(name_buffer))
+
+  try:
+    libc.setproctitle(ctypes.byref(name_buffer))
+  except AttributeError:
+    # Possible issue (seen on OSX):
+    # AttributeError: dlsym(0x7fff6a41d1e0, setproctitle): symbol not found
+
+    pass
