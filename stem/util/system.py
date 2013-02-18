@@ -707,7 +707,7 @@ def get_process_name():
 
     ps_output = call("ps -p %i -o args" % os.getpid(), [])
 
-    if len(ps_output) == 2 and ps_output[0] == "COMMAND":
+    if len(ps_output) == 2 and ps_output[0] in ("COMMAND", "ARGS"):
       _PROCESS_NAME = ps_output[1]
     else:
       # Falling back on using ctypes to get our argv. Unfortunately the simple
