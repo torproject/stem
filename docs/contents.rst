@@ -36,3 +36,6 @@ Contents
    api/util/term
    api/util/tor_tools
 
+   tutorial/the_little_relay_that_could
+   tutorial/mirror_mirror_on_the_wall
+
