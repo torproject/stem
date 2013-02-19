@@ -4,9 +4,13 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   api
-   download
    tutorial
+   tutorial/the_little_relay_that_could
+   tutorial/mirror_mirror_on_the_wall
+
+   download
+
+   api
 
    api/control
    api/connection
@@ -35,7 +39,4 @@ Contents
    api/util/system
    api/util/term
    api/util/tor_tools
-
-   tutorial/the_little_relay_that_could
-   tutorial/mirror_mirror_on_the_wall
 
