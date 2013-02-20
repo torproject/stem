@@ -31,7 +31,7 @@ Extra-info descriptors are available from a few sources...
     |  |- RelayExtraInfoDescriptor - Extra-info descriptor for a relay.
     |  +- BridgeExtraInfoDescriptor - Extra-info descriptor for a bridge.
     |
-    |- digest - calculates the digest value for our content
+    |- digest - calculates the upper-case hex digest value for our content
     +- get_unrecognized_lines - lines with unrecognized content
 
 .. data:: DirResponse (enum)
@@ -783,10 +783,11 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
 
   def digest(self):
     """
-    Provides the hex encoded sha1 of our content. This value is part of the
-    server descriptor entry for this relay.
+    Provides the upper-case hex encoded sha1 of our content. This value is part
+    of the server descriptor entry for this relay.
 
-    :returns: **str** with the digest value for this server descriptor
+    :returns: **str** with the upper-case hex digest value for this server
+      descriptor
     """
 
     raise NotImplementedError("Unsupported Operation: this should be implemented by the ExtraInfoDescriptor subclass")

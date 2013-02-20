@@ -23,7 +23,7 @@ etc). This information is provided from a few sources...
     |  |- is_scrubbed - checks if our content has been properly scrubbed
     |  +- get_scrubbing_issues - description of issues with our scrubbing
     |
-    |- digest - calculates the digest value for our content
+    |- digest - calculates the upper-case hex digest value for our content
     |- get_unrecognized_lines - lines with unrecognized content
     |- get_annotations - dictionary of content prior to the descriptor entry
     +- get_annotation_lines - lines that provided the annotations
@@ -170,7 +170,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   :var bool hibernating: **\*** hibernating when published
   :var bool allow_single_hop_exits: **\*** flag if single hop exiting is allowed
   :var bool extra_info_cache: **\*** flag if a mirror for extra-info documents
-  :var str extra_info_digest: hex encoded digest of our extra-info document
+  :var str extra_info_digest: upper-case hex encoded digest of our extra-info document
   :var bool eventdns: flag for evdns backend (deprecated, always unset)
   :var list address_alt: alternative for our address/or_port attributes, each
     entry is a tuple of the form (address (**str**), port (**int**), is_ipv6
@@ -277,7 +277,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     Provides the hex encoded sha1 of our content. This value is part of the
     network status entry for this relay.
 
-    :returns: **str** with the digest value for this server descriptor
+    :returns: **str** with the upper-case hex digest value for this server descriptor
     """
 
     raise NotImplementedError("Unsupported Operation: this should be implemented by the ServerDescriptor subclass")

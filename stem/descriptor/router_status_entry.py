@@ -248,7 +248,7 @@ class RouterStatusEntryV2(RouterStatusEntry):
   Information about an individual router stored within a version 2 network
   status document.
 
-  :var str digest: **\*** router's digest
+  :var str digest: **\*** router's upper-case hex digest
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -303,7 +303,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
 
   :var list addresses_v6: **\*** relay's OR addresses, this is a tuple listing
     of the form (address (**str**), port (**int**), is_ipv6 (**bool**))
-  :var str digest: **\*** router's digest
+  :var str digest: **\*** router's upper-case hex digest
 
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
   :var int measured: bandwidth measured to be available by the relay
@@ -500,7 +500,7 @@ def _parse_r_line(desc, value, validate, include_digest = True):
   desc.fingerprint = _decode_fingerprint(r_comp[1], validate)
 
   if include_digest:
-    desc.digest = r_comp[2]
+    desc.digest = _decode_fingerprint(r_comp[2], validate)
 
   desc.address = r_comp[5]
   desc.or_port = int(r_comp[6])
