@@ -1,24 +1,32 @@
 The Little Relay that Could
 ---------------------------
 
-Let's say you just set up your very first `Tor relay <https://www.torproject.org/docs/tor-doc-relay.html.en>`_. Thank you! Now you want to write a script that tells you how much it is being used.
+Let's say you just set up your very first `Tor relay
+<https://www.torproject.org/docs/tor-doc-relay.html.en>`_ (thank you!), and now
+you want to write a script that tells you how much it is being used.
 
-First, for any script we write to be able to talk with our relay it'll need to have a control port available. This is a port that's usually only available on localhost and protected by either a password or authentication cookie.
+First, for any script to talk with your relay it will need to have a control
+port available. This is a port that's usually only available on localhost and
+protected by either a **password** or **authentication cookie**.
 
-Look at your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_ for the following configuration options...
+Look at your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_ for
+the following configuration options...
 
 ::
 
-  # This provides a port for the script we write to talk to. If you set this
-  # then be sure to also have either set the CookieAuthentication flag *or*
-  # provide a HashedControlPassword!
+  # This provides a port for our script to talk with. If you set this then be
+  # sure to also set either CookieAuthentication *or* HashedControlPassword!
+  #
+  # You could also use ControlSocket instead of ControlPort, which provides a
+  # file based socket. You don't need to have authentication if you use
+  # ControlSocket. For this example however we'll use a port.
   
   ControlPort 9051
   
-  # This will make Tor write an authentication cookie file. Anything that can
-  # read that file can connect to Tor. If you're going to run this script with
-  # the same user as Tor then this is the easiest method of authentication to
-  # use.
+  # Setting this will make Tor write an authentication cookie. Anything with
+  # permission to read this file can connect to Tor. If you're going to run
+  # your script with the same user or permission group as Tor then this is the
+  # easiest method of authentication to use.
   
   CookieAuthentication 1
   
@@ -28,24 +36,25 @@ Look at your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_ for th
   # % tor --hash-password "my_password"
   # 16:E600ADC1B52C80BB6022A0E999A7734571A451EB6AE50FED489B72E3DF
   #
-  # ... and use that for the HashedControlPassword in our torrc.
+  # ... and use that for the HashedControlPassword in your torrc.
   
   HashedControlPassword 16:E600ADC1B52C80BB6022A0E999A7734571A451EB6AE50FED489B72E3DF
 
-You'll need to restart Tor or issue a SIGHUP for these new settings to take effect. Now let's write a script that tells us how many bytes Tor has sent and received...
+When you change your torrc you'll need to either restart Tor is issue a SIGHUP
+for the new settings to take effect. Now let's write a script that tells us how
+many bytes Tor has sent and received...
 
 ::
 
   from stem.control import Controller
   
-  controller = Controller.from_port(control_port = 9051)
-  controller.authenticate() # provide the password here if you set one
-  
-  bytes_read = controller.get_info("traffic/read")
-  bytes_written = controller.get_info("traffic/written")
-  
-  print "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
-  controller.close()
+  with Controller.from_port(control_port = 9051) as controller:
+    controller.authenticate() # provide the password here if you set one
+
+    bytes_read = controller.get_info("traffic/read")
+    bytes_written = controller.get_info("traffic/written")
+
+    print "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
 
 ::
 

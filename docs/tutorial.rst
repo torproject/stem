@@ -15,7 +15,8 @@ Tutorial
      License: Public Domain
      Alternate: https://openclipart.org/detail/174179/miroir-rectangulaire-by-defaz36-174179
 
-Getting started with any new library can be rather daunting, so let's get our feet wet by jumping straight in with a tutorial...
+Getting started with any new library can be rather daunting, so let's get our
+feet wet by jumping straight in with some tutorials...
 
 .. list-table::
    :widths: 1 10
@@ -36,7 +37,8 @@ Getting started with any new library can be rather daunting, so let's get our fe
      - .. image:: /_static/label/mirror_mirror_on_the_wall.png
           :target: tutorial/mirror_mirror_on_the_wall.html
 
-       Getting and acting on information about relays in the Tor network. This
-       walks you through Tor descriptors, both where to get them and writing a
-       small script to tell you the fastest Tor exits.
+       Getting and acting upon information about relays in the Tor network.
+       Relay information is provided through documents called **descriptors**.
+       This walks you through both where to get them and a small script to tell
+       you the fastest Tor exits.
 
