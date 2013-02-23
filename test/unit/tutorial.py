@@ -8,6 +8,7 @@ import StringIO
 import sys
 import unittest
 
+from stem.control import Controller
 from test import mocking
 
 
@@ -23,27 +24,34 @@ class TestTutorial(unittest.TestCase):
     sys.stdout = self.stdout_real
 
   def test_the_little_relay_that_could(self):
-    from stem.control import Controller
+    def tutorial_example():
+      from stem.control import Controller
+
+      with Controller.from_port(control_port = 9051) as controller:
+        controller.authenticate()  # provide the password here if you set one
+
+        bytes_read = controller.get_info("traffic/read")
+        bytes_written = controller.get_info("traffic/written")
+
+        print "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
 
     controller = mocking.get_object(Controller, {
       'authenticate': mocking.no_op(),
       'close': mocking.no_op(),
       'get_info': mocking.return_for_args({
-        ('traffic/read',): '1234',
-        ('traffic/written',): '5678',
+        ('traffic/read',): '33406',
+        ('traffic/written',): '29649',
       }, is_method = True),
     })
 
-    controller.authenticate()
+    mocking.mock(
+      Controller.from_port, mocking.return_value(controller),
+      target_module = Controller,
+      is_static = True,
+    )
 
-    bytes_read = controller.get_info("traffic/read")
-    bytes_written = controller.get_info("traffic/written")
-
-    print "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
-
-    controller.close()
-
-    self.assertEqual("My Tor relay has read 1234 bytes and written 5678.\n", self.stdout.getvalue())
+    tutorial_example()
+    self.assertEqual("My Tor relay has read 33406 bytes and written 29649.\n", self.stdout.getvalue())
 
   def test_mirror_mirror_on_the_wall(self):
     from stem.descriptor.server_descriptor import RelayDescriptor

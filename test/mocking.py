@@ -204,14 +204,14 @@ NETWORK_STATUS_DOCUMENT_FOOTER = (
 
 
 def no_op():
-  def _no_op(*args):
+  def _no_op(*args, **kwargs):
     pass
 
   return _no_op
 
 
 def return_value(value):
-  def _return_value(*args):
+  def _return_value(*args, **kwargs):
     return value
 
   return _return_value
@@ -318,7 +318,7 @@ def support_with(obj):
   return obj
 
 
-def mock(target, mock_call, target_module=None):
+def mock(target, mock_call, target_module = None, is_static = False):
   """
   Mocks the given function, saving the initial implementation so it can be
   reverted later.
@@ -331,6 +331,7 @@ def mock(target, mock_call, target_module=None):
   :param function target: function to be mocked
   :param functor mock_call: mocking to replace the function with
   :param module target_module: module that this is mocking, this defaults to the inspected value
+  :param bool is_static: handles this like a static method of the target_module if True
   """
 
   if hasattr(target, "mock_id"):
@@ -349,7 +350,10 @@ def mock(target, mock_call, target_module=None):
 
   # mocks the function with this wrapper
 
-  setattr(target_module, target_function, mock_wrapper)
+  if is_static:
+    setattr(target_module, target_function, staticmethod(mock_wrapper))
+  else:
+    setattr(target_module, target_function, mock_wrapper)
 
 
 def mock_method(target_class, method_name, mock_call):
