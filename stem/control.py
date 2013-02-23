@@ -968,6 +968,11 @@ class Controller(BaseController):
     nickname. If the relay identifier could be either a fingerprint *or*
     nickname then it's queried as a fingerprint.
 
+    **As of Tor version 0.2.3.25 relays no longer get server descriptors by
+    default.** It's advised that you use microdescriptors instead, but if you
+    really need server descriptors then you can get them by setting
+    'UseMicrodescriptors 0'.
+
     :param str relay: fingerprint or nickname of the relay to be queried
     :param object default: response if the query fails
 
@@ -1001,6 +1006,11 @@ class Controller(BaseController):
     """
     Provides an iterator for all of the server descriptors that tor presently
     knows about.
+
+    **As of Tor version 0.2.3.25 relays no longer get server descriptors by
+    default.** It's advised that you use microdescriptors instead, but if you
+    really need server descriptors then you can get them by setting
+    'UseMicrodescriptors 0'.
 
     :param list default: items to provide if the query fails
 
