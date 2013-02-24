@@ -30,7 +30,7 @@ class TestConnect(unittest.TestCase):
     runner = test.runner.get_runner()
 
     control_socket = stem.connection.connect_port(
-      control_port = test.runner.CONTROL_PORT,
+      port = test.runner.CONTROL_PORT,
       password = test.runner.CONTROL_PASSWORD,
       chroot_path = runner.get_chroot(),
       controller = None)
@@ -52,7 +52,7 @@ class TestConnect(unittest.TestCase):
     runner = test.runner.get_runner()
 
     control_socket = stem.connection.connect_socket_file(
-      socket_path = test.runner.CONTROL_SOCKET_PATH,
+      path = test.runner.CONTROL_SOCKET_PATH,
       password = test.runner.CONTROL_PASSWORD,
       chroot_path = runner.get_chroot(),
       controller = None)

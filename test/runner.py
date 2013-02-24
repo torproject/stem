@@ -528,7 +528,7 @@ class Runner(object):
     """
 
     if Torrc.PORT in self._custom_opts:
-      control_socket = stem.socket.ControlPort(control_port = CONTROL_PORT)
+      control_socket = stem.socket.ControlPort(port = CONTROL_PORT)
     elif Torrc.SOCKET in self._custom_opts:
       control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
     else:

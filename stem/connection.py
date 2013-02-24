@@ -22,7 +22,7 @@ fine-grained control over the authentication process. For instance...
   import stem.socket
 
   try:
-    control_socket = stem.socket.ControlPort(control_port = 9051)
+    control_socket = stem.socket.ControlPort(port = 9051)
   except stem.SocketError, exc:
     print "Unable to connect to port 9051 (%s)" % exc
     sys.exit(1)
@@ -125,15 +125,15 @@ CLIENT_HASH_CONSTANT = "Tor safe cookie authentication controller-to-server hash
 SERVER_HASH_CONSTANT = "Tor safe cookie authentication server-to-controller hash"
 
 
-def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
+def connect_port(address = "127.0.0.1", port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. This is very
   handy for debugging or CLI setup, handling setup and prompting for a password
   if necessary (and none is provided). If any issues arise this prints a
   description of the problem and returns **None**.
 
-  :param str control_addr: ip address of the controller
-  :param int control_port: port number of the controller
+  :param str address: ip address of the controller
+  :param int port: port number of the controller
   :param str password: passphrase to authenticate to the socket
   :param str chroot_path: path prefix if in a chroot environment
   :param Class controller: :class:`~stem.control.BaseController` subclass to be
@@ -143,7 +143,7 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
   """
 
   try:
-    control_port = stem.socket.ControlPort(control_addr, control_port)
+    control_port = stem.socket.ControlPort(address, port)
   except stem.SocketError, exc:
     print exc
     return None
@@ -151,12 +151,12 @@ def connect_port(control_addr = "127.0.0.1", control_port = 9051, password = Non
   return _connect(control_port, password, chroot_path, controller)
 
 
-def connect_socket_file(socket_path = "/var/run/tor/control", password = None, chroot_path = None, controller = stem.control.Controller):
+def connect_socket_file(path = "/var/run/tor/control", password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. For more
   information see the :func:`~stem.connection.connect_port` function.
 
-  :param str socket_path: path where the control socket is located
+  :param str path: path where the control socket is located
   :param str password: passphrase to authenticate to the socket
   :param str chroot_path: path prefix if in a chroot environment
   :param Class controller: :class:`~stem.control.BaseController` subclass to be
@@ -166,7 +166,7 @@ def connect_socket_file(socket_path = "/var/run/tor/control", password = None, c
   """
 
   try:
-    control_socket = stem.socket.ControlSocketFile(socket_path)
+    control_socket = stem.socket.ControlSocketFile(path)
   except stem.SocketError, exc:
     print exc
     return None

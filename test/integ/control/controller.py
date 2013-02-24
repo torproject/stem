@@ -39,7 +39,7 @@ class TestController(unittest.TestCase):
       return
 
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
-      with stem.control.Controller.from_port(control_port = test.runner.CONTROL_PORT) as controller:
+      with stem.control.Controller.from_port(port = test.runner.CONTROL_PORT) as controller:
         self.assertTrue(isinstance(controller, stem.control.Controller))
     else:
       self.assertRaises(stem.SocketError, stem.control.Controller.from_port, "127.0.0.1", test.runner.CONTROL_PORT)

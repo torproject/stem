@@ -618,38 +618,38 @@ class Controller(BaseController):
   BaseController and provides a more user friendly API for library users.
   """
 
-  def from_port(control_addr = "127.0.0.1", control_port = 9051):
+  def from_port(address = "127.0.0.1", port = 9051):
     """
     Constructs a :class:`~stem.socket.ControlPort` based Controller.
 
-    :param str control_addr: ip address of the controller
-    :param int control_port: port number of the controller
+    :param str address: ip address of the controller
+    :param int port: port number of the controller
 
     :returns: :class:`~stem.control.Controller` attached to the given port
 
     :raises: :class:`stem.SocketError` if we're unable to establish a connection
     """
 
-    if not stem.util.connection.is_valid_ip_address(control_addr):
-      raise ValueError("Invalid IP address: %s" % control_addr)
-    elif not stem.util.connection.is_valid_port(control_port):
-      raise ValueError("Invalid port: %s" % control_port)
+    if not stem.util.connection.is_valid_ip_address(address):
+      raise ValueError("Invalid IP address: %s" % address)
+    elif not stem.util.connection.is_valid_port(port):
+      raise ValueError("Invalid port: %s" % port)
 
-    control_port = stem.socket.ControlPort(control_addr, control_port)
+    control_port = stem.socket.ControlPort(address, port)
     return Controller(control_port)
 
-  def from_socket_file(socket_path = "/var/run/tor/control"):
+  def from_socket_file(path = "/var/run/tor/control"):
     """
     Constructs a :class:`~stem.socket.ControlSocketFile` based Controller.
 
-    :param str socket_path: path where the control socket is located
+    :param str path: path where the control socket is located
 
     :returns: :class:`~stem.control.Controller` attached to the given socket file
 
     :raises: :class:`stem.SocketError` if we're unable to establish a connection
     """
 
-    control_socket = stem.socket.ControlSocketFile(socket_path)
+    control_socket = stem.socket.ControlSocketFile(path)
     return Controller(control_socket)
 
   from_port = staticmethod(from_port)
@@ -1417,7 +1417,7 @@ class Controller(BaseController):
       def print_bw(event):
         print "sent: %i, received: %i" % (event.written, event.read)
 
-      with Controller.from_port(control_port = 9051) as controller:
+      with Controller.from_port(port = 9051) as controller:
         controller.authenticate()
         controller.add_event_listener(print_bw, EventType.BW)
         time.sleep(5)

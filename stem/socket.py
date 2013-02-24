@@ -296,12 +296,12 @@ class ControlPort(ControlSocket):
   option.
   """
 
-  def __init__(self, control_addr = "127.0.0.1", control_port = 9051, connect = True):
+  def __init__(self, address = "127.0.0.1", port = 9051, connect = True):
     """
     ControlPort constructor.
 
-    :param str control_addr: ip address of the controller
-    :param int control_port: port number of the controller
+    :param str address: ip address of the controller
+    :param int port: port number of the controller
     :param bool connect: connects to the socket if True, leaves it unconnected otherwise
 
     :raises: :class:`stem.SocketError` if connect is **True** and we're
@@ -309,8 +309,8 @@ class ControlPort(ControlSocket):
     """
 
     super(ControlPort, self).__init__()
-    self._control_addr = control_addr
-    self._control_port = control_port
+    self._control_addr = address
+    self._control_port = port
 
     if connect:
       self.connect()
@@ -351,7 +351,7 @@ class ControlSocketFile(ControlSocket):
   option.
   """
 
-  def __init__(self, socket_path = "/var/run/tor/control", connect = True):
+  def __init__(self, path = "/var/run/tor/control", connect = True):
     """
     ControlSocketFile constructor.
 
@@ -363,7 +363,7 @@ class ControlSocketFile(ControlSocket):
     """
 
     super(ControlSocketFile, self).__init__()
-    self._socket_path = socket_path
+    self._socket_path = path
 
     if connect:
       self.connect()

@@ -65,7 +65,7 @@ class TestProcess(unittest.TestCase):
 
     control_socket = None
     try:
-      control_socket = stem.socket.ControlPort(control_port = 2778)
+      control_socket = stem.socket.ControlPort(port = 2778)
       stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
 
       # exercises the socket
@@ -173,7 +173,7 @@ class TestProcess(unittest.TestCase):
 
     # We're the controlling process. Just need to connect then disconnect.
 
-    controller = stem.control.Controller.from_port(control_port = 2778)
+    controller = stem.control.Controller.from_port(port = 2778)
     controller.authenticate()
     controller.close()
 

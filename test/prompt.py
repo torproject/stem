@@ -97,6 +97,6 @@ def controller():
   if not is_running():
     start()
 
-  controller = stem.control.Controller.from_port(control_port = CONTROL_PORT)
+  controller = stem.control.Controller.from_port(port = CONTROL_PORT)
   controller.authenticate()
   return controller

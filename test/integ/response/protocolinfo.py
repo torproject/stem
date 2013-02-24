@@ -72,7 +72,7 @@ class TestProtocolInfo(unittest.TestCase):
         "lsof -a -p ")
 
       mocking.mock(stem.util.system.call, filter_system_call(cwd_by_port_lookup_prefixes))
-      control_socket = stem.socket.ControlPort(control_port = test.runner.CONTROL_PORT)
+      control_socket = stem.socket.ControlPort(port = test.runner.CONTROL_PORT)
     else:
       cwd_by_socket_lookup_prefixes = (
         stem.util.system.GET_PID_BY_FILE_LSOF % "",
