@@ -331,19 +331,25 @@ class _UnicodeReader(object):
   def readline(self):
     return stem.util.str_tools.to_unicode(self.wrapped_file.readline())
 
-  def readlines(self, sizehint = 0):
+  def readlines(self, sizehint = None):
     # being careful to do in-place conversion so we don't accidently double our
     # memory usage
 
-    results = self.wrapped_file.readlines(sizehint)
+    if sizehint is not None:
+      results = self.wrapped_file.readlines(sizehint)
+    else:
+      results = self.wrapped_file.readlines()
 
     for i in xrange(len(results)):
       results[i] = stem.util.str_tools.to_unicode(results[i])
 
     return results
 
-  def seek(self, pos, mode = 0):
-    return self.wrapped_file.seek(pos, mode)
+  def seek(self, pos, mode = None):
+    if mode is not None:
+      return self.wrapped_file.seek(pos, mode)
+    else:
+      return self.wrapped_file.seek(pos)
 
   def tell(self):
     return self.wrapped_file.tell()
