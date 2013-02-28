@@ -365,7 +365,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
 
     desc = get_bridge_server_descriptor({"or-address": "10.45.227.253:9001"})
-    self.assertEquals([("10.45.227.253", 9001, False)], desc.address_alt)
+    self.assertEquals([("10.45.227.253", 9001, False)], desc.or_addresses)
 
   def test_or_address_v6(self):
     """
@@ -373,7 +373,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
 
     desc = get_bridge_server_descriptor({"or-address": "[fd9f:2e19:3bcf::02:9970]:9001"})
-    self.assertEquals([("fd9f:2e19:3bcf::02:9970", 9001, True)], desc.address_alt)
+    self.assertEquals([("fd9f:2e19:3bcf::02:9970", 9001, True)], desc.or_addresses)
 
   def test_or_address_multiple(self):
     """
@@ -384,7 +384,7 @@ class TestServerDescriptor(unittest.TestCase):
                           "or-address 10.45.227.253:9001,9005,80",
                           "or-address [fd9f:2e19:3bcf::02:9970]:443"))
 
-    expected_address_alt = [
+    expected_or_addresses = [
       ("10.45.227.253", 9001, False),
       ("10.45.227.253", 9005, False),
       ("10.45.227.253", 80, False),
@@ -392,7 +392,7 @@ class TestServerDescriptor(unittest.TestCase):
     ]
 
     desc = BridgeDescriptor(desc_text)
-    self.assertEquals(expected_address_alt, desc.address_alt)
+    self.assertEquals(expected_or_addresses, desc.or_addresses)
 
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
     """

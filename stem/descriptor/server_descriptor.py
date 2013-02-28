@@ -158,7 +158,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   :var int uptime: uptime when published in seconds
   :var str contact: contact information
   :var stem.exit_policy.ExitPolicy exit_policy: **\*** stated exit policy
-  :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\*** exit policy for IPv6
+  :var stem.exit_policy.MicroExitPolicy exit_policy_v6: exit policy for IPv6
   :var list family: **\*** nicknames or fingerprints of declared family
 
   :var int average_bandwidth: **\*** average rate it's willing to relay in bytes/s
@@ -172,9 +172,9 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   :var bool extra_info_cache: **\*** flag if a mirror for extra-info documents
   :var str extra_info_digest: upper-case hex encoded digest of our extra-info document
   :var bool eventdns: flag for evdns backend (deprecated, always unset)
-  :var list address_alt: alternative for our address/or_port attributes, each
-    entry is a tuple of the form (address (**str**), port (**int**), is_ipv6
-    (**bool**))
+  :var list or_addresses: **\*** alternative for our address/or_port
+    attributes, each entry is a tuple of the form (address (**str**), port
+    (**int**), is_ipv6 (**bool**))
 
   Deprecated, moved to extra-info descriptor...
 
@@ -240,7 +240,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     self.extra_info_digest = None
     self.hidden_service_dir = None
     self.eventdns = None
-    self.address_alt = []
+    self.or_addresses = []
 
     self.read_history_end = None
     self.read_history_interval = None
@@ -537,7 +537,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
               else:
                 raise ValueError("or-address line has malformed ports: %s" % line)
 
-            self.address_alt.append((address, int(port), is_ipv6))
+            self.or_addresses.append((address, int(port), is_ipv6))
       elif keyword in ("read-history", "write-history"):
         try:
           timestamp, interval, remainder = \
@@ -888,7 +888,7 @@ class BridgeDescriptor(ServerDescriptor):
       if self.contact and self.contact != "somebody":
         issues.append("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
 
-      for address, _, is_ipv6 in self.address_alt:
+      for address, _, is_ipv6 in self.or_addresses:
         if not is_ipv6 and not address.startswith("10."):
           issues.append("or-address line's address should be scrubbed to be '10.x.x.x': %s" % address)
         elif is_ipv6 and not address.startswith("fd9f:2e19:3bcf::"):

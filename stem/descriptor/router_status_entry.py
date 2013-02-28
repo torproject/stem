@@ -301,7 +301,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
   Information about an individual router stored within a version 3 network
   status document.
 
-  :var list addresses_v6: **\*** relay's OR addresses, this is a tuple listing
+  :var list or_addresses: **\*** relay's OR addresses, this is a tuple listing
     of the form (address (**str**), port (**int**), is_ipv6 (**bool**))
   :var str digest: **\*** router's upper-case hex digest
 
@@ -321,7 +321,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
   """
 
   def __init__(self, content, validate = True, document = None):
-    self.addresses_v6 = []
+    self.or_addresses = []
     self.digest = None
 
     self.bandwidth = None
@@ -544,7 +544,7 @@ def _parse_a_line(desc, value, validate):
       else:
         raise ValueError("%s 'a' line had an invalid port (%s): a %s" % (desc._name(), port, value))
 
-    desc.addresses_v6.append((address, int(port), is_ipv6))
+    desc.or_addresses.append((address, int(port), is_ipv6))
 
 
 def _parse_s_line(desc, value, validate):

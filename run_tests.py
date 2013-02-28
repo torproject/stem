@@ -28,6 +28,7 @@ import test.unit.connection.authentication
 import test.unit.control.controller
 import test.unit.descriptor.export
 import test.unit.descriptor.extrainfo_descriptor
+import test.unit.descriptor.microdescriptor
 import test.unit.descriptor.networkstatus.bridge_document
 import test.unit.descriptor.networkstatus.directory_authority
 import test.unit.descriptor.networkstatus.document_v2
@@ -61,6 +62,7 @@ import test.integ.connection.connect
 import test.integ.control.base_controller
 import test.integ.control.controller
 import test.integ.descriptor.extrainfo_descriptor
+import test.integ.descriptor.microdescriptor
 import test.integ.descriptor.networkstatus
 import test.integ.descriptor.reader
 import test.integ.descriptor.server_descriptor
@@ -131,6 +133,7 @@ UNIT_TESTS = (
   test.unit.descriptor.reader.TestDescriptorReader,
   test.unit.descriptor.server_descriptor.TestServerDescriptor,
   test.unit.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
+  test.unit.descriptor.microdescriptor.TestMicrodescriptor,
   test.unit.descriptor.router_status_entry.TestRouterStatusEntry,
   test.unit.descriptor.networkstatus.directory_authority.TestDirectoryAuthority,
   test.unit.descriptor.networkstatus.key_certificate.TestKeyCertificate,
@@ -161,6 +164,7 @@ INTEG_TESTS = (
   test.integ.descriptor.reader.TestDescriptorReader,
   test.integ.descriptor.server_descriptor.TestServerDescriptor,
   test.integ.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor,
+  test.integ.descriptor.microdescriptor.TestMicrodescriptor,
   test.integ.descriptor.networkstatus.TestNetworkStatus,
   test.integ.version.TestVersion,
   test.integ.response.protocolinfo.TestProtocolInfo,

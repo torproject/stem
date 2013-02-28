@@ -35,6 +35,9 @@ calling :func:`test.mocking.revert_mocking`.
       get_relay_server_descriptor  - RelayDescriptor
       get_bridge_server_descriptor - BridgeDescriptor
 
+    stem.descriptor.microdescriptor
+      get_microdescriptor - Microdescriptor
+
     stem.descriptor.extrainfo_descriptor
       get_relay_extrainfo_descriptor  - RelayExtraInfoDescriptor
       get_bridge_extrainfo_descriptor - BridgeExtraInfoDescriptor
@@ -57,6 +60,7 @@ import inspect
 import itertools
 
 import stem.descriptor.extrainfo_descriptor
+import stem.descriptor.microdescriptor
 import stem.descriptor.networkstatus
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
@@ -124,6 +128,10 @@ BRIDGE_EXTRAINFO_HEADER = (
 
 BRIDGE_EXTRAINFO_FOOTER = (
   ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
+)
+
+MICRODESCRIPTOR = (
+  ("onion-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
 )
 
 ROUTER_STATUS_ENTRY_V2_HEADER = (
@@ -707,6 +715,26 @@ def get_bridge_extrainfo_descriptor(attr = None, exclude = (), content = False):
     return desc_content
   else:
     return stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(desc_content, validate = True)
+
+
+def get_microdescriptor(attr = None, exclude = (), content = False):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.microdescriptor.Microdescriptor
+
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+
+  :returns: Microdescriptor for the requested descriptor content
+  """
+
+  desc_content = _get_descriptor_content(attr, exclude, MICRODESCRIPTOR)
+
+  if content:
+    return desc_content
+  else:
+    return stem.descriptor.microdescriptor.Microdescriptor(desc_content, validate = True)
 
 
 def get_router_status_entry_v2(attr = None, exclude = (), content = False):

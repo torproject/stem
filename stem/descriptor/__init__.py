@@ -41,6 +41,7 @@ __all__ = [
   "reader",
   "extrainfo_descriptor",
   "server_descriptor",
+  "microdescriptor",
   "networkstatus",
   "router_status_entry",
   "parse_file",
@@ -100,6 +101,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   ========================================= =====
   server-descriptor 1.0                     :class:`~stem.descriptor.server_descriptor.RelayDescriptor`
   extra-info 1.0                            :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
+  microdescriptor 1.0                       :class:`~stem.descriptor.microdescriptor.Microdescriptor`
   directory 1.0                             **unsupported**
   network-status-2 1.0                      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV2`)
   dir-key-certificate-3 1.0                 :class:`~stem.descriptor.networkstatus.KeyCertificate`
@@ -181,6 +183,8 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
       file_parser = lambda f: stem.descriptor.server_descriptor._parse_file(f, validate = validate)
     elif filename == "cached-extrainfo":
       file_parser = lambda f: stem.descriptor.extrainfo_descriptor._parse_file(f, validate = validate)
+    elif filename == "cached-microdescs":
+      file_parser = lambda f: stem.descriptor.microdescriptor._parse_file(f, validate = validate)
     elif filename == "cached-consensus":
       file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, validate = validate, document_handler = document_handler)
     elif filename == "cached-microdesc-consensus":
@@ -215,6 +219,9 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
       yield desc
   elif descriptor_type == "extra-info" and major_version == 1:
     for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = False, validate = validate):
+      yield desc
+  elif descriptor_type == "microdescriptor" and major_version == 1:
+    for desc in stem.descriptor.microdescriptor._parse_file(descriptor_file, validate = validate):
       yield desc
   elif descriptor_type == "bridge-extra-info" and major_version == 1:
     # version 1.1 introduced a 'transport' field...

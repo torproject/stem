@@ -321,7 +321,7 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     for a_line, expected in test_values.items():
       entry = get_router_status_entry_v3({'a': a_line})
-      self.assertEquals(expected, entry.addresses_v6)
+      self.assertEquals(expected, entry.or_addresses)
 
     # includes multiple 'a' lines
 
@@ -336,7 +336,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     ]
 
     entry = RouterStatusEntryV3(content)
-    self.assertEquals(expected, entry.addresses_v6)
+    self.assertEquals(expected, entry.or_addresses)
 
     # tries some invalid inputs
 
