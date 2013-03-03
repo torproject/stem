@@ -4,7 +4,6 @@ Integration tests for the stem.control.Controller class.
 
 from __future__ import with_statement
 
-import os
 import shutil
 import socket
 import tempfile
@@ -27,6 +26,11 @@ from stem import Signal
 from stem.control import EventType, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
+
+# Router status entry for a relay with a nickname other than 'Unnamed'. This is
+# used for a few tests that need to look up a relay.
+
+TEST_ROUTER_STATUS_ENTRY = None
 
 
 class TestController(unittest.TestCase):
@@ -802,6 +806,8 @@ class TestController(unittest.TestCase):
 
     if test.runner.require_control(self):
       return
+    elif test.runner.require_version(self, Requirement.MICRODESCRIPTOR_IS_DEFAULT):
+      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       # we should balk at invalid content
@@ -814,36 +820,24 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.ControllerError, controller.get_microdescriptor, "blargg")
       self.assertRaises(stem.ControllerError, controller.get_microdescriptor, "5" * 40)
 
-      # microdescriptors exclude the fingerprint and nickname so checking the
-      # consensus to get the nickname and fingerprint of a relay
+      test_relay = self._get_router_status_entry(controller)
 
-      test_router_status_entry = None
-
-      for desc in controller.get_network_statuses():
-        if desc.nickname != "Unnamed":
-          test_router_status_entry = desc
-          break
-
-      if test_router_status_entry is None:
-        self.fail("Unable to find any relays without a nickname of 'Unnamed'")
-
-      md_by_fingerprint = controller.get_microdescriptor(test_router_status_entry.fingerprint)
-      md_by_nickname = controller.get_microdescriptor(test_router_status_entry.nickname)
+      md_by_fingerprint = controller.get_microdescriptor(test_relay.fingerprint)
+      md_by_nickname = controller.get_microdescriptor(test_relay.nickname)
 
       self.assertEqual(md_by_fingerprint, md_by_nickname)
 
   def test_get_server_descriptor(self):
     """
-    Compares get_server_descriptor() against our cached descriptors.
+    Basic checks for get_server_descriptor().
     """
 
     runner = test.runner.get_runner()
-    descriptor_path = runner.get_test_dir("cached-descriptors")
 
     if test.runner.require_control(self):
       return
-    elif not os.path.exists(descriptor_path):
-      test.runner.skip(self, "(no cached descriptors)")
+    elif runner.get_tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
+      test.runner.skip(self, "(requires server descriptors)")
       return
 
     with runner.get_tor_controller() as controller:
@@ -857,18 +851,12 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.ControllerError, controller.get_server_descriptor, "blargg")
       self.assertRaises(stem.ControllerError, controller.get_server_descriptor, "5" * 40)
 
-      test.runner.skip(self, "(https://trac.torproject.org/7163)")
-      return
+      test_relay = self._get_router_status_entry(controller)
 
-      first_descriptor = None
-      with stem.descriptor.reader.DescriptorReader([descriptor_path]) as reader:
-        for desc in reader:
-          if desc.nickname != "Unnamed":
-            first_descriptor = desc
-            break
+      desc_by_fingerprint = controller.get_server_descriptor(test_relay.fingerprint)
+      desc_by_nickname = controller.get_server_descriptor(test_relay.nickname)
 
-      self.assertEqual(first_descriptor, controller.get_server_descriptor(first_descriptor.fingerprint))
-      self.assertEqual(first_descriptor, controller.get_server_descriptor(first_descriptor.nickname))
+      self.assertEqual(desc_by_fingerprint, desc_by_nickname)
 
   def test_get_server_descriptors(self):
     """
@@ -897,19 +885,13 @@ class TestController(unittest.TestCase):
 
   def test_get_network_status(self):
     """
-    Compares get_network_status() against our cached descriptors.
+    Basic checks for get_network_status().
     """
-
-    runner = test.runner.get_runner()
-    descriptor_path = runner.get_test_dir("cached-consensus")
 
     if test.runner.require_control(self):
       return
-    elif not os.path.exists(descriptor_path):
-      test.runner.skip(self, "(no cached descriptors)")
-      return
 
-    with runner.get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       # we should balk at invalid content
       self.assertRaises(ValueError, controller.get_network_status, None)
       self.assertRaises(ValueError, controller.get_network_status, "")
@@ -920,24 +902,12 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.ControllerError, controller.get_network_status, "blargg")
       self.assertRaises(stem.ControllerError, controller.get_network_status, "5" * 40)
 
-      # our cached consensus is v3 but the control port can only be queried for
-      # v2 or v1 network status information
+      test_relay = self._get_router_status_entry(controller)
 
-      test.runner.skip(self, "(https://trac.torproject.org/7163)")
-      return
+      desc_by_fingerprint = controller.get_network_status(test_relay.fingerprint)
+      desc_by_nickname = controller.get_network_status(test_relay.nickname)
 
-      first_descriptor = None
-      with stem.descriptor.reader.DescriptorReader([descriptor_path]) as reader:
-        for desc in reader:
-          if desc.nickname != "Unnamed":
-            # truncate to just the first couple lines and reconstruct as a v2 entry
-            truncated_content = "\n".join(str(desc).split("\n")[:2])
-
-            first_descriptor = stem.descriptor.router_status_entry.RouterStatusEntryV2(truncated_content)
-            break
-
-      self.assertEqual(first_descriptor, controller.get_network_status(first_descriptor.fingerprint))
-      self.assertEqual(first_descriptor, controller.get_network_status(first_descriptor.nickname))
+      self.assertEqual(desc_by_fingerprint, desc_by_nickname)
 
   def test_get_network_statuses(self):
     """
@@ -1009,3 +979,22 @@ class TestController(unittest.TestCase):
       new_circ = controller.new_circuit()
       circuits = controller.get_circuits()
       self.assertTrue(new_circ in [circ.id for circ in circuits])
+
+  def _get_router_status_entry(self, controller):
+    """
+    Provides a router status entry for a relay with a nickname other than
+    'Unnamed'. This fails the test if unable to find one.
+    """
+
+    global TEST_ROUTER_STATUS_ENTRY
+
+    if TEST_ROUTER_STATUS_ENTRY is None:
+      for desc in controller.get_network_statuses():
+        if desc.nickname != "Unnamed":
+          TEST_ROUTER_STATUS_ENTRY = desc
+          break
+
+      if TEST_ROUTER_STATUS_ENTRY is None:
+        self.fail("Unable to find any relays without a nickname of 'Unnamed'")
+
+    return TEST_ROUTER_STATUS_ENTRY

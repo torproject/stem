@@ -47,6 +47,7 @@ easily parsed and compared, for instance...
   **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
   **GETINFO_CONFIG_TEXT**               'GETINFO config-text' query
   **LOADCONF**                          LOADCONF requests
+  **MICRODESCRIPTOR_IS_DEFAULT**        Tor gets microdescriptors by default rather than server descriptors
   **TAKEOWNERSHIP**                     TAKEOWNERSHIP requests
   **TORRC_CONTROL_SOCKET**              'ControlSocket <path>' config option
   **TORRC_PORT_FORWARDING**             'PortForwarding' config option
@@ -305,6 +306,7 @@ Requirement = stem.util.enum.Enum(
   ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),
   ("GETINFO_CONFIG_TEXT", Version("0.2.2.7-alpha")),
   ("LOADCONF", Version("0.2.1.1")),
+  ("MICRODESCRIPTOR_IS_DEFAULT", Version("0.2.3.25")),
   ("TAKEOWNERSHIP", Version("0.2.2.28-beta")),
   ("TORRC_CONTROL_SOCKET", Version("0.2.0.30")),
   ("TORRC_PORT_FORWARDING", Version("0.2.3.1-alpha")),
