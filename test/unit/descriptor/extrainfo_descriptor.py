@@ -487,6 +487,11 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     self.assertEquals({"obfs2": ("83.212.96.201", 33570, [])}, desc.transport)
     self.assertEquals([], desc.get_unrecognized_lines())
 
+    # multiple transport lines
+    desc = get_bridge_extrainfo_descriptor({"transport": "obfs3\ntransport obfs4"})
+    self.assertEquals({"obfs3": (None, None, None), "obfs4": (None, None, None)}, desc.transport)
+    self.assertEquals([], desc.get_unrecognized_lines())
+
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
     """
     Asserts that construction will fail due to desc_text having a malformed

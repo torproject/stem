@@ -480,41 +480,42 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
         # on non-bridges in the wild when the relay operator configured it this
         # way.
 
-        name, address, port, args = None, None, None, None
+        for transport_value, _ in values:
+          name, address, port, args = None, None, None, None
 
-        if not ' ' in value:
-          # scrubbed
-          name = value
-        else:
-          # not scrubbed
-          value_comp = value.split()
-
-          if len(value_comp) < 1:
-            raise ValueError("Transport line is missing its transport name: %s" % line)
+          if not ' ' in transport_value:
+            # scrubbed
+            name = transport_value
           else:
-            name = value_comp[0]
+            # not scrubbed
+            value_comp = transport_value.split()
 
-          if len(value_comp) < 2:
-            raise ValueError("Transport line is missing its address:port value: %s" % line)
-          elif not ":" in value_comp[1]:
-            raise ValueError("Transport line's address:port entry is missing a colon: %s" % line)
-          else:
-            address, port_str = value_comp[1].split(':', 1)
+            if len(value_comp) < 1:
+              raise ValueError("Transport line is missing its transport name: %s" % line)
+            else:
+              name = value_comp[0]
 
-            if not stem.util.connection.is_valid_ip_address(address) or \
-                   stem.util.connection.is_valid_ipv6_address(address):
-              raise ValueError("Transport line has a malformed address: %s" % line)
-            elif not stem.util.connection.is_valid_port(port_str):
-              raise ValueError("Transport line has a malformed port: %s" % line)
+            if len(value_comp) < 2:
+              raise ValueError("Transport line is missing its address:port value: %s" % line)
+            elif not ":" in value_comp[1]:
+              raise ValueError("Transport line's address:port entry is missing a colon: %s" % line)
+            else:
+              address, port_str = value_comp[1].split(':', 1)
 
-            port = int(port_str)
+              if not stem.util.connection.is_valid_ip_address(address) or \
+                     stem.util.connection.is_valid_ipv6_address(address):
+                raise ValueError("Transport line has a malformed address: %s" % line)
+              elif not stem.util.connection.is_valid_port(port_str):
+                raise ValueError("Transport line has a malformed port: %s" % line)
 
-          if len(value_comp) >= 3:
-            args = value_comp[2:]
-          else:
-            args = []
+              port = int(port_str)
 
-        self.transport[name] = (address, port, args)
+            if len(value_comp) >= 3:
+              args = value_comp[2:]
+            else:
+              args = []
+
+          self.transport[name] = (address, port, args)
       elif keyword == "cell-circuits-per-decile":
         # "cell-circuits-per-decile" num
 
