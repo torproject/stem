@@ -827,6 +827,26 @@ class TestController(unittest.TestCase):
 
       self.assertEqual(md_by_fingerprint, md_by_nickname)
 
+  def test_get_microdescriptors(self):
+    """
+    Fetches a few descriptors via the get_microdescriptors() method.
+    """
+
+    runner = test.runner.get_runner()
+
+    if test.runner.require_control(self):
+      return
+
+    with runner.get_tor_controller() as controller:
+      count = 0
+
+      for desc in controller.get_microdescriptors():
+        self.assertTrue(desc.onion_key is not None)
+
+        count += 1
+        if count > 10:
+          break
+
   def test_get_server_descriptor(self):
     """
     Basic checks for get_server_descriptor().

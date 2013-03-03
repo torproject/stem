@@ -26,6 +26,7 @@ providing its own for interacting at a higher level.
     |- get_protocolinfo - information about the controller interface
     |
     |- get_microdescriptor - querying the microdescriptor for a relay
+    |- get_microdescriptors - provides all presently available microdescriptors
     |- get_server_descriptor - querying the server descriptor for a relay
     |- get_server_descriptors - provides all presently available server descriptors
     |- get_network_status - querying the router status entry for a relay
@@ -141,6 +142,7 @@ import threading
 import time
 
 import stem.descriptor.microdescriptor
+import stem.descriptor.reader
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.exit_policy
@@ -998,6 +1000,56 @@ class Controller(BaseController):
         raise exc
       else:
         return default
+
+  def get_microdescriptors(self, default = UNDEFINED):
+    """
+    Provides an iterator for all of the microdescriptors that tor presently
+    knows about.
+
+    **Tor does not expose this information via the control protocol (`ticket
+    <https://trac.torproject.org/8323>`_).** Until it does this reads the
+    microdescriptors from disk, and hence won't work remotely or if we lack
+    read permissions.
+
+    :param list default: items to provide if the query fails
+
+    :returns: iterates over
+      :class:`~stem.descriptor.microdescriptor.Microdescriptor` for relays in
+      the tor network
+
+    :raises: :class:`stem.ControllerError` if unable to query tor and no
+      default was provided
+    """
+
+    try:
+      try:
+        data_directory = self.get_conf("DataDirectory")
+      except stem.ControllerError, exc:
+        raise stem.OperationFailed(message = "Unable to determine the data directory (%s)" % exc)
+
+      cached_descriptor_path = os.path.join(data_directory, "cached-microdescs")
+
+      if not os.path.exists(data_directory):
+        raise stem.OperationFailed(message = "Data directory reported by tor doesn't exist (%s)" % data_directory)
+      elif not os.path.exists(cached_descriptor_path):
+        raise stem.OperationFailed(message = "Data directory doens't contain cached microescriptors (%s)" % cached_descriptor_path)
+
+      with stem.descriptor.reader.DescriptorReader([cached_descriptor_path]) as reader:
+        for desc in reader:
+          # It shouldn't be possible for these to be something other than
+          # microdescriptors but as the saying goes: trust but verify.
+
+          if not isinstance(desc, stem.descriptor.microdescriptor.Microdescriptor):
+            raise stem.OperationFailed(message = "BUG: Descriptor reader provided non-microdescriptor content (%s)" % type(desc))
+
+          yield desc
+    except Exception, exc:
+      if default == UNDEFINED:
+        raise exc
+      else:
+        if default is not None:
+          for entry in default:
+            yield entry
 
   def get_server_descriptor(self, relay, default = UNDEFINED):
     """
