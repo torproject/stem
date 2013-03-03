@@ -224,3 +224,18 @@ class Microdescriptor(stem.descriptor.Descriptor):
 
     if "onion-key" != entries.keys()[0]:
       raise ValueError("Microdescriptor must start with a 'onion-key' entry")
+
+  def _compare(self, other, method):
+    if not isinstance(other, Microdescriptor):
+      return False
+
+    return method(str(self).strip(), str(other).strip())
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)

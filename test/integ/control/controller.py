@@ -795,6 +795,43 @@ class TestController(unittest.TestCase):
 
       self.assertTrue(stem.util.connection.is_valid_ip_address(ip_addr))
 
+  def test_get_microdescriptor(self):
+    """
+    Basic checks for get_microdescriptor().
+    """
+
+    if test.runner.require_control(self):
+      return
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      # we should balk at invalid content
+      self.assertRaises(ValueError, controller.get_microdescriptor, None)
+      self.assertRaises(ValueError, controller.get_microdescriptor, "")
+      self.assertRaises(ValueError, controller.get_microdescriptor, 5)
+      self.assertRaises(ValueError, controller.get_microdescriptor, "z" * 30)
+
+      # try with a relay that doesn't exist
+      self.assertRaises(stem.ControllerError, controller.get_microdescriptor, "blargg")
+      self.assertRaises(stem.ControllerError, controller.get_microdescriptor, "5" * 40)
+
+      # microdescriptors exclude the fingerprint and nickname so checking the
+      # consensus to get the nickname and fingerprint of a relay
+
+      test_router_status_entry = None
+
+      for desc in controller.get_network_statuses():
+        if desc.nickname != "Unnamed":
+          test_router_status_entry = desc
+          break
+
+      if test_router_status_entry is None:
+        self.fail("Unable to find any relays without a nickname of 'Unnamed'")
+
+      md_by_fingerprint = controller.get_microdescriptor(test_router_status_entry.fingerprint)
+      md_by_nickname = controller.get_microdescriptor(test_router_status_entry.nickname)
+
+      self.assertEqual(md_by_fingerprint, md_by_nickname)
+
   def test_get_server_descriptor(self):
     """
     Compares get_server_descriptor() against our cached descriptors.

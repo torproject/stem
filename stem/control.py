@@ -25,6 +25,7 @@ providing its own for interacting at a higher level.
     |- get_socks_listeners - provides where tor is listening for SOCKS connections
     |- get_protocolinfo - information about the controller interface
     |
+    |- get_microdescriptor - querying the microdescriptor for a relay
     |- get_server_descriptor - querying the server descriptor for a relay
     |- get_server_descriptors - provides all presently available server descriptors
     |- get_network_status - querying the router status entry for a relay
@@ -139,6 +140,7 @@ import StringIO
 import threading
 import time
 
+import stem.descriptor.microdescriptor
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.exit_policy
@@ -956,6 +958,41 @@ class Controller(BaseController):
 
     try:
       return stem.connection.get_protocolinfo(self)
+    except Exception, exc:
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
+
+  def get_microdescriptor(self, relay, default = UNDEFINED):
+    """
+    Provides the microdescriptor for the relay with the given fingerprint or
+    nickname. If the relay identifier could be either a fingerprint *or*
+    nickname then it's queried as a fingerprint.
+
+    :param str relay: fingerprint or nickname of the relay to be queried
+    :param object default: response if the query fails
+
+    :returns: :class:`~stem.descriptor.microdescriptor.Microdescriptor` for the given relay
+
+    :raises:
+      * :class:`stem.ControllerError` if unable to query the descriptor
+      * **ValueError** if **relay** doesn't conform with the pattern for being
+        a fingerprint or nickname
+
+      An exception is only raised if we weren't provided a default response.
+    """
+
+    try:
+      if stem.util.tor_tools.is_valid_fingerprint(relay):
+        query = "md/id/%s" % relay
+      elif stem.util.tor_tools.is_valid_nickname(relay):
+        query = "md/name/%s" % relay
+      else:
+        raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
+
+      desc_content = self.get_info(query)
+      return stem.descriptor.microdescriptor.Microdescriptor(desc_content)
     except Exception, exc:
       if default == UNDEFINED:
         raise exc
