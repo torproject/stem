@@ -29,6 +29,7 @@ individual files and `stem.descriptor.reader
  * `stem.descriptor <api/descriptor/descriptor.html>`_ - Base class for descriptors.
  * `stem.descriptor.server_descriptor <api/descriptor/server_descriptor.html>`_ - Relay and bridge server descriptors.
  * `stem.descriptor.extrainfo_descriptor <api/descriptor/extrainfo_descriptor.html>`_ - Relay and bridge extrainfo descriptors.
+ * `stem.descriptor.microdescriptor <api/descriptor/microdescriptor.html>`_ - Minimalistic counterpart for server descriptors.
  * `stem.descriptor.networkstatus <api/descriptor/networkstatus.html>`_ - Network status documents which make up the Tor consensus.
  * `stem.descriptor.router_status_entry <api/descriptor/router_status_entry.html>`_ - Relay entries within a network status document.
 

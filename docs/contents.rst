@@ -4,9 +4,13 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   api
-   download
    tutorial
+   tutorial/the_little_relay_that_could
+   tutorial/mirror_mirror_on_the_wall
+
+   download
+
+   api
 
    api/control
    api/connection
@@ -20,6 +24,7 @@ Contents
    api/descriptor/descriptor
    api/descriptor/server_descriptor
    api/descriptor/extrainfo_descriptor
+   api/descriptor/microdescriptor
    api/descriptor/networkstatus
    api/descriptor/router_status_entry
 
