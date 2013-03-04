@@ -87,7 +87,7 @@ through tor's control socket...
 
   from stem.descriptor import parse_file
 
-  for desc in parse_file("/home/atagar/.tor/cached-consensus"):
+  for desc in parse_file(open("/home/atagar/.tor/cached-consensus")):
     print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
 
 .. _where-can-i-get-past-descriptors:
@@ -128,7 +128,7 @@ this to work.
 
   import sys
 
-  from stem.contorl import Controller
+  from stem.control import Controller
   from stem.util import str_tools
 
   # provides a mapping of observed bandwidth to the relay nicknames
