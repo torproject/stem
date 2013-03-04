@@ -24,6 +24,7 @@ Contents
    api/descriptor/descriptor
    api/descriptor/server_descriptor
    api/descriptor/extrainfo_descriptor
+   api/descriptor/microdescriptor
    api/descriptor/networkstatus
    api/descriptor/router_status_entry
 
