@@ -1,5 +1,5 @@
 The Little Relay that Could
----------------------------
+===========================
 
 Let's say you just set up your very first `Tor relay
 <https://www.torproject.org/docs/tor-doc-relay.html.en>`_ (thank you!), and now
