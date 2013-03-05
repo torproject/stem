@@ -42,6 +42,7 @@ providing its own for interacting at a higher level.
     |- remove_event_listener - removes a listener so it isn't notified of further events
     |
     |- is_caching_enabled - true if the controller has enabled caching
+    |- set_caching - enables or disables caching
     |- clear_cache - clears any cached results
     |
     |- load_conf - loads configuration information as if it was in the torrc
@@ -659,10 +660,10 @@ class Controller(BaseController):
   from_port = staticmethod(from_port)
   from_socket_file = staticmethod(from_socket_file)
 
-  def __init__(self, control_socket, enable_caching = True):
+  def __init__(self, control_socket):
     super(Controller, self).__init__(control_socket)
 
-    self._is_caching_enabled = enable_caching
+    self._is_caching_enabled = True
     self._request_cache = {}
 
     # mapping of event types to their listeners
@@ -1584,6 +1585,18 @@ class Controller(BaseController):
     """
 
     return self._is_caching_enabled
+
+  def set_caching(self, enabled):
+    """
+    Enables or disables caching of information retrieved from tor.
+
+    :param bool enabled: **True** to enable caching, **False** to disable it
+    """
+
+    self._is_caching_enabled = enabled
+
+    if not self._is_caching_enabled:
+      self.clear_cache()
 
   def clear_cache(self):
     """

@@ -20,7 +20,7 @@ class TestControl(unittest.TestCase):
     socket = stem.socket.ControlSocket()
 
     mocking.mock_method(Controller, "add_event_listener", mocking.no_op())
-    self.controller = Controller(socket, enable_caching = True)
+    self.controller = Controller(socket)
     mocking.revert_mocking()
 
   def tearDown(self):
