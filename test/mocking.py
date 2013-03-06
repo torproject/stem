@@ -73,7 +73,7 @@ import stem.response
 
 MOCK_ID = itertools.count(0)
 
-# mock_id => (module, function_name, original_function)
+# mock_id => (module, function_name, original_function, is_static)
 
 MOCK_STATE = {}
 
@@ -337,13 +337,13 @@ def mock(target, mock_call, target_module = None, is_static = False):
   if hasattr(target, "mock_id"):
     # we're overriding an already mocked function
     mocking_id = getattr(target, "mock_id")
-    target_module, target_function, _ = MOCK_STATE[mocking_id]
+    target_module, target_function, _, _ = MOCK_STATE[mocking_id]
   else:
     # this is a new mocking, save the original state
     mocking_id = MOCK_ID.next()
     target_module = target_module or inspect.getmodule(target)
     target_function = target.__name__
-    MOCK_STATE[mocking_id] = (target_module, target_function, target)
+    MOCK_STATE[mocking_id] = (target_module, target_function, target, is_static)
 
   mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
   setattr(mock_wrapper, "mock_id", mocking_id)
@@ -389,11 +389,11 @@ def mock_method(target_class, method_name, mock_call):
   if hasattr(target_method, "mock_id"):
     # we're overriding an already mocked method
     mocking_id = target_method.mock_id
-    _, target_method, _ = MOCK_STATE[mocking_id]
+    _, target_method, _, _ = MOCK_STATE[mocking_id]
   else:
     # this is a new mocking, save the original state
     mocking_id = MOCK_ID.next()
-    MOCK_STATE[mocking_id] = (target_class, method_name, target_method)
+    MOCK_STATE[mocking_id] = (target_class, method_name, target_method, False)
 
   mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
   setattr(mock_wrapper, "mock_id", mocking_id)
@@ -415,7 +415,7 @@ def revert_mocking():
   mock_ids.reverse()
 
   for mock_id in mock_ids:
-    module, function, impl = MOCK_STATE[mock_id]
+    module, function, impl, is_static = MOCK_STATE[mock_id]
 
     # Python 3.x renamed __builtin__ to builtins. Ideally we'd account for
     # this with a simple 'import __builtin__ as builtins' but that somehow
@@ -427,6 +427,9 @@ def revert_mocking():
     else:
       import __builtin__
       builtin_module = __builtin__
+
+    if is_static:
+      impl = staticmethod(impl)
 
     if module == builtin_module:
       setattr(builtin_module, function, impl)
