@@ -5,6 +5,7 @@
 import datetime
 import re
 import StringIO
+import time
 
 import stem
 import stem.control
@@ -41,7 +42,10 @@ class Event(stem.response.ControlMessage):
   _SKIP_PARSING = False    # skip parsing contents into our positional_args and keyword_args
   _VERSION_ADDED = stem.version.Version('0.1.1.1-alpha')  # minimum version with control-spec V1 event support
 
-  def _parse_message(self, arrived_at):
+  def _parse_message(self, arrived_at = None):
+    if arrived_at is None:
+      arrived_at = int(time.time())
+
     if not str(self).strip():
       raise stem.ProtocolError("Received a blank tor event. Events must at the very least have a type.")
 

@@ -307,7 +307,7 @@ PURPOSE=DNS_REQUEST"
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
-  stem.response.convert("EVENT", controller_event, arrived_at = 25)
+  stem.response.convert("EVENT", controller_event)
   return controller_event
 
 
@@ -344,7 +344,7 @@ class TestEvents(unittest.TestCase):
 
   def test_event(self):
     # synthetic, contrived message construction to reach the blank event check
-    self.assertRaises(ProtocolError, stem.response.convert, "EVENT", stem.response.ControlMessage([('', '', '')], ''), arrived_at = 25)
+    self.assertRaises(ProtocolError, stem.response.convert, "EVENT", stem.response.ControlMessage([('', '', '')], ''))
 
     # Event._parse_message() on an unknown event type
     event = _get_event('650 NONE SOLID "NON SENSE" condition=MEH quoted="1 2 3"')
