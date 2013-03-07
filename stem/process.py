@@ -43,6 +43,10 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
   while. Usually this is done in 50 seconds or so, but occasionally calls seem
   to get stuck, taking well over the default timeout.
 
+  **To work to must log at NOTICE runlevel to stdout.** It does this by
+  default, but if you have a 'Log' entry in your torrc then you'll also need
+  'Log NOTICE stdout'.
+
   Note: The timeout argument does not work on Windows (`ticket
   <https://trac.torproject.org/5783>`_)
 
@@ -220,6 +224,25 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
   :raises: **OSError** if we either fail to create the tor process or reached a
     timeout without success
   """
+
+  # we need to be sure that we're logging to stdout to figure out when we're
+  # done bootstrapping
+
+  if 'Log' in config:
+    stdout_options = ['DEBUG stdout', 'INFO stdout', 'NOTICE stdout']
+
+    if isinstance(config['Log'], str):
+      config['Log'] = [config['Log']]
+
+    has_stdout = False
+
+    for log_config in config['Log']:
+      if log_config in stdout_options:
+        has_stdout = True
+        break
+
+    if not has_stdout:
+      config['Log'].append('NOTICE stdout')
 
   torrc_path = tempfile.mkstemp(prefix = "torrc-", text = True)[1]
 
