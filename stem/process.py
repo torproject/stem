@@ -98,7 +98,7 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
       runtime_args += ["-f", torrc_path]
 
   if take_ownership:
-    runtime_args += ["__OwningControllerProcess", _get_pid()]
+    runtime_args += ["__OwningControllerProcess", str(os.getpid())]
 
   tor_process = subprocess.Popen(runtime_args, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 
@@ -241,7 +241,3 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
       os.remove(torrc_path)
     except:
       pass
-
-
-def _get_pid():
-  return str(os.getpid())

@@ -116,12 +116,8 @@ class TestProcess(unittest.TestCase):
     elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP):
       return
 
-    # Have os.getpid provide the pid of a process we can safely kill. I hate
-    # needing to a _get_pid() helper but after much head scratching I haven't
-    # been able to mock os.getpid() or posix.getpid().
-
     sleep_process = subprocess.Popen(['sleep', '60'])
-    mocking.mock(stem.process._get_pid, mocking.return_value(str(sleep_process.pid)))
+    mocking.mock(os.getpid, mocking.return_value(str(sleep_process.pid)), target_module = os)
 
     tor_process = stem.process.launch_tor_with_config(
       tor_cmd = test.runner.get_runner().get_tor_command(),
