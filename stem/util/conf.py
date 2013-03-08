@@ -57,7 +57,7 @@ To do this use the :func:`~stem.util.conf.config_dict` function. For example...
       # require at least a one second timeout
       return max(1, value)
     elif key == "endpoint":
-      if not connection.is_valid_ip_address(value):
+      if not connection.is_valid_ipv4_address(value):
         raise ValueError("'%s' isn't a valid IPv4 address" % value)
     elif key == "port":
       if not connection.is_valid_port(value):

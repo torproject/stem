@@ -9,7 +9,7 @@ but for now just moving the parts we need.
 
 ::
 
-  is_valid_ip_address - checks if a string is a valid IPv4 address
+  is_valid_ipv4_address - checks if a string is a valid IPv4 address
   is_valid_ipv6_address - checks if a string is a valid IPv6 address
   is_valid_port - checks if something is a valid representation for a port
   expand_ipv6_address - provides an IPv6 address with its collapsed portions expanded
@@ -34,7 +34,7 @@ FULL_IPv4_MASK = "255.255.255.255"
 FULL_IPv6_MASK = "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"
 
 
-def is_valid_ip_address(address):
+def is_valid_ipv4_address(address):
   """
   Checks if a string is a valid IPv4 address.
 
@@ -202,7 +202,7 @@ def get_masked_bits(mask):
   :raises: **ValueError** if the mask is invalid or can't be converted
   """
 
-  if not is_valid_ip_address(mask):
+  if not is_valid_ipv4_address(mask):
     raise ValueError("'%s' is an invalid subnet mask" % mask)
 
   # converts octets to binary representation
@@ -264,7 +264,7 @@ def get_address_binary(address):
   :raises: **ValueError** if address is neither an IPv4 nor IPv6 address
   """
 
-  if is_valid_ip_address(address):
+  if is_valid_ipv4_address(address):
     return "".join([get_binary(int(octet), 8) for octet in address.split(".")])
   elif is_valid_ipv6_address(address):
     address = expand_ipv6_address(address)

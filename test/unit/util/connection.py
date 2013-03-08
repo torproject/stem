@@ -8,9 +8,9 @@ import stem.util.connection
 
 
 class TestConnection(unittest.TestCase):
-  def test_is_valid_ip_address(self):
+  def test_is_valid_ipv4_address(self):
     """
-    Checks the is_valid_ip_address function.
+    Checks the is_valid_ipv4_address function.
     """
 
     valid_addresses = (
@@ -30,10 +30,10 @@ class TestConnection(unittest.TestCase):
     )
 
     for address in valid_addresses:
-      self.assertTrue(stem.util.connection.is_valid_ip_address(address))
+      self.assertTrue(stem.util.connection.is_valid_ipv4_address(address))
 
     for address in invalid_addresses:
-      self.assertFalse(stem.util.connection.is_valid_ip_address(address))
+      self.assertFalse(stem.util.connection.is_valid_ipv4_address(address))
 
   def test_is_valid_ipv6_address(self):
     """

@@ -357,7 +357,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         if validate:
           if not stem.util.tor_tools.is_valid_nickname(router_comp[0]):
             raise ValueError("Router line entry isn't a valid nickname: %s" % router_comp[0])
-          elif not stem.util.connection.is_valid_ip_address(router_comp[1]):
+          elif not stem.util.connection.is_valid_ipv4_address(router_comp[1]):
             raise ValueError("Router line entry isn't a valid IPv4 address: %s" % router_comp[1])
           elif not stem.util.connection.is_valid_port(router_comp[2], allow_zero = True):
             raise ValueError("Router line's ORPort is invalid: %s" % router_comp[2])
@@ -523,7 +523,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
           if is_ipv6:
             address = address[1:-1]  # remove brackets
 
-          if not ((not is_ipv6 and stem.util.connection.is_valid_ip_address(address)) or
+          if not ((not is_ipv6 and stem.util.connection.is_valid_ipv4_address(address)) or
                  (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
             if not validate:
               continue

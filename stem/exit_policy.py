@@ -546,7 +546,7 @@ class ExitPolicyRule(object):
     if address is not None:
       address_type = self.get_address_type()
 
-      if stem.util.connection.is_valid_ip_address(address):
+      if stem.util.connection.is_valid_ipv4_address(address):
         if address_type == AddressType.IPv6:
           return False
       elif stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True):
@@ -705,7 +705,7 @@ class ExitPolicyRule(object):
     if addrspec == "*":
       self._address_type = _address_type_to_int(AddressType.WILDCARD)
       self.address = self._masked_bits = None
-    elif stem.util.connection.is_valid_ip_address(self.address):
+    elif stem.util.connection.is_valid_ipv4_address(self.address):
       # ipv4spec ::= ip4 | ip4 "/" num_ip4_bits | ip4 "/" ip4mask
       # ip4 ::= an IPv4 address in dotted-quad format
       # ip4mask ::= an IPv4 mask in dotted-quad format
@@ -715,7 +715,7 @@ class ExitPolicyRule(object):
 
       if addr_extra is None:
         self._masked_bits = 32
-      elif stem.util.connection.is_valid_ip_address(addr_extra):
+      elif stem.util.connection.is_valid_ipv4_address(addr_extra):
         # provided with an ip4mask
         try:
           self._masked_bits = stem.util.connection.get_masked_bits(addr_extra)

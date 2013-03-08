@@ -502,7 +502,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             else:
               address, port_str = value_comp[1].split(':', 1)
 
-              if not stem.util.connection.is_valid_ip_address(address) or \
+              if not stem.util.connection.is_valid_ipv4_address(address) or \
                      stem.util.connection.is_valid_ipv6_address(address):
                 raise ValueError("Transport line has a malformed address: %s" % line)
               elif not stem.util.connection.is_valid_port(port_str):
