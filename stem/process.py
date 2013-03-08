@@ -47,8 +47,8 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
   default, but if you have a 'Log' entry in your torrc then you'll also need
   'Log NOTICE stdout'.
 
-  Note: The timeout argument does not work on Windows (`ticket
-  <https://trac.torproject.org/5783>`_)
+  Note: The timeout argument does not work on Windows, and relies on the global
+  state of the signal module.
 
   :param str tor_cmd: command for starting tor
   :param list args: additional arguments for tor
