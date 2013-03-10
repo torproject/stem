@@ -5,6 +5,10 @@
 Functions to aid library logging. The default logging
 :data:`~stem.util.log.Runlevel` is usually NOTICE and above.
 
+**Stem users are more than welcome to listen for stem events, but these
+functions are not being vended to our users. They may change in the future, use
+them at your own risk.**
+
 **Module Overview:**
 
 ::
