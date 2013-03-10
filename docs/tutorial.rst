@@ -9,6 +9,12 @@ Tutorial
      License: Public Domain
      Alternate: https://openclipart.org/detail/1128/train-roadsign-by-ryanlerch
    
+   * To Russia With Love - soviet.png
+     Source: https://openclipart.org/detail/146017/flag-of-the-soviet-union-by-marxist-leninist
+     Author: Unknown
+     License: Public Domain (not a subject of copyright according the Russian civil code)
+     Alternate: https://openclipart.org/detail/85555/communist-sabbatarian-ribbon-by-rones-85555
+   
    * Mirror Mirror On The Wall - mirror.png
      Source: https://openclipart.org/detail/152155/mirror-frame-by-gsagri04
      Author: Unknown (gsagri04?)
@@ -30,6 +36,16 @@ feet wet by jumping straight in with some tutorials...
 
        "Hello World" for talking with Tor. This will step you through
        configuring Tor and writing your first script to talk with it.
+
+   * - .. image:: /_static/section/tutorial/soviet.png
+          :target: tutorial/to_russia_with_love.html
+
+     - .. image:: /_static/label/to_russia_with_love.png
+          :target: tutorial/to_russia_with_love.html
+
+       Rather than talking to Tor, we'll now talk **through** it. In this
+       tutorial we'll programmatically start Tor then use it to read a site
+       through mother Russia!
 
    * - .. image:: /_static/section/tutorial/mirror.png
           :target: tutorial/mirror_mirror_on_the_wall.html

@@ -6,6 +6,7 @@ Contents
 
    tutorial
    tutorial/the_little_relay_that_could
+   tutorial/to_russia_with_love
    tutorial/mirror_mirror_on_the_wall
 
    download
