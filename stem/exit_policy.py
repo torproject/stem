@@ -568,7 +568,7 @@ class ExitPolicyRule(object):
       if address is None:
         return False
       else:
-        comparison_addr_bin = int(stem.util.connection.get_address_binary(address), 2)
+        comparison_addr_bin = int(stem.util.connection._get_address_binary(address), 2)
         comparison_addr_bin &= self._get_mask_bin()
 
         if self._get_address_bin() != comparison_addr_bin:
@@ -681,7 +681,7 @@ class ExitPolicyRule(object):
     # provides an integer representation of our mask
 
     if self._mask_bin is None:
-      self._mask_bin = int(stem.util.connection.get_address_binary(self.get_mask(False)), 2)
+      self._mask_bin = int(stem.util.connection._get_address_binary(self.get_mask(False)), 2)
 
     return self._mask_bin
 
@@ -689,7 +689,7 @@ class ExitPolicyRule(object):
     # provides an integer representation of our address
 
     if self._addr_bin is None:
-      self._addr_bin = int(stem.util.connection.get_address_binary(self.address), 2) & self._mask_bin
+      self._addr_bin = int(stem.util.connection._get_address_binary(self.address), 2) & self._mask_bin
 
     return self._addr_bin
 
@@ -718,7 +718,7 @@ class ExitPolicyRule(object):
       elif stem.util.connection.is_valid_ipv4_address(addr_extra):
         # provided with an ip4mask
         try:
-          self._masked_bits = stem.util.connection.get_masked_bits(addr_extra)
+          self._masked_bits = stem.util.connection._get_masked_bits(addr_extra)
         except ValueError:
           # mask can't be represented as a number of bits (ex. "255.255.0.255")
           self._mask = addr_extra

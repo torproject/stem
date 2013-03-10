@@ -123,20 +123,20 @@ class TestConnection(unittest.TestCase):
 
   def test_get_masked_bits(self):
     """
-    Checks the get_masked_bits function.
+    Checks the _get_masked_bits function.
     """
 
-    self.assertEquals(32, stem.util.connection.get_masked_bits("255.255.255.255"))
-    self.assertEquals(29, stem.util.connection.get_masked_bits("255.255.255.248"))
-    self.assertEquals(23, stem.util.connection.get_masked_bits("255.255.254.0"))
-    self.assertEquals(0, stem.util.connection.get_masked_bits("0.0.0.0"))
+    self.assertEquals(32, stem.util.connection._get_masked_bits("255.255.255.255"))
+    self.assertEquals(29, stem.util.connection._get_masked_bits("255.255.255.248"))
+    self.assertEquals(23, stem.util.connection._get_masked_bits("255.255.254.0"))
+    self.assertEquals(0, stem.util.connection._get_masked_bits("0.0.0.0"))
 
-    self.assertRaises(ValueError, stem.util.connection.get_masked_bits, "blarg")
-    self.assertRaises(ValueError, stem.util.connection.get_masked_bits, "255.255.0.255")
+    self.assertRaises(ValueError, stem.util.connection._get_masked_bits, "blarg")
+    self.assertRaises(ValueError, stem.util.connection._get_masked_bits, "255.255.0.255")
 
   def test_get_address_binary(self):
     """
-    Checks the get_address_binary function.
+    Checks the _get_address_binary function.
     """
 
     test_values = {
@@ -151,7 +151,7 @@ class TestConnection(unittest.TestCase):
     }
 
     for test_arg, expected in test_values.items():
-      self.assertEquals(expected, stem.util.connection.get_address_binary(test_arg))
+      self.assertEquals(expected, stem.util.connection._get_address_binary(test_arg))
 
-    self.assertRaises(ValueError, stem.util.connection.get_address_binary, "")
-    self.assertRaises(ValueError, stem.util.connection.get_address_binary, "blarg")
+    self.assertRaises(ValueError, stem.util.connection._get_address_binary, "")
+    self.assertRaises(ValueError, stem.util.connection._get_address_binary, "blarg")
