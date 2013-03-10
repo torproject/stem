@@ -96,18 +96,30 @@ class TestConnection(unittest.TestCase):
 
     self.assertRaises(ValueError, stem.util.connection.expand_ipv6_address, "127.0.0.1")
 
-  def test_get_mask(self):
+  def test_get_mask_ipv4(self):
     """
-    Checks the get_mask function.
+    Checks the get_mask_ipv4 function.
     """
 
-    self.assertEquals("255.255.255.255", stem.util.connection.get_mask(32))
-    self.assertEquals("255.255.255.248", stem.util.connection.get_mask(29))
-    self.assertEquals("255.255.254.0", stem.util.connection.get_mask(23))
-    self.assertEquals("0.0.0.0", stem.util.connection.get_mask(0))
+    self.assertEquals("255.255.255.255", stem.util.connection.get_mask_ipv4(32))
+    self.assertEquals("255.255.255.248", stem.util.connection.get_mask_ipv4(29))
+    self.assertEquals("255.255.254.0", stem.util.connection.get_mask_ipv4(23))
+    self.assertEquals("0.0.0.0", stem.util.connection.get_mask_ipv4(0))
 
-    self.assertRaises(ValueError, stem.util.connection.get_mask, -1)
-    self.assertRaises(ValueError, stem.util.connection.get_mask, 33)
+    self.assertRaises(ValueError, stem.util.connection.get_mask_ipv4, -1)
+    self.assertRaises(ValueError, stem.util.connection.get_mask_ipv4, 33)
+
+  def test_get_mask_ipv6(self):
+    """
+    Checks the get_mask_ipv6 function.
+    """
+
+    self.assertEquals("FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF", stem.util.connection.get_mask_ipv6(128))
+    self.assertEquals("FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFE:0000", stem.util.connection.get_mask_ipv6(111))
+    self.assertEquals("0000:0000:0000:0000:0000:0000:0000:0000", stem.util.connection.get_mask_ipv6(0))
+
+    self.assertRaises(ValueError, stem.util.connection.get_mask_ipv6, -1)
+    self.assertRaises(ValueError, stem.util.connection.get_mask_ipv6, 129)
 
   def test_get_masked_bits(self):
     """
@@ -121,18 +133,6 @@ class TestConnection(unittest.TestCase):
 
     self.assertRaises(ValueError, stem.util.connection.get_masked_bits, "blarg")
     self.assertRaises(ValueError, stem.util.connection.get_masked_bits, "255.255.0.255")
-
-  def test_get_mask_ipv6(self):
-    """
-    Checks the get_mask_ipv6 function.
-    """
-
-    self.assertEquals("FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF", stem.util.connection.get_mask_ipv6(128))
-    self.assertEquals("FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFE:0000", stem.util.connection.get_mask_ipv6(111))
-    self.assertEquals("0000:0000:0000:0000:0000:0000:0000:0000", stem.util.connection.get_mask_ipv6(0))
-
-    self.assertRaises(ValueError, stem.util.connection.get_mask_ipv6, -1)
-    self.assertRaises(ValueError, stem.util.connection.get_mask, 129)
 
   def test_get_address_binary(self):
     """

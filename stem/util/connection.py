@@ -13,9 +13,9 @@ but for now just moving the parts we need.
   is_valid_ipv6_address - checks if a string is a valid IPv6 address
   is_valid_port - checks if something is a valid representation for a port
   expand_ipv6_address - provides an IPv6 address with its collapsed portions expanded
-  get_mask - provides the mask representation for a given number of bits
-  get_masked_bits - provides the number of bits represented by a mask
+  get_mask_ipv4 - provides the mask representation for a given number of bits
   get_mask_ipv6 - provides the IPv6 mask representation for a given number of bits
+  get_masked_bits - provides the number of bits represented by a mask
   get_binary - provides the binary representation for an integer with padding
   get_address_binary - provides the binary representation for an address
 
@@ -164,7 +164,7 @@ def expand_ipv6_address(address):
   return address
 
 
-def get_mask(bits):
+def get_mask_ipv4(bits):
   """
   Provides the IPv4 mask for a given number of bits, in the dotted-quad format.
 
@@ -188,31 +188,6 @@ def get_mask(bits):
 
   # converts each octet into its integer value
   return ".".join([str(int(octet, 2)) for octet in octets])
-
-
-def get_masked_bits(mask):
-  """
-  Provides the number of bits that an IPv4 subnet mask represents. Note that
-  not all masks can be represented by a bit count.
-
-  :param str mask: mask to be converted
-
-  :returns: **int** with the number of bits represented by the mask
-
-  :raises: **ValueError** if the mask is invalid or can't be converted
-  """
-
-  if not is_valid_ipv4_address(mask):
-    raise ValueError("'%s' is an invalid subnet mask" % mask)
-
-  # converts octets to binary representation
-  mask_bin = get_address_binary(mask)
-  mask_match = re.match("^(1*)(0*)$", mask_bin)
-
-  if mask_match:
-    return 32 - len(mask_match.groups()[1])
-  else:
-    raise ValueError("Unable to convert mask to a bit count: %s" % mask)
 
 
 def get_mask_ipv6(bits):
@@ -240,6 +215,31 @@ def get_mask_ipv6(bits):
 
   # converts each group into its hex value
   return ":".join(["%04x" % int(group, 2) for group in groupings]).upper()
+
+
+def get_masked_bits(mask):
+  """
+  Provides the number of bits that an IPv4 subnet mask represents. Note that
+  not all masks can be represented by a bit count.
+
+  :param str mask: mask to be converted
+
+  :returns: **int** with the number of bits represented by the mask
+
+  :raises: **ValueError** if the mask is invalid or can't be converted
+  """
+
+  if not is_valid_ipv4_address(mask):
+    raise ValueError("'%s' is an invalid subnet mask" % mask)
+
+  # converts octets to binary representation
+  mask_bin = get_address_binary(mask)
+  mask_match = re.match("^(1*)(0*)$", mask_bin)
+
+  if mask_match:
+    return 32 - len(mask_match.groups()[1])
+  else:
+    raise ValueError("Unable to convert mask to a bit count: %s" % mask)
 
 
 def get_binary(value, bits):

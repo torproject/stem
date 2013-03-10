@@ -610,7 +610,7 @@ class ExitPolicyRule(object):
       if address_type == AddressType.WILDCARD:
         mask = None
       elif address_type == AddressType.IPv4:
-        mask = stem.util.connection.get_mask(self._masked_bits)
+        mask = stem.util.connection.get_mask_ipv4(self._masked_bits)
       elif address_type == AddressType.IPv6:
         mask = stem.util.connection.get_mask_ipv6(self._masked_bits)
 
