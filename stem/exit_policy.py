@@ -546,7 +546,7 @@ class ExitPolicyRule(object):
     if address is not None:
       address_type = self.get_address_type()
 
-      if stem.util.connection.is_valid_ip_address(address):
+      if stem.util.connection.is_valid_ipv4_address(address):
         if address_type == AddressType.IPv6:
           return False
       elif stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True):
@@ -568,7 +568,7 @@ class ExitPolicyRule(object):
       if address is None:
         return False
       else:
-        comparison_addr_bin = int(stem.util.connection.get_address_binary(address), 2)
+        comparison_addr_bin = int(stem.util.connection._get_address_binary(address), 2)
         comparison_addr_bin &= self._get_mask_bin()
 
         if self._get_address_bin() != comparison_addr_bin:
@@ -610,7 +610,7 @@ class ExitPolicyRule(object):
       if address_type == AddressType.WILDCARD:
         mask = None
       elif address_type == AddressType.IPv4:
-        mask = stem.util.connection.get_mask(self._masked_bits)
+        mask = stem.util.connection.get_mask_ipv4(self._masked_bits)
       elif address_type == AddressType.IPv6:
         mask = stem.util.connection.get_mask_ipv6(self._masked_bits)
 
@@ -681,7 +681,7 @@ class ExitPolicyRule(object):
     # provides an integer representation of our mask
 
     if self._mask_bin is None:
-      self._mask_bin = int(stem.util.connection.get_address_binary(self.get_mask(False)), 2)
+      self._mask_bin = int(stem.util.connection._get_address_binary(self.get_mask(False)), 2)
 
     return self._mask_bin
 
@@ -689,7 +689,7 @@ class ExitPolicyRule(object):
     # provides an integer representation of our address
 
     if self._addr_bin is None:
-      self._addr_bin = int(stem.util.connection.get_address_binary(self.address), 2) & self._mask_bin
+      self._addr_bin = int(stem.util.connection._get_address_binary(self.address), 2) & self._mask_bin
 
     return self._addr_bin
 
@@ -705,7 +705,7 @@ class ExitPolicyRule(object):
     if addrspec == "*":
       self._address_type = _address_type_to_int(AddressType.WILDCARD)
       self.address = self._masked_bits = None
-    elif stem.util.connection.is_valid_ip_address(self.address):
+    elif stem.util.connection.is_valid_ipv4_address(self.address):
       # ipv4spec ::= ip4 | ip4 "/" num_ip4_bits | ip4 "/" ip4mask
       # ip4 ::= an IPv4 address in dotted-quad format
       # ip4mask ::= an IPv4 mask in dotted-quad format
@@ -715,10 +715,10 @@ class ExitPolicyRule(object):
 
       if addr_extra is None:
         self._masked_bits = 32
-      elif stem.util.connection.is_valid_ip_address(addr_extra):
+      elif stem.util.connection.is_valid_ipv4_address(addr_extra):
         # provided with an ip4mask
         try:
-          self._masked_bits = stem.util.connection.get_masked_bits(addr_extra)
+          self._masked_bits = stem.util.connection._get_masked_bits(addr_extra)
         except ValueError:
           # mask can't be represented as a number of bits (ex. "255.255.0.255")
           self._mask = addr_extra

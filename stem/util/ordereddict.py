@@ -1,5 +1,8 @@
 # Drop in replacement for python 2.7's OrderedDict, from...
 # http://pypi.python.org/pypi/ordereddict
+#
+# Stem users should *not* rely upon this module. It will be removed when we
+# drop support for python 2.6 and below.
 
 # Copyright (c) 2009 Raymond Hettinger
 #

@@ -502,7 +502,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             else:
               address, port_str = value_comp[1].split(':', 1)
 
-              if not stem.util.connection.is_valid_ip_address(address) or \
+              if not stem.util.connection.is_valid_ipv4_address(address) or \
                      stem.util.connection.is_valid_ipv6_address(address):
                 raise ValueError("Transport line has a malformed address: %s" % line)
               elif not stem.util.connection.is_valid_port(port_str):
@@ -825,7 +825,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
       # our digest is calculated from everything except our signature
       raw_content, ending = str(self), "\nrouter-signature\n"
       raw_content = raw_content[:raw_content.find(ending) + len(ending)]
-      self._digest = hashlib.sha1(stem.util.str_tools.to_bytes(raw_content)).hexdigest().upper()
+      self._digest = hashlib.sha1(stem.util.str_tools._to_bytes(raw_content)).hexdigest().upper()
 
     return self._digest
 

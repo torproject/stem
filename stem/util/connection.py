@@ -9,18 +9,12 @@ but for now just moving the parts we need.
 
 ::
 
-  is_valid_ip_address - checks if a string is a valid IPv4 address
+  is_valid_ipv4_address - checks if a string is a valid IPv4 address
   is_valid_ipv6_address - checks if a string is a valid IPv6 address
   is_valid_port - checks if something is a valid representation for a port
   expand_ipv6_address - provides an IPv6 address with its collapsed portions expanded
-  get_mask - provides the mask representation for a given number of bits
-  get_masked_bits - provides the number of bits represented by a mask
+  get_mask_ipv4 - provides the mask representation for a given number of bits
   get_mask_ipv6 - provides the IPv6 mask representation for a given number of bits
-  get_binary - provides the binary representation for an integer with padding
-  get_address_binary - provides the binary representation for an address
-
-  hmac_sha256 - provides a sha256 digest
-  cryptovariables_equal - string comparison for cryptographic operations
 """
 
 import hashlib
@@ -34,7 +28,7 @@ FULL_IPv4_MASK = "255.255.255.255"
 FULL_IPv6_MASK = "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"
 
 
-def is_valid_ip_address(address):
+def is_valid_ipv4_address(address):
   """
   Checks if a string is a valid IPv4 address.
 
@@ -164,7 +158,7 @@ def expand_ipv6_address(address):
   return address
 
 
-def get_mask(bits):
+def get_mask_ipv4(bits):
   """
   Provides the IPv4 mask for a given number of bits, in the dotted-quad format.
 
@@ -181,38 +175,13 @@ def get_mask(bits):
     return FULL_IPv4_MASK
 
   # get the binary representation of the mask
-  mask_bin = get_binary(2 ** bits - 1, 32)[::-1]
+  mask_bin = _get_binary(2 ** bits - 1, 32)[::-1]
 
   # breaks it into eight character groupings
   octets = [mask_bin[8 * i:8 * (i + 1)] for i in xrange(4)]
 
   # converts each octet into its integer value
   return ".".join([str(int(octet, 2)) for octet in octets])
-
-
-def get_masked_bits(mask):
-  """
-  Provides the number of bits that an IPv4 subnet mask represents. Note that
-  not all masks can be represented by a bit count.
-
-  :param str mask: mask to be converted
-
-  :returns: **int** with the number of bits represented by the mask
-
-  :raises: **ValueError** if the mask is invalid or can't be converted
-  """
-
-  if not is_valid_ip_address(mask):
-    raise ValueError("'%s' is an invalid subnet mask" % mask)
-
-  # converts octets to binary representation
-  mask_bin = get_address_binary(mask)
-  mask_match = re.match("^(1*)(0*)$", mask_bin)
-
-  if mask_match:
-    return 32 - len(mask_match.groups()[1])
-  else:
-    raise ValueError("Unable to convert mask to a bit count: %s" % mask)
 
 
 def get_mask_ipv6(bits):
@@ -233,7 +202,7 @@ def get_mask_ipv6(bits):
     return FULL_IPv6_MASK
 
   # get the binary representation of the mask
-  mask_bin = get_binary(2 ** bits - 1, 128)[::-1]
+  mask_bin = _get_binary(2 ** bits - 1, 128)[::-1]
 
   # breaks it into sixteen character groupings
   groupings = [mask_bin[16 * i:16 * (i + 1)] for i in xrange(8)]
@@ -242,7 +211,32 @@ def get_mask_ipv6(bits):
   return ":".join(["%04x" % int(group, 2) for group in groupings]).upper()
 
 
-def get_binary(value, bits):
+def _get_masked_bits(mask):
+  """
+  Provides the number of bits that an IPv4 subnet mask represents. Note that
+  not all masks can be represented by a bit count.
+
+  :param str mask: mask to be converted
+
+  :returns: **int** with the number of bits represented by the mask
+
+  :raises: **ValueError** if the mask is invalid or can't be converted
+  """
+
+  if not is_valid_ipv4_address(mask):
+    raise ValueError("'%s' is an invalid subnet mask" % mask)
+
+  # converts octets to binary representation
+  mask_bin = _get_address_binary(mask)
+  mask_match = re.match("^(1*)(0*)$", mask_bin)
+
+  if mask_match:
+    return 32 - len(mask_match.groups()[1])
+  else:
+    raise ValueError("Unable to convert mask to a bit count: %s" % mask)
+
+
+def _get_binary(value, bits):
   """
   Provides the given value as a binary string, padded with zeros to the given
   number of bits.
@@ -255,7 +249,7 @@ def get_binary(value, bits):
   return "".join([str((value >> y) & 1) for y in range(bits - 1, -1, -1)])
 
 
-def get_address_binary(address):
+def _get_address_binary(address):
   """
   Provides the binary value for an IPv4 or IPv6 address.
 
@@ -264,16 +258,16 @@ def get_address_binary(address):
   :raises: **ValueError** if address is neither an IPv4 nor IPv6 address
   """
 
-  if is_valid_ip_address(address):
-    return "".join([get_binary(int(octet), 8) for octet in address.split(".")])
+  if is_valid_ipv4_address(address):
+    return "".join([_get_binary(int(octet), 8) for octet in address.split(".")])
   elif is_valid_ipv6_address(address):
     address = expand_ipv6_address(address)
-    return "".join([get_binary(int(grouping, 16), 16) for grouping in address.split(":")])
+    return "".join([_get_binary(int(grouping, 16), 16) for grouping in address.split(":")])
   else:
     raise ValueError("'%s' is neither an IPv4 or IPv6 address" % address)
 
 
-def hmac_sha256(key, msg):
+def _hmac_sha256(key, msg):
   """
   Generates a sha256 digest using the given key and message.
 
@@ -286,7 +280,7 @@ def hmac_sha256(key, msg):
   return hmac.new(key, msg, hashlib.sha256).digest()
 
 
-def cryptovariables_equal(x, y):
+def _cryptovariables_equal(x, y):
   """
   Compares two strings for equality securely.
 
@@ -297,5 +291,5 @@ def cryptovariables_equal(x, y):
   """
 
   return (
-    hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
-    hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
+    _hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
+    _hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))

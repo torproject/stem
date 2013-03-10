@@ -487,7 +487,7 @@ def _parse_r_line(desc, value, validate, include_digest = True):
   if validate:
     if not stem.util.tor_tools.is_valid_nickname(r_comp[0]):
       raise ValueError("%s nickname isn't valid: %s" % (desc._name(), r_comp[0]))
-    elif not stem.util.connection.is_valid_ip_address(r_comp[5]):
+    elif not stem.util.connection.is_valid_ipv4_address(r_comp[5]):
       raise ValueError("%s address isn't a valid IPv4 address: %s" % (desc._name(), r_comp[5]))
     elif not stem.util.connection.is_valid_port(r_comp[6]):
       raise ValueError("%s ORPort is invalid: %s" % (desc._name(), r_comp[6]))
@@ -530,7 +530,7 @@ def _parse_a_line(desc, value, validate):
   if is_ipv6:
     address = address[1:-1]  # remove brackets
 
-  if not ((not is_ipv6 and stem.util.connection.is_valid_ip_address(address)) or
+  if not ((not is_ipv6 and stem.util.connection.is_valid_ipv4_address(address)) or
           (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
     if not validate:
       return
@@ -703,7 +703,7 @@ def _decode_fingerprint(identity, validate):
   fingerprint = ""
 
   try:
-    identity_decoded = base64.b64decode(stem.util.str_tools.to_bytes(identity))
+    identity_decoded = base64.b64decode(stem.util.str_tools._to_bytes(identity))
   except (TypeError, binascii.Error):
     if not validate:
       return None

@@ -12,6 +12,9 @@ The method for reading these files (and a little code) are borrowed from
 `psutil <https://code.google.com/p/psutil/>`_, which was written by Jay Loden,
 Dave Daeschler, Giampaolo Rodola' and is under the BSD license.
 
+**These functions are not being vended to stem users. They may change in the
+future, use them at your own risk.**
+
 **Module Overview:**
 
 ::

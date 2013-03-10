@@ -635,7 +635,7 @@ class Controller(BaseController):
     :raises: :class:`stem.SocketError` if we're unable to establish a connection
     """
 
-    if not stem.util.connection.is_valid_ip_address(address):
+    if not stem.util.connection.is_valid_ipv4_address(address):
       raise ValueError("Invalid IP address: %s" % address)
     elif not stem.util.connection.is_valid_port(port):
       raise ValueError("Invalid port: %s" % port)
@@ -928,7 +928,7 @@ class Controller(BaseController):
       # validate that address/ports are valid, and convert ports to ints
 
       for addr, port in proxy_addrs:
-        if not stem.util.connection.is_valid_ip_address(addr):
+        if not stem.util.connection.is_valid_ipv4_address(addr):
           raise stem.ProtocolError("Invalid address for a SOCKS listener: %s" % addr)
         elif not stem.util.connection.is_valid_port(port):
           raise stem.ProtocolError("Invalid port for a SOCKS listener: %s" % port)

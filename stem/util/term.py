@@ -4,6 +4,9 @@
 """
 Utilities for working with the terminal.
 
+**These functions are not being vended to stem users. They may change in the
+future, use them at your own risk.**
+
 **Module Overview:**
 
 ::
@@ -84,7 +87,7 @@ def format(msg, *attr):
 
   encodings = []
   for text_attr in attr:
-    text_attr, encoding = stem.util.str_tools.to_camel_case(text_attr), None
+    text_attr, encoding = stem.util.str_tools._to_camel_case(text_attr), None
     encoding = FG_ENCODING.get(text_attr, encoding)
     encoding = BG_ENCODING.get(text_attr, encoding)
     encoding = ATTR_ENCODING.get(text_attr, encoding)

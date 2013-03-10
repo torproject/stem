@@ -797,7 +797,7 @@ class TestController(unittest.TestCase):
       # The response data for our request for request should be an IP address + '\n'
       ip_addr = response[response.find("\r\n\r\n"):].strip()
 
-      self.assertTrue(stem.util.connection.is_valid_ip_address(ip_addr))
+      self.assertTrue(stem.util.connection.is_valid_ipv4_address(ip_addr))
 
   def test_get_microdescriptor(self):
     """

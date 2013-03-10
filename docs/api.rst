@@ -42,10 +42,6 @@ Utilities
 * `stem.util.conf <api/util/conf.html>`_ - Configuration file handling.
 * `stem.util.connection <api/util/connection.html>`_ - Connection and IP related utilities.
 * `stem.util.enum <api/util/enum.html>`_ - Enumeration class.
-* `stem.util.log <api/util/log.html>`_ - Logging utilities.
-* `stem.util.proc <api/util/proc.html>`_ - Tools to read a process' proc contents.
 * `stem.util.str_tools <api/util/str_tools.html>`_ - String utilities.
 * `stem.util.system <api/util/system.html>`_ - Tools related to the local system.
-* `stem.util.term <api/util/term.html>`_ - Tools for interacting with the terminal.
-* `stem.util.tor_tools <api/util/tor_tools.html>`_ - Helper functions for working with tor.
 

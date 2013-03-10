@@ -265,7 +265,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   """
 
   def __init__(self, raw_content, validate = True):
-    raw_content = stem.util.str_tools.to_unicode(raw_content)
+    raw_content = stem.util.str_tools._to_unicode(raw_content)
     super(NetworkStatusDocumentV2, self).__init__(raw_content)
 
     self.version = None
@@ -343,7 +343,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
           if not dir_source_comp[0]:
             # https://trac.torproject.org/7055
             raise ValueError("Authority's hostname can't be blank: %s" % line)
-          elif not stem.util.connection.is_valid_ip_address(dir_source_comp[1]):
+          elif not stem.util.connection.is_valid_ipv4_address(dir_source_comp[1]):
             raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[1])
           elif not stem.util.connection.is_valid_port(dir_source_comp[2], allow_zero = True):
             raise ValueError("Authority's DirPort is invalid: %s" % dir_source_comp[2])
@@ -464,7 +464,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     :raises: **ValueError** if the document is invalid
     """
 
-    raw_content = stem.util.str_tools.to_unicode(raw_content)
+    raw_content = stem.util.str_tools._to_unicode(raw_content)
     super(NetworkStatusDocumentV3, self).__init__(raw_content)
     document_file = StringIO.StringIO(raw_content)
 
@@ -1112,7 +1112,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
           elif not dir_source_comp[2]:
             # https://trac.torproject.org/7055
             raise ValueError("Authority's hostname can't be blank: %s" % line)
-          elif not stem.util.connection.is_valid_ip_address(dir_source_comp[3]):
+          elif not stem.util.connection.is_valid_ipv4_address(dir_source_comp[3]):
             raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[3])
           elif not stem.util.connection.is_valid_port(dir_source_comp[4], allow_zero = True):
             raise ValueError("Authority's DirPort is invalid: %s" % dir_source_comp[4])
@@ -1273,7 +1273,7 @@ class KeyCertificate(stem.descriptor.Descriptor):
         address, dirport = value.split(':', 1)
 
         if validate:
-          if not stem.util.connection.is_valid_ip_address(address):
+          if not stem.util.connection.is_valid_ipv4_address(address):
             raise ValueError("Key certificate's address isn't a valid IPv4 address: %s" % line)
           elif not stem.util.connection.is_valid_port(dirport):
             raise ValueError("Key certificate's dirport is invalid: %s" % line)

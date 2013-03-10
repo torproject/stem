@@ -5,6 +5,9 @@
 """
 Miscellaneous utility functions for working with tor.
 
+**These functions are not being vended to stem users. They may change in the
+future, use them at your own risk.**
+
 **Module Overview:**
 
 ::

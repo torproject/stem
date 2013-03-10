@@ -202,7 +202,7 @@ class Socks(_socket_socket):
     if response != SOCKS5_NOAUTH_RESPONSE:
       raise SocksError(0x01)
 
-    if stem.util.connection.is_valid_ip_address(address[0]):
+    if stem.util.connection.is_valid_ipv4_address(address[0]):
       header = self._ints_to_bytes(SOCKS5_CONN_BY_IPV4)
       header = header + socket.inet_aton(address[0])
     else:

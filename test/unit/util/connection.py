@@ -8,9 +8,9 @@ import stem.util.connection
 
 
 class TestConnection(unittest.TestCase):
-  def test_is_valid_ip_address(self):
+  def test_is_valid_ipv4_address(self):
     """
-    Checks the is_valid_ip_address function.
+    Checks the is_valid_ipv4_address function.
     """
 
     valid_addresses = (
@@ -30,10 +30,10 @@ class TestConnection(unittest.TestCase):
     )
 
     for address in valid_addresses:
-      self.assertTrue(stem.util.connection.is_valid_ip_address(address))
+      self.assertTrue(stem.util.connection.is_valid_ipv4_address(address))
 
     for address in invalid_addresses:
-      self.assertFalse(stem.util.connection.is_valid_ip_address(address))
+      self.assertFalse(stem.util.connection.is_valid_ipv4_address(address))
 
   def test_is_valid_ipv6_address(self):
     """
@@ -96,31 +96,18 @@ class TestConnection(unittest.TestCase):
 
     self.assertRaises(ValueError, stem.util.connection.expand_ipv6_address, "127.0.0.1")
 
-  def test_get_mask(self):
+  def test_get_mask_ipv4(self):
     """
-    Checks the get_mask function.
-    """
-
-    self.assertEquals("255.255.255.255", stem.util.connection.get_mask(32))
-    self.assertEquals("255.255.255.248", stem.util.connection.get_mask(29))
-    self.assertEquals("255.255.254.0", stem.util.connection.get_mask(23))
-    self.assertEquals("0.0.0.0", stem.util.connection.get_mask(0))
-
-    self.assertRaises(ValueError, stem.util.connection.get_mask, -1)
-    self.assertRaises(ValueError, stem.util.connection.get_mask, 33)
-
-  def test_get_masked_bits(self):
-    """
-    Checks the get_masked_bits function.
+    Checks the get_mask_ipv4 function.
     """
 
-    self.assertEquals(32, stem.util.connection.get_masked_bits("255.255.255.255"))
-    self.assertEquals(29, stem.util.connection.get_masked_bits("255.255.255.248"))
-    self.assertEquals(23, stem.util.connection.get_masked_bits("255.255.254.0"))
-    self.assertEquals(0, stem.util.connection.get_masked_bits("0.0.0.0"))
+    self.assertEquals("255.255.255.255", stem.util.connection.get_mask_ipv4(32))
+    self.assertEquals("255.255.255.248", stem.util.connection.get_mask_ipv4(29))
+    self.assertEquals("255.255.254.0", stem.util.connection.get_mask_ipv4(23))
+    self.assertEquals("0.0.0.0", stem.util.connection.get_mask_ipv4(0))
 
-    self.assertRaises(ValueError, stem.util.connection.get_masked_bits, "blarg")
-    self.assertRaises(ValueError, stem.util.connection.get_masked_bits, "255.255.0.255")
+    self.assertRaises(ValueError, stem.util.connection.get_mask_ipv4, -1)
+    self.assertRaises(ValueError, stem.util.connection.get_mask_ipv4, 33)
 
   def test_get_mask_ipv6(self):
     """
@@ -132,11 +119,24 @@ class TestConnection(unittest.TestCase):
     self.assertEquals("0000:0000:0000:0000:0000:0000:0000:0000", stem.util.connection.get_mask_ipv6(0))
 
     self.assertRaises(ValueError, stem.util.connection.get_mask_ipv6, -1)
-    self.assertRaises(ValueError, stem.util.connection.get_mask, 129)
+    self.assertRaises(ValueError, stem.util.connection.get_mask_ipv6, 129)
+
+  def test_get_masked_bits(self):
+    """
+    Checks the _get_masked_bits function.
+    """
+
+    self.assertEquals(32, stem.util.connection._get_masked_bits("255.255.255.255"))
+    self.assertEquals(29, stem.util.connection._get_masked_bits("255.255.255.248"))
+    self.assertEquals(23, stem.util.connection._get_masked_bits("255.255.254.0"))
+    self.assertEquals(0, stem.util.connection._get_masked_bits("0.0.0.0"))
+
+    self.assertRaises(ValueError, stem.util.connection._get_masked_bits, "blarg")
+    self.assertRaises(ValueError, stem.util.connection._get_masked_bits, "255.255.0.255")
 
   def test_get_address_binary(self):
     """
-    Checks the get_address_binary function.
+    Checks the _get_address_binary function.
     """
 
     test_values = {
@@ -151,7 +151,7 @@ class TestConnection(unittest.TestCase):
     }
 
     for test_arg, expected in test_values.items():
-      self.assertEquals(expected, stem.util.connection.get_address_binary(test_arg))
+      self.assertEquals(expected, stem.util.connection._get_address_binary(test_arg))
 
-    self.assertRaises(ValueError, stem.util.connection.get_address_binary, "")
-    self.assertRaises(ValueError, stem.util.connection.get_address_binary, "blarg")
+    self.assertRaises(ValueError, stem.util.connection._get_address_binary, "")
+    self.assertRaises(ValueError, stem.util.connection._get_address_binary, "blarg")
