@@ -11,19 +11,19 @@ from stem.util import str_tools
 class TestStrTools(unittest.TestCase):
   def test_to_camel_case(self):
     """
-    Checks the to_camel_case() function.
+    Checks the _to_camel_case() function.
     """
 
     # test the pydoc example
-    self.assertEquals("I Like Pepperjack!", str_tools.to_camel_case("I_LIKE_PEPPERJACK!"))
+    self.assertEquals("I Like Pepperjack!", str_tools._to_camel_case("I_LIKE_PEPPERJACK!"))
 
     # check a few edge cases
-    self.assertEquals("", str_tools.to_camel_case(""))
-    self.assertEquals("Hello", str_tools.to_camel_case("hello"))
-    self.assertEquals("Hello", str_tools.to_camel_case("HELLO"))
-    self.assertEquals("Hello  World", str_tools.to_camel_case("hello__world"))
-    self.assertEquals("Hello\tworld", str_tools.to_camel_case("hello\tWORLD"))
-    self.assertEquals("Hello\t\tWorld", str_tools.to_camel_case("hello__world", "_", "\t"))
+    self.assertEquals("", str_tools._to_camel_case(""))
+    self.assertEquals("Hello", str_tools._to_camel_case("hello"))
+    self.assertEquals("Hello", str_tools._to_camel_case("HELLO"))
+    self.assertEquals("Hello  World", str_tools._to_camel_case("hello__world"))
+    self.assertEquals("Hello\tworld", str_tools._to_camel_case("hello\tWORLD"))
+    self.assertEquals("Hello\t\tWorld", str_tools._to_camel_case("hello__world", "_", "\t"))
 
   def test_get_size_label(self):
     """
@@ -125,7 +125,7 @@ class TestStrTools(unittest.TestCase):
 
   def test_parse_iso_timestamp(self):
     """
-    Checks the parse_iso_timestamp() function.
+    Checks the _parse_iso_timestamp() function.
     """
 
     test_inputs = {
@@ -138,7 +138,7 @@ class TestStrTools(unittest.TestCase):
     }
 
     for arg, expected in test_inputs.items():
-      self.assertEqual(expected, str_tools.parse_iso_timestamp(arg))
+      self.assertEqual(expected, str_tools._parse_iso_timestamp(arg))
 
     invalid_input = [
       None,
@@ -150,4 +150,4 @@ class TestStrTools(unittest.TestCase):
     ]
 
     for arg in invalid_input:
-      self.assertRaises(ValueError, str_tools.parse_iso_timestamp, arg)
+      self.assertRaises(ValueError, str_tools._parse_iso_timestamp, arg)

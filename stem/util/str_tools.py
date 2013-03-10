@@ -8,16 +8,11 @@ Toolkit for various string activity.
 
 ::
 
-  to_bytes - normalizes string ASCII bytes
-  to_unicode - normalizes string to unicode
-  to_camel_case - converts a string to camel case
   get_size_label - human readable label for a number of bytes
   get_time_label - human readable label for a number of seconds
   get_time_labels - human readable labels for each time unit
   get_short_time_label - condensed time label output
   parse_short_time_label - seconds represented by a short time label
-
-  parse_iso_timestamp - parses an ISO timestamp as a datetime value
 """
 
 import codecs
@@ -53,32 +48,32 @@ TIME_UNITS = (
 )
 
 if stem.prereq.is_python_3():
-  def _to_bytes(msg):
+  def _to_bytes_impl(msg):
     if isinstance(msg, str):
       return codecs.latin_1_encode(msg, "replace")[0]
     else:
       return msg
 
-  def _to_unicode(msg):
+  def _to_unicode_impl(msg):
     if msg is not None and not isinstance(msg, str):
       return msg.decode("utf-8", "replace")
     else:
       return msg
 else:
-  def _to_bytes(msg):
+  def _to_bytes_impl(msg):
     if msg is not None and isinstance(msg, unicode):
       return codecs.latin_1_encode(msg, "replace")[0]
     else:
       return msg
 
-  def _to_unicode(msg):
+  def _to_unicode_impl(msg):
     if msg is not None and not isinstance(msg, unicode):
       return msg.decode("utf-8", "replace")
     else:
       return msg
 
 
-def to_bytes(msg):
+def _to_bytes(msg):
   """
   Provides the ASCII bytes for the given string. This is purely to provide
   python 3 compatability, normalizing the unicode/ASCII change in the version
@@ -91,10 +86,10 @@ def to_bytes(msg):
   :returns: ASCII bytes for string
   """
 
-  return _to_bytes(msg)
+  return _to_bytes_impl(msg)
 
 
-def to_unicode(msg):
+def _to_unicode(msg):
   """
   Provides the unicode string for the given ASCII bytes. This is purely to
   provide python 3 compatability, normalizing the unicode/ASCII change in the
@@ -105,16 +100,16 @@ def to_unicode(msg):
   :returns: unicode conversion
   """
 
-  return _to_unicode(msg)
+  return _to_unicode_impl(msg)
 
 
-def to_camel_case(label, divider = "_", joiner = " "):
+def _to_camel_case(label, divider = "_", joiner = " "):
   """
   Converts the given string to camel case, ie:
 
   ::
 
-    >>> to_camel_case("I_LIKE_PEPPERJACK!")
+    >>> _to_camel_case("I_LIKE_PEPPERJACK!")
     'I Like Pepperjack!'
 
   :param str label: input string to be converted
@@ -315,7 +310,7 @@ def parse_short_time_label(label):
     raise ValueError("Non-numeric value in time entry: %s" % label)
 
 
-def parse_iso_timestamp(entry):
+def _parse_iso_timestamp(entry):
   """
   Parses the ISO 8601 standard that provides for timestamps like...
 

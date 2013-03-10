@@ -703,7 +703,7 @@ def _decode_fingerprint(identity, validate):
   fingerprint = ""
 
   try:
-    identity_decoded = base64.b64decode(stem.util.str_tools.to_bytes(identity))
+    identity_decoded = base64.b64decode(stem.util.str_tools._to_bytes(identity))
   except (TypeError, binascii.Error):
     if not validate:
       return None

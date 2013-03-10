@@ -307,7 +307,7 @@ class Descriptor(object):
     if stem.prereq.is_python_3():
       return self._raw_contents
     else:
-      return str(stem.util.str_tools.to_bytes(self._raw_contents))
+      return str(stem.util.str_tools._to_bytes(self._raw_contents))
 
 
 class _UnicodeReader(object):
@@ -333,10 +333,10 @@ class _UnicodeReader(object):
     return self.wrapped_file.next()
 
   def read(self, n = -1):
-    return stem.util.str_tools.to_unicode(self.wrapped_file.read(n))
+    return stem.util.str_tools._to_unicode(self.wrapped_file.read(n))
 
   def readline(self):
-    return stem.util.str_tools.to_unicode(self.wrapped_file.readline())
+    return stem.util.str_tools._to_unicode(self.wrapped_file.readline())
 
   def readlines(self, sizehint = None):
     # being careful to do in-place conversion so we don't accidently double our
@@ -348,7 +348,7 @@ class _UnicodeReader(object):
       results = self.wrapped_file.readlines()
 
     for i in xrange(len(results)):
-      results[i] = stem.util.str_tools.to_unicode(results[i])
+      results[i] = stem.util.str_tools._to_unicode(results[i])
 
     return results
 

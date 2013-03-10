@@ -265,7 +265,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   """
 
   def __init__(self, raw_content, validate = True):
-    raw_content = stem.util.str_tools.to_unicode(raw_content)
+    raw_content = stem.util.str_tools._to_unicode(raw_content)
     super(NetworkStatusDocumentV2, self).__init__(raw_content)
 
     self.version = None
@@ -464,7 +464,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     :raises: **ValueError** if the document is invalid
     """
 
-    raw_content = stem.util.str_tools.to_unicode(raw_content)
+    raw_content = stem.util.str_tools._to_unicode(raw_content)
     super(NetworkStatusDocumentV3, self).__init__(raw_content)
     document_file = StringIO.StringIO(raw_content)
 

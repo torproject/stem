@@ -75,7 +75,7 @@ class Enum(object):
 
     for entry in args:
       if isinstance(entry, str):
-        key, val = entry, stem.util.str_tools.to_camel_case(entry)
+        key, val = entry, stem.util.str_tools._to_camel_case(entry)
       elif isinstance(entry, tuple) and len(entry) == 2:
         key, val = entry
       else:

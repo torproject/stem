@@ -41,7 +41,7 @@ class AuthChallengeResponse(stem.response.ControlMessage):
       if not stem.util.tor_tools.is_hex_digits(value, 64):
         raise stem.ProtocolError("SERVERHASH has an invalid value: %s" % value)
 
-      self.server_hash = binascii.a2b_hex(stem.util.str_tools.to_bytes(value))
+      self.server_hash = binascii.a2b_hex(stem.util.str_tools._to_bytes(value))
     else:
       raise stem.ProtocolError("Missing SERVERHASH mapping: %s" % line)
 
@@ -51,6 +51,6 @@ class AuthChallengeResponse(stem.response.ControlMessage):
       if not stem.util.tor_tools.is_hex_digits(value, 64):
         raise stem.ProtocolError("SERVERNONCE has an invalid value: %s" % value)
 
-      self.server_nonce = binascii.a2b_hex(stem.util.str_tools.to_bytes(value))
+      self.server_nonce = binascii.a2b_hex(stem.util.str_tools._to_bytes(value))
     else:
       raise stem.ProtocolError("Missing SERVERNONCE mapping: %s" % line)

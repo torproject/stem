@@ -345,7 +345,7 @@ class CircuitEvent(Event):
 
     if self.created is not None:
       try:
-        self.created = str_tools.parse_iso_timestamp(self.created)
+        self.created = str_tools._parse_iso_timestamp(self.created)
       except ValueError, exc:
         raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
 
@@ -401,7 +401,7 @@ class CircMinorEvent(Event):
 
     if self.created is not None:
       try:
-        self.created = str_tools.parse_iso_timestamp(self.created)
+        self.created = str_tools._parse_iso_timestamp(self.created)
       except ValueError, exc:
         raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
 

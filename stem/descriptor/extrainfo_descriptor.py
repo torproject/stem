@@ -825,7 +825,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
       # our digest is calculated from everything except our signature
       raw_content, ending = str(self), "\nrouter-signature\n"
       raw_content = raw_content[:raw_content.find(ending) + len(ending)]
-      self._digest = hashlib.sha1(stem.util.str_tools.to_bytes(raw_content)).hexdigest().upper()
+      self._digest = hashlib.sha1(stem.util.str_tools._to_bytes(raw_content)).hexdigest().upper()
 
     return self._digest
 

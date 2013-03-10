@@ -596,8 +596,8 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
     # This seems dumb but oh well. Converting the result to unicode so it won't
     # misbehave.
 
-    auth_token_hex = binascii.b2a_hex(stem.util.str_tools.to_bytes(cookie_data))
-    msg = "AUTHENTICATE %s" % stem.util.str_tools.to_unicode(auth_token_hex)
+    auth_token_hex = binascii.b2a_hex(stem.util.str_tools._to_bytes(cookie_data))
+    msg = "AUTHENTICATE %s" % stem.util.str_tools._to_unicode(auth_token_hex)
     auth_response = _msg(controller, msg)
 
     # if we got anything but an OK response then error
@@ -692,7 +692,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
   client_nonce = os.urandom(32)
 
   try:
-    client_nonce_hex = binascii.b2a_hex(stem.util.str_tools.to_bytes(client_nonce))
+    client_nonce_hex = binascii.b2a_hex(stem.util.str_tools._to_bytes(client_nonce))
     authchallenge_response = _msg(controller, "AUTHCHALLENGE SAFECOOKIE %s" % client_nonce_hex)
 
     if not authchallenge_response.is_ok():
@@ -744,7 +744,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
       CLIENT_HASH_CONSTANT,
       cookie_data + client_nonce + authchallenge_response.server_nonce)
 
-    auth_response = _msg(controller, "AUTHENTICATE %s" % (binascii.b2a_hex(stem.util.str_tools.to_bytes(client_hash))))
+    auth_response = _msg(controller, "AUTHENTICATE %s" % (binascii.b2a_hex(stem.util.str_tools._to_bytes(client_hash))))
   except stem.ControllerError, exc:
     try:
       controller.connect()
