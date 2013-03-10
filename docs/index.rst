@@ -52,5 +52,3 @@ Subsections
 
    contents
 
-*Last updated:* |today|
-
