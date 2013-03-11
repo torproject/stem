@@ -39,8 +39,8 @@ feet wet by jumping straight in with some tutorials...
      - .. image:: /_static/label/the_little_relay_that_could.png
           :target: tutorial/the_little_relay_that_could.html
 
-       "Hello World" for talking with Tor. This will step you through
-       configuring Tor and writing your first script to talk with it.
+       Basics for talking with Tor. This will step you through configuring Tor
+       and writing your first script to talk with it.
 
    * - .. image:: /_static/section/tutorial/soviet.png
           :target: tutorial/to_russia_with_love.html
