@@ -4,9 +4,6 @@
 """
 Utilities for working with the terminal.
 
-**These functions are not being vended to stem users. They may change in the
-future, use them at your own risk.**
-
 **Module Overview:**
 
 ::
