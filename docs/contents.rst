@@ -8,6 +8,7 @@ Contents
    tutorial/the_little_relay_that_could
    tutorial/to_russia_with_love
    tutorial/mirror_mirror_on_the_wall
+   tutorial/double_double_toil_and_trouble
 
    download
 

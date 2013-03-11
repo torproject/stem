@@ -20,6 +20,11 @@ Tutorial
      Author: Unknown (gsagri04?)
      License: Public Domain
      Alternate: https://openclipart.org/detail/174179/miroir-rectangulaire-by-defaz36-174179
+   
+   * Double Double Toil and Trouble - cauldron.png
+     Source: https://openclipart.org/detail/174099/cauldron-by-jarda-174099
+     Author: Unknown (jarda?)
+     License: Public Domain
 
 Getting started with any new library can be rather daunting, so let's get our
 feet wet by jumping straight in with some tutorials...
@@ -57,4 +62,13 @@ feet wet by jumping straight in with some tutorials...
        Relay information is provided through documents called **descriptors**.
        This walks you through both where to get them and a small script to tell
        you the fastest Tor exits.
+
+   * - .. image:: /_static/section/tutorial/cauldron.png
+          :target: tutorial/double_double_toil_and_trouble.html
+
+     - .. image:: /_static/label/double_double_toil_and_trouble.png
+          :target: tutorial/double_double_toil_and_trouble.html
+
+       Sometimes it's easiest to learn a library by seeing how it's used in the
+       wild. This is a directory of scripts and applications that use stem.
 
