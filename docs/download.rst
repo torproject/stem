@@ -25,6 +25,7 @@ Download
           :target: https://gitweb.torproject.org/stem.git
 
      - .. image:: /_static/label/git.png
+          :target: https://gitweb.torproject.org/stem.git
 
        For those wanting to live on the bleeding edge or contribute to stem,
        its git repository can be fetched with...
@@ -42,6 +43,7 @@ Download
           :target: https://aur.archlinux.org/packages/stem-git/
 
      - .. image:: /_static/label/archlinux.png
+          :target: https://aur.archlinux.org/packages/stem-git/
 
        Package maintained by Sjon for Arch Linux.
 

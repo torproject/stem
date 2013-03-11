@@ -13,6 +13,7 @@ something you would like to have included on this page then `let me know
           :target: http://www.atagar.com/arm/
 
      - .. image:: /_static/label/arm.png
+          :target: http://www.atagar.com/arm/
 
        Terminal status monitor for Tor. This provides a top like interface
        including system resource usage, connection information, and much more.
