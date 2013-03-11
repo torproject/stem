@@ -14,7 +14,7 @@ Stem is a python controller library for `Tor <https://www.torproject.org/>`_. Li
    File: NuoveXT 2.2/128x128/categories/applications-development.png
 
 .. image:: /_static/buttons/tutorial.png
-   :target: tutorial.html
+   :target: tutorials.html
 
 .. Source: http://www.cipherdyne.com/images/anvil.png
    Author and license are unknown
