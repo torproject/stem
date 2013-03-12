@@ -116,7 +116,7 @@ Library for working with the tor process.
   **HS_SERVICE_REND**  server side hidden service rendezvous circuit
   **TESTING**          testing to see if we're reachable, so we can be used as a relay
   **CONTROLLER**       circuit that was built by a controller
-  **MEASURE_TIMEOUT**  unknown (https://trac.torproject.org/7626)
+  **MEASURE_TIMEOUT**  circuit being kept around to see how long it takes
   ==================== ===========
 
 .. data:: CircClosureReason (enum)
