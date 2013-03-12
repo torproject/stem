@@ -75,7 +75,7 @@ through tor's control socket...
 
   from stem.control import Controller
 
-  with Controller.from_port(control_port = 9051) as controller:
+  with Controller.from_port(port = 9051) as controller:
     controller.authenticate()
 
     for desc in controller.get_network_statuses():
@@ -135,7 +135,7 @@ this to work.
   def get_bw_to_relay():
     bw_to_relay = {}
 
-    with Controller.from_port(control_port = 9051) as controller:
+    with Controller.from_port(port = 9051) as controller:
       controller.authenticate()
 
       for desc in controller.get_server_descriptors():
