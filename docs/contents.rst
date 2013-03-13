@@ -4,11 +4,12 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   tutorial
-   tutorial/the_little_relay_that_could
-   tutorial/to_russia_with_love
-   tutorial/mirror_mirror_on_the_wall
-   tutorial/double_double_toil_and_trouble
+   tutorials
+   tutorials/the_little_relay_that_could
+   tutorials/to_russia_with_love
+   tutorials/tortoise_and_the_hare
+   tutorials/mirror_mirror_on_the_wall
+   tutorials/double_double_toil_and_trouble
 
    download
 

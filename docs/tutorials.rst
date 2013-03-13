@@ -38,51 +38,51 @@ feet wet by jumping straight in with some tutorials...
    :widths: 1 10
    :header-rows: 0
 
-   * - .. image:: /_static/section/tutorial/train.png
-          :target: tutorial/the_little_relay_that_could.html
+   * - .. image:: /_static/section/tutorials/train.png
+          :target: tutorials/the_little_relay_that_could.html
 
      - .. image:: /_static/label/the_little_relay_that_could.png
-          :target: tutorial/the_little_relay_that_could.html
+          :target: tutorials/the_little_relay_that_could.html
 
        Basics for talking with Tor. This will step you through configuring Tor
        and writing your first script to talk with it.
 
-   * - .. image:: /_static/section/tutorial/soviet.png
-          :target: tutorial/to_russia_with_love.html
+   * - .. image:: /_static/section/tutorials/soviet.png
+          :target: tutorials/to_russia_with_love.html
 
      - .. image:: /_static/label/to_russia_with_love.png
-          :target: tutorial/to_russia_with_love.html
+          :target: tutorials/to_russia_with_love.html
 
        Rather than talking to Tor, we'll now talk **through** it. In this
        tutorial we'll programmatically start Tor then use it to read a site
        through mother Russia!
 
-   * - .. image:: /_static/section/tutorial/tortoise.png
-          :target: tutorial/tortoise_and_the_hare.html
+   * - .. image:: /_static/section/tutorials/tortoise.png
+          :target: tutorials/tortoise_and_the_hare.html
 
      - .. image:: /_static/label/tortoise_and_the_hare.png
-          :target: tutorial/tortoise_and_the_hare.html
+          :target: tutorials/tortoise_and_the_hare.html
 
        As Tor runs it generates a variety of **events** that controllers can
        subscribe to be notified of. In this tutorial we'll do just that,
        writing a curses application that graphs the bandwidth usage of Tor.
 
-   * - .. image:: /_static/section/tutorial/mirror.png
-          :target: tutorial/mirror_mirror_on_the_wall.html
+   * - .. image:: /_static/section/tutorials/mirror.png
+          :target: tutorials/mirror_mirror_on_the_wall.html
 
      - .. image:: /_static/label/mirror_mirror_on_the_wall.png
-          :target: tutorial/mirror_mirror_on_the_wall.html
+          :target: tutorials/mirror_mirror_on_the_wall.html
 
        Getting and acting upon information about relays in the Tor network.
        Relay information is provided through documents called **descriptors**.
        This walks you through both where to get them and a small script to tell
        you the fastest Tor exits.
 
-   * - .. image:: /_static/section/tutorial/cauldron.png
-          :target: tutorial/double_double_toil_and_trouble.html
+   * - .. image:: /_static/section/tutorials/cauldron.png
+          :target: tutorials/double_double_toil_and_trouble.html
 
      - .. image:: /_static/label/double_double_toil_and_trouble.png
-          :target: tutorial/double_double_toil_and_trouble.html
+          :target: tutorials/double_double_toil_and_trouble.html
 
        Sometimes it's easiest to learn a library by seeing how it's used in the
        wild. This is a directory of scripts and applications that use stem.
