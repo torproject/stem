@@ -69,7 +69,6 @@ Library for working with the tor process.
   **STABLE**        relay's suitable for long-lived circuits
   **UNNAMED**       relay isn't presently bound to a nickname
   **V2DIR**         relay supports the v2 directory protocol
-  **V3DIR**         relay supports the v3 directory protocol
   **VALID**         relay has been validated
   ================= ===========
 
