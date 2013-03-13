@@ -1,5 +1,5 @@
-Tutorials
-=========
+Tutorial
+========
 
 .. Image Sources:
    
@@ -14,6 +14,11 @@ Tutorials
      Author: Unknown
      License: Public Domain (not a subject of copyright according the Russian civil code)
      Alternate: https://openclipart.org/detail/85555/communist-sabbatarian-ribbon-by-rones-85555
+   
+   * Tortoise and the Hare - tortoise.png
+     Source: https://openclipart.org/detail/27911/green-tortoise-%28cartoon%29-by-arking-27911
+     Author: arking
+     License: Public Domain
    
    * Mirror Mirror On The Wall - mirror.png
      Source: https://openclipart.org/detail/152155/mirror-frame-by-gsagri04
@@ -51,6 +56,16 @@ feet wet by jumping straight in with some tutorials...
        Rather than talking to Tor, we'll now talk **through** it. In this
        tutorial we'll programmatically start Tor then use it to read a site
        through mother Russia!
+
+   * - .. image:: /_static/section/tutorial/tortoise.png
+          :target: tutorial/tortoise_and_the_hare.html
+
+     - .. image:: /_static/label/tortoise_and_the_hare.png
+          :target: tutorial/tortoise_and_the_hare.html
+
+       As Tor runs it generates a variety of **events** that controllers can
+       subscribe to be notified of. In this tutorial we'll do just that,
+       writing a curses application that graphs the bandwidth usage of Tor.
 
    * - .. image:: /_static/section/tutorial/mirror.png
           :target: tutorial/mirror_mirror_on_the_wall.html
