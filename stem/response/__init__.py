@@ -450,8 +450,7 @@ def _parse_entry(line, quoted, escaped):
       next_entry, remainder = remainder, ""
 
   if escaped:
-    for esc_sequence, replacement in CONTROL_ESCAPES.items():
-      next_entry = next_entry.replace(esc_sequence, replacement)
+    next_entry = _unescape(next_entry)
 
   return (next_entry, remainder.lstrip())
 
@@ -480,6 +479,34 @@ def _get_quote_indices(line, escaped):
     indices.append(quote_index)
 
   return tuple(indices)
+
+
+def _unescape(entry):
+  # Unescapes the given string with the mappings in CONTROL_ESCAPES.
+  #
+  # This can't be a simple series of str.replace() calls because replacements
+  # need to be excluded from consideration for further unescaping. For
+  # instance, '\\t' should be converted to '\t' rather than a tab.
+
+  def _pop_with_unescape(entry):
+    # Pop either the first character or the escape sequence conversion the
+    # entry starts with. This provides a tuple of...
+    #
+    #   (unescaped prefix, remaining entry)
+
+    for esc_sequence, replacement in CONTROL_ESCAPES.items():
+      if entry.startswith(esc_sequence):
+        return (replacement, entry[len(esc_sequence):])
+
+    return (entry[0], entry[1:])
+
+  result = []
+
+  while entry:
+    prefix, entry = _pop_with_unescape(entry)
+    result.append(prefix)
+
+  return "".join(result)
 
 
 class SingleLineResponse(ControlMessage):

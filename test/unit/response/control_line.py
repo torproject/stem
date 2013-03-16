@@ -165,3 +165,10 @@ class TestControlLine(unittest.TestCase):
     line = stem.response.ControlLine(cookie_file_entry)
     self.assertEquals(line.pop_mapping(True, True), ('COOKIEFILE', r'/tmp/my data\"dir//control_auth_cookie'))
     self.assertTrue(line.is_empty())
+
+    # try an escaped slash followed by a character that could be part of an
+    # escape sequence
+
+    line = stem.response.ControlLine(r'COOKIEFILE="C:\\Users\\Atagar\\AppData\\tor\\control_auth_cookie"')
+    self.assertEquals(line.pop_mapping(True, True), ('COOKIEFILE', r'C:\Users\Atagar\AppData\tor\control_auth_cookie'))
+    self.assertTrue(line.is_empty())
