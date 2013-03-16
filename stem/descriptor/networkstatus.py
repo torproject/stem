@@ -778,6 +778,8 @@ class _DocumentHeader(object):
         minimum = 500
       elif key == "cbtinitialtimeout":
         minimum = self.params.get("cbtmintimeout", minimum)
+      elif key == "UseOptimisticData":
+        minimum, maximum = 0, 1
 
       if value < minimum or value > maximum:
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
