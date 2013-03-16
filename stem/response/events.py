@@ -522,23 +522,38 @@ class DescChangedEvent(Event):
 
 class GuardEvent(Event):
   """
-  Event that indicates that our guard relays have changed.
+  Event that indicates that our guard relays have changed. The 'endpoint' could
+  be either a...
+
+  * fingerprint
+  * 'fingerprint=nickname' pair
+
+  The derived 'endpoint_*' attributes are generally more useful.
 
   The GUARD event was introduced in tor version 0.1.2.5-alpha.
 
   :var stem.GuardType guard_type: purpose the guard relay is for
-  :var str name: nickname or fingerprint of the guard relay
+  :var str endpoint: relay that the event concerns
+  :var str endpoint_fingerprint: endpoint's finterprint
+  :var str endpoint_nickname: endpoint's nickname if it was provided
   :var stem.GuardStatus status: status of the guard relay
   """
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_GUARD
+  _POSITIONAL_ARGS = ("guard_type", "endpoint", "status")
 
-  # TODO: We should replace the 'name' field with a fingerprint or nickname
-  # attribute once we know what it can be...
-  #
-  # https://trac.torproject.org/7619
+  def _parse(self):
+    self.endpoint_fingerprint = None
+    self.endpoint_nickname = None
 
-  _POSITIONAL_ARGS = ("guard_type", "name", "status")
+    try:
+      self.endpoint_fingerprint, self.endpoint_nickname = \
+        stem.control._parse_circ_entry(self.endpoint)
+    except stem.ProtocolError:
+      raise stem.ProtocolError("ORCONN's endpoint doesn't match a ServerSpec: %s" % self)
+
+    self._log_if_unrecognized('guard_type', stem.GuardType)
+    self._log_if_unrecognized('status', stem.GuardStatus)
 
 
 class LogEvent(Event):

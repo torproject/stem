@@ -332,31 +332,25 @@ Library for working with the tor process.
 
   Use a guard relay can be for. Tor may provide types not in this enum.
 
-  Enum descriptions are pending...
-  https://trac.torproject.org/7619
-
   =========== ===========
   GuardType   Description
   =========== ===========
-  **ENTRY**   unknown
+  **ENTRY**   used to connect to the tor network
   =========== ===========
 
 .. data:: GuardStatus (enum)
 
   Status a guard relay can have. Tor may provide types not in this enum.
 
-  Enum descriptions are pending...
-  https://trac.torproject.org/7619
-
   ============= ===========
   GuardStatus   Description
   ============= ===========
-  **NEW**       unknown
-  **UP**        unknown
-  **DOWN**      unknown
-  **BAD**       unknown
-  **GOOD**      unknown
-  **DROPPED**   unknown
+  **NEW**       new guard that we weren't previously using
+  **DROPPED**   removed from use as one of our guards
+  **UP**        guard is now reachable
+  **DOWN**      guard is now unreachable
+  **BAD**       consensus or relay considers this relay to be unusable as a guard
+  **GOOD**      consensus or relay considers this relay to be usable as a guard
   ============= ===========
 
 .. data:: TimeoutSetType (enum)

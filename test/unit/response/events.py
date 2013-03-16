@@ -173,7 +173,7 @@ CONF_CHANGED_EVENT = """650-CONF_CHANGED
 
 GUARD_NEW = "650 GUARD ENTRY $36B5DBA788246E8369DBAF58577C6BC044A9A374 NEW"
 GUARD_GOOD = "650 GUARD ENTRY $5D0034A368E0ABAF663D21847E1C9B6CFA09752A GOOD"
-GUARD_BAD = "650 GUARD ENTRY $5D0034A368E0ABAF663D21847E1C9B6CFA09752A BAD"
+GUARD_BAD = "650 GUARD ENTRY $5D0034A368E0ABAF663D21847E1C9B6CFA09752A=caerSidi BAD"
 
 # NEWCONSENSUS event from v0.2.1.30.
 
@@ -636,17 +636,23 @@ class TestEvents(unittest.TestCase):
     self.assertTrue(isinstance(event, stem.response.events.GuardEvent))
     self.assertEqual(GUARD_NEW.lstrip("650 "), str(event))
     self.assertEqual(GuardType.ENTRY, event.guard_type)
-    self.assertEqual("$36B5DBA788246E8369DBAF58577C6BC044A9A374", event.name)
+    self.assertEqual("$36B5DBA788246E8369DBAF58577C6BC044A9A374", event.endpoint)
+    self.assertEqual("36B5DBA788246E8369DBAF58577C6BC044A9A374", event.endpoint_fingerprint)
+    self.assertEqual(None, event.endpoint_nickname)
     self.assertEqual(GuardStatus.NEW, event.status)
 
     event = _get_event(GUARD_GOOD)
     self.assertEqual(GuardType.ENTRY, event.guard_type)
-    self.assertEqual("$5D0034A368E0ABAF663D21847E1C9B6CFA09752A", event.name)
+    self.assertEqual("$5D0034A368E0ABAF663D21847E1C9B6CFA09752A", event.endpoint)
+    self.assertEqual("5D0034A368E0ABAF663D21847E1C9B6CFA09752A", event.endpoint_fingerprint)
+    self.assertEqual(None, event.endpoint_nickname)
     self.assertEqual(GuardStatus.GOOD, event.status)
 
     event = _get_event(GUARD_BAD)
     self.assertEqual(GuardType.ENTRY, event.guard_type)
-    self.assertEqual("$5D0034A368E0ABAF663D21847E1C9B6CFA09752A", event.name)
+    self.assertEqual("$5D0034A368E0ABAF663D21847E1C9B6CFA09752A=caerSidi", event.endpoint)
+    self.assertEqual("5D0034A368E0ABAF663D21847E1C9B6CFA09752A", event.endpoint_fingerprint)
+    self.assertEqual("caerSidi", event.endpoint_nickname)
     self.assertEqual(GuardStatus.BAD, event.status)
 
   def test_newdesc_event(self):
