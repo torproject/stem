@@ -81,6 +81,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual(None, entry.version)
     self.assertEqual(None, entry.bandwidth)
     self.assertEqual(None, entry.measured)
+    self.assertEqual(False, entry.is_unmeasured)
     self.assertEqual([], entry.unrecognized_bandwidth_entries)
     self.assertEqual(None, entry.exit_policy)
     self.assertEqual([], entry.microdescriptor_hashes)
@@ -403,17 +404,19 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = {
-      "Bandwidth=0": (0, None, []),
-      "Bandwidth=63138": (63138, None, []),
-      "Bandwidth=11111 Measured=482": (11111, 482, []),
-      "Bandwidth=11111 Measured=482 Blarg!": (11111, 482, ["Blarg!"]),
+      "Bandwidth=0": (0, None, False, []),
+      "Bandwidth=63138": (63138, None, False, []),
+      "Bandwidth=11111 Measured=482": (11111, 482, False, []),
+      "Bandwidth=11111 Measured=482 Blarg!": (11111, 482, False, ["Blarg!"]),
+      "Bandwidth=11111 Measured=482 Unmeasured=1 Blarg!": (11111, 482, True, ["Blarg!"]),
     }
 
     for w_line, expected in test_values.items():
       entry = get_router_status_entry_v3({'w': w_line})
       self.assertEquals(expected[0], entry.bandwidth)
       self.assertEquals(expected[1], entry.measured)
-      self.assertEquals(expected[2], entry.unrecognized_bandwidth_entries)
+      self.assertEquals(expected[2], entry.is_unmeasured)
+      self.assertEquals(expected[3], entry.unrecognized_bandwidth_entries)
 
     # tries some invalid inputs
     test_values = (
@@ -427,6 +430,11 @@ class TestRouterStatusEntry(unittest.TestCase):
       "Bandwidth=10 Measured",
       "Bandwidth=10 Measured=",
       "Bandwidth=10 Measured=-50",
+      "Bandwidth=10 Measured=482 Unmeasured",
+      "Bandwidth=10 Measured=482 Unmeasured=",
+      "Bandwidth=10 Measured=482 Unmeasured=0",
+      "Bandwidth=10 Measured=482 Unmeasured=842",
+      "Bandwidth=10 Measured=482 Unmeasured=-5",
     )
 
     for w_line in test_values:

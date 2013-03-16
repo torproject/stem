@@ -307,6 +307,8 @@ class RouterStatusEntryV3(RouterStatusEntry):
 
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
   :var int measured: bandwidth measured to be available by the relay
+  :var bool is_unmeasured: bandwidth measurement isn't based on three or more
+    measurements
   :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting
     information that isn't yet recognized
 
@@ -326,6 +328,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
 
     self.bandwidth = None
     self.measured = None
+    self.is_unmeasured = False
     self.unrecognized_bandwidth_entries = []
 
     self.exit_policy = None
@@ -394,6 +397,8 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
 
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
   :var int measured: bandwidth measured to be available by the relay
+  :var bool is_unmeasured: bandwidth measurement isn't based on three or more
+    measurements
   :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting
     information that isn't yet recognized
 
@@ -404,8 +409,10 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   """
 
   def __init__(self, content, validate = True, document = None):
-    self.version_line = None
-    self.version = None
+    self.bandwidth = None
+    self.measured = None
+    self.is_unmeasured = False
+    self.unrecognized_bandwidth_entries = []
 
     self.digest = None
 
@@ -581,7 +588,7 @@ def _parse_v_line(desc, value, validate):
 
 
 def _parse_w_line(desc, value, validate):
-  # "w" "Bandwidth=" INT ["Measured=" INT]
+  # "w" "Bandwidth=" INT ["Measured=" INT] ["Unmeasured=1"]
   # example: w Bandwidth=7980
 
   w_comp = value.split(" ")
@@ -619,6 +626,11 @@ def _parse_w_line(desc, value, validate):
         raise ValueError("%s 'Measured=' entry needs to have a numeric value: w %s" % (desc._name(), value))
 
       desc.measured = int(w_value)
+    elif w_key == "Unmeasured":
+      if validate and w_value != "1":
+        raise ValueError("%s 'Unmeasured=' should only have the value of '1': w %s" % (desc._name(), value))
+
+      desc.is_unmeasured = True
     else:
       desc.unrecognized_bandwidth_entries.append(w_entry)
 
