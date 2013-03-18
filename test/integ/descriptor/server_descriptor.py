@@ -13,12 +13,16 @@ import stem.descriptor
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.version
+import test.mocking
 import test.runner
 
 from test.integ.descriptor import get_resource
 
 
 class TestServerDescriptor(unittest.TestCase):
+  def tearDown(self):
+    test.mocking.revert_mocking()
+
   def test_metrics_descriptor(self):
     """
     Parses and checks our results against a server descriptor from metrics.
@@ -189,6 +193,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
     Parses a descriptor with non-ascii content.
     """
+
+    test.mocking.mock_method(stem.descriptor.server_descriptor.RelayDescriptor, '_validate_content', test.mocking.no_op())
 
     descriptor_file = open(get_resource("non-ascii_descriptor"), 'rb')
 
