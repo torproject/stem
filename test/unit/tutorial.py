@@ -11,6 +11,7 @@ import unittest
 from stem.control import Controller
 from stem.descriptor.reader import DescriptorReader
 from stem.descriptor.server_descriptor import RelayDescriptor
+from stem.prereq import is_python_3
 from test import mocking
 
 MIRROR_MIRROR_OUTPUT = """\
@@ -102,7 +103,12 @@ class TestTutorial(unittest.TestCase):
 
     mocking.support_with(test_file)
     test_file.name = "/home/atagar/.tor/cached-consensus"
-    mocking.mock(open, mocking.return_value(test_file))
+
+    if is_python_3():
+      import builtins
+      mocking.mock(open, mocking.return_value(test_file), target_module = builtins)
+    else:
+      mocking.mock(open, mocking.return_value(test_file))
 
     tutorial_example()
     self.assertEqual("found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n", self.stdout.getvalue())
