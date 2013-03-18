@@ -6,7 +6,6 @@ from __future__ import with_statement
 
 import datetime
 import os
-import resource
 import unittest
 
 import stem
@@ -45,10 +44,6 @@ class TestNetworkStatus(unittest.TestCase):
     with open(consensus_path, 'rb') as descriptor_file:
       for router in stem.descriptor.parse_file(descriptor_file, "network-status-consensus-3 1.0"):
         count += 1
-
-        # We should have constant memory usage. Fail if we're using over 200 MB.
-        if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 200000:
-          self.fail()
 
         # check if there's any unknown flags
         # TODO: this should be a 'new capability' check later rather than
@@ -90,9 +85,6 @@ class TestNetworkStatus(unittest.TestCase):
     with open(consensus_path, 'rb') as descriptor_file:
       for router in stem.descriptor.parse_file(descriptor_file, "network-status-microdesc-consensus-3 1.0"):
         count += 1
-
-        if resource.getrusage(resource.RUSAGE_SELF).ru_maxrss > 200000:
-          self.fail()
 
         # check if there's any unknown flags
         # TODO: this should be a 'new capability' check later rather than
