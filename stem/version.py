@@ -306,7 +306,7 @@ Requirement = stem.util.enum.Enum(
   ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),
   ("GETINFO_CONFIG_TEXT", Version("0.2.2.7-alpha")),
   ("LOADCONF", Version("0.2.1.1")),
-  ("MICRODESCRIPTOR_IS_DEFAULT", Version("0.2.3.25")),
+  ("MICRODESCRIPTOR_IS_DEFAULT", Version("0.2.3.3")),
   ("TAKEOWNERSHIP", Version("0.2.2.28-beta")),
   ("TORRC_CONTROL_SOCKET", Version("0.2.0.30")),
   ("TORRC_PORT_FORWARDING", Version("0.2.3.1-alpha")),
