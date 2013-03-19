@@ -22,7 +22,7 @@ import test.network
 import test.runner
 import test.util
 
-from stem import Signal
+from stem import Flag, Signal
 from stem.control import EventType, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
@@ -1010,7 +1010,7 @@ class TestController(unittest.TestCase):
 
     if TEST_ROUTER_STATUS_ENTRY is None:
       for desc in controller.get_network_statuses():
-        if desc.nickname != "Unnamed":
+        if desc.nickname != "Unnamed" and Flag.NAMED in desc.flags:
           TEST_ROUTER_STATUS_ENTRY = desc
           break
 
