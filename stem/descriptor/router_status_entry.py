@@ -531,7 +531,7 @@ def _parse_a_line(desc, value, validate):
 
     raise ValueError("%s 'a' line must be of the form '[address]:[ports]': a %s" % (desc._name(), value))
 
-  address, ports = value.rsplit(':', 1)
+  address, port = value.rsplit(':', 1)
   is_ipv6 = address.startswith("[") and address.endswith("]")
 
   if is_ipv6:
@@ -544,14 +544,10 @@ def _parse_a_line(desc, value, validate):
     else:
       raise ValueError("%s 'a' line must start with an IPv6 address: a %s" % (desc._name(), value))
 
-  for port in ports.split(','):
-    if not stem.util.connection.is_valid_port(port):
-      if not validate:
-        continue
-      else:
-        raise ValueError("%s 'a' line had an invalid port (%s): a %s" % (desc._name(), port, value))
-
+  if stem.util.connection.is_valid_port(port):
     desc.or_addresses.append((address, int(port), is_ipv6))
+  elif validate:
+    raise ValueError("%s 'a' line had an invalid port (%s): a %s" % (desc._name(), port, value))
 
 
 def _parse_s_line(desc, value, validate):

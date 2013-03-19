@@ -517,7 +517,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
             else:
               raise ValueError("or-address line missing a colon: %s" % line)
 
-          address, ports = entry.rsplit(':', 1)
+          address, port = entry.rsplit(':', 1)
           is_ipv6 = address.startswith("[") and address.endswith("]")
 
           if is_ipv6:
@@ -530,14 +530,10 @@ class ServerDescriptor(stem.descriptor.Descriptor):
             else:
               raise ValueError("or-address line has a malformed address: %s" % line)
 
-          for port in ports.split(","):
-            if not stem.util.connection.is_valid_port(port):
-              if not validate:
-                continue
-              else:
-                raise ValueError("or-address line has malformed ports: %s" % line)
-
+          if stem.util.connection.is_valid_port(port):
             self.or_addresses.append((address, int(port), is_ipv6))
+          elif validate:
+            raise ValueError("or-address line has a malformed port: %s" % line)
       elif keyword in ("read-history", "write-history"):
         try:
           timestamp, interval, remainder = \

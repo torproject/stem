@@ -381,13 +381,11 @@ class TestServerDescriptor(unittest.TestCase):
     """
 
     desc_text = "\n".join((get_bridge_server_descriptor(content = True),
-                          "or-address 10.45.227.253:9001,9005,80",
+                          "or-address 10.45.227.253:9001",
                           "or-address [fd9f:2e19:3bcf::02:9970]:443"))
 
     expected_or_addresses = [
       ("10.45.227.253", 9001, False),
-      ("10.45.227.253", 9005, False),
-      ("10.45.227.253", 80, False),
       ("fd9f:2e19:3bcf::02:9970", 443, True),
     ]
 
