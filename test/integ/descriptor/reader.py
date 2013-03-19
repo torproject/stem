@@ -171,6 +171,14 @@ class TestDescriptorReader(unittest.TestCase):
     for listing in (missing_filename, relative_filename, string_timestamp):
       self.assertRaises(TypeError, stem.descriptor.reader.save_processed_files, "/tmp/foo", listing)
 
+    # Though our attempts to save the processed files fail we'll write an empty
+    # file. Cleaning it up.
+
+    try:
+      os.remove("/tmp/foo")
+    except:
+      pass
+
   def test_basic_example(self):
     """
     Exercises something similar to the first example in the header
