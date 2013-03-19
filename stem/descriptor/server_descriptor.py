@@ -159,7 +159,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   :var str contact: contact information
   :var stem.exit_policy.ExitPolicy exit_policy: **\*** stated exit policy
   :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\*** exit policy for IPv6
-  :var list family: **\*** nicknames or fingerprints of declared family
+  :var set family: **\*** nicknames or fingerprints of declared family
 
   :var int average_bandwidth: **\*** average rate it's willing to relay in bytes/s
   :var int burst_bandwidth: **\*** burst rate it's willing to relay in bytes/s
@@ -226,7 +226,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     self.contact = None
     self.exit_policy = None
     self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy("reject 1-65535")
-    self.family = []
+    self.family = set()
 
     self.average_bandwidth = None
     self.burst_bandwidth = None
@@ -500,7 +500,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
         elif validate:
           raise ValueError("Protocols line did not match the expected pattern: %s" % line)
       elif keyword == "family":
-        self.family = value.split(" ")
+        self.family = set(value.split(" "))
       elif keyword == "eventdns":
         self.eventdns = value == "1"
       elif keyword == "ipv6-policy":

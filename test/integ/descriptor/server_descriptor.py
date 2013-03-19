@@ -30,7 +30,7 @@ class TestServerDescriptor(unittest.TestCase):
 
     descriptor_file = open(get_resource("example_descriptor"), 'rb')
 
-    expected_family = [
+    expected_family = set([
       "$0CE3CFB1E9CC47B63EA8869813BF6FAB7D4540C1",
       "$1FD187E8F69A9B74C9202DC16A25B9E7744AB9F6",
       "$74FB5EFA6A46DE4060431D515DC9A790E6AD9A7C",
@@ -39,7 +39,7 @@ class TestServerDescriptor(unittest.TestCase):
       "$D2F37F46182C23AB747787FD657E680B34EAF892",
       "$E0BD57A11F00041A9789577C53A1B784473669E4",
       "$E5E3E9A472EAF7BE9682B86E92305DB4C71048EF",
-    ]
+    ])
 
     expected_onion_key = """-----BEGIN RSA PUBLIC KEY-----
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
@@ -133,7 +133,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(False, desc.extra_info_cache)
     self.assertEquals(None, desc.extra_info_digest)
     self.assertEquals(None, desc.hidden_service_dir)
-    self.assertEquals([], desc.family)
+    self.assertEquals(set(), desc.family)
     self.assertEquals(102400, desc.average_bandwidth)
     self.assertEquals(10485760, desc.burst_bandwidth)
     self.assertEquals(0, desc.observed_bandwidth)
@@ -220,7 +220,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(False, desc.extra_info_cache)
     self.assertEquals("51E9FD0DA7C235D8C0250BAFB6E1ABB5F1EF9F04", desc.extra_info_digest)
     self.assertEquals(["2"], desc.hidden_service_dir)
-    self.assertEquals([], desc.family)
+    self.assertEquals(set(), desc.family)
     self.assertEquals(81920, desc.average_bandwidth)
     self.assertEquals(102400, desc.burst_bandwidth)
     self.assertEquals(84275, desc.observed_bandwidth)
@@ -282,11 +282,11 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     descriptor_file = open(get_resource("bridge_descriptor"), 'rb')
 
-    expected_family = [
+    expected_family = set([
       "$CE396C72A3D0880F74C064FEA79D68C15BD380B9",
       "$AB8B00C00B1347BA80A88E548FAC9EDF701D7D0E",
       "$8C8A470D7C23151665A7B84E75E89FCC205A3304",
-    ]
+    ])
 
     desc = next(stem.descriptor.parse_file(descriptor_file, "bridge-server-descriptor 1.0"))
     self.assertEquals("Unnamed", desc.nickname)
