@@ -60,6 +60,10 @@ uploaded.
       controller.authenticate()
 
       try:
+        # This makes curses initialize and call drawBandwidthGraph() with a
+        # reference to the screen, followed by additional arguments (in this
+        # case just the controller).
+
         curses.wrapper(drawBandwidthGraph, controller)
       except KeyboardInterrupt:
         pass  # the user hit ctrl+c
