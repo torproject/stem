@@ -72,7 +72,9 @@ uploaded.
     bandwidth_rates = [(0, 0)] * GRAPH_WIDTH
 
     # Making a partial that wraps the window and bandwidth_rates with a function
-    # for Tor to call when it gets a BW event.
+    # for Tor to call when it gets a BW event. This causes the 'window' and
+    # 'bandwidth_rates' to be provided as the first two arguments whenever
+    # 'bw_event_handler()' is called.
 
     bw_event_handler = functools.partial(_handle_bandwidth_event, window, bandwidth_rates)
 

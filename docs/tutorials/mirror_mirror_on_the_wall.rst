@@ -1,6 +1,9 @@
 Mirror Mirror on the Wall
 =========================
 
+The following is an overview of **Tor descriptors**. If you're already familiar
+with what they are and where to get them then you may want to skip to the end.
+
 * :ref:`what-is-a-descriptor`
 * :ref:`where-can-i-get-the-current-descriptors`
 * :ref:`where-can-i-get-past-descriptors`
