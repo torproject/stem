@@ -4,6 +4,7 @@ Integration tests for stem.descriptor.reader.
 
 from __future__ import with_statement
 
+import getpass
 import os
 import signal
 import sys
@@ -122,6 +123,12 @@ class TestDescriptorReader(unittest.TestCase):
     Tests the load_processed_files() function with a file that can't be read
     due to permissions.
     """
+
+    # test relies on being unable to read a file
+
+    if getpass.getuser() == 'root':
+      test.runner.skip(self, "(running as root)")
+      return
 
     # Skip the test on windows, since you can only set the file's
     # read-only flag with os.chmod(). For more information see...
@@ -472,8 +479,14 @@ class TestDescriptorReader(unittest.TestCase):
     Listens for a file that's skipped because we lack read permissions.
     """
 
-    if system.is_windows():
+    # test relies on being unable to read a file
+
+    if getpass.getuser() == 'root':
+      test.runner.skip(self, "(running as root)")
+      return
+    elif system.is_windows():
       test.runner.skip(self, "(chmod not functional)")
+      return
 
     test_path = test.runner.get_runner().get_test_dir("secret_file")
 

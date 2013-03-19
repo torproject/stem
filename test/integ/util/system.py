@@ -387,6 +387,19 @@ class TestSystem(unittest.TestCase):
     Exercises the expand_path() method with actual runtime data.
     """
 
+    # Some of the following tests get confused when ran as root. For instance,
+    # in my case...
+    #
+    #   >>> os.path.expanduser("~")
+    #   '/home/atagar'
+    #
+    #   >>> os.path.expanduser("~root")
+    #   '/root'
+
+    if getpass.getuser() == 'root':
+      test.runner.skip(self, "(running as root)")
+      return
+
     self.assertEquals(os.getcwd(), stem.util.system.expand_path("."))
     self.assertEquals(os.getcwd(), stem.util.system.expand_path("./"))
     self.assertEquals(os.path.join(os.getcwd(), "foo"), stem.util.system.expand_path("./foo"))
