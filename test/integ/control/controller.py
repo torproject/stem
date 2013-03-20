@@ -57,7 +57,7 @@ class TestController(unittest.TestCase):
       return
 
     if test.runner.Torrc.SOCKET in test.runner.get_runner().get_options():
-      with stem.control.Controller.from_socket_file(socket_path = test.runner.CONTROL_SOCKET_PATH) as controller:
+      with stem.control.Controller.from_socket_file(path = test.runner.CONTROL_SOCKET_PATH) as controller:
         self.assertTrue(isinstance(controller, stem.control.Controller))
     else:
       self.assertRaises(stem.SocketError, stem.control.Controller.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
