@@ -688,9 +688,11 @@ class RelayDescriptor(ServerDescriptor):
         log.warn("Signing key hash: %s != fingerprint: %s" % (key_der_as_hash, self.fingerprint.lower()))
         raise ValueError("Fingerprint does not match hash")
 
-    self._verify_descriptor(key_as_bytes)
+    self._verify_digest(key_as_bytes)
 
-  def _verify_descriptor(self, key_as_der):
+  def _verify_digest(self, key_as_der):
+    # check that our digest matches what was signed
+
     if not stem.prereq.is_crypto_available():
       return
 
@@ -738,7 +740,7 @@ class RelayDescriptor(ServerDescriptor):
       if decrypted_bytes.index('\x00\x01') != 0:
         raise ValueError("Verification failed, identifier missing")
     except ValueError:
-      raise ValueError("Verification failed, Malformed data")
+      raise ValueError("Verification failed, malformed data")
 
     try:
       identifier_offset = 2

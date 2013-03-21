@@ -9,10 +9,22 @@ import stem.prereq
 import test.runner
 
 from stem.descriptor.export import export_csv, export_csv_file
-from test.mocking import get_relay_server_descriptor, get_bridge_server_descriptor
+from stem.descriptor.server_descriptor import RelayDescriptor
+
+from test.mocking import no_op, \
+                         mock_method, \
+                         revert_mocking, \
+                         get_relay_server_descriptor, \
+                         get_bridge_server_descriptor
 
 
 class TestExport(unittest.TestCase):
+  def setUp(self):
+    mock_method(RelayDescriptor, '_verify_digest', no_op())
+
+  def tearDown(self):
+    revert_mocking()
+
   def test_minimal_descriptor(self):
     """
     Exports a single minimal tor server descriptor.

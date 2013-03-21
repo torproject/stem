@@ -28,6 +28,8 @@ class TestTutorial(unittest.TestCase):
     self.stdout, self.stdout_real = StringIO.StringIO(), sys.stdout
     sys.stdout = self.stdout
 
+    mocking.mock_method(RelayDescriptor, '_verify_digest', mocking.no_op())
+
   def tearDown(self):
     mocking.revert_mocking()
     sys.stdout = self.stdout_real

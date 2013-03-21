@@ -643,7 +643,7 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
   return "\n".join(header_content + remainder + footer_content)
 
 
-def get_relay_server_descriptor(attr = None, exclude = (), content = False):
+def get_relay_server_descriptor(attr = None, exclude = (), content = False, sign_content = False):
   """
   Provides the descriptor content for...
   stem.descriptor.server_descriptor.RelayDescriptor
@@ -651,6 +651,7 @@ def get_relay_server_descriptor(attr = None, exclude = (), content = False):
   :param dict attr: keyword/value mappings to be included in the descriptor
   :param list exclude: mandatory keywords to exclude from the descriptor
   :param bool content: provides the str content of the descriptor rather than the class if True
+  :param bool sign_content: sets a proper digest value if True
 
   :returns: RelayDescriptor for the requested descriptor content
   """
@@ -660,7 +661,9 @@ def get_relay_server_descriptor(attr = None, exclude = (), content = False):
   if content:
     return desc_content
   else:
-    desc_content = sign_descriptor_content(desc_content)
+    if sign_content:
+      desc_content = sign_descriptor_content(desc_content)
+
     return stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate = True)
 
 
