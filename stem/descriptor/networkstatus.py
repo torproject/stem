@@ -47,7 +47,7 @@ For more information see :func:`~stem.descriptor.__init__.DocumentHandler`...
 """
 
 import datetime
-import StringIO
+import io
 
 import stem.descriptor
 import stem.descriptor.router_status_entry
@@ -201,7 +201,7 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
   routers_end = document_file.tell()
 
   footer = document_file.readlines()
-  document_content = "".join(header + footer)
+  document_content = bytes.join(b"", header + footer)
 
   if document_handler == stem.descriptor.DocumentHandler.BARE_DOCUMENT:
     yield document_type(document_content, validate)
@@ -265,7 +265,6 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   """
 
   def __init__(self, raw_content, validate = True):
-    raw_content = stem.util.str_tools._to_unicode(raw_content)
     super(NetworkStatusDocumentV2, self).__init__(raw_content)
 
     self.version = None
@@ -289,8 +288,8 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     # that header/footer attributes aren't in the wrong section. This is a
     # deprecated descriptor type - patches welcome if you want those checks.
 
-    document_file = StringIO.StringIO(raw_content)
-    document_content = "".join(stem.descriptor._read_until_keywords((ROUTERS_START, V2_FOOTER_START), document_file))
+    document_file = io.BytesIO(raw_content)
+    document_content = bytes.join(b"", stem.descriptor._read_until_keywords((ROUTERS_START, V2_FOOTER_START), document_file))
 
     self.routers = tuple(stem.descriptor.router_status_entry._parse_file(
       document_file,
@@ -301,7 +300,8 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
       extra_args = (self,),
     ))
 
-    document_content += "\n" + document_file.read()
+    document_content += b"\n" + document_file.read()
+    document_content = stem.util.str_tools._to_unicode(document_content)
 
     entries = stem.descriptor._get_descriptor_components(document_content, validate)
 
@@ -464,9 +464,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     :raises: **ValueError** if the document is invalid
     """
 
-    raw_content = stem.util.str_tools._to_unicode(raw_content)
     super(NetworkStatusDocumentV3, self).__init__(raw_content)
-    document_file = StringIO.StringIO(raw_content)
+    document_file = io.BytesIO(raw_content)
 
     self._header = _DocumentHeader(document_file, validate, default_params)
 
@@ -561,7 +560,8 @@ class _DocumentHeader(object):
 
     self._unrecognized_lines = []
 
-    content = "".join(stem.descriptor._read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
+    content = bytes.join(b"", stem.descriptor._read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
+    content = stem.util.str_tools._to_unicode(content)
     entries = stem.descriptor._get_descriptor_components(content, validate)
     self._parse(entries, validate)
 
@@ -791,7 +791,7 @@ class _DocumentFooter(object):
     self.bandwidth_weights = {}
     self._unrecognized_lines = []
 
-    content = document_file.read()
+    content = stem.util.str_tools._to_unicode(document_file.read())
 
     if not content:
       return  # footer is optional and there's nothing to parse
@@ -1006,6 +1006,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     """
 
     super(DirectoryAuthority, self).__init__(raw_content)
+    raw_content = stem.util.str_tools._to_unicode(raw_content)
 
     self.nickname = None
     self.fingerprint = None
@@ -1201,6 +1202,7 @@ class KeyCertificate(stem.descriptor.Descriptor):
 
   def __init__(self, raw_content, validate = True):
     super(KeyCertificate, self).__init__(raw_content)
+    raw_content = stem.util.str_tools._to_unicode(raw_content)
 
     self.version = None
     self.address = None
@@ -1415,9 +1417,8 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
     self.routers = None
     self.published = None
 
-    document_file = StringIO.StringIO(raw_content)
-
-    published_line = document_file.readline()
+    document_file = io.BytesIO(raw_content)
+    published_line = stem.util.str_tools._to_unicode(document_file.readline())
 
     if published_line.startswith("published "):
       published_line = published_line.split(" ", 1)[1].strip()
@@ -1428,7 +1429,7 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
         if validate:
           raise ValueError("Bridge network status document's 'published' time wasn't parsable: %s" % published_line)
     elif validate:
-      raise ValueError("Bridge network status documents must start with a 'published' line:\n%s" % raw_content)
+      raise ValueError("Bridge network status documents must start with a 'published' line:\n%s" % stem.util.str_tools._to_unicode(raw_content))
 
     self.routers = tuple(stem.descriptor.router_status_entry._parse_file(
       document_file,

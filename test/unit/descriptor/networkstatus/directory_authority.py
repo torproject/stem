@@ -83,7 +83,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     Includes a non-mandatory field before the 'dir-source' line.
     """
 
-    content = "ho-hum 567\n" + get_directory_authority(content = True)
+    content = b"ho-hum 567\n" + get_directory_authority(content = True)
     self.assertRaises(ValueError, DirectoryAuthority, content)
 
     authority = DirectoryAuthority(content, False)
@@ -119,10 +119,10 @@ class TestDirectoryAuthority(unittest.TestCase):
     Duplicates linesin the entry.
     """
 
-    lines = get_directory_authority(content = True).split("\n")
+    lines = get_directory_authority(content = True).split(b"\n")
 
     for index, duplicate_line in enumerate(lines):
-      content = "\n".join(lines[:index] + [duplicate_line] + lines[index:])
+      content = b"\n".join(lines[:index] + [duplicate_line] + lines[index:])
       self.assertRaises(ValueError, DirectoryAuthority, content)
 
       authority = DirectoryAuthority(content, False)
@@ -254,17 +254,17 @@ class TestDirectoryAuthority(unittest.TestCase):
     Includes or exclude a key certificate from the directory entry.
     """
 
-    key_cert = get_key_certificate()
+    key_cert = get_key_certificate(content = True)
 
     # include a key cert with a consensus
-    content = get_directory_authority(content = True) + "\n" + str(key_cert)
+    content = get_directory_authority(content = True) + b"\n" + key_cert
     self.assertRaises(ValueError, DirectoryAuthority, content)
 
     authority = DirectoryAuthority(content, False)
     self.assertEqual('turtles', authority.nickname)
 
     # exclude  key cert from a vote
-    content = get_directory_authority(content = True, is_vote = True).replace("\n" + str(key_cert), '')
+    content = get_directory_authority(content = True, is_vote = True).replace(b"\n" + key_cert, b'')
     self.assertRaises(ValueError, DirectoryAuthority, content, True, True)
 
     authority = DirectoryAuthority(content, False, True)

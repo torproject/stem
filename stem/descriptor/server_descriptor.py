@@ -127,9 +127,9 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True):
 
     if descriptor_content:
       # strip newlines from annotations
-      annotations = map(unicode.strip, annotations)
+      annotations = map(bytes.strip, annotations)
 
-      descriptor_text = "".join(descriptor_content)
+      descriptor_text = bytes.join(b"", descriptor_content)
 
       if is_bridge:
         yield BridgeDescriptor(descriptor_text, validate, annotations)
@@ -209,6 +209,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     """
 
     super(ServerDescriptor, self).__init__(raw_contents)
+    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
     self.nickname = None
     self.fingerprint = None
@@ -302,8 +303,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
       annotation_dict = {}
 
       for line in self._annotation_lines:
-        if " " in line:
-          key, value = line.split(" ", 1)
+        if b" " in line:
+          key, value = line.split(b" ", 1)
           annotation_dict[key] = value
         else:
           annotation_dict[line] = None
@@ -652,9 +653,9 @@ class RelayDescriptor(ServerDescriptor):
       # Digest is calculated from everything in the
       # descriptor except the router-signature.
 
-      raw_descriptor = str(self)
-      start_token = "router "
-      sig_token = "\nrouter-signature\n"
+      raw_descriptor = self.get_bytes()
+      start_token = b"router "
+      sig_token = b"\nrouter-signature\n"
       start = raw_descriptor.find(start_token)
       sig_start = raw_descriptor.find(sig_token)
       end = sig_start + len(sig_token)

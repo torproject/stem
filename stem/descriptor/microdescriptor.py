@@ -69,7 +69,7 @@ def _parse_file(descriptor_file, validate = True):
 
       if not line:
         break  # EOF
-      elif line.startswith("@") or line.startswith("onion-key"):
+      elif line.startswith(b"@") or line.startswith(b"onion-key"):
         descriptor_file.seek(last_position)
         break
       else:
@@ -77,9 +77,9 @@ def _parse_file(descriptor_file, validate = True):
 
     if descriptor_lines:
       # strip newlines from annotations
-      annotations = map(unicode.strip, annotations)
+      annotations = map(bytes.strip, annotations)
 
-      descriptor_text = "".join(descriptor_lines)
+      descriptor_text = bytes.join(b"", descriptor_lines)
 
       yield Microdescriptor(descriptor_text, validate, annotations)
     else:
@@ -105,6 +105,7 @@ class Microdescriptor(stem.descriptor.Descriptor):
 
   def __init__(self, raw_contents, validate = True, annotations = None):
     super(Microdescriptor, self).__init__(raw_contents)
+    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
     self.onion_key = None
     self.ntor_onion_key = None
@@ -143,8 +144,8 @@ class Microdescriptor(stem.descriptor.Descriptor):
       annotation_dict = {}
 
       for line in self._annotation_lines:
-        if " " in line:
-          key, value = line.split(" ", 1)
+        if b" " in line:
+          key, value = line.split(b" ", 1)
           annotation_dict[key] = value
         else:
           annotation_dict[line] = None

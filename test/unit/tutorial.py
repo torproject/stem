@@ -98,7 +98,7 @@ class TestTutorial(unittest.TestCase):
       for desc in parse_file(open("/home/atagar/.tor/cached-consensus")):
         print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
 
-    test_file = StringIO.StringIO(mocking.get_network_status_document_v3(
+    test_file = mocking.BytesBuffer(mocking.get_network_status_document_v3(
       routers = [mocking.get_router_status_entry_v3()],
       content = True,
     ))
@@ -165,7 +165,7 @@ class TestTutorial(unittest.TestCase):
 
     exit_descriptor = mocking.get_relay_server_descriptor({
       'router': 'speedyexit 149.255.97.109 9001 0 0'
-    }, content = True).replace('reject *:*', 'accept *:*')
+    }, content = True).replace(b'reject *:*', b'accept *:*')
 
     exit_descriptor = mocking.sign_descriptor_content(exit_descriptor)
     exit_descriptor = RelayDescriptor(exit_descriptor)

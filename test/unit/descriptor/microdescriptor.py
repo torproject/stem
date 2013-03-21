@@ -41,7 +41,7 @@ class TestMicrodescriptor(unittest.TestCase):
     Includes a line prior to the 'onion-key' entry.
     """
 
-    desc_text = "family Amunet1\n" + get_microdescriptor(content = True)
+    desc_text = b"family Amunet1\n" + get_microdescriptor(content = True)
     self.assertRaises(ValueError, Microdescriptor, desc_text)
 
     desc = Microdescriptor(desc_text, validate = False)
@@ -53,8 +53,8 @@ class TestMicrodescriptor(unittest.TestCase):
     """
 
     desc_text = get_microdescriptor(content = True)
-    desc_text += "\na 10.45.227.253:9001"
-    desc_text += "\na [fd9f:2e19:3bcf::02:9970]:9001"
+    desc_text += b"\na 10.45.227.253:9001"
+    desc_text += b"\na [fd9f:2e19:3bcf::02:9970]:9001"
 
     expected = [
       ("10.45.227.253", 9001, False),
@@ -75,8 +75,8 @@ class TestMicrodescriptor(unittest.TestCase):
     # try multiple family lines
 
     desc_text = get_microdescriptor(content = True)
-    desc_text += "\nfamily Amunet1"
-    desc_text += "\nfamily Amunet2"
+    desc_text += b"\nfamily Amunet1"
+    desc_text += b"\nfamily Amunet2"
 
     self.assertRaises(ValueError, Microdescriptor, desc_text)
 

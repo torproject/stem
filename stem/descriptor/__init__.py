@@ -143,10 +143,6 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   import stem.descriptor.extrainfo_descriptor
   import stem.descriptor.networkstatus
 
-  # attempt to read content as unicode
-
-  descriptor_file = _UnicodeReader(descriptor_file)
-
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
   # based on its filename. Metrics descriptors, however, can be identified
@@ -154,13 +150,14 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   # https://trac.torproject.org/5651
 
   initial_position = descriptor_file.tell()
-  first_line = descriptor_file.readline().strip()
+  first_line = stem.util.str_tools._to_unicode(descriptor_file.readline().strip())
   metrics_header_match = re.match("^@type (\S+) (\d+).(\d+)$", first_line)
 
   if not metrics_header_match:
     descriptor_file.seek(initial_position)
 
-  filename = '<undefined>' if descriptor_file.name is None else os.path.basename(descriptor_file.name)
+  descriptor_path = getattr(descriptor_file, 'name', None)
+  filename = '<undefined>' if descriptor_path is None else os.path.basename(descriptor_file.name)
   file_parser = None
 
   if descriptor_type is not None:
@@ -192,8 +189,8 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
 
   if file_parser:
     for desc in file_parser(descriptor_file):
-      if descriptor_file.name is not None:
-        desc._set_path(os.path.abspath(descriptor_file.name))
+      if descriptor_path is not None:
+        desc._set_path(os.path.abspath(descriptor_path))
 
       yield desc
 
@@ -286,6 +283,17 @@ class Descriptor(object):
 
     return self._archive_path
 
+  def get_bytes(self):
+    """
+    Provides the ASCII **bytes** of the descriptor. This only differs from
+    **str()** if you're running python 3.x, in which case **str()** provides a
+    **unicode** string.
+
+    :returns: **bytes** for the descriptor's contents
+    """
+
+    return self._raw_contents
+
   def get_unrecognized_lines(self):
     """
     Provides a list of lines that were either ignored or had data that we did
@@ -305,61 +313,9 @@ class Descriptor(object):
 
   def __str__(self):
     if stem.prereq.is_python_3():
+      return stem.util.str_tools._to_unicode(self._raw_contents)
+    else:
       return self._raw_contents
-    else:
-      return str(stem.util.str_tools._to_bytes(self._raw_contents))
-
-
-class _UnicodeReader(object):
-  """
-  File-like object that wraps another file. This replaces read ASCII bytes with
-  unicode content. This only supports read operations.
-  """
-
-  def __init__(self, wrapped_file):
-    self.wrapped_file = wrapped_file
-    self.name = getattr(wrapped_file, 'name', None)
-
-  def close(self):
-    return self.wrapped_file.close()
-
-  def getvalue(self):
-    return self.wrapped_file.getvalue()
-
-  def isatty(self):
-    return self.wrapped_file.isatty()
-
-  def next(self):
-    return self.wrapped_file.next()
-
-  def read(self, n = -1):
-    return stem.util.str_tools._to_unicode(self.wrapped_file.read(n))
-
-  def readline(self):
-    return stem.util.str_tools._to_unicode(self.wrapped_file.readline())
-
-  def readlines(self, sizehint = None):
-    # being careful to do in-place conversion so we don't accidently double our
-    # memory usage
-
-    if sizehint is not None:
-      results = self.wrapped_file.readlines(sizehint)
-    else:
-      results = self.wrapped_file.readlines()
-
-    for i in xrange(len(results)):
-      results[i] = stem.util.str_tools._to_unicode(results[i])
-
-    return results
-
-  def seek(self, pos, mode = None):
-    if mode is not None:
-      return self.wrapped_file.seek(pos, mode)
-    else:
-      return self.wrapped_file.seek(pos)
-
-  def tell(self):
-    return self.wrapped_file.tell()
 
 
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):
@@ -402,11 +358,11 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     if not line:
       break  # EOF
 
-    line_match = KEYWORD_LINE.match(line)
+    line_match = KEYWORD_LINE.match(stem.util.str_tools._to_unicode(line))
 
     if not line_match:
       # no spaces or tabs in the line
-      line_keyword = line.strip()
+      line_keyword = stem.util.str_tools._to_unicode(line.strip())
     else:
       line_keyword = line_match.groups()[0]
 

@@ -3,8 +3,8 @@
 # See LICENSE for licensing information
 
 import datetime
+import io
 import re
-import StringIO
 import time
 
 import stem
@@ -597,7 +597,7 @@ class NetworkStatusEvent(Event):
     content = str(self).lstrip("NS\n").rstrip("\nOK")
 
     self.desc = list(stem.descriptor.router_status_entry._parse_file(
-      StringIO.StringIO(content),
+      io.BytesIO(str_tools._to_bytes(content)),
       True,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
     ))
@@ -622,7 +622,7 @@ class NewConsensusEvent(Event):
     content = str(self).lstrip("NEWCONSENSUS\n").rstrip("\nOK")
 
     self.desc = list(stem.descriptor.router_status_entry._parse_file(
-      StringIO.StringIO(content),
+      io.BytesIO(str_tools._to_bytes(content)),
       True,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
     ))

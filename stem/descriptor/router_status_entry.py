@@ -64,7 +64,7 @@ def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start
   # check if we're starting at the end of the section (ie, there's no entries to read)
   if section_end_keywords:
     first_keyword = None
-    line_match = stem.descriptor.KEYWORD_LINE.match(document_file.readline())
+    line_match = stem.descriptor.KEYWORD_LINE.match(stem.util.str_tools._to_unicode(document_file.readline()))
 
     if line_match:
       first_keyword = line_match.groups()[0]
@@ -83,7 +83,7 @@ def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start
       include_ending_keyword = True
     )
 
-    desc_content = "".join(desc_lines)
+    desc_content = bytes.join(b"", desc_lines)
 
     if desc_content:
       yield entry_class(desc_content, validate, *extra_args)
@@ -129,6 +129,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
     """
 
     super(RouterStatusEntry, self).__init__(content)
+    content = stem.util.str_tools._to_unicode(content)
 
     self.document = document
 

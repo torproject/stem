@@ -135,7 +135,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Includes content prior to the 'r' line.
     """
 
-    content = 'z some stuff\n' + get_router_status_entry_v3(content = True)
+    content = b'z some stuff\n' + get_router_status_entry_v3(content = True)
     self._expect_invalid_attr(content, "_unrecognized_lines", ['z some stuff'])
 
   def test_blank_lines(self):
@@ -143,7 +143,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Includes blank lines, which should be ignored.
     """
 
-    content = get_router_status_entry_v3(content = True) + "\n\nv Tor 0.2.2.35\n\n"
+    content = get_router_status_entry_v3(content = True) + b"\n\nv Tor 0.2.2.35\n\n"
     entry = RouterStatusEntryV3(content)
     self.assertEqual("Tor 0.2.2.35", entry.version_line)
 
@@ -152,10 +152,10 @@ class TestRouterStatusEntry(unittest.TestCase):
     Duplicates linesin the entry.
     """
 
-    lines = get_router_status_entry_v3(content = True).split("\n")
+    lines = get_router_status_entry_v3(content = True).split(b"\n")
 
     for index, duplicate_line in enumerate(lines):
-      content = "\n".join(lines[:index] + [duplicate_line] + lines[index:])
+      content = b"\n".join(lines[:index] + [duplicate_line] + lines[index:])
       self.assertRaises(ValueError, RouterStatusEntryV3, content)
 
       entry = RouterStatusEntryV3(content, False)
@@ -324,8 +324,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     # includes multiple 'a' lines
 
     content = get_router_status_entry_v3(content = True)
-    content += "\na [2607:fcd0:daaa:101::602c:bd62]:443"
-    content += "\na [1148:fcd0:daaa:101::602c:bd62]:80"
+    content += b"\na [2607:fcd0:daaa:101::602c:bd62]:443"
+    content += b"\na [1148:fcd0:daaa:101::602c:bd62]:80"
 
     expected = [
       ('2607:fcd0:daaa:101::602c:bd62', 443, True),
@@ -490,8 +490,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     # try with multiple 'm' lines
 
     content = get_router_status_entry_v3(content = True)
-    content += "\nm 11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"
-    content += "\nm 31,32 sha512=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"
+    content += b"\nm 11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"
+    content += b"\nm 31,32 sha512=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"
 
     expected = [
       ([11, 12], {"sha256": "g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"}),

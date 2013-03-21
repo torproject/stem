@@ -5,7 +5,6 @@ Unit tests for the NetworkStatusDocumentV3 of stem.descriptor.networkstatus.
 from __future__ import with_statement
 
 import datetime
-import StringIO
 import unittest
 
 import stem.descriptor
@@ -25,11 +24,11 @@ from stem.descriptor.router_status_entry import \
                                           RouterStatusEntryV3, \
                                           RouterStatusEntryMicroV3
 
-from test.mocking import support_with, \
-                         get_router_status_entry_v3, \
+from test.mocking import get_router_status_entry_v3, \
                          get_router_status_entry_micro_v3, \
                          get_directory_authority, \
                          get_network_status_document_v3, \
+                         BytesBuffer, \
                          CRYPTO_BLOB, \
                          DOC_SIG, \
                          NETWORK_STATUS_DOCUMENT_FOOTER
@@ -119,7 +118,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     # first example: parsing via the NetworkStatusDocumentV3 constructor
 
-    consensus_file = StringIO.StringIO(content)
+    consensus_file = BytesBuffer(content)
     consensus = NetworkStatusDocumentV3(consensus_file.read())
     consensus_file.close()
 
@@ -128,7 +127,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     # second example: using stem.descriptor.parse_file
 
-    with support_with(StringIO.StringIO(content)) as consensus_file:
+    with BytesBuffer(content) as consensus_file:
       for router in stem.descriptor.parse_file(consensus_file, 'network-status-consensus-3 1.0'):
         self.assertEqual('caerSidi', router.nickname)
 
@@ -145,12 +144,12 @@ class TestNetworkStatusDocument(unittest.TestCase):
     entry2 = get_router_status_entry_v3({'s': "Valid"})
     content = get_network_status_document_v3(routers = (entry1, entry2), content = True)
 
-    descriptors = list(stem.descriptor.parse_file(StringIO.StringIO(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.DOCUMENT))
+    descriptors = list(stem.descriptor.parse_file(BytesBuffer(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.DOCUMENT))
     self.assertEqual(1, len(descriptors))
     self.assertTrue(isinstance(descriptors[0], NetworkStatusDocumentV3))
     self.assertEqual(2, len(descriptors[0].routers))
 
-    descriptors = list(stem.descriptor.parse_file(StringIO.StringIO(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.BARE_DOCUMENT))
+    descriptors = list(stem.descriptor.parse_file(BytesBuffer(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.BARE_DOCUMENT))
     self.assertEqual(1, len(descriptors))
     self.assertTrue(isinstance(descriptors[0], NetworkStatusDocumentV3))
     self.assertEqual(0, len(descriptors[0].routers))
@@ -169,7 +168,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     expected_document = get_network_status_document_v3()
 
-    descriptor_file = StringIO.StringIO(content)
+    descriptor_file = BytesBuffer(content)
     entries = list(_parse_file(descriptor_file))
 
     self.assertEquals(entry1, entries[0])
@@ -207,18 +206,18 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     for is_consensus in (True, False):
       attr = {"vote-status": "consensus"} if is_consensus else {"vote-status": "vote"}
-      lines = get_network_status_document_v3(attr, content = True).split("\n")
+      lines = get_network_status_document_v3(attr, content = True).split(b"\n")
 
       for index in xrange(len(lines) - 1):
         # once we reach the crypto blob we're done since swapping those won't
         # be detected
-        if lines[index].startswith(CRYPTO_BLOB[1:10]): break
+        if lines[index].startswith(stem.util.str_tools._to_bytes(CRYPTO_BLOB[1:10])): break
 
         # swaps this line with the one after it
         test_lines = list(lines)
         test_lines[index], test_lines[index + 1] = test_lines[index + 1], test_lines[index]
 
-        content = "\n".join(test_lines)
+        content = b"\n".join(test_lines)
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
         NetworkStatusDocumentV3(content, False)  # constructs without validation
 
@@ -230,7 +229,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     for is_consensus in (True, False):
       attr = {"vote-status": "consensus"} if is_consensus else {"vote-status": "vote"}
-      lines = get_network_status_document_v3(attr, content = True).split("\n")
+      lines = get_network_status_document_v3(attr, content = True).split(b"\n")
 
       for index, line in enumerate(lines):
         # Stop when we hit the 'directory-signature' for a couple reasons...
@@ -239,13 +238,13 @@ class TestNetworkStatusDocument(unittest.TestCase):
         #   validation failure
 
         test_lines = list(lines)
-        if line.startswith("directory-signature "):
+        if line.startswith(b"directory-signature "):
           break
 
         # duplicates the line
         test_lines.insert(index, line)
 
-        content = "\n".join(test_lines)
+        content = b"\n".join(test_lines)
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
         NetworkStatusDocumentV3(content, False)  # constructs without validation
 
@@ -902,10 +901,11 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     # make the dir-key-published field of the certiciate be malformed
     authority_content = get_directory_authority(is_vote = True, content = True)
-    authority_content = authority_content.replace("dir-key-published 2011", "dir-key-published 2011a")
+    authority_content = authority_content.replace(b"dir-key-published 2011", b"dir-key-published 2011a")
+    authority = DirectoryAuthority(authority_content, False, True)
 
-    content = get_network_status_document_v3({"vote-status": "vote"}, authorities = (authority_content,), content = True)
+    content = get_network_status_document_v3({"vote-status": "vote"}, authorities = (authority,), content = True)
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, validate = False)
-    self.assertEquals((DirectoryAuthority(authority_content, False, True),), document.directory_authorities)
+    self.assertEquals((authority,), document.directory_authorities)

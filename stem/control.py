@@ -136,6 +136,7 @@ providing its own for interacting at a higher level.
 
 from __future__ import with_statement
 
+import io
 import os
 import Queue
 import StringIO
@@ -156,7 +157,7 @@ import stem.util.tor_tools
 import stem.version
 
 from stem import UNDEFINED, CircStatus, Signal
-from stem.util import log
+from stem.util import log, str_tools
 
 # state changes a control socket can have
 
@@ -1120,7 +1121,7 @@ class Controller(BaseController):
 
       desc_content = self.get_info("desc/all-recent")
 
-      for desc in stem.descriptor.server_descriptor._parse_file(StringIO.StringIO(desc_content)):
+      for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(str_tools._to_bytes(desc_content))):
         yield desc
     except Exception, exc:
       if default == UNDEFINED:
@@ -1190,7 +1191,7 @@ class Controller(BaseController):
       desc_content = self.get_info("ns/all")
 
       desc_iterator = stem.descriptor.router_status_entry._parse_file(
-        StringIO.StringIO(desc_content),
+        io.BytesIO(str_tools._to_bytes(desc_content)),
         True,
         entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
       )

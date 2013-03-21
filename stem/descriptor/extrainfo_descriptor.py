@@ -164,9 +164,9 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True):
 
     if extrainfo_content:
       if is_bridge:
-        yield BridgeExtraInfoDescriptor("".join(extrainfo_content), validate)
+        yield BridgeExtraInfoDescriptor(bytes.join(b"", extrainfo_content), validate)
       else:
-        yield RelayExtraInfoDescriptor("".join(extrainfo_content), validate)
+        yield RelayExtraInfoDescriptor(bytes.join(b"", extrainfo_content), validate)
     else:
       break  # done parsing file
 
@@ -322,6 +322,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
     """
 
     super(ExtraInfoDescriptor, self).__init__(raw_contents)
+    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
     self.nickname = None
     self.fingerprint = None

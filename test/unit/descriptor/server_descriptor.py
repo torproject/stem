@@ -3,7 +3,6 @@ Unit tests for stem.descriptor.server_descriptor.
 """
 
 import datetime
-import StringIO
 import unittest
 
 import stem.descriptor.server_descriptor
@@ -18,6 +17,7 @@ from test.mocking import no_op, \
                          revert_mocking, \
                          get_relay_server_descriptor, \
                          get_bridge_server_descriptor, \
+                         BytesBuffer, \
                          CRYPTO_BLOB
 
 
@@ -62,7 +62,7 @@ class TestServerDescriptor(unittest.TestCase):
     Includes a line prior to the 'router' entry.
     """
 
-    desc_text = "hibernate 1\n" + get_relay_server_descriptor(content = True)
+    desc_text = b"hibernate 1\n" + get_relay_server_descriptor(content = True)
     self._expect_invalid_attr(desc_text)
 
   def test_trailing_line(self):
@@ -70,7 +70,7 @@ class TestServerDescriptor(unittest.TestCase):
     Includes a line after the 'router-signature' entry.
     """
 
-    desc_text = get_relay_server_descriptor(content = True) + "\nhibernate 1"
+    desc_text = get_relay_server_descriptor(content = True) + b"\nhibernate 1"
     self._expect_invalid_attr(desc_text)
 
   def test_nickname_missing(self):
@@ -139,7 +139,7 @@ class TestServerDescriptor(unittest.TestCase):
     self.assertEquals("", desc.platform)
 
     # does the same but with 'platform ' replaced with 'platform'
-    desc_text = desc_text.replace("platform ", "platform")
+    desc_text = desc_text.replace(b"platform ", b"platform")
     desc = RelayDescriptor(desc_text, validate = False)
     self.assertEquals("", desc.platform)
 
@@ -211,20 +211,20 @@ class TestServerDescriptor(unittest.TestCase):
     Checks that content before a descriptor are parsed as annotations.
     """
 
-    desc_text = "@pepperjack very tasty\n@mushrooms not so much\n"
+    desc_text = b"@pepperjack very tasty\n@mushrooms not so much\n"
     desc_text += get_relay_server_descriptor(content = True)
-    desc_text += "\ntrailing text that should be ignored, ho hum"
+    desc_text += b"\ntrailing text that should be ignored, ho hum"
 
     # running _parse_file should provide an iterator with a single descriptor
-    desc_iter = stem.descriptor.server_descriptor._parse_file(StringIO.StringIO(stem.util.str_tools._to_unicode(desc_text)))
+    desc_iter = stem.descriptor.server_descriptor._parse_file(BytesBuffer(stem.util.str_tools._to_unicode(desc_text)))
     desc_entries = list(desc_iter)
     self.assertEquals(1, len(desc_entries))
     desc = desc_entries[0]
 
     self.assertEquals("caerSidi", desc.nickname)
-    self.assertEquals("@pepperjack very tasty", desc.get_annotation_lines()[0])
-    self.assertEquals("@mushrooms not so much", desc.get_annotation_lines()[1])
-    self.assertEquals({"@pepperjack": "very tasty", "@mushrooms": "not so much"}, desc.get_annotations())
+    self.assertEquals(b"@pepperjack very tasty", desc.get_annotation_lines()[0])
+    self.assertEquals(b"@mushrooms not so much", desc.get_annotation_lines()[1])
+    self.assertEquals({b"@pepperjack": b"very tasty", b"@mushrooms": b"not so much"}, desc.get_annotations())
     self.assertEquals([], desc.get_unrecognized_lines())
 
   def test_duplicate_field(self):
@@ -233,7 +233,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
 
     desc_text = get_relay_server_descriptor({"<replace>": ""}, content = True)
-    desc_text = desc_text.replace("<replace>", "contact foo\ncontact bar")
+    desc_text = desc_text.replace(b"<replace>", b"contact foo\ncontact bar")
     self._expect_invalid_attr(desc_text, "contact", "foo")
 
   def test_missing_required_attr(self):
@@ -386,9 +386,9 @@ class TestServerDescriptor(unittest.TestCase):
     Constructs a bridge descriptor with multiple or-address entries and multiple ports.
     """
 
-    desc_text = "\n".join((get_bridge_server_descriptor(content = True),
-                          "or-address 10.45.227.253:9001",
-                          "or-address [fd9f:2e19:3bcf::02:9970]:443"))
+    desc_text = b"\n".join((get_bridge_server_descriptor(content = True),
+                           b"or-address 10.45.227.253:9001",
+                           b"or-address [fd9f:2e19:3bcf::02:9970]:443"))
 
     expected_or_addresses = [
       ("10.45.227.253", 9001, False),

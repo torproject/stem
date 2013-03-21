@@ -35,7 +35,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     Includes a line prior to the 'extra-info' entry.
     """
 
-    desc_text = "exit-streams-opened port=80\n" + get_relay_extrainfo_descriptor(content = True)
+    desc_text = b"exit-streams-opened port=80\n" + get_relay_extrainfo_descriptor(content = True)
     self._expect_invalid_attr(desc_text)
 
   def test_trailing_line(self):
@@ -43,7 +43,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     Includes a line after the 'router-signature' entry.
     """
 
-    desc_text = get_relay_extrainfo_descriptor(content = True) + "\nexit-streams-opened port=80"
+    desc_text = get_relay_extrainfo_descriptor(content = True) + b"\nexit-streams-opened port=80"
     self._expect_invalid_attr(desc_text)
 
   def test_extrainfo_line_missing_fields(self):

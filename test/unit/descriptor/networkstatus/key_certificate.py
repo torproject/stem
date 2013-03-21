@@ -49,8 +49,8 @@ class TestKeyCertificate(unittest.TestCase):
 
     content = get_key_certificate(content = True)
 
-    for cert_text in ("dir-address 127.0.0.1:80\n" + content,
-                      content + "\ndir-address 127.0.0.1:80"):
+    for cert_text in (b"dir-address 127.0.0.1:80\n" + content,
+                      content + b"\ndir-address 127.0.0.1:80"):
       self.assertRaises(ValueError, KeyCertificate, cert_text)
 
       certificate = KeyCertificate(cert_text, False)

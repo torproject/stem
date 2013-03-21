@@ -7,7 +7,7 @@ import unittest
 
 from stem.descriptor.networkstatus import BridgeNetworkStatusDocument
 
-DOCUMENT = """\
+DOCUMENT = b"""\
 published 2012-06-01 04:07:04
 r Unnamed ABSiBVJ42z6w5Z6nAXQUFq8YVVg FI74aFuNJZZQrgln0f+OaocMd0M 2012-05-31 15:57:00 10.97.236.247 443 0
 s Valid
@@ -26,7 +26,7 @@ class TestBridgeNetworkStatusDocument(unittest.TestCase):
     Parse a document without any router status entries.
     """
 
-    document = BridgeNetworkStatusDocument("published 2012-06-01 04:07:04")
+    document = BridgeNetworkStatusDocument(b"published 2012-06-01 04:07:04")
     self.assertEqual(datetime.datetime(2012, 6, 1, 4, 7, 4), document.published)
     self.assertEqual((), document.routers)
     self.assertEqual([], document.get_unrecognized_lines())

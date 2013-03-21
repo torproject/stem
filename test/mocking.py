@@ -58,6 +58,7 @@ import base64
 import hashlib
 import inspect
 import itertools
+import StringIO
 
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.microdescriptor
@@ -66,6 +67,7 @@ import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.prereq
 import stem.response
+import stem.util.str_tools
 
 # Once we've mocked a function we can't rely on its __module__ or __name__
 # attributes, so instead we associate a unique 'mock_id' attribute that maps
@@ -640,7 +642,7 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
     else:
       remainder.append(k)
 
-  return "\n".join(header_content + remainder + footer_content)
+  return stem.util.str_tools._to_bytes("\n".join(header_content + remainder + footer_content))
 
 
 def get_relay_server_descriptor(attr = None, exclude = (), content = False, sign_content = False):
@@ -831,7 +833,7 @@ def get_directory_authority(attr = None, exclude = (), is_vote = False, content 
   desc_content = _get_descriptor_content(attr, exclude, AUTHORITY_HEADER)
 
   if is_vote:
-    desc_content += "\n" + str(get_key_certificate())
+    desc_content += b"\n" + get_key_certificate(content = True)
 
   if content:
     return desc_content
@@ -917,31 +919,31 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
 
   # inject the authorities and/or routers between the header and footer
   if authorities:
-    if "directory-footer" in desc_content:
-      footer_div = desc_content.find("\ndirectory-footer") + 1
-    elif "directory-signature" in desc_content:
-      footer_div = desc_content.find("\ndirectory-signature") + 1
+    if b"directory-footer" in desc_content:
+      footer_div = desc_content.find(b"\ndirectory-footer") + 1
+    elif b"directory-signature" in desc_content:
+      footer_div = desc_content.find(b"\ndirectory-signature") + 1
     else:
       if routers:
-        desc_content += "\n"
+        desc_content += b"\n"
 
       footer_div = len(desc_content) + 1
 
-    authority_content = "\n".join([str(a) for a in authorities]) + "\n"
+    authority_content = stem.util.str_tools._to_bytes("\n".join([str(a) for a in authorities]) + "\n")
     desc_content = desc_content[:footer_div] + authority_content + desc_content[footer_div:]
 
   if routers:
-    if "directory-footer" in desc_content:
-      footer_div = desc_content.find("\ndirectory-footer") + 1
-    elif "directory-signature" in desc_content:
-      footer_div = desc_content.find("\ndirectory-signature") + 1
+    if b"directory-footer" in desc_content:
+      footer_div = desc_content.find(b"\ndirectory-footer") + 1
+    elif b"directory-signature" in desc_content:
+      footer_div = desc_content.find(b"\ndirectory-signature") + 1
     else:
       if routers:
-        desc_content += "\n"
+        desc_content += b"\n"
 
       footer_div = len(desc_content) + 1
 
-    router_content = "\n".join([str(r) for r in routers]) + "\n"
+    router_content = stem.util.str_tools._to_bytes("\n".join([str(r) for r in routers]) + "\n")
     desc_content = desc_content[:footer_div] + router_content + desc_content[footer_div:]
 
   if content:
@@ -1057,3 +1059,60 @@ def sign_descriptor_content(desc_content):
     desc_content = desc_content[:rst_start] + router_signature_token + router_signature_start + signature_base64 + router_signature_end
 
     return desc_content
+
+
+class BytesBuffer(object):
+  """
+  Similiar to a StringIO but provides bytes content (in python 3.x StringIO can
+  only be used for unicode).
+  """
+
+  def __init__(self, content):
+    self.wrapped_file = StringIO.StringIO(stem.util.str_tools._to_unicode(content))
+
+  def close(self):
+    return self.wrapped_file.close()
+
+  def getvalue(self):
+    return self.wrapped_file.getvalue()
+
+  def isatty(self):
+    return self.wrapped_file.isatty()
+
+  def next(self):
+    return self.wrapped_file.next()
+
+  def read(self, n = -1):
+    return stem.util.str_tools._to_bytes(self.wrapped_file.read(n))
+
+  def readline(self):
+    return stem.util.str_tools._to_bytes(self.wrapped_file.readline())
+
+  def readlines(self, sizehint = None):
+    # being careful to do in-place conversion so we don't accidently double our
+    # memory usage
+
+    if sizehint is not None:
+      results = self.wrapped_file.readlines(sizehint)
+    else:
+      results = self.wrapped_file.readlines()
+
+    for i in xrange(len(results)):
+      results[i] = stem.util.str_tools._to_bytes(results[i])
+
+    return results
+
+  def seek(self, pos, mode = None):
+    if mode is not None:
+      return self.wrapped_file.seek(pos, mode)
+    else:
+      return self.wrapped_file.seek(pos)
+
+  def tell(self):
+    return self.wrapped_file.tell()
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exit_type, value, traceback):
+    pass
