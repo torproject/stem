@@ -425,7 +425,7 @@ if __name__ == '__main__':
         test.output.print_line("Unable to test python 3 because %s isn't in your path" % required_cmd, *test.runner.ERROR_ATTR)
         sys.exit(1)
 
-  if CONFIG["argument.python3"] and sys.version_info.major != 3:
+  if CONFIG["argument.python3"] and sys.version_info[0] != 3:
     python3_destination = os.path.join(CONFIG["integ.test_directory"], "python3")
 
     if _python3_setup(python3_destination):
