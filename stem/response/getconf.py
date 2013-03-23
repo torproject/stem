@@ -43,13 +43,8 @@ class GetConfResponse(stem.response.ControlMessage):
     while remaining_lines:
       line = remaining_lines.pop(0)
 
-      if line.is_next_mapping(quoted = False):
+      if line.is_next_mapping():
         key, value = line.split("=", 1)
-      elif line.is_next_mapping(quoted = True):
-        # TODO: doesn't seem to occur yet in practice...
-        # https://trac.torproject.org/6172
-
-        key, value = line.pop_mapping(True).items()[0]
       else:
         key, value = (line.pop(), None)
 
