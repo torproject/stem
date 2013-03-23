@@ -612,7 +612,9 @@ if __name__ == '__main__':
   else:
     runtime_label = "(%i seconds)" % runtime
 
-  if testing_failed or error_tracker.has_error_occured():
+  has_error = testing_failed or error_tracker.has_error_occured()
+
+  if has_error:
     test.output.print_line("TESTING FAILED %s" % runtime_label, *ERROR_ATTR)
 
     for line in error_tracker:
@@ -624,3 +626,5 @@ if __name__ == '__main__':
   else:
     test.output.print_line("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
     print
+
+  sys.exit(1 if has_error else 0)
