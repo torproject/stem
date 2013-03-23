@@ -2,8 +2,7 @@
 Tests for the examples given in stem's tutorial.
 """
 
-from __future__ import with_statement
-
+import io
 import StringIO
 import sys
 import unittest
@@ -98,7 +97,7 @@ class TestTutorial(unittest.TestCase):
       for desc in parse_file(open("/home/atagar/.tor/cached-consensus")):
         print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
 
-    test_file = mocking.BytesBuffer(mocking.get_network_status_document_v3(
+    test_file = io.BytesIO(mocking.get_network_status_document_v3(
       routers = [mocking.get_router_status_entry_v3()],
       content = True,
     ))

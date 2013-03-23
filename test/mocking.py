@@ -58,7 +58,6 @@ import base64
 import hashlib
 import inspect
 import itertools
-import StringIO
 
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.microdescriptor
@@ -1059,60 +1058,3 @@ def sign_descriptor_content(desc_content):
     desc_content = desc_content[:rst_start] + router_signature_token + router_signature_start + signature_base64 + router_signature_end
 
     return desc_content
-
-
-class BytesBuffer(object):
-  """
-  Similiar to a StringIO but provides bytes content (in python 3.x StringIO can
-  only be used for unicode).
-  """
-
-  def __init__(self, content):
-    self.wrapped_file = StringIO.StringIO(stem.util.str_tools._to_unicode(content))
-
-  def close(self):
-    return self.wrapped_file.close()
-
-  def getvalue(self):
-    return self.wrapped_file.getvalue()
-
-  def isatty(self):
-    return self.wrapped_file.isatty()
-
-  def next(self):
-    return self.wrapped_file.next()
-
-  def read(self, n = -1):
-    return stem.util.str_tools._to_bytes(self.wrapped_file.read(n))
-
-  def readline(self):
-    return stem.util.str_tools._to_bytes(self.wrapped_file.readline())
-
-  def readlines(self, sizehint = None):
-    # being careful to do in-place conversion so we don't accidently double our
-    # memory usage
-
-    if sizehint is not None:
-      results = self.wrapped_file.readlines(sizehint)
-    else:
-      results = self.wrapped_file.readlines()
-
-    for i in xrange(len(results)):
-      results[i] = stem.util.str_tools._to_bytes(results[i])
-
-    return results
-
-  def seek(self, pos, mode = None):
-    if mode is not None:
-      return self.wrapped_file.seek(pos, mode)
-    else:
-      return self.wrapped_file.seek(pos)
-
-  def tell(self):
-    return self.wrapped_file.tell()
-
-  def __enter__(self):
-    return self
-
-  def __exit__(self, exit_type, value, traceback):
-    pass

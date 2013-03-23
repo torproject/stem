@@ -3,6 +3,7 @@ Unit tests for stem.descriptor.server_descriptor.
 """
 
 import datetime
+import io
 import unittest
 
 import stem.descriptor.server_descriptor
@@ -17,7 +18,6 @@ from test.mocking import no_op, \
                          revert_mocking, \
                          get_relay_server_descriptor, \
                          get_bridge_server_descriptor, \
-                         BytesBuffer, \
                          CRYPTO_BLOB
 
 
@@ -216,7 +216,7 @@ class TestServerDescriptor(unittest.TestCase):
     desc_text += b"\ntrailing text that should be ignored, ho hum"
 
     # running _parse_file should provide an iterator with a single descriptor
-    desc_iter = stem.descriptor.server_descriptor._parse_file(BytesBuffer(stem.util.str_tools._to_unicode(desc_text)))
+    desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text))
     desc_entries = list(desc_iter)
     self.assertEquals(1, len(desc_entries))
     desc = desc_entries[0]

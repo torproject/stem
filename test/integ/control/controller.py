@@ -2,8 +2,6 @@
 Integration tests for the stem.control.Controller class.
 """
 
-from __future__ import with_statement
-
 import shutil
 import socket
 import tempfile

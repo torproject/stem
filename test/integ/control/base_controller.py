@@ -2,8 +2,6 @@
 Integration tests for the stem.control.BaseController class.
 """
 
-from __future__ import with_statement
-
 import re
 import threading
 import time

@@ -157,8 +157,6 @@ Here's an expanation of what happened...
     +- get_value - provides the value for a given key as a string
 """
 
-from __future__ import with_statement
-
 import threading
 
 from stem.util import log
@@ -478,7 +476,6 @@ class Config(object):
     elif not self._path:
       raise ValueError("Unable to save configuration: no path provided")
 
-    # TODO: when we drop python 2.5 compatibility we can simplify this
     with self._contents_lock:
       with open(self._path, 'w') as output_file:
         for entry_key in sorted(self.keys()):

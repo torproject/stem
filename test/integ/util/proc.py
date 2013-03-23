@@ -3,8 +3,6 @@ Integration tests for stem.util.proc functions against the tor process that
 we're running.
 """
 
-from __future__ import with_statement
-
 import os
 import unittest
 

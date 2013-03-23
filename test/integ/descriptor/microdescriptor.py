@@ -2,8 +2,6 @@
 Integration tests for stem.descriptor.microdescriptor.
 """
 
-from __future__ import with_statement
-
 import os
 import unittest
 

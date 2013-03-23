@@ -102,8 +102,6 @@ fine-grained control over the authentication process. For instance...
   ============== ===========
 """
 
-from __future__ import with_statement
-
 import binascii
 import getpass
 import os

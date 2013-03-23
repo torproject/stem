@@ -2,9 +2,8 @@
 Unit tests for the NetworkStatusDocumentV3 of stem.descriptor.networkstatus.
 """
 
-from __future__ import with_statement
-
 import datetime
+import io
 import unittest
 
 import stem.descriptor
@@ -28,7 +27,6 @@ from test.mocking import get_router_status_entry_v3, \
                          get_router_status_entry_micro_v3, \
                          get_directory_authority, \
                          get_network_status_document_v3, \
-                         BytesBuffer, \
                          CRYPTO_BLOB, \
                          DOC_SIG, \
                          NETWORK_STATUS_DOCUMENT_FOOTER
@@ -118,7 +116,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     # first example: parsing via the NetworkStatusDocumentV3 constructor
 
-    consensus_file = BytesBuffer(content)
+    consensus_file = io.BytesIO(content)
     consensus = NetworkStatusDocumentV3(consensus_file.read())
     consensus_file.close()
 
@@ -127,7 +125,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     # second example: using stem.descriptor.parse_file
 
-    with BytesBuffer(content) as consensus_file:
+    with io.BytesIO(content) as consensus_file:
       for router in stem.descriptor.parse_file(consensus_file, 'network-status-consensus-3 1.0'):
         self.assertEqual('caerSidi', router.nickname)
 
@@ -144,12 +142,12 @@ class TestNetworkStatusDocument(unittest.TestCase):
     entry2 = get_router_status_entry_v3({'s': "Valid"})
     content = get_network_status_document_v3(routers = (entry1, entry2), content = True)
 
-    descriptors = list(stem.descriptor.parse_file(BytesBuffer(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.DOCUMENT))
+    descriptors = list(stem.descriptor.parse_file(io.BytesIO(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.DOCUMENT))
     self.assertEqual(1, len(descriptors))
     self.assertTrue(isinstance(descriptors[0], NetworkStatusDocumentV3))
     self.assertEqual(2, len(descriptors[0].routers))
 
-    descriptors = list(stem.descriptor.parse_file(BytesBuffer(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.BARE_DOCUMENT))
+    descriptors = list(stem.descriptor.parse_file(io.BytesIO(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.BARE_DOCUMENT))
     self.assertEqual(1, len(descriptors))
     self.assertTrue(isinstance(descriptors[0], NetworkStatusDocumentV3))
     self.assertEqual(0, len(descriptors[0].routers))
@@ -168,7 +166,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     expected_document = get_network_status_document_v3()
 
-    descriptor_file = BytesBuffer(content)
+    descriptor_file = io.BytesIO(content)
     entries = list(_parse_file(descriptor_file))
 
     self.assertEquals(entry1, entries[0])

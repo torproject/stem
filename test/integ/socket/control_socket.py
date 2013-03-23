@@ -8,8 +8,6 @@ those focus on parsing and correctness of the content these are more concerned
 with the behavior of the socket itself.
 """
 
-from __future__ import with_statement
-
 import unittest
 
 import stem.connection

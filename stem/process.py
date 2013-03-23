@@ -18,8 +18,6 @@ Helper functions for working with tor as a process.
   launch_tor_with_config - starts a tor process with a custom torrc
 """
 
-from __future__ import with_statement
-
 import os
 import re
 import signal

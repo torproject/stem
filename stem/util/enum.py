@@ -124,9 +124,7 @@ class Enum(object):
     if not value in self._values:
       raise ValueError("No such enumeration exists: %s (options: %s)" % (value, ", ".join(self._values)))
 
-    # TODO: python 2.5 lacks an index method on tuples, when we drop support
-    # we can drop this hack
-    next_index = (list(self._values).index(value) + 1) % len(self._values)
+    next_index = (self._values.index(value) + 1) % len(self._values)
     return self._values[next_index]
 
   def previous(self, value):
@@ -143,9 +141,7 @@ class Enum(object):
     if not value in self._values:
       raise ValueError("No such enumeration exists: %s (options: %s)" % (value, ", ".join(self._values)))
 
-    # TODO: python 2.5 lacks an index method on tuples, when we drop support
-    # we can drop this hack
-    prev_index = (list(self._values).index(value) - 1) % len(self._values)
+    prev_index = (self._values.index(value) - 1) % len(self._values)
     return self._values[prev_index]
 
   def __getitem__(self, item):

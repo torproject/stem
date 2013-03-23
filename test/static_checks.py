@@ -8,15 +8,7 @@ which are...
 * two space indentations
 * tabs are the root of all evil and should be shot on sight
 * standard newlines (\\n), not windows (\\r\\n) nor classic mac (\\r)
-
-This also checks for 2.5 compatibility issues (yea, they're not whitespace but
-it's so much easier to do here...):
-
-* checks that anything using the 'with' keyword has...
-  from __future__ import with_statement
 """
-
-from __future__ import with_statement
 
 import re
 import os
@@ -166,7 +158,6 @@ def get_issues(base_path = DEFAULT_TARGET):
       file_contents = f.read()
 
     lines, file_issues, prev_indent = file_contents.split("\n"), [], 0
-    has_with_import, given_with_warning = False, False
     is_block_comment = False
 
     for index, line in enumerate(lines):
@@ -174,13 +165,6 @@ def get_issues(base_path = DEFAULT_TARGET):
 
       if '"""' in content:
         is_block_comment = not is_block_comment
-
-      if content == "from __future__ import with_statement":
-        has_with_import = True
-      elif content.startswith("with ") and content.endswith(":") \
-        and not has_with_import and not given_with_warning and not is_block_comment:
-        file_issues.append((index + 1, "missing 'with' import (from __future__ import with_statement)"))
-        given_with_warning = True
 
       if "\t" in whitespace:
         file_issues.append((index + 1, "indentation has a tab"))

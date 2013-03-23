@@ -3,8 +3,6 @@ Integration tests for authenticating to the control socket via
 stem.connection.authenticate* functions.
 """
 
-from __future__ import with_statement
-
 import os
 import unittest
 

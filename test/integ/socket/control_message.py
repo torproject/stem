@@ -2,8 +2,6 @@
 Integration tests for the stem.response.ControlMessage class.
 """
 
-from __future__ import with_statement
-
 import re
 import unittest
 

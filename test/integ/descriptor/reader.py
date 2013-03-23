@@ -2,8 +2,6 @@
 Integration tests for stem.descriptor.reader.
 """
 
-from __future__ import with_statement
-
 import getpass
 import os
 import signal
@@ -56,7 +54,9 @@ def _get_raw_tar_descriptors():
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar")
     raw_descriptors = []
 
-    # TODO: revert to using the 'with' keyword for this when dropping python 2.5 support
+    # TODO: revert to using the 'with' keyword for this when dropping python
+    # 2.6 support
+
     tar_file = None
 
     try:

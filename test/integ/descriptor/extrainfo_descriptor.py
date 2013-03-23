@@ -2,8 +2,6 @@
 Integration tests for stem.descriptor.extrainfo_descriptor.
 """
 
-from __future__ import with_statement
-
 import datetime
 import os
 import unittest

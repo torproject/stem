@@ -30,8 +30,6 @@ Parses replies from the control socket.
   SingleLineResponse - Simple tor response only including a single line of information.
 """
 
-from __future__ import with_statement
-
 __all__ = [
   "events",
   "getinfo",

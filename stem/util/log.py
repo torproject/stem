@@ -195,7 +195,7 @@ class LogBuffer(logging.Handler):
   """
 
   def __init__(self, runlevel):
-    # TODO: At least in python 2.5 logging.Handler has a bug in that it doesn't
+    # TODO: At least in python 2.6 logging.Handler has a bug in that it doesn't
     # extend object, causing our super() call to fail. When we drop python 2.5
     # support we should switch back to using super() instead.
     #super(LogBuffer, self).__init__(level = logging_level(runlevel))

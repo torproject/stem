@@ -134,8 +134,6 @@ providing its own for interacting at a higher level.
   ===================== ===========
 """
 
-from __future__ import with_statement
-
 import io
 import os
 import Queue
@@ -219,10 +217,6 @@ CACHEABLE_GETINFO_PARAMS = (
 # number of sequential attempts before we decide that the Tor geoip database
 # is unavailable
 GEOIP_FAILURE_THRESHOLD = 5
-
-# TODO: The Thread's isAlive() method and threading's currentThread() was
-# changed to the more conventional is_alive() and current_thread() in python
-# 2.6 and above. We should use that when dropping python 2.5 compatibility.
 
 
 class BaseController(object):
@@ -495,7 +489,7 @@ class BaseController(object):
     # joins on our threads if it's safe to do so
 
     for t in (self._reader_thread, self._event_thread):
-      if t and t.isAlive() and threading.currentThread() != t:
+      if t and t.is_alive() and threading.current_thread() != t:
         t.join()
 
     self._notify_status_listeners(State.CLOSED)
@@ -516,7 +510,6 @@ class BaseController(object):
     # Any changes to our is_alive() state happen under the send lock, so we
     # need to have it to ensure it doesn't change beneath us.
 
-    # TODO: when we drop python 2.5 compatibility we can simplify this
     with self._socket._get_send_lock():
       with self._status_listeners_lock:
         # States imply that our socket is either alive or not, which may not
@@ -559,12 +552,12 @@ class BaseController(object):
     # single thread, which would cause an unexpected exception. Best be safe.
 
     with self._socket._get_send_lock():
-      if not self._reader_thread or not self._reader_thread.isAlive():
+      if not self._reader_thread or not self._reader_thread.is_alive():
         self._reader_thread = threading.Thread(target = self._reader_loop, name = "Tor Listener")
         self._reader_thread.setDaemon(True)
         self._reader_thread.start()
 
-      if not self._event_thread or not self._event_thread.isAlive():
+      if not self._event_thread or not self._event_thread.is_alive():
         self._event_thread = threading.Thread(target = self._event_loop, name = "Event Notifier")
         self._event_thread.setDaemon(True)
         self._event_thread.start()
@@ -1184,7 +1177,7 @@ class Controller(BaseController):
 
     try:
       # TODO: We should iterate over the descriptors as they're read from the
-      # socket rather than reading the whole thing into memeory.
+      # socket rather than reading the whole thing into memory.
       #
       # https://trac.torproject.org/8248
 
