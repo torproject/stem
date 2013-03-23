@@ -318,6 +318,33 @@ class Descriptor(object):
       return self._raw_contents
 
 
+def _get_bytes_field(keyword, content):
+  """
+  Provides the value corresponding to the given keyword. This is handy to fetch
+  values specifically allowed to be arbitrary bytes prior to converting to
+  unicode.
+
+  :param str keyword: line to look up
+  :param bytes content: content to look through
+
+  :returns: **bytes** value on the given line, **None** if the line doesn't
+    exist
+
+  :raises: **ValueError** if the content isn't bytes
+  """
+
+  if not isinstance(content, bytes):
+    raise ValueError("Content must be bytes, got a %s" % type(content))
+
+  line_match = re.search(stem.util.str_tools._to_bytes("^(opt )?%s(?:[%s]+(.*))?$" % (keyword, WHITESPACE)), content, re.MULTILINE)
+
+  if line_match:
+    value = line_match.groups()[1]
+    return b"" if value is None else value
+  else:
+    return None
+
+
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):
   """
   Reads from the descriptor file until we get to one of the given keywords or reach the

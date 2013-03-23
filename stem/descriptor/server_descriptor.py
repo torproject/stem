@@ -152,11 +152,11 @@ class ServerDescriptor(stem.descriptor.Descriptor):
   :var int socks_port: **\*** port used as client (deprecated, always **None**)
   :var int dir_port: **\*** port used for descriptor mirroring
 
-  :var str platform: line with operating system and tor version
+  :var bytes platform: line with operating system and tor version
   :var stem.version.Version tor_version: version of tor
   :var str operating_system: operating system
   :var int uptime: uptime when published in seconds
-  :var str contact: contact information
+  :var bytes contact: contact information
   :var stem.exit_policy.ExitPolicy exit_policy: **\*** stated exit policy
   :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\*** exit policy for IPv6
   :var set family: **\*** nicknames or fingerprints of declared family
@@ -209,6 +209,13 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     """
 
     super(ServerDescriptor, self).__init__(raw_contents)
+
+    # Only a few things can be arbitrary bytes according to the dir-spec, so
+    # parsing them separately.
+
+    self.platform = stem.descriptor._get_bytes_field("platform", raw_contents)
+    self.contact = stem.descriptor._get_bytes_field("contact", raw_contents)
+
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
     self.nickname = None
@@ -220,11 +227,9 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     self.socks_port = None
     self.dir_port = None
 
-    self.platform = None
     self.tor_version = None
     self.operating_system = None
     self.uptime = None
-    self.contact = None
     self.exit_policy = None
     self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy("reject 1-65535")
     self.family = set()
@@ -405,16 +410,16 @@ class ServerDescriptor(stem.descriptor.Descriptor):
       elif keyword == "platform":
         # "platform" string
 
-        self.platform = value
-
-        # This line can contain any arbitrary data, but tor seems to report its
-        # version followed by the os like the following...
-        # platform Tor 0.2.2.35 (git-73ff13ab3cc9570d) on Linux x86_64
+        # The platform attribute was set earlier. This line can contain any
+        # arbitrary data, but tor seems to report its version followed by the
+        # os like the following...
+        #
+        #   platform Tor 0.2.2.35 (git-73ff13ab3cc9570d) on Linux x86_64
         #
         # There's no guarantee that we'll be able to pick these out the
         # version, but might as well try to save our caller the effort.
 
-        platform_match = re.match("^Tor (\S*).* on (.*)$", self.platform)
+        platform_match = re.match("^Tor (\S*).* on (.*)$", value)
 
         if platform_match:
           version_str, self.operating_system = platform_match.groups()
@@ -490,7 +495,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
 
           raise ValueError("Uptime line must have an integer value: %s" % value)
       elif keyword == "contact":
-        self.contact = value
+        pass  # parsed as a bytes field earlier
       elif keyword == "protocols":
         protocols_match = re.match("^Link (.*) Circuit (.*)$", value)
 

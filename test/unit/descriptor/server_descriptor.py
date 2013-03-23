@@ -47,7 +47,7 @@ class TestServerDescriptor(unittest.TestCase):
     """
 
     desc = get_relay_server_descriptor({"opt": "contact www.atagar.com/contact/"})
-    self.assertEquals("www.atagar.com/contact/", desc.contact)
+    self.assertEquals(b"www.atagar.com/contact/", desc.contact)
 
   def test_unrecognized_line(self):
     """
@@ -136,12 +136,12 @@ class TestServerDescriptor(unittest.TestCase):
 
     desc_text = get_relay_server_descriptor({"platform": ""}, content = True)
     desc = RelayDescriptor(desc_text, validate = False)
-    self.assertEquals("", desc.platform)
+    self.assertEquals(b"", desc.platform)
 
     # does the same but with 'platform ' replaced with 'platform'
     desc_text = desc_text.replace(b"platform ", b"platform")
     desc = RelayDescriptor(desc_text, validate = False)
-    self.assertEquals("", desc.platform)
+    self.assertEquals(b"", desc.platform)
 
   def test_protocols_no_circuit_versions(self):
     """
@@ -234,7 +234,7 @@ class TestServerDescriptor(unittest.TestCase):
 
     desc_text = get_relay_server_descriptor({"<replace>": ""}, content = True)
     desc_text = desc_text.replace(b"<replace>", b"contact foo\ncontact bar")
-    self._expect_invalid_attr(desc_text, "contact", "foo")
+    self._expect_invalid_attr(desc_text, "contact", b"foo")
 
   def test_missing_required_attr(self):
     """

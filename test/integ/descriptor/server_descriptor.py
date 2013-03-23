@@ -66,12 +66,12 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(9001, desc.or_port)
     self.assertEquals(None, desc.socks_port)
     self.assertEquals(None, desc.dir_port)
-    self.assertEquals("Tor 0.2.1.30 on Linux x86_64", desc.platform)
+    self.assertEquals(b"Tor 0.2.1.30 on Linux x86_64", desc.platform)
     self.assertEquals(stem.version.Version("0.2.1.30"), desc.tor_version)
     self.assertEquals("Linux x86_64", desc.operating_system)
     self.assertEquals(588217, desc.uptime)
     self.assertEquals(datetime.datetime(2012, 3, 1, 17, 15, 27), desc.published)
-    self.assertEquals("www.atagar.com/contact", desc.contact)
+    self.assertEquals(b"www.atagar.com/contact", desc.contact)
     self.assertEquals(["1", "2"], desc.link_protocols)
     self.assertEquals(["1"], desc.circuit_protocols)
     self.assertEquals(False, desc.hibernating)
@@ -120,7 +120,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(8000, desc.or_port)
     self.assertEquals(None, desc.socks_port)
     self.assertEquals(None, desc.dir_port)
-    self.assertEquals("Tor 0.1.0.14 on FreeBSD i386", desc.platform)
+    self.assertEquals(b"Tor 0.1.0.14 on FreeBSD i386", desc.platform)
     self.assertEquals(stem.version.Version("0.1.0.14"), desc.tor_version)
     self.assertEquals("FreeBSD i386", desc.operating_system)
     self.assertEquals(64820, desc.uptime)
@@ -198,7 +198,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     descriptor_file = open(get_resource("non-ascii_descriptor"), 'rb')
 
-    expected_contact = b"2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf".decode("utf-8", "replace")
+    expected_contact = b"2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf"
 
     desc = next(stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"))
     self.assertEquals("torrelay389752132", desc.nickname)
@@ -207,7 +207,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(9001, desc.or_port)
     self.assertEquals(None, desc.socks_port)
     self.assertEquals(None, desc.dir_port)
-    self.assertEquals("Tor 0.2.2.35 (git-4f42b0a93422f70e) on Linux x86_64", desc.platform)
+    self.assertEquals(b"Tor 0.2.2.35 (git-4f42b0a93422f70e) on Linux x86_64", desc.platform)
     self.assertEquals(stem.version.Version("0.2.2.35"), desc.tor_version)
     self.assertEquals("Linux x86_64", desc.operating_system)
     self.assertEquals(3103848, desc.uptime)
@@ -250,8 +250,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     # the contact info block is huge so just checking the start and end,
     # including some of the embedded carriage returns
 
-    contact_start = "jie1 at pacbell dot net -----BEGIN PGP PUBLIC KEY BLOCK-----\rVersion:"
-    contact_end = "YFRk3NhCY=\r=Xaw3\r-----END PGP PUBLIC KEY BLOCK-----"
+    contact_start = b"jie1 at pacbell dot net -----BEGIN PGP PUBLIC KEY BLOCK-----\rVersion:"
+    contact_end = b"YFRk3NhCY=\r=Xaw3\r-----END PGP PUBLIC KEY BLOCK-----"
 
     self.assertTrue(desc.contact.startswith(contact_start))
     self.assertTrue(desc.contact.endswith(contact_end))
@@ -295,12 +295,12 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEquals(9001, desc.or_port)
     self.assertEquals(None, desc.socks_port)
     self.assertEquals(None, desc.dir_port)
-    self.assertEquals("Tor 0.2.3.12-alpha (git-800942b4176ca31c) on Linux x86_64", desc.platform)
+    self.assertEquals(b"Tor 0.2.3.12-alpha (git-800942b4176ca31c) on Linux x86_64", desc.platform)
     self.assertEquals(stem.version.Version("0.2.3.12-alpha"), desc.tor_version)
     self.assertEquals("Linux x86_64", desc.operating_system)
     self.assertEquals(186, desc.uptime)
     self.assertEquals(datetime.datetime(2012, 3, 22, 17, 34, 38), desc.published)
-    self.assertEquals("somebody", desc.contact)
+    self.assertEquals(b"somebody", desc.contact)
     self.assertEquals(["1", "2"], desc.link_protocols)
     self.assertEquals(["1"], desc.circuit_protocols)
     self.assertEquals(False, desc.hibernating)
