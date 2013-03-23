@@ -263,7 +263,7 @@ class DescriptorReader(object):
   """
 
   def __init__(self, target, validate = True, follow_links = False, buffer_size = 100, persistence_path = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
-    if isinstance(target, str):
+    if isinstance(target, (bytes, unicode)):
       self._targets = [target]
     else:
       self._targets = target

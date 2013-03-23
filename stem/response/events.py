@@ -142,7 +142,7 @@ class Event(stem.response.ControlMessage):
     attr_values = getattr(self, attr)
 
     if attr_values:
-      if isinstance(attr_values, str):
+      if isinstance(attr_values, (bytes, unicode)):
         attr_values = [attr_values]
 
       for value in attr_values:

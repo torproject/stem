@@ -737,7 +737,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if isinstance(params, str):
+    if isinstance(params, (bytes, unicode)):
       is_multiple = False
       params = set([params])
     else:
@@ -1299,7 +1299,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if isinstance(params, str):
+    if isinstance(params, (bytes, unicode)):
       params = [params]
 
     # remove strings which contain only whitespace
@@ -1483,7 +1483,7 @@ class Controller(BaseController):
           if value is None:
             if cache_key in self._request_cache:
               del self._request_cache[cache_key]
-          elif isinstance(value, str):
+          elif isinstance(value, (bytes, unicode)):
             self._request_cache[cache_key] = [value]
           else:
             self._request_cache[cache_key] = value
@@ -1697,7 +1697,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidArguments` if features passed were invalid
     """
 
-    if isinstance(features, str):
+    if isinstance(features, (bytes, unicode)):
       features = [features]
 
     response = self.msg("USEFEATURE %s" % " ".join(features))
@@ -1848,7 +1848,7 @@ class Controller(BaseController):
 
       args = [circuit_id]
 
-      if isinstance(path, str):
+      if isinstance(path, (bytes, unicode)):
         path = [path]
 
       if path:

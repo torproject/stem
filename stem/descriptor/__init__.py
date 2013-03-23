@@ -365,7 +365,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   content = None if skip else []
   ending_keyword = None
 
-  if isinstance(keywords, str):
+  if isinstance(keywords, (bytes, unicode)):
     keywords = (keywords,)
 
   if ignore_first:
