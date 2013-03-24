@@ -2,6 +2,7 @@
 Integration tests for the stem.control.Controller class.
 """
 
+import os
 import shutil
 import socket
 import tempfile
@@ -834,6 +835,9 @@ class TestController(unittest.TestCase):
 
     if test.runner.require_control(self):
       return
+    elif not os.path.exists(runner.get_test_dir("cached-descriptors")):
+      test.runner.skip(self, "(no cached microdescriptors)")
+      return
 
     with runner.get_tor_controller() as controller:
       count = 0
@@ -1013,6 +1017,8 @@ class TestController(unittest.TestCase):
           break
 
       if TEST_ROUTER_STATUS_ENTRY is None:
-        self.fail("Unable to find any relays without a nickname of 'Unnamed'")
+        # this is only likely to occure if we can't get descriptors
+        test.runner.skip(self, "(no named relays)")
+        return
 
     return TEST_ROUTER_STATUS_ENTRY
