@@ -156,29 +156,31 @@ class ExitPolicy(object):
     self._summary_representation = None
     self._can_exit_to_cache = {}
 
-  def can_exit_to(self, address = None, port = None):
+  def can_exit_to(self, address = None, port = None, strict = False):
     """
     Checks if this policy allows exiting to a given destination or not. If the
-    address or port is omitted then this will check if we allow for its
-    wildcard.
+    address or port is omitted then this will check if we're allowed to exit to
+    any instances of the defined address or port.
 
     :param str address: IPv4 or IPv6 address (with or without brackets)
     :param int port: port number
+    :param bool strict: if the address or port is excluded then check if we can
+      exit to **all** instances of the defined address or port
 
     :returns: **True** if exiting to this destination is allowed, **False** otherwise
     """
 
-    if not (address, port) in self._can_exit_to_cache:
+    if not (address, port, strict) in self._can_exit_to_cache:
       result = self._is_allowed_default
 
       for rule in self._get_rules():
-        if rule.is_match(address, port):
+        if rule.is_match(address, port, strict):
           result = rule.is_accept
           break
 
-      self._can_exit_to_cache[(address, port)] = result
+      self._can_exit_to_cache[(address, port, strict)] = result
 
-    return self._can_exit_to_cache[(address, port)]
+    return self._can_exit_to_cache[(address, port, strict)]
 
   def is_exiting_allowed(self):
     """
@@ -529,13 +531,16 @@ class ExitPolicyRule(object):
 
     return self.min_port in (0, 1) and self.max_port == 65535
 
-  def is_match(self, address = None, port = None):
+  def is_match(self, address = None, port = None, strict = False):
     """
     **True** if we match against the given destination, **False** otherwise. If
-    the address or port is omitted then that'll only match against a wildcard.
+    the address or port is omitted then this will check if we're allowed to
+    exit to any instances of the defined address or port.
 
     :param str address: IPv4 or IPv6 address (with or without brackets)
     :param int port: port number
+    :param bool strict: if the address or port is excluded then check if we can
+      exit to **all** instances of the defined address or port
 
     :returns: **bool** indicating if we match against this destination
 
@@ -566,7 +571,8 @@ class ExitPolicyRule(object):
       # mask applied matches.
 
       if address is None:
-        return False
+        if strict:
+          return False
       else:
         comparison_addr_bin = int(stem.util.connection._get_address_binary(address), 2)
         comparison_addr_bin &= self._get_mask_bin()
@@ -576,7 +582,8 @@ class ExitPolicyRule(object):
 
     if not self.is_port_wildcard():
       if port is None:
-        return False
+        if strict:
+          return False
       elif port < self.min_port or port > self.max_port:
         return False
 

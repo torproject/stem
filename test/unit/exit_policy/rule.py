@@ -216,8 +216,10 @@ class TestExitPolicyRule(unittest.TestCase):
         ("FE80:0000:0000:0000:0202:B3FF:FE1E:8329", 80): True,
         ("[FE80:0000:0000:0000:0202:B3FF:FE1E:8329]", 80): True,
         ("192.168.0.1", None): True,
-        (None, 80): True,
-        (None, None): True,
+        (None, 80, False): True,
+        (None, 80, True): True,
+        (None, None, False): True,
+        (None, None, True): True,
       },
       "reject 255.255.255.255/0:*": {
         ("192.168.0.1", 80): True,
@@ -226,8 +228,10 @@ class TestExitPolicyRule(unittest.TestCase):
         ("FE80:0000:0000:0000:0202:B3FF:FE1E:8329", 80): False,
         ("[FE80:0000:0000:0000:0202:B3FF:FE1E:8329]", 80): False,
         ("192.168.0.1", None): True,
-        (None, 80): False,
-        (None, None): False,
+        (None, 80, False): True,
+        (None, 80, True): False,
+        (None, None, False): True,
+        (None, None, True): False,
       },
     }
 
@@ -249,7 +253,8 @@ class TestExitPolicyRule(unittest.TestCase):
         ("192.168.0.50", 80): True,
         ("192.168.0.51", 80): False,
         ("192.168.0.49", 80): False,
-        (None, 80): False,
+        (None, 80, False): True,
+        (None, 80, True): False,
         ("192.168.0.50", None): True,
       },
       "reject 0.0.0.0/24:*": {
@@ -259,7 +264,8 @@ class TestExitPolicyRule(unittest.TestCase):
         ("0.0.1.0", 80): False,
         ("0.1.0.0", 80): False,
         ("1.0.0.0", 80): False,
-        (None, 80): False,
+        (None, 80, False): True,
+        (None, 80, True): False,
         ("0.0.0.0", None): True,
       },
     }
@@ -278,7 +284,8 @@ class TestExitPolicyRule(unittest.TestCase):
         ("[FE80:0000:0000:0000:0202:B3FF:FE1E:8329]", 80): True,
         ("FE80:0000:0000:0000:0202:B3FF:FE1E:8330", 80): False,
         ("FE80:0000:0000:0000:0202:B3FF:FE1E:8328", 80): False,
-        (None, 80): False,
+        (None, 80, False): True,
+        (None, 80, True): False,
         ("FE80:0000:0000:0000:0202:B3FF:FE1E:8329", None): True,
       },
       "reject [FE80:0000:0000:0000:0202:B3FF:FE1E:8329]/112:*": {
@@ -287,8 +294,10 @@ class TestExitPolicyRule(unittest.TestCase):
         ("FE80:0000:0000:0000:0202:B3FF:FE1E:FFFF", 80): True,
         ("FE80:0000:0000:0000:0202:B3FF:FE1F:8329", 80): False,
         ("FE81:0000:0000:0000:0202:B3FF:FE1E:8329", 80): False,
-        (None, 80): False,
-        ("FE80:0000:0000:0000:0202:B3FF:FE1E:8329", None): True,
+        (None, 80, False): True,
+        (None, 80, True): False,
+        ("FE80:0000:0000:0000:0202:B3FF:FE1E:8329", None, False): True,
+        ("FE80:0000:0000:0000:0202:B3FF:FE1E:8329", None, True): True,
       },
     }
 
@@ -305,7 +314,8 @@ class TestExitPolicyRule(unittest.TestCase):
         ("192.168.0.50", 81): False,
         ("192.168.0.50", 79): False,
         (None, 80): True,
-        ("192.168.0.50", None): False,
+        ("192.168.0.50", None, False): True,
+        ("192.168.0.50", None, True): False,
       },
       "reject *:80-85": {
         ("192.168.0.50", 79): False,
@@ -314,7 +324,8 @@ class TestExitPolicyRule(unittest.TestCase):
         ("192.168.0.50", 85): True,
         ("192.168.0.50", 86): False,
         (None, 83): True,
-        ("192.168.0.50", None): False,
+        ("192.168.0.50", None, False): True,
+        ("192.168.0.50", None, True): False,
       },
     }
 
