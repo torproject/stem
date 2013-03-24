@@ -45,7 +45,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
       Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING,
       Flag.STABLE, Flag.UNNAMED, Flag.V2DIR, Flag.VALID]
 
-    self.assertEqual((), document.routers)
+    self.assertEqual({}, document.routers)
     self.assertEqual(3, document.version)
     self.assertEqual(None, document.version_flavor)
     self.assertEqual(True, document.is_consensus)
@@ -81,7 +81,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
       Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING,
       Flag.STABLE, Flag.UNNAMED, Flag.V2DIR, Flag.VALID]
 
-    self.assertEqual((), document.routers)
+    self.assertEqual({}, document.routers)
     self.assertEqual(3, document.version)
     self.assertEqual(False, document.is_consensus)
     self.assertEqual(True, document.is_vote)
@@ -120,7 +120,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
     consensus = NetworkStatusDocumentV3(consensus_file.read())
     consensus_file.close()
 
-    for router in consensus.routers:
+    for router in consensus.routers.values():
       self.assertEqual('caerSidi', router.nickname)
 
     # second example: using stem.descriptor.parse_file
@@ -139,7 +139,11 @@ class TestNetworkStatusDocument(unittest.TestCase):
     # document includes or excludes the router status entries as appropriate.
 
     entry1 = get_router_status_entry_v3({'s': "Fast"})
-    entry2 = get_router_status_entry_v3({'s': "Valid"})
+    entry2 = get_router_status_entry_v3({
+      'r': "Nightfae AWt0XNId/OU2xX5xs5hVtDc5Mes 6873oEfM7fFIbxYtwllw9GPDwkA 2013-02-20 11:12:27 85.177.66.233 9001 9030",
+      's': "Valid",
+    })
+
     content = get_network_status_document_v3(routers = (entry1, entry2), content = True)
 
     descriptors = list(stem.descriptor.parse_file(io.BytesIO(content), 'network-status-consensus-3 1.0', document_handler = stem.descriptor.DocumentHandler.DOCUMENT))
@@ -792,10 +796,15 @@ class TestNetworkStatusDocument(unittest.TestCase):
     """
 
     entry1 = get_router_status_entry_v3({'s': "Fast"})
-    entry2 = get_router_status_entry_v3({'s': "Valid"})
+    entry2 = get_router_status_entry_v3({
+      'r': "Nightfae AWt0XNId/OU2xX5xs5hVtDc5Mes 6873oEfM7fFIbxYtwllw9GPDwkA 2013-02-20 11:12:27 85.177.66.233 9001 9030",
+      's': "Valid",
+    })
+
     document = get_network_status_document_v3(routers = (entry1, entry2))
 
-    self.assertEquals((entry1, entry2), document.routers)
+    self.assertTrue(entry1 in document.routers.values())
+    self.assertTrue(entry2 in document.routers.values())
 
     # try with an invalid RouterStatusEntry
 
@@ -804,20 +813,15 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals((entry3,), document.routers)
+    self.assertEquals([entry3], document.routers.values())
 
     # try including with a microdescriptor consensus
 
-    content = get_network_status_document_v3({"network-status-version": "3 microdesc"}, routers = (entry1, entry2), content = True)
+    content = get_network_status_document_v3({"network-status-version": "3 microdesc"}, routers = (entry1,), content = True)
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
-    expected_routers = (
-      RouterStatusEntryMicroV3(str(entry1), False),
-      RouterStatusEntryMicroV3(str(entry2), False),
-    )
-
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals(expected_routers, document.routers)
+    self.assertEqual([RouterStatusEntryMicroV3(str(entry1), False)], document.routers.values())
 
   def test_with_microdescriptor_router_status_entries(self):
     """
@@ -826,32 +830,33 @@ class TestNetworkStatusDocument(unittest.TestCase):
     """
 
     entry1 = get_router_status_entry_micro_v3({'s': "Fast"})
-    entry2 = get_router_status_entry_micro_v3({'s': "Valid"})
+    entry2 = get_router_status_entry_micro_v3({
+      'r': "tornodeviennasil AcWxDFxrHetHYS5m6/MVt8ZN6AM 2013-03-13 22:09:13 78.142.142.246 443 80",
+      's': "Valid",
+    })
+
     document = get_network_status_document_v3({"network-status-version": "3 microdesc"}, routers = (entry1, entry2))
 
-    self.assertEquals((entry1, entry2), document.routers)
+    self.assertTrue(entry1 in document.routers.values())
+    self.assertTrue(entry2 in document.routers.values())
 
     # try with an invalid RouterStatusEntry
 
     entry3 = RouterStatusEntryMicroV3(get_router_status_entry_micro_v3({'r': "ugabuga"}, content = True), False)
+
     content = get_network_status_document_v3({"network-status-version": "3 microdesc"}, routers = (entry3,), content = True)
-
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
-    document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals((entry3,), document.routers)
-
-    # try including microdescriptor entries in a normal consensus
-
-    content = get_network_status_document_v3(routers = (entry1, entry2), content = True)
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
-    expected_routers = (
-      RouterStatusEntryV3(str(entry1), False),
-      RouterStatusEntryV3(str(entry2), False),
-    )
+    document = NetworkStatusDocumentV3(content, False)
+    self.assertEquals([entry3], document.routers.values())
+
+    # try including microdescriptor entry in a normal consensus
+
+    content = get_network_status_document_v3(routers = (entry1,), content = True)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals(expected_routers, document.routers)
+    self.assertEqual([RouterStatusEntryV3(str(entry1), False)], document.routers.values())
 
   def test_with_directory_authorities(self):
     """

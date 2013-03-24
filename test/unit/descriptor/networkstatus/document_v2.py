@@ -16,7 +16,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     document = get_network_status_document_v2()
 
-    self.assertEquals((), document.routers)
+    self.assertEquals({}, document.routers)
     self.assertEquals(2, document.version)
     self.assertEquals("18.244.0.114", document.hostname)
     self.assertEquals("18.244.0.114", document.address)

@@ -251,7 +251,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       self.assertEquals(None, document.published)
       self.assertEquals([], document.get_unrecognized_lines())
 
-      router = document.routers[0]
+      router = document.routers["0013D22389CD50D0B784A3E4061CB31E8CE8CEB5"]
       self.assertEquals("sumkledi", router.nickname)
       self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
       self.assertEquals("F260ABF1297B445E04354E236F4159140FF7768F", router.digest)
@@ -326,7 +326,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
 
       self.assertEqual(3, len(document.routers))
 
-      router1 = document.routers[0]
+      router1 = document.routers["719BE45DE224B607C53707D0E2143E2D423E74CF"]
       self.assertEquals("moria2", router1.nickname)
       self.assertEquals("719BE45DE224B607C53707D0E2143E2D423E74CF", router1.fingerprint)
       self.assertEquals("B7F3F0975B87889DD1285FD57A1B1BB617F65432", router1.digest)
@@ -336,7 +336,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
       self.assertEquals(80, router1.dir_port)
       self.assertEquals(set(["Authority", "Fast", "Named", "Running", "Valid", "V2Dir"]), set(router1.flags))
 
-      router2 = document.routers[1]
+      router2 = document.routers["0928BA467056C4A689FEE4EF5D71482B6289C3D5"]
       self.assertEquals("stnv", router2.nickname)
       self.assertEquals("0928BA467056C4A689FEE4EF5D71482B6289C3D5", router2.fingerprint)
       self.assertEquals("22D1A7ED4199BDA7ED6C416EECD769C18E1F2A5A", router2.digest)
@@ -346,7 +346,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
       self.assertEquals(None, router2.dir_port)
       self.assertEquals(set(["Named", "Valid"]), set(router2.flags))
 
-      router3 = document.routers[2]
+      router3 = document.routers["09E8582FF0E6F85E2B8E41C0DC0B9C9DC46E6968"]
       self.assertEquals("nggrplz", router3.nickname)
       self.assertEquals("09E8582FF0E6F85E2B8E41C0DC0B9C9DC46E6968", router3.fingerprint)
       self.assertEquals("B302C2B01C94F398E3EF38939526B0651F824DD6", router3.digest)
@@ -449,7 +449,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEquals(datetime.datetime(2012, 7, 11, 23, 50, 1), document.published)
       self.assertEquals([], document.get_unrecognized_lines())
 
-      router = document.routers[0]
+      router = document.routers["0013D22389CD50D0B784A3E4061CB31E8CE8CEB5"]
       self.assertEquals("sumkledi", router.nickname)
       self.assertEquals("0013D22389CD50D0B784A3E4061CB31E8CE8CEB5", router.fingerprint)
       self.assertEquals("0799F806200B005F01E40A9A7F1A21C988AE8FB1", router.digest)
