@@ -253,7 +253,7 @@ class TestControl(unittest.TestCase):
     self.assertEqual(router, self.controller.get_network_status(nickname))
 
     # Pretend to get the router status entry with its fingerprint.
-    hex_fingerprint = stem.descriptor.router_status_entry._decode_fingerprint(fingerprint, False)
+    hex_fingerprint = stem.descriptor.router_status_entry._base64_to_hex(fingerprint, False)
     self.assertEqual(router, self.controller.get_network_status(hex_fingerprint))
 
     # Mangle hex fingerprint and try again.

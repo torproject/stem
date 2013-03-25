@@ -6,7 +6,7 @@ import datetime
 import unittest
 
 from stem import Flag
-from stem.descriptor.router_status_entry import RouterStatusEntryV3, _decode_fingerprint
+from stem.descriptor.router_status_entry import RouterStatusEntryV3, _base64_to_hex
 from stem.exit_policy import MicroExitPolicy
 from stem.version import Version
 
@@ -19,7 +19,7 @@ from test.mocking import get_router_status_entry_v2, \
 class TestRouterStatusEntry(unittest.TestCase):
   def test_fingerprint_decoding(self):
     """
-    Tests for the _decode_fingerprint() helper.
+    Tests for the _base64_to_hex() helper.
     """
 
     # consensus identity field and fingerprint for caerSidi and Amunet1-5
@@ -33,12 +33,12 @@ class TestRouterStatusEntry(unittest.TestCase):
     }
 
     for arg, expected in test_values.items():
-      self.assertEqual(expected, _decode_fingerprint(arg, True))
+      self.assertEqual(expected, _base64_to_hex(arg, True))
 
     # checks with some malformed inputs
     for arg in ('', '20wYcb', '20wYcb' * 30):
-      self.assertRaises(ValueError, _decode_fingerprint, arg, True)
-      self.assertEqual(None, _decode_fingerprint(arg, False))
+      self.assertRaises(ValueError, _base64_to_hex, arg, True)
+      self.assertEqual(None, _base64_to_hex(arg, False))
 
   def test_minimal_v2(self):
     """
@@ -105,7 +105,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual(expected_flags, set(entry.flags))
     self.assertEqual(None, entry.version_line)
     self.assertEqual(None, entry.version)
-    self.assertEqual("aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70", entry.digest)
+    self.assertEqual("6A252497006BB9AF36A1B1B902C4D7FA2129923400DBE0101F167B1B031F63BD", entry.digest)
     self.assertEqual([], entry.get_unrecognized_lines())
 
   def test_missing_fields(self):

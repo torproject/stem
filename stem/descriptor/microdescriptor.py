@@ -9,12 +9,64 @@ downloads server descriptors by default, opting for microdescriptors instead.
 Unlike most descriptor documents these aren't available on the metrics site
 (since they don't contain any information that the server descriptors don't).
 
+The limited information in microdescriptors make them rather clunky to use
+compared with server descriptors. For instance microdescriptors lack the
+relay's fingerprint, making it difficut to use them to look up the relay's
+other descriptors.
+
+To do so you need to match the microdescriptor's digest against its
+corresponding router status entry. For added fun as of this writing the
+controller doesn't even surface those router status entries
+(`ticket <https://trac.torproject.org/7953>`_).
+
+For instance, here's an example that prints the nickname and fignerprints of
+the exit relays.
+
+::
+
+  import os
+
+  from stem.control import Controller
+  from stem.descriptor import parse_file
+
+  with Controller.from_port(port = 9051) as controller:
+    controller.authenticate()
+
+    exit_digests = set()
+    data_dir = controller.get_conf("DataDirectory")
+
+    for desc in controller.get_microdescriptors():
+      if desc.exit_policy.is_exiting_allowed():
+        exit_digests.add(desc.digest)
+
+    print "Exit Relays:"
+
+    with open(os.path.join(data_dir, 'cached-microdesc-consensus')) as desc_file:
+      for desc in parse_file(desc_file):
+        if desc.digest in exit_digests:
+          print "  %s (%s)" % (desc.nickname, desc.fingerprint)
+
+Doing the same is trivial with server descriptors...
+
+::
+
+  from stem.descriptor import parse_file
+
+  print "Exit Relays:"
+
+  with open("/home/atagar/.tor/cached-descriptors") as desc_file:
+    for desc in parse_file(desc_file):
+      if desc.exit_policy.is_exiting_allowed():
+        print "  %s (%s)" % (desc.nickname, desc.fingerprint)
+
 **Module Overview:**
 
 ::
 
   Microdescriptor - Tor microdescriptor.
 """
+
+import hashlib
 
 import stem.descriptor
 import stem.descriptor.router_status_entry
@@ -91,6 +143,9 @@ class Microdescriptor(stem.descriptor.Descriptor):
   Microdescriptor (`descriptor specification
   <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_)
 
+  :var str digest: **\*** hex digest for this microdescriptor, this can be used
+    to match against the corresponding digest attribute of a
+    :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3`
   :var str onion_key: **\*** key used to encrypt EXTEND cells
   :var str ntor_onion_key: base64 key used to encrypt EXTEND in the ntor protocol
   :var list or_addresses: **\*** alternative for our address/or_port attributes, each
@@ -106,6 +161,8 @@ class Microdescriptor(stem.descriptor.Descriptor):
   def __init__(self, raw_contents, validate = True, annotations = None):
     super(Microdescriptor, self).__init__(raw_contents)
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
+
+    self.digest = hashlib.sha256(self.get_bytes()).hexdigest().upper()
 
     self.onion_key = None
     self.ntor_onion_key = None

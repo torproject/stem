@@ -403,7 +403,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting
     information that isn't yet recognized
 
-  :var str digest: **\*** router's base64 encoded router microdescriptor digest
+  :var str digest: **\*** router's hex encoded digest of our corresponding microdescriptor
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -433,7 +433,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
         # "m" digest
         # example: m aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70
 
-        self.digest = value
+        self.digest = _base64_to_hex(value, validate, False)
         del entries['m']
 
     RouterStatusEntry._parse(self, entries, validate)
@@ -505,10 +505,10 @@ def _parse_r_line(desc, value, validate, include_digest = True):
     return
 
   desc.nickname = r_comp[0]
-  desc.fingerprint = _decode_fingerprint(r_comp[1], validate)
+  desc.fingerprint = _base64_to_hex(r_comp[1], validate)
 
   if include_digest:
-    desc.digest = _decode_fingerprint(r_comp[2], validate)
+    desc.digest = _base64_to_hex(r_comp[2], validate)
 
   desc.address = r_comp[5]
   desc.or_port = int(r_comp[6])
@@ -687,18 +687,18 @@ def _parse_m_line(desc, value, validate):
   desc.microdescriptor_hashes.append((methods, hashes))
 
 
-def _decode_fingerprint(identity, validate):
+def _base64_to_hex(identity, validate, check_if_fingerprint = True):
   """
-  Decodes the 'identity' value found in consensuses into the more common hex
-  encoding of the relay's fingerprint. For example...
+  Decodes a base64 value to hex. For example...
 
   ::
 
-    >>> _decode_fingerprint('p1aag7VwarGxqctS7/fS0y5FU+s')
+    >>> _base64_to_hex('p1aag7VwarGxqctS7/fS0y5FU+s')
     'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
 
   :param str identity: encoded fingerprint from the consensus
   :param bool validate: checks validity if **True**
+  :param bool check_if_fingerprint: asserts that the result is a fingerprint if **True**
 
   :returns: **str** with the uppercase hex encoding of the relay's fingerprint
 
@@ -706,7 +706,7 @@ def _decode_fingerprint(identity, validate):
   """
 
   # trailing equal signs were stripped from the identity
-  missing_padding = 28 - len(identity)
+  missing_padding = len(identity) % 4
   identity += "=" * missing_padding
 
   fingerprint = ""
@@ -733,10 +733,11 @@ def _decode_fingerprint(identity, validate):
     char_int = char if isinstance(char, int) else ord(char)
     fingerprint += hex(char_int)[2:].zfill(2).upper()
 
-  if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
-    if not validate:
-      return None
+  if check_if_fingerprint:
+    if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
+      if not validate:
+        return None
 
-    raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
+      raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
 
   return fingerprint
