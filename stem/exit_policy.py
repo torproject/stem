@@ -131,6 +131,12 @@ def get_config_policy(rules):
     else:
       result.append(ExitPolicyRule(rule))
 
+  # torrc policies can apply to IPv4 or IPv6, so we need to make sure /0
+  # addresses aren't treated as being a full wildcard
+
+  for rule in result:
+    rule._submask_wildcard = False
+
   return ExitPolicy(*result)
 
 
@@ -510,15 +516,26 @@ class ExitPolicyRule(object):
 
     self._str_representation = None
 
+    # If true then a submask of /0 is treated by is_address_wildcard() as being
+    # a wildcard.
+
+    self._submask_wildcard = True
+
   def is_address_wildcard(self):
     """
-    **True** if we'll match against any address, **False** otherwise. Note that
-    this may be different from matching against a /0 because policies can
-    contain both IPv4 and IPv6 addresses (so 0.0.0.0/0 won't match against an
-    IPv6 address).
+    **True** if we'll match against any address, **False** otherwise.
+
+    Note that if this policy can apply to both IPv4 and IPv6 then this is
+    different from being for a /0 (since, for instance, 0.0.0.0/0 wouldn't
+    match against an IPv6 address). That said, /0 addresses are highly unusual
+    and most things citing exit policies are IPv4 specific anyway, making this
+    moot.
 
     :returns: **bool** for if our address matching is a wildcard
     """
+
+    if self._submask_wildcard and self.get_masked_bits() == 0:
+      return True
 
     return self._address_type == _address_type_to_int(AddressType.WILDCARD)
 

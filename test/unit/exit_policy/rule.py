@@ -69,10 +69,11 @@ class TestExitPolicyRule(unittest.TestCase):
       "accept 192.168.0.1:*": (False, True),
       "accept 192.168.0.1:80": (False, False),
 
-      "reject 127.0.0.1/0:*": (False, True),
+      "reject 127.0.0.1/0:*": (True, True),
+      "reject 127.0.0.1/0.0.0.0:*": (True, True),
       "reject 127.0.0.1/16:*": (False, True),
       "reject 127.0.0.1/32:*": (False, True),
-      "reject [0000:0000:0000:0000:0000:0000:0000:0000]/0:80": (False, False),
+      "reject [0000:0000:0000:0000:0000:0000:0000:0000]/0:80": (True, False),
       "reject [0000:0000:0000:0000:0000:0000:0000:0000]/64:80": (False, False),
       "reject [0000:0000:0000:0000:0000:0000:0000:0000]/128:80": (False, False),
 
@@ -88,6 +89,16 @@ class TestExitPolicyRule(unittest.TestCase):
       rule = ExitPolicyRule(rule_arg)
       self.assertEquals(is_address_wildcard, rule.is_address_wildcard())
       self.assertEquals(is_port_wildcard, rule.is_port_wildcard())
+
+    # check that when appropriate a /0 is reported as *not* being a wildcard
+
+    rule = ExitPolicyRule("reject 127.0.0.1/0:*")
+    rule._submask_wildcard = False
+    self.assertEquals(False, rule.is_address_wildcard())
+
+    rule = ExitPolicyRule("reject [0000:0000:0000:0000:0000:0000:0000:0000]/0:80")
+    rule._submask_wildcard = False
+    self.assertEquals(False, rule.is_address_wildcard())
 
   def test_invalid_wildcard(self):
     test_inputs = (
@@ -237,6 +248,7 @@ class TestExitPolicyRule(unittest.TestCase):
 
     for rule_arg, matches in test_inputs.items():
       rule = ExitPolicyRule(rule_arg)
+      rule._submask_wildcard = False
 
       for match_args, expected_result in matches.items():
         self.assertEquals(expected_result, rule.is_match(*match_args))
