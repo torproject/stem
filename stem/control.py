@@ -989,7 +989,7 @@ class Controller(BaseController):
         raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
       desc_content = self.get_info(query)
-      return stem.descriptor.microdescriptor.Microdescriptor(desc_content)
+      return stem.descriptor.microdescriptor.Microdescriptor(str_tools._to_bytes(desc_content))
     except Exception, exc:
       if default == UNDEFINED:
         raise exc
@@ -1079,7 +1079,7 @@ class Controller(BaseController):
         raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
       desc_content = self.get_info(query)
-      return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
+      return stem.descriptor.server_descriptor.RelayDescriptor(str_tools._to_bytes(desc_content))
     except Exception, exc:
       if default == UNDEFINED:
         raise exc
@@ -1153,7 +1153,7 @@ class Controller(BaseController):
         raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
       desc_content = self.get_info(query)
-      return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content)
+      return stem.descriptor.router_status_entry.RouterStatusEntryV2(str_tools._to_bytes(desc_content))
     except Exception, exc:
       if default == UNDEFINED:
         raise exc
