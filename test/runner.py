@@ -89,7 +89,7 @@ INTEG_RUNNER = None
 # control authentication options and attributes
 CONTROL_PASSWORD = "pw"
 CONTROL_PORT = 1111
-CONTROL_SOCKET_PATH = tempfile.mkstemp()[1]
+CONTROL_SOCKET_PATH = os.path.join(tempfile.mkdtemp(), 'socket')
 
 Torrc = stem.util.enum.Enum(
   ("PORT", "ControlPort %i" % CONTROL_PORT),
@@ -627,10 +627,9 @@ class Runner(object):
       test.output.print_line("failed (%s)" % exc, *ERROR_ATTR)
       raise exc
 
-    # Makes a directory for the control socket if needed. As of, at least, Tor
-    # 0.2.3.10 it checks during startup that the directory a control socket
-    # resides in is only accessible by the tor user (and refuses to finish
-    # starting if it isn't).
+    # Tor checks during startup that the directory a control socket resides in
+    # is only accessible by the tor user (and refuses to finish starting if it
+    # isn't).
 
     if Torrc.SOCKET in self._custom_opts:
       try:
