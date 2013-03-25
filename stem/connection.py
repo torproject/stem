@@ -119,8 +119,8 @@ from stem.util import log
 
 AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "SAFECOOKIE", "UNKNOWN")
 
-CLIENT_HASH_CONSTANT = "Tor safe cookie authentication controller-to-server hash"
-SERVER_HASH_CONSTANT = "Tor safe cookie authentication server-to-controller hash"
+CLIENT_HASH_CONSTANT = b"Tor safe cookie authentication controller-to-server hash"
+SERVER_HASH_CONSTANT = b"Tor safe cookie authentication server-to-controller hash"
 
 
 def connect_port(address = "127.0.0.1", port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
@@ -690,7 +690,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
   client_nonce = os.urandom(32)
 
   try:
-    client_nonce_hex = binascii.b2a_hex(stem.util.str_tools._to_bytes(client_nonce))
+    client_nonce_hex = stem.util.str_tools._to_unicode(binascii.b2a_hex(client_nonce))
     authchallenge_response = _msg(controller, "AUTHCHALLENGE SAFECOOKIE %s" % client_nonce_hex)
 
     if not authchallenge_response.is_ok():
