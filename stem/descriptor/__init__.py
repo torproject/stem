@@ -125,7 +125,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
 
     my_descriptor_file = open(descriptor_path, 'rb')
 
-  :param file descriptor_file: opened file with the descriptor contents
+  :param str,file descriptor_file: path or opened file with the descriptor contents
   :param str descriptor_type: `descriptor type <https://metrics.torproject.org/formats.html#descriptortypes>`_, this is guessed if not provided
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
@@ -138,6 +138,15 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
     * **TypeError** if we can't match the contents of the file to a descriptor type
     * **IOError** if unable to read from the descriptor_file
   """
+
+  # if we got a path then open that file for parsing
+
+  if isinstance(descriptor_file, (bytes, unicode)):
+    with open(descriptor_file) as desc_file:
+      for desc in parse_file(desc_file, descriptor_type, validate, document_handler):
+        yield desc
+
+      return
 
   import stem.descriptor.server_descriptor
   import stem.descriptor.extrainfo_descriptor

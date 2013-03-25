@@ -41,10 +41,9 @@ the exit relays.
 
     print "Exit Relays:"
 
-    with open(os.path.join(data_dir, 'cached-microdesc-consensus')) as desc_file:
-      for desc in parse_file(desc_file):
-        if desc.digest in exit_digests:
-          print "  %s (%s)" % (desc.nickname, desc.fingerprint)
+    for desc in parse_file(os.path.join(data_dir, 'cached-microdesc-consensus')):
+      if desc.digest in exit_digests:
+        print "  %s (%s)" % (desc.nickname, desc.fingerprint)
 
 Doing the same is trivial with server descriptors...
 
@@ -54,10 +53,9 @@ Doing the same is trivial with server descriptors...
 
   print "Exit Relays:"
 
-  with open("/home/atagar/.tor/cached-descriptors") as desc_file:
-    for desc in parse_file(desc_file):
-      if desc.exit_policy.is_exiting_allowed():
-        print "  %s (%s)" % (desc.nickname, desc.fingerprint)
+  for desc in parse_file("/home/atagar/.tor/cached-descriptors"):
+    if desc.exit_policy.is_exiting_allowed():
+      print "  %s (%s)" % (desc.nickname, desc.fingerprint)
 
 **Module Overview:**
 
