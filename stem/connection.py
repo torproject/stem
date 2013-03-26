@@ -742,7 +742,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
       CLIENT_HASH_CONSTANT,
       cookie_data + client_nonce + authchallenge_response.server_nonce)
 
-    auth_response = _msg(controller, "AUTHENTICATE %s" % (binascii.b2a_hex(stem.util.str_tools._to_bytes(client_hash))))
+    auth_response = _msg(controller, "AUTHENTICATE %s" % stem.util.str_tools._to_unicode(binascii.b2a_hex(client_hash)))
   except stem.ControllerError, exc:
     try:
       controller.connect()

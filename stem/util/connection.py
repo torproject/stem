@@ -274,7 +274,7 @@ def _hmac_sha256(key, msg):
   :param str key: starting key for the hash
   :param str msg: message to be hashed
 
-  :returns; A sha256 digest of msg, hashed using the given key.
+  :returns: sha256 digest of msg as bytes, hashed using the given key
   """
 
   return hmac.new(key, msg, hashlib.sha256).digest()
