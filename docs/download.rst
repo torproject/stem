@@ -35,17 +35,6 @@ Download
        release tarballs and instructions for using python 3.x are available on
        the `python package index <https://pypi.python.org/pypi/stem/>`_.
 
-   * - .. image:: /_static/section/download/git.png
-          :target: https://gitweb.torproject.org/stem.git
-
-     - .. image:: /_static/label/git.png
-          :target: https://gitweb.torproject.org/stem.git
-
-       For those wanting to live on the bleeding edge or contribute to stem,
-       its git repository can be fetched with...
-
-       `git clone https://git.torproject.org/stem.git <https://gitweb.torproject.org/stem.git>`_
-
    * - .. image:: /_static/section/download/debian.png
      - .. image:: /_static/label/debian.png
 
@@ -62,4 +51,15 @@ Download
        Package maintained by Sjon for Arch Linux.
 
        `https://aur.archlinux.org/packages/stem-git/ <https://aur.archlinux.org/packages/stem-git/>`_
+
+   * - .. image:: /_static/section/download/git.png
+          :target: https://gitweb.torproject.org/stem.git
+
+     - .. image:: /_static/label/source_repository.png
+          :target: https://gitweb.torproject.org/stem.git
+
+       For those wanting to live on the bleeding edge or contribute to stem,
+       stem's git repository can be fetched with...
+
+       `git clone https://git.torproject.org/stem.git <https://gitweb.torproject.org/stem.git>`_
 
