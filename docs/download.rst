@@ -43,14 +43,14 @@ Download
        Initial release should be in March.
 
    * - .. image:: /_static/section/download/archlinux.png
-          :target: https://aur.archlinux.org/packages/stem-git/
+          :target: https://aur.archlinux.org/packages/stem/
 
      - .. image:: /_static/label/archlinux.png
-          :target: https://aur.archlinux.org/packages/stem-git/
+          :target: https://aur.archlinux.org/packages/stem/
 
        Package maintained by Sjon for Arch Linux.
 
-       `https://aur.archlinux.org/packages/stem-git/ <https://aur.archlinux.org/packages/stem-git/>`_
+       `https://aur.archlinux.org/packages/stem/ <https://aur.archlinux.org/packages/stem/>`_
 
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
