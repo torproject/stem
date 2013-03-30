@@ -18,6 +18,10 @@ Download
      License: GPL v2
      File: NuoveXT/128x128/apps/debian-logo.png
    
+   * FreeBSD
+     Source: https://en.wikipedia.org/wiki/File:Freebsd_logo.svg
+     Author: Anton Gural
+   
    * Arch Linux
      Source: https://en.wikipedia.org/wiki/File:Archlinux-official-fullcolour.svg
 
@@ -49,6 +53,16 @@ Download
        Package maintained by Sjon for Arch Linux.
 
        `https://aur.archlinux.org/packages/stem/ <https://aur.archlinux.org/packages/stem/>`_
+
+   * - .. image:: /_static/section/download/freebsd.png
+          :target: http://www.freshports.org/security/stem/
+
+     - .. image:: /_static/label/freebsd.png
+          :target: http://www.freshports.org/security/stem/
+
+       Port maintained by Carlo for FreeBSD.
+
+       `http://www.freshports.org/security/stem/ <http://www.freshports.org/security/stem/>`_
 
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
