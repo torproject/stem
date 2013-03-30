@@ -8,6 +8,10 @@ Download
      Author: Dylan Beattie
      License: CC v3 (A, SA)
    
+   * PyPI
+     Source: http://www.python.org/community/logos/
+     License: http://www.python.org/psf/trademarks
+   
    * Debian
      Source: NuoveXT (http://nuovext.pwsp.net/)
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
@@ -20,6 +24,16 @@ Download
 .. list-table::
    :widths: 1 10
    :header-rows: 0
+
+   * - .. image:: /_static/section/download/pypi.png
+          :target: https://pypi.python.org/pypi/stem/
+
+     - .. image:: /_static/label/python_package_index.png
+          :target: https://pypi.python.org/pypi/stem/
+
+       Installing stem can be as easy as running **pip install stem**. Signed
+       release tarballs and instructions for using python 3.x are available on
+       the `python package index <https://pypi.python.org/pypi/stem/>`_.
 
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
