@@ -38,9 +38,7 @@ Download
    * - .. image:: /_static/section/download/debian.png
      - .. image:: /_static/label/debian.png
 
-       **Coming soon-ish**
-
-       Initial release should be in March.
+       **Coming soon** (`ITP Request <http://bugs.debian.org/697880>`_)
 
    * - .. image:: /_static/section/download/archlinux.png
           :target: https://aur.archlinux.org/packages/stem/
