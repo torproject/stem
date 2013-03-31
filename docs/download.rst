@@ -3,11 +3,6 @@ Download
 
 .. Image Sources:
    
-   * Git
-     Source: http://www.dylanbeattie.net/git_logo/
-     Author: Dylan Beattie
-     License: CC v3 (A, SA)
-   
    * PyPI
      Source: http://www.python.org/community/logos/
      License: http://www.python.org/psf/trademarks
@@ -24,6 +19,16 @@ Download
    
    * Arch Linux
      Source: https://en.wikipedia.org/wiki/File:Archlinux-official-fullcolour.svg
+   
+   * Git
+     Source: https://en.wikipedia.org/wiki/File:Git-logo.svg
+     Author: Jason Long
+     License: CC v3 (A)
+   
+   * Git (Alternate)
+     Source: http://www.dylanbeattie.net/git_logo/
+     Author: Dylan Beattie
+     License: CC v3 (A, SA)
 
 .. list-table::
    :widths: 1 10
