@@ -13,6 +13,12 @@ Download
      License: GPL v2
      File: NuoveXT/128x128/apps/debian-logo.png
    
+   * Red Hat
+     Source: NuoveXT (http://nuovext.pwsp.net/)
+     Author: Alexandre Moore (http://sa-ki.deviantart.com/)
+     License: GPL v2
+     File: NuoveXT/128x128/apps/fedora.png
+   
    * FreeBSD
      Source: https://en.wikipedia.org/wiki/File:Freebsd_logo.svg
      Author: Anton Gural
@@ -47,7 +53,12 @@ Download
    * - .. image:: /_static/section/download/debian.png
      - .. image:: /_static/label/debian.png
 
-       **Coming soon** (`ITP Request <http://bugs.debian.org/697880>`_)
+       `Coming soon <http://bugs.debian.org/697880>`_
+
+   * - .. image:: /_static/section/download/redhat.png
+     - .. image:: /_static/label/redhat.png
+
+       `Coming soon <https://bugzilla.redhat.com/show_bug.cgi?id=928541>`_
 
    * - .. image:: /_static/section/download/archlinux.png
           :target: https://aur.archlinux.org/packages/stem/
