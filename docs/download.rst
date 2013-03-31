@@ -46,9 +46,12 @@ Download
      - .. image:: /_static/label/python_package_index.png
           :target: https://pypi.python.org/pypi/stem/
 
-       Installing stem can be as easy as running **pip install stem**. Signed
-       release tarballs and instructions for using python 3.x are available on
-       the `python package index <https://pypi.python.org/pypi/stem/>`_.
+       Signed releases and instructions for both python 2.x and 3.x. If you
+       have **pip** installed then getting stem can be as simple as...
+
+       ::
+
+         % pip install stem
 
    * - .. image:: /_static/section/download/debian.png
      - .. image:: /_static/label/debian.png
@@ -66,9 +69,8 @@ Download
      - .. image:: /_static/label/archlinux.png
           :target: https://aur.archlinux.org/packages/stem/
 
-       Package maintained by Sjon for Arch Linux.
-
-       `https://aur.archlinux.org/packages/stem/ <https://aur.archlinux.org/packages/stem/>`_ (`instructions <https://wiki.archlinux.org/index.php/AUR#Installing_packages>`_)
+       Package maintained by Sjon for Arch Linux (`instructions
+       <https://wiki.archlinux.org/index.php/AUR#Installing_packages>`_).
 
    * - .. image:: /_static/section/download/freebsd.png
           :target: http://www.freshports.org/security/stem/
@@ -76,9 +78,8 @@ Download
      - .. image:: /_static/label/freebsd.png
           :target: http://www.freshports.org/security/stem/
 
-       Port maintained by Carlo for FreeBSD.
-
-       `http://www.freshports.org/security/stem/ <http://www.freshports.org/security/stem/>`_ (`instructions <http://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/ports.html>`_)
+       Port maintained by Carlo for FreeBSD (`instructions
+       <http://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/ports.html>`_).
 
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
@@ -89,5 +90,7 @@ Download
        For those wanting to live on the bleeding edge or contribute to stem,
        stem's git repository can be fetched with...
 
-       `git clone https://git.torproject.org/stem.git <https://gitweb.torproject.org/stem.git>`_
+       ::
+
+         % git clone https://git.torproject.org/stem.git
 
