@@ -52,7 +52,7 @@ Download
 
        Package maintained by Sjon for Arch Linux.
 
-       `https://aur.archlinux.org/packages/stem/ <https://aur.archlinux.org/packages/stem/>`_
+       `https://aur.archlinux.org/packages/stem/ <https://aur.archlinux.org/packages/stem/>`_ (`instructions <https://wiki.archlinux.org/index.php/AUR#Installing_packages>`_)
 
    * - .. image:: /_static/section/download/freebsd.png
           :target: http://www.freshports.org/security/stem/
@@ -62,7 +62,7 @@ Download
 
        Port maintained by Carlo for FreeBSD.
 
-       `http://www.freshports.org/security/stem/ <http://www.freshports.org/security/stem/>`_
+       `http://www.freshports.org/security/stem/ <http://www.freshports.org/security/stem/>`_ (`instructions <http://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/ports.html>`_)
 
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
