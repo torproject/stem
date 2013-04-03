@@ -650,9 +650,9 @@ class TestController(unittest.TestCase):
       circuit_id = controller.extend_circuit('0')
 
       # check if our circuit was created
-      self.assertIsNotNone(controller.get_circuit(circuit_id, None))
+      self.assertNotEqual(None, controller.get_circuit(circuit_id, None))
       circuit_id = controller.new_circuit()
-      self.assertIsNotNone(controller.get_circuit(circuit_id, None))
+      self.assertNotEqual(None, controller.get_circuit(circuit_id, None))
 
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, "foo")
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, '0', "thisroutershouldntexistbecausestemexists!@##$%#")
