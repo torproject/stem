@@ -222,6 +222,11 @@ class TestSystem(unittest.TestCase):
     elif not runner.is_ptraceable():
       test.runner.skip(self, "(DisableDebuggerAttachment is set)")
       return
+    elif not (stem.util.system.is_available("netstat") or
+              stem.util.system.is_available("sockstat") or
+              stem.util.system.is_available("lsof")):
+      test.runner.skip(self, "(connection resolvers unavailable)")
+      return
 
     tor_pid, tor_port = runner.get_pid(), test.runner.CONTROL_PORT
     self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(tor_port))
