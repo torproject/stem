@@ -55,6 +55,7 @@ easily parsed and compared, for instance...
   ===================================== ===========
 """
 
+import os
 import re
 
 import stem.util.enum
@@ -77,10 +78,19 @@ def get_system_tor_version(tor_cmd = "tor"):
   """
 
   if not tor_cmd in VERSION_CACHE:
+    version_cmd = "%s --version" % tor_cmd
+
     try:
-      version_cmd = "%s --version" % tor_cmd
       version_output = stem.util.system.call(version_cmd)
     except OSError, exc:
+      # make the error message nicer if this is due to tor being unavialable
+
+      if "No such file or directory" in str(exc):
+        if os.path.isabs(tor_cmd):
+          exc = "Unable to check tor's version. '%s' doesn't exist." % tor_cmd
+        else:
+          exc = "Unable to run '%s'. Mabye tor isn't in your PATH?" % version_cmd
+
       raise IOError(exc)
 
     if version_output:
