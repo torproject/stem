@@ -166,12 +166,15 @@ class AddrMapEvent(Event):
   :var datetime expiry: expiration time of the resolution in local time
   :var str error: error code if the resolution failed
   :var datetime utc_expiry: expiration time of the resolution in UTC
+  :var bool cached: **True** if the resolution will be kept until it expires,
+    **False** otherwise or **None** if undefined
   """
 
   _POSITIONAL_ARGS = ("hostname", "destination", "expiry")
   _KEYWORD_ARGS = {
     "error": "error",
     "EXPIRES": "utc_expiry",
+    "CACHED": "cached",
   }
   _OPTIONALLY_QUOTED = ("expiry")
 
@@ -190,6 +193,14 @@ class AddrMapEvent(Event):
 
     if self.utc_expiry is not None:
       self.utc_expiry = datetime.datetime.strptime(self.utc_expiry, "%Y-%m-%d %H:%M:%S")
+
+    if self.cached is not None:
+      if self.cached == "YES":
+        self.cached = True
+      elif self.cached == "NO":
+        self.cached = False
+      else:
+        raise stem.ProtocolError("An ADDRMAP event's CACHED mapping can only be 'YES' or 'NO': %s" % self)
 
 
 class AuthDirNewDescEvent(Event):

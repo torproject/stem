@@ -29,6 +29,17 @@ EXPIRES="2012-11-19 08:50:13"'
 ADDRMAP_BAD_2 = '650 ADDRMAP www.atagar.com 75.119.206.243 "2012-11-19 00:50:13 \
 EXPIRES="2012-11-19 08:50:13"'
 
+ADDRMAP_CACHED = '650 ADDRMAP example.com 192.0.43.10 "2013-04-03 22:31:22" \
+EXPIRES="2013-04-03 20:31:22" \
+CACHED="YES"'
+
+ADDRMAP_NOT_CACHED = '650 ADDRMAP example.com 192.0.43.10 "2013-04-03 22:29:11" \
+EXPIRES="2013-04-03 20:29:11" \
+CACHED="NO"'
+
+ADDRMAP_CACHED_MALFORMED = '650 ADDRMAP example.com 192.0.43.10 "2013-04-03 22:29:11" \
+CACHED="KINDA"'
+
 # BUILDTIMEOUT_SET event from tor 0.2.3.16.
 
 BUILD_TIMEOUT_EVENT = "650 BUILDTIMEOUT_SET COMPUTED \
@@ -401,10 +412,28 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 11, 19, 0, 50, 13), event.expiry)
     self.assertEqual("yes", event.error)
     self.assertEqual(datetime.datetime(2012, 11, 19, 8, 50, 13), event.utc_expiry)
+    self.assertEqual(None, event.cached)
 
     # malformed content where quotes are missing
     self.assertRaises(ProtocolError, _get_event, ADDRMAP_BAD_1)
     self.assertRaises(ProtocolError, _get_event, ADDRMAP_BAD_2)
+
+    # check the CACHED flag
+
+    event = _get_event(ADDRMAP_CACHED)
+
+    self.assertTrue(isinstance(event, stem.response.events.AddrMapEvent))
+    self.assertEqual("example.com", event.hostname)
+    self.assertEqual(True, event.cached)
+
+    event = _get_event(ADDRMAP_NOT_CACHED)
+
+    self.assertTrue(isinstance(event, stem.response.events.AddrMapEvent))
+    self.assertEqual("example.com", event.hostname)
+    self.assertEqual(False, event.cached)
+
+    # the CACHED argument should only allow YES or NO
+    self.assertRaises(ProtocolError, _get_event, ADDRMAP_CACHED_MALFORMED)
 
   def test_authdir_newdesc_event(self):
     # TODO: awaiting test data - https://trac.torproject.org/7534
