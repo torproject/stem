@@ -45,6 +45,8 @@ CONFIG = stem.util.conf.config_dict("test", {
   "target.prereq": {},
   "target.torrc": {},
   "integ.test_directory": "./test/data",
+  "test.unit_tests": "",
+  "test.integ_tests": "",
 })
 
 Target = stem.util.enum.UppercaseEnum(
@@ -65,67 +67,6 @@ Target = stem.util.enum.UppercaseEnum(
 DEFAULT_RUN_TARGET = Target.RUN_OPEN
 
 ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
-
-# Tests are ordered by the dependencies so the lowest level tests come first.
-# This is because a problem in say, controller message parsing, will cause all
-# higher level tests to fail too. Hence we want the test that most narrowly
-# exhibits problems to come first.
-
-UNIT_TESTS = (
-  'test.unit.util.enum.TestEnum',
-  'test.unit.util.connection.TestConnection',
-  'test.unit.util.conf.TestConf',
-  'test.unit.util.proc.TestProc',
-  'test.unit.util.str_tools.TestStrTools',
-  'test.unit.util.system.TestSystem',
-  'test.unit.util.tor_tools.TestTorTools',
-  'test.unit.descriptor.export.TestExport',
-  'test.unit.descriptor.reader.TestDescriptorReader',
-  'test.unit.descriptor.server_descriptor.TestServerDescriptor',
-  'test.unit.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor',
-  'test.unit.descriptor.microdescriptor.TestMicrodescriptor',
-  'test.unit.descriptor.router_status_entry.TestRouterStatusEntry',
-  'test.unit.descriptor.networkstatus.directory_authority.TestDirectoryAuthority',
-  'test.unit.descriptor.networkstatus.key_certificate.TestKeyCertificate',
-  'test.unit.descriptor.networkstatus.document_v2.TestNetworkStatusDocument',
-  'test.unit.descriptor.networkstatus.document_v3.TestNetworkStatusDocument',
-  'test.unit.descriptor.networkstatus.bridge_document.TestBridgeNetworkStatusDocument',
-  'test.unit.exit_policy.rule.TestExitPolicyRule',
-  'test.unit.exit_policy.policy.TestExitPolicy',
-  'test.unit.version.TestVersion',
-  'test.unit.tutorial.TestTutorial',
-  'test.unit.response.control_message.TestControlMessage',
-  'test.unit.response.control_line.TestControlLine',
-  'test.unit.response.events.TestEvents',
-  'test.unit.response.getinfo.TestGetInfoResponse',
-  'test.unit.response.getconf.TestGetConfResponse',
-  'test.unit.response.singleline.TestSingleLineResponse',
-  'test.unit.response.mapaddress.TestMapAddressResponse',
-  'test.unit.response.protocolinfo.TestProtocolInfoResponse',
-  'test.unit.response.authchallenge.TestAuthChallengeResponse',
-  'test.unit.connection.authentication.TestAuthenticate',
-  'test.unit.control.controller.TestControl',
-)
-
-INTEG_TESTS = (
-  'test.integ.util.conf.TestConf',
-  'test.integ.util.proc.TestProc',
-  'test.integ.util.system.TestSystem',
-  'test.integ.descriptor.reader.TestDescriptorReader',
-  'test.integ.descriptor.server_descriptor.TestServerDescriptor',
-  'test.integ.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor',
-  'test.integ.descriptor.microdescriptor.TestMicrodescriptor',
-  'test.integ.descriptor.networkstatus.TestNetworkStatus',
-  'test.integ.version.TestVersion',
-  'test.integ.response.protocolinfo.TestProtocolInfo',
-  'test.integ.process.TestProcess',
-  'test.integ.socket.control_socket.TestControlSocket',
-  'test.integ.socket.control_message.TestControlMessage',
-  'test.integ.connection.authentication.TestAuthenticate',
-  'test.integ.connection.connect.TestConnect',
-  'test.integ.control.base_controller.TestBaseController',
-  'test.integ.control.controller.TestController',
-)
 
 
 def load_user_configuration(test_config):
@@ -436,7 +377,10 @@ if __name__ == '__main__':
     test.output.print_divider("UNIT TESTS", True)
     error_tracker.set_category("UNIT TEST")
 
-    for test_module in UNIT_TESTS:
+    for test_module in CONFIG["test.unit_tests"].splitlines():
+      if not test_module:
+        continue
+
       test_class = _import_test(test_module)
 
       if CONFIG["argument.test"] and \
@@ -522,7 +466,10 @@ if __name__ == '__main__':
         test.output.print_line("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
 
-        for test_module in INTEG_TESTS:
+        for test_module in CONFIG["test.integ_tests"].splitlines():
+          if not test_module:
+            continue
+
           test_class = _import_test(test_module)
 
           if CONFIG["argument.test"] and \
