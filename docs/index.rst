@@ -7,6 +7,11 @@ Stem is a python controller library for `Tor <https://www.torproject.org/>`_. Li
    Source: http://www.wpclipart.com/plants/assorted/P/plant_stem.png.html
    Author: Jakub Jankiewicz
    License: Public Domain (http://www.wpclipart.com/legal.html#terms)
+   
+   Alternate:
+   Source: http://andreajoseph24.blogspot.com/search/label/onions
+   Author: Andrea Joseph
+   License: CCv3 (NC, ND) - http://creativecommons.org/licenses/by-nc-nd/3.0/
 
 .. Source: NuoveXT 2 (http://nuovext.pwsp.net/)
    Author: Alexandre Moore (http://sa-ki.deviantart.com/)
