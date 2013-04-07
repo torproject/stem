@@ -19,15 +19,17 @@
         <p>
         {%- block haikurel1 %}
         {%- endblock %}
-        {%- if prev %}
-        «&#160;&#160;<a href="{{ prev.link|e }}">{{ prev.title }}</a>
-        &#160;&#160;::&#160;&#160;
-        {%- endif %}
-        <a class="uplink" href="{{ pathto(master_doc) }}">{{ _('Contents') }}</a>
-        {%- if next %}
-        &#160;&#160;::&#160;&#160;
-        <a href="{{ next.link|e }}">{{ next.title }}</a>&#160;&#160;»
-        {%- endif %}
+        <a class="uplink" href="{{ pathto(master_doc) }}">Home</a>
+        &#160;&#160;|&#160;&#160;
+        <a class="uplink" href="{{ pathto('tutorials') }}">Tutorials</a>
+        &#160;&#160;|&#160;&#160;
+        <a class="uplink" href="{{ pathto('api') }}">API</a>
+        &#160;&#160;|&#160;&#160;
+        <a class="uplink" href="https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs">Bug Tracker</a>
+        &#160;&#160;|&#160;&#160;
+        <a class="uplink" href="{{ pathto('change_log') }}">Change Log</a>
+        &#160;&#160;|&#160;&#160;
+        <a class="uplink" href="{{ pathto('download') }}">Download</a>
         {%- block haikurel2 %}
         {%- endblock %}
         </p>
