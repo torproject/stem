@@ -35,6 +35,14 @@ Stem is a python controller library for `Tor <https://www.torproject.org/>`_. Li
 .. image:: /_static/buttons/bug_tracker.png
    :target: https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs
 
+.. Nuovo (http://www.silvestre.com.ar/?p=5)
+   Author: Silvestre Herrera (http://www.silvestre.com.ar/)
+   License: GPL v2
+   File: Nuovo/128x128/mimetypes/gnome-mime-text-log.png
+
+.. image:: /_static/buttons/change_log.png
+   :target: change_log.html
+
 .. ColorCons (http://mouserunner.com/Spheres_ColoCons1_Free_Icons.html)
    Author: Ken Saunders (http://mouserunner.com/MRDS_Cell.html)
    License: CC v2.5 (A, SA)

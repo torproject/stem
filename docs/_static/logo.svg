@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   width="215.122"
+   height="261.156"
+   id="svg2"
+   inkscape:version="0.48.1 r9760"
+   sodipodi:docname="logo2.svg">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="754"
+     inkscape:window-height="480"
+     id="namedview7"
+     showgrid="false"
+     inkscape:zoom="1.1678843"
+     inkscape:cx="131.87707"
+     inkscape:cy="130.578"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg2" />
+  <defs
+     id="defs4" />
+  <metadata
+     id="metadata6">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title></dc:title>
+        <dc:description>Green plant seedling.</dc:description>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>plant</rdf:li>
+            <rdf:li>seeding</rdf:li>
+            <rdf:li>seed</rdf:li>
+            <rdf:li>floral</rdf:li>
+            <rdf:li>green</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+        <dc:publisher>
+          <cc:Agent
+             rdf:about="http://www.openclipart.org">
+            <dc:title>Open Clip Art Library</dc:title>
+          </cc:Agent>
+        </dc:publisher>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Jakub Jankiewicz</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:rights>
+          <cc:Agent>
+            <dc:title>Jakub Jankiewicz</dc:title>
+          </cc:Agent>
+        </dc:rights>
+        <dc:date />
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <cc:license
+           rdf:resource="http://web.resource.org/cc/PublicDomain" />
+        <dc:language>pl</dc:language>
+      </cc:Work>
+      <cc:License
+         rdf:about="http://web.resource.org/cc/PublicDomain">
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/Reproduction" />
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/Distribution" />
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/DerivativeWorks" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1"
+     style="fill:#afdcaf;fill-opacity:1"
+     inkscape:export-filename="/home/atagar/Desktop/stem/docs/_static/logo2.png"
+     inkscape:export-xdpi="37.4711"
+     inkscape:export-ydpi="37.4711"
+     transform="matrix(0.96019699,0,0,0.96019699,0.00453889,10.394562)">
+    <path
+       d="m 175.67323,0 c -6.53936,20.49862 11.98216,25.07135 9.8125,37.75 -16.21643,26.50723 -40.10353,47.89786 -66.46875,64.03125 -18.47147,9.021 -35.644461,21.42547 -47.718751,38.28125 -25.349987,34.75939 -32.2853,79.04153 -33.21875,121.09375 l 14.5625,0 c -0.4394,-20.50962 0.484795,-41.13419 4.25,-61.34375 6.147953,-32.99885 22.2559,-65.86992 51.031251,-84.65625 18.76336,-10.78918 36.13593,-24.00542 50.9375,-39.84375 17.04635,-5.01991 29.21357,18.791 56.375,3.6875 -6.07644,-13.84618 -19.28417,-19.23183 -28.25,-18.71875 -7.97237,-0.15627 -12.98268,0.50969 -17.375,2.6875 6.22703,-7.5205 12.07655,-15.44384 16.46875,-24.0625 6.58271,-8.96555 8.1018,-12.14722 5.75,-22.75 C 190.9764,10.16834 185.62291,2.1714 175.67323,0 z M 95.204479,29.9375 c 3.27593,22.58599 -8.684794,36.053528 3.736008,50.862176 9.139373,10.896379 19.138633,11.121284 33.232743,8.825324 -7.94795,-1.45498 -11.96121,-3.178239 -16.98274,-6.599113 -11.38727,-7.757481 -6.99319,-17.291516 -13.16069,-31.355645 6.13633,9.641467 4.26256,20.321589 9.56157,25.850282 6.53624,6.819543 13.32978,7.303426 22.30061,10.260726 C 108.37583,66.061512 130.80318,55.813871 95.204479,29.9375 z m -94.1875002,57 c 8.0717369,34.5364 -9.898603,49.23411 5.75,67.75 12.6187422,14.93086 23.9193802,13.12802 39.0625002,12.71875 0,0 -20.230315,-7.91977 -25.982742,-19.97528 -5.701498,-11.94877 6.497073,-19.14146 -8.934234,-48.86101 15.099529,24.59757 7.005263,36.92543 10.152984,46.32976 4.320676,12.90873 27.295242,18.91278 27.295242,18.91278 C 19.522068,145.97779 52.836331,98.52529 1.0169788,86.9375 z M 142.67323,134.96875 c -42.63044,0.46206 -43.690787,33.2614 -79.156251,53.5625 13.965964,3.10355 30.015142,-1.93566 46.326491,-16.3751 8.24088,-7.29515 11.30245,-19.83583 37.03125,-26.47752 -29.83203,10.75162 -23.33683,18.90123 -39.78125,32.10252 -8.480769,6.80821 -22.980278,18.14644 -42.982741,15.09385 13.17746,12.90681 30.83981,17.14209 57.812501,3.15625 25.60947,-13.27898 20.43491,-28.48638 46.125,-58.53125 -10.08886,-1.81722 -18.39911,-2.60686 -25.375,-2.53125 z"
+       id="path2985"
+       style="fill:#afdcaf;fill-opacity:1;stroke:none"
+       inkscape:connector-curvature="0" />
+  </g>
+</svg>
