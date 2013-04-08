@@ -48,6 +48,7 @@ import tempfile
 import threading
 import time
 
+import stem.connection
 import stem.prereq
 import stem.process
 import stem.socket
