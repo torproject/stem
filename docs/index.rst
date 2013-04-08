@@ -59,6 +59,7 @@ Subsections
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+* `Automated Testing <https://jenkins.torproject.org/job/stem-tor-ci/>`_
 
 .. toctree::
    :maxdepth: 1
