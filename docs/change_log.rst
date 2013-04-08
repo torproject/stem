@@ -46,6 +46,7 @@ The following are only available within stem's `git repository
 
   * Overhaul of stem's `download page <download.html>`_. This included several
     improvements, most notably the addition of PyPI, FreeBSD, and RedHat.
+  * Replaced default sphinx header with a navbar menu.
   * Added this change log.
   * Settled on a `logo
     <http://www.wpclipart.com/plants/assorted/P/plant_stem.png.html>`_ for
