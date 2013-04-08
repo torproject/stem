@@ -19,17 +19,40 @@
         <p>
         {%- block haikurel1 %}
         {%- endblock %}
-        <a class="uplink" href="{{ pathto(master_doc) }}">Home</a>
-        &#160;&#160;|&#160;&#160;
-        <a class="uplink" href="{{ pathto('tutorials') }}">Tutorials</a>
-        &#160;&#160;|&#160;&#160;
-        <a class="uplink" href="{{ pathto('api') }}">API</a>
-        &#160;&#160;|&#160;&#160;
-        <a class="uplink" href="https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs">Bug Tracker</a>
-        &#160;&#160;|&#160;&#160;
-        <a class="uplink" href="{{ pathto('change_log') }}">Change Log</a>
-        &#160;&#160;|&#160;&#160;
-        <a class="uplink" href="{{ pathto('download') }}">Download</a>
+
+        <ul id="navbar">
+          <li><a href="{{ pathto(master_doc) }}">Home</a></li>
+          <li><a href="{{ pathto('tutorials') }}">Tutorials</a>
+            <ul>
+              <li><a href="{{ pathto('tutorials/the_little_relay_that_could') }}">Hello World</a></li>
+              <li><a href="{{ pathto('tutorials/to_russia_with_love') }}">Client Usage</a></li>
+              <li><a href="{{ pathto('tutorials/tortoise_and_the_hare') }}">Event Listening</a></li>
+              <li><a href="{{ pathto('tutorials/mirror_mirror_on_the_wall') }}">Tor Descriptors</a></li>
+              <li><a href="{{ pathto('tutorials/double_double_toil_and_trouble') }}">Examples</a></li>
+            </ul>
+          </li>
+          <li><a href="{{ pathto('api') }}">API</a>
+            <ul>
+              <li><a href="{{ pathto('api/control') }}">stem.control</a></li>
+              <li><a href="{{ pathto('api/connection') }}">stem.connection</a></li>
+              <li><a href="{{ pathto('api/socket') }}">stem.socket</a></li>
+              <li><a href="{{ pathto('api/process') }}">stem.process</a></li>
+              <li><a href="{{ pathto('api/response') }}">stem.response</a></li>
+              <li><a href="{{ pathto('api/exit_policy') }}">stem.exit_policy</a></li>
+              <li><a href="{{ pathto('api/version') }}">stem.version</a></li>
+              <li><a href="{{ pathto('api') }}#descriptors">Descriptors</a></li>
+              <li><a href="{{ pathto('api') }}#utilities">Utilities</a></li>
+            </ul>
+          </li>
+          <li><a href="https://trac.torproject.org/projects/tor/wiki/doc/stem">Development</a>
+            <ul>
+              <li><a href="{{ pathto('change_log') }}">Change Log</a></li>
+              <li><a href="https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs">Bug Tracker</a></li>
+              <li><a href="{{ pathto('download') }}">Download</a></li>
+            </ul>
+          </li>
+        </ul>
+
         {%- block haikurel2 %}
         {%- endblock %}
         </p>
@@ -65,6 +88,5 @@
         {% block body %}{% endblock %}
       </div>
       <div class="bottomnav">
-      {{ nav() }}
       </div>
 {% endblock %}

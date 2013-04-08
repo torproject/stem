@@ -367,3 +367,90 @@ div.viewcode-block:target {
     margin: -1px -12px;
     padding: 0 12px;
 }
+
+/* Navbar */
+
+#navbar { 
+  list-style: none; 
+  margin: 0; 
+  padding: 0;
+  float: left;
+  position: relative;
+}
+
+#navbar li {
+  float: left;
+  position: relative;
+}
+
+/* top navbar items */
+
+#navbar li a {
+  float: left;
+  display: block;
+  text-decoration: none;
+  color: #666;
+  font-weight: normal;
+  text-indent: 10px;
+  width: 130px;
+  font-size: 0.9em;
+}
+
+#navbar li:hover a,
+#navbar li a:hover {
+  font-weight: normal;
+  background: #999;
+  color: #fff;
+}
+
+/* start child items as invisible, but make them visible on hover */
+
+#navbar ul {
+  display: none;
+}
+
+#navbar li:hover ul {
+  display: block;
+}
+
+/* attributes for child navbar items */
+
+#navbar ul {
+  float: none;
+  position: absolute;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  top: 1.1em;
+  left: 0;
+}
+
+#navbar ul li {
+  float: none;
+  clear: none;
+  margin: 0;
+  padding: 0;
+  width: auto;
+  color: #666;
+}
+
+#navbar li:hover ul li a,
+#navbar ul li {
+  font-weight: normal;
+  text-indent: 5px;
+  line-height: 200%;
+  display: block;
+  padding: 0 0 0 0;
+  float: none;
+  color: #666;
+  background-color: #e0e0e0;
+}
+
+#navbar li:hover ul li a:hover,
+#navbar ul li a:hover {
+  font-weight: normal;
+  text-indent: 5px;
+  background-color: #c1c1c1;
+  color: #000;
+}
+
