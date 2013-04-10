@@ -45,8 +45,6 @@ CONFIG = stem.util.conf.config_dict("test", {
   "target.prereq": {},
   "target.torrc": {},
   "integ.test_directory": "./test/data",
-  "test.unit_tests": "",
-  "test.integ_tests": "",
 })
 
 Target = stem.util.enum.UppercaseEnum(
@@ -284,23 +282,6 @@ def _print_style_issues():
       print
 
 
-def _import_test(import_name):
-  # Dynamically imports test modules. The __import__() call has a couple quirks
-  # that make this a little clunky...
-  #
-  #   * it only accepts modules, not the actual class we want to import
-  #
-  #   * it returns the top level module, so we need to transverse into it for
-  #     the test class
-
-  module_name = '.'.join(import_name.split('.')[:-1])
-  module = __import__(module_name)
-
-  for subcomponent in import_name.split(".")[1:]:
-    module = getattr(module, subcomponent)
-
-  return module
-
 if __name__ == '__main__':
   try:
     stem.prereq.check_requirements()
@@ -377,12 +358,7 @@ if __name__ == '__main__':
     test.output.print_divider("UNIT TESTS", True)
     error_tracker.set_category("UNIT TEST")
 
-    for test_module in CONFIG["test.unit_tests"].splitlines():
-      if not test_module:
-        continue
-
-      test_class = _import_test(test_module)
-
+    for test_class in test.runner.get_unit_tests():
       if CONFIG["argument.test"] and \
         not test_class.__module__.startswith(CONFIG["argument.test"]):
         continue
@@ -466,12 +442,7 @@ if __name__ == '__main__':
         test.output.print_line("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
 
-        for test_module in CONFIG["test.integ_tests"].splitlines():
-          if not test_module:
-            continue
-
-          test_class = _import_test(test_module)
-
+        for test_class in test.runner.get_integ_tests():
           if CONFIG["argument.test"] and \
             not test_class.__module__.startswith(CONFIG["argument.test"]):
             continue
