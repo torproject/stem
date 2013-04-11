@@ -30,14 +30,6 @@ OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=",
 DIVIDER = "=" * 70
 
 CONFIG = stem.util.conf.config_dict("test", {
-  "argument.unit": False,
-  "argument.integ": False,
-  "argument.style": False,
-  "argument.python3": False,
-  "argument.python3_clean": False,
-  "argument.test": "",
-  "argument.log": None,
-  "argument.tor": "tor",
   "msg.help": "",
   "target.config": {},
   "target.description": {},
@@ -96,7 +88,7 @@ def _clean_orphaned_pyc():
       os.remove(pyc_file)
 
 
-def _python3_setup(python3_destination):
+def _python3_setup(python3_destination, clean):
   # Python 2.7.3 added some nice capabilities to 2to3, like '--output-dir'...
   #
   #   http://docs.python.org/2/library/2to3.html
@@ -106,7 +98,7 @@ def _python3_setup(python3_destination):
 
   test.output.print_divider("EXPORTING TO PYTHON 3", True)
 
-  if CONFIG["argument.python3_clean"]:
+  if clean:
     shutil.rmtree(python3_destination, ignore_errors = True)
 
   if os.path.exists(python3_destination):
@@ -144,7 +136,7 @@ def _python3_setup(python3_destination):
   return True
 
 
-def _print_style_issues():
+def _print_style_issues(run_unit, run_integ, run_style):
   base_path = os.path.sep.join(__file__.split(os.path.sep)[:-1]).lstrip("./")
   style_issues = test.static_checks.get_issues(os.path.join(base_path, "stem"))
   style_issues.update(test.static_checks.get_issues(os.path.join(base_path, "test")))
@@ -154,7 +146,7 @@ def _print_style_issues():
   # available then use it. Its static checks are pretty quick so there's not
   # much overhead in including it with all tests.
 
-  if CONFIG["argument.unit"] or CONFIG["argument.integ"]:
+  if run_unit or run_integ:
     if system.is_available("pyflakes"):
       style_issues.update(test.static_checks.pyflakes_issues(os.path.join(base_path, "stem")))
       style_issues.update(test.static_checks.pyflakes_issues(os.path.join(base_path, "test")))
@@ -162,7 +154,7 @@ def _print_style_issues():
     else:
       test.output.print_line("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", *ERROR_ATTR)
 
-  if CONFIG["argument.style"]:
+  if run_style:
     if system.is_available("pep8"):
       style_issues.update(test.static_checks.pep8_issues(os.path.join(base_path, "stem")))
       style_issues.update(test.static_checks.pep8_issues(os.path.join(base_path, "test")))
@@ -212,21 +204,31 @@ if __name__ == '__main__':
     print "%s (for usage provide --help)" % exc
     sys.exit(1)
 
+  run_unit = False
+  run_integ = False
+  run_style = False
+  run_python3 = False
+  run_python3_clean = False
+
+  test_prefix = None
+  logging_runlevel = None
+  tor_path = "tor"
+
   for opt, arg in opts:
     if opt in ("-a", "--all"):
-      test_config.set("argument.unit", "true")
-      test_config.set("argument.integ", "true")
-      test_config.set("argument.style", "true")
+      run_unit = True
+      run_integ = True
+      run_style = True
     elif opt in ("-u", "--unit"):
-      test_config.set("argument.unit", "true")
+      run_unit = True
     elif opt in ("-i", "--integ"):
-      test_config.set("argument.integ", "true")
+      run_integ = True
     elif opt in ("-s", "--style"):
-      test_config.set("argument.style", "true")
+      run_style = True
     elif opt == "--python3":
-      test_config.set("argument.python3", "true")
+      run_python3 = True
     elif opt == "--clean":
-      test_config.set("argument.python3_clean", "true")
+      run_python3_clean = True
     elif opt in ("-t", "--targets"):
       integ_targets = arg.split(",")
 
@@ -245,11 +247,11 @@ if __name__ == '__main__':
           if target_config:
             test_config.set(target_config, "true")
     elif opt in ("-l", "--test"):
-      test_config.set("argument.test", arg)
+      test_prefix = arg
     elif opt in ("-l", "--log"):
-      test_config.set("argument.log", arg.upper())
+      logging_runlevel = arg.upper()
     elif opt in ("--tor"):
-      test_config.set("argument.tor", arg)
+      tor_path = arg
     elif opt in ("-h", "--help"):
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
@@ -269,35 +271,34 @@ if __name__ == '__main__':
 
   # basic validation on user input
 
-  log_config = CONFIG["argument.log"]
-  if log_config and not log_config in log.LOG_VALUES:
-    print "'%s' isn't a logging runlevel, use one of the following instead:" % log_config
+  if logging_runlevel and not logging_runlevel in log.LOG_VALUES:
+    print "'%s' isn't a logging runlevel, use one of the following instead:" % logging_runlevel
     print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
     sys.exit(1)
 
   # check that we have 2to3 and python3 available in our PATH
-  if CONFIG["argument.python3"]:
+  if run_python3:
     for required_cmd in ("2to3", "python3"):
       if not system.is_available(required_cmd):
         test.output.print_line("Unable to test python 3 because %s isn't in your path" % required_cmd, *test.runner.ERROR_ATTR)
         sys.exit(1)
 
-  if CONFIG["argument.python3"] and sys.version_info[0] != 3:
+  if run_python3 and sys.version_info[0] != 3:
     python3_destination = os.path.join(CONFIG["integ.test_directory"], "python3")
 
-    if _python3_setup(python3_destination):
+    if _python3_setup(python3_destination, run_python3_clean):
       python3_runner = os.path.join(python3_destination, "run_tests.py")
       exit_status = os.system("python3 %s %s" % (python3_runner, " ".join(sys.argv[1:])))
       sys.exit(exit_status)
     else:
       sys.exit(1)  # failed to do python3 setup
 
-  if not CONFIG["argument.unit"] and not CONFIG["argument.integ"] and not CONFIG["argument.style"]:
+  if not run_unit and not run_integ and not run_style:
     test.output.print_line("Nothing to run (for usage provide --help)\n")
     sys.exit()
 
   # if we have verbose logging then provide the testing config
-  our_level = stem.util.log.logging_level(CONFIG["argument.log"])
+  our_level = stem.util.log.logging_level(logging_runlevel)
   info_level = stem.util.log.logging_level(stem.util.log.INFO)
 
   if our_level <= info_level:
@@ -312,7 +313,7 @@ if __name__ == '__main__':
   )
 
   stem_logger = log.get_logger()
-  logging_buffer = log.LogBuffer(CONFIG["argument.log"])
+  logging_buffer = log.LogBuffer(logging_runlevel)
   stem_logger.addHandler(logging_buffer)
 
   test.output.print_divider("INITIALISING", True)
@@ -322,11 +323,11 @@ if __name__ == '__main__':
 
   print
 
-  if CONFIG["argument.unit"]:
+  if run_unit:
     test.output.print_divider("UNIT TESTS", True)
     error_tracker.set_category("UNIT TEST")
 
-    for test_class in test.runner.get_unit_tests(CONFIG["argument.test"]):
+    for test_class in test.runner.get_unit_tests(test_prefix):
       test.output.print_divider(test_class.__module__)
       suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
       test_results = StringIO.StringIO()
@@ -341,7 +342,7 @@ if __name__ == '__main__':
 
     print
 
-  if CONFIG["argument.integ"]:
+  if run_integ:
     test.output.print_divider("INTEGRATION TESTS", True)
     integ_runner = test.runner.get_runner()
 
@@ -375,7 +376,7 @@ if __name__ == '__main__':
       if target_prereq:
         # lazy loaded to skip system call if we don't have any prereqs
         if not our_version:
-          our_version = stem.version.get_system_tor_version(CONFIG["argument.tor"])
+          our_version = stem.version.get_system_tor_version(tor_path)
 
         if our_version < stem.version.Requirement[target_prereq]:
           skip_targets.append(target)
@@ -401,12 +402,12 @@ if __name__ == '__main__':
               test.output.print_line("'%s' isn't a test.runner.Torrc enumeration" % opt)
               sys.exit(1)
 
-        integ_runner.start(CONFIG["argument.tor"], extra_torrc_opts = torrc_opts)
+        integ_runner.start(tor_path, extra_torrc_opts = torrc_opts)
 
         test.output.print_line("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
 
-        for test_class in test.runner.get_integ_tests(CONFIG["argument.test"]):
+        for test_class in test.runner.get_integ_tests(test_prefix):
           test.output.print_divider(test_class.__module__)
           suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
           test_results = StringIO.StringIO()
@@ -452,7 +453,7 @@ if __name__ == '__main__':
     # TODO: note unused config options afterward?
 
   if not stem.prereq.is_python_3():
-    _print_style_issues()
+    _print_style_issues(run_unit, run_integ, run_style)
 
   runtime = time.time() - start_time
 
