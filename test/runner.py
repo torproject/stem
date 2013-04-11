@@ -217,28 +217,42 @@ def exercise_controller(test_case, controller):
 
 
 
-def get_unit_tests():
+def get_unit_tests(prefix = None):
   """
   Provides the classes for our unit tests.
+
+  :param str prefix: only provide the test if the module starts with this prefix
 
   :returns: an **iterator** for our unit tests
   """
 
-  for test_module in CONFIG["test.unit_tests"].splitlines():
-    if test_module:
-      yield _import_test(test_module)
+  for line in CONFIG["test.unit_tests"].splitlines():
+    if line:
+      test_class = _import_test(line)
+
+      if prefix and not test_class.__module__.startswith(prefix):
+        continue
+
+      yield test_class
 
 
-def get_integ_tests():
+def get_integ_tests(prefix = None):
   """
   Provides the classes for our integration tests.
+
+  :param str prefix: only provide the test if the module starts with this prefix
 
   :returns: an **iterator** for our integration tests
   """
 
-  for test_module in CONFIG["test.unit_tests"].splitlines():
-    if test_module:
-      yield _import_test(test_module)
+  for line in CONFIG["test.integ_tests"].splitlines():
+    if line:
+      test_class = _import_test(line)
+
+      if prefix and not test_class.__module__.startswith(prefix):
+        continue
+
+      yield test_class
 
 
 def _import_test(import_name):

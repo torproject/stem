@@ -358,11 +358,7 @@ if __name__ == '__main__':
     test.output.print_divider("UNIT TESTS", True)
     error_tracker.set_category("UNIT TEST")
 
-    for test_class in test.runner.get_unit_tests():
-      if CONFIG["argument.test"] and \
-        not test_class.__module__.startswith(CONFIG["argument.test"]):
-        continue
-
+    for test_class in test.runner.get_unit_tests(CONFIG["argument.test"]):
       test.output.print_divider(test_class.__module__)
       suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
       test_results = StringIO.StringIO()
@@ -442,11 +438,7 @@ if __name__ == '__main__':
         test.output.print_line("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
 
-        for test_class in test.runner.get_integ_tests():
-          if CONFIG["argument.test"] and \
-            not test_class.__module__.startswith(CONFIG["argument.test"]):
-            continue
-
+        for test_class in test.runner.get_integ_tests(CONFIG["argument.test"]):
           test.output.print_divider(test_class.__module__)
           suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
           test_results = StringIO.StringIO()
