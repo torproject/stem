@@ -38,7 +38,6 @@ CONFIG = stem.util.conf.config_dict("test", {
   "argument.test": "",
   "argument.log": None,
   "argument.tor": "tor",
-  "argument.no_color": False,
   "msg.help": "",
   "target.config": {},
   "target.description": {},
@@ -82,10 +81,6 @@ def load_user_configuration(test_config):
   except getopt.GetoptError, exc:
     print "%s (for usage provide --help)" % exc
     sys.exit(1)
-
-  # suppress color output if our output is being piped
-  if (not sys.stdout.isatty()) or system.is_windows():
-    arg_overrides["argument.no_color"] = "true"
 
   for opt, arg in opts:
     if opt in ("-a", "--all"):

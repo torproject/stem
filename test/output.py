@@ -9,14 +9,11 @@ together for improved readability.
 import re
 import sys
 
-import stem.util.conf
 import stem.util.enum
 
-from stem.util import term
+from stem.util import system, term
 
-CONFIG = stem.util.conf.config_dict("test", {
-  "argument.no_color": False,
-})
+COLOR_SUPPORT = sys.stdout.isatty() and not system.is_windows()
 
 DIVIDER = "=" * 70
 HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
@@ -41,19 +38,18 @@ LINE_ATTR = {
 
 
 def print_line(msg, *attr):
-  if CONFIG["argument.no_color"]:
-    print msg
-  else:
-    print term.format(msg, *attr)
+  if COLOR_SUPPORT:
+    msg = term.format(msg, *attr)
+
+  print msg
 
 
 def print_noline(msg, *attr):
-  if CONFIG["argument.no_color"]:
-    sys.stdout.write(msg)
-    sys.stdout.flush()
-  else:
-    sys.stdout.write(term.format(msg, *attr))
-    sys.stdout.flush()
+  if COLOR_SUPPORT:
+    msg = term.format(msg, *attr)
+
+  sys.stdout.write(msg)
+  sys.stdout.flush()
 
 
 def print_divider(msg, is_header = False):
@@ -128,10 +124,10 @@ def colorize(line_type, line_content):
   Applies escape sequences so each line is colored according to its type.
   """
 
-  if CONFIG["argument.no_color"]:
-    return line_content
-  else:
-    return term.format(line_content, *LINE_ATTR[line_type])
+  if COLOR_SUPPORT:
+    line_content = term.format(line_content, *LINE_ATTR[line_type])
+
+  return line_content
 
 
 def strip_module(line_type, line_content):
@@ -177,10 +173,10 @@ def align_results(line_type, line_content):
     assert False, "Unexpected line type: %s" % line_type
     return line_content
 
-  if CONFIG["argument.no_color"]:
-    return "%-61s[%s]" % (line_content, term.format(new_ending))
-  else:
+  if COLOR_SUPPORT:
     return "%-61s[%s]" % (line_content, term.format(new_ending, term.Attr.BOLD))
+  else:
+    return "%-61s[%s]" % (line_content, term.format(new_ending))
 
 
 class ErrorTracker(object):
