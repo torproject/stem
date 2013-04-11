@@ -66,89 +66,6 @@ DEFAULT_RUN_TARGET = Target.RUN_OPEN
 ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
 
 
-def load_user_configuration(test_config):
-  """
-  Parses our commandline arguments, loading our custom test configuration if
-  '--config' was provided and then appending arguments to that. This does some
-  sanity checking on the input, printing an error and quitting if validation
-  fails.
-  """
-
-  arg_overrides = {}
-
-  try:
-    opts = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)[0]
-  except getopt.GetoptError, exc:
-    print "%s (for usage provide --help)" % exc
-    sys.exit(1)
-
-  for opt, arg in opts:
-    if opt in ("-a", "--all"):
-      arg_overrides["argument.unit"] = "true"
-      arg_overrides["argument.integ"] = "true"
-      arg_overrides["argument.style"] = "true"
-    elif opt in ("-u", "--unit"):
-      arg_overrides["argument.unit"] = "true"
-    elif opt in ("-i", "--integ"):
-      arg_overrides["argument.integ"] = "true"
-    elif opt in ("-s", "--style"):
-      arg_overrides["argument.style"] = "true"
-    elif opt == "--python3":
-      arg_overrides["argument.python3"] = "true"
-    elif opt == "--clean":
-      arg_overrides["argument.python3_clean"] = "true"
-    elif opt in ("-t", "--targets"):
-      integ_targets = arg.split(",")
-
-      # validates the targets
-      if not integ_targets:
-        print "No targets provided"
-        sys.exit(1)
-
-      for target in integ_targets:
-        if not target in Target:
-          print "Invalid integration target: %s" % target
-          sys.exit(1)
-        else:
-          target_config = test_config.get("target.config", {}).get(target)
-
-          if target_config:
-            arg_overrides[target_config] = "true"
-    elif opt in ("-l", "--test"):
-      arg_overrides["argument.test"] = arg
-    elif opt in ("-l", "--log"):
-      arg_overrides["argument.log"] = arg.upper()
-    elif opt in ("--tor"):
-      arg_overrides["argument.tor"] = arg
-    elif opt in ("-h", "--help"):
-      # Prints usage information and quits. This includes a listing of the
-      # valid integration targets.
-
-      print CONFIG["msg.help"]
-
-      # gets the longest target length so we can show the entries in columns
-      target_name_length = max(map(len, Target))
-      description_format = "    %%-%is - %%s" % target_name_length
-
-      for target in Target:
-        print description_format % (target, CONFIG["target.description"].get(target, ""))
-
-      print
-
-      sys.exit()
-
-  for key, value in arg_overrides.items():
-    test_config.set(key, value)
-
-  # basic validation on user input
-
-  log_config = CONFIG["argument.log"]
-  if log_config and not log_config in log.LOG_VALUES:
-    print "'%s' isn't a logging runlevel, use one of the following instead:" % log_config
-    print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
-    sys.exit(1)
-
-
 def _clean_orphaned_pyc():
   test.output.print_noline("  checking for orphaned .pyc files... ", *test.runner.STATUS_ATTR)
 
@@ -289,7 +206,74 @@ if __name__ == '__main__':
   settings_path = os.path.join(test.runner.STEM_BASE, "test", "settings.cfg")
   test_config.load(settings_path)
 
-  load_user_configuration(test_config)
+  try:
+    opts = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)[0]
+  except getopt.GetoptError, exc:
+    print "%s (for usage provide --help)" % exc
+    sys.exit(1)
+
+  for opt, arg in opts:
+    if opt in ("-a", "--all"):
+      test_config.set("argument.unit", "true")
+      test_config.set("argument.integ", "true")
+      test_config.set("argument.style", "true")
+    elif opt in ("-u", "--unit"):
+      test_config.set("argument.unit", "true")
+    elif opt in ("-i", "--integ"):
+      test_config.set("argument.integ", "true")
+    elif opt in ("-s", "--style"):
+      test_config.set("argument.style", "true")
+    elif opt == "--python3":
+      test_config.set("argument.python3", "true")
+    elif opt == "--clean":
+      test_config.set("argument.python3_clean", "true")
+    elif opt in ("-t", "--targets"):
+      integ_targets = arg.split(",")
+
+      # validates the targets
+      if not integ_targets:
+        print "No targets provided"
+        sys.exit(1)
+
+      for target in integ_targets:
+        if not target in Target:
+          print "Invalid integration target: %s" % target
+          sys.exit(1)
+        else:
+          target_config = test_config.get("target.config", {}).get(target)
+
+          if target_config:
+            test_config.set(target_config, "true")
+    elif opt in ("-l", "--test"):
+      test_config.set("argument.test", arg)
+    elif opt in ("-l", "--log"):
+      test_config.set("argument.log", arg.upper())
+    elif opt in ("--tor"):
+      test_config.set("argument.tor", arg)
+    elif opt in ("-h", "--help"):
+      # Prints usage information and quits. This includes a listing of the
+      # valid integration targets.
+
+      print CONFIG["msg.help"]
+
+      # gets the longest target length so we can show the entries in columns
+      target_name_length = max(map(len, Target))
+      description_format = "    %%-%is - %%s" % target_name_length
+
+      for target in Target:
+        print description_format % (target, CONFIG["target.description"].get(target, ""))
+
+      print
+
+      sys.exit()
+
+  # basic validation on user input
+
+  log_config = CONFIG["argument.log"]
+  if log_config and not log_config in log.LOG_VALUES:
+    print "'%s' isn't a logging runlevel, use one of the following instead:" % log_config
+    print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
+    sys.exit(1)
 
   # check that we have 2to3 and python3 available in our PATH
   if CONFIG["argument.python3"]:
