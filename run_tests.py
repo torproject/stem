@@ -25,8 +25,8 @@ import test.output
 import test.runner
 import test.static_checks
 
-OPT = "auist:l:c:h"
-OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=", "test=", "log=", "tor=", "config=", "help"]
+OPT = "auist:l:h"
+OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=", "test=", "log=", "tor=", "help"]
 DIVIDER = "=" * 70
 
 CONFIG = stem.util.conf.config_dict("test", {
@@ -74,7 +74,7 @@ def load_user_configuration(test_config):
   fails.
   """
 
-  arg_overrides, config_path = {}, None
+  arg_overrides = {}
 
   try:
     opts = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)[0]
@@ -97,8 +97,6 @@ def load_user_configuration(test_config):
       arg_overrides["argument.python3"] = "true"
     elif opt == "--clean":
       arg_overrides["argument.python3_clean"] = "true"
-    elif opt in ("-c", "--config"):
-      config_path = os.path.abspath(arg)
     elif opt in ("-t", "--targets"):
       integ_targets = arg.split(",")
 
@@ -138,15 +136,6 @@ def load_user_configuration(test_config):
       print
 
       sys.exit()
-
-  # load a testrc if '--config' was given, then apply arguments
-
-  if config_path:
-    try:
-      test_config.load(config_path)
-    except IOError, exc:
-      print "Unable to load testing configuration at '%s': %s" % (config_path, exc)
-      sys.exit(1)
 
   for key, value in arg_overrides.items():
     test_config.set(key, value)
