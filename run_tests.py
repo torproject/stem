@@ -46,36 +46,6 @@ base = os.path.sep.join(__file__.split(os.path.sep)[:-1]).lstrip("./")
 SOURCE_BASE_PATHS = [os.path.join(base, path) for path in ('stem', 'test', 'run_tests.py')]
 
 
-def _clean_orphaned_pyc():
-  test.output.print_noline("  checking for orphaned .pyc files... ", *test.runner.STATUS_ATTR)
-
-  orphaned_pyc = []
-
-  for base_dir in SOURCE_BASE_PATHS:
-    for pyc_path in test.static_checks._get_files_with_suffix(base_dir, ".pyc"):
-      # If we're running python 3 then the *.pyc files are no longer bundled
-      # with the *.py. Rather, they're in a __pycache__ directory.
-      #
-      # At the moment there's no point in checking for orphaned bytecode with
-      # python 3 because it's an exported copy of the python 2 codebase, so
-      # skipping.
-
-      if "__pycache__" in pyc_path:
-        continue
-
-      if not os.path.exists(pyc_path[:-1]):
-        orphaned_pyc.append(pyc_path)
-
-  if not orphaned_pyc:
-    # no orphaned files, nothing to do
-    test.output.print_line("done", *test.runner.STATUS_ATTR)
-  else:
-    print
-    for pyc_file in orphaned_pyc:
-      test.output.print_error("    removing %s" % pyc_file)
-      os.remove(pyc_file)
-
-
 def _python3_setup(python3_destination, clean):
   # Python 2.7.3 added some nice capabilities to 2to3, like '--output-dir'...
   #
@@ -321,7 +291,17 @@ if __name__ == '__main__':
   test.output.print_divider("INITIALISING", True)
 
   test.output.print_line("Performing startup activities...", *test.runner.STATUS_ATTR)
-  _clean_orphaned_pyc()
+  test.output.print_noline("  checking for orphaned .pyc files... ", *test.runner.STATUS_ATTR)
+
+  orphaned_pyc = test.util.clean_orphaned_pyc(SOURCE_BASE_PATHS)
+
+  if not orphaned_pyc:
+    # no orphaned files, nothing to do
+    test.output.print_line("done", *test.runner.STATUS_ATTR)
+  else:
+    print
+    for pyc_file in orphaned_pyc:
+      test.output.print_error("    removed %s" % pyc_file)
 
   print
 

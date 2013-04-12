@@ -5,9 +5,15 @@ Helper functions for our test framework.
 
   get_unit_tests - provides our unit tests
   get_integ_tests - provides our integration tests
+
+  clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
 """
 
+import os
+
 import stem.util.conf
+
+import test.static_checks
 
 CONFIG = stem.util.conf.config_dict("test", {
   "test.unit_tests": "",
@@ -60,3 +66,43 @@ def _get_tests(modules, prefix):
         module = getattr(module, subcomponent)
 
       yield module
+
+
+def clean_orphaned_pyc(paths):
+  """
+  Deletes any file with a *.pyc extention without a corresponding *.py. This
+  helps to address a common gotcha when deleting python files...
+
+  * You delete module 'foo.py' and run the tests to ensure that you haven't
+    broken anything. They pass, however there *are* still some 'import foo'
+    statements that still work because the bytecode (foo.pyc) is still around.
+
+  * You push your change.
+
+  * Another developer clones our repository and is confused because we have a
+    bunch of ImportErrors.
+
+  :param list paths: paths to search for orphaned pyc files
+
+  :returns: list of files that we deleted
+  """
+
+  orphaned_pyc = []
+
+  for base_dir in paths:
+    for pyc_path in test.static_checks._get_files_with_suffix(base_dir, ".pyc"):
+      # If we're running python 3 then the *.pyc files are no longer bundled
+      # with the *.py. Rather, they're in a __pycache__ directory.
+      #
+      # At the moment there's no point in checking for orphaned bytecode with
+      # python 3 because it's an exported copy of the python 2 codebase, so
+      # skipping.
+
+      if "__pycache__" in pyc_path:
+        continue
+
+      if not os.path.exists(pyc_path[:-1]):
+        orphaned_pyc.append(pyc_path)
+        os.remove(pyc_path)
+
+  return orphaned_pyc
