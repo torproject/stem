@@ -227,7 +227,6 @@ def exercise_controller(test_case, controller):
   test_case.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
 
 
-
 def get_unit_tests(prefix = None):
   """
   Provides the classes for our unit tests.

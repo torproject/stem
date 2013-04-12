@@ -41,13 +41,16 @@ CONFIG = stem.util.conf.config_dict("test", {
 
 DEFAULT_RUN_TARGET = Target.RUN_OPEN
 
+base = os.path.sep.join(__file__.split(os.path.sep)[:-1]).lstrip("./")
+SOURCE_BASE_PATHS = [os.path.join(base, path) for path in ('stem', 'test', 'run_tests.py')]
+
 
 def _clean_orphaned_pyc():
   test.output.print_noline("  checking for orphaned .pyc files... ", *test.runner.STATUS_ATTR)
 
   orphaned_pyc = []
 
-  for base_dir in ('stem', 'test', 'run_tests.py'):
+  for base_dir in SOURCE_BASE_PATHS:
     for pyc_path in test.static_checks._get_files_with_suffix(base_dir, ".pyc"):
       # If we're running python 3 then the *.pyc files are no longer bundled
       # with the *.py. Rather, they're in a __pycache__ directory.
@@ -121,10 +124,7 @@ def _python3_setup(python3_destination, clean):
 
 
 def _print_style_issues(run_unit, run_integ, run_style):
-  base_path = os.path.sep.join(__file__.split(os.path.sep)[:-1]).lstrip("./")
-  style_issues = test.static_checks.get_issues(os.path.join(base_path, "stem"))
-  style_issues.update(test.static_checks.get_issues(os.path.join(base_path, "test")))
-  style_issues.update(test.static_checks.get_issues(os.path.join(base_path, "run_tests.py")))
+  style_issues = test.static_checks.get_issues(SOURCE_BASE_PATHS)
 
   # If we're doing some sort of testing (unit or integ) and pyflakes is
   # available then use it. Its static checks are pretty quick so there's not
@@ -132,17 +132,13 @@ def _print_style_issues(run_unit, run_integ, run_style):
 
   if run_unit or run_integ:
     if system.is_available("pyflakes"):
-      style_issues.update(test.static_checks.pyflakes_issues(os.path.join(base_path, "stem")))
-      style_issues.update(test.static_checks.pyflakes_issues(os.path.join(base_path, "test")))
-      style_issues.update(test.static_checks.pyflakes_issues(os.path.join(base_path, "run_tests.py")))
+      style_issues.update(test.static_checks.pyflakes_issues(SOURCE_BASE_PATHS))
     else:
       test.output.print_error("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n")
 
   if run_style:
     if system.is_available("pep8"):
-      style_issues.update(test.static_checks.pep8_issues(os.path.join(base_path, "stem")))
-      style_issues.update(test.static_checks.pep8_issues(os.path.join(base_path, "test")))
-      style_issues.update(test.static_checks.pep8_issues(os.path.join(base_path, "run_tests.py")))
+      style_issues.update(test.static_checks.pep8_issues(SOURCE_BASE_PATHS))
     else:
       test.output.print_error("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n")
 

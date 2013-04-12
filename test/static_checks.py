@@ -27,15 +27,23 @@ CONFIG = conf.config_dict("test", {
 })
 
 
-def pep8_issues(base_path = DEFAULT_TARGET):
+def pep8_issues(base_paths = DEFAULT_TARGET):
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
   we conform to.
 
-  :param str base_path: directory to be iterated over
+  :param str,list base_paths: directory to be iterated over
 
   :returns: dict of the form ``path => [(line_number, message)...]``
   """
+
+  if isinstance(base_paths, (tuple, list)):
+    results = {}
+
+    for path in base_paths:
+      results.update(pep8_issues(path))
+
+    return results
 
   # The pep8 command give output of the form...
   #
@@ -76,7 +84,7 @@ def pep8_issues(base_path = DEFAULT_TARGET):
   ignored_issues = "E111,E121,E501,E251,E127"
 
   issues = {}
-  pep8_output = system.call("pep8 --ignore %s %s" % (ignored_issues, base_path))
+  pep8_output = system.call("pep8 --ignore %s %s" % (ignored_issues, base_paths))
 
   for line in pep8_output:
     line_match = re.match("^(.*):(\d+):(\d+): (.*)$", line)
@@ -90,15 +98,23 @@ def pep8_issues(base_path = DEFAULT_TARGET):
   return issues
 
 
-def pyflakes_issues(base_path = DEFAULT_TARGET):
+def pyflakes_issues(base_paths = DEFAULT_TARGET):
   """
   Checks for issues via pyflakes. False positives can be whitelisted via our
   test configuration.
 
-  :param str base_path: directory to be iterated over
+  :param str,list base_paths: directory to be iterated over
 
   :returns: dict of the form ``path => [(line_number, message)...]``
   """
+
+  if isinstance(base_paths, (tuple, list)):
+    results = {}
+
+    for path in base_paths:
+      results.update(pyflakes_issues(path))
+
+    return results
 
   global PYFLAKES_IGNORE
 
@@ -121,7 +137,7 @@ def pyflakes_issues(base_path = DEFAULT_TARGET):
   #   stem/control.py:957: undefined name 'entry'
 
   issues = {}
-  pyflakes_output = system.call("pyflakes %s" % base_path)
+  pyflakes_output = system.call("pyflakes %s" % base_paths)
 
   for line in pyflakes_output:
     line_match = re.match("^(.*):(\d+): (.*)$", line)
@@ -135,14 +151,22 @@ def pyflakes_issues(base_path = DEFAULT_TARGET):
   return issues
 
 
-def get_issues(base_path = DEFAULT_TARGET):
+def get_issues(base_paths = DEFAULT_TARGET):
   """
   Checks python source code in the given directory for whitespace issues.
 
-  :param str base_path: directory to be iterated over
+  :param str,list base_paths: directory to be iterated over
 
   :returns: dict of the form ``path => [(line_number, message)...]``
   """
+
+  if isinstance(base_paths, (tuple, list)):
+    results = {}
+
+    for path in base_paths:
+      results.update(get_issues(path))
+
+    return results
 
   # TODO: This does not check that block indentations are two spaces because
   # differentiating source from string blocks ("""foo""") is more of a pita
@@ -150,7 +174,7 @@ def get_issues(base_path = DEFAULT_TARGET):
 
   issues = {}
 
-  for file_path in _get_files_with_suffix(base_path):
+  for file_path in _get_files_with_suffix(base_paths):
     if _is_test_data(file_path):
       continue
 
