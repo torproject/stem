@@ -25,33 +25,19 @@ import test.output
 import test.runner
 import test.static_checks
 
+from test.runner import Target
+
 OPT = "auist:l:h"
 OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=", "test=", "log=", "tor=", "help"]
 DIVIDER = "=" * 70
 
 CONFIG = stem.util.conf.config_dict("test", {
   "msg.help": "",
-  "target.config": {},
   "target.description": {},
   "target.prereq": {},
   "target.torrc": {},
   "integ.test_directory": "./test/data",
 })
-
-Target = stem.util.enum.UppercaseEnum(
-  "ONLINE",
-  "RELATIVE",
-  "CHROOT",
-  "RUN_NONE",
-  "RUN_OPEN",
-  "RUN_PASSWORD",
-  "RUN_COOKIE",
-  "RUN_MULTIPLE",
-  "RUN_SOCKET",
-  "RUN_SCOOKIE",
-  "RUN_PTRACE",
-  "RUN_ALL",
-)
 
 DEFAULT_RUN_TARGET = Target.RUN_OPEN
 
@@ -214,6 +200,18 @@ if __name__ == '__main__':
   logging_runlevel = None
   tor_path = "tor"
 
+  # Integration testing targets fall into two categories:
+  #
+  # * Run Targets (like RUN_COOKIE and RUN_PTRACE) which customize our torrc.
+  #   We do an integration test run for each run target we get.
+  #
+  # * Attribute Target (like CHROOT and ONLINE) which indicates
+  #   non-configuration changes to ur test runs. These are applied to all
+  #   integration runs that we perform.
+
+  run_targets = [DEFAULT_RUN_TARGET]
+  attribute_targets = []
+
   for opt, arg in opts:
     if opt in ("-a", "--all"):
       run_unit = True
@@ -232,7 +230,11 @@ if __name__ == '__main__':
     elif opt in ("-t", "--targets"):
       integ_targets = arg.split(",")
 
-      # validates the targets
+      run_targets = []
+      all_run_targets = [t for t in Target if CONFIG["target.torrc"].get(t) is not None]
+
+      # validates the targets and split them into run and attribute targets
+
       if not integ_targets:
         print "No targets provided"
         sys.exit(1)
@@ -241,11 +243,16 @@ if __name__ == '__main__':
         if not target in Target:
           print "Invalid integration target: %s" % target
           sys.exit(1)
+        elif target in all_run_targets:
+          run_targets.append(target)
         else:
-          target_config = test_config.get("target.config", {}).get(target)
+          attribute_targets.append(target)
 
-          if target_config:
-            test_config.set(target_config, "true")
+      # check if we were told to use all run targets
+
+      if Target.RUN_ALL in attribute_targets:
+        attribute_targets.remove(Target.RUN_ALL)
+        run_targets = all_run_targets
     elif opt in ("-l", "--test"):
       test_prefix = arg
     elif opt in ("-l", "--log"):
@@ -346,43 +353,19 @@ if __name__ == '__main__':
     test.output.print_divider("INTEGRATION TESTS", True)
     integ_runner = test.runner.get_runner()
 
-    # Queue up all the targets with torrc options we want to run against.
-
-    integ_run_targets = []
-    all_run_targets = [t for t in Target if CONFIG["target.torrc"].get(t) is not None]
-
-    if test_config.get("integ.target.run.all", False):
-      # test against everything with torrc options
-      integ_run_targets = all_run_targets
-    else:
-      for target in all_run_targets:
-        target_config = CONFIG["target.config"].get(target)
-
-        if target_config and test_config.get(target_config, False):
-          integ_run_targets.append(target)
-
-    # if we didn't specify any targets then use the default
-    if not integ_run_targets:
-      integ_run_targets.append(DEFAULT_RUN_TARGET)
-
     # Determine targets we don't meet the prereqs for. Warnings are given about
     # these at the end of the test run so they're more noticeable.
 
-    our_version, skip_targets = None, []
+    our_version = stem.version.get_system_tor_version(tor_path)
+    skip_targets = []
 
-    for target in integ_run_targets:
+    for target in run_targets:
+      # check if we meet this target's tor version prerequisites
+
       target_prereq = CONFIG["target.prereq"].get(target)
 
-      if target_prereq:
-        # lazy loaded to skip system call if we don't have any prereqs
-        if not our_version:
-          our_version = stem.version.get_system_tor_version(tor_path)
-
-        if our_version < stem.version.Requirement[target_prereq]:
-          skip_targets.append(target)
-
-    for target in integ_run_targets:
-      if target in skip_targets:
+      if target_prereq and our_version < stem.version.Requirement[target_prereq]:
+        skip_targets.append(target)
         continue
 
       error_tracker.set_category(target)
@@ -402,7 +385,7 @@ if __name__ == '__main__':
               test.output.print_line("'%s' isn't a test.runner.Torrc enumeration" % opt)
               sys.exit(1)
 
-        integ_runner.start(tor_path, extra_torrc_opts = torrc_opts)
+        integ_runner.start(target, attribute_targets, tor_path, extra_torrc_opts = torrc_opts)
 
         test.output.print_line("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print

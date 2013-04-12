@@ -65,12 +65,24 @@ from stem.util import term
 CONFIG = stem.util.conf.config_dict("test", {
   "integ.test_directory": "./test/data",
   "integ.log": "./test/data/log",
-  "integ.target.online": False,
-  "integ.target.relative_data_dir": False,
-  "integ.target.chroot": False,
   "test.unit_tests": "",
   "test.integ_tests": "",
 })
+
+Target = stem.util.enum.UppercaseEnum(
+  "ONLINE",
+  "RELATIVE",
+  "CHROOT",
+  "RUN_NONE",
+  "RUN_OPEN",
+  "RUN_PASSWORD",
+  "RUN_COOKIE",
+  "RUN_MULTIPLE",
+  "RUN_SOCKET",
+  "RUN_SCOOKIE",
+  "RUN_PTRACE",
+  "RUN_ALL",
+)
 
 STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
 SUBSTATUS_ATTR = (term.Color.BLUE, )
@@ -170,7 +182,7 @@ def require_online(test_case):
   :returns: True if test should be skipped, False otherwise
   """
 
-  if not CONFIG["integ.target.online"]:
+  if not Target.ONLINE in test.runner.get_runner().attribute_targets:
     skip(test_case, "(requires online target)")
     return True
 
@@ -305,6 +317,9 @@ class _MockChrootFile(object):
 
 class Runner(object):
   def __init__(self):
+    self.run_target = None
+    self.attribute_targets = []
+
     self._runner_lock = threading.RLock()
 
     # runtime attributes, set by the start method
@@ -320,11 +335,13 @@ class Runner(object):
 
     self._original_recv_message = None
 
-  def start(self, tor_cmd, extra_torrc_opts):
+  def start(self, run_target, attribute_targets, tor_cmd, extra_torrc_opts):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
 
+    :param Target run_target: configuration we're running with
+    :param list attribute_targets: **Targets** for our non-configuration attributes
     :param str tor_cmd: command to start tor with
     :param list extra_torrc_opts: additional torrc options for our test instance
 
@@ -332,6 +349,9 @@ class Runner(object):
     """
 
     with self._runner_lock:
+      self.run_target = run_target
+      self.attribute_targets = attribute_targets
+
       # if we're holding on to a tor process (running or not) then clean up after
       # it so we can start a fresh instance
 
@@ -352,7 +372,7 @@ class Runner(object):
 
       original_cwd, data_dir_path = os.getcwd(), self._test_dir
 
-      if CONFIG["integ.target.relative_data_dir"]:
+      if Target.RELATIVE in self.attribute_targets:
         tor_cwd = os.path.dirname(self._test_dir)
 
         if not os.path.exists(tor_cwd):
@@ -376,7 +396,7 @@ class Runner(object):
         # strip the testing directory from recv_message responses if we're
         # simulating a chroot setup
 
-        if CONFIG["integ.target.chroot"] and not self._original_recv_message:
+        if Target.CHROOT in self.attribute_targets and not self._original_recv_message:
           # TODO: when we have a function for telling stem the chroot we'll
           # need to set that too
 
@@ -389,7 +409,7 @@ class Runner(object):
           stem.socket.recv_message = _chroot_recv_message
 
         # revert our cwd back to normal
-        if CONFIG["integ.target.relative_data_dir"]:
+        if Target.RELATIVE in self.attribute_targets:
           os.chdir(original_cwd)
       except OSError, exc:
         raise exc
@@ -768,7 +788,7 @@ class Runner(object):
     try:
       # wait to fully complete if we're running tests with network activity,
       # otherwise finish after local bootstraping
-      complete_percent = 100 if CONFIG["integ.target.online"] else 5
+      complete_percent = 100 if Target.ONLINE in self.attribute_targets else 5
 
       # prints output from tor's stdout while it starts up
       print_init_line = lambda line: test.output.print_line("  %s" % line, *SUBSTATUS_ATTR)
