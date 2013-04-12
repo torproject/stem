@@ -15,9 +15,6 @@ import os
 
 from stem.util import conf, system
 
-# if ran directly then run over everything one level up
-DEFAULT_TARGET = os.path.sep.join(__file__.split(os.path.sep)[:-1])
-
 # mapping of files to the issues that should be ignored
 PYFLAKES_IGNORE = None
 
@@ -27,7 +24,7 @@ CONFIG = conf.config_dict("test", {
 })
 
 
-def pep8_issues(base_paths = DEFAULT_TARGET):
+def pep8_issues(base_paths):
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
   we conform to.
@@ -98,7 +95,7 @@ def pep8_issues(base_paths = DEFAULT_TARGET):
   return issues
 
 
-def pyflakes_issues(base_paths = DEFAULT_TARGET):
+def pyflakes_issues(base_paths):
   """
   Checks for issues via pyflakes. False positives can be whitelisted via our
   test configuration.
@@ -151,7 +148,7 @@ def pyflakes_issues(base_paths = DEFAULT_TARGET):
   return issues
 
 
-def get_issues(base_paths = DEFAULT_TARGET):
+def get_issues(base_paths):
   """
   Checks python source code in the given directory for whitespace issues.
 
@@ -226,15 +223,3 @@ def _get_files_with_suffix(base_path, suffix = ".py"):
       for filename in files:
         if filename.endswith(suffix):
           yield os.path.join(root, filename)
-
-if __name__ == '__main__':
-  issues = get_issues()
-
-  for file_path in issues:
-    print file_path
-
-    for line_number, msg in issues[file_path]:
-      line_count = "%-4s" % line_number
-      print "  line %s %s" % (line_count, msg)
-
-    print
