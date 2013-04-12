@@ -18,9 +18,6 @@ about the tor test instance they're running against.
   require_online - skips unless targets allow for online tests
   exercise_controller - basic sanity check that a controller connection can be used
 
-  get_unit_tests - provides our unit tests
-  get_integ_tests - provides our integration tests
-
   get_runner - Singleton for fetching our runtime context.
   Runner - Runtime context for our integration tests.
     |- start - prepares and starts a tor instance for our tests to run against
@@ -65,8 +62,6 @@ from stem.util import term
 CONFIG = stem.util.conf.config_dict("test", {
   "integ.test_directory": "./test/data",
   "integ.log": "./test/data/log",
-  "test.unit_tests": "",
-  "test.integ_tests": "",
 })
 
 Target = stem.util.enum.UppercaseEnum(
@@ -225,62 +220,6 @@ def exercise_controller(test_case, controller):
     config_file_response = controller.msg("GETINFO config-file")
 
   test_case.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
-
-
-def get_unit_tests(prefix = None):
-  """
-  Provides the classes for our unit tests.
-
-  :param str prefix: only provide the test if the module starts with this prefix
-
-  :returns: an **iterator** for our unit tests
-  """
-
-  for line in CONFIG["test.unit_tests"].splitlines():
-    if line:
-      test_class = _import_test(line)
-
-      if prefix and not test_class.__module__.startswith(prefix):
-        continue
-
-      yield test_class
-
-
-def get_integ_tests(prefix = None):
-  """
-  Provides the classes for our integration tests.
-
-  :param str prefix: only provide the test if the module starts with this prefix
-
-  :returns: an **iterator** for our integration tests
-  """
-
-  for line in CONFIG["test.integ_tests"].splitlines():
-    if line:
-      test_class = _import_test(line)
-
-      if prefix and not test_class.__module__.startswith(prefix):
-        continue
-
-      yield test_class
-
-
-def _import_test(import_name):
-  # Dynamically imports test modules. The __import__() call has a couple quirks
-  # that make this a little clunky...
-  #
-  #   * it only accepts modules, not the actual class we want to import
-  #
-  #   * it returns the top level module, so we need to transverse into it for
-  #     the test class
-
-  module_name = '.'.join(import_name.split('.')[:-1])
-  module = __import__(module_name)
-
-  for subcomponent in import_name.split(".")[1:]:
-    module = getattr(module, subcomponent)
-
-  return module
 
 
 def get_runner():

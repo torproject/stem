@@ -24,6 +24,7 @@ from stem.util import log, system, term
 import test.output
 import test.runner
 import test.static_checks
+import test.util
 
 from test.runner import Target
 
@@ -328,7 +329,7 @@ if __name__ == '__main__':
     test.output.print_divider("UNIT TESTS", True)
     error_tracker.set_category("UNIT TEST")
 
-    for test_class in test.runner.get_unit_tests(test_prefix):
+    for test_class in test.util.get_unit_tests(test_prefix):
       test.output.print_divider(test_class.__module__)
       suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
       test_results = StringIO.StringIO()
@@ -384,7 +385,7 @@ if __name__ == '__main__':
         test.output.print_line("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
 
-        for test_class in test.runner.get_integ_tests(test_prefix):
+        for test_class in test.util.get_integ_tests(test_prefix):
           test.output.print_divider(test_class.__module__)
           suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
           test_results = StringIO.StringIO()
