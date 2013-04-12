@@ -18,6 +18,7 @@ COLOR_SUPPORT = sys.stdout.isatty() and not system.is_windows()
 DIVIDER = "=" * 70
 HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
 CATEGORY_ATTR = (term.Color.GREEN, term.Attr.BOLD)
+ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
 
 LineType = stem.util.enum.Enum("OK", "FAIL", "ERROR", "SKIPPED", "CONTENT")
 
@@ -50,6 +51,10 @@ def print_noline(msg, *attr):
 
   sys.stdout.write(msg)
   sys.stdout.flush()
+
+
+def print_error(msg):
+  print_line(msg, *ERROR_ATTR)
 
 
 def print_divider(msg, is_header = False):

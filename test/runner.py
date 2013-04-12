@@ -86,7 +86,6 @@ Target = stem.util.enum.UppercaseEnum(
 
 STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
 SUBSTATUS_ATTR = (term.Color.BLUE, )
-ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
 
 SOCKS_HOST = "127.0.0.1"
 SOCKS_PORT = 1112
@@ -432,7 +431,7 @@ class Runner(object):
           elif not stem.util.system.is_windows():
             os.kill(self._tor_process.pid, signal.SIGTERM)
           else:
-            test.output.print_line("failed (unable to call kill() in python 2.5)", *ERROR_ATTR)
+            test.output.print_error("failed (unable to call kill() in python 2.5)")
         except OSError:
           pass
 
@@ -470,7 +469,7 @@ class Runner(object):
       if self._tor_process and self._tor_process.poll() is not None:
         # clean up the temporary resources and note the unexpected shutdown
         self.stop()
-        test.output.print_line("tor shut down unexpectedly", *ERROR_ATTR)
+        test.output.print_error("tor shut down unexpectedly")
 
       return bool(self._tor_process)
 
@@ -707,7 +706,7 @@ class Runner(object):
         os.makedirs(self._test_dir)
         test.output.print_line("done", *STATUS_ATTR)
     except OSError, exc:
-      test.output.print_line("failed (%s)" % exc, *ERROR_ATTR)
+      test.output.print_error("failed (%s)" % exc)
       raise exc
 
     # Tor checks during startup that the directory a control socket resides in
@@ -728,7 +727,7 @@ class Runner(object):
           os.chmod(socket_dir, 0700)
           test.output.print_line("done", *STATUS_ATTR)
       except OSError, exc:
-        test.output.print_line("failed (%s)" % exc, *ERROR_ATTR)
+        test.output.print_error("failed (%s)" % exc)
         raise exc
 
     # configures logging
@@ -769,7 +768,7 @@ class Runner(object):
 
       print
     except Exception, exc:
-      test.output.print_line("failed (%s)\n" % exc, *ERROR_ATTR)
+      test.output.print_error("failed (%s)\n" % exc)
       raise OSError(exc)
 
   def _start_tor(self, tor_cmd):
@@ -799,5 +798,5 @@ class Runner(object):
       runtime = time.time() - start_time
       test.output.print_line("  done (%i seconds)\n" % runtime, *STATUS_ATTR)
     except OSError, exc:
-      test.output.print_line("  failed to start tor: %s\n" % exc, *ERROR_ATTR)
+      test.output.print_error("  failed to start tor: %s\n" % exc)
       raise exc

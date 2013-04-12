@@ -41,8 +41,6 @@ CONFIG = stem.util.conf.config_dict("test", {
 
 DEFAULT_RUN_TARGET = Target.RUN_OPEN
 
-ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
-
 
 def _clean_orphaned_pyc():
   test.output.print_noline("  checking for orphaned .pyc files... ", *test.runner.STATUS_ATTR)
@@ -70,7 +68,7 @@ def _clean_orphaned_pyc():
   else:
     print
     for pyc_file in orphaned_pyc:
-      test.output.print_line("    removing %s" % pyc_file, *test.runner.ERROR_ATTR)
+      test.output.print_error("    removing %s" % pyc_file)
       os.remove(pyc_file)
 
 
@@ -88,7 +86,7 @@ def _python3_setup(python3_destination, clean):
     shutil.rmtree(python3_destination, ignore_errors = True)
 
   if os.path.exists(python3_destination):
-    test.output.print_line("Reusing '%s'. Run again with '--clean' if you want to recreate the python3 export." % python3_destination, *test.runner.ERROR_ATTR)
+    test.output.print_error("Reusing '%s'. Run again with '--clean' if you want to recreate the python3 export." % python3_destination)
     print
     return True
 
@@ -108,7 +106,7 @@ def _python3_setup(python3_destination, clean):
     shutil.copy('run_tests.py', os.path.join(python3_destination, 'run_tests.py'))
     test.output.print_line("done", *test.runner.STATUS_ATTR)
   except OSError, exc:
-    test.output.print_line("failed\n%s" % exc, *test.runner.ERROR_ATTR)
+    test.output.print_error("failed\n%s" % exc)
     return False
 
   try:
@@ -116,7 +114,7 @@ def _python3_setup(python3_destination, clean):
     system.call("2to3 --write --nobackups --no-diffs %s" % python3_destination)
     test.output.print_line("done", *test.runner.STATUS_ATTR)
   except OSError, exc:
-    test.output.print_line("failed\n%s" % exc, *test.runner.ERROR_ATTR)
+    test.output.print_error("failed\n%s" % exc)
     return False
 
   return True
@@ -138,7 +136,7 @@ def _print_style_issues(run_unit, run_integ, run_style):
       style_issues.update(test.static_checks.pyflakes_issues(os.path.join(base_path, "test")))
       style_issues.update(test.static_checks.pyflakes_issues(os.path.join(base_path, "run_tests.py")))
     else:
-      test.output.print_line("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", *ERROR_ATTR)
+      test.output.print_error("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n")
 
   if run_style:
     if system.is_available("pep8"):
@@ -146,7 +144,7 @@ def _print_style_issues(run_unit, run_integ, run_style):
       style_issues.update(test.static_checks.pep8_issues(os.path.join(base_path, "test")))
       style_issues.update(test.static_checks.pep8_issues(os.path.join(base_path, "run_tests.py")))
     else:
-      test.output.print_line("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", *ERROR_ATTR)
+      test.output.print_error("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n")
 
   if style_issues:
     test.output.print_line("STYLE ISSUES", term.Color.BLUE, term.Attr.BOLD)
@@ -287,7 +285,7 @@ if __name__ == '__main__':
   if run_python3:
     for required_cmd in ("2to3", "python3"):
       if not system.is_available(required_cmd):
-        test.output.print_line("Unable to test python 3 because %s isn't in your path" % required_cmd, *test.runner.ERROR_ATTR)
+        test.output.print_error("Unable to test python 3 because %s isn't in your path" % required_cmd)
         sys.exit(1)
 
   if run_python3 and sys.version_info[0] != 3:
@@ -409,15 +407,15 @@ if __name__ == '__main__':
         active_threads = threading.enumerate()
 
         if len(active_threads) > 1:
-          test.output.print_line("Threads lingering after test run:", *ERROR_ATTR)
+          test.output.print_error("Threads lingering after test run:")
 
           for lingering_thread in active_threads:
-            test.output.print_line("  %s" % lingering_thread, *ERROR_ATTR)
+            test.output.print_error("  %s" % lingering_thread)
 
           testing_failed = True
           break
       except KeyboardInterrupt:
-        test.output.print_line("  aborted starting tor: keyboard interrupt\n", *ERROR_ATTR)
+        test.output.print_error("  aborted starting tor: keyboard interrupt\n")
         break
       except OSError:
         testing_failed = True
@@ -448,10 +446,10 @@ if __name__ == '__main__':
   has_error = testing_failed or error_tracker.has_error_occured()
 
   if has_error:
-    test.output.print_line("TESTING FAILED %s" % runtime_label, *ERROR_ATTR)
+    test.output.print_error("TESTING FAILED %s" % runtime_label)
 
     for line in error_tracker:
-      test.output.print_line("  %s" % line, *ERROR_ATTR)
+      test.output.print_error("  %s" % line)
   elif skipped_test_count > 0:
     test.output.print_line("%i TESTS WERE SKIPPED" % skipped_test_count, term.Color.BLUE, term.Attr.BOLD)
     test.output.print_line("ALL OTHER TESTS PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
