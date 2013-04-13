@@ -45,7 +45,7 @@ LINE_ATTR = {
 }
 
 
-def println(msg, *attr):
+def println(msg = "", *attr):
   attr = _flatten(attr)
   no_newline = False
 

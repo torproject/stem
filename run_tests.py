@@ -68,8 +68,7 @@ def _python3_setup(python3_destination, clean):
     shutil.rmtree(python3_destination, ignore_errors = True)
 
   if os.path.exists(python3_destination):
-    println("Reusing '%s'. Run again with '--clean' if you want to recreate the python3 export." % python3_destination, ERROR)
-    print
+    println("Reusing '%s'. Run again with '--clean' if you want to recreate the python3 export.\n" % python3_destination, ERROR)
     return True
 
   os.makedirs(python3_destination)
@@ -131,16 +130,14 @@ def _print_static_issues(run_unit, run_integ, run_style):
         line_count = "%-4s" % line_number
         println("  line %s - %s" % (line_count, msg))
 
-      print
+      println()
 
 
 if __name__ == '__main__':
   try:
     stem.prereq.check_requirements()
   except ImportError, exc:
-    print exc
-    print
-
+    println("%s\n" % exc)
     sys.exit(1)
 
   start_time = time.time()
@@ -160,7 +157,7 @@ if __name__ == '__main__':
   try:
     opts = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)[0]
   except getopt.GetoptError, exc:
-    print "%s (for usage provide --help)" % exc
+    println("%s (for usage provide --help)" % exc)
     sys.exit(1)
 
   run_unit = False
@@ -209,12 +206,12 @@ if __name__ == '__main__':
       # validates the targets and split them into run and attribute targets
 
       if not integ_targets:
-        print "No targets provided"
+        println("No targets provided")
         sys.exit(1)
 
       for target in integ_targets:
         if not target in Target:
-          print "Invalid integration target: %s" % target
+          println("Invalid integration target: %s" % target)
           sys.exit(1)
         elif target in all_run_targets:
           run_targets.append(target)
@@ -236,24 +233,23 @@ if __name__ == '__main__':
       # Prints usage information and quits. This includes a listing of the
       # valid integration targets.
 
-      print CONFIG["msg.help"]
+      println(CONFIG["msg.help"])
 
       # gets the longest target length so we can show the entries in columns
       target_name_length = max(map(len, Target))
       description_format = "    %%-%is - %%s" % target_name_length
 
       for target in Target:
-        print description_format % (target, CONFIG["target.description"].get(target, ""))
+        println(description_format % (target, CONFIG["target.description"].get(target, "")))
 
-      print
-
+      println()
       sys.exit()
 
   # basic validation on user input
 
   if logging_runlevel and not logging_runlevel in log.LOG_VALUES:
-    print "'%s' isn't a logging runlevel, use one of the following instead:" % logging_runlevel
-    print "  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR"
+    println("'%s' isn't a logging runlevel, use one of the following instead:" % logging_runlevel)
+    println("  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR")
     sys.exit(1)
 
   # check that we have 2to3 and python3 available in our PATH
@@ -307,11 +303,11 @@ if __name__ == '__main__':
     # no orphaned files, nothing to do
     println("done", STATUS)
   else:
-    print
+    println()
     for pyc_file in orphaned_pyc:
       println("    removed %s" % pyc_file, ERROR)
 
-  print
+  println()
 
   if run_unit:
     test.output.print_divider("UNIT TESTS", True)
@@ -326,11 +322,11 @@ if __name__ == '__main__':
         skipped_test_count += len(run_result.skipped)
 
       sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
-      print
+      println()
 
       test.output.print_logging(logging_buffer)
 
-    print
+    println()
 
   if run_integ:
     test.output.print_divider("INTEGRATION TESTS", True)
@@ -370,8 +366,7 @@ if __name__ == '__main__':
 
         integ_runner.start(target, attribute_targets, tor_path, extra_torrc_opts = torrc_opts)
 
-        println("Running tests...", term.Color.BLUE, term.Attr.BOLD)
-        print
+        println("Running tests...\n", term.Color.BLUE, term.Attr.BOLD)
 
         for test_class in test.util.get_integ_tests(test_prefix):
           test.output.print_divider(test_class.__module__)
@@ -382,7 +377,7 @@ if __name__ == '__main__':
             skipped_test_count += len(run_result.skipped)
 
           sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
-          print
+          println()
 
           test.output.print_logging(logging_buffer)
 
@@ -408,13 +403,13 @@ if __name__ == '__main__':
         integ_runner.stop()
 
     if skip_targets:
-      print
+      println()
 
       for target in skip_targets:
         req_version = stem.version.Requirement[CONFIG["target.prereq"][target]]
         println("Unable to run target %s, this requires tor version %s" % (target, req_version), ERROR)
 
-      print
+      println()
 
     # TODO: note unused config options afterward?
 
@@ -437,10 +432,8 @@ if __name__ == '__main__':
       println("  %s" % line, ERROR)
   elif skipped_test_count > 0:
     println("%i TESTS WERE SKIPPED" % skipped_test_count, term.Color.BLUE, term.Attr.BOLD)
-    println("ALL OTHER TESTS PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
-    print
+    println("ALL OTHER TESTS PASSED %s\n" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
   else:
-    println("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
-    print
+    println("TESTING PASSED %s\n" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
 
   sys.exit(1 if has_error else 0)

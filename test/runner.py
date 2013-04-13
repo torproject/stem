@@ -695,7 +695,7 @@ class Runner(object):
       for line in self._torrc_contents.strip().splitlines():
         println("    %s" % line.strip(), SUBSTATUS)
 
-      print
+      println()
     except Exception, exc:
       test.output.print_error("failed (%s)\n" % exc)
       raise OSError(exc)
