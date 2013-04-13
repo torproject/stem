@@ -23,7 +23,6 @@ from stem.util import log, system, term
 
 import test.output
 import test.runner
-import test.static_checks
 import test.util
 
 from test.runner import Target
@@ -47,6 +46,14 @@ SOURCE_BASE_PATHS = [os.path.join(base, path) for path in ('stem', 'test', 'run_
 
 
 def _python3_setup(python3_destination, clean):
+  """
+  Exports the python3 counterpart of our codebase using 2to3.
+
+  :param str python3_destination: location to export our codebase to
+  :param bool clean: deletes our priorly exported codebase if **True**,
+    otherwise this is a no-op
+  """
+
   # Python 2.7.3 added some nice capabilities to 2to3, like '--output-dir'...
   #
   #   http://docs.python.org/2/library/2to3.html
@@ -94,8 +101,8 @@ def _python3_setup(python3_destination, clean):
   return True
 
 
-def _print_style_issues(run_unit, run_integ, run_style):
-  style_issues = test.static_checks.get_issues(SOURCE_BASE_PATHS)
+def _print_static_issues(run_unit, run_integ, run_style):
+  static_check_issues = {}
 
   # If we're doing some sort of testing (unit or integ) and pyflakes is
   # available then use it. Its static checks are pretty quick so there's not
@@ -103,23 +110,23 @@ def _print_style_issues(run_unit, run_integ, run_style):
 
   if run_unit or run_integ:
     if system.is_available("pyflakes"):
-      style_issues.update(test.static_checks.pyflakes_issues(SOURCE_BASE_PATHS))
+      static_check_issues.update(test.util.get_pyflakes_issues(SOURCE_BASE_PATHS))
     else:
       test.output.print_error("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n")
 
   if run_style:
     if system.is_available("pep8"):
-      style_issues.update(test.static_checks.pep8_issues(SOURCE_BASE_PATHS))
+      static_check_issues = test.util.get_stylistic_issues(SOURCE_BASE_PATHS)
     else:
       test.output.print_error("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n")
 
-  if style_issues:
-    test.output.print_line("STYLE ISSUES", term.Color.BLUE, term.Attr.BOLD)
+  if static_check_issues:
+    test.output.print_line("STATIC CHECKS", term.Color.BLUE, term.Attr.BOLD)
 
-    for file_path in style_issues:
+    for file_path in static_check_issues:
       test.output.print_line("* %s" % file_path, term.Color.BLUE, term.Attr.BOLD)
 
-      for line_number, msg in style_issues[file_path]:
+      for line_number, msg in static_check_issues[file_path]:
         line_count = "%-4s" % line_number
         test.output.print_line("  line %s - %s" % (line_count, msg))
 
@@ -411,7 +418,7 @@ if __name__ == '__main__':
     # TODO: note unused config options afterward?
 
   if not stem.prereq.is_python_3():
-    _print_style_issues(run_unit, run_integ, run_style)
+    _print_static_issues(run_unit, run_integ, run_style)
 
   runtime = time.time() - start_time
 

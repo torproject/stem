@@ -12,7 +12,5 @@ __all__ = [
   "output",
   "prompt",
   "runner",
-  "static_checks",
-  "tutorial",
   "utils",
 ]
