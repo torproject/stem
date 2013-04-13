@@ -2,14 +2,10 @@
 # See LICENSE for licensing information
 
 """
-Checks for stem dependencies. We require python 2.5 or greater (in the 2.x
-series). Other requirements for complete functionality are...
+Checks for stem dependencies. We require python 2.6 or greater (including the
+3.x series). Other requirements for complete functionality are...
 
-* Python 2.6
-
-  * os.walk's followlinks argument
-
-* rsa module
+* pycrypto module
 
   * validating descriptor signature integrity
 
@@ -17,11 +13,10 @@ series). Other requirements for complete functionality are...
 
   check_requirements - checks for minimum requirements for running stem
 
-  is_python_26 - checks if python 2.6 or later is available
   is_python_27 - checks if python 2.7 or later is available
   is_python_3 - checks if python 3.0 or later is available
 
-  is_rsa_available - checks if the rsa module is available
+  is_crypto_available - checks if the pycrypto module is available
 """
 
 import sys
@@ -41,16 +36,6 @@ def check_requirements():
 
   if major_version < 2 or (major_version == 2 and minor_version < 6):
     raise ImportError("stem requires python version 2.6 or greater")
-
-
-def is_python_26():
-  """
-  Checks if we're running python 2.6 or above.
-
-  :returns: bool that is True if we meet this requirement and False otherwise
-  """
-
-  return _check_version(6)
 
 
 def is_python_27():

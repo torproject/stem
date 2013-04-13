@@ -364,12 +364,7 @@ class Runner(object):
         # an OSError ([Errno 3] No such process)
 
         try:
-          if stem.prereq.is_python_26():
-            self._tor_process.kill()
-          elif not stem.util.system.is_windows():
-            os.kill(self._tor_process.pid, signal.SIGTERM)
-          else:
-            test.output.print_error("failed (unable to call kill() in python 2.5)")
+          self._tor_process.kill()
         except OSError:
           pass
 
