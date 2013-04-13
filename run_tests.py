@@ -25,6 +25,7 @@ import test.output
 import test.runner
 import test.util
 
+from test.output import println, STATUS, ERROR, NO_NL
 from test.runner import Target
 
 OPT = "auist:l:h"
@@ -67,7 +68,7 @@ def _python3_setup(python3_destination, clean):
     shutil.rmtree(python3_destination, ignore_errors = True)
 
   if os.path.exists(python3_destination):
-    test.output.print_error("Reusing '%s'. Run again with '--clean' if you want to recreate the python3 export." % python3_destination)
+    println("Reusing '%s'. Run again with '--clean' if you want to recreate the python3 export." % python3_destination, ERROR)
     print
     return True
 
@@ -81,21 +82,21 @@ def _python3_setup(python3_destination, clean):
       else:
         return []
 
-    test.output.print_noline("  copying stem to '%s'... " % python3_destination, *test.runner.STATUS_ATTR)
+    println("  copying stem to '%s'... " % python3_destination, STATUS, NO_NL)
     shutil.copytree('stem', os.path.join(python3_destination, 'stem'))
     shutil.copytree('test', os.path.join(python3_destination, 'test'), ignore = _ignore)
     shutil.copy('run_tests.py', os.path.join(python3_destination, 'run_tests.py'))
-    test.output.print_line("done", *test.runner.STATUS_ATTR)
+    println("done", STATUS)
   except OSError, exc:
-    test.output.print_error("failed\n%s" % exc)
+    println("failed\n%s" % exc, ERROR)
     return False
 
   try:
-    test.output.print_noline("  running 2to3... ", *test.runner.STATUS_ATTR)
+    println("  running 2to3... ", STATUS, NO_NL)
     system.call("2to3 --write --nobackups --no-diffs %s" % python3_destination)
-    test.output.print_line("done", *test.runner.STATUS_ATTR)
+    println("done", STATUS)
   except OSError, exc:
-    test.output.print_error("failed\n%s" % exc)
+    println("failed\n%s" % exc, ERROR)
     return False
 
   return True
@@ -112,23 +113,23 @@ def _print_static_issues(run_unit, run_integ, run_style):
     if system.is_available("pyflakes"):
       static_check_issues.update(test.util.get_pyflakes_issues(SOURCE_BASE_PATHS))
     else:
-      test.output.print_error("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n")
+      println("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
 
   if run_style:
     if system.is_available("pep8"):
       static_check_issues = test.util.get_stylistic_issues(SOURCE_BASE_PATHS)
     else:
-      test.output.print_error("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n")
+      println("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
 
   if static_check_issues:
-    test.output.print_line("STATIC CHECKS", term.Color.BLUE, term.Attr.BOLD)
+    println("STATIC CHECKS", term.Color.BLUE, term.Attr.BOLD)
 
     for file_path in static_check_issues:
-      test.output.print_line("* %s" % file_path, term.Color.BLUE, term.Attr.BOLD)
+      println("* %s" % file_path, term.Color.BLUE, term.Attr.BOLD)
 
       for line_number, msg in static_check_issues[file_path]:
         line_count = "%-4s" % line_number
-        test.output.print_line("  line %s - %s" % (line_count, msg))
+        println("  line %s - %s" % (line_count, msg))
 
       print
 
@@ -259,7 +260,7 @@ if __name__ == '__main__':
   if run_python3:
     for required_cmd in ("2to3", "python3"):
       if not system.is_available(required_cmd):
-        test.output.print_error("Unable to test python 3 because %s isn't in your path" % required_cmd)
+        println("Unable to test python 3 because %s isn't in your path" % required_cmd, ERROR)
         sys.exit(1)
 
   if run_python3 and sys.version_info[0] != 3:
@@ -273,7 +274,7 @@ if __name__ == '__main__':
       sys.exit(1)  # failed to do python3 setup
 
   if not run_unit and not run_integ and not run_style:
-    test.output.print_line("Nothing to run (for usage provide --help)\n")
+    println("Nothing to run (for usage provide --help)\n")
     sys.exit()
 
   # if we have verbose logging then provide the testing config
@@ -297,18 +298,18 @@ if __name__ == '__main__':
 
   test.output.print_divider("INITIALISING", True)
 
-  test.output.print_line("Performing startup activities...", *test.runner.STATUS_ATTR)
-  test.output.print_noline("  checking for orphaned .pyc files... ", *test.runner.STATUS_ATTR)
+  println("Performing startup activities...", STATUS)
+  println("  checking for orphaned .pyc files... ", STATUS, NO_NL)
 
   orphaned_pyc = test.util.clean_orphaned_pyc(SOURCE_BASE_PATHS)
 
   if not orphaned_pyc:
     # no orphaned files, nothing to do
-    test.output.print_line("done", *test.runner.STATUS_ATTR)
+    println("done", STATUS)
   else:
     print
     for pyc_file in orphaned_pyc:
-      test.output.print_error("    removed %s" % pyc_file)
+      println("    removed %s" % pyc_file, ERROR)
 
   print
 
@@ -364,12 +365,12 @@ if __name__ == '__main__':
             if opt in test.runner.Torrc.keys():
               torrc_opts.append(test.runner.Torrc[opt])
             else:
-              test.output.print_line("'%s' isn't a test.runner.Torrc enumeration" % opt)
+              println("'%s' isn't a test.runner.Torrc enumeration" % opt)
               sys.exit(1)
 
         integ_runner.start(target, attribute_targets, tor_path, extra_torrc_opts = torrc_opts)
 
-        test.output.print_line("Running tests...", term.Color.BLUE, term.Attr.BOLD)
+        println("Running tests...", term.Color.BLUE, term.Attr.BOLD)
         print
 
         for test_class in test.util.get_integ_tests(test_prefix):
@@ -391,15 +392,15 @@ if __name__ == '__main__':
         active_threads = threading.enumerate()
 
         if len(active_threads) > 1:
-          test.output.print_error("Threads lingering after test run:")
+          println("Threads lingering after test run:", ERROR)
 
           for lingering_thread in active_threads:
-            test.output.print_error("  %s" % lingering_thread)
+            println("  %s" % lingering_thread, ERROR)
 
           testing_failed = True
           break
       except KeyboardInterrupt:
-        test.output.print_error("  aborted starting tor: keyboard interrupt\n")
+        println("  aborted starting tor: keyboard interrupt\n", ERROR)
         break
       except OSError:
         testing_failed = True
@@ -411,7 +412,7 @@ if __name__ == '__main__':
 
       for target in skip_targets:
         req_version = stem.version.Requirement[CONFIG["target.prereq"][target]]
-        test.output.print_line("Unable to run target %s, this requires tor version %s" % (target, req_version), term.Color.RED, term.Attr.BOLD)
+        println("Unable to run target %s, this requires tor version %s" % (target, req_version), ERROR)
 
       print
 
@@ -430,16 +431,16 @@ if __name__ == '__main__':
   has_error = testing_failed or error_tracker.has_error_occured()
 
   if has_error:
-    test.output.print_error("TESTING FAILED %s" % runtime_label)
+    println("TESTING FAILED %s" % runtime_label, ERROR)
 
     for line in error_tracker:
-      test.output.print_error("  %s" % line)
+      println("  %s" % line, ERROR)
   elif skipped_test_count > 0:
-    test.output.print_line("%i TESTS WERE SKIPPED" % skipped_test_count, term.Color.BLUE, term.Attr.BOLD)
-    test.output.print_line("ALL OTHER TESTS PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
+    println("%i TESTS WERE SKIPPED" % skipped_test_count, term.Color.BLUE, term.Attr.BOLD)
+    println("ALL OTHER TESTS PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
     print
   else:
-    test.output.print_line("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
+    println("TESTING PASSED %s" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
     print
 
   sys.exit(1 if has_error else 0)

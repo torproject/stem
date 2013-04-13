@@ -4,7 +4,6 @@ Tests the stem.process functions with various use cases.
 
 import os
 import shutil
-import signal
 import subprocess
 import tempfile
 import time

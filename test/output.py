@@ -18,7 +18,14 @@ COLOR_SUPPORT = sys.stdout.isatty() and not system.is_windows()
 DIVIDER = "=" * 70
 HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
 CATEGORY_ATTR = (term.Color.GREEN, term.Attr.BOLD)
-ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
+
+NO_NL = "no newline"
+
+# formatting for various categories of messages
+
+STATUS = (term.Color.BLUE, term.Attr.BOLD)
+SUBSTATUS = (term.Color.BLUE, )
+ERROR = (term.Color.RED, term.Attr.BOLD)
 
 LineType = stem.util.enum.Enum("OK", "FAIL", "ERROR", "SKIPPED", "CONTENT")
 
@@ -38,41 +45,40 @@ LINE_ATTR = {
 }
 
 
-def print_line(msg, *attr):
+def println(msg, *attr):
+  attr = _flatten(attr)
+  no_newline = False
+
+  if NO_NL in attr:
+    no_newline = True
+    attr.remove(NO_NL)
+
   if COLOR_SUPPORT:
     msg = term.format(msg, *attr)
 
-  print msg
-
-
-def print_noline(msg, *attr):
-  if COLOR_SUPPORT:
-    msg = term.format(msg, *attr)
-
-  sys.stdout.write(msg)
-  sys.stdout.flush()
-
-
-def print_error(msg):
-  print_line(msg, *ERROR_ATTR)
+  if no_newline:
+    sys.stdout.write(msg)
+    sys.stdout.flush()
+  else:
+    print msg
 
 
 def print_divider(msg, is_header = False):
   attr = HEADER_ATTR if is_header else CATEGORY_ATTR
-  print_line("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
+  println("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
 
 
 def print_logging(logging_buffer):
   if not logging_buffer.is_empty():
     for entry in logging_buffer:
-      print_line(entry.replace("\n", "\n  "), term.Color.MAGENTA)
+      println(entry.replace("\n", "\n  "), term.Color.MAGENTA)
 
     print
 
 
 def print_config(test_config):
   print_divider("TESTING CONFIG", True)
-  print_line("Test configuration... ", term.Color.BLUE, term.Attr.BOLD)
+  println("Test configuration... ", term.Color.BLUE, term.Attr.BOLD)
 
   for config_key in test_config.keys():
     key_entry = "  %s => " % config_key
@@ -81,7 +87,7 @@ def print_config(test_config):
     value_div = ",\n" + (" " * len(key_entry))
     value_entry = value_div.join(test_config.get_value(config_key, multiple = True))
 
-    print_line(key_entry + value_entry, term.Color.BLUE)
+    println(key_entry + value_entry, term.Color.BLUE)
 
   print
 
@@ -225,3 +231,20 @@ class ErrorTracker(object):
   def __iter__(self):
     for error_line in self._errors:
       yield error_line
+
+
+def _flatten(seq):
+  # Flattens nested collections into a single list. For instance...
+  #
+  # >>> _flatten([1, [2, 3], 4])
+  # [1, 2, 3, 4]
+
+  result = []
+
+  for item in seq:
+    if (isinstance(item, (tuple, list))):
+      result.extend(_flatten(item))
+    else:
+      result.append(item)
+
+  return result
