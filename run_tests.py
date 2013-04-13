@@ -19,18 +19,17 @@ import stem.prereq
 import stem.util.conf
 import stem.util.enum
 
-from stem.util import log, system, term
+from stem.util import log, system
 
 import test.output
 import test.runner
 import test.util
 
-from test.output import println, STATUS, ERROR, NO_NL
+from test.output import println, STATUS, SUCCESS, ERROR, NO_NL
 from test.runner import Target
 
 OPT = "auist:l:h"
 OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=", "test=", "log=", "tor=", "help"]
-DIVIDER = "=" * 70
 
 CONFIG = stem.util.conf.config_dict("test", {
   "msg.help": "",
@@ -121,10 +120,10 @@ def _print_static_issues(run_unit, run_integ, run_style):
       println("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
 
   if static_check_issues:
-    println("STATIC CHECKS", term.Color.BLUE, term.Attr.BOLD)
+    println("STATIC CHECKS", STATUS)
 
     for file_path in static_check_issues:
-      println("* %s" % file_path, term.Color.BLUE, term.Attr.BOLD)
+      println("* %s" % file_path, STATUS)
 
       for line_number, msg in static_check_issues[file_path]:
         line_count = "%-4s" % line_number
@@ -366,7 +365,7 @@ if __name__ == '__main__':
 
         integ_runner.start(target, attribute_targets, tor_path, extra_torrc_opts = torrc_opts)
 
-        println("Running tests...\n", term.Color.BLUE, term.Attr.BOLD)
+        println("Running tests...\n", STATUS)
 
         for test_class in test.util.get_integ_tests(test_prefix):
           test.output.print_divider(test_class.__module__)
@@ -431,9 +430,9 @@ if __name__ == '__main__':
     for line in error_tracker:
       println("  %s" % line, ERROR)
   elif skipped_test_count > 0:
-    println("%i TESTS WERE SKIPPED" % skipped_test_count, term.Color.BLUE, term.Attr.BOLD)
-    println("ALL OTHER TESTS PASSED %s\n" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
+    println("%i TESTS WERE SKIPPED" % skipped_test_count, STATUS)
+    println("ALL OTHER TESTS PASSED %s\n" % runtime_label, SUCCESS)
   else:
-    println("TESTING PASSED %s\n" % runtime_label, term.Color.GREEN, term.Attr.BOLD)
+    println("TESTING PASSED %s\n" % runtime_label, SUCCESS)
 
   sys.exit(1 if has_error else 0)

@@ -25,6 +25,8 @@ NO_NL = "no newline"
 
 STATUS = (term.Color.BLUE, term.Attr.BOLD)
 SUBSTATUS = (term.Color.BLUE, )
+
+SUCCESS = (term.Color.GREEN, term.Attr.BOLD)
 ERROR = (term.Color.RED, term.Attr.BOLD)
 
 LineType = stem.util.enum.Enum("OK", "FAIL", "ERROR", "SKIPPED", "CONTENT")
