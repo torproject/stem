@@ -224,4 +224,4 @@ man_pages = [
      ['%s (%s)' % (__author__, __contact__)], 1)
 ]
 
-trac_url = 'https://trac.torproject.org/projects/tor'
+trac_url = 'https://trac.torproject.org'

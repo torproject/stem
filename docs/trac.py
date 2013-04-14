@@ -53,9 +53,9 @@ def make_link_node(rawtext, app, type, slug, options):
         raise ValueError('trac_url is not set (%s)' % str(e))
 
     slash = '/' if base[-1] != '/' else ''
-    ref = base + slash + type + '/' + slug
+    ref = base + slash + slug
     set_classes(options)
-    name = type + ' #' + unescape(slug)
+    name = type + ' ' + unescape(slug)
     node = reference(rawtext, name, refuri=ref, **options)
     return node
 
