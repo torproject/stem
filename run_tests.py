@@ -67,6 +67,8 @@ SRC_PATHS = [os.path.join(STEM_BASE, path) for path in (
   'stem',
   'test',
   'run_tests.py',
+  os.path.join('docs', 'republish.py'),
+  os.path.join('docs', 'trac.py'),
 )]
 
 LOG_TYPE_ERROR = """\

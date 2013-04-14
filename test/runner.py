@@ -396,8 +396,7 @@ class Runner(object):
   def is_ptraceable(self):
     """
     Checks if tor's 'DisableDebuggerAttachment' option is set. This feature has
-    a lot of adverse side effects
-    (`ticket <https://trac.torproject.org/projects/tor/ticket/3313>`_).
+    a lot of adverse side effects (:trac:`3313`).
 
     :returns: True if debugger attachment is allowed, False otherwise
     """

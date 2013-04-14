@@ -387,6 +387,7 @@ def check_for_unused_tests(paths):
   if unused_tests:
     raise ValueError("Test modules are missing from our test/settings.cfg:\n%s" % "\n".join(unused_tests))
 
+
 def python3_prereq():
   for required_cmd in ("2to3", "python3"):
     if not stem.util.system.is_available(required_cmd):

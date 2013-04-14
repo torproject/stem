@@ -479,7 +479,7 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
   :func:`~stem.connection.authenticate`, we may mistakenly raise a
   PasswordAuthRejected rather than IncorrectPassword. This is because we rely
   on tor's error messaging which is liable to change in future versions
-  (`ticket <https://trac.torproject.org/4817>`_).
+  (:trac:`4817`).
 
   This can authenticate to either a :class:`~stem.control.BaseController` or
   :class:`~stem.socket.ControlSocket`.
@@ -555,8 +555,8 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
   :func:`~stem.connection.authenticate`, we may mistakenly raise a
   :class:`~stem.connection.CookieAuthRejected` rather than
   :class:`~stem.connection.IncorrectCookieValue`. This is because we rely on
-  tor's error messaging which is liable to change in future versions (`ticket
-  <https://trac.torproject.org/4817>`_).
+  tor's error messaging which is liable to change in future versions
+  (:trac:`4817`).
 
   This can authenticate to either a :class:`~stem.control.BaseController` or
   :class:`~stem.socket.ControlSocket`.
@@ -781,7 +781,7 @@ def get_protocolinfo(controller):
   According to the control spec the cookie_file is an absolute path. However,
   this often is not the case (especially for the Tor Browser Bundle). If the
   path is relative then we'll make an attempt (which may not work) to correct
-  this (`ticket <https://trac.torproject.org/1101>`_).
+  this (:trac:`1101`).
 
   This can authenticate to either a :class:`~stem.control.BaseController` or
   :class:`~stem.socket.ControlSocket`.

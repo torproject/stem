@@ -18,7 +18,7 @@ import sys, os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 sys.path.insert(0, os.path.abspath('..'))
-
+sys.path.append(os.path.abspath('.'))
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -26,7 +26,7 @@ needs_sphinx = '1.1' # required for the sphinx-apidoc command
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'trac']
 
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members', 'show-inheritance', 'undoc-members']
@@ -223,3 +223,5 @@ man_pages = [
     ('index', 'stem', u'Stem Documentation',
      ['%s (%s)' % (__author__, __contact__)], 1)
 ]
+
+trac_url = 'https://trac.torproject.org'

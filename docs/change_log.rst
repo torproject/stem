@@ -40,7 +40,7 @@ The following are only available within stem's `git repository
 
  * **Controller**
 
-  * :class:`~stem.response.events.AddrMapEvent` support for the new CACHED argument (`ticket <https://trac.torproject.org/8596>`_, `spec <https://gitweb.torproject.org/torspec.git/commitdiff/25b0d43>`_)
+  * :class:`~stem.response.events.AddrMapEvent` support for the new CACHED argument (:trac:`8596`, `spec <https://gitweb.torproject.org/torspec.git/commitdiff/25b0d43>`_)
 
  * **Website**
 
