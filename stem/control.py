@@ -1965,6 +1965,7 @@ class Controller(BaseController):
 
     :raises:
       * :class:`stem.InvalidRequest` if the stream or circuit id were unrecognized
+      * :class:`UnsatisfiableRequest` if the stream isn't in a state where it can be attached
       * :class:`stem.OperationFailed` if the stream couldn't be attached for any other reason
     """
 
@@ -1982,12 +1983,7 @@ class Controller(BaseController):
       elif response.code == '551':
         raise stem.OperationFailed(response.code, response.message)
       elif response.code == '555':
-        # TODO: This response has been seen in the wild, but isn't valid
-        # according to the spec...
-        #
-        # https://trac.torproject.org/8701
-
-        raise stem.OperationFailed(response.code, response.message)
+        raise stem.UnsatisfiableRequest(response.code, response.message)
       else:
         raise stem.ProtocolError("ATTACHSTREAM returned unexpected response code: %s" % response.code)
 

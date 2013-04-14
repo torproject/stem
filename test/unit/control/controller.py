@@ -6,10 +6,11 @@ integ tests, but a few bits lend themselves to unit testing.
 import unittest
 
 import stem.descriptor.router_status_entry
+import stem.response
 import stem.socket
 import stem.version
 
-from stem import InvalidArguments, InvalidRequest, ProtocolError
+from stem import InvalidArguments, InvalidRequest, ProtocolError, UnsatisfiableRequest
 from stem.control import _parse_circ_path, Controller, EventType
 from stem.exit_policy import ExitPolicy
 from test import mocking
@@ -319,6 +320,19 @@ class TestControl(unittest.TestCase):
       self.assertEqual(valid_streams[index][1], stream.status)
       self.assertEqual(valid_streams[index][2], stream.circ_id)
       self.assertEqual(valid_streams[index][3], stream.target)
+
+  def test_attach_stream(self):
+    """
+    Exercises the attach_stream() method.
+    """
+
+    # Response when the stream is in a state where it can't be attached (for
+    # instance, it's already open).
+
+    response = stem.response.ControlMessage.from_str("555 Connection is not managed by controller.\r\n")
+    mocking.mock_method(Controller, "msg", mocking.return_value(response))
+
+    self.assertRaises(UnsatisfiableRequest, self.controller.attach_stream, 'stream_id', 'circ_id')
 
   def test_parse_circ_path(self):
     """
