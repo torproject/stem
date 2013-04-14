@@ -25,7 +25,8 @@ Tasks are...
   |- check_python_version - checks our version of python
   |- check_pyflakes_version - checks our version of pyflakes
   |- check_pep8_version - checks our version of pep8
-  +- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
+  |- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
+  +- check_for_unused_tests - checks to see if any tests are missing from our settings
 
   Testing Python 3
   |- python3_prereq - checks that we have python3 and 2to3
@@ -350,6 +351,41 @@ def clean_orphaned_pyc(paths):
 
   return ["removed %s" % path for path in orphaned_pyc]
 
+
+def check_for_unused_tests(paths):
+  """
+  The 'test.unit_tests' and 'test.integ_tests' in our settings.cfg defines the
+  tests that we run. We do it this way so that we can control the order in
+  which our tests are run but there's a disadvantage: when we add new test
+  modules we can easily forget to add it there.
+
+  Checking to see if we have any unittest.TestCase subclasses not covered by
+  our settings.
+
+  :param list paths: paths to search for unused tests
+  """
+
+  unused_tests = []
+
+  for path in paths:
+    for py_path in _get_files_with_suffix(path, ".py"):
+      if _is_test_data(py_path):
+        continue
+
+      with open(py_path) as f:
+        file_contents = f.read()
+
+      test_match = re.search("^class (\S*)\(unittest.TestCase\):$", file_contents, re.MULTILINE)
+
+      if test_match:
+        class_name = test_match.groups()[0]
+        module_name = py_path.replace(os.path.sep, '.')[len(STEM_BASE) + 1:-3] + '.' + class_name
+
+        if not (module_name in CONFIG['test.unit_tests'] or module_name in CONFIG['test.integ_tests']):
+          unused_tests.append(module_name)
+
+  if unused_tests:
+    raise ValueError("Test modules are missing from our test/settings.cfg:\n%s" % "\n".join(unused_tests))
 
 def python3_prereq():
   for required_cmd in ("2to3", "python3"):

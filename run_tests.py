@@ -110,6 +110,7 @@ def main():
     Task("checking pyflakes version", test.util.check_pyflakes_version),
     Task("checking pep8 version", test.util.check_pep8_version),
     Task("checking for orphaned .pyc files", test.util.clean_orphaned_pyc, (SRC_PATHS,)),
+    Task("checking for unused tests", test.util.check_for_unused_tests, ((os.path.join(STEM_BASE, 'test'),),)),
   )
 
   if args.run_python3 and sys.version_info[0] != 3:
