@@ -1001,10 +1001,9 @@ class Controller(BaseController):
     Provides an iterator for all of the microdescriptors that tor presently
     knows about.
 
-    **Tor does not expose this information via the control protocol (`ticket
-    <https://trac.torproject.org/8323>`_).** Until it does this reads the
-    microdescriptors from disk, and hence won't work remotely or if we lack
-    read permissions.
+    **Tor does not expose this information via the control protocol
+    (:trac:`8323`).** Until it does this reads the microdescriptors from disk,
+    and hence won't work remotely or if we lack read permissions.
 
     :param list default: items to provide if the query fails
 

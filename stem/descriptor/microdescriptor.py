@@ -17,7 +17,7 @@ other descriptors.
 To do so you need to match the microdescriptor's digest against its
 corresponding router status entry. For added fun as of this writing the
 controller doesn't even surface those router status entries
-(`ticket <https://trac.torproject.org/7953>`_).
+(:trac:`7953`).
 
 For instance, here's an example that prints the nickname and fignerprints of
 the exit relays.
