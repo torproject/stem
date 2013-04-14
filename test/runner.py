@@ -57,26 +57,12 @@ import stem.version
 import test.output
 
 from test.output import println, STATUS, SUBSTATUS, NO_NL
+from test.util import Target, STEM_BASE
 
 CONFIG = stem.util.conf.config_dict("test", {
   "integ.test_directory": "./test/data",
   "integ.log": "./test/data/log",
 })
-
-Target = stem.util.enum.UppercaseEnum(
-  "ONLINE",
-  "RELATIVE",
-  "CHROOT",
-  "RUN_NONE",
-  "RUN_OPEN",
-  "RUN_PASSWORD",
-  "RUN_COOKIE",
-  "RUN_MULTIPLE",
-  "RUN_SOCKET",
-  "RUN_SCOOKIE",
-  "RUN_PTRACE",
-  "RUN_ALL",
-)
 
 SOCKS_HOST = "127.0.0.1"
 SOCKS_PORT = 1112
@@ -86,10 +72,6 @@ DataDirectory %%s
 SocksListenAddress %s:%i
 DownloadExtraInfo 1
 """ % (SOCKS_HOST, SOCKS_PORT)
-
-# We make some paths relative to stem's base directory (the one above us)
-# rather than the process' cwd. This doesn't end with a slash.
-STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 # singleton Runner instance
 INTEG_RUNNER = None

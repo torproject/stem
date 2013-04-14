@@ -9,24 +9,72 @@ Helper functions for our test framework.
   get_unit_tests - provides our unit tests
   get_integ_tests - provides our integration tests
 
-  clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
+  get_help_message - provides usage information for running our tests
+  get_python3_destination - location where a python3 copy of stem is exported to
   get_stylistic_issues - checks for PEP8 and other stylistic issues
   get_pyflakes_issues - static checks for problems via pyflakes
+
+Sets of :class:`~test.util.Task` instances can be ran with
+:func:`~test.util.run_tasks`. Functions that are intended for easy use with
+Tasks are...
+
+::
+
+  Initialization
+  |- check_stem_version - checks our version of stem
+  |- check_python_version - checks our version of python
+  |- check_pyflakes_version - checks our version of pyflakes
+  |- check_pep8_version - checks our version of pep8
+  +- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
+
+  Testing Python 3
+  |- python3_prereq - checks that we have python3 and 2to3
+  |- python3_clean - deletes our prior python3 export
+  |- python3_copy_stem - copies our codebase and converts with 2to3
+  +- python3_run_tests - runs python 3 tests
 """
 
 import re
 import os
+import shutil
+import sys
 
+import stem
 import stem.util.conf
 import stem.util.system
 
+import test.output
+
+from test.output import STATUS, ERROR, NO_NL, println
+
 CONFIG = stem.util.conf.config_dict("test", {
+  "msg.help": "",
+  "target.description": {},
   "pep8.ignore": [],
   "pyflakes.ignore": [],
   "integ.test_directory": "./test/data",
   "test.unit_tests": "",
   "test.integ_tests": "",
 })
+
+Target = stem.util.enum.UppercaseEnum(
+  "ONLINE",
+  "RELATIVE",
+  "CHROOT",
+  "RUN_NONE",
+  "RUN_OPEN",
+  "RUN_PASSWORD",
+  "RUN_COOKIE",
+  "RUN_MULTIPLE",
+  "RUN_SOCKET",
+  "RUN_SCOOKIE",
+  "RUN_PTRACE",
+  "RUN_ALL",
+)
+
+# We make some paths relative to stem's base directory (the one above us)
+# rather than the process' cwd. This doesn't end with a slash.
+STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 # mapping of files to the issues that should be ignored
 PYFLAKES_IGNORE = None
@@ -79,44 +127,37 @@ def _get_tests(modules, prefix):
       yield module
 
 
-def clean_orphaned_pyc(paths):
+def get_help_message():
   """
-  Deletes any file with a *.pyc extention without a corresponding *.py. This
-  helps to address a common gotcha when deleting python files...
+  Provides usage information, as provided by the '--help' argument. This
+  includes a listing of the valid integration targets.
 
-  * You delete module 'foo.py' and run the tests to ensure that you haven't
-    broken anything. They pass, however there *are* still some 'import foo'
-    statements that still work because the bytecode (foo.pyc) is still around.
-
-  * You push your change.
-
-  * Another developer clones our repository and is confused because we have a
-    bunch of ImportErrors.
-
-  :param list paths: paths to search for orphaned pyc files
-
-  :returns: list of files that we deleted
+  :returns: **str** with our usage information
   """
 
-  orphaned_pyc = []
+  help_msg = CONFIG["msg.help"]
 
-  for path in paths:
-    for pyc_path in _get_files_with_suffix(path, ".pyc"):
-      # If we're running python 3 then the *.pyc files are no longer bundled
-      # with the *.py. Rather, they're in a __pycache__ directory.
-      #
-      # At the moment there's no point in checking for orphaned bytecode with
-      # python 3 because it's an exported copy of the python 2 codebase, so
-      # skipping.
+  # gets the longest target length so we can show the entries in columns
+  target_name_length = max(map(len, Target))
+  description_format = "\n    %%-%is - %%s" % target_name_length
 
-      if "__pycache__" in pyc_path:
-        continue
+  for target in Target:
+    help_msg += description_format % (target, CONFIG["target.description"].get(target, ""))
 
-      if not os.path.exists(pyc_path[:-1]):
-        orphaned_pyc.append(pyc_path)
-        os.remove(pyc_path)
+  help_msg += "\n"
 
-  return orphaned_pyc
+  return help_msg
+
+
+def get_python3_destination():
+  """
+  Provides the location where a python 3 copy of stem is exported to for
+  testing.
+
+  :returns: **str** with the relative path to our python 3 location
+  """
+
+  return os.path.join(CONFIG["integ.test_directory"], "python3")
 
 
 def get_stylistic_issues(paths):
@@ -130,7 +171,7 @@ def get_stylistic_issues(paths):
 
   :param list paths: paths to search for stylistic issues
 
-  :returns: dict of the form ``path => [(line_number, message)...]``
+  :returns: **dict** of the form ``path => [(line_number, message)...]``
   """
 
   # The pep8 command give output of the form...
@@ -229,14 +270,138 @@ def get_pyflakes_issues(paths):
       if line_match:
         path, line, issue = line_match.groups()
 
-        if not _is_test_data(path) and not issue in PYFLAKES_IGNORE.get(path, []):
+        if _is_test_data(path):
+          continue
+
+        # paths in PYFLAKES_IGNORE are relative, so we need to check to see if
+        # our path ends with any of them
+
+        ignore_issue = False
+
+        for ignore_path in PYFLAKES_IGNORE:
+          if path.endswith(ignore_path) and issue in PYFLAKES_IGNORE[ignore_path]:
+            ignore_issue = True
+            break
+
+        if not ignore_issue:
           issues.setdefault(path, []).append((int(line), issue))
 
   return issues
 
 
+def check_stem_version():
+  return stem.__version__
+
+
+def check_python_version():
+  return '.'.join(map(str, sys.version_info[:3]))
+
+
+def check_pyflakes_version():
+  try:
+    import pyflakes
+    return pyflakes.__version__
+  except ImportError:
+    return "missing"
+
+
+def check_pep8_version():
+  try:
+    import pep8
+    return pep8.__version__
+  except ImportError:
+    return "missing"
+
+
+def clean_orphaned_pyc(paths):
+  """
+  Deletes any file with a *.pyc extention without a corresponding *.py. This
+  helps to address a common gotcha when deleting python files...
+
+  * You delete module 'foo.py' and run the tests to ensure that you haven't
+    broken anything. They pass, however there *are* still some 'import foo'
+    statements that still work because the bytecode (foo.pyc) is still around.
+
+  * You push your change.
+
+  * Another developer clones our repository and is confused because we have a
+    bunch of ImportErrors.
+
+  :param list paths: paths to search for orphaned pyc files
+  """
+
+  orphaned_pyc = []
+
+  for path in paths:
+    for pyc_path in _get_files_with_suffix(path, ".pyc"):
+      # If we're running python 3 then the *.pyc files are no longer bundled
+      # with the *.py. Rather, they're in a __pycache__ directory.
+      #
+      # At the moment there's no point in checking for orphaned bytecode with
+      # python 3 because it's an exported copy of the python 2 codebase, so
+      # skipping.
+
+      if "__pycache__" in pyc_path:
+        continue
+
+      if not os.path.exists(pyc_path[:-1]):
+        orphaned_pyc.append(pyc_path)
+        os.remove(pyc_path)
+
+  return ["removed %s" % path for path in orphaned_pyc]
+
+
+def python3_prereq():
+  for required_cmd in ("2to3", "python3"):
+    if not stem.util.system.is_available(required_cmd):
+      raise ValueError("Unable to test python 3 because %s isn't in your path" % required_cmd)
+
+
+def python3_clean(skip = False):
+  location = get_python3_destination()
+
+  if not os.path.exists(location):
+    return "skipped"
+  elif skip:
+    return ["Reusing '%s'. Run again with '--clean' if you want a fresh copy." % location]
+  else:
+    shutil.rmtree(location, ignore_errors = True)
+    return "done"
+
+
+def python3_copy_stem():
+  destination = get_python3_destination()
+
+  if os.path.exists(destination):
+    return "skipped"
+
+  # skips the python3 destination (to avoid an infinite loop)
+  def _ignore(src, names):
+    if src == os.path.normpath(destination):
+      return names
+    else:
+      return []
+
+  os.makedirs(destination)
+  shutil.copytree('stem', os.path.join(destination, 'stem'))
+  shutil.copytree('test', os.path.join(destination, 'test'), ignore = _ignore)
+  shutil.copy('run_tests.py', os.path.join(destination, 'run_tests.py'))
+  stem.util.system.call("2to3 --write --nobackups --no-diffs %s" % get_python3_destination())
+
+  return "done"
+
+
+def python3_run_tests():
+  println()
+  println()
+
+  python3_runner = os.path.join(get_python3_destination(), "run_tests.py")
+  exit_status = os.system("python3 %s %s" % (python3_runner, " ".join(sys.argv[1:])))
+  sys.exit(exit_status)
+
+
 def _is_test_data(path):
-  return os.path.normpath(path).startswith(os.path.normpath(CONFIG["integ.test_directory"]))
+  return os.path.normpath(CONFIG["integ.test_directory"]) in path
 
 
 def _get_files_with_suffix(base_path, suffix = ".py"):
@@ -258,3 +423,72 @@ def _get_files_with_suffix(base_path, suffix = ".py"):
       for filename in files:
         if filename.endswith(suffix):
           yield os.path.join(root, filename)
+
+
+def run_tasks(category, *tasks):
+  """
+  Runs a series of :class:`test.util.Task` instances. This simply prints 'done'
+  or 'failed' for each unless we fail one that is marked as being required. If
+  that happens then we print its error message and call sys.exit().
+
+  :param str category: label for the series of tasks
+  :param list tasks: **Task** instances to be ran
+  """
+
+  test.output.print_divider(category, True)
+
+  for task in tasks:
+    task.run()
+
+    if task.is_required and task.error:
+      println("\n%s\n" % task.error, ERROR)
+      sys.exit(1)
+
+  println()
+
+
+class Task(object):
+  """
+  Task we can process while running our tests. The runner can return either a
+  message or list of strings for its results.
+  """
+
+  def __init__(self, label, runner, args = None, is_required = True):
+    super(Task, self).__init__()
+
+    self.label = label
+    self.runner = runner
+    self.args = args
+    self.is_required = is_required
+    self.error = None
+
+  def run(self):
+    println("  %s..." % self.label, STATUS, NO_NL)
+
+    padding = 50 - len(self.label)
+    println(" " * padding, NO_NL)
+
+    try:
+      if self.args:
+        result = self.runner(*self.args)
+      else:
+        result = self.runner()
+
+      output_msg = "done"
+
+      if isinstance(result, str):
+        output_msg = result
+
+      println(output_msg, STATUS)
+
+      if isinstance(result, (list, tuple)):
+        for line in result:
+          println("    %s" % line, STATUS)
+    except Exception, exc:
+      output_msg = str(exc)
+
+      if not output_msg or self.is_required:
+        output_msg = "failed"
+
+      println(output_msg, ERROR)
+      self.error = exc

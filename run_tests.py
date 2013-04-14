@@ -6,9 +6,9 @@
 Runs unit and integration tests. For usage information run this with '--help'.
 """
 
+import collections
 import getopt
 import os
-import shutil
 import StringIO
 import sys
 import threading
@@ -18,268 +18,121 @@ import unittest
 import stem.prereq
 import stem.util.conf
 import stem.util.enum
-
-from stem.util import log, system
+import stem.util.log
+import stem.util.system
 
 import test.output
 import test.runner
 import test.util
 
-from test.output import println, STATUS, SUCCESS, ERROR, NO_NL
-from test.runner import Target
+from test.output import STATUS, SUCCESS, ERROR, println
+from test.util import STEM_BASE, Target, Task
+
+# Our default arguments. The _get_args() function provides a named tuple of
+# this merged with our argv.
+#
+# Integration targets fall into two categories:
+#
+# * Run Targets (like RUN_COOKIE and RUN_PTRACE) which customize our torrc.
+#   We do an integration test run for each run target we get.
+#
+# * Attribute Target (like CHROOT and ONLINE) which indicates
+#   non-configuration changes to ur test runs. These are applied to all
+#   integration runs that we perform.
+
+ARGS = {
+  'run_unit': False,
+  'run_integ': False,
+  'run_style': False,
+  'run_python3': False,
+  'run_python3_clean': False,
+  'test_prefix': None,
+  'logging_runlevel': None,
+  'tor_path': 'tor',
+  'run_targets': [Target.RUN_OPEN],
+  'attribute_targets': [],
+  'print_help': False,
+}
 
 OPT = "auist:l:h"
 OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=", "test=", "log=", "tor=", "help"]
 
 CONFIG = stem.util.conf.config_dict("test", {
-  "msg.help": "",
-  "target.description": {},
   "target.prereq": {},
   "target.torrc": {},
   "integ.test_directory": "./test/data",
 })
 
-DEFAULT_RUN_TARGET = Target.RUN_OPEN
+SRC_PATHS = [os.path.join(STEM_BASE, path) for path in (
+  'stem',
+  'test',
+  'run_tests.py',
+)]
 
-base = os.path.sep.join(__file__.split(os.path.sep)[:-1]).lstrip("./")
-SOURCE_BASE_PATHS = [os.path.join(base, path) for path in ('stem', 'test', 'run_tests.py')]
-
-
-def _python3_setup(python3_destination, clean):
-  """
-  Exports the python3 counterpart of our codebase using 2to3.
-
-  :param str python3_destination: location to export our codebase to
-  :param bool clean: deletes our priorly exported codebase if **True**,
-    otherwise this is a no-op
-  """
-
-  # Python 2.7.3 added some nice capabilities to 2to3, like '--output-dir'...
-  #
-  #   http://docs.python.org/2/library/2to3.html
-  #
-  # ... but I'm using 2.7.1, and it's pretty easy to make it work without
-  # requiring a bleeding edge interpretor.
-
-  test.output.print_divider("EXPORTING TO PYTHON 3", True)
-
-  if clean:
-    shutil.rmtree(python3_destination, ignore_errors = True)
-
-  if os.path.exists(python3_destination):
-    println("Reusing '%s'. Run again with '--clean' if you want to recreate the python3 export.\n" % python3_destination, ERROR)
-    return True
-
-  os.makedirs(python3_destination)
-
-  try:
-    # skips the python3 destination (to avoid an infinite loop)
-    def _ignore(src, names):
-      if src == os.path.normpath(python3_destination):
-        return names
-      else:
-        return []
-
-    println("  copying stem to '%s'... " % python3_destination, STATUS, NO_NL)
-    shutil.copytree('stem', os.path.join(python3_destination, 'stem'))
-    shutil.copytree('test', os.path.join(python3_destination, 'test'), ignore = _ignore)
-    shutil.copy('run_tests.py', os.path.join(python3_destination, 'run_tests.py'))
-    println("done", STATUS)
-  except OSError, exc:
-    println("failed\n%s" % exc, ERROR)
-    return False
-
-  try:
-    println("  running 2to3... ", STATUS, NO_NL)
-    system.call("2to3 --write --nobackups --no-diffs %s" % python3_destination)
-    println("done", STATUS)
-  except OSError, exc:
-    println("failed\n%s" % exc, ERROR)
-    return False
-
-  return True
+LOG_TYPE_ERROR = """\
+'%s' isn't a logging runlevel, use one of the following instead:
+  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR
+"""
 
 
-def _print_static_issues(run_unit, run_integ, run_style):
-  static_check_issues = {}
+def main():
+  start_time = time.time()
 
-  # If we're doing some sort of testing (unit or integ) and pyflakes is
-  # available then use it. Its static checks are pretty quick so there's not
-  # much overhead in including it with all tests.
-
-  if run_unit or run_integ:
-    if system.is_available("pyflakes"):
-      static_check_issues.update(test.util.get_pyflakes_issues(SOURCE_BASE_PATHS))
-    else:
-      println("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
-
-  if run_style:
-    if system.is_available("pep8"):
-      static_check_issues = test.util.get_stylistic_issues(SOURCE_BASE_PATHS)
-    else:
-      println("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
-
-  if static_check_issues:
-    println("STATIC CHECKS", STATUS)
-
-    for file_path in static_check_issues:
-      println("* %s" % file_path, STATUS)
-
-      for line_number, msg in static_check_issues[file_path]:
-        line_count = "%-4s" % line_number
-        println("  line %s - %s" % (line_count, msg))
-
-      println()
-
-
-if __name__ == '__main__':
   try:
     stem.prereq.check_requirements()
   except ImportError, exc:
     println("%s\n" % exc)
     sys.exit(1)
 
-  start_time = time.time()
-
-  # override flag to indicate at the end that testing failed somewhere
-  testing_failed = False
-
-  # count how many tests have been skipped.
-  skipped_test_count = 0
-
-  # loads and validates our various configurations
   test_config = stem.util.conf.get_config("test")
-
-  settings_path = os.path.join(test.runner.STEM_BASE, "test", "settings.cfg")
-  test_config.load(settings_path)
+  test_config.load(os.path.join(STEM_BASE, "test", "settings.cfg"))
 
   try:
-    opts = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)[0]
+    args = _get_args(sys.argv[1:])
   except getopt.GetoptError, exc:
     println("%s (for usage provide --help)" % exc)
     sys.exit(1)
-
-  run_unit = False
-  run_integ = False
-  run_style = False
-  run_python3 = False
-  run_python3_clean = False
-
-  test_prefix = None
-  logging_runlevel = None
-  tor_path = "tor"
-
-  # Integration testing targets fall into two categories:
-  #
-  # * Run Targets (like RUN_COOKIE and RUN_PTRACE) which customize our torrc.
-  #   We do an integration test run for each run target we get.
-  #
-  # * Attribute Target (like CHROOT and ONLINE) which indicates
-  #   non-configuration changes to ur test runs. These are applied to all
-  #   integration runs that we perform.
-
-  run_targets = [DEFAULT_RUN_TARGET]
-  attribute_targets = []
-
-  for opt, arg in opts:
-    if opt in ("-a", "--all"):
-      run_unit = True
-      run_integ = True
-      run_style = True
-    elif opt in ("-u", "--unit"):
-      run_unit = True
-    elif opt in ("-i", "--integ"):
-      run_integ = True
-    elif opt in ("-s", "--style"):
-      run_style = True
-    elif opt == "--python3":
-      run_python3 = True
-    elif opt == "--clean":
-      run_python3_clean = True
-    elif opt in ("-t", "--targets"):
-      integ_targets = arg.split(",")
-
-      run_targets = []
-      all_run_targets = [t for t in Target if CONFIG["target.torrc"].get(t) is not None]
-
-      # validates the targets and split them into run and attribute targets
-
-      if not integ_targets:
-        println("No targets provided")
-        sys.exit(1)
-
-      for target in integ_targets:
-        if not target in Target:
-          println("Invalid integration target: %s" % target)
-          sys.exit(1)
-        elif target in all_run_targets:
-          run_targets.append(target)
-        else:
-          attribute_targets.append(target)
-
-      # check if we were told to use all run targets
-
-      if Target.RUN_ALL in attribute_targets:
-        attribute_targets.remove(Target.RUN_ALL)
-        run_targets = all_run_targets
-    elif opt in ("-l", "--test"):
-      test_prefix = arg
-    elif opt in ("-l", "--log"):
-      logging_runlevel = arg.upper()
-    elif opt in ("--tor"):
-      tor_path = arg
-    elif opt in ("-h", "--help"):
-      # Prints usage information and quits. This includes a listing of the
-      # valid integration targets.
-
-      println(CONFIG["msg.help"])
-
-      # gets the longest target length so we can show the entries in columns
-      target_name_length = max(map(len, Target))
-      description_format = "    %%-%is - %%s" % target_name_length
-
-      for target in Target:
-        println(description_format % (target, CONFIG["target.description"].get(target, "")))
-
-      println()
-      sys.exit()
-
-  # basic validation on user input
-
-  if logging_runlevel and not logging_runlevel in log.LOG_VALUES:
-    println("'%s' isn't a logging runlevel, use one of the following instead:" % logging_runlevel)
-    println("  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR")
+  except ValueError, exc:
+    println(str(exc))
     sys.exit(1)
 
-  # check that we have 2to3 and python3 available in our PATH
-  if run_python3:
-    for required_cmd in ("2to3", "python3"):
-      if not system.is_available(required_cmd):
-        println("Unable to test python 3 because %s isn't in your path" % required_cmd, ERROR)
-        sys.exit(1)
-
-  if run_python3 and sys.version_info[0] != 3:
-    python3_destination = os.path.join(CONFIG["integ.test_directory"], "python3")
-
-    if _python3_setup(python3_destination, run_python3_clean):
-      python3_runner = os.path.join(python3_destination, "run_tests.py")
-      exit_status = os.system("python3 %s %s" % (python3_runner, " ".join(sys.argv[1:])))
-      sys.exit(exit_status)
-    else:
-      sys.exit(1)  # failed to do python3 setup
-
-  if not run_unit and not run_integ and not run_style:
+  if args.print_help:
+    println(test.util.get_help_message())
+    sys.exit()
+  elif not args.run_unit and not args.run_integ and not args.run_style:
     println("Nothing to run (for usage provide --help)\n")
     sys.exit()
 
-  # if we have verbose logging then provide the testing config
-  our_level = stem.util.log.logging_level(logging_runlevel)
-  info_level = stem.util.log.logging_level(stem.util.log.INFO)
+  test.util.run_tasks(
+    "INITIALISING",
+    Task("checking stem version", test.util.check_stem_version),
+    Task("checking python version", test.util.check_python_version),
+    Task("checking pyflakes version", test.util.check_pyflakes_version),
+    Task("checking pep8 version", test.util.check_pep8_version),
+    Task("checking for orphaned .pyc files", test.util.clean_orphaned_pyc, (SRC_PATHS,)),
+  )
 
-  if our_level <= info_level:
-    test.output.print_config(test_config)
+  if args.run_python3 and sys.version_info[0] != 3:
+    test.util.run_tasks(
+      "EXPORTING TO PYTHON 3",
+      Task("checking requirements", test.util.python3_prereq),
+      Task("cleaning prior export", test.util.python3_clean, (not args.run_python3_clean,)),
+      Task("exporting python 3 copy", test.util.python3_copy_stem),
+      Task("running tests", test.util.python3_run_tests),
+    )
+
+    println("BUG: python3_run_tests() should have terminated our process", ERROR)
+    sys.exit(1)
+
+  # buffer that we log messages into so they can be printed after a test has finished
+
+  logging_buffer = stem.util.log.LogBuffer(args.logging_runlevel)
+  stem.util.log.get_logger().addHandler(logging_buffer)
+
+  # filters for how testing output is displayed
 
   error_tracker = test.output.ErrorTracker()
+
   output_filters = (
     error_tracker.get_filter(),
     test.output.strip_module,
@@ -287,63 +140,39 @@ if __name__ == '__main__':
     test.output.colorize,
   )
 
-  stem_logger = log.get_logger()
-  logging_buffer = log.LogBuffer(logging_runlevel)
-  stem_logger.addHandler(logging_buffer)
+  # Number of tests that we have skipped. This is only available with python
+  # 2.7 or later because before that test results didn't have a 'skipped'
+  # attribute.
 
-  test.output.print_divider("INITIALISING", True)
+  skipped_tests = 0
 
-  println("Performing startup activities...", STATUS)
-  println("  checking for orphaned .pyc files... ", STATUS, NO_NL)
-
-  orphaned_pyc = test.util.clean_orphaned_pyc(SOURCE_BASE_PATHS)
-
-  if not orphaned_pyc:
-    # no orphaned files, nothing to do
-    println("done", STATUS)
-  else:
-    println()
-    for pyc_file in orphaned_pyc:
-      println("    removed %s" % pyc_file, ERROR)
-
-  println()
-
-  if run_unit:
+  if args.run_unit:
     test.output.print_divider("UNIT TESTS", True)
     error_tracker.set_category("UNIT TEST")
 
-    for test_class in test.util.get_unit_tests(test_prefix):
-      test.output.print_divider(test_class.__module__)
-      suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-      test_results = StringIO.StringIO()
-      run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
-      if stem.prereq.is_python_27():
-        skipped_test_count += len(run_result.skipped)
-
-      sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
-      println()
-
-      test.output.print_logging(logging_buffer)
+    for test_class in test.util.get_unit_tests(args.test_prefix):
+      run_result = _run_test(test_class, output_filters, logging_buffer)
+      skipped_tests += len(getattr(run_result, 'skipped', []))
 
     println()
 
-  if run_integ:
+  if args.run_integ:
     test.output.print_divider("INTEGRATION TESTS", True)
     integ_runner = test.runner.get_runner()
 
     # Determine targets we don't meet the prereqs for. Warnings are given about
     # these at the end of the test run so they're more noticeable.
 
-    our_version = stem.version.get_system_tor_version(tor_path)
-    skip_targets = []
+    our_version = stem.version.get_system_tor_version(args.tor_path)
+    skipped_targets = []
 
-    for target in run_targets:
+    for target in args.run_targets:
       # check if we meet this target's tor version prerequisites
 
       target_prereq = CONFIG["target.prereq"].get(target)
 
       if target_prereq and our_version < stem.version.Requirement[target_prereq]:
-        skip_targets.append(target)
+        skipped_targets.append(target)
         continue
 
       error_tracker.set_category(target)
@@ -363,22 +192,13 @@ if __name__ == '__main__':
               println("'%s' isn't a test.runner.Torrc enumeration" % opt)
               sys.exit(1)
 
-        integ_runner.start(target, attribute_targets, tor_path, extra_torrc_opts = torrc_opts)
+        integ_runner.start(target, args.attribute_targets, args.tor_path, extra_torrc_opts = torrc_opts)
 
         println("Running tests...\n", STATUS)
 
-        for test_class in test.util.get_integ_tests(test_prefix):
-          test.output.print_divider(test_class.__module__)
-          suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
-          test_results = StringIO.StringIO()
-          run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
-          if stem.prereq.is_python_27():
-            skipped_test_count += len(run_result.skipped)
-
-          sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
-          println()
-
-          test.output.print_logging(logging_buffer)
+        for test_class in test.util.get_integ_tests(args.test_prefix):
+          run_result = _run_test(test_class, output_filters, logging_buffer)
+          skipped_tests += len(getattr(run_result, 'skipped', []))
 
         # We should have joined on all threads. If not then that indicates a
         # leak that could both likely be a bug and disrupt further targets.
@@ -391,48 +211,166 @@ if __name__ == '__main__':
           for lingering_thread in active_threads:
             println("  %s" % lingering_thread, ERROR)
 
-          testing_failed = True
+          error_tracker.note_error()
           break
       except KeyboardInterrupt:
         println("  aborted starting tor: keyboard interrupt\n", ERROR)
         break
       except OSError:
-        testing_failed = True
+        error_tracker.note_error()
       finally:
         integ_runner.stop()
 
-    if skip_targets:
+    if skipped_targets:
       println()
 
-      for target in skip_targets:
+      for target in skipped_targets:
         req_version = stem.version.Requirement[CONFIG["target.prereq"][target]]
         println("Unable to run target %s, this requires tor version %s" % (target, req_version), ERROR)
 
       println()
 
-    # TODO: note unused config options afterward?
-
   if not stem.prereq.is_python_3():
-    _print_static_issues(run_unit, run_integ, run_style)
+    _print_static_issues(args)
 
-  runtime = time.time() - start_time
+  runtime_label = "(%i seconds)" % (time.time() - start_time)
 
-  if runtime < 1:
-    runtime_label = "(%0.1f seconds)" % runtime
-  else:
-    runtime_label = "(%i seconds)" % runtime
-
-  has_error = testing_failed or error_tracker.has_error_occured()
-
-  if has_error:
+  if error_tracker.has_errors_occured():
     println("TESTING FAILED %s" % runtime_label, ERROR)
 
     for line in error_tracker:
       println("  %s" % line, ERROR)
-  elif skipped_test_count > 0:
-    println("%i TESTS WERE SKIPPED" % skipped_test_count, STATUS)
-    println("ALL OTHER TESTS PASSED %s\n" % runtime_label, SUCCESS)
   else:
+    if skipped_tests > 0:
+      println("%i TESTS WERE SKIPPED" % skipped_tests, STATUS)
+
     println("TESTING PASSED %s\n" % runtime_label, SUCCESS)
 
-  sys.exit(1 if has_error else 0)
+  sys.exit(1 if error_tracker.has_errors_occured() else 0)
+
+
+def _get_args(argv):
+  """
+  Parses our arguments, providing a named tuple with their values.
+
+  :param list argv: input arguments to be parsed
+
+  :returns: a **named tuple** with our parsed arguments
+
+  :raises: **ValueError** if we got an invalid argument
+  :raises: **getopt.GetoptError** if the arguments don't conform with what we
+    accept
+  """
+
+  args = dict(ARGS)
+
+  for opt, arg in getopt.getopt(argv, OPT, OPT_EXPANDED)[0]:
+    if opt in ("-a", "--all"):
+      args['run_unit'] = True
+      args['run_integ'] = True
+      args['run_style'] = True
+    elif opt in ("-u", "--unit"):
+      args['run_unit'] = True
+    elif opt in ("-i", "--integ"):
+      args['run_integ'] = True
+    elif opt in ("-s", "--style"):
+      args['run_style'] = True
+    elif opt == "--python3":
+      args['run_python3'] = True
+    elif opt == "--clean":
+      args['run_python3_clean'] = True
+    elif opt in ("-t", "--targets"):
+      run_targets, attribute_targets = [], []
+
+      integ_targets = arg.split(",")
+      all_run_targets = [t for t in Target if CONFIG["target.torrc"].get(t) is not None]
+
+      # validates the targets and split them into run and attribute targets
+
+      if not integ_targets:
+        raise ValueError("No targets provided")
+
+      for target in integ_targets:
+        if not target in Target:
+          raise ValueError("Invalid integration target: %s" % target)
+        elif target in all_run_targets:
+          run_targets.append(target)
+        else:
+          attribute_targets.append(target)
+
+      # check if we were told to use all run targets
+
+      if Target.RUN_ALL in attribute_targets:
+        attribute_targets.remove(Target.RUN_ALL)
+        run_targets = all_run_targets
+
+      args['run_targets'] = run_targets
+      args['attribute_targets'] = attribute_targets
+    elif opt in ("-l", "--test"):
+      args['test_prefix'] = arg
+    elif opt in ("-l", "--log"):
+      arg = arg.upper()
+
+      if not arg in stem.util.log.LOG_VALUES:
+        raise ValueError(LOG_TYPE_ERROR % arg)
+
+      args['logging_runlevel'] = arg
+    elif opt in ("--tor"):
+      args['tor_path'] = arg
+    elif opt in ("-h", "--help"):
+      args['print_help'] = True
+
+  # translates our args dict into a named tuple
+
+  Args = collections.namedtuple('Args', args.keys())
+  return Args(**args)
+
+
+def _print_static_issues(args):
+  static_check_issues = {}
+
+  # If we're doing some sort of testing (unit or integ) and pyflakes is
+  # available then use it. Its static checks are pretty quick so there's not
+  # much overhead in including it with all tests.
+
+  if args.run_unit or args.run_integ:
+    if stem.util.system.is_available("pyflakes"):
+      static_check_issues.update(test.util.get_pyflakes_issues(SRC_PATHS))
+    else:
+      println("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
+
+  if args.run_style:
+    if stem.util.system.is_available("pep8"):
+      static_check_issues.update(test.util.get_stylistic_issues(SRC_PATHS))
+    else:
+      println("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
+
+  if static_check_issues:
+    println("STATIC CHECKS", STATUS)
+
+    for file_path in static_check_issues:
+      println("* %s" % file_path, STATUS)
+
+      for line_number, msg in static_check_issues[file_path]:
+        line_count = "%-4s" % line_number
+        println("  line %s - %s" % (line_count, msg))
+
+      println()
+
+
+def _run_test(test_class, output_filters, logging_buffer):
+  test.output.print_divider(test_class.__module__)
+  suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+
+  test_results = StringIO.StringIO()
+  run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+
+  sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
+  println()
+  test.output.print_logging(logging_buffer)
+
+  return run_result
+
+
+if __name__ == '__main__':
+  main()

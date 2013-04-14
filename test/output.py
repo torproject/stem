@@ -78,22 +78,6 @@ def print_logging(logging_buffer):
     print
 
 
-def print_config(test_config):
-  print_divider("TESTING CONFIG", True)
-  println("Test configuration... ", term.Color.BLUE, term.Attr.BOLD)
-
-  for config_key in test_config.keys():
-    key_entry = "  %s => " % config_key
-
-    # if there's multiple values then list them on separate lines
-    value_div = ",\n" + (" " * len(key_entry))
-    value_entry = value_div.join(test_config.get_value(config_key, multiple = True))
-
-    println(key_entry + value_entry, term.Color.BLUE)
-
-  print
-
-
 def apply_filters(testing_output, *filters):
   """
   Gets the tests results, possibly processed through a series of filters. The
@@ -200,6 +184,15 @@ class ErrorTracker(object):
   def __init__(self):
     self._errors = []
     self._category = None
+    self._error_noted = False
+
+  def note_error(self):
+    """
+    If called then has_errors_occured() will report that an error has occured,
+    even if we haven't encountered an error message in the tests.
+    """
+
+    self._error_noted = True
 
   def set_category(self, category):
     """
@@ -215,8 +208,8 @@ class ErrorTracker(object):
 
     self._category = category
 
-  def has_error_occured(self):
-    return bool(self._errors)
+  def has_errors_occured(self):
+    return self._error_noted or bool(self._errors)
 
   def get_filter(self):
     def _error_tracker(line_type, line_content):
