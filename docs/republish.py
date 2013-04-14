@@ -84,4 +84,3 @@ if __name__ == '__main__':
         LOGGER.log(logging.WARN, str(exc))
   else:
     republish_site()
-
