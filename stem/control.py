@@ -1981,6 +1981,13 @@ class Controller(BaseController):
         raise stem.InvalidRequest(response.code, response.message)
       elif response.code == '551':
         raise stem.OperationFailed(response.code, response.message)
+      elif response.code == '555':
+        # TODO: This response has been seen in the wild, but isn't valid
+        # according to the spec...
+        #
+        # https://trac.torproject.org/8701
+
+        raise stem.OperationFailed(response.code, response.message)
       else:
         raise stem.ProtocolError("ATTACHSTREAM returned unexpected response code: %s" % response.code)
 
