@@ -418,11 +418,7 @@ class DescriptorReader(object):
         continue
 
       if os.path.isdir(target):
-        if stem.prereq.is_python_26():
-          walker = os.walk(target, followlinks = self._follow_links)
-        else:
-          walker = os.walk(target)
-
+        walker = os.walk(target, followlinks = self._follow_links)
         self._handle_walker(walker, new_processed_files)
       else:
         self._handle_file(target, new_processed_files)

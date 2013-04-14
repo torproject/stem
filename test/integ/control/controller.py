@@ -19,7 +19,6 @@ import stem.socket
 import stem.version
 import test.network
 import test.runner
-import test.util
 
 from stem import Flag, Signal
 from stem.control import EventType, State
@@ -788,8 +787,8 @@ class TestController(unittest.TestCase):
 
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       s.connect(('127.0.0.1', int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])))
-      test.util.negotiate_socks(s, '1.2.1.2', 80)
-      s.sendall(test.util.ip_request)  # make the http request for the ip address
+      test.network.negotiate_socks(s, '1.2.1.2', 80)
+      s.sendall(test.network.ip_request)  # make the http request for the ip address
       response = s.recv(1000)
 
       # everything after the blank line is the 'data' in a HTTP response.
@@ -974,7 +973,7 @@ class TestController(unittest.TestCase):
         circuit_id = controller.new_circuit(await_build = True)
         socksport = controller.get_socks_listeners()[0][1]
 
-        ip = test.util.external_ip('127.0.0.1', socksport)
+        ip = test.network.external_ip('127.0.0.1', socksport)
         exit_circuit = controller.get_circuit(circuit_id)
         self.assertTrue(exit_circuit)
         exit_ip = controller.get_network_status(exit_circuit.path[2][0]).address

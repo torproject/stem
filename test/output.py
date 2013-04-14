@@ -9,18 +9,25 @@ together for improved readability.
 import re
 import sys
 
-import stem.util.conf
 import stem.util.enum
 
-from stem.util import term
+from stem.util import system, term
 
-CONFIG = stem.util.conf.config_dict("test", {
-  "argument.no_color": False,
-})
+COLOR_SUPPORT = sys.stdout.isatty() and not system.is_windows()
 
 DIVIDER = "=" * 70
 HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
 CATEGORY_ATTR = (term.Color.GREEN, term.Attr.BOLD)
+
+NO_NL = "no newline"
+
+# formatting for various categories of messages
+
+STATUS = (term.Color.BLUE, term.Attr.BOLD)
+SUBSTATUS = (term.Color.BLUE, )
+
+SUCCESS = (term.Color.GREEN, term.Attr.BOLD)
+ERROR = (term.Color.RED, term.Attr.BOLD)
 
 LineType = stem.util.enum.Enum("OK", "FAIL", "ERROR", "SKIPPED", "CONTENT")
 
@@ -40,49 +47,35 @@ LINE_ATTR = {
 }
 
 
-def print_line(msg, *attr):
-  if CONFIG["argument.no_color"]:
-    print msg
-  else:
-    print term.format(msg, *attr)
+def println(msg = "", *attr):
+  attr = _flatten(attr)
+  no_newline = False
 
+  if NO_NL in attr:
+    no_newline = True
+    attr.remove(NO_NL)
 
-def print_noline(msg, *attr):
-  if CONFIG["argument.no_color"]:
+  if COLOR_SUPPORT:
+    msg = term.format(msg, *attr)
+
+  if no_newline:
     sys.stdout.write(msg)
     sys.stdout.flush()
   else:
-    sys.stdout.write(term.format(msg, *attr))
-    sys.stdout.flush()
+    print msg
 
 
 def print_divider(msg, is_header = False):
   attr = HEADER_ATTR if is_header else CATEGORY_ATTR
-  print_line("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
+  println("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
 
 
 def print_logging(logging_buffer):
   if not logging_buffer.is_empty():
     for entry in logging_buffer:
-      print_line(entry.replace("\n", "\n  "), term.Color.MAGENTA)
+      println(entry.replace("\n", "\n  "), term.Color.MAGENTA)
 
     print
-
-
-def print_config(test_config):
-  print_divider("TESTING CONFIG", True)
-  print_line("Test configuration... ", term.Color.BLUE, term.Attr.BOLD)
-
-  for config_key in test_config.keys():
-    key_entry = "  %s => " % config_key
-
-    # if there's multiple values then list them on separate lines
-    value_div = ",\n" + (" " * len(key_entry))
-    value_entry = value_div.join(test_config.get_value(config_key, multiple = True))
-
-    print_line(key_entry + value_entry, term.Color.BLUE)
-
-  print
 
 
 def apply_filters(testing_output, *filters):
@@ -128,10 +121,10 @@ def colorize(line_type, line_content):
   Applies escape sequences so each line is colored according to its type.
   """
 
-  if CONFIG["argument.no_color"]:
-    return line_content
-  else:
-    return term.format(line_content, *LINE_ATTR[line_type])
+  if COLOR_SUPPORT:
+    line_content = term.format(line_content, *LINE_ATTR[line_type])
+
+  return line_content
 
 
 def strip_module(line_type, line_content):
@@ -177,10 +170,10 @@ def align_results(line_type, line_content):
     assert False, "Unexpected line type: %s" % line_type
     return line_content
 
-  if CONFIG["argument.no_color"]:
-    return "%-61s[%s]" % (line_content, term.format(new_ending))
-  else:
+  if COLOR_SUPPORT:
     return "%-61s[%s]" % (line_content, term.format(new_ending, term.Attr.BOLD))
+  else:
+    return "%-61s[%s]" % (line_content, term.format(new_ending))
 
 
 class ErrorTracker(object):
@@ -191,6 +184,15 @@ class ErrorTracker(object):
   def __init__(self):
     self._errors = []
     self._category = None
+    self._error_noted = False
+
+  def note_error(self):
+    """
+    If called then has_errors_occured() will report that an error has occured,
+    even if we haven't encountered an error message in the tests.
+    """
+
+    self._error_noted = True
 
   def set_category(self, category):
     """
@@ -206,8 +208,8 @@ class ErrorTracker(object):
 
     self._category = category
 
-  def has_error_occured(self):
-    return bool(self._errors)
+  def has_errors_occured(self):
+    return self._error_noted or bool(self._errors)
 
   def get_filter(self):
     def _error_tracker(line_type, line_content):
@@ -224,3 +226,20 @@ class ErrorTracker(object):
   def __iter__(self):
     for error_line in self._errors:
       yield error_line
+
+
+def _flatten(seq):
+  # Flattens nested collections into a single list. For instance...
+  #
+  # >>> _flatten([1, [2, 3], 4])
+  # [1, 2, 3, 4]
+
+  result = []
+
+  for item in seq:
+    if (isinstance(item, (tuple, list))):
+      result.extend(_flatten(item))
+    else:
+      result.append(item)
+
+  return result

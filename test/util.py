@@ -1,80 +1,494 @@
 # Copyright 2012-2013, Damian Johnson
 # See LICENSE for licensing information
 
-import socket
-import struct
+"""
+Helper functions for our test framework.
 
-from stem import ProtocolError, SocketError
+::
 
-error_msgs = {
-  0x5a: "SOCKS4A request granted",
-  0x5b: "SOCKS4A request rejected or failed",
-  0x5c: "SOCKS4A request failed because client is not running identd (or not reachable from the server)",
-  0x5d: "SOCKS4A request failed because client's identd could not confirm the user ID string in the request",
-}
+  get_unit_tests - provides our unit tests
+  get_integ_tests - provides our integration tests
 
-ip_request = """GET /ip HTTP/1.0
-Host: ifconfig.me
-Accept-Encoding: identity
+  get_help_message - provides usage information for running our tests
+  get_python3_destination - location where a python3 copy of stem is exported to
+  get_stylistic_issues - checks for PEP8 and other stylistic issues
+  get_pyflakes_issues - static checks for problems via pyflakes
 
+Sets of :class:`~test.util.Task` instances can be ran with
+:func:`~test.util.run_tasks`. Functions that are intended for easy use with
+Tasks are...
+
+::
+
+  Initialization
+  |- check_stem_version - checks our version of stem
+  |- check_python_version - checks our version of python
+  |- check_pyflakes_version - checks our version of pyflakes
+  |- check_pep8_version - checks our version of pep8
+  +- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
+
+  Testing Python 3
+  |- python3_prereq - checks that we have python3 and 2to3
+  |- python3_clean - deletes our prior python3 export
+  |- python3_copy_stem - copies our codebase and converts with 2to3
+  +- python3_run_tests - runs python 3 tests
 """
 
+import re
+import os
+import shutil
+import sys
 
-def external_ip(host, port):
+import stem
+import stem.util.conf
+import stem.util.system
+
+import test.output
+
+from test.output import STATUS, ERROR, NO_NL, println
+
+CONFIG = stem.util.conf.config_dict("test", {
+  "msg.help": "",
+  "target.description": {},
+  "pep8.ignore": [],
+  "pyflakes.ignore": [],
+  "integ.test_directory": "./test/data",
+  "test.unit_tests": "",
+  "test.integ_tests": "",
+})
+
+Target = stem.util.enum.UppercaseEnum(
+  "ONLINE",
+  "RELATIVE",
+  "CHROOT",
+  "RUN_NONE",
+  "RUN_OPEN",
+  "RUN_PASSWORD",
+  "RUN_COOKIE",
+  "RUN_MULTIPLE",
+  "RUN_SOCKET",
+  "RUN_SCOOKIE",
+  "RUN_PTRACE",
+  "RUN_ALL",
+)
+
+# We make some paths relative to stem's base directory (the one above us)
+# rather than the process' cwd. This doesn't end with a slash.
+STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
+
+# mapping of files to the issues that should be ignored
+PYFLAKES_IGNORE = None
+
+
+def get_unit_tests(prefix = None):
   """
-  Returns the externally visible IP address when using a SOCKS4a proxy.
-  Negotiates the socks connection, connects to ipconfig.me and requests
-  http://ifconfig.me/ip to find out the externally visible IP.
+  Provides the classes for our unit tests.
 
-  Supports only SOCKS4a proxies.
+  :param str prefix: only provide the test if the module starts with this prefix
 
-  :param str host: hostname/IP of the proxy server
-  :param int port: port on which the proxy server is listening
-
-  :returns: externally visible IP address, or None if it isn't able to
-
-  :raises: :class:`stem.socket.SocketError`: unable to connect a socket to the socks server
+  :returns: an **iterator** for our unit tests
   """
 
+  return _get_tests(CONFIG["test.unit_tests"].splitlines(), prefix)
+
+
+def get_integ_tests(prefix = None):
+  """
+  Provides the classes for our integration tests.
+
+  :param str prefix: only provide the test if the module starts with this prefix
+
+  :returns: an **iterator** for our integration tests
+  """
+
+  return _get_tests(CONFIG["test.integ_tests"].splitlines(), prefix)
+
+
+def _get_tests(modules, prefix):
+  for import_name in modules:
+    if import_name:
+      if prefix and not import_name.startswith(prefix):
+        continue
+
+      # Dynamically imports test modules. The __import__() call has a couple
+      # quirks that make this a little clunky...
+      #
+      #   * it only accepts modules, not the actual class we want to import
+      #
+      #   * it returns the top level module, so we need to transverse into it
+      #     for the test class
+
+      module_name = '.'.join(import_name.split('.')[:-1])
+      module = __import__(module_name)
+
+      for subcomponent in import_name.split(".")[1:]:
+        module = getattr(module, subcomponent)
+
+      yield module
+
+
+def get_help_message():
+  """
+  Provides usage information, as provided by the '--help' argument. This
+  includes a listing of the valid integration targets.
+
+  :returns: **str** with our usage information
+  """
+
+  help_msg = CONFIG["msg.help"]
+
+  # gets the longest target length so we can show the entries in columns
+  target_name_length = max(map(len, Target))
+  description_format = "\n    %%-%is - %%s" % target_name_length
+
+  for target in Target:
+    help_msg += description_format % (target, CONFIG["target.description"].get(target, ""))
+
+  help_msg += "\n"
+
+  return help_msg
+
+
+def get_python3_destination():
+  """
+  Provides the location where a python 3 copy of stem is exported to for
+  testing.
+
+  :returns: **str** with the relative path to our python 3 location
+  """
+
+  return os.path.join(CONFIG["integ.test_directory"], "python3")
+
+
+def get_stylistic_issues(paths):
+  """
+  Checks for stylistic issues that are an issue according to the parts of PEP8
+  we conform to. This alsochecks a few other stylistic issues:
+
+  * two space indentations
+  * tabs are the root of all evil and should be shot on sight
+  * standard newlines (\\n), not windows (\\r\\n) nor classic mac (\\r)
+
+  :param list paths: paths to search for stylistic issues
+
+  :returns: **dict** of the form ``path => [(line_number, message)...]``
+  """
+
+  # The pep8 command give output of the form...
+  #
+  #   FILE:LINE:CHARACTER ISSUE
+  #
+  # ... for instance...
+  #
+  #   ./test/mocking.py:868:31: E225 missing whitespace around operator
+
+  ignored_issues = ','.join(CONFIG["pep8.ignore"])
+  issues = {}
+
+  for path in paths:
+    pep8_output = stem.util.system.call("pep8 --ignore %s %s" % (ignored_issues, path))
+
+    for line in pep8_output:
+      line_match = re.match("^(.*):(\d+):(\d+): (.*)$", line)
+
+      if line_match:
+        path, line, _, issue = line_match.groups()
+
+        if not _is_test_data(path):
+          issues.setdefault(path, []).append((int(line), issue))
+
+    for file_path in _get_files_with_suffix(path):
+      if _is_test_data(file_path):
+        continue
+
+      with open(file_path) as f:
+        file_contents = f.read()
+
+      lines, file_issues, prev_indent = file_contents.split("\n"), [], 0
+      is_block_comment = False
+
+      for index, line in enumerate(lines):
+        whitespace, content = re.match("^(\s*)(.*)$", line).groups()
+
+        # TODO: This does not check that block indentations are two spaces
+        # because differentiating source from string blocks ("""foo""") is more
+        # of a pita than I want to deal with right now.
+
+        if '"""' in content:
+          is_block_comment = not is_block_comment
+
+        if "\t" in whitespace:
+          file_issues.append((index + 1, "indentation has a tab"))
+        elif "\r" in content:
+          file_issues.append((index + 1, "contains a windows newline"))
+        elif content != content.rstrip():
+          file_issues.append((index + 1, "line has trailing whitespace"))
+
+      if file_issues:
+        issues[file_path] = file_issues
+
+  return issues
+
+
+def get_pyflakes_issues(paths):
+  """
+  Performs static checks via pyflakes.
+
+  :param list paths: paths to search for problems
+
+  :returns: dict of the form ``path => [(line_number, message)...]``
+  """
+
+  global PYFLAKES_IGNORE
+
+  if PYFLAKES_IGNORE is None:
+    pyflakes_ignore = {}
+
+    for line in CONFIG["pyflakes.ignore"]:
+      path, issue = line.split("=>")
+      pyflakes_ignore.setdefault(path.strip(), []).append(issue.strip())
+
+    PYFLAKES_IGNORE = pyflakes_ignore
+
+  # Pyflakes issues are of the form...
+  #
+  #   FILE:LINE: ISSUE
+  #
+  # ... for instance...
+  #
+  #   stem/prereq.py:73: 'long_to_bytes' imported but unused
+  #   stem/control.py:957: undefined name 'entry'
+
+  issues = {}
+
+  for path in paths:
+    pyflakes_output = stem.util.system.call("pyflakes %s" % path)
+
+    for line in pyflakes_output:
+      line_match = re.match("^(.*):(\d+): (.*)$", line)
+
+      if line_match:
+        path, line, issue = line_match.groups()
+
+        if _is_test_data(path):
+          continue
+
+        # paths in PYFLAKES_IGNORE are relative, so we need to check to see if
+        # our path ends with any of them
+
+        ignore_issue = False
+
+        for ignore_path in PYFLAKES_IGNORE:
+          if path.endswith(ignore_path) and issue in PYFLAKES_IGNORE[ignore_path]:
+            ignore_issue = True
+            break
+
+        if not ignore_issue:
+          issues.setdefault(path, []).append((int(line), issue))
+
+  return issues
+
+
+def check_stem_version():
+  return stem.__version__
+
+
+def check_python_version():
+  return '.'.join(map(str, sys.version_info[:3]))
+
+
+def check_pyflakes_version():
   try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((host, int(port)))
-  except Exception, exc:
-    raise SocketError("Failed to connect to the socks server: " + str(exc))
+    import pyflakes
+    return pyflakes.__version__
+  except ImportError:
+    return "missing"
 
+
+def check_pep8_version():
   try:
-    negotiate_socks(sock, "ifconfig.me", 80)
-    sock.sendall(ip_request)
-    response = sock.recv(1000)
-
-    # everything after the blank line is the 'data' in a HTTP response
-    # The response data for our request for request should be an IP address + '\n'
-    return response[response.find("\r\n\r\n"):].strip()
-  except Exception, exc:
-    return None
+    import pep8
+    return pep8.__version__
+  except ImportError:
+    return "missing"
 
 
-def negotiate_socks(sock, host, port):
+def clean_orphaned_pyc(paths):
   """
-  Negotiate with a socks4a server. Closes the socket and raises an exception on
-  failure.
+  Deletes any file with a *.pyc extention without a corresponding *.py. This
+  helps to address a common gotcha when deleting python files...
 
-  :param socket sock: socket connected to socks4a server
-  :param str host: hostname/IP to connect to
-  :param int port: port to connect to
+  * You delete module 'foo.py' and run the tests to ensure that you haven't
+    broken anything. They pass, however there *are* still some 'import foo'
+    statements that still work because the bytecode (foo.pyc) is still around.
 
-  :raises: :class:`stem.ProtocolError` if the socks server doesn't grant our request
+  * You push your change.
 
-  :returns: a list with the IP address and the port that the proxy connected to
+  * Another developer clones our repository and is confused because we have a
+    bunch of ImportErrors.
+
+  :param list paths: paths to search for orphaned pyc files
   """
 
-  # SOCKS4a request here - http://en.wikipedia.org/wiki/SOCKS#Protocol
-  request = "\x04\x01" + struct.pack("!H", port) + "\x00\x00\x00\x01" + "\x00" + host + "\x00"
-  sock.sendall(request)
-  response = sock.recv(8)
+  orphaned_pyc = []
 
-  if len(response) != 8 or response[0] != "\x00" or response[1] != "\x5a":
-    sock.close()
-    raise ProtocolError(error_msgs.get(response[1], "SOCKS server returned unrecognized error code"))
+  for path in paths:
+    for pyc_path in _get_files_with_suffix(path, ".pyc"):
+      # If we're running python 3 then the *.pyc files are no longer bundled
+      # with the *.py. Rather, they're in a __pycache__ directory.
+      #
+      # At the moment there's no point in checking for orphaned bytecode with
+      # python 3 because it's an exported copy of the python 2 codebase, so
+      # skipping.
 
-  return [socket.inet_ntoa(response[4:]), struct.unpack("!H", response[2:4])[0]]
+      if "__pycache__" in pyc_path:
+        continue
+
+      if not os.path.exists(pyc_path[:-1]):
+        orphaned_pyc.append(pyc_path)
+        os.remove(pyc_path)
+
+  return ["removed %s" % path for path in orphaned_pyc]
+
+
+def python3_prereq():
+  for required_cmd in ("2to3", "python3"):
+    if not stem.util.system.is_available(required_cmd):
+      raise ValueError("Unable to test python 3 because %s isn't in your path" % required_cmd)
+
+
+def python3_clean(skip = False):
+  location = get_python3_destination()
+
+  if not os.path.exists(location):
+    return "skipped"
+  elif skip:
+    return ["Reusing '%s'. Run again with '--clean' if you want a fresh copy." % location]
+  else:
+    shutil.rmtree(location, ignore_errors = True)
+    return "done"
+
+
+def python3_copy_stem():
+  destination = get_python3_destination()
+
+  if os.path.exists(destination):
+    return "skipped"
+
+  # skips the python3 destination (to avoid an infinite loop)
+  def _ignore(src, names):
+    if src == os.path.normpath(destination):
+      return names
+    else:
+      return []
+
+  os.makedirs(destination)
+  shutil.copytree('stem', os.path.join(destination, 'stem'))
+  shutil.copytree('test', os.path.join(destination, 'test'), ignore = _ignore)
+  shutil.copy('run_tests.py', os.path.join(destination, 'run_tests.py'))
+  stem.util.system.call("2to3 --write --nobackups --no-diffs %s" % get_python3_destination())
+
+  return "done"
+
+
+def python3_run_tests():
+  println()
+  println()
+
+  python3_runner = os.path.join(get_python3_destination(), "run_tests.py")
+  exit_status = os.system("python3 %s %s" % (python3_runner, " ".join(sys.argv[1:])))
+  sys.exit(exit_status)
+
+
+def _is_test_data(path):
+  return os.path.normpath(CONFIG["integ.test_directory"]) in path
+
+
+def _get_files_with_suffix(base_path, suffix = ".py"):
+  """
+  Iterates over files in a given directory, providing filenames with a certain
+  suffix.
+
+  :param str base_path: directory to be iterated over
+  :param str suffix: filename suffix to look for
+
+  :returns: iterator that yields the absolute path for files with the given suffix
+  """
+
+  if os.path.isfile(base_path):
+    if base_path.endswith(suffix):
+      yield base_path
+  else:
+    for root, _, files in os.walk(base_path):
+      for filename in files:
+        if filename.endswith(suffix):
+          yield os.path.join(root, filename)
+
+
+def run_tasks(category, *tasks):
+  """
+  Runs a series of :class:`test.util.Task` instances. This simply prints 'done'
+  or 'failed' for each unless we fail one that is marked as being required. If
+  that happens then we print its error message and call sys.exit().
+
+  :param str category: label for the series of tasks
+  :param list tasks: **Task** instances to be ran
+  """
+
+  test.output.print_divider(category, True)
+
+  for task in tasks:
+    task.run()
+
+    if task.is_required and task.error:
+      println("\n%s\n" % task.error, ERROR)
+      sys.exit(1)
+
+  println()
+
+
+class Task(object):
+  """
+  Task we can process while running our tests. The runner can return either a
+  message or list of strings for its results.
+  """
+
+  def __init__(self, label, runner, args = None, is_required = True):
+    super(Task, self).__init__()
+
+    self.label = label
+    self.runner = runner
+    self.args = args
+    self.is_required = is_required
+    self.error = None
+
+  def run(self):
+    println("  %s..." % self.label, STATUS, NO_NL)
+
+    padding = 50 - len(self.label)
+    println(" " * padding, NO_NL)
+
+    try:
+      if self.args:
+        result = self.runner(*self.args)
+      else:
+        result = self.runner()
+
+      output_msg = "done"
+
+      if isinstance(result, str):
+        output_msg = result
+
+      println(output_msg, STATUS)
+
+      if isinstance(result, (list, tuple)):
+        for line in result:
+          println("    %s" % line, STATUS)
+    except Exception, exc:
+      output_msg = str(exc)
+
+      if not output_msg or self.is_required:
+        output_msg = "failed"
+
+      println(output_msg, ERROR)
+      self.error = exc

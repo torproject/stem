@@ -42,7 +42,6 @@ about the tor test instance they're running against.
 import logging
 import os
 import shutil
-import signal
 import stat
 import tempfile
 import threading
@@ -57,19 +56,13 @@ import stem.util.enum
 import stem.version
 import test.output
 
-from stem.util import term
+from test.output import println, STATUS, SUBSTATUS, NO_NL
+from test.util import Target, STEM_BASE
 
 CONFIG = stem.util.conf.config_dict("test", {
   "integ.test_directory": "./test/data",
   "integ.log": "./test/data/log",
-  "integ.target.online": False,
-  "integ.target.relative_data_dir": False,
-  "integ.target.chroot": False,
 })
-
-STATUS_ATTR = (term.Color.BLUE, term.Attr.BOLD)
-SUBSTATUS_ATTR = (term.Color.BLUE, )
-ERROR_ATTR = (term.Color.RED, term.Attr.BOLD)
 
 SOCKS_HOST = "127.0.0.1"
 SOCKS_PORT = 1112
@@ -79,10 +72,6 @@ DataDirectory %%s
 SocksListenAddress %s:%i
 DownloadExtraInfo 1
 """ % (SOCKS_HOST, SOCKS_PORT)
-
-# We make some paths relative to stem's base directory (the one above us)
-# rather than the process' cwd. This doesn't end with a slash.
-STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 # singleton Runner instance
 INTEG_RUNNER = None
@@ -165,7 +154,7 @@ def require_online(test_case):
   :returns: True if test should be skipped, False otherwise
   """
 
-  if not CONFIG["integ.target.online"]:
+  if not Target.ONLINE in test.runner.get_runner().attribute_targets:
     skip(test_case, "(requires online target)")
     return True
 
@@ -243,6 +232,9 @@ class _MockChrootFile(object):
 
 class Runner(object):
   def __init__(self):
+    self.run_target = None
+    self.attribute_targets = []
+
     self._runner_lock = threading.RLock()
 
     # runtime attributes, set by the start method
@@ -258,11 +250,13 @@ class Runner(object):
 
     self._original_recv_message = None
 
-  def start(self, tor_cmd, extra_torrc_opts):
+  def start(self, run_target, attribute_targets, tor_cmd, extra_torrc_opts):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
 
+    :param Target run_target: configuration we're running with
+    :param list attribute_targets: **Targets** for our non-configuration attributes
     :param str tor_cmd: command to start tor with
     :param list extra_torrc_opts: additional torrc options for our test instance
 
@@ -270,13 +264,16 @@ class Runner(object):
     """
 
     with self._runner_lock:
+      self.run_target = run_target
+      self.attribute_targets = attribute_targets
+
       # if we're holding on to a tor process (running or not) then clean up after
       # it so we can start a fresh instance
 
       if self._tor_process:
         self.stop()
 
-      test.output.print_line("Setting up a test instance...", *STATUS_ATTR)
+      println("Setting up a test instance...", STATUS)
 
       # if 'test_directory' is unset then we make a new data directory in /tmp
       # and clean it up when we're done
@@ -290,7 +287,7 @@ class Runner(object):
 
       original_cwd, data_dir_path = os.getcwd(), self._test_dir
 
-      if CONFIG["integ.target.relative_data_dir"]:
+      if Target.RELATIVE in self.attribute_targets:
         tor_cwd = os.path.dirname(self._test_dir)
 
         if not os.path.exists(tor_cwd):
@@ -314,7 +311,7 @@ class Runner(object):
         # strip the testing directory from recv_message responses if we're
         # simulating a chroot setup
 
-        if CONFIG["integ.target.chroot"] and not self._original_recv_message:
+        if Target.CHROOT in self.attribute_targets and not self._original_recv_message:
           # TODO: when we have a function for telling stem the chroot we'll
           # need to set that too
 
@@ -327,7 +324,7 @@ class Runner(object):
           stem.socket.recv_message = _chroot_recv_message
 
         # revert our cwd back to normal
-        if CONFIG["integ.target.relative_data_dir"]:
+        if Target.RELATIVE in self.attribute_targets:
           os.chdir(original_cwd)
       except OSError, exc:
         raise exc
@@ -338,19 +335,14 @@ class Runner(object):
     """
 
     with self._runner_lock:
-      test.output.print_noline("Shutting down tor... ", *STATUS_ATTR)
+      println("Shutting down tor... ", STATUS, NO_NL)
 
       if self._tor_process:
         # if the tor process has stopped on its own then the following raises
         # an OSError ([Errno 3] No such process)
 
         try:
-          if stem.prereq.is_python_26():
-            self._tor_process.kill()
-          elif not stem.util.system.is_windows():
-            os.kill(self._tor_process.pid, signal.SIGTERM)
-          else:
-            test.output.print_line("failed (unable to call kill() in python 2.5)", *ERROR_ATTR)
+          self._tor_process.kill()
         except OSError:
           pass
 
@@ -372,7 +364,7 @@ class Runner(object):
       self._custom_opts = None
       self._tor_process = None
 
-      test.output.print_line("done", *STATUS_ATTR)
+      println("done", STATUS)
 
   def is_running(self):
     """
@@ -388,7 +380,7 @@ class Runner(object):
       if self._tor_process and self._tor_process.poll() is not None:
         # clean up the temporary resources and note the unexpected shutdown
         self.stop()
-        test.output.print_line("tor shut down unexpectedly", *ERROR_ATTR)
+        test.output.print_error("tor shut down unexpectedly")
 
       return bool(self._tor_process)
 
@@ -617,15 +609,15 @@ class Runner(object):
 
     # makes a temporary data directory if needed
     try:
-      test.output.print_noline("  making test directory (%s)... " % self._test_dir, *STATUS_ATTR)
+      println("  making test directory (%s)... " % self._test_dir, STATUS, NO_NL)
 
       if os.path.exists(self._test_dir):
-        test.output.print_line("skipped", *STATUS_ATTR)
+        println("skipped", STATUS)
       else:
         os.makedirs(self._test_dir)
-        test.output.print_line("done", *STATUS_ATTR)
+        println("done", STATUS)
     except OSError, exc:
-      test.output.print_line("failed (%s)" % exc, *ERROR_ATTR)
+      test.output.print_error("failed (%s)" % exc)
       raise exc
 
     # Tor checks during startup that the directory a control socket resides in
@@ -635,18 +627,18 @@ class Runner(object):
     if Torrc.SOCKET in self._custom_opts:
       try:
         socket_dir = os.path.dirname(CONTROL_SOCKET_PATH)
-        test.output.print_noline("  making control socket directory (%s)... " % socket_dir, *STATUS_ATTR)
+        println("  making control socket directory (%s)... " % socket_dir, STATUS, NO_NL)
 
         if os.path.exists(socket_dir) and stat.S_IMODE(os.stat(socket_dir).st_mode) == 0700:
-          test.output.print_line("skipped", *STATUS_ATTR)
+          println("skipped", STATUS)
         else:
           if not os.path.exists(socket_dir):
             os.makedirs(socket_dir)
 
           os.chmod(socket_dir, 0700)
-          test.output.print_line("done", *STATUS_ATTR)
+          println("done", STATUS)
       except OSError, exc:
-        test.output.print_line("failed (%s)" % exc, *ERROR_ATTR)
+        test.output.print_error("failed (%s)" % exc)
         raise exc
 
     # configures logging
@@ -654,7 +646,7 @@ class Runner(object):
 
     if logging_path:
       logging_path = stem.util.system.expand_path(logging_path, STEM_BASE)
-      test.output.print_noline("  configuring logger (%s)... " % logging_path, *STATUS_ATTR)
+      println("  configuring logger (%s)... " % logging_path, STATUS, NO_NL)
 
       # delete the old log
       if os.path.exists(logging_path):
@@ -667,27 +659,27 @@ class Runner(object):
         datefmt = '%D %H:%M:%S',
       )
 
-      test.output.print_line("done", *STATUS_ATTR)
+      println("done", STATUS)
     else:
-      test.output.print_line("  configuring logger... skipped", *STATUS_ATTR)
+      println("  configuring logger... skipped", STATUS)
 
     # writes our testing torrc
     torrc_dst = os.path.join(self._test_dir, "torrc")
     try:
-      test.output.print_noline("  writing torrc (%s)... " % torrc_dst, *STATUS_ATTR)
+      println("  writing torrc (%s)... " % torrc_dst, STATUS, NO_NL)
 
       torrc_file = open(torrc_dst, "w")
       torrc_file.write(self._torrc_contents)
       torrc_file.close()
 
-      test.output.print_line("done", *STATUS_ATTR)
+      println("done", STATUS)
 
       for line in self._torrc_contents.strip().splitlines():
-        test.output.print_line("    %s" % line.strip(), *SUBSTATUS_ATTR)
+        println("    %s" % line.strip(), SUBSTATUS)
 
-      print
+      println()
     except Exception, exc:
-      test.output.print_line("failed (%s)\n" % exc, *ERROR_ATTR)
+      test.output.print_error("failed (%s)\n" % exc)
       raise OSError(exc)
 
   def _start_tor(self, tor_cmd):
@@ -700,22 +692,22 @@ class Runner(object):
     :raises: OSError if we either fail to create the tor process or reached a timeout without success
     """
 
-    test.output.print_line("Starting tor...\n", *STATUS_ATTR)
+    println("Starting tor...\n", STATUS)
     start_time = time.time()
 
     try:
       # wait to fully complete if we're running tests with network activity,
       # otherwise finish after local bootstraping
-      complete_percent = 100 if CONFIG["integ.target.online"] else 5
+      complete_percent = 100 if Target.ONLINE in self.attribute_targets else 5
 
       # prints output from tor's stdout while it starts up
-      print_init_line = lambda line: test.output.print_line("  %s" % line, *SUBSTATUS_ATTR)
+      print_init_line = lambda line: println("  %s" % line, SUBSTATUS)
 
       torrc_dst = os.path.join(self._test_dir, "torrc")
       self._tor_process = stem.process.launch_tor(tor_cmd, None, torrc_dst, complete_percent, print_init_line)
 
       runtime = time.time() - start_time
-      test.output.print_line("  done (%i seconds)\n" % runtime, *STATUS_ATTR)
+      println("  done (%i seconds)\n" % runtime, STATUS)
     except OSError, exc:
-      test.output.print_line("  failed to start tor: %s\n" % exc, *ERROR_ATTR)
+      test.output.print_error("  failed to start tor: %s\n" % exc)
       raise exc

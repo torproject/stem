@@ -113,14 +113,7 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
         except:
           pass
 
-      # We can't kill the subprocess on python 2.5 running Windows without the
-      # win32process module...
-      # http://stackoverflow.com/questions/552423/use-python-2-6-subprocess-module-in-python-2-5/552510#552510
-
-      if stem.prereq.is_python_26():
-        tor_process.kill()
-      elif not stem.util.system.is_windows():
-        os.kill(tor_process.pid, signal.SIGTERM)
+      tor_process.kill()
 
       raise OSError("reached a %i second timeout without success" % timeout)
 
@@ -147,10 +140,8 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
         signal.alarm(0)  # stop alarm
 
       # ... but best make sure
-      if stem.prereq.is_python_26():
-        tor_process.kill()
-      elif not stem.util.system.is_windows():
-        os.kill(tor_process.pid, signal.SIGTERM)
+
+      tor_process.kill()
 
       raise OSError("Process terminated: %s" % last_problem)
 

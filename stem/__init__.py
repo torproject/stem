@@ -369,7 +369,7 @@ Library for working with the tor process.
   =============== ===========
 """
 
-__version__ = '1.0.1'
+__version__ = '1.0.1-dev'
 __author__ = 'Damian Johnson'
 __contact__ = 'atagar@torproject.org'
 __url__ = 'https://stem.torproject.org/'

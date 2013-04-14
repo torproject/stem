@@ -4,7 +4,6 @@ Tests the stem.process functions with various use cases.
 
 import os
 import shutil
-import signal
 import subprocess
 import tempfile
 import time
@@ -21,11 +20,7 @@ from test import mocking
 
 
 def _kill_process(process):
-  if stem.prereq.is_python_26():
-    process.kill()
-  elif not stem.util.system.is_windows():
-    os.kill(process.pid, signal.SIGTERM)
-
+  process.kill()
   process.communicate()  # block until its definitely gone
 
 
@@ -41,10 +36,6 @@ class TestProcess(unittest.TestCase):
     """
     Exercises launch_tor_with_config.
     """
-
-    if not stem.prereq.is_python_26() and stem.util.system.is_windows():
-      test.runner.skip(self, "(unable to kill subprocesses)")
-      return
 
     if test.runner.only_run_once(self, "test_launch_tor_with_config"):
       return
@@ -83,10 +74,6 @@ class TestProcess(unittest.TestCase):
     Runs launch_tor where it times out before completing.
     """
 
-    if not stem.prereq.is_python_26() and stem.util.system.is_windows():
-      test.runner.skip(self, "(unable to kill subprocesses)")
-      return
-
     if test.runner.only_run_once(self, "test_launch_tor_with_timeout"):
       return
 
@@ -105,10 +92,7 @@ class TestProcess(unittest.TestCase):
     test this we spawn a process and trick tor into thinking that it is us.
     """
 
-    if not stem.prereq.is_python_26() and stem.util.system.is_windows():
-      test.runner.skip(self, "(unable to kill subprocesses)")
-      return
-    elif not stem.util.system.is_available("sleep"):
+    if not stem.util.system.is_available("sleep"):
       test.runner.skip(self, "('sleep' command is unavailable)")
       return
     elif test.runner.only_run_once(self, "test_take_ownership_via_pid"):
