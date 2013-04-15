@@ -14,6 +14,7 @@ Contents
    change_log
    download
 
+   faq
    api
 
    api/control

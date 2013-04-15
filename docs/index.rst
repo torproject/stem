@@ -27,6 +27,27 @@ Stem is a python controller library for `Tor <https://www.torproject.org/>`_. Li
 .. image:: /_static/buttons/api.png
    :target: api.html
 
+.. Source: https://openclipart.org/detail/171951/help-by-diamonjohn-171951
+   Author: John Diamond (https://openclipart.org/user-detail/diamonjohn)
+   License: Public Domain
+   
+   Alternate:
+   Source: Oxygen (http://www.oxygen-icons.org/)
+   Author: Andrea Joseph
+   License: CCv3 (A, SA) - http://creativecommons.org/licenses/by-sa/3.0/
+   File: Oxygen/128x128/categories/system-help.png
+
+.. image:: /_static/buttons/faq.png
+   :target: faq.html
+
+.. Source: Nuovo (http://www.silvestre.com.ar/?p=5)
+   Author: Silvestre Herrera (http://www.silvestre.com.ar/)
+   License: GPL v2
+   File: Nuovo/128x128/mimetypes/gnome-mime-text-log.png
+
+.. image:: /_static/buttons/change_log.png
+   :target: change_log.html
+
 .. Source: Crystal (http://www.everaldo.com/crystal/)
    Author: Everaldo Coelho (http://www.everaldo.com/)
    License: LGPL v2
@@ -35,15 +56,7 @@ Stem is a python controller library for `Tor <https://www.torproject.org/>`_. Li
 .. image:: /_static/buttons/bug_tracker.png
    :target: https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs
 
-.. Nuovo (http://www.silvestre.com.ar/?p=5)
-   Author: Silvestre Herrera (http://www.silvestre.com.ar/)
-   License: GPL v2
-   File: Nuovo/128x128/mimetypes/gnome-mime-text-log.png
-
-.. image:: /_static/buttons/change_log.png
-   :target: change_log.html
-
-.. ColorCons (http://mouserunner.com/Spheres_ColoCons1_Free_Icons.html)
+.. Source: ColorCons (http://mouserunner.com/Spheres_ColoCons1_Free_Icons.html)
    Author: Ken Saunders (http://mouserunner.com/MRDS_Cell.html)
    License: CC v2.5 (A, SA)
    File: ColorCons/Blue/Download.png
