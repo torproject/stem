@@ -17,12 +17,12 @@ Frequently Asked Questions
  * :ref:`what_is_the_copyright_for_patches`
 
 Usage
------
+=====
 
 .. _what_is_stem:
 
 What is stem?
-^^^^^^^^^^^^^
+-------------
 
 Stem is a python controller library that you can use to interact with `tor <https://www.torproject.org/>`_. With it you can write scripts and applications with capabilities similar to `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <http://www.atagar.com/arm/>`_.
 
@@ -31,7 +31,7 @@ From a technical standpoint, stem is a python implementation of Tor's `directory
 .. _does_stem_have_any_dependencies:
 
 Does stem have any dependencies?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------
 
 **No.** All you need in order to use stem is python.
 
@@ -40,31 +40,31 @@ When it is available stem will use `pycrypto <https://www.dlitz.net/software/pyc
 .. _what_python_versions_is_stem_compatible_with:
 
 What python versions is stem compatible with?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------------------
 
 Stem works with **python 2.6 and greater**. This includes the python 3.x series by installing stem via python3 (see our `installation instructions <https://pypi.python.org/pypi/stem/>`_ for more information).
 
 .. _what_license_is_stem_under:
 
 What license is stem under?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------
 
 Stem is under the `LGPLv3 <https://www.gnu.org/licenses/lgpl>`_.
 
 .. _where_can_i_get_help:
 
 Where can I get help?
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 Do you have a tor related question or project that you would like to discuss? If so then find us on the `tor-dev@ email list <https://lists.torproject.org/cgi-bin/mailman/listinfo/tor-dev>`_ and `IRC <https://www.torproject.org/about/contact.html.en#irc>`_.
 
 Development
------------
+===========
 
 .. _how_do_i_get_started:
 
 How do I get started?
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 The best way of getting involved with any project is to jump right in! Our `bug tracker <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_ lists several development tasks. In particular look for the 'easy' keyword when getting started.
 
@@ -90,7 +90,7 @@ To start hacking on stem please do the following and don't hesitate to let me kn
 .. _how_do_i_run_the_tests:
 
 How do I run the tests?
-^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 Stem has three kinds of tests: **unit**, **integration**, and **static**.
 
@@ -126,7 +126,7 @@ See ``run_tests.py --help`` for more usage information.
 .. _how_do_i_build_the_site:
 
 How do I build the site?
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 If you have `sphinx <http://sphinx-doc.org/>`_ version 1.1 or later installed then building our site is as easy as...
 
@@ -144,7 +144,7 @@ When it's finished you can direct your browser to the *_build* directory with a 
 .. _what_is_the_copyright_for_patches:
 
 What is the copyright for patches?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 
 Stem is under the LGPLv3 which is a fine license, but poses a bit of a problem for sharing code with our other projects (which are mostly BSD). To share code without needing to hunt down prior contributors we need an individual to have the copyright for the whole stem codebase. This is Damian at present, but I'll probably give it to Tor if I get nailed by a bus.
 
