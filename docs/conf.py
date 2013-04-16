@@ -45,6 +45,11 @@ master_doc = 'index'
 
 from stem import __version__, __author__, __contact__
 
+# Ignore the '-dev' version suffix.
+
+if __version__.endswith('-dev'):
+  __version__ = __version__[:-4]
+
 # General information about the project.
 project = u'Stem'
 copyright = u'2012, %s' % __author__
