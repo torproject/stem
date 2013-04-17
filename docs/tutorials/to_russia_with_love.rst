@@ -45,7 +45,8 @@ In the following example we're using stem to `start Tor <../api/process.html>`_,
       return "Unable to reach %s (%s)" % (url, exc)
 
   # Start an instance of tor configured to only exit through Russia. This prints
-  # tor's bootstrap information as it starts.
+  # tor's bootstrap information as it starts. Note that this likely will not
+  # work if you have another tor instance running.
 
   def print_bootstrap_lines(line):
     if "Bootstrapped " in line:
