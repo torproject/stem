@@ -40,7 +40,8 @@ The following are only available within stem's `git repository
 
  * **Controller**
 
-  * :class:`~stem.response.events.AddrMapEvent` support for the new CACHED argument (:trac:`8596`, `spec <https://gitweb.torproject.org/torspec.git/commitdiff/25b0d43>`_)
+  * :class:`~stem.response.events.AddrMapEvent` support for the new CACHED argument (:trac:`8596`, :spec:`25b0d43`)
+  * :func:`~stem.control.Controller.attach_stream` could encounter an undocumented 555 response (:trac:`8701`, :spec:`7286576`)
 
  * **Website**
 
@@ -48,6 +49,7 @@ The following are only available within stem's `git repository
     improvements, most notably the addition of PyPI, FreeBSD, and RedHat.
   * Replaced default sphinx header with a navbar menu.
   * Added this change log.
+  * Added the `FAQ page <faq.html>`_.
   * Settled on a `logo
     <http://www.wpclipart.com/plants/assorted/P/plant_stem.png.html>`_ for
     stem.

@@ -26,7 +26,7 @@ needs_sphinx = '1.1' # required for the sphinx-apidoc command
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'trac']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'roles']
 
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members', 'show-inheritance', 'undoc-members']
@@ -230,3 +230,4 @@ man_pages = [
 ]
 
 trac_url = 'https://trac.torproject.org'
+spec_url = 'https://gitweb.torproject.org/torspec.git/commitdiff'

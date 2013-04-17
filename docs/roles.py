@@ -1,3 +1,5 @@
+import re
+
 from docutils.utils import unescape
 from docutils.nodes import reference
 from docutils.parsers.rst.roles import set_classes
@@ -5,8 +7,7 @@ from docutils.parsers.rst.roles import set_classes
 
 def role_trac(name, rawtext, text, lineno, inliner, options={}, content=[]):
   """
-  Returns two part tuple consisting of node and system messages. Both allowed
-  to be empty.
+  Aliases :trac:`1234` to 'https://trac.torproject.org/1234'.
 
   :param name: the role name used in the document
   :param rawtext: the entire markup snippet, with role
@@ -25,7 +26,30 @@ def role_trac(name, rawtext, text, lineno, inliner, options={}, content=[]):
       raise ValueError
   except ValueError:
     msg = inliner.reporter.error(
-         'Invalid trac ticket: %s' % (text), line=lineno)
+         'Invalid trac ticket: %s' % text, line=lineno)
+    prb = inliner.problematic(rawtext, rawtext, msg)
+
+    return ([prb], [msg])
+
+  app = inliner.document.settings.env.app
+  link_text = 'ticket %s' % unescape(str(ticket_num))
+
+  return (
+    [make_link_node(rawtext, app, 'trac_url', link_text, str(ticket_num), options)],
+    [],
+  )
+
+
+def role_spec(name, rawtext, text, lineno, inliner, options={}, content=[]):
+  """
+  Aliases :spec:`25b0d43` to 'https://gitweb.torproject.org/torspec.git/commitdiff/25b0d43'.
+  """
+
+  # checking if the input is a valid short commit id
+
+  if not re.match('^[0-9a-f]{7}$', text):
+    msg = inliner.reporter.error(
+         'Spec tag expects a short commit id (seven hex characters): %s' % text, line=lineno)
     prb = inliner.problematic(rawtext, rawtext, msg)
 
     return ([prb], [msg])
@@ -33,32 +57,32 @@ def role_trac(name, rawtext, text, lineno, inliner, options={}, content=[]):
   app = inliner.document.settings.env.app
 
   return (
-    [make_link_node(rawtext, app, 'ticket', str(ticket_num), options)],
+    [make_link_node(rawtext, app, 'spec_url', 'spec', text, options)],
     [],
   )
 
 
-def make_link_node(rawtext, app, link_type, slug, options):
+def make_link_node(rawtext, app, url_type, link_text, slug, options):
   """
   Creates a link to a trac ticket.
 
   :param rawtext: text being replaced with link node
   :param app: sphinx application context
-  :param link_type: link type (issue, changeset, etc.)
+  :param url_type: base for our url
+  :param link_text: text for the link
   :param slug: ID of the thing to link to
   :param options: options dictionary passed to role func
   """
 
-  trac_base_url = getattr(app.config, 'trac_url', None)
+  base_url = getattr(app.config, url_type, None)
 
-  if not trac_base_url:
-    raise ValueError('trac_url is not set')
+  if not base_url:
+    raise ValueError("'%s' isn't set in our config" % url_type)
 
-  ref = trac_base_url.rstrip('/') + '/' + slug
+  ref = base_url.rstrip('/') + '/' + slug
   set_classes(options)
-  name = link_type + ' ' + unescape(slug)  # sets the text to 'ticket 345'
 
-  return reference(rawtext, name, refuri = ref, **options)
+  return reference(rawtext, link_text, refuri = ref, **options)
 
 
 def setup(app):
@@ -70,3 +94,6 @@ def setup(app):
 
   app.add_role('trac', role_trac)
   app.add_config_value('trac_url', None, 'env')
+
+  app.add_role('spec', role_spec)
+  app.add_config_value('spec_url', None, 'env')
