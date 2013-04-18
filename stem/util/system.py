@@ -799,7 +799,8 @@ def _set_argv(process_name):
   zero_size = max(len(current_name), len(process_name))
 
   ctypes.memset(argc.contents, 0, zero_size + 1)  # null terminate the string's end
-  ctypes.memmove(argc.contents, process_name, len(process_name))
+  process_name_encoded = process_name.encode('utf8')
+  ctypes.memmove(argc.contents, process_name_encoded, len(process_name))
   _PROCESS_NAME = process_name
 
 
