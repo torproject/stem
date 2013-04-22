@@ -58,7 +58,6 @@ OPT = "auist:l:h"
 OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=", "test=", "log=", "tor=", "help"]
 
 CONFIG = stem.util.conf.config_dict("test", {
-  "target.prereq": {},
   "target.torrc": {},
   "integ.test_directory": "./test/data",
 })
@@ -68,7 +67,7 @@ SRC_PATHS = [os.path.join(STEM_BASE, path) for path in (
   'test',
   'run_tests.py',
   os.path.join('docs', 'republish.py'),
-  os.path.join('docs', 'trac.py'),
+  os.path.join('docs', 'roles.py'),
 )]
 
 LOG_TYPE_ERROR = """\
@@ -109,6 +108,7 @@ def main():
     "INITIALISING",
     Task("checking stem version", test.util.check_stem_version),
     Task("checking python version", test.util.check_python_version),
+    Task("checking pycrypto version", test.util.check_pycrypto_version),
     Task("checking pyflakes version", test.util.check_pyflakes_version),
     Task("checking pep8 version", test.util.check_pep8_version),
     Task("checking for orphaned .pyc files", test.util.clean_orphaned_pyc, (SRC_PATHS,)),
@@ -172,9 +172,9 @@ def main():
     for target in args.run_targets:
       # check if we meet this target's tor version prerequisites
 
-      target_prereq = CONFIG["target.prereq"].get(target)
+      target_prereq = test.util.get_prereq(target)
 
-      if target_prereq and our_version < stem.version.Requirement[target_prereq]:
+      if target_prereq and our_version < target_prereq:
         skipped_targets.append(target)
         continue
 
@@ -214,13 +214,13 @@ def main():
           for lingering_thread in active_threads:
             println("  %s" % lingering_thread, ERROR)
 
-          error_tracker.note_error()
+          error_tracker.register_error()
           break
       except KeyboardInterrupt:
         println("  aborted starting tor: keyboard interrupt\n", ERROR)
         break
       except OSError:
-        error_tracker.note_error()
+        error_tracker.register_error()
       finally:
         integ_runner.stop()
 
@@ -228,7 +228,7 @@ def main():
       println()
 
       for target in skipped_targets:
-        req_version = stem.version.Requirement[CONFIG["target.prereq"][target]]
+        req_version = test.util.get_prereq(target)
         println("Unable to run target %s, this requires tor version %s" % (target, req_version), ERROR)
 
       println()

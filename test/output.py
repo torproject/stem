@@ -186,7 +186,7 @@ class ErrorTracker(object):
     self._category = None
     self._error_noted = False
 
-  def note_error(self):
+  def register_error(self):
     """
     If called then has_errors_occured() will report that an error has occured,
     even if we haven't encountered an error message in the tests.

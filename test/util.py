@@ -9,6 +9,7 @@ Helper functions for our test framework.
   get_unit_tests - provides our unit tests
   get_integ_tests - provides our integration tests
 
+  get_prereq - provides the tor version required to run the given target
   get_help_message - provides usage information for running our tests
   get_python3_destination - location where a python3 copy of stem is exported to
   get_stylistic_issues - checks for PEP8 and other stylistic issues
@@ -23,6 +24,7 @@ Tasks are...
   Initialization
   |- check_stem_version - checks our version of stem
   |- check_python_version - checks our version of python
+  |- check_pycrypto_version - checks our version of pycrypto
   |- check_pyflakes_version - checks our version of pyflakes
   |- check_pep8_version - checks our version of pep8
   |- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
@@ -41,8 +43,10 @@ import shutil
 import sys
 
 import stem
+import stem.prereq
 import stem.util.conf
 import stem.util.system
+import stem.version
 
 import test.output
 
@@ -51,6 +55,7 @@ from test.output import STATUS, ERROR, NO_NL, println
 CONFIG = stem.util.conf.config_dict("test", {
   "msg.help": "",
   "target.description": {},
+  "target.prereq": {},
   "pep8.ignore": [],
   "pyflakes.ignore": [],
   "integ.test_directory": "./test/data",
@@ -148,6 +153,25 @@ def get_help_message():
   help_msg += "\n"
 
   return help_msg
+
+
+def get_prereq(target):
+  """
+  Provides the tor version required to run the given target. If the target
+  doesn't have any prerequisite then this provides **None**.
+
+  :param Target target: target to provide the prerequisite for
+
+  :returns: :class:`~stem.version.Version` required to run the given target, or
+    **None** if there is no prerequisite
+  """
+
+  target_prereq = CONFIG["target.prereq"].get(target)
+
+  if target_prereq:
+    return stem.version.Requirement[target_prereq]
+  else:
+    return None
 
 
 def get_python3_destination():
@@ -296,6 +320,14 @@ def check_stem_version():
 
 def check_python_version():
   return '.'.join(map(str, sys.version_info[:3]))
+
+
+def check_pycrypto_version():
+  if stem.prereq.is_crypto_available():
+    import Crypto
+    return Crypto.__version__
+  else:
+    return "missing"
 
 
 def check_pyflakes_version():
