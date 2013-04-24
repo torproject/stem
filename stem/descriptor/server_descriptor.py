@@ -17,7 +17,6 @@ etc). This information is provided from a few sources...
 
   ServerDescriptor - Tor server descriptor.
     |- RelayDescriptor - Server descriptor for a relay.
-    |  +- is_valid - checks the signature against the descriptor content
     |
     |- BridgeDescriptor - Scrubbed server descriptor for a bridge.
     |  |- is_scrubbed - checks if our content has been properly scrubbed
@@ -30,6 +29,7 @@ etc). This information is provided from a few sources...
 """
 
 import base64
+import codecs
 import datetime
 import hashlib
 import re
@@ -649,9 +649,9 @@ class RelayDescriptor(ServerDescriptor):
     """
     Provides the digest of our descriptor's content.
 
-    :raises: ValueError if the digest canot be calculated
-
     :returns: the digest string encoded in uppercase hex
+
+    :raises: ValueError if the digest canot be calculated
     """
 
     if self._digest is None:
@@ -743,7 +743,7 @@ class RelayDescriptor(ServerDescriptor):
     ############################################################################
 
     try:
-      if decrypted_bytes.index('\x00\x01') != 0:
+      if decrypted_bytes.index(b'\x00\x01') != 0:
         raise ValueError("Verification failed, identifier missing")
     except ValueError:
       raise ValueError("Verification failed, malformed data")
@@ -752,20 +752,15 @@ class RelayDescriptor(ServerDescriptor):
       identifier_offset = 2
 
       # find the separator
-      seperator_index = decrypted_bytes.index('\x00', identifier_offset)
+      seperator_index = decrypted_bytes.index(b'\x00', identifier_offset)
     except ValueError:
       raise ValueError("Verification failed, seperator not found")
 
-    digest = decrypted_bytes[seperator_index + 1:]
-
-    # The local digest is stored in uppercase hex;
-    #  - so decode it from hex
-    #  - and convert it to lower case
-
-    local_digest = self.digest().lower().decode('hex')
+    digest = codecs.encode(decrypted_bytes[seperator_index + 1:], 'hex_codec').upper()
+    local_digest = self.digest()
 
     if digest != local_digest:
-      raise ValueError("Decrypted digest does not match local digest")
+      raise ValueError("Decrypted digest does not match local digest (calculated: %s, local: %s)" % (digest, local_digest))
 
   def _parse(self, entries, validate):
     entries = dict(entries)  # shallow copy since we're destructive
