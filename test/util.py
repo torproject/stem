@@ -10,6 +10,7 @@ Helper functions for our test framework.
   get_integ_tests - provides our integration tests
 
   get_prereq - provides the tor version required to run the given target
+  get_torrc_entries - provides the torrc entries for a given target
   get_help_message - provides usage information for running our tests
   get_python3_destination - location where a python3 copy of stem is exported to
   get_stylistic_issues - checks for PEP8 and other stylistic issues
@@ -56,6 +57,7 @@ CONFIG = stem.util.conf.config_dict("test", {
   "msg.help": "",
   "target.description": {},
   "target.prereq": {},
+  "target.torrc": {},
   "pep8.ignore": [],
   "pyflakes.ignore": [],
   "integ.test_directory": "./test/data",
@@ -172,6 +174,35 @@ def get_prereq(target):
     return stem.version.Requirement[target_prereq]
   else:
     return None
+
+
+def get_torrc_entries(target):
+  """
+  Provides the torrc entries used to run the given target.
+
+  :param Target target: target to provide the custom torrc contents of
+
+  :returns: list of :class:`~test.runner.Torrc` entries for the given target
+
+  :raises: **ValueError** if the target.torrc config has entries that don't map
+    to test.runner.Torrc
+  """
+
+  # converts the 'target.torrc' csv into a list of test.runner.Torrc enums
+
+  config_csv = CONFIG["target.torrc"].get(target)
+  torrc_opts = []
+
+  if config_csv:
+    for opt in config_csv.split(','):
+      opt = opt.strip()
+
+      if opt in test.runner.Torrc.keys():
+        torrc_opts.append(test.runner.Torrc[opt])
+      else:
+        raise ValueError("'%s' isn't a test.runner.Torrc enumeration" % opt)
+
+  return torrc_opts
 
 
 def get_python3_destination():

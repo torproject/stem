@@ -181,21 +181,7 @@ def main():
       error_tracker.set_category(target)
 
       try:
-        # converts the 'target.torrc' csv into a list of test.runner.Torrc enums
-        config_csv = CONFIG["target.torrc"].get(target)
-        torrc_opts = []
-
-        if config_csv:
-          for opt in config_csv.split(','):
-            opt = opt.strip()
-
-            if opt in test.runner.Torrc.keys():
-              torrc_opts.append(test.runner.Torrc[opt])
-            else:
-              println("'%s' isn't a test.runner.Torrc enumeration" % opt)
-              sys.exit(1)
-
-        integ_runner.start(target, args.attribute_targets, args.tor_path, extra_torrc_opts = torrc_opts)
+        integ_runner.start(target, args.attribute_targets, args.tor_path, extra_torrc_opts = test.util.get_torrc_entries(target))
 
         println("Running tests...\n", STATUS)
 
@@ -218,6 +204,11 @@ def main():
           break
       except KeyboardInterrupt:
         println("  aborted starting tor: keyboard interrupt\n", ERROR)
+        break
+      except ValueError, exc:
+        # can arise if get_torrc_entries() runs into a bad settings.cfg data
+
+        println(exc, ERROR)
         break
       except OSError:
         error_tracker.register_error()
