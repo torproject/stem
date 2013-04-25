@@ -283,7 +283,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     Provides the hex encoded sha1 of our content. This value is part of the
     network status entry for this relay.
 
-    :returns: **str** with the upper-case hex digest value for this server descriptor
+    :returns: **unicode** with the upper-case hex digest value for this server descriptor
     """
 
     raise NotImplementedError("Unsupported Operation: this should be implemented by the ServerDescriptor subclass")
@@ -668,7 +668,7 @@ class RelayDescriptor(ServerDescriptor):
       if start >= 0 and sig_start > 0 and end > start:
         for_digest = raw_descriptor[start:end]
         digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(for_digest))
-        self._digest = digest_hash.hexdigest().upper()
+        self._digest = stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
       else:
         raise ValueError("unable to calculate digest for descriptor")
 
@@ -756,7 +756,9 @@ class RelayDescriptor(ServerDescriptor):
     except ValueError:
       raise ValueError("Verification failed, seperator not found")
 
-    digest = codecs.encode(decrypted_bytes[seperator_index + 1:], 'hex_codec').upper()
+    digest_hex = codecs.encode(decrypted_bytes[seperator_index + 1:], 'hex_codec')
+    digest = stem.util.str_tools._to_unicode(digest_hex.upper())
+
     local_digest = self.digest()
 
     if digest != local_digest:
@@ -852,7 +854,7 @@ class BridgeDescriptor(ServerDescriptor):
         if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
           raise ValueError("Router digest line had an invalid sha1 digest: %s" % line)
 
-        self._digest = value
+        self._digest = stem.util.str_tools._to_unicode(value)
         del entries["router-digest"]
 
     ServerDescriptor._parse(self, entries, validate)
