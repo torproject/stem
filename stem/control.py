@@ -675,6 +675,19 @@ class Controller(BaseController):
 
     self.add_event_listener(_sighup_listener, EventType.SIGNAL)
 
+    def _confchanged_listener(event):
+      if self.is_caching_enabled():
+        for param, value in event.config.items():
+          cache_key = "getconf.%s" % param.lower()
+
+          if cache_key in self._request_cache:
+            del self._request_cache[cache_key]
+
+          if param.lower() == "exitpolicy" and "exit_policy" in self._request_cache:
+            del self._request_cache["exit_policy"]
+
+    self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
+
   def connect(self):
     super(Controller, self).connect()
     self.clear_cache()
