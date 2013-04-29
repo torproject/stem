@@ -54,9 +54,16 @@ Download
          % pip install stem
 
    * - .. image:: /_static/section/download/debian.png
-     - .. image:: /_static/label/debian.png
+          :target: http://packages.debian.org/sid/python-stem
 
-       `Coming soon <http://bugs.debian.org/697880>`_
+     - .. image:: /_static/label/debian.png
+          :target: http://packages.debian.org/sid/python-stem
+
+       Package maintained by Dererk for Debian.
+
+       ::
+
+         % apt-get install python-stem
 
    * - .. image:: /_static/section/download/redhat.png
      - .. image:: /_static/label/redhat.png
