@@ -32,6 +32,10 @@ TEST_ROUTER_STATUS_ENTRY = None
 
 
 class TestController(unittest.TestCase):
+  # TODO: We should find an event we can reliably trigger rather than using BW
+  # events with sleeps. This both slows our tests and can be unreliable on
+  # systems under a heavy load.
+
   def test_from_port(self):
     """
     Basic sanity check for the from_port constructor.
@@ -177,9 +181,10 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       controller.add_event_listener(listener, EventType.BW)
 
-      # get a BW event or two
+      # Get a BW event or two. These should be emitted each second but under
+      # heavy system load that's not always the case.
 
-      event_notice.wait(2)
+      event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)
 
       # disconnect and check that we stop getting events
@@ -196,7 +201,7 @@ class TestController(unittest.TestCase):
       controller.connect()
       controller.authenticate(password = test.runner.CONTROL_PASSWORD)
 
-      event_notice.wait(2)
+      event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)
 
       # disconnect
@@ -210,7 +215,7 @@ class TestController(unittest.TestCase):
       controller.connect()
       stem.connection.authenticate(controller, password = test.runner.CONTROL_PASSWORD)
 
-      event_notice.wait(2)
+      event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)
 
       # disconnect
@@ -232,7 +237,7 @@ class TestController(unittest.TestCase):
         else:
           controller.msg('AUTHENTICATE')
 
-        event_notice.wait(2)
+        event_notice.wait(4)
         self.assertTrue(len(event_buffer) >= 1)
 
   def test_getinfo(self):
