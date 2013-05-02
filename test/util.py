@@ -279,6 +279,8 @@ def get_stylistic_issues(paths):
           file_issues.append((index + 1, "contains a windows newline"))
         elif content != content.rstrip():
           file_issues.append((index + 1, "line has trailing whitespace"))
+        elif content.lstrip().startswith("except") and content.endswith(", exc:"):
+          file_issues.append((index + 1, "except clause should use 'as', not comma"))
 
       if file_issues:
         issues[file_path] = file_issues
