@@ -357,7 +357,7 @@ class Config(object):
 
     try:
       user_config.load("/home/atagar/myConfig")
-    except IOError, exc:
+    except IOError as exc:
       print "Unable to load the user's config: %s" % exc
 
     # This replace the contents of ssh_config with the values from the user's

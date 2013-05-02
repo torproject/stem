@@ -579,7 +579,7 @@ def _parse_v_line(desc, value, validate):
   if value.startswith("Tor "):
     try:
       desc.version = stem.version.Version(value[4:])
-    except ValueError, exc:
+    except ValueError as exc:
       if validate:
         raise ValueError("%s has a malformed tor version (%s): v %s" % (desc._name(), exc, value))
 
@@ -639,7 +639,7 @@ def _parse_p_line(desc, value, validate):
 
   try:
     desc.exit_policy = stem.exit_policy.MicroExitPolicy(value)
-  except ValueError, exc:
+  except ValueError as exc:
     if not validate:
       return
 

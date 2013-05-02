@@ -597,7 +597,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             self.dir_v2_share = percentage
           elif keyword == "dirreq-v3-share":
             self.dir_v3_share = percentage
-        except ValueError, exc:
+        except ValueError as exc:
           if validate:
             raise ValueError("Value can't be parsed as a percentage: %s" % line)
       elif keyword in ("cell-processed-cells", "cell-queued-cells", "cell-time-in-queue"):
@@ -656,7 +656,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           elif keyword == "dirreq-stats-end":
             self.dir_stats_end = timestamp
             self.dir_stats_interval = interval
-        except ValueError, exc:
+        except ValueError as exc:
           if validate:
             raise exc
       elif keyword == "conn-bi-direct":
@@ -676,7 +676,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
           self.conn_bi_direct_read = int(stats[1])
           self.conn_bi_direct_write = int(stats[2])
           self.conn_bi_direct_both = int(stats[3])
-        except ValueError, exc:
+        except ValueError as exc:
           if validate:
             raise exc
       elif keyword in ("read-history", "write-history", "dirreq-read-history", "dirreq-write-history"):
@@ -707,7 +707,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
             self.dir_write_history_end = timestamp
             self.dir_write_history_interval = interval
             self.dir_write_history_values = history_values
-        except ValueError, exc:
+        except ValueError as exc:
           if validate:
             raise exc
       elif keyword in ("exit-kibibytes-written", "exit-kibibytes-read", "exit-streams-opened"):

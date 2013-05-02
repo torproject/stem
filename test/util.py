@@ -586,7 +586,7 @@ class Task(object):
       if isinstance(result, (list, tuple)):
         for line in result:
           println("    %s" % line, STATUS)
-    except Exception, exc:
+    except Exception as exc:
       output_msg = str(exc)
 
       if not output_msg or self.is_required:

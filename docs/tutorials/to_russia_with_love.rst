@@ -41,7 +41,7 @@ In the following example we're using stem to `start Tor <../api/process.html>`_,
     try:
       query.perform()
       return output.getvalue()
-    except pycurl.error, exc:
+    except pycurl.error as exc:
       return "Unable to reach %s (%s)" % (url, exc)
 
   # Start an instance of tor configured to only exit through Russia. This prints

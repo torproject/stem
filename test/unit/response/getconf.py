@@ -102,7 +102,7 @@ class TestGetConfResponse(unittest.TestCase):
 
     try:
       stem.response.convert("GETCONF", control_message)
-    except stem.InvalidArguments, exc:
+    except stem.InvalidArguments as exc:
       self.assertEqual(exc.arguments, ["brickroad", "submarine"])
 
   def test_invalid_content(self):

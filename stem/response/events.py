@@ -357,7 +357,7 @@ class CircuitEvent(Event):
     if self.created is not None:
       try:
         self.created = str_tools._parse_iso_timestamp(self.created)
-      except ValueError, exc:
+      except ValueError as exc:
         raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
 
     if not tor_tools.is_valid_circuit_id(self.id):
@@ -413,7 +413,7 @@ class CircMinorEvent(Event):
     if self.created is not None:
       try:
         self.created = str_tools._parse_iso_timestamp(self.created)
-      except ValueError, exc:
+      except ValueError as exc:
         raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
 
     if not tor_tools.is_valid_circuit_id(self.id):

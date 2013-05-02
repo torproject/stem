@@ -289,7 +289,7 @@ def external_ip(host, port):
   try:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, int(port)))
-  except Exception, exc:
+  except Exception as exc:
     raise SocketError("Failed to connect to the socks server: " + str(exc))
 
   try:
@@ -300,7 +300,7 @@ def external_ip(host, port):
     # everything after the blank line is the 'data' in a HTTP response
     # The response data for our request for request should be an IP address + '\n'
     return response[response.find("\r\n\r\n"):].strip()
-  except Exception, exc:
+  except Exception as exc:
     return None
 
 

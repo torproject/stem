@@ -360,11 +360,11 @@ def get_connections(pid):
           conn.append((local_ip, local_port, foreign_ip, foreign_port))
 
       proc_file.close()
-    except IOError, exc:
+    except IOError as exc:
       exc = IOError("unable to read '%s': %s" % (proc_file_path, exc))
       _log_failure(parameter, exc)
       raise exc
-    except Exception, exc:
+    except Exception as exc:
       exc = IOError("unable to parse '%s': %s" % (proc_file_path, exc))
       _log_failure(parameter, exc)
       raise exc
@@ -465,7 +465,7 @@ def _get_lines(file_path, line_prefixes, parameter):
       raise IOError(msg)
     else:
       return results
-  except IOError, exc:
+  except IOError as exc:
     _log_failure(parameter, exc)
     raise exc
 

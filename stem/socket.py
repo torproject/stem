@@ -85,7 +85,7 @@ class ControlSocket(object):
           raise stem.SocketClosed()
 
         send_message(self._socket_file, message, raw)
-      except stem.SocketClosed, exc:
+      except stem.SocketClosed as exc:
         # if send_message raises a SocketClosed then we should properly shut
         # everything down
 
@@ -117,7 +117,7 @@ class ControlSocket(object):
           raise stem.SocketClosed()
 
         return recv_message(socket_file)
-      except stem.SocketClosed, exc:
+      except stem.SocketClosed as exc:
         # If recv_message raises a SocketClosed then we should properly shut
         # everything down. However, there's a couple cases where this will
         # cause deadlock...
@@ -340,7 +340,7 @@ class ControlPort(ControlSocket):
       control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       control_socket.connect((self._control_addr, self._control_port))
       return control_socket
-    except socket.error, exc:
+    except socket.error as exc:
       raise stem.SocketError(exc)
 
 
@@ -384,7 +384,7 @@ class ControlSocketFile(ControlSocket):
       control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
       control_socket.connect(self._socket_path)
       return control_socket
-    except socket.error, exc:
+    except socket.error as exc:
       raise stem.SocketError(exc)
 
 
@@ -429,7 +429,7 @@ def send_message(control_file, message, raw = False):
 
     log_message = message.replace("\r\n", "\n").rstrip()
     log.trace("Sent to tor:\n" + log_message)
-  except socket.error, exc:
+  except socket.error as exc:
     log.info("Failed to send message: %s" % exc)
 
     # When sending there doesn't seem to be a reliable method for
@@ -480,7 +480,7 @@ def recv_message(control_file):
       prefix = logging_prefix % "SocketClosed"
       log.info(prefix + "socket file has been closed")
       raise stem.SocketClosed("socket file has been closed")
-    except (socket.error, ValueError), exc:
+    except (socket.error, ValueError) as exc:
       # When disconnected we get...
       #
       # Python 2:
@@ -542,7 +542,7 @@ def recv_message(control_file):
 
           if stem.prereq.is_python_3():
             line = stem.util.str_tools._to_unicode(line)
-        except socket.error, exc:
+        except socket.error as exc:
           prefix = logging_prefix % "SocketClosed"
           log.info(prefix + "received an exception while mid-way through a data reply (exception: \"%s\", read content: \"%s\")" % (exc, log.escape(raw_content)))
           raise stem.SocketClosed(exc)

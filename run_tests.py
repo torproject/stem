@@ -81,7 +81,7 @@ def main():
 
   try:
     stem.prereq.check_requirements()
-  except ImportError, exc:
+  except ImportError as exc:
     println("%s\n" % exc)
     sys.exit(1)
 
@@ -90,10 +90,10 @@ def main():
 
   try:
     args = _get_args(sys.argv[1:])
-  except getopt.GetoptError, exc:
+  except getopt.GetoptError as exc:
     println("%s (for usage provide --help)" % exc)
     sys.exit(1)
-  except ValueError, exc:
+  except ValueError as exc:
     println(str(exc))
     sys.exit(1)
 
@@ -205,7 +205,7 @@ def main():
       except KeyboardInterrupt:
         println("  aborted starting tor: keyboard interrupt\n", ERROR)
         break
-      except ValueError, exc:
+      except ValueError as exc:
         # can arise if get_torrc_entries() runs into a bad settings.cfg data
 
         println(exc, ERROR)

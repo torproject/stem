@@ -475,7 +475,7 @@ class TestController(unittest.TestCase):
         try:
           controller.set_conf("invalidkeyboo", "abcde")
           self.fail()
-        except stem.InvalidArguments, exc:
+        except stem.InvalidArguments as exc:
           self.assertEqual(["invalidkeyboo"], exc.arguments)
 
         # resets configuration parameters
@@ -499,7 +499,7 @@ class TestController(unittest.TestCase):
             "bombay": "vadapav",
           })
           self.fail()
-        except stem.InvalidArguments, exc:
+        except stem.InvalidArguments as exc:
           self.assertEqual(["bombay"], exc.arguments)
 
         # context-sensitive keys (the only retched things for which order matters)
@@ -544,7 +544,7 @@ class TestController(unittest.TestCase):
         try:
           controller.load_conf("Blahblah blah")
           self.fail()
-        except stem.InvalidArguments, exc:
+        except stem.InvalidArguments as exc:
           self.assertEqual(["Blahblah"], exc.arguments)
 
         # valid config
@@ -617,7 +617,7 @@ class TestController(unittest.TestCase):
 
       try:
         controller.enable_feature(["NOT", "A", "FEATURE"])
-      except stem.InvalidArguments, exc:
+      except stem.InvalidArguments as exc:
         self.assertEqual(["NOT"], exc.arguments)
       else:
         self.fail()

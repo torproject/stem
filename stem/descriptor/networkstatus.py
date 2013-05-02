@@ -956,7 +956,7 @@ def _parse_int_mappings(keyword, value, validate):
 
       results[entry_key] = entry_value
       seen_keys.append(entry_key)
-    except ValueError, exc:
+    except ValueError as exc:
       if not validate:
         continue
 

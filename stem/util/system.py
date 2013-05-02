@@ -681,7 +681,7 @@ def call(command, default = UNDEFINED):
       return stdout.decode("utf-8", "replace").splitlines()
     else:
       return []
-  except OSError, exc:
+  except OSError as exc:
     log.debug("System call (failed): %s (error: %s)" % (command, exc))
 
     if default != UNDEFINED:

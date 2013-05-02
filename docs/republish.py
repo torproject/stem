@@ -55,7 +55,7 @@ def republish_site():
 if __name__ == '__main__':
   try:
     opts = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)[0]
-  except getopt.GetoptError, exc:
+  except getopt.GetoptError as exc:
     print "%s (for usage provide --help)" % exc
     sys.exit(1)
 
@@ -83,7 +83,7 @@ if __name__ == '__main__':
       try:
         latest_run = time.time()
         republish_site()
-      except OSError, exc:
+      except OSError as exc:
         LOGGER.log(logging.WARN, str(exc))
   else:
     republish_site()
