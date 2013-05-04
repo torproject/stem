@@ -135,6 +135,7 @@ class ControlMessage(object):
   never empty.
   """
 
+  @staticmethod
   def from_str(content):
     """
     Provides a ControlMessage for the given content.
@@ -145,8 +146,6 @@ class ControlMessage(object):
     """
 
     return stem.socket.recv_message(StringIO.StringIO(content))
-
-  from_str = staticmethod(from_str)
 
   def __init__(self, parsed_content, raw_content):
     if not parsed_content:

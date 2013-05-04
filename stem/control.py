@@ -617,6 +617,7 @@ class Controller(BaseController):
   BaseController and provides a more user friendly API for library users.
   """
 
+  @staticmethod
   def from_port(address = "127.0.0.1", port = 9051):
     """
     Constructs a :class:`~stem.socket.ControlPort` based Controller.
@@ -637,6 +638,7 @@ class Controller(BaseController):
     control_port = stem.socket.ControlPort(address, port)
     return Controller(control_port)
 
+  @staticmethod
   def from_socket_file(path = "/var/run/tor/control"):
     """
     Constructs a :class:`~stem.socket.ControlSocketFile` based Controller.
@@ -650,9 +652,6 @@ class Controller(BaseController):
 
     control_socket = stem.socket.ControlSocketFile(path)
     return Controller(control_socket)
-
-  from_port = staticmethod(from_port)
-  from_socket_file = staticmethod(from_socket_file)
 
   def __init__(self, control_socket):
     super(Controller, self).__init__(control_socket)
