@@ -216,7 +216,7 @@ def save_processed_files(path, processed_files):
 
     if not os.path.exists(path_dir):
       os.makedirs(path_dir)
-  except OSError, exc:
+  except OSError as exc:
     raise IOError(exc)
 
   with open(path, "w") as output_file:
@@ -461,7 +461,7 @@ class DescriptorReader(object):
       last_modified = int(os.stat(target).st_mtime)
       last_used = self._processed_files.get(target)
       new_processed_files[target] = last_modified
-    except OSError, exc:
+    except OSError as exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
       return
 
@@ -515,11 +515,11 @@ class DescriptorReader(object):
 
           self._unreturned_descriptors.put(desc)
           self._iter_notice.set()
-    except TypeError, exc:
+    except TypeError as exc:
       self._notify_skip_listeners(target, UnrecognizedType(mime_type))
-    except ValueError, exc:
+    except ValueError as exc:
       self._notify_skip_listeners(target, ParsingFailure(exc))
-    except IOError, exc:
+    except IOError as exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
 
   def _handle_archive(self, target):
@@ -546,13 +546,13 @@ class DescriptorReader(object):
               desc._set_archive_path(entry.name)
               self._unreturned_descriptors.put(desc)
               self._iter_notice.set()
-          except TypeError, exc:
+          except TypeError as exc:
             self._notify_skip_listeners(target, ParsingFailure(exc))
-          except ValueError, exc:
+          except ValueError as exc:
             self._notify_skip_listeners(target, ParsingFailure(exc))
           finally:
             entry.close()
-    except IOError, exc:
+    except IOError as exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
     finally:
       if tar_file:

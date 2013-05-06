@@ -326,7 +326,7 @@ class Runner(object):
         # revert our cwd back to normal
         if Target.RELATIVE in self.attribute_targets:
           os.chdir(original_cwd)
-      except OSError, exc:
+      except OSError as exc:
         raise exc
 
   def stop(self):
@@ -615,7 +615,7 @@ class Runner(object):
       else:
         os.makedirs(self._test_dir)
         println("done", STATUS)
-    except OSError, exc:
+    except OSError as exc:
       test.output.print_error("failed (%s)" % exc)
       raise exc
 
@@ -636,7 +636,7 @@ class Runner(object):
 
           os.chmod(socket_dir, 0700)
           println("done", STATUS)
-      except OSError, exc:
+      except OSError as exc:
         test.output.print_error("failed (%s)" % exc)
         raise exc
 
@@ -677,7 +677,7 @@ class Runner(object):
         println("    %s" % line.strip(), SUBSTATUS)
 
       println()
-    except Exception, exc:
+    except Exception as exc:
       test.output.print_error("failed (%s)\n" % exc)
       raise OSError(exc)
 
@@ -707,6 +707,6 @@ class Runner(object):
 
       runtime = time.time() - start_time
       println("  done (%i seconds)\n" % runtime, STATUS)
-    except OSError, exc:
+    except OSError as exc:
       test.output.print_error("  failed to start tor: %s\n" % exc)
       raise exc

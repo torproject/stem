@@ -522,7 +522,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
 
     try:
       block_contents = _get_pseudo_pgp_block(remaining_lines)
-    except ValueError, exc:
+    except ValueError as exc:
       if not validate:
         continue
 

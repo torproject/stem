@@ -334,7 +334,7 @@ class BaseController(object):
             self._post_authentication()
 
           return response
-      except stem.SocketClosed, exc:
+      except stem.SocketClosed as exc:
         # If the recv() thread caused the SocketClosed then we could still be
         # in the process of closing. Calling close() here so that we can
         # provide an assurance to the caller that when we raise a SocketClosed
@@ -583,7 +583,7 @@ class BaseController(object):
         else:
           # response to a msg() call
           self._reply_queue.put(control_message)
-      except stem.ControllerError, exc:
+      except stem.ControllerError as exc:
         # Assume that all exceptions belong to the reader. This isn't always
         # true, but the msg() call can do a better job of sorting it out.
         #
@@ -786,7 +786,7 @@ class Controller(BaseController):
         return reply
       else:
         return reply.values()[0]
-    except stem.ControllerError, exc:
+    except stem.ControllerError as exc:
       # bump geoip failure count if...
       # * we're caching results
       # * this was soley a geoip lookup
@@ -832,7 +832,7 @@ class Controller(BaseController):
         self._request_cache["version"] = version
 
       return self._request_cache["version"]
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -876,7 +876,7 @@ class Controller(BaseController):
           self._request_cache["exit_policy"] = stem.exit_policy.get_config_policy(policy)
 
         return self._request_cache["exit_policy"]
-      except Exception, exc:
+      except Exception as exc:
         if default == UNDEFINED:
           raise exc
         else:
@@ -928,7 +928,7 @@ class Controller(BaseController):
           raise stem.ProtocolError("Invalid port for a SOCKS listener: %s" % port)
 
       return [(addr, int(port)) for (addr, port) in proxy_addrs]
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -955,7 +955,7 @@ class Controller(BaseController):
 
     try:
       return stem.connection.get_protocolinfo(self)
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -990,7 +990,7 @@ class Controller(BaseController):
 
       desc_content = self.get_info(query)
       return stem.descriptor.microdescriptor.Microdescriptor(str_tools._to_bytes(desc_content))
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -1018,7 +1018,7 @@ class Controller(BaseController):
     try:
       try:
         data_directory = self.get_conf("DataDirectory")
-      except stem.ControllerError, exc:
+      except stem.ControllerError as exc:
         raise stem.OperationFailed(message = "Unable to determine the data directory (%s)" % exc)
 
       cached_descriptor_path = os.path.join(data_directory, "cached-microdescs")
@@ -1037,7 +1037,7 @@ class Controller(BaseController):
             raise stem.OperationFailed(message = "BUG: Descriptor reader provided non-microdescriptor content (%s)" % type(desc))
 
           yield desc
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -1079,7 +1079,7 @@ class Controller(BaseController):
 
       desc_content = self.get_info(query)
       return stem.descriptor.server_descriptor.RelayDescriptor(str_tools._to_bytes(desc_content))
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -1115,7 +1115,7 @@ class Controller(BaseController):
 
       for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(str_tools._to_bytes(desc_content))):
         yield desc
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -1153,7 +1153,7 @@ class Controller(BaseController):
 
       desc_content = self.get_info(query)
       return stem.descriptor.router_status_entry.RouterStatusEntryV2(str_tools._to_bytes(desc_content))
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -1190,7 +1190,7 @@ class Controller(BaseController):
 
       for desc in desc_iterator:
         yield desc
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -1345,7 +1345,7 @@ class Controller(BaseController):
 
       log.debug("GETCONF %s (runtime: %0.4f)" % (" ".join(lookup_params), time.time() - start_time))
       return self._get_conf_dict_to_response(reply, default, multiple)
-    except stem.ControllerError, exc:
+    except stem.ControllerError as exc:
       log.debug("GETCONF %s (failed: %s)" % (" ".join(lookup_params), exc))
 
       if default != UNDEFINED:
@@ -1730,7 +1730,7 @@ class Controller(BaseController):
           return circ
 
       raise ValueError("Tor presently does not have a circuit with the id of '%s'" % circuit_id)
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -1757,7 +1757,7 @@ class Controller(BaseController):
         circuits.append(circ_message)
 
       return circuits
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -1945,7 +1945,7 @@ class Controller(BaseController):
         streams.append(message)
 
       return streams
-    except Exception, exc:
+    except Exception as exc:
       if default == UNDEFINED:
         raise exc
       else:
@@ -2088,7 +2088,7 @@ class Controller(BaseController):
 
           logging_id = "stem.controller.event_reattach-%s" % "-".join(failed_events)
           log.log_once(logging_id, log.WARN, "We were unable to re-attach our event listeners to the new tor instance for: %s" % ", ".join(failed_events))
-      except stem.ProtocolError, exc:
+      except stem.ProtocolError as exc:
         log.warn("Unable to issue the SETEVENTS request to re-attach our listeners (%s)" % exc)
 
     # issue TAKEOWNERSHIP if we're the owning process for this tor instance
@@ -2105,7 +2105,7 @@ class Controller(BaseController):
 
         try:
           self.reset_conf("__OwningControllerProcess")
-        except stem.ControllerError, exc:
+        except stem.ControllerError as exc:
           log.warn("We were unable to reset tor's __OwningControllerProcess configuration. It will continue to periodically check if our pid exists. (%s)" % exc)
       else:
         log.warn("We were unable assert ownership of tor through TAKEOWNERSHIP, despite being configured to be the owning process through __OwningControllerProcess. (%s)" % response)
@@ -2199,7 +2199,7 @@ def _parse_circ_path(path):
   if path:
     try:
       return [_parse_circ_entry(entry) for entry in path.split(',')]
-    except stem.ProtocolError, exc:
+    except stem.ProtocolError as exc:
       # include the path with the exception
       raise stem.ProtocolError("%s: %s" % (exc, path))
   else:

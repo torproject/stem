@@ -113,7 +113,7 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
 
         try:
           self.tor_version = stem.version.Version(line.pop_mapping(True)[1])
-        except ValueError, exc:
+        except ValueError as exc:
           raise stem.ProtocolError(exc)
       else:
         log.debug("Unrecognized PROTOCOLINFO line type '%s', ignoring it: %s" % (line_type, line))

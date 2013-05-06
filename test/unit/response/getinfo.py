@@ -125,7 +125,7 @@ class TestGetInfoResponse(unittest.TestCase):
 
     try:
       stem.response.convert("GETINFO", control_message)
-    except stem.InvalidArguments, exc:
+    except stem.InvalidArguments as exc:
       self.assertEqual(exc.arguments, ["blackhole"])
 
   def test_invalid_multiline_content(self):

@@ -82,7 +82,7 @@ def get_system_tor_version(tor_cmd = "tor"):
 
     try:
       version_output = stem.util.system.call(version_cmd)
-    except OSError, exc:
+    except OSError as exc:
       # make the error message nicer if this is due to tor being unavialable
 
       if "No such file or directory" in str(exc):
@@ -104,7 +104,7 @@ def get_system_tor_version(tor_cmd = "tor"):
         try:
           version_str = last_line[12:-1]
           VERSION_CACHE[tor_cmd] = Version(version_str)
-        except ValueError, exc:
+        except ValueError as exc:
           raise IOError(exc)
       else:
         raise IOError("Unexpected response from '%s': %s" % (version_cmd, last_line))

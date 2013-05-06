@@ -400,7 +400,7 @@ class TestAuthenticate(unittest.TestCase):
           stem.connection.authenticate_safecookie(control_socket, auth_arg)
 
         test.runner.exercise_controller(self, control_socket)
-      except stem.connection.AuthenticationFailure, exc:
+      except stem.connection.AuthenticationFailure as exc:
         # authentication functions should re-attach on failure
         self.assertTrue(control_socket.is_alive())
 
