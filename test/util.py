@@ -224,6 +224,7 @@ def get_stylistic_issues(paths):
   * two space indentations
   * tabs are the root of all evil and should be shot on sight
   * standard newlines (\\n), not windows (\\r\\n) nor classic mac (\\r)
+  * checks that we're using 'as' for exceptions rather than a comma
 
   :param list paths: paths to search for stylistic issues
 
@@ -280,6 +281,14 @@ def get_stylistic_issues(paths):
         elif content != content.rstrip():
           file_issues.append((index + 1, "line has trailing whitespace"))
         elif content.lstrip().startswith("except") and content.endswith(", exc:"):
+          # Python 2.6 - 2.7 supports two forms for exceptions...
+          #
+          #   except ValueError, exc:
+          #   except ValueError as exc:
+          #
+          # The former is the old method and no longer supported in python 3
+          # going forward.
+
           file_issues.append((index + 1, "except clause should use 'as', not comma"))
 
       if file_issues:
