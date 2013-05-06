@@ -100,7 +100,7 @@ Where can I get past descriptors?
 
 Descriptor archives are available on `Tor's metrics site
 <https://metrics.torproject.org/data.html>`_. These archives can be read with
-the `DescriptorReader <api/descriptor/reader.html>`_...
+the `DescriptorReader <../api/descriptor/reader.html>`_...
 
 ::
 
@@ -119,7 +119,7 @@ As discussed above there are three methods for reading descriptors...
 
 * With the :class:`~stem.control.Controller` via methods like :func:`~stem.control.Controller.get_server_descriptors` and :func:`~stem.control.Controller.get_network_statuses`.
 * By reading the file directly with :func:`~stem.descriptor.__init__.parse_file`.
-* Reading with the `DescriptorReader <api/descriptor/reader.html>`_. This is best if you have you want to read everything from a directory or archive.
+* Reading with the `DescriptorReader <../api/descriptor/reader.html>`_. This is best if you have you want to read everything from a directory or archive.
 
 Now lets say you want to figure out who the *biggest* exit relays are. You
 could use any of the methods above, but for this example we'll use the
