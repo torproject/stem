@@ -261,6 +261,10 @@ class DescriptorReader(object):
     else:
       self._targets = target
 
+    # expand any relative paths we got
+
+    target = map(os.path.abspath, target)
+
     self._validate = validate
     self._follow_links = follow_links
     self._persistence_path = persistence_path
