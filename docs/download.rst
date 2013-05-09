@@ -13,6 +13,10 @@ Download
      License: GPL v2
      File: NuoveXT/128x128/apps/debian-logo.png
    
+   * Fedora
+     Source: https://en.wikipedia.org/wiki/File:Fedora_logo_and_wordmark.svg
+     Author: Unknown
+   
    * Red Hat
      Source: NuoveXT (http://nuovext.pwsp.net/)
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
@@ -65,10 +69,19 @@ Download
 
          % apt-get install python-stem
 
-   * - .. image:: /_static/section/download/redhat.png
-     - .. image:: /_static/label/redhat.png
+   * - .. image:: /_static/section/download/fedora.png
+          :target: https://apps.fedoraproject.org/packages/python-stem
 
-       `Coming soon <https://bugzilla.redhat.com/show_bug.cgi?id=928541>`_
+     - .. image:: /_static/label/fedora.png
+          :target: https://apps.fedoraproject.org/packages/python-stem
+
+       Packages maintained by Juan for Fedora. These include **python-stem**
+       (stem for python 2.x), **python3-stem** (stem for python 3.x), and
+       **python-stem-doc** (this website).
+
+       ::
+
+         % yum install python-stem
 
    * - .. image:: /_static/section/download/archlinux.png
           :target: https://aur.archlinux.org/packages/stem/
