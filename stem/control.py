@@ -756,7 +756,7 @@ class Controller(BaseController):
 
     # check for cached results
     from_cache = [param.lower() for param in params]
-    cached_results = self._get_cache(from_cache, "getinfo")
+    cached_results = self._get_cache_map(from_cache, "getinfo")
 
     reply = {}
     for key in cached_results.keys():
@@ -849,7 +849,7 @@ class Controller(BaseController):
       if not self.is_caching_enabled():
         return stem.version.Version(self.get_info("version"))
       else:
-        version = self._get_cache(["version"]).get("version", None)
+        version = self._get_cache("version")
 
         if not version:
           version = stem.version.Version(self.get_info("version"))
@@ -880,8 +880,7 @@ class Controller(BaseController):
     """
     with self._msg_lock:
       try:
-        config_policy = self._get_cache(["exit_policy"]).get("exit_policy",
-                                                             None)
+        config_policy = self._get_cache("exit_policy")
         if not config_policy:
           policy = []
 
@@ -1330,7 +1329,7 @@ class Controller(BaseController):
 
     # check for cached results
     from_cache = [param.lower() for param in lookup_params]
-    cached_results = self._get_cache(from_cache, "getconf")
+    cached_results = self._get_cache_map(from_cache, "getconf")
 
     reply = {}
     for key in cached_results.keys():
@@ -1597,7 +1596,19 @@ class Controller(BaseController):
         if not response.is_ok():
           raise stem.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
 
-  def _get_cache(self, params, func=None):
+  def _get_cache(self, param, func=None):
+    """
+    Queries cache for a configuration option.
+
+    :param str param: key to be queried in cache
+    :param str func: function prefix to keys
+
+    :returns: cached value corresponding to key or None if key wasn't found
+    """
+
+    return self._get_cache_map([param], func).get(param, None)
+
+  def _get_cache_map(self, params, func=None):
     """
     Queries multiple configuration options in cache atomically, returning a
     mapping of those options to their values.
