@@ -108,6 +108,14 @@ class TestController(unittest.TestCase):
     them. Then remove the listeners.
     """
 
+    # TODO: This test relies on the timing of BW events which has proved to
+    # be unreliable on our jenkins host (probably related to system load).
+    # This occures even with sizable sleeps so this test needs to be disabled
+    # until we can come up with a test that doesn't rely on event timing.
+
+    test.runner.skip(self, "(presently unreliable)")
+    return
+
     if test.runner.require_control(self):
       return
 
