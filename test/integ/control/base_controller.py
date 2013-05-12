@@ -221,14 +221,14 @@ class TestBaseController(unittest.TestCase):
       controller.close()
       self.assertEquals(controller, state_observer.controller)
       self.assertEquals(stem.control.State.CLOSED, state_observer.state)
-      self.assertTrue(state_observer.timestamp < time.time())
+      self.assertTrue(state_observer.timestamp <= time.time())
       self.assertTrue(state_observer.timestamp > time.time() - 1.0)
       state_observer.reset()
 
       controller.connect()
       self.assertEquals(controller, state_observer.controller)
       self.assertEquals(stem.control.State.INIT, state_observer.state)
-      self.assertTrue(state_observer.timestamp < time.time())
+      self.assertTrue(state_observer.timestamp <= time.time())
       self.assertTrue(state_observer.timestamp > time.time() - 1.0)
       state_observer.reset()
 
@@ -237,7 +237,7 @@ class TestBaseController(unittest.TestCase):
       self.assertRaises(stem.SocketClosed, controller.msg, "blarg")
       self.assertEquals(controller, state_observer.controller)
       self.assertEquals(stem.control.State.CLOSED, state_observer.state)
-      self.assertTrue(state_observer.timestamp < time.time())
+      self.assertTrue(state_observer.timestamp <= time.time())
       self.assertTrue(state_observer.timestamp > time.time() - 1.0)
       state_observer.reset()
 
@@ -257,6 +257,6 @@ class TestBaseController(unittest.TestCase):
       time.sleep(0.1)  # not much work going on so this doesn't need to be much
       self.assertEquals(controller, state_observer.controller)
       self.assertEquals(stem.control.State.CLOSED, state_observer.state)
-      self.assertTrue(state_observer.timestamp < time.time())
+      self.assertTrue(state_observer.timestamp <= time.time())
       self.assertTrue(state_observer.timestamp > time.time() - 1.0)
       state_observer.reset()
