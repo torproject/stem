@@ -43,6 +43,7 @@ The following are only available within stem's `git repository
   * :class:`~stem.response.events.AddrMapEvent` support for the new CACHED argument (:trac:`8596`, :spec:`25b0d43`)
   * :func:`~stem.control.Controller.attach_stream` could encounter an undocumented 555 response (:trac:`8701`, :spec:`7286576`)
   * :class:`~stem.descriptor.server_descriptor.RelayDescriptor` digest validation was broken with python 3 (:trac:`8755`)
+  * :func:`~stem.util.system.get_pid_by_name` can now pull for all processes with a given name
 
  * **Website**
 

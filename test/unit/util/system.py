@@ -37,6 +37,12 @@ GET_PID_BY_NAME_PS_BSD = [
   "   11   ??  Ss     5:47.36 DirectoryService",
   "   12   ??  Ss     3:01.44 notifyd"]
 
+GET_PID_BY_NAME_PS_BSD_MULTIPLE = [
+  "  PID   TT  STAT      TIME COMMAND",
+  "    1   ??  Ss     9:00.22 launchd",
+  "   10   ??  Ss     0:09.97 kextd",
+  "   41   ??  Ss     9:00.22 launchd"]
+
 GET_PID_BY_PORT_NETSTAT_RESULTS = [
   "Active Internet connections (only servers)",
   "Proto Recv-Q Send-Q Local Address           Foreign Address   State    PID/Program name",
@@ -141,6 +147,8 @@ class TestSystem(unittest.TestCase):
       expected_response = 1111 if test_input == "success" else None
       self.assertEquals(expected_response, system.get_pid_by_name(test_input))
 
+    self.assertEquals([123, 456, 789], system.get_pid_by_name("multiple_results", multiple = True))
+
   def test_get_pid_by_name_pidof(self):
     """
     Tests the get_pid_by_name function with pidof responses.
@@ -154,6 +162,8 @@ class TestSystem(unittest.TestCase):
     for test_input in responses:
       expected_response = 1111 if test_input == "success" else None
       self.assertEquals(expected_response, system.get_pid_by_name(test_input))
+
+    self.assertEquals([123, 456, 789], system.get_pid_by_name("multiple_results", multiple = True))
 
   def test_get_pid_by_name_ps_linux(self):
     """
@@ -170,6 +180,8 @@ class TestSystem(unittest.TestCase):
       expected_response = 1111 if test_input == "success" else None
       self.assertEquals(expected_response, system.get_pid_by_name(test_input))
 
+    self.assertEquals([123, 456, 789], system.get_pid_by_name("multiple_results", multiple = True))
+
   def test_get_pid_by_name_ps_bsd(self):
     """
     Tests the get_pid_by_name function with the bsd variant of ps.
@@ -180,6 +192,10 @@ class TestSystem(unittest.TestCase):
     self.assertEquals(1, system.get_pid_by_name("launchd"))
     self.assertEquals(11, system.get_pid_by_name("DirectoryService"))
     self.assertEquals(None, system.get_pid_by_name("blarg"))
+
+    mocking.mock(system.call, mock_call(system.GET_PID_BY_NAME_PS_BSD, GET_PID_BY_NAME_PS_BSD_MULTIPLE))
+
+    self.assertEquals([1, 41], system.get_pid_by_name("launchd", multiple = True))
 
   def test_get_pid_by_name_lsof(self):
     """
@@ -194,6 +210,8 @@ class TestSystem(unittest.TestCase):
     for test_input in responses:
       expected_response = 1111 if test_input == "success" else None
       self.assertEquals(expected_response, system.get_pid_by_name(test_input))
+
+    self.assertEquals([123, 456, 789], system.get_pid_by_name("multiple_results", multiple = True))
 
   def test_get_pid_by_port_netstat(self):
     """

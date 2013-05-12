@@ -201,8 +201,12 @@ class TestSystem(unittest.TestCase):
     lsof_prefix = stem.util.system.GET_PID_BY_NAME_LSOF % ""
     mocking.mock(stem.util.system.call, filter_system_call([lsof_prefix]))
 
-    tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
+    our_tor_pid = test.runner.get_runner().get_pid()
+
+    all_tor_pids = stem.util.system.get_pid_by_name("tor", multiple = True)
+
+    if len(all_tor_pids) == 1:
+      self.assertEquals(our_tor_pid, all_tor_pids[0])
 
   def test_get_pid_by_port(self):
     """

@@ -219,7 +219,7 @@ def is_running(command):
   return None
 
 
-def get_pid_by_name(process_name):
+def get_pid_by_name(process_name, multiple = False):
   """
   Attempts to determine the process id for a running process, using...
 
@@ -231,11 +231,15 @@ def get_pid_by_name(process_name):
        ps axc | egrep " <name>$" (bsd)
     4. lsof -tc <name>
 
-  Results with multiple instances of the process are discarded.
-
   :param str process_name: process name for which to fetch the pid
+  :param bool multiple: provides a list of all pids if **True**, otherwise
+    results with multiple processes are discarded
 
-  :returns: **int** with the process id, **None** if it can't be determined
+  :returns:
+    Response depends upon the 'multiple' argument as follows...
+
+    * if **False** then this provides an **int** with the process id or **None** if it can't be determined
+    * if **True** then this provides a **list** of all **int** process ids, and an empty list if it can't be determined
   """
 
   # attempts to resolve using pgrep, failing if:
@@ -249,11 +253,16 @@ def get_pid_by_name(process_name):
   if is_available("pgrep"):
     results = call(GET_PID_BY_NAME_PGREP % process_name)
 
-    if results and len(results) == 1:
-      pid = results[0].strip()
+    if results:
+      try:
+        pids = map(int, results)
 
-      if pid.isdigit():
-        return int(pid)
+        if multiple:
+          return pids
+        elif len(pids) == 1:
+          return pids[0]
+      except ValueError:
+        pass
 
   # attempts to resolve using pidof, failing if:
   # - we're running on bsd (command unavailable)
@@ -265,11 +274,16 @@ def get_pid_by_name(process_name):
   if is_available("pidof"):
     results = call(GET_PID_BY_NAME_PIDOF % process_name)
 
-    if results and len(results) == 1 and len(results[0].split()) == 1:
-      pid = results[0].strip()
+    if results and len(results) == 1:
+      try:
+        pids = map(int, results[0].split())
 
-      if pid.isdigit():
-        return int(pid)
+        if multiple:
+          return pids
+        elif len(pids) == 1:
+          return pids[0]
+      except ValueError:
+        pass
 
   # attempts to resolve using ps, failing if:
   # - system's ps variant doesn't handle these flags (none known at the moment)
@@ -292,11 +306,16 @@ def get_pid_by_name(process_name):
       # linux variant of ps
       results = call(GET_PID_BY_NAME_PS_LINUX % process_name)
 
-      if results and len(results) == 2:
-        pid = results[1].strip()
+      if results:
+        try:
+          pids = map(int, results[1:])
 
-        if pid.isdigit():
-          return int(pid)
+          if multiple:
+            return pids
+          elif len(pids) == 1:
+            return pids[0]
+        except ValueError:
+          pass
 
     if is_bsd():
       # bsd variant of ps
@@ -304,13 +323,17 @@ def get_pid_by_name(process_name):
 
       if results:
         # filters results to those with our process name
-        results = [r for r in results if r.endswith(" %s" % process_name)]
+        results = [r.split()[0] for r in results if r.endswith(" %s" % process_name)]
 
-        if len(results) == 1 and len(results[0].split()) > 0:
-          pid = results[0].split()[0]
+        try:
+          pids = map(int, results)
 
-          if pid.isdigit():
-            return int(pid)
+          if multiple:
+            return pids
+          elif len(pids) == 1:
+            return pids[0]
+        except ValueError:
+          pass
 
   # resolves using lsof which works on both Linux and BSD, only failing if:
   # - lsof is unavailable (not included by default on OpenBSD)
@@ -329,14 +352,19 @@ def get_pid_by_name(process_name):
   if is_available("lsof"):
     results = call(GET_PID_BY_NAME_LSOF % process_name)
 
-    if results and len(results) == 1:
-      pid = results[0].strip()
+    if results:
+      try:
+        pids = map(int, results)
 
-      if pid.isdigit():
-        return int(pid)
+        if multiple:
+          return pids
+        elif len(pids) == 1:
+          return pids[0]
+      except ValueError:
+        pass
 
   log.debug("failed to resolve a pid for '%s'" % process_name)
-  return None
+  return [] if multiple else None
 
 
 def get_pid_by_port(port):
