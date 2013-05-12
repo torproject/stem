@@ -659,6 +659,8 @@ class Controller(BaseController):
     self._is_caching_enabled = True
     self._request_cache = {}
 
+    self._cache_lock = threading.RLock()
+
     # mapping of event types to their listeners
 
     self._event_listeners = {}
@@ -677,14 +679,10 @@ class Controller(BaseController):
 
     def _confchanged_listener(event):
       if self.is_caching_enabled():
-        for param, value in event.config.items():
-          cache_key = "getconf.%s" % param.lower()
+        self._set_cache(dict((k, None) for k in event.config), "getconf")
 
-          if cache_key in self._request_cache:
-            del self._request_cache[cache_key]
-
-          if param.lower() == "exitpolicy" and "exit_policy" in self._request_cache:
-            del self._request_cache["exit_policy"]
+        if "exitpolicy" in event.config.keys():
+          self._set_cache({"exitpolicy": None})
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
 
@@ -753,13 +751,17 @@ class Controller(BaseController):
       params = set(params)
 
     # check for cached results
-    for param in list(params):
-      cache_key = "getinfo.%s" % param.lower()
 
-      if cache_key in self._request_cache:
-        reply[param] = self._request_cache[cache_key]
-        params.remove(param)
-      elif param.startswith('ip-to-country/') and self.is_geoip_unavailable():
+    from_cache = [param.lower() for param in params]
+    cached_results = self._get_cache_map(from_cache, "getinfo")
+
+    for key in cached_results:
+      user_expected_key = _case_insensitive_lookup(params, key)
+      reply[user_expected_key] = cached_results[key]
+      params.remove(user_expected_key)
+
+    for param in params:
+      if param.startswith('ip-to-country/') and self.is_geoip_unavailable():
         # the geoip database already looks to be unavailable - abort the request
         if default == UNDEFINED:
           raise stem.ProtocolError("Tor geoip database is unavailable")
@@ -782,15 +784,19 @@ class Controller(BaseController):
       reply.update(response.entries)
 
       if self.is_caching_enabled():
+        to_cache = {}
+
         for key, value in response.entries.items():
           key = key.lower()  # make case insensitive
 
           if key in CACHEABLE_GETINFO_PARAMS:
-            self._request_cache["getinfo.%s" % key] = value
+            to_cache[key] = value
           elif key.startswith('ip-to-country/'):
             # both cache-able and means that we should reset the geoip failure count
-            self._request_cache["getinfo.%s" % key] = value
+            to_cache[key] = value
             self._geoip_failure_count = -1
+
+        self._set_cache(to_cache, "getinfo")
 
       log.debug("GETINFO %s (runtime: %0.4f)" % (" ".join(params), time.time() - start_time))
 
@@ -839,11 +845,14 @@ class Controller(BaseController):
     try:
       if not self.is_caching_enabled():
         return stem.version.Version(self.get_info("version"))
-      elif not "version" in self._request_cache:
-        version = stem.version.Version(self.get_info("version"))
-        self._request_cache["version"] = version
+      else:
+        version = self._get_cache("version")
 
-      return self._request_cache["version"]
+        if not version:
+          version = stem.version.Version(self.get_info("version"))
+          self._set_cache({"version": version})
+
+        return version
     except Exception as exc:
       if default == UNDEFINED:
         raise exc
@@ -866,10 +875,11 @@ class Controller(BaseController):
 
       An exception is only raised if we weren't provided a default response.
     """
-
     with self._msg_lock:
       try:
-        if not "exit_policy" in self._request_cache:
+        config_policy = self._get_cache("exit_policy")
+
+        if not config_policy:
           policy = []
 
           if self.get_conf("ExitPolicyRejectPrivate") == "1":
@@ -885,9 +895,10 @@ class Controller(BaseController):
 
           policy += self.get_info("exit-policy/default").split(",")
 
-          self._request_cache["exit_policy"] = stem.exit_policy.get_config_policy(policy)
+          config_policy = stem.exit_policy.get_config_policy(policy)
+          self._set_cache({"exit_policy": config_policy})
 
-        return self._request_cache["exit_policy"]
+        return config_policy
       except Exception as exc:
         if default == UNDEFINED:
           raise exc
@@ -1316,12 +1327,14 @@ class Controller(BaseController):
     lookup_params = set([MAPPED_CONFIG_KEYS.get(entry, entry) for entry in params])
 
     # check for cached results
-    for param in list(lookup_params):
-      cache_key = "getconf.%s" % param.lower()
 
-      if cache_key in self._request_cache:
-        reply[param] = self._request_cache[cache_key]
-        lookup_params.remove(param)
+    from_cache = [param.lower() for param in lookup_params]
+    cached_results = self._get_cache_map(from_cache, "getconf")
+
+    for key in cached_results:
+      user_expected_key = _case_insensitive_lookup(lookup_params, key)
+      reply[user_expected_key] = cached_results[key]
+      lookup_params.remove(user_expected_key)
 
     # if everything was cached then short circuit making the query
     if not lookup_params:
@@ -1334,8 +1347,8 @@ class Controller(BaseController):
       reply.update(response.entries)
 
       if self.is_caching_enabled():
-        for key, value in response.entries.items():
-          self._request_cache["getconf.%s" % key.lower()] = value
+        to_cache = dict((k.lower(), v) for k, v in response.entries.items())
+        self._set_cache(to_cache, "getconf")
 
       # Maps the entries back to the parameters that the user requested so the
       # capitalization matches (ie, if they request "exitpolicy" then that
@@ -1481,19 +1494,20 @@ class Controller(BaseController):
       log.debug("%s (runtime: %0.4f)" % (query, time.time() - start_time))
 
       if self.is_caching_enabled():
+        to_cache = {}
+
         for param, value in params:
-          cache_key = "getconf.%s" % param.lower()
+          param = param.lower()
 
-          if value is None:
-            if cache_key in self._request_cache:
-              del self._request_cache[cache_key]
-          elif isinstance(value, (bytes, unicode)):
-            self._request_cache[cache_key] = [value]
-          else:
-            self._request_cache[cache_key] = value
+          if isinstance(value, (bytes, unicode)):
+            value = [value]
 
-          if param.lower() == "exitpolicy" and "exit_policy" in self._request_cache:
-            del self._request_cache["exit_policy"]
+          to_cache[param] = value
+
+          if param == "exitpolicy":
+            self._set_cache({"exitpolicy": None})
+
+        self._set_cache(to_cache, "getconf")
     else:
       log.debug("%s (failed, code: %s, message: %s)" % (query, response.code, response.message))
 
@@ -1582,6 +1596,64 @@ class Controller(BaseController):
         if not response.is_ok():
           raise stem.ProtocolError("SETEVENTS received unexpected response\n%s" % response)
 
+  def _get_cache(self, param, namespace = None):
+    """
+    Queries our request cache for the given key.
+
+    :param str param: key to be queried
+    :param str namespace: namespace in which to check for the key
+
+    :returns: cached value corresponding to key or **None** if the key wasn't found
+    """
+
+    return self._get_cache_map([param], namespace).get(param, None)
+
+  def _get_cache_map(self, params, namespace = None):
+    """
+    Queries our request cache for multiple entries.
+
+    :param list params: keys to be queried
+    :param str namespace: namespace in which to check for the keys
+
+    :returns: **dict** of 'param => cached value' pairs of keys present in cache
+    """
+
+    with self._cache_lock:
+      cached_values = {}
+
+      for param in params:
+        if namespace:
+          cache_key = "%s.%s" % (namespace, param)
+        else:
+          cache_key = param
+
+        if cache_key in self._request_cache:
+          cached_values[param] = self._request_cache[cache_key]
+
+      return cached_values
+
+  def _set_cache(self, params, namespace = None):
+    """
+    Sets the given request cache entries. If the new cache value is **None**
+    then it is removed from our cache.
+
+    :param dict params: **dict** of 'cache_key => value' pairs to be cached
+    :param str namespace: namespace for the keys
+    """
+
+    with self._cache_lock:
+      for key, value in params.items():
+        if namespace:
+          cache_key = "%s.%s" % (namespace, key)
+        else:
+          cache_key = key
+
+        if value is None:
+          if cache_key in self._request_cache:
+            del self._request_cache[cache_key]
+        else:
+          self._request_cache[cache_key] = value
+
   def is_caching_enabled(self):
     """
     **True** if caching has been enabled, **False** otherwise.
@@ -1608,8 +1680,9 @@ class Controller(BaseController):
     Drops any cached results.
     """
 
-    self._request_cache = {}
-    self._geoip_failure_count = 0
+    with self._cache_lock:
+      self._request_cache = {}
+      self._geoip_failure_count = 0
 
   def load_conf(self, configtext):
     """
