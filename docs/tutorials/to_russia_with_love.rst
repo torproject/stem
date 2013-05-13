@@ -24,6 +24,7 @@ In the following example we're using stem to `start Tor <../api/process.html>`_,
 ::
 
   import StringIO
+  import socket
   import urllib
 
   import socks  # SocksiPy module
@@ -36,7 +37,7 @@ In the following example we're using stem to `start Tor <../api/process.html>`_,
   # Set socks proxy and wrap the urllib module
 
   socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, '127.0.0.1', SOCKS_PORT)
-  socks.wrapmodule(urllib)
+  socket.socket = socks.socksocket
 
 
   def query(url):
