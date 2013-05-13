@@ -3,6 +3,7 @@ To Russia With Love
 
 * :ref:`using-socksipy`
 * :ref:`using-pycurl`
+* :ref:`reading-twitter`
 
 .. _using-socksipy:
 
@@ -107,4 +108,60 @@ Besides SocksiPy, you can also use `PycURL <http://pycurl.sourceforge.net/>`_ to
       return output.getvalue()
     except pycurl.error as exc:
       return "Unable to reach %s (%s)" % (url, exc)
+
+.. _reading-twitter:
+
+Reading Twitter
+---------------
+
+Now lets do somthing a little more interesting, and read a Twitter feed over Tor. This can be easily done `using thier API <https://dev.twitter.com/docs/api/1/get/statuses/user_timeline>`_...
+
+::
+
+  import json
+  import socket
+  import urllib
+
+  import socks  # SockiPy module
+  import stem.process
+
+  SOCKS_PORT = 7000
+  TWITTER_API_URL = "http://api.twitter.com/1/statuses/user_timeline.json?screen_name=%s&count=%i&include_rts=1"
+
+  socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, '127.0.0.1', SOCKS_PORT)
+  socket.socket = socks.socksocket
+
+
+  def poll_twitter_feed(user_id, tweet_count):
+    """
+    Polls Twitter for the tweets from a given user.
+    """
+
+    api_url = TWITTER_API_URL % (user_id, tweet_count)
+
+    try:
+      api_response = urllib.urlopen(api_url).read()
+    except:
+      raise IOError("Unable to reach %s" % api_url)
+
+    return json.loads(api_response)
+
+  tor_process = stem.process.launch_tor_with_config(
+    config = {
+      'SocksPort': str(SOCKS_PORT),
+      'ExitNodes': '{ru}',
+    },
+  )
+
+  try:
+    for index, tweet in enumerate(poll_twitter_feed('ioerror', 3)):
+      print "%i. %s" % (index + 1, tweet["created_at"])
+      print tweet["text"]
+      print
+  except IOError, exc:
+    print exc
+  finally:
+    tor_process.kill()  # stops tor
+
+.. image:: /_static/twitter_output.png
 
