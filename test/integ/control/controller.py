@@ -108,14 +108,6 @@ class TestController(unittest.TestCase):
     them. Then remove the listeners.
     """
 
-    # TODO: This test relies on the timing of BW events which has proved to
-    # be unreliable on our jenkins host (probably related to system load).
-    # This occures even with sizable sleeps so this test needs to be disabled
-    # until we can come up with a test that doesn't rely on event timing.
-
-    test.runner.skip(self, "(presently unreliable)")
-    return
-
     if test.runner.require_control(self):
       return
 
@@ -139,11 +131,11 @@ class TestController(unittest.TestCase):
       # BW events occure at the rate of one per second, so wait a bit to let
       # some accumulate.
 
-      event_notice1.wait(2)
+      event_notice1.wait(4)
       self.assertTrue(len(event_buffer1) >= 1)
       event_notice1.clear()
 
-      event_notice2.wait(2)
+      event_notice2.wait(4)
       self.assertTrue(len(event_buffer2) >= 1)
       event_notice2.clear()
 
@@ -153,10 +145,10 @@ class TestController(unittest.TestCase):
 
       buffer2_size = len(event_buffer2)
 
-      event_notice1.wait(2)
+      event_notice1.wait(4)
       self.assertTrue(len(event_buffer1) >= 2)
 
-      event_notice2.wait(2)
+      event_notice2.wait(4)
       self.assertEqual(buffer2_size, len(event_buffer2))
 
       for event in event_buffer1:
