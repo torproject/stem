@@ -46,6 +46,7 @@ import stat
 import tempfile
 import threading
 import time
+import uuid
 
 import stem.connection
 import stem.prereq
@@ -79,7 +80,7 @@ INTEG_RUNNER = None
 # control authentication options and attributes
 CONTROL_PASSWORD = "pw"
 CONTROL_PORT = 1111
-CONTROL_SOCKET_PATH = os.path.join(tempfile.mkdtemp(), 'socket')
+CONTROL_SOCKET_PATH = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()), 'socket')
 
 Torrc = stem.util.enum.Enum(
   ("PORT", "ControlPort %i" % CONTROL_PORT),
@@ -356,6 +357,12 @@ class Runner(object):
       if self._original_recv_message:
         stem.socket.recv_message = self._original_recv_message
         self._original_recv_message = None
+
+      # clean up our socket directory if we made one
+      socket_dir = os.path.dirname(CONTROL_SOCKET_PATH)
+
+      if os.path.exists(socket_dir):
+        shutil.rmtree(socket_dir, ignore_errors = True)
 
       self._test_dir = ""
       self._tor_cmd = None
