@@ -102,6 +102,8 @@ class TestController(unittest.TestCase):
       self.assertEqual(State.RESET, state_type)
       self.assertTrue(state_timestamp > before and state_timestamp < after)
 
+      controller.reset_conf("__OwningControllerProcess")
+
   def test_event_handling(self):
     """
     Add a couple listeners for various events and make sure that they receive
@@ -559,6 +561,7 @@ class TestController(unittest.TestCase):
       finally:
         # reload original valid config
         controller.load_conf(oldconf)
+        controller.reset_conf("__OwningControllerProcess")
 
   def test_saveconf(self):
     if test.runner.require_control(self):
@@ -580,6 +583,7 @@ class TestController(unittest.TestCase):
       finally:
         controller.load_conf(oldconf)
         controller.save_conf()
+        controller.reset_conf("__OwningControllerProcess")
 
   def test_get_socks_ports(self):
     """

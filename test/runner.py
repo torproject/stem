@@ -710,7 +710,7 @@ class Runner(object):
       print_init_line = lambda line: println("  %s" % line, SUBSTATUS)
 
       torrc_dst = os.path.join(self._test_dir, "torrc")
-      self._tor_process = stem.process.launch_tor(tor_cmd, None, torrc_dst, complete_percent, print_init_line)
+      self._tor_process = stem.process.launch_tor(tor_cmd, None, torrc_dst, complete_percent, print_init_line, take_ownership = True)
 
       runtime = time.time() - start_time
       println("  done (%i seconds)\n" % runtime, STATUS)
