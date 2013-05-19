@@ -1,30 +1,30 @@
 @type server-descriptor 1.0
-router torrelay389752132 130.243.230.116 9001 0 0
-platform Tor 0.2.2.35 (git-4f42b0a93422f70e) on Linux x86_64
+router Coruscant 88.182.161.122 9001 0 9030
+platform Tor 0.2.3.25 on Linux
 opt protocols Link 1 2 Circuit 1
-published 2012-03-21 16:28:14
-opt fingerprint 5D47 E91A 1F74 21A4 E325 5F4D 04E5 34E9 A214 07BB
-uptime 3103848
-bandwidth 81920 102400 84275
-opt extra-info-digest 51E9FD0DA7C235D8C0250BAFB6E1ABB5F1EF9F04
+published 2013-05-18 11:16:19
+opt fingerprint 0B98 2154 5C48 E496 AEED 9ECC 0DB5 06C4 9FF8 158D
+uptime 259738
+bandwidth 102400 204800 122818
+opt extra-info-digest 56403D838DE152421CD401B8E57DAD4483A3D56B
 onion-key
 -----BEGIN RSA PUBLIC KEY-----
-MIGJAoGBAKTHzdEAocB7JhpB5iDaNYgHujJ+0mtoahZOAqgZ5BWVjw8fwt0UXEtO
-BRPzNigNyAP1UWKHvgelBy49wvuC9twoBejCCYjcu9z2RmbBvYcyZRzphvHJqBpW
-k3Rx75up+wsuBzhfwSYr7W+T+WkDQvz49RFPpns6Ef0qFpQ1TlHxAgMBAAE=
+MIGJAoGBAK+rjPilZJVzvWn6slOpak4eUab+VXiGNkRAIKgGAqbpex7lNMcZeXbu
+8uYhiDUdjRaHQUbBjLaj6nAjtlHUl3NCbIpo2p03KEcxfAGi3k6dUMBJ7aIYb8lL
+SDK95huLBpyyNPikeDIiTKS1HNtmrai/iVtUiJS2I4fs3lP1TxevAgMBAAE=
 -----END RSA PUBLIC KEY-----
 signing-key
 -----BEGIN RSA PUBLIC KEY-----
-MIGJAoGBALRHQWXGjGLNROY8At3dMnrcSxw4PF/9oLYuqCsXNAq0Gju+EBA5qfM4
-AMpeOk+7ZsZ6AsjdBPAPaOf7hm+z6Kr3Am/gC43dci+iuNHf2wYLR8TnW/C5Q6ZQ
-iXpSAGrOHnIptyPHa0j9ayM4WmHWrPBKnC0QA91CGrxnnNc6DHehAgMBAAE=
+MIGJAoGBANGDDMHoCtTeL4UTEGip4T+37jd4lEjBgla7lgL8W1gtVTX/uMMo+HGE
+m1sD/FgBI3w8w7zpZlJgYeB/94YPUrw11iAEYAooJVmGDmel2g6CFofDs7KmrzqR
+1FQDIWeY9sQd4+L+jWMquqcA3FyzuZz28gi56hIombjkfr0RwCsNAgMBAAE=
 -----END RSA PUBLIC KEY-----
 opt hidden-service-dir
-contact 2048R/F171EC1F Johan Blåbäck こんにちは
+contact 1024D/04D2E818 Lénaïc Huard <lenaic dot huard AT laposte dot net>
 reject *:*
 router-signature
 -----BEGIN SIGNATURE-----
-WqBgiomhJ+XewpbOGg1r+6KXlAkdxHRhgCB/D980yJVzXWbOCrRhwyyAH9Lx+yrK
-1EFXAtfQBBx2hmsw8CSYuUT6ckjXyUBAKEdABC25yRdi+fN3NfSQd56U9MvArjo9
-Y8oz244gH4BSVp4CScL8dK0EUsUrAxjs+OU7bnV5saA=
+hk4jKRtI0LbjYWdGhjTuev9Hk9AilyBmBtK9nfpBPyamQZDZVirEUuP7PdtxM2U9
+EdCg+KnkrLoKoxh18YumBD2HvwHa2J1VZtezWkwxGB+HPkECTU/byl+dn6ZRncY7
+r0IrVeGUnlK/UaWpswx6amH7FEKXmBZYHxTxyuwwybQ=
 -----END SIGNATURE-----

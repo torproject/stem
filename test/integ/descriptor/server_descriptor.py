@@ -192,36 +192,34 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a descriptor with non-ascii content.
     """
 
-    test.mocking.mock_method(stem.descriptor.server_descriptor.RelayDescriptor, '_validate_content', test.mocking.no_op())
-
     descriptor_file = open(get_resource("non-ascii_descriptor"), 'rb')
 
-    expected_contact = b"2048R/F171EC1F Johan Bl\xc3\xa5b\xc3\xa4ck \xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf"
+    expected_contact = b"1024D/04D2E818 L\xc3\xa9na\xc3\xafc Huard <lenaic dot huard AT laposte dot net>"
 
     desc = next(stem.descriptor.parse_file(descriptor_file, "server-descriptor 1.0"))
-    self.assertEquals("torrelay389752132", desc.nickname)
-    self.assertEquals("5D47E91A1F7421A4E3255F4D04E534E9A21407BB", desc.fingerprint)
-    self.assertEquals("130.243.230.116", desc.address)
+    self.assertEquals("Coruscant", desc.nickname)
+    self.assertEquals("0B9821545C48E496AEED9ECC0DB506C49FF8158D", desc.fingerprint)
+    self.assertEquals("88.182.161.122", desc.address)
     self.assertEquals(9001, desc.or_port)
     self.assertEquals(None, desc.socks_port)
-    self.assertEquals(None, desc.dir_port)
-    self.assertEquals(b"Tor 0.2.2.35 (git-4f42b0a93422f70e) on Linux x86_64", desc.platform)
-    self.assertEquals(stem.version.Version("0.2.2.35"), desc.tor_version)
-    self.assertEquals("Linux x86_64", desc.operating_system)
-    self.assertEquals(3103848, desc.uptime)
-    self.assertEquals(datetime.datetime(2012, 3, 21, 16, 28, 14), desc.published)
+    self.assertEquals(9030, desc.dir_port)
+    self.assertEquals(b"Tor 0.2.3.25 on Linux", desc.platform)
+    self.assertEquals(stem.version.Version("0.2.3.25"), desc.tor_version)
+    self.assertEquals("Linux", desc.operating_system)
+    self.assertEquals(259738, desc.uptime)
+    self.assertEquals(datetime.datetime(2013, 5, 18, 11, 16, 19), desc.published)
     self.assertEquals(expected_contact, desc.contact)
     self.assertEquals(["1", "2"], desc.link_protocols)
     self.assertEquals(["1"], desc.circuit_protocols)
     self.assertEquals(False, desc.hibernating)
     self.assertEquals(False, desc.allow_single_hop_exits)
     self.assertEquals(False, desc.extra_info_cache)
-    self.assertEquals("51E9FD0DA7C235D8C0250BAFB6E1ABB5F1EF9F04", desc.extra_info_digest)
+    self.assertEquals("56403D838DE152421CD401B8E57DAD4483A3D56B", desc.extra_info_digest)
     self.assertEquals(["2"], desc.hidden_service_dir)
     self.assertEquals(set(), desc.family)
-    self.assertEquals(81920, desc.average_bandwidth)
-    self.assertEquals(102400, desc.burst_bandwidth)
-    self.assertEquals(84275, desc.observed_bandwidth)
+    self.assertEquals(102400, desc.average_bandwidth)
+    self.assertEquals(204800, desc.burst_bandwidth)
+    self.assertEquals(122818, desc.observed_bandwidth)
     self.assertEquals(stem.exit_policy.ExitPolicy("reject *:*"), desc.exit_policy)
     self.assertEquals([], desc.get_unrecognized_lines())
 
