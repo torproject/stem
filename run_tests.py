@@ -185,10 +185,16 @@ def main():
 
         println("Running tests...\n", STATUS)
 
-        with integ_runner.get_tor_controller(True):  # Controller to own our main tor process
-          for test_class in test.util.get_integ_tests(args.test_prefix):
-              run_result = _run_test(test_class, output_filters, logging_buffer)
-              skipped_tests += len(getattr(run_result, 'skipped', []))
+        owner = None
+        if integ_runner.is_accessible():
+          owner = integ_runner.get_tor_controller(True)  # controller to own our main Tor process
+
+        for test_class in test.util.get_integ_tests(args.test_prefix):
+          run_result = _run_test(test_class, output_filters, logging_buffer)
+          skipped_tests += len(getattr(run_result, 'skipped', []))
+
+        if owner:
+          owner.close()
 
         # We should have joined on all threads. If not then that indicates a
         # leak that could both likely be a bug and disrupt further targets.
