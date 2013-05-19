@@ -40,25 +40,33 @@ def check_requirements():
 
 def is_python_27():
   """
-  Checks if we're running python 2.7 or above.
+  Checks if we're running python 2.7 or above (including the 3.x series).
 
-  :returns: bool that is True if we meet this requirement and False otherwise
+  :returns: **True** if we meet this requirement and **False** otherwise
   """
 
-  return _check_version(7)
+  major_version, minor_version = sys.version_info[0:2]
+
+  return major_version > 2 or (major_version == 2 and minor_version >= 7)
 
 
 def is_python_3():
   """
   Checks if we're in the 3.0 - 3.x range.
 
-  :returns: bool that is True if we meet this requirement and False otherwise
+  :returns: **True** if we meet this requirement and **False** otherwise
   """
 
   return sys.version_info[0] == 3
 
 
 def is_crypto_available():
+  """
+  Checks if the pycrypto functions we use are available.
+
+  :returns: **True** if we can use pycrypto and **False** otherwise
+  """
+
   global IS_CRYPTO_AVAILABLE
 
   if IS_CRYPTO_AVAILABLE is None:
@@ -73,18 +81,7 @@ def is_crypto_available():
       IS_CRYPTO_AVAILABLE = False
 
       # the code that verifies relay descriptor signatures uses the python-crypto library
-      msg = "Unable to import the crypto module. Because of this we'll be unable to verify descriptor signature integrity."
+      msg = "Unable to import the pycrypto module. Because of this we'll be unable to verify descriptor signature integrity. You can get pycrypto from: https://www.dlitz.net/software/pycrypto/"
       log.log_once("stem.prereq.is_crypto_available", log.INFO, msg)
 
   return IS_CRYPTO_AVAILABLE
-
-
-def _check_version(minor_req):
-  major_version, minor_version = sys.version_info[0:2]
-
-  if major_version > 2:
-    return True
-  elif major_version < 2 or minor_version < minor_req:
-    return False
-
-  return True
