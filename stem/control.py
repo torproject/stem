@@ -1166,6 +1166,11 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
+    # TODO: It would be great to add support for v3 router status entries. This
+    # is pending...
+    #
+    # https://trac.torproject.org/7953
+
     try:
       if stem.util.tor_tools.is_valid_fingerprint(relay):
         query = "ns/id/%s" % relay
