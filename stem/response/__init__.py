@@ -167,7 +167,7 @@ class ControlMessage(object):
 
     return False
 
-  def content(self):
+  def content(self, get_bytes = False):
     """
     Provides the parsed message content. These are entries of the form...
 
@@ -189,19 +189,33 @@ class ControlMessage(object):
     For data entries the content is the full multi-line payload with newline
     linebreaks and leading periods unescaped.
 
+    The **status_code** and **divider** are both strings (**bytes** in python
+    2.x and **unicode** in python 3.x). The **content** however is **bytes** if
+    **get_bytes** is **True**.
+
+    :param bool get_bytes: provides **bytes** for the **content** rather than a **str**
+
     :returns: **list** of (str, str, str) tuples for the components of this message
     """
 
-    return list(self._parsed_content)
+    if stem.prereq.is_python_3() and not get_bytes:
+      return [(code, div, stem.util.str_tools._to_unicode(content)) for (code, div, content) in self._parsed_content]
+    else:
+      return list(self._parsed_content)
 
-  def raw_content(self):
+  def raw_content(self, get_bytes = False):
     """
     Provides the unparsed content read from the control socket.
+
+    :param bool get_bytes: if **True** then this provides **bytes** rather than a **str**
 
     :returns: **str** of the socket data used to generate this message
     """
 
-    return self._raw_content
+    if stem.prereq.is_python_3() and not get_bytes:
+      return stem.util.str_tools._to_unicode(self._raw_content)
+    else:
+      return self._raw_content
 
   def __str__(self):
     """
@@ -235,6 +249,9 @@ class ControlMessage(object):
     """
 
     for _, _, content in self._parsed_content:
+      if stem.prereq.is_python_3():
+        content = stem.util.str_tools._to_unicode(content)
+
       yield ControlLine(content)
 
   def __len__(self):
@@ -249,7 +266,12 @@ class ControlMessage(object):
     :returns: :class:`~stem.response.ControlLine` at the index
     """
 
-    return ControlLine(self._parsed_content[index][2])
+    content = self._parsed_content[index][2]
+
+    if stem.prereq.is_python_3():
+      content = stem.util.str_tools._to_unicode(content)
+
+    return ControlLine(content)
 
 
 class ControlLine(str):

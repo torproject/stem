@@ -464,15 +464,16 @@ def recv_message(control_file):
       a complete message
   """
 
-  parsed_content, raw_content = [], ""
+  parsed_content, raw_content = [], b""
   logging_prefix = "Error while receiving a control message (%s): "
 
   while True:
     try:
-      line = control_file.readline()
+      # From a real socket readline() would always provide bytes, but during
+      # tests we might be given a StringIO in which case it's unicode under
+      # python 3.x.
 
-      if stem.prereq.is_python_3():
-        line = stem.util.str_tools._to_unicode(line)
+      line = stem.util.str_tools._to_bytes(control_file.readline())
     except AttributeError:
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
@@ -509,17 +510,21 @@ def recv_message(control_file):
       prefix = logging_prefix % "ProtocolError"
       log.info(prefix + "line too short, \"%s\"" % log.escape(line))
       raise stem.ProtocolError("Badly formatted reply line: too short")
-    elif not re.match(r'^[a-zA-Z0-9]{3}[-+ ]', line):
+    elif not re.match(b'^[a-zA-Z0-9]{3}[-+ ]', line):
       prefix = logging_prefix % "ProtocolError"
       log.info(prefix + "malformed status code/divider, \"%s\"" % log.escape(line))
       raise stem.ProtocolError("Badly formatted reply line: beginning is malformed")
-    elif not line.endswith("\r\n"):
+    elif not line.endswith(b"\r\n"):
       prefix = logging_prefix % "ProtocolError"
       log.info(prefix + "no CRLF linebreak, \"%s\"" % log.escape(line))
       raise stem.ProtocolError("All lines should end with CRLF")
 
     line = line[:-2]  # strips off the CRLF
-    status_code, divider, content = line[:3], line[3], line[4:]
+    status_code, divider, content = line[:3], line[3:4], line[4:]
+
+    if stem.prereq.is_python_3():
+      status_code = stem.util.str_tools._to_unicode(status_code)
+      divider = stem.util.str_tools._to_unicode(divider)
 
     if divider == "-":
       # mid-reply line, keep pulling for more content
@@ -528,8 +533,8 @@ def recv_message(control_file):
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
 
-      log_message = raw_content.replace("\r\n", "\n").rstrip()
-      log.trace("Received from tor:\n" + log_message)
+      log_message = raw_content.replace(b"\r\n", b"\n").rstrip()
+      log.trace("Received from tor:\n" + stem.util.str_tools._to_unicode(log_message))
 
       return stem.response.ControlMessage(parsed_content, raw_content)
     elif divider == "+":
@@ -538,10 +543,7 @@ def recv_message(control_file):
 
       while True:
         try:
-          line = control_file.readline()
-
-          if stem.prereq.is_python_3():
-            line = stem.util.str_tools._to_unicode(line)
+          line = stem.util.str_tools._to_bytes(control_file.readline())
         except socket.error as exc:
           prefix = logging_prefix % "SocketClosed"
           log.info(prefix + "received an exception while mid-way through a data reply (exception: \"%s\", read content: \"%s\")" % (exc, log.escape(raw_content)))
@@ -549,11 +551,11 @@ def recv_message(control_file):
 
         raw_content += line
 
-        if not line.endswith("\r\n"):
+        if not line.endswith(b"\r\n"):
           prefix = logging_prefix % "ProtocolError"
           log.info(prefix + "CRLF linebreaks missing from a data reply, \"%s\"" % log.escape(raw_content))
           raise stem.ProtocolError("All lines should end with CRLF")
-        elif line == ".\r\n":
+        elif line == b".\r\n":
           break  # data block termination
 
         line = line[:-2]  # strips off the CRLF
@@ -561,22 +563,22 @@ def recv_message(control_file):
         # lines starting with a period are escaped by a second period (as per
         # section 2.4 of the control-spec)
 
-        if line.startswith(".."):
+        if line.startswith(b".."):
           line = line[1:]
 
         # appends to previous content, using a newline rather than CRLF
         # separator (more conventional for multi-line string content outside
         # the windows world)
 
-        content += "\n" + line
+        content += b"\n" + line
 
       parsed_content.append((status_code, divider, content))
     else:
       # this should never be reached due to the prefix regex, but might as well
       # be safe...
       prefix = logging_prefix % "ProtocolError"
-      log.warn(prefix + "\"%s\" isn't a recognized divider type" % line)
-      raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, line))
+      log.warn(prefix + "\"%s\" isn't a recognized divider type" % divider)
+      raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, stem.util.str_tools._to_unicode(line)))
 
 
 def send_formatting(message):

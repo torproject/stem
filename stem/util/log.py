@@ -50,7 +50,9 @@ them at your own risk.**
 
 import logging
 
+import stem.prereq
 import stem.util.enum
+import stem.util.str_tools
 
 # Logging runlevels. These are *very* commonly used so including shorter
 # aliases (so they can be referenced as log.DEBUG, log.WARN, etc).
@@ -118,12 +120,16 @@ def logging_level(runlevel):
 
 def escape(message):
   """
-  Escapes specific sequences for logging (newlines, tabs, carriage returns).
+  Escapes specific sequences for logging (newlines, tabs, carriage returns). If
+  the input is **bytes** then this converts it to **unicode** under python 3.x.
 
   :param str message: string to be escaped
 
   :returns: str that is escaped
   """
+
+  if stem.prereq.is_python_3():
+    message = stem.util.str_tools._to_unicode(message)
 
   for pattern, replacement in (("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")):
     message = message.replace(pattern, replacement)
