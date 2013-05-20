@@ -9,7 +9,7 @@ class GetInfoResponse(stem.response.ControlMessage):
   """
   Reply for a GETINFO query.
 
-  :var dict entries: mapping between the queried options and their values
+  :var dict entries: mapping between the queried options and their bytes values
   """
 
   def _parse_message(self):
@@ -26,9 +26,9 @@ class GetInfoResponse(stem.response.ControlMessage):
     # 250 OK
 
     self.entries = {}
-    remaining_lines = list(self)
+    remaining_lines = [content for (code, div, content) in self.content(get_bytes = True)]
 
-    if not self.is_ok() or not remaining_lines.pop() == "OK":
+    if not self.is_ok() or not remaining_lines.pop() == b"OK":
       unrecognized_keywords = []
       for code, _, line in self.content():
         if code == '552' and line.startswith("Unrecognized key \"") and line.endswith("\""):
@@ -41,15 +41,18 @@ class GetInfoResponse(stem.response.ControlMessage):
 
     while remaining_lines:
       try:
-        key, value = remaining_lines.pop(0).split("=", 1)
+        key, value = remaining_lines.pop(0).split(b"=", 1)
       except ValueError:
         raise stem.ProtocolError("GETINFO replies should only contain parameter=value mappings:\n%s" % self)
+
+      if stem.prereq.is_python_3():
+        key = stem.util.str_tools._to_unicode(key)
 
       # if the value is a multiline value then it *must* be of the form
       # '<key>=\n<value>'
 
-      if "\n" in value:
-        if not value.startswith("\n"):
+      if b"\n" in value:
+        if not value.startswith(b"\n"):
           raise stem.ProtocolError("GETINFO response contained a multi-line value that didn't start with a newline:\n%s" % self)
 
         value = value[1:]

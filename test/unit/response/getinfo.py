@@ -7,6 +7,7 @@ import unittest
 import stem.response
 import stem.response.getinfo
 import stem.socket
+import stem.util.str_tools
 
 from test import mocking
 
@@ -72,7 +73,7 @@ class TestGetInfoResponse(unittest.TestCase):
 
     control_message = mocking.get_message(SINGLE_RESPONSE)
     stem.response.convert("GETINFO", control_message)
-    self.assertEqual({"version": "0.2.3.11-alpha-dev"}, control_message.entries)
+    self.assertEqual({"version": b"0.2.3.11-alpha-dev"}, control_message.entries)
 
   def test_batch_response(self):
     """
@@ -83,9 +84,9 @@ class TestGetInfoResponse(unittest.TestCase):
     stem.response.convert("GETINFO", control_message)
 
     expected = {
-      "version": "0.2.3.11-alpha-dev",
-      "address": "67.137.76.214",
-      "fingerprint": "5FDE0422045DF0E1879A3738D09099EB4A0C5BA0",
+      "version": b"0.2.3.11-alpha-dev",
+      "address": b"67.137.76.214",
+      "fingerprint": b"5FDE0422045DF0E1879A3738D09099EB4A0C5BA0",
     }
 
     self.assertEqual(expected, control_message.entries)
@@ -100,8 +101,8 @@ class TestGetInfoResponse(unittest.TestCase):
     stem.response.convert("GETINFO", control_message)
 
     expected = {
-      "version": "0.2.3.11-alpha-dev (git-ef0bc7f8f26a917c)",
-      "config-text": "\n".join(MULTILINE_RESPONSE.splitlines()[2:8]),
+      "version": b"0.2.3.11-alpha-dev (git-ef0bc7f8f26a917c)",
+      "config-text": b"\n".join(stem.util.str_tools._to_bytes(MULTILINE_RESPONSE).splitlines()[2:8]),
     }
 
     self.assertEqual(expected, control_message.entries)

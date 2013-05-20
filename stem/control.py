@@ -711,7 +711,7 @@ class Controller(BaseController):
     import stem.connection
     stem.connection.authenticate(self, *args, **kwargs)
 
-  def get_info(self, params, default = UNDEFINED):
+  def get_info(self, params, default = UNDEFINED, get_bytes = False):
     """
     Queries the control socket for the given GETINFO option. If provided a
     default then that's returned if the GETINFO option is undefined or the
@@ -720,6 +720,7 @@ class Controller(BaseController):
 
     :param str,list params: GETINFO option or options to be queried
     :param object default: response if the query fails
+    :param bool get_bytes: provides **bytes** values rather than a **str** under python 3.x
 
     :returns:
       Response depends upon how we were called as follows...
@@ -781,6 +782,12 @@ class Controller(BaseController):
       response = self.msg("GETINFO %s" % " ".join(params))
       stem.response.convert("GETINFO", response)
       response.assert_matches(params)
+
+      # usually we want unicode values under python 3.x
+
+      if stem.prereq.is_python_3() and not get_bytes:
+        response.entries = dict((k, stem.util.str_tools._to_unicode(v)) for (k, v) in response.entries.items())
+
       reply.update(response.entries)
 
       if self.is_caching_enabled():
