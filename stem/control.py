@@ -151,11 +151,12 @@ import stem.response.events
 import stem.socket
 import stem.util.connection
 import stem.util.enum
+import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
 
 from stem import UNDEFINED, CircStatus, Signal
-from stem.util import log, str_tools
+from stem.util import log
 
 # state changes a control socket can have
 
@@ -1018,8 +1019,8 @@ class Controller(BaseController):
       else:
         raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
-      desc_content = self.get_info(query)
-      return stem.descriptor.microdescriptor.Microdescriptor(str_tools._to_bytes(desc_content))
+      desc_content = self.get_info(query, get_bytes = True)
+      return stem.descriptor.microdescriptor.Microdescriptor(desc_content)
     except Exception as exc:
       if default == UNDEFINED:
         raise exc
@@ -1107,8 +1108,8 @@ class Controller(BaseController):
       else:
         raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
-      desc_content = self.get_info(query)
-      return stem.descriptor.server_descriptor.RelayDescriptor(str_tools._to_bytes(desc_content))
+      desc_content = self.get_info(query, get_bytes = True)
+      return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
     except Exception as exc:
       if default == UNDEFINED:
         raise exc
@@ -1141,9 +1142,9 @@ class Controller(BaseController):
       #
       # https://trac.torproject.org/8248
 
-      desc_content = self.get_info("desc/all-recent")
+      desc_content = self.get_info("desc/all-recent", get_bytes = True)
 
-      for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(str_tools._to_bytes(desc_content))):
+      for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_content)):
         yield desc
     except Exception as exc:
       if default == UNDEFINED:
@@ -1186,8 +1187,8 @@ class Controller(BaseController):
       else:
         raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
-      desc_content = self.get_info(query)
-      return stem.descriptor.router_status_entry.RouterStatusEntryV2(str_tools._to_bytes(desc_content))
+      desc_content = self.get_info(query, get_bytes = True)
+      return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content)
     except Exception as exc:
       if default == UNDEFINED:
         raise exc
@@ -1215,10 +1216,10 @@ class Controller(BaseController):
       #
       # https://trac.torproject.org/8248
 
-      desc_content = self.get_info("ns/all")
+      desc_content = self.get_info("ns/all", get_bytes = True)
 
       desc_iterator = stem.descriptor.router_status_entry._parse_file(
-        io.BytesIO(str_tools._to_bytes(desc_content)),
+        io.BytesIO(desc_content),
         True,
         entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
       )

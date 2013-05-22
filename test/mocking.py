@@ -293,7 +293,7 @@ def return_for_args(args_to_return_value, default = None, is_method = False):
 
 
 def raise_exception(exception):
-  def _raise(*args):
+  def _raise(*args, **kwargs):
     raise exception
 
   return _raise
