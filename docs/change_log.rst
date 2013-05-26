@@ -42,19 +42,31 @@ The following are only available within stem's `git repository
 
   * :class:`~stem.response.events.AddrMapEvent` support for the new CACHED argument (:trac:`8596`, :spec:`25b0d43`)
   * :func:`~stem.control.Controller.attach_stream` could encounter an undocumented 555 response (:trac:`8701`, :spec:`7286576`)
-  * :class:`~stem.descriptor.server_descriptor.RelayDescriptor` digest validation was broken with python 3 (:trac:`8755`)
+  * :class:`~stem.descriptor.server_descriptor.RelayDescriptor` digest validation was broken when dealing with non-unicode content with python 3 (:trac:`8755`)
+  * The :class:`~stem.control.Controller` use of cached content wasn't thread safe (:trac:`8607`)
+
+ * **Descriptors**
+
+  * The :class:`~stem.descriptor.reader.DescriptorReader` mishandled relative paths (:trac:`8815`)
+
+ * **Utilities**
+
+  * :func:`~stem.util.system.set_process_name` inserted spaces between characters (:trac:`8631`)
   * :func:`~stem.util.system.get_pid_by_name` can now pull for all processes with a given name
 
  * **Website**
 
   * Overhaul of stem's `download page <download.html>`_. This included several
-    improvements, most notably the addition of PyPI, FreeBSD, and RedHat.
+    improvements, most notably the addition of PyPI, Ubuntu, Fedora, and
+    FreeBSD.
   * Replaced default sphinx header with a navbar menu.
   * Added this change log.
   * Added the `FAQ page <faq.html>`_.
   * Settled on a `logo
     <http://www.wpclipart.com/plants/assorted/P/plant_stem.png.html>`_ for
     stem.
+  * Expanded the `client usage tutorial <tutorials/to_russia_with_love.html>`_
+    to cover SocksiPy and include an example for polling Twitter.
 
 .. _version_1.0:
 
