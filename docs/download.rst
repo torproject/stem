@@ -13,6 +13,11 @@ Download
      License: GPL v2
      File: NuoveXT/128x128/apps/debian-logo.png
    
+   * Ubuntu
+     Source: http://logonoid.com/ubuntu-logo/
+     Not quite sure of the license, probably covered by...
+     http://design.ubuntu.com/brand/ubuntu-logo
+   
    * Fedora
      Source: https://en.wikipedia.org/wiki/File:Fedora_logo_and_wordmark.svg
      Author: Unknown
@@ -64,6 +69,18 @@ Download
           :target: http://packages.debian.org/sid/python-stem
 
        Package maintained by Dererk for Debian.
+
+       ::
+
+         % apt-get install python-stem
+
+   * - .. image:: /_static/section/download/ubuntu.png
+          :target: https://launchpad.net/ubuntu/+source/python-stem
+
+     - .. image:: /_static/label/ubuntu.png
+          :target: https://launchpad.net/ubuntu/+source/python-stem
+
+       Package derived from Debian for Ubuntu.
 
        ::
 
