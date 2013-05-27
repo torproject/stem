@@ -136,16 +136,23 @@ class ControlMessage(object):
   """
 
   @staticmethod
-  def from_str(content):
+  def from_str(content, msg_type = None, **kwargs):
     """
     Provides a ControlMessage for the given content.
 
     :param str content: message to construct the message from
+    :param str msg_type: type of tor reply to parse the content as
+    :param kwargs: optional keyword arguments to be passed to the parser method
 
     :returns: stem.response.ControlMessage instance
     """
 
-    return stem.socket.recv_message(StringIO.StringIO(content))
+    msg = stem.socket.recv_message(StringIO.StringIO(content))
+
+    if msg_type is not None:
+      convert(msg_type, msg, **kwargs)
+
+    return msg
 
   def __init__(self, parsed_content, raw_content):
     if not parsed_content:

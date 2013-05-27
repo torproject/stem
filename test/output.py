@@ -133,7 +133,7 @@ def strip_module(line_type, line_content):
   repetitive, and redundant with the headers.
   """
 
-  m = re.match(".*( \(.*?\)).*", line_content)
+  m = re.match(".*( \(test\..*?\)).*", line_content)
 
   if m:
     line_content = line_content.replace(m.groups()[0], "", 1)
