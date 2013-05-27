@@ -14,7 +14,6 @@ from stem import Flag
 from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, \
                                           FOOTER_STATUS_DOCUMENT_FIELDS, \
                                           DEFAULT_PARAMS, \
-                                          BANDWIDTH_WEIGHT_ENTRIES, \
                                           DirectoryAuthority, \
                                           NetworkStatusDocumentV3, \
                                           _parse_file
@@ -30,6 +29,14 @@ from test.mocking import get_router_status_entry_v3, \
                          CRYPTO_BLOB, \
                          DOC_SIG, \
                          NETWORK_STATUS_DOCUMENT_FOOTER
+
+BANDWIDTH_WEIGHT_ENTRIES = (
+  "Wbd", "Wbe", "Wbg", "Wbm",
+  "Wdb",
+  "Web", "Wed", "Wee", "Weg", "Wem",
+  "Wgb", "Wgd", "Wgg", "Wgm",
+  "Wmb", "Wmd", "Wme", "Wmg", "Wmm",
+)
 
 
 class TestNetworkStatusDocument(unittest.TestCase):
@@ -719,31 +726,6 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEquals(expected, document.bandwidth_weights)
-
-  def test_bandwidth_wights_omissions(self):
-    """
-    Leaves entries out of the 'bandwidth-wights' line.
-    """
-
-    # try parsing an empty value
-
-    content = get_network_status_document_v3({"bandwidth-weights": ""}, content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
-
-    document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals({}, document.bandwidth_weights)
-
-    # drop individual values
-
-    for missing_entry in BANDWIDTH_WEIGHT_ENTRIES:
-      weight_entries = ["%s=5" % e for e in BANDWIDTH_WEIGHT_ENTRIES if e != missing_entry]
-      expected = dict([(e, 5) for e in BANDWIDTH_WEIGHT_ENTRIES if e != missing_entry])
-
-      content = get_network_status_document_v3({"bandwidth-weights": " ".join(weight_entries)}, content = True)
-      self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
-
-      document = NetworkStatusDocumentV3(content, False)
-      self.assertEquals(expected, document.bandwidth_weights)
 
   def test_microdescriptor_signature(self):
     """

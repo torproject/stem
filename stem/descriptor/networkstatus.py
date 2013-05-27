@@ -137,14 +137,6 @@ KEY_CERTIFICATE_PARAMS = (
   ('dir-key-certification', True),
 )
 
-BANDWIDTH_WEIGHT_ENTRIES = (
-  "Wbd", "Wbe", "Wbg", "Wbm",
-  "Wdb",
-  "Web", "Wed", "Wee", "Weg", "Wem",
-  "Wgb", "Wgd", "Wgg", "Wgm",
-  "Wmb", "Wmd", "Wme", "Wmg", "Wmm",
-)
-
 
 def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
   """
@@ -837,15 +829,6 @@ class _DocumentFooter(object):
           raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got '%s'" % line)
       elif keyword == "bandwidth-weights":
         self.bandwidth_weights = _parse_int_mappings(keyword, value, validate)
-
-        if validate:
-          weight_keys = tuple(sorted(self.bandwidth_weights.keys()))
-
-          if weight_keys != BANDWIDTH_WEIGHT_ENTRIES:
-            expected_label = ', '.join(BANDWIDTH_WEIGHT_ENTRIES)
-            actual_label = ', '.join(weight_keys)
-
-            raise ValueError("A network status document's 'bandwidth-weights' entries should be '%s', got '%s'" % (expected_label, actual_label))
       elif keyword == "directory-signature":
         for sig_value, block_contents in values:
           if not sig_value.count(" ") in (1, 2) or not block_contents:
