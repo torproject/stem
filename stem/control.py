@@ -24,6 +24,7 @@ providing its own for interacting at a higher level.
     |- get_exit_policy - provides our exit policy
     |- get_socks_listeners - provides where tor is listening for SOCKS connections
     |- get_protocolinfo - information about the controller interface
+    |- get_pid - provides the pid of our tor process
     |
     |- get_microdescriptor - querying the microdescriptor for a relay
     |- get_microdescriptors - provides all presently available microdescriptors
@@ -152,6 +153,7 @@ import stem.socket
 import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
+import stem.util.system
 import stem.util.tor_tools
 import stem.version
 
@@ -991,6 +993,59 @@ class Controller(BaseController):
         raise exc
       else:
         return default
+
+  def get_pid(self, default = UNDEFINED):
+    """
+    Provides the process id of tor. This only works if tor is running locally.
+    Also, most of its checks are platform dependent, and hence are not entirely
+    reliable.
+
+    :param object default: response if the query fails
+
+    :returns: int with our process' pid
+
+    :raises: **ValueError** if unable to determine the pid and no default was
+      provided
+    """
+
+    if not self.get_socket().is_localhost():
+      if default == UNDEFINED:
+        raise ValueError("Tor isn't running locally")
+      else:
+        return default
+
+    pid = self._get_cache("pid")
+
+    if not pid:
+      pid_file_path = self.get_conf("PidFile", None)
+
+      if pid_file_path is not None:
+        with open(pid_file_path) as pid_file:
+          pid_file_contents = pid_file.read().strip()
+
+          if pid_file_contents.isdigit():
+            pid = int(pid_file_contents)
+
+      if not pid:
+        pid = stem.util.system.get_pid_by_name('tor')
+
+      if not pid:
+        control_socket = self.get_socket()
+
+        if isinstance(control_socket, stem.socket.ControlPort):
+          pid = stem.util.system.get_pid_by_port(control_socket.get_port())
+        elif isinstance(control_socket, stem.socket.ControlSocketFile):
+          pid = stem.util.system.get_pid_by_open_file(control_socket.get_socket_path())
+
+      if pid and self.is_caching_enabled():
+        self._set_cache({"pid": pid})
+
+    if pid:
+      return pid
+    elif default == UNDEFINED:
+      raise ValueError("Unable to resolve tor's pid")
+    else:
+      return default
 
   def get_microdescriptor(self, relay, default = UNDEFINED):
     """

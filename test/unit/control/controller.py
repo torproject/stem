@@ -3,16 +3,20 @@ Unit tests for the stem.control module. The module's primarily exercised via
 integ tests, but a few bits lend themselves to unit testing.
 """
 
+import os
+import tempfile
 import unittest
 
 import stem.descriptor.router_status_entry
 import stem.response
 import stem.socket
+import stem.util.system
 import stem.version
 
 from stem import InvalidArguments, InvalidRequest, ProtocolError, UnsatisfiableRequest
 from stem.control import _parse_circ_path, Controller, EventType
 from stem.exit_policy import ExitPolicy
+from stem.socket import ControlSocket
 from test import mocking
 
 
@@ -215,63 +219,118 @@ class TestControl(unittest.TestCase):
     Exercises the get_protocolinfo() method.
     """
 
-    # Use the handy mocked protocolinfo response.
+    # use the handy mocked protocolinfo response
+
     mocking.mock(stem.connection.get_protocolinfo, mocking.return_value(
       mocking.get_protocolinfo_response()
     ))
-    # Compare the str representation of these object, because the class
-    # does not have, nor need, a direct comparison operator.
-    self.assertEqual(str(mocking.get_protocolinfo_response()), str(self.controller.get_protocolinfo()))
 
-    # Raise an exception in the stem.connection.get_protocolinfo() call.
+    # compare the str representation of these object, because the class
+    # does not have, nor need, a direct comparison operator
+
+    self.assertEqual(
+      str(mocking.get_protocolinfo_response()),
+      str(self.controller.get_protocolinfo())
+    )
+
+    # raise an exception in the stem.connection.get_protocolinfo() call
+
     mocking.mock(stem.connection.get_protocolinfo, mocking.raise_exception(ProtocolError))
 
-    # Get a default value when the call fails.
+    # get a default value when the call fails
 
     self.assertEqual(
       "default returned",
       self.controller.get_protocolinfo(default = "default returned")
     )
 
-    # No default value, accept the error.
+    # no default value, accept the error
+
     self.assertRaises(ProtocolError, self.controller.get_protocolinfo)
+
+  def test_get_pid_remote(self):
+    """
+    Exercise the get_pid() method for a non-local socket.
+    """
+
+    mocking.mock_method(ControlSocket, "is_localhost", mocking.return_false())
+
+    self.assertRaises(ValueError, self.controller.get_pid)
+    self.assertEqual(123, self.controller.get_pid(123))
+
+  def test_get_pid_by_pid_file(self):
+    """
+    Exercise the get_pid() resolution via a PidFile.
+    """
+
+    # It's a little inappropriate for us to be using tempfile in unit tests,
+    # but this is more reliable than trying to mock open().
+
+    mocking.mock_method(ControlSocket, "is_localhost", mocking.return_true())
+
+    pid_file_path = tempfile.mkstemp()[1]
+
+    try:
+      with open(pid_file_path, 'w') as pid_file:
+        pid_file.write('321')
+
+      mocking.mock_method(Controller, "get_conf", mocking.return_value(pid_file_path))
+      self.assertEqual(321, self.controller.get_pid())
+    finally:
+      os.remove(pid_file_path)
+
+  def test_get_pid_by_name(self):
+    """
+    Exercise the get_pid() resolution via the process name.
+    """
+
+    mocking.mock_method(ControlSocket, "is_localhost", mocking.return_true())
+    mocking.mock(stem.util.system.get_pid_by_name, mocking.return_value(432))
+    self.assertEqual(432, self.controller.get_pid())
 
   def test_get_network_status(self):
     """
     Exercises the get_network_status() method.
     """
 
-    # Build a single router status entry.
+    # build a single router status entry
+
     nickname = "Beaver"
     fingerprint = "/96bKo4soysolMgKn5Hex2nyFSY"
     desc = "r %s %s u5lTXJKGsLKufRLnSyVqT7TdGYw 2012-12-30 22:02:49 77.223.43.54 9001 0\ns Fast Named Running Stable Valid\nw Bandwidth=75" % (nickname, fingerprint)
     router = stem.descriptor.router_status_entry.RouterStatusEntryV2(desc)
 
-    # Always return the same router status entry.
+    # always return the same router status entry
+
     mocking.mock_method(Controller, "get_info", mocking.return_value(desc))
 
-    # Pretend to get the router status entry with its name.
+    # pretend to get the router status entry with its name
+
     self.assertEqual(router, self.controller.get_network_status(nickname))
 
-    # Pretend to get the router status entry with its fingerprint.
+    # pretend to get the router status entry with its fingerprint
+
     hex_fingerprint = stem.descriptor.router_status_entry._base64_to_hex(fingerprint, False)
     self.assertEqual(router, self.controller.get_network_status(hex_fingerprint))
 
-    # Mangle hex fingerprint and try again.
+    # mangle hex fingerprint and try again
+
     hex_fingerprint = hex_fingerprint[2:]
     self.assertRaises(ValueError, self.controller.get_network_status, hex_fingerprint)
 
-    # Raise an exception in the get_info() call.
+    # raise an exception in the get_info() call
+
     mocking.mock_method(Controller, "get_info", mocking.raise_exception(InvalidArguments))
 
-    # Get a default value when the call fails.
+    # get a default value when the call fails
 
     self.assertEqual(
       "default returned",
       self.controller.get_network_status(nickname, default = "default returned")
     )
 
-    # No default value, accept the error.
+    # no default value, accept the error
+
     self.assertRaises(InvalidArguments, self.controller.get_network_status, nickname)
 
   def test_event_listening(self):
