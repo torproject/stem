@@ -8,6 +8,7 @@ import os
 import tempfile
 import unittest
 
+import stem.util.proc
 import stem.util.system
 import test.runner
 
@@ -381,6 +382,34 @@ class TestSystem(unittest.TestCase):
 
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
     self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
+
+  def test_get_start_time_proc(self):
+    """
+    Tests the get_start_time function with a proc response.
+    """
+
+    if not stem.util.proc.is_available():
+      test.runner.skip(self, "(proc unavailable)")
+      return
+
+    mocking.mock(stem.util.system.call, filter_system_call(['ps ']))
+
+    pid = test.runner.get_runner().get_pid()
+    self.assertTrue(stem.util.system.get_start_time(pid) >= 0)
+
+  def test_get_start_time_ps(self):
+    """
+    Tests the get_start_time function with a ps response.
+    """
+
+    if not stem.util.system.is_available("ps"):
+      test.runner.skip(self, "(ps unavailable)")
+      return
+
+    mocking.mock(stem.util.proc.is_available, mocking.return_false())
+
+    pid = test.runner.get_runner().get_pid()
+    self.assertTrue(stem.util.system.get_start_time(pid) >= 0)
 
   def test_get_bsd_jail_id(self):
     """

@@ -20,6 +20,7 @@ best-effort, providing **None** if the lookup fails.
   get_pid_by_port - gets the pid for a process listening to a given port
   get_pid_by_open_file - gets the pid for the process with an open file
   get_cwd - provides the current working directory for a given process
+  get_start_time - provides the unix timestamp when the process started
   get_bsd_jail_id - provides the BSD jail id a given process is running within
   expand_path - expands relative paths and ~ entries
   call - runs the given system command and provides back the results
@@ -530,6 +531,7 @@ def get_cwd(pid):
   Provides the working directory of the given process.
 
   :param int pid: process id of the process to be queried
+
   :returns: **str** with the absolute path for the process' present working
     directory, **None** if it can't be determined
   """
@@ -592,6 +594,33 @@ def get_cwd(pid):
 
   return None  # all queries failed
 
+
+def get_start_time(pid):
+  """
+  Provides the unix timestamp when the given process started.
+
+  :param int pid: process id of the process to be queried
+
+  :returns: **float** for the unix timestamp when the process began, **None**
+    if it can't be determined
+  """
+
+  if stem.util.proc.is_available():
+    try:
+      return float(stem.util.proc.get_stats(pid, stem.util.proc.Stat.START_TIME)[0])
+    except IOError:
+      pass
+
+  try:
+    ps_results = stem.util.system.call("ps -p %s -o etime" % pid)
+
+    if ps_results and len(ps_results) >= 2:
+      etime = ps_results[1].strip()
+      return time.time() - stem.util.str_tools.parse_short_time_label(etime)
+  except:
+    pass
+
+  return None
 
 def get_bsd_jail_id(pid):
   """
