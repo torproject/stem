@@ -1017,14 +1017,20 @@ class Controller(BaseController):
     pid = self._get_cache("pid")
 
     if not pid:
-      pid_file_path = self.get_conf("PidFile", None)
+      getinfo_pid = self.get_info("process/pid", None)
 
-      if pid_file_path is not None:
-        with open(pid_file_path) as pid_file:
-          pid_file_contents = pid_file.read().strip()
+      if getinfo_pid and getinfo_pid.isdigit():
+        pid = int(getinfo_pid)
 
-          if pid_file_contents.isdigit():
-            pid = int(pid_file_contents)
+      if not pid:
+        pid_file_path = self.get_conf("PidFile", None)
+
+        if pid_file_path is not None:
+          with open(pid_file_path) as pid_file:
+            pid_file_contents = pid_file.read().strip()
+
+            if pid_file_contents.isdigit():
+              pid = int(pid_file_contents)
 
       if not pid:
         pid = stem.util.system.get_pid_by_name('tor')

@@ -258,6 +258,15 @@ class TestControl(unittest.TestCase):
     self.assertRaises(ValueError, self.controller.get_pid)
     self.assertEqual(123, self.controller.get_pid(123))
 
+  def test_get_pid_by_getinfo(self):
+    """
+    Exercise the get_pid() resolution via its getinfo option.
+    """
+
+    mocking.mock_method(ControlSocket, "is_localhost", mocking.return_true())
+    mocking.mock_method(Controller, "get_info", mocking.return_value('321'))
+    self.assertEqual(321, self.controller.get_pid())
+
   def test_get_pid_by_pid_file(self):
     """
     Exercise the get_pid() resolution via a PidFile.
@@ -272,10 +281,10 @@ class TestControl(unittest.TestCase):
 
     try:
       with open(pid_file_path, 'w') as pid_file:
-        pid_file.write('321')
+        pid_file.write('432')
 
       mocking.mock_method(Controller, "get_conf", mocking.return_value(pid_file_path))
-      self.assertEqual(321, self.controller.get_pid())
+      self.assertEqual(432, self.controller.get_pid())
     finally:
       os.remove(pid_file_path)
 
