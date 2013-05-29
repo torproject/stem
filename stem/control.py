@@ -853,16 +853,13 @@ class Controller(BaseController):
     """
 
     try:
-      if not self.is_caching_enabled():
-        return stem.version.Version(self.get_info("version"))
-      else:
-        version = self._get_cache("version")
+      version = self._get_cache("version")
 
-        if not version:
-          version = stem.version.Version(self.get_info("version"))
-          self._set_cache({"version": version})
+      if not version:
+        version = stem.version.Version(self.get_info("version"))
+        self._set_cache({"version": version})
 
-        return version
+      return version
     except Exception as exc:
       if default == UNDEFINED:
         raise exc
@@ -1018,16 +1015,7 @@ class Controller(BaseController):
       if getinfo_pid and getinfo_pid.isdigit():
         pid = int(getinfo_pid)
 
-        if self.is_caching_enabled():
-          self._set_cache({"pid": pid})
-
-    if not pid:
-      if not self.get_socket().is_localhost():
-        if default == UNDEFINED:
-          raise ValueError("Tor isn't running locally")
-        else:
-          return default
-
+    if not pid and self.get_socket().is_localhost():
       pid_file_path = self.get_conf("PidFile", None)
 
       if pid_file_path is not None:
@@ -1048,13 +1036,14 @@ class Controller(BaseController):
         elif isinstance(control_socket, stem.socket.ControlSocketFile):
           pid = stem.util.system.get_pid_by_open_file(control_socket.get_socket_path())
 
-      if pid and self.is_caching_enabled():
-        self._set_cache({"pid": pid})
-
     if pid:
+      self._set_cache({"pid": pid})
       return pid
     elif default == UNDEFINED:
-      raise ValueError("Unable to resolve tor's pid")
+      if self.get_socket().is_localhost():
+        raise ValueError("Unable to resolve tor's pid")
+      else:
+        raise ValueError("Tor isn't running locally")
     else:
       return default
 
@@ -1700,14 +1689,15 @@ class Controller(BaseController):
     with self._cache_lock:
       cached_values = {}
 
-      for param in params:
-        if namespace:
-          cache_key = "%s.%s" % (namespace, param)
-        else:
-          cache_key = param
+      if self.is_caching_enabled():
+        for param in params:
+          if namespace:
+            cache_key = "%s.%s" % (namespace, param)
+          else:
+            cache_key = param
 
-        if cache_key in self._request_cache:
-          cached_values[param] = self._request_cache[cache_key]
+          if cache_key in self._request_cache:
+            cached_values[param] = self._request_cache[cache_key]
 
       return cached_values
 
@@ -1721,6 +1711,9 @@ class Controller(BaseController):
     """
 
     with self._cache_lock:
+      if not self.is_caching_enabled():
+        return
+
       for key, value in params.items():
         if namespace:
           cache_key = "%s.%s" % (namespace, key)
