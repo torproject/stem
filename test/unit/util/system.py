@@ -62,6 +62,11 @@ GET_PID_BY_PORT_LSOF_RESULTS = [
   "tor     1745 atagar    6u  IPv4  14229      0t0  TCP 127.0.0.1:9051 (LISTEN)",
   "apache   329 atagar    6u  IPv4  14229      0t0  TCP 127.0.0.1:80 (LISTEN)"]
 
+GET_BSD_JAIL_PATH_RESULTS = [
+  "   JID  IP Address      Hostname      Path",
+  "     1  10.0.0.2        tor-jail      /usr/jails/tor-jail",
+]
+
 
 def mock_call(base_cmd, responses):
   """
@@ -87,7 +92,7 @@ def mock_call(base_cmd, responses):
     functor to override stem.util.system.call with
   """
 
-  def _mock_call(base_cmd, responses, command):
+  def _mock_call(base_cmd, responses, command, default = None):
     if isinstance(responses, list):
       if base_cmd == command:
         return responses
@@ -309,6 +314,19 @@ class TestSystem(unittest.TestCase):
     for test_input in responses:
       expected_response = 1 if test_input == "1111" else 0
       self.assertEquals(expected_response, system.get_bsd_jail_id(test_input))
+
+  def test_get_bsd_jail_path(self):
+    """
+    Tests the get_bsd_jail_path function.
+    """
+
+    # check when we don't have a jail
+
+    mocking.mock(system.call, mocking.return_value([]))
+    self.assertEquals(None, system.get_bsd_jail_path(1))
+
+    mocking.mock(system.call, mock_call(system.GET_BSD_JAIL_PATH % '1', GET_BSD_JAIL_PATH_RESULTS))
+    self.assertEquals("/usr/jails/tor-jail", system.get_bsd_jail_path(1))
 
   def test_expand_path_unix(self):
     """

@@ -69,6 +69,7 @@ GET_PID_BY_FILE_LSOF = "lsof -tw %s"
 GET_CWD_PWDX = "pwdx %s"
 GET_CWD_LSOF = "lsof -a -p %s -d cwd -Fn"
 GET_BSD_JAIL_ID_PS = "ps -p %s -o jid"
+GET_BSD_JAIL_PATH = "jls -j %s"
 
 # flag for setting the process name, found in '/usr/include/linux/prctl.h'
 
@@ -655,6 +656,28 @@ def get_bsd_jail_id(pid):
     log.debug("get_bsd_jail_id(%s): jail ids do not exist on %s" % (pid, os_name))
 
   return 0
+
+
+def get_bsd_jail_path(jid):
+  """
+  Provides the path of the given FreeBSD jail.
+
+  :param int jid: jail id to be queried
+
+  :returns: **str** of the path prefix, **None** if this can't be determined
+  """
+
+  if jid != 0:
+    # Output should be something like:
+    #    JID  IP Address      Hostname      Path
+    #      1  10.0.0.2        tor-jail      /usr/jails/tor-jail
+  
+    jls_output = call(GET_BSD_JAIL_PATH % jid, [])
+
+    if len(jls_output) == 2 and len(jls_output[1].split()) == 4:
+      return jls_output[1].split()[3]
+
+  return None
 
 
 def expand_path(path, cwd = None):
