@@ -37,7 +37,7 @@ from test.util import STEM_BASE, Target, Task
 #   We do an integration test run for each run target we get.
 #
 # * Attribute Target (like CHROOT and ONLINE) which indicates
-#   non-configuration changes to ur test runs. These are applied to all
+#   non-configuration changes to your test runs. These are applied to all
 #   integration runs that we perform.
 
 ARGS = {

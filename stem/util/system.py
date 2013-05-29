@@ -210,9 +210,10 @@ def is_running(command):
       primary_resolver = IS_RUNNING_PS_LINUX
       secondary_resolver = IS_RUNNING_PS_BSD
 
-    command_listing = call(primary_resolver)
+    command_listing = call(primary_resolver, None)
+
     if not command_listing:
-      command_listing = call(secondary_resolver)
+      command_listing = call(secondary_resolver, None)
 
     if command_listing:
       command_listing = map(unicode.strip, command_listing)
@@ -253,7 +254,7 @@ def get_pid_by_name(process_name, multiple = False):
   #   3392
 
   if is_available("pgrep"):
-    results = call(GET_PID_BY_NAME_PGREP % process_name)
+    results = call(GET_PID_BY_NAME_PGREP % process_name, None)
 
     if results:
       try:
@@ -274,7 +275,7 @@ def get_pid_by_name(process_name, multiple = False):
   #   3392 3283
 
   if is_available("pidof"):
-    results = call(GET_PID_BY_NAME_PIDOF % process_name)
+    results = call(GET_PID_BY_NAME_PIDOF % process_name, None)
 
     if results and len(results) == 1:
       try:
@@ -306,7 +307,7 @@ def get_pid_by_name(process_name, multiple = False):
   if is_available("ps"):
     if not is_bsd():
       # linux variant of ps
-      results = call(GET_PID_BY_NAME_PS_LINUX % process_name)
+      results = call(GET_PID_BY_NAME_PS_LINUX % process_name, None)
 
       if results:
         try:
@@ -321,7 +322,7 @@ def get_pid_by_name(process_name, multiple = False):
 
     if is_bsd():
       # bsd variant of ps
-      results = call(GET_PID_BY_NAME_PS_BSD)
+      results = call(GET_PID_BY_NAME_PS_BSD, None)
 
       if results:
         # filters results to those with our process name
@@ -352,7 +353,7 @@ def get_pid_by_name(process_name, multiple = False):
   #   2561
 
   if is_available("lsof"):
-    results = call(GET_PID_BY_NAME_LSOF % process_name)
+    results = call(GET_PID_BY_NAME_LSOF % process_name, None)
 
     if results:
       try:
@@ -409,7 +410,7 @@ def get_pid_by_port(port):
   #   udp6       0      0 fe80::7ae4:ff:fe2f::123 :::*                       -
 
   if is_available("netstat"):
-    results = call(GET_PID_BY_PORT_NETSTAT)
+    results = call(GET_PID_BY_PORT_NETSTAT, None)
 
     if results:
       # filters to results with our port
@@ -442,7 +443,7 @@ def get_pid_by_port(port):
   #   _tor     tor        4397  20 tcp4   51.64.7.84:51946   32.83.7.104:443
 
   if is_available("sockstat"):
-    results = call(GET_PID_BY_PORT_SOCKSTAT % port)
+    results = call(GET_PID_BY_PORT_SOCKSTAT % port, None)
 
     if results:
       # filters to results where this is the local port
@@ -474,7 +475,7 @@ def get_pid_by_port(port):
   #   tor     1745 atagar    6u  IPv4  14229      0t0  TCP 127.0.0.1:9051 (LISTEN)
 
   if is_available("lsof"):
-    results = call(GET_PID_BY_PORT_LSOF)
+    results = call(GET_PID_BY_PORT_LSOF, None)
 
     if results:
       # filters to results with our port
@@ -516,9 +517,9 @@ def get_pid_by_open_file(path):
   #   4762
 
   if is_available("lsof"):
-    results = call(GET_PID_BY_FILE_LSOF % path)
+    results = call(GET_PID_BY_FILE_LSOF % path, [])
 
-    if results and len(results) == 1:
+    if len(results) == 1:
       pid = results[0].strip()
 
       if pid.isdigit():
@@ -552,7 +553,7 @@ def get_cwd(pid):
     # 3799: /home/atagar
     # 5839: No such process
 
-    results = call(GET_CWD_PWDX % pid)
+    results = call(GET_CWD_PWDX % pid, None)
 
     if not results:
       log.debug("%s pwdx didn't return any results" % logging_prefix)
@@ -579,9 +580,9 @@ def get_cwd(pid):
   #   n/Users/atagar/tor/src/or
 
   if is_available("lsof"):
-    results = call(GET_CWD_LSOF % pid)
+    results = call(GET_CWD_LSOF % pid, [])
 
-    if results and len(results) == 2 and results[1].startswith("n/"):
+    if len(results) == 2 and results[1].startswith("n/"):
       lsof_result = results[1][1:].strip()
 
       # If we lack read permissions for the cwd then it returns...
@@ -613,15 +614,16 @@ def get_start_time(pid):
       pass
 
   try:
-    ps_results = stem.util.system.call("ps -p %s -o etime" % pid)
+    ps_results = call("ps -p %s -o etime" % pid, [])
 
-    if ps_results and len(ps_results) >= 2:
+    if len(ps_results) >= 2:
       etime = ps_results[1].strip()
       return time.time() - stem.util.str_tools.parse_short_time_label(etime)
   except:
     pass
 
   return None
+
 
 def get_bsd_jail_id(pid):
   """
@@ -641,9 +643,9 @@ def get_bsd_jail_id(pid):
   #   JID
   #    1
 
-  ps_output = call(GET_BSD_JAIL_ID_PS % pid)
+  ps_output = call(GET_BSD_JAIL_ID_PS % pid, [])
 
-  if ps_output and len(ps_output) == 2 and len(ps_output[1].split()) == 1:
+  if len(ps_output) == 2 and len(ps_output[1].split()) == 1:
     jid = ps_output[1].strip()
 
     if jid.isdigit():
@@ -671,7 +673,7 @@ def get_bsd_jail_path(jid):
     # Output should be something like:
     #    JID  IP Address      Hostname      Path
     #      1  10.0.0.2        tor-jail      /usr/jails/tor-jail
-  
+
     jls_output = call(GET_BSD_JAIL_PATH % jid, [])
 
     if len(jls_output) == 2 and len(jls_output[1].split()) == 4:
@@ -725,7 +727,7 @@ def expand_path(path, cwd = None):
   return relative_path
 
 
-def call(command, default = UNDEFINED):
+def call(command, default = UNDEFINED, ignore_exit_status = False):
   """
   Issues a command in a subprocess, blocking until completion and returning the
   results. This is not actually ran in a shell so pipes and other shell syntax
@@ -733,6 +735,8 @@ def call(command, default = UNDEFINED):
 
   :param str command: command to be issued
   :param object default: response if the query fails
+  :param bool ignore_exit_status: reports failure if our command's exit status
+    was non-zero
 
   :returns: **list** with the lines of output from the command
 
@@ -743,7 +747,9 @@ def call(command, default = UNDEFINED):
     is_shell_command = command.split(" ")[0] in SHELL_COMMANDS
 
     start_time = time.time()
-    stdout, stderr = subprocess.Popen(command.split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command).communicate()
+    process = subprocess.Popen(command.split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command)
+
+    stdout, stderr = process.communicate()
     stdout, stderr = stdout.strip(), stderr.strip()
     runtime = time.time() - start_time
 
@@ -756,6 +762,11 @@ def call(command, default = UNDEFINED):
       log.trace(trace_prefix + ", stdout:\n%s" % stdout)
     elif stderr:
       log.trace(trace_prefix + ", stderr:\n%s" % stderr)
+
+    exit_code = process.poll()
+
+    if not ignore_exit_status and exit_code != 0:
+      raise OSError("%s returned exit status %i" % (command, exit_code))
 
     if stdout:
       return stdout.decode("utf-8", "replace").splitlines()

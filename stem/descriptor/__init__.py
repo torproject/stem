@@ -14,6 +14,7 @@ Package for parsing and processing descriptor data.
   Descriptor - Common parent for all descriptor file types.
     |- get_path - location of the descriptor on disk if it came from a file
     |- get_archive_path - location of the descriptor within the archive it came from
+    |- get_bytes - similar to str(), but provides our original bytes content
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
 

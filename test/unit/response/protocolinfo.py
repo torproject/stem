@@ -156,7 +156,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     # - resolving the pid of the "tor" process
     # - using that to get tor's cwd
 
-    def call_mocking(command):
+    def call_mocking(command, default):
       if command == stem.util.system.GET_PID_BY_NAME_PGREP % "tor":
         return ["10"]
       elif command == stem.util.system.GET_CWD_PWDX % 10:

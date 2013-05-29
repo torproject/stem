@@ -21,7 +21,7 @@ def filter_system_call(prefixes):
   function if it matches one of the prefixes, and acts as a no-op otherwise.
   """
 
-  def _filter_system_call(command):
+  def _filter_system_call(command, default):
     for prefix in prefixes:
       if command.startswith(prefix):
         real_call_function = mocking.get_real_function(stem.util.system.call)

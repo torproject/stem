@@ -243,7 +243,10 @@ def get_stylistic_issues(paths):
   issues = {}
 
   for path in paths:
-    pep8_output = stem.util.system.call("pep8 --ignore %s %s" % (ignored_issues, path))
+    pep8_output = stem.util.system.call(
+      "pep8 --ignore %s %s" % (ignored_issues, path),
+      ignore_exit_status = True,
+    )
 
     for line in pep8_output:
       line_match = re.match("^(.*):(\d+):(\d+): (.*)$", line)
@@ -329,7 +332,10 @@ def get_pyflakes_issues(paths):
   issues = {}
 
   for path in paths:
-    pyflakes_output = stem.util.system.call("pyflakes %s" % path)
+    pyflakes_output = stem.util.system.call(
+      "pyflakes %s" % path,
+      ignore_exit_status = True,
+    )
 
     for line in pyflakes_output:
       line_match = re.match("^(.*):(\d+): (.*)$", line)

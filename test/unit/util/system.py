@@ -97,11 +97,13 @@ def mock_call(base_cmd, responses):
       if base_cmd == command:
         return responses
       else:
-        return None
+        return default
     else:
       for cmd_completion in responses:
         if command == base_cmd % cmd_completion:
           return responses[cmd_completion]
+
+      return default
 
   return functools.partial(_mock_call, base_cmd, responses)
 
@@ -258,6 +260,8 @@ class TestSystem(unittest.TestCase):
     lsof_query = system.GET_PID_BY_FILE_LSOF % "/tmp/foo"
     mocking.mock(system.call, mock_call(lsof_query, ["4762"]))
     self.assertEquals(4762, system.get_pid_by_open_file("/tmp/foo"))
+
+    mocking.mock(system.call, mocking.return_value([]))
     self.assertEquals(None, system.get_pid_by_open_file("/tmp/somewhere_else"))
 
   def test_get_cwd_pwdx(self):
@@ -286,7 +290,7 @@ class TestSystem(unittest.TestCase):
     responses = {
       "75717": ["p75717", "n/Users/atagar/tor/src/or"],
       "1234": ["malformed output"],
-      "7878": None,
+      "7878": [],
     }
 
     mocking.mock(system.call, mock_call(system.GET_CWD_LSOF, responses))
@@ -306,7 +310,7 @@ class TestSystem(unittest.TestCase):
       "3333": ["JID", "bad data"],
       "4444": ["bad data"],
       "5555": [],
-      "6666": None
+      "6666": []
     }
 
     mocking.mock(system.call, mock_call(system.GET_BSD_JAIL_ID_PS, responses))
