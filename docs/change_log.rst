@@ -40,11 +40,11 @@ The following are only available within stem's `git repository
 
  * **Controller**
 
-  * Added a :class:`~stem.control.Controller` method for querying tor's pid (:func:`~stem.control.Controller.get_pid`)
   * :class:`~stem.response.events.AddrMapEvent` support for the new CACHED argument (:trac:`8596`, :spec:`25b0d43`)
   * :func:`~stem.control.Controller.attach_stream` could encounter an undocumented 555 response (:trac:`8701`, :spec:`7286576`)
   * :class:`~stem.descriptor.server_descriptor.RelayDescriptor` digest validation was broken when dealing with non-unicode content with python 3 (:trac:`8755`)
   * The :class:`~stem.control.Controller` use of cached content wasn't thread safe (:trac:`8607`)
+  * Added :func:`~stem.control.Controller.get_pid` method to the:class:`~stem.control.Controller`
 
  * **Descriptors**
 

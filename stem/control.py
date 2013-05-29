@@ -996,9 +996,9 @@ class Controller(BaseController):
 
   def get_pid(self, default = UNDEFINED):
     """
-    Provides the process id of tor. This only works if tor is running locally.
-    Also, most of its checks are platform dependent, and hence are not entirely
-    reliable.
+    Provides the process id of tor. This often only works if tor is running
+    locally. Also, most of its checks are platform dependent, and hence are not
+    entirely reliable.
 
     :param object default: response if the query fails
 
@@ -1008,29 +1008,34 @@ class Controller(BaseController):
       provided
     """
 
-    if not self.get_socket().is_localhost():
-      if default == UNDEFINED:
-        raise ValueError("Tor isn't running locally")
-      else:
-        return default
-
     pid = self._get_cache("pid")
 
     if not pid:
+      # this is the only pid resolution method that works remotely
+
       getinfo_pid = self.get_info("process/pid", None)
 
       if getinfo_pid and getinfo_pid.isdigit():
         pid = int(getinfo_pid)
 
-      if not pid:
-        pid_file_path = self.get_conf("PidFile", None)
+        if self.is_caching_enabled():
+          self._set_cache({"pid": pid})
 
-        if pid_file_path is not None:
-          with open(pid_file_path) as pid_file:
-            pid_file_contents = pid_file.read().strip()
+    if not pid:
+      if not self.get_socket().is_localhost():
+        if default == UNDEFINED:
+          raise ValueError("Tor isn't running locally")
+        else:
+          return default
 
-            if pid_file_contents.isdigit():
-              pid = int(pid_file_contents)
+      pid_file_path = self.get_conf("PidFile", None)
+
+      if pid_file_path is not None:
+        with open(pid_file_path) as pid_file:
+          pid_file_contents = pid_file.read().strip()
+
+          if pid_file_contents.isdigit():
+            pid = int(pid_file_contents)
 
       if not pid:
         pid = stem.util.system.get_pid_by_name('tor')

@@ -22,6 +22,7 @@ best-effort, providing **None** if the lookup fails.
   get_cwd - provides the current working directory for a given process
   get_start_time - provides the unix timestamp when the process started
   get_bsd_jail_id - provides the BSD jail id a given process is running within
+  get_bsd_jail_path - provides the path of the given BSD jail
   expand_path - expands relative paths and ~ entries
   call - runs the given system command and provides back the results
 
