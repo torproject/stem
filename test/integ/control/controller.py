@@ -797,7 +797,8 @@ class TestController(unittest.TestCase):
       s = None
       response = None
 
-      for _ in range(10):  # Try up to 10 times, to rule out failures due to temporary network issues
+      # try up to 10 times to rule out transient network failures
+      for _ in xrange(10):
         try:
           s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
           s.settimeout(30)
@@ -805,6 +806,7 @@ class TestController(unittest.TestCase):
           test.network.negotiate_socks(s, '1.2.1.2', 80)
           s.sendall(test.network.ip_request)  # make the http request for the ip address
           response = s.recv(1000)
+
           if response:
             break
         except (stem.ProtocolError, socket.timeout):
@@ -814,11 +816,11 @@ class TestController(unittest.TestCase):
             s.close()
 
       self.assertTrue(response)
- 
+
       # everything after the blank line is the 'data' in a HTTP response.
       # The response data for our request for request should be an IP address + '\n'
       ip_addr = response[response.find("\r\n\r\n"):].strip()
- 
+
       self.assertTrue(stem.util.connection.is_valid_ipv4_address(ip_addr))
 
   def test_get_microdescriptor(self):
@@ -993,13 +995,15 @@ class TestController(unittest.TestCase):
         controller.attach_stream(stream.id, circuit_id)
 
     with test.runner.get_runner().get_tor_controller() as controller:
-      for i in range(10):  # Try 10 times to build a circuit we can connect through
+      # try 10 times to build a circuit we can connect through
+      for i in xrange(10):
         controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
         controller.set_conf("__LeaveStreamsUnattached", "1")
 
         try:
           circuit_id = controller.new_circuit(await_build = True)
           socks_listener = controller.get_socks_listeners()[0]
+
           with test.network.Socks(socks_listener) as s:
             s.settimeout(30)
             s.connect((host, port))
