@@ -794,16 +794,31 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       controller.map_address({'1.2.1.2': 'ifconfig.me'})
 
-      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      s.connect(('127.0.0.1', int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])))
-      test.network.negotiate_socks(s, '1.2.1.2', 80)
-      s.sendall(test.network.ip_request)  # make the http request for the ip address
-      response = s.recv(1000)
+      s = None
+      response = None
 
+      for _ in range(10):  # Try up to 10 times, to rule out failures due to temporary network issues
+        try:
+          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          s.settimeout(30)
+          s.connect(('127.0.0.1', int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])))
+          test.network.negotiate_socks(s, '1.2.1.2', 80)
+          s.sendall(test.network.ip_request)  # make the http request for the ip address
+          response = s.recv(1000)
+          if response:
+            break
+        except (stem.ProtocolError, socket.timeout):
+          continue
+        finally:
+          if s:
+            s.close()
+
+      self.assertTrue(response)
+ 
       # everything after the blank line is the 'data' in a HTTP response.
       # The response data for our request for request should be an IP address + '\n'
       ip_addr = response[response.find("\r\n\r\n"):].strip()
-
+ 
       self.assertTrue(stem.util.connection.is_valid_ipv4_address(ip_addr))
 
   def test_get_microdescriptor(self):
@@ -968,6 +983,9 @@ class TestController(unittest.TestCase):
     elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
       return
 
+    host = "38.229.72.14"   # www.torproject.org
+    port = 80
+
     circuit_id = None
 
     def handle_streamcreated(stream):
@@ -975,22 +993,30 @@ class TestController(unittest.TestCase):
         controller.attach_stream(stream.id, circuit_id)
 
     with test.runner.get_runner().get_tor_controller() as controller:
-      controller.set_conf("__LeaveStreamsUnattached", "1")
-      controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
+      for i in range(10):  # Try 10 times to build a circuit we can connect through
+        controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
+        controller.set_conf("__LeaveStreamsUnattached", "1")
 
-      try:
-        circuit_id = controller.new_circuit(await_build = True)
-        socksport = controller.get_socks_listeners()[0][1]
+        try:
+          circuit_id = controller.new_circuit(await_build = True)
+          socks_listener = controller.get_socks_listeners()[0]
+          with test.network.Socks(socks_listener) as s:
+            s.settimeout(30)
+            s.connect((host, port))
+            streams = controller.get_streams()
+            break
+        except (stem.CircuitExtensionFailed, socket.timeout):
+          continue
+        finally:
+          controller.remove_event_listener(handle_streamcreated)
+          controller.reset_conf("__LeaveStreamsUnattached")
 
-        ip = test.network.external_ip('127.0.0.1', socksport)
-        exit_circuit = controller.get_circuit(circuit_id)
-        self.assertTrue(exit_circuit)
-        exit_ip = controller.get_network_status(exit_circuit.path[2][0]).address
+    our_stream = [stream for stream in streams if stream.target_address == host][0]
 
-        self.assertEquals(exit_ip, ip)
-      finally:
-        controller.remove_event_listener(handle_streamcreated)
-        controller.reset_conf("__LeaveStreamsUnattached")
+    self.assertTrue(our_stream.circ_id)
+    self.assertTrue(circuit_id)
+
+    self.assertEquals(our_stream.circ_id, circuit_id)
 
   def test_get_circuits(self):
     """
