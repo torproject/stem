@@ -20,6 +20,7 @@ best-effort, providing **None** if the lookup fails.
   get_pid_by_port - gets the pid for a process listening to a given port
   get_pid_by_open_file - gets the pid for the process with an open file
   get_cwd - provides the current working directory for a given process
+  get_user - provides the user a process is running under
   get_start_time - provides the unix timestamp when the process started
   get_bsd_jail_id - provides the BSD jail id a given process is running within
   get_bsd_jail_path - provides the path of the given BSD jail
@@ -34,6 +35,7 @@ import ctypes
 import ctypes.util
 import os
 import platform
+import pwd
 import subprocess
 import time
 
@@ -598,6 +600,37 @@ def get_cwd(pid):
   return None  # all queries failed
 
 
+def get_user(pid):
+  """
+  Provides the user a process is running under.
+
+  :param int pid: process id of the process to be queried
+
+  :returns: **str** with the username a process is running under, **None** if
+    it can't be determined
+  """
+
+  if not isinstance(pid, int) or pid < 0:
+    return None
+
+  if stem.util.proc.is_available():
+    try:
+      uid = stem.util.proc.get_uid(pid)
+
+      if uid and uid.isdigit():
+        return pwd.getpwuid(int(uid)).pw_name
+    except:
+      pass
+
+  if is_available("ps"):
+    results = call("ps -o user %s" % pid, [])
+
+    if len(results) >= 2:
+      return results[1].strip()
+
+  return None
+
+
 def get_start_time(pid):
   """
   Provides the unix timestamp when the given process started.
@@ -607,6 +640,9 @@ def get_start_time(pid):
   :returns: **float** for the unix timestamp when the process began, **None**
     if it can't be determined
   """
+
+  if not isinstance(pid, int) or pid < 0:
+    return None
 
   if stem.util.proc.is_available():
     try:

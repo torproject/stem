@@ -248,6 +248,35 @@ class TestControl(unittest.TestCase):
 
     self.assertRaises(ProtocolError, self.controller.get_protocolinfo)
 
+  def test_get_user_remote(self):
+    """
+    Exercise the get_user() method for a non-local socket.
+    """
+
+    mocking.mock_method(ControlSocket, "is_localhost", mocking.return_false())
+
+    self.assertRaises(ValueError, self.controller.get_user)
+    self.assertEqual(123, self.controller.get_user(123))
+
+  def test_get_user_by_getinfo(self):
+    """
+    Exercise the get_user() resolution via its getinfo option.
+    """
+
+    mocking.mock_method(ControlSocket, "is_localhost", mocking.return_true())
+    mocking.mock_method(Controller, "get_info", mocking.return_value('atagar'))
+    self.assertEqual('atagar', self.controller.get_user())
+
+  def test_get_user_by_system(self):
+    """
+    Exercise the get_user() resolution via the system module.
+    """
+
+    mocking.mock_method(ControlSocket, "is_localhost", mocking.return_true())
+    mocking.mock(stem.util.system.get_pid_by_name, mocking.return_value(432))
+    mocking.mock(stem.util.system.get_user, mocking.return_value('atagar'))
+    self.assertEqual('atagar', self.controller.get_user())
+
   def test_get_pid_remote(self):
     """
     Exercise the get_pid() method for a non-local socket.

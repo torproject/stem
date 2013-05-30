@@ -24,6 +24,7 @@ providing its own for interacting at a higher level.
     |- get_exit_policy - provides our exit policy
     |- get_socks_listeners - provides where tor is listening for SOCKS connections
     |- get_protocolinfo - information about the controller interface
+    |- get_user - provides the user tor is running as
     |- get_pid - provides the pid of our tor process
     |
     |- get_microdescriptor - querying the microdescriptor for a relay
@@ -991,6 +992,39 @@ class Controller(BaseController):
       else:
         return default
 
+  def get_user(self, default = UNDEFINED):
+    """
+    Provides the user tor is running as. This often only works if tor is
+    running locally. Also, most of its checks are platform dependent, and hence
+    are not entirely reliable.
+
+    :param object default: response if the query fails
+
+    :returns: str with the username tor is running as
+    """
+
+    user = self._get_cache("user")
+
+    if not user:
+      user = self.get_info("process/user", None)
+
+    if not user and self.get_socket().is_localhost():
+      pid = self.get_pid(None)
+
+      if pid:
+        user = stem.util.system.get_user(pid)
+
+    if user:
+      self._set_cache({"user": user})
+      return user
+    elif default == UNDEFINED:
+      if self.get_socket().is_localhost():
+        raise ValueError("Unable to resolve tor's user")
+      else:
+        raise ValueError("Tor isn't running locally")
+    else:
+      return default
+
   def get_pid(self, default = UNDEFINED):
     """
     Provides the process id of tor. This often only works if tor is running
@@ -1008,8 +1042,6 @@ class Controller(BaseController):
     pid = self._get_cache("pid")
 
     if not pid:
-      # this is the only pid resolution method that works remotely
-
       getinfo_pid = self.get_info("process/pid", None)
 
       if getinfo_pid and getinfo_pid.isdigit():

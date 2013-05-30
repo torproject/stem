@@ -44,6 +44,7 @@ The following are only available within stem's `git repository
   * :func:`~stem.control.Controller.attach_stream` could encounter an undocumented 555 response (:trac:`8701`, :spec:`7286576`)
   * :class:`~stem.descriptor.server_descriptor.RelayDescriptor` digest validation was broken when dealing with non-unicode content with python 3 (:trac:`8755`)
   * The :class:`~stem.control.Controller` use of cached content wasn't thread safe (:trac:`8607`)
+  * Added :func:`~stem.control.Controller.get_user` method to the:class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_pid` method to the:class:`~stem.control.Controller`
 
  * **Descriptors**
@@ -55,6 +56,7 @@ The following are only available within stem's `git repository
   * :func:`~stem.util.system.set_process_name` inserted spaces between characters (:trac:`8631`)
   * :func:`~stem.util.system.get_pid_by_name` can now pull for all processes with a given name
   * :func:`~stem.util.system.call` ignored the subprocess' exit status
+  * Added :func:`stem.util.system.get_user`
   * Added :func:`stem.util.system.get_start_time`
   * Added :func:`stem.util.system.get_bsd_jail_path`
 

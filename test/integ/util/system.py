@@ -383,6 +383,54 @@ class TestSystem(unittest.TestCase):
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
     self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
 
+  def test_get_user_none(self):
+    """
+    Tests the get_user function when the process doesn't exist.
+    """
+
+    self.assertEqual(None, stem.util.system.get_user(None))
+    self.assertEqual(None, stem.util.system.get_user(-5))
+    self.assertEqual(None, stem.util.system.get_start_time(98765))
+
+  def test_get_user_proc(self):
+    """
+    Tests the get_user function with a proc response.
+    """
+
+    if not stem.util.proc.is_available():
+      test.runner.skip(self, "(proc unavailable)")
+      return
+
+    mocking.mock(stem.util.system.call, filter_system_call(['ps ']))
+
+    # we started our tor process so it should be running with the same user
+
+    pid = test.runner.get_runner().get_pid()
+    self.assertTrue(getpass.getuser(), stem.util.system.get_user(pid))
+
+  def test_get_user_ps(self):
+    """
+    Tests the get_user function with a ps response.
+    """
+
+    if not stem.util.system.is_available("ps"):
+      test.runner.skip(self, "(ps unavailable)")
+      return
+
+    mocking.mock(stem.util.proc.is_available, mocking.return_false())
+
+    pid = test.runner.get_runner().get_pid()
+    self.assertTrue(getpass.getuser(), stem.util.system.get_user(pid))
+
+  def test_get_start_time_none(self):
+    """
+    Tests the get_start_time function when the process doesn't exist.
+    """
+
+    self.assertEqual(None, stem.util.system.get_start_time(None))
+    self.assertEqual(None, stem.util.system.get_start_time(-5))
+    self.assertEqual(None, stem.util.system.get_start_time(98765))
+
   def test_get_start_time_proc(self):
     """
     Tests the get_start_time function with a proc response.
