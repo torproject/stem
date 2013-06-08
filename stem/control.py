@@ -1119,8 +1119,8 @@ class Controller(BaseController):
     Provides an iterator for all of the microdescriptors that tor presently
     knows about.
 
-    **Tor does not expose this information via the control protocol
-    (:trac:`8323`).** Until it does this reads the microdescriptors from disk,
+    **Tor does not expose this information via the control protocol**
+    (:trac:`8323`). Until it does this reads the microdescriptors from disk,
     and hence won't work remotely or if we lack read permissions.
 
     :param list default: items to provide if the query fails
@@ -1908,7 +1908,7 @@ class Controller(BaseController):
 
     :raises:
       * :class:`stem.ControllerError` if the call fails
-      * ValueError if the circuit doesn't exist
+      * **ValueError** if the circuit doesn't exist
 
       An exception is only raised if we weren't provided a default response.
     """
@@ -2118,7 +2118,7 @@ class Controller(BaseController):
 
     :param object default: response if the query fails
 
-    :returns: list of :class:`stem.events.StreamEvent` objects
+    :returns: list of :class:`stem.response.events.StreamEvent` objects
 
     :raises: :class:`stem.ControllerError` if the call fails and no default was
       provided
@@ -2153,7 +2153,7 @@ class Controller(BaseController):
 
     :raises:
       * :class:`stem.InvalidRequest` if the stream or circuit id were unrecognized
-      * :class:`UnsatisfiableRequest` if the stream isn't in a state where it can be attached
+      * :class:`stem.UnsatisfiableRequest` if the stream isn't in a state where it can be attached
       * :class:`stem.OperationFailed` if the stream couldn't be attached for any other reason
     """
 
