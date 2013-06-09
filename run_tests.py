@@ -75,6 +75,12 @@ LOG_TYPE_ERROR = """\
   TRACE, DEBUG, INFO, NOTICE, WARN, ERROR
 """
 
+MOCK_UNAVAILABLE_MSG = """\
+To run stem's tests you'll need mock...
+
+https://pypi.python.org/pypi/mock/
+"""
+
 
 def main():
   start_time = time.time()
@@ -104,11 +110,22 @@ def main():
     println("Nothing to run (for usage provide --help)\n")
     sys.exit()
 
+  if not stem.prereq.is_mock_available():
+    println(MOCK_UNAVAILABLE_MSG)
+
+    if stem.util.system.is_available('pip'):
+      println("You can get it by running 'sudo pip install mock'.")
+    elif stem.util.system.is_available('apt-get'):
+      println("You can get it by running 'sudo apt-get install python-mock'.")
+
+    sys.exit(1)
+
   test.util.run_tasks(
     "INITIALISING",
     Task("checking stem version", test.util.check_stem_version),
     Task("checking python version", test.util.check_python_version),
     Task("checking pycrypto version", test.util.check_pycrypto_version),
+    Task("checking mock version", test.util.check_mock_version),
     Task("checking pyflakes version", test.util.check_pyflakes_version),
     Task("checking pep8 version", test.util.check_pep8_version),
     Task("checking for orphaned .pyc files", test.util.clean_orphaned_pyc, (SRC_PATHS,)),

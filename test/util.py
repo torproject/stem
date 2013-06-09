@@ -378,6 +378,14 @@ def check_pycrypto_version():
     return "missing"
 
 
+def check_mock_version():
+  if stem.prereq.is_mock_available():
+    import mock
+    return mock.__version__
+  else:
+    return "missing"
+
+
 def check_pyflakes_version():
   try:
     import pyflakes

@@ -22,6 +22,7 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
 import sys
 
 IS_CRYPTO_AVAILABLE = None
+IS_MOCK_AVAILABLE = None
 
 
 def check_requirements():
@@ -85,3 +86,22 @@ def is_crypto_available():
       log.log_once("stem.prereq.is_crypto_available", log.INFO, msg)
 
   return IS_CRYPTO_AVAILABLE
+
+
+def is_mock_available():
+  """
+  Checks if the mock module is available.
+
+  :returns: **True** if the mock module is available and **False** otherwise
+  """
+
+  global IS_MOCK_AVAILABLE
+
+  if IS_MOCK_AVAILABLE is None:
+    try:
+      import mock
+      IS_MOCK_AVAILABLE = True
+    except ImportError:
+      IS_MOCK_AVAILABLE = False
+
+  return IS_MOCK_AVAILABLE
