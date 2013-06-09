@@ -4,8 +4,9 @@ Tests for the examples given in stem's tutorial.
 
 import io
 import StringIO
-import sys
 import unittest
+
+from mock import patch
 
 from stem.control import Controller
 from stem.descriptor.reader import DescriptorReader
@@ -21,19 +22,14 @@ MIRROR_MIRROR_OUTPUT = """\
 
 
 class TestTutorial(unittest.TestCase):
-  stdout, stdout_real = None, None
-
   def setUp(self):
-    self.stdout, self.stdout_real = StringIO.StringIO(), sys.stdout
-    sys.stdout = self.stdout
-
     mocking.mock_method(RelayDescriptor, '_verify_digest', mocking.no_op())
 
   def tearDown(self):
     mocking.revert_mocking()
-    sys.stdout = self.stdout_real
 
-  def test_the_little_relay_that_could(self):
+  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  def test_the_little_relay_that_could(self, stdout_mock):
     def tutorial_example():
       from stem.control import Controller
 
@@ -61,9 +57,10 @@ class TestTutorial(unittest.TestCase):
     )
 
     tutorial_example()
-    self.assertEqual("My Tor relay has read 33406 bytes and written 29649.\n", self.stdout.getvalue())
+    self.assertEqual("My Tor relay has read 33406 bytes and written 29649.\n", stdout_mock.getvalue())
 
-  def test_mirror_mirror_on_the_wall_1(self):
+  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  def test_mirror_mirror_on_the_wall_1(self, stdout_mock):
     def tutorial_example():
       from stem.control import Controller
 
@@ -88,9 +85,10 @@ class TestTutorial(unittest.TestCase):
     )
 
     tutorial_example()
-    self.assertEqual("found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n", self.stdout.getvalue())
+    self.assertEqual("found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n", stdout_mock.getvalue())
 
-  def test_mirror_mirror_on_the_wall_2(self):
+  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  def test_mirror_mirror_on_the_wall_2(self, stdout_mock):
     def tutorial_example():
       from stem.descriptor import parse_file
 
@@ -112,9 +110,10 @@ class TestTutorial(unittest.TestCase):
       mocking.mock(open, mocking.return_value(test_file))
 
     tutorial_example()
-    self.assertEqual("found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n", self.stdout.getvalue())
+    self.assertEqual("found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n", stdout_mock.getvalue())
 
-  def test_mirror_mirror_on_the_wall_3(self):
+  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  def test_mirror_mirror_on_the_wall_3(self, stdout_mock):
     def tutorial_example():
       from stem.descriptor.reader import DescriptorReader
 
@@ -129,9 +128,10 @@ class TestTutorial(unittest.TestCase):
     )
 
     tutorial_example()
-    self.assertEqual("found relay caerSidi (None)\n", self.stdout.getvalue())
+    self.assertEqual("found relay caerSidi (None)\n", stdout_mock.getvalue())
 
-  def test_mirror_mirror_on_the_wall_4(self):
+  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  def test_mirror_mirror_on_the_wall_4(self, stdout_mock):
     def tutorial_example():
       from stem.control import Controller
       from stem.util import str_tools
@@ -187,4 +187,4 @@ class TestTutorial(unittest.TestCase):
     )
 
     tutorial_example()
-    self.assertEqual(MIRROR_MIRROR_OUTPUT, self.stdout.getvalue())
+    self.assertEqual(MIRROR_MIRROR_OUTPUT, stdout_mock.getvalue())
