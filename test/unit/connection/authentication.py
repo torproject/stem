@@ -13,44 +13,41 @@ import unittest
 
 import stem.connection
 
+from mock import Mock, patch
+
 from stem.util import log
 from test import mocking
 
 
 class TestAuthenticate(unittest.TestCase):
-  def setUp(self):
-    mocking.mock(stem.connection.get_protocolinfo, mocking.no_op())
-    mocking.mock(stem.connection.authenticate_none, mocking.no_op())
-    mocking.mock(stem.connection.authenticate_password, mocking.no_op())
-    mocking.mock(stem.connection.authenticate_cookie, mocking.no_op())
-    mocking.mock(stem.connection.authenticate_safecookie, mocking.no_op())
-
-  def tearDown(self):
-    mocking.revert_mocking()
-
-  def test_with_get_protocolinfo(self):
+  @patch('stem.connection.get_protocolinfo')
+  @patch('stem.connection.authenticate_none', Mock())
+  def test_with_get_protocolinfo(self, get_protocolinfo_mock):
     """
     Tests the authenticate() function when it needs to make a get_protocolinfo.
     """
 
     # tests where get_protocolinfo succeeds
-    protocolinfo_response = mocking.get_protocolinfo_response(
+
+    get_protocolinfo_mock.return_value = mocking.get_protocolinfo_response(
       auth_methods = (stem.connection.AuthMethod.NONE, ),
     )
 
-    mocking.mock(stem.connection.get_protocolinfo, mocking.return_value(protocolinfo_response))
     stem.connection.authenticate(None)
 
     # tests where get_protocolinfo raises an exception
-    raised_exc = stem.ProtocolError(None)
-    mocking.mock(stem.connection.get_protocolinfo, mocking.raise_exception(raised_exc))
+
+    get_protocolinfo_mock.side_effect = stem.ProtocolError
     self.assertRaises(stem.connection.IncorrectSocketType, stem.connection.authenticate, None)
 
-    raised_exc = stem.SocketError(None)
-    mocking.mock(stem.connection.get_protocolinfo, mocking.raise_exception(raised_exc))
+    get_protocolinfo_mock.side_effect = stem.SocketError
     self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None)
 
-  def test_all_use_cases(self):
+  @patch('stem.connection.authenticate_none')
+  @patch('stem.connection.authenticate_password')
+  @patch('stem.connection.authenticate_cookie')
+  @patch('stem.connection.authenticate_safecookie')
+  def test_all_use_cases(self, authenticate_safecookie_mock, authenticate_cookie_mock, authenticate_password_mock, authenticate_none_mock):
     """
     Does basic validation that all valid use cases for the PROTOCOLINFO input
     and dependent functions result in either success or a AuthenticationFailed
@@ -127,26 +124,26 @@ class TestAuthenticate(unittest.TestCase):
             expect_success = False
             auth_mocks = {
               stem.connection.AuthMethod.NONE:
-                (stem.connection.authenticate_none, auth_none_exc),
+                (authenticate_none_mock, auth_none_exc),
               stem.connection.AuthMethod.PASSWORD:
-                (stem.connection.authenticate_password, auth_password_exc),
+                (authenticate_password_mock, auth_password_exc),
               stem.connection.AuthMethod.COOKIE:
-                (stem.connection.authenticate_cookie, auth_cookie_exc),
+                (authenticate_cookie_mock, auth_cookie_exc),
               stem.connection.AuthMethod.SAFECOOKIE:
-                (stem.connection.authenticate_safecookie, auth_cookie_exc),
+                (authenticate_safecookie_mock, auth_cookie_exc),
             }
 
             for auth_method in auth_mocks:
-              auth_function, raised_exc = auth_mocks[auth_method]
+              auth_mock, raised_exc = auth_mocks[auth_method]
 
               if not raised_exc:
                 # Mocking this authentication method so it will succeed. If
                 # it's among the protocolinfo methods then expect success.
 
-                mocking.mock(auth_function, mocking.no_op())
+                auth_mock.side_effect = None
                 expect_success |= auth_method in protocolinfo_auth_methods
               else:
-                mocking.mock(auth_function, mocking.raise_exception(raised_exc))
+                auth_mock.side_effect = raised_exc
 
             if expect_success:
               stem.connection.authenticate(None, "blah", None, protocolinfo_arg)
