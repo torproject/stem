@@ -12,6 +12,8 @@ import stem.util.proc
 import stem.util.system
 import stem.version
 
+from mock import Mock, patch
+
 from stem.response.protocolinfo import AuthMethod
 from test import mocking
 
@@ -145,6 +147,8 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertEquals((), control_message.unknown_auth_methods)
     self.assertEquals(None, control_message.cookie_path)
 
+  @patch('stem.util.proc.is_available', Mock(return_value = False))
+  @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_relative_cookie(self):
     """
     Checks an authentication cookie with a relative path where expansion both
@@ -156,30 +160,26 @@ class TestProtocolInfoResponse(unittest.TestCase):
     # - resolving the pid of the "tor" process
     # - using that to get tor's cwd
 
-    def call_mocking(command, default):
+    def call_function(command, default):
       if command == stem.util.system.GET_PID_BY_NAME_PGREP % "tor":
         return ["10"]
       elif command == stem.util.system.GET_CWD_PWDX % 10:
         return ["10: /tmp/foo"]
 
-    mocking.mock(stem.util.proc.is_available, mocking.return_false())
-    mocking.mock(stem.util.system.is_available, mocking.return_true())
-    mocking.mock(stem.util.system.call, call_mocking)
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_function
 
-    control_message = mocking.get_message(RELATIVE_COOKIE_PATH)
-    stem.response.convert("PROTOCOLINFO", control_message)
+      control_message = mocking.get_message(RELATIVE_COOKIE_PATH)
+      stem.response.convert("PROTOCOLINFO", control_message)
 
-    stem.connection._expand_cookie_path(control_message, stem.util.system.get_pid_by_name, "tor")
+      stem.connection._expand_cookie_path(control_message, stem.util.system.get_pid_by_name, "tor")
 
-    self.assertEquals(os.path.join("/tmp/foo", "tor-browser_en-US", "Data", "control_auth_cookie"), control_message.cookie_path)
+      self.assertEquals(os.path.join("/tmp/foo", "tor-browser_en-US", "Data", "control_auth_cookie"), control_message.cookie_path)
 
     # exercise cookie expansion where both calls fail (should work, just
     # leaving the path unexpanded)
 
-    mocking.mock(stem.util.system.call, mocking.return_none())
-    control_message = mocking.get_message(RELATIVE_COOKIE_PATH)
-    stem.response.convert("PROTOCOLINFO", control_message)
-    self.assertEquals("./tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_path)
-
-    # reset system call mocking
-    mocking.revert_mocking()
+    with patch('stem.util.system.call', Mock(return_value = None)):
+      control_message = mocking.get_message(RELATIVE_COOKIE_PATH)
+      stem.response.convert("PROTOCOLINFO", control_message)
+      self.assertEquals("./tor-browser_en-US/Data/control_auth_cookie", control_message.cookie_path)
