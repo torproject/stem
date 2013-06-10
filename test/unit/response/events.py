@@ -10,6 +10,8 @@ import stem.response
 import stem.response.events
 import stem.util.log
 
+from mock import Mock
+
 from stem import *  # enums and exceptions
 from test import mocking
 
@@ -340,10 +342,7 @@ class TestEvents(unittest.TestCase):
         print_bw(_get_event("650 BW 15 25"))
         time.sleep(0.05)
 
-    controller = mocking.get_object(Controller, {
-      'authenticate': mocking.no_op(),
-      'add_event_listener': mocking.no_op(),
-    })
+    controller = Mock(spec = Controller)
 
     controller.authenticate()
     controller.add_event_listener(print_bw, EventType.BW)
