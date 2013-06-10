@@ -6,12 +6,11 @@ import io
 import StringIO
 import unittest
 
-from mock import patch
+from mock import Mock, patch
 
 from stem.control import Controller
 from stem.descriptor.reader import DescriptorReader
 from stem.descriptor.server_descriptor import RelayDescriptor
-from stem.prereq import is_python_3
 from test import mocking
 
 MIRROR_MIRROR_OUTPUT = """\
@@ -22,14 +21,9 @@ MIRROR_MIRROR_OUTPUT = """\
 
 
 class TestTutorial(unittest.TestCase):
-  def setUp(self):
-    mocking.mock_method(RelayDescriptor, '_verify_digest', mocking.no_op())
-
-  def tearDown(self):
-    mocking.revert_mocking()
-
   @patch('sys.stdout', new_callable = StringIO.StringIO)
-  def test_the_little_relay_that_could(self, stdout_mock):
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  def test_the_little_relay_that_could(self, from_port_mock, stdout_mock):
     def tutorial_example():
       from stem.control import Controller
 
@@ -41,26 +35,18 @@ class TestTutorial(unittest.TestCase):
 
         print "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
 
-    controller = mocking.get_object(Controller, {
-      'authenticate': mocking.no_op(),
-      'close': mocking.no_op(),
-      'get_info': mocking.return_for_args({
-        ('traffic/read',): '33406',
-        ('traffic/written',): '29649',
-      }, is_method = True),
-    })
-
-    mocking.mock(
-      Controller.from_port, mocking.return_value(controller),
-      target_module = Controller,
-      is_static = True,
-    )
+    controller = from_port_mock().__enter__()
+    controller.get_info.side_effect = lambda arg: {
+      'traffic/read': '33406',
+      'traffic/written': '29649',
+    }[arg]
 
     tutorial_example()
     self.assertEqual("My Tor relay has read 33406 bytes and written 29649.\n", stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO.StringIO)
-  def test_mirror_mirror_on_the_wall_1(self, stdout_mock):
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  def test_mirror_mirror_on_the_wall_1(self, from_port_mock, stdout_mock):
     def tutorial_example():
       from stem.control import Controller
 
@@ -70,25 +56,15 @@ class TestTutorial(unittest.TestCase):
         for desc in controller.get_network_statuses():
           print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
 
-    controller = mocking.get_object(Controller, {
-      'authenticate': mocking.no_op(),
-      'close': mocking.no_op(),
-      'get_network_statuses': mocking.return_value(
-        [mocking.get_router_status_entry_v2()],
-      ),
-    })
-
-    mocking.mock(
-      Controller.from_port, mocking.return_value(controller),
-      target_module = Controller,
-      is_static = True,
-    )
+    controller = from_port_mock().__enter__()
+    controller.get_network_statuses.return_value = [mocking.get_router_status_entry_v2()]
 
     tutorial_example()
     self.assertEqual("found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n", stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO.StringIO)
-  def test_mirror_mirror_on_the_wall_2(self, stdout_mock):
+  @patch('%s.open' % __name__, create = True)
+  def test_mirror_mirror_on_the_wall_2(self, open_mock, stdout_mock):
     def tutorial_example():
       from stem.descriptor import parse_file
 
@@ -100,20 +76,16 @@ class TestTutorial(unittest.TestCase):
       content = True,
     ))
 
-    mocking.support_with(test_file)
     test_file.name = "/home/atagar/.tor/cached-consensus"
-
-    if is_python_3():
-      import builtins
-      mocking.mock(open, mocking.return_value(test_file), target_module = builtins)
-    else:
-      mocking.mock(open, mocking.return_value(test_file))
+    open_mock.return_value = test_file
 
     tutorial_example()
     self.assertEqual("found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n", stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO.StringIO)
-  def test_mirror_mirror_on_the_wall_3(self, stdout_mock):
+  @patch('stem.descriptor.reader.DescriptorReader', spec = DescriptorReader)
+  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
+  def test_mirror_mirror_on_the_wall_3(self, reader_mock, stdout_mock):
     def tutorial_example():
       from stem.descriptor.reader import DescriptorReader
 
@@ -121,17 +93,16 @@ class TestTutorial(unittest.TestCase):
         for desc in reader:
           print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
 
-    mocking.mock(
-      DescriptorReader.__iter__,
-      mocking.return_value(iter([mocking.get_relay_server_descriptor()])),
-      target_module = DescriptorReader
-    )
+    reader = reader_mock().__enter__()
+    reader.__iter__.return_value = iter([mocking.get_relay_server_descriptor()])
 
     tutorial_example()
     self.assertEqual("found relay caerSidi (None)\n", stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO.StringIO)
-  def test_mirror_mirror_on_the_wall_4(self, stdout_mock):
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
+  def test_mirror_mirror_on_the_wall_4(self, from_port_mock, stdout_mock):
     def tutorial_example():
       from stem.control import Controller
       from stem.util import str_tools
@@ -169,22 +140,13 @@ class TestTutorial(unittest.TestCase):
     exit_descriptor = mocking.sign_descriptor_content(exit_descriptor)
     exit_descriptor = RelayDescriptor(exit_descriptor)
 
-    controller = mocking.get_object(Controller, {
-      'authenticate': mocking.no_op(),
-      'close': mocking.no_op(),
-      'get_server_descriptors': mocking.return_value([
-        exit_descriptor,
-        mocking.get_relay_server_descriptor(),  # non-exit
-        exit_descriptor,
-        exit_descriptor,
-      ])
-    })
-
-    mocking.mock(
-      Controller.from_port, mocking.return_value(controller),
-      target_module = Controller,
-      is_static = True,
-    )
+    controller = from_port_mock().__enter__()
+    controller.get_server_descriptors.return_value = [
+      exit_descriptor,
+      mocking.get_relay_server_descriptor(),  # non-exit
+      exit_descriptor,
+      exit_descriptor,
+    ]
 
     tutorial_example()
     self.assertEqual(MIRROR_MIRROR_OUTPUT, stdout_mock.getvalue())
