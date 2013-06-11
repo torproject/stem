@@ -3,8 +3,7 @@ Unit tests for the stem.control module. The module's primarily exercised via
 integ tests, but a few bits lend themselves to unit testing.
 """
 
-import os
-import tempfile
+import io
 import unittest
 
 import stem.descriptor.router_status_entry
@@ -305,24 +304,18 @@ class TestControl(unittest.TestCase):
     self.assertEqual(321, self.controller.get_pid())
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = True))
-  def test_get_pid_by_pid_file(self):
+  @patch('stem.control.Controller.get_conf')
+  @patch('stem.control.open', create = True)
+  def test_get_pid_by_pid_file(self, open_mock, get_conf_mock):
     """
     Exercise the get_pid() resolution via a PidFile.
     """
 
-    # It's a little inappropriate for us to be using tempfile in unit tests,
-    # but this is more reliable than trying to mock open().
+    get_conf_mock.return_value = '/tmp/pid_file'
+    open_mock.return_value = io.BytesIO('432')
 
-    pid_file_path = tempfile.mkstemp()[1]
-
-    try:
-      with open(pid_file_path, 'w') as pid_file:
-        pid_file.write('432')
-
-      with patch('stem.control.Controller.get_conf', Mock(return_value = pid_file_path)):
-        self.assertEqual(432, self.controller.get_pid())
-    finally:
-      os.remove(pid_file_path)
+    self.assertEqual(432, self.controller.get_pid())
+    open_mock.assert_called_once_with('/tmp/pid_file')
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = True))
   @patch('stem.util.system.get_pid_by_name', Mock(return_value = 432))
