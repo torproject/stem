@@ -2,30 +2,17 @@
 Unit tests for stem.descriptor.reader.
 """
 
-import StringIO
+import io
 import unittest
 
 import stem.descriptor.reader
-import stem.prereq
-import test.mocking as mocking
 
-
-def _mock_open(content):
-  test_content = StringIO.StringIO(content)
-  mocking.support_with(test_content)
-
-  if stem.prereq.is_python_3():
-    import builtins
-    mocking.mock(builtins.open, mocking.return_value(test_content), builtins)
-  else:
-    mocking.mock(open, mocking.return_value(test_content))
+from mock import patch
 
 
 class TestDescriptorReader(unittest.TestCase):
-  def tearDown(self):
-    mocking.revert_mocking()
-
-  def test_load_processed_files(self):
+  @patch('stem.descriptor.reader.open', create = True)
+  def test_load_processed_files(self, open_mock):
     """
     Successful load of content.
     """
@@ -48,49 +35,54 @@ class TestDescriptorReader(unittest.TestCase):
       "/dir/after empty line": 12345,
     }
 
-    _mock_open("\n".join(test_lines))
+    open_mock.return_value = io.BytesIO("\n".join(test_lines))
     self.assertEquals(expected_value, stem.descriptor.reader.load_processed_files(""))
 
-  def test_load_processed_files_empty(self):
+  @patch('stem.descriptor.reader.open', create = True)
+  def test_load_processed_files_empty(self, open_mock):
     """
     Tests the load_processed_files() function with an empty file.
     """
 
-    _mock_open("")
+    open_mock.return_value = io.BytesIO("")
     self.assertEquals({}, stem.descriptor.reader.load_processed_files(""))
 
-  def test_load_processed_files_no_file(self):
+  @patch('stem.descriptor.reader.open', create = True)
+  def test_load_processed_files_no_file(self, open_mock):
     """
     Tests the load_processed_files() function content that is malformed because
     it is missing the file path.
     """
 
-    _mock_open(" 12345")
+    open_mock.return_value = io.BytesIO(" 12345")
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")
 
-  def test_load_processed_files_no_timestamp(self):
+  @patch('stem.descriptor.reader.open', create = True)
+  def test_load_processed_files_no_timestamp(self, open_mock):
     """
     Tests the load_processed_files() function content that is malformed because
     it is missing the timestamp.
     """
 
-    _mock_open("/dir/file ")
+    open_mock.return_value = io.BytesIO("/dir/file ")
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")
 
-  def test_load_processed_files_malformed_file(self):
+  @patch('stem.descriptor.reader.open', create = True)
+  def test_load_processed_files_malformed_file(self, open_mock):
     """
     Tests the load_processed_files() function content that is malformed because
     it has an invalid file path.
     """
 
-    _mock_open("not_an_absolute_file 12345")
+    open_mock.return_value = io.BytesIO("not_an_absolute_file 12345")
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")
 
-  def test_load_processed_files_malformed_timestamp(self):
+  @patch('stem.descriptor.reader.open', create = True)
+  def test_load_processed_files_malformed_timestamp(self, open_mock):
     """
     Tests the load_processed_files() function content that is malformed because
     it has a non-numeric timestamp.
     """
 
-    _mock_open("/dir/file 123a")
+    open_mock.return_value = io.BytesIO("/dir/file 123a")
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, "")
