@@ -42,7 +42,7 @@ class TestControlMessage(unittest.TestCase):
 
     msg = stem.response.ControlMessage.from_str(GETINFO_VERSION, "GETINFO")
     self.assertTrue(isinstance(msg, stem.response.getinfo.GetInfoResponse))
-    self.assertEqual({'version': '0.2.2.23-alpha (git-b85eb949b528f4d7)'}, msg.entries)
+    self.assertEqual({'version': b'0.2.2.23-alpha (git-b85eb949b528f4d7)'}, msg.entries)
 
   def test_ok_response(self):
     """
