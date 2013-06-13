@@ -10,22 +10,7 @@ calling :func:`test.mocking.revert_mocking`.
 
 ::
 
-  mock - replaces a function with an alternative implementation
-  mock_method - replaces a method with an alternative implementation
-  revert_mocking - reverts any changes made by the mock function
-  get_real_function - provides the non-mocked version of a function
   get_all_combinations - provides all combinations of attributes
-  support_with - makes object be compatible for use via the 'with' keyword
-  get_object - get an arbitrary mock object of any class
-
-  Mocking Functions
-    no_op           - does nothing
-    return_value    - returns a given value
-    return_true     - returns True
-    return_false    - returns False
-    return_none     - returns None
-    return_for_args - return based on the input arguments
-    raise_exception - raises an exception when called
 
   Instance Constructors
     get_message                     - stem.response.ControlMessage
@@ -56,7 +41,6 @@ calling :func:`test.mocking.revert_mocking`.
 
 import base64
 import hashlib
-import inspect
 import itertools
 
 import stem.descriptor.extrainfo_descriptor
@@ -67,18 +51,6 @@ import stem.descriptor.server_descriptor
 import stem.prereq
 import stem.response
 import stem.util.str_tools
-
-# Once we've mocked a function we can't rely on its __module__ or __name__
-# attributes, so instead we associate a unique 'mock_id' attribute that maps
-# back to the original attributes.
-
-MOCK_ID = itertools.count(0)
-
-# mock_id => (module, function_name, original_function, is_static)
-
-MOCK_STATE = {}
-
-BUILTIN_TYPE = type(open)
 
 CRYPTO_BLOB = """
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
@@ -204,261 +176,6 @@ NETWORK_STATUS_DOCUMENT_FOOTER = (
 )
 
 
-def no_op():
-  def _no_op(*args, **kwargs):
-    pass
-
-  return _no_op
-
-
-def return_value(value):
-  def _return_value(*args, **kwargs):
-    return value
-
-  return _return_value
-
-
-def return_true():
-  return return_value(True)
-
-
-def return_false():
-  return return_value(False)
-
-
-def return_none():
-  return return_value(None)
-
-
-def return_for_args(args_to_return_value, default = None, is_method = False):
-  """
-  Returns a value if the arguments to it match something in a given
-  'argument => return value' mapping. Otherwise, a default function
-  is called with the arguments.
-
-  The mapped argument is a tuple (not a list) of parameters to a function or
-  method. Positional arguments must be in the order used to call the mocked
-  function, and keyword arguments must be strings of the form 'k=v'. Keyword
-  arguments **must** appear in alphabetical order. For example...
-
-  ::
-
-    mocking.mock("get_answer", mocking.return_for_args({
-      ("breakfast_menu",): "spam",
-      ("lunch_menu",): "eggs and spam",
-      (42,): ["life", "universe", "everything"],
-    }))
-
-    mocking.mock("align_text", mocking.return_for_args({
-      ("Stem", "alignment=left", "size=10"):   "Stem      ",
-      ("Stem", "alignment=center", "size=10"): "   Stem   ",
-      ("Stem", "alignment=right", "size=10"):  "      Stem",
-    }))
-
-    mocking.mock_method(Controller, "new_circuit", mocking.return_for_args({
-      (): "1",
-      ("path=['718BCEA286B531757ACAFF93AE04910EA73DE617', " + \
-        "'30BAB8EE7606CBD12F3CC269AE976E0153E7A58D', " + \
-        "'2765D8A8C4BBA3F89585A9FFE0E8575615880BEB']",): "2"
-      ("path=['1A', '2B', '3C']", "purpose=controller"): "3"
-    }, is_method = True))
-
-  :param dict args_to_return_value: mapping of arguments to the value we should provide
-  :param functor default: returns the value of this function if the args don't
-    match something that we have, we raise a ValueError by default
-  :param bool is_method: handles this like a method, removing the 'self'
-    reference
-  """
-
-  def _return_value(*args, **kwargs):
-    # strip off the 'self' if we're mocking a method
-    if args and is_method:
-      args = args[1:] if len(args) > 2 else [args[1]]
-
-    if kwargs:
-      args.extend(["%s=%s" % (k, kwargs[k]) for k in sorted(kwargs.keys())])
-
-    args = tuple(args)
-
-    if args in args_to_return_value:
-      return args_to_return_value[args]
-    elif default is None:
-      arg_label = ", ".join([str(v) for v in args])
-      arg_keys = ", ".join([str(v) for v in args_to_return_value.keys()])
-      raise ValueError("Unrecognized argument sent for return_for_args(). Got '%s' but we only recognize '%s'." % (arg_label, arg_keys))
-    else:
-      return default(args)
-
-  return _return_value
-
-
-def raise_exception(exception):
-  def _raise(*args, **kwargs):
-    raise exception
-
-  return _raise
-
-
-def support_with(obj):
-  """
-  Provides no-op support for the 'with' keyword, adding __enter__ and __exit__
-  methods to the object. The __enter__ provides the object itself and __exit__
-  does nothing.
-
-  :param object obj: object to support the 'with' keyword
-
-  :returns: input object
-  """
-
-  if not hasattr(obj, "__enter__"):
-    setattr(obj, "__enter__", return_value(obj))
-
-  if not hasattr(obj, "__exit__"):
-    setattr(obj, "__exit__", no_op())
-
-  return obj
-
-
-def mock(target, mock_call, target_module = None, is_static = False):
-  """
-  Mocks the given function, saving the initial implementation so it can be
-  reverted later.
-
-  The target_module only needs to be set if the results of
-  'inspect.getmodule(target)' doesn't match the module that we want to mock
-  (for instance, the 'os' module provides the platform module that it wraps
-  like 'postix', which won't work).
-
-  :param function target: function to be mocked
-  :param functor mock_call: mocking to replace the function with
-  :param module target_module: module that this is mocking, this defaults to the inspected value
-  :param bool is_static: handles this like a static method of the target_module if True
-  """
-
-  if hasattr(target, "mock_id"):
-    # we're overriding an already mocked function
-    mocking_id = getattr(target, "mock_id")
-    target_module, target_function, _, _ = MOCK_STATE[mocking_id]
-  else:
-    # this is a new mocking, save the original state
-    mocking_id = MOCK_ID.next()
-    target_module = target_module or inspect.getmodule(target)
-    target_function = target.__name__
-    MOCK_STATE[mocking_id] = (target_module, target_function, target, is_static)
-
-  mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
-  setattr(mock_wrapper, "mock_id", mocking_id)
-
-  # mocks the function with this wrapper
-
-  if is_static:
-    setattr(target_module, target_function, staticmethod(mock_wrapper))
-  else:
-    setattr(target_module, target_function, mock_wrapper)
-
-
-def mock_method(target_class, method_name, mock_call):
-  """
-  Mocks the given method in target_class in a similar fashion as mock()
-  does for functions. For instance...
-
-  ::
-
-    >>> mock_method(stem.control.Controller, "is_feature_enabled", mocking.return_true())
-    >>> controller.is_feature_enabled("VERBOSE_EVENTS")
-    True
-
-  ::
-
-  "VERBOSE_EVENTS" does not exist and can never be True, but the mocked
-  "is_feature_enabled" will always return True, regardless.
-
-  :param class target_class: class with the method we want to mock
-  :param str method_name: name of the method to be mocked
-  :param functor mock_call: mocking to replace the method
-  """
-
-  # Ideally callers could call us with just the method, for instance like...
-  #   mock_method(MyClass.foo, mocking.return_true())
-  #
-  # However, while classes reference the methods they have the methods
-  # themselves don't reference the class. This is unfortunate because it means
-  # that we need to know both the class and method we're replacing.
-
-  target_method = getattr(target_class, method_name)
-
-  if hasattr(target_method, "mock_id"):
-    # we're overriding an already mocked method
-    mocking_id = target_method.mock_id
-    _, target_method, _, _ = MOCK_STATE[mocking_id]
-  else:
-    # this is a new mocking, save the original state
-    mocking_id = MOCK_ID.next()
-    MOCK_STATE[mocking_id] = (target_class, method_name, target_method, False)
-
-  mock_wrapper = lambda *args, **kwargs: mock_call(*args, **kwargs)
-  setattr(mock_wrapper, "mock_id", mocking_id)
-
-  # mocks the function with this wrapper
-  setattr(target_class, method_name, mock_wrapper)
-
-
-def revert_mocking():
-  """
-  Reverts any mocking done by this function.
-  """
-
-  # Reverting mocks in reverse order. If we properly reuse mock_ids then this
-  # shouldn't matter, but might as well be safe.
-
-  mock_ids = MOCK_STATE.keys()
-  mock_ids.sort()
-  mock_ids.reverse()
-
-  for mock_id in mock_ids:
-    module, function, impl, is_static = MOCK_STATE[mock_id]
-
-    # Python 3.x renamed __builtin__ to builtins. Ideally we'd account for
-    # this with a simple 'import __builtin__ as builtins' but that somehow
-    # makes the following check fail. Haven't a clue why.
-
-    if stem.prereq.is_python_3():
-      import builtins
-      builtin_module = builtins
-    else:
-      import __builtin__
-      builtin_module = __builtin__
-
-    if is_static:
-      impl = staticmethod(impl)
-
-    if module == builtin_module:
-      setattr(builtin_module, function, impl)
-    else:
-      setattr(module, function, impl)
-
-    del MOCK_STATE[mock_id]
-
-  MOCK_STATE.clear()
-
-
-def get_real_function(function):
-  """
-  Provides the original, non-mocked implementation for a function or method.
-  This simply returns the current implementation if it isn't being mocked.
-
-  :param function function: function to look up the original implementation of
-
-  :returns: original implementation of the function
-  """
-
-  if hasattr(function, "mock_id"):
-    mocking_id = getattr(function, "mock_id")
-    return MOCK_STATE[mocking_id][2]
-  else:
-    return function
-
-
 def get_all_combinations(attr, include_empty = False):
   """
   Provides an iterator for all combinations of a set of attributes. For
@@ -494,38 +211,6 @@ def get_all_combinations(attr, include_empty = False):
       if not item in seen:
         seen.add(item)
         yield item
-
-
-def get_object(object_class, methods = None):
-  """
-  Provides a mock instance of an arbitrary class. Its methods are mocked with
-  the given replacements, and calling any others will result in an exception.
-
-  :param class object_class: class that we're making an instance of
-  :param dict methods: mapping of method names to their mocked implementation
-
-  :returns: stem.control.Controller instance
-  """
-
-  if methods is None:
-    methods = {}
-
-  mock_methods = {}
-
-  for method_name in dir(object_class):
-    if method_name in methods:
-      mock_methods[method_name] = methods[method_name]
-    elif method_name.startswith('__') and method_name.endswith('__'):
-      pass  # messing with most private methods makes for a broken mock object
-    else:
-      mock_methods[method_name] = raise_exception(ValueError("Unexpected call of '%s' on a mock object" % method_name))
-
-  # makes it so our constructor won't need any arguments
-  mock_methods['__init__'] = no_op()
-
-  mock_class = type('MockClass', (object_class,), mock_methods)
-
-  return mock_class()
 
 
 def get_message(content, reformat = True):

@@ -12,7 +12,7 @@ import stem.util.proc
 import stem.util.system
 import test.runner
 
-from test import mocking
+from mock import Mock, patch
 
 
 def filter_system_call(prefixes):
@@ -21,10 +21,12 @@ def filter_system_call(prefixes):
   function if it matches one of the prefixes, and acts as a no-op otherwise.
   """
 
+  original_call = stem.util.system.call
+
   def _filter_system_call(command, default):
     for prefix in prefixes:
       if command.startswith(prefix):
-        real_call_function = mocking.get_real_function(stem.util.system.call)
+        real_call_function = original_call
         return real_call_function(command)
 
   return _filter_system_call
@@ -58,9 +60,6 @@ class TestSystem(unittest.TestCase):
         ps_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PS_BSD)
         results = [r for r in ps_results if r.endswith(" tor")]
         self.is_extra_tor_running = len(results) > 1
-
-  def tearDown(self):
-    mocking.revert_mocking()
 
   def test_is_available(self):
     """
@@ -118,10 +117,14 @@ class TestSystem(unittest.TestCase):
       return
 
     pgrep_prefix = stem.util.system.GET_PID_BY_NAME_PGREP % ""
-    mocking.mock(stem.util.system.call, filter_system_call([pgrep_prefix]))
 
-    tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
+    call_replacement = filter_system_call([pgrep_prefix])
+
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
+
+      tor_pid = test.runner.get_runner().get_pid()
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
 
   def test_get_pid_by_name_pidof(self):
     """
@@ -136,10 +139,14 @@ class TestSystem(unittest.TestCase):
       return
 
     pidof_prefix = stem.util.system.GET_PID_BY_NAME_PIDOF % ""
-    mocking.mock(stem.util.system.call, filter_system_call([pidof_prefix]))
 
-    tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
+    call_replacement = filter_system_call([pidof_prefix])
+
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
+
+      tor_pid = test.runner.get_runner().get_pid()
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
 
   def test_get_pid_by_name_ps_linux(self):
     """
@@ -157,10 +164,14 @@ class TestSystem(unittest.TestCase):
       return
 
     ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_LINUX % ""
-    mocking.mock(stem.util.system.call, filter_system_call([ps_prefix]))
 
-    tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
+    call_replacement = filter_system_call([ps_prefix])
+
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
+
+      tor_pid = test.runner.get_runner().get_pid()
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
 
   def test_get_pid_by_name_ps_bsd(self):
     """
@@ -178,10 +189,14 @@ class TestSystem(unittest.TestCase):
       return
 
     ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_BSD
-    mocking.mock(stem.util.system.call, filter_system_call([ps_prefix]))
 
-    tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
+    call_replacement = filter_system_call([ps_prefix])
+
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
+
+      tor_pid = test.runner.get_runner().get_pid()
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
 
   def test_get_pid_by_name_lsof(self):
     """
@@ -200,14 +215,17 @@ class TestSystem(unittest.TestCase):
       return
 
     lsof_prefix = stem.util.system.GET_PID_BY_NAME_LSOF % ""
-    mocking.mock(stem.util.system.call, filter_system_call([lsof_prefix]))
 
-    our_tor_pid = test.runner.get_runner().get_pid()
+    call_replacement = filter_system_call([lsof_prefix])
 
-    all_tor_pids = stem.util.system.get_pid_by_name("tor", multiple = True)
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
 
-    if len(all_tor_pids) == 1:
-      self.assertEquals(our_tor_pid, all_tor_pids[0])
+      our_tor_pid = test.runner.get_runner().get_pid()
+      all_tor_pids = stem.util.system.get_pid_by_name("tor", multiple = True)
+
+      if len(all_tor_pids) == 1:
+        self.assertEquals(our_tor_pid, all_tor_pids[0])
 
   def test_get_pid_by_port(self):
     """
@@ -257,10 +275,14 @@ class TestSystem(unittest.TestCase):
       return
 
     netstat_prefix = stem.util.system.GET_PID_BY_PORT_NETSTAT
-    mocking.mock(stem.util.system.call, filter_system_call([netstat_prefix]))
 
-    tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
+    call_replacement = filter_system_call([netstat_prefix])
+
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
+
+      tor_pid = test.runner.get_runner().get_pid()
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
 
   def test_get_pid_by_port_sockstat(self):
     """
@@ -282,10 +304,14 @@ class TestSystem(unittest.TestCase):
       return
 
     sockstat_prefix = stem.util.system.GET_PID_BY_PORT_SOCKSTAT % ""
-    mocking.mock(stem.util.system.call, filter_system_call([sockstat_prefix]))
 
-    tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
+    call_replacement = filter_system_call([sockstat_prefix])
+
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
+
+      tor_pid = test.runner.get_runner().get_pid()
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
 
   def test_get_pid_by_port_lsof(self):
     """
@@ -307,10 +333,14 @@ class TestSystem(unittest.TestCase):
       return
 
     lsof_prefix = stem.util.system.GET_PID_BY_PORT_LSOF
-    mocking.mock(stem.util.system.call, filter_system_call([lsof_prefix]))
 
-    tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
+    call_replacement = filter_system_call([lsof_prefix])
+
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
+
+      tor_pid = test.runner.get_runner().get_pid()
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
 
   def test_get_pid_by_open_file(self):
     """
@@ -358,10 +388,14 @@ class TestSystem(unittest.TestCase):
 
     # filter the call function to only allow this command
     pwdx_prefix = stem.util.system.GET_CWD_PWDX % ""
-    mocking.mock(stem.util.system.call, filter_system_call([pwdx_prefix]))
 
-    runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
-    self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
+    call_replacement = filter_system_call([pwdx_prefix])
+
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
+
+      runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
+      self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
 
   def test_get_cwd_lsof(self):
     """
@@ -378,10 +412,14 @@ class TestSystem(unittest.TestCase):
 
     # filter the call function to only allow this command
     lsof_prefix = "lsof -a -p "
-    mocking.mock(stem.util.system.call, filter_system_call([lsof_prefix]))
 
-    runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
-    self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
+    call_replacement = filter_system_call([lsof_prefix])
+
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
+
+      runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
+      self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
 
   def test_get_user_none(self):
     """
@@ -401,13 +439,17 @@ class TestSystem(unittest.TestCase):
       test.runner.skip(self, "(proc unavailable)")
       return
 
-    mocking.mock(stem.util.system.call, filter_system_call(['ps ']))
+    call_replacement = filter_system_call(['ps '])
 
-    # we started our tor process so it should be running with the same user
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
 
-    pid = test.runner.get_runner().get_pid()
-    self.assertTrue(getpass.getuser(), stem.util.system.get_user(pid))
+      # we started our tor process so it should be running with the same user
 
+      pid = test.runner.get_runner().get_pid()
+      self.assertTrue(getpass.getuser(), stem.util.system.get_user(pid))
+
+  @patch('stem.util.proc.is_available', Mock(return_value = False))
   def test_get_user_ps(self):
     """
     Tests the get_user function with a ps response.
@@ -416,8 +458,6 @@ class TestSystem(unittest.TestCase):
     if not stem.util.system.is_available("ps"):
       test.runner.skip(self, "(ps unavailable)")
       return
-
-    mocking.mock(stem.util.proc.is_available, mocking.return_false())
 
     pid = test.runner.get_runner().get_pid()
     self.assertTrue(getpass.getuser(), stem.util.system.get_user(pid))
@@ -440,11 +480,15 @@ class TestSystem(unittest.TestCase):
       test.runner.skip(self, "(proc unavailable)")
       return
 
-    mocking.mock(stem.util.system.call, filter_system_call(['ps ']))
+    call_replacement = filter_system_call(['ps '])
 
-    pid = test.runner.get_runner().get_pid()
-    self.assertTrue(stem.util.system.get_start_time(pid) >= 0)
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
 
+      pid = test.runner.get_runner().get_pid()
+      self.assertTrue(stem.util.system.get_start_time(pid) >= 0)
+
+  @patch('stem.util.proc.is_available', Mock(return_value = False))
   def test_get_start_time_ps(self):
     """
     Tests the get_start_time function with a ps response.
@@ -453,8 +497,6 @@ class TestSystem(unittest.TestCase):
     if not stem.util.system.is_available("ps"):
       test.runner.skip(self, "(ps unavailable)")
       return
-
-    mocking.mock(stem.util.proc.is_available, mocking.return_false())
 
     pid = test.runner.get_runner().get_pid()
     self.assertTrue(stem.util.system.get_start_time(pid) >= 0)

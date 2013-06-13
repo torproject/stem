@@ -11,16 +11,12 @@ import stem.descriptor
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.version
-import test.mocking
 import test.runner
 
 from test.integ.descriptor import get_resource
 
 
 class TestServerDescriptor(unittest.TestCase):
-  def tearDown(self):
-    test.mocking.revert_mocking()
-
   def test_metrics_descriptor(self):
     """
     Parses and checks our results against a server descriptor from metrics.

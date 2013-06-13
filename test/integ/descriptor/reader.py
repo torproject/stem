@@ -11,7 +11,6 @@ import time
 import unittest
 
 import stem.descriptor.reader
-import test.mocking
 import test.runner
 
 from stem.util import system
@@ -87,8 +86,6 @@ class SkipListener:
 
 class TestDescriptorReader(unittest.TestCase):
   def tearDown(self):
-    test.mocking.revert_mocking()
-
     # cleans up 'processed file' listings that we made
     test_listing_path = _get_processed_files_path()
 
@@ -394,8 +391,6 @@ class TestDescriptorReader(unittest.TestCase):
     Checks that the reader properly reports when it skips both binary and
     plaintext non-descriptor files.
     """
-
-    test.mocking.mock_method(stem.descriptor.server_descriptor.RelayDescriptor, '_validate_content', test.mocking.no_op())
 
     skip_listener = SkipListener()
     reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA)

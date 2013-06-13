@@ -7,8 +7,9 @@ import unittest
 import stem.util.system
 import stem.version
 
+from mock import patch
+
 from stem.version import Version
-from test import mocking
 
 TOR_VERSION_OUTPUT = """Mar 22 23:09:37.088 [notice] Tor v0.2.2.35 \
 (git-73ff13ab3cc9570d). This is experimental software. Do not rely on it for \
@@ -17,28 +18,18 @@ Tor version 0.2.2.35 (git-73ff13ab3cc9570d)."""
 
 
 class TestVersion(unittest.TestCase):
-  def tearDown(self):
-    mocking.revert_mocking()
+  @patch('stem.util.system.call')
+  @patch.dict(stem.version.VERSION_CACHE)
+  def test_get_system_tor_version(self, call_mock):
+    call_mock.return_value = TOR_VERSION_OUTPUT.splitlines()
 
-  def test_get_system_tor_version(self):
-    # Clear the version cache both before and after the test. Without this
-    # prior results short circuit the system call, and future calls will
-    # provide this mocked value.
-
-    stem.version.VERSION_CACHE = {}
-
-    def _mock_call(command):
-      if command == "tor --version":
-        return TOR_VERSION_OUTPUT.splitlines()
-      else:
-        raise ValueError("stem.util.system.call received an unexpected command: %s" % command)
-
-    mocking.mock(stem.util.system.call, _mock_call)
     version = stem.version.get_system_tor_version()
+
     self.assert_versions_match(version, 0, 2, 2, 35, None, "git-73ff13ab3cc9570d")
     self.assertEqual("73ff13ab3cc9570d", version.git_commit)
+    call_mock.assert_called_once_with('tor --version')
 
-    stem.version.VERSION_CACHE = {}
+    self.assertEqual({'tor': version}, stem.version.VERSION_CACHE)
 
   def test_parsing(self):
     """
