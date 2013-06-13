@@ -2,7 +2,6 @@
 Tests the stem.process functions with various use cases.
 """
 
-import os
 import shutil
 import subprocess
 import tempfile
@@ -16,12 +15,7 @@ import stem.util.system
 import stem.version
 import test.runner
 
-from test import mocking
-
-
-def _kill_process(process):
-  process.kill()
-  process.communicate()  # block until its definitely gone
+from mock import patch
 
 
 class TestProcess(unittest.TestCase):
@@ -29,7 +23,6 @@ class TestProcess(unittest.TestCase):
     self.data_directory = tempfile.mkdtemp()
 
   def tearDown(self):
-    mocking.revert_mocking()
     shutil.rmtree(self.data_directory)
 
   def test_launch_tor_with_config(self):
@@ -67,7 +60,8 @@ class TestProcess(unittest.TestCase):
       if control_socket:
         control_socket.close()
 
-      _kill_process(tor_process)
+      tor_process.kill()
+      tor_process.communicate()
 
   def test_launch_tor_with_timeout(self):
     """
@@ -86,7 +80,8 @@ class TestProcess(unittest.TestCase):
     if not (runtime > 2 and runtime < 3):
       self.fail("Test should have taken 2-3 seconds, took %i instead" % runtime)
 
-  def test_take_ownership_via_pid(self):
+  @patch('os.getpid')
+  def test_take_ownership_via_pid(self, getpid_mock):
     """
     Checks that the tor process quits after we do if we set take_ownership. To
     test this we spawn a process and trick tor into thinking that it is us.
@@ -101,7 +96,7 @@ class TestProcess(unittest.TestCase):
       return
 
     sleep_process = subprocess.Popen(['sleep', '60'])
-    mocking.mock(os.getpid, mocking.return_value(str(sleep_process.pid)), target_module = os)
+    getpid_mock.return_value = str(sleep_process.pid)
 
     tor_process = stem.process.launch_tor_with_config(
       tor_cmd = test.runner.get_runner().get_tor_command(),
@@ -116,7 +111,8 @@ class TestProcess(unittest.TestCase):
 
     # Kill the sleep command. Tor should quit shortly after.
 
-    _kill_process(sleep_process)
+    sleep_process.kill()
+    sleep_process.communicate()
 
     # tor polls for the process every fifteen seconds so this may take a
     # while...
