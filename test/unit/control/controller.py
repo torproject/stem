@@ -312,7 +312,7 @@ class TestControl(unittest.TestCase):
     """
 
     get_conf_mock.return_value = '/tmp/pid_file'
-    open_mock.return_value = io.BytesIO('432')
+    open_mock.return_value = io.BytesIO(b'432')
 
     self.assertEqual(432, self.controller.get_pid())
     open_mock.assert_called_once_with('/tmp/pid_file')
