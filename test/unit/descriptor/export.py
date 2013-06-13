@@ -8,23 +8,16 @@ import unittest
 import stem.prereq
 import test.runner
 
-from stem.descriptor.export import export_csv, export_csv_file
-from stem.descriptor.server_descriptor import RelayDescriptor
+from mock import Mock, patch
 
-from test.mocking import no_op, \
-                         mock_method, \
-                         revert_mocking, \
-                         get_relay_server_descriptor, \
+from stem.descriptor.export import export_csv, export_csv_file
+
+from test.mocking import get_relay_server_descriptor, \
                          get_bridge_server_descriptor
 
 
 class TestExport(unittest.TestCase):
-  def setUp(self):
-    mock_method(RelayDescriptor, '_verify_digest', no_op())
-
-  def tearDown(self):
-    revert_mocking()
-
+  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_minimal_descriptor(self):
     """
     Exports a single minimal tor server descriptor.
@@ -45,6 +38,7 @@ class TestExport(unittest.TestCase):
     expected = "nickname,address,published\n" + expected
     self.assertEquals(expected, desc_csv)
 
+  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_multiple_descriptors(self):
     """
     Exports multiple descriptors, making sure that we get them back in the same
@@ -61,6 +55,7 @@ class TestExport(unittest.TestCase):
     expected = "\n".join(nicknames) + "\n"
     self.assertEqual(expected, export_csv(descriptors, included_fields = ('nickname',), header = False))
 
+  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_file_output(self):
     """
     Basic test for the export_csv_file() function, checking that it provides
@@ -75,6 +70,7 @@ class TestExport(unittest.TestCase):
 
     self.assertEqual(desc_csv, csv_buffer.getvalue())
 
+  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_excludes_private_attr(self):
     """
     Checks that the default attributes for our csv output doesn't include private fields.
@@ -99,6 +95,7 @@ class TestExport(unittest.TestCase):
 
     self.assertEquals("", export_csv([]))
 
+  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_invalid_attributes(self):
     """
     Attempts to make a csv with attributes that don't exist.
@@ -107,6 +104,7 @@ class TestExport(unittest.TestCase):
     desc = get_relay_server_descriptor()
     self.assertRaises(ValueError, export_csv, desc, ('nickname', 'blarg!'))
 
+  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_multiple_descriptor_types(self):
     """
     Attempts to make a csv with multiple descriptor types.
