@@ -11,18 +11,12 @@ import stem.util.system
 import stem.version
 import test.runner
 
-from test import mocking
+from mock import Mock, patch
+
 from test.integ.util.system import filter_system_call
 
 
 class TestProtocolInfo(unittest.TestCase):
-  def setUp(self):
-    mocking.mock(stem.util.proc.is_available, mocking.return_false())
-    mocking.mock(stem.util.system.is_available, mocking.return_true())
-
-  def tearDown(self):
-    mocking.revert_mocking()
-
   def test_parsing(self):
     """
     Makes a PROTOCOLINFO query and processes the response for our control
@@ -47,6 +41,8 @@ class TestProtocolInfo(unittest.TestCase):
 
     self.assert_matches_test_config(protocolinfo_response)
 
+  @patch('stem.util.proc.is_available', Mock(return_value = False))
+  @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_get_protocolinfo_path_expansion(self):
     """
     If we're running with the 'RELATIVE' target then test_parsing() will
@@ -62,30 +58,33 @@ class TestProtocolInfo(unittest.TestCase):
       return
 
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
-      cwd_by_port_lookup_prefixes = (
+      lookup_prefixes = (
         stem.util.system.GET_PID_BY_PORT_NETSTAT,
         stem.util.system.GET_PID_BY_PORT_SOCKSTAT % "",
         stem.util.system.GET_PID_BY_PORT_LSOF,
         stem.util.system.GET_CWD_PWDX % "",
         "lsof -a -p ")
 
-      mocking.mock(stem.util.system.call, filter_system_call(cwd_by_port_lookup_prefixes))
       control_socket = stem.socket.ControlPort(port = test.runner.CONTROL_PORT)
     else:
-      cwd_by_socket_lookup_prefixes = (
+      lookup_prefixes = (
         stem.util.system.GET_PID_BY_FILE_LSOF % "",
         stem.util.system.GET_CWD_PWDX % "",
         "lsof -a -p ")
 
-      mocking.mock(stem.util.system.call, filter_system_call(cwd_by_socket_lookup_prefixes))
       control_socket = stem.socket.ControlSocketFile(test.runner.CONTROL_SOCKET_PATH)
 
-    protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
-    self.assert_matches_test_config(protocolinfo_response)
+    call_replacement = filter_system_call(lookup_prefixes)
 
-    # we should have a usable socket at this point
-    self.assertTrue(control_socket.is_alive())
-    control_socket.close()
+    with patch('stem.util.system.call') as call_mock:
+      call_mock.side_effect = call_replacement
+
+      protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
+      self.assert_matches_test_config(protocolinfo_response)
+
+      # we should have a usable socket at this point
+      self.assertTrue(control_socket.is_alive())
+      control_socket.close()
 
   def test_multiple_protocolinfo_calls(self):
     """
