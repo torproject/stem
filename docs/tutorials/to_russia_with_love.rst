@@ -114,7 +114,7 @@ Besides SocksiPy, you can also use `PycURL <http://pycurl.sourceforge.net/>`_ to
 Reading Twitter
 ---------------
 
-Now lets do somthing a little more interesting, and read a Twitter feed over Tor. This can be easily done `using thier API <https://dev.twitter.com/docs/api/1/get/statuses/user_timeline>`_...
+Now lets do somthing a little more interesting, and read a Twitter feed over Tor. This can be easily done `using thier API <https://dev.twitter.com/docs/api/1/get/statuses/user_timeline>`_ (**warning: Twitter has deprecated the API that this example uses,** :trac:`9003`)...
 
 ::
 
