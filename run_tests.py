@@ -81,6 +81,13 @@ To run stem's tests you'll need mock...
 https://pypi.python.org/pypi/mock/
 """
 
+MOCK_OUT_OF_DATE_MSG = """\
+To run stem's tests you'll need mock. You have version %s, but you need
+version 0.7.0 or later...
+
+https://pypi.python.org/pypi/mock/
+"""
+
 
 def main():
   start_time = time.time()
@@ -111,7 +118,11 @@ def main():
     sys.exit()
 
   if not stem.prereq.is_mock_available():
-    println(MOCK_UNAVAILABLE_MSG)
+    try:
+      import mock
+      println(MOCK_OUT_OF_DATE_MSG % mock.__version__)
+    except ImportError:
+      println(MOCK_UNAVAILABLE_MSG)
 
     if stem.util.system.is_available('pip'):
       println("You can get it by running 'sudo pip install mock'.")

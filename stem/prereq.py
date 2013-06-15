@@ -100,6 +100,12 @@ def is_mock_available():
   if IS_MOCK_AVAILABLE is None:
     try:
       import mock
+
+      # we use mock's patch.dict() which was introduced in version 0.7.0
+
+      if not hasattr(mock.patch, 'dict'):
+        raise ImportError()
+
       IS_MOCK_AVAILABLE = True
     except ImportError:
       IS_MOCK_AVAILABLE = False
