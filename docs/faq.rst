@@ -9,6 +9,10 @@ Frequently Asked Questions
  * :ref:`what_license_is_stem_under`
  * :ref:`where_can_i_get_help`
 
+* **Tasks**
+
+ * :ref:`how_do_i_request_a_new_identity_from_tor`
+
 * **Development**
 
  * :ref:`how_do_i_get_started`
@@ -57,6 +61,50 @@ Where can I get help?
 ---------------------
 
 Do you have a tor related question or project that you would like to discuss? If so then find us on the `tor-dev@ email list <https://lists.torproject.org/cgi-bin/mailman/listinfo/tor-dev>`_ and `IRC <https://www.torproject.org/about/contact.html.en#irc>`_.
+
+Tasks
+=====
+
+.. _how_do_i_request_a_new_identity_from_tor:
+
+How do I request a new identity from Tor?
+-----------------------------------------
+
+In Tor your identity is the three-hop **circuit** over which your traffic travels through the Tor network.
+
+Tor will create new circuits for you every ten minutes. When this happens your present circuits become **dirty**, which means that new connections will not use them. When all of the connections using a dirty circuit are done the circuit is closed.
+
+An important thing to note is that a new circuit does not necessarily mean a new IP address. Paths are randomly selected based on heuristics like speed and stability. There are only so many large exits in the Tor network, so it's not uncommon to reuse an exit you have had previously.
+
+Tor does not have a method for cycling your IP address. This is on purpose, and done for a couple reasons. The first is that this capability is usually requested for not-so-nice reasons such as ban evasion or SEO. Second, repeated circuit creation puts a very high load on the Tor network, so please don't!
+
+With all that out of the way, now do you create a new circuit? You can customise the rate at which Tor cycles circuits with the **MaxCircuitDirtiness** option in your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <http://www.atagar.com/arm/>`_ both provide a method to request a new identity, and you can do so programmatically by sending Tor a NEWNYM signal.
+
+To do this with telnet...
+
+::
+
+  % telnet localhost 9051
+  Trying 127.0.0.1...
+  Connected to localhost.
+  Escape character is '^]'.
+  AUTHENTICATE
+  250 OK
+  SIGNAL NEWNYM
+  250 OK
+
+And with stem...
+
+::
+
+  from stem import Signal
+  from stem.control import Controller
+
+  with Controller.from_port(port = 9051) as controller:
+    controller.authenticate()
+    controller.signal(Signal.NEWNYM)
+
+For lower level control over Tor's circuits and path selection see the `client usage tutorial <tutorials/to_russia_with_love.html>`_.
 
 Development
 ===========
