@@ -12,6 +12,7 @@ Frequently Asked Questions
 * **Tasks**
 
  * :ref:`how_do_i_request_a_new_identity_from_tor`
+ * :ref:`how_do_i_get_information_about_my_exits`
 
 * **Development**
 
@@ -105,6 +106,59 @@ And with stem...
     controller.signal(Signal.NEWNYM)
 
 For lower level control over Tor's circuits and path selection see the `client usage tutorial <tutorials/to_russia_with_love.html>`_.
+
+.. _how_do_i_get_information_about_my_exits:
+
+How do I get information about my exits?
+----------------------------------------
+
+To learn about the Tor relays you're presently using call :func:`stem.control.Controller.get_circuits`. The last relay in the circuit's path is your exit...
+
+::
+
+  from stem import CircStatus
+  from stem.control import Controller
+
+  with Controller.from_port(port = 9051) as controller:
+    controller.authenticate()
+
+    for circ in controller.get_circuits():
+      if circ.status != CircStatus.BUILT:
+        continue
+
+      exit_fp, exit_nickname = circ.path[-1]
+
+      exit_desc = controller.get_network_status(exit_fp, None)
+      exit_address = exit_desc.address if exit_desc else 'unknown'
+
+      print "Exit relay"
+      print "  fingerprint: %s" % exit_fp
+      print "  nickname: %s" % exit_nickname
+      print "  address: %s" % exit_address
+      print
+
+::
+
+  % python example.py 
+  Exit relay
+    fingerprint: 94AD3437EC49A31E8D6C17CC3BDE8316C90262BE
+    nickname: davidonet
+    address: 188.165.236.209
+
+  Exit relay
+    fingerprint: 6042CC1C69BBFE83A1DD2BCD4C15000A0DD5E1BC
+    nickname: Gnome5
+    address: 178.209.50.230
+
+  Exit relay
+    fingerprint: 9634F910C2942A2E46720DD161A873E3A619AD90
+    nickname: veebikaamera
+    address: 81.21.246.66
+
+  Exit relay
+    fingerprint: A59E1E7C7EAEE083D756EE1FF6EC31CA3D8651D7
+    nickname: chaoscomputerclub19
+    address: 31.172.30.2
 
 Development
 ===========
