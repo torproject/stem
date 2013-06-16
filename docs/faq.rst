@@ -1,7 +1,7 @@
 Frequently Asked Questions
 ==========================
 
-* **Usage**
+* **General Information**
 
  * :ref:`what_is_stem`
  * :ref:`does_stem_have_any_dependencies`
@@ -9,7 +9,7 @@ Frequently Asked Questions
  * :ref:`what_license_is_stem_under`
  * :ref:`where_can_i_get_help`
 
-* **Tasks**
+* **Usage**
 
  * :ref:`how_do_i_request_a_new_identity_from_tor`
  * :ref:`how_do_i_get_information_about_my_exits`
@@ -21,8 +21,8 @@ Frequently Asked Questions
  * :ref:`how_do_i_build_the_site`
  * :ref:`what_is_the_copyright_for_patches`
 
-Usage
-=====
+General Information
+===================
 
 .. _what_is_stem:
 
@@ -63,7 +63,7 @@ Where can I get help?
 
 Do you have a tor related question or project that you would like to discuss? If so then find us on the `tor-dev@ email list <https://lists.torproject.org/cgi-bin/mailman/listinfo/tor-dev>`_ and `IRC <https://www.torproject.org/about/contact.html.en#irc>`_.
 
-Tasks
+Usage
 =====
 
 .. _how_do_i_request_a_new_identity_from_tor:
@@ -112,7 +112,7 @@ For lower level control over Tor's circuits and path selection see the `client u
 How do I get information about my exits?
 ----------------------------------------
 
-To learn about the Tor relays you're presently using call :func:`stem.control.Controller.get_circuits`. The last relay in the circuit's path is your exit...
+To learn about the Tor relays you're presently using call :func:`~stem.control.Controller.get_circuits`. The last relay in the circuit's path is your exit...
 
 ::
 
