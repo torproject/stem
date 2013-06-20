@@ -40,6 +40,7 @@ Package for parsing and processing descriptor data.
 __all__ = [
   "export",
   "reader",
+  "remote",
   "extrainfo_descriptor",
   "server_descriptor",
   "microdescriptor",
