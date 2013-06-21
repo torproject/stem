@@ -55,9 +55,8 @@ import stem.socket
 import stem.util.conf
 import stem.util.enum
 import stem.version
-import test.output
 
-from test.output import println, STATUS, SUBSTATUS, NO_NL
+from test.output import println, STATUS, ERROR, SUBSTATUS, NO_NL
 from test.util import Target, STEM_BASE
 
 CONFIG = stem.util.conf.config_dict("test", {
@@ -125,7 +124,7 @@ def require_control(test_case):
   :returns: True if test should be skipped, False otherwise
   """
 
-  if not test.runner.get_runner().is_accessible():
+  if not get_runner().is_accessible():
     skip(test_case, "(no connection)")
     return True
 
@@ -155,7 +154,7 @@ def require_online(test_case):
   :returns: True if test should be skipped, False otherwise
   """
 
-  if not Target.ONLINE in test.runner.get_runner().attribute_targets:
+  if not Target.ONLINE in get_runner().attribute_targets:
     skip(test_case, "(requires online target)")
     return True
 
@@ -387,7 +386,7 @@ class Runner(object):
       if self._tor_process and self._tor_process.poll() is not None:
         # clean up the temporary resources and note the unexpected shutdown
         self.stop()
-        test.output.print_error("tor shut down unexpectedly")
+        println("tor shut down unexpectedly", ERROR)
 
       return bool(self._tor_process)
 
@@ -623,7 +622,7 @@ class Runner(object):
         os.makedirs(self._test_dir)
         println("done", STATUS)
     except OSError as exc:
-      test.output.print_error("failed (%s)" % exc)
+      println("failed (%s)" % exc, ERROR)
       raise exc
 
     # Tor checks during startup that the directory a control socket resides in
@@ -644,7 +643,7 @@ class Runner(object):
           os.chmod(socket_dir, 0700)
           println("done", STATUS)
       except OSError as exc:
-        test.output.print_error("failed (%s)" % exc)
+        println("failed (%s)" % exc, ERROR)
         raise exc
 
     # configures logging
@@ -685,7 +684,7 @@ class Runner(object):
 
       println()
     except Exception as exc:
-      test.output.print_error("failed (%s)\n" % exc)
+      println("failed (%s)\n" % exc, ERROR)
       raise OSError(exc)
 
   def _start_tor(self, tor_cmd):
@@ -715,5 +714,5 @@ class Runner(object):
       runtime = time.time() - start_time
       println("  done (%i seconds)\n" % runtime, STATUS)
     except OSError as exc:
-      test.output.print_error("  failed to start tor: %s\n" % exc)
+      println("  failed to start tor: %s\n" % exc, ERROR)
       raise exc
