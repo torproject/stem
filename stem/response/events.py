@@ -822,7 +822,7 @@ class StreamEvent(Event):
       if not ':' in self.target:
         raise stem.ProtocolError("Target location must be of the form 'address:port': %s" % self)
 
-      address, port = self.target.split(':', 1)
+      address, port = self.target.rsplit(':', 1)
 
       if not connection.is_valid_port(port, allow_zero = True):
         raise stem.ProtocolError("Target location's port is invalid: %s" % self)

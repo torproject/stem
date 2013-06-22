@@ -47,6 +47,7 @@ The following are only available within stem's `git repository
   * The :class:`~stem.control.Controller` use of cached content wasn't thread safe (:trac:`8607`)
   * Added :func:`~stem.control.Controller.get_user` method to the:class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_pid` method to the:class:`~stem.control.Controller`
+  * :class:`~stem.response.events.StreamEvent` didn't recognize IPv6 addresses (:trac:`9181`)
 
  * **Descriptors**
 
@@ -64,8 +65,8 @@ The following are only available within stem's `git repository
  * **Website**
 
   * Overhaul of stem's `download page <download.html>`_. This included several
-    improvements, most notably the addition of PyPI, Ubuntu, Fedora, and
-    FreeBSD.
+    improvements, most notably the addition of PyPI, Ubuntu, Fedora, Slackware,
+    and FreeBSD.
   * Replaced default sphinx header with a navbar menu.
   * Added this change log.
   * Added the `FAQ page <faq.html>`_.

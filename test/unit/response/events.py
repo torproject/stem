@@ -317,6 +317,8 @@ STREAM_DNS_REQUEST_BAD_2 = "650 STREAM 1113 NEW 0 www.google.com:0 \
 SOURCE_ADDR=127.0.0.1:dns \
 PURPOSE=DNS_REQUEST"
 
+STREAM_NEWRESOLVE_IP6 = "650 STREAM 23 NEWRESOLVE 0 2001:db8::1:0 PURPOSE=DNS_REQUEST"
+
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -1117,6 +1119,25 @@ class TestEvents(unittest.TestCase):
 
     # SOURCE_ADDR's port is malformed
     self.assertRaises(ProtocolError, _get_event, STREAM_DNS_REQUEST_BAD_2)
+
+    # IPv6 address
+    event = _get_event(STREAM_NEWRESOLVE_IP6)
+
+    self.assertTrue(isinstance(event, stem.response.events.StreamEvent))
+    self.assertEqual(STREAM_NEWRESOLVE_IP6.lstrip("650 "), str(event))
+    self.assertEqual("23", event.id)
+    self.assertEqual(StreamStatus.NEWRESOLVE, event.status)
+    self.assertEqual(None, event.circ_id)
+    self.assertEqual("2001:db8::1:0", event.target)
+    self.assertEqual("2001:db8::1", event.target_address)
+    self.assertEqual(0, event.target_port)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual(None, event.source)
+    self.assertEqual(None, event.source_addr)
+    self.assertEqual(None, event.source_address)
+    self.assertEqual(None, event.source_port)
+    self.assertEqual(StreamPurpose.DNS_REQUEST, event.purpose)
 
   def test_stream_bw_event(self):
     event = _get_event("650 STREAM_BW 2 15 25")
