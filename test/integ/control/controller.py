@@ -545,7 +545,14 @@ class TestController(unittest.TestCase):
       oldconf = runner.get_torrc_contents()
 
       try:
-        # invalid requests
+        # Check a request that changes our DataDir. Tor should rightfully balk
+        # at this...
+        #
+        #   InvalidRequest: Transition not allowed: Failed to parse/validate
+        #   config: While Tor is running, changing DataDirectory
+        #   ("/home/atagar/Desktop/stem/test/data"->"/home/atagar/.tor") is not
+        #   allowed.
+
         self.assertRaises(stem.InvalidRequest, controller.load_conf, "ContactInfo confloaded")
 
         try:
