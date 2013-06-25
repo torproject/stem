@@ -337,7 +337,7 @@ class TestControl(unittest.TestCase):
     nickname = "Beaver"
     fingerprint = "/96bKo4soysolMgKn5Hex2nyFSY"
     desc = "r %s %s u5lTXJKGsLKufRLnSyVqT7TdGYw 2012-12-30 22:02:49 77.223.43.54 9001 0\ns Fast Named Running Stable Valid\nw Bandwidth=75" % (nickname, fingerprint)
-    router = stem.descriptor.router_status_entry.RouterStatusEntryV2(desc)
+    router = stem.descriptor.router_status_entry.RouterStatusEntryV3(desc)
 
     # always return the same router status entry
 

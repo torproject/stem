@@ -1250,7 +1250,7 @@ class Controller(BaseController):
     :param str relay: fingerprint or nickname of the relay to be queried
     :param object default: response if the query fails
 
-    :returns: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2`
+    :returns: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
       for the given relay
 
     :raises:
@@ -1275,7 +1275,7 @@ class Controller(BaseController):
         raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
       desc_content = self.get_info(query, get_bytes = True)
-      return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content)
+      return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content)
     except Exception as exc:
       if default == UNDEFINED:
         raise exc
@@ -1290,7 +1290,7 @@ class Controller(BaseController):
     :param list default: items to provide if the query fails
 
     :returns: iterates over
-      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2` for
+      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for
       relays in the tor network
 
     :raises: :class:`stem.ControllerError` if unable to query tor and no
@@ -1308,7 +1308,7 @@ class Controller(BaseController):
       desc_iterator = stem.descriptor.router_status_entry._parse_file(
         io.BytesIO(desc_content),
         True,
-        entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
+        entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
       )
 
       for desc in desc_iterator:

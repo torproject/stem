@@ -980,6 +980,11 @@ class TestController(unittest.TestCase):
         self.assertTrue(desc.fingerprint is not None)
         self.assertTrue(desc.nickname is not None)
 
+        unrecognized_lines = desc.get_unrecognized_lines()
+
+        if unrecognized_lines:
+          self.fail("Unrecognized descriptor content: %s" % unrecognized_lines)
+
         count += 1
         if count > 10:
           break
