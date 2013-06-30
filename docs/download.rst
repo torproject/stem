@@ -28,12 +28,18 @@ Download
      License: GPL v2
      File: NuoveXT/128x128/apps/fedora.png
    
-   * FreeBSD
-     Source: https://en.wikipedia.org/wiki/File:Freebsd_logo.svg
-     Author: Anton Gural
+   * Slackware
+     Source: NuoveXT (http://nuovext.pwsp.net/)
+     Author: Alexandre Moore (http://sa-ki.deviantart.com/)
+     License: GPL v2
+     File: NuoveXT/128x128/apps/slackware.png
    
    * Arch Linux
      Source: https://en.wikipedia.org/wiki/File:Archlinux-official-fullcolour.svg
+   
+   * FreeBSD
+     Source: https://en.wikipedia.org/wiki/File:Freebsd_logo.svg
+     Author: Anton Gural
    
    * Git
      Source: https://en.wikipedia.org/wiki/File:Git-logo.svg
@@ -99,6 +105,15 @@ Download
        ::
 
          % yum install python-stem
+
+   * - .. image:: /_static/section/download/slackware.png
+          :target: http://slackbuilds.org/repository/14.0/python/stem/
+
+     - .. image:: /_static/label/slackware.png
+          :target: http://slackbuilds.org/repository/14.0/python/stem/
+
+       Package maintained by Markus for Slackware (`instructions
+       <http://slackbuilds.org/howto/>`_).
 
    * - .. image:: /_static/section/download/archlinux.png
           :target: https://aur.archlinux.org/packages/stem/
