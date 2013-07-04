@@ -220,7 +220,9 @@ class TestNetworkStatusDocument(unittest.TestCase):
       for index in xrange(len(lines) - 1):
         # once we reach the crypto blob we're done since swapping those won't
         # be detected
-        if lines[index].startswith(stem.util.str_tools._to_bytes(CRYPTO_BLOB[1:10])): break
+
+        if lines[index].startswith(stem.util.str_tools._to_bytes(CRYPTO_BLOB[1:10])):
+          break
 
         # swaps this line with the one after it
         test_lines = list(lines)

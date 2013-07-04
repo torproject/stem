@@ -299,7 +299,7 @@ def parse_enum_csv(key, value, enumeration, count = None):
     raise ValueError("The count must be None, an int, or two value tuple. Got '%s' (%s)'" % (count, type(count)))
 
   result = []
-  enum_keys = [key.upper() for key in enumeration.keys()]
+  enum_keys = [k.upper() for k in enumeration.keys()]
   enum_values = list(enumeration)
 
   for val in values:
