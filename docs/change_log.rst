@@ -45,8 +45,8 @@ The following are only available within stem's `git repository
   * :func:`~stem.control.Controller.attach_stream` could encounter an undocumented 555 response (:trac:`8701`, :spec:`7286576`)
   * :class:`~stem.descriptor.server_descriptor.RelayDescriptor` digest validation was broken when dealing with non-unicode content with python 3 (:trac:`8755`)
   * The :class:`~stem.control.Controller` use of cached content wasn't thread safe (:trac:`8607`)
-  * Added :func:`~stem.control.Controller.get_user` method to the:class:`~stem.control.Controller`
-  * Added :func:`~stem.control.Controller.get_pid` method to the:class:`~stem.control.Controller`
+  * Added :func:`~stem.control.Controller.get_user` method to the :class:`~stem.control.Controller`
+  * Added :func:`~stem.control.Controller.get_pid` method to the :class:`~stem.control.Controller`
   * :class:`~stem.response.events.StreamEvent` didn't recognize IPv6 addresses (:trac:`9181`)
 
  * **Descriptors**

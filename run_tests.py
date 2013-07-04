@@ -83,7 +83,7 @@ https://pypi.python.org/pypi/mock/
 
 MOCK_OUT_OF_DATE_MSG = """\
 To run stem's tests you'll need mock. You have version %s, but you need
-version 0.7.0 or later...
+version 0.8.0 or later...
 
 https://pypi.python.org/pypi/mock/
 """

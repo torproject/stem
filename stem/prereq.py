@@ -19,6 +19,7 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
   is_crypto_available - checks if the pycrypto module is available
 """
 
+import inspect
 import sys
 
 IS_CRYPTO_AVAILABLE = None
@@ -101,9 +102,14 @@ def is_mock_available():
     try:
       import mock
 
-      # we use mock's patch.dict() which was introduced in version 0.7.0
+      # check for mock's patch.dict() which was introduced in version 0.7.0
 
       if not hasattr(mock.patch, 'dict'):
+        raise ImportError()
+
+      # check for mock's new_callable argument for patch() which was introduced in version 0.8.0
+
+      if not 'new_callable' in inspect.getargspec(mock.patch).args:
         raise ImportError()
 
       IS_MOCK_AVAILABLE = True
