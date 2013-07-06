@@ -137,6 +137,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor` instances in the file
 
   :raises:
+    * **ValueError** if the contents is malformed and validate is True
     * **TypeError** if we can't match the contents of the file to a descriptor type
     * **IOError** if unable to read from the descriptor_file
   """

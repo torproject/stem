@@ -1255,8 +1255,8 @@ class Controller(BaseController):
 
     :raises:
       * :class:`stem.ControllerError` if unable to query the descriptor
-      * **ValueError** if **relay** doesn't conform with the patter for being a
-        fingerprint or nickname
+      * **ValueError** if **relay** doesn't conform with the pattern for being
+        a fingerprint or nickname
 
       An exception is only raised if we weren't provided a default response.
     """

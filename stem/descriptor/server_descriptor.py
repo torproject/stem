@@ -136,6 +136,9 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True):
       else:
         yield RelayDescriptor(descriptor_text, validate, annotations)
     else:
+      if validate and annotations:
+        raise ValueError('Content conform to being a server descriptor:\n%s' % '\n'.join(annotations))
+
       break  # done parsing descriptors
 
 
