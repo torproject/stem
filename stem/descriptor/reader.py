@@ -25,11 +25,11 @@ content. To be notified of skipped files you can register a listener with
 
 The :class:`~stem.descriptor.reader.DescriptorReader` keeps track of the last
 modified timestamps for descriptor files that it has read so it can skip
-unchanged files if ran again. This listing of processed files can also be
+unchanged files if run again. This listing of processed files can also be
 persisted and applied to other
 :class:`~stem.descriptor.reader.DescriptorReader` instances. For example, the
 following prints descriptors as they're changed over the course of a minute,
-and picks up where it left off if ran again...
+and picks up where it left off if run again...
 
 ::
 
