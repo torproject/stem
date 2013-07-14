@@ -39,6 +39,7 @@ itself...
       print "  %s (%s)" % (desc.nickname, desc.fingerprint)
 """
 
+import io
 import sys
 import threading
 import time
@@ -177,6 +178,13 @@ class Query(object):
       self.start_time = time.time()
       response = urllib2.urlopen(self.get_url(), timeout = self.timeout)
       self.runtime = time.time() - self.start_time
+
+      # This sucks. We need to read the full response into memory before
+      # processing the content. This is because urllib2 returns a 'file like'
+      # object that lacks tell() or seek(). Hence we need to read it into our
+      # own buffer that does support these.
+
+      response = io.BytesIO(response.read().strip())
 
       self._results = stem.descriptor.parse_file(response, self.descriptor_type)
     except:
