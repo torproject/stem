@@ -46,14 +46,15 @@ import urllib2
 
 import stem.descriptor
 
-# Tor directory authorities as of commit f631b73 (7/4/13):
+# Tor directory authorities as of commit f631b73 (7/4/13). This should only
+# include authorities with 'v3ident':
+#
 # https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816
 
 DIRECTORY_AUTHORITIES = {
   'moria1': ('128.31.0.39', 9131),
   'tor26': ('86.59.21.38', 80),
   'dizum': ('194.109.206.212', 80),
-  'Tonga': ('82.94.251.203', 80),
   'turtles': ('76.73.17.194', 9030),
   'gabelmoo': ('212.112.245.170', 80),
   'dannenberg': ('193.23.244.244', 80),
