@@ -29,11 +29,10 @@ class TestDescriptorReader(unittest.TestCase):
 
     for authority, (address, dirport) in stem.descriptor.remote.DIRECTORY_AUTHORITIES.items():
       queries.append(stem.descriptor.remote.Query(
-        address,
-        dirport,
         '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
         'server-descriptor 1.0',
-        30,
+        endpoints = [(address, dirport)],
+        timeout = 30,
       ))
 
     for query in queries:

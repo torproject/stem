@@ -65,14 +65,13 @@ class TestDescriptorDownloader(unittest.TestCase):
     urlopen_mock.return_value = io.BytesIO(TEST_DESCRIPTOR)
 
     query = stem.descriptor.remote.Query(
-      '128.31.0.39',
-      9131,
       '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
       'server-descriptor 1.0',
+      endpoints = [('128.31.0.39', 9131)],
     )
 
     expeced_url = 'http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31'
-    self.assertEqual(expeced_url, query.get_url())
+    self.assertEqual(expeced_url, query.pick_url())
 
     descriptors = list(query)
     self.assertEqual(1, len(descriptors))
@@ -95,10 +94,9 @@ class TestDescriptorDownloader(unittest.TestCase):
     urlopen_mock.return_value = io.BytesIO(descriptor_content)
 
     query = stem.descriptor.remote.Query(
-      '128.31.0.39',
-      9131,
       '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
       'server-descriptor 1.0',
+      endpoints = [('128.31.0.39', 9131)],
     )
 
     # checking via the iterator
@@ -119,15 +117,16 @@ class TestDescriptorDownloader(unittest.TestCase):
     urlopen_mock.side_effect = socket.timeout('connection timed out')
 
     query = stem.descriptor.remote.Query(
-      '128.31.0.39',
-      9131,
       '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
       'server-descriptor 1.0',
-      5,
+      endpoints = [('128.31.0.39', 9131)],
+      fall_back_to_authority = False,
+      timeout = 5,
     )
 
     self.assertRaises(socket.timeout, list, query.run())
-    urlopen_mock.assert_called_once_with(
+    urlopen_mock.assert_called_with(
       'http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
       timeout = 5,
     )
+    self.assertEqual(3, urlopen_mock.call_count)
