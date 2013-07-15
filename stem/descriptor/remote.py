@@ -40,6 +40,7 @@ itself...
 """
 
 import io
+import random
 import sys
 import threading
 import time
@@ -194,4 +195,61 @@ class Query(object):
 
 
 class DescriptorDownloader(object):
-  pass
+  """
+  Configurable class through which descriptors can be downloaded. This provides
+  caching, retries, and other capabilities to make downloading descriptors easy
+  and efficient.
+
+  Queries can be made in either a blocking or non-blocking fashion. If
+  non-blocking then retries cannot be performed (since we do not know at the
+  time of the request if it succeeded or failed).
+
+  For more advanced use cases you can use the
+  :class:`~stem.descriptor.remote.Query` class directly.
+
+  :var bool block: blocks until requests have been concluded if **True**,
+    otherwise provides the query as soon as its been issued
+  :var int retries: number of times to attempt the request if it fails
+  :var float timeout: duration before we'll time out our request, no timeout is
+    applied if **None**
+  :var bool start_when_requested: issues requests when our methods are called
+    if **True**, otherwise provides non-running
+    :class:`~stem.descriptor.remote.Query` instances
+  :var bool fall_back_to_authority: when retrying request issues the last
+    request to a directory authority if **True**
+  """
+
+  def __init__(self, block = True, retries = 2, timeout = None, start_when_requested = True, fall_back_to_authority = True):
+    self.block = block
+    self.retries = retries
+    self.timeout = timeout
+    self.start_when_requested = start_when_requested
+    self.fall_back_to_authority = fall_back_to_authority
+    self._directories = DIRECTORY_AUTHORITIES.values()
+
+  def _query(self, resource, descriptor_type, retries):
+    """
+    Issues a request for the given resource.
+    """
+
+    if self.fall_back_to_authority and retries == 0:
+      address, dirport = random.choice(DIRECTORY_AUTHORITIES.values())
+    else:
+      address, dirport = random.choice(self._directories)
+
+    query = Query(
+      address,
+      dirport,
+      resource,
+      descriptor_type,
+      timeout = self.timeout,
+      start = self.start_when_requested,
+    )
+
+    if self.block:
+      query.run(True)
+
+      if query.error and retries > 0:
+        return self.query(resource, descriptor_type, retries - 1)
+
+    return query
