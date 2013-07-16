@@ -80,16 +80,20 @@ class Query(object):
 
   :var list endpoints: (address, dirport) tuples of the authority or mirror
     we're querying, this uses authorities if undefined
-  :var int retries: number of times to attempt the request if it fails
+  :var int retries: number of times to attempt the request if downloading it
+    fails
   :var bool fall_back_to_authority: when retrying request issues the last
     request to a directory authority if **True**
 
   :var Exception error: exception if a problem occured
   :var bool is_done: flag that indicates if our request has finished
+  :var str download_url: last url used to download the descriptor, this is
+    unset until we've actually made a download attempt
 
   :var float start_time: unix timestamp when we first started running
   :var float timeout: duration before we'll time out our request
-  :var float runtime: time our query took, this is **None** if it's not yet finished
+  :var float runtime: time our query took, this is **None** if it's not yet
+    finished
   """
 
   def __init__(self, resource, descriptor_type, endpoints = None, retries = 2, fall_back_to_authority = True, timeout = None, start = True):
@@ -102,6 +106,7 @@ class Query(object):
 
     self.error = None
     self.is_done = False
+    self.download_url = None
 
     self.start_time = None
     self.timeout = timeout
@@ -183,6 +188,8 @@ class Query(object):
           for desc in self._results:
             yield desc
         except ValueError as exc:
+          # encountered a parsing error
+
           self.error = exc
 
           if not suppress:
@@ -195,10 +202,10 @@ class Query(object):
   def _download_descriptors(self, retries):
     try:
       use_authority = retries == 0 and self.fall_back_to_authority
-      resource_url = self.pick_url(use_authority)
+      self.download_url = self.pick_url(use_authority)
 
       self.start_time = time.time()
-      response = urllib2.urlopen(resource_url, timeout = self.timeout)
+      response = urllib2.urlopen(self.download_url, timeout = self.timeout)
       self.runtime = time.time() - self.start_time
 
       # This sucks. We need to read the full response into memory before
@@ -209,15 +216,15 @@ class Query(object):
       response = io.BytesIO(response.read().strip())
 
       self._results = stem.descriptor.parse_file(response, self.descriptor_type)
-      log.trace("Descriptors retrieved from '%s' in %0.2fs" % (resource_url, self.runtime))
+      log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
     except:
       exc = sys.exc_info()[1]
 
       if retries > 0:
-        log.debug("Unable to download descriptors from '%s' (%i retries remaining): %s" % (resource_url, retries, exc))
+        log.debug("Unable to download descriptors from '%s' (%i retries remaining): %s" % (self.download_url, retries, exc))
         return self._download_descriptors(retries - 1)
       else:
-        log.debug("Unable to download descriptors from '%s': %s" % (resource_url, exc))
+        log.debug("Unable to download descriptors from '%s': %s" % (self.download_url, exc))
         self.error = exc
     finally:
       self.is_done = True
@@ -242,14 +249,36 @@ class DescriptorDownloader(object):
     request to a directory authority if **True**
   """
 
-  def __init__(self, retries = 2, timeout = None, start_when_requested = True, fall_back_to_authority = True):
+  def __init__(self, retries = 2, fall_back_to_authority = True, timeout = None, start_when_requested = True):
     self.retries = retries
     self.timeout = timeout
     self.start_when_requested = start_when_requested
     self.fall_back_to_authority = fall_back_to_authority
     self._endpoints = DIRECTORY_AUTHORITIES.values()
 
-  def _query(self, resource, descriptor_type, retries):
+  def get_server_descriptors(self, fingerprints = None):
+    """
+    Provides the server descriptors with the given fingerprints. If no
+    fingerprints are provided then this returns all descriptors in the present
+    consensus.
+
+    :param str,list fingerprints: fingerprint or list of fingerprints to be
+      retrieved, gets all descriptors if **None**
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the server descriptors
+    """
+
+    resource = '/tor/server/all'
+
+    if fingerprints:
+      if isinstance(fingerprints, str):
+        resource = '/tor/server/fp/%s' % fingerprints
+      else:
+        resource = '/tor/server/fp/%s' % '+'.join(fingerprints)
+
+    return self._query(resource, 'server-descriptor 1.0')
+
+  def _query(self, resource, descriptor_type):
     """
     Issues a request for the given resource.
     """
