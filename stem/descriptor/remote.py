@@ -50,6 +50,11 @@ import stem.descriptor
 
 from stem.util import log
 
+# Tor has a limit on the number of descriptors we can fetch explicitly by their
+# fingerprint.
+
+MAX_BATCH_SIZE = 96
+
 # Tor directory authorities as of commit f631b73 (7/4/13). This should only
 # include authorities with 'v3ident':
 #
@@ -266,6 +271,8 @@ class DescriptorDownloader(object):
       retrieved, gets all descriptors if **None**
 
     :returns: :class:`~stem.descriptor.remote.Query` for the server descriptors
+
+    :raises: **ValueError** if we request descriptors by fingerprints and there are more than 96 of them (this is a limitation of tor).
     """
 
     resource = '/tor/server/all'
@@ -274,6 +281,9 @@ class DescriptorDownloader(object):
       if isinstance(fingerprints, str):
         resource = '/tor/server/fp/%s' % fingerprints
       else:
+        if len(fingerprints) > MAX_BATCH_SIZE:
+          raise ValueError('We can request at most %i descritors at a time when retrieving by fingerprints' % MAX_BATCH_SIZE)
+
         resource = '/tor/server/fp/%s' % '+'.join(fingerprints)
 
     return self._query(resource, 'server-descriptor 1.0')
