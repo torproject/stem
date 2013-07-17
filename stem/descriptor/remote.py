@@ -272,7 +272,8 @@ class DescriptorDownloader(object):
 
     :returns: :class:`~stem.descriptor.remote.Query` for the server descriptors
 
-    :raises: **ValueError** if we request descriptors by fingerprints and there are more than 96 of them (this is a limitation of tor).
+    :raises: **ValueError** if we request more than 96 descriptors by their
+      fingerprints (this is due to a limit on the url length by squid proxies).
     """
 
     resource = '/tor/server/all'
@@ -282,11 +283,39 @@ class DescriptorDownloader(object):
         resource = '/tor/server/fp/%s' % fingerprints
       else:
         if len(fingerprints) > MAX_BATCH_SIZE:
-          raise ValueError('We can request at most %i descritors at a time when retrieving by fingerprints' % MAX_BATCH_SIZE)
+          raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_BATCH_SIZE)
 
         resource = '/tor/server/fp/%s' % '+'.join(fingerprints)
 
     return self._query(resource, 'server-descriptor 1.0')
+
+  def get_extrainfo_descriptors(self, fingerprints = None):
+    """
+    Provides the extrainfo descriptors with the given fingerprints. If no
+    fingerprints are provided then this returns all descriptors in the present
+    consensus.
+
+    :param str,list fingerprints: fingerprint or list of fingerprints to be
+      retrieved, gets all descriptors if **None**
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the extrainfo descriptors
+
+    :raises: **ValueError** if we request more than 96 descriptors by their
+      fingerprints (this is due to a limit on the url length by squid proxies).
+    """
+
+    resource = '/tor/extra/all'
+
+    if fingerprints:
+      if isinstance(fingerprints, str):
+        resource = '/tor/extra/fp/%s' % fingerprints
+      else:
+        if len(fingerprints) > MAX_BATCH_SIZE:
+          raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_BATCH_SIZE)
+
+        resource = '/tor/extra/fp/%s' % '+'.join(fingerprints)
+
+    return self._query(resource, 'extra-info 1.0')
 
   def _query(self, resource, descriptor_type):
     """
