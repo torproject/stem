@@ -132,7 +132,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
   :param stem.descriptor.__init__.DocumentHandler document_handler: method in
-    which to parse :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+    which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
 
   :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor` instances in the file
 

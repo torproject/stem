@@ -4,9 +4,10 @@ Integration tests for stem.descriptor.remote.
 
 import unittest
 
-import stem.descriptor.server_descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.remote
+import stem.descriptor.router_status_entry
+import stem.descriptor.server_descriptor
 import test.runner
 
 # Required to prevent unmarshal error when running this test alone.
@@ -25,6 +26,8 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     if test.runner.require_online(self):
+      return
+    elif test.runner.only_run_once(self, "test_using_authorities"):
       return
 
     queries = []
@@ -50,6 +53,11 @@ class TestDescriptorReader(unittest.TestCase):
     """
     Exercises the downloader's get_server_descriptors() method.
     """
+
+    if test.runner.require_online(self):
+      return
+    elif test.runner.only_run_once(self, "test_get_server_descriptors"):
+      return
 
     downloader = stem.descriptor.remote.DescriptorDownloader()
 
@@ -82,6 +90,11 @@ class TestDescriptorReader(unittest.TestCase):
     Exercises the downloader's get_extrainfo_descriptors() method.
     """
 
+    if test.runner.require_online(self):
+      return
+    elif test.runner.only_run_once(self, "test_get_extrainfo_descriptors"):
+      return
+
     downloader = stem.descriptor.remote.DescriptorDownloader()
 
     single_query = downloader.get_extrainfo_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31')
@@ -101,4 +114,21 @@ class TestDescriptorReader(unittest.TestCase):
 
     self.assertEqual(2, len(list(multiple_query)))
 
+  def test_get_consensus(self):
+    """
+    Exercises the downloader's get_consensus() method.
+    """
 
+    if test.runner.require_online(self):
+      return
+    elif test.runner.only_run_once(self, "test_get_consensus"):
+      return
+
+    downloader = stem.descriptor.remote.DescriptorDownloader()
+
+    consensus_query = downloader.get_consensus()
+    consensus_query.run()
+
+    consensus = list(consensus_query)
+    self.assertTrue(len(consensus) > 50)
+    self.assertTrue(isinstance(consensus[0], stem.descriptor.router_status_entry.RouterStatusEntryV3))

@@ -82,6 +82,8 @@ class Query(object):
   :var str resource: resource being fetched, such as '/tor/status-vote/current/consensus.z'
   :var str descriptor_type: type of descriptors being fetched, see
     :func:`~stem.descriptor.__init__.parse_file`
+  :param stem.descriptor.__init__.DocumentHandler document_handler: method in
+    which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
 
   :var list endpoints: (address, dirport) tuples of the authority or mirror
     we're querying, this uses authorities if undefined
@@ -101,9 +103,10 @@ class Query(object):
     finished
   """
 
-  def __init__(self, resource, descriptor_type, endpoints = None, retries = 2, fall_back_to_authority = True, timeout = None, start = True):
+  def __init__(self, resource, descriptor_type, endpoints = None, retries = 2, fall_back_to_authority = True, timeout = None, start = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
     self.resource = resource
     self.descriptor_type = descriptor_type
+    self.document_handler = document_handler
 
     self.endpoints = endpoints if endpoints else []
     self.retries = retries
@@ -220,7 +223,7 @@ class Query(object):
 
       response = io.BytesIO(response.read().strip())
 
-      self._results = stem.descriptor.parse_file(response, self.descriptor_type)
+      self._results = stem.descriptor.parse_file(response, self.descriptor_type, document_handler = self.document_handler)
       log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
     except:
       exc = sys.exc_info()[1]
@@ -278,14 +281,14 @@ class DescriptorDownloader(object):
 
     resource = '/tor/server/all'
 
-    if fingerprints:
-      if isinstance(fingerprints, str):
-        resource = '/tor/server/fp/%s' % fingerprints
-      else:
-        if len(fingerprints) > MAX_BATCH_SIZE:
-          raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_BATCH_SIZE)
+    if isinstance(fingerprints, str):
+      fingerprints = [fingerprints]
 
-        resource = '/tor/server/fp/%s' % '+'.join(fingerprints)
+    if fingerprints:
+      if len(fingerprints) > MAX_BATCH_SIZE:
+        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_BATCH_SIZE)
+
+      resource = '/tor/server/fp/%s' % '+'.join(fingerprints)
 
     return self._query(resource, 'server-descriptor 1.0')
 
@@ -306,18 +309,44 @@ class DescriptorDownloader(object):
 
     resource = '/tor/extra/all'
 
-    if fingerprints:
-      if isinstance(fingerprints, str):
-        resource = '/tor/extra/fp/%s' % fingerprints
-      else:
-        if len(fingerprints) > MAX_BATCH_SIZE:
-          raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_BATCH_SIZE)
+    if isinstance(fingerprints, str):
+      fingerprints = [fingerprints]
 
-        resource = '/tor/extra/fp/%s' % '+'.join(fingerprints)
+    if fingerprints:
+      if len(fingerprints) > MAX_BATCH_SIZE:
+        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_BATCH_SIZE)
+
+      resource = '/tor/extra/fp/%s' % '+'.join(fingerprints)
 
     return self._query(resource, 'extra-info 1.0')
 
-  def _query(self, resource, descriptor_type):
+  def get_consensus(self, document_handler = stem.descriptor.DocumentHandler.ENTRIES, authority_v3ident = None):
+    """
+    Provides the present router status entries.
+
+    :param stem.descriptor.__init__.DocumentHandler document_handler: method in
+      which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`
+    :param str authority_v3ident: fingerprint of the authority key for which
+      to get the consensus, see `'v3ident' in tor's config.c
+      <https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816>`_
+      for the values.
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the router status
+      entries
+    """
+
+    resource = '/tor/status-vote/current/consensus'
+
+    if authority_v3ident:
+      resource += '/%s' % authority_v3ident
+
+    return self._query(
+      resource,
+      'network-status-consensus-3 1.0',
+      document_handler = document_handler,
+    )
+
+  def _query(self, resource, descriptor_type, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
     """
     Issues a request for the given resource.
     """
@@ -330,4 +359,5 @@ class DescriptorDownloader(object):
       fall_back_to_authority = self.fall_back_to_authority,
       timeout = self.timeout,
       start = self.start_when_requested,
+      document_handler = document_handler,
     )
