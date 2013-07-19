@@ -49,6 +49,20 @@ class TestDescriptorReader(unittest.TestCase):
       self.assertEqual(1, len(descriptors))
       self.assertEqual('moria1', descriptors[0].nickname)
 
+  def test_use_directory_mirrors(self):
+    """
+    Checks that we can fetch and use a list of directory mirrors.
+    """
+
+    if test.runner.require_online(self):
+      return
+    elif test.runner.only_run_once(self, "test_use_directory_mirrors"):
+      return
+
+    downloader = stem.descriptor.remote.DescriptorDownloader()
+    downloader.use_directory_mirrors()
+    self.assertTrue(len(downloader._endpoints) > 50)
+
   def test_get_server_descriptors(self):
     """
     Exercises the downloader's get_server_descriptors() method.

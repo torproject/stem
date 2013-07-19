@@ -48,6 +48,7 @@ import urllib2
 
 import stem.descriptor
 
+from stem import Flag
 from stem.util import log
 
 # Tor has a limit on the number of descriptors we can fetch explicitly by their
@@ -250,6 +251,9 @@ class DescriptorDownloader(object):
   :var int retries: number of times to attempt the request if it fails
   :var float timeout: duration before we'll time out our request, no timeout is
     applied if **None**
+  :var bool use_mirrors: downloads the present consensus and uses the directory
+    mirrors to fetch future requests, this fails silently if the consensus
+    cannot be downloaded
   :var bool start_when_requested: issues requests when our methods are called
     if **True**, otherwise provides non-running
     :class:`~stem.descriptor.remote.Query` instances
@@ -257,12 +261,41 @@ class DescriptorDownloader(object):
     request to a directory authority if **True**
   """
 
-  def __init__(self, retries = 2, fall_back_to_authority = True, timeout = None, start_when_requested = True):
+  def __init__(self, retries = 2, use_mirrors = False, fall_back_to_authority = True, timeout = None, start_when_requested = True):
     self.retries = retries
     self.timeout = timeout
     self.start_when_requested = start_when_requested
     self.fall_back_to_authority = fall_back_to_authority
     self._endpoints = DIRECTORY_AUTHORITIES.values()
+
+    if use_mirrors:
+      try:
+        start_time = time.time()
+        self.use_directory_mirrors()
+        log.debug("Retrieve directory mirrors (took %0.2fs)" % (time.time() - start_time))
+      except Exception, exc:
+        log.debug("Unable to retrieve directory mirrors: %s" % exc)
+
+  def use_directory_mirrors(self):
+    """
+    Downloads the present consensus and configures ourselves to use directory
+    mirrors, in addition to authorities.
+
+    :raises: **Exception** if unable to determine the directory mirrors
+    """
+
+    new_endpoints = set(DIRECTORY_AUTHORITIES.values())
+
+    query = self.get_consensus()
+    query.run()  # running explicitly so we'll raise errors
+
+    for desc in query:
+      if Flag.V2DIR in desc.flags:
+        new_endpoints.add((desc.address, desc.dir_port))
+
+    # we need our endpoints to be a list rather than set for random.choice()
+
+    self._endpoints = list(new_endpoints)
 
   def get_server_descriptors(self, fingerprints = None):
     """
@@ -350,6 +383,8 @@ class DescriptorDownloader(object):
     """
     Issues a request for the given resource.
     """
+
+    log.trace("Retrieving descriptors (resource: %s, type: %s)" % (resource, descriptor_type))
 
     return Query(
       resource,
