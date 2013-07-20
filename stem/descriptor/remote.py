@@ -52,9 +52,10 @@ from stem import Flag
 from stem.util import log
 
 # Tor has a limit on the number of descriptors we can fetch explicitly by their
-# fingerprint.
+# fingerprint or hashes due to the url lenght of squid proxies.
 
-MAX_BATCH_SIZE = 96
+MAX_DESCRIPTOR_BATCH_SIZE = 96
+MAX_MICRODESCRIPTOR_BATCH_SIZE = 92
 
 # Tor directory authorities as of commit f631b73 (7/4/13). This should only
 # include authorities with 'v3ident':
@@ -318,8 +319,8 @@ class DescriptorDownloader(object):
       fingerprints = [fingerprints]
 
     if fingerprints:
-      if len(fingerprints) > MAX_BATCH_SIZE:
-        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_BATCH_SIZE)
+      if len(fingerprints) > MAX_DESCRIPTOR_BATCH_SIZE:
+        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_DESCRIPTOR_BATCH_SIZE)
 
       resource = '/tor/server/fp/%s' % '+'.join(fingerprints)
 
@@ -346,12 +347,39 @@ class DescriptorDownloader(object):
       fingerprints = [fingerprints]
 
     if fingerprints:
-      if len(fingerprints) > MAX_BATCH_SIZE:
-        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_BATCH_SIZE)
+      if len(fingerprints) > MAX_DESCRIPTOR_BATCH_SIZE:
+        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_DESCRIPTOR_BATCH_SIZE)
 
       resource = '/tor/extra/fp/%s' % '+'.join(fingerprints)
 
     return self._query(resource, 'extra-info 1.0')
+
+  def get_microdescriptors(self, hashes):
+    """
+    Provides the microdescriptors with the given hashes. To get these see the
+    'microdescriptor_hashes' attribute of
+    :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`. Note
+    that these are only provided via a microdescriptor consensus (such as
+    'cached-microdesc-consensus' in your data directory).
+
+    :param str,list hashes: microdescriptor hash or list of hashes to be
+      retrieved
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the microdescriptors
+
+    :raises: **ValueError** if we request more than 92 microdescriptors by their
+      hashes (this is due to a limit on the url length by squid proxies).
+    """
+
+    if isinstance(hashes, str):
+      hashes = [hashes]
+
+    if len(hashes) > MAX_MICRODESCRIPTOR_BATCH_SIZE:
+      raise ValueError("Unable to request more than %i microdescriptors at a time by their hashes" % MAX_MICRODESCRIPTOR_BATCH_SIZE)
+
+    resource = '/tor/micro/d/%s' % '-'.join(hashes)
+
+    return self._query(resource, 'microdescriptor 1.0')
 
   def get_consensus(self, document_handler = stem.descriptor.DocumentHandler.ENTRIES, authority_v3ident = None):
     """

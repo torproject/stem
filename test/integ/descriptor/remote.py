@@ -5,6 +5,7 @@ Integration tests for stem.descriptor.remote.
 import unittest
 
 import stem.descriptor.extrainfo_descriptor
+import stem.descriptor.microdescriptor
 import stem.descriptor.remote
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
@@ -125,6 +126,40 @@ class TestDescriptorReader(unittest.TestCase):
     self.assertEqual(1, len(single_query_results))
     self.assertEqual('moria1', single_query_results[0].nickname)
     self.assertTrue(isinstance(single_query_results[0], stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor))
+
+    self.assertEqual(2, len(list(multiple_query)))
+
+  def test_get_microdescriptors(self):
+    """
+    Exercises the downloader's get_microdescriptors() method.
+    """
+
+    # TODO: method needs to be fixed - not quite sure what's going wrong...
+
+    test.runner.skip(self, '(test presently broken)')
+    return
+
+    if test.runner.require_online(self):
+      return
+    elif test.runner.only_run_once(self, "test_get_microdescriptors"):
+      return
+
+    downloader = stem.descriptor.remote.DescriptorDownloader()
+
+    single_query = downloader.get_microdescriptors('6dCl6ab8CLo0LeMjxi/MZgVJiZgWN8WKTesWPBMtyTo')
+
+    multiple_query = downloader.get_microdescriptors([
+      '6dCl6ab8CLo0LeMjxi/MZgVJiZgWN8WKTesWPBMtyTo',  # moria1
+      'oXBV80OwMACBJpqNeZrYSXF18l9EJCi4/mB8UOl9sME',  # tor26
+    ])
+
+    single_query.run()
+    multiple_query.run()
+
+    single_query_results = list(single_query)
+    self.assertEqual(1, len(single_query_results))
+    self.assertEqual('moria1', single_query_results[0].digest)
+    self.assertTrue(isinstance(single_query_results[0], stem.descriptor.microdescriptor.Microdescriptor))
 
     self.assertEqual(2, len(list(multiple_query)))
 
