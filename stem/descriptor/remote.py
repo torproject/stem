@@ -84,8 +84,6 @@ class Query(object):
   :var str resource: resource being fetched, such as '/tor/status-vote/current/consensus.z'
   :var str descriptor_type: type of descriptors being fetched, see
     :func:`~stem.descriptor.__init__.parse_file`
-  :param stem.descriptor.__init__.DocumentHandler document_handler: method in
-    which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
 
   :var list endpoints: (address, dirport) tuples of the authority or mirror
     we're querying, this uses authorities if undefined
@@ -103,12 +101,16 @@ class Query(object):
   :var float timeout: duration before we'll time out our request
   :var float runtime: time our query took, this is **None** if it's not yet
     finished
+
+  :var bool validate: checks the validity of the descriptor's content if
+    **True**, skips these checks otherwise
+  :var stem.descriptor.__init__.DocumentHandler document_handler: method in
+    which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
   """
 
-  def __init__(self, resource, descriptor_type, endpoints = None, retries = 2, fall_back_to_authority = True, timeout = None, start = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
+  def __init__(self, resource, descriptor_type, endpoints = None, retries = 2, fall_back_to_authority = True, timeout = None, start = True, validate = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
     self.resource = resource
     self.descriptor_type = descriptor_type
-    self.document_handler = document_handler
 
     self.endpoints = endpoints if endpoints else []
     self.retries = retries
@@ -121,6 +123,9 @@ class Query(object):
     self.start_time = None
     self.timeout = timeout
     self.runtime = None
+
+    self.validate = validate
+    self.document_handler = document_handler
 
     self._downloader_thread = None
     self._downloader_thread_lock = threading.RLock()
@@ -225,7 +230,7 @@ class Query(object):
 
       response = io.BytesIO(response.read().strip())
 
-      self._results = stem.descriptor.parse_file(response, self.descriptor_type, document_handler = self.document_handler)
+      self._results = stem.descriptor.parse_file(response, self.descriptor_type, validate = self.validate, document_handler = self.document_handler)
       log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
     except:
       exc = sys.exc_info()[1]
@@ -258,15 +263,18 @@ class DescriptorDownloader(object):
   :var bool start_when_requested: issues requests when our methods are called
     if **True**, otherwise provides non-running
     :class:`~stem.descriptor.remote.Query` instances
+  :var bool validate: checks the validity of the descriptor's content if
+    **True**, skips these checks otherwise
   :var bool fall_back_to_authority: when retrying request issues the last
     request to a directory authority if **True**
   """
 
-  def __init__(self, retries = 2, use_mirrors = False, fall_back_to_authority = True, timeout = None, start_when_requested = True):
+  def __init__(self, retries = 2, use_mirrors = False, fall_back_to_authority = True, timeout = None, start_when_requested = True, validate = True):
     self.retries = retries
     self.timeout = timeout
     self.start_when_requested = start_when_requested
     self.fall_back_to_authority = fall_back_to_authority
+    self.validate = validate
     self._endpoints = DIRECTORY_AUTHORITIES.values()
 
     if use_mirrors:
@@ -422,5 +430,6 @@ class DescriptorDownloader(object):
       fall_back_to_authority = self.fall_back_to_authority,
       timeout = self.timeout,
       start = self.start_when_requested,
+      validate = self.validate,
       document_handler = document_handler,
     )
