@@ -406,7 +406,7 @@ class DescriptorDownloader(object):
 
     self._endpoints = list(new_endpoints)
 
-  def get_server_descriptors(self, fingerprints = None):
+  def get_server_descriptors(self, fingerprints = None, **query_args):
     """
     Provides the server descriptors with the given fingerprints. If no
     fingerprints are provided then this returns all descriptors in the present
@@ -414,6 +414,8 @@ class DescriptorDownloader(object):
 
     :param str,list fingerprints: fingerprint or list of fingerprints to be
       retrieved, gets all descriptors if **None**
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
 
     :returns: :class:`~stem.descriptor.remote.Query` for the server descriptors
 
@@ -432,9 +434,9 @@ class DescriptorDownloader(object):
 
       resource = '/tor/server/fp/%s.z' % '+'.join(fingerprints)
 
-    return self.query(resource)
+    return self.query(resource, **query_args)
 
-  def get_extrainfo_descriptors(self, fingerprints = None):
+  def get_extrainfo_descriptors(self, fingerprints = None, **query_args):
     """
     Provides the extrainfo descriptors with the given fingerprints. If no
     fingerprints are provided then this returns all descriptors in the present
@@ -442,6 +444,8 @@ class DescriptorDownloader(object):
 
     :param str,list fingerprints: fingerprint or list of fingerprints to be
       retrieved, gets all descriptors if **None**
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
 
     :returns: :class:`~stem.descriptor.remote.Query` for the extrainfo descriptors
 
@@ -460,9 +464,9 @@ class DescriptorDownloader(object):
 
       resource = '/tor/extra/fp/%s.z' % '+'.join(fingerprints)
 
-    return self.query(resource)
+    return self.query(resource, **query_args)
 
-  def get_microdescriptors(self, hashes):
+  def get_microdescriptors(self, hashes, **query_args):
     """
     Provides the microdescriptors with the given hashes. To get these see the
     'microdescriptor_hashes' attribute of
@@ -472,6 +476,8 @@ class DescriptorDownloader(object):
 
     :param str,list hashes: microdescriptor hash or list of hashes to be
       retrieved
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
 
     :returns: :class:`~stem.descriptor.remote.Query` for the microdescriptors
 
@@ -485,9 +491,9 @@ class DescriptorDownloader(object):
     if len(hashes) > MAX_MICRODESCRIPTOR_BATCH_SIZE:
       raise ValueError("Unable to request more than %i microdescriptors at a time by their hashes" % MAX_MICRODESCRIPTOR_BATCH_SIZE)
 
-    return self.query('/tor/micro/d/%s.z' % '-'.join(hashes))
+    return self.query('/tor/micro/d/%s.z' % '-'.join(hashes), **query_args)
 
-  def get_consensus(self, document_handler = stem.descriptor.DocumentHandler.ENTRIES, authority_v3ident = None):
+  def get_consensus(self, document_handler = stem.descriptor.DocumentHandler.ENTRIES, authority_v3ident = None, **query_args):
     """
     Provides the present router status entries.
 
@@ -497,6 +503,8 @@ class DescriptorDownloader(object):
       to get the consensus, see `'v3ident' in tor's config.c
       <https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816>`_
       for the values.
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
 
     :returns: :class:`~stem.descriptor.remote.Query` for the router status
       entries
@@ -507,14 +515,14 @@ class DescriptorDownloader(object):
     if authority_v3ident:
       resource += '/%s' % authority_v3ident
 
-    return self.query(resource + '.z', document_handler = document_handler)
+    return self.query(resource + '.z', document_handler = document_handler, **query_args)
 
-  def query(self, resource, **kwargs):
+  def query(self, resource, **query_args):
     """
     Issues a request for the given resource.
 
     :param str resource: resource being fetched, such as '/tor/server/all.z'
-    :param kwargs: additional arguments for the
+    :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 
     :returns: :class:`~stem.descriptor.remote.Query` for the descriptors
@@ -523,11 +531,11 @@ class DescriptorDownloader(object):
       type can't be determined when 'descriptor_type' is **None**
     """
 
-    query_args = dict(self._default_args)
-    query_args.update(kwargs)
+    args = dict(self._default_args)
+    args.update(query_args)
 
     return Query(
       resource,
       endpoints = self._endpoints,
-      **query_args
+      **args
     )
