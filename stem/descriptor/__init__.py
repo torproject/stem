@@ -151,11 +151,6 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
 
       return
 
-  import stem.descriptor.server_descriptor
-  import stem.descriptor.extrainfo_descriptor
-  import stem.descriptor.networkstatus
-  import stem.descriptor.microdescriptor
-
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
   # based on its filename. Metrics descriptors, however, can be identified
@@ -217,9 +212,6 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
 def _parse_metrics_file(descriptor_type, major_version, minor_version, descriptor_file, validate, document_handler):
   # Parses descriptor files from metrics, yielding individual descriptors. This
   # throws a TypeError if the descriptor_type or version isn't recognized.
-  import stem.descriptor.server_descriptor
-  import stem.descriptor.extrainfo_descriptor
-  import stem.descriptor.networkstatus
 
   if descriptor_type == "server-descriptor" and major_version == 1:
     for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = False, validate = validate):
@@ -541,3 +533,10 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     return entries, extra_entries
   else:
     return entries
+
+# importing at the end to avoid circular dependencies on our Descriptor class
+
+import stem.descriptor.server_descriptor
+import stem.descriptor.extrainfo_descriptor
+import stem.descriptor.networkstatus
+import stem.descriptor.microdescriptor

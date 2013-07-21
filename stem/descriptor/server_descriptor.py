@@ -34,7 +34,6 @@ import datetime
 import hashlib
 import re
 
-import stem.descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
 import stem.prereq
@@ -44,6 +43,14 @@ import stem.util.tor_tools
 import stem.version
 
 from stem.util import log
+
+from stem.descriptor import (
+  PGP_BLOCK_END,
+  Descriptor,
+  _get_bytes_field,
+  _get_descriptor_components,
+  _read_until_keywords,
+)
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -118,12 +125,12 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True):
   # to the caller).
 
   while True:
-    annotations = stem.descriptor._read_until_keywords("router", descriptor_file)
-    descriptor_content = stem.descriptor._read_until_keywords("router-signature", descriptor_file)
+    annotations = _read_until_keywords("router", descriptor_file)
+    descriptor_content = _read_until_keywords("router-signature", descriptor_file)
 
     # we've reached the 'router-signature', now include the pgp style block
-    block_end_prefix = stem.descriptor.PGP_BLOCK_END.split(' ', 1)[0]
-    descriptor_content += stem.descriptor._read_until_keywords(block_end_prefix, descriptor_file, True)
+    block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
+    descriptor_content += _read_until_keywords(block_end_prefix, descriptor_file, True)
 
     if descriptor_content:
       # strip newlines from annotations
@@ -142,7 +149,7 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True):
       break  # done parsing descriptors
 
 
-class ServerDescriptor(stem.descriptor.Descriptor):
+class ServerDescriptor(Descriptor):
   """
   Common parent for server descriptors.
 
@@ -216,8 +223,8 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     # Only a few things can be arbitrary bytes according to the dir-spec, so
     # parsing them separately.
 
-    self.platform = stem.descriptor._get_bytes_field("platform", raw_contents)
-    self.contact = stem.descriptor._get_bytes_field("contact", raw_contents)
+    self.platform = _get_bytes_field("platform", raw_contents)
+    self.contact = _get_bytes_field("contact", raw_contents)
 
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
@@ -272,8 +279,7 @@ class ServerDescriptor(stem.descriptor.Descriptor):
     # influences the resulting exit policy, but for everything else the order
     # does not matter so breaking it into key / value pairs.
 
-    entries, policy = \
-      stem.descriptor._get_descriptor_components(raw_contents, validate, ("accept", "reject"))
+    entries, policy = _get_descriptor_components(raw_contents, validate, ("accept", "reject"))
 
     self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
     self._parse(entries, validate)

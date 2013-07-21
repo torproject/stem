@@ -10,13 +10,6 @@ import stem.descriptor.remote
 
 from mock import patch
 
-# The following isn't used by this directly, but we're still importing it due
-# to a screwy aspect of how mock works. If patched() results in an import that
-# we haven't done before then we can fail with a RuntimeError. In practice this
-# just arises if we run this unit test on its own.
-
-import stem.descriptor.networkstatus
-
 # Output from requesting moria1's descriptor from itself...
 # % curl http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31
 

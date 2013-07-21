@@ -49,11 +49,17 @@ For more information see :func:`~stem.descriptor.__init__.DocumentHandler`...
 import datetime
 import io
 
-import stem.descriptor
 import stem.descriptor.router_status_entry
 import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
+
+from stem.descriptor import (
+  Descriptor,
+  DocumentHandler,
+  _get_descriptor_components,
+  _read_until_keywords,
+)
 
 # Version 2 network status document fields, tuples of the form...
 # (keyword, is_mandatory)
@@ -138,7 +144,7 @@ KEY_CERTIFICATE_PARAMS = (
 )
 
 
-def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
+def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False, document_handler = DocumentHandler.ENTRIES):
   """
   Parses a network status and iterates over the RouterStatusEntry in it. The
   document that these instances reference have an empty 'routers' attribute to
@@ -180,24 +186,24 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
   else:
     raise ValueError("Document type %i isn't recognized (only able to parse v2, v3, and bridge)" % document_type)
 
-  if document_handler == stem.descriptor.DocumentHandler.DOCUMENT:
+  if document_handler == DocumentHandler.DOCUMENT:
     yield document_type(document_file.read(), validate)
     return
 
   # getting the document without the routers section
 
-  header = stem.descriptor._read_until_keywords((ROUTERS_START, FOOTER_START, V2_FOOTER_START), document_file)
+  header = _read_until_keywords((ROUTERS_START, FOOTER_START, V2_FOOTER_START), document_file)
 
   routers_start = document_file.tell()
-  stem.descriptor._read_until_keywords((FOOTER_START, V2_FOOTER_START), document_file, skip = True)
+  _read_until_keywords((FOOTER_START, V2_FOOTER_START), document_file, skip = True)
   routers_end = document_file.tell()
 
   footer = document_file.readlines()
   document_content = bytes.join(b"", header + footer)
 
-  if document_handler == stem.descriptor.DocumentHandler.BARE_DOCUMENT:
+  if document_handler == DocumentHandler.BARE_DOCUMENT:
     yield document_type(document_content, validate)
-  elif document_handler == stem.descriptor.DocumentHandler.ENTRIES:
+  elif document_handler == DocumentHandler.ENTRIES:
     desc_iterator = stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
@@ -214,7 +220,7 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
     raise ValueError("Unrecognized document_handler: %s" % document_handler)
 
 
-class NetworkStatusDocument(stem.descriptor.Descriptor):
+class NetworkStatusDocument(Descriptor):
   """
   Common parent for network status documents.
   """
@@ -281,7 +287,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     # deprecated descriptor type - patches welcome if you want those checks.
 
     document_file = io.BytesIO(raw_content)
-    document_content = bytes.join(b"", stem.descriptor._read_until_keywords((ROUTERS_START, V2_FOOTER_START), document_file))
+    document_content = bytes.join(b"", _read_until_keywords((ROUTERS_START, V2_FOOTER_START), document_file))
 
     router_iter = stem.descriptor.router_status_entry._parse_file(
       document_file,
@@ -297,7 +303,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     document_content += b"\n" + document_file.read()
     document_content = stem.util.str_tools._to_unicode(document_content)
 
-    entries = stem.descriptor._get_descriptor_components(document_content, validate)
+    entries = _get_descriptor_components(document_content, validate)
 
     if validate:
       self._check_constraints(entries)
@@ -556,9 +562,9 @@ class _DocumentHeader(object):
 
     self._unrecognized_lines = []
 
-    content = bytes.join(b"", stem.descriptor._read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
+    content = bytes.join(b"", _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
     content = stem.util.str_tools._to_unicode(content)
-    entries = stem.descriptor._get_descriptor_components(content, validate)
+    entries = _get_descriptor_components(content, validate)
     self._parse(entries, validate)
 
     # doing this validation afterward so we know our 'is_consensus' and
@@ -792,7 +798,7 @@ class _DocumentFooter(object):
     if not content:
       return  # footer is optional and there's nothing to parse
 
-    entries = stem.descriptor._get_descriptor_components(content, validate)
+    entries = _get_descriptor_components(content, validate)
     self._parse(entries, validate, header)
 
     if validate:
@@ -948,7 +954,7 @@ def _parse_int_mappings(keyword, value, validate):
   return results
 
 
-class DirectoryAuthority(stem.descriptor.Descriptor):
+class DirectoryAuthority(Descriptor):
   """
   Directory authority information obtained from a v3 network status document.
 
@@ -1034,7 +1040,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     else:
       key_cert_content = None
 
-    entries = stem.descriptor._get_descriptor_components(content, validate)
+    entries = _get_descriptor_components(content, validate)
 
     if validate and 'dir-source' != entries.keys()[0]:
       raise ValueError("Authority entries are expected to start with a 'dir-source' line:\n%s" % (content))
@@ -1168,7 +1174,7 @@ class DirectoryAuthority(stem.descriptor.Descriptor):
     return self._compare(other, lambda s, o: s <= o)
 
 
-class KeyCertificate(stem.descriptor.Descriptor):
+class KeyCertificate(Descriptor):
   """
   Directory key certificate for a v3 network status document.
 
@@ -1216,7 +1222,7 @@ class KeyCertificate(stem.descriptor.Descriptor):
     :raises: **ValueError** if a validity check fails
     """
 
-    entries = stem.descriptor._get_descriptor_components(content, validate)
+    entries = _get_descriptor_components(content, validate)
 
     if validate:
       if 'dir-key-certificate-version' != entries.keys()[0]:

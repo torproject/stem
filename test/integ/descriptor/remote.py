@@ -11,10 +11,6 @@ import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import test.runner
 
-# Required to prevent unmarshal error when running this test alone.
-
-import stem.descriptor.networkstatus
-
 
 class TestDescriptorDownloader(unittest.TestCase):
   def test_using_authorities(self):

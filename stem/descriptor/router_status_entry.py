@@ -23,9 +23,15 @@ import base64
 import binascii
 import datetime
 
-import stem.descriptor
 import stem.exit_policy
 import stem.util.str_tools
+
+from stem.descriptor import (
+  KEYWORD_LINE,
+  Descriptor,
+  _get_descriptor_components,
+  _read_until_keywords,
+)
 
 
 def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
@@ -64,7 +70,7 @@ def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start
   # check if we're starting at the end of the section (ie, there's no entries to read)
   if section_end_keywords:
     first_keyword = None
-    line_match = stem.descriptor.KEYWORD_LINE.match(stem.util.str_tools._to_unicode(document_file.readline()))
+    line_match = KEYWORD_LINE.match(stem.util.str_tools._to_unicode(document_file.readline()))
 
     if line_match:
       first_keyword = line_match.groups()[0]
@@ -75,7 +81,7 @@ def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start
       return
 
   while end_position is None or document_file.tell() < end_position:
-    desc_lines, ending_keyword = stem.descriptor._read_until_keywords(
+    desc_lines, ending_keyword = _read_until_keywords(
       (entry_keyword,) + section_end_keywords,
       document_file,
       ignore_first = True,
@@ -95,7 +101,7 @@ def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start
       break
 
 
-class RouterStatusEntry(stem.descriptor.Descriptor):
+class RouterStatusEntry(Descriptor):
   """
   Information about an individual router stored within a network status
   document. This is the common parent for concrete status entry types.
@@ -147,7 +153,7 @@ class RouterStatusEntry(stem.descriptor.Descriptor):
 
     self._unrecognized_lines = []
 
-    entries = stem.descriptor._get_descriptor_components(content, validate)
+    entries = _get_descriptor_components(content, validate)
 
     if validate:
       self._check_constraints(entries)

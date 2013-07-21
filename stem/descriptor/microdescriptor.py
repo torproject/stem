@@ -66,9 +66,14 @@ Doing the same is trivial with server descriptors...
 
 import hashlib
 
-import stem.descriptor
 import stem.descriptor.router_status_entry
 import stem.exit_policy
+
+from stem.descriptor import (
+  Descriptor,
+  _get_descriptor_components,
+  _read_until_keywords,
+)
 
 REQUIRED_FIELDS = (
   "onion-key",
@@ -99,7 +104,7 @@ def _parse_file(descriptor_file, validate = True):
   """
 
   while True:
-    annotations = stem.descriptor._read_until_keywords("onion-key", descriptor_file)
+    annotations = _read_until_keywords("onion-key", descriptor_file)
 
     # read until we reach an annotation or onion-key line
     descriptor_lines = []
@@ -136,7 +141,7 @@ def _parse_file(descriptor_file, validate = True):
       break  # done parsing descriptors
 
 
-class Microdescriptor(stem.descriptor.Descriptor):
+class Microdescriptor(Descriptor):
   """
   Microdescriptor (`descriptor specification
   <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_)
@@ -174,7 +179,7 @@ class Microdescriptor(stem.descriptor.Descriptor):
     self._annotation_lines = annotations if annotations else []
     self._annotation_dict = None  # cached breakdown of key/value mappings
 
-    entries = stem.descriptor._get_descriptor_components(raw_contents, validate)
+    entries = _get_descriptor_components(raw_contents, validate)
     self._parse(entries, validate)
 
     if validate:
