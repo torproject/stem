@@ -74,6 +74,7 @@ import sys
 import threading
 import time
 import urllib2
+import zlib
 
 import stem.descriptor
 
@@ -335,15 +336,17 @@ class Query(object):
       self.download_url = self._pick_url(use_authority)
 
       self.start_time = time.time()
-      response = urllib2.urlopen(self.download_url, timeout = self.timeout)
+      response = urllib2.urlopen(self.download_url, timeout = self.timeout).read()
 
-      # This sucks. We need to read the full response into memory before
-      # processing the content. This is because urllib2 returns a 'file like'
-      # object that lacks tell() or seek(). Hence we need to read it into our
-      # own buffer that does support these.
+      if self.download_url.endswith('.z'):
+        response = zlib.decompress(response)
 
-      response = io.BytesIO(response.read().strip())
-      self._results = stem.descriptor.parse_file(response, self.descriptor_type, validate = self.validate, document_handler = self.document_handler)
+      self._results = stem.descriptor.parse_file(
+        io.BytesIO(response.strip()),
+        self.descriptor_type,
+        validate = self.validate,
+        document_handler = self.document_handler,
+      )
 
       self.runtime = time.time() - self.start_time
       log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
@@ -434,7 +437,7 @@ class DescriptorDownloader(object):
       fingerprints (this is due to a limit on the url length by squid proxies).
     """
 
-    resource = '/tor/server/all'
+    resource = '/tor/server/all.z'
 
     if isinstance(fingerprints, str):
       fingerprints = [fingerprints]
@@ -443,7 +446,7 @@ class DescriptorDownloader(object):
       if len(fingerprints) > MAX_DESCRIPTOR_BATCH_SIZE:
         raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_DESCRIPTOR_BATCH_SIZE)
 
-      resource = '/tor/server/fp/%s' % '+'.join(fingerprints)
+      resource = '/tor/server/fp/%s.z' % '+'.join(fingerprints)
 
     return self._query(resource)
 
@@ -462,7 +465,7 @@ class DescriptorDownloader(object):
       fingerprints (this is due to a limit on the url length by squid proxies).
     """
 
-    resource = '/tor/extra/all'
+    resource = '/tor/extra/all.z'
 
     if isinstance(fingerprints, str):
       fingerprints = [fingerprints]
@@ -471,7 +474,7 @@ class DescriptorDownloader(object):
       if len(fingerprints) > MAX_DESCRIPTOR_BATCH_SIZE:
         raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_DESCRIPTOR_BATCH_SIZE)
 
-      resource = '/tor/extra/fp/%s' % '+'.join(fingerprints)
+      resource = '/tor/extra/fp/%s.z' % '+'.join(fingerprints)
 
     return self._query(resource)
 
@@ -498,7 +501,7 @@ class DescriptorDownloader(object):
     if len(hashes) > MAX_MICRODESCRIPTOR_BATCH_SIZE:
       raise ValueError("Unable to request more than %i microdescriptors at a time by their hashes" % MAX_MICRODESCRIPTOR_BATCH_SIZE)
 
-    return self._query('/tor/micro/d/%s' % '-'.join(hashes))
+    return self._query('/tor/micro/d/%s.z' % '-'.join(hashes))
 
   def get_consensus(self, document_handler = stem.descriptor.DocumentHandler.ENTRIES, authority_v3ident = None):
     """
@@ -520,7 +523,7 @@ class DescriptorDownloader(object):
     if authority_v3ident:
       resource += '/%s' % authority_v3ident
 
-    return self._query(resource, document_handler = document_handler)
+    return self._query(resource + '.z', document_handler = document_handler)
 
   def _query(self, resource, descriptor_type = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
     """
