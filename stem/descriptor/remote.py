@@ -51,7 +51,8 @@ itself...
     |- get_server_descriptors - provides present :class:`~stem.descriptor.stem.descriptor.server_descriptor.ServerDescriptor`
     |- get_extrainfo_descriptors - provides present :class:`~stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor`
     |- get_microdescriptors - provides present :class:`~stem.descriptor.microdescriptor.Microdescriptor`
-    +- get_consensus - provides present :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
+    |- get_consensus - provides present :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
+    +- query - request an arbitrary descriptor resource
 
 .. data:: MAX_DESCRIPTOR_BATCH_SIZE
 
@@ -365,35 +366,18 @@ class Query(object):
 
 class DescriptorDownloader(object):
   """
-  Configurable class through which descriptors can be downloaded. This provides
-  caching, retries, and other capabilities to make downloading descriptors easy
-  and efficient.
-
-  For more advanced use cases you can use the
-  :class:`~stem.descriptor.remote.Query` class directly.
+  Configurable class that issues :class:`~stem.descriptor.remote.Query`
+  instances on your behalf.
 
   :param bool use_mirrors: downloads the present consensus and uses the directory
     mirrors to fetch future requests, this fails silently if the consensus
     cannot be downloaded
-
-  :var int retries: number of times to attempt the request if it fails
-  :var bool fall_back_to_authority: when retrying request issues the last
-    request to a directory authority if **True**
-  :var float timeout: duration before we'll time out our request, no timeout is
-    applied if **None**
-  :var bool start_when_requested: issues requests when our methods are called
-    if **True**, otherwise provides non-running
-    :class:`~stem.descriptor.remote.Query` instances
-  :var bool validate: checks the validity of the descriptor's content if
-    **True**, skips these checks otherwise
+  :param default_args: default arguments for the
+    :class:`~stem.descriptor.remote.Query` constructor
   """
 
-  def __init__(self, use_mirrors = False, retries = 2, fall_back_to_authority = True, timeout = None, start_when_requested = True, validate = True):
-    self.retries = retries
-    self.fall_back_to_authority = fall_back_to_authority
-    self.timeout = timeout
-    self.start_when_requested = start_when_requested
-    self.validate = validate
+  def __init__(self, use_mirrors = False, **default_args):
+    self._default_args = default_args
     self._endpoints = DIRECTORY_AUTHORITIES.values()
 
     if use_mirrors:
@@ -448,7 +432,7 @@ class DescriptorDownloader(object):
 
       resource = '/tor/server/fp/%s.z' % '+'.join(fingerprints)
 
-    return self._query(resource)
+    return self.query(resource)
 
   def get_extrainfo_descriptors(self, fingerprints = None):
     """
@@ -476,7 +460,7 @@ class DescriptorDownloader(object):
 
       resource = '/tor/extra/fp/%s.z' % '+'.join(fingerprints)
 
-    return self._query(resource)
+    return self.query(resource)
 
   def get_microdescriptors(self, hashes):
     """
@@ -501,7 +485,7 @@ class DescriptorDownloader(object):
     if len(hashes) > MAX_MICRODESCRIPTOR_BATCH_SIZE:
       raise ValueError("Unable to request more than %i microdescriptors at a time by their hashes" % MAX_MICRODESCRIPTOR_BATCH_SIZE)
 
-    return self._query('/tor/micro/d/%s.z' % '-'.join(hashes))
+    return self.query('/tor/micro/d/%s.z' % '-'.join(hashes))
 
   def get_consensus(self, document_handler = stem.descriptor.DocumentHandler.ENTRIES, authority_v3ident = None):
     """
@@ -523,23 +507,27 @@ class DescriptorDownloader(object):
     if authority_v3ident:
       resource += '/%s' % authority_v3ident
 
-    return self._query(resource + '.z', document_handler = document_handler)
+    return self.query(resource + '.z', document_handler = document_handler)
 
-  def _query(self, resource, descriptor_type = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
+  def query(self, resource, **kwargs):
     """
     Issues a request for the given resource.
+
+    :param str resource: resource being fetched, such as '/tor/server/all.z'
+    :param kwargs: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the descriptors
+
+    :raises: **ValueError** if resource is clearly invalid or the descriptor
+      type can't be determined when 'descriptor_type' is **None**
     """
 
-    log.trace("Retrieving descriptors (resource: %s, type: %s)" % (resource, descriptor_type))
+    query_args = dict(self._default_args)
+    query_args.update(kwargs)
 
     return Query(
       resource,
-      descriptor_type,
       endpoints = self._endpoints,
-      retries = self.retries,
-      fall_back_to_authority = self.fall_back_to_authority,
-      timeout = self.timeout,
-      start = self.start_when_requested,
-      validate = self.validate,
-      document_handler = document_handler,
+      **query_args
     )
