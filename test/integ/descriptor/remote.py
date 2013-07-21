@@ -15,7 +15,8 @@ import test.runner
 
 import stem.descriptor.networkstatus
 
-class TestDescriptorReader(unittest.TestCase):
+
+class TestDescriptorDownloader(unittest.TestCase):
   def test_using_authorities(self):
     """
     Fetches a descriptor from each of the directory authorities. This is
@@ -44,7 +45,7 @@ class TestDescriptorReader(unittest.TestCase):
     for query in queries:
       try:
         descriptors = list(query.run())
-      except Exception, exc:
+      except Exception as exc:
         self.fail("Unable to use %s (%s:%s, %s): %s" % (authority, address, dirport, type(exc), exc))
 
       self.assertEqual(1, len(descriptors))

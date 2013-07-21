@@ -154,6 +154,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   import stem.descriptor.server_descriptor
   import stem.descriptor.extrainfo_descriptor
   import stem.descriptor.networkstatus
+  import stem.descriptor.microdescriptor
 
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess

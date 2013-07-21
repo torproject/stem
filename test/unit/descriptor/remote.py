@@ -71,7 +71,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     expeced_url = 'http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31'
-    self.assertEqual(expeced_url, query.pick_url())
+    self.assertEqual(expeced_url, query._pick_url())
 
     descriptors = list(query)
     self.assertEqual(1, len(descriptors))
