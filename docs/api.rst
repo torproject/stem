@@ -22,7 +22,9 @@ Descriptors
 
 To read descriptors from disk use :func:`~stem.descriptor.__init__.parse_file` for
 individual files and `stem.descriptor.reader
-<api/descriptor/reader.html>`_ for batches.
+<api/descriptor/reader.html>`_ for batches. You can also use
+`stem.descriptor.remote <api/descriptor/remote.html>`_ to download descriptors
+remotely like tor does.
 
 * **Classes**
 
@@ -34,6 +36,7 @@ individual files and `stem.descriptor.reader
  * `stem.descriptor.router_status_entry <api/descriptor/router_status_entry.html>`_ - Relay entries within a network status document.
 
 * `stem.descriptor.reader <api/descriptor/reader.html>`_ - Reads and parses descriptor files from disk.
+* `stem.descriptor.remote <api/descriptor/remote.html>`_ - Downloads descriptors from directory mirrors and authorities.
 * `stem.descriptor.export <api/descriptor/export.html>`_ - Exports descriptors to other formats.
 
 Utilities

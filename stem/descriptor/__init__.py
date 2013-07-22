@@ -40,6 +40,7 @@ Package for parsing and processing descriptor data.
 __all__ = [
   "export",
   "reader",
+  "remote",
   "extrainfo_descriptor",
   "server_descriptor",
   "microdescriptor",
@@ -131,11 +132,12 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
   :param stem.descriptor.__init__.DocumentHandler document_handler: method in
-    which to parse :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+    which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
 
   :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor` instances in the file
 
   :raises:
+    * **ValueError** if the contents is malformed and validate is True
     * **TypeError** if we can't match the contents of the file to a descriptor type
     * **IOError** if unable to read from the descriptor_file
   """
@@ -148,10 +150,6 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
         yield desc
 
       return
-
-  import stem.descriptor.server_descriptor
-  import stem.descriptor.extrainfo_descriptor
-  import stem.descriptor.networkstatus
 
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
@@ -214,9 +212,6 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
 def _parse_metrics_file(descriptor_type, major_version, minor_version, descriptor_file, validate, document_handler):
   # Parses descriptor files from metrics, yielding individual descriptors. This
   # throws a TypeError if the descriptor_type or version isn't recognized.
-  import stem.descriptor.server_descriptor
-  import stem.descriptor.extrainfo_descriptor
-  import stem.descriptor.networkstatus
 
   if descriptor_type == "server-descriptor" and major_version == 1:
     for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = False, validate = validate):
@@ -242,7 +237,8 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler):
       yield desc
   elif descriptor_type == "dir-key-certificate-3" and major_version == 1:
-    yield stem.descriptor.networkstatus.KeyCertificate(descriptor_file.read(), validate = validate)
+    for desc in stem.descriptor.networkstatus._parse_file_key_certs(descriptor_file, validate = validate):
+      yield desc
   elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 
@@ -538,3 +534,10 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     return entries, extra_entries
   else:
     return entries
+
+# importing at the end to avoid circular dependencies on our Descriptor class
+
+import stem.descriptor.server_descriptor
+import stem.descriptor.extrainfo_descriptor
+import stem.descriptor.networkstatus
+import stem.descriptor.microdescriptor

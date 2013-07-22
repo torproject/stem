@@ -213,10 +213,16 @@ class TestServerDescriptor(unittest.TestCase):
 
     desc_text = b"@pepperjack very tasty\n@mushrooms not so much\n"
     desc_text += get_relay_server_descriptor(content = True)
-    desc_text += b"\ntrailing text that should be ignored, ho hum"
+    desc_text += b"\ntrailing text that should be invalid, ho hum"
 
     # running _parse_file should provide an iterator with a single descriptor
     desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text))
+    self.assertRaises(ValueError, list, desc_iter)
+
+    desc_text = b"@pepperjack very tasty\n@mushrooms not so much\n"
+    desc_text += get_relay_server_descriptor(content = True)
+    desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text))
+
     desc_entries = list(desc_iter)
     self.assertEquals(1, len(desc_entries))
     desc = desc_entries[0]

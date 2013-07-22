@@ -72,10 +72,16 @@ import datetime
 import hashlib
 import re
 
-import stem.descriptor
 import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
+
+from stem.descriptor import (
+  PGP_BLOCK_END,
+  Descriptor,
+  _read_until_keywords,
+  _get_descriptor_components,
+)
 
 # known statuses for dirreq-v2-resp and dirreq-v3-resp...
 DirResponse = stem.util.enum.Enum(
@@ -156,11 +162,11 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True):
   """
 
   while True:
-    extrainfo_content = stem.descriptor._read_until_keywords("router-signature", descriptor_file)
+    extrainfo_content = _read_until_keywords("router-signature", descriptor_file)
 
     # we've reached the 'router-signature', now include the pgp style block
-    block_end_prefix = stem.descriptor.PGP_BLOCK_END.split(' ', 1)[0]
-    extrainfo_content += stem.descriptor._read_until_keywords(block_end_prefix, descriptor_file, True)
+    block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
+    extrainfo_content += _read_until_keywords(block_end_prefix, descriptor_file, True)
 
     if extrainfo_content:
       if is_bridge:
@@ -205,7 +211,7 @@ def _parse_timestamp_and_interval(keyword, content):
     raise ValueError("%s line's timestamp wasn't parsable: %s" % (keyword, line))
 
 
-class ExtraInfoDescriptor(stem.descriptor.Descriptor):
+class ExtraInfoDescriptor(Descriptor):
   """
   Extra-info descriptor document.
 
@@ -400,7 +406,7 @@ class ExtraInfoDescriptor(stem.descriptor.Descriptor):
 
     self._unrecognized_lines = []
 
-    entries = stem.descriptor._get_descriptor_components(raw_contents, validate)
+    entries = _get_descriptor_components(raw_contents, validate)
 
     if validate:
       for keyword in self._required_fields():

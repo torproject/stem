@@ -16,6 +16,7 @@ about the tor test instance they're running against.
   require_control - skips the test unless tor provides a controller endpoint
   require_version - skips the test unless we meet a tor version requirement
   require_online - skips unless targets allow for online tests
+  only_run_once - skip the test if it has been ran before
   exercise_controller - basic sanity check that a controller connection can be used
 
   get_runner - Singleton for fetching our runtime context.
