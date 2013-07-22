@@ -237,7 +237,8 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler):
       yield desc
   elif descriptor_type == "dir-key-certificate-3" and major_version == 1:
-    yield stem.descriptor.networkstatus.KeyCertificate(descriptor_file.read(), validate = validate)
+    for desc in stem.descriptor.networkstatus._parse_file_key_certs(descriptor_file, validate = validate):
+      yield desc
   elif descriptor_type in ("network-status-consensus-3", "network-status-vote-3") and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
 

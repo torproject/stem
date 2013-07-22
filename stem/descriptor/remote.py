@@ -52,6 +52,7 @@ itself...
     |- get_extrainfo_descriptors - provides present :class:`~stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor`
     |- get_microdescriptors - provides present :class:`~stem.descriptor.microdescriptor.Microdescriptor`
     |- get_consensus - provides present :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
+    |- get_key_certificates - provides present :class:`~stem.descriptor.networkstatus.KeyCertificate`
     +- query - request an arbitrary descriptor resource
 
 .. data:: MAX_DESCRIPTOR_BATCH_SIZE
@@ -118,6 +119,8 @@ def _guess_descriptor_type(resource):
     return 'microdescriptor 1.0'
   elif resource.startswith('/tor/status-vote/'):
     return 'network-status-consensus-3 1.0'
+  elif resource.startswith('/tor/keys/'):
+    return 'dir-key-certificate-3 1.0'
   else:
     raise ValueError("Unable to determine the descriptor type for '%s'" % resource)
 
@@ -516,6 +519,39 @@ class DescriptorDownloader(object):
       resource += '/%s' % authority_v3ident
 
     return self.query(resource + '.z', document_handler = document_handler, **query_args)
+
+  def get_key_certificates(self, authority_v3idents = None, **query_args):
+    """
+    Provides the key certificates for authorities with the given fingerprints.
+    If no fingerprints are provided then this returns all present key
+    certificates.
+
+    :param str authority_v3idents: fingerprint or list of fingerprints of the
+      authority keys, see `'v3ident' in tor's config.c
+      <https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816>`_
+      for the values.
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the key certificates
+
+    :raises: **ValueError** if we request more than 96 key certificates by
+      their identity fingerprints (this is due to a limit on the url length by
+      squid proxies).
+    """
+
+    resource = '/tor/keys/all.z'
+
+    if isinstance(authority_v3idents, str):
+      authority_v3idents = [authority_v3idents]
+
+    if authority_v3idents:
+      if len(authority_v3idents) > MAX_DESCRIPTOR_BATCH_SIZE:
+        raise ValueError("Unable to request more than %i key certificates at a time by their identity fingerprints" % MAX_DESCRIPTOR_BATCH_SIZE)
+
+      resource = '/tor/keys/fp/%s.z' % '+'.join(authority_v3idents)
+
+    return self.query(resource, **query_args)
 
   def query(self, resource, **query_args):
     """

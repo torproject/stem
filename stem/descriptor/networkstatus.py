@@ -55,6 +55,7 @@ import stem.util.tor_tools
 import stem.version
 
 from stem.descriptor import (
+  PGP_BLOCK_END,
   Descriptor,
   DocumentHandler,
   _get_descriptor_components,
@@ -218,6 +219,36 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
       yield desc
   else:
     raise ValueError("Unrecognized document_handler: %s" % document_handler)
+
+
+def _parse_file_key_certs(certificate_file, validate = True):
+  """
+  Parses a file containing one or more authority key certificates.
+
+  :param file certificate_file: file with key certificates
+  :param bool validate: checks the validity of the certificate's contents if
+    **True**, skips these checks otherwise
+
+  :returns: iterator for :class:`stem.descriptor.networkstatus.KeyCertificate`
+    instance in the file
+
+  :raises:
+    * **ValueError** if the key certificate content is invalid and validate is
+      **True**
+    * **IOError** if the file can't be read
+  """
+
+  while True:
+    keycert_content = _read_until_keywords("dir-key-certification", certificate_file)
+
+    # we've reached the 'router-signature', now include the pgp style block
+    block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
+    keycert_content += _read_until_keywords(block_end_prefix, certificate_file, True)
+
+    if keycert_content:
+      yield stem.descriptor.networkstatus.KeyCertificate(bytes.join(b"", keycert_content), validate = validate)
+    else:
+      break  # done parsing file
 
 
 class NetworkStatusDocument(Descriptor):

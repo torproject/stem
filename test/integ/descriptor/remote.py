@@ -6,6 +6,7 @@ import unittest
 
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.microdescriptor
+import stem.descriptor.networkstatus
 import stem.descriptor.remote
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
@@ -178,3 +179,32 @@ class TestDescriptorDownloader(unittest.TestCase):
     consensus = list(consensus_query)
     self.assertTrue(len(consensus) > 50)
     self.assertTrue(isinstance(consensus[0], stem.descriptor.router_status_entry.RouterStatusEntryV3))
+
+  def test_get_key_certificates(self):
+    """
+    Exercises the downloader's get_key_certificates() method.
+    """
+
+    if test.runner.require_online(self):
+      return
+    elif test.runner.only_run_once(self, "test_get_key_certificates"):
+      return
+
+    downloader = stem.descriptor.remote.DescriptorDownloader()
+
+    single_query = downloader.get_key_certificates('D586D18309DED4CD6D57C18FDB97EFA96D330566')
+
+    multiple_query = downloader.get_key_certificates([
+      'D586D18309DED4CD6D57C18FDB97EFA96D330566',
+      '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
+    ])
+
+    single_query.run()
+    multiple_query.run()
+
+    single_query_results = list(single_query)
+    self.assertEqual(1, len(single_query_results))
+    self.assertEqual('D586D18309DED4CD6D57C18FDB97EFA96D330566', single_query_results[0].fingerprint)
+    self.assertTrue(isinstance(single_query_results[0], stem.descriptor.networkstatus.KeyCertificate))
+
+    self.assertEqual(2, len(list(multiple_query)))
