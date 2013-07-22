@@ -13,8 +13,8 @@ content. For example...
   from stem.descriptor.remote import DescriptorDownloader
 
   downloader = DescriptorDownloader(
-    cache = '/tmp/descriptor_cache',
     use_mirrors = True,
+    timeout = 10,
   )
 
   query = downloader.get_server_descriptors()
@@ -48,19 +48,19 @@ itself...
 
   DescriptorDownloader - Configurable class for issuing queries
     |- use_directory_mirrors - use directory mirrors to download future descriptors
-    |- get_server_descriptors - provides present :class:`~stem.descriptor.stem.descriptor.server_descriptor.ServerDescriptor`
-    |- get_extrainfo_descriptors - provides present :class:`~stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor`
-    |- get_microdescriptors - provides present :class:`~stem.descriptor.microdescriptor.Microdescriptor`
-    |- get_consensus - provides present :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
-    |- get_key_certificates - provides present :class:`~stem.descriptor.networkstatus.KeyCertificate`
+    |- get_server_descriptors - provides present server descriptors
+    |- get_extrainfo_descriptors - provides present extrainfo descriptors
+    |- get_microdescriptors - provides present microdescriptors
+    |- get_consensus - provides the present consensus or router status entries
+    |- get_key_certificates - provides present authority key certificates
     +- query - request an arbitrary descriptor resource
 
-.. data:: MAX_DESCRIPTOR_BATCH_SIZE
+.. data:: MAX_FINGERPRINTS
 
-  Maximum number of server or extrainfo descriptors that can requested at a
-  time by their fingerprints.
+  Maximum number of descriptors that can requested at a time by their
+  fingerprints.
 
-.. data:: MAX_MICRODESCRIPTOR_BATCH_SIZE
+.. data:: MAX_MICRODESCRIPTOR_HASHES
 
   Maximum number of microdescriptors that can requested at a time by their
   hashes.
@@ -86,8 +86,8 @@ from stem.util import log
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
 
-MAX_DESCRIPTOR_BATCH_SIZE = 96
-MAX_MICRODESCRIPTOR_BATCH_SIZE = 92
+MAX_FINGERPRINTS = 96
+MAX_MICRODESCRIPTOR_HASHES = 92
 
 # Tor directory authorities as of commit f631b73 (7/4/13). This should only
 # include authorities with 'v3ident':
@@ -134,7 +134,7 @@ class Query(object):
 
   To block on the response and get results either call
   :func:`~stem.descriptor.remote.Query.run` or iterate over the Query. The
-  :func:`~stem.descriptor.remote.run` method pass along any errors that
+  :func:`~stem.descriptor.remote.Query.run` method pass along any errors that
   arise...
 
   ::
@@ -143,7 +143,7 @@ class Query(object):
 
     query = Query(
       '/tor/server/all.z',
-      'server-descriptor 1.0',
+      descriptor_type = 'server-descriptor 1.0',
       timeout = 30,
     )
 
@@ -171,16 +171,18 @@ class Query(object):
   <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_).
   Commonly useful ones include...
 
-  ========                              ===========
+  ===================================== ===========
   Resource                              Description
-  ========                              ===========
+  ===================================== ===========
   /tor/server/all.z                     all present server descriptors
   /tor/server/fp/<fp1>+<fp2>+<fp3>.z    server descriptors with the given fingerprints
   /tor/extra/all.z                      all present extrainfo descriptors
   /tor/extra/fp/<fp1>+<fp2>+<fp3>.z     extrainfo descriptors with the given fingerprints
   /tor/micro/d/<hash1>-<hash2>.z        microdescriptors with the given hashes
   /tor/status-vote/current/consensus.z  present consensus
-  ========                              ===========
+  /tor/keys/all.z                       key certificates for the authorities
+  /tor/keys/fp/<v3ident1>+<v3ident2>.z  key certificates for specific authorities
+  ===================================== ===========
 
   The '.z' suffix can be excluded to get a plaintext rather than compressed
   response. Compression is handled transparently, so this shouldn't matter to
@@ -211,7 +213,9 @@ class Query(object):
   :var bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
   :var stem.descriptor.__init__.DocumentHandler document_handler: method in
-    which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+    which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+
+  :param bool start: start making the request when constructed (default is **True**)
   """
 
   def __init__(self, resource, descriptor_type = None, endpoints = None, retries = 2, fall_back_to_authority = True, timeout = None, start = True, validate = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
@@ -432,8 +436,8 @@ class DescriptorDownloader(object):
       fingerprints = [fingerprints]
 
     if fingerprints:
-      if len(fingerprints) > MAX_DESCRIPTOR_BATCH_SIZE:
-        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_DESCRIPTOR_BATCH_SIZE)
+      if len(fingerprints) > MAX_FINGERPRINTS:
+        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_FINGERPRINTS)
 
       resource = '/tor/server/fp/%s.z' % '+'.join(fingerprints)
 
@@ -462,8 +466,8 @@ class DescriptorDownloader(object):
       fingerprints = [fingerprints]
 
     if fingerprints:
-      if len(fingerprints) > MAX_DESCRIPTOR_BATCH_SIZE:
-        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_DESCRIPTOR_BATCH_SIZE)
+      if len(fingerprints) > MAX_FINGERPRINTS:
+        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_FINGERPRINTS)
 
       resource = '/tor/extra/fp/%s.z' % '+'.join(fingerprints)
 
@@ -491,21 +495,21 @@ class DescriptorDownloader(object):
     if isinstance(hashes, str):
       hashes = [hashes]
 
-    if len(hashes) > MAX_MICRODESCRIPTOR_BATCH_SIZE:
-      raise ValueError("Unable to request more than %i microdescriptors at a time by their hashes" % MAX_MICRODESCRIPTOR_BATCH_SIZE)
+    if len(hashes) > MAX_MICRODESCRIPTOR_HASHES:
+      raise ValueError("Unable to request more than %i microdescriptors at a time by their hashes" % MAX_MICRODESCRIPTOR_HASHES)
 
     return self.query('/tor/micro/d/%s.z' % '-'.join(hashes), **query_args)
 
-  def get_consensus(self, document_handler = stem.descriptor.DocumentHandler.ENTRIES, authority_v3ident = None, **query_args):
+  def get_consensus(self, authority_v3ident = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **query_args):
     """
     Provides the present router status entries.
 
-    :param stem.descriptor.__init__.DocumentHandler document_handler: method in
-      which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`
     :param str authority_v3ident: fingerprint of the authority key for which
       to get the consensus, see `'v3ident' in tor's config.c
       <https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816>`_
       for the values.
+    :param stem.descriptor.__init__.DocumentHandler document_handler: method in
+      which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 
@@ -546,8 +550,8 @@ class DescriptorDownloader(object):
       authority_v3idents = [authority_v3idents]
 
     if authority_v3idents:
-      if len(authority_v3idents) > MAX_DESCRIPTOR_BATCH_SIZE:
-        raise ValueError("Unable to request more than %i key certificates at a time by their identity fingerprints" % MAX_DESCRIPTOR_BATCH_SIZE)
+      if len(authority_v3idents) > MAX_FINGERPRINTS:
+        raise ValueError("Unable to request more than %i key certificates at a time by their identity fingerprints" % MAX_FINGERPRINTS)
 
       resource = '/tor/keys/fp/%s.z' % '+'.join(authority_v3idents)
 

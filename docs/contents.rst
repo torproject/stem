@@ -35,6 +35,7 @@ Contents
 
    api/descriptor/export
    api/descriptor/reader
+   api/descriptor/remote
 
    api/util/conf
    api/util/connection
