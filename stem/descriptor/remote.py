@@ -391,7 +391,7 @@ class DescriptorDownloader(object):
       try:
         start_time = time.time()
         self.use_directory_mirrors()
-        log.debug("Retrieve directory mirrors (took %0.2fs)" % (time.time() - start_time))
+        log.debug("Retrieved directory mirrors (took %0.2fs)" % (time.time() - start_time))
       except Exception as exc:
         log.debug("Unable to retrieve directory mirrors: %s" % exc)
 
@@ -400,18 +400,25 @@ class DescriptorDownloader(object):
     Downloads the present consensus and configures ourselves to use directory
     mirrors, in addition to authorities.
 
+    :returns: :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`
+      from which we got the directory mirrors
+
     :raises: **Exception** if unable to determine the directory mirrors
     """
 
     new_endpoints = set(DIRECTORY_AUTHORITIES.values())
 
-    for desc in self.get_consensus().run():
+    consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
+
+    for desc in consensus.routers:
       if Flag.V2DIR in desc.flags:
         new_endpoints.add((desc.address, desc.dir_port))
 
     # we need our endpoints to be a list rather than set for random.choice()
 
     self._endpoints = list(new_endpoints)
+
+    return consensus
 
   def get_server_descriptors(self, fingerprints = None, **query_args):
     """
