@@ -193,7 +193,7 @@ def _connect(control_socket, password, chroot_path, controller):
     else:
       return controller(control_socket)
   except MissingPassword:
-    if password is None:
+    if password is not None:
       raise ValueError("BUG: authenticate raised MissingPassword despite getting one")
 
     try:
