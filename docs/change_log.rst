@@ -51,6 +51,7 @@ The following are only available within stem's `git repository
 
  * **Descriptors**
 
+  * Added the `stem.descriptor.remote <api/descriptor/remote.html>`_ module.
   * The :class:`~stem.descriptor.reader.DescriptorReader` mishandled relative paths (:trac:`8815`)
 
  * **Utilities**
@@ -75,6 +76,9 @@ The following are only available within stem's `git repository
     stem.
   * Expanded the `client usage tutorial <tutorials/to_russia_with_love.html>`_
     to cover SocksiPy and include an example for polling Twitter.
+  * Subtler buttons for the frontpage (`before
+    <http://www.atagar.com/transfer/stem_frontpage/before.png>`_ and `after
+    <http://www.atagar.com/transfer/stem_frontpage/after.png>`_).
 
 .. _version_1.0:
 
