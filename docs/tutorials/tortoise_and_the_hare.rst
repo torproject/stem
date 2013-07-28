@@ -60,15 +60,15 @@ uploaded.
       controller.authenticate()
 
       try:
-        # This makes curses initialize and call drawBandwidthGraph() with a
+        # This makes curses initialize and call draw_bandwidth_graph() with a
         # reference to the screen, followed by additional arguments (in this
         # case just the controller).
 
-        curses.wrapper(drawBandwidthGraph, controller)
+        curses.wrapper(draw_bandwidth_graph, controller)
       except KeyboardInterrupt:
         pass  # the user hit ctrl+c
 
-  def drawBandwidthGraph(stdscr, controller):
+  def draw_bandwidth_graph(stdscr, controller):
     window = Window(stdscr)
 
     # (downloaded, uploaded) tuples for the last 40 seconds
