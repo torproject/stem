@@ -103,7 +103,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     # check via the run() method
 
-    self.assertRaises(ValueError, list, query.run())
+    self.assertRaises(ValueError, query.run)
 
   @patch('urllib2.urlopen')
   def test_query_with_timeout(self, urlopen_mock):
@@ -117,7 +117,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       timeout = 5,
     )
 
-    self.assertRaises(socket.timeout, list, query.run())
+    self.assertRaises(socket.timeout, query.run)
     urlopen_mock.assert_called_with(
       'http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
       timeout = 5,

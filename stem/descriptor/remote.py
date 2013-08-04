@@ -275,7 +275,7 @@ class Query(object):
 
     :param bool suppress: avoids raising exceptions if **True**
 
-    :returns: iterator for the requested :class:`~stem.descriptor.__init__.Descriptor` instances
+    :returns: list for the requested :class:`~stem.descriptor.__init__.Descriptor` instances
 
     :raises:
       Using the iterator can fail with the following if **suppress** is
@@ -289,6 +289,9 @@ class Query(object):
       which case we'll pass it along.
     """
 
+    return list(self._run(suppress))
+
+  def _run(self, suppress):
     with self._downloader_thread_lock:
       self.start()
       self._downloader_thread.join()
@@ -317,7 +320,7 @@ class Query(object):
           raise self.error
 
   def __iter__(self):
-    for desc in self.run(True):
+    for desc in self._run(True):
       yield desc
 
   def _pick_url(self, use_authority = False):
