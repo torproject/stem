@@ -143,17 +143,17 @@ class Query(object):
 
     query = Query(
       '/tor/server/all.z',
-      descriptor_type = 'server-descriptor 1.0',
+      block = True,
       timeout = 30,
     )
 
     print "Current relays:"
 
-    try:
-      for desc in query.run():
+    if not query.error:
+      for desc in query:
         print desc.fingerprint
-    except Exception as exc:
-      print "Unable to retrieve the server descriptors: %s" % exc
+    else:
+      print "Unable to retrieve the server descriptors: %s" % query.error
 
   ... while iterating fails silently...
 
@@ -216,9 +216,11 @@ class Query(object):
     which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
 
   :param bool start: start making the request when constructed (default is **True**)
+  :param bool block: only return after the request has been completed, this is
+    the same as running **query.run(True)** (default is **False**)
   """
 
-  def __init__(self, resource, descriptor_type = None, endpoints = None, retries = 2, fall_back_to_authority = False, timeout = None, start = True, validate = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
+  def __init__(self, resource, descriptor_type = None, endpoints = None, retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
     if not resource.startswith('/'):
       raise ValueError("Resources should start with a '/': %s" % resource)
 
@@ -251,6 +253,9 @@ class Query(object):
 
     if start:
       self.start()
+
+    if block:
+      self.run(True)
 
   def start(self):
     """
