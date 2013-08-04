@@ -222,6 +222,10 @@ CACHEABLE_GETINFO_PARAMS = (
 # is unavailable
 GEOIP_FAILURE_THRESHOLD = 5
 
+SERVER_DESCRIPTORS_UNSUPPORTED = "Tor is presently not configured to retrieve \
+server descriptors. As of Tor version 0.2.3.25 it downloads microdescriptors \
+instead unless you set 'UseMicrodescriptors 0' in your torrc."
+
 
 class BaseController(object):
   """
@@ -1199,6 +1203,9 @@ class Controller(BaseController):
       return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
     except Exception as exc:
       if default == UNDEFINED:
+        if not self._is_server_descriptors_available():
+          raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
+
         raise exc
       else:
         return default
@@ -1231,6 +1238,9 @@ class Controller(BaseController):
 
       desc_content = self.get_info("desc/all-recent", get_bytes = True)
 
+      if not desc_content and not self._is_server_descriptors_available():
+        raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
+
       for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_content)):
         yield desc
     except Exception as exc:
@@ -1240,6 +1250,14 @@ class Controller(BaseController):
         if default is not None:
           for entry in default:
             yield entry
+
+  def _is_server_descriptors_available(self):
+    """
+    Checks to see if tor server descriptors should be available or not.
+    """
+
+    return self.get_version() < stem.version.Requirement.MICRODESCRIPTOR_IS_DEFAULT or \
+           self.get_conf('UseMicrodescriptors', None) == '0'
 
   def get_network_status(self, relay, default = UNDEFINED):
     """

@@ -921,6 +921,9 @@ class TestController(unittest.TestCase):
 
     if test.runner.require_control(self):
       return
+    elif runner.get_tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
+      test.runner.skip(self, "(requires server descriptors)")
+      return
 
     with runner.get_tor_controller() as controller:
       count = 0
