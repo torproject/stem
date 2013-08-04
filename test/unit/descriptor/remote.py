@@ -123,3 +123,19 @@ class TestDescriptorDownloader(unittest.TestCase):
       timeout = 5,
     )
     self.assertEqual(3, urlopen_mock.call_count)
+
+  @patch('urllib2.urlopen')
+  def test_can_iterate_multiple_times(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO(TEST_DESCRIPTOR)
+
+    query = stem.descriptor.remote.Query(
+      '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
+      'server-descriptor 1.0',
+      endpoints = [('128.31.0.39', 9131)],
+    )
+
+    # check that iterating over the query provides the descriptors each time
+
+    self.assertEqual(1, len(list(query)))
+    self.assertEqual(1, len(list(query)))
+    self.assertEqual(1, len(list(query)))

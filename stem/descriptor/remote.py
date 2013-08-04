@@ -200,6 +200,7 @@ class Query(object):
   :var bool fall_back_to_authority: when retrying request issues the last
     request to a directory authority if **True**
 
+  :var str content: downloaded descriptor content
   :var Exception error: exception if a problem occured
   :var bool is_done: flag that indicates if our request has finished
   :var str download_url: last url used to download the descriptor, this is
@@ -235,6 +236,7 @@ class Query(object):
     self.retries = retries
     self.fall_back_to_authority = fall_back_to_authority
 
+    self.content = None
     self.error = None
     self.is_done = False
     self.download_url = None
@@ -248,8 +250,6 @@ class Query(object):
 
     self._downloader_thread = None
     self._downloader_thread_lock = threading.RLock()
-
-    self._results = None  # descriptor iterator
 
     if start:
       self.start()
@@ -307,14 +307,21 @@ class Query(object):
 
         raise self.error
       else:
-        if self._results is None:
+        if self.content is None:
           if suppress:
             return
 
           raise ValueError('BUG: _download_descriptors() finished without either results or an error')
 
         try:
-          for desc in self._results:
+          results = stem.descriptor.parse_file(
+            io.BytesIO(self.content),
+            self.descriptor_type,
+            validate = self.validate,
+            document_handler = self.document_handler,
+          )
+
+          for desc in results:
             yield desc
         except ValueError as exc:
           self.error = exc  # encountered a parsing error
@@ -357,12 +364,7 @@ class Query(object):
       if self.download_url.endswith('.z'):
         response = zlib.decompress(response)
 
-      self._results = stem.descriptor.parse_file(
-        io.BytesIO(response.strip()),
-        self.descriptor_type,
-        validate = self.validate,
-        document_handler = self.document_handler,
-      )
+      self.content = response.strip()
 
       self.runtime = time.time() - self.start_time
       log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
