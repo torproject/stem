@@ -218,7 +218,7 @@ class Query(object):
   :param bool start: start making the request when constructed (default is **True**)
   """
 
-  def __init__(self, resource, descriptor_type = None, endpoints = None, retries = 2, fall_back_to_authority = True, timeout = None, start = True, validate = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
+  def __init__(self, resource, descriptor_type = None, endpoints = None, retries = 2, fall_back_to_authority = False, timeout = None, start = True, validate = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
     if not resource.startswith('/'):
       raise ValueError("Resources should start with a '/': %s" % resource)
 
@@ -581,8 +581,13 @@ class DescriptorDownloader(object):
     args = dict(self._default_args)
     args.update(query_args)
 
+    if not 'endpoints' in args:
+      args['endpoints'] = self._endpoints
+
+    if not 'fall_back_to_authority' in args:
+      args['fall_back_to_authority'] = True
+
     return Query(
       resource,
-      endpoints = self._endpoints,
       **args
     )
