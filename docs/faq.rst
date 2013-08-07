@@ -74,7 +74,7 @@ How do I request a new identity from Tor?
 
 In Tor your identity is the three-hop **circuit** over which your traffic travels through the Tor network.
 
-Tor will create new circuits for you every ten minutes. When this happens your present circuits become **dirty**, which means that new connections will not use them. When all of the connections using a dirty circuit are done the circuit is closed.
+Tor periodically creates new circuits. When a circuit is used it becomes **dirty**, and after ten minutes new connections will not use it. When all of the connections using an expired circuit are done the circuit is closed.
 
 An important thing to note is that a new circuit does not necessarily mean a new IP address. Paths are randomly selected based on heuristics like speed and stability. There are only so many large exits in the Tor network, so it's not uncommon to reuse an exit you have had previously.
 
