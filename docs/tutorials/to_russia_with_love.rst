@@ -20,7 +20,7 @@ Tor makes `configuring your exit locale <https://www.torproject.org/docs/faq.htm
 
 In the following example we're using stem to `start Tor <../api/process.html>`_, then reading a site through it with `SocksiPy <http://socksipy.sourceforge.net/>`_. This is not always reliable (some relays are lemons) so you may need to run this more than once.
 
-**Do not rely on the following not to leak.** Though it seems to work, DNS resolution and other edge cases might expose your real IP. If you have a suggestion for how to improve this example then please `let me know <http://www.atagar.com/contact/>`_!
+**Do not rely on the following not to leak.** Though it seems to work there may be edge cases that expose your real IP. If you have a suggestion for how to improve this example then please `let me know <http://www.atagar.com/contact/>`_!
 
 ::
 
@@ -39,6 +39,13 @@ In the following example we're using stem to `start Tor <../api/process.html>`_,
 
   socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, '127.0.0.1', SOCKS_PORT)
   socket.socket = socks.socksocket
+
+  # Perform DNS resolution through the socket
+
+  def getaddrinfo(*args):
+    return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
+
+  socket.getaddrinfo = getaddrinfo
 
 
   def query(url):
