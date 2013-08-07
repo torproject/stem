@@ -545,14 +545,13 @@ def get_key_certificate(attr = None, exclude = (), content = False):
     return stem.descriptor.networkstatus.KeyCertificate(desc_content, validate = True)
 
 
-def get_network_status_document_v2(attr = None, exclude = (), routers = None, content = False):
+def get_network_status_document_v2(attr = None, exclude = (), content = False):
   """
   Provides the descriptor content for...
   stem.descriptor.networkstatus.NetworkStatusDocumentV2
 
   :param dict attr: keyword/value mappings to be included in the descriptor
   :param list exclude: mandatory keywords to exclude from the descriptor
-  :param list routers: router status entries to include in the document
   :param bool content: provides the str content of the descriptor rather than the class if True
 
   :returns: NetworkStatusDocumentV2 for the requested descriptor content
