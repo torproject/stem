@@ -517,7 +517,7 @@ class DescriptorDownloader(object):
 
     return self.query('/tor/micro/d/%s.z' % '-'.join(hashes), **query_args)
 
-  def get_consensus(self, authority_v3ident = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **query_args):
+  def get_consensus(self, authority_v3ident = None, **query_args):
     """
     Provides the present router status entries.
 
@@ -525,8 +525,6 @@ class DescriptorDownloader(object):
       to get the consensus, see `'v3ident' in tor's config.c
       <https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816>`_
       for the values.
-    :param stem.descriptor.__init__.DocumentHandler document_handler: method in
-      which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 
@@ -539,7 +537,7 @@ class DescriptorDownloader(object):
     if authority_v3ident:
       resource += '/%s' % authority_v3ident
 
-    return self.query(resource + '.z', document_handler = document_handler, **query_args)
+    return self.query(resource + '.z', **query_args)
 
   def get_key_certificates(self, authority_v3idents = None, **query_args):
     """
