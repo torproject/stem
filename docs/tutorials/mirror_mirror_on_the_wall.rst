@@ -52,6 +52,7 @@ the network!
   # most recent descriptor information, regardless of if tor needs it or not,
   # set the following.
 
+  FetchDirInfoEarly 1
   FetchDirInfoExtraEarly 1
 
   # If you aren't actively using tor as a client then tor will eventually stop
