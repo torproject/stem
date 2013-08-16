@@ -253,9 +253,10 @@ class DescriptorReader(object):
     listings from this path, errors are ignored
   :param stem.descriptor.__init__.DocumentHandler document_handler: method in
     which to parse :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+  :param dict kwargs: additional arguments for the descriptor constructor
   """
 
-  def __init__(self, target, validate = True, follow_links = False, buffer_size = 100, persistence_path = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
+  def __init__(self, target, validate = True, follow_links = False, buffer_size = 100, persistence_path = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
     if isinstance(target, (bytes, unicode)):
       self._targets = [target]
     else:
@@ -269,6 +270,7 @@ class DescriptorReader(object):
     self._follow_links = follow_links
     self._persistence_path = persistence_path
     self._document_handler = document_handler
+    self._kwargs = kwargs
     self._read_listeners = []
     self._skip_listeners = []
     self._processed_files = {}
@@ -513,7 +515,7 @@ class DescriptorReader(object):
       self._notify_read_listeners(target)
 
       with open(target, 'rb') as target_file:
-        for desc in stem.descriptor.parse_file(target_file, validate = self._validate, document_handler = self._document_handler):
+        for desc in stem.descriptor.parse_file(target_file, validate = self._validate, document_handler = self._document_handler, **self._kwargs):
           if self._is_stopped.is_set():
             return
 
@@ -542,7 +544,7 @@ class DescriptorReader(object):
           entry = tar_file.extractfile(tar_entry)
 
           try:
-            for desc in stem.descriptor.parse_file(entry, validate = self._validate, document_handler = self._document_handler):
+            for desc in stem.descriptor.parse_file(entry, validate = self._validate, document_handler = self._document_handler, **self._kwargs):
               if self._is_stopped.is_set():
                 return
 

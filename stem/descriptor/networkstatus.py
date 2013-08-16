@@ -145,7 +145,7 @@ KEY_CERTIFICATE_PARAMS = (
 )
 
 
-def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False, document_handler = DocumentHandler.ENTRIES):
+def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False, document_handler = DocumentHandler.ENTRIES, **kwargs):
   """
   Parses a network status and iterates over the RouterStatusEntry in it. The
   document that these instances reference have an empty 'routers' attribute to
@@ -159,6 +159,7 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
     consensus, **False** otherwise
   :param stem.descriptor.__init__.DocumentHandler document_handler: method in
     which to parse :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+  :param dict kwargs: additional arguments for the descriptor constructor
 
   :returns: :class:`stem.descriptor.networkstatus.NetworkStatusDocument` object
 
@@ -188,7 +189,7 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
     raise ValueError("Document type %i isn't recognized (only able to parse v2, v3, and bridge)" % document_type)
 
   if document_handler == DocumentHandler.DOCUMENT:
-    yield document_type(document_file.read(), validate)
+    yield document_type(document_file.read(), validate, **kwargs)
     return
 
   # getting the document without the routers section
@@ -203,7 +204,7 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
   document_content = bytes.join(b"", header + footer)
 
   if document_handler == DocumentHandler.BARE_DOCUMENT:
-    yield document_type(document_content, validate)
+    yield document_type(document_content, validate, **kwargs)
   elif document_handler == DocumentHandler.ENTRIES:
     desc_iterator = stem.descriptor.router_status_entry._parse_file(
       document_file,
@@ -213,6 +214,7 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
       start_position = routers_start,
       end_position = routers_end,
       extra_args = (document_type(document_content, validate),),
+      **kwargs
     )
 
     for desc in desc_iterator:

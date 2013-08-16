@@ -215,13 +215,14 @@ class Query(object):
     **True**, skips these checks otherwise
   :var stem.descriptor.__init__.DocumentHandler document_handler: method in
     which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+  :var dict kwargs: additional arguments for the descriptor constructor
 
   :param bool start: start making the request when constructed (default is **True**)
   :param bool block: only return after the request has been completed, this is
     the same as running **query.run(True)** (default is **False**)
   """
 
-  def __init__(self, resource, descriptor_type = None, endpoints = None, retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES):
+  def __init__(self, resource, descriptor_type = None, endpoints = None, retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
     if not resource.startswith('/'):
       raise ValueError("Resources should start with a '/': %s" % resource)
 
@@ -247,6 +248,7 @@ class Query(object):
 
     self.validate = validate
     self.document_handler = document_handler
+    self.kwargs = kwargs
 
     self._downloader_thread = None
     self._downloader_thread_lock = threading.RLock()
@@ -319,6 +321,7 @@ class Query(object):
             self.descriptor_type,
             validate = self.validate,
             document_handler = self.document_handler,
+            **self.kwargs
           )
 
           for desc in results:

@@ -144,7 +144,7 @@ SINGLE_FIELDS = (
 )
 
 
-def _parse_file(descriptor_file, is_bridge = False, validate = True):
+def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
   """
   Iterates over the extra-info descriptors in a file.
 
@@ -152,6 +152,7 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True):
   :param bool is_bridge: parses the file as being a bridge descriptor
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
+  :param dict kwargs: additional arguments for the descriptor constructor
 
   :returns: iterator for :class:`~stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor`
     instances in the file
@@ -170,9 +171,9 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True):
 
     if extrainfo_content:
       if is_bridge:
-        yield BridgeExtraInfoDescriptor(bytes.join(b"", extrainfo_content), validate)
+        yield BridgeExtraInfoDescriptor(bytes.join(b"", extrainfo_content), validate, **kwargs)
       else:
-        yield RelayExtraInfoDescriptor(bytes.join(b"", extrainfo_content), validate)
+        yield RelayExtraInfoDescriptor(bytes.join(b"", extrainfo_content), validate, **kwargs)
     else:
       break  # done parsing file
 

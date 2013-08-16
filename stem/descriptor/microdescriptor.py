@@ -88,13 +88,14 @@ SINGLE_FIELDS = (
 )
 
 
-def _parse_file(descriptor_file, validate = True):
+def _parse_file(descriptor_file, validate = True, **kwargs):
   """
   Iterates over the microdescriptors in a file.
 
   :param file descriptor_file: file with descriptor content
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
+  :param dict kwargs: additional arguments for the descriptor constructor
 
   :returns: iterator for Microdescriptor instances in the file
 
@@ -136,7 +137,7 @@ def _parse_file(descriptor_file, validate = True):
 
       descriptor_text = bytes.join(b"", descriptor_lines)
 
-      yield Microdescriptor(descriptor_text, validate, annotations)
+      yield Microdescriptor(descriptor_text, validate, annotations, **kwargs)
     else:
       break  # done parsing descriptors
 
