@@ -235,7 +235,6 @@ def main():
           for lingering_thread in active_threads:
             println("  %s" % lingering_thread, ERROR)
 
-          error_tracker.register_error()
           break
       except KeyboardInterrupt:
         println("  aborted starting tor: keyboard interrupt\n", ERROR)
