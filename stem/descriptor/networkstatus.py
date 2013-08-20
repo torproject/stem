@@ -518,6 +518,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       extra_args = (self._header.is_vote,),
     ))
 
+    if validate and self._header.is_vote and len(self.directory_authorities) != 1:
+      raise ValueError("Votes should only have an authority entry for the one that issued it, got %i: %s" % (len(self.directory_authorities), self.directory_authorities))
+
     if not self._header.is_microdescriptor:
       router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
     else:

@@ -589,6 +589,11 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
       "consensus-methods": "1 9",
       "published": "2012-09-02 22:00:00",
     }
+
+    # votes need an authority to be valid
+
+    if authorities is None:
+      authorities = [get_directory_authority(is_vote = True)]
   else:
     extra_defaults = {
       "consensus-method": "9",

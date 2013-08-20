@@ -105,7 +105,6 @@ class TestNetworkStatusDocument(unittest.TestCase):
     self.assertEqual(expected_known_flags, document.known_flags)
     self.assertEqual({}, document.flag_thresholds)
     self.assertEqual(DEFAULT_PARAMS, document.params)
-    self.assertEqual((), document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
     self.assertEqual([DOC_SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
@@ -218,10 +217,12 @@ class TestNetworkStatusDocument(unittest.TestCase):
       lines = get_network_status_document_v3(attr, content = True).split(b"\n")
 
       for index in xrange(len(lines) - 1):
-        # once we reach the crypto blob we're done since swapping those won't
-        # be detected
+        # once we reach the authority entry or later we're done since swapping
+        # those won't be detected
 
-        if lines[index].startswith(stem.util.str_tools._to_bytes(CRYPTO_BLOB[1:10])):
+        if is_consensus and lines[index].startswith(stem.util.str_tools._to_bytes(CRYPTO_BLOB[1:10])):
+          break
+        elif not is_consensus and lines[index].startswith('dir-source'):
           break
 
         # swaps this line with the one after it
@@ -243,6 +244,9 @@ class TestNetworkStatusDocument(unittest.TestCase):
       lines = get_network_status_document_v3(attr, content = True).split(b"\n")
 
       for index, line in enumerate(lines):
+        if not is_consensus and lines[index].startswith('dir-source'):
+          break
+
         # Stop when we hit the 'directory-signature' for a couple reasons...
         # - that is the one field that can validly appear multiple times
         # - after it is a crypto blob, which won't trigger this kind of
@@ -856,7 +860,14 @@ class TestNetworkStatusDocument(unittest.TestCase):
         content = get_network_status_document_v3({"vote-status": vote_status}, authorities = (authority1, authority2), content = True)
 
         if is_document_vote == is_authorities_vote:
-          document = NetworkStatusDocumentV3(content)
+          if is_document_vote:
+            # votes can only have a single authority
+
+            self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+            document = NetworkStatusDocumentV3(content, validate = False)
+          else:
+            document = NetworkStatusDocumentV3(content)
+
           self.assertEquals((authority1, authority2), document.directory_authorities)
         else:
           # authority votes in a consensus or consensus authorities in a vote
