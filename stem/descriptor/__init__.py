@@ -46,6 +46,7 @@ __all__ = [
   "microdescriptor",
   "networkstatus",
   "router_status_entry",
+  "tordnsel",
   "parse_file",
   "Descriptor",
 ]
@@ -115,7 +116,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   bridge-extra-info 1.1                     :class:`~stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor`
   torperf 1.0                               **unsupported**
   bridge-pool-assignment 1.0                **unsupported**
-  tordnsel 1.0                              **unsupported**
+  tordnsel 1.0                              :class:`~stem.descriptor.tordnsel.TorDNSEL`
   ========================================= =====
 
   If you're using **python 3** then beware that the open() function defaults to
@@ -254,6 +255,11 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     document_type = stem.descriptor.networkstatus.BridgeNetworkStatusDocument
 
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler, **kwargs):
+      yield desc
+  elif descriptor_type == "tordnsel" and major_version == 1:
+    document_type = stem.descriptor.tordnsel.TorDNSEL
+
+    for desc in stem.descriptor.tordnsel._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
   else:
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
@@ -542,3 +548,4 @@ import stem.descriptor.server_descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.networkstatus
 import stem.descriptor.microdescriptor
+import stem.descriptor.tordnsel
