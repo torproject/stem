@@ -1,8 +1,9 @@
-# Copyright 2012-2013, Damian Johnson
+# Copyright 2013, Damian Johnson
 # See LICENSE for licensing information
 
 """
-Parsing for TorDNSEL files.
+Parsing for `TorDNSEL <https://www.torproject.org/projects/tordnsel.html.en>`_
+exit list files.
 """
 
 import datetime
@@ -36,6 +37,7 @@ def _parse_file(tordnsel_file, validate = True, **kwargs):
   while True:
     contents = _read_until_keywords("ExitAddress", tordnsel_file)
     contents += _read_until_keywords("ExitNode", tordnsel_file)
+
     if contents:
       yield TorDNSEL(bytes.join(b"", contents), validate, **kwargs)
     else:
@@ -79,42 +81,35 @@ class TorDNSEL(Descriptor):
       if keyword == "ExitNode":
         if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
           raise ValueError("Tor relay fingerprints consist of forty hex digits: %s" % value)
-        self.fingerprint = value
 
+        self.fingerprint = value
       elif keyword == "Published":
         try:
           self.published = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         except ValueError:
           if validate:
             raise ValueError("Published time wasn't parsable: %s" % value)
-
       elif keyword == "LastStatus":
         try:
           self.last_status = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         except ValueError:
           if validate:
             raise ValueError("LastStatus time wasn't parsable: %s" % value)
-
       elif keyword == "ExitAddress":
         for value, block_content in values:
-
-          if validate and block_content:
-            raise ValueError("Unexpected block content: %s" % block_content)
-
           address, date = value.split(" ", 1)
 
-          if validate and not stem.util.connection.is_valid_ipv4_address(address):
-            raise ValueError("ExitAddress isn't a valid IPv4 address: %s" % address)
+          if validate:
+            if not stem.util.connection.is_valid_ipv4_address(address):
+              raise ValueError("ExitAddress isn't a valid IPv4 address: %s" % address)
+            elif block_content:
+              raise ValueError("Unexpected block content: %s" % block_content)
+
           try:
             date = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+            self.exit_addresses.append((address, date))
           except ValueError:
             if validate:
               raise ValueError("ExitAddress found time wasn't parsable: %s" % value)
-            else:
-              continue
-
-          self.exit_addresses.append((address, date))
-
-      else:
-        if validate:
-          raise ValueError("Saw a keyword that wasn't expected.")
+      elif validate:
+        raise ValueError("Unrecognized keyword: %s" % keyword)
