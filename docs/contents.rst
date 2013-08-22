@@ -32,6 +32,7 @@ Contents
    api/descriptor/microdescriptor
    api/descriptor/networkstatus
    api/descriptor/router_status_entry
+   api/descriptor/tordnsel
 
    api/descriptor/export
    api/descriptor/reader

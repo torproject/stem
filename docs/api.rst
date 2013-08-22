@@ -34,6 +34,7 @@ remotely like tor does.
  * `stem.descriptor.microdescriptor <api/descriptor/microdescriptor.html>`_ - Minimalistic counterpart for server descriptors.
  * `stem.descriptor.networkstatus <api/descriptor/networkstatus.html>`_ - Network status documents which make up the Tor consensus.
  * `stem.descriptor.router_status_entry <api/descriptor/router_status_entry.html>`_ - Relay entries within a network status document.
+ * `stem.descriptor.tordnsel <api/descriptor/tordnsel.html>`_ - `TorDNSEL <https://www.torproject.org/projects/tordnsel.html.en>`_ exit lists.
 
 * `stem.descriptor.reader <api/descriptor/reader.html>`_ - Reads and parses descriptor files from disk.
 * `stem.descriptor.remote <api/descriptor/remote.html>`_ - Downloads descriptors from directory mirrors and authorities.

@@ -52,6 +52,7 @@ The following are only available within stem's `git repository
  * **Descriptors**
 
   * Added the `stem.descriptor.remote <api/descriptor/remote.html>`_ module.
+  * Added support for `TorDNSEL exit lists <api/descriptor/tordnsel.html>`_ (feature by arlolra, :trac:`8255`).
   * The :class:`~stem.descriptor.reader.DescriptorReader` mishandled relative paths (:trac:`8815`)
 
  * **Utilities**
