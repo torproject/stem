@@ -268,7 +268,7 @@ When it's finished you can direct your browser to the *_build* directory with a 
 What is the copyright for patches?
 ----------------------------------
 
-Stem is under the LGPLv3 which is a fine license, but poses a bit of a problem for sharing code with our other projects (which are mostly BSD). To share code without needing to hunt down prior contributors we need an individual to have the copyright for the whole stem codebase. This is Damian at present, but I'll probably give it to Tor if I get nailed by a bus.
+Stem is under the LGPLv3 which is a fine license, but poses a bit of a problem for sharing code with our other projects (which are mostly BSD). To share code without needing to hunt down prior contributors we need Tor to have the copyright for the whole stem codebase. Presently the copyright of stem is jointly held by its main author (`Damian <http://www.atagar.com/>`_) and the `Tor Project <https://www.torproject.org/>`_.
 
 If you submit a substantial patch I'll ask if you're fine with it being in the public domain. This would mean that there are no legal restrictions for using your contribution, and hence won't pose a problem if we reuse stem code in other projects.
 
