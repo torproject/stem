@@ -310,6 +310,7 @@ class ExtraInfoDescriptor(Descriptor):
   :var datetime geoip_start_time: replaced by bridge_stats_end (deprecated)
   :var dict geoip_client_origins: replaced by bridge_ips (deprecated)
   :var dict ip_versions: mapping of ip protocols to a rounded count for the number of users
+  :var dict ip_versions: mapping of ip transports to a count for the number of users
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -406,6 +407,7 @@ class ExtraInfoDescriptor(Descriptor):
     self.geoip_client_origins = None
 
     self.ip_versions = None
+    self.ip_transports = None
 
     self._unrecognized_lines = []
 
@@ -803,6 +805,20 @@ class ExtraInfoDescriptor(Descriptor):
               raise stem.ProtocolError("IP protocol count was non-numeric (%s): %s" % (count, line))
 
             self.ip_versions[protocol] = int(count)
+      elif keyword == "bridge-ip-transports":
+        self.ip_transports = {}
+
+        if value:
+          for entry in value.split(','):
+            if not '=' in entry:
+              raise stem.ProtocolError("The bridge-ip-transports should be a comma separated listing of '<protocol>=<count>' mappings: %s" % line)
+
+            protocol, count = entry.split('=', 1)
+
+            if not count.isdigit():
+              raise stem.ProtocolError("Transport count was non-numeric (%s): %s" % (count, line))
+
+            self.ip_transports[protocol] = int(count)
       else:
         self._unrecognized_lines.append(line)
 

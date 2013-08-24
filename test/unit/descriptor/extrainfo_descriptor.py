@@ -474,6 +474,20 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     desc_text = get_bridge_extrainfo_descriptor({"bridge-ip-versions": "v4=24.5"}, content = True)
     self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text)
 
+  def test_bridge_ip_transports_line(self):
+    """
+    Parses the 'bridge-ip-transports' line, which only appears in bridges.
+    """
+
+    desc = get_bridge_extrainfo_descriptor({"bridge-ip-transports": "<OR>=16,<??>=40"})
+    self.assertEquals({'<OR>': 16, '<??>': 40}, desc.ip_transports)
+
+    desc = get_bridge_extrainfo_descriptor({"bridge-ip-transports": ""})
+    self.assertEquals({}, desc.ip_transports)
+
+    desc_text = get_bridge_extrainfo_descriptor({"bridge-ip-transports": "<OR>=24.5"}, content = True)
+    self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text)
+
   def test_transport_line(self):
     """
     Basic exercise for both a bridge and relay's transport entry.
