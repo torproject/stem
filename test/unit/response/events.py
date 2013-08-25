@@ -319,6 +319,11 @@ PURPOSE=DNS_REQUEST"
 
 STREAM_NEWRESOLVE_IP6 = "650 STREAM 23 NEWRESOLVE 0 2001:db8::1:0 PURPOSE=DNS_REQUEST"
 
+TRANSPORT_LAUNCHED = "650 TRANSPORT_LAUNCHED server obfs1 127.0.0.1 1111"
+TRANSPORT_LAUNCHED_BAD_TYPE = "650 TRANSPORT_LAUNCHED unicorn obfs1 127.0.0.1 1111"
+TRANSPORT_LAUNCHED_BAD_ADDRESS = "650 TRANSPORT_LAUNCHED server obfs1 127.0.x.y 1111"
+TRANSPORT_LAUNCHED_BAD_PORT = "650 TRANSPORT_LAUNCHED server obfs1 127.0.0.1 my_port"
+
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -1160,6 +1165,20 @@ class TestEvents(unittest.TestCase):
     self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2 -15 25")
     self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2 15 -25")
     self.assertRaises(ProtocolError, _get_event, "650 STREAM_BW 2 x 25")
+
+  def test_transport_launched_event(self):
+    event = _get_event(TRANSPORT_LAUNCHED)
+
+    self.assertTrue(isinstance(event, stem.response.events.TransportLaunchedEvent))
+    self.assertEqual(TRANSPORT_LAUNCHED.lstrip("650 "), str(event))
+    self.assertEqual("server", event.type)
+    self.assertEqual("obfs1", event.name)
+    self.assertEqual("127.0.0.1", event.address)
+    self.assertEqual(1111, event.port)
+
+    self.assertRaises(ProtocolError, _get_event, TRANSPORT_LAUNCHED_BAD_TYPE)
+    self.assertRaises(ProtocolError, _get_event, TRANSPORT_LAUNCHED_BAD_ADDRESS)
+    self.assertRaises(ProtocolError, _get_event, TRANSPORT_LAUNCHED_BAD_PORT)
 
   def test_unrecognized_enum_logging(self):
     """

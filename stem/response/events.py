@@ -882,6 +882,36 @@ class StreamBwEvent(Event):
     self.read = long(self.read)
     self.written = long(self.written)
 
+
+class TransportLaunchedEvent(Event):
+  """
+  Event triggered when a pluggable transport is launched.
+
+  The TRANSPORT_LAUNCHED event was introduced in tor version 0.2.5.0-alpha.
+
+  :var str type: 'server' or 'client'
+  :var str name: name of the pluggable transport
+  :var str address: IPv4 or IPv6 address where the transport is listening for
+    connections
+  :var int port: port where the transport is listening for connections
+  """
+
+  _POSITIONAL_ARGS = ("type", "name", "address", "port")
+  _VERSION_ADDED = stem.version.Requirement.EVENT_TRANSPORT_LAUNCHED
+
+  def _parse(self):
+    if not self.type in ('server', 'client'):
+      raise stem.ProtocolError("Transport type should either be 'server' or 'client': %s" % self)
+
+    if not connection.is_valid_ipv4_address(self.address) and \
+       not connection.is_valid_ipv6_address(self.address):
+      raise stem.ProtocolError("Transport address isn't a valid IPv4 or IPv6 address: %s" % self)
+
+    if not connection.is_valid_port(self.port):
+      raise stem.ProtocolError("Transport port is invalid: %s" % self)
+
+    self.port = int(self.port)
+
 EVENT_TYPE_TO_CLASS = {
   "ADDRMAP": AddrMapEvent,
   "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
@@ -907,6 +937,7 @@ EVENT_TYPE_TO_CLASS = {
   "STATUS_SERVER": StatusEvent,
   "STREAM": StreamEvent,
   "STREAM_BW": StreamBwEvent,
+  "TRANSPORT_LAUNCHED": TransportLaunchedEvent,
   "WARN": LogEvent,
 
   # accounting for a bug in tor 0.2.0.22

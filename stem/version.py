@@ -42,6 +42,7 @@ easily parsed and compared, for instance...
   **EVENT_SIGNAL**                      SIGNAL events
   **EVENT_STATUS**                      STATUS_GENERAL, STATUS_CLIENT, and STATUS_SERVER events
   **EVENT_STREAM_BW**                   STREAM_BW events
+  **EVENT_TRANSPORT_LAUNCHED**          TRANSPORT_LAUNCHED events
   **EXTENDCIRCUIT_PATH_OPTIONAL**       EXTENDCIRCUIT queries can omit the path if the circuit is zero
   **FEATURE_EXTENDED_EVENTS**           'EXTENDED_EVENTS' optional feature
   **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
@@ -311,6 +312,7 @@ Requirement = stem.util.enum.Enum(
   ("EVENT_SIGNAL", Version('0.2.3.1-alpha')),
   ("EVENT_STATUS", Version('0.1.2.3-alpha')),
   ("EVENT_STREAM_BW", Version('0.1.2.8-beta')),
+  ("EVENT_TRANSPORT_LAUNCHED", Version('0.2.5.0-alpha')),
   ("EXTENDCIRCUIT_PATH_OPTIONAL", Version("0.2.2.9")),
   ("FEATURE_EXTENDED_EVENTS", Version("0.2.2.1-alpha")),
   ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),
