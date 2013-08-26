@@ -6,6 +6,7 @@ with what they are and where to get them then you may want to skip to the end.
 
 * :ref:`what-is-a-descriptor`
 * :ref:`where-can-i-get-the-current-descriptors`
+* :ref:`can-i-get-descriptors-from-tor`
 * :ref:`where-can-i-get-past-descriptors`
 * :ref:`putting-it-together`
 
@@ -36,7 +37,36 @@ Where can I get the current descriptors?
 ----------------------------------------
 
 To work tor needs to have up-to-date information about relays within the
-network. As such getting current descriptors is easy: *just run tor*.
+network. As such getting current descriptors is easy: *just download it like
+tor does*.
+
+The `stem.descriptor.remote <../api/descriptor/remote.html>`_ module downloads
+descriptors from the tor directory authorities and mirrors. **Please show
+some restraint when doing this**! This adds load to the network, and hence an
+irresponsible script can make tor worse for everyone.
+
+Listing the current relays in the tor network is as easy as...
+
+::
+
+  from stem.descriptor.remote import DescriptorDownloader
+
+  downloader = DescriptorDownloader()
+
+  try:
+    for desc in downloader.get_consensus().run():
+      print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
+  except Exception as exc:
+    print "Unable to retrieve the consensus: %s" % exc 
+
+.. _can-i-get-descriptors-from-tor:
+
+Can I get descriptors from Tor?
+-------------------------------
+
+If you already have tor running on your system then it is already getting
+descriptors on your behalf. Reusing these is a great way to keep from burdening
+the rest of the tor network.
 
 Tor only gets the descriptors that it needs by default, so if you're scripting
 against tor you may want to set some of the following in your `torrc
