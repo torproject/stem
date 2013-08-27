@@ -153,28 +153,28 @@ As discussed above there are three methods for reading descriptors...
 * Reading with the `DescriptorReader <../api/descriptor/reader.html>`_. This is best if you have you want to read everything from a directory or archive.
 
 Now lets say you want to figure out who the *biggest* exit relays are. You
-could use any of the methods above, but for this example we'll use the
-:class:`~stem.control.Controller`. This uses server descriptors, so keep in
-mind that you'll likely need to set "UseMicrodescriptors 0" in your torrc for
-this to work.
+could use any of the methods above, but for this example we'll use
+`stem.descriptor.remote <../api/descriptor/remote.html>`_...
 
 ::
 
-  import sys
+  import sys 
 
-  from stem.control import Controller
+  from stem.descriptor.remote import DescriptorDownloader
   from stem.util import str_tools
 
   # provides a mapping of observed bandwidth to the relay nicknames
   def get_bw_to_relay():
     bw_to_relay = {}
 
-    with Controller.from_port(port = 9051) as controller:
-      controller.authenticate()
+    downloader = DescriptorDownloader()
 
-      for desc in controller.get_server_descriptors():
+    try:
+      for desc in downloader.get_server_descriptors().run():
         if desc.exit_policy.is_exiting_allowed():
           bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
+    except Exception as exc:
+      print "Unable to retrieve the server descriptors: %s" % exc 
 
     return bw_to_relay
 
