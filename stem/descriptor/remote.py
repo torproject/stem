@@ -42,6 +42,8 @@ itself...
 
 ::
 
+  DirectoryAuthority - Information about a tor directory authority.
+
   Query - Asynchronous request to download tor descriptors
     |- start - issues the query if it isn't already running
     +- run - blocks until the request is finished and provides the results
@@ -67,7 +69,8 @@ itself...
 
 .. data:: DIRECTORY_AUTHORITIES
 
-  Mapping of directory authority nicknames to their (address, dirport) tuple.
+  Mapping of nicknames to the associated
+  :class:`~stem.descriptor.remote.DirectoryAuthority`.
 """
 
 import io
@@ -89,22 +92,10 @@ from stem.util import log
 MAX_FINGERPRINTS = 96
 MAX_MICRODESCRIPTOR_HASHES = 92
 
-# Tor directory authorities as of commit f631b73 (7/4/13). This should only
-# include authorities with 'v3ident':
-#
-# https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816
+# We commonly only want authorities that vote in the consensus, and hence have
+# a v3ident.
 
-DIRECTORY_AUTHORITIES = {
-  'moria1': ('128.31.0.39', 9131),
-  'tor26': ('86.59.21.38', 80),
-  'dizum': ('194.109.206.212', 80),
-  'turtles': ('76.73.17.194', 9030),
-  'gabelmoo': ('212.112.245.170', 80),
-  'dannenberg': ('193.23.244.244', 80),
-  'urras': ('208.83.223.34', 443),
-  'maatuska': ('171.25.193.9', 443),
-  'Faravahar': ('154.35.32.5', 80),
-}
+HAS_V3IDENT = lambda auth: auth.v3ident is not None
 
 
 def _guess_descriptor_type(resource):
@@ -350,7 +341,8 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      address, dirport = random.choice(DIRECTORY_AUTHORITIES.values())
+      authority = random.choice(filter(HAS_V3IDENT, DIRECTORY_AUTHORITIES.values()))
+      address, dirport = authority.address, authority.dir_port
     else:
       address, dirport = random.choice(self.endpoints)
 
@@ -398,7 +390,9 @@ class DescriptorDownloader(object):
 
   def __init__(self, use_mirrors = False, **default_args):
     self._default_args = default_args
-    self._endpoints = DIRECTORY_AUTHORITIES.values()
+
+    authorities = filter(HAS_V3IDENT, DIRECTORY_AUTHORITIES.values())
+    self._endpoints = [(auth.address, auth.dir_port) for auth in authorities]
 
     if use_mirrors:
       try:
@@ -419,7 +413,8 @@ class DescriptorDownloader(object):
     :raises: **Exception** if unable to determine the directory mirrors
     """
 
-    new_endpoints = set(DIRECTORY_AUTHORITIES.values())
+    authorities = filter(HAS_V3IDENT, DIRECTORY_AUTHORITIES.values())
+    new_endpoints = set([(auth.address, auth.dir_port) for auth in authorities])
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
 
@@ -602,3 +597,137 @@ class DescriptorDownloader(object):
       resource,
       **args
     )
+
+
+class DirectoryAuthority(object):
+  """
+  Tor directory authority, a special type of relay `hardcoded into tor
+  <https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816>`_
+  that enumerates the other relays within the network.
+
+  At a very high level tor works as follows...
+
+  1. A volunteer starts up a new tor relay, during which it sends a `server
+     descriptor <server_descriptor.html>`_ to each of the directory
+     authorities.
+
+  2. Each hour the directory authorities make a `vote <networkstatus.html>`_
+     that says who they think the active relays are in the network and some
+     attributes about them.
+
+  3. The directory authorities send each other their votes, and compile that
+     into the `consensus <networkstatus.html>`_. This document is very similar
+     to the votes, the only difference being that the majority of the
+     authorities agree upon and sign this document. The idividual relay entries
+     in the vote or consensus is called `router status entries
+     <router_status_entry.html>`_.
+
+  4. Tor clients (people using the service) download the consensus from one of
+     the authorities or a mirror to determine the active relays within the
+     network. They in turn use this to construct their circuits and use the
+     network.
+
+  The directory information hardcoded in tor occasionally changes, and as such
+  the information this provides might not necessarily match your version of tor.
+  This is the tor directory information as of **commit 00bcc25 (8/27/13)**.
+
+  :var str nickname: nickname of the authority
+  :var str address: IP address of the authority, presently they're all IPv4 but
+    this may not always be the case
+  :var int or_port: port on which the relay services relay traffic
+  :var int dir_port: port on which directory information is available
+  :var str fingerprint: relay fingerprint
+  :var str v3ident: identity key fingerprint used to sign votes and consensus
+  """
+
+  def __init__(self, nickname = None, address = None, or_port = None, dir_port = None, fingerprint = None, v3ident = None):
+    self.nickname = nickname
+    self.address = address
+    self.or_port = or_port
+    self.dir_port = dir_port
+    self.fingerprint = fingerprint
+    self.v3ident = v3ident
+
+
+DIRECTORY_AUTHORITIES = {
+  'moria1': DirectoryAuthority(
+    nickname = 'moria1',
+    address = '128.31.0.39',
+    or_port = 9101,
+    dir_port = 9131,
+    fingerprint = '9695DFC35FFEB861329B9F1AB04C46397020CE31',
+    v3ident = 'D586D18309DED4CD6D57C18FDB97EFA96D330566',
+  ),
+  'tor26': DirectoryAuthority(
+    nickname = 'tor26',
+    address = '86.59.21.38',
+    or_port = 443,
+    dir_port = 80,
+    fingerprint = '847B1F850344D7876491A54892F904934E4EB85D',
+    v3ident = '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
+  ),
+  'dizum': DirectoryAuthority(
+    nickname = 'dizum',
+    address = '194.109.206.212',
+    or_port = 443,
+    dir_port = 80,
+    fingerprint = '7EA6EAD6FD83083C538F44038BBFA077587DD755',
+    v3ident = 'E8A9C45EDE6D711294FADF8E7951F4DE6CA56B58',
+  ),
+  'Tonga': DirectoryAuthority(
+    nickname = 'Tonga',
+    address = '82.94.251.203',
+    or_port = 443,
+    dir_port = 80,
+    fingerprint = '4A0CCD2DDC7995083D73F5D667100C8A5831F16D',
+    v3ident = None,  # does not vote in the consensus
+  ),
+  'turtles': DirectoryAuthority(
+    nickname = 'turtles',
+    address = '76.73.17.194',
+    or_port = 9090,
+    dir_port = 9030,
+    fingerprint = 'F397038ADC51336135E7B80BD99CA3844360292B',
+    v3ident = '27B6B5996C426270A5C95488AA5BCEB6BCC86956',
+  ),
+  'gabelmoo': DirectoryAuthority(
+    nickname = 'gabelmoo',
+    address = '212.112.245.170',
+    or_port = 443,
+    dir_port = 80,
+    fingerprint = 'F2044413DAC2E02E3D6BCF4735A19BCA1DE97281',
+    v3ident = 'ED03BB616EB2F60BEC80151114BB25CEF515B226',
+  ),
+  'dannenberg': DirectoryAuthority(
+    nickname = 'dannenberg',
+    address = '193.23.244.244',
+    or_port = 443,
+    dir_port = 80,
+    fingerprint = '7BE683E65D48141321C5ED92F075C55364AC7123',
+    v3ident = '585769C78764D58426B8B52B6651A5A71137189A',
+  ),
+  'urras': DirectoryAuthority(
+    nickname = 'urras',
+    address = '208.83.223.34',
+    or_port = 80,
+    dir_port = 443,
+    fingerprint = '0AD3FA884D18F89EEA2D89C019379E0E7FD94417',
+    v3ident = '80550987E1D626E3EBA5E5E75A458DE0626D088C',
+  ),
+  'maatuska': DirectoryAuthority(
+    nickname = 'maatuska',
+    address = '171.25.193.9',
+    or_port = 80,
+    dir_port = 443,
+    fingerprint = 'BD6A829255CB08E66FBE7D3748363586E46B3810',
+    v3ident = '49015F787433103580E3B66A1707A00E60F2D15B',
+  ),
+  'Faravahar': DirectoryAuthority(
+    nickname = 'Faravahar',
+    address = '154.35.32.5',
+    or_port = 443,
+    dir_port = 80,
+    fingerprint = 'CF6D0AAFB385BE71B8E111FC5CFF4B47923733BC',
+    v3ident = 'EFCBE720AB3A82B99F9E953CD5BF50F7EEFC7B97',
+  ),
+}
