@@ -14,6 +14,7 @@ Frequently Asked Questions
  * :ref:`how_do_i_request_a_new_identity_from_tor`
  * :ref:`how_do_i_get_information_about_my_exits`
  * :ref:`how_do_i_reload_my_torrc`
+ * :ref:`what_is_that_with_keyword_i_keep_seeing_in_the_tutorials`
 
 * **Development**
 
@@ -179,6 +180,67 @@ Tor is configured through its `torrc <https://www.torproject.org/docs/faq.html.e
   with Controller.from_port(port = 9051) as controller:
     controller.authenticate()
     controller.signal(Signal.SIGHUP)
+
+.. _what_is_that_with_keyword_i_keep_seeing_in_the_tutorials:
+
+What is that 'with' keyword I keep seeing in the tutorials?
+-----------------------------------------------------------
+
+Python's '**with**' keyword is shorthand for a try/finally block. With a :class:`~stem.control.Controller` the following...
+
+::
+
+  with Controller.from_port(port = 9051) as controller:
+    # do my stuff
+
+... is equivialnt to...
+
+::
+
+  controller = Controller.from_port(port = 9051)
+
+  try:
+    # do my stuff
+  finally:
+    controller.close()
+
+This helps to make sure that regardless of if your code raises an exception or not the control connection will be cleaned up afterward. Note that this means that if you leave the 'with' scope your :class:`~stem.control.Controller` will be closed. For instance...
+
+::
+
+  class BandwidthReporter(object):
+    def __init__(self, controller):
+      self.controller = controller
+
+    def print_bandwidth(self):
+      bytes_read = self.controller.get_info("traffic/read")
+      bytes_written = self.controller.get_info("traffic/written")
+
+      print "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
+
+  if __name__ == '__main__':
+    with Controller.from_port(port = 9051) as controller:
+      reporter = BandwidthReporter(controller)
+
+    # The following line is broken because the 'controller' we initialised
+    # above was disconnected once we left the 'with' scope.
+
+    reporter.print_bandwidth()
+
+To fix this we could either move the print_bandwidth() call into the 'with' scope, or simply avoid using 'with' all together...
+
+::
+
+  if __name__ == '__main__':
+    controller = Controller.from_port(port = 9051)
+
+    try:
+      reporter = BandwidthReporter(controller)
+      reporter.print_bandwidth()
+    finally:
+      controller.close()
+
+For more information about the 'with' keyword see `here <http://effbot.org/zone/python-with-statement.htm>`_.
 
 Development
 ===========
