@@ -1570,7 +1570,7 @@ class Controller(BaseController):
         "Log": None,
       })
 
-    The params can optionally be a list a key/value tuples, though the only
+    The params can optionally be a list of key/value tuples, though the only
     reason this type of argument would be useful is for hidden service
     configuration (those options are order dependent).
 
