@@ -7,6 +7,7 @@ Frequently Asked Questions
  * :ref:`does_stem_have_any_dependencies`
  * :ref:`what_python_versions_is_stem_compatible_with`
  * :ref:`what_license_is_stem_under`
+ * :ref:`are_there_any_other_controller_libraries`
  * :ref:`where_can_i_get_help`
 
 * **Usage**
@@ -57,6 +58,29 @@ What license is stem under?
 ---------------------------
 
 Stem is under the `LGPLv3 <https://www.gnu.org/licenses/lgpl>`_.
+
+.. _are_there_any_other_controller_libraries:
+
+Are There Any Other Controller Libraries?
+-----------------------------------------
+
+Yup. The most mature controller libraries are written in python, but there's a few options in other languages as well. By far the most mature alternative to Stem are `Txtorcon <https://txtorcon.readthedocs.org/>`_ and `TorCtl <https://gitweb.torproject.org/pytorctl.git>`_.
+
+`Txtorcon <https://txtorcon.readthedocs.org/>`_ is an actively maintained controller library written by Meejah for `Twisted <https://twistedmatrix.com/trac/>`_. In the future we plan to `integrate Stem and Txtorcon <https://www.torproject.org/getinvolved/volunteer.html.en#txtorcon-stemIntegration>`_ to some degree, but that is still a ways off.
+
+`TorCtl <https://gitweb.torproject.org/pytorctl.git>`_ is Stem's predecessor and `deprecated in December 2012 <https://blog.torproject.org/blog/torctl-deprecation-and-stem-plans>`_ in favor of Stem. Though no longer actively developed, it's still quite functional and still used for several `TorFlow <https://gitweb.torproject.org/torflow.git>`_ based projects.
+
+The following are the functional controller libraries I'm aware of. Dates are for highly active development. If I missed one then please `let me know <http://www.atagar.com/contact/>`_!
+
+==========================================================  ================    =======================
+Library                                                     Language            Developed
+==========================================================  ================    =======================
+`Stem <https://stem.torproject.org/>`_                      Python              October 2011 - Present
+`Txtorcon <https://txtorcon.readthedocs.org/>`_             Python (Twisted)    February 2012 - Present
+`TorCtl <https://gitweb.torproject.org/pytorctl.git>`_      Python              July 2008 - November 2011
+`PHP TorCtl <https://github.com/dunglas/php-torcontrol/>`_  PHP                 February 2013
+`JTorCtl <https://gitweb.torproject.org/jtorctl.git>`_      Java                June 2005 - May 2009
+==========================================================  ================    =======================
 
 .. _where_can_i_get_help:
 
