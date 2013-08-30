@@ -61,7 +61,7 @@ Stem is under the `LGPLv3 <https://www.gnu.org/licenses/lgpl>`_.
 
 .. _are_there_any_other_controller_libraries:
 
-Are There Any Other Controller Libraries?
+Are there any other controller libraries?
 -----------------------------------------
 
 Yup. The most mature controller libraries are written in python, but there's a few options in other languages as well. By far the most mature alternative to Stem are `Txtorcon <https://txtorcon.readthedocs.org/>`_ and `TorCtl <https://gitweb.torproject.org/pytorctl.git>`_.
