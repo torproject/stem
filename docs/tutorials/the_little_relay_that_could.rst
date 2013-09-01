@@ -40,7 +40,7 @@ the following configuration options...
   
   HashedControlPassword 16:E600ADC1B52C80BB6022A0E999A7734571A451EB6AE50FED489B72E3DF
 
-When you change your torrc you'll need to either restart Tor is issue a SIGHUP
+When you change your torrc you'll need to either restart Tor or issue a SIGHUP
 for the new settings to take effect. Now let's write a script that tells us how
 many bytes Tor has sent and received since it started. Note that there are a
 `few ways to connect to Tor <../faq.html#how-do-i-connect-to-tor>`_. If you're
