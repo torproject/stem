@@ -121,18 +121,19 @@ Once you have Tor running and `properly configured <tutorials/the_little_relay_t
           sys.exit(1)  # unable to get a connection
 
         print "Tor is running version %s" % controller.get_version()
+        controller.close()
 
    ::
 
-     % python example.py 
-     Tor is running version 0.2.4.10-alpha-dev (git-8be6058d8f31e578)
+      % python example.py 
+      Tor is running version 0.2.4.10-alpha-dev (git-8be6058d8f31e578)
 
    ... or if Tor isn't running...
 
    ::
 
-     % python example.py 
-     [Errno 111] Connection refused
+      % python example.py 
+      [Errno 111] Connection refused
 
 #. :func:`stem.control.Controller.from_port` and :func:`stem.control.Controller.from_socket_file`
 
@@ -144,36 +145,49 @@ Once you have Tor running and `properly configured <tutorials/the_little_relay_t
 
    ::
 
-     import getpass
-     import sys
+      import getpass
+      import sys
 
-     import stem
-     import stem.connection
+      import stem
+      import stem.connection
 
-     from stem.control import Controller
+      from stem.control import Controller
 
-     if __name__ == '__main__':
-       try:
-         controller = Controller.from_port()
-       except stem.SocketError as exc:
-         print "Unable to connect to tor on port 9051: %s" % exc
-         sys.exit(1)
+      if __name__ == '__main__':
+        try:
+          controller = Controller.from_port()
+        except stem.SocketError as exc:
+          print "Unable to connect to tor on port 9051: %s" % exc
+          sys.exit(1)
 
-       try:
-         controller.authenticate()
-       except stem.connection.MissingPassword:
-         pw = getpass.getpass("Controller password: ")
+        try:
+          controller.authenticate()
+        except stem.connection.MissingPassword:
+          pw = getpass.getpass("Controller password: ")
 
-         try:
-           controller.authenticate(password = pw)
-         except stem.connection.PasswordAuthFailed:
-           print "Unable to authenticate, password is incorrect"
-           sys.exit(1)
-       except stem.connection.AuthenticationFailure as exc:
-         print "Unable to authenticate: %s" % exc
-         sys.exit(1)
+          try:
+            controller.authenticate(password = pw)
+          except stem.connection.PasswordAuthFailed:
+            print "Unable to authenticate, password is incorrect"
+            sys.exit(1)
+        except stem.connection.AuthenticationFailure as exc:
+          print "Unable to authenticate: %s" % exc
+          sys.exit(1)
 
-       print "Tor is running version %s" % controller.get_version()
+        print "Tor is running version %s" % controller.get_version()
+        controller.close()
+
+   If you're fine with allowing your script to raise exceptions then this can be more nicely done as...
+
+   ::
+
+      from stem.control import Controller
+
+      if __name__ == '__main__':
+        with Controller.from_port() as controller:
+          controller.authenticate()
+
+          print "Tor is running version %s" % controller.get_version()
 
 #. `Socket Module <api/socket.html>`_
 
@@ -185,32 +199,32 @@ Once you have Tor running and `properly configured <tutorials/the_little_relay_t
 
    ::
 
-     import stem
-     import stem.connection
-     import stem.socket
+      import stem
+      import stem.connection
+      import stem.socket
 
-     if __name__ == '__main__':
-       try:
-         control_socket = stem.socket.ControlPort(port = 9051)
-         stem.connection.authenticate(control_socket)
-       except stem.SocketError as exc:
-         print "Unable to connect to tor on port 9051: %s" % exc
-         sys.exit(1)
-       except stem.connection.AuthenticationFailure as exc:
-         print "Unable to authenticate: %s" % exc
-         sys.exit(1)
+      if __name__ == '__main__':
+        try:
+          control_socket = stem.socket.ControlPort(port = 9051)
+          stem.connection.authenticate(control_socket)
+        except stem.SocketError as exc:
+          print "Unable to connect to tor on port 9051: %s" % exc
+          sys.exit(1)
+        except stem.connection.AuthenticationFailure as exc:
+          print "Unable to authenticate: %s" % exc
+          sys.exit(1)
 
-       print "Issuing 'GETINFO version' query...\n"
-       control_socket.send('GETINFO version')
-       print control_socket.recv()
+        print "Issuing 'GETINFO version' query...\n"
+        control_socket.send('GETINFO version')
+        print control_socket.recv()
 
    ::
 
-     % python example.py 
-     Issuing 'GETINFO version' query...
+      % python example.py 
+      Issuing 'GETINFO version' query...
 
-     version=0.2.4.10-alpha-dev (git-8be6058d8f31e578)
-     OK
+      version=0.2.4.10-alpha-dev (git-8be6058d8f31e578)
+      OK
 
 .. _how_do_i_request_a_new_identity_from_tor:
 
