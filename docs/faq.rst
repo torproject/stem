@@ -12,6 +12,7 @@ Frequently Asked Questions
 
 * **Usage**
 
+ * :ref:`how_do_i_connect_to_tor`
  * :ref:`how_do_i_request_a_new_identity_from_tor`
  * :ref:`how_do_i_get_information_about_my_exits`
  * :ref:`how_do_i_reload_my_torrc`
@@ -68,7 +69,7 @@ Yup. The most mature controller libraries are written in python, but there's a f
 
 `Txtorcon <https://txtorcon.readthedocs.org/>`_ is an actively maintained controller library written by Meejah for `Twisted <https://twistedmatrix.com/trac/>`_. In the future we plan to `integrate Stem and Txtorcon <https://www.torproject.org/getinvolved/volunteer.html.en#txtorcon-stemIntegration>`_ to some degree, but that is still a ways off.
 
-`TorCtl <https://gitweb.torproject.org/pytorctl.git>`_ is Stem's predecessor and `deprecated in December 2012 <https://blog.torproject.org/blog/torctl-deprecation-and-stem-plans>`_ in favor of Stem. Though no longer actively developed, it's still quite functional and still used for several `TorFlow <https://gitweb.torproject.org/torflow.git>`_ based projects.
+`TorCtl <https://gitweb.torproject.org/pytorctl.git>`_ was Stem's predecessor and `deprecated in December 2012 <https://blog.torproject.org/blog/torctl-deprecation-and-stem-plans>`_ in favor of Stem. Though no longer actively developed, it's still quite functional and still used for several `TorFlow <https://gitweb.torproject.org/torflow.git>`_ based projects.
 
 The following are the functional controller libraries I'm aware of. Dates are for highly active development. If I missed one then please `let me know <http://www.atagar.com/contact/>`_!
 
@@ -91,6 +92,125 @@ Do you have a tor related question or project that you would like to discuss? If
 
 Usage
 =====
+
+.. _how_do_i_connect_to_tor:
+
+How do I connect to Tor?
+------------------------
+
+Once you have Tor running and `properly configured <tutorials/the_little_relay_that_could.html>`_ you have a few ways of connecting to it. The following are the most common methods for getting a :class:`~stem.control.Controller` instance, from the highest to lowest level...
+
+#. :func:`stem.connection.connect_port` and :func:`stem.connection.connect_socket_file`
+
+   Writing a commandline script? Then the `connection module <api/connection.html>`_ provide you the quickest and most hassle free method for getting a :class:`~stem.control.Controller`.
+
+   These functions connect and authenticate to the given port or socket, providing you with a :class:`~stem.control.Controller` that's ready to use. If Tor requires a password then the user will be prompted for it. When the connection cannot be established this prints a description of the problem to stdout then returns **None**.
+
+   For instance...
+
+   ::
+
+      import sys 
+
+      from stem.connection import connect_port
+
+      if __name__ == '__main__':
+        controller = connect_port()
+
+        if not controller:
+          sys.exit(1)  # unable to get a connection
+
+        print "Tor is running version %s" % controller.get_version()
+
+   ::
+
+     % python example.py 
+     Tor is running version 0.2.4.10-alpha-dev (git-8be6058d8f31e578)
+
+   ... or if Tor isn't running...
+
+   ::
+
+     % python example.py 
+     [Errno 111] Connection refused
+
+#. :func:`stem.control.Controller.from_port` and :func:`stem.control.Controller.from_socket_file`
+
+   The connection module helpers above are all well and good when you need a quick-and-dirty connection for your commandline script, but they're inflexible. In particular their lack of exceptions and direct use of stdin/stdout make them undesirable for more complicated situations. That's where the Controller's :func:`~stem.control.Controller.from_port` and :func:`~stem.control.Controller.from_socket_file` methods come in.
+
+   These static :class:`~stem.control.Controller` methods return an **unauthenticated** controller you can then authenticate yourself using its :func:`~stem.control.Controller.authenticate` method.
+
+   For instance...
+
+   ::
+
+     import getpass
+     import sys
+
+     import stem
+     import stem.connection
+
+     from stem.control import Controller
+
+     if __name__ == '__main__':
+       try:
+         controller = Controller.from_port()
+       except stem.SocketError as exc:
+         print "Unable to connect to tor on port 9051: %s" % exc
+         sys.exit(1)
+
+       try:
+         controller.authenticate()
+       except stem.connection.MissingPassword:
+         pw = getpass.getpass("Controller password: ")
+
+         try:
+           controller.authenticate(password = pw)
+         except stem.connection.PasswordAuthFailed:
+           print "Unable to authenticate, password is incorrect"
+           sys.exit(1)
+       except stem.connection.AuthenticationFailure as exc:
+         print "Unable to authenticate: %s" % exc
+         sys.exit(1)
+
+       print "Tor is running version %s" % controller.get_version()
+
+#. `Socket Module <api/socket.html>`_
+
+   For the diehards among us you can skip the conveniences of a high level :class:`~stem.control.Controller` and work directly with the raw components. At Stem's lowest level your connection with Tor is a :class:`~stem.socket.ControlSocket` subclass. This provides methods to send, receive, disconnect, and reconnect to Tor.
+
+   One level up is the :class:`~stem.control.BaseController`. This wraps the :class:`~stem.socket.ControlSocket` and provides a :func:`~stem.control.BaseController.msg` method so you can send messages and receive their reply in a thread safe manner. Finally comes the :class:`~stem.control.Controller`, which extends :class:`~stem.control.BaseController` to provide more user friendly methods.
+
+   Directly using the :class:`~stem.socket.ControlSocket` is unsafe when it's being managed through a :class:`~stem.control.BaseController`, but if you're interested in dealing with lower level components directly then that is certainly an option...
+
+   ::
+
+     import stem
+     import stem.connection
+     import stem.socket
+
+     if __name__ == '__main__':
+       try:
+         control_socket = stem.socket.ControlPort(port = 9051)
+         stem.connection.authenticate(control_socket)
+       except stem.SocketError as exc:
+         print "Unable to connect to tor on port 9051: %s" % exc
+         sys.exit(1)
+       except stem.connection.AuthenticationFailure as exc:
+         print "Unable to authenticate: %s" % exc
+         sys.exit(1)
+
+       print "Issuing 'GETINFO version' query...\n"
+       control_socket.send('GETINFO version')
+       print control_socket.recv()
+
+   ::
+
+     % python example.py 
+     Issuing 'GETINFO version' query...
+
+     version=0.2.4.10-alpha-dev (git-8be6058d8f31e578)
+     OK
 
 .. _how_do_i_request_a_new_identity_from_tor:
 

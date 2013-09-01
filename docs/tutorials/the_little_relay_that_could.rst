@@ -42,7 +42,7 @@ the following configuration options...
 
 When you change your torrc you'll need to either restart Tor is issue a SIGHUP
 for the new settings to take effect. Now let's write a script that tells us how
-many bytes Tor has sent and received since it started. If you're unfamiliar
+many bytes Tor has sent and received since it started. Note that there are a `few ways to connect to Tor <../faq.html#how-do-i-connect-to-tor>`_. If you're unfamiliar
 with the '**with**' keyword then see `here
 <../faq.html#what-is-that-with-keyword-i-keep-seeing-in-the-tutorials>`_...
 
