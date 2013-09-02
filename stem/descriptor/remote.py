@@ -42,6 +42,8 @@ itself...
 
 ::
 
+  get_authorities - Provides tor directory information.
+
   DirectoryAuthority - Information about a tor directory authority.
 
   Query - Asynchronous request to download tor descriptors
@@ -66,11 +68,6 @@ itself...
 
   Maximum number of microdescriptors that can requested at a time by their
   hashes.
-
-.. data:: DIRECTORY_AUTHORITIES
-
-  Mapping of nicknames to the associated
-  :class:`~stem.descriptor.remote.DirectoryAuthority`.
 """
 
 import io
@@ -341,7 +338,7 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      authority = random.choice(filter(HAS_V3IDENT, DIRECTORY_AUTHORITIES.values()))
+      authority = random.choice(filter(HAS_V3IDENT, get_authorities().values()))
       address, dirport = authority.address, authority.dir_port
     else:
       address, dirport = random.choice(self.endpoints)
@@ -391,7 +388,7 @@ class DescriptorDownloader(object):
   def __init__(self, use_mirrors = False, **default_args):
     self._default_args = default_args
 
-    authorities = filter(HAS_V3IDENT, DIRECTORY_AUTHORITIES.values())
+    authorities = filter(HAS_V3IDENT, get_authorities().values())
     self._endpoints = [(auth.address, auth.dir_port) for auth in authorities]
 
     if use_mirrors:
@@ -413,7 +410,7 @@ class DescriptorDownloader(object):
     :raises: **Exception** if unable to determine the directory mirrors
     """
 
-    authorities = filter(HAS_V3IDENT, DIRECTORY_AUTHORITIES.values())
+    authorities = filter(HAS_V3IDENT, get_authorities().values())
     new_endpoints = set([(auth.address, auth.dir_port) for auth in authorities])
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
@@ -627,10 +624,6 @@ class DirectoryAuthority(object):
      network. They in turn use this to construct their circuits and use the
      network.
 
-  The directory information hardcoded in tor occasionally changes, and as such
-  the information this provides might not necessarily match your version of tor.
-  This is the tor directory information as of **commit 00bcc25 (8/27/13)**.
-
   :var str nickname: nickname of the authority
   :var str address: IP address of the authority, presently they're all IPv4 but
     this may not always be the case
@@ -731,3 +724,16 @@ DIRECTORY_AUTHORITIES = {
     v3ident = 'EFCBE720AB3A82B99F9E953CD5BF50F7EEFC7B97',
   ),
 }
+
+
+def get_authorities():
+  """
+  Provides the Tor directory authority information as of **Tor commit 00bcc25
+  (8/27/13)**. The directory information hardcoded into Tor and occasionally
+  changes, so the information this provides might not necessarily match your
+  version of tor.
+
+  :returns: dict of str nicknames to :class:`~stem.descriptor.remote.DirectoryAuthority` instances
+  """
+
+  return dict(DIRECTORY_AUTHORITIES)
