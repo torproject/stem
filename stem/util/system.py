@@ -16,6 +16,7 @@ best-effort, providing **None** if the lookup fails.
 
   is_available - determines if a command is available on this system
   is_running - determines if a given process is running
+  get_name_by_pid - gets the name for a process by the given pid
   get_pid_by_name - gets the pid for a process by the given name
   get_pid_by_port - gets the pid for a process listening to a given port
   get_pid_by_open_file - gets the pid for the process with an open file
@@ -60,6 +61,7 @@ SHELL_COMMANDS = ['ulimit']
 
 IS_RUNNING_PS_LINUX = "ps -A co command"
 IS_RUNNING_PS_BSD = "ps -ao ucomm="
+GET_NAME_BY_PID_PS = "ps -p %s -o comm"
 GET_PID_BY_NAME_PGREP = "pgrep -x %s"
 GET_PID_BY_NAME_PIDOF = "pidof %s"
 GET_PID_BY_NAME_PS_LINUX = "ps -o pid -C %s"
@@ -223,6 +225,46 @@ def is_running(command):
       return command in command_listing
 
   return None
+
+
+def get_name_by_pid(pid):
+  """
+  Attempts to determine the name a given process is running under (not
+  including arguments). This uses...
+
+  ::
+
+    1. Information from /proc
+    2. ps -p <pid> -o command
+
+  :param int pid: process id of the process to be queried
+
+  :returns: **str** with the process name, **None** if it can't be determined
+  """
+
+  process_name = None
+
+  if stem.util.proc.is_available():
+    try:
+      process_name = stem.util.proc.get_stats(pid, stem.util.proc.Stat.COMMAND)[0]
+    except IOError:
+      pass
+
+  # attempts to resolve using ps, failing if:
+  # - system's ps variant doesn't handle these flags (none known at the moment)
+  #
+  # example output:
+  #   atagar@morrigan:~$ ps -p 5767 -o comm
+  #   COMMAND
+  #   vim
+
+  if not process_name:
+    results = call(GET_NAME_BY_PID_PS % pid)
+
+    if results and len(results) == 2 and results[0] == 'COMMAND':
+      process_name = results[1].strip()
+
+  return process_name
 
 
 def get_pid_by_name(process_name, multiple = False):

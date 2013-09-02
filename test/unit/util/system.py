@@ -134,6 +134,29 @@ class TestSystem(unittest.TestCase):
     self.assertEquals(None, system.is_running("irssi"))
 
   @patch('stem.util.system.call')
+  @patch('stem.util.proc.is_available', Mock(return_value = False))
+  @patch('stem.util.system.is_available', Mock(return_value = True))
+  def test_get_name_by_pid_ps(self, call_mock):
+    """
+    Tests the get_name_by_pid function with ps responses.
+    """
+
+    responses = {
+      "success": ["COMMAND", "vim"],
+      "malformed_command_1": ["COMMAND"],
+      "malformed_command_2": ["foobar"],
+      "malformed_command_3": ["NOT_COMMAND", "vim"],
+      "no_results": [],
+      "command_fails": None,
+    }
+
+    call_mock.side_effect = mock_call(system.GET_NAME_BY_PID_PS, responses)
+
+    for test_input in responses:
+      expected_response = "vim" if test_input == "success" else None
+      self.assertEquals(expected_response, system.get_name_by_pid(test_input))
+
+  @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_get_pid_by_name_pgrep(self, call_mock):
     """
