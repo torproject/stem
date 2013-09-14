@@ -71,6 +71,8 @@ BASE_TORRC = """# configuration for stem integration tests
 DataDirectory %%s
 SocksListenAddress %s:%i
 DownloadExtraInfo 1
+Log notice stdout
+Log notice file %%s/tor_log
 """ % (SOCKS_HOST, SOCKS_PORT)
 
 # singleton Runner instance
@@ -298,7 +300,7 @@ class Runner(object):
 
       self._tor_cmd = tor_cmd
       self._custom_opts = extra_torrc_opts
-      self._torrc_contents = BASE_TORRC % data_dir_path
+      self._torrc_contents = BASE_TORRC % (data_dir_path, data_dir_path)
 
       if extra_torrc_opts:
         self._torrc_contents += "\n".join(extra_torrc_opts) + "\n"
