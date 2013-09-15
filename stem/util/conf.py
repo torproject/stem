@@ -390,10 +390,9 @@ class Config(object):
   def __init__(self):
     self._path = None        # location we last loaded from or saved to
     self._contents = {}      # configuration key/value pairs
-    self._raw_contents = []  # raw contents read from configuration file
     self._listeners = []     # functors to be notified of config changes
 
-    # used for both _contents and _raw_contents access
+    # used for accessing _contents
     self._contents_lock = threading.RLock()
 
     # keys that have been requested (used to provide unused config contents)
@@ -422,11 +421,8 @@ class Config(object):
       read_contents = config_file.readlines()
 
     with self._contents_lock:
-      self._raw_contents = read_contents
-      remainder = list(self._raw_contents)
-
-      while remainder:
-        line = remainder.pop(0)
+      while read_contents:
+        line = read_contents.pop(0)
 
         # strips any commenting or excess whitespace
         comment_start = line.find("#")
@@ -449,8 +445,8 @@ class Config(object):
             # this might be a multi-line entry, try processing it as such
             multiline_buffer = []
 
-            while remainder and remainder[0].lstrip().startswith("|"):
-              content = remainder.pop(0).lstrip()[1:]  # removes '\s+|' prefix
+            while read_contents and read_contents[0].lstrip().startswith("|"):
+              content = read_contents.pop(0).lstrip()[1:]  # removes '\s+|' prefix
               content = content.rstrip("\n")           # trailing newline
               multiline_buffer.append(content)
 
@@ -493,7 +489,6 @@ class Config(object):
 
     with self._contents_lock:
       self._contents.clear()
-      self._raw_contents = []
       self._requested_keys = set()
 
   def add_listener(self, listener, backfill = True):
