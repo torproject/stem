@@ -127,6 +127,7 @@ DEFAULT_PARAMS = {
   "cbttestfreq": 60,
   "cbtmintimeout": 2000,
   "cbtinitialtimeout": 60000,
+  "Support022HiddenServices": 1,
 }
 
 # KeyCertificate fields, tuple is of the form...
@@ -817,6 +818,8 @@ class _DocumentHeader(object):
       elif key == "cbtinitialtimeout":
         minimum = self.params.get("cbtmintimeout", minimum)
       elif key == "UseOptimisticData":
+        minimum, maximum = 0, 1
+      elif key == "Support022HiddenServices":
         minimum, maximum = 0, 1
 
       if value < minimum or value > maximum:
