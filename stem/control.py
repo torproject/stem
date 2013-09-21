@@ -204,6 +204,7 @@ MAPPED_CONFIG_KEYS = {
 }
 
 # unchangeable GETINFO parameters
+
 CACHEABLE_GETINFO_PARAMS = (
   'version',
   'config-file',
@@ -215,6 +216,19 @@ CACHEABLE_GETINFO_PARAMS = (
   'events/names',
   'features/names',
   'process/descriptor-limit',
+)
+
+# GETCONF parameters we shouldn't cache. This includes hidden service
+# perameters due to the funky way they're set and retrieved (for instance,
+# 'SETCONF HiddenServiceDir' effects 'GETCONF HiddenServiceOptions').
+
+UNCACHEABLE_GETCONF_PARAMS = (
+  'hiddenserviceoptions',
+  'hiddenservicedir',
+  'hiddenserviceport',
+  'hiddenserviceversion',
+  'hiddenserviceauthorizeclient',
+  'hiddenserviceoptions',
 )
 
 # number of sequential attempts before we decide that the Tor geoip database
@@ -1465,6 +1479,11 @@ class Controller(BaseController):
 
       if self.is_caching_enabled():
         to_cache = dict((k.lower(), v) for k, v in response.entries.items())
+
+        for key in UNCACHEABLE_GETCONF_PARAMS:
+          if key in to_cache:
+            del to_cache[key]
+
         self._set_cache(to_cache, "getconf")
 
       # Maps the entries back to the parameters that the user requested so the

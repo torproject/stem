@@ -48,6 +48,7 @@ The following are only available within stem's `git repository
   * Added :func:`~stem.control.Controller.get_user` method to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_pid` method to the :class:`~stem.control.Controller`
   * :class:`~stem.response.events.StreamEvent` didn't recognize IPv6 addresses (:trac:`9181`)
+  * :func:`~stem.control.Controller.get_conf` mistakenly cached hidden service related options (:trac:`9792`)
 
  * **Descriptors**
 
