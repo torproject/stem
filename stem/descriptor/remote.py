@@ -534,6 +534,25 @@ class DescriptorDownloader(object):
 
     return self.query(resource + '.z', **query_args)
 
+  def get_vote(self, authority, **query_args):
+    """
+    Provides the present vote for a given directory authority.
+
+    :param stem.descriptor.remote.DirectoryAuthority authority: authority for which to retrieve a vote for
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the router status
+      entries
+    """
+
+    resource = '/tor/status-vote/current/authority'
+
+    if not 'endpoint' in query_args:
+      query_args['endpoints'] = [(authority.address, authority.dir_port)]
+
+    return self.query(resource + '.z', **query_args)
+
   def get_key_certificates(self, authority_v3idents = None, **query_args):
     """
     Provides the key certificates for authorities with the given fingerprints.
