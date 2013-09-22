@@ -2,12 +2,39 @@
 Unit tests for the stem.util.connection functions.
 """
 
+import platform
 import unittest
+
+from mock import patch
 
 import stem.util.connection
 
+from stem.util.connection import Resolver
 
 class TestConnection(unittest.TestCase):
+  @patch('stem.util.proc.is_available')
+  def test_get_system_resolvers(self, proc_mock):
+    """
+    Checks the get_system_resolvers function.
+    """
+
+    proc_mock.return_value = False
+
+    self.assertEqual([], stem.util.connection.get_system_resolvers('Windows'))
+    self.assertEqual([Resolver.LSOF], stem.util.connection.get_system_resolvers('Darwin'))
+    self.assertEqual([Resolver.LSOF], stem.util.connection.get_system_resolvers('OpenBSD'))
+    self.assertEqual([Resolver.BSD_SOCKSTAT, Resolver.BSD_PROCSTAT, Resolver.LSOF], stem.util.connection.get_system_resolvers('FreeBSD'))
+    self.assertEqual([Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.get_system_resolvers('Linux'))
+
+    proc_mock.return_value = True
+
+    self.assertEqual([Resolver.PROC, Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.get_system_resolvers('Linux'))
+
+    # check that calling without an argument is equivilant to calling for this
+    # platform
+
+    self.assertEqual(stem.util.connection.get_system_resolvers(platform.system()), stem.util.connection.get_system_resolvers())
+
   def test_is_valid_ipv4_address(self):
     """
     Checks the is_valid_ipv4_address function.

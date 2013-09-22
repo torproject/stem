@@ -21,12 +21,57 @@ but for now just moving the parts we need.
 import hashlib
 import hmac
 import os
+import platform
 import re
 
-CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
+import stem.util.proc
+
+from stem.util import enum
+
+Resolver = enum.Enum(
+  ('PROC', 'proc'),
+  ('NETSTAT', 'netstat'),
+  ('SS', 'ss'),
+  ('LSOF', 'lsof'),
+  ('SOCKSTAT', 'sockstat'),
+  ('BSD_SOCKSTAT', 'sockstat (bsd)'),
+  ('BSD_PROCSTAT', 'procstat (bsd)')
+)
 
 FULL_IPv4_MASK = "255.255.255.255"
 FULL_IPv6_MASK = "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"
+
+CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
+
+
+def get_system_resolvers(system = None):
+  """
+  Provides the types of connection resolvers likely to be available on this platform.
+
+  :param str system: system to get resolvers for, this is determined by
+    platform.system() if not provided
+
+  :returns: **list** of Resolvers likely to be available on this platform
+  """
+
+  if system is None:
+    system = platform.system()
+
+  if system == 'Windows':
+    resolvers = []
+  elif system in ('Darwin', 'OpenBSD'):
+    resolvers = [Resolver.LSOF]
+  elif system == 'FreeBSD':
+    resolvers = [Resolver.BSD_SOCKSTAT, Resolver.BSD_PROCSTAT, Resolver.LSOF]
+  else:
+    resolvers = [Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS]
+
+  # proc resolution, by far, outperforms the others so defaults to this is able
+
+  if stem.util.proc.is_available():
+    resolvers = [Resolver.PROC] + resolvers
+
+  return resolvers
 
 
 def is_valid_ipv4_address(address):
