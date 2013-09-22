@@ -65,6 +65,7 @@ The following are only available within stem's `git repository
   * Added :func:`stem.util.system.get_user`
   * Added :func:`stem.util.system.get_start_time`
   * Added :func:`stem.util.system.get_bsd_jail_path`
+  * Added :func:`stem.util.connection.is_private_address`
 
  * **Website**
 

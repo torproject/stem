@@ -12,6 +12,7 @@ but for now just moving the parts we need.
   is_valid_ipv4_address - checks if a string is a valid IPv4 address
   is_valid_ipv6_address - checks if a string is a valid IPv6 address
   is_valid_port - checks if something is a valid representation for a port
+  is_private_address - checks if an IPv4 address belongs to a private range or not
   expand_ipv6_address - provides an IPv6 address with its collapsed portions expanded
   get_mask_ipv4 - provides the mask representation for a given number of bits
   get_mask_ipv6 - provides the IPv6 mask representation for a given number of bits
@@ -117,6 +118,40 @@ def is_valid_port(entry, allow_zero = False):
     return True
 
   return entry > 0 and entry < 65536
+
+
+def is_private_address(address):
+  """
+  Checks if the IPv4 address is in a range belonging to the local network or
+  loopback. These include:
+
+    * Private ranges: 10.*, 172.16.* - 172.31.*, 192.168.*
+    * Loopback: 127.*
+
+  :param str address: string to be checked
+
+  :returns: **True** if input is in a private range, **False** otherwise
+
+  :raises: **ValueError** if the address isn't a valid IPv4 address
+  """
+
+  if not is_valid_ipv4_address(address):
+    raise ValueError("'%s' isn't a valid IPv4 address" % address)
+
+  # checks for any of the simple wildcard ranges
+
+  if address.startswith("10.") or address.startswith("192.168.") or address.startswith("127."):
+    return True
+
+  # checks for the 172.16.* - 172.31.* range
+
+  if address.startswith("172."):
+    second_octet = int(address.split('.')[1])
+
+    if second_octet >= 16 and second_octet <= 31: 
+      return True
+
+  return False
 
 
 def expand_ipv6_address(address):

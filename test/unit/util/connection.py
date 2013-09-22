@@ -79,6 +79,26 @@ class TestConnection(unittest.TestCase):
     self.assertTrue(stem.util.connection.is_valid_port(0, allow_zero = True))
     self.assertTrue(stem.util.connection.is_valid_port("0", allow_zero = True))
 
+  def test_is_private_address(self):
+    """
+    Checks the is_private_address function.
+    """
+
+    self.assertTrue(stem.util.connection.is_private_address('127.0.0.1'))
+    self.assertTrue(stem.util.connection.is_private_address('10.0.0.0'))
+    self.assertTrue(stem.util.connection.is_private_address('172.16.0.0'))
+    self.assertTrue(stem.util.connection.is_private_address('172.31.0.0'))
+    self.assertTrue(stem.util.connection.is_private_address('192.168.0.50'))
+
+    self.assertFalse(stem.util.connection.is_private_address('74.125.28.103'))
+    self.assertFalse(stem.util.connection.is_private_address('172.15.0.0'))
+    self.assertFalse(stem.util.connection.is_private_address('172.32.0.0'))
+
+    self.assertRaises(ValueError, stem.util.connection.is_private_address, '')
+    self.assertRaises(ValueError, stem.util.connection.is_private_address, 'blarg')
+    self.assertRaises(ValueError, stem.util.connection.is_private_address, '127.0.0')
+    self.assertRaises(ValueError, stem.util.connection.is_private_address, 'fe80:0000:0000:0000:0202:b3ff:fe1e:8329')
+
   def test_expand_ipv6_address(self):
     """
     Checks the expand_ipv6_address function.
