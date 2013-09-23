@@ -2,22 +2,40 @@
 # See LICENSE for licensing information
 
 """
-Connection and networking based utility functions. This will likely be expanded
-later to have all of `arm's functions
-<https://gitweb.torproject.org/arm.git/blob/HEAD:/src/util/connections.py>`_,
-but for now just moving the parts we need.
+Connection and networking based utility functions.
 
 ::
+
+  get_connections - quieries the connections belonging to a given process
+  get_system_resolvers - provides connection resolution methods that are likely to be available
 
   is_valid_ipv4_address - checks if a string is a valid IPv4 address
   is_valid_ipv6_address - checks if a string is a valid IPv6 address
   is_valid_port - checks if something is a valid representation for a port
   is_private_address - checks if an IPv4 address belongs to a private range or not
+
   expand_ipv6_address - provides an IPv6 address with its collapsed portions expanded
   get_mask_ipv4 - provides the mask representation for a given number of bits
   get_mask_ipv6 - provides the IPv6 mask representation for a given number of bits
+
+.. data:: Resolver (enum)
+
+  Method for resolving a process' connections.
+
+  ================= ===========
+  Resolver          Description
+  ================= ===========
+  **PROC**          /proc contents
+  **NETSTAT**       netstat command
+  **SS**            ss command
+  **LSOF**          lsof command
+  **SOCKSTAT**      sockstat command under *nix
+  **BSD_SOCKSTAT**  sockstat command under FreeBSD
+  **BSD_PROCSTAT**  procstat command under FreeBSD
+  ================= ===========
 """
 
+import collections
 import hashlib
 import hmac
 import os
@@ -25,8 +43,16 @@ import platform
 import re
 
 import stem.util.proc
+import stem.util.system
 
-from stem.util import enum
+from stem.util import enum, log
+
+# Connection resolution is risky to log about since it's highly likely to
+# contain sensitive information. That said, it's also difficult to get right in
+# a platform independent fashion. To opt into the logging requried to
+# troubleshoot connection resolution set the following...
+
+LOG_CONNECTION_RESOLUTION = False
 
 Resolver = enum.Enum(
   ('PROC', 'proc'),
@@ -38,10 +64,161 @@ Resolver = enum.Enum(
   ('BSD_PROCSTAT', 'procstat (bsd)')
 )
 
+Connection = collections.namedtuple('Connection', [
+  'local_address',
+  'local_port',
+  'remote_address',
+  'remote_port',
+  'protocol',
+])
+
 FULL_IPv4_MASK = "255.255.255.255"
 FULL_IPv6_MASK = "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"
 
 CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
+
+RESOLVER_COMMAND = {
+  Resolver.PROC: '',
+
+  # -n = prevents dns lookups, -p = include process
+  Resolver.NETSTAT: 'netstat -np',
+
+  # -n = numeric ports, -p = include process, -t = tcp sockets, -u = udp sockets
+  Resolver.SS: 'ss -nptu',
+
+  # -n = prevent dns lookups, -P = show port numbers (not names), -i = ip only, -w = no warnings
+  # (lsof provides a '-p <pid>' but oddly in practice it seems to be ~11-28% slower)
+  Resolver.LSOF: 'lsof -wnPi',
+
+  Resolver.SOCKSTAT: 'sockstat',
+
+  # -4 = IPv4, -c = connected sockets
+  Resolver.BSD_SOCKSTAT: 'sockstat -4c',
+
+  # -f <pid> = process pid
+  Resolver.BSD_PROCSTAT: 'procstat -f {pid}',
+}
+
+RESOLVER_FILTER = {
+  Resolver.PROC: '',
+
+  # tcp        0    586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843/tor
+  Resolver.NETSTAT: '^{protocol}\s+.*\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED\s+{pid}/{name}\s*$',
+
+  # tcp    ESTAB      0      0           192.168.0.20:44415       38.229.79.2:443    users:(("tor",15843,9))
+  Resolver.SS: '^{protocol}\s+ESTAB\s+.*\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+users:\(\("{name}",{pid},[0-9]+\)\)$',
+
+  # tor  3873  atagar  45u  IPv4  40994  0t0  TCP 10.243.55.20:45724->194.154.227.109:9001 (ESTABLISHED)
+  Resolver.LSOF: '^{name}\s+{pid}\s+.*\s+{protocol}\s+{local_address}:{local_port}->{remote_address}:{remote_port} \(ESTABLISHED\)$',
+
+  # atagar   tor                  15843    tcp4   192.168.0.20:44092        68.169.35.102:443         ESTABLISHED
+  Resolver.SOCKSTAT: '^\S+\s+{name}\s+{pid}\s+{protocol}4\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED$',
+
+  # _tor     tor        4397  12 tcp4   172.27.72.202:54011   127.0.0.1:9001
+  Resolver.BSD_SOCKSTAT: '^\S+\s+{name}\s+{pid}\s+\S+\s+{protocol}4\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}$',
+
+  # 3561 tor                 4 s - rw---n--   2       0 TCP 10.0.0.2:9050 10.0.0.1:22370
+  Resolver.BSD_PROCSTAT: '^\s*{pid}\s+{name}\s+.*\s+{protocol}\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}$',
+}
+
+
+def get_connections(resolver, process_pid = None, process_name = None):
+  """
+  Retrieves a list of the current connections for a given process. The provides
+  a list of Connection instances, which have four attributes...
+
+    * local_address (str)
+    * local_port (int)
+    * remote_address (str)
+    * remote_port (int)
+    * protocol (str, generally either 'tcp' or 'udp')
+
+  :param Resolver resolver: method of connection resolution to use
+  :param int process_pid: pid of the process to retrieve
+  :param str process_name: name of the process to retrieve
+
+  :raises:
+    * **ValueError** if using **Resolver.PROC** or **Resolver.BSD_PROCSTAT**
+      and the process_pid wasn't provided
+
+    * **IOError** if no connections are available or resolution fails
+      (generally they're indistinguishable). The common causes are the
+      command being unavailable or permissions.
+  """
+
+  def _log(msg):
+    if LOG_CONNECTION_RESOLUTION:
+      log.debug(msg)
+
+  _log("=" * 80)
+  _log("Querying connections for resolver: %s, pid: %s, name: %s" % (resolver, process_pid, process_name))
+
+  if isinstance(process_pid, str):
+    try:
+      process_pid = int(process_pid)
+    except ValueError:
+      raise ValueError("Process pid was non-numeric: %s" % process_pid)
+
+  if process_pid is None and resolver in (Resolver.PROC, Resolver.BSD_PROCSTAT):
+    raise ValueError("%s resolution requires a pid" % resolver)
+
+  if resolver == Resolver.PROC:
+    return [Connection(*conn) for conn in stem.util.proc.get_connections(process_pid)]
+
+  resolver_command = RESOLVER_COMMAND[resolver].format(pid = process_pid)
+
+  try:
+    results = stem.util.system.call(resolver_command)
+  except OSError as exc:
+    raise IOError("Unable to query '%s': %s" % (resolver_command, exc))
+
+  resolver_regex_str = RESOLVER_FILTER[resolver].format(
+    protocol = '(?P<protocol>\S+)',
+    local_address = '(?P<local_address>[0-9.]+)',
+    local_port = '(?P<local_port>[0-9]+)',
+    remote_address = '(?P<remote_address>[0-9.]+)',
+    remote_port = '(?P<remote_port>[0-9]+)',
+    pid = process_pid if process_pid else '[0-9]*',
+    name = process_name if process_name else '\S*',
+  )
+
+  _log("Resolver regex: %s" % resolver_regex_str)
+  _log("Resolver results:\n%s" % '\n'.join(results))
+
+  connections = []
+  resolver_regex = re.compile(resolver_regex_str)
+
+  for line in results:
+    match = resolver_regex.match(line)
+
+    if match:
+      attr = match.groupdict()
+      local_addr = attr['local_address']
+      local_port = int(attr['local_port'])
+      remote_addr = attr['remote_address']
+      remote_port = int(attr['remote_port'])
+      protocol = attr['protocol'].lower()
+
+      if remote_addr == '0.0.0.0':
+        continue  # procstat response for unestablished connections
+
+      if not (is_valid_ipv4_address(local_addr) and is_valid_ipv4_address(remote_addr)):
+        _log("Invalid address (%s or %s): %s" % (local_addr, remote_addr, line))
+      elif not (is_valid_port(local_port) and is_valid_port(remote_port)):
+        _log("Invalid port (%s or %s): %s" % (local_port, remote_port, line))
+      elif protocol not in ('tcp', 'udp'):
+        _log("Unrecognized protocol (%s): %s" % (protocol, line))
+
+      conn = Connection(local_addr, local_port, remote_addr, remote_port, protocol)
+      connections.append(conn)
+      _log(str(conn))
+
+  _log("%i connections found" % len(connections))
+
+  if not connections:
+    raise IOError("No results found using: %s" % resolver_command)
+
+  return connections
 
 
 def get_system_resolvers(system = None):
@@ -62,8 +239,14 @@ def get_system_resolvers(system = None):
   elif system in ('Darwin', 'OpenBSD'):
     resolvers = [Resolver.LSOF]
   elif system == 'FreeBSD':
+    # Netstat is available, but lacks a '-p' equivilant so we can't associate
+    # the results to processes. The platform also has a ss command, but it
+    # belongs to a spreadsheet application.
+
     resolvers = [Resolver.BSD_SOCKSTAT, Resolver.BSD_PROCSTAT, Resolver.LSOF]
   else:
+    # Sockstat isn't available by default on ubuntu.
+
     resolvers = [Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS]
 
   # proc resolution, by far, outperforms the others so defaults to this is able
@@ -193,7 +376,7 @@ def is_private_address(address):
   if address.startswith("172."):
     second_octet = int(address.split('.')[1])
 
-    if second_octet >= 16 and second_octet <= 31: 
+    if second_octet >= 16 and second_octet <= 31:
       return True
 
   return False

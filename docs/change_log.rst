@@ -58,6 +58,7 @@ The following are only available within stem's `git repository
 
  * **Utilities**
 
+  * Connection resolution via the :func:`~stem.util.connection.get_connections` function (:trac:`7910`)
   * :func:`~stem.util.system.set_process_name` inserted spaces between characters (:trac:`8631`)
   * :func:`~stem.util.system.get_pid_by_name` can now pull for all processes with a given name
   * :func:`~stem.util.system.call` ignored the subprocess' exit status

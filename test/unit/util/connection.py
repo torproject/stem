@@ -9,7 +9,83 @@ from mock import patch
 
 import stem.util.connection
 
-from stem.util.connection import Resolver
+from stem.util.connection import Resolver, Connection
+
+NETSTAT_OUTPUT = """\
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 192.168.0.1:5939        73.94.23.87:443         ESTABLISHED 20586/firefox
+tcp        0      0 192.168.0.1:4325        73.94.23.55:443         ESTABLISHED 20586/firefox
+tcp        1      0 192.168.0.1:4378        29.208.141.42:443       CLOSE_WAIT  20586/firefox
+tcp        0      0 127.0.0.1:22            127.0.0.1:56673         ESTABLISHED -
+tcp        0    586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843/tor
+tcp        0      0 192.168.0.1:37909       16.111.19.278:6697      ESTABLISHED -
+Active UNIX domain sockets (w/o servers)
+Proto RefCnt Flags       Type       State         I-Node   PID/Program name    Path
+unix  14     [ ]         DGRAM                    8433     -                   /dev/log
+unix  3      [ ]         STREAM     CONNECTED     34164277 15843/tor
+unix  3      [ ]         STREAM     CONNECTED     34164276 15843/tor
+unix  3      [ ]         STREAM     CONNECTED     7951     -
+"""
+
+SS_OUTPUT = """\
+Netid  State      Recv-Q Send-Q     Local Address:Port       Peer Address:Port
+tcp    CLOSE-WAIT 1      0           192.168.0.1:43780      53.203.145.45:443    users:(("firefox",20586,118))
+tcp    ESTAB      55274  0           192.168.0.1:46136     196.153.236.35:80     users:(("firefox",20586,93))
+tcp    ESTAB      0      0           192.168.0.1:44092      23.112.135.72:443    users:(("tor",15843,10))
+tcp    ESTAB      0      0              127.0.0.1:22            127.0.0.1:56673
+tcp    ESTAB      0      0           192.168.0.1:44415        38.229.79.2:443    users:(("tor",15843,9))
+"""
+
+LSOF_OUTPUT = """\
+COMMAND     PID   USER   FD   TYPE   DEVICE SIZE/OFF NODE NAME
+ubuntu-ge  2164 atagar   11u  IPv4    13593      0t0  TCP 192.168.0.1:55395->21.89.91.78:80 (CLOSE_WAIT)
+tor       15843 atagar    6u  IPv4 34164278      0t0  TCP 127.0.0.1:9050 (LISTEN)
+tor       15843 atagar    7u  IPv4 34164279      0t0  TCP 127.0.0.1:9051 (LISTEN)
+tor       15843 atagar    9u  IPv4 34188132      0t0  TCP 192.168.0.1:44415->38.229.79.2:443 (ESTABLISHED)
+tor       15843 atagar   10u  IPv4 34165291      0t0  TCP 192.168.0.1:44092->68.169.35.102:443 (ESTABLISHED)
+python    16422 atagar    3u  IPv4 34203773      0t0  UDP 127.0.0.1:39624->127.0.0.1:53
+firefox   20586 atagar   66u  IPv4  5765353      0t0  TCP 192.168.0.1:47486->62.135.16.134:443 (ESTABLISHED)
+firefox   20586 atagar   71u  IPv4 13094989      0t0  TCP 192.168.0.1:43762->182.3.10.42:443 (CLOSE_WAIT)
+"""
+
+SOCKSTAT_OUTPUT = """\
+USER     PROCESS              PID      PROTO  SOURCE ADDRESS            FOREIGN ADDRESS           STATE
+atagar   ubuntu-geoip-pr      2164     tcp4   192.168.0.1:55395         141.18.34.33:80           CLOSE_WAIT
+atagar   tor                  15843    tcp4   127.0.0.1:9050            *:*                       LISTEN
+atagar   tor                  15843    tcp4   127.0.0.1:9051            *:*                       LISTEN
+atagar   tor                  15843    tcp4   192.168.0.1:44415         38.229.79.2:443           ESTABLISHED
+atagar   tor                  15843    tcp4   192.168.0.1:44092         68.169.35.102:443         ESTABLISHED
+atagar   firefox              20586    tcp4   192.168.0.1:47486         213.24.100.160:443        ESTABLISHED
+atagar   firefox              20586    tcp4   192.168.0.1:43762         32.188.221.72:443         CLOSE_WAIT
+"""
+
+# I don't have actual sockstat and procstat output for FreeBSD. Rather, these
+# are snippets of output from email threads.
+
+BSD_SOCKSTAT_OUTPUT = """\
+_tor     tor        4397  7  tcp4   172.27.72.202:9050    *:*
+_tor     tor        4397  8  udp4   172.27.72.202:53      *:*
+_tor     tor        4397  9  tcp4   172.27.72.202:9051    *:*
+_tor     tor        4397  12 tcp4   172.27.72.202:54011   38.229.79.2:9001
+_tor     tor        4397  15 tcp4   172.27.72.202:59374   68.169.35.102:9001
+_tor     tor        4397  19 tcp4   172.27.72.202:59673   213.24.100.160:9001
+_tor     tor        4397  20 tcp4   172.27.72.202:51946   32.188.221.72:443
+_tor     tor        4397  22 tcp4   172.27.72.202:60344   21.89.91.78:9001
+"""
+
+BSD_PROCSTAT_OUTPUT = """\
+  PID COMM               FD T V FLAGS    REF  OFFSET PRO NAME
+ 3561 tor                 4 s - rw---n--   2       0 TCP 10.0.0.2:9050 10.0.0.1:22370
+ 3561 tor                 5 s - rw---n--   2       0 TCP 10.0.0.2:9050 0.0.0.0:0
+ 3561 tor                 6 s - rw---n--   2       0 TCP 10.0.0.2:9040 0.0.0.0:0
+ 3561 tor                 7 s - rw---n--   2       0 UDP 10.0.0.2:53 0.0.0.0:0
+ 3561 tor                 8 s - rw---n--   2       0 TCP 10.0.0.2:9051 0.0.0.0:0
+ 3561 tor                14 s - rw---n--   2       0 TCP 10.0.0.2:9050 10.0.0.1:44381
+ 3561 tor                15 s - rw---n--   2       0 TCP 10.0.0.2:33734 38.229.79.2:443
+ 3561 tor                16 s - rw---n--   2       0 TCP 10.0.0.2:47704 68.169.35.102:9001
+"""
+
 
 class TestConnection(unittest.TestCase):
   @patch('stem.util.proc.is_available')
@@ -27,13 +103,150 @@ class TestConnection(unittest.TestCase):
     self.assertEqual([Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.get_system_resolvers('Linux'))
 
     proc_mock.return_value = True
-
     self.assertEqual([Resolver.PROC, Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.get_system_resolvers('Linux'))
 
     # check that calling without an argument is equivilant to calling for this
     # platform
 
     self.assertEqual(stem.util.connection.get_system_resolvers(platform.system()), stem.util.connection.get_system_resolvers())
+
+  @patch('stem.util.proc.get_connections')
+  def test_get_connections_by_proc(self, proc_mock):
+    """
+    Checks the get_connections function with the proc resolver.
+    """
+
+    proc_mock.return_value = [
+      ('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp'),
+      ('187.187.187.187', 48059, '204.204.204.204', 52428, 'tcp'),
+    ]
+
+    expected = [
+      Connection('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp'),
+      Connection('187.187.187.187', 48059, '204.204.204.204', 52428, 'tcp'),
+    ]
+
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.PROC, process_pid = 1111))
+
+    proc_mock.side_effect = IOError('No connections for you!')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.PROC, process_pid = 1111)
+
+  @patch('stem.util.system.call')
+  def test_get_connections_by_netstat(self, call_mock):
+    """
+    Checks the get_connections function with the netstat resolver.
+    """
+
+    call_mock.return_value = NETSTAT_OUTPUT.split('\n')
+    expected = [Connection('192.168.0.1', 44284, '38.229.79.2', 443, 'tcp')]
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.NETSTAT, process_pid = 15843, process_name = 'tor'))
+
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 15843, process_name = 'stuff')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 1111, process_name = 'tor')
+
+    call_mock.side_effect = OSError('Unable to call netstat')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 1111)
+
+  @patch('stem.util.system.call')
+  def test_get_connections_by_ss(self, call_mock):
+    """
+    Checks the get_connections function with the ss resolver.
+    """
+
+    call_mock.return_value = SS_OUTPUT.split('\n')
+    expected = [
+      Connection('192.168.0.1', 44092, '23.112.135.72', 443, 'tcp'),
+      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp'),
+    ]
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SS, process_pid = 15843, process_name = 'tor'))
+
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_pid = 15843, process_name = 'stuff')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_pid = 1111, process_name = 'tor')
+
+    call_mock.side_effect = OSError('Unable to call ss')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_pid = 1111)
+
+  @patch('stem.util.system.call')
+  def test_get_connections_by_lsof(self, call_mock):
+    """
+    Checks the get_connections function with the lsof resolver.
+    """
+
+    call_mock.return_value = LSOF_OUTPUT.split('\n')
+    expected = [
+      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp'),
+      Connection('192.168.0.1', 44092, '68.169.35.102', 443, 'tcp'),
+    ]
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.LSOF, process_pid = 15843, process_name = 'tor'))
+
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 15843, process_name = 'stuff')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 1111, process_name = 'tor')
+
+    call_mock.side_effect = OSError('Unable to call lsof')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 1111)
+
+  @patch('stem.util.system.call')
+  def test_get_connections_by_sockstat(self, call_mock):
+    """
+    Checks the get_connections function with the sockstat resolver.
+    """
+
+    call_mock.return_value = SOCKSTAT_OUTPUT.split('\n')
+    expected = [
+      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp'),
+      Connection('192.168.0.1', 44092, '68.169.35.102', 443, 'tcp'),
+    ]
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SOCKSTAT, process_pid = 15843, process_name = 'tor'))
+
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SOCKSTAT, process_pid = 15843, process_name = 'stuff')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SOCKSTAT, process_pid = 1111, process_name = 'tor')
+
+    call_mock.side_effect = OSError('Unable to call sockstat')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SOCKSTAT, process_pid = 1111)
+
+  @patch('stem.util.system.call')
+  def test_get_connections_by_sockstat_for_bsd(self, call_mock):
+    """
+    Checks the get_connections function with the bsd variant of the sockstat
+    resolver.
+    """
+
+    call_mock.return_value = BSD_SOCKSTAT_OUTPUT.split('\n')
+    expected = [
+      Connection('172.27.72.202', 54011, '38.229.79.2', 9001, 'tcp'),
+      Connection('172.27.72.202', 59374, '68.169.35.102', 9001, 'tcp'),
+      Connection('172.27.72.202', 59673, '213.24.100.160', 9001, 'tcp'),
+      Connection('172.27.72.202', 51946, '32.188.221.72', 443, 'tcp'),
+      Connection('172.27.72.202', 60344, '21.89.91.78', 9001, 'tcp'),
+    ]
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.BSD_SOCKSTAT, process_pid = 4397, process_name = 'tor'))
+
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_SOCKSTAT, process_pid = 4397, process_name = 'stuff')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_SOCKSTAT, process_pid = 1111, process_name = 'tor')
+
+    call_mock.side_effect = OSError('Unable to call sockstat')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_SOCKSTAT, process_pid = 1111)
+
+  @patch('stem.util.system.call')
+  def test_get_connections_by_procstat(self, call_mock):
+    """
+    Checks the get_connections function with the procstat resolver.
+    """
+
+    call_mock.return_value = BSD_PROCSTAT_OUTPUT.split('\n')
+    expected = [
+      Connection('10.0.0.2', 9050, '10.0.0.1', 22370, 'tcp'),
+      Connection('10.0.0.2', 9050, '10.0.0.1', 44381, 'tcp'),
+      Connection('10.0.0.2', 33734, '38.229.79.2', 443, 'tcp'),
+      Connection('10.0.0.2', 47704, '68.169.35.102', 9001, 'tcp'),
+    ]
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.BSD_PROCSTAT, process_pid = 3561, process_name = 'tor'))
+
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_PROCSTAT, process_pid = 3561, process_name = 'stuff')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_PROCSTAT, process_pid = 1111, process_name = 'tor')
+
+    call_mock.side_effect = OSError('Unable to call procstat')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_PROCSTAT, process_pid = 1111)
 
   def test_is_valid_ipv4_address(self):
     """

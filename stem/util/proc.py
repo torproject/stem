@@ -309,23 +309,32 @@ def get_connections(pid):
   :param int pid: process id of the process to be queried
 
   :returns: A listing of connection tuples of the form **[(local_ipAddr1,
-    local_port1, foreign_ipAddr1, foreign_port1), ...]** (IP addresses are
-    strings and ports are ints)
+    local_port1, foreign_ipAddr1, foreign_port1, protocol), ...]** (addresses
+    and protocols are strings and ports are ints)
 
   :raises: **IOError** if it can't be determined
   """
+
+  if isinstance(pid, str):
+    try:
+      pid = int(pid)
+    except ValueError:
+      raise IOError("Process pid was non-numeric: %s" % pid)
 
   if pid == 0:
     return []
 
   # fetches the inode numbers for socket file descriptors
+
   start_time, parameter = time.time(), "process connections"
   inodes = []
+
   for fd in os.listdir("/proc/%s/fd" % pid):
     fd_path = "/proc/%s/fd/%s" % (pid, fd)
 
     try:
       # File descriptor link, such as 'socket:[30899]'
+
       fd_name = os.readlink(fd_path)
 
       if fd_name.startswith('socket:['):
@@ -341,7 +350,9 @@ def get_connections(pid):
     return []
 
   # check for the connection information from the /proc/net contents
+
   conn = []
+
   for proc_file_path in ("/proc/net/tcp", "/proc/net/udp"):
     try:
       proc_file = open(proc_file_path)
@@ -357,7 +368,8 @@ def get_connections(pid):
 
           local_ip, local_port = _decode_proc_address_encoding(l_addr)
           foreign_ip, foreign_port = _decode_proc_address_encoding(f_addr)
-          conn.append((local_ip, local_port, foreign_ip, foreign_port))
+          protocol = proc_file_path[10:]
+          conn.append((local_ip, local_port, foreign_ip, foreign_port, protocol))
 
       proc_file.close()
     except IOError as exc:
