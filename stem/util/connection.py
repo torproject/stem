@@ -249,6 +249,10 @@ def get_system_resolvers(system = None):
 
     resolvers = [Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS]
 
+  # remove any that aren't in the user's PATH
+
+  resolvers = filter(lambda r: stem.util.system.is_available(RESOLVER_COMMAND[r]), resolvers)
+
   # proc resolution, by far, outperforms the others so defaults to this is able
 
   if stem.util.proc.is_available():

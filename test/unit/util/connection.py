@@ -88,12 +88,14 @@ BSD_PROCSTAT_OUTPUT = """\
 
 
 class TestConnection(unittest.TestCase):
+  @patch('stem.util.system.is_available')
   @patch('stem.util.proc.is_available')
-  def test_get_system_resolvers(self, proc_mock):
+  def test_get_system_resolvers(self, proc_mock, is_available_mock):
     """
     Checks the get_system_resolvers function.
     """
 
+    is_available_mock.return_value = True
     proc_mock.return_value = False
 
     self.assertEqual([], stem.util.connection.get_system_resolvers('Windows'))
@@ -109,6 +111,11 @@ class TestConnection(unittest.TestCase):
     # platform
 
     self.assertEqual(stem.util.connection.get_system_resolvers(platform.system()), stem.util.connection.get_system_resolvers())
+
+    # check that lacking commands in our PATH drops them from the results
+
+    is_available_mock.return_value = False
+    self.assertEqual([Resolver.PROC], stem.util.connection.get_system_resolvers('Linux'))
 
   @patch('stem.util.proc.get_connections')
   def test_get_connections_by_proc(self, proc_mock):
