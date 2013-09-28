@@ -29,10 +29,10 @@ something you would like to have included on this page then `let me know
        including system resource usage, connection information, and much more.
 
    * - .. image:: /_static/doctor.png
-          :target: https://gitweb.torproject.org/atagar/tor-utils.git/tree
+          :target: https://gitweb.torproject.org/doctor.git/tree
 
      - .. image:: /_static/label/doctor.png
-          :target: https://gitweb.torproject.org/atagar/tor-utils.git/tree
+          :target: https://gitweb.torproject.org/doctor.git/tree
 
        Monitors the Tor consensus for a variety of issues including malformed
        descriptors, directory authority issues, sybil attacks, and much more.
