@@ -8,6 +8,7 @@ Contents
    tutorials/the_little_relay_that_could
    tutorials/to_russia_with_love
    tutorials/tortoise_and_the_hare
+   tutorials/east_of_the_sun
    tutorials/mirror_mirror_on_the_wall
    tutorials/double_double_toil_and_trouble
 

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="492"
+   height="484"
+   viewBox="-5 -5 128 126"
+   id="svg2"
+   sodipodi:version="0.32"
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="Compass_card_(sl).svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   version="1.1"
+   inkscape:export-filename="/home/atagar/Desktop/Compass_card_(sl).png"
+   inkscape:export-xdpi="23.958799"
+   inkscape:export-ydpi="23.958799">
+  <metadata
+     id="metadata105">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs103">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 242 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="492 : 242 : 1"
+       inkscape:persp3d-origin="246 : 161.33333 : 1"
+       id="perspective107" />
+  </defs>
+  <sodipodi:namedview
+     inkscape:window-height="696"
+     inkscape:window-width="1024"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     guidetolerance="10.0"
+     gridtolerance="10.0"
+     objecttolerance="10.0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     id="base"
+     showgrid="false"
+     inkscape:zoom="0.95454545"
+     inkscape:cx="246"
+     inkscape:cy="273.72233"
+     inkscape:window-x="0"
+     inkscape:window-y="24"
+     inkscape:current-layer="svg2"
+     inkscape:window-maximized="0" />
+  <g
+     id="g4"
+     transform="matrix(1.2776887,0,0,1.2776887,-19.635229,-19.332998)">
+    <g
+       id="g6">
+      <polygon
+         points="95.833496,26.863281 71.893066,60.804688 61.893066,60.804688 "
+         id="polygon8"
+         style="fill:#c5f2fb" />
+      <polygon
+         points="27.95166,26.864258 61.893066,50.804688 61.893066,60.804688 "
+         id="polygon10"
+         style="fill:#c5f2fb" />
+      <polygon
+         points="27.952637,94.746094 51.893066,60.804688 61.893066,60.804688 "
+         id="polygon12"
+         style="fill:#c5f2fb" />
+      <polygon
+         points="95.834473,94.745117 61.893066,70.804688 61.893066,60.804688 "
+         id="polygon14"
+         style="fill:#c5f2fb" />
+    </g>
+    <g
+       id="g16">
+      <polygon
+         points="27.952148,26.863281 51.893066,60.804688 61.893066,60.804688 "
+         id="polygon18"
+         style="fill:#4291e4" />
+      <polygon
+         points="95.834473,26.864258 61.893066,50.804688 61.893066,60.804688 "
+         id="polygon20"
+         style="fill:#4291e4" />
+      <polygon
+         points="95.833496,94.746094 71.893066,60.804688 61.893066,60.804688 "
+         id="polygon22"
+         style="fill:#4291e4" />
+      <polygon
+         points="27.95166,94.745117 61.893066,70.804688 61.893066,60.804688 "
+         id="polygon24"
+         style="fill:#4291e4" />
+    </g>
+    <polygon
+       stroke-miterlimit="100"
+       points="71.893066,60.804688 95.834473,94.746094 61.893066,70.804688 27.952148,94.746094 51.893066,60.804688 27.952148,26.863281 61.893066,50.804688 95.834473,26.863281 "
+       id="polygon26"
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-miterlimit:100" />
+  </g>
+  <g
+     id="g28"
+     transform="matrix(1.2776887,0,0,1.2776887,-19.635229,-19.332998)">
+    <g
+       id="g30">
+      <polygon
+         points="61.893066,12.804688 71.893066,50.804688 61.893066,60.804688 "
+         id="polygon32"
+         style="fill:#d4e5f7" />
+      <polygon
+         points="51.893066,50.804688 13.893066,60.804688 61.893066,60.804688 "
+         id="polygon34"
+         style="fill:#d4e5f7" />
+      <polygon
+         points="51.893066,70.804688 61.893066,108.80469 61.893066,60.804688 "
+         id="polygon36"
+         style="fill:#d4e5f7" />
+      <polygon
+         points="71.893066,70.804688 109.89307,60.804688 61.893066,60.804688 "
+         id="polygon38"
+         style="fill:#d4e5f7" />
+    </g>
+    <g
+       id="g40">
+      <polygon
+         points="61.893066,12.804688 51.893066,50.804688 61.893066,60.804688 "
+         id="polygon42"
+         style="fill:#0d0ba9" />
+      <polygon
+         points="71.893066,50.804688 109.89307,60.804688 61.893066,60.804688 "
+         id="polygon44"
+         style="fill:#0d0ba9" />
+      <polygon
+         points="71.893066,70.804688 61.893066,108.80469 61.893066,60.804688 "
+         id="polygon46"
+         style="fill:#0d0ba9" />
+      <polygon
+         points="51.893066,70.804688 13.893066,60.804688 61.893066,60.804688 "
+         id="polygon48"
+         style="fill:#0d0ba9" />
+    </g>
+    <polygon
+       points="71.893066,70.804688 61.893066,108.80469 51.893066,70.804688 13.893555,60.804688 51.893066,50.804688 61.893066,12.804688 71.893066,50.804688 109.89307,60.804688 "
+       id="polygon50"
+       style="fill:none;stroke:#000000;stroke-width:0.5" />
+  </g>
+  <g
+     id="g52"
+     transform="matrix(1.2776887,0,0,1.2776887,-19.635229,-19.332998)">
+    <polyline
+       points="61.8930664,60.8046875 61.8930664,12.8046875      61.8930664,108.8046875 "
+       id="polyline54"
+       style="fill:none;stroke:#000000;stroke-width:0.5" />
+    <line
+       x1="109.89307"
+       y1="60.804688"
+       x2="13.893555"
+       y2="60.804688"
+       id="line56"
+       style="fill:none;stroke:#000000;stroke-width:0.5" />
+    <line
+       x1="95.834473"
+       y1="26.863281"
+       x2="27.952148"
+       y2="94.746094"
+       id="line58"
+       style="fill:none;stroke:#000000;stroke-width:0.5" />
+    <polyline
+       points="61.8930664,60.8046875 27.9521484,26.8632813      95.8344727,94.7460938 "
+       id="polyline60"
+       style="fill:none;stroke:#000000;stroke-width:0.5" />
+  </g>
+  <text
+     xml:space="preserve"
+     style="font-size:40px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
+     x="111.68595"
+     y="54.181816"
+     id="text2480"><tspan
+       sodipodi:role="line"
+       id="tspan2482" /></text>
+</svg>

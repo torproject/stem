@@ -26,6 +26,11 @@ Tutorial
      License: Public Domain
      Alternate: https://openclipart.org/detail/174179/miroir-rectangulaire-by-defaz36-174179
    
+   * East of the Sun & West of the Moon - windrose.png
+     Source: https://commons.wikimedia.org/wiki/File:Compass_card_%28sl%29.svg
+     Author: Andrejj
+     License: CC0 (https://creativecommons.org/publicdomain/zero/1.0/deed.en)
+   
    * Double Double Toil and Trouble - cauldron.png
      Source: https://openclipart.org/detail/174099/cauldron-by-jarda-174099
      Author: Unknown (jarda?)
@@ -77,6 +82,15 @@ feet wet by jumping straight in with some tutorials...
        Relay information is provided through documents called **descriptors**.
        This walks you through both where to get them and a small script to tell
        you the fastest Tor exits.
+
+   * - .. image:: /_static/section/tutorials/windrose.png
+          :target: tutorials/east_of_the_sun.html
+
+     - .. image:: /_static/label/east_of_the_sun.png
+          :target: tutorials/east_of_the_sun.html
+
+       Stem provides several utility modules frequently useful for Tor
+       controller applications. Here we introduce some of them.
 
    * - .. image:: /_static/section/tutorials/cauldron.png
           :target: tutorials/double_double_toil_and_trouble.html
