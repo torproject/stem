@@ -236,6 +236,19 @@ class Version(object):
 
     return self._compare(other, lambda s, o: s >= o)
 
+  def __hash__(self):
+    my_hash = 0
+
+    for attr in ("major", "minor", "micro", "patch", "status"):
+      my_hash *= 1024
+
+      attr_value = getattr(self, attr)
+
+      if attr_value is not None:
+        my_hash += hash(attr_value)
+
+    return my_hash
+
 
 class _VersionRequirements(object):
   """
