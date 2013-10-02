@@ -242,7 +242,7 @@ def main():
       except ValueError as exc:
         # can arise if get_torrc_entries() runs into a bad settings.cfg data
 
-        println(exc, ERROR)
+        println(str(exc), ERROR)
         break
       except OSError:
         error_tracker.register_error()
