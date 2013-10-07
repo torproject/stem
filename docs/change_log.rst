@@ -3,7 +3,7 @@ Change Log
 
 The following is a log of all user-facing changes to stem, both released and
 unreleased. For a monthly report on work being done see my `development log
-<http://www.atagar.com/log.php>`_.
+<https://www.atagar.com/log.php>`_.
 
 * :ref:`versioning`
 * :ref:`unreleased`
@@ -82,8 +82,8 @@ The following are only available within stem's `git repository
   * Expanded the `client usage tutorial <tutorials/to_russia_with_love.html>`_
     to cover SocksiPy and include an example for polling Twitter.
   * Subtler buttons for the frontpage (`before
-    <http://www.atagar.com/transfer/stem_frontpage/before.png>`_ and `after
-    <http://www.atagar.com/transfer/stem_frontpage/after.png>`_).
+    <https://www.atagar.com/transfer/stem_frontpage/before.png>`_ and `after
+    <https://www.atagar.com/transfer/stem_frontpage/after.png>`_).
 
 .. _version_1.0:
 

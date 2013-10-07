@@ -3,7 +3,7 @@ Double Double Toil and Trouble
 
 Below is a listing of scripts and applications that use stem. If you have
 something you would like to have included on this page then `let me know
-<http://www.atagar.com/contact/>`_!
+<https://www.atagar.com/contact/>`_!
 
 .. Image Sources:
    
@@ -20,10 +20,10 @@ something you would like to have included on this page then `let me know
    :header-rows: 0
 
    * - .. image:: /_static/arm.png
-          :target: http://www.atagar.com/arm/
+          :target: https://www.atagar.com/arm/
 
      - .. image:: /_static/label/arm.png
-          :target: http://www.atagar.com/arm/
+          :target: https://www.atagar.com/arm/
 
        Terminal status monitor for Tor. This provides a top like interface
        including system resource usage, connection information, and much more.

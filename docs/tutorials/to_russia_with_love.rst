@@ -20,7 +20,7 @@ Tor makes `configuring your exit locale <https://www.torproject.org/docs/faq.htm
 
 In the following example we're using stem to `start Tor <../api/process.html>`_, then reading a site through it with `SocksiPy <http://socksipy.sourceforge.net/>`_. This is not always reliable (some relays are lemons) so you may need to run this more than once.
 
-**Do not rely on the following not to leak.** Though it seems to work there may be edge cases that expose your real IP. If you have a suggestion for how to improve this example then please `let me know <http://www.atagar.com/contact/>`_!
+**Do not rely on the following not to leak.** Though it seems to work there may be edge cases that expose your real IP. If you have a suggestion for how to improve this example then please `let me know <https://www.atagar.com/contact/>`_!
 
 ::
 
@@ -79,7 +79,7 @@ In the following example we're using stem to `start Tor <../api/process.html>`_,
   )
 
   print term.format("\nChecking our endpoint:\n", term.Attr.BOLD)
-  print term.format(query("http://www.atagar.com/echo.php"), term.Color.BLUE)
+  print term.format(query("https://www.atagar.com/echo.php"), term.Color.BLUE)
 
   tor_process.kill()  # stops tor
 

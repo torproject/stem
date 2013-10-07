@@ -33,7 +33,7 @@ General Information
 What is stem?
 -------------
 
-Stem is a python controller library that you can use to interact with `tor <https://www.torproject.org/>`_. With it you can write scripts and applications with capabilities similar to `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <http://www.atagar.com/arm/>`_.
+Stem is a python controller library that you can use to interact with `tor <https://www.torproject.org/>`_. With it you can write scripts and applications with capabilities similar to `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <https://www.atagar.com/arm/>`_.
 
 From a technical standpoint, stem is a python implementation of Tor's `directory <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_ and `control specifications <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_. `To get started see our tutorials! <tutorials.html>`_
 
@@ -71,7 +71,7 @@ Yup. The most mature controller libraries are written in python, but there's a f
 
 `TorCtl <https://gitweb.torproject.org/pytorctl.git>`_ was Stem's predecessor and `deprecated in December 2012 <https://blog.torproject.org/blog/torctl-deprecation-and-stem-plans>`_ in favor of Stem. Though no longer actively developed, it's still quite functional and still used for several `TorFlow <https://gitweb.torproject.org/torflow.git>`_ based projects.
 
-The following are the functional controller libraries I'm aware of. Dates are for highly active development. If I missed one then please `let me know <http://www.atagar.com/contact/>`_!
+The following are the functional controller libraries I'm aware of. Dates are for highly active development. If I missed one then please `let me know <https://www.atagar.com/contact/>`_!
 
 ==========================================================  ================    =======================
 Library                                                     Language            Developed
@@ -239,7 +239,7 @@ An important thing to note is that a new circuit does not necessarily mean a new
 
 Tor does not have a method for cycling your IP address. This is on purpose, and done for a couple reasons. The first is that this capability is usually requested for not-so-nice reasons such as ban evasion or SEO. Second, repeated circuit creation puts a very high load on the Tor network, so please don't!
 
-With all that out of the way, how do you create a new circuit? You can customise the rate at which Tor cycles circuits with the **MaxCircuitDirtiness** option in your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <http://www.atagar.com/arm/>`_ both provide a method to request a new identity, and you can do so programmatically by sending Tor a NEWNYM signal.
+With all that out of the way, how do you create a new circuit? You can customise the rate at which Tor cycles circuits with the **MaxCircuitDirtiness** option in your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <https://www.atagar.com/arm/>`_ both provide a method to request a new identity, and you can do so programmatically by sending Tor a NEWNYM signal.
 
 To do this with telnet...
 
@@ -410,7 +410,7 @@ How do I get started?
 
 The best way of getting involved with any project is to jump right in! Our `bug tracker <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_ lists several development tasks. In particular look for the 'easy' keyword when getting started.
 
-If you have any questions then I'm always more than happy to help (I'm **atagar** on `oftc <http://www.oftc.net/oftc/>`_ and also available `via email <http://www.atagar.com/contact/>`_).
+If you have any questions then I'm always more than happy to help (I'm **atagar** on `oftc <http://www.oftc.net/oftc/>`_ and also available `via email <https://www.atagar.com/contact/>`_).
 
 To start hacking on stem please do the following and don't hesitate to let me know if you get stuck or would like to discuss anything!
 
@@ -488,7 +488,7 @@ When it's finished you can direct your browser to the *_build* directory with a 
 What is the copyright for patches?
 ----------------------------------
 
-Stem is under the LGPLv3 which is a fine license, but poses a bit of a problem for sharing code with our other projects (which are mostly BSD). To share code without needing to hunt down prior contributors we need Tor to have the copyright for the whole stem codebase. Presently the copyright of stem is jointly held by its main author (`Damian <http://www.atagar.com/>`_) and the `Tor Project <https://www.torproject.org/>`_.
+Stem is under the LGPLv3 which is a fine license, but poses a bit of a problem for sharing code with our other projects (which are mostly BSD). To share code without needing to hunt down prior contributors we need Tor to have the copyright for the whole stem codebase. Presently the copyright of stem is jointly held by its main author (`Damian <https://www.atagar.com/>`_) and the `Tor Project <https://www.torproject.org/>`_.
 
 If you submit a substantial patch I'll ask if you're fine with it being in the public domain. This would mean that there are no legal restrictions for using your contribution, and hence won't pose a problem if we reuse stem code in other projects.
 
