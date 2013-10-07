@@ -10,6 +10,7 @@ __all__ = [
   "connection",
   "enum",
   "log",
+  "lru_cache",
   "ordereddict",
   "proc",
   "system",
