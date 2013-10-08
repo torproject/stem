@@ -81,6 +81,8 @@ SINGLE_FIELDS = (
   "ntor-onion-key",
 )
 
+DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy("reject 1-65535")
+
 
 def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
   """
@@ -242,7 +244,7 @@ class ServerDescriptor(Descriptor):
     self.operating_system = None
     self.uptime = None
     self.exit_policy = None
-    self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy("reject 1-65535")
+    self.exit_policy_v6 = DEFAULT_IPV6_EXIT_POLICY
     self.family = set()
 
     self.average_bandwidth = None
