@@ -712,7 +712,7 @@ class _DocumentHeader(object):
       elif keyword in ("client-versions", "server-versions"):
         for entry in value.split(","):
           try:
-            version_value = stem.version.Version(entry)
+            version_value = stem.version._get_version(entry)
 
             if keyword == 'client-versions':
               self.client_versions.append(version_value)

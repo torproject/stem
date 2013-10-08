@@ -442,7 +442,7 @@ class ServerDescriptor(Descriptor):
           version_str, self.operating_system = platform_match.groups()
 
           try:
-            self.tor_version = stem.version.Version(version_str)
+            self.tor_version = stem.version._get_version(version_str)
           except ValueError:
             pass
       elif keyword == "published":
