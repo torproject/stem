@@ -81,6 +81,9 @@ SINGLE_FIELDS = (
   "ntor-onion-key",
 )
 
+DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy("reject 1-65535")
+REJECT_ALL_POLICY = stem.exit_policy.ExitPolicy("reject *:*")
+
 
 def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
   """
@@ -242,7 +245,7 @@ class ServerDescriptor(Descriptor):
     self.operating_system = None
     self.uptime = None
     self.exit_policy = None
-    self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy("reject 1-65535")
+    self.exit_policy_v6 = DEFAULT_IPV6_EXIT_POLICY
     self.family = set()
 
     self.average_bandwidth = None
@@ -282,7 +285,11 @@ class ServerDescriptor(Descriptor):
 
     entries, policy = _get_descriptor_components(raw_contents, validate, ("accept", "reject"))
 
-    self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
+    if policy == [u'reject *:*']:
+      self.exit_policy = REJECT_ALL_POLICY
+    else:
+      self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
+
     self._parse(entries, validate)
 
     if validate:
@@ -435,7 +442,7 @@ class ServerDescriptor(Descriptor):
           version_str, self.operating_system = platform_match.groups()
 
           try:
-            self.tor_version = stem.version.Version(version_str)
+            self.tor_version = stem.version._get_version(version_str)
           except ValueError:
             pass
       elif keyword == "published":

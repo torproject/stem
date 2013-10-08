@@ -62,6 +62,12 @@ import re
 import stem.util.enum
 import stem.util.system
 
+try:
+  # added in python 3.2
+  from collections import lru_cache
+except ImportError:
+  from stem.util.lru_cache import lru_cache
+
 # cache for the get_system_tor_version function
 VERSION_CACHE = {}
 
@@ -113,6 +119,11 @@ def get_system_tor_version(tor_cmd = "tor"):
       raise IOError("'%s' didn't have any output" % version_cmd)
 
   return VERSION_CACHE[tor_cmd]
+
+
+@lru_cache()
+def _get_version(version_str):
+  return Version(version_str)
 
 
 class Version(object):

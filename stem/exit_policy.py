@@ -56,8 +56,17 @@ exiting to a destination is permissible or not. For instance...
   ============ ===========
 """
 
+import zlib
+
+import stem.prereq
 import stem.util.connection
 import stem.util.enum
+
+try:
+  # added in python 3.2
+  from collections import lru_cache
+except ImportError:
+  from stem.util.lru_cache import lru_cache
 
 AddressType = stem.util.enum.Enum(("WILDCARD", "Wildcard"), ("IPv4", "IPv4"), ("IPv6", "IPv6"))
 
@@ -76,21 +85,6 @@ PRIVATE_ADDRESSES = (
   "172.16.0.0/12",
 )
 
-
-# TODO: The ExitPolicyRule could easily be a mutable class if we did the
-# following...
-#
-# * Provided setter methods that acquired an RLock which also wrapped all of
-#   our current methods to provide thread safety.
-#
-# * Reset our derived attributes (self._addr_bin, self._mask_bin, and
-#   self._str_representation) when we changed something that it was based on.
-#
-# That said, I'm not sure if this is entirely desirable since for most use
-# cases we *want* the caller to have an immutable ExitPolicy (since it
-# reflects something they... well, can't modify). However, I can think of
-# some use cases where we might want to construct custom policies. Maybe make
-# it a CustomExitPolicyRule subclass?
 
 def get_config_policy(rules):
   """
@@ -155,12 +149,29 @@ class ExitPolicy(object):
       if not isinstance(rule, (bytes, unicode, ExitPolicyRule)):
         raise TypeError("Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)" % (type(rule), rules))
 
-    self._rules = None          # lazily loaded series of ExitPolicyRule
-    self._input_rules = rules   # input rules, only kept until self._rules is set
-    self._is_allowed_default = True
-    self._summary_representation = None
-    self._can_exit_to_cache = {}
+    # Unparsed representation of the rules we were constructed with. Our
+    # _get_rules() method consumes this to provide ExitPolicyRule instances.
+    # This is lazily evaluated so we don't need to actually parse the exit
+    # policy if it's never used.
 
+    is_all_str = True
+
+    for rule in rules:
+      if not isinstance(rule, (bytes, unicode)):
+        is_all_str = False
+
+    if rules and is_all_str:
+      self._input_rules = zlib.compress(','.join(rules))
+    else:
+      self._input_rules = rules
+
+    # Result when no rules apply. According to the spec policies default to 'is
+    # allowed', but our microdescriptor policy subclass might want to change
+    # this.
+
+    self._is_allowed_default = True
+
+  @lru_cache()
   def can_exit_to(self, address = None, port = None, strict = False):
     """
     Checks if this policy allows exiting to a given destination or not. If the
@@ -175,18 +186,13 @@ class ExitPolicy(object):
     :returns: **True** if exiting to this destination is allowed, **False** otherwise
     """
 
-    if not (address, port, strict) in self._can_exit_to_cache:
-      result = self._is_allowed_default
+    for rule in self._get_rules():
+      if rule.is_match(address, port, strict):
+        return rule.is_accept
 
-      for rule in self._get_rules():
-        if rule.is_match(address, port, strict):
-          result = rule.is_accept
-          break
+    return self._is_allowed_default
 
-      self._can_exit_to_cache[(address, port, strict)] = result
-
-    return self._can_exit_to_cache[(address, port, strict)]
-
+  @lru_cache()
   def is_exiting_allowed(self):
     """
     Provides **True** if the policy allows exiting whatsoever, **False**
@@ -194,6 +200,7 @@ class ExitPolicy(object):
     """
 
     rejected_ports = set()
+
     for rule in self._get_rules():
       if rule.is_accept:
         for port in xrange(rule.min_port, rule.max_port + 1):
@@ -207,6 +214,7 @@ class ExitPolicy(object):
 
     return self._is_allowed_default
 
+  @lru_cache()
   def summary(self):
     """
     Provides a short description of our policy chain, similar to a
@@ -227,131 +235,115 @@ class ExitPolicy(object):
     :returns: **str** with a concise summary for our policy
     """
 
-    if self._summary_representation is None:
-      # determines if we're a white-list or blacklist
-      is_whitelist = not self._is_allowed_default
+    # determines if we're a white-list or blacklist
+    is_whitelist = not self._is_allowed_default
 
-      for rule in self._get_rules():
-        if rule.is_address_wildcard() and rule.is_port_wildcard():
-          is_whitelist = not rule.is_accept
-          break
+    for rule in self._get_rules():
+      if rule.is_address_wildcard() and rule.is_port_wildcard():
+        is_whitelist = not rule.is_accept
+        break
 
-      # Iterates over the policies and adds the the ports we'll return (ie,
-      # allows if a white-list and rejects if a blacklist). Regardless of a
-      # port's allow/reject policy, all further entries with that port are
-      # ignored since policies respect the first matching policy.
+    # Iterates over the policies and adds the the ports we'll return (ie,
+    # allows if a white-list and rejects if a blacklist). Regardless of a
+    # port's allow/reject policy, all further entries with that port are
+    # ignored since policies respect the first matching policy.
 
-      display_ports, skip_ports = [], set()
+    display_ports, skip_ports = [], set()
 
-      for rule in self._get_rules():
-        if not rule.is_address_wildcard():
+    for rule in self._get_rules():
+      if not rule.is_address_wildcard():
+        continue
+      elif rule.is_port_wildcard():
+        break
+
+      for port in xrange(rule.min_port, rule.max_port + 1):
+        if port in skip_ports:
           continue
-        elif rule.is_port_wildcard():
-          break
 
-        for port in xrange(rule.min_port, rule.max_port + 1):
-          if port in skip_ports:
-            continue
+        # if accept + white-list or reject + blacklist then add
+        if rule.is_accept == is_whitelist:
+          display_ports.append(port)
 
-          # if accept + white-list or reject + blacklist then add
-          if rule.is_accept == is_whitelist:
-            display_ports.append(port)
+        # all further entries with this port should be ignored
+        skip_ports.add(port)
 
-          # all further entries with this port should be ignored
-          skip_ports.add(port)
+    # convert port list to a list of ranges (ie, ['1-3'] rather than [1, 2, 3])
+    if display_ports:
+      display_ranges, temp_range = [], []
+      display_ports.sort()
+      display_ports.append(None)  # ending item to include last range in loop
 
-      # convert port list to a list of ranges (ie, ['1-3'] rather than [1, 2, 3])
-      if display_ports:
-        display_ranges, temp_range = [], []
-        display_ports.sort()
-        display_ports.append(None)  # ending item to include last range in loop
-
-        for port in display_ports:
-          if not temp_range or temp_range[-1] + 1 == port:
-            temp_range.append(port)
-          else:
-            if len(temp_range) > 1:
-              display_ranges.append("%i-%i" % (temp_range[0], temp_range[-1]))
-            else:
-              display_ranges.append(str(temp_range[0]))
-
-            temp_range = [port]
-      else:
-        # everything for the inverse
-        is_whitelist = not is_whitelist
-        display_ranges = ["1-65535"]
-
-      # constructs the summary string
-      label_prefix = "accept " if is_whitelist else "reject "
-
-      self._summary_representation = (label_prefix + ", ".join(display_ranges)).strip()
-
-    return self._summary_representation
-
-  def _set_default_allowed(self, is_allowed_default):
-    """
-    Generally policies end with either an 'reject \*:\*' or 'accept \*:\*'
-    policy, but if it doesn't then is_allowed_default will determine the
-    default response for our :meth:`~stem.exit_policy.ExitPolicy.can_exit_to`
-    method.
-
-    Our default, and tor's, is **True**.
-
-    :param bool is_allowed_default:
-      :meth:`~stem.exit_policy.ExitPolicy.can_exit_to` default when no rules
-      apply
-    """
-
-    self._is_allowed_default = is_allowed_default
-    self._can_exit_to_cache = {}
-
-  def _get_rules(self):
-    if self._rules is None:
-      rules = []
-      is_all_accept, is_all_reject = True, True
-
-      for rule in self._input_rules:
-        if isinstance(rule, (bytes, unicode)):
-          rule = ExitPolicyRule(rule.strip())
-
-        if rule.is_accept:
-          is_all_reject = False
+      for port in display_ports:
+        if not temp_range or temp_range[-1] + 1 == port:
+          temp_range.append(port)
         else:
-          is_all_accept = False
+          if len(temp_range) > 1:
+            display_ranges.append("%i-%i" % (temp_range[0], temp_range[-1]))
+          else:
+            display_ranges.append(str(temp_range[0]))
 
-        rules.append(rule)
+          temp_range = [port]
+    else:
+      # everything for the inverse
+      is_whitelist = not is_whitelist
+      display_ranges = ["1-65535"]
 
-        if rule.is_address_wildcard() and rule.is_port_wildcard():
-          break  # this is a catch-all, no reason to include more
+    # constructs the summary string
+    label_prefix = "accept " if is_whitelist else "reject "
 
-      # If we only have one kind of entry *and* end with a wildcard then
-      # we might as well use the simpler version. For instance...
-      #
-      #   reject *:80, reject *:443, reject *:*
-      #
-      # ... could also be represented as simply...
-      #
-      #   reject *:*
-      #
-      # This mostly comes up with reject-all policies because the
-      # 'reject private:*' appends an extra seven rules that have no
-      # effect.
+    return (label_prefix + ", ".join(display_ranges)).strip()
 
-      if rules and (rules[-1].is_address_wildcard() and rules[-1].is_port_wildcard()):
-        if is_all_accept:
-          rules = [ExitPolicyRule("accept *:*")]
-        elif is_all_reject:
-          rules = [ExitPolicyRule("reject *:*")]
+  @lru_cache()
+  def _get_rules(self):
+    rules = []
+    is_all_accept, is_all_reject = True, True
 
-      self._rules = rules
-      self._input_rules = None
+    if isinstance(self._input_rules, str):
+      decompressed_rules = zlib.decompress(self._input_rules).split(',')
+    else:
+      decompressed_rules = self._input_rules
 
-    return self._rules
+    for rule in decompressed_rules:
+      if isinstance(rule, (bytes, unicode)):
+        rule = ExitPolicyRule(rule.strip())
+
+      if rule.is_accept:
+        is_all_reject = False
+      else:
+        is_all_accept = False
+
+      rules.append(rule)
+
+      if rule.is_address_wildcard() and rule.is_port_wildcard():
+        break  # this is a catch-all, no reason to include more
+
+    # If we only have one kind of entry *and* end with a wildcard then
+    # we might as well use the simpler version. For instance...
+    #
+    #   reject *:80, reject *:443, reject *:*
+    #
+    # ... could also be represented as simply...
+    #
+    #   reject *:*
+    #
+    # This mostly comes up with reject-all policies because the
+    # 'reject private:*' appends an extra seven rules that have no
+    # effect.
+
+    if rules and (rules[-1].is_address_wildcard() and rules[-1].is_port_wildcard()):
+      if is_all_accept:
+        rules = [ExitPolicyRule("accept *:*")]
+      elif is_all_reject:
+        rules = [ExitPolicyRule("reject *:*")]
+
+    self._input_rules = None
+    return rules
 
   def __iter__(self):
     for rule in self._get_rules():
       yield rule
 
+  @lru_cache()
   def __str__(self):
     return ', '.join([str(rule) for rule in self._get_rules()])
 
@@ -430,7 +422,7 @@ class MicroExitPolicy(ExitPolicy):
       rules.append(MicroExitPolicyRule(self.is_accept, int(min_port), int(max_port)))
 
     super(MicroExitPolicy, self).__init__(*rules)
-    self._set_default_allowed(not self.is_accept)
+    self._is_allowed_default = not self.is_accept
 
   def __str__(self):
     return self._policy
@@ -504,12 +496,6 @@ class ExitPolicyRule(object):
     addrspec, portspec = exitpattern.rsplit(":", 1)
     self._apply_addrspec(rule, addrspec)
     self._apply_portspec(rule, portspec)
-
-    # The integer representation of our mask and masked address. These are
-    # lazily loaded and used by our is_match() method to compare ourselves to
-    # other addresses.
-
-    self._mask_bin = self._addr_bin = None
 
     # Lazily loaded string representation of our policy.
 
@@ -700,21 +686,17 @@ class ExitPolicyRule(object):
 
     return self._str_representation
 
+  @lru_cache()
   def _get_mask_bin(self):
     # provides an integer representation of our mask
 
-    if self._mask_bin is None:
-      self._mask_bin = int(stem.util.connection._get_address_binary(self.get_mask(False)), 2)
+    return int(stem.util.connection._get_address_binary(self.get_mask(False)), 2)
 
-    return self._mask_bin
-
+  @lru_cache()
   def _get_address_bin(self):
     # provides an integer representation of our address
 
-    if self._addr_bin is None:
-      self._addr_bin = int(stem.util.connection._get_address_binary(self.address), 2) & self._mask_bin
-
-    return self._addr_bin
+    return int(stem.util.connection._get_address_binary(self.address), 2) & self._get_mask_bin()
 
   def _apply_addrspec(self, rule, addrspec):
     # Parses the addrspec...

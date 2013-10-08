@@ -584,7 +584,7 @@ def _parse_v_line(desc, value, validate):
 
   if value.startswith("Tor "):
     try:
-      desc.version = stem.version.Version(value[4:])
+      desc.version = stem.version._get_version(value[4:])
     except ValueError as exc:
       if validate:
         raise ValueError("%s has a malformed tor version (%s): v %s" % (desc._name(), exc, value))

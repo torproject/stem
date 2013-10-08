@@ -47,28 +47,6 @@ class TestExitPolicy(unittest.TestCase):
     policy = ExitPolicy(*"reject *:80, reject *:443, reject *:*".split(","))
     self.assertEquals(ExitPolicy("reject *:*"), policy)
 
-  def test_set_default_allowed(self):
-    policy = ExitPolicy('reject *:80', 'accept *:443')
-
-    # our default for being allowed defaults to True
-    self.assertFalse(policy.can_exit_to("75.119.206.243", 80))
-    self.assertTrue(policy.can_exit_to("75.119.206.243", 443))
-    self.assertTrue(policy.can_exit_to("75.119.206.243", 999))
-
-    policy._set_default_allowed(False)
-    self.assertFalse(policy.can_exit_to("75.119.206.243", 80))
-    self.assertTrue(policy.can_exit_to("75.119.206.243", 443))
-    self.assertFalse(policy.can_exit_to("75.119.206.243", 999))
-
-    # Our is_exiting_allowed() is also influcenced by this flag if we lack any
-    # 'accept' rules.
-
-    policy = ExitPolicy()
-    self.assertTrue(policy.is_exiting_allowed())
-
-    policy._set_default_allowed(False)
-    self.assertFalse(policy.is_exiting_allowed())
-
   def test_can_exit_to(self):
     # Basic sanity test for our can_exit_to() method. Most of the interesting
     # use cases (ip masks, wildcards, etc) are covered by the ExitPolicyRule
