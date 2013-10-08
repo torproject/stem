@@ -56,6 +56,8 @@ exiting to a destination is permissible or not. For instance...
   ============ ===========
 """
 
+import zlib
+
 import stem.prereq
 import stem.util.connection
 import stem.util.enum
@@ -152,7 +154,16 @@ class ExitPolicy(object):
     # This is lazily evaluated so we don't need to actually parse the exit
     # policy if it's never used.
 
-    self._input_rules = rules
+    is_all_str = True
+
+    for rule in rules:
+      if not isinstance(rule, (bytes, unicode)):
+        is_all_str = False
+
+    if rules and is_all_str:
+      self._input_rules = zlib.compress(','.join(rules))
+    else:
+      self._input_rules = rules
 
     # Result when no rules apply. According to the spec policies default to 'is
     # allowed', but our microdescriptor policy subclass might want to change
@@ -287,7 +298,12 @@ class ExitPolicy(object):
     rules = []
     is_all_accept, is_all_reject = True, True
 
-    for rule in self._input_rules:
+    if isinstance(self._input_rules, str):
+      decompressed_rules = zlib.decompress(self._input_rules).split(',')
+    else:
+      decompressed_rules = self._input_rules
+
+    for rule in decompressed_rules:
       if isinstance(rule, (bytes, unicode)):
         rule = ExitPolicyRule(rule.strip())
 
