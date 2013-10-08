@@ -82,6 +82,7 @@ SINGLE_FIELDS = (
 )
 
 DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy("reject 1-65535")
+REJECT_ALL_POLICY = stem.exit_policy.ExitPolicy("reject *:*")
 
 
 def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
@@ -284,7 +285,11 @@ class ServerDescriptor(Descriptor):
 
     entries, policy = _get_descriptor_components(raw_contents, validate, ("accept", "reject"))
 
-    self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
+    if policy == [u'reject *:*']:
+      self.exit_policy = REJECT_ALL_POLICY
+    else:
+      self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
+
     self._parse(entries, validate)
 
     if validate:
