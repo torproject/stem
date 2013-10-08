@@ -187,6 +187,7 @@ class Version(object):
 
     return self.version_str
 
+  @lru_cache()
   def _compare(self, other, method):
     """
     Compares version ordering according to the spec.
@@ -247,6 +248,7 @@ class Version(object):
 
     return self._compare(other, lambda s, o: s >= o)
 
+  @lru_cache()
   def __hash__(self):
     my_hash = 0
 
