@@ -2,10 +2,7 @@
 # See LICENSE for licensing information
 
 """
-Helper functions for creating mock objects and monkey patching to help with
-testing. With python's builtin unit testing framework the setUp and test
-functions set up mocking, which is then reverted in the tearDown method by
-calling :func:`test.mocking.revert_mocking`.
+Helper functions for creating mock objects.
 
 ::
 
