@@ -59,7 +59,7 @@ class GetInfoResponse(stem.response.ControlMessage):
 
       self.entries[key] = value
 
-  def assert_matches(self, params):
+  def _assert_matches(self, params):
     """
     Checks if we match a given set of parameters, and raise a ProtocolError if not.
 

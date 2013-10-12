@@ -52,6 +52,12 @@ from stem.descriptor import (
   _read_until_keywords,
 )
 
+try:
+  # added in python 3.2
+  from collections import lru_cache
+except ImportError:
+  from stem.util.lru_cache import lru_cache
+
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
   "router",
@@ -273,7 +279,6 @@ class ServerDescriptor(Descriptor):
     self._unrecognized_lines = []
 
     self._annotation_lines = annotations if annotations else []
-    self._annotation_dict = None  # cached breakdown of key/value mappings
 
     # A descriptor contains a series of 'keyword lines' which are simply a
     # keyword followed by an optional value. Lines can also be followed by a
@@ -308,6 +313,7 @@ class ServerDescriptor(Descriptor):
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
 
+  @lru_cache()
   def get_annotations(self):
     """
     Provides content that appeared prior to the descriptor. If this comes from
@@ -321,19 +327,16 @@ class ServerDescriptor(Descriptor):
     :returns: **dict** with the key/value pairs in our annotations
     """
 
-    if self._annotation_dict is None:
-      annotation_dict = {}
+    annotation_dict = {}
 
-      for line in self._annotation_lines:
-        if b" " in line:
-          key, value = line.split(b" ", 1)
-          annotation_dict[key] = value
-        else:
-          annotation_dict[line] = None
+    for line in self._annotation_lines:
+      if b" " in line:
+        key, value = line.split(b" ", 1)
+        annotation_dict[key] = value
+      else:
+        annotation_dict[line] = None
 
-      self._annotation_dict = annotation_dict
-
-    return self._annotation_dict
+    return annotation_dict
 
   def get_annotation_lines(self):
     """
@@ -654,7 +657,6 @@ class RelayDescriptor(ServerDescriptor):
     self.ntor_onion_key = None
     self.signing_key = None
     self.signature = None
-    self._digest = None
 
     super(RelayDescriptor, self).__init__(raw_contents, validate, annotations)
 
@@ -662,6 +664,7 @@ class RelayDescriptor(ServerDescriptor):
     if validate:
       self._validate_content()
 
+  @lru_cache()
   def digest(self):
     """
     Provides the digest of our descriptor's content.
@@ -671,25 +674,22 @@ class RelayDescriptor(ServerDescriptor):
     :raises: ValueError if the digest canot be calculated
     """
 
-    if self._digest is None:
-      # Digest is calculated from everything in the
-      # descriptor except the router-signature.
+    # Digest is calculated from everything in the
+    # descriptor except the router-signature.
 
-      raw_descriptor = self.get_bytes()
-      start_token = b"router "
-      sig_token = b"\nrouter-signature\n"
-      start = raw_descriptor.find(start_token)
-      sig_start = raw_descriptor.find(sig_token)
-      end = sig_start + len(sig_token)
+    raw_descriptor = self.get_bytes()
+    start_token = b"router "
+    sig_token = b"\nrouter-signature\n"
+    start = raw_descriptor.find(start_token)
+    sig_start = raw_descriptor.find(sig_token)
+    end = sig_start + len(sig_token)
 
-      if start >= 0 and sig_start > 0 and end > start:
-        for_digest = raw_descriptor[start:end]
-        digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(for_digest))
-        self._digest = stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
-      else:
-        raise ValueError("unable to calculate digest for descriptor")
-
-    return self._digest
+    if start >= 0 and sig_start > 0 and end > start:
+      for_digest = raw_descriptor[start:end]
+      digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(for_digest))
+      return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
+    else:
+      raise ValueError("unable to calculate digest for descriptor")
 
   def _validate_content(self):
     """
@@ -852,7 +852,6 @@ class BridgeDescriptor(ServerDescriptor):
 
   def __init__(self, raw_contents, validate = True, annotations = None):
     self._digest = None
-    self._scrubbing_issues = None
 
     super(BridgeDescriptor, self).__init__(raw_contents, validate, annotations)
 
@@ -889,6 +888,7 @@ class BridgeDescriptor(ServerDescriptor):
 
     return self.get_scrubbing_issues() == []
 
+  @lru_cache()
   def get_scrubbing_issues(self):
     """
     Provides issues with our scrubbing.
@@ -897,34 +897,31 @@ class BridgeDescriptor(ServerDescriptor):
       scrubbing, this list is empty if we're properly scrubbed
     """
 
-    if self._scrubbing_issues is None:
-      issues = []
+    issues = []
 
-      if not self.address.startswith("10."):
-        issues.append("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
+    if not self.address.startswith("10."):
+      issues.append("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
 
-      if self.contact and self.contact != "somebody":
-        issues.append("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
+    if self.contact and self.contact != "somebody":
+      issues.append("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
 
-      for address, _, is_ipv6 in self.or_addresses:
-        if not is_ipv6 and not address.startswith("10."):
-          issues.append("or-address line's address should be scrubbed to be '10.x.x.x': %s" % address)
-        elif is_ipv6 and not address.startswith("fd9f:2e19:3bcf::"):
-          # TODO: this check isn't quite right because we aren't checking that
-          # the next grouping of hex digits contains 1-2 digits
-          issues.append("or-address line's address should be scrubbed to be 'fd9f:2e19:3bcf::xx:xxxx': %s" % address)
+    for address, _, is_ipv6 in self.or_addresses:
+      if not is_ipv6 and not address.startswith("10."):
+        issues.append("or-address line's address should be scrubbed to be '10.x.x.x': %s" % address)
+      elif is_ipv6 and not address.startswith("fd9f:2e19:3bcf::"):
+        # TODO: this check isn't quite right because we aren't checking that
+        # the next grouping of hex digits contains 1-2 digits
+        issues.append("or-address line's address should be scrubbed to be 'fd9f:2e19:3bcf::xx:xxxx': %s" % address)
 
-      for line in self.get_unrecognized_lines():
-        if line.startswith("onion-key "):
-          issues.append("Bridge descriptors should have their onion-key scrubbed: %s" % line)
-        elif line.startswith("signing-key "):
-          issues.append("Bridge descriptors should have their signing-key scrubbed: %s" % line)
-        elif line.startswith("router-signature "):
-          issues.append("Bridge descriptors should have their signature scrubbed: %s" % line)
+    for line in self.get_unrecognized_lines():
+      if line.startswith("onion-key "):
+        issues.append("Bridge descriptors should have their onion-key scrubbed: %s" % line)
+      elif line.startswith("signing-key "):
+        issues.append("Bridge descriptors should have their signing-key scrubbed: %s" % line)
+      elif line.startswith("router-signature "):
+        issues.append("Bridge descriptors should have their signature scrubbed: %s" % line)
 
-      self._scrubbing_issues = issues
-
-    return self._scrubbing_issues
+    return issues
 
   def _required_fields(self):
     # bridge required fields are the same as a relay descriptor, minus items

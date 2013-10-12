@@ -53,15 +53,17 @@ import stem.util.enum
 
 from stem.util import log
 
-# cached system values
-IS_PROC_AVAILABLE, SYS_START_TIME, SYS_PHYSICAL_MEMORY = None, None, None
-CLOCK_TICKS = None
+try:
+  # added in python 3.2
+  from collections import lru_cache
+except ImportError:
+  from stem.util.lru_cache import lru_cache
 
 # os.sysconf is only defined on unix
 try:
   CLOCK_TICKS = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
 except AttributeError:
-  pass
+  CLOCK_TICKS = None
 
 Stat = stem.util.enum.Enum(
   ("COMMAND", "command"), ("CPU_UTIME", "utime"),
@@ -69,6 +71,7 @@ Stat = stem.util.enum.Enum(
 )
 
 
+@lru_cache()
 def is_available():
   """
   Checks if proc information is available on this platform.
@@ -76,26 +79,20 @@ def is_available():
   :returns: **True** if proc contents exist on this platform, **False** otherwise
   """
 
-  global IS_PROC_AVAILABLE
+  if platform.system() != "Linux":
+    return False
+  else:
+    # list of process independent proc paths we use
+    proc_paths = ("/proc/stat", "/proc/meminfo", "/proc/net/tcp", "/proc/net/udp")
 
-  if IS_PROC_AVAILABLE is None:
-    if platform.system() != "Linux":
-      IS_PROC_AVAILABLE = False
-    else:
-      # list of process independent proc paths we use
-      proc_paths = ("/proc/stat", "/proc/meminfo", "/proc/net/tcp", "/proc/net/udp")
-      proc_paths_exist = True
+    for path in proc_paths:
+      if not os.path.exists(path):
+        return False
 
-      for path in proc_paths:
-        if not os.path.exists(path):
-          proc_paths_exist = False
-          break
-
-      IS_PROC_AVAILABLE = proc_paths_exist
-
-  return IS_PROC_AVAILABLE
+    return True
 
 
+@lru_cache()
 def get_system_start_time():
   """
   Provides the unix time (seconds since epoch) when the system started.
@@ -105,22 +102,20 @@ def get_system_start_time():
   :raises: **IOError** if it can't be determined
   """
 
-  global SYS_START_TIME
-  if not SYS_START_TIME:
-    start_time, parameter = time.time(), "system start time"
-    btime_line = _get_line("/proc/stat", "btime", parameter)
+  start_time, parameter = time.time(), "system start time"
+  btime_line = _get_line("/proc/stat", "btime", parameter)
 
-    try:
-      SYS_START_TIME = float(btime_line.strip().split()[1])
-      _log_runtime(parameter, "/proc/stat[btime]", start_time)
-    except:
-      exc = IOError("unable to parse the /proc/stat btime entry: %s" % btime_line)
-      _log_failure(parameter, exc)
-      raise exc
-
-  return SYS_START_TIME
+  try:
+    result = float(btime_line.strip().split()[1])
+    _log_runtime(parameter, "/proc/stat[btime]", start_time)
+    return result
+  except:
+    exc = IOError("unable to parse the /proc/stat btime entry: %s" % btime_line)
+    _log_failure(parameter, exc)
+    raise exc
 
 
+@lru_cache()
 def get_physical_memory():
   """
   Provides the total physical memory on the system in bytes.
@@ -130,20 +125,17 @@ def get_physical_memory():
   :raises: **IOError** if it can't be determined
   """
 
-  global SYS_PHYSICAL_MEMORY
-  if not SYS_PHYSICAL_MEMORY:
-    start_time, parameter = time.time(), "system physical memory"
-    mem_total_line = _get_line("/proc/meminfo", "MemTotal:", parameter)
+  start_time, parameter = time.time(), "system physical memory"
+  mem_total_line = _get_line("/proc/meminfo", "MemTotal:", parameter)
 
-    try:
-      SYS_PHYSICAL_MEMORY = int(mem_total_line.split()[1]) * 1024
-      _log_runtime(parameter, "/proc/meminfo[MemTotal]", start_time)
-    except:
-      exc = IOError("unable to parse the /proc/meminfo MemTotal entry: %s" % mem_total_line)
-      _log_failure(parameter, exc)
-      raise exc
-
-  return SYS_PHYSICAL_MEMORY
+  try:
+    result = int(mem_total_line.split()[1]) * 1024
+    _log_runtime(parameter, "/proc/meminfo[MemTotal]", start_time)
+    return result
+  except:
+    exc = IOError("unable to parse the /proc/meminfo MemTotal entry: %s" % mem_total_line)
+    _log_failure(parameter, exc)
+    raise exc
 
 
 def get_cwd(pid):

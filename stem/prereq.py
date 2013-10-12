@@ -22,8 +22,13 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
 import inspect
 import sys
 
-IS_CRYPTO_AVAILABLE = None
-IS_MOCK_AVAILABLE = None
+try:
+  # added in python 3.2
+  from collections import lru_cache
+except ImportError:
+  from stem.util.lru_cache import lru_cache
+
+CRYPTO_UNAVAILABLE = "Unable to import the pycrypto module. Because of this we'll be unable to verify descriptor signature integrity. You can get pycrypto from: https://www.dlitz.net/software/pycrypto/"
 
 
 def check_requirements():
@@ -62,33 +67,28 @@ def is_python_3():
   return sys.version_info[0] == 3
 
 
+@lru_cache()
 def is_crypto_available():
   """
-  Checks if the pycrypto functions we use are available.
+  Checks if the pycrypto functions we use are available. This is used for
+  verifying relay descriptor signatures.
 
   :returns: **True** if we can use pycrypto and **False** otherwise
   """
 
-  global IS_CRYPTO_AVAILABLE
+  from stem.util import log
 
-  if IS_CRYPTO_AVAILABLE is None:
-    from stem.util import log
-
-    try:
-      from Crypto.PublicKey import RSA
-      from Crypto.Util import asn1
-      from Crypto.Util.number import long_to_bytes
-      IS_CRYPTO_AVAILABLE = True
-    except ImportError:
-      IS_CRYPTO_AVAILABLE = False
-
-      # the code that verifies relay descriptor signatures uses the python-crypto library
-      msg = "Unable to import the pycrypto module. Because of this we'll be unable to verify descriptor signature integrity. You can get pycrypto from: https://www.dlitz.net/software/pycrypto/"
-      log.log_once("stem.prereq.is_crypto_available", log.INFO, msg)
-
-  return IS_CRYPTO_AVAILABLE
+  try:
+    from Crypto.PublicKey import RSA
+    from Crypto.Util import asn1
+    from Crypto.Util.number import long_to_bytes
+    return True
+  except ImportError:
+    log.log_once("stem.prereq.is_crypto_available", log.INFO, CRYPTO_UNAVAILABLE)
+    return False
 
 
+@lru_cache()
 def is_mock_available():
   """
   Checks if the mock module is available.
@@ -96,24 +96,19 @@ def is_mock_available():
   :returns: **True** if the mock module is available and **False** otherwise
   """
 
-  global IS_MOCK_AVAILABLE
+  try:
+    import mock
 
-  if IS_MOCK_AVAILABLE is None:
-    try:
-      import mock
+    # check for mock's patch.dict() which was introduced in version 0.7.0
 
-      # check for mock's patch.dict() which was introduced in version 0.7.0
+    if not hasattr(mock.patch, 'dict'):
+      raise ImportError()
 
-      if not hasattr(mock.patch, 'dict'):
-        raise ImportError()
+    # check for mock's new_callable argument for patch() which was introduced in version 0.8.0
 
-      # check for mock's new_callable argument for patch() which was introduced in version 0.8.0
+    if not 'new_callable' in inspect.getargspec(mock.patch).args:
+      raise ImportError()
 
-      if not 'new_callable' in inspect.getargspec(mock.patch).args:
-        raise ImportError()
-
-      IS_MOCK_AVAILABLE = True
-    except ImportError:
-      IS_MOCK_AVAILABLE = False
-
-  return IS_MOCK_AVAILABLE
+    return True
+  except ImportError:
+    return False

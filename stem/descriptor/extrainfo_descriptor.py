@@ -82,6 +82,12 @@ from stem.descriptor import (
   _get_descriptor_components,
 )
 
+try:
+  # added in python 3.2
+  from collections import lru_cache
+except ImportError:
+  from stem.util.lru_cache import lru_cache
+
 # known statuses for dirreq-v2-resp and dirreq-v3-resp...
 DirResponse = stem.util.enum.Enum(
   ("OK", "ok"),
@@ -856,18 +862,15 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
 
   def __init__(self, raw_contents, validate = True):
     self.signature = None
-    self._digest = None
 
     super(RelayExtraInfoDescriptor, self).__init__(raw_contents, validate)
 
+  @lru_cache()
   def digest(self):
-    if self._digest is None:
-      # our digest is calculated from everything except our signature
-      raw_content, ending = str(self), "\nrouter-signature\n"
-      raw_content = raw_content[:raw_content.find(ending) + len(ending)]
-      self._digest = hashlib.sha1(stem.util.str_tools._to_bytes(raw_content)).hexdigest().upper()
-
-    return self._digest
+    # our digest is calculated from everything except our signature
+    raw_content, ending = str(self), "\nrouter-signature\n"
+    raw_content = raw_content[:raw_content.find(ending) + len(ending)]
+    return hashlib.sha1(stem.util.str_tools._to_bytes(raw_content)).hexdigest().upper()
 
   def _parse(self, entries, validate):
     entries = dict(entries)  # shallow copy since we're destructive

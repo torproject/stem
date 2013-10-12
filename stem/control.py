@@ -802,7 +802,7 @@ class Controller(BaseController):
     try:
       response = self.msg("GETINFO %s" % " ".join(params))
       stem.response.convert("GETINFO", response)
-      response.assert_matches(params)
+      response._assert_matches(params)
 
       # usually we want unicode values under python 3.x
 

@@ -75,6 +75,12 @@ from stem.descriptor import (
   _read_until_keywords,
 )
 
+try:
+  # added in python 3.2
+  from collections import lru_cache
+except ImportError:
+  from stem.util.lru_cache import lru_cache
+
 REQUIRED_FIELDS = (
   "onion-key",
 )
@@ -178,7 +184,6 @@ class Microdescriptor(Descriptor):
     self._unrecognized_lines = []
 
     self._annotation_lines = annotations if annotations else []
-    self._annotation_dict = None  # cached breakdown of key/value mappings
 
     entries = _get_descriptor_components(raw_contents, validate)
     self._parse(entries, validate)
@@ -189,6 +194,7 @@ class Microdescriptor(Descriptor):
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
 
+  @lru_cache()
   def get_annotations(self):
     """
     Provides content that appeared prior to the descriptor. If this comes from
@@ -201,19 +207,16 @@ class Microdescriptor(Descriptor):
     :returns: **dict** with the key/value pairs in our annotations
     """
 
-    if self._annotation_dict is None:
-      annotation_dict = {}
+    annotation_dict = {}
 
-      for line in self._annotation_lines:
-        if b" " in line:
-          key, value = line.split(b" ", 1)
-          annotation_dict[key] = value
-        else:
-          annotation_dict[line] = None
+    for line in self._annotation_lines:
+      if b" " in line:
+        key, value = line.split(b" ", 1)
+        annotation_dict[key] = value
+      else:
+        annotation_dict[line] = None
 
-      self._annotation_dict = annotation_dict
-
-    return self._annotation_dict
+    return annotation_dict
 
   def get_annotation_lines(self):
     """
