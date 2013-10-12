@@ -15,7 +15,11 @@ import stem.util.system
 import stem.version
 import test.runner
 
-from mock import patch
+try:
+  # added in python 3.3
+  from unittest.mock import patch
+except ImportError:
+  from mock import patch
 
 
 class TestProcess(unittest.TestCase):

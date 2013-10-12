@@ -12,7 +12,11 @@ import stem.util.proc
 import stem.util.system
 import test.runner
 
-from mock import Mock, patch
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
 
 
 def filter_system_call(prefixes):

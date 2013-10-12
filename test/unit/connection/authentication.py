@@ -13,10 +13,14 @@ import unittest
 
 import stem.connection
 
-from mock import Mock, patch
-
 from stem.util import log
 from test import mocking
+
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
 
 
 class TestAuthenticate(unittest.TestCase):

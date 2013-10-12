@@ -7,7 +7,11 @@ import unittest
 
 import stem.descriptor.reader
 
-from mock import patch
+try:
+  # added in python 3.3
+  from unittest.mock import patch
+except ImportError:
+  from mock import patch
 
 
 class TestDescriptorReader(unittest.TestCase):

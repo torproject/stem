@@ -6,12 +6,16 @@ import io
 import StringIO
 import unittest
 
-from mock import Mock, patch
-
 from stem.control import Controller
 from stem.descriptor.reader import DescriptorReader
 from stem.descriptor.server_descriptor import RelayDescriptor
 from test import mocking
+
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
 
 MIRROR_MIRROR_OUTPUT = """\
 1. speedyexit (102.13 KB/s)

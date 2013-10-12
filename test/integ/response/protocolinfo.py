@@ -11,9 +11,13 @@ import stem.util.system
 import stem.version
 import test.runner
 
-from mock import Mock, patch
-
 from test.integ.util.system import filter_system_call
+
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
 
 
 class TestProtocolInfo(unittest.TestCase):

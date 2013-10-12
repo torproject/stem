@@ -91,10 +91,27 @@ def is_crypto_available():
 @lru_cache()
 def is_mock_available():
   """
-  Checks if the mock module is available.
+  Checks if the mock module is available. In python 3.3 and up it is a builtin
+  unittest module, but before this it needed to be `installed separately
+  <https://pypi.python.org/pypi/mock/>`_. Imports should be as follows....
+
+  ::
+
+    try:
+      # added in python 3.3
+      from unittest.mock import Mock
+    except ImportError:
+      from mock import Mock
 
   :returns: **True** if the mock module is available and **False** otherwise
   """
+
+  try:
+    # checks for python 3.3 version
+    import unittest.mock
+    return True
+  except ImportError:
+    pass
 
   try:
     import mock

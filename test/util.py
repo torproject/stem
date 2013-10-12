@@ -380,7 +380,11 @@ def check_pycrypto_version():
 
 def check_mock_version():
   if stem.prereq.is_mock_available():
-    import mock
+    try:
+      import unittest.mock as mock
+    except ImportError:
+      import mock
+
     return mock.__version__
   else:
     return "missing"

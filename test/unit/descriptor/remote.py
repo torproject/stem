@@ -8,7 +8,11 @@ import unittest
 
 import stem.descriptor.remote
 
-from mock import patch
+try:
+  # added in python 3.3
+  from unittest.mock import patch
+except ImportError:
+  from mock import patch
 
 # Output from requesting moria1's descriptor from itself...
 # % curl http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31
