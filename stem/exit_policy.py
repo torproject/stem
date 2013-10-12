@@ -61,6 +61,7 @@ import zlib
 import stem.prereq
 import stem.util.connection
 import stem.util.enum
+import stem.util.str_tools
 
 try:
   # added in python 3.2
@@ -161,7 +162,8 @@ class ExitPolicy(object):
         is_all_str = False
 
     if rules and is_all_str:
-      self._input_rules = zlib.compress(','.join(rules))
+      byte_rules = [stem.util.str_tools._to_bytes(r) for r in rules]
+      self._input_rules = zlib.compress(b','.join(byte_rules))
     else:
       self._input_rules = rules
 
