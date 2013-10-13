@@ -502,6 +502,7 @@ class ExitPolicyRule(object):
     self._address_type = None
     self._masked_bits = None
     self.min_port = self.max_port = None
+    self._hash = None
 
     # Our mask in ip notation (ex. "255.255.255.0"). This is only set if we
     # either have a custom mask that can't be represented by a number of bits,
@@ -697,20 +698,23 @@ class ExitPolicyRule(object):
     return label
 
   def __hash__(self):
-    my_hash = 0
+    if self._hash is None:
+      my_hash = 0
 
-    for attr in ("is_accept", "address", "min_port", "max_port"):
+      for attr in ("is_accept", "address", "min_port", "max_port"):
+        my_hash *= 1024
+
+        attr_value = getattr(self, attr)
+
+        if attr_value is not None:
+          my_hash += hash(attr_value)
+
       my_hash *= 1024
+      my_hash += hash(self.get_mask(False))
 
-      attr_value = getattr(self, attr)
+      self._hash = my_hash
 
-      if attr_value is not None:
-        my_hash += hash(attr_value)
-
-    my_hash *= 1024
-    my_hash += hash(self.get_mask(False))
-
-    return my_hash
+    return self._hash
 
   @lru_cache()
   def _get_mask_bin(self):
@@ -845,6 +849,7 @@ class MicroExitPolicyRule(ExitPolicyRule):
     self.address = None  # wildcard address
     self.min_port = min_port
     self.max_port = max_port
+    self._hash = None
 
   def is_address_wildcard(self):
     return True
@@ -859,14 +864,17 @@ class MicroExitPolicyRule(ExitPolicyRule):
     return None
 
   def __hash__(self):
-    my_hash = 0
+    if self._hash is None:
+      my_hash = 0
 
-    for attr in ("is_accept", "min_port", "max_port"):
-      my_hash *= 1024
+      for attr in ("is_accept", "min_port", "max_port"):
+        my_hash *= 1024
 
-      attr_value = getattr(self, attr)
+        attr_value = getattr(self, attr)
 
-      if attr_value is not None:
-        my_hash += hash(attr_value)
+        if attr_value is not None:
+          my_hash += hash(attr_value)
 
-    return my_hash
+      self._hash = my_hash
+
+    return self._hash

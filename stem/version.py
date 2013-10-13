@@ -150,6 +150,7 @@ class Version(object):
   def __init__(self, version_str):
     self.version_str = version_str
     version_parts = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?( \(\S*\))?$', version_str)
+    self._hash = None
 
     if version_parts:
       major, minor, micro, patch, status, extra = version_parts.groups()
@@ -248,17 +249,20 @@ class Version(object):
     return self._compare(other, lambda s, o: s >= o)
 
   def __hash__(self):
-    my_hash = 0
+    if self._hash is None:
+      my_hash = 0
 
-    for attr in ("major", "minor", "micro", "patch", "status"):
-      my_hash *= 1024
+      for attr in ("major", "minor", "micro", "patch", "status"):
+        my_hash *= 1024
 
-      attr_value = getattr(self, attr)
+        attr_value = getattr(self, attr)
 
-      if attr_value is not None:
-        my_hash += hash(attr_value)
+        if attr_value is not None:
+          my_hash += hash(attr_value)
 
-    return my_hash
+      self._hash = my_hash
+
+    return self._hash
 
 
 class _VersionRequirements(object):
