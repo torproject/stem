@@ -371,7 +371,9 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   :param int end_position: end if we reach this point in the file
   :param bool include_ending_keyword: provides the keyword we broke on if **True**
 
-  :returns: **list** with the lines until we find one of the keywords, this is a two value tuple with the ending keyword if include_ending_keyword is **True**
+  :returns: **list** with the lines until we find one of the keywords, this is
+    a two value tuple with the ending keyword if include_ending_keyword is
+    **True**
   """
 
   content = None if skip else []

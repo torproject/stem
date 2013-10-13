@@ -174,7 +174,7 @@ GM9hAsAMRX9Ogqhq5UjDNqEsvDKuyVeyh7unSZEOip9Zr6K/+7VsVPNb8vfBRBjo
 
     cert_path = get_resource("metrics_cert")
 
-    with open(cert_path) as cert_file:
+    with open(cert_path, 'rb') as cert_file:
       cert = next(stem.descriptor.parse_file(cert_file))
       self.assertEquals(3, cert.version)
       self.assertEquals(None, cert.address)
