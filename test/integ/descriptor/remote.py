@@ -31,19 +31,19 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     queries = []
 
-    for authority, (address, dirport) in stem.descriptor.remote.DIRECTORY_AUTHORITIES.items():
-      queries.append(stem.descriptor.remote.Query(
+    for nickname, authority in stem.descriptor.remote.get_authorities().items():
+      queries.append((stem.descriptor.remote.Query(
         '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
         'server-descriptor 1.0',
-        endpoints = [(address, dirport)],
+        endpoints = [(authority.address, authority.dir_port)],
         timeout = 30,
-      ))
+      ), authority))
 
-    for query in queries:
+    for query, authority in queries:
       try:
         descriptors = list(query.run())
       except Exception as exc:
-        self.fail("Unable to use %s (%s:%s, %s): %s" % (authority, address, dirport, type(exc), exc))
+        self.fail("Unable to use %s (%s:%s, %s): %s" % (authority.nickname, authority.address, authority.dir_port, type(exc), exc))
 
       self.assertEqual(1, len(descriptors))
       self.assertEqual('moria1', descriptors[0].nickname)

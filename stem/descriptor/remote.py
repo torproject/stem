@@ -415,7 +415,7 @@ class DescriptorDownloader(object):
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
 
-    for desc in consensus.routers:
+    for desc in consensus.routers.values():
       if Flag.V2DIR in desc.flags:
         new_endpoints.add((desc.address, desc.dir_port))
 
