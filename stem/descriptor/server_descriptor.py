@@ -154,7 +154,8 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
         yield RelayDescriptor(descriptor_text, validate, annotations, **kwargs)
     else:
       if validate and annotations:
-        raise ValueError('Content conform to being a server descriptor:\n%s' % '\n'.join(annotations))
+        orphaned_annotations = stem.util.str_tools._to_unicode(b'\n'.join(annotations))
+        raise ValueError('Content conform to being a server descriptor:\n%s' % orphaned_annotations)
 
       break  # done parsing descriptors
 
