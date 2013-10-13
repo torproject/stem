@@ -349,6 +349,14 @@ class ExitPolicy(object):
   def __str__(self):
     return ', '.join([str(rule) for rule in self._get_rules()])
 
+  def __hash__(self):
+    # TODO: It would be nice to provide a real hash function, but doing so is
+    # tricky due to how we lazily load the rules. Like equality checks a proper
+    # hash function would need to call _get_rules(), but that's behind
+    # @lru_cache which calls hash() forming a circular dependency.
+
+    return id(self)
+
   def __eq__(self, other):
     if isinstance(other, ExitPolicy):
       return self._get_rules() == list(other)
@@ -428,6 +436,9 @@ class MicroExitPolicy(ExitPolicy):
 
   def __str__(self):
     return self._policy
+
+  def __hash__(self):
+    return id(self)
 
   def __eq__(self, other):
     if isinstance(other, MicroExitPolicy):
@@ -682,6 +693,22 @@ class ExitPolicyRule(object):
 
     return label
 
+  def __hash__(self):
+    my_hash = 0
+
+    for attr in ("is_accept", "address", "min_port", "max_port"):
+      my_hash *= 1024
+
+      attr_value = getattr(self, attr)
+
+      if attr_value is not None:
+        my_hash += hash(attr_value)
+
+    my_hash *= 1024
+    my_hash += hash(self.get_mask(False))
+
+    return my_hash
+
   @lru_cache()
   def _get_mask_bin(self):
     # provides an integer representation of our mask
@@ -792,7 +819,7 @@ class ExitPolicyRule(object):
       # 0.0.0.0/0" == "accept 0.0.0.0/0.0.0.0" will be True), but these
       # policies are effectively equivalent.
 
-      return str(self) == str(other)
+      return hash(self) == hash(other)
     else:
       return False
 
@@ -827,3 +854,16 @@ class MicroExitPolicyRule(ExitPolicyRule):
 
   def get_masked_bits(self):
     return None
+
+  def __hash__(self):
+    my_hash = 0
+
+    for attr in ("is_accept", "min_port", "max_port"):
+      my_hash *= 1024
+
+      attr_value = getattr(self, attr)
+
+      if attr_value is not None:
+        my_hash += hash(attr_value)
+
+    return my_hash
