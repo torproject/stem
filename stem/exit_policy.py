@@ -300,13 +300,16 @@ class ExitPolicy(object):
     rules = []
     is_all_accept, is_all_reject = True, True
 
-    if isinstance(self._input_rules, str):
-      decompressed_rules = zlib.decompress(self._input_rules).split(',')
+    if isinstance(self._input_rules, bytes):
+      decompressed_rules = zlib.decompress(self._input_rules).split(b',')
     else:
       decompressed_rules = self._input_rules
 
     for rule in decompressed_rules:
-      if isinstance(rule, (bytes, unicode)):
+      if isinstance(rule, bytes):
+        rule = stem.util.str_tools._to_unicode(rule)
+
+      if isinstance(rule, unicode):
         rule = ExitPolicyRule(rule.strip())
 
       if rule.is_accept:
