@@ -6,6 +6,7 @@ import io
 import socket
 import unittest
 
+import stem.prereq
 import stem.descriptor.remote
 
 try:
@@ -13,6 +14,12 @@ try:
   from unittest.mock import patch
 except ImportError:
   from mock import patch
+
+# The urlopen() method is in a different location depending on if we're using
+# python 2.x or 3.x. The 2to3 converter accounts for this in imports, but not
+# mock annotations.
+
+URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
 
 # Output from requesting moria1's descriptor from itself...
 # % curl http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31
@@ -53,7 +60,7 @@ iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
 
 
 class TestDescriptorDownloader(unittest.TestCase):
-  @patch('urllib2.urlopen')
+  @patch(URL_OPEN)
   def test_query_download(self, urlopen_mock):
     """
     Check Query functionality when we successfully download a descriptor.
@@ -81,7 +88,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     urlopen_mock.assert_called_once_with(expeced_url, timeout = None)
 
-  @patch('urllib2.urlopen')
+  @patch(URL_OPEN)
   def test_query_with_malformed_content(self, urlopen_mock):
     """
     Query with malformed descriptor content.
@@ -109,7 +116,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertRaises(ValueError, query.run)
 
-  @patch('urllib2.urlopen')
+  @patch(URL_OPEN)
   def test_query_with_timeout(self, urlopen_mock):
     urlopen_mock.side_effect = socket.timeout('connection timed out')
 
@@ -128,7 +135,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
     self.assertEqual(3, urlopen_mock.call_count)
 
-  @patch('urllib2.urlopen')
+  @patch(URL_OPEN)
   def test_can_iterate_multiple_times(self, urlopen_mock):
     urlopen_mock.return_value = io.BytesIO(TEST_DESCRIPTOR)
 
