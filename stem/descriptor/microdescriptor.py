@@ -296,6 +296,9 @@ class Microdescriptor(Descriptor):
 
     return method(str(self).strip(), str(other).strip())
 
+  def __hash__(self):
+    return hash(str(self).strip())
+
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 

@@ -441,7 +441,7 @@ class MicroExitPolicy(ExitPolicy):
     return self._policy
 
   def __hash__(self):
-    return id(self)
+    return hash(str(self))
 
   def __eq__(self, other):
     if isinstance(other, MicroExitPolicy):
