@@ -499,10 +499,6 @@ class ExitPolicyRule(object):
     self._apply_addrspec(rule, addrspec)
     self._apply_portspec(rule, portspec)
 
-    # Lazily loaded string representation of our policy.
-
-    self._str_representation = None
-
     # If true then a submask of /0 is treated by is_address_wildcard() as being
     # a wildcard.
 
@@ -642,6 +638,7 @@ class ExitPolicyRule(object):
 
     return self._masked_bits
 
+  @lru_cache()
   def __str__(self):
     """
     Provides the string representation of our policy. This does not
@@ -651,42 +648,39 @@ class ExitPolicyRule(object):
     to re-create this rule.
     """
 
-    if self._str_representation is None:
-      label = "accept " if self.is_accept else "reject "
+    label = "accept " if self.is_accept else "reject "
 
-      if self.is_address_wildcard():
-        label += "*:"
+    if self.is_address_wildcard():
+      label += "*:"
+    else:
+      address_type = self.get_address_type()
+
+      if address_type == AddressType.IPv4:
+        label += self.address
       else:
-        address_type = self.get_address_type()
+        label += "[%s]" % self.address
 
-        if address_type == AddressType.IPv4:
-          label += self.address
-        else:
-          label += "[%s]" % self.address
+      # Including our mask label as follows...
+      # - exclude our mask if it doesn't do anything
+      # - use our masked bit count if we can
+      # - use the mask itself otherwise
 
-        # Including our mask label as follows...
-        # - exclude our mask if it doesn't do anything
-        # - use our masked bit count if we can
-        # - use the mask itself otherwise
-
-        if (address_type == AddressType.IPv4 and self._masked_bits == 32) or \
-           (address_type == AddressType.IPv6 and self._masked_bits == 128):
-          label += ":"
-        elif self._masked_bits is not None:
-          label += "/%i:" % self._masked_bits
-        else:
-          label += "/%s:" % self.get_mask()
-
-      if self.is_port_wildcard():
-        label += "*"
-      elif self.min_port == self.max_port:
-        label += str(self.min_port)
+      if (address_type == AddressType.IPv4 and self._masked_bits == 32) or \
+         (address_type == AddressType.IPv6 and self._masked_bits == 128):
+        label += ":"
+      elif self._masked_bits is not None:
+        label += "/%i:" % self._masked_bits
       else:
-        label += "%i-%i" % (self.min_port, self.max_port)
+        label += "/%s:" % self.get_mask()
 
-      self._str_representation = label
+    if self.is_port_wildcard():
+      label += "*"
+    elif self.min_port == self.max_port:
+      label += str(self.min_port)
+    else:
+      label += "%i-%i" % (self.min_port, self.max_port)
 
-    return self._str_representation
+    return label
 
   @lru_cache()
   def _get_mask_bin(self):
@@ -821,7 +815,6 @@ class MicroExitPolicyRule(ExitPolicyRule):
     self.address = None  # wildcard address
     self.min_port = min_port
     self.max_port = max_port
-    self._str_representation = None
 
   def is_address_wildcard(self):
     return True
