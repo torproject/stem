@@ -55,7 +55,7 @@ from stem.util import log
 
 try:
   # added in python 3.2
-  from collections import lru_cache
+  from functools import lru_cache
 except ImportError:
   from stem.util.lru_cache import lru_cache
 
