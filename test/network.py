@@ -20,6 +20,8 @@ import socket
 import struct
 
 import stem.util.connection
+import stem.util.str_tools
+
 from stem import ProtocolError, SocketError
 
 # Store a reference to the original class so we can find it after
@@ -318,11 +320,11 @@ def negotiate_socks(sock, host, port):
   """
 
   # SOCKS4a request here - http://en.wikipedia.org/wiki/SOCKS#Protocol
-  request = "\x04\x01" + struct.pack("!H", port) + "\x00\x00\x00\x01" + "\x00" + host + "\x00"
+  request = b"\x04\x01" + struct.pack("!H", port) + b"\x00\x00\x00\x01" + b"\x00" + stem.util.str_tools._to_bytes(host) + b"\x00"
   sock.sendall(request)
   response = sock.recv(8)
 
-  if len(response) != 8 or response[0] != "\x00" or response[1] != "\x5a":
+  if len(response) != 8 or response[0:2] != b"\x00\x5a":
     sock.close()
     raise ProtocolError(error_msgs.get(response[1], "SOCKS server returned unrecognized error code"))
 

@@ -16,6 +16,7 @@ import stem.descriptor.reader
 import stem.descriptor.router_status_entry
 import stem.response.protocolinfo
 import stem.socket
+import stem.util.str_tools
 import stem.version
 import test.network
 import test.runner
@@ -811,7 +812,7 @@ class TestController(unittest.TestCase):
           s.settimeout(30)
           s.connect(('127.0.0.1', int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])))
           test.network.negotiate_socks(s, '1.2.1.2', 80)
-          s.sendall(test.network.ip_request)  # make the http request for the ip address
+          s.sendall(stem.util.str_tools._to_bytes(test.network.ip_request))  # make the http request for the ip address
           response = s.recv(1000)
 
           if response:
@@ -826,9 +827,9 @@ class TestController(unittest.TestCase):
 
       # everything after the blank line is the 'data' in a HTTP response.
       # The response data for our request for request should be an IP address + '\n'
-      ip_addr = response[response.find("\r\n\r\n"):].strip()
+      ip_addr = response[response.find(b"\r\n\r\n"):].strip()
 
-      self.assertTrue(stem.util.connection.is_valid_ipv4_address(ip_addr))
+      self.assertTrue(stem.util.connection.is_valid_ipv4_address(stem.util.str_tools._to_unicode(ip_addr)))
 
   def test_get_microdescriptor(self):
     """
