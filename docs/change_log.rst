@@ -38,6 +38,11 @@ Unreleased
 The following are only available within stem's `git repository
 <download.html>`_.
 
+.. _version_1.1:
+
+Version 1.1
+-----------
+
  * **Controller**
 
   * :func:`~stem.control.Controller.get_network_status` and :func:`~stem.control.Controller.get_network_statuses` now provide v3 rather than v2 directory information (:trac:`7953`, :spec:`d2b7ebb`)
