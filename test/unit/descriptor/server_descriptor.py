@@ -11,13 +11,17 @@ import stem.exit_policy
 import stem.prereq
 import stem.util.str_tools
 
-from mock import Mock, patch
-
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 
 from test.mocking import get_relay_server_descriptor, \
                          get_bridge_server_descriptor, \
                          CRYPTO_BLOB
+
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
 
 
 class TestServerDescriptor(unittest.TestCase):

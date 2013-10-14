@@ -54,7 +54,7 @@ from stem.descriptor import (
 
 try:
   # added in python 3.2
-  from collections import lru_cache
+  from functools import lru_cache
 except ImportError:
   from stem.util.lru_cache import lru_cache
 
@@ -154,7 +154,8 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
         yield RelayDescriptor(descriptor_text, validate, annotations, **kwargs)
     else:
       if validate and annotations:
-        raise ValueError('Content conform to being a server descriptor:\n%s' % '\n'.join(annotations))
+        orphaned_annotations = stem.util.str_tools._to_unicode(b'\n'.join(annotations))
+        raise ValueError('Content conform to being a server descriptor:\n%s' % orphaned_annotations)
 
       break  # done parsing descriptors
 
@@ -820,6 +821,9 @@ class RelayDescriptor(ServerDescriptor):
 
     return method(str(self).strip(), str(other).strip())
 
+  def __hash__(self):
+    return hash(str(self).strip())
+
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 
@@ -950,6 +954,9 @@ class BridgeDescriptor(ServerDescriptor):
       return False
 
     return method(str(self).strip(), str(other).strip())
+
+  def __hash__(self):
+    return hash(str(self).strip())
 
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)

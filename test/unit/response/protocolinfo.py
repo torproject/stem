@@ -12,10 +12,14 @@ import stem.util.proc
 import stem.util.system
 import stem.version
 
-from mock import Mock, patch
-
 from stem.response.protocolinfo import AuthMethod
 from test import mocking
+
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
 
 NO_AUTH = """250-PROTOCOLINFO 1
 250-AUTH METHODS=NULL

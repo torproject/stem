@@ -12,12 +12,16 @@ import stem.socket
 import stem.util.system
 import stem.version
 
-from mock import Mock, patch
-
 from stem import InvalidArguments, InvalidRequest, ProtocolError, UnsatisfiableRequest
 from stem.control import _parse_circ_path, Controller, EventType
 from stem.exit_policy import ExitPolicy
 from test import mocking
+
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
 
 
 class TestControl(unittest.TestCase):

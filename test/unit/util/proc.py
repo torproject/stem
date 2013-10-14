@@ -5,10 +5,14 @@ Unit testing code for the stem.util.proc functions.
 import StringIO
 import unittest
 
-from mock import Mock, patch
-
 from stem.util import proc
 from test import mocking
+
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
 
 
 class TestProc(unittest.TestCase):

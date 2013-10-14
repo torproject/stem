@@ -5,11 +5,15 @@ Unit tests for the stem.util.connection functions.
 import platform
 import unittest
 
-from mock import patch
-
 import stem.util.connection
 
 from stem.util.connection import Resolver, Connection
+
+try:
+  # added in python 3.3
+  from unittest.mock import patch
+except ImportError:
+  from mock import patch
 
 NETSTAT_OUTPUT = """\
 Active Internet connections (w/o servers)

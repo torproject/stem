@@ -222,7 +222,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
 
         if is_consensus and lines[index].startswith(stem.util.str_tools._to_bytes(CRYPTO_BLOB[1:10])):
           break
-        elif not is_consensus and lines[index].startswith('dir-source'):
+        elif not is_consensus and lines[index].startswith(b'dir-source'):
           break
 
         # swaps this line with the one after it
@@ -244,7 +244,7 @@ class TestNetworkStatusDocument(unittest.TestCase):
       lines = get_network_status_document_v3(attr, content = True).split(b"\n")
 
       for index, line in enumerate(lines):
-        if not is_consensus and lines[index].startswith('dir-source'):
+        if not is_consensus and lines[index].startswith(b'dir-source'):
           break
 
         # Stop when we hit the 'directory-signature' for a couple reasons...

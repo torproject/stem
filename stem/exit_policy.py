@@ -61,10 +61,11 @@ import zlib
 import stem.prereq
 import stem.util.connection
 import stem.util.enum
+import stem.util.str_tools
 
 try:
   # added in python 3.2
-  from collections import lru_cache
+  from functools import lru_cache
 except ImportError:
   from stem.util.lru_cache import lru_cache
 
@@ -161,7 +162,8 @@ class ExitPolicy(object):
         is_all_str = False
 
     if rules and is_all_str:
-      self._input_rules = zlib.compress(','.join(rules))
+      byte_rules = [stem.util.str_tools._to_bytes(r) for r in rules]
+      self._input_rules = zlib.compress(b','.join(byte_rules))
     else:
       self._input_rules = rules
 
@@ -298,13 +300,16 @@ class ExitPolicy(object):
     rules = []
     is_all_accept, is_all_reject = True, True
 
-    if isinstance(self._input_rules, str):
-      decompressed_rules = zlib.decompress(self._input_rules).split(',')
+    if isinstance(self._input_rules, bytes):
+      decompressed_rules = zlib.decompress(self._input_rules).split(b',')
     else:
       decompressed_rules = self._input_rules
 
     for rule in decompressed_rules:
-      if isinstance(rule, (bytes, unicode)):
+      if isinstance(rule, bytes):
+        rule = stem.util.str_tools._to_unicode(rule)
+
+      if isinstance(rule, unicode):
         rule = ExitPolicyRule(rule.strip())
 
       if rule.is_accept:
@@ -346,6 +351,14 @@ class ExitPolicy(object):
   @lru_cache()
   def __str__(self):
     return ', '.join([str(rule) for rule in self._get_rules()])
+
+  def __hash__(self):
+    # TODO: It would be nice to provide a real hash function, but doing so is
+    # tricky due to how we lazily load the rules. Like equality checks a proper
+    # hash function would need to call _get_rules(), but that's behind
+    # @lru_cache which calls hash() forming a circular dependency.
+
+    return id(self)
 
   def __eq__(self, other):
     if isinstance(other, ExitPolicy):
@@ -427,6 +440,9 @@ class MicroExitPolicy(ExitPolicy):
   def __str__(self):
     return self._policy
 
+  def __hash__(self):
+    return hash(str(self))
+
   def __eq__(self, other):
     if isinstance(other, MicroExitPolicy):
       return str(self) == str(other)
@@ -486,6 +502,7 @@ class ExitPolicyRule(object):
     self._address_type = None
     self._masked_bits = None
     self.min_port = self.max_port = None
+    self._hash = None
 
     # Our mask in ip notation (ex. "255.255.255.0"). This is only set if we
     # either have a custom mask that can't be represented by a number of bits,
@@ -496,10 +513,6 @@ class ExitPolicyRule(object):
     addrspec, portspec = exitpattern.rsplit(":", 1)
     self._apply_addrspec(rule, addrspec)
     self._apply_portspec(rule, portspec)
-
-    # Lazily loaded string representation of our policy.
-
-    self._str_representation = None
 
     # If true then a submask of /0 is treated by is_address_wildcard() as being
     # a wildcard.
@@ -640,6 +653,7 @@ class ExitPolicyRule(object):
 
     return self._masked_bits
 
+  @lru_cache()
   def __str__(self):
     """
     Provides the string representation of our policy. This does not
@@ -649,42 +663,58 @@ class ExitPolicyRule(object):
     to re-create this rule.
     """
 
-    if self._str_representation is None:
-      label = "accept " if self.is_accept else "reject "
+    label = "accept " if self.is_accept else "reject "
 
-      if self.is_address_wildcard():
-        label += "*:"
+    if self.is_address_wildcard():
+      label += "*:"
+    else:
+      address_type = self.get_address_type()
+
+      if address_type == AddressType.IPv4:
+        label += self.address
       else:
-        address_type = self.get_address_type()
+        label += "[%s]" % self.address
 
-        if address_type == AddressType.IPv4:
-          label += self.address
-        else:
-          label += "[%s]" % self.address
+      # Including our mask label as follows...
+      # - exclude our mask if it doesn't do anything
+      # - use our masked bit count if we can
+      # - use the mask itself otherwise
 
-        # Including our mask label as follows...
-        # - exclude our mask if it doesn't do anything
-        # - use our masked bit count if we can
-        # - use the mask itself otherwise
-
-        if (address_type == AddressType.IPv4 and self._masked_bits == 32) or \
-           (address_type == AddressType.IPv6 and self._masked_bits == 128):
-          label += ":"
-        elif self._masked_bits is not None:
-          label += "/%i:" % self._masked_bits
-        else:
-          label += "/%s:" % self.get_mask()
-
-      if self.is_port_wildcard():
-        label += "*"
-      elif self.min_port == self.max_port:
-        label += str(self.min_port)
+      if (address_type == AddressType.IPv4 and self._masked_bits == 32) or \
+         (address_type == AddressType.IPv6 and self._masked_bits == 128):
+        label += ":"
+      elif self._masked_bits is not None:
+        label += "/%i:" % self._masked_bits
       else:
-        label += "%i-%i" % (self.min_port, self.max_port)
+        label += "/%s:" % self.get_mask()
 
-      self._str_representation = label
+    if self.is_port_wildcard():
+      label += "*"
+    elif self.min_port == self.max_port:
+      label += str(self.min_port)
+    else:
+      label += "%i-%i" % (self.min_port, self.max_port)
 
-    return self._str_representation
+    return label
+
+  def __hash__(self):
+    if self._hash is None:
+      my_hash = 0
+
+      for attr in ("is_accept", "address", "min_port", "max_port"):
+        my_hash *= 1024
+
+        attr_value = getattr(self, attr)
+
+        if attr_value is not None:
+          my_hash += hash(attr_value)
+
+      my_hash *= 1024
+      my_hash += hash(self.get_mask(False))
+
+      self._hash = my_hash
+
+    return self._hash
 
   @lru_cache()
   def _get_mask_bin(self):
@@ -796,7 +826,7 @@ class ExitPolicyRule(object):
       # 0.0.0.0/0" == "accept 0.0.0.0/0.0.0.0" will be True), but these
       # policies are effectively equivalent.
 
-      return str(self) == str(other)
+      return hash(self) == hash(other)
     else:
       return False
 
@@ -819,7 +849,7 @@ class MicroExitPolicyRule(ExitPolicyRule):
     self.address = None  # wildcard address
     self.min_port = min_port
     self.max_port = max_port
-    self._str_representation = None
+    self._hash = None
 
   def is_address_wildcard(self):
     return True
@@ -832,3 +862,19 @@ class MicroExitPolicyRule(ExitPolicyRule):
 
   def get_masked_bits(self):
     return None
+
+  def __hash__(self):
+    if self._hash is None:
+      my_hash = 0
+
+      for attr in ("is_accept", "min_port", "max_port"):
+        my_hash *= 1024
+
+        attr_value = getattr(self, attr)
+
+        if attr_value is not None:
+          my_hash += hash(attr_value)
+
+      self._hash = my_hash
+
+    return self._hash

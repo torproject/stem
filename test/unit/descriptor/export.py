@@ -8,12 +8,16 @@ import unittest
 import stem.prereq
 import test.runner
 
-from mock import Mock, patch
-
 from stem.descriptor.export import export_csv, export_csv_file
 
 from test.mocking import get_relay_server_descriptor, \
                          get_bridge_server_descriptor
+
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
 
 
 class TestExport(unittest.TestCase):

@@ -7,9 +7,13 @@ import unittest
 import stem.util.system
 import stem.version
 
-from mock import patch
-
 from stem.version import Version
+
+try:
+  # added in python 3.3
+  from unittest.mock import patch
+except ImportError:
+  from mock import patch
 
 TOR_VERSION_OUTPUT = """Mar 22 23:09:37.088 [notice] Tor v0.2.2.35 \
 (git-73ff13ab3cc9570d). This is experimental software. Do not rely on it for \

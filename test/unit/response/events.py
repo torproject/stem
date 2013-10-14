@@ -10,10 +10,14 @@ import stem.response
 import stem.response.events
 import stem.util.log
 
-from mock import Mock
-
 from stem import *  # enums and exceptions
 from test import mocking
+
+try:
+  # added in python 3.3
+  from unittest.mock import Mock
+except ImportError:
+  from mock import Mock
 
 # ADDRMAP event
 

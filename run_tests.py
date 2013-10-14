@@ -119,7 +119,11 @@ def main():
 
   if not stem.prereq.is_mock_available():
     try:
-      import mock
+      try:
+        import unittest.mock
+      except ImportError:
+        import mock
+
       println(MOCK_OUT_OF_DATE_MSG % mock.__version__)
     except ImportError:
       println(MOCK_UNAVAILABLE_MSG)

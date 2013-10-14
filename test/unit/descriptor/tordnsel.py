@@ -9,7 +9,7 @@ import datetime
 from stem.util.tor_tools import is_valid_fingerprint
 from stem.descriptor.tordnsel import TorDNSEL, _parse_file
 
-TEST_DESC = """\
+TEST_DESC = b"""\
 @type tordnsel 1.0
 Downloaded 2013-08-19 04:02:03
 ExitNode 003A71137D959748C8157C4A76ECA639CEF5E33E
@@ -28,14 +28,14 @@ LastStatus 2013-08-18 13:02:57
 ExitAddress 46.10.211.205 2013-08-18 13:18:48
 """
 
-MALFORMED_ENTRY_1 = """\
+MALFORMED_ENTRY_1 = b"""\
 ExitNode 030B22437D99B2DB2908B747B6962EAD13AB4038
 Published Today!
 LastStatus 2013-08-18 13:02:57
 ExitAddress 46.10.211.205 2013-08-18 13:18:48
 """
 
-MALFORMED_ENTRY_2 = """\
+MALFORMED_ENTRY_2 = b"""\
 @type tordnsel 1.0
 ExitNode 030B22437D99B2DB2908B747B6962EAD13AB4038
 Published Today!
@@ -67,13 +67,13 @@ class TestTorDNSELDescriptor(unittest.TestCase):
 
     # block content raises value error
 
-    extra = "ExtraContent goes here\n"
+    extra = b"ExtraContent goes here\n"
     descriptors = _parse_file(io.BytesIO(TEST_DESC + extra))
     self.assertRaises(ValueError, list, descriptors)
 
     # malformed fingerprint raises value errors
 
-    extra = "ExitNode 030B22437D99B2DB2908B747B6"
+    extra = b"ExitNode 030B22437D99B2DB2908B747B6"
     self.assertRaises(ValueError, list, _parse_file(io.BytesIO(TEST_DESC + extra)))
 
     # malformed date raises value errors
