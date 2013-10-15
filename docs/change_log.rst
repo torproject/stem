@@ -7,6 +7,7 @@ unreleased. For a monthly report on work being done see my `development log
 
 * :ref:`versioning`
 * :ref:`unreleased`
+* :ref:`version_1.1`
 * :ref:`version_1.0`
 
 .. _versioning:
@@ -42,6 +43,11 @@ The following are only available within stem's `git repository
 
 Version 1.1
 -----------
+
+`Stem release 1.1 <https://blog.torproject.org/blog/stem-release-11>`_
+introduced `remote descriptor fetching <api/descriptor/remote.html>`_,
+`connection resolution <tutorials/east_of_the_sun.html#connection-resolution>`_
+and a myriad of smaller improvements and fixes.
 
  * **Controller**
 
