@@ -125,10 +125,10 @@ Download
        <https://wiki.archlinux.org/index.php/AUR#Installing_packages>`_).
 
    * - .. image:: /_static/section/download/freebsd.png
-          :target: http://www.freshports.org/security/stem/
+          :target: http://www.freshports.org/security/py-stem/
 
      - .. image:: /_static/label/freebsd.png
-          :target: http://www.freshports.org/security/stem/
+          :target: http://www.freshports.org/security/py-stem/
 
        Port maintained by Carlo for FreeBSD (`instructions
        <http://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/ports.html>`_).
