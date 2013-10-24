@@ -139,6 +139,8 @@ class ControlMessage(object):
     """
     Provides a ControlMessage for the given content.
 
+    .. versionadded:: 1.1.0
+
     :param str content: message to construct the message from
     :param str msg_type: type of tor reply to parse the content as
     :param kwargs: optional keyword arguments to be passed to the parser method
@@ -199,6 +201,9 @@ class ControlMessage(object):
     2.x and **unicode** in python 3.x). The **content** however is **bytes** if
     **get_bytes** is **True**.
 
+    .. versionchanged:: 1.1.0
+       Added the get_bytes argument.
+
     :param bool get_bytes: provides **bytes** for the **content** rather than a **str**
 
     :returns: **list** of (str, str, str) tuples for the components of this message
@@ -212,6 +217,9 @@ class ControlMessage(object):
   def raw_content(self, get_bytes = False):
     """
     Provides the unparsed content read from the control socket.
+
+    .. versionchanged:: 1.1.0
+       Added the get_bytes argument.
 
     :param bool get_bytes: if **True** then this provides **bytes** rather than a **str**
 

@@ -739,6 +739,9 @@ class Controller(BaseController):
     call fails for any reason (error response, control port closed, initiated,
     etc).
 
+    .. versionchanged:: 1.1.0
+       Added the get_bytes argument.
+
     :param str,list params: GETINFO option or options to be queried
     :param object default: response if the query fails
     :param bool get_bytes: provides **bytes** values rather than a **str** under python 3.x
@@ -1015,6 +1018,8 @@ class Controller(BaseController):
     running locally. Also, most of its checks are platform dependent, and hence
     are not entirely reliable.
 
+    .. versionadded:: 1.1.0
+
     :param object default: response if the query fails
 
     :returns: str with the username tor is running as
@@ -1047,6 +1052,8 @@ class Controller(BaseController):
     Provides the process id of tor. This often only works if tor is running
     locally. Also, most of its checks are platform dependent, and hence are not
     entirely reliable.
+
+    .. versionadded:: 1.1.0
 
     :param object default: response if the query fails
 

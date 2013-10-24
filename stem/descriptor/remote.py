@@ -59,6 +59,8 @@ itself...
     |- get_key_certificates - provides present authority key certificates
     +- query - request an arbitrary descriptor resource
 
+.. versionadded:: 1.1.0
+
 .. data:: MAX_FINGERPRINTS
 
   Maximum number of descriptors that can requested at a time by their

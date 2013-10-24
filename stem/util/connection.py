@@ -22,6 +22,8 @@ Connection and networking based utility functions.
 
   Method for resolving a process' connections.
 
+  .. versionadded:: 1.1.0
+
   ================= ===========
   Resolver          Description
   ================= ===========
@@ -133,9 +135,13 @@ def get_connections(resolver, process_pid = None, process_name = None):
     * remote_port (int)
     * protocol (str, generally either 'tcp' or 'udp')
 
+  .. versionadded:: 1.1.0
+
   :param Resolver resolver: method of connection resolution to use
   :param int process_pid: pid of the process to retrieve
   :param str process_name: name of the process to retrieve
+
+  :returns: **list** of Connection instances
 
   :raises:
     * **ValueError** if using **Resolver.PROC** or **Resolver.BSD_PROCSTAT**
@@ -225,10 +231,12 @@ def get_system_resolvers(system = None):
   """
   Provides the types of connection resolvers likely to be available on this platform.
 
+  .. versionadded:: 1.1.0
+
   :param str system: system to get resolvers for, this is determined by
     platform.system() if not provided
 
-  :returns: **list** of Resolvers likely to be available on this platform
+  :returns: **list** of :data:`~stem.util.connection.Resolver` instances available on this platform
   """
 
   if system is None:
@@ -359,6 +367,8 @@ def is_private_address(address):
 
     * Private ranges: 10.*, 172.16.* - 172.31.*, 192.168.*
     * Loopback: 127.*
+
+  .. versionadded:: 1.1.0
 
   :param str address: string to be checked
 
