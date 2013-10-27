@@ -37,10 +37,15 @@ class TestDocumentation(unittest.TestCase):
       test_run = None
 
       if path.endswith('/stem/util/conf.py'):
-        pass  # too much context to easily test
+        with patch('stem.util.conf.get_config') as get_config_mock:
+          config = Mock()
+          config.load.return_value = None
+          get_config_mock.return_value = config
+
+          test_run = doctest.testfile(path, **args)
       elif path.endswith('/stem/descriptor/router_status_entry.py'):
         args['globs'] = {
-          '_base64_to_hex': stem.descriptor.router_status_entry._base64_to_hex
+          '_base64_to_hex': stem.descriptor.router_status_entry._base64_to_hex,
         }
 
         test_run = doctest.testfile(path, **args)
