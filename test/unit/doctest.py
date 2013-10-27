@@ -18,6 +18,10 @@ try:
 except ImportError:
   from mock import Mock, patch
 
+EXPECTED_CIRCUIT_STATUS = """\
+20 EXTENDED $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA=Eskimo BUILD_FLAGS=NEED_CAPACITY PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:51:11.433755
+19 BUILT $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$30BAB8EE7606CBD12F3CC269AE976E0153E7A58D=Pascal1,$2765D8A8C4BBA3F89585A9FFE0E8575615880BEB=Anthracite PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:50:56.969938\
+"""
 
 class TestDocumentation(unittest.TestCase):
   def test_examples(self):
@@ -33,7 +37,14 @@ class TestDocumentation(unittest.TestCase):
       elif path.endswith('/stem/response/__init__.py'):
         pass  # the escaped slashes seem to be confusing doctest
       elif path.endswith('/stem/control.py'):
-        pass  # examples refrence a control instance
+        controller = Mock()
+        controller.extend_circuit.side_effect = [19, 20]
+        controller.get_info.side_effect = lambda arg: {
+          'circuit-status': EXPECTED_CIRCUIT_STATUS,
+        }[arg]
+
+        args['globs'] = {'controller': controller}
+        test_run = doctest.testfile(path, **args)
       elif path.endswith('/stem/version.py'):
         with patch('stem.version.get_system_tor_version', Mock(return_value = stem.version.Version('0.2.1.30'))):
           test_run = doctest.testfile(path, **args)
