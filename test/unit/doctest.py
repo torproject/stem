@@ -21,10 +21,11 @@ except ImportError:
 
 class TestDocumentation(unittest.TestCase):
   def test_examples(self):
-    cwd = os.getcwd()
+    stem_dir = os.path.join(test.util.STEM_BASE, 'stem')
+    is_failed = False
 
-    for path in test.util._get_files_with_suffix(os.path.join(test.util.STEM_BASE, 'stem')):
-      path = '../../' + path[len(cwd) + 1:]
+    for path in test.util._get_files_with_suffix(stem_dir):
+      args = {'module_relative': False}
       test_run = None
 
       if path.endswith('/stem/util/conf.py'):
@@ -35,9 +36,12 @@ class TestDocumentation(unittest.TestCase):
         pass  # examples refrence a control instance
       elif path.endswith('/stem/version.py'):
         with patch('stem.version.get_system_tor_version', Mock(return_value = stem.version.Version('0.2.1.30'))):
-          test_run = doctest.testfile(path)
+          test_run = doctest.testfile(path, **args)
       else:
-        test_run = doctest.testfile(path)
+        test_run = doctest.testfile(path, **args)
 
       if test_run and test_run.failed > 0:
-        self.fail()
+        is_failed = True
+
+    if is_failed:
+      self.fail("doctests encountered errors")
