@@ -109,6 +109,7 @@ def _to_camel_case(label, divider = "_", joiner = " "):
 
   ::
 
+    >>> from stem.util.str_tools import _to_camel_case
     >>> _to_camel_case("I_LIKE_PEPPERJACK!")
     'I Like Pepperjack!'
 
@@ -141,6 +142,7 @@ def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
 
   ::
 
+    >>> from stem.util.str_tools import get_size_label
     >>> get_size_label(2000000)
     '1 MB'
 
@@ -176,6 +178,7 @@ def get_time_label(seconds, decimal = 0, is_long = False):
 
   ::
 
+    >>> from stem.util.str_tools import get_time_label
     >>> get_time_label(10000)
     '2h'
 
@@ -203,6 +206,7 @@ def get_time_labels(seconds, is_long = False):
 
   ::
 
+    >>> from stem.util.str_tools import get_time_labels
     >>> get_time_labels(400)
     ['6m', '40s']
 
@@ -232,6 +236,7 @@ def get_short_time_label(seconds):
 
   ::
 
+    >>> from stem.util.str_tools import get_short_time_label
     >>> get_short_time_label(111)
     '01:51'
 
@@ -273,6 +278,7 @@ def parse_short_time_label(label):
 
   ::
 
+    >>> from stem.util.str_tools import parse_short_time_label
     >>> parse_short_time_label('01:51')
     111
 

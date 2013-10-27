@@ -699,7 +699,8 @@ def _base64_to_hex(identity, validate, check_if_fingerprint = True):
 
   ::
 
-    >>> _base64_to_hex('p1aag7VwarGxqctS7/fS0y5FU+s')
+    >>> from stem.descriptor.router_status_entry import _base64_to_hex
+    >>> _base64_to_hex('p1aag7VwarGxqctS7/fS0y5FU+s', True)
     'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
 
   :param str identity: encoded fingerprint from the consensus
