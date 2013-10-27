@@ -8,6 +8,9 @@ import doctest
 import os
 import unittest
 
+import stem.descriptor.router_status_entry
+import stem.util.connection
+import stem.util.str_tools
 import stem.version
 
 import test.util
@@ -23,6 +26,7 @@ EXPECTED_CIRCUIT_STATUS = """\
 19 BUILT $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$30BAB8EE7606CBD12F3CC269AE976E0153E7A58D=Pascal1,$2765D8A8C4BBA3F89585A9FFE0E8575615880BEB=Anthracite PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:50:56.969938\
 """
 
+
 class TestDocumentation(unittest.TestCase):
   def test_examples(self):
     stem_dir = os.path.join(test.util.STEM_BASE, 'stem')
@@ -34,6 +38,29 @@ class TestDocumentation(unittest.TestCase):
 
       if path.endswith('/stem/util/conf.py'):
         pass  # too much context to easily test
+      elif path.endswith('/stem/descriptor/router_status_entry.py'):
+        args['globs'] = {
+          '_base64_to_hex': stem.descriptor.router_status_entry._base64_to_hex
+        }
+
+        test_run = doctest.testfile(path, **args)
+      elif path.endswith('/stem/util/connection.py'):
+        args['globs'] = {
+          'expand_ipv6_address': stem.util.connection.expand_ipv6_address,
+        }
+
+        test_run = doctest.testfile(path, **args)
+      elif path.endswith('/stem/util/str_tools.py'):
+        args['globs'] = {
+          '_to_camel_case': stem.util.str_tools._to_camel_case,
+          'get_size_label': stem.util.str_tools.get_size_label,
+          'get_time_label': stem.util.str_tools.get_time_label,
+          'get_time_labels': stem.util.str_tools.get_time_labels,
+          'get_short_time_label': stem.util.str_tools.get_short_time_label,
+          'parse_short_time_label': stem.util.str_tools.parse_short_time_label,
+        }
+
+        test_run = doctest.testfile(path, **args)
       elif path.endswith('/stem/response/__init__.py'):
         pass  # the escaped slashes seem to be confusing doctest
       elif path.endswith('/stem/control.py'):
