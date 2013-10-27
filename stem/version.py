@@ -11,7 +11,7 @@ easily parsed and compared, for instance...
   >>> my_version = get_system_tor_version()
   >>> print my_version
   0.2.1.30
-  >>> my_version >= Requirement.CONTROL_SOCKET
+  >>> my_version >= Requirement.TORRC_CONTROL_SOCKET
   True
 
 **Module Overview:**

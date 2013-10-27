@@ -106,10 +106,10 @@ Now lets say our user has the following configuration file...
 
 ::
 
-  >>> from from stem.util import conf
+  >>> from stem.util import conf
   >>> our_config = conf.get_config("ssh_login")
   >>> our_config.load("/home/atagar/user_config")
-  >>> print CONFIG
+  >>> print CONFIG  # doctest: +SKIP
   {
     "username": "waddle_doo",
     "password": "jabberwocky",

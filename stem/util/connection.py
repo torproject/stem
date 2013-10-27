@@ -404,10 +404,10 @@ def expand_ipv6_address(address):
   ::
 
     >>> expand_ipv6_address("2001:db8::ff00:42:8329")
-    "2001:0db8:0000:0000:0000:ff00:0042:8329"
+    '2001:0db8:0000:0000:0000:ff00:0042:8329'
 
     >>> expand_ipv6_address("::")
-    "0000:0000:0000:0000:0000:0000:0000:0000"
+    '0000:0000:0000:0000:0000:0000:0000:0000'
 
   :param str address: IPv6 address to be expanded
 
