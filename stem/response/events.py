@@ -670,8 +670,13 @@ class ORConnEvent(Event):
   The derived 'endpoint_*' attributes are generally more useful.
 
   The ORCONN event was one of the first Control Protocol V1 events and was
-  introduced in tor version 0.1.1.1-alpha.
+  introduced in tor version 0.1.1.1-alpha. Its id attribute was added in
+  version 0.2.5.2-alpha.
 
+  .. versionchanged:: 1.1.0-dev
+     Added the id attribute.
+
+  :var str id: connection identifier
   :var str endpoint: relay that the event concerns
   :var str endpoint_fingerprint: endpoint's finterprint if it was provided
   :var str endpoint_nickname: endpoint's nickname if it was provided
@@ -686,6 +691,7 @@ class ORConnEvent(Event):
   _KEYWORD_ARGS = {
     "REASON": "reason",
     "NCIRCS": "circ_count",
+    "ID": "id",
   }
 
   def _parse(self):
@@ -714,6 +720,9 @@ class ORConnEvent(Event):
         raise stem.ProtocolError("ORCONN event got a non-numeric circuit count (%s): %s" % (self.circ_count, self))
 
       self.circ_count = int(self.circ_count)
+
+    if self.id and not tor_tools.is_valid_connection_id(self.id):
+      raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
 
     self._log_if_unrecognized('status', stem.ORStatus)
     self._log_if_unrecognized('reason', stem.ORClosureReason)

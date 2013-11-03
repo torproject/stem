@@ -39,6 +39,10 @@ Unreleased
 The following are only available within stem's `git repository
 <download.html>`_.
 
+ * **Controller**
+
+  * Added the id attribute to the :class:`~stem.response.events.ORConnEvent` (:spec:`6f2919a`)
+
 .. _version_1.1:
 
 Version 1.1

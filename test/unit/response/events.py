@@ -222,12 +222,13 @@ s Fast HSDir Named Stable V2Dir Valid
 # ORCONN events from starting tor 0.2.2.39 via TBB
 
 ORCONN_CLOSED = "650 ORCONN $A1130635A0CDA6F60C276FBF6994EFBD4ECADAB1~tama CLOSED REASON=DONE"
-ORCONN_CONNECTED = "650 ORCONN 127.0.0.1:9000 CONNECTED NCIRCS=20"
+ORCONN_CONNECTED = "650 ORCONN 127.0.0.1:9000 CONNECTED NCIRCS=20 ID=18"
 ORCONN_LAUNCHED = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E51E1A0=GreenDragon LAUNCHED"
 
 ORCONN_BAD_1 = "650 ORCONN $7ED90E2833EE38A75795BA9237B0A4560E5=GreenD LAUNCHED"
 ORCONN_BAD_2 = "650 ORCONN 127.0.0.1:001 CONNECTED"
 ORCONN_BAD_3 = "650 ORCONN 127.0.0.1:9000 CONNECTED NCIRCS=too_many"
+ORCONN_BAD_4 = "650 ORCONN 127.0.0.1:9000 CONNECTED NCIRCS=20 ID=30635A0CDA6F60C276FBF6994EFBD4ECADA"
 
 # STATUS_* events that I was able to easily trigger. Most came from starting
 # TBB, then listening while it bootstrapped.
@@ -752,6 +753,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(ORStatus.CLOSED, event.status)
     self.assertEqual(ORClosureReason.DONE, event.reason)
     self.assertEqual(None, event.circ_count)
+    self.assertEqual(None, event.id)
 
     event = _get_event(ORCONN_CONNECTED)
 
@@ -765,6 +767,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(ORStatus.CONNECTED, event.status)
     self.assertEqual(None, event.reason)
     self.assertEqual(20, event.circ_count)
+    self.assertEqual('18', event.id)
 
     event = _get_event(ORCONN_LAUNCHED)
 
@@ -787,6 +790,9 @@ class TestEvents(unittest.TestCase):
 
     # non-numeric NCIRCS
     self.assertRaises(ProtocolError, _get_event, ORCONN_BAD_3)
+
+    # invalid connection id
+    self.assertRaises(ProtocolError, _get_event, ORCONN_BAD_4)
 
   def test_signal_event(self):
     event = _get_event("650 SIGNAL DEBUG")

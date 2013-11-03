@@ -15,6 +15,7 @@ future, use them at your own risk.**
   is_valid_nickname - checks if a string is a valid tor relay nickname
   is_valid_circuit_id - checks if a string is a valid tor circuit id
   is_valid_stream_id - checks if a string is a valid tor stream id
+  is_valid_connection_id - checks if a string is a valid tor connection id
   is_hex_digits - checks if a string is only made up of hex digits
 """
 
@@ -96,6 +97,17 @@ def is_valid_stream_id(entry):
   Currently, this is just an alias to :func:`~stem.util.tor_tools.is_valid_circuit_id`.
 
   :returns: **True** if the string could be a stream id, **False** otherwise
+  """
+
+  return is_valid_circuit_id(entry)
+
+
+def is_valid_connection_id(entry):
+  """
+  Checks if a string is a valid format for being a connection identifier.
+  Currently, this is just an alias to :func:`~stem.util.tor_tools.is_valid_circuit_id`.
+
+  :returns: **True** if the string could be a connection id, **False** otherwise
   """
 
   return is_valid_circuit_id(entry)
