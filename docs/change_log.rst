@@ -43,6 +43,7 @@ The following are only available within stem's `git repository
 
   * Added the id attribute to the :class:`~stem.response.events.ORConnEvent` (:spec:`6f2919a`)
   * Added `support for CONN_BW events <api/response.html#stem.response.events.ConnectionBandwidthEvent>`_ (:spec:`6f2919a`)
+  * Added `support for CIRC_BW events <api/response.html#stem.response.events.CircuitBandwidthEvent>`_ (:spec:`6f2919a`)
 
 .. _version_1.1:
 

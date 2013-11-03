@@ -333,6 +333,10 @@ CONN_BW = "650 CONN_BW ID=11 TYPE=DIR READ=272 WRITTEN=817"
 CONN_BW_BAD_WRITTEN_VALUE = "650 CONN_BW ID=11 TYPE=DIR READ=272 WRITTEN=817.7"
 CONN_BW_BAD_MISSING_ID = "650 CONN_BW TYPE=DIR READ=272 WRITTEN=817"
 
+CIRC_BW = "650 CIRC_BW ID=11 READ=272 WRITTEN=817"
+CIRC_BW_BAD_WRITTEN_VALUE = "650 CIRC_BW ID=11 READ=272 WRITTEN=817.7"
+CIRC_BW_BAD_MISSING_ID = "650 CIRC_BW READ=272 WRITTEN=817"
+
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -1206,6 +1210,18 @@ class TestEvents(unittest.TestCase):
 
     self.assertRaises(ProtocolError, _get_event, CONN_BW_BAD_WRITTEN_VALUE)
     self.assertRaises(ProtocolError, _get_event, CONN_BW_BAD_MISSING_ID)
+
+  def test_circ_bw_event(self):
+    event = _get_event(CIRC_BW)
+
+    self.assertTrue(isinstance(event, stem.response.events.CircuitBandwidthEvent))
+    self.assertEqual(CIRC_BW.lstrip("650 "), str(event))
+    self.assertEqual("11", event.id)
+    self.assertEqual(272, event.read)
+    self.assertEqual(817, event.written)
+
+    self.assertRaises(ProtocolError, _get_event, CIRC_BW_BAD_WRITTEN_VALUE)
+    self.assertRaises(ProtocolError, _get_event, CIRC_BW_BAD_MISSING_ID)
 
   def test_unrecognized_enum_logging(self):
     """

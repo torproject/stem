@@ -970,6 +970,44 @@ class ConnectionBandwidthEvent(Event):
 
     self._log_if_unrecognized('type', stem.ConnectionType)
 
+
+class CircuitBandwidthEvent(Event):
+  """
+  Event emitted every second with the bytes sent and received by tor on a
+  per-circuit basis.
+
+  The CIRC_BW event was introduced in tor version 0.2.5.2-alpha.
+
+  .. versionadded:: 1.1.0-dev
+
+  :var str id: circuit identifier
+  :var long read: bytes received by tor that second
+  :var long written: bytes sent by tor that second
+  """
+
+  _KEYWORD_ARGS = {
+    "ID": "id",
+    "READ": "read",
+    "WRITTEN": "written",
+  }
+
+  _VERSION_ADDED = stem.version.Requirement.EVENT_CIRC_BW
+
+  def _parse(self):
+    if not self.id:
+      raise stem.ProtocolError("CIRC_BW event is missing its id")
+    elif not self.read:
+      raise stem.ProtocolError("CIRC_BW event is missing its read value")
+    elif not self.written:
+      raise stem.ProtocolError("CIRC_BW event is missing its written value")
+    elif not self.read.isdigit() or not self.written.isdigit():
+      raise stem.ProtocolError("A CIRC_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
+    elif not tor_tools.is_valid_circuit_id(self.id):
+      raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
+
+    self.read = long(self.read)
+    self.written = long(self.written)
+
 EVENT_TYPE_TO_CLASS = {
   "ADDRMAP": AddrMapEvent,
   "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
@@ -997,6 +1035,7 @@ EVENT_TYPE_TO_CLASS = {
   "STREAM_BW": StreamBwEvent,
   "TRANSPORT_LAUNCHED": TransportLaunchedEvent,
   "CONN_BW": ConnectionBandwidthEvent,
+  "CIRC_BW": CircuitBandwidthEvent,
   "WARN": LogEvent,
 
   # accounting for a bug in tor 0.2.0.22
