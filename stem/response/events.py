@@ -926,6 +926,50 @@ class TransportLaunchedEvent(Event):
 
     self.port = int(self.port)
 
+
+class ConnectionBandwidthEvent(Event):
+  """
+  Event emitted every second with the bytes sent and received by tor on a
+  per-connection basis.
+
+  The CONN_BW event was introduced in tor version 0.2.5.2-alpha.
+
+  .. versionadded:: 1.1.0-dev
+
+  :var str id: connection identifier
+  :var stem.ConnectionType type: connection type
+  :var long read: bytes received by tor that second
+  :var long written: bytes sent by tor that second
+  """
+
+  _KEYWORD_ARGS = {
+    "ID": "id",
+    "TYPE": "type",
+    "READ": "read",
+    "WRITTEN": "written",
+  }
+
+  _VERSION_ADDED = stem.version.Requirement.EVENT_CONN_BW
+
+  def _parse(self):
+    if not self.id:
+      raise stem.ProtocolError("CONN_BW event is missing its id")
+    elif not self.type:
+      raise stem.ProtocolError("CONN_BW event is missing its type")
+    elif not self.read:
+      raise stem.ProtocolError("CONN_BW event is missing its read value")
+    elif not self.written:
+      raise stem.ProtocolError("CONN_BW event is missing its written value")
+    elif not self.read.isdigit() or not self.written.isdigit():
+      raise stem.ProtocolError("A CONN_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
+    elif not tor_tools.is_valid_connection_id(self.id):
+      raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
+
+    self.read = long(self.read)
+    self.written = long(self.written)
+
+    self._log_if_unrecognized('type', stem.ConnectionType)
+
 EVENT_TYPE_TO_CLASS = {
   "ADDRMAP": AddrMapEvent,
   "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
@@ -952,6 +996,7 @@ EVENT_TYPE_TO_CLASS = {
   "STREAM": StreamEvent,
   "STREAM_BW": StreamBwEvent,
   "TRANSPORT_LAUNCHED": TransportLaunchedEvent,
+  "CONN_BW": ConnectionBandwidthEvent,
   "WARN": LogEvent,
 
   # accounting for a bug in tor 0.2.0.22

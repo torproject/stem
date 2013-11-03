@@ -42,6 +42,7 @@ The following are only available within stem's `git repository
  * **Controller**
 
   * Added the id attribute to the :class:`~stem.response.events.ORConnEvent` (:spec:`6f2919a`)
+  * Added `support for CONN_BW events <api/response.html#stem.response.events.ConnectionBandwidthEvent>`_ (:spec:`6f2919a`)
 
 .. _version_1.1:
 
@@ -64,6 +65,7 @@ and a myriad of smaller improvements and fixes.
   * Added :func:`~stem.control.Controller.get_pid` method to the :class:`~stem.control.Controller`
   * :class:`~stem.response.events.StreamEvent` didn't recognize IPv6 addresses (:trac:`9181`)
   * :func:`~stem.control.Controller.get_conf` mistakenly cached hidden service related options (:trac:`9792`)
+  * Added `support for TRANSPORT_LAUNCHED events <api/response.html#stem.response.events.TransportLaunchedEvent>`_ (:spec:`48f6dd0`)
 
  * **Descriptors**
 

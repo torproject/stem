@@ -329,6 +329,10 @@ TRANSPORT_LAUNCHED_BAD_TYPE = "650 TRANSPORT_LAUNCHED unicorn obfs1 127.0.0.1 11
 TRANSPORT_LAUNCHED_BAD_ADDRESS = "650 TRANSPORT_LAUNCHED server obfs1 127.0.x.y 1111"
 TRANSPORT_LAUNCHED_BAD_PORT = "650 TRANSPORT_LAUNCHED server obfs1 127.0.0.1 my_port"
 
+CONN_BW = "650 CONN_BW ID=11 TYPE=DIR READ=272 WRITTEN=817"
+CONN_BW_BAD_WRITTEN_VALUE = "650 CONN_BW ID=11 TYPE=DIR READ=272 WRITTEN=817.7"
+CONN_BW_BAD_MISSING_ID = "650 CONN_BW TYPE=DIR READ=272 WRITTEN=817"
+
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -1189,6 +1193,19 @@ class TestEvents(unittest.TestCase):
     self.assertRaises(ProtocolError, _get_event, TRANSPORT_LAUNCHED_BAD_TYPE)
     self.assertRaises(ProtocolError, _get_event, TRANSPORT_LAUNCHED_BAD_ADDRESS)
     self.assertRaises(ProtocolError, _get_event, TRANSPORT_LAUNCHED_BAD_PORT)
+
+  def test_conn_bw_event(self):
+    event = _get_event(CONN_BW)
+
+    self.assertTrue(isinstance(event, stem.response.events.ConnectionBandwidthEvent))
+    self.assertEqual(CONN_BW.lstrip("650 "), str(event))
+    self.assertEqual("11", event.id)
+    self.assertEqual(stem.ConnectionType.DIR, event.type)
+    self.assertEqual(272, event.read)
+    self.assertEqual(817, event.written)
+
+    self.assertRaises(ProtocolError, _get_event, CONN_BW_BAD_WRITTEN_VALUE)
+    self.assertRaises(ProtocolError, _get_event, CONN_BW_BAD_MISSING_ID)
 
   def test_unrecognized_enum_logging(self):
     """

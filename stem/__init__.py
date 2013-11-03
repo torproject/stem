@@ -366,6 +366,20 @@ Library for working with the tor process.
   **DISCARD**     throwing out timeout value from when the network was down
   **RESUME**      resumed calculations to determine the proper timeout
   =============== ===========
+
+.. data:: ConnectionType (enum)
+
+  Purpose for a tor connection. Tor may provide types not in this enum.
+
+  The meaning behind these values is a bit unclear, pending :trac:`10086`.
+
+  =============== ===========
+  ConnectionType  Description
+  =============== ===========
+  **OR**          carrying traffic within the tor network
+  **DIR**         fetching or sending tor descriptor data
+  **EXIT**        carrying traffic between the tor network and an external destination
+  =============== ===========
 """
 
 __version__ = '1.1.0-dev'
@@ -697,4 +711,10 @@ TimeoutSetType = stem.util.enum.UppercaseEnum(
   "SUSPENDED",
   "DISCARD",
   "RESUME",
+)
+
+ConnectionType = stem.util.enum.UppercaseEnum(
+  "OR",
+  "DIR",
+  "EXIT",
 )
