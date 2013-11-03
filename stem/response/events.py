@@ -158,6 +158,9 @@ class AddrMapEvent(Event):
   The ADDRMAP event was one of the first Control Protocol V1 events and was
   introduced in tor version 0.1.1.1-alpha.
 
+  .. versionchanged:: 1.1.0
+     Added the cached attribute.
+
   :var str hostname: address being resolved
   :var str destination: destionation of the resolution, this is usually an ip,
     but could be a hostname if TrackHostExits is enabled or **NONE** if the
@@ -897,6 +900,8 @@ class TransportLaunchedEvent(Event):
   Event triggered when a pluggable transport is launched.
 
   The TRANSPORT_LAUNCHED event was introduced in tor version 0.2.5.0-alpha.
+
+  .. versionadded:: 1.1.0
 
   :var str type: 'server' or 'client'
   :var str name: name of the pluggable transport
