@@ -1069,6 +1069,49 @@ class CellStatsEvent(Event):
     self.outbound_time = _parse_cell_type_mapping(self.outbound_time)
 
 
+class TokenBucketEmptyEvent(Event):
+  """
+  Event emitted when refilling an empty token bucket. **These events are only
+  emitted if TestingTorNetwork is set.**
+
+  The TB_EMPTY event was introduced in tor version 0.2.5.2-alpha.
+
+  .. versionadded:: 1.1.0-dev
+
+  :var stem.TokenBucket bucket: bucket being refilled
+  :var str id: connection identifier
+  :var int read: time in milliseconds since the read bucket was last refilled
+  :var int written: time in milliseconds since the write bucket was last refilled
+  :var int last_refill: time in milliseconds the bucket has been empty since last refilled
+  """
+
+  _POSITIONAL_ARGS = ("bucket",)
+  _KEYWORD_ARGS = {
+    "ID": "id",
+    "READ": "read",
+    "WRITTEN": "written",
+    "LAST": "last_refill",
+  }
+
+  _VERSION_ADDED = stem.version.Requirement.EVENT_TB_EMPTY
+
+  def _parse(self):
+    if self.id and not tor_tools.is_valid_connection_id(self.id):
+      raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
+    elif not self.read.isdigit():
+      raise stem.ProtocolError("A TB_EMPTY's READ value should be a positive numeric value, received: %s" % self)
+    elif not self.written.isdigit():
+      raise stem.ProtocolError("A TB_EMPTY's WRITTEN value should be a positive numeric value, received: %s" % self)
+    elif not self.last_refill.isdigit():
+      raise stem.ProtocolError("A TB_EMPTY's LAST value should be a positive numeric value, received: %s" % self)
+
+    self.read = int(self.read)
+    self.written = int(self.written)
+    self.last_refill = int(self.last_refill)
+
+    self._log_if_unrecognized('bucket', stem.TokenBucket)
+
+
 def _parse_cell_type_mapping(mapping):
   """
   Parses a mapping of the form...
@@ -1133,6 +1176,7 @@ EVENT_TYPE_TO_CLASS = {
   "STATUS_SERVER": StatusEvent,
   "STREAM": StreamEvent,
   "STREAM_BW": StreamBwEvent,
+  "TB_EMPTY": TokenBucketEmptyEvent,
   "TRANSPORT_LAUNCHED": TransportLaunchedEvent,
   "WARN": LogEvent,
 

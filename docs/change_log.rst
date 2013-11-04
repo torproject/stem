@@ -45,6 +45,7 @@ The following are only available within stem's `git repository
   * Added `support for CONN_BW events <api/response.html#stem.response.events.ConnectionBandwidthEvent>`_ (:spec:`6f2919a`)
   * Added `support for CIRC_BW events <api/response.html#stem.response.events.CircuitBandwidthEvent>`_ (:spec:`6f2919a`)
   * Added `support for CELL_STATS events <api/response.html#stem.response.events.CellStatsEvent>`_ (:spec:`6f2919a`)
+  * Added `support for TB_EMPTY events <api/response.html#stem.response.events.TokenBucketEmptyEvent>`_ (:spec:`6f2919a`)
 
 .. _version_1.1:
 

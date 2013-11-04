@@ -46,6 +46,7 @@ easily parsed and compared, for instance...
   **EVENT_CONN_BW**                     CONN_BW events
   **EVENT_CIRC_BW**                     CIRC_BW events
   **EVENT_CELL_STATS**                  CELL_STATS events
+  **EVENT_TB_EMPTY**                    TB_EMPTY events
   **EXTENDCIRCUIT_PATH_OPTIONAL**       EXTENDCIRCUIT queries can omit the path if the circuit is zero
   **FEATURE_EXTENDED_EVENTS**           'EXTENDED_EVENTS' optional feature
   **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
@@ -347,6 +348,7 @@ Requirement = stem.util.enum.Enum(
   ("EVENT_CONN_BW", Version('0.2.5.2-alpha')),
   ("EVENT_CIRC_BW", Version('0.2.5.2-alpha')),
   ("EVENT_CELL_STATS", Version('0.2.5.2-alpha')),
+  ("EVENT_TB_EMPTY", Version('0.2.5.2-alpha')),
   ("EXTENDCIRCUIT_PATH_OPTIONAL", Version("0.2.2.9")),
   ("FEATURE_EXTENDED_EVENTS", Version("0.2.2.1-alpha")),
   ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),

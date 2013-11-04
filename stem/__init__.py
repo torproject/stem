@@ -380,6 +380,18 @@ Library for working with the tor process.
   **DIR**         fetching or sending tor descriptor data
   **EXIT**        carrying traffic between the tor network and an external destination
   =============== ===========
+
+.. data:: TokenBucket (enum)
+
+  Bucket categories of TB_EMPTY events.
+
+  =============== ===========
+  TokenBucket     Description
+  =============== ===========
+  **GLOBAL**      global token bucket
+  **RELAY**       relay token bucket
+  **ORCONN**      bucket used for OR connections
+  =============== ===========
 """
 
 __version__ = '1.1.0-dev'
@@ -717,4 +729,10 @@ ConnectionType = stem.util.enum.UppercaseEnum(
   "OR",
   "DIR",
   "EXIT",
+)
+
+TokenBucket = stem.util.enum.UppercaseEnum(
+  "GLOBAL",
+  "RELAY",
+  "ORCONN",
 )

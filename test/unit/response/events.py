@@ -357,6 +357,13 @@ CELL_STATS_BAD_1 = "650 CELL_STATS OutboundAdded=create_fast:-1,relay_early:2"
 CELL_STATS_BAD_2 = "650 CELL_STATS OutboundAdded=create_fast:arg,relay_early:-2"
 CELL_STATS_BAD_3 = "650 CELL_STATS OutboundAdded=create_fast!:1,relay_early:-2"
 
+TB_EMPTY_1 = "650 TB_EMPTY ORCONN ID=16 READ=0 WRITTEN=0 LAST=100"
+TB_EMPTY_2 = "650 TB_EMPTY GLOBAL READ=93 WRITTEN=93 LAST=100"
+TB_EMPTY_3 = "650 TB_EMPTY RELAY READ=93 WRITTEN=93 LAST=100"
+
+TB_EMPTY_BAD_1 = "650 TB_EMPTY GLOBAL READ=93 WRITTEN=blarg LAST=100"
+TB_EMPTY_BAD_2 = "650 TB_EMPTY GLOBAL READ=93 WRITTEN=93 LAST=-100"
+
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -1281,6 +1288,40 @@ class TestEvents(unittest.TestCase):
     self.assertRaises(ProtocolError, _get_event, CELL_STATS_BAD_1)
     self.assertRaises(ProtocolError, _get_event, CELL_STATS_BAD_2)
     self.assertRaises(ProtocolError, _get_event, CELL_STATS_BAD_3)
+
+  def test_token_bucket_empty_event(self):
+    event = _get_event(TB_EMPTY_1)
+
+    self.assertTrue(isinstance(event, stem.response.events.TokenBucketEmptyEvent))
+    self.assertEqual(TB_EMPTY_1.lstrip("650 "), str(event))
+    self.assertEqual(stem.TokenBucket.ORCONN, event.bucket)
+    self.assertEqual("16", event.id)
+    self.assertEqual(0, event.read)
+    self.assertEqual(0, event.written)
+    self.assertEqual(100, event.last_refill)
+
+    event = _get_event(TB_EMPTY_2)
+
+    self.assertTrue(isinstance(event, stem.response.events.TokenBucketEmptyEvent))
+    self.assertEqual(TB_EMPTY_2.lstrip("650 "), str(event))
+    self.assertEqual(stem.TokenBucket.GLOBAL, event.bucket)
+    self.assertEqual(None, event.id)
+    self.assertEqual(93, event.read)
+    self.assertEqual(93, event.written)
+    self.assertEqual(100, event.last_refill)
+
+    event = _get_event(TB_EMPTY_3)
+
+    self.assertTrue(isinstance(event, stem.response.events.TokenBucketEmptyEvent))
+    self.assertEqual(TB_EMPTY_3.lstrip("650 "), str(event))
+    self.assertEqual(stem.TokenBucket.RELAY, event.bucket)
+    self.assertEqual(None, event.id)
+    self.assertEqual(93, event.read)
+    self.assertEqual(93, event.written)
+    self.assertEqual(100, event.last_refill)
+
+    self.assertRaises(ProtocolError, _get_event, TB_EMPTY_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, TB_EMPTY_BAD_2)
 
   def test_unrecognized_enum_logging(self):
     """
