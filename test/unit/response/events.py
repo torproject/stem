@@ -329,6 +329,41 @@ TRANSPORT_LAUNCHED_BAD_TYPE = "650 TRANSPORT_LAUNCHED unicorn obfs1 127.0.0.1 11
 TRANSPORT_LAUNCHED_BAD_ADDRESS = "650 TRANSPORT_LAUNCHED server obfs1 127.0.x.y 1111"
 TRANSPORT_LAUNCHED_BAD_PORT = "650 TRANSPORT_LAUNCHED server obfs1 127.0.0.1 my_port"
 
+CONN_BW = "650 CONN_BW ID=11 TYPE=DIR READ=272 WRITTEN=817"
+CONN_BW_BAD_WRITTEN_VALUE = "650 CONN_BW ID=11 TYPE=DIR READ=272 WRITTEN=817.7"
+CONN_BW_BAD_MISSING_ID = "650 CONN_BW TYPE=DIR READ=272 WRITTEN=817"
+
+CIRC_BW = "650 CIRC_BW ID=11 READ=272 WRITTEN=817"
+CIRC_BW_BAD_WRITTEN_VALUE = "650 CIRC_BW ID=11 READ=272 WRITTEN=817.7"
+CIRC_BW_BAD_MISSING_ID = "650 CIRC_BW READ=272 WRITTEN=817"
+
+CELL_STATS_1 = "650 CELL_STATS ID=14 \
+OutboundQueue=19403 OutboundConn=15 \
+OutboundAdded=create_fast:1,relay_early:2 \
+OutboundRemoved=create_fast:1,relay_early:2 \
+OutboundTime=create_fast:0,relay_early:0"
+
+CELL_STATS_2 = "650 CELL_STATS \
+InboundQueue=19403 InboundConn=32 \
+InboundAdded=relay:1,created_fast:1 \
+InboundRemoved=relay:1,created_fast:1 \
+InboundTime=relay:0,created_fast:0 \
+OutboundQueue=6710 OutboundConn=18 \
+OutboundAdded=create:1,relay_early:1 \
+OutboundRemoved=create:1,relay_early:1 \
+OutboundTime=create:0,relay_early:0"
+
+CELL_STATS_BAD_1 = "650 CELL_STATS OutboundAdded=create_fast:-1,relay_early:2"
+CELL_STATS_BAD_2 = "650 CELL_STATS OutboundAdded=create_fast:arg,relay_early:-2"
+CELL_STATS_BAD_3 = "650 CELL_STATS OutboundAdded=create_fast!:1,relay_early:-2"
+
+TB_EMPTY_1 = "650 TB_EMPTY ORCONN ID=16 READ=0 WRITTEN=0 LAST=100"
+TB_EMPTY_2 = "650 TB_EMPTY GLOBAL READ=93 WRITTEN=93 LAST=100"
+TB_EMPTY_3 = "650 TB_EMPTY RELAY READ=93 WRITTEN=93 LAST=100"
+
+TB_EMPTY_BAD_1 = "650 TB_EMPTY GLOBAL READ=93 WRITTEN=blarg LAST=100"
+TB_EMPTY_BAD_2 = "650 TB_EMPTY GLOBAL READ=93 WRITTEN=93 LAST=-100"
+
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -1189,6 +1224,104 @@ class TestEvents(unittest.TestCase):
     self.assertRaises(ProtocolError, _get_event, TRANSPORT_LAUNCHED_BAD_TYPE)
     self.assertRaises(ProtocolError, _get_event, TRANSPORT_LAUNCHED_BAD_ADDRESS)
     self.assertRaises(ProtocolError, _get_event, TRANSPORT_LAUNCHED_BAD_PORT)
+
+  def test_conn_bw_event(self):
+    event = _get_event(CONN_BW)
+
+    self.assertTrue(isinstance(event, stem.response.events.ConnectionBandwidthEvent))
+    self.assertEqual(CONN_BW.lstrip("650 "), str(event))
+    self.assertEqual("11", event.id)
+    self.assertEqual(stem.ConnectionType.DIR, event.type)
+    self.assertEqual(272, event.read)
+    self.assertEqual(817, event.written)
+
+    self.assertRaises(ProtocolError, _get_event, CONN_BW_BAD_WRITTEN_VALUE)
+    self.assertRaises(ProtocolError, _get_event, CONN_BW_BAD_MISSING_ID)
+
+  def test_circ_bw_event(self):
+    event = _get_event(CIRC_BW)
+
+    self.assertTrue(isinstance(event, stem.response.events.CircuitBandwidthEvent))
+    self.assertEqual(CIRC_BW.lstrip("650 "), str(event))
+    self.assertEqual("11", event.id)
+    self.assertEqual(272, event.read)
+    self.assertEqual(817, event.written)
+
+    self.assertRaises(ProtocolError, _get_event, CIRC_BW_BAD_WRITTEN_VALUE)
+    self.assertRaises(ProtocolError, _get_event, CIRC_BW_BAD_MISSING_ID)
+
+  def test_cell_stats_event(self):
+    event = _get_event(CELL_STATS_1)
+
+    self.assertTrue(isinstance(event, stem.response.events.CellStatsEvent))
+    self.assertEqual(CELL_STATS_1.lstrip("650 "), str(event))
+    self.assertEqual("14", event.id)
+    self.assertEqual(None, event.inbound_queue)
+    self.assertEqual(None, event.inbound_connection)
+    self.assertEqual(None, event.inbound_added)
+    self.assertEqual(None, event.inbound_removed)
+    self.assertEqual(None, event.inbound_time)
+    self.assertEqual("19403", event.outbound_queue)
+    self.assertEqual("15", event.outbound_connection)
+    self.assertEqual({'create_fast': 1, 'relay_early' :2}, event.outbound_added)
+    self.assertEqual({'create_fast': 1, 'relay_early': 2}, event.outbound_removed)
+    self.assertEqual({'create_fast': 0, 'relay_early': 0}, event.outbound_time)
+
+    event = _get_event(CELL_STATS_2)
+
+    self.assertTrue(isinstance(event, stem.response.events.CellStatsEvent))
+    self.assertEqual(CELL_STATS_2.lstrip("650 "), str(event))
+    self.assertEqual(None, event.id)
+    self.assertEqual("19403", event.inbound_queue)
+    self.assertEqual("32", event.inbound_connection)
+    self.assertEqual({'relay': 1, 'created_fast': 1}, event.inbound_added)
+    self.assertEqual({'relay': 1, 'created_fast': 1}, event.inbound_removed)
+    self.assertEqual({'relay': 0, 'created_fast': 0}, event.inbound_time)
+    self.assertEqual("6710", event.outbound_queue)
+    self.assertEqual("18", event.outbound_connection)
+    self.assertEqual({'create': 1, 'relay_early': 1}, event.outbound_added)
+    self.assertEqual({'create': 1, 'relay_early': 1}, event.outbound_removed)
+    self.assertEqual({'create': 0, 'relay_early': 0}, event.outbound_time)
+
+    # check a few invalid mappings (bad key or value)
+
+    self.assertRaises(ProtocolError, _get_event, CELL_STATS_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, CELL_STATS_BAD_2)
+    self.assertRaises(ProtocolError, _get_event, CELL_STATS_BAD_3)
+
+  def test_token_bucket_empty_event(self):
+    event = _get_event(TB_EMPTY_1)
+
+    self.assertTrue(isinstance(event, stem.response.events.TokenBucketEmptyEvent))
+    self.assertEqual(TB_EMPTY_1.lstrip("650 "), str(event))
+    self.assertEqual(stem.TokenBucket.ORCONN, event.bucket)
+    self.assertEqual("16", event.id)
+    self.assertEqual(0, event.read)
+    self.assertEqual(0, event.written)
+    self.assertEqual(100, event.last_refill)
+
+    event = _get_event(TB_EMPTY_2)
+
+    self.assertTrue(isinstance(event, stem.response.events.TokenBucketEmptyEvent))
+    self.assertEqual(TB_EMPTY_2.lstrip("650 "), str(event))
+    self.assertEqual(stem.TokenBucket.GLOBAL, event.bucket)
+    self.assertEqual(None, event.id)
+    self.assertEqual(93, event.read)
+    self.assertEqual(93, event.written)
+    self.assertEqual(100, event.last_refill)
+
+    event = _get_event(TB_EMPTY_3)
+
+    self.assertTrue(isinstance(event, stem.response.events.TokenBucketEmptyEvent))
+    self.assertEqual(TB_EMPTY_3.lstrip("650 "), str(event))
+    self.assertEqual(stem.TokenBucket.RELAY, event.bucket)
+    self.assertEqual(None, event.id)
+    self.assertEqual(93, event.read)
+    self.assertEqual(93, event.written)
+    self.assertEqual(100, event.last_refill)
+
+    self.assertRaises(ProtocolError, _get_event, TB_EMPTY_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, TB_EMPTY_BAD_2)
 
   def test_unrecognized_enum_logging(self):
     """

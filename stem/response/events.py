@@ -20,6 +20,7 @@ from stem.util import connection, log, str_tools, tor_tools
 
 KW_ARG = re.compile("^(.*) ([A-Za-z0-9_]+)=(\S*)$")
 QUOTED_KW_ARG = re.compile("^(.*) ([A-Za-z0-9_]+)=\"(.*)\"$")
+CELL_TYPE = re.compile("^[a-z0-9_]+$")
 
 
 class Event(stem.response.ControlMessage):
@@ -926,15 +927,239 @@ class TransportLaunchedEvent(Event):
 
     self.port = int(self.port)
 
+
+class ConnectionBandwidthEvent(Event):
+  """
+  Event emitted every second with the bytes sent and received by tor on a
+  per-connection basis.
+
+  The CONN_BW event was introduced in tor version 0.2.5.2-alpha.
+
+  .. versionadded:: 1.1.0-dev
+
+  :var str id: connection identifier
+  :var stem.ConnectionType type: connection type
+  :var long read: bytes received by tor that second
+  :var long written: bytes sent by tor that second
+  """
+
+  _KEYWORD_ARGS = {
+    "ID": "id",
+    "TYPE": "type",
+    "READ": "read",
+    "WRITTEN": "written",
+  }
+
+  _VERSION_ADDED = stem.version.Requirement.EVENT_CONN_BW
+
+  def _parse(self):
+    if not self.id:
+      raise stem.ProtocolError("CONN_BW event is missing its id")
+    elif not self.type:
+      raise stem.ProtocolError("CONN_BW event is missing its type")
+    elif not self.read:
+      raise stem.ProtocolError("CONN_BW event is missing its read value")
+    elif not self.written:
+      raise stem.ProtocolError("CONN_BW event is missing its written value")
+    elif not self.read.isdigit() or not self.written.isdigit():
+      raise stem.ProtocolError("A CONN_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
+    elif not tor_tools.is_valid_connection_id(self.id):
+      raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
+
+    self.read = long(self.read)
+    self.written = long(self.written)
+
+    self._log_if_unrecognized('type', stem.ConnectionType)
+
+
+class CircuitBandwidthEvent(Event):
+  """
+  Event emitted every second with the bytes sent and received by tor on a
+  per-circuit basis.
+
+  The CIRC_BW event was introduced in tor version 0.2.5.2-alpha.
+
+  .. versionadded:: 1.1.0-dev
+
+  :var str id: circuit identifier
+  :var long read: bytes received by tor that second
+  :var long written: bytes sent by tor that second
+  """
+
+  _KEYWORD_ARGS = {
+    "ID": "id",
+    "READ": "read",
+    "WRITTEN": "written",
+  }
+
+  _VERSION_ADDED = stem.version.Requirement.EVENT_CIRC_BW
+
+  def _parse(self):
+    if not self.id:
+      raise stem.ProtocolError("CIRC_BW event is missing its id")
+    elif not self.read:
+      raise stem.ProtocolError("CIRC_BW event is missing its read value")
+    elif not self.written:
+      raise stem.ProtocolError("CIRC_BW event is missing its written value")
+    elif not self.read.isdigit() or not self.written.isdigit():
+      raise stem.ProtocolError("A CIRC_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
+    elif not tor_tools.is_valid_circuit_id(self.id):
+      raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
+
+    self.read = long(self.read)
+    self.written = long(self.written)
+
+
+class CellStatsEvent(Event):
+  """
+  Event emitted every second with a count of the number of cells types broken
+  down by the circuit. **These events are only emitted if TestingTorNetwork is
+  set.**
+
+  The CELL_STATS event was introduced in tor version 0.2.5.2-alpha.
+
+  .. versionadded:: 1.1.0-dev
+
+  :var str id: circuit identifier
+  :var str inbound_queue: inbound queue identifier
+  :var str inbound_connection: inbound connection identifier
+  :var dict inbound_added: mapping of added inbound cell types to their count
+  :var dict inbound_removed: mapping of removed inbound cell types to their count
+  :var dict inbound_time: mapping of inbound cell types to the time they took to write in milliseconds
+  :var str outbound_queue: outbound queue identifier
+  :var str outbound_connection: outbound connection identifier
+  :var dict outbound_added: mapping of added outbound cell types to their count
+  :var dict outbound_removed: mapping of removed outbound cell types to their count
+  :var dict outbound_time: mapping of outbound cell types to the time they took to write in milliseconds
+  """
+
+  _KEYWORD_ARGS = {
+    "ID": "id",
+    "InboundQueue": "inbound_queue",
+    "InboundConn": "inbound_connection",
+    "InboundAdded": "inbound_added",
+    "InboundRemoved": "inbound_removed",
+    "InboundTime": "inbound_time",
+    "OutboundQueue": "outbound_queue",
+    "OutboundConn": "outbound_connection",
+    "OutboundAdded": "outbound_added",
+    "OutboundRemoved": "outbound_removed",
+    "OutboundTime": "outbound_time",
+  }
+
+  _VERSION_ADDED = stem.version.Requirement.EVENT_CELL_STATS
+
+  def _parse(self):
+    if self.id and not tor_tools.is_valid_circuit_id(self.id):
+      raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
+    elif self.inbound_queue and not tor_tools.is_valid_circuit_id(self.inbound_queue):
+      raise stem.ProtocolError("Queue IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.inbound_queue, self))
+    elif self.inbound_connection and not tor_tools.is_valid_connection_id(self.inbound_connection):
+      raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.inbound_connection, self))
+    elif self.outbound_queue and not tor_tools.is_valid_circuit_id(self.outbound_queue):
+      raise stem.ProtocolError("Queue IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.outbound_queue, self))
+    elif self.outbound_connection and not tor_tools.is_valid_connection_id(self.outbound_connection):
+      raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.outbound_connection, self))
+
+    self.inbound_added = _parse_cell_type_mapping(self.inbound_added)
+    self.inbound_removed = _parse_cell_type_mapping(self.inbound_removed)
+    self.inbound_time = _parse_cell_type_mapping(self.inbound_time)
+    self.outbound_added = _parse_cell_type_mapping(self.outbound_added)
+    self.outbound_removed = _parse_cell_type_mapping(self.outbound_removed)
+    self.outbound_time = _parse_cell_type_mapping(self.outbound_time)
+
+
+class TokenBucketEmptyEvent(Event):
+  """
+  Event emitted when refilling an empty token bucket. **These events are only
+  emitted if TestingTorNetwork is set.**
+
+  The TB_EMPTY event was introduced in tor version 0.2.5.2-alpha.
+
+  .. versionadded:: 1.1.0-dev
+
+  :var stem.TokenBucket bucket: bucket being refilled
+  :var str id: connection identifier
+  :var int read: time in milliseconds since the read bucket was last refilled
+  :var int written: time in milliseconds since the write bucket was last refilled
+  :var int last_refill: time in milliseconds the bucket has been empty since last refilled
+  """
+
+  _POSITIONAL_ARGS = ("bucket",)
+  _KEYWORD_ARGS = {
+    "ID": "id",
+    "READ": "read",
+    "WRITTEN": "written",
+    "LAST": "last_refill",
+  }
+
+  _VERSION_ADDED = stem.version.Requirement.EVENT_TB_EMPTY
+
+  def _parse(self):
+    if self.id and not tor_tools.is_valid_connection_id(self.id):
+      raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
+    elif not self.read.isdigit():
+      raise stem.ProtocolError("A TB_EMPTY's READ value should be a positive numeric value, received: %s" % self)
+    elif not self.written.isdigit():
+      raise stem.ProtocolError("A TB_EMPTY's WRITTEN value should be a positive numeric value, received: %s" % self)
+    elif not self.last_refill.isdigit():
+      raise stem.ProtocolError("A TB_EMPTY's LAST value should be a positive numeric value, received: %s" % self)
+
+    self.read = int(self.read)
+    self.written = int(self.written)
+    self.last_refill = int(self.last_refill)
+
+    self._log_if_unrecognized('bucket', stem.TokenBucket)
+
+
+def _parse_cell_type_mapping(mapping):
+  """
+  Parses a mapping of the form...
+
+    key1:value1,key2:value2...
+
+  ... in which keys are strings and values are integers.
+
+  :param str mapping: value to be parsed
+
+  :returns: dict of **str => int** mappings
+
+  :rasies: **stem.ProtocolError** if unable to parse the mapping
+  """
+
+  if mapping is None:
+    return None
+
+  results = {}
+
+  for entry in mapping.split(','):
+    if not ':' in entry:
+      raise stem.ProtocolError("Mappings are expected to be of the form 'key:value', got '%s': %s" % (entry, mapping))
+
+    key, value = entry.split(':', 1)
+
+    if not CELL_TYPE.match(key):
+      raise stem.ProtocolError("Key had invalid characters, got '%s': %s" % (key, mapping))
+    elif not value.isdigit():
+      raise stem.ProtocolError("Values should just be integers, got '%s': %s" % (value, mapping))
+
+    results[key] = int(value)
+
+  return results
+
+
 EVENT_TYPE_TO_CLASS = {
   "ADDRMAP": AddrMapEvent,
   "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
   "BUILDTIMEOUT_SET": BuildTimeoutSetEvent,
   "BW": BandwidthEvent,
+  "CELL_STATS": CellStatsEvent,
   "CIRC": CircuitEvent,
+  "CIRC_BW": CircuitBandwidthEvent,
   "CIRC_MINOR": CircMinorEvent,
   "CLIENTS_SEEN": ClientsSeenEvent,
   "CONF_CHANGED": ConfChangedEvent,
+  "CONN_BW": ConnectionBandwidthEvent,
   "DEBUG": LogEvent,
   "DESCCHANGED": DescChangedEvent,
   "ERR": LogEvent,
@@ -951,6 +1176,7 @@ EVENT_TYPE_TO_CLASS = {
   "STATUS_SERVER": StatusEvent,
   "STREAM": StreamEvent,
   "STREAM_BW": StreamBwEvent,
+  "TB_EMPTY": TokenBucketEmptyEvent,
   "TRANSPORT_LAUNCHED": TransportLaunchedEvent,
   "WARN": LogEvent,
 
