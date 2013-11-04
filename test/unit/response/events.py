@@ -337,6 +337,26 @@ CIRC_BW = "650 CIRC_BW ID=11 READ=272 WRITTEN=817"
 CIRC_BW_BAD_WRITTEN_VALUE = "650 CIRC_BW ID=11 READ=272 WRITTEN=817.7"
 CIRC_BW_BAD_MISSING_ID = "650 CIRC_BW READ=272 WRITTEN=817"
 
+CELL_STATS_1 = "650 CELL_STATS ID=14 \
+OutboundQueue=19403 OutboundConn=15 \
+OutboundAdded=create_fast:1,relay_early:2 \
+OutboundRemoved=create_fast:1,relay_early:2 \
+OutboundTime=create_fast:0,relay_early:0"
+
+CELL_STATS_2 = "650 CELL_STATS \
+InboundQueue=19403 InboundConn=32 \
+InboundAdded=relay:1,created_fast:1 \
+InboundRemoved=relay:1,created_fast:1 \
+InboundTime=relay:0,created_fast:0 \
+OutboundQueue=6710 OutboundConn=18 \
+OutboundAdded=create:1,relay_early:1 \
+OutboundRemoved=create:1,relay_early:1 \
+OutboundTime=create:0,relay_early:0"
+
+CELL_STATS_BAD_1 = "650 CELL_STATS OutboundAdded=create_fast:-1,relay_early:2"
+CELL_STATS_BAD_2 = "650 CELL_STATS OutboundAdded=create_fast:arg,relay_early:-2"
+CELL_STATS_BAD_3 = "650 CELL_STATS OutboundAdded=create_fast!:1,relay_early:-2"
+
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -1222,6 +1242,45 @@ class TestEvents(unittest.TestCase):
 
     self.assertRaises(ProtocolError, _get_event, CIRC_BW_BAD_WRITTEN_VALUE)
     self.assertRaises(ProtocolError, _get_event, CIRC_BW_BAD_MISSING_ID)
+
+  def test_cell_stats_event(self):
+    event = _get_event(CELL_STATS_1)
+
+    self.assertTrue(isinstance(event, stem.response.events.CellStatsEvent))
+    self.assertEqual(CELL_STATS_1.lstrip("650 "), str(event))
+    self.assertEqual("14", event.id)
+    self.assertEqual(None, event.inbound_queue)
+    self.assertEqual(None, event.inbound_connection)
+    self.assertEqual(None, event.inbound_added)
+    self.assertEqual(None, event.inbound_removed)
+    self.assertEqual(None, event.inbound_time)
+    self.assertEqual("19403", event.outbound_queue)
+    self.assertEqual("15", event.outbound_connection)
+    self.assertEqual({'create_fast': 1, 'relay_early' :2}, event.outbound_added)
+    self.assertEqual({'create_fast': 1, 'relay_early': 2}, event.outbound_removed)
+    self.assertEqual({'create_fast': 0, 'relay_early': 0}, event.outbound_time)
+
+    event = _get_event(CELL_STATS_2)
+
+    self.assertTrue(isinstance(event, stem.response.events.CellStatsEvent))
+    self.assertEqual(CELL_STATS_2.lstrip("650 "), str(event))
+    self.assertEqual(None, event.id)
+    self.assertEqual("19403", event.inbound_queue)
+    self.assertEqual("32", event.inbound_connection)
+    self.assertEqual({'relay': 1, 'created_fast': 1}, event.inbound_added)
+    self.assertEqual({'relay': 1, 'created_fast': 1}, event.inbound_removed)
+    self.assertEqual({'relay': 0, 'created_fast': 0}, event.inbound_time)
+    self.assertEqual("6710", event.outbound_queue)
+    self.assertEqual("18", event.outbound_connection)
+    self.assertEqual({'create': 1, 'relay_early': 1}, event.outbound_added)
+    self.assertEqual({'create': 1, 'relay_early': 1}, event.outbound_removed)
+    self.assertEqual({'create': 0, 'relay_early': 0}, event.outbound_time)
+
+    # check a few invalid mappings (bad key or value)
+
+    self.assertRaises(ProtocolError, _get_event, CELL_STATS_BAD_1)
+    self.assertRaises(ProtocolError, _get_event, CELL_STATS_BAD_2)
+    self.assertRaises(ProtocolError, _get_event, CELL_STATS_BAD_3)
 
   def test_unrecognized_enum_logging(self):
     """

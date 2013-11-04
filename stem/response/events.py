@@ -20,6 +20,7 @@ from stem.util import connection, log, str_tools, tor_tools
 
 KW_ARG = re.compile("^(.*) ([A-Za-z0-9_]+)=(\S*)$")
 QUOTED_KW_ARG = re.compile("^(.*) ([A-Za-z0-9_]+)=\"(.*)\"$")
+CELL_TYPE = re.compile("^[a-z0-9_]+$")
 
 
 class Event(stem.response.ControlMessage):
@@ -1008,15 +1009,114 @@ class CircuitBandwidthEvent(Event):
     self.read = long(self.read)
     self.written = long(self.written)
 
+
+class CellStatsEvent(Event):
+  """
+  Event emitted every second with a count of the number of cells types broken
+  down by the circuit. **These events are only emitted if TestingTorNetwork is
+  set.**
+
+  The CELL_STATS event was introduced in tor version 0.2.5.2-alpha.
+
+  .. versionadded:: 1.1.0-dev
+
+  :var str id: circuit identifier
+  :var str inbound_queue: inbound queue identifier
+  :var str inbound_connection: inbound connection identifier
+  :var dict inbound_added: mapping of added inbound cell types to their count
+  :var dict inbound_removed: mapping of removed inbound cell types to their count
+  :var dict inbound_time: mapping of inbound cell types to the time they took to write in milliseconds
+  :var str outbound_queue: outbound queue identifier
+  :var str outbound_connection: outbound connection identifier
+  :var dict outbound_added: mapping of added outbound cell types to their count
+  :var dict outbound_removed: mapping of removed outbound cell types to their count
+  :var dict outbound_time: mapping of outbound cell types to the time they took to write in milliseconds
+  """
+
+  _KEYWORD_ARGS = {
+    "ID": "id",
+    "InboundQueue": "inbound_queue",
+    "InboundConn": "inbound_connection",
+    "InboundAdded": "inbound_added",
+    "InboundRemoved": "inbound_removed",
+    "InboundTime": "inbound_time",
+    "OutboundQueue": "outbound_queue",
+    "OutboundConn": "outbound_connection",
+    "OutboundAdded": "outbound_added",
+    "OutboundRemoved": "outbound_removed",
+    "OutboundTime": "outbound_time",
+  }
+
+  _VERSION_ADDED = stem.version.Requirement.EVENT_CELL_STATS
+
+  def _parse(self):
+    if self.id and not tor_tools.is_valid_circuit_id(self.id):
+      raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
+    elif self.inbound_queue and not tor_tools.is_valid_circuit_id(self.inbound_queue):
+      raise stem.ProtocolError("Queue IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.inbound_queue, self))
+    elif self.inbound_connection and not tor_tools.is_valid_connection_id(self.inbound_connection):
+      raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.inbound_connection, self))
+    elif self.outbound_queue and not tor_tools.is_valid_circuit_id(self.outbound_queue):
+      raise stem.ProtocolError("Queue IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.outbound_queue, self))
+    elif self.outbound_connection and not tor_tools.is_valid_connection_id(self.outbound_connection):
+      raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.outbound_connection, self))
+
+    self.inbound_added = _parse_cell_type_mapping(self.inbound_added)
+    self.inbound_removed = _parse_cell_type_mapping(self.inbound_removed)
+    self.inbound_time = _parse_cell_type_mapping(self.inbound_time)
+    self.outbound_added = _parse_cell_type_mapping(self.outbound_added)
+    self.outbound_removed = _parse_cell_type_mapping(self.outbound_removed)
+    self.outbound_time = _parse_cell_type_mapping(self.outbound_time)
+
+
+def _parse_cell_type_mapping(mapping):
+  """
+  Parses a mapping of the form...
+
+    key1:value1,key2:value2...
+
+  ... in which keys are strings and values are integers.
+
+  :param str mapping: value to be parsed
+
+  :returns: dict of **str => int** mappings
+
+  :rasies: **stem.ProtocolError** if unable to parse the mapping
+  """
+
+  if mapping is None:
+    return None
+
+  results = {}
+
+  for entry in mapping.split(','):
+    if not ':' in entry:
+      raise stem.ProtocolError("Mappings are expected to be of the form 'key:value', got '%s': %s" % (entry, mapping))
+
+    key, value = entry.split(':', 1)
+
+    if not CELL_TYPE.match(key):
+      raise stem.ProtocolError("Key had invalid characters, got '%s': %s" % (key, mapping))
+    elif not value.isdigit():
+      raise stem.ProtocolError("Values should just be integers, got '%s': %s" % (value, mapping))
+
+    results[key] = int(value)
+
+  return results
+
+
 EVENT_TYPE_TO_CLASS = {
   "ADDRMAP": AddrMapEvent,
   "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
   "BUILDTIMEOUT_SET": BuildTimeoutSetEvent,
   "BW": BandwidthEvent,
+  "CELL_STATS": CellStatsEvent,
   "CIRC": CircuitEvent,
+  "CIRC_BW": CircuitBandwidthEvent,
   "CIRC_MINOR": CircMinorEvent,
   "CLIENTS_SEEN": ClientsSeenEvent,
   "CONF_CHANGED": ConfChangedEvent,
+  "CONN_BW": ConnectionBandwidthEvent,
   "DEBUG": LogEvent,
   "DESCCHANGED": DescChangedEvent,
   "ERR": LogEvent,
@@ -1034,8 +1134,6 @@ EVENT_TYPE_TO_CLASS = {
   "STREAM": StreamEvent,
   "STREAM_BW": StreamBwEvent,
   "TRANSPORT_LAUNCHED": TransportLaunchedEvent,
-  "CONN_BW": ConnectionBandwidthEvent,
-  "CIRC_BW": CircuitBandwidthEvent,
   "WARN": LogEvent,
 
   # accounting for a bug in tor 0.2.0.22
