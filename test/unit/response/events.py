@@ -1263,7 +1263,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.inbound_time)
     self.assertEqual("19403", event.outbound_queue)
     self.assertEqual("15", event.outbound_connection)
-    self.assertEqual({'create_fast': 1, 'relay_early' :2}, event.outbound_added)
+    self.assertEqual({'create_fast': 1, 'relay_early': 2}, event.outbound_added)
     self.assertEqual({'create_fast': 1, 'relay_early': 2}, event.outbound_removed)
     self.assertEqual({'create_fast': 0, 'relay_early': 0}, event.outbound_time)
 
