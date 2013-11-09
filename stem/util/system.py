@@ -36,7 +36,6 @@ import ctypes
 import ctypes.util
 import os
 import platform
-import pwd
 import subprocess
 import time
 
@@ -657,6 +656,8 @@ def get_user(pid):
 
   if stem.util.proc.is_available():
     try:
+      import pwd  # only available on unix platforms
+
       uid = stem.util.proc.get_uid(pid)
 
       if uid and uid.isdigit():
