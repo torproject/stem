@@ -82,9 +82,11 @@ Target = stem.util.enum.UppercaseEnum(
 
 # We make some paths relative to stem's base directory (the one above us)
 # rather than the process' cwd. This doesn't end with a slash.
+
 STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
-# mapping of files to the issues that should be ignored
+# Mapping of files to the issues that should be ignored.
+
 PYFLAKES_IGNORE = None
 
 
