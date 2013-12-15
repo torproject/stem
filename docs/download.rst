@@ -61,8 +61,13 @@ Download
      - .. image:: /_static/label/python_package_index.png
           :target: https://pypi.python.org/pypi/stem/
 
-       Signed releases and instructions for both python 2.x and 3.x. If you
-       have **pip** installed then getting stem can be as simple as...
+       Signed releases and instructions for both python 2.x and 3.x. You can
+       install from its `tarball
+       <https://pypi.python.org/packages/source/s/stem/stem-1.1.1.tar.bz2>`_
+       (`sig
+       <https://pypi.python.org/packages/source/s/stem/stem-1.1.1.tar.bz2.asc>`_),
+       or if you have **pip** installed then getting stem can be as simple
+       as...
 
        ::
 
