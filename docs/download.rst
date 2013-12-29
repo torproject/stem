@@ -112,10 +112,10 @@ Download
          % yum install python-stem
 
    * - .. image:: /_static/section/download/slackware.png
-          :target: http://slackbuilds.org/repository/14.0/python/stem/
+          :target: http://slackbuilds.org/repository/14.1/python/stem/
 
      - .. image:: /_static/label/slackware.png
-          :target: http://slackbuilds.org/repository/14.0/python/stem/
+          :target: http://slackbuilds.org/repository/14.1/python/stem/
 
        Package maintained by Markus for Slackware (`instructions
        <http://slackbuilds.org/howto/>`_).
