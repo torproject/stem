@@ -85,10 +85,6 @@ Target = stem.util.enum.UppercaseEnum(
 
 STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
-# Mapping of files to the issues that should be ignored.
-
-PYFLAKES_IGNORE = None
-
 
 def get_unit_tests(prefix = None):
   """
@@ -311,16 +307,11 @@ def get_pyflakes_issues(paths):
   :returns: dict of the form ``path => [(line_number, message)...]``
   """
 
-  global PYFLAKES_IGNORE
+  pyflakes_ignore = {}
 
-  if PYFLAKES_IGNORE is None:
-    pyflakes_ignore = {}
-
-    for line in CONFIG["pyflakes.ignore"]:
-      path, issue = line.split("=>")
-      pyflakes_ignore.setdefault(path.strip(), []).append(issue.strip())
-
-    PYFLAKES_IGNORE = pyflakes_ignore
+  for line in CONFIG["pyflakes.ignore"]:
+    path, issue = line.split("=>")
+    pyflakes_ignore.setdefault(path.strip(), []).append(issue.strip())
 
   # Pyflakes issues are of the form...
   #
@@ -348,13 +339,13 @@ def get_pyflakes_issues(paths):
         if _is_test_data(path):
           continue
 
-        # paths in PYFLAKES_IGNORE are relative, so we need to check to see if
+        # paths in pyflakes_ignore are relative, so we need to check to see if
         # our path ends with any of them
 
         ignore_issue = False
 
-        for ignore_path in PYFLAKES_IGNORE:
-          if path.endswith(ignore_path) and issue in PYFLAKES_IGNORE[ignore_path]:
+        for ignore_path in pyflakes_ignore:
+          if path.endswith(ignore_path) and issue in pyflakes_ignore[ignore_path]:
             ignore_issue = True
             break
 
