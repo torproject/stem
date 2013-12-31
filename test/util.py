@@ -313,6 +313,16 @@ def get_pyflakes_issues(paths):
     path, issue = line.split("=>")
     pyflakes_ignore.setdefault(path.strip(), []).append(issue.strip())
 
+  def is_ignored(path, issue):
+    # Paths in pyflakes_ignore are relative, so we need to check to see if our
+    # path ends with any of them.
+
+    for ignore_path in pyflakes_ignore:
+      if path.endswith(ignore_path) and issue in pyflakes_ignore[ignore_path]:
+        return True
+
+    return False
+
   # Pyflakes issues are of the form...
   #
   #   FILE:LINE: ISSUE
@@ -336,20 +346,7 @@ def get_pyflakes_issues(paths):
       if line_match:
         path, line, issue = line_match.groups()
 
-        if _is_test_data(path):
-          continue
-
-        # paths in pyflakes_ignore are relative, so we need to check to see if
-        # our path ends with any of them
-
-        ignore_issue = False
-
-        for ignore_path in pyflakes_ignore:
-          if path.endswith(ignore_path) and issue in pyflakes_ignore[ignore_path]:
-            ignore_issue = True
-            break
-
-        if not ignore_issue:
+        if not _is_test_data(path) and not is_ignored(path, issue):
           issues.setdefault(path, []).append((int(line), issue))
 
   return issues
