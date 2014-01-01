@@ -250,10 +250,10 @@ def get_stylistic_issues(paths):
       line_match = re.match("^(.*):(\d+):(\d+): (.*)$", line)
 
       if line_match:
-        path, line, _, issue = line_match.groups()
+        file_path, line, _, issue = line_match.groups()
 
-        if not _is_test_data(path):
-          issues.setdefault(path, []).append((int(line), issue))
+        if not _is_test_data(file_path):
+          issues.setdefault(file_path, []).append((int(line), issue))
 
     for file_path in _get_files_with_suffix(path):
       if _is_test_data(file_path):
