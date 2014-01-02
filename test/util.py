@@ -328,17 +328,49 @@ def get_pyflakes_issues(paths):
   :returns: dict of the form ``path => [(line_number, message)...]``
   """
 
-  if not is_pyflakes_available():
-    return {}
+  issues = {}
 
-  import pyflakes.api
+  if is_pyflakes_available():
+    import pyflakes.api
+    import pyflakes.reporter
 
-  reporter = PyflakesReporter()
+    class Reporter(pyflakes.reporter.Reporter):
+      def __init__(self):
+        self._ignored_issues = {}
 
-  for path in _get_python_files(paths):
-    pyflakes.api.checkPath(path, reporter)
+        for line in CONFIG["pyflakes.ignore"]:
+          path, issue = line.split("=>")
+          self._ignored_issues.setdefault(path.strip(), []).append(issue.strip())
 
-  return reporter.issues
+      def unexpectedError(self, filename, msg):
+        self._register_issue(filename, None, msg)
+
+      def syntaxError(self, filename, msg, lineno, offset, text):
+        self._register_issue(filename, lineno, msg)
+
+      def flake(self, msg):
+        self._register_issue(msg.filename, msg.lineno, msg.message % msg.message_args)
+
+      def _is_ignored(self, path, issue):
+        # Paths in pyflakes_ignore are relative, so we need to check to see if our
+        # path ends with any of them.
+
+        for ignored_path, ignored_issues in self._ignored_issues.items():
+          if path.endswith(ignored_path) and issue in ignored_issues:
+            return True
+
+        return False
+
+      def _register_issue(self, path, line_number, issue):
+        if not self._is_ignored(path, issue):
+          issues.setdefault(path, []).append((line_number, issue))
+
+    reporter = Reporter()
+
+    for path in _get_python_files(paths):
+      pyflakes.api.checkPath(path, reporter)
+
+  return issues
 
 
 def check_stem_version():
@@ -564,46 +596,6 @@ def _get_python_files(paths):
         results.append(file_path)
 
   return results
-
-
-class PyflakesReporter(object):
-  """
-  Implementation of the pyflakes.reporter.Reporter interface. This populates
-  our **issues** with a dictionary of the form...
-
-    {path: [(line_number, issue)...], ...}
-  """
-
-  def __init__(self):
-    self.issues = {}
-    self.ignored_issues = {}
-
-    for line in CONFIG["pyflakes.ignore"]:
-      path, issue = line.split("=>")
-      self.ignored_issues.setdefault(path.strip(), []).append(issue.strip())
-
-  def is_ignored(self, path, issue):
-    # Paths in pyflakes_ignore are relative, so we need to check to see if our
-    # path ends with any of them.
-
-    for ignore_path in self.ignored_issues:
-      if path.endswith(ignore_path) and issue in self.ignored_issues[ignore_path]:
-        return True
-
-    return False
-
-  def unexpectedError(self, filename, msg):
-    self.register_issue(filename, None, msg)
-
-  def syntaxError(self, filename, msg, lineno, offset, text):
-    self.register_issue(filename, lineno, msg)
-
-  def flake(self, msg):
-    self.register_issue(msg.filename, msg.lineno, msg.message % msg.message_args)
-
-  def register_issue(self, path, line_number, issue):
-    if not self.is_ignored(path, issue):
-      self.issues.setdefault(path, []).append((line_number, issue))
 
 
 class Task(object):
