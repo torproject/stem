@@ -372,7 +372,7 @@ def _print_static_issues(args):
       println("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
 
   if args.run_style:
-    if stem.util.system.is_available("pep8"):
+    if test.util.is_pep8_available():
       static_check_issues.update(test.util.get_stylistic_issues(SRC_PATHS))
     else:
       println("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
@@ -383,9 +383,18 @@ def _print_static_issues(args):
     for file_path in static_check_issues:
       println("* %s" % file_path, STATUS)
 
+      # Make a dict of line numbers to its issues. This is so we can both sort
+      # by the line number and clear any duplicate messages.
+
+      line_to_issues = {}
+
       for line_number, msg in static_check_issues[file_path]:
-        line_count = "%-4s" % line_number
-        println("  line %s - %s" % (line_count, msg))
+        line_to_issues.setdefault(line_number, set()).add(msg)
+
+      for line_number in sorted(line_to_issues.keys()):
+        for msg in line_to_issues[line_number]:
+          line_count = "%-4s" % line_number
+          println("  line %s - %s" % (line_count, msg))
 
       println()
 

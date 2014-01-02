@@ -10,6 +10,8 @@ Helper functions for our test framework.
   get_integ_tests - provides our integration tests
 
   is_pyflakes_available - checks if pyflakes is available
+  is_pep8_available - checks if pep8 is available
+
   get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
   get_help_message - provides usage information for running our tests
@@ -170,6 +172,20 @@ def is_pyflakes_available():
     return False
 
 
+def is_pep8_available():
+  """
+  Checks if pep8 is availalbe.
+
+  :returns: **True** if we can use pep8 and **False** otherwise
+  """
+
+  try:
+    import pep8
+    return True
+  except ImportError:
+    return False
+
+
 def get_prereq(target):
   """
   Provides the tor version required to run the given target. If the target
@@ -244,32 +260,25 @@ def get_stylistic_issues(paths):
   :returns: **dict** of the form ``path => [(line_number, message)...]``
   """
 
-  # The pep8 command give output of the form...
-  #
-  #   FILE:LINE:CHARACTER ISSUE
-  #
-  # ... for instance...
-  #
-  #   ./test/mocking.py:868:31: E225 missing whitespace around operator
-
-  ignored_issues = ','.join(CONFIG["pep8.ignore"])
   issues = {}
 
+  if is_pep8_available():
+    import pep8
+
+    class StyleReport(pep8.BaseReport):
+      def __init__(self, options):
+        super(StyleReport, self).__init__(options)
+
+      def error(self, line_number, offset, text, check):
+        code = super(StyleReport, self).error(line_number, offset, text, check)
+
+        if code:
+          issues.setdefault(self.filename, []).append((offset + line_number, "%s %s" % (code, text)))
+
+    style_checker = pep8.StyleGuide(ignore = CONFIG["pep8.ignore"], reporter = StyleReport)
+    style_checker.check_files(_get_python_files(paths))
+
   for path in paths:
-    pep8_output = stem.util.system.call(
-      "pep8 --ignore %s %s" % (ignored_issues, path),
-      ignore_exit_status = True,
-    )
-
-    for line in pep8_output:
-      line_match = re.match("^(.*):(\d+):(\d+): (.*)$", line)
-
-      if line_match:
-        file_path, line, _, issue = line_match.groups()
-
-        if not _is_test_data(file_path):
-          issues.setdefault(file_path, []).append((int(line), issue))
-
     for file_path in _get_files_with_suffix(path):
       if _is_test_data(file_path):
         continue
@@ -277,7 +286,7 @@ def get_stylistic_issues(paths):
       with open(file_path) as f:
         file_contents = f.read()
 
-      lines, file_issues, prev_indent = file_contents.split("\n"), [], 0
+      lines, prev_indent = file_contents.split("\n"), 0
       is_block_comment = False
 
       for index, line in enumerate(lines):
@@ -291,11 +300,11 @@ def get_stylistic_issues(paths):
           is_block_comment = not is_block_comment
 
         if "\t" in whitespace:
-          file_issues.append((index + 1, "indentation has a tab"))
+          issues.setdefault(file_path, []).append((index + 1, "indentation has a tab"))
         elif "\r" in content:
-          file_issues.append((index + 1, "contains a windows newline"))
+          issues.setdefault(file_path, []).append((index + 1, "contains a windows newline"))
         elif content != content.rstrip():
-          file_issues.append((index + 1, "line has trailing whitespace"))
+          issues.setdefault(file_path, []).append((index + 1, "line has trailing whitespace"))
         elif content.lstrip().startswith("except") and content.endswith(", exc:"):
           # Python 2.6 - 2.7 supports two forms for exceptions...
           #
@@ -305,10 +314,7 @@ def get_stylistic_issues(paths):
           # The former is the old method and no longer supported in python 3
           # going forward.
 
-          file_issues.append((index + 1, "except clause should use 'as', not comma"))
-
-      if file_issues:
-        issues[file_path] = file_issues
+          issues.setdefault(file_path, []).append((index + 1, "except clause should use 'as', not comma"))
 
   return issues
 
@@ -329,10 +335,8 @@ def get_pyflakes_issues(paths):
 
   reporter = PyflakesReporter()
 
-  for path in paths:
-    for file_path in _get_files_with_suffix(path):
-      if not _is_test_data(file_path):
-        pyflakes.api.checkPath(file_path, reporter)
+  for path in _get_python_files(paths):
+    pyflakes.api.checkPath(path, reporter)
 
   return reporter.issues
 
@@ -549,6 +553,17 @@ def run_tasks(category, *tasks):
       sys.exit(1)
 
   println()
+
+
+def _get_python_files(paths):
+  results = []
+
+  for path in paths:
+    for file_path in _get_files_with_suffix(path):
+      if not _is_test_data(file_path):
+        results.append(file_path)
+
+  return results
 
 
 class PyflakesReporter(object):
