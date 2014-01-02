@@ -43,7 +43,6 @@ from test.util import STEM_BASE, Target, Task
 ARGS = {
   'run_unit': False,
   'run_integ': False,
-  'run_style': False,
   'run_python3': False,
   'run_python3_clean': False,
   'test_prefix': None,
@@ -54,8 +53,8 @@ ARGS = {
   'print_help': False,
 }
 
-OPT = "auist:l:h"
-OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=", "test=", "log=", "tor=", "help"]
+OPT = "auit:l:h"
+OPT_EXPANDED = ["all", "unit", "integ", "python3", "clean", "targets=", "test=", "log=", "tor=", "help"]
 
 CONFIG = stem.util.conf.config_dict("test", {
   "target.torrc": {},
@@ -113,7 +112,7 @@ def main():
   if args.print_help:
     println(test.util.get_help_message())
     sys.exit()
-  elif not args.run_unit and not args.run_integ and not args.run_style:
+  elif not args.run_unit and not args.run_integ:
     println("Nothing to run (for usage provide --help)\n")
     sys.exit()
 
@@ -300,13 +299,10 @@ def _get_args(argv):
     if opt in ("-a", "--all"):
       args['run_unit'] = True
       args['run_integ'] = True
-      args['run_style'] = True
     elif opt in ("-u", "--unit"):
       args['run_unit'] = True
     elif opt in ("-i", "--integ"):
       args['run_integ'] = True
-    elif opt in ("-s", "--style"):
-      args['run_style'] = True
     elif opt == "--python3":
       args['run_python3'] = True
     elif opt == "--clean":
@@ -371,7 +367,6 @@ def _print_static_issues(args):
     else:
       println("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
 
-  if args.run_style:
     if test.util.is_pep8_available():
       static_check_issues.update(test.util.get_stylistic_issues(SRC_PATHS))
     else:
