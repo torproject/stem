@@ -366,7 +366,7 @@ def _print_static_issues(args):
   # much overhead in including it with all tests.
 
   if args.run_unit or args.run_integ:
-    if stem.util.system.is_available("pyflakes"):
+    if test.util.is_pyflakes_available():
       static_check_issues.update(test.util.get_pyflakes_issues(SRC_PATHS))
     else:
       println("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)

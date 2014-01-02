@@ -9,6 +9,7 @@ Helper functions for our test framework.
   get_unit_tests - provides our unit tests
   get_integ_tests - provides our integration tests
 
+  is_pyflakes_available - checks if pyflakes is available
   get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
   get_help_message - provides usage information for running our tests
@@ -153,6 +154,20 @@ def get_help_message():
   help_msg += "\n"
 
   return help_msg
+
+
+def is_pyflakes_available():
+  """
+  Checks if pyflakes is availalbe.
+
+  :returns: **True** if we can use pyflakes and **False** otherwise
+  """
+
+  try:
+    import pyflakes
+    return True
+  except ImportError:
+    return False
 
 
 def get_prereq(target):
@@ -307,49 +322,19 @@ def get_pyflakes_issues(paths):
   :returns: dict of the form ``path => [(line_number, message)...]``
   """
 
-  pyflakes_ignore = {}
+  if not is_pyflakes_available():
+    return {}
 
-  for line in CONFIG["pyflakes.ignore"]:
-    path, issue = line.split("=>")
-    pyflakes_ignore.setdefault(path.strip(), []).append(issue.strip())
+  import pyflakes.api
 
-  def is_ignored(path, issue):
-    # Paths in pyflakes_ignore are relative, so we need to check to see if our
-    # path ends with any of them.
-
-    for ignore_path in pyflakes_ignore:
-      if path.endswith(ignore_path) and issue in pyflakes_ignore[ignore_path]:
-        return True
-
-    return False
-
-  # Pyflakes issues are of the form...
-  #
-  #   FILE:LINE: ISSUE
-  #
-  # ... for instance...
-  #
-  #   stem/prereq.py:73: 'long_to_bytes' imported but unused
-  #   stem/control.py:957: undefined name 'entry'
-
-  issues = {}
+  reporter = PyflakesReporter()
 
   for path in paths:
-    pyflakes_output = stem.util.system.call(
-      "pyflakes %s" % path,
-      ignore_exit_status = True,
-    )
+    for file_path in _get_files_with_suffix(path):
+      if not _is_test_data(file_path):
+        pyflakes.api.checkPath(file_path, reporter)
 
-    for line in pyflakes_output:
-      line_match = re.match("^(.*):(\d+): (.*)$", line)
-
-      if line_match:
-        path, line, issue = line_match.groups()
-
-        if not _is_test_data(path) and not is_ignored(path, issue):
-          issues.setdefault(path, []).append((int(line), issue))
-
-  return issues
+  return reporter.issues
 
 
 def check_stem_version():
@@ -564,6 +549,46 @@ def run_tasks(category, *tasks):
       sys.exit(1)
 
   println()
+
+
+class PyflakesReporter(object):
+  """
+  Implementation of the pyflakes.reporter.Reporter interface. This populates
+  our **issues** with a dictionary of the form...
+
+    {path: [(line_number, issue)...], ...}
+  """
+
+  def __init__(self):
+    self.issues = {}
+    self.ignored_issues = {}
+
+    for line in CONFIG["pyflakes.ignore"]:
+      path, issue = line.split("=>")
+      self.ignored_issues.setdefault(path.strip(), []).append(issue.strip())
+
+  def is_ignored(self, path, issue):
+    # Paths in pyflakes_ignore are relative, so we need to check to see if our
+    # path ends with any of them.
+
+    for ignore_path in self.ignored_issues:
+      if path.endswith(ignore_path) and issue in self.ignored_issues[ignore_path]:
+        return True
+
+    return False
+
+  def unexpectedError(self, filename, msg):
+    self.register_issue(filename, None, msg)
+
+  def syntaxError(self, filename, msg, lineno, offset, text):
+    self.register_issue(filename, lineno, msg)
+
+  def flake(self, msg):
+    self.register_issue(msg.filename, msg.lineno, msg.message % msg.message_args)
+
+  def register_issue(self, path, line_number, issue):
+    if not self.is_ignored(path, issue):
+      self.issues.setdefault(path, []).append((line_number, issue))
 
 
 class Task(object):
