@@ -43,7 +43,6 @@ from test.util import STEM_BASE, Target, Task
 ARGS = {
   'run_unit': False,
   'run_integ': False,
-  'run_style': False,
   'run_python3': False,
   'run_python3_clean': False,
   'test_prefix': None,
@@ -54,8 +53,8 @@ ARGS = {
   'print_help': False,
 }
 
-OPT = "auist:l:h"
-OPT_EXPANDED = ["all", "unit", "integ", "style", "python3", "clean", "targets=", "test=", "log=", "tor=", "help"]
+OPT = "auit:l:h"
+OPT_EXPANDED = ["all", "unit", "integ", "python3", "clean", "targets=", "test=", "log=", "tor=", "help"]
 
 CONFIG = stem.util.conf.config_dict("test", {
   "target.torrc": {},
@@ -113,7 +112,7 @@ def main():
   if args.print_help:
     println(test.util.get_help_message())
     sys.exit()
-  elif not args.run_unit and not args.run_integ and not args.run_style:
+  elif not args.run_unit and not args.run_integ:
     println("Nothing to run (for usage provide --help)\n")
     sys.exit()
 
@@ -300,13 +299,10 @@ def _get_args(argv):
     if opt in ("-a", "--all"):
       args['run_unit'] = True
       args['run_integ'] = True
-      args['run_style'] = True
     elif opt in ("-u", "--unit"):
       args['run_unit'] = True
     elif opt in ("-i", "--integ"):
       args['run_integ'] = True
-    elif opt in ("-s", "--style"):
-      args['run_style'] = True
     elif opt == "--python3":
       args['run_python3'] = True
     elif opt == "--clean":
@@ -366,13 +362,12 @@ def _print_static_issues(args):
   # much overhead in including it with all tests.
 
   if args.run_unit or args.run_integ:
-    if stem.util.system.is_available("pyflakes"):
+    if test.util.is_pyflakes_available():
       static_check_issues.update(test.util.get_pyflakes_issues(SRC_PATHS))
     else:
       println("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
 
-  if args.run_style:
-    if stem.util.system.is_available("pep8"):
+    if test.util.is_pep8_available():
       static_check_issues.update(test.util.get_stylistic_issues(SRC_PATHS))
     else:
       println("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
@@ -383,9 +378,18 @@ def _print_static_issues(args):
     for file_path in static_check_issues:
       println("* %s" % file_path, STATUS)
 
+      # Make a dict of line numbers to its issues. This is so we can both sort
+      # by the line number and clear any duplicate messages.
+
+      line_to_issues = {}
+
       for line_number, msg in static_check_issues[file_path]:
-        line_count = "%-4s" % line_number
-        println("  line %s - %s" % (line_count, msg))
+        line_to_issues.setdefault(line_number, set()).add(msg)
+
+      for line_number in sorted(line_to_issues.keys()):
+        for msg in line_to_issues[line_number]:
+          line_count = "%-4s" % line_number
+          println("  line %s - %s" % (line_count, msg))
 
       println()
 

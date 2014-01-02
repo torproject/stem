@@ -11,6 +11,7 @@ import unittest
 import stem.descriptor.router_status_entry
 import stem.util.connection
 import stem.util.str_tools
+import stem.util.system
 import stem.version
 
 import test.util
@@ -32,7 +33,7 @@ class TestDocumentation(unittest.TestCase):
     stem_dir = os.path.join(test.util.STEM_BASE, 'stem')
     is_failed = False
 
-    for path in test.util._get_files_with_suffix(stem_dir):
+    for path in stem.util.system.files_with_suffix(stem_dir, '.py'):
       args = {'module_relative': False}
       test_run = None
 

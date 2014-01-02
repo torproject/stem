@@ -26,6 +26,7 @@ best-effort, providing **None** if the lookup fails.
   get_bsd_jail_id - provides the BSD jail id a given process is running within
   get_bsd_jail_path - provides the path of the given BSD jail
   expand_path - expands relative paths and ~ entries
+  files_with_suffix - provides files with the given suffix
   call - runs the given system command and provides back the results
 
   get_process_name - provides our process' name
@@ -805,6 +806,29 @@ def expand_path(path, cwd = None):
       relative_path = os.path.join(cwd, relative_path)
 
   return relative_path
+
+
+def files_with_suffix(base_path, suffix):
+  """
+  Iterates over files in a given directory, providing filenames with a certain
+  suffix.
+
+  .. versionadded:: 1.2.0
+
+  :param str base_path: directory to be iterated over
+  :param str suffix: filename suffix to look for
+
+  :returns: iterator that yields the absolute path for files with the given suffix
+  """
+
+  if os.path.isfile(base_path):
+    if base_path.endswith(suffix):
+      yield base_path
+  else:
+    for root, _, files in os.walk(base_path):
+      for filename in files:
+        if filename.endswith(suffix):
+          yield os.path.join(root, filename)
 
 
 def call(command, default = UNDEFINED, ignore_exit_status = False):

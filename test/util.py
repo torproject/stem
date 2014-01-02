@@ -9,6 +9,9 @@ Helper functions for our test framework.
   get_unit_tests - provides our unit tests
   get_integ_tests - provides our integration tests
 
+  is_pyflakes_available - checks if pyflakes is available
+  is_pep8_available - checks if pep8 is available
+
   get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
   get_help_message - provides usage information for running our tests
@@ -85,10 +88,6 @@ Target = stem.util.enum.UppercaseEnum(
 
 STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
-# Mapping of files to the issues that should be ignored.
-
-PYFLAKES_IGNORE = None
-
 
 def get_unit_tests(prefix = None):
   """
@@ -157,6 +156,34 @@ def get_help_message():
   help_msg += "\n"
 
   return help_msg
+
+
+def is_pyflakes_available():
+  """
+  Checks if pyflakes is availalbe.
+
+  :returns: **True** if we can use pyflakes and **False** otherwise
+  """
+
+  try:
+    import pyflakes
+    return True
+  except ImportError:
+    return False
+
+
+def is_pep8_available():
+  """
+  Checks if pep8 is availalbe.
+
+  :returns: **True** if we can use pep8 and **False** otherwise
+  """
+
+  try:
+    import pep8
+    return True
+  except ImportError:
+    return False
 
 
 def get_prereq(target):
@@ -233,71 +260,57 @@ def get_stylistic_issues(paths):
   :returns: **dict** of the form ``path => [(line_number, message)...]``
   """
 
-  # The pep8 command give output of the form...
-  #
-  #   FILE:LINE:CHARACTER ISSUE
-  #
-  # ... for instance...
-  #
-  #   ./test/mocking.py:868:31: E225 missing whitespace around operator
-
-  ignored_issues = ','.join(CONFIG["pep8.ignore"])
   issues = {}
 
-  for path in paths:
-    pep8_output = stem.util.system.call(
-      "pep8 --ignore %s %s" % (ignored_issues, path),
-      ignore_exit_status = True,
-    )
+  if is_pep8_available():
+    import pep8
 
-    for line in pep8_output:
-      line_match = re.match("^(.*):(\d+):(\d+): (.*)$", line)
+    class StyleReport(pep8.BaseReport):
+      def __init__(self, options):
+        super(StyleReport, self).__init__(options)
 
-      if line_match:
-        path, line, _, issue = line_match.groups()
+      def error(self, line_number, offset, text, check):
+        code = super(StyleReport, self).error(line_number, offset, text, check)
 
-        if not _is_test_data(path):
-          issues.setdefault(path, []).append((int(line), issue))
+        if code:
+          issues.setdefault(self.filename, []).append((offset + line_number, "%s %s" % (code, text)))
 
-    for file_path in _get_files_with_suffix(path):
-      if _is_test_data(file_path):
-        continue
+    style_checker = pep8.StyleGuide(ignore = CONFIG["pep8.ignore"], reporter = StyleReport)
+    style_checker.check_files(list(_python_files(paths)))
 
-      with open(file_path) as f:
-        file_contents = f.read()
+  for path in _python_files(paths):
+    with open(path) as f:
+      file_contents = f.read()
 
-      lines, file_issues, prev_indent = file_contents.split("\n"), [], 0
-      is_block_comment = False
+    lines, prev_indent = file_contents.split("\n"), 0
+    is_block_comment = False
 
-      for index, line in enumerate(lines):
-        whitespace, content = re.match("^(\s*)(.*)$", line).groups()
+    for index, line in enumerate(lines):
+      whitespace, content = re.match("^(\s*)(.*)$", line).groups()
 
-        # TODO: This does not check that block indentations are two spaces
-        # because differentiating source from string blocks ("""foo""") is more
-        # of a pita than I want to deal with right now.
+      # TODO: This does not check that block indentations are two spaces
+      # because differentiating source from string blocks ("""foo""") is more
+      # of a pita than I want to deal with right now.
 
-        if '"""' in content:
-          is_block_comment = not is_block_comment
+      if '"""' in content:
+        is_block_comment = not is_block_comment
 
-        if "\t" in whitespace:
-          file_issues.append((index + 1, "indentation has a tab"))
-        elif "\r" in content:
-          file_issues.append((index + 1, "contains a windows newline"))
-        elif content != content.rstrip():
-          file_issues.append((index + 1, "line has trailing whitespace"))
-        elif content.lstrip().startswith("except") and content.endswith(", exc:"):
-          # Python 2.6 - 2.7 supports two forms for exceptions...
-          #
-          #   except ValueError, exc:
-          #   except ValueError as exc:
-          #
-          # The former is the old method and no longer supported in python 3
-          # going forward.
+      if "\t" in whitespace:
+        issues.setdefault(path, []).append((index + 1, "indentation has a tab"))
+      elif "\r" in content:
+        issues.setdefault(path, []).append((index + 1, "contains a windows newline"))
+      elif content != content.rstrip():
+        issues.setdefault(path, []).append((index + 1, "line has trailing whitespace"))
+      elif content.lstrip().startswith("except") and content.endswith(", exc:"):
+        # Python 2.6 - 2.7 supports two forms for exceptions...
+        #
+        #   except ValueError, exc:
+        #   except ValueError as exc:
+        #
+        # The former is the old method and no longer supported in python 3
+        # going forward.
 
-          file_issues.append((index + 1, "except clause should use 'as', not comma"))
-
-      if file_issues:
-        issues[file_path] = file_issues
+        issues.setdefault(path, []).append((index + 1, "except clause should use 'as', not comma"))
 
   return issues
 
@@ -311,55 +324,47 @@ def get_pyflakes_issues(paths):
   :returns: dict of the form ``path => [(line_number, message)...]``
   """
 
-  global PYFLAKES_IGNORE
-
-  if PYFLAKES_IGNORE is None:
-    pyflakes_ignore = {}
-
-    for line in CONFIG["pyflakes.ignore"]:
-      path, issue = line.split("=>")
-      pyflakes_ignore.setdefault(path.strip(), []).append(issue.strip())
-
-    PYFLAKES_IGNORE = pyflakes_ignore
-
-  # Pyflakes issues are of the form...
-  #
-  #   FILE:LINE: ISSUE
-  #
-  # ... for instance...
-  #
-  #   stem/prereq.py:73: 'long_to_bytes' imported but unused
-  #   stem/control.py:957: undefined name 'entry'
-
   issues = {}
 
-  for path in paths:
-    pyflakes_output = stem.util.system.call(
-      "pyflakes %s" % path,
-      ignore_exit_status = True,
-    )
+  if is_pyflakes_available():
+    import pyflakes.api
+    import pyflakes.reporter
 
-    for line in pyflakes_output:
-      line_match = re.match("^(.*):(\d+): (.*)$", line)
+    class Reporter(pyflakes.reporter.Reporter):
+      def __init__(self):
+        self._ignored_issues = {}
 
-      if line_match:
-        path, line, issue = line_match.groups()
+        for line in CONFIG["pyflakes.ignore"]:
+          path, issue = line.split("=>")
+          self._ignored_issues.setdefault(path.strip(), []).append(issue.strip())
 
-        if _is_test_data(path):
-          continue
+      def unexpectedError(self, filename, msg):
+        self._register_issue(filename, None, msg)
 
-        # paths in PYFLAKES_IGNORE are relative, so we need to check to see if
-        # our path ends with any of them
+      def syntaxError(self, filename, msg, lineno, offset, text):
+        self._register_issue(filename, lineno, msg)
 
-        ignore_issue = False
+      def flake(self, msg):
+        self._register_issue(msg.filename, msg.lineno, msg.message % msg.message_args)
 
-        for ignore_path in PYFLAKES_IGNORE:
-          if path.endswith(ignore_path) and issue in PYFLAKES_IGNORE[ignore_path]:
-            ignore_issue = True
-            break
+      def _is_ignored(self, path, issue):
+        # Paths in pyflakes_ignore are relative, so we need to check to see if our
+        # path ends with any of them.
 
-        if not ignore_issue:
-          issues.setdefault(path, []).append((int(line), issue))
+        for ignored_path, ignored_issues in self._ignored_issues.items():
+          if path.endswith(ignored_path) and issue in ignored_issues:
+            return True
+
+        return False
+
+      def _register_issue(self, path, line_number, issue):
+        if not self._is_ignored(path, issue):
+          issues.setdefault(path, []).append((line_number, issue))
+
+    reporter = Reporter()
+
+    for path in _python_files(paths):
+      pyflakes.api.checkPath(path, reporter)
 
   return issues
 
@@ -428,7 +433,7 @@ def clean_orphaned_pyc(paths):
   orphaned_pyc = []
 
   for path in paths:
-    for pyc_path in _get_files_with_suffix(path, ".pyc"):
+    for pyc_path in stem.util.system.files_with_suffix(path, '.pyc'):
       # If we're running python 3 then the *.pyc files are no longer bundled
       # with the *.py. Rather, they're in a __pycache__ directory.
       #
@@ -462,7 +467,7 @@ def check_for_unused_tests(paths):
   unused_tests = []
 
   for path in paths:
-    for py_path in _get_files_with_suffix(path, ".py"):
+    for py_path in stem.util.system.files_with_suffix(path, '.py'):
       if _is_test_data(py_path):
         continue
 
@@ -535,27 +540,6 @@ def _is_test_data(path):
   return os.path.normpath(CONFIG["integ.test_directory"]) in path
 
 
-def _get_files_with_suffix(base_path, suffix = ".py"):
-  """
-  Iterates over files in a given directory, providing filenames with a certain
-  suffix.
-
-  :param str base_path: directory to be iterated over
-  :param str suffix: filename suffix to look for
-
-  :returns: iterator that yields the absolute path for files with the given suffix
-  """
-
-  if os.path.isfile(base_path):
-    if base_path.endswith(suffix):
-      yield base_path
-  else:
-    for root, _, files in os.walk(base_path):
-      for filename in files:
-        if filename.endswith(suffix):
-          yield os.path.join(root, filename)
-
-
 def run_tasks(category, *tasks):
   """
   Runs a series of :class:`test.util.Task` instances. This simply prints 'done'
@@ -576,6 +560,13 @@ def run_tasks(category, *tasks):
       sys.exit(1)
 
   println()
+
+
+def _python_files(paths):
+  for path in paths:
+    for file_path in stem.util.system.files_with_suffix(path, '.py'):
+      if not _is_test_data(file_path):
+        yield file_path
 
 
 class Task(object):
