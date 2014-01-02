@@ -278,43 +278,39 @@ def get_stylistic_issues(paths):
     style_checker = pep8.StyleGuide(ignore = CONFIG["pep8.ignore"], reporter = StyleReport)
     style_checker.check_files(list(_python_files(paths)))
 
-  for path in paths:
-    for file_path in stem.util.system.files_with_suffix(path, '.py'):
-      if _is_test_data(file_path):
-        continue
+  for path in _python_files(paths):
+    with open(path) as f:
+      file_contents = f.read()
 
-      with open(file_path) as f:
-        file_contents = f.read()
+    lines, prev_indent = file_contents.split("\n"), 0
+    is_block_comment = False
 
-      lines, prev_indent = file_contents.split("\n"), 0
-      is_block_comment = False
+    for index, line in enumerate(lines):
+      whitespace, content = re.match("^(\s*)(.*)$", line).groups()
 
-      for index, line in enumerate(lines):
-        whitespace, content = re.match("^(\s*)(.*)$", line).groups()
+      # TODO: This does not check that block indentations are two spaces
+      # because differentiating source from string blocks ("""foo""") is more
+      # of a pita than I want to deal with right now.
 
-        # TODO: This does not check that block indentations are two spaces
-        # because differentiating source from string blocks ("""foo""") is more
-        # of a pita than I want to deal with right now.
+      if '"""' in content:
+        is_block_comment = not is_block_comment
 
-        if '"""' in content:
-          is_block_comment = not is_block_comment
+      if "\t" in whitespace:
+        issues.setdefault(path, []).append((index + 1, "indentation has a tab"))
+      elif "\r" in content:
+        issues.setdefault(path, []).append((index + 1, "contains a windows newline"))
+      elif content != content.rstrip():
+        issues.setdefault(path, []).append((index + 1, "line has trailing whitespace"))
+      elif content.lstrip().startswith("except") and content.endswith(", exc:"):
+        # Python 2.6 - 2.7 supports two forms for exceptions...
+        #
+        #   except ValueError, exc:
+        #   except ValueError as exc:
+        #
+        # The former is the old method and no longer supported in python 3
+        # going forward.
 
-        if "\t" in whitespace:
-          issues.setdefault(file_path, []).append((index + 1, "indentation has a tab"))
-        elif "\r" in content:
-          issues.setdefault(file_path, []).append((index + 1, "contains a windows newline"))
-        elif content != content.rstrip():
-          issues.setdefault(file_path, []).append((index + 1, "line has trailing whitespace"))
-        elif content.lstrip().startswith("except") and content.endswith(", exc:"):
-          # Python 2.6 - 2.7 supports two forms for exceptions...
-          #
-          #   except ValueError, exc:
-          #   except ValueError as exc:
-          #
-          # The former is the old method and no longer supported in python 3
-          # going forward.
-
-          issues.setdefault(file_path, []).append((index + 1, "except clause should use 'as', not comma"))
+        issues.setdefault(path, []).append((index + 1, "except clause should use 'as', not comma"))
 
   return issues
 
