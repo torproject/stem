@@ -276,10 +276,10 @@ def get_stylistic_issues(paths):
           issues.setdefault(self.filename, []).append((offset + line_number, "%s %s" % (code, text)))
 
     style_checker = pep8.StyleGuide(ignore = CONFIG["pep8.ignore"], reporter = StyleReport)
-    style_checker.check_files(_get_python_files(paths))
+    style_checker.check_files(list(_python_files(paths)))
 
   for path in paths:
-    for file_path in _get_files_with_suffix(path):
+    for file_path in stem.util.system.files_with_suffix(path, '.py'):
       if _is_test_data(file_path):
         continue
 
@@ -367,7 +367,7 @@ def get_pyflakes_issues(paths):
 
     reporter = Reporter()
 
-    for path in _get_python_files(paths):
+    for path in _python_files(paths):
       pyflakes.api.checkPath(path, reporter)
 
   return issues
@@ -437,7 +437,7 @@ def clean_orphaned_pyc(paths):
   orphaned_pyc = []
 
   for path in paths:
-    for pyc_path in _get_files_with_suffix(path, ".pyc"):
+    for pyc_path in stem.util.system.files_with_suffix(path, '.pyc'):
       # If we're running python 3 then the *.pyc files are no longer bundled
       # with the *.py. Rather, they're in a __pycache__ directory.
       #
@@ -471,7 +471,7 @@ def check_for_unused_tests(paths):
   unused_tests = []
 
   for path in paths:
-    for py_path in _get_files_with_suffix(path, ".py"):
+    for py_path in stem.util.system.files_with_suffix(path, '.py'):
       if _is_test_data(py_path):
         continue
 
@@ -544,27 +544,6 @@ def _is_test_data(path):
   return os.path.normpath(CONFIG["integ.test_directory"]) in path
 
 
-def _get_files_with_suffix(base_path, suffix = ".py"):
-  """
-  Iterates over files in a given directory, providing filenames with a certain
-  suffix.
-
-  :param str base_path: directory to be iterated over
-  :param str suffix: filename suffix to look for
-
-  :returns: iterator that yields the absolute path for files with the given suffix
-  """
-
-  if os.path.isfile(base_path):
-    if base_path.endswith(suffix):
-      yield base_path
-  else:
-    for root, _, files in os.walk(base_path):
-      for filename in files:
-        if filename.endswith(suffix):
-          yield os.path.join(root, filename)
-
-
 def run_tasks(category, *tasks):
   """
   Runs a series of :class:`test.util.Task` instances. This simply prints 'done'
@@ -587,15 +566,11 @@ def run_tasks(category, *tasks):
   println()
 
 
-def _get_python_files(paths):
-  results = []
-
+def _python_files(paths):
   for path in paths:
-    for file_path in _get_files_with_suffix(path):
+    for file_path in stem.util.system.files_with_suffix(path, '.py'):
       if not _is_test_data(file_path):
-        results.append(file_path)
-
-  return results
+        yield file_path
 
 
 class Task(object):

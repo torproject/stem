@@ -47,6 +47,10 @@ The following are only available within stem's `git repository
   * Added `support for CELL_STATS events <api/response.html#stem.response.events.CellStatsEvent>`_ (:spec:`6f2919a`)
   * Added `support for TB_EMPTY events <api/response.html#stem.response.events.TokenBucketEmptyEvent>`_ (:spec:`6f2919a`)
 
+ * **Utilities**
+
+  * Added :func:`stem.util.system.files_with_suffix`
+
 .. _version_1.1:
 
 Version 1.1
