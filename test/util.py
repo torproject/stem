@@ -554,6 +554,9 @@ def run_tasks(category, *tasks):
   test.output.print_divider(category, True)
 
   for task in tasks:
+    if task is None:
+      continue
+
     task.run()
 
     if task.is_required and task.error:
@@ -576,14 +579,18 @@ class Task(object):
   message or list of strings for its results.
   """
 
-  def __init__(self, label, runner, args = None, is_required = True):
+  def __init__(self, label, runner, args = None, is_required = True, print_result = True):
     super(Task, self).__init__()
 
     self.label = label
     self.runner = runner
     self.args = args
     self.is_required = is_required
+    self.print_result = print_result
     self.error = None
+
+    self.is_successful = False
+    self.result = None
 
   def run(self):
     println("  %s..." % self.label, STATUS, NO_NL)
@@ -593,19 +600,20 @@ class Task(object):
 
     try:
       if self.args:
-        result = self.runner(*self.args)
+        self.result = self.runner(*self.args)
       else:
-        result = self.runner()
+        self.result = self.runner()
 
+      self.is_successful = True
       output_msg = "done"
 
-      if isinstance(result, str):
-        output_msg = result
+      if self.print_result and isinstance(self.result, str):
+        output_msg = self.result
 
       println(output_msg, STATUS)
 
-      if isinstance(result, (list, tuple)):
-        for line in result:
+      if self.print_result and isinstance(self.result, (list, tuple)):
+        for line in self.result:
           println("    %s" % line, STATUS)
     except Exception as exc:
       output_msg = str(exc)

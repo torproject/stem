@@ -87,6 +87,22 @@ version 0.8.0 or later...
 https://pypi.python.org/pypi/mock/
 """
 
+PYFLAKES_TASK = Task(
+  "running pyflakes",
+  test.util.get_pyflakes_issues,
+  args = (SRC_PATHS,),
+  is_required = False,
+  print_result = False,
+)
+
+PEP8_TASK = Task(
+  "running pep8",
+  test.util.get_stylistic_issues,
+  args = (SRC_PATHS,),
+  is_required = False,
+  print_result = False,
+)
+
 
 def main():
   start_time = time.time()
@@ -134,6 +150,15 @@ def main():
 
     sys.exit(1)
 
+  pyflakes_task, pep8_task = None, None
+
+  if not stem.prereq.is_python_3():
+    if test.util.is_pyflakes_available():
+      pyflakes_task = PYFLAKES_TASK
+
+    if test.util.is_pep8_available():
+      pep8_task = PEP8_TASK
+
   test.util.run_tasks(
     "INITIALISING",
     Task("checking stem version", test.util.check_stem_version),
@@ -144,6 +169,8 @@ def main():
     Task("checking pep8 version", test.util.check_pep8_version),
     Task("checking for orphaned .pyc files", test.util.clean_orphaned_pyc, (SRC_PATHS,)),
     Task("checking for unused tests", test.util.check_for_unused_tests, ((os.path.join(STEM_BASE, 'test'),),)),
+    pyflakes_task,
+    pep8_task,
   )
 
   if args.run_python3 and sys.version_info[0] != 3:
@@ -262,7 +289,19 @@ def main():
       println()
 
   if not stem.prereq.is_python_3():
-    _print_static_issues(args)
+    static_check_issues = {}
+
+    if pyflakes_task and pyflakes_task.is_successful:
+      static_check_issues.update(pyflakes_task.result)
+    elif not test.util.is_pyflakes_available():
+      println("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
+
+    if pep8_task and pep8_task.is_successful:
+      static_check_issues.update(pep8_task.result)
+    elif not test.util.is_pep8_available():
+      println("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
+
+    _print_static_issues(static_check_issues)
 
   runtime_label = "(%i seconds)" % (time.time() - start_time)
 
@@ -354,24 +393,7 @@ def _get_args(argv):
   return Args(**args)
 
 
-def _print_static_issues(args):
-  static_check_issues = {}
-
-  # If we're doing some sort of testing (unit or integ) and pyflakes is
-  # available then use it. Its static checks are pretty quick so there's not
-  # much overhead in including it with all tests.
-
-  if args.run_unit or args.run_integ:
-    if test.util.is_pyflakes_available():
-      static_check_issues.update(test.util.get_pyflakes_issues(SRC_PATHS))
-    else:
-      println("Static error checking requires pyflakes. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
-
-    if test.util.is_pep8_available():
-      static_check_issues.update(test.util.get_stylistic_issues(SRC_PATHS))
-    else:
-      println("Style checks require pep8. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
-
+def _print_static_issues(static_check_issues):
   if static_check_issues:
     println("STATIC CHECKS", STATUS)
 
