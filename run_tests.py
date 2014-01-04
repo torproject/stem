@@ -25,7 +25,7 @@ import test.output
 import test.runner
 import test.util
 
-from test.output import STATUS, SUCCESS, ERROR, println
+from test.output import STATUS, SUCCESS, ERROR, NO_NL, println
 from test.util import STEM_BASE, Target, Task
 
 # Our default arguments. The _get_args() function provides a named tuple of
@@ -50,11 +50,12 @@ ARGS = {
   'tor_path': 'tor',
   'run_targets': [Target.RUN_OPEN],
   'attribute_targets': [],
+  'verbose': False,
   'print_help': False,
 }
 
-OPT = "auit:l:h"
-OPT_EXPANDED = ["all", "unit", "integ", "python3", "clean", "targets=", "test=", "log=", "tor=", "help"]
+OPT = "auit:l:vh"
+OPT_EXPANDED = ["all", "unit", "integ", "python3", "clean", "targets=", "test=", "log=", "tor=", "verbose", "help"]
 
 CONFIG = stem.util.conf.config_dict("test", {
   "target.torrc": {},
@@ -212,7 +213,7 @@ def main():
     error_tracker.set_category("UNIT TEST")
 
     for test_class in test.util.get_unit_tests(args.test_prefix):
-      run_result = _run_test(test_class, output_filters, logging_buffer)
+      run_result = _run_test(args, test_class, output_filters, logging_buffer)
       skipped_tests += len(getattr(run_result, 'skipped', []))
 
     println()
@@ -248,7 +249,7 @@ def main():
           owner = integ_runner.get_tor_controller(True)  # controller to own our main Tor process
 
         for test_class in test.util.get_integ_tests(args.test_prefix):
-          run_result = _run_test(test_class, output_filters, logging_buffer)
+          run_result = _run_test(args, test_class, output_filters, logging_buffer)
           skipped_tests += len(getattr(run_result, 'skipped', []))
 
         if owner:
@@ -384,6 +385,8 @@ def _get_args(argv):
       args['logging_runlevel'] = arg
     elif opt in ("--tor"):
       args['tor_path'] = arg
+    elif opt in ("-v", "--verbose"):
+      args['verbose'] = True
     elif opt in ("-h", "--help"):
       args['print_help'] = True
 
@@ -416,15 +419,38 @@ def _print_static_issues(static_check_issues):
       println()
 
 
-def _run_test(test_class, output_filters, logging_buffer):
-  test.output.print_divider(test_class.__module__)
+def _run_test(args, test_class, output_filters, logging_buffer):
+  start_time = time.time()
+
+  if args.verbose:
+    test.output.print_divider(test_class.__module__)
+  else:
+    label = test_class.__module__
+
+    if label.startswith('test.unit.'):
+      label = label[10:]
+    elif label.startswith('test.integ.'):
+      label = label[11:]
+
+    label = "  %s..." % label
+    label = "%-54s" % label
+
+    println(label, STATUS, NO_NL)
+
   suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
 
   test_results = StringIO.StringIO()
   run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
 
-  sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
-  println()
+  if args.verbose:
+    sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
+    println()
+  elif not run_result.failures:
+    println(" success (%0.2fs)" % (time.time() - start_time), SUCCESS)
+  else:
+    println(" failed (%0.2fs)" % (time.time() - start_time), ERROR)
+    sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
+
   test.output.print_logging(logging_buffer)
 
   return run_result
