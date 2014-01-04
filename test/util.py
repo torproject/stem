@@ -182,6 +182,10 @@ def is_pep8_available():
 
   try:
     import pep8
+
+    if not hasattr(pep8, 'BaseReport'):
+      raise ImportError()
+
     return True
   except ImportError:
     return False
