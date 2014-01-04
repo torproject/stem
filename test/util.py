@@ -166,7 +166,8 @@ def is_pyflakes_available():
   """
 
   try:
-    import pyflakes
+    import pyflakes.api
+    import pyflakes.reporter
     return True
   except ImportError:
     return False
