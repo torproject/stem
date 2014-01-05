@@ -293,12 +293,16 @@ def main():
     static_check_issues = {}
 
     if pyflakes_task and pyflakes_task.is_successful:
-      static_check_issues.update(pyflakes_task.result)
+      for path, issues in pyflakes_task.result.items():
+        for issue in issues:
+          static_check_issues.setdefault(path, []).append(issue)
     elif not test.util.is_pyflakes_available():
       println("Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
 
     if pep8_task and pep8_task.is_successful:
-      static_check_issues.update(pep8_task.result)
+      for path, issues in pep8_task.result.items():
+        for issue in issues:
+          static_check_issues.setdefault(path, []).append(issue)
     elif not test.util.is_pep8_available():
       println("Style checks require pep8 version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
 
