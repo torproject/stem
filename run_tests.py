@@ -449,7 +449,7 @@ def _run_test(args, test_class, output_filters, logging_buffer):
   if args.verbose:
     sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
     println()
-  elif not run_result.failures:
+  elif not run_result.failures and not run_result.errors:
     println(" success (%0.2fs)" % (time.time() - start_time), SUCCESS)
   else:
     println(" failed (%0.2fs)" % (time.time() - start_time), ERROR)
