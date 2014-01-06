@@ -45,7 +45,7 @@ ARGS = {
   'run_integ': False,
   'run_python3': False,
   'run_python3_clean': False,
-  'test_prefix': None,
+  'specific_test': None,
   'logging_runlevel': None,
   'tor_path': 'tor',
   'run_targets': [Target.RUN_OPEN],
@@ -153,7 +153,7 @@ def main():
 
   pyflakes_task, pep8_task = None, None
 
-  if not stem.prereq.is_python_3() and not args.test_prefix:
+  if not stem.prereq.is_python_3() and not args.specific_test:
     if test.util.is_pyflakes_available():
       pyflakes_task = PYFLAKES_TASK
 
@@ -212,7 +212,7 @@ def main():
     test.output.print_divider("UNIT TESTS", True)
     error_tracker.set_category("UNIT TEST")
 
-    for test_class in test.util.get_unit_tests(args.test_prefix):
+    for test_class in test.util.get_unit_tests(args.specific_test):
       run_result = _run_test(args, test_class, output_filters, logging_buffer)
       skipped_tests += len(getattr(run_result, 'skipped', []))
 
@@ -248,7 +248,7 @@ def main():
         if integ_runner.is_accessible():
           owner = integ_runner.get_tor_controller(True)  # controller to own our main Tor process
 
-        for test_class in test.util.get_integ_tests(args.test_prefix):
+        for test_class in test.util.get_integ_tests(args.specific_test):
           run_result = _run_test(args, test_class, output_filters, logging_buffer)
           skipped_tests += len(getattr(run_result, 'skipped', []))
 
@@ -379,7 +379,7 @@ def _get_args(argv):
       args['run_targets'] = run_targets
       args['attribute_targets'] = attribute_targets
     elif opt in ("-l", "--test"):
-      args['test_prefix'] = arg
+      args['specific_test'] = arg
     elif opt in ("-l", "--log"):
       arg = arg.upper()
 

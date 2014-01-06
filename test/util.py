@@ -89,34 +89,34 @@ Target = stem.util.enum.UppercaseEnum(
 STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 
-def get_unit_tests(prefix = None):
+def get_unit_tests(module_substring = None):
   """
   Provides the classes for our unit tests.
 
-  :param str prefix: only provide the test if the module starts with this prefix
+  :param str module_substring: only provide the test if the module includes this substring
 
   :returns: an **iterator** for our unit tests
   """
 
-  return _get_tests(CONFIG["test.unit_tests"].splitlines(), prefix)
+  return _get_tests(CONFIG["test.unit_tests"].splitlines(), module_substring)
 
 
-def get_integ_tests(prefix = None):
+def get_integ_tests(module_substring = None):
   """
   Provides the classes for our integration tests.
 
-  :param str prefix: only provide the test if the module starts with this prefix
+  :param str module_substring: only provide the test if the module includes this substring
 
   :returns: an **iterator** for our integration tests
   """
 
-  return _get_tests(CONFIG["test.integ_tests"].splitlines(), prefix)
+  return _get_tests(CONFIG["test.integ_tests"].splitlines(), module_substring)
 
 
-def _get_tests(modules, prefix):
+def _get_tests(modules, module_substring):
   for import_name in modules:
     if import_name:
-      if prefix and not import_name.startswith(prefix):
+      if module_substring and module_substring not in import_name:
         continue
 
       # Dynamically imports test modules. The __import__() call has a couple
