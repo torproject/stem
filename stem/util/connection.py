@@ -8,6 +8,7 @@ Connection and networking based utility functions.
 
   get_connections - quieries the connections belonging to a given process
   get_system_resolvers - provides connection resolution methods that are likely to be available
+  port_usage - brief description of the common usage for a port
 
   is_valid_ipv4_address - checks if a string is a valid IPv4 address
   is_valid_ipv6_address - checks if a string is a valid IPv6 address
@@ -47,7 +48,7 @@ import re
 import stem.util.proc
 import stem.util.system
 
-from stem.util import enum, log
+from stem.util import conf, enum, log
 
 # Connection resolution is risky to log about since it's highly likely to
 # contain sensitive information. That said, it's also difficult to get right in
@@ -78,6 +79,8 @@ FULL_IPv4_MASK = "255.255.255.255"
 FULL_IPv6_MASK = "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"
 
 CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
+
+PORT_USES = None  # port number => description
 
 RESOLVER_COMMAND = {
   Resolver.PROC: '',
@@ -267,6 +270,52 @@ def get_system_resolvers(system = None):
     resolvers = [Resolver.PROC] + resolvers
 
   return resolvers
+
+
+def port_usage(port):
+  """
+  Provides the common use of a given port. For example, 'HTTP' for port 80 or
+  'SSH' for 22.
+
+  .. versionadded:: 1.2.0
+
+  :param int port: port number to look up
+
+  :returns: **str** with a description for the port, **None** if none is known
+  """
+
+  global PORT_USES
+
+  if PORT_USES is None:
+    config = conf.Config()
+    config_path = os.path.join(os.path.dirname(__file__), 'ports.cfg')
+
+    try:
+      config.load(config_path)
+      port_uses = {}
+
+      for key, value in config.get('port', {}).items():
+        if key.isdigit():
+         port_uses[int(key)] = value
+        elif '-' in key:
+          min_port, max_port = key.split('-', 1)
+
+          for port_entry in range(int(min_port), int(max_port) + 1):
+            port_uses[port_entry] = value
+        else:
+          raise ValueError("'%s' is an invalid key" % key)
+
+      PORT_USES = port_uses
+    except Exception as exc:
+      log.warn("BUG: stem failed to load its internal port descriptions from '%s': %s" % (config_path, exc))
+
+  if not PORT_USES:
+    return None
+
+  if isinstance(port, str) and port.isdigit():
+    port = int(port)
+
+  return PORT_USES.get(port)
 
 
 def is_valid_ipv4_address(address):

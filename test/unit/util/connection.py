@@ -121,6 +121,17 @@ class TestConnection(unittest.TestCase):
     is_available_mock.return_value = False
     self.assertEqual([Resolver.PROC], stem.util.connection.get_system_resolvers('Linux'))
 
+  def test_port_usage(self):
+    """
+    Check that port_usage can load our config and provide the expected results.
+    """
+
+    self.assertEqual('HTTP', stem.util.connection.port_usage(80))
+    self.assertEqual('HTTP', stem.util.connection.port_usage('80'))  # query with a string
+    self.assertEqual('BitTorrent', stem.util.connection.port_usage(6881))  # min and max value of a range
+    self.assertEqual('BitTorrent', stem.util.connection.port_usage(6999))
+    self.assertEqual(None, stem.util.connection.port_usage(30000))  # unrecognized port
+
   @patch('stem.util.proc.get_connections')
   def test_get_connections_by_proc(self, proc_mock):
     """

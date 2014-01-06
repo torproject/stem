@@ -49,6 +49,7 @@ The following are only available within stem's `git repository
 
  * **Utilities**
 
+  * Added :func:`stem.util.connection.port_usage`
   * Added :func:`stem.util.system.files_with_suffix`
 
 .. _version_1.1:
