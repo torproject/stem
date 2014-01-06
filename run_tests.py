@@ -153,7 +153,7 @@ def main():
 
   pyflakes_task, pep8_task = None, None
 
-  if not stem.prereq.is_python_3():
+  if not stem.prereq.is_python_3() and not args.test_prefix:
     if test.util.is_pyflakes_available():
       pyflakes_task = PYFLAKES_TASK
 
