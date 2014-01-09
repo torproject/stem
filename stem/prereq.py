@@ -1,4 +1,4 @@
-# Copyright 2012-2013, Damian Johnson and The Tor Project
+# Copyright 2012-2014, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 
 """
@@ -36,7 +36,8 @@ def check_requirements():
   Checks that we meet the minimum requirements to run stem. If we don't then
   this raises an ImportError with the issue.
 
-  :raises: ImportError with the problem if we don't meet stem's requirements
+  :raises: **ImportError** with the problem if we don't meet stem's
+    requirements
   """
 
   major_version, minor_version = sys.version_info[0:2]

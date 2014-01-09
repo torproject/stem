@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2011-2013, Damian Johnson and The Tor Project
+# Copyright 2011-2014, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 
 """
