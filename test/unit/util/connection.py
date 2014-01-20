@@ -53,6 +53,19 @@ firefox   20586 atagar   66u  IPv4  5765353      0t0  TCP 192.168.0.1:47486->62.
 firefox   20586 atagar   71u  IPv4 13094989      0t0  TCP 192.168.0.1:43762->182.3.10.42:443 (CLOSE_WAIT)
 """
 
+LSOF_OUTPUT_OSX = """\
+tor       129 atagar    4u  IPv4 0xffffff3527af0500      0t0  TCP 127.0.0.1:9051 (LISTEN)
+tor       129 atagar    5u  IPv4 0xffffff363af9de40      0t0  TCP 192.168.1.10:9090 (LISTEN)
+tor       129 atagar    6u  IPv4 0xffffff306a960a40      0t0  TCP 192.168.1.10:9091 (LISTEN)
+tor       129 atagar    8u  IPv6 0xffffff13f5575a98      0t0  UDP *:48718
+tor       129 atagar    9u  IPv6 0xffffff1b2273a178      0t0  UDP *:48714
+tor       129 atagar   10u  IPv6 0xffffff1b473a9758      0t0  UDP *:48716
+tor       129 atagar   11u  IPv6 0xffffff1b5733aa48      0t0  UDP *:48719
+tor       129 atagar   12u  IPv4 0xffffff1cc6dd0160      0t0  TCP 192.168.1.20:9090->38.229.79.2:14010 (ESTABLISHED)
+tor       129 atagar   22u  IPv4 0xffffff35c9125500      0t0  TCP 192.168.1.20:9090->68.169.35.102:14815 (ESTABLISHED)
+tor       129 atagar   23u  IPv4 0xffffff3236168160      0t0  TCP 192.168.1.20:9090->62.135.16.134:14456 (ESTABLISHED)
+"""
+
 SOCKSTAT_OUTPUT = """\
 USER     PROCESS              PID      PROTO  SOURCE ADDRESS            FOREIGN ADDRESS           STATE
 atagar   ubuntu-geoip-pr      2164     tcp4   192.168.0.1:55395         141.18.34.33:80           CLOSE_WAIT
@@ -206,6 +219,23 @@ class TestConnection(unittest.TestCase):
 
     call_mock.side_effect = OSError('Unable to call lsof')
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 1111)
+
+  @patch('stem.util.system.call')
+  def test_get_connections_by_lsof_osx(self, call_mock):
+    """
+    Checks the get_connections function with the lsof resolver on OSX. This
+    only includes entries for the tor process.
+    """
+
+    call_mock.return_value = LSOF_OUTPUT_OSX.split('\n')
+
+    expected = [
+      Connection('192.168.1.20', 9090, '38.229.79.2', 14010, 'tcp'),
+      Connection('192.168.1.20', 9090, '68.169.35.102', 14815, 'tcp'),
+      Connection('192.168.1.20', 9090, '62.135.16.134', 14456, 'tcp'),
+    ]
+
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.LSOF, process_pid = 129, process_name = 'tor'))
 
   @patch('stem.util.system.call')
   def test_get_connections_by_sockstat(self, call_mock):
