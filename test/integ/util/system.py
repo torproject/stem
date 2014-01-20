@@ -19,6 +19,9 @@ except ImportError:
   from mock import Mock, patch
 
 
+IS_EXTRA_TOR_RUNNING = None
+
+
 def filter_system_call(prefixes):
   """
   Provides a functor that passes calls on to the stem.util.system.call()
@@ -45,26 +48,6 @@ def _has_port():
 
 
 class TestSystem(unittest.TestCase):
-  is_extra_tor_running = None
-
-  def setUp(self):
-    # Try to figure out if there's more than one tor instance running. This
-    # check will fail if pgrep is unavailable (for instance on bsd) but this
-    # isn't the end of the world. It's just used to skip tests if they should
-    # legitemately fail.
-
-    if self.is_extra_tor_running is None:
-      if stem.util.system.is_windows():
-        # TODO: not sure how to check for this on windows
-        self.is_extra_tor_running = False
-      elif not stem.util.system.is_bsd():
-        pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % "tor")
-        self.is_extra_tor_running = len(pgrep_results) > 1
-      else:
-        ps_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PS_BSD)
-        results = [r for r in ps_results if r.endswith(" tor")]
-        self.is_extra_tor_running = len(results) > 1
-
   def test_is_available(self):
     """
     Checks the stem.util.system.is_available function.
@@ -100,7 +83,7 @@ class TestSystem(unittest.TestCase):
     if stem.util.system.is_windows():
       test.runner.skip(self, "(unavailable on windows)")
       return
-    elif self.is_extra_tor_running:
+    elif self._is_extra_tor_running():
       test.runner.skip(self, "(multiple tor instances)")
       return
 
@@ -113,7 +96,7 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with a pgrep response.
     """
 
-    if self.is_extra_tor_running:
+    if self._is_extra_tor_running():
       test.runner.skip(self, "(multiple tor instances)")
       return
     elif not stem.util.system.is_available("pgrep"):
@@ -135,7 +118,7 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with a pidof response.
     """
 
-    if self.is_extra_tor_running:
+    if self._is_extra_tor_running():
       test.runner.skip(self, "(multiple tor instances)")
       return
     elif not stem.util.system.is_available("pidof"):
@@ -157,7 +140,7 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with the linux variant of ps.
     """
 
-    if self.is_extra_tor_running:
+    if self._is_extra_tor_running():
       test.runner.skip(self, "(multiple tor instances)")
       return
     elif not stem.util.system.is_available("ps"):
@@ -182,7 +165,7 @@ class TestSystem(unittest.TestCase):
     Tests the get_pid_by_name function with the bsd variant of ps.
     """
 
-    if self.is_extra_tor_running:
+    if self._is_extra_tor_running():
       test.runner.skip(self, "(multiple tor instances)")
       return
     elif not stem.util.system.is_available("ps"):
@@ -208,7 +191,7 @@ class TestSystem(unittest.TestCase):
     """
 
     runner = test.runner.get_runner()
-    if self.is_extra_tor_running:
+    if self._is_extra_tor_running():
       test.runner.skip(self, "(multiple tor instances)")
       return
     elif not stem.util.system.is_available("lsof"):
@@ -555,3 +538,25 @@ class TestSystem(unittest.TestCase):
       self.assertEqual("stem_integ", stem.util.system.get_process_name())
     finally:
       stem.util.system.set_process_name(initial_name)
+
+  def _is_extra_tor_running(self):
+    # Try to figure out if there's more than one tor instance running. This
+    # check will fail if pgrep is unavailable (for instance on bsd) but this
+    # isn't the end of the world. It's just used to skip tests if they should
+    # legitemately fail.
+
+    global IS_EXTRA_TOR_RUNNING
+
+    if IS_EXTRA_TOR_RUNNING is None:
+      if stem.util.system.is_windows():
+        # TODO: not sure how to check for this on windows
+        IS_EXTRA_TOR_RUNNING = False
+      elif not stem.util.system.is_bsd():
+        pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % "tor")
+        IS_EXTRA_TOR_RUNNING = len(pgrep_results) > 1
+      else:
+        ps_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PS_BSD)
+        results = [r for r in ps_results if r.endswith(" tor")]
+        IS_EXTRA_TOR_RUNNING = len(results) > 1
+
+    return IS_EXTRA_TOR_RUNNING
