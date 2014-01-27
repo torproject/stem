@@ -654,6 +654,23 @@ class TestController(unittest.TestCase):
       # invalid signals
       self.assertRaises(stem.InvalidArguments, controller.signal, "FOOBAR")
 
+  def test_newnym_availability(self):
+    """
+    Test the is_newnym_available and get_newnym_wait methods.
+    """
+
+    if test.runner.require_control(self):
+      return
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      self.assertEqual(True, controller.is_newnym_available())
+      self.assertEqual(0.0, controller.get_newnym_wait())
+
+      controller.signal(stem.Signal.NEWNYM)
+
+      self.assertEqual(False, controller.is_newnym_available())
+      self.assertTrue(controller.get_newnym_wait() > 9.0)
+
   def test_extendcircuit(self):
     if test.runner.require_control(self):
       return

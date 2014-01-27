@@ -64,6 +64,8 @@ providing its own for interacting at a higher level.
     |- close_stream - close a stream
     |
     |- signal - sends a signal to the tor client
+    |- is_newnym_available - true if tor would presently accept a NEWNYM signal
+    |- get_newnym_wait - seconds until tor would accept a NEWNYM signal
     |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
     +- map_address - maps one address to another such that connections to the original are replaced with the other
 
@@ -679,6 +681,7 @@ class Controller(BaseController):
 
     self._is_caching_enabled = True
     self._request_cache = {}
+    self._last_newnym = 0.0
 
     self._cache_lock = threading.RLock()
 
@@ -688,6 +691,7 @@ class Controller(BaseController):
     self._event_listeners_lock = threading.RLock()
 
     # number of sequential 'GETINFO ip-to-country/*' lookups that have failed
+
     self._geoip_failure_count = 0
     self._enabled_features = []
 
@@ -2258,11 +2262,43 @@ class Controller(BaseController):
     response = self.msg("SIGNAL %s" % signal)
     stem.response.convert("SINGLELINE", response)
 
-    if not response.is_ok():
+    if response.is_ok():
+      if signal == stem.Signal.NEWNYM:
+        self._last_newnym = time.time()
+    else:
       if response.code == "552":
         raise stem.InvalidArguments(response.code, response.message, [signal])
 
       raise stem.ProtocolError("SIGNAL response contained unrecognized status code: %s" % response.code)
+
+  def is_newnym_available(self):
+    """
+    Indicates if tor would presently accept a NEWNYM signal. This can only
+    account for signals sent via this controller.
+
+    .. versionadded:: 1.2.0
+
+    :returns: **True** if tor would presently accept a NEWNYM signal, **False**
+      otherwise
+    """
+
+    if self.is_alive():
+      return self.get_newnym_wait() == 0.0
+    else:
+      return False
+
+  def get_newnym_wait(self):
+    """
+    Provides the number of seconds until a NEWNYM signal would be respected.
+    This can only account for signals sent via this controller.
+
+    .. versionadded:: 1.2.0
+
+    :returns: **float** for the number of seconds until tor would respect
+      another NEWNYM signal
+    """
+
+    return max(0.0, self._last_newnym + 10 - time.time())
 
   def is_geoip_unavailable(self):
     """
