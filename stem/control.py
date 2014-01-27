@@ -1833,6 +1833,7 @@ class Controller(BaseController):
 
     with self._cache_lock:
       self._request_cache = {}
+      self._last_newnym = 0.0
       self._geoip_failure_count = 0
 
   def load_conf(self, configtext):
