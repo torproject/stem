@@ -325,10 +325,10 @@ To learn about the Tor relays you're presently using call :func:`~stem.control.C
 How do I reload my torrc?
 -------------------------
 
-Tor is configured through its `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. When you edit this file you need to either restart Tor or issue a **SIGHUP** for the changes to be reflected. To issue a SIGHUP you can either...
+Tor is configured through its `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. When you edit this file you need to either restart Tor or issue a **HUP** for the changes to be reflected. To issue a HUP you can either...
 
  * Run **pkill -sighup tor**.
- * Send Tor a **SIGHUP** signal through its control port...
+ * Send Tor a **HUP** signal through its control port...
 
 ::
 
@@ -337,7 +337,7 @@ Tor is configured through its `torrc <https://www.torproject.org/docs/faq.html.e
 
   with Controller.from_port(port = 9051) as controller:
     controller.authenticate()
-    controller.signal(Signal.SIGHUP)
+    controller.signal(Signal.HUP)
 
 .. _what_is_that_with_keyword_i_keep_seeing_in_the_tutorials:
 
