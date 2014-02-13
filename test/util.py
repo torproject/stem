@@ -9,15 +9,10 @@ Helper functions for our test framework.
   get_unit_tests - provides our unit tests
   get_integ_tests - provides our integration tests
 
-  is_pyflakes_available - checks if pyflakes is available
-  is_pep8_available - checks if pep8 is available
-
   get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
   get_help_message - provides usage information for running our tests
   get_python3_destination - location where a python3 copy of stem is exported to
-  get_stylistic_issues - checks for PEP8 and other stylistic issues
-  get_pyflakes_issues - static checks for problems via pyflakes
 
 Sets of :class:`~test.util.Task` instances can be ran with
 :func:`~test.util.run_tasks`. Functions that are intended for easy use with
@@ -50,6 +45,7 @@ import stem
 import stem.prereq
 import stem.util.conf
 import stem.util.system
+import stem.util.test_tools
 import stem.version
 
 import test.output
@@ -61,8 +57,6 @@ CONFIG = stem.util.conf.config_dict("test", {
   "target.description": {},
   "target.prereq": {},
   "target.torrc": {},
-  "pep8.ignore": [],
-  "pyflakes.ignore": [],
   "integ.test_directory": "./test/data",
   "test.unit_tests": "",
   "test.integ_tests": "",
@@ -158,39 +152,6 @@ def get_help_message():
   return help_msg
 
 
-def is_pyflakes_available():
-  """
-  Checks if pyflakes is availalbe.
-
-  :returns: **True** if we can use pyflakes and **False** otherwise
-  """
-
-  try:
-    import pyflakes.api
-    import pyflakes.reporter
-    return True
-  except ImportError:
-    return False
-
-
-def is_pep8_available():
-  """
-  Checks if pep8 is availalbe.
-
-  :returns: **True** if we can use pep8 and **False** otherwise
-  """
-
-  try:
-    import pep8
-
-    if not hasattr(pep8, 'BaseReport'):
-      raise ImportError()
-
-    return True
-  except ImportError:
-    return False
-
-
 def get_prereq(target):
   """
   Provides the tor version required to run the given target. If the target
@@ -250,130 +211,6 @@ def get_python3_destination():
   return os.path.join(CONFIG["integ.test_directory"], "python3")
 
 
-def get_stylistic_issues(paths):
-  """
-  Checks for stylistic issues that are an issue according to the parts of PEP8
-  we conform to. This alsochecks a few other stylistic issues:
-
-  * two space indentations
-  * tabs are the root of all evil and should be shot on sight
-  * standard newlines (\\n), not windows (\\r\\n) nor classic mac (\\r)
-  * checks that we're using 'as' for exceptions rather than a comma
-
-  :param list paths: paths to search for stylistic issues
-
-  :returns: **dict** of the form ``path => [(line_number, message)...]``
-  """
-
-  issues = {}
-
-  if is_pep8_available():
-    import pep8
-
-    class StyleReport(pep8.BaseReport):
-      def __init__(self, options):
-        super(StyleReport, self).__init__(options)
-
-      def error(self, line_number, offset, text, check):
-        code = super(StyleReport, self).error(line_number, offset, text, check)
-
-        if code:
-          issues.setdefault(self.filename, []).append((offset + line_number, "%s %s" % (code, text)))
-
-    style_checker = pep8.StyleGuide(ignore = CONFIG["pep8.ignore"], reporter = StyleReport)
-    style_checker.check_files(list(_python_files(paths)))
-
-  for path in _python_files(paths):
-    with open(path) as f:
-      file_contents = f.read()
-
-    lines, prev_indent = file_contents.split("\n"), 0
-    is_block_comment = False
-
-    for index, line in enumerate(lines):
-      whitespace, content = re.match("^(\s*)(.*)$", line).groups()
-
-      # TODO: This does not check that block indentations are two spaces
-      # because differentiating source from string blocks ("""foo""") is more
-      # of a pita than I want to deal with right now.
-
-      if '"""' in content:
-        is_block_comment = not is_block_comment
-
-      if "\t" in whitespace:
-        issues.setdefault(path, []).append((index + 1, "indentation has a tab"))
-      elif "\r" in content:
-        issues.setdefault(path, []).append((index + 1, "contains a windows newline"))
-      elif content != content.rstrip():
-        issues.setdefault(path, []).append((index + 1, "line has trailing whitespace"))
-      elif content.lstrip().startswith("except") and content.endswith(", exc:"):
-        # Python 2.6 - 2.7 supports two forms for exceptions...
-        #
-        #   except ValueError, exc:
-        #   except ValueError as exc:
-        #
-        # The former is the old method and no longer supported in python 3
-        # going forward.
-
-        issues.setdefault(path, []).append((index + 1, "except clause should use 'as', not comma"))
-
-  return issues
-
-
-def get_pyflakes_issues(paths):
-  """
-  Performs static checks via pyflakes.
-
-  :param list paths: paths to search for problems
-
-  :returns: dict of the form ``path => [(line_number, message)...]``
-  """
-
-  issues = {}
-
-  if is_pyflakes_available():
-    import pyflakes.api
-    import pyflakes.reporter
-
-    class Reporter(pyflakes.reporter.Reporter):
-      def __init__(self):
-        self._ignored_issues = {}
-
-        for line in CONFIG["pyflakes.ignore"]:
-          path, issue = line.split("=>")
-          self._ignored_issues.setdefault(path.strip(), []).append(issue.strip())
-
-      def unexpectedError(self, filename, msg):
-        self._register_issue(filename, None, msg)
-
-      def syntaxError(self, filename, msg, lineno, offset, text):
-        self._register_issue(filename, lineno, msg)
-
-      def flake(self, msg):
-        self._register_issue(msg.filename, msg.lineno, msg.message % msg.message_args)
-
-      def _is_ignored(self, path, issue):
-        # Paths in pyflakes_ignore are relative, so we need to check to see if our
-        # path ends with any of them.
-
-        for ignored_path, ignored_issues in self._ignored_issues.items():
-          if path.endswith(ignored_path) and issue in ignored_issues:
-            return True
-
-        return False
-
-      def _register_issue(self, path, line_number, issue):
-        if not self._is_ignored(path, issue):
-          issues.setdefault(path, []).append((line_number, issue))
-
-    reporter = Reporter()
-
-    for path in _python_files(paths):
-      pyflakes.api.checkPath(path, reporter)
-
-  return issues
-
-
 def check_stem_version():
   return stem.__version__
 
@@ -420,40 +257,12 @@ def check_pep8_version():
 
 def clean_orphaned_pyc(paths):
   """
-  Deletes any file with a *.pyc extention without a corresponding *.py. This
-  helps to address a common gotcha when deleting python files...
-
-  * You delete module 'foo.py' and run the tests to ensure that you haven't
-    broken anything. They pass, however there *are* still some 'import foo'
-    statements that still work because the bytecode (foo.pyc) is still around.
-
-  * You push your change.
-
-  * Another developer clones our repository and is confused because we have a
-    bunch of ImportErrors.
+  Deletes any file with a *.pyc extention without a corresponding *.py.
 
   :param list paths: paths to search for orphaned pyc files
   """
 
-  orphaned_pyc = []
-
-  for path in paths:
-    for pyc_path in stem.util.system.files_with_suffix(path, '.pyc'):
-      # If we're running python 3 then the *.pyc files are no longer bundled
-      # with the *.py. Rather, they're in a __pycache__ directory.
-      #
-      # At the moment there's no point in checking for orphaned bytecode with
-      # python 3 because it's an exported copy of the python 2 codebase, so
-      # skipping.
-
-      if "__pycache__" in pyc_path:
-        continue
-
-      if not os.path.exists(pyc_path[:-1]):
-        orphaned_pyc.append(pyc_path)
-        os.remove(pyc_path)
-
-  return ["removed %s" % path for path in orphaned_pyc]
+  return ["removed %s" % path for path in stem.util.test_tools.clean_orphaned_pyc(paths)]
 
 
 def check_for_unused_tests(paths):
@@ -568,13 +377,6 @@ def run_tasks(category, *tasks):
       sys.exit(1)
 
   println()
-
-
-def _python_files(paths):
-  for path in paths:
-    for file_path in stem.util.system.files_with_suffix(path, '.py'):
-      if not _is_test_data(file_path):
-        yield file_path
 
 
 class Task(object):

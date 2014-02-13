@@ -20,6 +20,7 @@ import stem.util.conf
 import stem.util.enum
 import stem.util.log
 import stem.util.system
+import stem.util.test_tools
 
 import test.output
 import test.runner
@@ -90,7 +91,7 @@ https://pypi.python.org/pypi/mock/
 
 PYFLAKES_TASK = Task(
   "running pyflakes",
-  test.util.get_pyflakes_issues,
+  stem.util.test_tools.get_pyflakes_issues,
   args = (SRC_PATHS,),
   is_required = False,
   print_result = False,
@@ -98,8 +99,8 @@ PYFLAKES_TASK = Task(
 
 PEP8_TASK = Task(
   "running pep8",
-  test.util.get_stylistic_issues,
-  args = (SRC_PATHS,),
+  stem.util.test_tools.get_stylistic_issues,
+  args = (SRC_PATHS, True, True, True, True),
   is_required = False,
   print_result = False,
 )
@@ -154,10 +155,10 @@ def main():
   pyflakes_task, pep8_task = None, None
 
   if not stem.prereq.is_python_3() and not args.specific_test:
-    if test.util.is_pyflakes_available():
+    if stem.util.test_tools.is_pyflakes_available():
       pyflakes_task = PYFLAKES_TASK
 
-    if test.util.is_pep8_available():
+    if stem.util.test_tools.is_pep8_available():
       pep8_task = PEP8_TASK
 
   test.util.run_tasks(
@@ -296,14 +297,14 @@ def main():
       for path, issues in pyflakes_task.result.items():
         for issue in issues:
           static_check_issues.setdefault(path, []).append(issue)
-    elif not test.util.is_pyflakes_available():
+    elif not stem.util.test_tools.is_pyflakes_available():
       println("Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
 
     if pep8_task and pep8_task.is_successful:
       for path, issues in pep8_task.result.items():
         for issue in issues:
           static_check_issues.setdefault(path, []).append(issue)
-    elif not test.util.is_pep8_available():
+    elif not stem.util.test_tools.is_pep8_available():
       println("Style checks require pep8 version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
 
     _print_static_issues(static_check_issues)

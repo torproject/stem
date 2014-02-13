@@ -15,5 +15,6 @@ __all__ = [
   "proc",
   "system",
   "term",
+  "test_tools",
   "tor_tools",
 ]
