@@ -9,6 +9,7 @@ import unittest
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.prereq
+import stem.version
 import stem.util.str_tools
 
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
@@ -142,6 +143,17 @@ class TestServerDescriptor(unittest.TestCase):
     desc_text = desc_text.replace(b"platform ", b"platform")
     desc = RelayDescriptor(desc_text, validate = False)
     self.assertEquals(b"", desc.platform)
+
+  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
+  def test_platform_for_node_tor(self):
+    """
+    Parse a platform line belonging to a node-Tor relay.
+    """
+
+    desc = get_relay_server_descriptor({"platform": "node-Tor 0.1.0 on Linux x86_64"})
+    self.assertEquals(b"node-Tor 0.1.0 on Linux x86_64", desc.platform)
+    self.assertEquals(stem.version.Version("0.1.0"), desc.tor_version)
+    self.assertEquals("Linux x86_64", desc.operating_system)
 
   def test_protocols_no_circuit_versions(self):
     """

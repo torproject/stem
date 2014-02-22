@@ -440,7 +440,7 @@ class ServerDescriptor(Descriptor):
         # There's no guarantee that we'll be able to pick these out the
         # version, but might as well try to save our caller the effort.
 
-        platform_match = re.match("^Tor (\S*).* on (.*)$", value)
+        platform_match = re.match("^(?:node-)?Tor (\S*).* on (.*)$", value)
 
         if platform_match:
           version_str, self.operating_system = platform_match.groups()
