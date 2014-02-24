@@ -13,7 +13,7 @@ import stem.util.system
 import stem.version
 
 from stem import InvalidArguments, InvalidRequest, ProtocolError, UnsatisfiableRequest
-from stem.control import _parse_circ_path, Controller, EventType
+from stem.control import _parse_circ_path, Listener, Controller, EventType
 from stem.exit_policy import ExitPolicy
 from test import mocking
 
@@ -123,6 +123,55 @@ class TestControl(unittest.TestCase):
     )
 
     self.assertEqual(expected, self.controller.get_exit_policy())
+
+  @patch('stem.control.Controller.get_info')
+  @patch('stem.control.Controller.get_conf')
+  def test_get_ports(self, get_conf_mock, get_info_mock):
+    """
+    Exercises the get_ports() and get_listeners() methods.
+    """
+
+    # Exercise as an old version of tor that doesn't support the 'GETINFO
+    # net/listeners/*' options.
+
+    get_info_mock.side_effect = InvalidArguments
+
+    get_conf_mock.side_effect = lambda param, **kwargs: {
+      "ControlPort": "9050",
+      "ControlListenAddress": ["127.0.0.1"],
+    }[param]
+
+    self.assertEqual([('127.0.0.1', 9050)], self.controller.get_listeners(Listener.CONTROL))
+    self.assertEqual([9050], self.controller.get_ports(Listener.CONTROL))
+
+    # non-local addresss
+
+    get_conf_mock.side_effect = lambda param, **kwargs: {
+      "ControlPort": "9050",
+      "ControlListenAddress": ["27.4.4.1"],
+    }[param]
+
+    self.assertEqual([('27.4.4.1', 9050)], self.controller.get_listeners(Listener.CONTROL))
+    self.assertEqual([], self.controller.get_ports(Listener.CONTROL))
+
+    # Exercise via the GETINFO option.
+
+    get_info_mock.side_effect = None
+    get_info_mock.return_value = '"127.0.0.1:1112" "127.0.0.1:1114"'
+
+    self.assertEqual(
+      [('127.0.0.1', 1112), ('127.0.0.1', 1114)],
+      self.controller.get_listeners(Listener.CONTROL)
+    )
+
+    self.assertEqual([1112, 1114], self.controller.get_ports(Listener.CONTROL))
+
+    # unix socket file
+
+    get_info_mock.return_value = '"unix:/tmp/tor/socket"'
+
+    self.assertEqual([], self.controller.get_listeners(Listener.CONTROL))
+    self.assertEqual([], self.controller.get_ports(Listener.CONTROL))
 
   @patch('stem.control.Controller.get_info')
   @patch('stem.control.Controller.get_conf')

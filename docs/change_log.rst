@@ -42,6 +42,7 @@ The following are only available within stem's `git repository
  * **Controller**
 
   * Added :func:`~stem.control.Controller.is_newnym_available` and :func:`~stem.control.Controller.get_newnym_wait` methods to the :class:`~stem.control.Controller`
+  * Added :func:`~stem.control.Controller.get_ports` and :func:`~stem.control.Controller.get_listeners` methods to the :class:`~stem.control.Controller`
   * Added the id attribute to the :class:`~stem.response.events.ORConnEvent` (:spec:`6f2919a`)
   * Added `support for CONN_BW events <api/response.html#stem.response.events.ConnectionBandwidthEvent>`_ (:spec:`6f2919a`)
   * Added `support for CIRC_BW events <api/response.html#stem.response.events.CircuitBandwidthEvent>`_ (:spec:`6f2919a`)
@@ -52,6 +53,11 @@ The following are only available within stem's `git repository
 
   * Added :func:`stem.util.connection.port_usage`
   * Added :func:`stem.util.system.files_with_suffix`
+
+ * **Website**
+
+  * Expanded the `client usage tutorial <tutorials/to_russia_with_love.html>`_
+    to include an example for determining what exit tor uses for a connection.
 
 .. _version_1.1:
 

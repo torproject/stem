@@ -21,7 +21,8 @@ providing its own for interacting at a higher level.
     |- get_info - issues a GETINFO query for a parameter
     |- get_version - provides our tor version
     |- get_exit_policy - provides our exit policy
-    |- get_socks_listeners - provides where tor is listening for SOCKS connections
+    |- get_ports - provides the local ports where tor is listening for connections
+    |- get_listeners - provides the addresses and ports where tor is listening for connections
     |- get_protocolinfo - information about the controller interface
     |- get_user - provides the user tor is running as
     |- get_pid - provides the pid of our tor process
@@ -135,6 +136,22 @@ providing its own for interacting at a higher level.
   **STREAM_BW**         :class:`stem.response.events.StreamBwEvent`
   **WARN**              :class:`stem.response.events.LogEvent`
   ===================== ===========
+
+.. data:: Listener (enum)
+
+  Purposes for inbound connections that Tor handles.
+
+  ============= ===========
+  Listener      Description
+  ============= ===========
+  **OR**        traffic we're relaying as a member of the network (torrc's **ORPort** and **ORListenAddress**)
+  **DIR**       mirroring for tor descriptor content (torrc's **DirPort** and **DirListenAddress**)
+  **SOCKS**     client traffic we're sending over Tor (torrc's **SocksPort** and **SocksListenAddress**)
+  **TRANS**     transparent proxy handling (torrc's **TransPort** and **TransListenAddress**)
+  **NATD**      forwarding for ipfw NATD connections (torrc's **NatdPort** and **NatdListenAddress**)
+  **DNS**       DNS lookups for our traffic (torrc's **DNSPort** and **DNSListenAddress**)
+  **CONTROL**   controller applications (torrc's **ControlPort** and **ControlListenAddress**)
+  ============= ===========
 """
 
 import io
@@ -192,6 +209,16 @@ EventType = stem.util.enum.UppercaseEnum(
   "SIGNAL",
   "CONF_CHANGED",
   "CIRC_MINOR",
+)
+
+Listener = stem.util.enum.UppercaseEnum(
+  "OR",
+  "DIR",
+  "SOCKS",
+  "TRANS",
+  "NATD",
+  "DNS",
+  "CONTROL",
 )
 
 # Configuration options that are fetched by a special key. The keys are
@@ -937,9 +964,130 @@ class Controller(BaseController):
         else:
           return default
 
+  def get_ports(self, listener_type, default = UNDEFINED):
+    """
+    Provides the local ports where tor is listening for the given type of
+    connections. This is similar to
+    :func:`~stem.control.Controller.get_listeners`, but doesn't provide
+    addresses nor include non-local endpoints.
+
+    :param stem.control.Listener listener_type: connection type being handled
+      by the ports we return
+    :param object default: response if the query fails
+
+    :returns: **list** of **ints** for the local ports where tor handles
+      connections of the given type
+
+    :raises: :class:`stem.ControllerError` if unable to determine the ports
+      and no default was provided
+    """
+
+    try:
+      return [port for (addr, port) in self.get_listeners(listener_type) if addr == '127.0.0.1']
+    except stem.ControllerError as exc:
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
+
+  def get_listeners(self, listener_type, default = UNDEFINED):
+    """
+    Provides the addresses and ports where tor is listening for connections of
+    the given type. This is similar to
+    :func:`~stem.control.Controller.get_ports` but includes listener addresses
+    and non-local endpoints.
+
+    :param stem.control.Listener listener_type: connection type being handled
+      by the listeners we return
+    :param object default: response if the query fails
+
+    :returns: **list** of **(address, port)** tuples for the available
+      listeners
+
+    :raises: :class:`stem.ControllerError` if unable to determine the listeners
+      and no default was provided
+    """
+
+    try:
+      proxy_addrs = []
+      query = 'net/listeners/%s' % listener_type.lower()
+
+      try:
+        for listener in self.get_info(query).split():
+          if not (listener.startswith('"') and listener.endswith('"')):
+            raise stem.ProtocolError("'GETINFO %s' responses are expected to be quoted: %s" % (query, listener))
+          elif not ':' in listener:
+            raise stem.ProtocolError("'GETINFO %s' had a listener without a colon: %s" % (query, listener))
+
+          listener = listener[1:-1]  # strip quotes
+          addr, port = listener.split(':')
+
+          # Skip unix sockets, for instance...
+          #
+          # GETINFO net/listeners/control
+          # 250-net/listeners/control="unix:/tmp/tor/socket"
+          # 250 OK
+
+          if addr == 'unix':
+            continue
+
+          proxy_addrs.append((addr, port))
+      except stem.InvalidArguments:
+        # Tor version is old (pre-tor-0.2.2.26-beta), use get_conf() instead.
+        # Some options (like the ORPort) can have optional attributes after the
+        # actual port number.
+
+        port_option = {
+          Listener.OR: 'ORPort',
+          Listener.DIR: 'DirPort',
+          Listener.SOCKS: 'SocksPort',
+          Listener.TRANS: 'TransPort',
+          Listener.NATD: 'NatdPort',
+          Listener.DNS: 'DNSPort',
+          Listener.CONTROL: 'ControlPort',
+        }[listener_type]
+
+        listener_option = {
+          Listener.OR: 'ORListenAddress',
+          Listener.DIR: 'DirListenAddress',
+          Listener.SOCKS: 'SocksListenAddress',
+          Listener.TRANS: 'TransListenAddress',
+          Listener.NATD: 'NatdListenAddress',
+          Listener.DNS: 'DNSListenAddress',
+          Listener.CONTROL: 'ControlListenAddress',
+        }[listener_type]
+
+        port_value = self.get_conf(port_option).split()[0]
+
+        for listener in self.get_conf(listener_option, multiple = True):
+          if ':' in listener:
+            addr, port = listener.split(':')
+            proxy_addrs.append((addr, port))
+          else:
+            proxy_addrs.append((listener, port_value))
+
+      # validate that address/ports are valid, and convert ports to ints
+
+      for addr, port in proxy_addrs:
+        if not stem.util.connection.is_valid_ipv4_address(addr):
+          raise stem.ProtocolError("Invalid address for a %s listener: %s" % (listener_type, addr))
+        elif not stem.util.connection.is_valid_port(port):
+          raise stem.ProtocolError("Invalid port for a %s listener: %s" % (listener_type, port))
+
+      return [(addr, int(port)) for (addr, port) in proxy_addrs]
+    except Exception as exc:
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
+
   def get_socks_listeners(self, default = UNDEFINED):
     """
     Provides the SOCKS **(address, port)** tuples that tor has open.
+
+    .. deprecated:: 1.2.0
+       Use :func:`~stem.control.Controller.get_listeners` with
+       **Listener.SOCKS** instead.
 
     :param object default: response if the query fails
 
@@ -950,44 +1098,7 @@ class Controller(BaseController):
       and no default was provided
     """
 
-    try:
-      proxy_addrs = []
-
-      try:
-        for listener in self.get_info("net/listeners/socks").split():
-          if not (listener.startswith('"') and listener.endswith('"')):
-            raise stem.ProtocolError("'GETINFO net/listeners/socks' responses are expected to be quoted: %s" % listener)
-          elif not ':' in listener:
-            raise stem.ProtocolError("'GETINFO net/listeners/socks' had a listener without a colon: %s" % listener)
-
-          listener = listener[1:-1]  # strip quotes
-          addr, port = listener.split(':')
-          proxy_addrs.append((addr, port))
-      except stem.InvalidArguments:
-        # tor version is old (pre-tor-0.2.2.26-beta), use get_conf() instead
-        socks_port = self.get_conf('SocksPort')
-
-        for listener in self.get_conf('SocksListenAddress', multiple = True):
-          if ':' in listener:
-            addr, port = listener.split(':')
-            proxy_addrs.append((addr, port))
-          else:
-            proxy_addrs.append((listener, socks_port))
-
-      # validate that address/ports are valid, and convert ports to ints
-
-      for addr, port in proxy_addrs:
-        if not stem.util.connection.is_valid_ipv4_address(addr):
-          raise stem.ProtocolError("Invalid address for a SOCKS listener: %s" % addr)
-        elif not stem.util.connection.is_valid_port(port):
-          raise stem.ProtocolError("Invalid port for a SOCKS listener: %s" % port)
-
-      return [(addr, int(port)) for (addr, port) in proxy_addrs]
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
+    return self.get_listeners(Listener.SOCKS, default)
 
   def get_protocolinfo(self, default = UNDEFINED):
     """

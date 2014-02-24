@@ -22,7 +22,7 @@ import test.network
 import test.runner
 
 from stem import Flag, Signal
-from stem.control import EventType, State
+from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
 
@@ -593,9 +593,55 @@ class TestController(unittest.TestCase):
         controller.save_conf()
         controller.reset_conf("__OwningControllerProcess")
 
-  def test_get_socks_ports(self):
+  def test_get_ports(self):
     """
-    Test Controller.get_socks_ports against a running tor instance.
+    Test Controller.get_ports against a running tor instance.
+    """
+
+    if test.runner.require_control(self):
+      return
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      self.assertEqual([], controller.get_ports(Listener.OR))
+      self.assertEqual([], controller.get_ports(Listener.DIR))
+      self.assertEqual([test.runner.SOCKS_PORT], controller.get_ports(Listener.SOCKS))
+      self.assertEqual([], controller.get_ports(Listener.TRANS))
+      self.assertEqual([], controller.get_ports(Listener.NATD))
+      self.assertEqual([], controller.get_ports(Listener.DNS))
+
+      if test.runner.Torrc.PORT in runner.get_options():
+        self.assertEqual([test.runner.CONTROL_PORT], controller.get_ports(Listener.CONTROL))
+      else:
+        self.assertEqual([], controller.get_ports(Listener.CONTROL))
+
+  def test_get_listeners(self):
+    """
+    Test Controller.get_listeners against a running tor instance.
+    """
+
+    if test.runner.require_control(self):
+      return
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      self.assertEqual([], controller.get_listeners(Listener.OR))
+      self.assertEqual([], controller.get_listeners(Listener.DIR))
+      self.assertEqual([('127.0.0.1', test.runner.SOCKS_PORT)], controller.get_listeners(Listener.SOCKS))
+      self.assertEqual([], controller.get_listeners(Listener.TRANS))
+      self.assertEqual([], controller.get_listeners(Listener.NATD))
+      self.assertEqual([], controller.get_listeners(Listener.DNS))
+
+      if test.runner.Torrc.PORT in runner.get_options():
+        self.assertEqual([('127.0.0.1', test.runner.CONTROL_PORT)], controller.get_listeners(Listener.CONTROL))
+      else:
+        self.assertEqual([], controller.get_listeners(Listener.CONTROL))
+
+  def test_get_socks_listeners(self):
+    """
+    Test Controller.get_socks_listeners against a running tor instance.
     """
 
     if test.runner.require_control(self):
