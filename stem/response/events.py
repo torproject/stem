@@ -570,6 +570,38 @@ class GuardEvent(Event):
     self._log_if_unrecognized('status', stem.GuardStatus)
 
 
+class HSDescEvent(Event):
+  """
+  Event triggered when we fetch a hidden service descriptor that presently isn't in our cache.
+
+  The HS_DESC event was introduced in tor version 0.2.5.2-alpha.
+
+  :var stem.HSDescAction action: what is happening with the descriptor
+  :var str address: hidden service address
+  :var stem.HSAuth authentication: service's authentication method
+  :var str directory: hidden service directory servicing the request
+  :var str directory_fingerprint: hidden service directory's finterprint
+  :var str directory_nickname: hidden service directory's nickname if it was provided
+  :var str descriptor_id: descriptor identifier
+  """
+
+  _VERSION_ADDED = stem.version.Requirement.EVENT_HS_DESC
+  _POSITIONAL_ARGS = ("action", "address", "authentication", "directory", "descriptor_id")
+
+  def _parse(self):
+    self.directory_fingerprint = None
+    self.directory_nickname = None
+
+    try:
+      self.directory_fingerprint, self.directory_nickname = \
+        stem.control._parse_circ_entry(self.directory)
+    except stem.ProtocolError:
+      raise stem.ProtocolError("HS_DESC's directory doesn't match a ServerSpec: %s" % self)
+
+    self._log_if_unrecognized('action', stem.HSDescAction)
+    self._log_if_unrecognized('authentication', stem.HSAuth)
+
+
 class LogEvent(Event):
   """
   Tor logging event. These are the most visible kind of event since, by
@@ -1164,6 +1196,7 @@ EVENT_TYPE_TO_CLASS = {
   "DESCCHANGED": DescChangedEvent,
   "ERR": LogEvent,
   "GUARD": GuardEvent,
+  "HS_DESC": HSDescEvent,
   "INFO": LogEvent,
   "NEWCONSENSUS": NewConsensusEvent,
   "NEWDESC": NewDescEvent,

@@ -392,6 +392,32 @@ Library for working with the tor process.
   **RELAY**       relay token bucket
   **ORCONN**      bucket used for OR connections
   =============== ===========
+
+.. data:: HSDescAction (enum)
+
+  Action beeing taken in a HS_DESC event.
+
+  =============== ===========
+  HSDescAction    Description
+  =============== ===========
+  **REQUESTED**   uncached hidden service descriptor is being requested
+  **RECEIVED**    hidden service descriptor has been retrieved
+  **IGNORE**      fetched descriptor was ignored because we already have its v0 descriptor
+  **FAILED**      we were unable to retrieve the descriptor
+  =============== ===========
+
+.. data:: HSAuth (enum)
+
+  Type of authentication being used for a HS_DESC event.
+
+  ================= ===========
+  HSAuth            Description
+  ================= ===========
+  **NO_AUTH**       no authentication
+  **BASIC_AUTH**    general hidden service authentication
+  **STEALTH_AUTH**  authentication method that hides service activity from unauthorized clients
+  **UNKNOWN**       unrecognized method of authentication
+  ================= ===========
 """
 
 __version__ = '1.1.1-dev'
@@ -429,6 +455,8 @@ __all__ = [
   "CircClosureReason",
   "CircEvent",
   "HiddenServiceState",
+  "HSAuth",
+  "HSDescAction",
   "RelayEndReason",
   "StreamStatus",
   "StreamClosureReason",
@@ -735,4 +763,18 @@ TokenBucket = stem.util.enum.UppercaseEnum(
   "GLOBAL",
   "RELAY",
   "ORCONN",
+)
+
+HSDescAction = stem.util.enum.UppercaseEnum(
+  "REQUESTED",
+  "RECEIVED",
+  "IGNORE",
+  "FAILED",
+)
+
+HSAuth = stem.util.enum.UppercaseEnum(
+  "NO_AUTH",
+  "BASIC_AUTH",
+  "STEALTH_AUTH",
+  "UNKNOWN",
 )

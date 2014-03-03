@@ -192,6 +192,12 @@ GUARD_NEW = "650 GUARD ENTRY $36B5DBA788246E8369DBAF58577C6BC044A9A374 NEW"
 GUARD_GOOD = "650 GUARD ENTRY $5D0034A368E0ABAF663D21847E1C9B6CFA09752A GOOD"
 GUARD_BAD = "650 GUARD ENTRY $5D0034A368E0ABAF663D21847E1C9B6CFA09752A=caerSidi BAD"
 
+HS_DESC_EVENT = "650 HS_DESC REQUESTED ajhb7kljbiru65qo NO_AUTH \
+$67B2BDA4264D8A189D9270E28B1D30A262838243=europa1 b3oeducbhjmbqmgw2i3jtz4fekkrinwj"
+
+HS_DESC_NO_DESC_ID = "650 HS_DESC REQUESTED ajhb7kljbiru65qo NO_AUTH \
+$67B2BDA4264D8A189D9270E28B1D30A262838243"
+
 # NEWCONSENSUS event from v0.2.1.30.
 
 NEWCONSENSUS_EVENT = """650+NEWCONSENSUS
@@ -729,6 +735,26 @@ class TestEvents(unittest.TestCase):
     self.assertEqual("5D0034A368E0ABAF663D21847E1C9B6CFA09752A", event.endpoint_fingerprint)
     self.assertEqual("caerSidi", event.endpoint_nickname)
     self.assertEqual(GuardStatus.BAD, event.status)
+
+  def test_hs_desc_event(self):
+    event = _get_event(HS_DESC_EVENT)
+
+    self.assertTrue(isinstance(event, stem.response.events.HSDescEvent))
+    self.assertEqual(HS_DESC_EVENT.lstrip("650 "), str(event))
+    self.assertEqual(HSDescAction.REQUESTED, event.action)
+    self.assertEqual("ajhb7kljbiru65qo", event.address)
+    self.assertEqual(HSAuth.NO_AUTH, event.authentication)
+    self.assertEqual("$67B2BDA4264D8A189D9270E28B1D30A262838243=europa1", event.directory)
+    self.assertEqual("67B2BDA4264D8A189D9270E28B1D30A262838243", event.directory_fingerprint)
+    self.assertEqual("europa1", event.directory_nickname)
+    self.assertEqual("b3oeducbhjmbqmgw2i3jtz4fekkrinwj", event.descriptor_id)
+
+    event = _get_event(HS_DESC_NO_DESC_ID)
+
+    self.assertEqual("$67B2BDA4264D8A189D9270E28B1D30A262838243", event.directory)
+    self.assertEqual("67B2BDA4264D8A189D9270E28B1D30A262838243", event.directory_fingerprint)
+    self.assertEqual(None, event.directory_nickname)
+    self.assertEqual(None, event.descriptor_id)
 
   def test_newdesc_event(self):
     event = _get_event(NEWDESC_SINGLE)

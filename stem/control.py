@@ -122,6 +122,7 @@ providing its own for interacting at a higher level.
   **DESCCHANGED**       :class:`stem.response.events.DescChangedEvent`
   **ERR**               :class:`stem.response.events.LogEvent`
   **GUARD**             :class:`stem.response.events.GuardEvent`
+  **HS_DIR**            :class:`stem.response.events.HSDescEvent`
   **INFO**              :class:`stem.response.events.LogEvent`
   **NEWCONSENSUS**      :class:`stem.response.events.NewConsensusEvent`
   **NEWDESC**           :class:`stem.response.events.NewDescEvent`
@@ -2589,7 +2590,7 @@ def _parse_circ_path(path):
 def _parse_circ_entry(entry):
   """
   Parses a single relay's 'LongName' or 'ServerID'. See the
-  :func:`~_stem.control._parse_circ_path` function for more information.
+  :func:`~stem.control._parse_circ_path` function for more information.
 
   :param str entry: relay information to be parsed
 
