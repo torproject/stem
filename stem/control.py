@@ -122,7 +122,7 @@ providing its own for interacting at a higher level.
   **DESCCHANGED**       :class:`stem.response.events.DescChangedEvent`
   **ERR**               :class:`stem.response.events.LogEvent`
   **GUARD**             :class:`stem.response.events.GuardEvent`
-  **HS_DIR**            :class:`stem.response.events.HSDescEvent`
+  **HS_DESC**           :class:`stem.response.events.HSDescEvent`
   **INFO**              :class:`stem.response.events.LogEvent`
   **NEWCONSENSUS**      :class:`stem.response.events.NewConsensusEvent`
   **NEWDESC**           :class:`stem.response.events.NewDescEvent`
@@ -197,7 +197,7 @@ EventType = stem.util.enum.UppercaseEnum(
   "DESCCHANGED",
   "ERR",
   "GUARD",
-  "HS_DIR",
+  "HS_DESC",
   "INFO",
   "NEWCONSENSUS",
   "NEWDESC",
