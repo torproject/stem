@@ -709,7 +709,7 @@ class ORConnEvent(Event):
   introduced in tor version 0.1.1.1-alpha. Its id attribute was added in
   version 0.2.5.2-alpha.
 
-  .. versionchanged:: 1.1.0-dev
+  .. versionchanged:: 1.2.0
      Added the id attribute.
 
   :var str id: connection identifier
@@ -967,7 +967,7 @@ class ConnectionBandwidthEvent(Event):
 
   The CONN_BW event was introduced in tor version 0.2.5.2-alpha.
 
-  .. versionadded:: 1.1.0-dev
+  .. versionadded:: 1.2.0
 
   :var str id: connection identifier
   :var stem.ConnectionType type: connection type
@@ -1011,7 +1011,7 @@ class CircuitBandwidthEvent(Event):
 
   The CIRC_BW event was introduced in tor version 0.2.5.2-alpha.
 
-  .. versionadded:: 1.1.0-dev
+  .. versionadded:: 1.2.0
 
   :var str id: circuit identifier
   :var long read: bytes received by tor that second
@@ -1050,7 +1050,7 @@ class CellStatsEvent(Event):
 
   The CELL_STATS event was introduced in tor version 0.2.5.2-alpha.
 
-  .. versionadded:: 1.1.0-dev
+  .. versionadded:: 1.2.0
 
   :var str id: circuit identifier
   :var str inbound_queue: inbound queue identifier
@@ -1108,7 +1108,7 @@ class TokenBucketEmptyEvent(Event):
 
   The TB_EMPTY event was introduced in tor version 0.2.5.2-alpha.
 
-  .. versionadded:: 1.1.0-dev
+  .. versionadded:: 1.2.0
 
   :var stem.TokenBucket bucket: bucket being refilled
   :var str id: connection identifier
