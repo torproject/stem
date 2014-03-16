@@ -576,6 +576,8 @@ class HSDescEvent(Event):
 
   The HS_DESC event was introduced in tor version 0.2.5.2-alpha.
 
+  .. versionadded:: 1.2.0
+
   :var stem.HSDescAction action: what is happening with the descriptor
   :var str address: hidden service address
   :var stem.HSAuth authentication: service's authentication method
