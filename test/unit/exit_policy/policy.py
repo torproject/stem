@@ -2,6 +2,7 @@
 Unit tests for the stem.exit_policy.ExitPolicy class.
 """
 
+import pickle
 import unittest
 
 from stem.exit_policy import get_config_policy, \
@@ -216,3 +217,18 @@ class TestExitPolicy(unittest.TestCase):
 
     for test_input in test_inputs:
       self.assertRaises(ValueError, get_config_policy, test_input)
+
+  def test_pickleability(self):
+    """
+    Checks that we can unpickle ExitPolicy instances.
+    """
+
+    policy = ExitPolicy("accept *:80", "accept *:443", "reject *:*")
+    self.assertTrue(policy.can_exit_to('74.125.28.106', 80))
+
+    encoded_policy = pickle.dumps(policy)
+    restored_policy = pickle.loads(encoded_policy)
+
+    self.assertEqual(policy, restored_policy)
+    self.assertTrue(restored_policy.is_exiting_allowed())
+    self.assertTrue(restored_policy.can_exit_to('74.125.28.106', 80))

@@ -167,6 +167,8 @@ class ExitPolicy(object):
     else:
       self._input_rules = rules
 
+    self._rules = None
+
     # Result when no rules apply. According to the spec policies default to 'is
     # allowed', but our microdescriptor policy subclass might want to change
     # this.
@@ -295,54 +297,56 @@ class ExitPolicy(object):
 
     return (label_prefix + ", ".join(display_ranges)).strip()
 
-  @lru_cache()
   def _get_rules(self):
-    rules = []
-    is_all_accept, is_all_reject = True, True
+    if self._rules is None:
+      rules = []
+      is_all_accept, is_all_reject = True, True
 
-    if isinstance(self._input_rules, bytes):
-      decompressed_rules = zlib.decompress(self._input_rules).split(b',')
-    else:
-      decompressed_rules = self._input_rules
-
-    for rule in decompressed_rules:
-      if isinstance(rule, bytes):
-        rule = stem.util.str_tools._to_unicode(rule)
-
-      if isinstance(rule, unicode):
-        rule = ExitPolicyRule(rule.strip())
-
-      if rule.is_accept:
-        is_all_reject = False
+      if isinstance(self._input_rules, bytes):
+        decompressed_rules = zlib.decompress(self._input_rules).split(b',')
       else:
-        is_all_accept = False
+        decompressed_rules = self._input_rules
 
-      rules.append(rule)
+      for rule in decompressed_rules:
+        if isinstance(rule, bytes):
+          rule = stem.util.str_tools._to_unicode(rule)
 
-      if rule.is_address_wildcard() and rule.is_port_wildcard():
-        break  # this is a catch-all, no reason to include more
+        if isinstance(rule, unicode):
+          rule = ExitPolicyRule(rule.strip())
 
-    # If we only have one kind of entry *and* end with a wildcard then
-    # we might as well use the simpler version. For instance...
-    #
-    #   reject *:80, reject *:443, reject *:*
-    #
-    # ... could also be represented as simply...
-    #
-    #   reject *:*
-    #
-    # This mostly comes up with reject-all policies because the
-    # 'reject private:*' appends an extra seven rules that have no
-    # effect.
+        if rule.is_accept:
+          is_all_reject = False
+        else:
+          is_all_accept = False
 
-    if rules and (rules[-1].is_address_wildcard() and rules[-1].is_port_wildcard()):
-      if is_all_accept:
-        rules = [ExitPolicyRule("accept *:*")]
-      elif is_all_reject:
-        rules = [ExitPolicyRule("reject *:*")]
+        rules.append(rule)
 
-    self._input_rules = None
-    return rules
+        if rule.is_address_wildcard() and rule.is_port_wildcard():
+          break  # this is a catch-all, no reason to include more
+
+      # If we only have one kind of entry *and* end with a wildcard then
+      # we might as well use the simpler version. For instance...
+      #
+      #   reject *:80, reject *:443, reject *:*
+      #
+      # ... could also be represented as simply...
+      #
+      #   reject *:*
+      #
+      # This mostly comes up with reject-all policies because the
+      # 'reject private:*' appends an extra seven rules that have no
+      # effect.
+
+      if rules and (rules[-1].is_address_wildcard() and rules[-1].is_port_wildcard()):
+        if is_all_accept:
+          rules = [ExitPolicyRule("accept *:*")]
+        elif is_all_reject:
+          rules = [ExitPolicyRule("reject *:*")]
+
+      self._rules = rules
+      self._input_rules = None
+
+    return self._rules
 
   def __iter__(self):
     for rule in self._get_rules():
