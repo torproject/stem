@@ -346,9 +346,20 @@ class BaseController(object):
       #
       # - This is a leftover response for a msg() call. We can't tell who an
       #   exception was earmarked for, so we only know that this was the case
-      #   if it's a ControlMessage. This should not be possible and indicates
-      #   a stem bug. This deserves a NOTICE level log message since it
-      #   indicates that one of our callers didn't get their reply.
+      #   if it's a ControlMessage.
+      #
+      #   This is the most concerning situation since it indicates that one of
+      #   our callers didn't get their reply. However, this is still a
+      #   perfectly viable use case. For instance...
+      #
+      #   1. We send a request.
+      #   2. The reader thread encounters an exception, for instance a socket
+      #      error. We enqueue the exception.
+      #   3. The reader thread receives the reply.
+      #   4. We raise the socket error, and have an undelivered message.
+      #
+      #   Thankfully this only seems to arise in edge cases around rapidly
+      #   closing/reconnecting the socket.
 
       while not self._reply_queue.empty():
         try:
@@ -361,7 +372,7 @@ class BaseController(object):
           elif isinstance(response, stem.ControllerError):
             log.info("Socket experienced a problem (%s)" % response)
           elif isinstance(response, stem.response.ControlMessage):
-            log.notice("BUG: the msg() function failed to deliver a response: %s" % response)
+            log.info("Failed to deliver a response: %s" % response)
         except Queue.Empty:
           # the empty() method is documented to not be fully reliable so this
           # isn't entirely surprising
