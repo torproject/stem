@@ -8,6 +8,7 @@ Frequently Asked Questions
  * :ref:`what_python_versions_is_stem_compatible_with`
  * :ref:`what_license_is_stem_under`
  * :ref:`are_there_any_other_controller_libraries`
+ * :ref:`can_i_interact_with_tors_controller_interface_directly`
  * :ref:`where_can_i_get_help`
 
 * **Usage**
@@ -82,6 +83,130 @@ Library                                                     Language            
 `PHP TorCtl <https://github.com/dunglas/php-torcontrol/>`_  PHP                 February 2013
 `JTorCtl <https://gitweb.torproject.org/jtorctl.git>`_      Java                June 2005 - May 2009
 ==========================================================  ================    =======================
+
+.. _can_i_interact_with_tors_controller_interface_directly:
+
+Can I interact with Tor's controller interface directly?
+--------------------------------------------------------
+
+Yup. You don't need a library to interact with Tor's `controller interface <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_, and interacting with it directly is a great way of learning about what it can do. The exact details for how you connect to Tor depend on two things...
+
+* Where is Tor listening for controller connections? This is specified by either the **ControlPort** or **ControlSocket** option in your torrc. If you have neither then Tor will not accept controller connections.
+* What type of authentication is Tor's controller interface using? This is defined by your **CookieAuthentication** or **HashedControlPassword** option. If you have neither then Tor does not restrict access.
+
+We'll tackle each of these scenarios one at a time...
+
+* **I'm using a ControlPort**
+
+If you are using a **ControlPort** then the easiest method of talking with Tor is via **telnet**. You always need to authenticate after connecting, even if Tor does not restrict access. If your torrc doesn't have a **CookieAuthentication** or **HashedControlPassword** then to authenticate you will simply call **AUTHENTICATE** after connecting without any credentials.
+
+::
+
+  % cat ~/.tor/torrc
+  ControlPort 9051
+
+  % telnet localhost 9051
+  Trying 127.0.0.1...
+  Connected to localhost.
+  Escape character is '^]'.
+  AUTHENTICATE
+  250 OK
+  GETINFO version
+  250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)
+  250 OK
+  QUIT
+  250 closing connection
+  Connection closed by foreign host.
+
+* **I'm using a ControlSocket**
+
+A **ControlSocket** is a file based socket, so we'll use **socat** to connect to it...
+
+::
+
+  % cat ~/.tor/torrc
+  ControlSocket /home/atagar/.tor/socket
+
+  % socat UNIX-CONNECT:/home/atagar/.tor/socket STDIN
+  AUTHENTICATE
+  250 OK
+  GETINFO version
+  250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)
+  250 OK
+  QUIT
+  250 closing connection
+
+* **I'm using cookie authentication**
+
+Cookie authentication simply means that your credential is the content of a file in Tor's **DataDirectory**. You can learn information about Tor's method of authentication (including the cookie file's location) by calling **PROTOCOLINFO**...
+
+::
+
+  % cat ~/.tor/torrc
+  ControlPort 9051
+  CookieAuthentication 1
+
+  % telnet localhost 9051
+  Trying 127.0.0.1...
+  Connected to localhost.
+  Escape character is '^]'.
+  PROTOCOLINFO
+  250-PROTOCOLINFO 1
+  250-AUTH METHODS=COOKIE,SAFECOOKIE COOKIEFILE="/home/atagar/.tor/control_auth_cookie"
+  250-VERSION Tor="0.2.5.1-alpha-dev"
+  250 OK
+
+Cookie authentication has two flavors: **COOKIE** and **SAFECOOKIE**. Below we'll show you how to authenticate via COOKIE. SAFECOOKIE authentication is a lot more involved, and not something you will want to do by hand (though Stem supports it transparently).
+
+To get the credential for your AUTHENTICATE command we will use **hexdump**...
+
+::
+
+  % hexdump -e '32/1 "%02x""\n"' /home/atagar/.tor/control_auth_cookie
+  be9c9e18364e33d5eb8ba820d456aa2bc03444c0420f089ba4569b6aeecc6254
+
+  % telnet localhost 9051
+  Trying 127.0.0.1...
+  Connected to localhost.
+  Escape character is '^]'.
+  AUTHENTICATE be9c9e18364e33d5eb8ba820d456aa2bc03444c0420f089ba4569b6aeecc6254
+  250 OK
+  GETINFO version
+  250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)
+  250 OK
+  QUIT
+  250 closing connection
+  Connection closed by foreign host.
+
+* **I'm using password authentication**
+
+Tor's other method of authentication is a credential you know. To use it you ask Tor to hash your password, then use that in your torrc...
+
+::
+
+  % tor --hash-password "my_password"
+  16:E600ADC1B52C80BB6022A0E999A7734571A451EB6AE50FED489B72E3DF
+
+Authenticating with this simply involves giving Tor the credential...
+
+::
+
+  % cat ~/.tor/torrc
+  ControlPort 9051
+  HashedControlPassword 16:E600ADC1B52C80BB6022A0E999A7734571A451EB6AE50FED489B72E3DF
+
+  % telnet localhost 9051
+  Trying 127.0.0.1...
+  Connected to localhost.
+  Escape character is '^]'.
+  AUTHENTICATE "my_password"
+  250 OK
+  GETINFO version
+  250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)
+  250 OK
+  QUIT
+  250 closing connection
+  Connection closed by foreign host.
 
 .. _where_can_i_get_help:
 
