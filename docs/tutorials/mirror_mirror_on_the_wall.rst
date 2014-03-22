@@ -25,9 +25,9 @@ There are several different kinds of descriptors, the most common ones being...
 Descriptor Type                                                        Description
 ====================================================================== ===========
 `Server Descriptor <../api/descriptor/server_descriptor.html>`_        Information that relays publish about themselves. Tor clients once downloaded this information, but now they use microdescriptors instead.
-`ExtraInfo Descriptor <../api/descriptor/extrainfo_descriptor.html>`_  Relay information that tor clients do not need in order to function. This is self-published, like server descriptors, but not downloaded by default.
-`Microdescriptor <../api/descriptor/microdescriptor.html>`_            Minimalistic document that just includes the information necessary for tor clients to work.
-`Network Status Document <../api/descriptor/networkstatus.html>`_      Though tor relays are decentralized, the directories that track the overall network are not. These central points are called **directory authorities**, and every hour they publish a document called a **consensus** (aka, network status document). The consensus in turn is made up of **router status entries**.
+`ExtraInfo Descriptor <../api/descriptor/extrainfo_descriptor.html>`_  Relay information that Tor clients do not need in order to function. This is self-published, like server descriptors, but not downloaded by default.
+`Microdescriptor <../api/descriptor/microdescriptor.html>`_            Minimalistic document that just includes the information necessary for Tor clients to work.
+`Network Status Document <../api/descriptor/networkstatus.html>`_      Though Tor relays are decentralized, the directories that track the overall network are not. These central points are called **directory authorities**, and every hour they publish a document called a **consensus** (aka, network status document). The consensus in turn is made up of **router status entries**.
 `Router Status Entry <../api/descriptor/router_status_entry.html>`_    Relay information provided by the directory authorities including flags, heuristics used for relay selection, etc.
 ====================================================================== ===========
 
@@ -36,16 +36,16 @@ Descriptor Type                                                        Descripti
 Where can I get the current descriptors?
 ----------------------------------------
 
-To work tor needs to have up-to-date information about relays within the
+To work Tor needs to have up-to-date information about relays within the
 network. As such getting current descriptors is easy: *just download it like
 tor does*.
 
 The `stem.descriptor.remote <../api/descriptor/remote.html>`_ module downloads
 descriptors from the tor directory authorities and mirrors. **Please show
 some restraint when doing this**! This adds load to the network, and hence an
-irresponsible script can make tor worse for everyone.
+irresponsible script can make Tor worse for everyone.
 
-Listing the current relays in the tor network is as easy as...
+Listing the current relays in the Tor network is as easy as...
 
 ::
 
@@ -64,46 +64,46 @@ Listing the current relays in the tor network is as easy as...
 Can I get descriptors from Tor?
 -------------------------------
 
-If you already have tor running on your system then it is already getting
+If you already have Tor running on your system then it is already getting
 descriptors on your behalf. Reusing these is a great way to keep from burdening
-the rest of the tor network.
+the rest of the Tor network.
 
 Tor only gets the descriptors that it needs by default, so if you're scripting
-against tor you may want to set some of the following in your `torrc
+against Tor you may want to set some of the following in your `torrc
 <https://www.torproject.org/docs/faq.html.en#torrc>`_. Keep in mind that these
 add a small burden to the network, so don't set them in a widely distributed
-application. And, of course, please consider `running tor as a relay
+application. And, of course, please consider `running Tor as a relay
 <https://www.torproject.org/docs/tor-doc-relay.html.en>`_ so you give back to
 the network!
 
 ::
 
   # Descriptors have a range of time during which they're valid. To get the
-  # most recent descriptor information, regardless of if tor needs it or not,
+  # most recent descriptor information, regardless of if Tor needs it or not,
   # set the following.
 
   FetchDirInfoEarly 1
   FetchDirInfoExtraEarly 1
 
-  # If you aren't actively using tor as a client then tor will eventually stop
+  # If you aren't actively using Tor as a client then Tor will eventually stop
   # downloading descriptor information that it doesn't need. To prevent this
   # from happening set...
 
   FetchUselessDescriptors 1
 
   # Tor no longer downloads server descriptors by default, opting for
-  # microdescriptors instead. If you want tor to download server descriptors
+  # microdescriptors instead. If you want Tor to download server descriptors
   # then set...
 
   UseMicrodescriptors 0
 
-  # Tor doesn't need extrainfo descriptors to work. If you want tor to download
+  # Tor doesn't need extrainfo descriptors to work. If you want Tor to download
   # them anyway then set...
 
   DownloadExtraInfo 1
 
-Now that tor is happy chugging along up-to-date descriptors are available
-through tor's control socket...
+Now that Tor is happy chugging along up-to-date descriptors are available
+through Tor's control socket...
 
 ::
 
@@ -115,7 +115,7 @@ through tor's control socket...
     for desc in controller.get_network_statuses():
       print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
 
-... or by reading directly from tor's data directory...
+... or by reading directly from Tor's data directory...
 
 ::
 

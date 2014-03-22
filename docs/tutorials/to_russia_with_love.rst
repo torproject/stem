@@ -17,9 +17,9 @@ The Internet isn't uniform. Localization, censorship, and selective service base
 
 Tor relays are scattered all over the world and, as such, you can pretend to be from any place running an exit. This can be especially useful to evade pesky geolocational restrictions, such as news sites that refuse to work while you're traveling abroad.
 
-Tor makes `configuring your exit locale <https://www.torproject.org/docs/faq.html.en#ChooseEntryExit>`_ easy through the **ExitNodes** torrc option. Note that you don't need a control port (or even stem) to do this, though they can be useful if you later want to do something more elaborate.
+Tor makes `configuring your exit locale <https://www.torproject.org/docs/faq.html.en#ChooseEntryExit>`_ easy through the **ExitNodes** torrc option. Note that you don't need a control port (or even Stem) to do this, though they can be useful if you later want to do something more elaborate.
 
-In the following example we're using stem to `start Tor <../api/process.html>`_, then reading a site through it with `SocksiPy <http://socksipy.sourceforge.net/>`_. This is not always reliable (some relays are lemons) so you may need to run this more than once.
+In the following example we're using Stem to `start Tor <../api/process.html>`_, then reading a site through it with `SocksiPy <http://socksipy.sourceforge.net/>`_. This is not always reliable (some relays are lemons) so you may need to run this more than once.
 
 **Do not rely on the following not to leak.** Though it seems to work there may be edge cases that expose your real IP. If you have a suggestion for how to improve this example then please `let me know <https://www.atagar.com/contact/>`_!
 
@@ -60,9 +60,9 @@ In the following example we're using stem to `start Tor <../api/process.html>`_,
       return "Unable to reach %s" % url
 
 
-  # Start an instance of tor configured to only exit through Russia. This prints
-  # tor's bootstrap information as it starts. Note that this likely will not
-  # work if you have another tor instance running.
+  # Start an instance of Tor configured to only exit through Russia. This prints
+  # Tor's bootstrap information as it starts. Note that this likely will not
+  # work if you have another Tor instance running.
 
   def print_bootstrap_lines(line):
     if "Bootstrapped " in line:
@@ -220,7 +220,7 @@ Here's a simple script that prints information about the exits used to service t
   if __name__ == '__main__':
     main()
 
-Now if you make a request over tor...
+Now if you make a request over Tor...
 
 ::
 

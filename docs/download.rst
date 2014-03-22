@@ -61,7 +61,7 @@ Download
      - .. image:: /_static/label/python_package_index.png
           :target: https://pypi.python.org/pypi/stem/
 
-       Signed releases and instructions for both python 2.x and 3.x. You can
+       Signed releases and instructions for both Python 2.x and 3.x. You can
        install from its `tarball
        <https://pypi.python.org/packages/source/s/stem/stem-1.1.1.tar.bz2>`_
        (`sig
@@ -104,7 +104,7 @@ Download
           :target: https://apps.fedoraproject.org/packages/python-stem
 
        Packages maintained by Juan for Fedora. These include **python-stem**
-       (stem for python 2.x), **python3-stem** (stem for python 3.x), and
+       (Stem for Python 2.x), **python3-stem** (Stem for Python 3.x), and
        **python-stem-doc** (this website).
 
        ::
@@ -144,8 +144,8 @@ Download
      - .. image:: /_static/label/source_repository.png
           :target: https://gitweb.torproject.org/stem.git
 
-       For those wanting to live on the bleeding edge or contribute to stem,
-       stem's git repository can be fetched with...
+       For those wanting to live on the bleeding edge or contribute to Stem,
+       Stem's git repository can be fetched with...
 
        ::
 

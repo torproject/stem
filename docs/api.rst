@@ -24,7 +24,7 @@ To read descriptors from disk use :func:`~stem.descriptor.__init__.parse_file` f
 individual files and `stem.descriptor.reader
 <api/descriptor/reader.html>`_ for batches. You can also use
 `stem.descriptor.remote <api/descriptor/remote.html>`_ to download descriptors
-remotely like tor does.
+remotely like Tor does.
 
 * **Classes**
 

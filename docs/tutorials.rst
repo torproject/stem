@@ -99,5 +99,5 @@ feet wet by jumping straight in with some tutorials...
           :target: tutorials/double_double_toil_and_trouble.html
 
        Sometimes it's easiest to learn a library by seeing how it's used in the
-       wild. This is a directory of scripts and applications that use stem.
+       wild. This is a directory of scripts and applications that use Stem.
 

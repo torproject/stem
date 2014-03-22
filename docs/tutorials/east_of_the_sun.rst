@@ -1,7 +1,7 @@
 East of the Sun & West of the Moon
 ==================================
 
-The following is an overview of some of the utilities stem provides.
+The following is an overview of some of the utilities Stem provides.
 
 * :ref:`connection-resolution`
 
@@ -74,5 +74,4 @@ simple script that dumps Tor's present connections.
 
     192.168.0.1:59014 => 38.229.79.2:443
     192.168.0.1:58822 => 68.169.35.102:443
-
 
