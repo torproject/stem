@@ -96,7 +96,8 @@ Yup. You don't need a library to interact with Tor's `controller interface <http
 
 We'll tackle each of these scenarios one at a time...
 
-* **I'm using a ControlPort**
+**I'm using a ControlPort**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you are using a **ControlPort** then the easiest method of talking with Tor is via **telnet**. You always need to authenticate after connecting, even if Tor does not restrict access. If your torrc doesn't have a **CookieAuthentication** or **HashedControlPassword** then to authenticate you will simply call **AUTHENTICATE** after connecting without any credentials.
 
@@ -118,7 +119,8 @@ If you are using a **ControlPort** then the easiest method of talking with Tor i
   250 closing connection
   Connection closed by foreign host.
 
-* **I'm using a ControlSocket**
+**I'm using a ControlSocket**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A **ControlSocket** is a file based socket, so we'll use **socat** to connect to it...
 
@@ -136,7 +138,8 @@ A **ControlSocket** is a file based socket, so we'll use **socat** to connect to
   QUIT
   250 closing connection
 
-* **I'm using cookie authentication**
+**I'm using cookie authentication**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Cookie authentication simply means that your credential is the content of a file in Tor's **DataDirectory**. You can learn information about Tor's method of authentication (including the cookie file's location) by calling **PROTOCOLINFO**...
 
@@ -178,7 +181,8 @@ To get the credential for your AUTHENTICATE command we will use **hexdump**...
   250 closing connection
   Connection closed by foreign host.
 
-* **I'm using password authentication**
+**I'm using password authentication**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Tor's other method of authentication is a credential you know. To use it you ask Tor to hash your password, then use that in your torrc...
 
