@@ -6,8 +6,8 @@ with what they are and where to get them then you may want to skip to the end.
 
 * :ref:`what-is-a-descriptor`
 * :ref:`where-can-i-get-the-current-descriptors`
-* :ref:`can-i-get-descriptors-from-tor`
 * :ref:`where-can-i-get-past-descriptors`
+* :ref:`can-i-get-descriptors-from-the-tor-process`
 * :ref:`putting-it-together`
 
 .. _what-is-a-descriptor:
@@ -38,7 +38,7 @@ Where can I get the current descriptors?
 
 To work Tor needs to have up-to-date information about relays within the
 network. As such getting current descriptors is easy: *just download it like
-tor does*.
+Tor does*.
 
 The `stem.descriptor.remote <../api/descriptor/remote.html>`_ module downloads
 descriptors from the tor directory authorities and mirrors. **Please show
@@ -59,12 +59,29 @@ Listing the current relays in the Tor network is as easy as...
   except Exception as exc:
     print "Unable to retrieve the consensus: %s" % exc 
 
-.. _can-i-get-descriptors-from-tor:
+.. _where-can-i-get-past-descriptors:
 
-Can I get descriptors from Tor?
--------------------------------
+Where can I get past descriptors?
+---------------------------------
 
-If you already have Tor running on your system then it is already getting
+Descriptor archives are available on `Tor's metrics site
+<https://metrics.torproject.org/data.html>`_. These archives can be read with
+the `DescriptorReader <../api/descriptor/reader.html>`_...
+
+::
+
+  from stem.descriptor.reader import DescriptorReader
+
+  with DescriptorReader(["/home/atagar/server-descriptors-2013-03.tar"]) as reader:
+    for desc in reader:
+      print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
+
+.. _can-i-get-descriptors-from-the-tor-process:
+
+Can I get descriptors from the Tor process?
+-------------------------------------------
+
+If you already have Tor running on your system then it is already downloading
 descriptors on your behalf. Reusing these is a great way to keep from burdening
 the rest of the Tor network.
 
@@ -102,7 +119,7 @@ the network!
 
   DownloadExtraInfo 1
 
-Now that Tor is happy chugging along up-to-date descriptors are available
+Now that Tor is happy chugging along, up-to-date descriptors are available
 through Tor's control socket...
 
 ::
@@ -124,33 +141,17 @@ through Tor's control socket...
   for desc in parse_file(open("/home/atagar/.tor/cached-consensus")):
     print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
 
-.. _where-can-i-get-past-descriptors:
-
-Where can I get past descriptors?
----------------------------------
-
-Descriptor archives are available on `Tor's metrics site
-<https://metrics.torproject.org/data.html>`_. These archives can be read with
-the `DescriptorReader <../api/descriptor/reader.html>`_...
-
-::
-
-  from stem.descriptor.reader import DescriptorReader
-
-  with DescriptorReader(["/home/atagar/server-descriptors-2013-03.tar"]) as reader:
-    for desc in reader:
-      print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
-
 .. _putting-it-together:
 
 Putting it together...
 ----------------------
 
-As discussed above there are three methods for reading descriptors...
+As discussed above there are four methods for reading descriptors...
 
-* With the :class:`~stem.control.Controller` via methods like :func:`~stem.control.Controller.get_server_descriptors` and :func:`~stem.control.Controller.get_network_statuses`.
-* By reading the file directly with :func:`~stem.descriptor.__init__.parse_file`.
-* Reading with the `DescriptorReader <../api/descriptor/reader.html>`_. This is best if you have you want to read everything from a directory or archive.
+* Download descriptors directly with `stem.descriptor.remote <../api/descriptor/remote.html>`_.
+* Read a single file with :func:`~stem.descriptor.__init__.parse_file`.
+* Read multiple files or an archive with the `DescriptorReader <../api/descriptor/reader.html>`_.
+* Requesting them from Tor with :class:`~stem.control.Controller` methods like :func:`~stem.control.Controller.get_server_descriptors` and :func:`~stem.control.Controller.get_network_statuses`.
 
 Now lets say you want to figure out who the *biggest* exit relays are. You
 could use any of the methods above, but for this example we'll use

@@ -1482,7 +1482,7 @@ class Controller(BaseController):
     :param list default: items to provide if the query fails
 
     :returns: iterates over
-      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for
+      :class:`~stem.descriptor.router_status_entry.RouterStatusEntry` for
       relays in the tor network
 
     :raises: :class:`stem.ControllerError` if unable to query tor and no

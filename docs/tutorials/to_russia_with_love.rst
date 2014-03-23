@@ -19,7 +19,7 @@ Tor relays are scattered all over the world and, as such, you can pretend to be 
 
 Tor makes `configuring your exit locale <https://www.torproject.org/docs/faq.html.en#ChooseEntryExit>`_ easy through the **ExitNodes** torrc option. Note that you don't need a control port (or even Stem) to do this, though they can be useful if you later want to do something more elaborate.
 
-In the following example we're using Stem to `start Tor <../api/process.html>`_, then reading a site through it with `SocksiPy <http://socksipy.sourceforge.net/>`_. This is not always reliable (some relays are lemons) so you may need to run this more than once.
+In the following example we're using Stem to `start Tor <../api/process.html>`_, then read a site through it with `SocksiPy <http://socksipy.sourceforge.net/>`_. This is not always reliable (some relays are lemons) so you may need to run this more than once.
 
 **Do not rely on the following not to leak.** Though it seems to work there may be edge cases that expose your real IP. If you have a suggestion for how to improve this example then please `let me know <https://www.atagar.com/contact/>`_!
 
