@@ -11,6 +11,33 @@ applications and the python interactive interpreter, but does several things
 that makes it undesirable for applications (uses stdin/stdout, suppresses
 exceptions, etc).
 
+::
+
+  import sys 
+
+  from stem.connection import connect_port
+
+  if __name__ == '__main__':
+    controller = connect_port()
+
+    if not controller:
+      sys.exit(1)  # unable to get a connection
+
+    print "Tor is running version %s" % controller.get_version()
+    controller.close()
+
+::
+
+  % python example.py 
+  Tor is running version 0.2.4.10-alpha-dev (git-8be6058d8f31e578)
+
+... or if Tor isn't running...
+
+::
+
+  % python example.py 
+  [Errno 111] Connection refused
+
 The :func:`~stem.connection.authenticate` function, however, gives easy but
 fine-grained control over the authentication process. For instance...
 
