@@ -12,6 +12,8 @@ Contents
    tutorials/mirror_mirror_on_the_wall
    tutorials/double_double_toil_and_trouble
 
+   tutorials/examples/compare_flags
+
    change_log
    download
 

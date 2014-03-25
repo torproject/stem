@@ -5,6 +5,9 @@ Below is a listing of scripts and applications that use Stem. If you have
 something you would like to have included on this page then `let me know
 <https://www.atagar.com/contact/>`_!
 
+Applications
+============
+
 .. Image Sources:
    
    * Arm
@@ -46,4 +49,15 @@ something you would like to have included on this page then `let me know
 `torirc <https://github.com/alfred-gw/torirc>`_                                                             IRC-like chat client using Tor hidden services.
 `ExitMap <https://github.com/NullHypothesis/exitmap>`_                                                      Scanner for malicious or misconfigured Tor exits.
 =========================================================================================================== ==========
+
+Scripts
+=======
+
+Descriptors
+-----------
+
+* `Comparing Directory Authority Flags <examples/compare_flags.html>`_
+
+  Compares the votes of two directory authorities, in this case moria1 and
+  maatuska, with a special interest in the 'Running' flag.
 
