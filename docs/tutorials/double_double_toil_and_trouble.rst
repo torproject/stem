@@ -63,6 +63,10 @@ Client Usage
 Descriptors
 -----------
 
+* `List Outdated Relays <examples/outdated_relays.html>`_
+
+  Prints contact information for relays prior to a given version.
+
 * `Comparing Directory Authority Flags <examples/compare_flags.html>`_
 
   Compares the votes of two directory authorities, in this case moria1 and
