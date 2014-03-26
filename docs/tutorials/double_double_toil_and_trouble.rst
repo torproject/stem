@@ -56,6 +56,10 @@ Scripts
 Client Usage
 ------------
 
+* `List Circuits <examples/list_circuits.html>`_
+
+  List the path Tor uses for its present circuits.
+
 * `Determine The Exit You're Using <examples/exit_used.html>`_
 
   Tells you the exit used for each Tor connection.

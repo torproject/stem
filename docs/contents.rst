@@ -14,6 +14,7 @@ Contents
 
    tutorials/examples/compare_flags
    tutorials/examples/exit_used
+   tutorials/examples/list_circuits
    tutorials/examples/outdated_relays
 
    change_log
