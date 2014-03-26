@@ -53,11 +53,18 @@ Applications
 Scripts
 =======
 
+Client Usage
+------------
+
+* `Determine The Exit You're Using <examples/exit_used.html>`_
+
+  Tells you the exit used for each Tor connection.
+
 Descriptors
 -----------
 
 * `Comparing Directory Authority Flags <examples/compare_flags.html>`_
 
   Compares the votes of two directory authorities, in this case moria1 and
-  maatuska, with a special interest in the 'Running' flag.
+  maatuska with a special interest in the 'Running' flag.
 

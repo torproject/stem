@@ -13,6 +13,7 @@ Contents
    tutorials/double_double_toil_and_trouble
 
    tutorials/examples/compare_flags
+   tutorials/examples/exit_used
 
    change_log
    download
