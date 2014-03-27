@@ -93,7 +93,7 @@ application. And, of course, please consider `running Tor as a relay
 <https://www.torproject.org/docs/tor-doc-relay.html.en>`_ so you give back to
 the network!
 
-::
+.. code-block:: lighttpd
 
   # Descriptors have a range of time during which they're valid. To get the
   # most recent descriptor information, regardless of if Tor needs it or not,

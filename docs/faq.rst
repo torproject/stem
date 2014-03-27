@@ -372,14 +372,14 @@ Python's `with <http://effbot.org/zone/python-with-statement.htm>`_ keyword
 is shorthand for a try/finally block. With a :class:`~stem.control.Controller`
 the following...
 
-::
+.. code-block:: python
 
   with Controller.from_port(port = 9051) as controller:
     # do my stuff
 
 ... is equivialnt to...
 
-::
+.. code-block:: python
 
   controller = Controller.from_port(port = 9051)
 
