@@ -48,6 +48,7 @@ Applications
 `munin-tor <https://github.com/mweinelt/munin-tor>`_                                                        Plugin to provide Munin graphs.
 `tbbscraper <https://github.com/zackw/tbbscraper/blob/master/controller/controller.py>`_                    Automated website scraper over Tor.
 `torirc <https://github.com/alfred-gw/torirc>`_                                                             IRC-like chat client using Tor hidden services.
+`exit-funding <https://github.com/torservers/exit-funding>`_                                                Script to estimate how much exit relays have been used.
 `ExitMap <https://github.com/NullHypothesis/exitmap>`_                                                      Scanner for malicious or misconfigured Tor exits.
 =========================================================================================================== ==========
 
