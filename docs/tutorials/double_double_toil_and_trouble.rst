@@ -20,6 +20,11 @@ Applications
    
    * Doctor
      Source: https://openclipart.org/detail/29839/stethoscope-by-metalmarious
+     License: Public Domain
+   
+   * Exit Map
+     Source: https://openclipart.org/detail/120607/treasure-map-by-tzunghaor
+     License: Public Domain
 
 .. list-table::
    :widths: 1 10
@@ -43,6 +48,17 @@ Applications
        Monitors the Tor consensus for a variety of issues including malformed
        descriptors, directory authority issues, sybil attacks, and much more.
 
+   * - .. image:: /_static/exit_map.png
+          :target: http://www.cs.kau.se/philwint/spoiled_onions/
+
+     - .. image:: /_static/label/exit_map.png
+          :target: http://www.cs.kau.se/philwint/spoiled_onions/
+
+       Scanner by Philipp Winter to detect malicious and misconfigured Tor
+       exits. For more information about how it works see his `Spoiled
+       Onions <http://www.cs.kau.se/philwint/spoiled_onions/techreport.pdf>`_
+       research paper.
+
 =========================================================================================================== ==========
 `RTT Prober <https://bitbucket.org/ra_/tor-rtt/>`_                                                          Measures round-trip times for Tor circuits.
 `TorPS <https://www.torproject.org/getinvolved/volunteer.html.en#project-torps>`_                           Tor path simulator.
@@ -52,7 +68,6 @@ Applications
 `tbbscraper <https://github.com/zackw/tbbscraper/blob/master/controller/controller.py>`_                    Automated website scraper over Tor.
 `torirc <https://github.com/alfred-gw/torirc>`_                                                             IRC-like chat client using Tor hidden services.
 `exit-funding <https://github.com/torservers/exit-funding>`_                                                Script to estimate how much exit relays have been used.
-`ExitMap <https://github.com/NullHypothesis/exitmap>`_                                                      Scanner for malicious or misconfigured Tor exits.
 =========================================================================================================== ==========
 
 Scripts
