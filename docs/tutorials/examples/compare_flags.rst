@@ -1,6 +1,9 @@
 Comparing Directory Authority Flags
 ===================================
 
+.. image:: /_static/buttons/back.png
+   :target: ../double_double_toil_and_trouble.html
+
 Compares the votes of two directory authorities, in this case moria1 and
 maatuska, with a special interest in the 'Running' flag.
 

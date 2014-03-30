@@ -1,6 +1,12 @@
 To Russia With Love
 ===================
 
+.. image:: /_static/buttons/back.png
+   :target: ../tutorials.html
+
+The following is an quick introduction for scripts and applications that go
+through Tor.
+
 * :ref:`using-socksipy`
 * :ref:`using-pycurl`
 * :ref:`reading-twitter`

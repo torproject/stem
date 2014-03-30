@@ -1,6 +1,9 @@
 Mirror Mirror on the Wall
 =========================
 
+.. image:: /_static/buttons/back.png
+   :target: ../tutorials.html
+
 The following is an overview of **Tor descriptors**. If you're already familiar
 with what they are and where to get them then you may want to skip to the end.
 

@@ -1,7 +1,12 @@
 List Outdated Relays
 ====================
 
-Time marches on. Tor makes new releases, and at some point needs to drop support for old ones. Below is the script we used on :trac:`9476` to reach out to relay operators that needed to upgrade.
+.. image:: /_static/buttons/back.png
+   :target: ../double_double_toil_and_trouble.html
+
+Time marches on. Tor makes new releases, and at some point needs to drop
+support for old ones. Below is the script we used on :trac:`9476` to reach out
+to relay operators that needed to upgrade.
 
 ::
 

@@ -1,6 +1,9 @@
 The Little Relay that Could
 ===========================
 
+.. image:: /_static/buttons/back.png
+   :target: ../tutorials.html
+
 Let's say you just set up your very first `Tor relay
 <https://www.torproject.org/docs/tor-doc-relay.html.en>`_ (thank you!), and now
 you want to write a script that tells you how much it is being used.

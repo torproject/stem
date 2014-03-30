@@ -1,6 +1,9 @@
 East of the Sun & West of the Moon
 ==================================
 
+.. image:: /_static/buttons/back.png
+   :target: ../tutorials.html
+
 The following is an overview of some of the utilities Stem provides.
 
 * :ref:`connection-resolution`

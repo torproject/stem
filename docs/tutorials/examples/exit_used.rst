@@ -1,6 +1,9 @@
 Determine The Exit You're Using
 ===============================
 
+.. image:: /_static/buttons/back.png
+   :target: ../double_double_toil_and_trouble.html
+
 Lets say you're using Tor and one day you run into something odd. Maybe a
 misconfigured relay, or maybe one that's being malicious. How can you figure
 out what exit you're using?

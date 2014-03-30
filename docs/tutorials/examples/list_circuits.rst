@@ -1,6 +1,9 @@
 List Circuits
 =============
 
+.. image:: /_static/buttons/back.png
+   :target: ../double_double_toil_and_trouble.html
+
 Tor creates new circuits and tears down old ones on your behalf, so how can you
 get information about circuits Tor currently has available?
 
