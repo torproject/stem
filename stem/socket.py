@@ -2,9 +2,45 @@
 # See LICENSE for licensing information
 
 """
-Supports message based communication with sockets speaking the tor control
-protocol. This lets users send messages as basic strings and receive responses
-as instances of the :class:`~stem.response.ControlMessage` class.
+Supports communication with sockets speaking the Tor control protocol. This
+allows us to send messages as basic strings, and receive responses as
+:class:`~stem.response.ControlMessage` instances.
+
+**This module only consists of low level components, and is not intended for
+users.** See our `tutorials <tutorials.html>`_ and `Control Module
+<api/control.html>`_ if you're new to Stem and looking to get started.
+
+With that aside, these can still be used for raw socket communication with
+Tor...
+
+::
+
+  import stem
+  import stem.connection
+  import stem.socket
+
+  if __name__ == '__main__':
+    try:
+      control_socket = stem.socket.ControlPort(port = 9051)
+      stem.connection.authenticate(control_socket)
+    except stem.SocketError as exc:
+      print "Unable to connect to tor on port 9051: %s" % exc
+      sys.exit(1)
+    except stem.connection.AuthenticationFailure as exc:
+      print "Unable to authenticate: %s" % exc
+      sys.exit(1)
+
+    print "Issuing 'GETINFO version' query...\\n"
+    control_socket.send('GETINFO version')
+    print control_socket.recv()
+
+::
+
+  % python example.py 
+  Issuing 'GETINFO version' query...
+
+  version=0.2.4.10-alpha-dev (git-8be6058d8f31e578)
+  OK
 
 **Module Overview:**
 

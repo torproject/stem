@@ -28,7 +28,8 @@ To do this it listens to **BW events**
 are events that Tor emits each second saying the number of bytes downloaded and
 uploaded.
 
-::
+.. code-block:: python
+  :emphasize-lines: 53-55,62-67
 
   import curses
   import functools

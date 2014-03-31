@@ -5,6 +5,9 @@ Below is a listing of scripts and applications that use Stem. If you have
 something you would like to have included on this page then `let me know
 <https://www.atagar.com/contact/>`_!
 
+Applications
+============
+
 .. Image Sources:
    
    * Arm
@@ -14,6 +17,11 @@ something you would like to have included on this page then `let me know
    
    * Doctor
      Source: https://openclipart.org/detail/29839/stethoscope-by-metalmarious
+     License: Public Domain
+   
+   * Exit Map
+     Source: https://openclipart.org/detail/120607/treasure-map-by-tzunghaor
+     License: Public Domain
 
 .. list-table::
    :widths: 1 10
@@ -37,13 +45,51 @@ something you would like to have included on this page then `let me know
        Monitors the Tor consensus for a variety of issues including malformed
        descriptors, directory authority issues, sybil attacks, and much more.
 
+   * - .. image:: /_static/exit_map.png
+          :target: http://www.cs.kau.se/philwint/spoiled_onions/
+
+     - .. image:: /_static/label/exit_map.png
+          :target: http://www.cs.kau.se/philwint/spoiled_onions/
+
+       Scanner by Philipp Winter to detect malicious and misconfigured Tor
+       exits. For more information about how it works see his `Spoiled
+       Onions <http://www.cs.kau.se/philwint/spoiled_onions/techreport.pdf>`_
+       research paper.
+
 =========================================================================================================== ==========
 `RTT Prober <https://bitbucket.org/ra_/tor-rtt/>`_                                                          Measures round-trip times for Tor circuits.
 `TorPS <https://www.torproject.org/getinvolved/volunteer.html.en#project-torps>`_                           Tor path simulator.
 `Metrics Tasks <https://gitweb.torproject.org/metrics-tasks.git/tree>`_                                     One-off tasks related to Tor metrics. These mostly involve using descriptor information to answer a particular question. Tasks that involve Stem are: `1854 <https://gitweb.torproject.org/metrics-tasks.git/blob/HEAD:/task-1854/pylinf.py>`_, `6232 <https://gitweb.torproject.org/metrics-tasks.git/blob/HEAD:/task-6232/pyentropy.py>`_, and `7241 <https://gitweb.torproject.org/metrics-tasks.git/blob/HEAD:/task-7241/first_pass.py>`_.
 `check_tor <http://anonscm.debian.org/gitweb/?p=users/lunar/check_tor.git;a=blob;f=check_tor.py;hb=HEAD>`_  Nagios check to verify that a relay is participating in the Tor network.
+`munin-tor <https://github.com/mweinelt/munin-tor>`_                                                        Plugin to provide Munin graphs.
 `tbbscraper <https://github.com/zackw/tbbscraper/blob/master/controller/controller.py>`_                    Automated website scraper over Tor.
 `torirc <https://github.com/alfred-gw/torirc>`_                                                             IRC-like chat client using Tor hidden services.
-`ExitMap <https://github.com/NullHypothesis/exitmap>`_                                                      Scanner for malicious or misconfigured Tor exits.
+`exit-funding <https://github.com/torservers/exit-funding>`_                                                Script to estimate how much exit relays have been used.
 =========================================================================================================== ==========
+
+Scripts
+=======
+
+Client Usage
+------------
+
+* `List Circuits <examples/list_circuits.html>`_
+
+  List the path Tor uses for its present circuits.
+
+* `Determine The Exit You're Using <examples/exit_used.html>`_
+
+  Tells you the exit used for each Tor connection.
+
+Descriptors
+-----------
+
+* `List Outdated Relays <examples/outdated_relays.html>`_
+
+  Prints contact information for relays prior to a given version.
+
+* `Comparing Directory Authority Flags <examples/compare_flags.html>`_
+
+  Compares the votes of two directory authorities, in this case moria1 and
+  maatuska with a special interest in the 'Running' flag.
 

@@ -12,6 +12,11 @@ Contents
    tutorials/mirror_mirror_on_the_wall
    tutorials/double_double_toil_and_trouble
 
+   tutorials/examples/compare_flags
+   tutorials/examples/exit_used
+   tutorials/examples/list_circuits
+   tutorials/examples/outdated_relays
+
    change_log
    download
 

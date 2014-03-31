@@ -12,7 +12,7 @@ protected by either a **password** or **authentication cookie**.
 Look at your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_ for
 the following configuration options...
 
-::
+.. code-block:: bash
 
   # This provides a port for our script to talk with. If you set this then be
   # sure to also set either CookieAuthentication *or* HashedControlPassword!

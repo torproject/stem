@@ -373,6 +373,43 @@ class CircuitEvent(Event):
     self._log_if_unrecognized('reason', stem.CircClosureReason)
     self._log_if_unrecognized('remote_reason', stem.CircClosureReason)
 
+  def _compare(self, other, method):
+    if not isinstance(other, CircuitEvent):
+      return False
+
+    for attr in ('id', 'status', 'path', 'build_flags', 'purpose', 'hs_state', 'rend_query', 'created', 'reason', 'remote_reason'):
+      my_attr = getattr(self, attr)
+      other_attr = getattr(other, attr)
+
+      # Our id attribute is technically a string, but Tor conventionally uses
+      # ints. Attempt to handle as ints if that's the case so we get numeric
+      # ordering.
+
+      if attr == 'id' and my_attr and other_attr:
+        if my_attr.isdigit() and other_attr.isdigit():
+          my_attr = int(my_attr)
+          other_attr = int(other_attr)
+
+      if my_attr is None:
+        my_attr = ''
+
+      if other_attr is None:
+        other_attr = ''
+
+      if my_attr != other_attr:
+        return method(my_attr, other_attr)
+
+    return True
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __gt__(self, other):
+    return self._compare(other, lambda s, o: s > o)
+
+  def __ge__(self, other):
+    return self._compare(other, lambda s, o: s >= o)
+
 
 class CircMinorEvent(Event):
   """
@@ -564,7 +601,7 @@ class GuardEvent(Event):
       self.endpoint_fingerprint, self.endpoint_nickname = \
         stem.control._parse_circ_entry(self.endpoint)
     except stem.ProtocolError:
-      raise stem.ProtocolError("ORCONN's endpoint doesn't match a ServerSpec: %s" % self)
+      raise stem.ProtocolError("GUARD's endpoint doesn't match a ServerSpec: %s" % self)
 
     self._log_if_unrecognized('guard_type', stem.GuardType)
     self._log_if_unrecognized('status', stem.GuardStatus)

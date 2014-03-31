@@ -2,11 +2,65 @@
 # See LICENSE for licensing information
 
 """
-Classes for interacting with the tor control socket.
+Module for interacting with the Tor control socket. The
+:class:`~stem.control.Controller` is a wrapper around a
+:class:`~stem.socket.ControlSocket`, retaining many of its methods (connect,
+close, is_alive, etc) in addition to providing its own for working with the
+socket at a higher level.
 
-Controllers are a wrapper around a :class:`~stem.socket.ControlSocket`,
-retaining many of its methods (connect, close, is_alive, etc) in addition to
-providing its own for interacting at a higher level.
+Stem has `several ways <../faq.html#how-do-i-connect-to-tor>`_ of getting a
+:class:`~stem.control.Controller`, but the most flexible are
+:func:`~stem.control.Controller.from_port` and
+:func:`~stem.control.Controller.from_socket_file`. These static
+:class:`~stem.control.Controller` methods give you an **unauthenticated**
+Controller you can then authenticate yourself using its
+:func:`~stem.control.Controller.authenticate` method. For example...
+
+::
+
+  import getpass
+  import sys
+
+  import stem
+  import stem.connection
+
+  from stem.control import Controller
+
+  if __name__ == '__main__':
+    try:
+      controller = Controller.from_port()
+    except stem.SocketError as exc:
+      print "Unable to connect to tor on port 9051: %s" % exc
+      sys.exit(1)
+
+    try:
+      controller.authenticate()
+    except stem.connection.MissingPassword:
+      pw = getpass.getpass("Controller password: ")
+
+      try:
+        controller.authenticate(password = pw)
+      except stem.connection.PasswordAuthFailed:
+        print "Unable to authenticate, password is incorrect"
+        sys.exit(1)
+    except stem.connection.AuthenticationFailure as exc:
+      print "Unable to authenticate: %s" % exc
+      sys.exit(1)
+
+    print "Tor is running version %s" % controller.get_version()
+    controller.close()
+
+If you're fine with allowing your script to raise exceptions then this can be more nicely done as...
+
+::
+
+  from stem.control import Controller
+
+  if __name__ == '__main__':
+    with Controller.from_port() as controller:
+      controller.authenticate()
+
+      print "Tor is running version %s" % controller.get_version()
 
 **Module Overview:**
 
@@ -1482,7 +1536,7 @@ class Controller(BaseController):
     :param list default: items to provide if the query fails
 
     :returns: iterates over
-      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for
+      :class:`~stem.descriptor.router_status_entry.RouterStatusEntry` for
       relays in the tor network
 
     :raises: :class:`stem.ControllerError` if unable to query tor and no
