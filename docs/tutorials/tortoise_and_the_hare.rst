@@ -1,9 +1,6 @@
 Tortoise and the Hare
 =====================
 
-.. image:: /_static/buttons/back.png
-   :target: ../tutorials.html
-
 Controllers have two methods of talking with Tor...
 
 * **Synchronous** - Most commonly you make a request to Tor then receive its

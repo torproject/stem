@@ -1,9 +1,6 @@
 Double Double Toil and Trouble
 ==============================
 
-.. image:: /_static/buttons/back.png
-   :target: ../tutorials.html
-
 Below is a listing of scripts and applications that use Stem. If you have
 something you would like to have included on this page then `let me know
 <https://www.atagar.com/contact/>`_!
