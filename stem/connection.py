@@ -147,6 +147,40 @@ AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "SAFECOOKIE", "UN
 CLIENT_HASH_CONSTANT = b"Tor safe cookie authentication controller-to-server hash"
 SERVER_HASH_CONSTANT = b"Tor safe cookie authentication server-to-controller hash"
 
+MISSING_PASSWORD_BUG_MSG = """
+BUG: You provided a password but despite this stem reported that it was
+missing. This shouldn't happen - please let us know about it!
+
+  http://bugs.torproject.org
+"""
+
+UNRECOGNIZED_AUTH_TYPE_MSG = """
+Tor is using a type of authentication we do not recognize...
+
+  {auth_methods}
+
+Please check that arm is up to date and if there is an existing issue on
+'http://bugs.torproject.org'. If there isn't one then let us know!
+"""
+
+
+UNREADABLE_COOKIE_FILE_MSG = """
+We were unable to read tor's authentication cookie...
+
+  Path: {path}
+  Issue: {issue}
+"""
+
+WRONG_PORT_TYPE_MSG = """
+Please check in your torrc that {port} is the ControlPort. Maybe you
+configured it to be the ORPort or SocksPort instead?
+"""
+
+WRONG_SOCKET_TYPE_MSG = """
+Unable to connect to tor. Are you sure the interface you specified belongs to
+tor?
+"""
+
 CONNECT_MESSAGES = {
   'general_auth_failure': "Unable to authenticate: {error}",
   'incorrect_password': "Incorrect password",
@@ -156,6 +190,11 @@ CONNECT_MESSAGES = {
   'tor_isnt_running': "Unable to connect to tor. Are you sure it's running?",
   'unable_to_use_port': "Unable to connect to {address}:{port}: {error}",
   'unable_to_use_socket': "Unable to connect to '{path}': {error}",
+  'missing_password_bug': MISSING_PASSWORD_BUG_MSG.strip(),
+  'uncrcognized_auth_type': UNRECOGNIZED_AUTH_TYPE_MSG.strip(),
+  'unreadable_cookie_file': UNREADABLE_COOKIE_FILE_MSG.strip(),
+  'wrong_port_type': WRONG_PORT_TYPE_MSG.strip(),
+  'wrong_socket_type': WRONG_SOCKET_TYPE_MSG.strip(),
 }
 
 
@@ -232,7 +271,7 @@ def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/c
     print error_msg
     return None
 
-  return _connect(control_connection, password, chroot_path, controller)
+  return _connect_auth(control_connection, password, chroot_path, controller)
 
 
 def connect_port(address = "127.0.0.1", port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
@@ -261,7 +300,7 @@ def connect_port(address = "127.0.0.1", port = 9051, password = None, chroot_pat
     print exc
     return None
 
-  return _connect(control_port, password, chroot_path, controller)
+  return _connect_auth(control_port, password, chroot_path, controller)
 
 
 def connect_socket_file(path = "/var/run/tor/control", password = None, chroot_path = None, controller = stem.control.Controller):
@@ -291,12 +330,13 @@ def connect_socket_file(path = "/var/run/tor/control", password = None, chroot_p
     print exc
     return None
 
-  return _connect(control_socket, password, chroot_path, controller)
+  return _connect_auth(control_socket, password, chroot_path, controller)
 
 
-def _connect(control_socket, password, chroot_path, controller):
+def _connect_auth(control_socket, password, chroot_path, controller):
   """
-  Common implementation for the connect_* functions.
+  Helper for the connect_* functions that authenticates the socket and
+  constructs the controller.
 
   :param stem.socket.ControlSocket control_socket: socket being authenticated to
   :param str password: passphrase to authenticate to the socket
@@ -341,7 +381,7 @@ def _connect(control_socket, password, chroot_path, controller):
       control_socket.close()
       return None
 
-    return _connect(control_socket, password, chroot_path, controller)
+    return _connect_auth(control_socket, password, chroot_path, controller)
   except UnreadableCookieFile as exc:
     print CONNECT_MESSAGES['unreadable_cookie_file'].format(path = exc.cookie_path, issue = str(exc))
     control_socket.close()
