@@ -8,7 +8,9 @@ Commandline argument parsing for arm.
 import collections
 import getopt
 
-DEFAULT_ARGS = { 
+import stem.util.connection
+
+DEFAULT_ARGS = {
   'control_address': '127.0.0.1',
   'control_port': 9051,
   'user_provided_port': False,
@@ -19,7 +21,7 @@ DEFAULT_ARGS = {
 
 OPT = 'i:s:h'
 
-OPT_EXPANDED = [ 
+OPT_EXPANDED = [
   'interface=',
   'socket=',
   'help',
@@ -39,6 +41,7 @@ prompt -i 1643            attach to control port 1643
 prompt -s ~/.tor/socket   attach to a control socket in your home directory
 """
 
+
 def parse(argv):
   """
   Parses our arguments, providing a named tuple with their values.
@@ -55,7 +58,7 @@ def parse(argv):
   try:
     getopt_results = getopt.getopt(argv, OPT, OPT_EXPANDED)[0]
   except getopt.GetoptError as exc:
-    raise ValueError(msg('usage.invalid_arguments', error = exc))
+    raise ValueError('%s (for usage provide --help)' % exc)
 
   for opt, arg in getopt_results:
     if opt in ('-i', '--interface'):
@@ -66,12 +69,12 @@ def parse(argv):
 
       if address is not None:
         if not stem.util.connection.is_valid_ipv4_address(address):
-          raise ValueError(msg('usage.not_a_valid_address', address_input = address))
+          raise ValueError("'%s' isn't a valid IPv4 address" % address)
 
         args['control_address'] = address
 
       if not stem.util.connection.is_valid_port(port):
-        raise ValueError(msg('usage.not_a_valid_port', port_input = port))
+        raise ValueError("'%s' isn't a valid port number" % port)
 
       args['control_port'] = int(port)
       args['user_provided_port'] = True
@@ -85,6 +88,7 @@ def parse(argv):
 
   Args = collections.namedtuple('Args', args.keys())
   return Args(**args)
+
 
 def get_help():
   """

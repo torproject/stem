@@ -12,8 +12,23 @@ import sys
 
 import stem.connection
 import stem.interpretor.arguments
+import stem.prereq
+
+from stem.util.term import Attr, Color, format
+
+# We can only present a color prompt with python 2.7 or later...
+#
+#   http://bugs.python.org/issue12972
+
+if stem.prereq.is_python_27():
+  PROMPT = format(">>> ", Color.GREEN, Attr.BOLD)
+else:
+  PROMPT = ">>> "
+
 
 def main():
+  import readline
+
   try:
     args = stem.interpretor.arguments.parse(sys.argv[1:])
   except ValueError as exc:
@@ -30,10 +45,17 @@ def main():
   controller = stem.connection.connect(
     control_port = control_port,
     control_socket = control_socket,
+    password_prompt = True,
   )
 
   if controller is None:
     sys.exit(1)
 
   with controller:
-    print controller.get_version()
+    while True:
+      try:
+        user_input = raw_input(PROMPT)
+        print controller.msg(user_input)
+      except KeyboardInterrupt as exc:
+        print  # move cursor to the following line
+        break
