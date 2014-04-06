@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# Provides a quick method of getting a controller that we can use to test stem
+# with. This starts tor if it isn't already running and provides us with a
+# controller instance. When done it gives us the option to stop the tor.
+#
+#   atagar@morrigan:~/Desktop/stem$ ./prompt 
+#   Welcome to stem's testing prompt. You currently have a controller available
+#   via the 'controller' variable.
+#
+#   >>> controller.get_info("version")
+#   '0.2.1.30'
+#   >>> quit()
+#
+#   Would you like to stop the tor instance we made? (y/n, default: n): y
+
+python -i -c "import test.prompt; test.prompt.print_usage(); controller = test.prompt.controller()"
+python -c "import test.prompt; test.prompt.stop(True)"
+
