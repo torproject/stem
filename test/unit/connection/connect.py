@@ -77,11 +77,11 @@ class TestConnect(unittest.TestCase):
   def test_auth_success(self, authenticate_mock):
     control_socket = Mock()
 
-    stem.connection._connect_auth(control_socket, None, None, None)
+    stem.connection._connect_auth(control_socket, None, False, None, None)
     authenticate_mock.assert_called_with(control_socket, None, None)
     authenticate_mock.reset_mock()
 
-    stem.connection._connect_auth(control_socket, 's3krit!!!', '/my/chroot', None)
+    stem.connection._connect_auth(control_socket, 's3krit!!!', False, '/my/chroot', None)
     authenticate_mock.assert_called_with(control_socket, 's3krit!!!', '/my/chroot')
 
   @patch('getpass.getpass')
@@ -100,7 +100,7 @@ class TestConnect(unittest.TestCase):
     authenticate_mock.side_effect = authenticate_mock_func
     getpass_mock.return_value = 'my_password'
 
-    stem.connection._connect_auth(control_socket, None, None, None)
+    stem.connection._connect_auth(control_socket, None, True, None, None)
     authenticate_mock.assert_any_call(control_socket, None, None)
     authenticate_mock.assert_any_call(control_socket, 'my_password', None)
 
@@ -129,7 +129,7 @@ class TestConnect(unittest.TestCase):
     self._assert_authenticate_fails_with(control_socket, stdout_mock, 'Unable to authenticate: crazy failure')
 
   def _assert_authenticate_fails_with(self, control_socket, stdout_mock, msg):
-    result = stem.connection._connect_auth(control_socket, None, None, None)
+    result = stem.connection._connect_auth(control_socket, None, False, None, None)
 
     if result is not None:
       self.fail()  # _connect_auth() was successful

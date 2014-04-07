@@ -186,6 +186,7 @@ CONNECT_MESSAGES = {
   'incorrect_password': "Incorrect password",
   'no_control_port': "Unable to connect to tor. Maybe it's running without a ControlPort?",
   'password_prompt': "Tor controller password:",
+  'needs_password': "Tor requires a password to authenticate",
   'socket_doesnt_exist': "The socket file you specified ({path}) doesn't exist",
   'tor_isnt_running': "Unable to connect to tor. Are you sure it's running?",
   'unable_to_use_port': "Unable to connect to {address}:{port}: {error}",
@@ -198,7 +199,7 @@ CONNECT_MESSAGES = {
 }
 
 
-def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/control', password = None, chroot_path = None, controller = stem.control.Controller):
+def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/control', password = None, password_prompt = False, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. This is very
   handy for debugging or CLI setup, handling setup and prompting for a password
@@ -216,6 +217,8 @@ def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/c
   :param tuple contol_port: address and port tuple, for instance **('127.0.0.1', 9051)**
   :param str path: path where the control socket is located
   :param str password: passphrase to authenticate to the socket
+  :param bool password_prompt: prompt for the controller password if it wasn't
+    supplied
   :param str chroot_path: path prefix if in a chroot environment
   :param Class controller: :class:`~stem.control.BaseController` subclass to be
     returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
@@ -271,7 +274,7 @@ def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/c
     print error_msg
     return None
 
-  return _connect_auth(control_connection, password, chroot_path, controller)
+  return _connect_auth(control_connection, password, password_prompt, chroot_path, controller)
 
 
 def connect_port(address = "127.0.0.1", port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
@@ -300,7 +303,7 @@ def connect_port(address = "127.0.0.1", port = 9051, password = None, chroot_pat
     print exc
     return None
 
-  return _connect_auth(control_port, password, chroot_path, controller)
+  return _connect_auth(control_port, password, True, chroot_path, controller)
 
 
 def connect_socket_file(path = "/var/run/tor/control", password = None, chroot_path = None, controller = stem.control.Controller):
@@ -330,16 +333,18 @@ def connect_socket_file(path = "/var/run/tor/control", password = None, chroot_p
     print exc
     return None
 
-  return _connect_auth(control_socket, password, chroot_path, controller)
+  return _connect_auth(control_socket, password, True, chroot_path, controller)
 
 
-def _connect_auth(control_socket, password, chroot_path, controller):
+def _connect_auth(control_socket, password, password_prompt, chroot_path, controller):
   """
   Helper for the connect_* functions that authenticates the socket and
   constructs the controller.
 
   :param stem.socket.ControlSocket control_socket: socket being authenticated to
   :param str password: passphrase to authenticate to the socket
+  :param bool password_prompt: prompt for the controller password if it wasn't
+    supplied
   :param str chroot_path: path prefix if in a chroot environment
   :param Class controller: :class:`~stem.control.BaseController` subclass to be
     returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
@@ -375,13 +380,18 @@ def _connect_auth(control_socket, password, chroot_path, controller):
       control_socket.close()
       raise ValueError(CONNECT_MESSAGES['missing_password_bug'])
 
-    try:
-      password = getpass.getpass(CONNECT_MESSAGES['password_prompt'] + ' ')
-    except KeyboardInterrupt:
+    if password_prompt:
+      try:
+        password = getpass.getpass(CONNECT_MESSAGES['password_prompt'] + ' ')
+      except KeyboardInterrupt:
+        control_socket.close()
+        return None
+
+      return _connect_auth(control_socket, password, password_prompt, chroot_path, controller)
+    else:
+      print CONNECT_MESSAGES['needs_password']
       control_socket.close()
       return None
-
-    return _connect_auth(control_socket, password, chroot_path, controller)
   except UnreadableCookieFile as exc:
     print CONNECT_MESSAGES['unreadable_cookie_file'].format(path = exc.cookie_path, issue = str(exc))
     control_socket.close()
