@@ -62,6 +62,6 @@ def main():
       try:
         user_input = raw_input(PROMPT)
         print controller.msg(user_input)
-      except KeyboardInterrupt as exc:
+      except (KeyboardInterrupt, EOFError) as exc:
         print  # move cursor to the following line
         break
