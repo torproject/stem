@@ -12,6 +12,7 @@ import sys
 
 import stem.connection
 import stem.interpretor.arguments
+import stem.interpretor.commands
 import stem.prereq
 
 from stem.util.term import Attr, Color, format
@@ -52,6 +53,11 @@ def main():
     sys.exit(1)
 
   with controller:
+    tab_completer = stem.interpretor.commands.Autocomplete(controller)
+    readline.parse_and_bind("tab: complete")
+    readline.set_completer(tab_completer.complete)
+    readline.set_completer_delims('\n')
+
     while True:
       try:
         user_input = raw_input(PROMPT)
