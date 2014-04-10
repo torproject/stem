@@ -10,6 +10,7 @@ __all__ = ['arguments']
 
 import sys
 
+import stem
 import stem.connection
 import stem.interpretor.arguments
 import stem.interpretor.commands
@@ -58,10 +59,12 @@ def main():
     readline.set_completer(tab_completer.complete)
     readline.set_completer_delims('\n')
 
+    interpretor = stem.interpretor.commands.ControlInterpretor(controller)
+
     while True:
       try:
         user_input = raw_input(PROMPT)
-        print controller.msg(user_input)
-      except (KeyboardInterrupt, EOFError) as exc:
+        print interpretor.run_command(user_input)
+      except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
         print  # move cursor to the following line
         break
