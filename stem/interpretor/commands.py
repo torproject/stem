@@ -2,9 +2,12 @@
 Handles making requests and formatting the responses.
 """
 
+import os
 import re
 
 import stem
+import stem.util.conf
+import stem.util.log
 
 from stem.util.term import Attr, Color, format
 
@@ -32,76 +35,6 @@ TOR_CONTROLLER_COMMANDS = [
   'DROPGUARDS',
 ]
 
-MULTILINE_UNIMPLEMENTED_NOTICE = "Multi-line control options like this are not yet implemented."
-
-GENERAL_HELP = """Interpretor commands include:
-  /help   - provides information for interpretor and tor commands/config options
-  /quit   - shuts down the interpretor
-
-Tor commands include:
-  GETINFO - queries information from tor
-  GETCONF, SETCONF, RESETCONF - show or edit a configuration option
-  SIGNAL - issues control signal to the process (for resetting, stopping, etc)
-  SETEVENTS - configures the events tor will notify us of
-
-  USEFEATURE - enables custom behavior for the controller
-  SAVECONF - writes tor's current configuration to our torrc
-  LOADCONF - loads the given input like it was part of our torrc
-  MAPADDRESS - replaces requests for one address with another
-  POSTDESCRIPTOR - adds a relay descriptor to our cache
-  EXTENDCIRCUIT - create or extend a tor circuit
-  SETCIRCUITPURPOSE - configures the purpose associated with a circuit
-  CLOSECIRCUIT - closes the given circuit
-  ATTACHSTREAM - associates an application's stream with a tor circuit
-  REDIRECTSTREAM - sets a stream's destination
-  CLOSESTREAM - closes the given stream
-  RESOLVE - issues an asynchronous dns or rdns request over tor
-  TAKEOWNERSHIP - instructs tor to quit when this control connection is closed
-  PROTOCOLINFO - queries version and controller authentication information
-  QUIT - disconnect the control connection
-
-For more information use '/help [OPTION]'."""
-
-HELP_HELP = """Provides usage information for the given interpretor, tor command, or tor
-configuration option.
-
-Example:
-  /help GETINFO     # usage information for tor's GETINFO controller option
-"""
-
-HELP_QUIT = """Terminates the interpretor."""
-
-HELP_GETINFO = """Queries the tor process for information. Options are...
-"""
-
-HELP_GETCONF = """Provides the current value for a given configuration value. Options include...
-"""
-
-HELP_SETCONF = """Sets the given configuration parameters. Values can be quoted or non-quoted
-strings, and reverts the option to 0 or NULL if not provided.
-
-Examples:
-  * Sets a contact address and resets our family to NULL
-    SETCONF MyFamily ContactInfo=foo@bar.com
-
-  * Sets an exit policy that only includes port 80/443
-    SETCONF ExitPolicy=\"accept *:80, accept *:443, reject *:*\"\
-"""
-
-HELP_RESETCONF = """Reverts the given configuration options to their default values. If a value
-is provided then this behaves in the same way as SETCONF.
-
-Examples:
-  * Returns both of our accounting parameters to their defaults
-    RESETCONF AccountingMax AccountingStart
-
-  * Uses the default exit policy and sets our nickname to be 'Goomba'
-    RESETCONF ExitPolicy Nickname=Goomba"""
-
-HELP_SIGNAL = """Issues a signal that tells the tor process to reload its torrc, dump its
-stats, halt, etc.
-"""
-
 SIGNAL_DESCRIPTIONS = (
   ("RELOAD / HUP", "reload our torrc"),
   ("SHUTDOWN / INT", "gracefully shut down, waiting 30 seconds if we're a relay"),
@@ -112,92 +45,49 @@ SIGNAL_DESCRIPTIONS = (
   ("NEWNYM", "clears the DNS cache and uses new circuits for future connections")
 )
 
-HELP_SETEVENTS = """Sets the events that we will receive. This turns off any events that aren't
-listed so sending 'SETEVENTS' without any values will turn off all event reporting.
-
-For Tor versions between 0.1.1.9 and 0.2.2.1 adding 'EXTENDED' causes some
-events to give us additional information. After version 0.2.2.1 this is
-always on.
-
-Events include...
-
-"""
-
-HELP_USEFEATURE = """Customizes the behavior of the control port. Options include...
-"""
-
-HELP_SAVECONF = """Writes Tor's current configuration to its torrc."""
-
-HELP_LOADCONF = """Reads the given text like it belonged to our torrc.
-
-Example:
-  +LOADCONF
-  # sets our exit policy to just accept ports 80 and 443
-  ExitPolicy accept *:80
-  ExitPolicy accept *:443
-  ExitPolicy reject *:*
-  ."""
-
-HELP_MAPADDRESS = """Replaces future requests for one address with another.
-
-Example:
-  MAPADDRESS 0.0.0.0=torproject.org 1.2.3.4=tor.freehaven.net"""
-
-HELP_POSTDESCRIPTOR = """Simulates getting a new relay descriptor."""
-
-HELP_EXTENDCIRCUIT = """Extends the given circuit or create a new one if the CircuitID is zero. The
-PATH is a comma separated list of fingerprints. If it isn't set then this
-uses Tor's normal path selection."""
-
-HELP_SETCIRCUITPURPOSE = """Sets the purpose attribute for a circuit."""
-
-HELP_CLOSECIRCUIT = """Closes the given circuit. If "IfUnused" is included then this only closes
-the circuit if it isn't currently being used."""
-
-HELP_ATTACHSTREAM = """Attaches a stream with the given built circuit (tor picks one on its own if
-CircuitID is zero). If HopNum is given then this hop is used to exit the
-circuit, otherwise the last relay is used."""
-
-HELP_REDIRECTSTREAM = """Sets the destination for a given stream. This can only be done after a
-stream is created but before it's attached to a circuit."""
-
-HELP_CLOSESTREAM = """Closes the given stream, the reason being an integer matching a reason as
-per section 6.3 of the tor-spec."""
-
-HELP_RESOLVE = """Performs IPv4 DNS resolution over tor, doing a reverse lookup instead if
-"mode=reverse" is included. This request is processed in the background and
-results in a ADDRMAP event with the response."""
-
-HELP_TAKEOWNERSHIP = """Instructs Tor to gracefully shut down when this control connection is closed."""
-
-HELP_PROTOCOLINFO = """Provides bootstrapping information that a controller might need when first
-starting, like Tor's version and controller authentication. This can be done
-before authenticating to the control port."""
-
 HELP_OPTIONS = {
-  "HELP": ("/help [OPTION]", HELP_HELP),
-  "QUIT": ("/quit", HELP_QUIT),
-  "GETINFO": ("GETINFO OPTION", HELP_GETINFO),
-  "GETCONF": ("GETCONF OPTION", HELP_GETCONF),
-  "SETCONF": ("SETCONF PARAM[=VALUE]", HELP_SETCONF),
-  "RESETCONF": ("RESETCONF PARAM[=VALUE]", HELP_RESETCONF),
-  "SIGNAL": ("SIGNAL SIG", HELP_SIGNAL),
-  "SETEVENTS": ("SETEVENTS [EXTENDED] [EVENTS]", HELP_SETEVENTS),
-  "USEFEATURE": ("USEFEATURE OPTION", HELP_USEFEATURE),
-  "SAVECONF": ("SAVECONF", HELP_SAVECONF),
-  "LOADCONF": ("LOADCONF...", HELP_LOADCONF),
-  "MAPADDRESS": ("MAPADDRESS SOURCE_ADDR=DESTINATION_ADDR", HELP_MAPADDRESS),
-  "POSTDESCRIPTOR": ("POSTDESCRIPTOR [purpose=general/controller/bridge] [cache=yes/no]...", HELP_POSTDESCRIPTOR),
-  "EXTENDCIRCUIT": ("EXTENDCIRCUIT CircuitID [PATH] [purpose=general/controller]", HELP_EXTENDCIRCUIT),
-  "SETCIRCUITPURPOSE": ("SETCIRCUITPURPOSE CircuitID purpose=general/controller", HELP_SETCIRCUITPURPOSE),
-  "CLOSECIRCUIT": ("CLOSECIRCUIT CircuitID [IfUnused]", HELP_CLOSECIRCUIT),
-  "ATTACHSTREAM": ("ATTACHSTREAM StreamID CircuitID [HOP=HopNum]", HELP_ATTACHSTREAM),
-  "REDIRECTSTREAM": ("REDIRECTSTREAM StreamID Address [Port]", HELP_REDIRECTSTREAM),
-  "CLOSESTREAM": ("CLOSESTREAM StreamID Reason [Flag]", HELP_CLOSESTREAM),
-  "RESOLVE": ("RESOLVE [mode=reverse] address", HELP_RESOLVE),
-  "TAKEOWNERSHIP": ("TAKEOWNERSHIP", HELP_TAKEOWNERSHIP),
-  "PROTOCOLINFO": ("PROTOCOLINFO [ProtocolVersion]", HELP_PROTOCOLINFO),
+  'HELP': ("/help [OPTION]", 'help.help'),
+  'QUIT': ("/quit", 'help.quit'),
+  'GETINFO': ("GETINFO OPTION", 'help.getinfo'),
+  'GETCONF': ("GETCONF OPTION", 'help.getconf'),
+  'SETCONF': ("SETCONF PARAM[=VALUE]", 'help.setconf'),
+  'RESETCONF': ("RESETCONF PARAM[=VALUE]", 'help.resetconf'),
+  'SIGNAL': ("SIGNAL SIG", 'help.signal'),
+  'SETEVENTS': ("SETEVENTS [EXTENDED] [EVENTS]", 'help.setevents'),
+  'USEFEATURE': ("USEFEATURE OPTION", 'help.usefeature'),
+  'SAVECONF': ("SAVECONF", 'help.saveconf'),
+  'LOADCONF': ("LOADCONF...", 'help.loadconf'),
+  'MAPADDRESS': ("MAPADDRESS SOURCE_ADDR=DESTINATION_ADDR", 'help.mapaddress'),
+  'POSTDESCRIPTOR': ("POSTDESCRIPTOR [purpose=general/controller/bridge] [cache=yes/no]...", 'help.postdescriptor'),
+  'EXTENDCIRCUIT': ("EXTENDCIRCUIT CircuitID [PATH] [purpose=general/controller]", 'help.extendcircuit'),
+  'SETCIRCUITPURPOSE': ("SETCIRCUITPURPOSE CircuitID purpose=general/controller", 'help.setcircuitpurpose'),
+  'CLOSECIRCUIT': ("CLOSECIRCUIT CircuitID [IfUnused]", 'help.closecircuit'),
+  'ATTACHSTREAM': ("ATTACHSTREAM StreamID CircuitID [HOP=HopNum]", 'help.attachstream'),
+  'REDIRECTSTREAM': ("REDIRECTSTREAM StreamID Address [Port]", 'help.redirectstream'),
+  'CLOSESTREAM': ("CLOSESTREAM StreamID Reason [Flag]", 'help.closestream'),
+  'RESOLVE': ("RESOLVE [mode=reverse] address", 'help.resolve'),
+  'TAKEOWNERSHIP': ("TAKEOWNERSHIP", 'help.takeownership'),
+  'PROTOCOLINFO': ("PROTOCOLINFO [ProtocolVersion]", 'help.protocolinfo'),
 }
+
+
+def uses_settings(func):
+  """
+  Loads our interpretor's internal settings. This should be treated as a fatal
+  failure if unsuccessful.
+
+  :raises: **IOError** if we're unable to read or parse our internal
+    configurations
+  """
+
+  config = stem.util.conf.get_config('stem_interpretor')
+
+  if not config.get('settings_loaded', False):
+    settings_path = os.path.join(os.path.dirname(__file__), 'settings.cfg')
+    config.load(settings_path)
+    config.set('settings_loaded', 'true')
+
+  return func
 
 
 def _get_commands(controller):
@@ -329,9 +219,9 @@ class ControlInterpretor(object):
     output = ''
 
     if not arg:
-      # provides the GENERAL_HELP with everything bolded except descriptions
+      # provides the general help with everything bolded except descriptions
 
-      for line in GENERAL_HELP.splitlines():
+      for line in msg('help.general').splitlines():
         cmd_start = line.find(' - ')
 
         if cmd_start != -1:
@@ -343,7 +233,8 @@ class ControlInterpretor(object):
       # Provides information for the tor or interpretor argument. This bolds
       # the usage information and indents the description after it.
 
-      usage, description = HELP_OPTIONS[arg]
+      usage, attr = HELP_OPTIONS[arg]
+      description = msg(attr)
 
       output = format(usage + '\n', *BOLD_OUTPUT_FORMAT)
 
@@ -420,7 +311,7 @@ class ControlInterpretor(object):
           output += format(feature_options + '\n', *OUTPUT_FORMAT)
       elif arg in ('LOADCONF', 'POSTDESCRIPTOR'):
         # gives a warning that this option isn't yet implemented
-        output += format('\n' + MULTILINE_UNIMPLEMENTED_NOTICE + '\n', *ERROR_FORMAT)
+        output += format('\n' + msg('msg.multiline_unimplemented_notice') + '\n', *ERROR_FORMAT)
     else:
       output += format("No help information available for '%s'..." % arg, *ERROR_FORMAT)
 
@@ -523,7 +414,7 @@ class ControlInterpretor(object):
         pass  # TODO: implement
       elif cmd.replace('+', '') in ('LOADCONF', 'POSTDESCRIPTOR'):
         # provides a notice that multi-line controller input isn't yet implemented
-        output = format(MULTILINE_UNIMPLEMENTED_NOTICE, *ERROR_FORMAT)
+        output = format(msg('msg.multiline_unimplemented_notice'), *ERROR_FORMAT)
       else:
         try:
           response = self.controller.msg(command)
@@ -539,3 +430,23 @@ class ControlInterpretor(object):
             output = format(str(exc), *ERROR_FORMAT)
 
     return output
+
+
+@uses_settings
+def msg(message, **attr):
+  """
+  Provides the given message.
+
+  :param str message: message handle
+  :param dict attr: attributes to format the message with
+
+  :returns: **str** that was requested
+  """
+
+  config = stem.util.conf.get_config('stem_interpretor')
+
+  try:
+    return config.get(message).format(**attr)
+  except:
+    stem.util.log.notice('BUG: We attempted to use an undefined string resource (%s)' % message)
+    return ''
