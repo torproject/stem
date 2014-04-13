@@ -273,12 +273,11 @@ Once you have Tor running and `properly configured <tutorials/the_little_relay_t
 
 #. `Connection Module <api/connection.html>`_
 
-   Writing a commandline script? Then the :func:`~stem.connection.connect_port`
-   and :func:`~stem.connection.connect_socket_file` functions provide you the
-   quickest and most hassle free method for getting a
+   Writing a commandline script? Then the :func:`~stem.connection.connect`
+   function provide you the quickest and most hassle free method for getting a
    :class:`~stem.control.Controller`.
 
-   These functions connect and authenticate to the given port or socket,
+   This function connects and authenticates to the given port or socket,
    providing you a one-line method of getting a
    :class:`~stem.control.Controller` that's ready to use. If Tor requires a
    password then the user will be prompted for it. When the connection cannot

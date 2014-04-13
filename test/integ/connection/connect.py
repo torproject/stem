@@ -19,6 +19,25 @@ class TestConnect(unittest.TestCase):
   def tearDown(self):
     sys.stdout = self.original_stdout
 
+  def test_connect(self):
+    """
+    Basic sanity checks for the connect function.
+    """
+
+    if test.runner.require_control(self):
+      return
+
+    runner = test.runner.get_runner()
+
+    control_socket = stem.connection.connect(
+      control_port = ('127.0.0.1', test.runner.CONTROL_PORT),
+      control_socket = test.runner.CONTROL_SOCKET_PATH,
+      password = test.runner.CONTROL_PASSWORD,
+      chroot_path = runner.get_chroot(),
+      controller = None)
+
+    test.runner.exercise_controller(self, control_socket)
+
   def test_connect_port(self):
     """
     Basic sanity checks for the connect_port function.

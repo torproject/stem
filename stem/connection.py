@@ -4,8 +4,7 @@
 """
 Functions for connecting and authenticating to the tor process.
 
-The :func:`~stem.connection.connect_port` and
-:func:`~stem.connection.connect_socket_file` functions give an easy, one line
+The :func:`~stem.connection.connect` function give an easy, one line
 method for getting an authenticated control connection. This is handy for CLI
 applications and the python interactive interpreter, but does several things
 that makes it undesirable for applications (uses stdin/stdout, suppresses
@@ -13,12 +12,12 @@ exceptions, etc).
 
 ::
 
-  import sys 
+  import sys
 
-  from stem.connection import connect_port
+  from stem.connection import connect
 
   if __name__ == '__main__':
-    controller = connect_port()
+    controller = connect()
 
     if not controller:
       sys.exit(1)  # unable to get a connection
@@ -28,14 +27,14 @@ exceptions, etc).
 
 ::
 
-  % python example.py 
+  % python example.py
   Tor is running version 0.2.4.10-alpha-dev (git-8be6058d8f31e578)
 
 ... or if Tor isn't running...
 
 ::
 
-  % python example.py 
+  % python example.py
   [Errno 111] Connection refused
 
 The :func:`~stem.connection.authenticate` function, however, gives easy but
@@ -76,8 +75,7 @@ fine-grained control over the authentication process. For instance...
 
 ::
 
-  connect_port - Convenience method to get an authenticated control connection
-  connect_socket_file - Similar to connect_port, but for control socket files
+  connect - Simple method for getting authenticated control connection
 
   authenticate - Main method for authenticating to a control socket
   authenticate_none - Authenticates to an open control socket
@@ -149,6 +147,135 @@ AuthMethod = stem.util.enum.Enum("NONE", "PASSWORD", "COOKIE", "SAFECOOKIE", "UN
 CLIENT_HASH_CONSTANT = b"Tor safe cookie authentication controller-to-server hash"
 SERVER_HASH_CONSTANT = b"Tor safe cookie authentication server-to-controller hash"
 
+MISSING_PASSWORD_BUG_MSG = """
+BUG: You provided a password but despite this stem reported that it was
+missing. This shouldn't happen - please let us know about it!
+
+  http://bugs.torproject.org
+"""
+
+UNRECOGNIZED_AUTH_TYPE_MSG = """
+Tor is using a type of authentication we do not recognize...
+
+  {auth_methods}
+
+Please check that arm is up to date and if there is an existing issue on
+'http://bugs.torproject.org'. If there isn't one then let us know!
+"""
+
+
+UNREADABLE_COOKIE_FILE_MSG = """
+We were unable to read tor's authentication cookie...
+
+  Path: {path}
+  Issue: {issue}
+"""
+
+WRONG_PORT_TYPE_MSG = """
+Please check in your torrc that {port} is the ControlPort. Maybe you
+configured it to be the ORPort or SocksPort instead?
+"""
+
+WRONG_SOCKET_TYPE_MSG = """
+Unable to connect to tor. Are you sure the interface you specified belongs to
+tor?
+"""
+
+CONNECT_MESSAGES = {
+  'general_auth_failure': "Unable to authenticate: {error}",
+  'incorrect_password': "Incorrect password",
+  'no_control_port': "Unable to connect to tor. Maybe it's running without a ControlPort?",
+  'password_prompt': "Tor controller password:",
+  'needs_password': "Tor requires a password to authenticate",
+  'socket_doesnt_exist': "The socket file you specified ({path}) doesn't exist",
+  'tor_isnt_running': "Unable to connect to tor. Are you sure it's running?",
+  'unable_to_use_port': "Unable to connect to {address}:{port}: {error}",
+  'unable_to_use_socket': "Unable to connect to '{path}': {error}",
+  'missing_password_bug': MISSING_PASSWORD_BUG_MSG.strip(),
+  'uncrcognized_auth_type': UNRECOGNIZED_AUTH_TYPE_MSG.strip(),
+  'unreadable_cookie_file': UNREADABLE_COOKIE_FILE_MSG.strip(),
+  'wrong_port_type': WRONG_PORT_TYPE_MSG.strip(),
+  'wrong_socket_type': WRONG_SOCKET_TYPE_MSG.strip(),
+}
+
+
+def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/control', password = None, password_prompt = False, chroot_path = None, controller = stem.control.Controller):
+  """
+  Convenience function for quickly getting a control connection. This is very
+  handy for debugging or CLI setup, handling setup and prompting for a password
+  if necessary (and none is provided). If any issues arise this prints a
+  description of the problem and returns **None**.
+
+  If both a **control_port** and **control_socket** are provided then the
+  **control_socket** is tried first, and this provides a generic error message
+  if they're both unavailable.
+
+  In much the same vein as git porcelain commands, users should not rely on
+  details of how this works. Messages and details of this function's behavior
+  could change in the future.
+
+  :param tuple contol_port: address and port tuple, for instance **('127.0.0.1', 9051)**
+  :param str path: path where the control socket is located
+  :param str password: passphrase to authenticate to the socket
+  :param bool password_prompt: prompt for the controller password if it wasn't
+    supplied
+  :param str chroot_path: path prefix if in a chroot environment
+  :param Class controller: :class:`~stem.control.BaseController` subclass to be
+    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
+
+  :returns: authenticated control connection, the type based on the controller argument
+
+  :raises: **ValueError** if given an invalid control_port, or both
+    **control_port** and **control_socket** are **None**
+  """
+
+  if control_port is None and control_socket is None:
+    raise ValueError("Neither a control port nor control socket were provided. Nothing to connect to.")
+  elif control_port:
+    if len(control_port) != 2:
+      raise ValueError("The control_port argument for connect() should be an (address, port) tuple.")
+    elif not stem.util.connection.is_valid_ipv4_address(control_port[0]):
+      raise ValueError("'%s' isn't a vaid IPv4 address" % control_port[0])
+    elif not stem.util.connection.is_valid_port(control_port[1]):
+      raise ValueError("'%s' isn't a valid port" % control_port[1])
+
+  control_connection, error_msg = None, ''
+
+  if control_socket:
+    if os.path.exists(control_socket):
+      try:
+        control_connection = stem.socket.ControlSocketFile(control_socket)
+      except stem.SocketError as exc:
+        error_msg = CONNECT_MESSAGES['unable_to_use_socket'].format(path = control_socket, error = exc)
+    else:
+      error_msg = CONNECT_MESSAGES['socket_doesnt_exist'].format(path = control_socket)
+
+  if control_port and not control_connection:
+    address, port = control_port
+
+    try:
+      control_connection = stem.socket.ControlPort(address, port)
+    except stem.SocketError as exc:
+      error_msg = CONNECT_MESSAGES['unable_to_use_port'].format(address = address, port = port, error = exc)
+
+  # If unable to connect to either a control socket or port then finally fail
+  # out. If we only attempted to connect to one of them then provide the error
+  # output from that. Otherwise we provide a more generic error message.
+  #
+  # We check for a 'tor.real' process name because that's what TBB uses.
+
+  if not control_connection:
+    if control_socket and control_port:
+      if not stem.util.system.is_running('tor') and not stem.util.system.is_running('tor.real'):
+        error_msg = CONNECT_MESSAGES['tor_isnt_running']
+      else:
+        error_msg = CONNECT_MESSAGES['no_control_port']
+
+    print error_msg
+    return None
+
+  return _connect_auth(control_connection, password, password_prompt, chroot_path, controller)
+
 
 def connect_port(address = "127.0.0.1", port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
   """
@@ -156,6 +283,9 @@ def connect_port(address = "127.0.0.1", port = 9051, password = None, chroot_pat
   handy for debugging or CLI setup, handling setup and prompting for a password
   if necessary (and none is provided). If any issues arise this prints a
   description of the problem and returns **None**.
+
+  .. deprecated:: 1.2.0
+     Use :func:`~stem.connection.connect` instead.
 
   :param str address: ip address of the controller
   :param int port: port number of the controller
@@ -173,13 +303,20 @@ def connect_port(address = "127.0.0.1", port = 9051, password = None, chroot_pat
     print exc
     return None
 
-  return _connect(control_port, password, chroot_path, controller)
+  return _connect_auth(control_port, password, True, chroot_path, controller)
 
 
 def connect_socket_file(path = "/var/run/tor/control", password = None, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. For more
   information see the :func:`~stem.connection.connect_port` function.
+
+  In much the same vein as git porcelain commands, users should not rely on
+  details of how this works. Messages or details of this function's behavior
+  might change in the future.
+
+  .. deprecated:: 1.2.0
+     Use :func:`~stem.connection.connect` instead.
 
   :param str path: path where the control socket is located
   :param str password: passphrase to authenticate to the socket
@@ -196,15 +333,18 @@ def connect_socket_file(path = "/var/run/tor/control", password = None, chroot_p
     print exc
     return None
 
-  return _connect(control_socket, password, chroot_path, controller)
+  return _connect_auth(control_socket, password, True, chroot_path, controller)
 
 
-def _connect(control_socket, password, chroot_path, controller):
+def _connect_auth(control_socket, password, password_prompt, chroot_path, controller):
   """
-  Common implementation for the connect_* functions.
+  Helper for the connect_* functions that authenticates the socket and
+  constructs the controller.
 
   :param stem.socket.ControlSocket control_socket: socket being authenticated to
   :param str password: passphrase to authenticate to the socket
+  :param bool password_prompt: prompt for the controller password if it wasn't
+    supplied
   :param str chroot_path: path prefix if in a chroot environment
   :param Class controller: :class:`~stem.control.BaseController` subclass to be
     returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
@@ -219,19 +359,46 @@ def _connect(control_socket, password, chroot_path, controller):
       return control_socket
     else:
       return controller(control_socket)
+  except IncorrectSocketType:
+    if isinstance(control_socket, stem.socket.ControlPort):
+      print CONNECT_MESSAGES['wrong_port_type'].format(port = control_socket.get_port())
+    else:
+      print CONNECT_MESSAGES['wrong_socket_type']
+
+    control_socket.close()
+    return None
+  except UnrecognizedAuthMethods as exc:
+    print CONNECT_MESSAGES['uncrcognized_auth_type'].format(auth_methods = ', '.join(exc.unknown_auth_methods))
+    control_socket.close()
+    return None
+  except IncorrectPassword:
+    print CONNECT_MESSAGES['incorrect_password']
+    control_socket.close()
+    return None
   except MissingPassword:
     if password is not None:
-      raise ValueError("BUG: authenticate raised MissingPassword despite getting one")
+      control_socket.close()
+      raise ValueError(CONNECT_MESSAGES['missing_password_bug'])
 
-    try:
-      password = getpass.getpass("Controller password: ")
-    except KeyboardInterrupt:
+    if password_prompt:
+      try:
+        password = getpass.getpass(CONNECT_MESSAGES['password_prompt'] + ' ')
+      except KeyboardInterrupt:
+        control_socket.close()
+        return None
+
+      return _connect_auth(control_socket, password, password_prompt, chroot_path, controller)
+    else:
+      print CONNECT_MESSAGES['needs_password']
+      control_socket.close()
       return None
-
-    return _connect(control_socket, password, chroot_path, controller)
-  except AuthenticationFailure as exc:
+  except UnreadableCookieFile as exc:
+    print CONNECT_MESSAGES['unreadable_cookie_file'].format(path = exc.cookie_path, issue = str(exc))
     control_socket.close()
-    print "Unable to authenticate: %s" % exc
+    return None
+  except AuthenticationFailure as exc:
+    print CONNECT_MESSAGES['general_auth_failure'].format(error = exc)
+    control_socket.close()
     return None
 
 

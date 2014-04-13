@@ -50,6 +50,7 @@ The following are only available within Stem's `git repository
   * Added `support for TB_EMPTY events <api/response.html#stem.response.events.TokenBucketEmptyEvent>`_ (:spec:`6f2919a`)
   * Added `support for HS_DESC events <api/response.html#stem.response.events.HSDescEvent>`_ (:spec:`a67ac4d`, :trac:`10807`)
   * Changed :func:`~stem.control.Controller.get_network_status` and :func:`~stem.control.Controller.get_network_statuses` to provide :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` if Tor is using microdescriptors (:trac:`7646`)
+  * Deprecated :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file` in favor of a new, better :func:`~stem.connection.connect` function
 
  * **Utilities**
 

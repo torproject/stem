@@ -36,7 +36,7 @@ Tor...
 
 ::
 
-  % python example.py 
+  % python example.py
   Issuing 'GETINFO version' query...
 
   version=0.2.4.10-alpha-dev (git-8be6058d8f31e578)
