@@ -47,6 +47,7 @@ SIGNAL_DESCRIPTIONS = (
 
 HELP_OPTIONS = {
   'HELP': ("/help [OPTION]", 'help.help'),
+  'EVENTS': ("/events [types]", 'help.events'),
   'QUIT': ("/quit", 'help.quit'),
   'GETINFO': ("GETINFO OPTION", 'help.getinfo'),
   'GETCONF': ("GETCONF OPTION", 'help.getconf'),
@@ -196,6 +197,14 @@ class ControlInterpretor(object):
 
   def __init__(self, controller):
     self.controller = controller
+    self.received_events = []
+
+  def register_event(self, event):
+    """
+    Adds the event to our buffer so it'll be in '/events' output.
+    """
+
+    self.received_events.append(event)
 
   def do_help(self, arg):
     """
@@ -317,6 +326,21 @@ class ControlInterpretor(object):
 
     return output
 
+  def do_events(self, arg):
+    """
+    Performs the '/events' operation, dumping the events that we've received
+    belonging to the given types. If no types are specified then this provides
+    all buffered events.
+    """
+
+    events = self.received_events
+    event_types = arg.upper().split()
+
+    if event_types:
+      events = filter(lambda event: event.type in event_types, events)
+
+    return '\n'.join([format(str(event), *OUTPUT_FORMAT) for event in events])
+
   def run_command(self, command):
     """
     Runs the given command. Requests starting with a '/' are special commands
@@ -356,6 +380,8 @@ class ControlInterpretor(object):
     if cmd.startswith('/'):
       if cmd == "/quit":
         raise stem.SocketClosed()
+      elif cmd == "/events":
+        output = self.do_events(arg)
       elif cmd == "/help":
         output = self.do_help(arg)
       else:
@@ -411,7 +437,21 @@ class ControlInterpretor(object):
         except stem.ControllerError as exc:
           output = format(str(exc), *ERROR_FORMAT)
       elif cmd == 'SETEVENTS':
-        pass  # TODO: implement
+        try:
+          # first discontinue listening to prior events
+
+          self.controller.remove_event_listener(self.register_event)
+
+          # attach listeners for the given group of events
+
+          if arg:
+            events = arg.split()
+            self.controller.add_event_listener(self.register_event, *events)
+            output = format('Listing for %s events\n' % ', '.join(events), *OUTPUT_FORMAT)
+          else:
+            output = format('Disabled event listening\n', *OUTPUT_FORMAT)
+        except stem.ControllerError as exc:
+          output = format(str(exc), *ERROR_FORMAT)
       elif cmd.replace('+', '') in ('LOADCONF', 'POSTDESCRIPTOR'):
         # provides a notice that multi-line controller input isn't yet implemented
         output = format(msg('msg.multiline_unimplemented_notice'), *ERROR_FORMAT)
