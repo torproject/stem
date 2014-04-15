@@ -1917,10 +1917,10 @@ class Controller(BaseController):
     with self._event_listeners_lock:
       if self.is_authenticated():
         for event_type in events:
-          event_version = stem.response.events.EVENT_TYPE_TO_CLASS[event_type]._VERSION_ADDED
+          event_type = stem.response.events.EVENT_TYPE_TO_CLASS.get(event_type)
 
-          if self.get_version() < event_version:
-            raise stem.InvalidRequest(552, "%s event requires Tor version %s or later" % (event_type, event_version))
+          if event_type and (self.get_version() < event_type._VERSION_ADDED):
+            raise stem.InvalidRequest(552, "%s event requires Tor version %s or later" % (event_type, event_type._VERSION_ADDED))
 
       for event_type in events:
         self._event_listeners.setdefault(event_type, []).append(listener)
