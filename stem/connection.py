@@ -358,7 +358,7 @@ def _connect_auth(control_socket, password, password_prompt, chroot_path, contro
     if controller is None:
       return control_socket
     else:
-      return controller(control_socket)
+      return controller(control_socket, is_authenticated = True)
   except IncorrectSocketType:
     if isinstance(control_socket, stem.socket.ControlPort):
       print CONNECT_MESSAGES['wrong_port_type'].format(port = control_socket.get_port())

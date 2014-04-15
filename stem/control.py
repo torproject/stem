@@ -335,9 +335,13 @@ class BaseController(object):
   It's highly suggested that you don't interact directly with the
   :class:`~stem.socket.ControlSocket` that we're constructed from - use our
   wrapper methods instead.
+
+  If the **control_socket** is already authenticated to Tor then the caller
+  should provide the **is_authenticated** flag. Otherwise, we will treat the
+  socket as though it hasn't yet been authenticated.
   """
 
-  def __init__(self, control_socket):
+  def __init__(self, control_socket, is_authenticated = False):
     self._socket = control_socket
     self._msg_lock = threading.RLock()
 
@@ -369,6 +373,9 @@ class BaseController(object):
 
     if self._socket.is_alive():
       self._launch_threads()
+
+    if is_authenticated:
+      self._post_authentication()
 
   def msg(self, message):
     """
@@ -770,9 +777,7 @@ class Controller(BaseController):
     control_socket = stem.socket.ControlSocketFile(path)
     return Controller(control_socket)
 
-  def __init__(self, control_socket):
-    super(Controller, self).__init__(control_socket)
-
+  def __init__(self, control_socket, is_authenticated = False):
     self._is_caching_enabled = True
     self._request_cache = {}
     self._last_newnym = 0.0
@@ -788,6 +793,8 @@ class Controller(BaseController):
 
     self._geoip_failure_count = 0
     self._enabled_features = []
+
+    super(Controller, self).__init__(control_socket, is_authenticated)
 
     def _sighup_listener(event):
       if event.signal == Signal.RELOAD:
