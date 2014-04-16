@@ -6,8 +6,10 @@ import os
 import re
 
 import stem
+import stem.util.connection
 import stem.util.conf
 import stem.util.log
+import stem.util.tor_tools
 
 from stem.util.term import Attr, Color, format
 
@@ -48,6 +50,7 @@ SIGNAL_DESCRIPTIONS = (
 HELP_OPTIONS = {
   'HELP': ("/help [OPTION]", 'help.help'),
   'EVENTS': ("/events [types]", 'help.events'),
+  'INFO': ("/info [relay fingerprint, nickname, or IP address]", 'help.info'),
   'QUIT': ("/quit", 'help.quit'),
   'GETINFO': ("GETINFO OPTION", 'help.getinfo'),
   'GETCONF': ("GETCONF OPTION", 'help.getconf'),
@@ -341,6 +344,127 @@ class ControlInterpretor(object):
 
     return '\n'.join([format(str(event), *OUTPUT_FORMAT) for event in events])
 
+  def do_info(self, arg):
+    """
+    Performs the '/info' operation, looking up a relay by fingerprint, IP
+    address, or nickname and printing its descriptor and consensus entries in a
+    pretty fashion.
+    """
+
+    output, fingerprint = '', None
+
+    # determines the fingerprint, leaving it unset and adding an error message
+    # if unsuccessful
+
+    if not arg:
+      # uses our fingerprint if we're a relay, otherwise gives an error
+
+      fingerprint = self.controller.get_info('fingerprint', None)
+
+      if not fingerprint:
+        output += format("We aren't a relay, no information to provide", *ERROR_FORMAT)
+    elif stem.util.tor_tools.is_valid_fingerprint(arg):
+      fingerprint = arg
+    elif stem.util.tor_tools.is_valid_nickname(arg):
+      desc = self.controller.get_network_status(arg, None)
+
+      if desc:
+        fingerprint = desc.fingerprint
+      else:
+        return format("Unable to find a relay with the nickname of '%s'" % arg, *ERROR_FORMAT)
+    elif ':' in arg or stem.util.connection.is_valid_ipv4_address(arg):
+      # we got an address, so looking up the fingerprint
+
+      if ':' in arg:
+        address, port = arg.split(':', 1)
+
+        if not stem.util.connection.is_valid_ipv4_address(address):
+          return format("'%s' isn't a valid IPv4 address" % address, *ERROR_FORMAT)
+        elif port and not stem.util.connection.is_valid_port(port):
+          return format("'%s' isn't a valid port" % port, *ERROR_FORMAT)
+
+        port = int(port)
+      else:
+        address, port = arg, None
+
+      matches = {}
+
+      for desc in self.controller.get_network_statuses():
+        if desc.address == address:
+          if not port or desc.or_port == port:
+            matches[desc.or_port] = desc.fingerprint
+
+      if len(matches) == 0:
+        output += format('No relays found at %s' % arg, *ERROR_FORMAT)
+      elif len(matches) == 1:
+        fingerprint = matches.values()[0]
+      else:
+        output += format("There's multiple relays at %s, include a port to specify which.\n\n" % arg, *ERROR_FORMAT)
+
+        for i, or_port in enumerate(matches):
+          output += format("  %i. %s:%s, fingerprint: %s\n" % (i + 1, address, or_port, matches[or_port]), *ERROR_FORMAT)
+    else:
+      return format("'%s' isn't a fingerprint, nickname, or IP address" % arg, *ERROR_FORMAT)
+
+    if fingerprint:
+      micro_desc = self.controller.get_microdescriptor(fingerprint, None)
+      server_desc = self.controller.get_server_descriptor(fingerprint, None)
+      ns_desc = self.controller.get_network_status(fingerprint, None)
+
+      # We'll mostly rely on the router status entry. Either the server
+      # descriptor or microdescriptor will be missing, so we'll treat them as
+      # being optional.
+
+      if not ns_desc:
+        return format("Unable to find consensus information for %s" % fingerprint, *ERROR_FORMAT)
+
+      locale = self.controller.get_info('ip-to-country/%s' % ns_desc.address, None)
+      locale_label = ' (%s)' % locale if locale else ''
+
+      if server_desc:
+        exit_policy_label = server_desc.exit_policy.summary()
+      elif micro_desc:
+        exit_policy_label = micro_desc.exit_policy.summary()
+      else:
+        exit_policy_label = 'Unknown'
+
+      output += '%s (%s)\n' % (ns_desc.nickname, fingerprint)
+
+      output += format('address: ', *BOLD_OUTPUT_FORMAT)
+      output += '%s:%s%s\n' % (ns_desc.address, ns_desc.or_port, locale_label)
+
+      output += format('published: ', *BOLD_OUTPUT_FORMAT)
+      output += ns_desc.published.strftime('%H:%M:%S %d/%m/%Y') + '\n'
+
+      if server_desc:
+        output += format('os: ', *BOLD_OUTPUT_FORMAT)
+        output += server_desc.platform.decode('utf-8', 'replace') + '\n'
+
+        output += format('version: ', *BOLD_OUTPUT_FORMAT)
+        output += str(server_desc.tor_version) + '\n'
+
+      output += format('flags: ', *BOLD_OUTPUT_FORMAT)
+      output += ', '.join(ns_desc.flags) + '\n'
+
+      output += format('exit policy: ', *BOLD_OUTPUT_FORMAT)
+      output += exit_policy_label + '\n'
+
+      if server_desc:
+        contact = server_desc.contact
+
+        # clears up some highly common obscuring
+
+        for alias in (' at ', ' AT '):
+          contact = contact.replace(alias, '@')
+
+        for alias in (' dot ', ' DOT '):
+          contact = contact.replace(alias, '.')
+
+        output += format('contact: ', *BOLD_OUTPUT_FORMAT)
+        output += contact + '\n'
+
+    return output.strip()
+
   def run_command(self, command):
     """
     Runs the given command. Requests starting with a '/' are special commands
@@ -378,11 +502,13 @@ class ControlInterpretor(object):
     output = ''
 
     if cmd.startswith('/'):
-      if cmd == "/quit":
+      if cmd == '/quit':
         raise stem.SocketClosed()
-      elif cmd == "/events":
+      elif cmd == '/events':
         output = self.do_events(arg)
-      elif cmd == "/help":
+      elif cmd == '/info':
+        output = self.do_info(arg)
+      elif cmd == '/help':
         output = self.do_help(arg)
       else:
         output = format("'%s' isn't a recognized command" % command, *ERROR_FORMAT)
