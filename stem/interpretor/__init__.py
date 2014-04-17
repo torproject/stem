@@ -15,7 +15,6 @@ import stem
 import stem.connection
 import stem.prereq
 import stem.util.conf
-import stem.util.log
 
 from stem.util.term import Attr, Color, format
 
@@ -99,9 +98,11 @@ def msg(message, **attr):
   Provides the given message.
 
   :param str message: message handle
-  :param dict attr: attributes to format the message with
+  :param dict attr: values to insert into the message
 
   :returns: **str** that was requested
+
+  :raises: **ValueError** if string key doesn't exist
   """
 
   config = stem.util.conf.get_config('stem_interpretor')
@@ -109,5 +110,4 @@ def msg(message, **attr):
   try:
     return config.get(message).format(**attr)
   except:
-    stem.util.log.notice('BUG: We attempted to use an undefined string resource (%s)' % message)
-    return ''
+    raise ValueError('We attempted to use an undefined string resource (%s)' % message)

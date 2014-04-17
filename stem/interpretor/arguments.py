@@ -8,6 +8,7 @@ Commandline argument parsing for arm.
 import collections
 import getopt
 
+import stem.interpretor
 import stem.util.connection
 
 DEFAULT_ARGS = {
@@ -26,20 +27,6 @@ OPT_EXPANDED = [
   'socket=',
   'help',
 ]
-
-HELP_OUTPUT = """
-Usage prompt [OPTION]
-Interactive interpretor for Tor.
-
-  -i, --interface [ADDRESS:]PORT  change control interface from {address}:{port}
-  -s, --socket SOCKET_PATH        attach using unix domain socket if present,
-                                    SOCKET_PATH defaults to: {socket}
-  -h, --help                      presents this help
-
-Example:
-prompt -i 1643            attach to control port 1643
-prompt -s ~/.tor/socket   attach to a control socket in your home directory
-"""
 
 
 def parse(argv):
@@ -97,7 +84,7 @@ def get_help():
   :returns: **str** with our usage information
   """
 
-  return HELP_OUTPUT.format(
+  return stem.interpretor.msg('msg.help',
     address = DEFAULT_ARGS['control_address'],
     port = DEFAULT_ARGS['control_port'],
     socket = DEFAULT_ARGS['control_socket'],
