@@ -13,19 +13,18 @@ import sys
 
 import stem
 import stem.connection
-import stem.prereq
 import stem.util.conf
 
-from stem.util.term import Attr, Color, format
+from stem.util.term import RESET, Attr, Color, format
 
-# We can only present a color prompt with python 2.7 or later...
+# Our color prompt triggers a bug between raw_input() and readline history,
+# where scrolling through history widens our prompt. Widening our prompt via
+# invisible characters (like resets) seems to sidestep this bug for short
+# inputs. Contrary to the ticket, this still manifests with python 2.7.1...
 #
 #   http://bugs.python.org/issue12972
 
-if stem.prereq.is_python_27():
-  PROMPT = format(">>> ", Color.GREEN, Attr.BOLD)
-else:
-  PROMPT = ">>> "
+PROMPT = format(">>> ", Color.GREEN, Attr.BOLD) + RESET * 10
 
 
 def main():

@@ -84,7 +84,8 @@ def get_help():
   :returns: **str** with our usage information
   """
 
-  return stem.interpretor.msg('msg.help',
+  return stem.interpretor.msg(
+    'msg.help',
     address = DEFAULT_ARGS['control_address'],
     port = DEFAULT_ARGS['control_port'],
     socket = DEFAULT_ARGS['control_socket'],
