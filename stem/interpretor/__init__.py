@@ -6,15 +6,16 @@ Interactive interpretor for interacting with Tor directly. This adds usability
 features such as tab completion, history, and IRC-style functions (like /help).
 """
 
-__all__ = ['arguments']
+__all__ = ['arguments', 'commands', 'msg']
 
+import os
 import sys
 
 import stem
 import stem.connection
-import stem.interpretor.arguments
-import stem.interpretor.commands
 import stem.prereq
+import stem.util.conf
+import stem.util.log
 
 from stem.util.term import Attr, Color, format
 
@@ -30,6 +31,9 @@ else:
 
 def main():
   import readline
+
+  import stem.interpretor.arguments
+  import stem.interpretor.commands
 
   try:
     args = stem.interpretor.arguments.parse(sys.argv[1:])
@@ -68,3 +72,42 @@ def main():
       except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
         print  # move cursor to the following line
         break
+
+
+def uses_settings(func):
+  """
+  Loads our interpretor's internal settings. This should be treated as a fatal
+  failure if unsuccessful.
+
+  :raises: **IOError** if we're unable to read or parse our internal
+    configurations
+  """
+
+  config = stem.util.conf.get_config('stem_interpretor')
+
+  if not config.get('settings_loaded', False):
+    settings_path = os.path.join(os.path.dirname(__file__), 'settings.cfg')
+    config.load(settings_path)
+    config.set('settings_loaded', 'true')
+
+  return func
+
+
+@uses_settings
+def msg(message, **attr):
+  """
+  Provides the given message.
+
+  :param str message: message handle
+  :param dict attr: attributes to format the message with
+
+  :returns: **str** that was requested
+  """
+
+  config = stem.util.conf.get_config('stem_interpretor')
+
+  try:
+    return config.get(message).format(**attr)
+  except:
+    stem.util.log.notice('BUG: We attempted to use an undefined string resource (%s)' % message)
+    return ''
