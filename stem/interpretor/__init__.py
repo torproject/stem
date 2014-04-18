@@ -26,6 +26,14 @@ from stem.util.term import RESET, Attr, Color, format
 
 PROMPT = format(">>> ", Color.GREEN, Attr.BOLD) + RESET * 10
 
+settings_path = os.path.join(os.path.dirname(__file__), 'settings.cfg')
+uses_settings = stem.util.conf.uses_settings('stem_interpretor', settings_path)
+
+
+@uses_settings
+def msg(config, message, **attr):
+  return config.get(message).format(**attr)
+
 
 def main():
   import readline
@@ -70,43 +78,3 @@ def main():
       except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
         print  # move cursor to the following line
         break
-
-
-def uses_settings(func):
-  """
-  Loads our interpretor's internal settings. This should be treated as a fatal
-  failure if unsuccessful.
-
-  :raises: **IOError** if we're unable to read or parse our internal
-    configurations
-  """
-
-  config = stem.util.conf.get_config('stem_interpretor')
-
-  if not config.get('settings_loaded', False):
-    settings_path = os.path.join(os.path.dirname(__file__), 'settings.cfg')
-    config.load(settings_path)
-    config.set('settings_loaded', 'true')
-
-  return func
-
-
-@uses_settings
-def msg(message, **attr):
-  """
-  Provides the given message.
-
-  :param str message: message handle
-  :param dict attr: values to insert into the message
-
-  :returns: **str** that was requested
-
-  :raises: **ValueError** if string key doesn't exist
-  """
-
-  config = stem.util.conf.get_config('stem_interpretor')
-
-  try:
-    return config.get(message).format(**attr)
-  except:
-    raise ValueError('We attempted to use an undefined string resource (%s)' % message)
