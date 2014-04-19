@@ -15,33 +15,6 @@ OUTPUT_FORMAT = (Color.BLUE, )
 BOLD_OUTPUT_FORMAT = (Color.BLUE, Attr.BOLD)
 ERROR_FORMAT = (Attr.BOLD, Color.RED)
 
-HELP_OPTIONS = {
-  'HELP': ("/help [OPTION]", 'help.help'),
-  'EVENTS': ("/events [types]", 'help.events'),
-  'INFO': ("/info [relay fingerprint, nickname, or IP address]", 'help.info'),
-  'QUIT': ("/quit", 'help.quit'),
-  'GETINFO': ("GETINFO OPTION", 'help.getinfo'),
-  'GETCONF': ("GETCONF OPTION", 'help.getconf'),
-  'SETCONF': ("SETCONF PARAM[=VALUE]", 'help.setconf'),
-  'RESETCONF': ("RESETCONF PARAM[=VALUE]", 'help.resetconf'),
-  'SIGNAL': ("SIGNAL SIG", 'help.signal'),
-  'SETEVENTS': ("SETEVENTS [EXTENDED] [EVENTS]", 'help.setevents'),
-  'USEFEATURE': ("USEFEATURE OPTION", 'help.usefeature'),
-  'SAVECONF': ("SAVECONF", 'help.saveconf'),
-  'LOADCONF': ("LOADCONF...", 'help.loadconf'),
-  'MAPADDRESS': ("MAPADDRESS SOURCE_ADDR=DESTINATION_ADDR", 'help.mapaddress'),
-  'POSTDESCRIPTOR': ("POSTDESCRIPTOR [purpose=general/controller/bridge] [cache=yes/no]...", 'help.postdescriptor'),
-  'EXTENDCIRCUIT': ("EXTENDCIRCUIT CircuitID [PATH] [purpose=general/controller]", 'help.extendcircuit'),
-  'SETCIRCUITPURPOSE': ("SETCIRCUITPURPOSE CircuitID purpose=general/controller", 'help.setcircuitpurpose'),
-  'CLOSECIRCUIT': ("CLOSECIRCUIT CircuitID [IfUnused]", 'help.closecircuit'),
-  'ATTACHSTREAM': ("ATTACHSTREAM StreamID CircuitID [HOP=HopNum]", 'help.attachstream'),
-  'REDIRECTSTREAM': ("REDIRECTSTREAM StreamID Address [Port]", 'help.redirectstream'),
-  'CLOSESTREAM': ("CLOSESTREAM StreamID Reason [Flag]", 'help.closestream'),
-  'RESOLVE': ("RESOLVE [mode=reverse] address", 'help.resolve'),
-  'TAKEOWNERSHIP': ("TAKEOWNERSHIP", 'help.takeownership'),
-  'PROTOCOLINFO': ("PROTOCOLINFO [ProtocolVersion]", 'help.protocolinfo'),
-}
-
 
 @uses_settings
 def _get_commands(config, controller):
@@ -107,12 +80,6 @@ def _get_commands(config, controller):
   else:
     commands.append('SIGNAL ')
 
-  # adds interpretor commands
-
-  for cmd in HELP_OPTIONS:
-    if HELP_OPTIONS[cmd][0].startswith('/'):
-      commands.append('/' + cmd.lower())
-
   # adds help options for the previous commands
 
   base_cmd = set([cmd.split(' ')[0].replace('+', '').replace('/', '') for cmd in commands])
@@ -167,6 +134,7 @@ class ControlInterpretor(object):
     """
 
     arg = arg.upper()
+    usage_info = config.get('help.usage', {})
 
     # If there's multiple arguments then just take the first. This is
     # particularly likely if they're trying to query a full command (for
@@ -192,12 +160,12 @@ class ControlInterpretor(object):
           output += format(line[cmd_start:] + '\n', *OUTPUT_FORMAT)
         else:
           output += format(line + '\n', *BOLD_OUTPUT_FORMAT)
-    elif arg in HELP_OPTIONS:
+    elif arg in usage_info:
       # Provides information for the tor or interpretor argument. This bolds
       # the usage information and indents the description after it.
 
-      usage, attr = HELP_OPTIONS[arg]
-      description = msg(attr)
+      usage = usage_info[arg]
+      description = config.get('help.description.%s' % arg.lower(), '')
 
       output = format(usage + '\n', *BOLD_OUTPUT_FORMAT)
 
