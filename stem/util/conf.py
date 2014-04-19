@@ -157,7 +157,7 @@ Here's an expanation of what happened...
     +- get_value - provides the value for a given key as a string
 """
 
-import functools
+import collections
 import threading
 
 from stem.util import log
@@ -268,11 +268,14 @@ def uses_settings(handle, path, lazy_load = True):
     config.set('settings_loaded', 'true')
 
   def annotation(func):
-    if lazy_load and not config.get('settings_loaded', False):
-      config.load(path)
-      config.set('settings_loaded', 'true')
+    def wrapped(*args, **kwargs):
+      if lazy_load and not config.get('settings_loaded', False):
+        config.load(path)
+        config.set('settings_loaded', 'true')
 
-    return functools.partial(func, config)
+      return func(config, *args, **kwargs)
+
+    return wrapped
 
   return annotation
 
@@ -679,7 +682,7 @@ class Config(object):
     elif isinstance(default, tuple):
       val = tuple(val)
     elif isinstance(default, dict):
-      valMap = {}
+      valMap = collections.OrderedDict()
       for entry in val:
         if "=>" in entry:
           entryKey, entryVal = entry.split("=>", 1)

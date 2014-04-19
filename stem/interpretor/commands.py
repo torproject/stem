@@ -15,16 +15,6 @@ OUTPUT_FORMAT = (Color.BLUE, )
 BOLD_OUTPUT_FORMAT = (Color.BLUE, Attr.BOLD)
 ERROR_FORMAT = (Attr.BOLD, Color.RED)
 
-SIGNAL_DESCRIPTIONS = (
-  ("RELOAD / HUP", "reload our torrc"),
-  ("SHUTDOWN / INT", "gracefully shut down, waiting 30 seconds if we're a relay"),
-  ("DUMP / USR1", "logs information about open connections and circuits"),
-  ("DEBUG / USR2", "makes us log at the DEBUG runlevel"),
-  ("HALT / TERM", "immediately shut down"),
-  ("CLEARDNSCACHE", "clears any cached DNS results"),
-  ("NEWNYM", "clears the DNS cache and uses new circuits for future connections")
-)
-
 HELP_OPTIONS = {
   'HELP': ("/help [OPTION]", 'help.help'),
   'EVENTS': ("/events [types]", 'help.events'),
@@ -169,7 +159,8 @@ class ControlInterpretor(object):
 
     self.received_events.append(event)
 
-  def do_help(self, arg):
+  @uses_settings
+  def do_help(config, self, arg):
     """
     Performs the '/help' operation, giving usage information for the given
     argument or a general summary if there wasn't one.
@@ -252,7 +243,9 @@ class ControlInterpretor(object):
       elif arg == 'SIGNAL':
         # lists descriptions for all of the signals
 
-        for signal, description in SIGNAL_DESCRIPTIONS:
+        descriptions = config.get('help.signal.options', {})
+
+        for signal, description in descriptions.items():
           output += format('%-15s' % signal, *BOLD_OUTPUT_FORMAT)
           output += format(' - %s\n' % description, *OUTPUT_FORMAT)
       elif arg == 'SETEVENTS':
