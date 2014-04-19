@@ -64,9 +64,9 @@ def main():
     sys.exit(1)
 
   with controller:
-    tab_completer = stem.interpretor.commands.Autocomplete(controller)
-    readline.parse_and_bind("tab: complete")
-    readline.set_completer(tab_completer.complete)
+    autocomplete = stem.interpretor.commands.Autocomplete(controller)
+    readline.parse_and_bind('tab: complete')
+    readline.set_completer(autocomplete.complete)
     readline.set_completer_delims('\n')
 
     interpretor = stem.interpretor.commands.ControlInterpretor(controller)

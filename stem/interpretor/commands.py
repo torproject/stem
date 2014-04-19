@@ -8,32 +8,12 @@ import stem
 import stem.util.connection
 import stem.util.tor_tools
 
-from stem.interpretor import msg
+from stem.interpretor import msg, uses_settings
 from stem.util.term import Attr, Color, format
 
 OUTPUT_FORMAT = (Color.BLUE, )
 BOLD_OUTPUT_FORMAT = (Color.BLUE, Attr.BOLD)
 ERROR_FORMAT = (Attr.BOLD, Color.RED)
-
-TOR_CONTROLLER_COMMANDS = [
-  'SAVECONF',
-  'MAPADDRESS',
-  'EXTENDCIRCUIT',
-  'SETCIRCUITPURPOSE',
-  'SETROUTERPURPOSE',
-  'ATTACHSTREAM',
-  #'+POSTDESCRIPTOR',  # TODO: needs multi-line support
-  'REDIRECTSTREAM',
-  'CLOSESTREAM',
-  'CLOSECIRCUIT',
-  'QUIT',
-  'RESOLVE',
-  'PROTOCOLINFO',
-  #'+LOADCONF',  # TODO: needs multi-line support
-  'TAKEOWNERSHIP',
-  'AUTHCHALLENGE',
-  'DROPGUARDS',
-]
 
 SIGNAL_DESCRIPTIONS = (
   ("RELOAD / HUP", "reload our torrc"),
@@ -73,12 +53,13 @@ HELP_OPTIONS = {
 }
 
 
-def _get_commands(controller):
+@uses_settings
+def _get_commands(config, controller):
   """
   Provides commands recognized by tor.
   """
 
-  commands = list(TOR_CONTROLLER_COMMANDS)
+  commands = config.get('autocomplete', [])
 
   # GETINFO commands
 
