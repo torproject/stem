@@ -6,7 +6,7 @@ Interactive interpretor for interacting with Tor directly. This adds usability
 features such as tab completion, history, and IRC-style functions (like /help).
 """
 
-__all__ = ['arguments', 'commands', 'msg']
+__all__ = ['arguments', 'autocomplete', 'commands', 'msg']
 
 import os
 import sys
@@ -39,6 +39,7 @@ def main():
   import readline
 
   import stem.interpretor.arguments
+  import stem.interpretor.autocomplete
   import stem.interpretor.commands
 
   try:
@@ -64,9 +65,9 @@ def main():
     sys.exit(1)
 
   with controller:
-    autocomplete = stem.interpretor.commands.Autocomplete(controller)
+    autocompleter = stem.interpretor.autocomplete.Autocompleter(controller)
     readline.parse_and_bind('tab: complete')
-    readline.set_completer(autocomplete.complete)
+    readline.set_completer(autocompleter.complete)
     readline.set_completer_delims('\n')
 
     interpretor = stem.interpretor.commands.ControlInterpretor(controller)
