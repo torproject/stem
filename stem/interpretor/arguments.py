@@ -2,7 +2,7 @@
 # See LICENSE for licensing information
 
 """
-Commandline argument parsing for arm.
+Commandline argument parsing for our interpretor prompt.
 """
 
 import collections
