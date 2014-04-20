@@ -19,67 +19,55 @@ def _get_commands(config, controller):
 
   commands = config.get('autocomplete', [])
 
-  # GETINFO commands
+  # GETINFO commands. Lines are of the form '[option] -- [description]'. This
+  # strips '*' from options that accept values.
 
-  getinfo_options = controller.get_info('info/names', None)
+  results = controller.get_info('info/names', None)
 
-  if getinfo_options:
-    # Lines are of the form '[option] -- [description]'. This strips '*' from
-    # options that accept values.
-
-    options = [line.split(' ', 1)[0].rstrip('*') for line in getinfo_options.splitlines()]
-
-    commands += ['GETINFO %s' % opt for opt in options]
+  if results:
+    for line in results.splitlines():
+      option = line.split(' ', 1)[0].rstrip('*')
+      commands.append('GETINFO %s' % option)
   else:
     commands.append('GETINFO ')
 
-  # GETCONF, SETCONF, and RESETCONF commands
+  # GETCONF, SETCONF, and RESETCONF commands. Lines are of the form
+  # '[option] [type]'.
 
-  config_options = controller.get_info('config/names', None)
+  results = controller.get_info('config/names', None)
 
-  if config_options:
-    # individual options are '[option] [type]' pairs
+  if results:
+    for line in results.splitlines():
+      option = line.split(' ', 1)[0]
 
-    entries = [opt.split(' ', 1)[0] for opt in config_options.splitlines()]
-
-    commands += ['GETCONF %s' % opt for opt in entries]
-    commands += ['SETCONF %s ' % opt for opt in entries]
-    commands += ['RESETCONF %s' % opt for opt in entries]
+      commands.append('GETCONF %s' % option)
+      commands.append('SETCONF %s' % option)
+      commands.append('RESETCONF %s' % option)
   else:
     commands += ['GETCONF ', 'SETCONF ', 'RESETCONF ']
 
-  # SETEVENT commands
+  # SETEVENT, USEFEATURE, and SIGNAL commands. For each of these the GETINFO
+  # results are simply a space separated lists of the values they can have.
 
-  events = controller.get_info('events/names', None)
+  options = (
+    ('SETEVENTS ', 'events/names'),
+    ('USEFEATURE ', 'features/names'),
+    ('SIGNAL ', 'signal/names'),
+  )
 
-  if events:
-    commands += ['SETEVENTS %s' % event for event in events.split(' ')]
-  else:
-    commands.append('SETEVENTS ')
+  for prefix, getinfo_cmd in options:
+    results = controller.get_info(getinfo_cmd, None)
 
-  # USEFEATURE commands
+    if results:
+      commands += [prefix + value for value in results.split()]
+    else:
+      commands.append(prefix)
 
-  features = controller.get_info('features/names', None)
+  # Adds /help commands.
 
-  if features:
-    commands += ['USEFEATURE %s' % feature for feature in features.split(' ')]
-  else:
-    commands.append('USEFEATURE ')
+  usage_info = config.get('help.usage', {})
 
-  # SIGNAL commands
-
-  signals = controller.get_info('signal/names', None)
-
-  if signals:
-    commands += ['SIGNAL %s' % signal for signal in signals.split(' ')]
-  else:
-    commands.append('SIGNAL ')
-
-  # adds help options for the previous commands
-
-  base_cmd = set([cmd.split(' ')[0].replace('+', '').replace('/', '') for cmd in commands])
-
-  for cmd in base_cmd:
+  for cmd in usage_info.keys():
     commands.append('/help ' + cmd)
 
   return commands
