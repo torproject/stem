@@ -4,6 +4,12 @@ Tab completion for our interpretor prompt.
 
 from stem.interpretor import uses_settings
 
+try:
+  # added in python 3.2
+  from functools import lru_cache
+except ImportError:
+  from stem.util.lru_cache import lru_cache
+
 
 @uses_settings
 def _get_commands(config, controller):
@@ -83,16 +89,33 @@ class Autocompleter(object):
   def __init__(self, controller):
     self._commands = _get_commands(controller)
 
+  @lru_cache()
+  def matches(self, text):
+    """
+    Provides autocompletion matches for the given text.
+
+    :param str text: text to check for autocompletion matches with
+
+    :returns: **list** with possible matches
+    """
+
+    lowercase_text = text.lower()
+    return [cmd for cmd in self._commands if cmd.lower().startswith(lowercase_text)]
+
   def complete(self, text, state):
     """
     Provides case insensetive autocompletion options, acting as a functor for
     the readlines set_completer function.
+
+    :param str text: text to check for autocompletion matches with
+    :param int state: index of result to be provided, readline fetches matches
+      until this function provides None
+
+    :returns: **str** with the autocompletion match, **None** if eithe none
+      exists or state is higher than our number of matches
     """
 
-    lowercase_text = text.lower()
-    prefix_matches = [cmd for cmd in self._commands if cmd.lower().startswith(lowercase_text)]
-
-    if state < len(prefix_matches):
-      return prefix_matches[state]
-    else:
+    try:
+      return self.matches(text)[state]
+    except IndexError:
       return None
