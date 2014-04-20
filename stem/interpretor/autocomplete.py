@@ -19,6 +19,9 @@ def _get_commands(controller, config):
 
   commands = config.get('autocomplete', [])
 
+  if controller is None:
+    return commands
+
   # GETINFO commands. Lines are of the form '[option] -- [description]'. This
   # strips '*' from options that accept values.
 

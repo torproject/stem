@@ -678,7 +678,7 @@ class Config(object):
         log.debug("Config entry '%s' is expected to be a float, defaulting to '%f'" % (key, default))
         val = default
     elif isinstance(default, list):
-      pass  # nothing special to do (already a list)
+      val = list(val)  # make a shallow copy
     elif isinstance(default, tuple):
       val = tuple(val)
     elif isinstance(default, dict):
