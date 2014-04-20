@@ -16,6 +16,101 @@ BOLD_OUTPUT_FORMAT = (Color.BLUE, Attr.BOLD)
 ERROR_FORMAT = (Attr.BOLD, Color.RED)
 
 
+@uses_settings
+def help_output(controller, config):
+  """
+  Provides the output for our /help commands.
+
+  :param stem.Controller controller: tor control connection
+  :param stem.util.conf.Config config: interpretor configuration
+
+  :returns: **dict** mapping arguments to their help output
+  """
+
+  result = {}
+  usage_info = config.get('help.usage', {})
+
+  general_help = ''
+
+  for line in msg('help.general').splitlines():
+    cmd_start = line.find(' - ')
+
+    if cmd_start != -1:
+      general_help += format(line[:cmd_start], *BOLD_OUTPUT_FORMAT)
+      general_help += format(line[cmd_start:] + '\n', *OUTPUT_FORMAT)
+    else:
+      general_help += format(line + '\n', *BOLD_OUTPUT_FORMAT)
+
+  result[''] = general_help
+
+  for arg, usage in usage_info.items():
+    description = config.get('help.description.%s' % arg.lower(), '')
+
+    output = format(usage + '\n', *BOLD_OUTPUT_FORMAT)
+
+    for line in description.splitlines():
+      output += format('  ' + line + '\n', *OUTPUT_FORMAT)
+
+    output += '\n'
+
+    if arg == 'GETINFO':
+      results = controller.get_info('info/names', None)
+
+      if results:
+        for line in results.splitlines():
+          if ' -- ' in line:
+            opt, summary = line.split(' -- ', 1)
+
+            output += format("%-33s" % opt, *BOLD_OUTPUT_FORMAT)
+            output += format(" - %s\n" % summary, *OUTPUT_FORMAT)
+    elif arg == 'GETCONF':
+      results = controller.get_info('config/names', None)
+
+      if results:
+        options = [opt.split(' ', 1)[0] for opt in results.splitlines()]
+
+        for i in range(0, len(options), 2):
+          line = ''
+
+          for entry in options[i:i + 1]:
+            line += '%-42s' % entry
+
+          output += format(line + '\n', *OUTPUT_FORMAT)
+    elif arg == 'SIGNAL':
+      signal_options = config.get('help.signal.options', {})
+
+      for signal, summary in signal_options.items():
+        output += format('%-15s' % signal, *BOLD_OUTPUT_FORMAT)
+        output += format(' - %s\n' % summary, *OUTPUT_FORMAT)
+    elif arg == 'SETEVENTS':
+      results = controller.get_info('events/names', None)
+
+      if results:
+        entries = results.split()
+
+        # displays four columns of 20 characters
+
+        for i in range(0, len(entries), 4):
+          line = ''
+
+          for entry in entries[i:i + 4]:
+            line += '%-20s' % entry
+
+          output += format(line + '\n', *OUTPUT_FORMAT)
+    elif arg == 'USEFEATURE':
+      results = controller.get_info('features/names', None)
+
+      if results:
+        output += format(results + '\n', *OUTPUT_FORMAT)
+    elif arg in ('LOADCONF', 'POSTDESCRIPTOR'):
+      # gives a warning that this option isn't yet implemented
+      output += format(msg('msg.multiline_unimplemented_notice') + '\n', *ERROR_FORMAT)
+
+    result[arg] = output
+
+  return result
+
+
 class ControlInterpretor(object):
   """
   Handles issuing requests and providing nicely formed responses, with support
@@ -23,15 +118,16 @@ class ControlInterpretor(object):
   """
 
   def __init__(self, controller):
-    self.controller = controller
-    self.received_events = []
+    self._controller = controller
+    self._received_events = []
+    self._help_output = help_output(controller)
 
   def register_event(self, event):
     """
     Adds the event to our buffer so it'll be in '/events' output.
     """
 
-    self.received_events.append(event)
+    self._received_events.append(event)
 
   @uses_settings
   def do_help(self, arg, config):
@@ -54,108 +150,10 @@ class ControlInterpretor(object):
     if arg.startswith('/'):
       arg = arg[1:]
 
-    output = ''
-
-    if not arg:
-      # provides the general help with everything bolded except descriptions
-
-      for line in msg('help.general').splitlines():
-        cmd_start = line.find(' - ')
-
-        if cmd_start != -1:
-          output += format(line[:cmd_start], *BOLD_OUTPUT_FORMAT)
-          output += format(line[cmd_start:] + '\n', *OUTPUT_FORMAT)
-        else:
-          output += format(line + '\n', *BOLD_OUTPUT_FORMAT)
-    elif arg in usage_info:
-      # Provides information for the tor or interpretor argument. This bolds
-      # the usage information and indents the description after it.
-
-      usage = usage_info[arg]
-      description = config.get('help.description.%s' % arg.lower(), '')
-
-      output = format(usage + '\n', *BOLD_OUTPUT_FORMAT)
-
-      for line in description.splitlines():
-        output += format('  ' + line + '\n', *OUTPUT_FORMAT)
-
-      if arg == 'GETINFO':
-        # if this is the GETINFO option then also list the valid options
-
-        info_options = self.controller.get_info('info/names', None)
-
-        if info_options:
-          for line in info_options.splitlines():
-            line_match = re.match("^(.+) -- (.+)$", line)
-
-            if line_match:
-              opt, description = line_match.groups()
-
-              output += format("%-33s" % opt, *BOLD_OUTPUT_FORMAT)
-              output += format(" - %s\n" % description, *OUTPUT_FORMAT)
-      elif arg == 'GETCONF':
-        # lists all of the configuration options
-        # TODO: integrate tor man page output when stem supports that
-
-        conf_options = self.controller.get_info('config/names', None)
-
-        if conf_options:
-          conf_entries = [opt.split(' ', 1)[0] for opt in conf_options.split('\n')]
-
-          # displays two columns of 42 characters
-
-          for i in range(0, len(conf_entries), 2):
-            line_entries = conf_entries[i:i + 2]
-
-            line_content = ''
-
-            for entry in line_entries:
-              line_content += '%-42s' % entry
-
-            output += format(line_content + '\n', *OUTPUT_FORMAT)
-
-          output += format("For more information use '/help [CONFIG OPTION]'.", *BOLD_OUTPUT_FORMAT)
-      elif arg == 'SIGNAL':
-        # lists descriptions for all of the signals
-
-        descriptions = config.get('help.signal.options', {})
-
-        for signal, description in descriptions.items():
-          output += format('%-15s' % signal, *BOLD_OUTPUT_FORMAT)
-          output += format(' - %s\n' % description, *OUTPUT_FORMAT)
-      elif arg == 'SETEVENTS':
-        # lists all of the event types
-
-        event_options = self.controller.get_info('events/names', None)
-
-        if event_options:
-          event_entries = event_options.split()
-
-          # displays four columns of 20 characters
-
-          for i in range(0, len(event_entries), 4):
-            line_entries = event_entries[i:i + 4]
-
-            line_content = ''
-
-            for entry in line_entries:
-              line_content += '%-20s' % entry
-
-            output += format(line_content + '\n', *OUTPUT_FORMAT)
-      elif arg == 'USEFEATURE':
-        # lists the feature options
-
-        feature_options = self.controller.get_info('features/names', None)
-
-        if feature_options:
-          output += format(feature_options + '\n', *OUTPUT_FORMAT)
-      elif arg in ('LOADCONF', 'POSTDESCRIPTOR'):
-        # gives a warning that this option isn't yet implemented
-        output += format('\n' + msg('msg.multiline_unimplemented_notice') + '\n', *ERROR_FORMAT)
+    if arg in self._help_output:
+      return self._help_output[arg]
     else:
-      output += format("No help information available for '%s'..." % arg, *ERROR_FORMAT)
-
-    return output
+      return format("No help information available for '%s'..." % arg, *ERROR_FORMAT)
 
   def do_events(self, arg):
     """
@@ -164,7 +162,7 @@ class ControlInterpretor(object):
     all buffered events.
     """
 
-    events = self.received_events
+    events = self._received_events
     event_types = arg.upper().split()
 
     if event_types:
@@ -187,14 +185,14 @@ class ControlInterpretor(object):
     if not arg:
       # uses our fingerprint if we're a relay, otherwise gives an error
 
-      fingerprint = self.controller.get_info('fingerprint', None)
+      fingerprint = self._controller.get_info('fingerprint', None)
 
       if not fingerprint:
         output += format("We aren't a relay, no information to provide", *ERROR_FORMAT)
     elif stem.util.tor_tools.is_valid_fingerprint(arg):
       fingerprint = arg
     elif stem.util.tor_tools.is_valid_nickname(arg):
-      desc = self.controller.get_network_status(arg, None)
+      desc = self._controller.get_network_status(arg, None)
 
       if desc:
         fingerprint = desc.fingerprint
@@ -217,7 +215,7 @@ class ControlInterpretor(object):
 
       matches = {}
 
-      for desc in self.controller.get_network_statuses():
+      for desc in self._controller.get_network_statuses():
         if desc.address == address:
           if not port or desc.or_port == port:
             matches[desc.or_port] = desc.fingerprint
@@ -235,9 +233,9 @@ class ControlInterpretor(object):
       return format("'%s' isn't a fingerprint, nickname, or IP address" % arg, *ERROR_FORMAT)
 
     if fingerprint:
-      micro_desc = self.controller.get_microdescriptor(fingerprint, None)
-      server_desc = self.controller.get_server_descriptor(fingerprint, None)
-      ns_desc = self.controller.get_network_status(fingerprint, None)
+      micro_desc = self._controller.get_microdescriptor(fingerprint, None)
+      server_desc = self._controller.get_server_descriptor(fingerprint, None)
+      ns_desc = self._controller.get_network_status(fingerprint, None)
 
       # We'll mostly rely on the router status entry. Either the server
       # descriptor or microdescriptor will be missing, so we'll treat them as
@@ -246,7 +244,7 @@ class ControlInterpretor(object):
       if not ns_desc:
         return format("Unable to find consensus information for %s" % fingerprint, *ERROR_FORMAT)
 
-      locale = self.controller.get_info('ip-to-country/%s' % ns_desc.address, None)
+      locale = self._controller.get_info('ip-to-country/%s' % ns_desc.address, None)
       locale_label = ' (%s)' % locale if locale else ''
 
       if server_desc:
@@ -307,7 +305,7 @@ class ControlInterpretor(object):
     :raises: **stem.SocketClosed** if the control connection has been severed
     """
 
-    if not self.controller.is_alive():
+    if not self._controller.is_alive():
       raise stem.SocketClosed()
 
     command = command.strip()
@@ -347,7 +345,7 @@ class ControlInterpretor(object):
 
       if cmd == 'GETINFO':
         try:
-          response = self.controller.get_info(arg.split())
+          response = self._controller.get_info(arg.split())
           output = format('\n'.join(response.values()), *OUTPUT_FORMAT)
         except stem.ControllerError as exc:
           output = format(str(exc), *ERROR_FORMAT)
@@ -387,20 +385,20 @@ class ControlInterpretor(object):
 
         try:
           is_reset = cmd == 'RESETCONF'
-          self.controller.set_options(param_list, is_reset)
+          self._controller.set_options(param_list, is_reset)
         except stem.ControllerError as exc:
           output = format(str(exc), *ERROR_FORMAT)
       elif cmd == 'SETEVENTS':
         try:
           # first discontinue listening to prior events
 
-          self.controller.remove_event_listener(self.register_event)
+          self._controller.remove_event_listener(self.register_event)
 
           # attach listeners for the given group of events
 
           if arg:
             events = arg.split()
-            self.controller.add_event_listener(self.register_event, *events)
+            self._controller.add_event_listener(self.register_event, *events)
             output = format('Listing for %s events\n' % ', '.join(events), *OUTPUT_FORMAT)
           else:
             output = format('Disabled event listening\n', *OUTPUT_FORMAT)
@@ -411,7 +409,7 @@ class ControlInterpretor(object):
         output = format(msg('msg.multiline_unimplemented_notice'), *ERROR_FORMAT)
       else:
         try:
-          response = self.controller.msg(command)
+          response = self._controller.msg(command)
 
           if cmd == 'QUIT':
             raise stem.SocketClosed()
