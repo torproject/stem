@@ -12,7 +12,7 @@ except ImportError:
 
 
 @uses_settings
-def _get_commands(config, controller):
+def _get_commands(controller, config):
   """
   Provides commands recognized by tor.
   """

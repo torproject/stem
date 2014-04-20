@@ -31,7 +31,7 @@ uses_settings = stem.util.conf.uses_settings('stem_interpretor', settings_path)
 
 
 @uses_settings
-def msg(config, message, **attr):
+def msg(message, config, **attr):
   return config.get(message).format(**attr)
 
 

@@ -34,7 +34,7 @@ class ControlInterpretor(object):
     self.received_events.append(event)
 
   @uses_settings
-  def do_help(config, self, arg):
+  def do_help(self, arg, config):
     """
     Performs the '/help' operation, giving usage information for the given
     argument or a general summary if there wasn't one.

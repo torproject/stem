@@ -239,7 +239,7 @@ def uses_settings(handle, path, lazy_load = True):
   """
   Provides a function that can be used as an annotation for other functions
   that require settings to be loaded. Functions with this annotation will be
-  provided with the configuration as its first argument.
+  provided with the configuration as its 'config' keyword argument.
 
   ::
 
@@ -273,7 +273,7 @@ def uses_settings(handle, path, lazy_load = True):
         config.load(path)
         config.set('settings_loaded', 'true')
 
-      return func(config, *args, **kwargs)
+      return func(*args, config = config, **kwargs)
 
     return wrapped
 
