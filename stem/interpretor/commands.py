@@ -5,137 +5,12 @@ Handles making requests and formatting the responses.
 import re
 
 import stem
+import stem.interpretor.help
 import stem.util.connection
 import stem.util.tor_tools
 
-from stem.interpretor import msg, uses_settings
-from stem.util.term import Attr, Color, format
-
-STANDARD_OUTPUT = (Color.BLUE, )
-BOLD_OUTPUT = (Color.BLUE, Attr.BOLD)
-ERROR_OUTPUT = (Attr.BOLD, Color.RED)
-
-try:
-  # added in python 3.2
-  from functools import lru_cache
-except ImportError:
-  from stem.util.lru_cache import lru_cache
-
-
-@uses_settings
-def help_output(controller, arg, config):
-  """
-  Provides our /help response.
-
-  :param stem.Controller controller: tor control connection
-  :param str arg: controller or interpretor command to provide help output for
-  :param stem.util.conf.Config config: interpretor configuration
-
-  :returns: **str** with our help response
-  """
-
-  # Normalizing inputs first so we can better cache responses.
-
-  arg = arg.upper()
-
-  # If there's multiple arguments then just take the first. This is
-  # particularly likely if they're trying to query a full command (for
-  # instance "/help GETINFO version")
-
-  arg = arg.split(' ')[0]
-
-  # strip slash if someone enters an interpretor command (ex. "/help /help")
-
-  if arg.startswith('/'):
-    arg = arg[1:]
-
-  return _help_output(controller, arg, config)
-
-
-@lru_cache()
-def _help_output(controller, arg, config):
-  if not arg:
-    general_help = ''
-
-    for line in msg('help.general').splitlines():
-      cmd_start = line.find(' - ')
-
-      if cmd_start != -1:
-        general_help += format(line[:cmd_start], *BOLD_OUTPUT)
-        general_help += format(line[cmd_start:] + '\n', *STANDARD_OUTPUT)
-      else:
-        general_help += format(line + '\n', *BOLD_OUTPUT)
-
-    return general_help
-
-  usage_info = config.get('help.usage', {})
-
-  if not arg in usage_info:
-    return format("No help information available for '%s'..." % arg, *ERROR_OUTPUT)
-
-  output = format(usage_info[arg] + '\n', *BOLD_OUTPUT)
-
-  description = config.get('help.description.%s' % arg.lower(), '')
-
-  for line in description.splitlines():
-    output += format('  ' + line + '\n', *STANDARD_OUTPUT)
-
-  output += '\n'
-
-  if arg == 'GETINFO':
-    results = controller.get_info('info/names', None)
-
-    if results:
-      for line in results.splitlines():
-        if ' -- ' in line:
-          opt, summary = line.split(' -- ', 1)
-
-          output += format("%-33s" % opt, *BOLD_OUTPUT)
-          output += format(" - %s\n" % summary, *STANDARD_OUTPUT)
-  elif arg == 'GETCONF':
-    results = controller.get_info('config/names', None)
-
-    if results:
-      options = [opt.split(' ', 1)[0] for opt in results.splitlines()]
-
-      for i in range(0, len(options), 2):
-        line = ''
-
-        for entry in options[i:i + 1]:
-          line += '%-42s' % entry
-
-        output += format(line + '\n', *STANDARD_OUTPUT)
-  elif arg == 'SIGNAL':
-    signal_options = config.get('help.signal.options', {})
-
-    for signal, summary in signal_options.items():
-      output += format('%-15s' % signal, *BOLD_OUTPUT)
-      output += format(' - %s\n' % summary, *STANDARD_OUTPUT)
-  elif arg == 'SETEVENTS':
-    results = controller.get_info('events/names', None)
-
-    if results:
-      entries = results.split()
-
-      # displays four columns of 20 characters
-
-      for i in range(0, len(entries), 4):
-        line = ''
-
-        for entry in entries[i:i + 4]:
-          line += '%-20s' % entry
-
-        output += format(line + '\n', *STANDARD_OUTPUT)
-  elif arg == 'USEFEATURE':
-    results = controller.get_info('features/names', None)
-
-    if results:
-      output += format(results + '\n', *STANDARD_OUTPUT)
-  elif arg in ('LOADCONF', 'POSTDESCRIPTOR'):
-    # gives a warning that this option isn't yet implemented
-    output += format(msg('msg.multiline_unimplemented_notice') + '\n', *ERROR_OUTPUT)
-
-  return output
+from stem.interpretor import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, msg
+from stem.util.term import format
 
 
 class ControlInterpretor(object):
@@ -161,7 +36,7 @@ class ControlInterpretor(object):
     argument or a general summary if there wasn't one.
     """
 
-    return help_output(self._controller, arg)
+    return stem.interpretor.help.response(self._controller, arg)
 
   def do_events(self, arg):
     """
