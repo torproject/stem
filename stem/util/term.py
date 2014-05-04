@@ -70,7 +70,8 @@ def format(msg, *attr):
   * `colorama <http://pypi.python.org/pypi/colorama>`_
 
   :param str msg: string to be formatted
-  :param str attr: text attributes, this can be :data:`~stem.util.term.Color`, :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` enums
+  :param str attr: text attributes, this can be :data:`~stem.util.term.Color`,
+    :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` enums
     and are case insensitive (so strings like "red" are fine)
 
   :returns: **str** wrapped with ANSI escape encodings, starting with the given

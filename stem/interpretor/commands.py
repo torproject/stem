@@ -11,9 +11,9 @@ import stem.util.tor_tools
 from stem.interpretor import msg, uses_settings
 from stem.util.term import Attr, Color, format
 
-OUTPUT_FORMAT = (Color.BLUE, )
-BOLD_OUTPUT_FORMAT = (Color.BLUE, Attr.BOLD)
-ERROR_FORMAT = (Attr.BOLD, Color.RED)
+STANDARD_OUTPUT = (Color.BLUE, )
+BOLD_OUTPUT = (Color.BLUE, Attr.BOLD)
+ERROR_OUTPUT = (Attr.BOLD, Color.RED)
 
 try:
   # added in python 3.2
@@ -61,24 +61,24 @@ def _help_output(controller, arg, config):
       cmd_start = line.find(' - ')
 
       if cmd_start != -1:
-        general_help += format(line[:cmd_start], *BOLD_OUTPUT_FORMAT)
-        general_help += format(line[cmd_start:] + '\n', *OUTPUT_FORMAT)
+        general_help += format(line[:cmd_start], *BOLD_OUTPUT)
+        general_help += format(line[cmd_start:] + '\n', *STANDARD_OUTPUT)
       else:
-        general_help += format(line + '\n', *BOLD_OUTPUT_FORMAT)
+        general_help += format(line + '\n', *BOLD_OUTPUT)
 
     return general_help
 
   usage_info = config.get('help.usage', {})
 
   if not arg in usage_info:
-    return format("No help information available for '%s'..." % arg, *ERROR_FORMAT)
+    return format("No help information available for '%s'..." % arg, *ERROR_OUTPUT)
 
-  output = format(usage_info[arg] + '\n', *BOLD_OUTPUT_FORMAT)
+  output = format(usage_info[arg] + '\n', *BOLD_OUTPUT)
 
   description = config.get('help.description.%s' % arg.lower(), '')
 
   for line in description.splitlines():
-    output += format('  ' + line + '\n', *OUTPUT_FORMAT)
+    output += format('  ' + line + '\n', *STANDARD_OUTPUT)
 
   output += '\n'
 
@@ -90,8 +90,8 @@ def _help_output(controller, arg, config):
         if ' -- ' in line:
           opt, summary = line.split(' -- ', 1)
 
-          output += format("%-33s" % opt, *BOLD_OUTPUT_FORMAT)
-          output += format(" - %s\n" % summary, *OUTPUT_FORMAT)
+          output += format("%-33s" % opt, *BOLD_OUTPUT)
+          output += format(" - %s\n" % summary, *STANDARD_OUTPUT)
   elif arg == 'GETCONF':
     results = controller.get_info('config/names', None)
 
@@ -104,13 +104,13 @@ def _help_output(controller, arg, config):
         for entry in options[i:i + 1]:
           line += '%-42s' % entry
 
-        output += format(line + '\n', *OUTPUT_FORMAT)
+        output += format(line + '\n', *STANDARD_OUTPUT)
   elif arg == 'SIGNAL':
     signal_options = config.get('help.signal.options', {})
 
     for signal, summary in signal_options.items():
-      output += format('%-15s' % signal, *BOLD_OUTPUT_FORMAT)
-      output += format(' - %s\n' % summary, *OUTPUT_FORMAT)
+      output += format('%-15s' % signal, *BOLD_OUTPUT)
+      output += format(' - %s\n' % summary, *STANDARD_OUTPUT)
   elif arg == 'SETEVENTS':
     results = controller.get_info('events/names', None)
 
@@ -125,15 +125,15 @@ def _help_output(controller, arg, config):
         for entry in entries[i:i + 4]:
           line += '%-20s' % entry
 
-        output += format(line + '\n', *OUTPUT_FORMAT)
+        output += format(line + '\n', *STANDARD_OUTPUT)
   elif arg == 'USEFEATURE':
     results = controller.get_info('features/names', None)
 
     if results:
-      output += format(results + '\n', *OUTPUT_FORMAT)
+      output += format(results + '\n', *STANDARD_OUTPUT)
   elif arg in ('LOADCONF', 'POSTDESCRIPTOR'):
     # gives a warning that this option isn't yet implemented
-    output += format(msg('msg.multiline_unimplemented_notice') + '\n', *ERROR_FORMAT)
+    output += format(msg('msg.multiline_unimplemented_notice') + '\n', *ERROR_OUTPUT)
 
   return output
 
@@ -176,7 +176,7 @@ class ControlInterpretor(object):
     if event_types:
       events = filter(lambda event: event.type in event_types, events)
 
-    return '\n'.join([format(str(event), *OUTPUT_FORMAT) for event in events])
+    return '\n'.join([format(str(event), *STANDARD_OUTPUT) for event in events])
 
   def do_info(self, arg):
     """
@@ -196,7 +196,7 @@ class ControlInterpretor(object):
       fingerprint = self._controller.get_info('fingerprint', None)
 
       if not fingerprint:
-        output += format("We aren't a relay, no information to provide", *ERROR_FORMAT)
+        output += format("We aren't a relay, no information to provide", *ERROR_OUTPUT)
     elif stem.util.tor_tools.is_valid_fingerprint(arg):
       fingerprint = arg
     elif stem.util.tor_tools.is_valid_nickname(arg):
@@ -205,7 +205,7 @@ class ControlInterpretor(object):
       if desc:
         fingerprint = desc.fingerprint
       else:
-        return format("Unable to find a relay with the nickname of '%s'" % arg, *ERROR_FORMAT)
+        return format("Unable to find a relay with the nickname of '%s'" % arg, *ERROR_OUTPUT)
     elif ':' in arg or stem.util.connection.is_valid_ipv4_address(arg):
       # we got an address, so looking up the fingerprint
 
@@ -213,9 +213,9 @@ class ControlInterpretor(object):
         address, port = arg.split(':', 1)
 
         if not stem.util.connection.is_valid_ipv4_address(address):
-          return format("'%s' isn't a valid IPv4 address" % address, *ERROR_FORMAT)
+          return format("'%s' isn't a valid IPv4 address" % address, *ERROR_OUTPUT)
         elif port and not stem.util.connection.is_valid_port(port):
-          return format("'%s' isn't a valid port" % port, *ERROR_FORMAT)
+          return format("'%s' isn't a valid port" % port, *ERROR_OUTPUT)
 
         port = int(port)
       else:
@@ -229,16 +229,16 @@ class ControlInterpretor(object):
             matches[desc.or_port] = desc.fingerprint
 
       if len(matches) == 0:
-        output += format('No relays found at %s' % arg, *ERROR_FORMAT)
+        output += format('No relays found at %s' % arg, *ERROR_OUTPUT)
       elif len(matches) == 1:
         fingerprint = matches.values()[0]
       else:
-        output += format("There's multiple relays at %s, include a port to specify which.\n\n" % arg, *ERROR_FORMAT)
+        output += format("There's multiple relays at %s, include a port to specify which.\n\n" % arg, *ERROR_OUTPUT)
 
         for i, or_port in enumerate(matches):
-          output += format("  %i. %s:%s, fingerprint: %s\n" % (i + 1, address, or_port, matches[or_port]), *ERROR_FORMAT)
+          output += format("  %i. %s:%s, fingerprint: %s\n" % (i + 1, address, or_port, matches[or_port]), *ERROR_OUTPUT)
     else:
-      return format("'%s' isn't a fingerprint, nickname, or IP address" % arg, *ERROR_FORMAT)
+      return format("'%s' isn't a fingerprint, nickname, or IP address" % arg, *ERROR_OUTPUT)
 
     if fingerprint:
       micro_desc = self._controller.get_microdescriptor(fingerprint, None)
@@ -250,7 +250,7 @@ class ControlInterpretor(object):
       # being optional.
 
       if not ns_desc:
-        return format("Unable to find consensus information for %s" % fingerprint, *ERROR_FORMAT)
+        return format("Unable to find consensus information for %s" % fingerprint, *ERROR_OUTPUT)
 
       locale = self._controller.get_info('ip-to-country/%s' % ns_desc.address, None)
       locale_label = ' (%s)' % locale if locale else ''
@@ -264,23 +264,23 @@ class ControlInterpretor(object):
 
       output += '%s (%s)\n' % (ns_desc.nickname, fingerprint)
 
-      output += format('address: ', *BOLD_OUTPUT_FORMAT)
+      output += format('address: ', *BOLD_OUTPUT)
       output += '%s:%s%s\n' % (ns_desc.address, ns_desc.or_port, locale_label)
 
-      output += format('published: ', *BOLD_OUTPUT_FORMAT)
+      output += format('published: ', *BOLD_OUTPUT)
       output += ns_desc.published.strftime('%H:%M:%S %d/%m/%Y') + '\n'
 
       if server_desc:
-        output += format('os: ', *BOLD_OUTPUT_FORMAT)
+        output += format('os: ', *BOLD_OUTPUT)
         output += server_desc.platform.decode('utf-8', 'replace') + '\n'
 
-        output += format('version: ', *BOLD_OUTPUT_FORMAT)
+        output += format('version: ', *BOLD_OUTPUT)
         output += str(server_desc.tor_version) + '\n'
 
-      output += format('flags: ', *BOLD_OUTPUT_FORMAT)
+      output += format('flags: ', *BOLD_OUTPUT)
       output += ', '.join(ns_desc.flags) + '\n'
 
-      output += format('exit policy: ', *BOLD_OUTPUT_FORMAT)
+      output += format('exit policy: ', *BOLD_OUTPUT)
       output += exit_policy_label + '\n'
 
       if server_desc:
@@ -294,7 +294,7 @@ class ControlInterpretor(object):
         for alias in (' dot ', ' DOT '):
           contact = contact.replace(alias, '.')
 
-        output += format('contact: ', *BOLD_OUTPUT_FORMAT)
+        output += format('contact: ', *BOLD_OUTPUT)
         output += contact + '\n'
 
     return output.strip()
@@ -345,7 +345,7 @@ class ControlInterpretor(object):
       elif cmd == '/help':
         output = self.do_help(arg)
       else:
-        output = format("'%s' isn't a recognized command" % command, *ERROR_FORMAT)
+        output = format("'%s' isn't a recognized command" % command, *ERROR_OUTPUT)
 
       output += '\n'  # give ourselves an extra line before the next prompt
     else:
@@ -354,9 +354,9 @@ class ControlInterpretor(object):
       if cmd == 'GETINFO':
         try:
           response = self._controller.get_info(arg.split())
-          output = format('\n'.join(response.values()), *OUTPUT_FORMAT)
+          output = format('\n'.join(response.values()), *STANDARD_OUTPUT)
         except stem.ControllerError as exc:
-          output = format(str(exc), *ERROR_FORMAT)
+          output = format(str(exc), *ERROR_OUTPUT)
       elif cmd in ('SETCONF', 'RESETCONF'):
         # arguments can either be '<param>', '<param>=<value>', or
         # '<param>="<value>"' entries
@@ -395,7 +395,7 @@ class ControlInterpretor(object):
           is_reset = cmd == 'RESETCONF'
           self._controller.set_options(param_list, is_reset)
         except stem.ControllerError as exc:
-          output = format(str(exc), *ERROR_FORMAT)
+          output = format(str(exc), *ERROR_OUTPUT)
       elif cmd == 'SETEVENTS':
         try:
           # first discontinue listening to prior events
@@ -407,14 +407,14 @@ class ControlInterpretor(object):
           if arg:
             events = arg.split()
             self._controller.add_event_listener(self.register_event, *events)
-            output = format('Listing for %s events\n' % ', '.join(events), *OUTPUT_FORMAT)
+            output = format('Listing for %s events\n' % ', '.join(events), *STANDARD_OUTPUT)
           else:
-            output = format('Disabled event listening\n', *OUTPUT_FORMAT)
+            output = format('Disabled event listening\n', *STANDARD_OUTPUT)
         except stem.ControllerError as exc:
-          output = format(str(exc), *ERROR_FORMAT)
+          output = format(str(exc), *ERROR_OUTPUT)
       elif cmd.replace('+', '') in ('LOADCONF', 'POSTDESCRIPTOR'):
         # provides a notice that multi-line controller input isn't yet implemented
-        output = format(msg('msg.multiline_unimplemented_notice'), *ERROR_FORMAT)
+        output = format(msg('msg.multiline_unimplemented_notice'), *ERROR_OUTPUT)
       else:
         try:
           response = self._controller.msg(command)
@@ -422,11 +422,11 @@ class ControlInterpretor(object):
           if cmd == 'QUIT':
             raise stem.SocketClosed()
 
-          output = format(str(response), *OUTPUT_FORMAT)
+          output = format(str(response), *STANDARD_OUTPUT)
         except stem.ControllerError as exc:
           if isinstance(exc, stem.SocketClosed):
             raise exc
           else:
-            output = format(str(exc), *ERROR_FORMAT)
+            output = format(str(exc), *ERROR_OUTPUT)
 
     return output
