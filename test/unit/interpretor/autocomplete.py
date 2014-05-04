@@ -2,23 +2,13 @@ import unittest
 
 from stem.interpretor.autocomplete import _get_commands, Autocompleter
 
+from test.unit.interpretor import CONTROLLER
+
 try:
   # added in python 3.3
   from unittest.mock import Mock
 except ImportError:
   from mock import Mock
-
-GETINFO_NAMES = """
-info/names -- List of GETINFO options, types, and documentation.
-ip-to-country/* -- Perform a GEOIP lookup
-md/id/* -- Microdescriptors by ID
-""".strip()
-
-GETCONF_NAMES = """
-ExitNodes RouterList
-ExitPolicy LineList
-ExitPolicyRejectPrivate Boolean
-""".strip()
 
 
 class TestAutocompletion(unittest.TestCase):
@@ -54,15 +44,7 @@ class TestAutocompletion(unittest.TestCase):
 
     # Now check where we should be able to determine tor's capabilities.
 
-    controller.get_info.side_effect = lambda arg, _: {
-      'info/names': GETINFO_NAMES,
-      'config/names': GETCONF_NAMES,
-      'events/names': 'BW DEBUG INFO NOTICE',
-      'features/names': 'VERBOSE_NAMES EXTENDED_EVENTS',
-      'signal/names': 'RELOAD HUP SHUTDOWN',
-    }[arg]
-
-    commands = _get_commands(controller)
+    commands = _get_commands(CONTROLLER)
 
     expected = (
       'GETINFO info/names',
