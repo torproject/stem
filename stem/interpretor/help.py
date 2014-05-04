@@ -31,6 +31,10 @@ def response(controller, arg):
 
   # Normalizing inputs first so we can better cache responses.
 
+  return _response(controller, _normalize(arg))
+
+
+def _normalize(arg):
   arg = arg.upper()
 
   # If there's multiple arguments then just take the first. This is
@@ -44,7 +48,7 @@ def response(controller, arg):
   if arg.startswith('/'):
     arg = arg[1:]
 
-  return _response(controller, arg)
+  return arg
 
 
 @lru_cache()
@@ -86,10 +90,10 @@ def _response(controller, arg, config):
       for i in range(0, len(options), 2):
         line = ''
 
-        for entry in options[i:i + 1]:
+        for entry in options[i:i + 2]:
           line += '%-42s' % entry
 
-        output += format(line + '\n', *STANDARD_OUTPUT)
+        output += format(line.rstrip() + '\n', *STANDARD_OUTPUT)
   elif arg == 'SIGNAL':
     signal_options = config.get('help.signal.options', {})
 
@@ -110,7 +114,7 @@ def _response(controller, arg, config):
         for entry in entries[i:i + 4]:
           line += '%-20s' % entry
 
-        output += format(line + '\n', *STANDARD_OUTPUT)
+        output += format(line.rstrip() + '\n', *STANDARD_OUTPUT)
   elif arg == 'USEFEATURE':
     results = controller.get_info('features/names', None)
 
