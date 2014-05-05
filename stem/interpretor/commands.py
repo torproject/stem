@@ -150,26 +150,18 @@ class ControlInterpretor(object):
     else:
       exit_policy_label = 'Unknown'
 
-    output = '%s (%s)\n' % (ns_desc.nickname, fingerprint)
-
-    output += format('address: ', *BOLD_OUTPUT)
-    output += '%s:%s%s\n' % (ns_desc.address, ns_desc.or_port, locale_label)
-
-    output += format('published: ', *BOLD_OUTPUT)
-    output += ns_desc.published.strftime('%H:%M:%S %d/%m/%Y') + '\n'
+    lines = [
+      '%s (%s)' % (ns_desc.nickname, fingerprint),
+      format('address: ', *BOLD_OUTPUT) + '%s:%s%s' % (ns_desc.address, ns_desc.or_port, locale_label),
+      format('published: ', *BOLD_OUTPUT) + ns_desc.published.strftime('%H:%M:%S %d/%m/%Y'),
+    ]
 
     if server_desc:
-      output += format('os: ', *BOLD_OUTPUT)
-      output += server_desc.platform.decode('utf-8', 'replace') + '\n'
+      lines.append(format('os: ', *BOLD_OUTPUT) + server_desc.platform.decode('utf-8', 'replace'))
+      lines.append(format('version: ', *BOLD_OUTPUT) + str(server_desc.tor_version))
 
-      output += format('version: ', *BOLD_OUTPUT)
-      output += str(server_desc.tor_version) + '\n'
-
-    output += format('flags: ', *BOLD_OUTPUT)
-    output += ', '.join(ns_desc.flags) + '\n'
-
-    output += format('exit policy: ', *BOLD_OUTPUT)
-    output += exit_policy_label + '\n'
+    lines.append(format('flags: ', *BOLD_OUTPUT) + ', '.join(ns_desc.flags))
+    lines.append(format('exit policy: ', *BOLD_OUTPUT) + exit_policy_label)
 
     if server_desc:
       contact = server_desc.contact
@@ -182,10 +174,9 @@ class ControlInterpretor(object):
       for alias in (' dot ', ' DOT '):
         contact = contact.replace(alias, '.')
 
-      output += format('contact: ', *BOLD_OUTPUT)
-      output += contact + '\n'
+      lines.append(format('contact: ', *BOLD_OUTPUT) + contact)
 
-    return output.strip()
+    return '\n'.join(lines)
 
   def run_command(self, command):
     """
