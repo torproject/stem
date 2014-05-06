@@ -37,6 +37,7 @@ moria1 (9695DFC35FFEB861329B9F1AB04C46397020CE31)
 EXPECTED_GETCONF_RESPONSE = """\
 \x1b[34;1mlog\x1b[0m\x1b[34m => notice stdout\x1b[0m
 \x1b[34;1maddress\x1b[0m\x1b[34m => \x1b[0m
+
 """
 
 FINGERPRINT = '9695DFC35FFEB861329B9F1AB04C46397020CE31'
@@ -171,15 +172,15 @@ class TestInterpretorCommands(unittest.TestCase):
     interpretor = ControlInterpretor(controller)
 
     getinfo['version'] = '0.2.5.1-alpha-dev (git-245ecfff36c0cecc)'
-    self.assertEqual('\x1b[34m0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\x1b[0m', interpretor.run_command('GETINFO version'))
+    self.assertEqual('\x1b[34m0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\x1b[0m\n', interpretor.run_command('GETINFO version'))
     controller.get_info.assert_called_with(['version'])
 
     getinfo['process/user'] = 'atagar'
-    self.assertEqual('\x1b[34m0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\natagar\x1b[0m', interpretor.run_command('getinfo version process/user'))
+    self.assertEqual('\x1b[34m0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\natagar\x1b[0m\n', interpretor.run_command('getinfo version process/user'))
     controller.get_info.assert_called_with(['version', 'process/user'])
 
     controller.get_info.side_effect = stem.ControllerError('kaboom!')
-    self.assertEqual('\x1b[1;31mkaboom!\x1b[0m', interpretor.run_command('getinfo process/user'))
+    self.assertEqual('\x1b[1;31mkaboom!\x1b[0m\n', interpretor.run_command('getinfo process/user'))
 
   def test_getconf(self):
     controller, getconf = Mock(), collections.OrderedDict()
@@ -197,14 +198,14 @@ class TestInterpretorCommands(unittest.TestCase):
     controller = Mock()
     interpretor = ControlInterpretor(controller)
 
-    self.assertEqual('', interpretor.run_command('SETCONF ControlPort=9051'))
+    self.assertEqual('\n', interpretor.run_command('SETCONF ControlPort=9051'))
     controller.set_options.assert_called_with([('ControlPort', '9051')], False)
 
   def test_setevents(self):
     controller = Mock()
     interpretor = ControlInterpretor(controller)
 
-    self.assertEqual('\x1b[34mListing for BW events\n\x1b[0m', interpretor.run_command('SETEVENTS BW'))
+    self.assertEqual('\x1b[34mListing for BW events\n\x1b[0m\n', interpretor.run_command('SETEVENTS BW'))
     controller.add_event_listener.assert_called_with(interpretor.register_event, 'BW')
 
   def test_raw_commands(self):
@@ -212,5 +213,5 @@ class TestInterpretorCommands(unittest.TestCase):
     controller.msg.return_value = 'response'
     interpretor = ControlInterpretor(controller)
 
-    self.assertEqual('\x1b[34mresponse\x1b[0m', interpretor.run_command('NEW_COMMAND spiffyness'))
+    self.assertEqual('\x1b[34mresponse\x1b[0m\n', interpretor.run_command('NEW_COMMAND spiffyness'))
     controller.msg.assert_called_with('NEW_COMMAND spiffyness')
