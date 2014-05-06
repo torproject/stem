@@ -236,6 +236,14 @@ class ControlInterpretor(object):
           output = format('\n'.join(response.values()), *STANDARD_OUTPUT)
         except stem.ControllerError as exc:
           output = format(str(exc), *ERROR_OUTPUT)
+      elif cmd == 'GETCONF':
+        try:
+          response = self._controller.get_conf_map(arg.split())
+
+          for arg in response:
+            output += format(arg, *BOLD_OUTPUT) + format(' => ' + ', '.join(response[arg]), *STANDARD_OUTPUT) + '\n'
+        except stem.ControllerError as exc:
+          output = format(str(exc), *ERROR_OUTPUT)
       elif cmd in ('SETCONF', 'RESETCONF'):
         # arguments can either be '<param>', '<param>=<value>', or
         # '<param>="<value>"' entries

@@ -1,3 +1,4 @@
+import collections
 import datetime
 import unittest
 
@@ -31,6 +32,11 @@ moria1 (9695DFC35FFEB861329B9F1AB04C46397020CE31)
 \x1b[34;1mflags: \x1b[0mAuthority, Fast, Guard, HSDir, Named, Running, Stable, V2Dir, Valid
 \x1b[34;1mexit policy: \x1b[0mreject 1-65535
 \x1b[34;1mcontact: \x1b[0m1024D/28988BF5 arma mit edu
+"""
+
+EXPECTED_GETCONF_RESPONSE = """\
+\x1b[34;1mlog\x1b[0m\x1b[34m => notice stdout\x1b[0m
+\x1b[34;1maddress\x1b[0m\x1b[34m => \x1b[0m
 """
 
 FINGERPRINT = '9695DFC35FFEB861329B9F1AB04C46397020CE31'
@@ -86,9 +92,17 @@ class TestInterpretorCommands(unittest.TestCase):
   def test_get_fingerprint_for_unrecognized_inputs(self):
     self.assertRaises(ValueError, _get_fingerprint, 'blarg!', Mock())
 
+  def test_when_disconnected(self):
+    controller = Mock()
+    controller.is_alive.return_value = False
+
+    interpretor = ControlInterpretor(controller)
+    self.assertRaises(stem.SocketClosed, interpretor.run_command, '/help')
+
   def test_quit(self):
     interpretor = ControlInterpretor(CONTROLLER)
     self.assertRaises(stem.SocketClosed, interpretor.run_command, '/quit')
+    self.assertRaises(stem.SocketClosed, interpretor.run_command, 'QUIT')
 
   def test_help(self):
     interpretor = ControlInterpretor(CONTROLLER)
@@ -143,3 +157,60 @@ class TestInterpretorCommands(unittest.TestCase):
 
     interpretor = ControlInterpretor(controller)
     self.assertEqual(EXPECTED_INFO_RESPONSE, interpretor.run_command('/info ' + FINGERPRINT))
+
+  def test_unrecognized_interpretor_command(self):
+    interpretor = ControlInterpretor(CONTROLLER)
+
+    expected = "\x1b[1;31m'/unrecognized' isn't a recognized command\x1b[0m\n"
+    self.assertEqual(expected, interpretor.run_command('/unrecognized'))
+
+  def test_getinfo(self):
+    controller, getinfo = Mock(), collections.OrderedDict()
+    controller.get_info.return_value = getinfo
+
+    interpretor = ControlInterpretor(controller)
+
+    getinfo['version'] = '0.2.5.1-alpha-dev (git-245ecfff36c0cecc)'
+    self.assertEqual('\x1b[34m0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\x1b[0m', interpretor.run_command('GETINFO version'))
+    controller.get_info.assert_called_with(['version'])
+
+    getinfo['process/user'] = 'atagar'
+    self.assertEqual('\x1b[34m0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\natagar\x1b[0m', interpretor.run_command('getinfo version process/user'))
+    controller.get_info.assert_called_with(['version', 'process/user'])
+
+    controller.get_info.side_effect = stem.ControllerError('kaboom!')
+    self.assertEqual('\x1b[1;31mkaboom!\x1b[0m', interpretor.run_command('getinfo process/user'))
+
+  def test_getconf(self):
+    controller, getconf = Mock(), collections.OrderedDict()
+    controller.get_conf_map.return_value = getconf
+
+    interpretor = ControlInterpretor(controller)
+
+    getconf['log'] = ['notice stdout']
+    getconf['address'] = ['']
+
+    self.assertEqual(EXPECTED_GETCONF_RESPONSE, interpretor.run_command('GETCONF log address'))
+    controller.get_conf_map.assert_called_with(['log', 'address'])
+
+  def test_setconf(self):
+    controller = Mock()
+    interpretor = ControlInterpretor(controller)
+
+    self.assertEqual('', interpretor.run_command('SETCONF ControlPort=9051'))
+    controller.set_options.assert_called_with([('ControlPort', '9051')], False)
+
+  def test_setevents(self):
+    controller = Mock()
+    interpretor = ControlInterpretor(controller)
+
+    self.assertEqual('\x1b[34mListing for BW events\n\x1b[0m', interpretor.run_command('SETEVENTS BW'))
+    controller.add_event_listener.assert_called_with(interpretor.register_event, 'BW')
+
+  def test_raw_commands(self):
+    controller = Mock()
+    controller.msg.return_value = 'response'
+    interpretor = ControlInterpretor(controller)
+
+    self.assertEqual('\x1b[34mresponse\x1b[0m', interpretor.run_command('NEW_COMMAND spiffyness'))
+    controller.msg.assert_called_with('NEW_COMMAND spiffyness')
