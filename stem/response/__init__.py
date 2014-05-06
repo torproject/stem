@@ -12,6 +12,7 @@ Parses replies from the control socket.
 
   ControlMessage - Message that's read from the control socket.
     |- from_str - provides a ControlMessage for the given string
+    |- is_ok - response had a 250 status
     |- content - provides the parsed message content
     |- raw_content - unparsed socket data
     |- __str__ - content stripped of protocol formatting

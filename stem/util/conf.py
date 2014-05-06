@@ -141,6 +141,7 @@ Here's an expanation of what happened...
 
   config_dict - provides a dictionary that's kept in sync with our config
   get_config - singleton for getting configurations
+  uses_settings - provides an annotation for functions that use configurations
   parse_enum_csv - helper funcion for parsing confguration entries for enums
 
   Config - Custom configuration
@@ -156,6 +157,7 @@ Here's an expanation of what happened...
     +- get_value - provides the value for a given key as a string
 """
 
+import collections
 import threading
 
 from stem.util import log
@@ -231,6 +233,51 @@ def get_config(handle):
     CONFS[handle] = Config()
 
   return CONFS[handle]
+
+
+def uses_settings(handle, path, lazy_load = True):
+  """
+  Provides a function that can be used as an annotation for other functions
+  that require settings to be loaded. Functions with this annotation will be
+  provided with the configuration as its 'config' keyword argument.
+
+  ::
+
+    uses_settings = stem.util.conf.uses_settings('my_app', '/path/to/settings.cfg')
+
+    @uses_settings
+    def my_function(config):
+      print 'hello %s!' % config.get('username', '')
+
+  :param str handle: hande for the configuration
+  :param str path: path where the configuration should be loaded from
+  :param bool lazy_load: loads the configuration file when the annotation is
+    used if true, otherwise it's loaded right away
+
+  :returns: **function** that can be used as an annotation to provide the
+    configuration
+
+  :raises: **IOError** if we fail to read the configuration file, if
+    **lazy_load** is true then this arises when we use the annotation
+  """
+
+  config = get_config(handle)
+
+  if not lazy_load and not config.get('settings_loaded', False):
+    config.load(path)
+    config.set('settings_loaded', 'true')
+
+  def annotation(func):
+    def wrapped(*args, **kwargs):
+      if lazy_load and not config.get('settings_loaded', False):
+        config.load(path)
+        config.set('settings_loaded', 'true')
+
+      return func(*args, config = config, **kwargs)
+
+    return wrapped
+
+  return annotation
 
 
 def parse_enum(key, value, enumeration):
@@ -631,11 +678,11 @@ class Config(object):
         log.debug("Config entry '%s' is expected to be a float, defaulting to '%f'" % (key, default))
         val = default
     elif isinstance(default, list):
-      pass  # nothing special to do (already a list)
+      val = list(val)  # make a shallow copy
     elif isinstance(default, tuple):
       val = tuple(val)
     elif isinstance(default, dict):
-      valMap = {}
+      valMap = collections.OrderedDict()
       for entry in val:
         if "=>" in entry:
           entryKey, entryVal = entry.split("=>", 1)
