@@ -225,8 +225,6 @@ class ControlInterpretor(object):
         output = self.do_help(arg)
       else:
         output = format("'%s' isn't a recognized command" % command, *ERROR_OUTPUT)
-
-      output += '\n'  # give ourselves an extra line before the next prompt
     else:
       cmd = cmd.upper()  # makes commands uppercase to match the spec
 
@@ -315,5 +313,7 @@ class ControlInterpretor(object):
             raise exc
           else:
             output = format(str(exc), *ERROR_OUTPUT)
+
+    output += '\n'  # give ourselves an extra line before the next prompt
 
     return output
