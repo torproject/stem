@@ -41,6 +41,7 @@ The following are only available within Stem's `git repository
 
  * **Controller**
 
+  * New, better :func:`~stem.connection.connect` function that deprecates :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file`
   * Added :func:`~stem.control.Controller.is_newnym_available` and :func:`~stem.control.Controller.get_newnym_wait` methods to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_ports` and :func:`~stem.control.Controller.get_listeners` methods to the :class:`~stem.control.Controller`
   * Added the id attribute to the :class:`~stem.response.events.ORConnEvent` (:spec:`6f2919a`)
@@ -50,18 +51,29 @@ The following are only available within Stem's `git repository
   * Added `support for TB_EMPTY events <api/response.html#stem.response.events.TokenBucketEmptyEvent>`_ (:spec:`6f2919a`)
   * Added `support for HS_DESC events <api/response.html#stem.response.events.HSDescEvent>`_ (:spec:`a67ac4d`, :trac:`10807`)
   * Changed :func:`~stem.control.Controller.get_network_status` and :func:`~stem.control.Controller.get_network_statuses` to provide :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` if Tor is using microdescriptors (:trac:`7646`)
-  * Deprecated :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file` in favor of a new, better :func:`~stem.connection.connect` function
   * The :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file` didn't properly mark the Controller it returned as being authenticated, causing event listening among other things to fail.
+  * The :func:`~stem.control.Controller.add_event_listener` method couldn't accept event types that Stem didn't already recognize.
+  * The :class:`~stem.exit_policy.ExitPolicy` class couldn't be pickled.
 
  * **Utilities**
 
   * Added :func:`stem.util.connection.port_usage`
   * Added :func:`stem.util.system.files_with_suffix`
 
+ * **Interpretor**
+
+  * Initial release of a Tor interactive interpretor. This included...
+
+   * irc-style functions such as '/help' and '/info'
+   * history scroll-back by pressing up/down
+   * tab completion
+   * terminal coloring for improved readability
+   * support for listing the asynchronous events we've received
+
  * **Website**
 
-  * Expanded the `client usage tutorial <tutorials/to_russia_with_love.html>`_
-    to include an example for determining what exit tor uses for a connection.
+  * Added a section with `example scripts <tutorials/double_double_toil_and_trouble.html#scripts>`_.
+  * Made FAQ and other sections quite a bit more succinct.
 
 .. _version_1.1:
 
@@ -89,7 +101,7 @@ and a myriad of smaller improvements and fixes.
  * **Descriptors**
 
   * Added the `stem.descriptor.remote <api/descriptor/remote.html>`_ module.
-  * Added support for `TorDNSEL exit lists <api/descriptor/tordnsel.html>`_ (feature by arlolra, :trac:`8255`).
+  * Added support for `TorDNSEL exit lists <api/descriptor/tordnsel.html>`_ (feature by arlolra, :trac:`8255`)
   * The :class:`~stem.descriptor.reader.DescriptorReader` mishandled relative paths (:trac:`8815`)
 
  * **Utilities**
