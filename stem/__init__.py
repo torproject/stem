@@ -300,6 +300,7 @@ Library for working with the tor process.
   **IOERROR**         got a different kind of error from relay
   **RESOURCELIMIT**   relay has insufficient resources to service the request
   **MISC**            connection refused for another reason
+  **PT_MISSING**      no pluggable transport was available
   =================== ===========
 
 .. data:: AuthDescriptorAction (enum)
@@ -718,6 +719,7 @@ ORClosureReason = stem.util.enum.UppercaseEnum(
   "IOERROR",
   "RESOURCELIMIT",
   "MISC",
+  "PT_MISSING",
 )
 
 AuthDescriptorAction = stem.util.enum.UppercaseEnum(
