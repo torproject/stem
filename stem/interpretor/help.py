@@ -80,7 +80,7 @@ def _response(controller, arg, config):
           opt, summary = line.split(' -- ', 1)
 
           output += format("%-33s" % opt, *BOLD_OUTPUT)
-          output += format(" - %s\n" % summary, *STANDARD_OUTPUT)
+          output += format(" - %s" % summary, *STANDARD_OUTPUT) + '\n'
   elif arg == 'GETCONF':
     results = controller.get_info('config/names', None)
 
@@ -93,13 +93,13 @@ def _response(controller, arg, config):
         for entry in options[i:i + 2]:
           line += '%-42s' % entry
 
-        output += format(line.rstrip() + '\n', *STANDARD_OUTPUT)
+        output += format(line.rstrip(), *STANDARD_OUTPUT) + '\n'
   elif arg == 'SIGNAL':
     signal_options = config.get('help.signal.options', {})
 
     for signal, summary in signal_options.items():
       output += format('%-15s' % signal, *BOLD_OUTPUT)
-      output += format(' - %s\n' % summary, *STANDARD_OUTPUT)
+      output += format(' - %s' % summary, *STANDARD_OUTPUT) + '\n'
   elif arg == 'SETEVENTS':
     results = controller.get_info('events/names', None)
 
@@ -114,17 +114,17 @@ def _response(controller, arg, config):
         for entry in entries[i:i + 4]:
           line += '%-20s' % entry
 
-        output += format(line.rstrip() + '\n', *STANDARD_OUTPUT)
+        output += format(line.rstrip(), *STANDARD_OUTPUT) + '\n'
   elif arg == 'USEFEATURE':
     results = controller.get_info('features/names', None)
 
     if results:
-      output += format(results + '\n', *STANDARD_OUTPUT)
+      output += format(results, *STANDARD_OUTPUT) + '\n'
   elif arg in ('LOADCONF', 'POSTDESCRIPTOR'):
     # gives a warning that this option isn't yet implemented
-    output += format(msg('msg.multiline_unimplemented_notice') + '\n', *ERROR_OUTPUT)
+    output += format(msg('msg.multiline_unimplemented_notice'), *ERROR_OUTPUT) + '\n'
 
-  return output
+  return output.rstrip()
 
 
 def _general_help():
