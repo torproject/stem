@@ -26,6 +26,8 @@ class TestMicrodescriptor(unittest.TestCase):
     self.assertEquals([], desc.family)
     self.assertEquals(stem.exit_policy.MicroExitPolicy("reject 1-65535"), desc.exit_policy)
     self.assertEquals(None, desc.exit_policy_v6)
+    self.assertEquals(None, desc.identifier_type)
+    self.assertEquals(None, desc.identifier)
     self.assertEquals([], desc.get_unrecognized_lines())
 
   def test_unrecognized_line(self):
@@ -92,3 +94,12 @@ class TestMicrodescriptor(unittest.TestCase):
 
     desc = get_microdescriptor({"p": "accept 80,110,143,443"})
     self.assertEquals(stem.exit_policy.MicroExitPolicy("accept 80,110,143,443"), desc.exit_policy)
+
+  def test_identifier(self):
+    """
+    Basic check for 'id' lines.
+    """
+
+    desc = get_microdescriptor({"id": "rsa1024 Cd47okjCHD83YGzThGBDptXs9Z4"})
+    self.assertEquals('rsa1024', desc.identifier_type)
+    self.assertEquals('Cd47okjCHD83YGzThGBDptXs9Z4', desc.identifier)

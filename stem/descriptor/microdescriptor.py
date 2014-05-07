@@ -164,6 +164,8 @@ class Microdescriptor(Descriptor):
   :var list family: **\*** nicknames or fingerprints of declared family
   :var stem.exit_policy.MicroExitPolicy exit_policy: **\*** relay's exit policy
   :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\*** exit policy for IPv6
+  :var str identifier_type: identity digest key type
+  :var str identifier: base64 encoded identity digest, this is only used for collision prevention (:trac:`11743`)
 
   **\*** attribute is required when we're parsed with validation
   """
@@ -180,6 +182,8 @@ class Microdescriptor(Descriptor):
     self.family = []
     self.exit_policy = stem.exit_policy.MicroExitPolicy("reject 1-65535")
     self.exit_policy_v6 = None
+    self.identifier_type = None
+    self.identifier = None
 
     self._unrecognized_lines = []
 
@@ -266,6 +270,14 @@ class Microdescriptor(Descriptor):
         stem.descriptor.router_status_entry._parse_p_line(self, value, validate)
       elif keyword == "p6":
         self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
+      elif keyword == "id":
+        value_comp = value.split()
+
+        if len(value_comp) >= 2:
+          self.identifier_type = value_comp[0]
+          self.identifier = value_comp[1]
+        elif validate:
+          raise ValueError("'id' lines should contain both the key type and digest: %s" % line)
       else:
         self._unrecognized_lines.append(line)
 

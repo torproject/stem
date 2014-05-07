@@ -55,6 +55,10 @@ The following are only available within Stem's `git repository
   * The :func:`~stem.control.Controller.add_event_listener` method couldn't accept event types that Stem didn't already recognize.
   * The :class:`~stem.exit_policy.ExitPolicy` class couldn't be pickled.
 
+ * **Descriptors**
+
+  * Added microdescriptor's new identity and identity_type attributes (:spec:`22cda72`)
+
  * **Utilities**
 
   * Added :func:`stem.util.connection.port_usage`
