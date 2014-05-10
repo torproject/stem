@@ -8,6 +8,7 @@ features such as tab completion, history, and IRC-style functions (like /help).
 
 __all__ = ['arguments', 'autocomplete', 'commands', 'help', 'msg']
 
+import code
 import os
 import sys
 
@@ -69,17 +70,25 @@ def main():
     sys.exit(1)
 
   with controller:
-    autocompleter = stem.interpretor.autocomplete.Autocompleter(controller)
-    readline.parse_and_bind('tab: complete')
-    readline.set_completer(autocompleter.complete)
-    readline.set_completer_delims('\n')
+    if args.python_prompt:
+      console = code.InteractiveConsole({
+        'controller': controller,
+        'stem': stem,
+        'stem.control': stem.control,
+      })
+      console.interact(msg('msg.python_banner', version = controller.get_info('version')))
+    else:
+      autocompleter = stem.interpretor.autocomplete.Autocompleter(controller)
+      readline.parse_and_bind('tab: complete')
+      readline.set_completer(autocompleter.complete)
+      readline.set_completer_delims('\n')
 
-    interpretor = stem.interpretor.commands.ControlInterpretor(controller)
+      interpretor = stem.interpretor.commands.ControlInterpretor(controller)
 
-    while True:
-      try:
-        user_input = raw_input(PROMPT)
-        print interpretor.run_command(user_input)
-      except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
-        print  # move cursor to the following line
-        break
+      while True:
+        try:
+          user_input = raw_input(PROMPT)
+          print interpretor.run_command(user_input)
+        except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
+          print  # move cursor to the following line
+          break
