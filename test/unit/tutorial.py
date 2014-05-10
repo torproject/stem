@@ -34,10 +34,10 @@ class TestTutorial(unittest.TestCase):
       with Controller.from_port(control_port = 9051) as controller:
         controller.authenticate()  # provide the password here if you set one
 
-        bytes_read = controller.get_info("traffic/read")
-        bytes_written = controller.get_info("traffic/written")
+        bytes_read = controller.get_info('traffic/read')
+        bytes_written = controller.get_info('traffic/written')
 
-        print "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
+        print 'My Tor relay has read %s bytes and written %s.' % (bytes_read, bytes_written)
 
     controller = from_port_mock().__enter__()
     controller.get_info.side_effect = lambda arg: {
@@ -46,7 +46,7 @@ class TestTutorial(unittest.TestCase):
     }[arg]
 
     tutorial_example()
-    self.assertEqual("My Tor relay has read 33406 bytes and written 29649.\n", stdout_mock.getvalue())
+    self.assertEqual('My Tor relay has read 33406 bytes and written 29649.\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO.StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
@@ -58,14 +58,14 @@ class TestTutorial(unittest.TestCase):
 
       try:
         for desc in downloader.get_consensus().run():
-          print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
+          print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
       except Exception as exc:
-        print "Unable to retrieve the consensus: %s" % exc
+        print 'Unable to retrieve the consensus: %s' % exc
 
     downloader_mock().get_consensus().run.return_value = [mocking.get_router_status_entry_v2()]
 
     tutorial_example()
-    self.assertEqual("found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n", stdout_mock.getvalue())
+    self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO.StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
@@ -77,13 +77,13 @@ class TestTutorial(unittest.TestCase):
         controller.authenticate()
 
         for desc in controller.get_network_statuses():
-          print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
+          print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
 
     controller = from_port_mock().__enter__()
     controller.get_network_statuses.return_value = [mocking.get_router_status_entry_v2()]
 
     tutorial_example()
-    self.assertEqual("found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n", stdout_mock.getvalue())
+    self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO.StringIO)
   @patch('%s.open' % __name__, create = True)
@@ -91,19 +91,19 @@ class TestTutorial(unittest.TestCase):
     def tutorial_example():
       from stem.descriptor import parse_file
 
-      for desc in parse_file(open("/home/atagar/.tor/cached-consensus")):
-        print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
+      for desc in parse_file(open('/home/atagar/.tor/cached-consensus')):
+        print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
 
     test_file = io.BytesIO(mocking.get_network_status_document_v3(
       routers = [mocking.get_router_status_entry_v3()],
       content = True,
     ))
 
-    test_file.name = "/home/atagar/.tor/cached-consensus"
+    test_file.name = '/home/atagar/.tor/cached-consensus'
     open_mock.return_value = test_file
 
     tutorial_example()
-    self.assertEqual("found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n", stdout_mock.getvalue())
+    self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO.StringIO)
   @patch('stem.descriptor.reader.DescriptorReader', spec = DescriptorReader)
@@ -112,15 +112,15 @@ class TestTutorial(unittest.TestCase):
     def tutorial_example():
       from stem.descriptor.reader import DescriptorReader
 
-      with DescriptorReader(["/home/atagar/server-descriptors-2013-03.tar"]) as reader:
+      with DescriptorReader(['/home/atagar/server-descriptors-2013-03.tar']) as reader:
         for desc in reader:
-          print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
+          print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
 
     reader = reader_mock().__enter__()
     reader.__iter__.return_value = iter([mocking.get_relay_server_descriptor()])
 
     tutorial_example()
-    self.assertEqual("found relay caerSidi (None)\n", stdout_mock.getvalue())
+    self.assertEqual('found relay caerSidi (None)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO.StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
@@ -141,7 +141,7 @@ class TestTutorial(unittest.TestCase):
             if desc.exit_policy.is_exiting_allowed():
               bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
         except Exception as exc:
-          print "Unable to retrieve the server descriptors: %s" % exc
+          print 'Unable to retrieve the server descriptors: %s' % exc
 
         return bw_to_relay
 
@@ -152,7 +152,7 @@ class TestTutorial(unittest.TestCase):
 
       for bw_value in sorted(bw_to_relay.keys(), reverse = True):
         for nickname in bw_to_relay[bw_value]:
-          print "%i. %s (%s/s)" % (count, nickname, str_tools.get_size_label(bw_value, 2))
+          print '%i. %s (%s/s)' % (count, nickname, str_tools.get_size_label(bw_value, 2))
           count += 1
 
           if count > 15:

@@ -24,19 +24,19 @@ class MapAddressResponse(stem.response.ControlMessage):
 
     if not self.is_ok():
       for code, _, message in self.content():
-        if code == "512":
+        if code == '512':
           raise stem.InvalidRequest(code, message)
-        elif code == "451":
+        elif code == '451':
           raise stem.OperationFailed(code, message)
         else:
-          raise stem.ProtocolError("MAPADDRESS returned unexpected response code: %s", code)
+          raise stem.ProtocolError('MAPADDRESS returned unexpected response code: %s', code)
 
     self.entries = {}
 
     for code, _, message in self.content():
-      if code == "250":
+      if code == '250':
         try:
-          key, value = message.split("=", 1)
+          key, value = message.split('=', 1)
           self.entries[key] = value
         except ValueError:
           raise stem.ProtocolError(None, "MAPADDRESS returned '%s', which isn't a mapping" % message)

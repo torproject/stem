@@ -32,14 +32,14 @@ def _parse_file(tordnsel_file, validate = True, **kwargs):
   """
 
   # skip content prior to the first ExitNode
-  _read_until_keywords("ExitNode", tordnsel_file, skip = True)
+  _read_until_keywords('ExitNode', tordnsel_file, skip = True)
 
   while True:
-    contents = _read_until_keywords("ExitAddress", tordnsel_file)
-    contents += _read_until_keywords("ExitNode", tordnsel_file)
+    contents = _read_until_keywords('ExitAddress', tordnsel_file)
+    contents += _read_until_keywords('ExitNode', tordnsel_file)
 
     if contents:
-      yield TorDNSEL(bytes.join(b"", contents), validate, **kwargs)
+      yield TorDNSEL(bytes.join(b'', contents), validate, **kwargs)
     else:
       break  # done parsing file
 
@@ -76,40 +76,40 @@ class TorDNSEL(Descriptor):
       value, block_content = values[0]
 
       if validate and block_content:
-        raise ValueError("Unexpected block content: %s" % block_content)
+        raise ValueError('Unexpected block content: %s' % block_content)
 
-      if keyword == "ExitNode":
+      if keyword == 'ExitNode':
         if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError("Tor relay fingerprints consist of forty hex digits: %s" % value)
+          raise ValueError('Tor relay fingerprints consist of forty hex digits: %s' % value)
 
         self.fingerprint = value
-      elif keyword == "Published":
+      elif keyword == 'Published':
         try:
-          self.published = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+          self.published = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
         except ValueError:
           if validate:
             raise ValueError("Published time wasn't parsable: %s" % value)
-      elif keyword == "LastStatus":
+      elif keyword == 'LastStatus':
         try:
-          self.last_status = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+          self.last_status = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
         except ValueError:
           if validate:
             raise ValueError("LastStatus time wasn't parsable: %s" % value)
-      elif keyword == "ExitAddress":
+      elif keyword == 'ExitAddress':
         for value, block_content in values:
-          address, date = value.split(" ", 1)
+          address, date = value.split(' ', 1)
 
           if validate:
             if not stem.util.connection.is_valid_ipv4_address(address):
               raise ValueError("ExitAddress isn't a valid IPv4 address: %s" % address)
             elif block_content:
-              raise ValueError("Unexpected block content: %s" % block_content)
+              raise ValueError('Unexpected block content: %s' % block_content)
 
           try:
-            date = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+            date = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
             self.exit_addresses.append((address, date))
           except ValueError:
             if validate:
               raise ValueError("ExitAddress found time wasn't parsable: %s" % value)
       elif validate:
-        raise ValueError("Unrecognized keyword: %s" % keyword)
+        raise ValueError('Unrecognized keyword: %s' % keyword)

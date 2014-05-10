@@ -75,8 +75,8 @@ Connection = collections.namedtuple('Connection', [
   'protocol',
 ])
 
-FULL_IPv4_MASK = "255.255.255.255"
-FULL_IPv6_MASK = "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"
+FULL_IPv4_MASK = '255.255.255.255'
+FULL_IPv6_MASK = 'FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF'
 
 CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
 
@@ -159,17 +159,17 @@ def get_connections(resolver, process_pid = None, process_name = None):
     if LOG_CONNECTION_RESOLUTION:
       log.debug(msg)
 
-  _log("=" * 80)
-  _log("Querying connections for resolver: %s, pid: %s, name: %s" % (resolver, process_pid, process_name))
+  _log('=' * 80)
+  _log('Querying connections for resolver: %s, pid: %s, name: %s' % (resolver, process_pid, process_name))
 
   if isinstance(process_pid, str):
     try:
       process_pid = int(process_pid)
     except ValueError:
-      raise ValueError("Process pid was non-numeric: %s" % process_pid)
+      raise ValueError('Process pid was non-numeric: %s' % process_pid)
 
   if process_pid is None and resolver in (Resolver.PROC, Resolver.BSD_PROCSTAT):
-    raise ValueError("%s resolution requires a pid" % resolver)
+    raise ValueError('%s resolution requires a pid' % resolver)
 
   if resolver == Resolver.PROC:
     return [Connection(*conn) for conn in stem.util.proc.get_connections(process_pid)]
@@ -191,8 +191,8 @@ def get_connections(resolver, process_pid = None, process_name = None):
     name = process_name if process_name else '\S*',
   )
 
-  _log("Resolver regex: %s" % resolver_regex_str)
-  _log("Resolver results:\n%s" % '\n'.join(results))
+  _log('Resolver regex: %s' % resolver_regex_str)
+  _log('Resolver results:\n%s' % '\n'.join(results))
 
   connections = []
   resolver_regex = re.compile(resolver_regex_str)
@@ -212,20 +212,20 @@ def get_connections(resolver, process_pid = None, process_name = None):
         continue  # procstat response for unestablished connections
 
       if not (is_valid_ipv4_address(local_addr) and is_valid_ipv4_address(remote_addr)):
-        _log("Invalid address (%s or %s): %s" % (local_addr, remote_addr, line))
+        _log('Invalid address (%s or %s): %s' % (local_addr, remote_addr, line))
       elif not (is_valid_port(local_port) and is_valid_port(remote_port)):
-        _log("Invalid port (%s or %s): %s" % (local_port, remote_port, line))
+        _log('Invalid port (%s or %s): %s' % (local_port, remote_port, line))
       elif protocol not in ('tcp', 'udp'):
-        _log("Unrecognized protocol (%s): %s" % (protocol, line))
+        _log('Unrecognized protocol (%s): %s' % (protocol, line))
 
       conn = Connection(local_addr, local_port, remote_addr, remote_port, protocol)
       connections.append(conn)
       _log(str(conn))
 
-  _log("%i connections found" % len(connections))
+  _log('%i connections found' % len(connections))
 
   if not connections:
-    raise IOError("No results found using: %s" % resolver_command)
+    raise IOError('No results found using: %s' % resolver_command)
 
   return connections
 
@@ -332,15 +332,15 @@ def is_valid_ipv4_address(address):
 
   # checks if theres four period separated values
 
-  if address.count(".") != 3:
+  if address.count('.') != 3:
     return False
 
   # checks that each value in the octet are decimal values between 0-255
-  for entry in address.split("."):
+  for entry in address.split('.'):
     if not entry.isdigit() or int(entry) < 0 or int(entry) > 255:
       return False
-    elif entry[0] == "0" and len(entry) > 1:
-      return False  # leading zeros, for instance in "1.2.3.001"
+    elif entry[0] == '0' and len(entry) > 1:
+      return False  # leading zeros, for instance in '1.2.3.001'
 
   return True
 
@@ -356,24 +356,24 @@ def is_valid_ipv6_address(address, allow_brackets = False):
   """
 
   if allow_brackets:
-    if address.startswith("[") and address.endswith("]"):
+    if address.startswith('[') and address.endswith(']'):
       address = address[1:-1]
 
   # addresses are made up of eight colon separated groups of four hex digits
   # with leading zeros being optional
   # https://en.wikipedia.org/wiki/IPv6#Address_format
 
-  colon_count = address.count(":")
+  colon_count = address.count(':')
 
   if colon_count > 7:
     return False  # too many groups
-  elif colon_count != 7 and not "::" in address:
+  elif colon_count != 7 and not '::' in address:
     return False  # not enough groups and none are collapsed
-  elif address.count("::") > 1 or ":::" in address:
+  elif address.count('::') > 1 or ':::' in address:
     return False  # multiple groupings of zeros can't be collapsed
 
-  for entry in address.split(":"):
-    if not re.match("^[0-9a-fA-f]{0,4}$", entry):
+  for entry in address.split(':'):
+    if not re.match('^[0-9a-fA-f]{0,4}$', entry):
       return False
 
   return True
@@ -398,8 +398,8 @@ def is_valid_port(entry, allow_zero = False):
   elif isinstance(entry, (bytes, unicode)):
     if not entry.isdigit():
       return False
-    elif entry[0] == "0" and len(entry) > 1:
-      return False  # leading zeros, ex "001"
+    elif entry[0] == '0' and len(entry) > 1:
+      return False  # leading zeros, ex '001'
 
     entry = int(entry)
 
@@ -431,12 +431,12 @@ def is_private_address(address):
 
   # checks for any of the simple wildcard ranges
 
-  if address.startswith("10.") or address.startswith("192.168.") or address.startswith("127."):
+  if address.startswith('10.') or address.startswith('192.168.') or address.startswith('127.'):
     return True
 
   # checks for the 172.16.* - 172.31.* range
 
-  if address.startswith("172."):
+  if address.startswith('172.'):
     second_octet = int(address.split('.')[1])
 
     if second_octet >= 16 and second_octet <= 31:
@@ -452,10 +452,10 @@ def expand_ipv6_address(address):
 
   ::
 
-    >>> expand_ipv6_address("2001:db8::ff00:42:8329")
+    >>> expand_ipv6_address('2001:db8::ff00:42:8329')
     '2001:0db8:0000:0000:0000:ff00:0042:8329'
 
-    >>> expand_ipv6_address("::")
+    >>> expand_ipv6_address('::')
     '0000:0000:0000:0000:0000:0000:0000:0000'
 
   :param str address: IPv6 address to be expanded
@@ -469,17 +469,17 @@ def expand_ipv6_address(address):
   # expands collapsed groupings, there can only be a single '::' in a valid
   # address
   if "::" in address:
-    missing_groups = 7 - address.count(":")
-    address = address.replace("::", "::" + ":" * missing_groups)
+    missing_groups = 7 - address.count(':')
+    address = address.replace('::', '::' + ':' * missing_groups)
 
   # inserts missing zeros
   for index in xrange(8):
     start = index * 5
-    end = address.index(":", start) if index != 7 else len(address)
+    end = address.index(':', start) if index != 7 else len(address)
     missing_zeros = 4 - (end - start)
 
     if missing_zeros > 0:
-      address = address[:start] + "0" * missing_zeros + address[start:]
+      address = address[:start] + '0' * missing_zeros + address[start:]
 
   return address
 
@@ -496,7 +496,7 @@ def get_mask_ipv4(bits):
   """
 
   if bits > 32 or bits < 0:
-    raise ValueError("A mask can only be 0-32 bits, got %i" % bits)
+    raise ValueError('A mask can only be 0-32 bits, got %i' % bits)
   elif bits == 32:
     return FULL_IPv4_MASK
 
@@ -507,7 +507,7 @@ def get_mask_ipv4(bits):
   octets = [mask_bin[8 * i:8 * (i + 1)] for i in xrange(4)]
 
   # converts each octet into its integer value
-  return ".".join([str(int(octet, 2)) for octet in octets])
+  return '.'.join([str(int(octet, 2)) for octet in octets])
 
 
 def get_mask_ipv6(bits):
@@ -523,7 +523,7 @@ def get_mask_ipv6(bits):
   """
 
   if bits > 128 or bits < 0:
-    raise ValueError("A mask can only be 0-128 bits, got %i" % bits)
+    raise ValueError('A mask can only be 0-128 bits, got %i' % bits)
   elif bits == 128:
     return FULL_IPv6_MASK
 
@@ -534,7 +534,7 @@ def get_mask_ipv6(bits):
   groupings = [mask_bin[16 * i:16 * (i + 1)] for i in xrange(8)]
 
   # converts each group into its hex value
-  return ":".join(["%04x" % int(group, 2) for group in groupings]).upper()
+  return ':'.join(['%04x' % int(group, 2) for group in groupings]).upper()
 
 
 def _get_masked_bits(mask):
@@ -554,12 +554,12 @@ def _get_masked_bits(mask):
 
   # converts octets to binary representation
   mask_bin = _get_address_binary(mask)
-  mask_match = re.match("^(1*)(0*)$", mask_bin)
+  mask_match = re.match('^(1*)(0*)$', mask_bin)
 
   if mask_match:
     return 32 - len(mask_match.groups()[1])
   else:
-    raise ValueError("Unable to convert mask to a bit count: %s" % mask)
+    raise ValueError('Unable to convert mask to a bit count: %s' % mask)
 
 
 def _get_binary(value, bits):
@@ -572,7 +572,7 @@ def _get_binary(value, bits):
   """
 
   # http://www.daniweb.com/code/snippet216539.html
-  return "".join([str((value >> y) & 1) for y in range(bits - 1, -1, -1)])
+  return ''.join([str((value >> y) & 1) for y in range(bits - 1, -1, -1)])
 
 
 def _get_address_binary(address):
@@ -585,10 +585,10 @@ def _get_address_binary(address):
   """
 
   if is_valid_ipv4_address(address):
-    return "".join([_get_binary(int(octet), 8) for octet in address.split(".")])
+    return ''.join([_get_binary(int(octet), 8) for octet in address.split('.')])
   elif is_valid_ipv6_address(address):
     address = expand_ipv6_address(address)
-    return "".join([_get_binary(int(grouping, 16), 16) for grouping in address.split(":")])
+    return ''.join([_get_binary(int(grouping, 16), 16) for grouping in address.split(':')])
   else:
     raise ValueError("'%s' is neither an IPv4 or IPv6 address" % address)
 

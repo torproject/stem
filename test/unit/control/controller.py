@@ -39,7 +39,7 @@ class TestControl(unittest.TestCase):
 
     try:
       # Use one version for first check.
-      version_2_1 = "0.2.1.32"
+      version_2_1 = '0.2.1.32'
       version_2_1_object = stem.version.Version(version_2_1)
       get_info_mock.return_value = version_2_1
 
@@ -47,7 +47,7 @@ class TestControl(unittest.TestCase):
       self.assertEqual(version_2_1_object, self.controller.get_version())
 
       # Use a different version for second check.
-      version_2_2 = "0.2.2.39"
+      version_2_2 = '0.2.2.39'
       version_2_2_object = stem.version.Version(version_2_2)
       get_info_mock.return_value = version_2_2
 
@@ -64,15 +64,15 @@ class TestControl(unittest.TestCase):
 
       # Get a default value when the call fails.
       self.assertEqual(
-        "default returned",
-        self.controller.get_version(default = "default returned")
+        'default returned',
+        self.controller.get_version(default = 'default returned')
       )
 
       # No default value, accept the error.
       self.assertRaises(InvalidArguments, self.controller.get_version)
 
       # Give a bad version.  The stem.version.Version ValueError should bubble up.
-      version_A_42 = "0.A.42.spam"
+      version_A_42 = '0.A.42.spam'
       get_info_mock.return_value = version_A_42
       get_info_mock.side_effect = None
       self.assertRaises(ValueError, self.controller.get_version)
@@ -88,13 +88,13 @@ class TestControl(unittest.TestCase):
     """
 
     get_conf_mock.side_effect = lambda param, **kwargs: {
-      "ExitPolicyRejectPrivate": "1",
-      "ExitPolicy": ["accept *:80,   accept *:443", "accept 43.5.5.5,reject *:22"],
+      'ExitPolicyRejectPrivate': '1',
+      'ExitPolicy': ['accept *:80,   accept *:443', 'accept 43.5.5.5,reject *:22'],
     }[param]
 
     get_info_mock.side_effect = lambda param, default = None: {
-      "address": "123.45.67.89",
-      "exit-policy/default": "reject *:25,reject *:119,reject *:135-139,reject *:445,reject *:563,reject *:1214,reject *:4661-4666,reject *:6346-6429,reject *:6699,reject *:6881-6999,accept *:*",
+      'address': '123.45.67.89',
+      'exit-policy/default': 'reject *:25,reject *:119,reject *:135-139,reject *:445,reject *:563,reject *:1214,reject *:4661-4666,reject *:6346-6429,reject *:6699,reject *:6881-6999,accept *:*',
     }[param]
 
     expected = ExitPolicy(
@@ -137,8 +137,8 @@ class TestControl(unittest.TestCase):
     get_info_mock.side_effect = InvalidArguments
 
     get_conf_mock.side_effect = lambda param, **kwargs: {
-      "ControlPort": "9050",
-      "ControlListenAddress": ["127.0.0.1"],
+      'ControlPort': '9050',
+      'ControlListenAddress': ['127.0.0.1'],
     }[param]
 
     self.assertEqual([('127.0.0.1', 9050)], self.controller.get_listeners(Listener.CONTROL))
@@ -147,8 +147,8 @@ class TestControl(unittest.TestCase):
     # non-local addresss
 
     get_conf_mock.side_effect = lambda param, **kwargs: {
-      "ControlPort": "9050",
-      "ControlListenAddress": ["27.4.4.1"],
+      'ControlPort': '9050',
+      'ControlListenAddress': ['27.4.4.1'],
     }[param]
 
     self.assertEqual([('27.4.4.1', 9050)], self.controller.get_listeners(Listener.CONTROL))
@@ -187,8 +187,8 @@ class TestControl(unittest.TestCase):
     get_info_mock.side_effect = InvalidArguments
 
     get_conf_mock.side_effect = lambda param, **kwargs: {
-      "SocksPort": "9050",
-      "SocksListenAddress": ["127.0.0.1"],
+      'SocksPort': '9050',
+      'SocksListenAddress': ['127.0.0.1'],
     }[param]
 
     self.assertEqual([('127.0.0.1', 9050)], self.controller.get_socks_listeners())
@@ -196,8 +196,8 @@ class TestControl(unittest.TestCase):
     # Again, an old tor, but SocksListenAddress overrides the port number.
 
     get_conf_mock.side_effect = lambda param, **kwargs: {
-      "SocksPort": "9050",
-      "SocksListenAddress": ["127.0.0.1:1112"],
+      'SocksPort': '9050',
+      'SocksListenAddress': ['127.0.0.1:1112'],
     }[param]
 
     self.assertEqual([('127.0.0.1', 1112)], self.controller.get_socks_listeners())
@@ -205,8 +205,8 @@ class TestControl(unittest.TestCase):
     # Again, an old tor, but multiple listeners
 
     get_conf_mock.side_effect = lambda param, **kwargs: {
-      "SocksPort": "9050",
-      "SocksListenAddress": ["127.0.0.1:1112", "127.0.0.1:1114"],
+      'SocksPort': '9050',
+      'SocksListenAddress': ['127.0.0.1:1112', '127.0.0.1:1114'],
     }[param]
 
     self.assertEqual([('127.0.0.1', 1112), ('127.0.0.1', 1114)], self.controller.get_socks_listeners())
@@ -214,8 +214,8 @@ class TestControl(unittest.TestCase):
     # Again, an old tor, but no SOCKS listeners
 
     get_conf_mock.side_effect = lambda param, **kwargs: {
-      "SocksPort": "0",
-      "SocksListenAddress": [],
+      'SocksPort': '0',
+      'SocksListenAddress': [],
     }[param]
 
     self.assertEqual([], self.controller.get_socks_listeners())
@@ -223,22 +223,22 @@ class TestControl(unittest.TestCase):
     # Where tor provides invalid ports or addresses
 
     get_conf_mock.side_effect = lambda param, **kwargs: {
-      "SocksPort": "blarg",
-      "SocksListenAddress": ["127.0.0.1"],
+      'SocksPort': 'blarg',
+      'SocksListenAddress': ['127.0.0.1'],
     }[param]
 
     self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
 
     get_conf_mock.side_effect = lambda param, **kwargs: {
-      "SocksPort": "0",
-      "SocksListenAddress": ["127.0.0.1:abc"],
+      'SocksPort': '0',
+      'SocksListenAddress': ['127.0.0.1:abc'],
     }[param]
 
     self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
 
     get_conf_mock.side_effect = lambda param, **kwargs: {
-      "SocksPort": "40",
-      "SocksListenAddress": ["500.0.0.1"],
+      'SocksPort': '40',
+      'SocksListenAddress': ['500.0.0.1'],
     }[param]
 
     self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
@@ -302,8 +302,8 @@ class TestControl(unittest.TestCase):
     # get a default value when the call fails
 
     self.assertEqual(
-      "default returned",
-      self.controller.get_protocolinfo(default = "default returned")
+      'default returned',
+      self.controller.get_protocolinfo(default = 'default returned')
     )
 
     # no default value, accept the error
@@ -387,9 +387,9 @@ class TestControl(unittest.TestCase):
 
     # build a single router status entry
 
-    nickname = "Beaver"
-    fingerprint = "/96bKo4soysolMgKn5Hex2nyFSY"
-    desc = "r %s %s u5lTXJKGsLKufRLnSyVqT7TdGYw 2012-12-30 22:02:49 77.223.43.54 9001 0\ns Fast Named Running Stable Valid\nw Bandwidth=75" % (nickname, fingerprint)
+    nickname = 'Beaver'
+    fingerprint = '/96bKo4soysolMgKn5Hex2nyFSY'
+    desc = 'r %s %s u5lTXJKGsLKufRLnSyVqT7TdGYw 2012-12-30 22:02:49 77.223.43.54 9001 0\ns Fast Named Running Stable Valid\nw Bandwidth=75' % (nickname, fingerprint)
     router = stem.descriptor.router_status_entry.RouterStatusEntryV3(desc)
 
     # always return the same router status entry
@@ -417,8 +417,8 @@ class TestControl(unittest.TestCase):
     # get a default value when the call fails
 
     self.assertEqual(
-      "default returned",
-      self.controller.get_network_status(nickname, default = "default returned")
+      'default returned',
+      self.controller.get_network_status(nickname, default = 'default returned')
     )
 
     # no default value, accept the error
@@ -456,12 +456,12 @@ class TestControl(unittest.TestCase):
 
     # get a list of fake, but good looking, streams
     valid_streams = (
-      ("1", "NEW", "4", "10.10.10.1:80"),
-      ("2", "SUCCEEDED", "4", "10.10.10.1:80"),
-      ("3", "SUCCEEDED", "4", "10.10.10.1:80")
+      ('1', 'NEW', '4', '10.10.10.1:80'),
+      ('2', 'SUCCEEDED', '4', '10.10.10.1:80'),
+      ('3', 'SUCCEEDED', '4', '10.10.10.1:80')
     )
 
-    response = "".join(["%s\r\n" % " ".join(entry) for entry in valid_streams])
+    response = ''.join(['%s\r\n' % ' '.join(entry) for entry in valid_streams])
 
     with patch('stem.control.Controller.get_info', Mock(return_value = response)):
       streams = self.controller.get_streams()
@@ -481,7 +481,7 @@ class TestControl(unittest.TestCase):
     # Response when the stream is in a state where it can't be attached (for
     # instance, it's already open).
 
-    response = stem.response.ControlMessage.from_str("555 Connection is not managed by controller.\r\n")
+    response = stem.response.ControlMessage.from_str('555 Connection is not managed by controller.\r\n')
 
     with patch('stem.control.Controller.msg', Mock(return_value = response)):
       self.assertRaises(UnsatisfiableRequest, self.controller.attach_stream, 'stream_id', 'circ_id')

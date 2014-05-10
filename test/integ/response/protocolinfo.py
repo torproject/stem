@@ -31,9 +31,9 @@ class TestProtocolInfo(unittest.TestCase):
       return
 
     control_socket = test.runner.get_runner().get_tor_socket(False)
-    control_socket.send("PROTOCOLINFO 1")
+    control_socket.send('PROTOCOLINFO 1')
     protocolinfo_response = control_socket.recv()
-    stem.response.convert("PROTOCOLINFO", protocolinfo_response)
+    stem.response.convert('PROTOCOLINFO', protocolinfo_response)
     control_socket.close()
 
     # according to the control spec the following _could_ differ or be
@@ -64,17 +64,17 @@ class TestProtocolInfo(unittest.TestCase):
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
       lookup_prefixes = (
         stem.util.system.GET_PID_BY_PORT_NETSTAT,
-        stem.util.system.GET_PID_BY_PORT_SOCKSTAT % "",
+        stem.util.system.GET_PID_BY_PORT_SOCKSTAT % '',
         stem.util.system.GET_PID_BY_PORT_LSOF,
-        stem.util.system.GET_CWD_PWDX % "",
-        "lsof -a -p ")
+        stem.util.system.GET_CWD_PWDX % '',
+        'lsof -a -p ')
 
       control_socket = stem.socket.ControlPort(port = test.runner.CONTROL_PORT)
     else:
       lookup_prefixes = (
-        stem.util.system.GET_PID_BY_FILE_LSOF % "",
-        stem.util.system.GET_CWD_PWDX % "",
-        "lsof -a -p ")
+        stem.util.system.GET_PID_BY_FILE_LSOF % '',
+        stem.util.system.GET_CWD_PWDX % '',
+        'lsof -a -p ')
 
       control_socket = stem.socket.ControlSocketFile(test.runner.CONTROL_SOCKET_PATH)
 
@@ -116,10 +116,10 @@ class TestProtocolInfo(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_socket(False) as control_socket:
       # makes a couple protocolinfo queries outside of get_protocolinfo first
-      control_socket.send("PROTOCOLINFO 1")
+      control_socket.send('PROTOCOLINFO 1')
       control_socket.recv()
 
-      control_socket.send("PROTOCOLINFO 1")
+      control_socket.send('PROTOCOLINFO 1')
       control_socket.recv()
 
       protocolinfo_response = stem.connection.get_protocolinfo(control_socket)

@@ -11,7 +11,7 @@ import stem.util.str_tools
 
 from test import mocking
 
-EMPTY_RESPONSE = "250 OK"
+EMPTY_RESPONSE = '250 OK'
 
 SINGLE_RESPONSE = """\
 250-version=0.2.3.11-alpha-dev
@@ -58,7 +58,7 @@ class TestGetInfoResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(EMPTY_RESPONSE)
-    stem.response.convert("GETINFO", control_message)
+    stem.response.convert('GETINFO', control_message)
 
     # now this should be a GetInfoResponse (ControlMessage subclass)
     self.assertTrue(isinstance(control_message, stem.response.ControlMessage))
@@ -72,8 +72,8 @@ class TestGetInfoResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(SINGLE_RESPONSE)
-    stem.response.convert("GETINFO", control_message)
-    self.assertEqual({"version": b"0.2.3.11-alpha-dev"}, control_message.entries)
+    stem.response.convert('GETINFO', control_message)
+    self.assertEqual({'version': b'0.2.3.11-alpha-dev'}, control_message.entries)
 
   def test_batch_response(self):
     """
@@ -81,12 +81,12 @@ class TestGetInfoResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(BATCH_RESPONSE)
-    stem.response.convert("GETINFO", control_message)
+    stem.response.convert('GETINFO', control_message)
 
     expected = {
-      "version": b"0.2.3.11-alpha-dev",
-      "address": b"67.137.76.214",
-      "fingerprint": b"5FDE0422045DF0E1879A3738D09099EB4A0C5BA0",
+      'version': b'0.2.3.11-alpha-dev',
+      'address': b'67.137.76.214',
+      'fingerprint': b'5FDE0422045DF0E1879A3738D09099EB4A0C5BA0',
     }
 
     self.assertEqual(expected, control_message.entries)
@@ -98,11 +98,11 @@ class TestGetInfoResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(MULTILINE_RESPONSE)
-    stem.response.convert("GETINFO", control_message)
+    stem.response.convert('GETINFO', control_message)
 
     expected = {
-      "version": b"0.2.3.11-alpha-dev (git-ef0bc7f8f26a917c)",
-      "config-text": b"\n".join(stem.util.str_tools._to_bytes(MULTILINE_RESPONSE).splitlines()[2:8]),
+      'version': b'0.2.3.11-alpha-dev (git-ef0bc7f8f26a917c)',
+      'config-text': b'\n'.join(stem.util.str_tools._to_bytes(MULTILINE_RESPONSE).splitlines()[2:8]),
     }
 
     self.assertEqual(expected, control_message.entries)
@@ -114,7 +114,7 @@ class TestGetInfoResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(NON_KEY_VALUE_ENTRY)
-    self.assertRaises(stem.ProtocolError, stem.response.convert, "GETINFO", control_message)
+    self.assertRaises(stem.ProtocolError, stem.response.convert, 'GETINFO', control_message)
 
   def test_unrecognized_key_response(self):
     """
@@ -122,12 +122,12 @@ class TestGetInfoResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(UNRECOGNIZED_KEY_ENTRY)
-    self.assertRaises(stem.InvalidArguments, stem.response.convert, "GETINFO", control_message)
+    self.assertRaises(stem.InvalidArguments, stem.response.convert, 'GETINFO', control_message)
 
     try:
-      stem.response.convert("GETINFO", control_message)
+      stem.response.convert('GETINFO', control_message)
     except stem.InvalidArguments as exc:
-      self.assertEqual(exc.arguments, ["blackhole"])
+      self.assertEqual(exc.arguments, ['blackhole'])
 
   def test_invalid_multiline_content(self):
     """
@@ -137,4 +137,4 @@ class TestGetInfoResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(MISSING_MULTILINE_NEWLINE)
-    self.assertRaises(stem.ProtocolError, stem.response.convert, "GETINFO", control_message)
+    self.assertRaises(stem.ProtocolError, stem.response.convert, 'GETINFO', control_message)

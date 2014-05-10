@@ -34,7 +34,7 @@ class TestProcess(unittest.TestCase):
     Exercises launch_tor_with_config.
     """
 
-    if test.runner.only_run_once(self, "test_launch_tor_with_config"):
+    if test.runner.only_run_once(self, 'test_launch_tor_with_config'):
       return
 
     # Launch tor without a torrc, but with a control port. Confirms that this
@@ -57,9 +57,9 @@ class TestProcess(unittest.TestCase):
       stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
 
       # exercises the socket
-      control_socket.send("GETCONF ControlPort")
+      control_socket.send('GETCONF ControlPort')
       getconf_response = control_socket.recv()
-      self.assertEquals("ControlPort=2778", str(getconf_response))
+      self.assertEquals('ControlPort=2778', str(getconf_response))
     finally:
       if control_socket:
         control_socket.close()
@@ -72,7 +72,7 @@ class TestProcess(unittest.TestCase):
     Runs launch_tor where it times out before completing.
     """
 
-    if test.runner.only_run_once(self, "test_launch_tor_with_timeout"):
+    if test.runner.only_run_once(self, 'test_launch_tor_with_timeout'):
       return
 
     runner = test.runner.get_runner()
@@ -82,7 +82,7 @@ class TestProcess(unittest.TestCase):
     runtime = time.time() - start_time
 
     if not (runtime > 2 and runtime < 3):
-      self.fail("Test should have taken 2-3 seconds, took %i instead" % runtime)
+      self.fail('Test should have taken 2-3 seconds, took %i instead' % runtime)
 
   @patch('os.getpid')
   def test_take_ownership_via_pid(self, getpid_mock):
@@ -91,10 +91,10 @@ class TestProcess(unittest.TestCase):
     test this we spawn a process and trick tor into thinking that it is us.
     """
 
-    if not stem.util.system.is_available("sleep"):
+    if not stem.util.system.is_available('sleep'):
       test.runner.skip(self, "('sleep' command is unavailable)")
       return
-    elif test.runner.only_run_once(self, "test_take_ownership_via_pid"):
+    elif test.runner.only_run_once(self, 'test_take_ownership_via_pid'):
       return
     elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP):
       return
@@ -135,7 +135,7 @@ class TestProcess(unittest.TestCase):
     connects, then disconnects..
     """
 
-    if test.runner.only_run_once(self, "test_take_ownership_via_controller"):
+    if test.runner.only_run_once(self, 'test_take_ownership_via_controller'):
       return
     elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP):
       return

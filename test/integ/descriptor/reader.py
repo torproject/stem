@@ -22,13 +22,13 @@ BASIC_LISTING = """
 """
 
 my_dir = os.path.dirname(__file__)
-DESCRIPTOR_TEST_DATA = os.path.join(my_dir, "data")
+DESCRIPTOR_TEST_DATA = os.path.join(my_dir, 'data')
 
 TAR_DESCRIPTORS = None
 
 
 def _get_processed_files_path():
-  return test.runner.get_runner().get_test_dir("descriptor_processed_files")
+  return test.runner.get_runner().get_test_dir('descriptor_processed_files')
 
 
 def _make_processed_files_listing(contents):
@@ -39,7 +39,7 @@ def _make_processed_files_listing(contents):
 
   test_listing_path = _get_processed_files_path()
 
-  test_listing_file = open(test_listing_path, "w")
+  test_listing_file = open(test_listing_path, 'w')
   test_listing_file.write(contents)
   test_listing_file.close()
 
@@ -50,7 +50,7 @@ def _get_raw_tar_descriptors():
   global TAR_DESCRIPTORS
 
   if not TAR_DESCRIPTORS:
-    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar")
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, 'descriptor_archive.tar')
     raw_descriptors = []
 
     # TODO: revert to using the 'with' keyword for this when dropping python
@@ -65,7 +65,7 @@ def _get_raw_tar_descriptors():
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
           entry.readline()  # strip header
-          raw_descriptors.append(entry.read().decode("utf-8", "replace"))
+          raw_descriptors.append(entry.read().decode('utf-8', 'replace'))
           entry.close()
     finally:
       if tar_file:
@@ -101,9 +101,9 @@ class TestDescriptorReader(unittest.TestCase):
     loaded_listing = stem.descriptor.reader.load_processed_files(test_listing_path)
 
     expected_listing = {
-      "/tmp": 123,
-      "/bin/grep": 4567,
-      "/file with spaces/and \\ stuff": 890,
+      '/tmp': 123,
+      '/bin/grep': 4567,
+      '/file with spaces/and \\ stuff': 890,
     }
 
     self.assertEquals(expected_listing, loaded_listing)
@@ -113,7 +113,7 @@ class TestDescriptorReader(unittest.TestCase):
     Tests the load_processed_files() function with a file that doesn't exist.
     """
 
-    self.assertRaises(IOError, stem.descriptor.reader.load_processed_files, "/non-existant/path")
+    self.assertRaises(IOError, stem.descriptor.reader.load_processed_files, '/non-existant/path')
 
   def test_load_processed_files_permissions(self):
     """
@@ -124,7 +124,7 @@ class TestDescriptorReader(unittest.TestCase):
     # test relies on being unable to read a file
 
     if getpass.getuser() == 'root':
-      test.runner.skip(self, "(running as root)")
+      test.runner.skip(self, '(running as root)')
       return
 
     # Skip the test on windows, since you can only set the file's
@@ -132,7 +132,7 @@ class TestDescriptorReader(unittest.TestCase):
     # http://docs.python.org/library/os.html#os.chmod
 
     if system.is_windows():
-      test.runner.skip(self, "(chmod not functional)")
+      test.runner.skip(self, '(chmod not functional)')
 
     test_listing_path = _make_processed_files_listing(BASIC_LISTING)
     os.chmod(test_listing_path, 0077)  # remove read permissions
@@ -144,9 +144,9 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     initial_listing = {
-      "/tmp": 123,
-      "/bin/grep": 4567,
-      "/file with spaces/and \\ stuff": 890,
+      '/tmp': 123,
+      '/bin/grep': 4567,
+      '/file with spaces/and \\ stuff': 890,
     }
 
     # saves the initial_listing to a file then reloads it
@@ -161,18 +161,18 @@ class TestDescriptorReader(unittest.TestCase):
     Tests the save_processed_files() function with malformed data.
     """
 
-    missing_filename = {"": 123}
-    relative_filename = {"foobar": 123}
-    string_timestamp = {"/tmp": "123a"}
+    missing_filename = {'': 123}
+    relative_filename = {'foobar': 123}
+    string_timestamp = {'/tmp': '123a'}
 
     for listing in (missing_filename, relative_filename, string_timestamp):
-      self.assertRaises(TypeError, stem.descriptor.reader.save_processed_files, "/tmp/foo", listing)
+      self.assertRaises(TypeError, stem.descriptor.reader.save_processed_files, '/tmp/foo', listing)
 
     # Though our attempts to save the processed files fail we'll write an empty
     # file. Cleaning it up.
 
     try:
-      os.remove("/tmp/foo")
+      os.remove('/tmp/foo')
     except:
       pass
 
@@ -187,12 +187,14 @@ class TestDescriptorReader(unittest.TestCase):
 
     descriptor_entries = []
 
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, 'example_descriptor')
+
     with open(descriptor_path) as descriptor_file:
       descriptor_file.readline()  # strip header
       descriptor_entries.append(descriptor_file.read())
 
     # running this test multiple times to flush out concurrency issues
+
     for _ in xrange(15):
       remaining_entries = list(descriptor_entries)
 
@@ -215,7 +217,7 @@ class TestDescriptorReader(unittest.TestCase):
     making sure that it can be used repeatedly.
     """
 
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, 'example_descriptor')
     reader = stem.descriptor.reader.DescriptorReader(descriptor_path)
 
     with reader:
@@ -255,7 +257,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     persistence_path = _get_processed_files_path()
-    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+    descriptor_path = os.path.join(DESCRIPTOR_TEST_DATA, 'example_descriptor')
 
     # First run where the persistence_path doesn't yet exist. This just tests
     # the saving functionality.
@@ -287,12 +289,12 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     expected_archive_paths = (
-      "descriptor_archive/0/2/02c311d3d789f3f55c0880b5c85f3c196343552c",
-      "descriptor_archive/1/b/1bb798cae15e21479db0bc700767eee4733e9d4a",
-      "descriptor_archive/1/b/1ef75fef564180d8b3f72c6f8635ff0cd855f92c",
+      'descriptor_archive/0/2/02c311d3d789f3f55c0880b5c85f3c196343552c',
+      'descriptor_archive/1/b/1bb798cae15e21479db0bc700767eee4733e9d4a',
+      'descriptor_archive/1/b/1ef75fef564180d8b3f72c6f8635ff0cd855f92c',
     )
 
-    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar")
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, 'descriptor_archive.tar')
 
     with stem.descriptor.reader.DescriptorReader(test_path) as reader:
       for desc in reader:
@@ -305,7 +307,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     expected_results = _get_raw_tar_descriptors()
-    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar")
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, 'descriptor_archive.tar')
 
     with stem.descriptor.reader.DescriptorReader(test_path) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
@@ -317,7 +319,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     expected_results = _get_raw_tar_descriptors()
-    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar.gz")
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, 'descriptor_archive.tar.gz')
 
     with stem.descriptor.reader.DescriptorReader(test_path) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
@@ -329,7 +331,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     expected_results = _get_raw_tar_descriptors()
-    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "descriptor_archive.tar.bz2")
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, 'descriptor_archive.tar.bz2')
 
     with stem.descriptor.reader.DescriptorReader(test_path) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
@@ -344,10 +346,10 @@ class TestDescriptorReader(unittest.TestCase):
     # Skip on windows since SIGALRM is unavailable
 
     if system.is_windows():
-      test.runner.skip(self, "(SIGALRM unavailable)")
+      test.runner.skip(self, '(SIGALRM unavailable)')
 
     is_test_running = True
-    reader = stem.descriptor.reader.DescriptorReader("/usr")
+    reader = stem.descriptor.reader.DescriptorReader('/usr')
 
     # Fails the test after a couple seconds if we don't finish successfully.
     # Depending on what we're blocked on this might not work when the test
@@ -396,24 +398,24 @@ class TestDescriptorReader(unittest.TestCase):
     reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA)
     reader.register_skip_listener(skip_listener.listener)
 
-    expected_skip_files = ("riddle", "tiny.png", "vote", "new_metrics_type")
+    expected_skip_files = ('riddle', 'tiny.png', 'vote', 'new_metrics_type')
 
     with reader:
       list(reader)  # iterates over all of the descriptors
 
     # strip anything with a .swp suffix (vim tmp files)
 
-    skip_listener.results = [(path, exc) for (path, exc) in skip_listener.results if not path.endswith(".swp")]
+    skip_listener.results = [(path, exc) for (path, exc) in skip_listener.results if not path.endswith('.swp')]
 
     if len(skip_listener.results) != len(expected_skip_files):
-      expected_label = ",\n  ".join(expected_skip_files)
-      results_label = ",\n  ".join(["%s (%s)" % (path, exc) for (path, exc) in skip_listener.results])
+      expected_label = ',\n  '.join(expected_skip_files)
+      results_label = ',\n  '.join(['%s (%s)' % (path, exc) for (path, exc) in skip_listener.results])
 
-      self.fail("Skipped files that we should have been able to parse.\n\nExpected:\n  %s\n\nResult:\n  %s" % (expected_label, results_label))
+      self.fail('Skipped files that we should have been able to parse.\n\nExpected:\n  %s\n\nResult:\n  %s' % (expected_label, results_label))
 
     for skip_path, skip_exception in skip_listener.results:
       if not os.path.basename(skip_path) in expected_skip_files:
-        self.fail("Unexpected non-descriptor content: %s" % skip_path)
+        self.fail('Unexpected non-descriptor content: %s' % skip_path)
 
       self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
 
@@ -425,7 +427,8 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     # path that we want the DescriptorReader to skip
-    test_path = os.path.join(DESCRIPTOR_TEST_DATA, "example_descriptor")
+
+    test_path = os.path.join(DESCRIPTOR_TEST_DATA, 'example_descriptor')
     initial_processed_files = {test_path: sys.maxint}
 
     skip_listener = SkipListener()
@@ -453,11 +456,11 @@ class TestDescriptorReader(unittest.TestCase):
     # types are solely based on file extensions so making something that looks
     # like an png image
 
-    test_path = test.runner.get_runner().get_test_dir("test.png")
+    test_path = test.runner.get_runner().get_test_dir('test.png')
 
     try:
-      test_file = open(test_path, "w")
-      test_file.write("test data for test_skip_listener_unrecognized_type()")
+      test_file = open(test_path, 'w')
+      test_file.write('test data for test_skip_listener_unrecognized_type()')
       test_file.close()
 
       skip_listener = SkipListener()
@@ -472,7 +475,7 @@ class TestDescriptorReader(unittest.TestCase):
       skipped_path, skip_exception = skip_listener.results[0]
       self.assertEqual(test_path, skipped_path)
       self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.UnrecognizedType))
-      self.assertTrue(skip_exception.mime_type in (("image/png", None), ("image/x-png", None)))
+      self.assertTrue(skip_exception.mime_type in (('image/png', None), ('image/x-png', None)))
     finally:
       if os.path.exists(test_path):
         os.remove(test_path)
@@ -485,17 +488,17 @@ class TestDescriptorReader(unittest.TestCase):
     # test relies on being unable to read a file
 
     if getpass.getuser() == 'root':
-      test.runner.skip(self, "(running as root)")
+      test.runner.skip(self, '(running as root)')
       return
     elif system.is_windows():
-      test.runner.skip(self, "(chmod not functional)")
+      test.runner.skip(self, '(chmod not functional)')
       return
 
-    test_path = test.runner.get_runner().get_test_dir("secret_file")
+    test_path = test.runner.get_runner().get_test_dir('secret_file')
 
     try:
-      test_file = open(test_path, "w")
-      test_file.write("test data for test_skip_listener_unrecognized_type()")
+      test_file = open(test_path, 'w')
+      test_file.write('test data for test_skip_listener_unrecognized_type()')
       test_file.close()
 
       os.chmod(test_path, 0077)  # remove read permissions
@@ -522,7 +525,7 @@ class TestDescriptorReader(unittest.TestCase):
     Listens for a file that's skipped because the file doesn't exist.
     """
 
-    test_path = "/non-existant/path"
+    test_path = '/non-existant/path'
 
     skip_listener = SkipListener()
     reader = stem.descriptor.reader.DescriptorReader(test_path)
@@ -542,7 +545,7 @@ class TestDescriptorReader(unittest.TestCase):
     Parses a file that has a valid metrics header, but an unrecognized type.
     """
 
-    test_path = test.integ.descriptor.get_resource("new_metrics_type")
+    test_path = test.integ.descriptor.get_resource('new_metrics_type')
 
     skip_listener = SkipListener()
     reader = stem.descriptor.reader.DescriptorReader(test_path)

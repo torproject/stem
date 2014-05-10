@@ -8,7 +8,7 @@ constructed as simple type listings...
 ::
 
   >>> from stem.util import enum
-  >>> insects = enum.Enum("ANT", "WASP", "LADYBUG", "FIREFLY")
+  >>> insects = enum.Enum('ANT', 'WASP', 'LADYBUG', 'FIREFLY')
   >>> insects.ANT
   'Ant'
   >>> tuple(insects)
@@ -19,7 +19,7 @@ constructed as simple type listings...
 ::
 
   >>> from stem.util import enum
-  >>> pets = enum.Enum(("DOG", "Skippy"), "CAT", ("FISH", "Nemo"))
+  >>> pets = enum.Enum(('DOG', 'Skippy'), 'CAT', ('FISH', 'Nemo'))
   >>> pets.DOG
   'Skippy'
   >>> pets.CAT
@@ -52,7 +52,7 @@ def UppercaseEnum(*args):
   ::
 
     >>> from stem.util import enum
-    >>> runlevels = enum.UppercaseEnum("DEBUG", "INFO", "NOTICE", "WARN", "ERROR")
+    >>> runlevels = enum.UppercaseEnum('DEBUG', 'INFO', 'NOTICE', 'WARN', 'ERROR')
     >>> runlevels.DEBUG
     'DEBUG'
 
@@ -79,7 +79,7 @@ class Enum(object):
       elif isinstance(entry, tuple) and len(entry) == 2:
         key, val = entry
       else:
-        raise ValueError("Unrecognized input: %s" % args)
+        raise ValueError('Unrecognized input: %s' % args)
 
       keys.append(key)
       values.append(val)
@@ -122,7 +122,7 @@ class Enum(object):
     """
 
     if not value in self._values:
-      raise ValueError("No such enumeration exists: %s (options: %s)" % (value, ", ".join(self._values)))
+      raise ValueError('No such enumeration exists: %s (options: %s)' % (value, ', '.join(self._values)))
 
     next_index = (self._values.index(value) + 1) % len(self._values)
     return self._values[next_index]
@@ -139,7 +139,7 @@ class Enum(object):
     """
 
     if not value in self._values:
-      raise ValueError("No such enumeration exists: %s (options: %s)" % (value, ", ".join(self._values)))
+      raise ValueError('No such enumeration exists: %s (options: %s)' % (value, ', '.join(self._values)))
 
     prev_index = (self._values.index(value) - 1) % len(self._values)
     return self._values[prev_index]
@@ -158,7 +158,7 @@ class Enum(object):
     if item in vars(self):
       return getattr(self, item)
     else:
-      keys = ", ".join(self.keys())
+      keys = ', '.join(self.keys())
       raise ValueError("'%s' isn't among our enumeration keys, which includes: %s" % (item, keys))
 
   def __iter__(self):

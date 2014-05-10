@@ -8,18 +8,18 @@ exiting to a destination is permissible or not. For instance...
 ::
 
   >>> from stem.exit_policy import ExitPolicy, MicroExitPolicy
-  >>> policy = ExitPolicy("accept *:80", "accept *:443", "reject *:*")
+  >>> policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
   >>> print policy
   accept *:80, accept *:443, reject *:*
   >>> print policy.summary()
   accept 80, 443
-  >>> policy.can_exit_to("75.119.206.243", 80)
+  >>> policy.can_exit_to('75.119.206.243', 80)
   True
 
-  >>> policy = MicroExitPolicy("accept 80,443")
+  >>> policy = MicroExitPolicy('accept 80,443')
   >>> print policy
   accept 80,443
-  >>> policy.can_exit_to("75.119.206.243", 80)
+  >>> policy.can_exit_to('75.119.206.243', 80)
   True
 
 ::
@@ -69,21 +69,21 @@ try:
 except ImportError:
   from stem.util.lru_cache import lru_cache
 
-AddressType = stem.util.enum.Enum(("WILDCARD", "Wildcard"), ("IPv4", "IPv4"), ("IPv6", "IPv6"))
+AddressType = stem.util.enum.Enum(('WILDCARD', 'Wildcard'), ('IPv4', 'IPv4'), ('IPv6', 'IPv6'))
 
 # Addresses aliased by the 'private' policy. From the tor man page...
 #
 # To specify all internal and link-local networks (including 0.0.0.0/8,
 # 169.254.0.0/16, 127.0.0.0/8, 192.168.0.0/16, 10.0.0.0/8, and 172.16.0.0/12),
-# you can use the "private" alias instead of an address.
+# you can use the 'private' alias instead of an address.
 
 PRIVATE_ADDRESSES = (
-  "0.0.0.0/8",
-  "169.254.0.0/16",
-  "127.0.0.0/8",
-  "192.168.0.0/16",
-  "10.0.0.0/8",
-  "172.16.0.0/12",
+  '0.0.0.0/8',
+  '169.254.0.0/16',
+  '127.0.0.0/8',
+  '192.168.0.0/16',
+  '10.0.0.0/8',
+  '172.16.0.0/12',
 )
 
 
@@ -148,7 +148,7 @@ class ExitPolicy(object):
     # sanity check the types
     for rule in rules:
       if not isinstance(rule, (bytes, unicode, ExitPolicyRule)):
-        raise TypeError("Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)" % (type(rule), rules))
+        raise TypeError('Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)' % (type(rule), rules))
 
     # Unparsed representation of the rules we were constructed with. Our
     # _get_rules() method consumes this to provide ExitPolicyRule instances.
@@ -282,7 +282,7 @@ class ExitPolicy(object):
           temp_range.append(port)
         else:
           if len(temp_range) > 1:
-            display_ranges.append("%i-%i" % (temp_range[0], temp_range[-1]))
+            display_ranges.append('%i-%i' % (temp_range[0], temp_range[-1]))
           else:
             display_ranges.append(str(temp_range[0]))
 
@@ -290,12 +290,12 @@ class ExitPolicy(object):
     else:
       # everything for the inverse
       is_whitelist = not is_whitelist
-      display_ranges = ["1-65535"]
+      display_ranges = ['1-65535']
 
     # constructs the summary string
-    label_prefix = "accept " if is_whitelist else "reject "
+    label_prefix = 'accept ' if is_whitelist else 'reject '
 
-    return (label_prefix + ", ".join(display_ranges)).strip()
+    return (label_prefix + ', '.join(display_ranges)).strip()
 
   def _get_rules(self):
     if self._rules is None:
@@ -339,9 +339,9 @@ class ExitPolicy(object):
 
       if rules and (rules[-1].is_address_wildcard() and rules[-1].is_port_wildcard()):
         if is_all_accept:
-          rules = [ExitPolicyRule("accept *:*")]
+          rules = [ExitPolicyRule('accept *:*')]
         elif is_all_reject:
-          rules = [ExitPolicyRule("reject *:*")]
+          rules = [ExitPolicyRule('reject *:*')]
 
       self._rules = rules
       self._input_rules = None
@@ -409,24 +409,24 @@ class MicroExitPolicy(ExitPolicy):
 
     self._policy = policy
 
-    if policy.startswith("accept"):
+    if policy.startswith('accept'):
       self.is_accept = True
-    elif policy.startswith("reject"):
+    elif policy.startswith('reject'):
       self.is_accept = False
     else:
       raise ValueError("A microdescriptor exit policy must start with either 'accept' or 'reject': %s" % policy)
 
     policy = policy[6:]
 
-    if not policy.startswith(" ") or (len(policy) - 1 != len(policy.lstrip())):
-      raise ValueError("A microdescriptor exit policy should have a space separating accept/reject from its port list: %s" % self._policy)
+    if not policy.startswith(' ') or (len(policy) - 1 != len(policy.lstrip())):
+      raise ValueError('A microdescriptor exit policy should have a space separating accept/reject from its port list: %s' % self._policy)
 
     policy = policy[1:]
 
     # convert our port list into MicroExitPolicyRule
     rules = []
 
-    for port_entry in policy.split(","):
+    for port_entry in policy.split(','):
       if '-' in port_entry:
         min_port, max_port = port_entry.split('-', 1)
       else:
@@ -462,7 +462,7 @@ class ExitPolicyRule(object):
 
   The format of these rules are formally described in the `dir-spec
   <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_ as an
-  "exitpattern". Note that while these are similar to tor's man page entry for
+  'exitpattern'. Note that while these are similar to tor's man page entry for
   ExitPolicies, it's not the exact same. An exitpattern is better defined and
   stricter in what it'll accept. For instance, ports are not optional and it
   does not contain the 'private' alias.
@@ -485,21 +485,21 @@ class ExitPolicyRule(object):
     # policy ::= "accept" exitpattern | "reject" exitpattern
     # exitpattern ::= addrspec ":" portspec
 
-    if rule.startswith("accept"):
+    if rule.startswith('accept'):
       self.is_accept = True
-    elif rule.startswith("reject"):
+    elif rule.startswith('reject'):
       self.is_accept = False
     else:
       raise ValueError("An exit policy must start with either 'accept' or 'reject': %s" % rule)
 
     exitpattern = rule[6:]
 
-    if not exitpattern.startswith(" ") or (len(exitpattern) - 1 != len(exitpattern.lstrip())):
-      raise ValueError("An exit policy should have a space separating its accept/reject from the exit pattern: %s" % rule)
+    if not exitpattern.startswith(' ') or (len(exitpattern) - 1 != len(exitpattern.lstrip())):
+      raise ValueError('An exit policy should have a space separating its accept/reject from the exit pattern: %s' % rule)
 
     exitpattern = exitpattern[1:]
 
-    if not ":" in exitpattern:
+    if not ':' in exitpattern:
       raise ValueError("An exitpattern must be of the form 'addrspec:portspec': %s" % rule)
 
     self.address = None
@@ -508,13 +508,13 @@ class ExitPolicyRule(object):
     self.min_port = self.max_port = None
     self._hash = None
 
-    # Our mask in ip notation (ex. "255.255.255.0"). This is only set if we
+    # Our mask in ip notation (ex. '255.255.255.0'). This is only set if we
     # either have a custom mask that can't be represented by a number of bits,
     # or the user has called mask(), lazily loading this.
 
     self._mask = None
 
-    addrspec, portspec = exitpattern.rsplit(":", 1)
+    addrspec, portspec = exitpattern.rsplit(':', 1)
     self._apply_addrspec(rule, addrspec)
     self._apply_portspec(rule, portspec)
 
@@ -577,7 +577,7 @@ class ExitPolicyRule(object):
         if address_type == AddressType.IPv4:
           return False
 
-        address = address.lstrip("[").rstrip("]")
+        address = address.lstrip('[').rstrip(']')
       else:
         raise ValueError("'%s' isn't a valid IPv4 or IPv6 address" % address)
 
@@ -624,7 +624,7 @@ class ExitPolicyRule(object):
 
     :param bool cache: caches the result if **True**
 
-    :returns: str of our subnet mask for the address (ex. "255.255.255.0")
+    :returns: str of our subnet mask for the address (ex. '255.255.255.0')
     """
 
     # Lazy loading our mask because it very infrequently requested. There's
@@ -667,17 +667,17 @@ class ExitPolicyRule(object):
     to re-create this rule.
     """
 
-    label = "accept " if self.is_accept else "reject "
+    label = 'accept ' if self.is_accept else 'reject '
 
     if self.is_address_wildcard():
-      label += "*:"
+      label += '*:'
     else:
       address_type = self.get_address_type()
 
       if address_type == AddressType.IPv4:
         label += self.address
       else:
-        label += "[%s]" % self.address
+        label += '[%s]' % self.address
 
       # Including our mask label as follows...
       # - exclude our mask if it doesn't do anything
@@ -686,18 +686,18 @@ class ExitPolicyRule(object):
 
       if (address_type == AddressType.IPv4 and self._masked_bits == 32) or \
          (address_type == AddressType.IPv6 and self._masked_bits == 128):
-        label += ":"
+        label += ':'
       elif self._masked_bits is not None:
-        label += "/%i:" % self._masked_bits
+        label += '/%i:' % self._masked_bits
       else:
-        label += "/%s:" % self.get_mask()
+        label += '/%s:' % self.get_mask()
 
     if self.is_port_wildcard():
-      label += "*"
+      label += '*'
     elif self.min_port == self.max_port:
       label += str(self.min_port)
     else:
-      label += "%i-%i" % (self.min_port, self.max_port)
+      label += '%i-%i' % (self.min_port, self.max_port)
 
     return label
 
@@ -705,7 +705,7 @@ class ExitPolicyRule(object):
     if self._hash is None:
       my_hash = 0
 
-      for attr in ("is_accept", "address", "min_port", "max_port"):
+      for attr in ('is_accept', 'address', 'min_port', 'max_port'):
         my_hash *= 1024
 
         attr_value = getattr(self, attr)
@@ -736,12 +736,12 @@ class ExitPolicyRule(object):
     # Parses the addrspec...
     # addrspec ::= "*" | ip4spec | ip6spec
 
-    if "/" in addrspec:
-      self.address, addr_extra = addrspec.split("/", 1)
+    if '/' in addrspec:
+      self.address, addr_extra = addrspec.split('/', 1)
     else:
       self.address, addr_extra = addrspec, None
 
-    if addrspec == "*":
+    if addrspec == '*':
       self._address_type = _address_type_to_int(AddressType.WILDCARD)
       self.address = self._masked_bits = None
     elif stem.util.connection.is_valid_ipv4_address(self.address):
@@ -759,7 +759,7 @@ class ExitPolicyRule(object):
         try:
           self._masked_bits = stem.util.connection._get_masked_bits(addr_extra)
         except ValueError:
-          # mask can't be represented as a number of bits (ex. "255.255.0.255")
+          # mask can't be represented as a number of bits (ex. '255.255.0.255')
           self._mask = addr_extra
           self._masked_bits = None
       elif addr_extra.isdigit():
@@ -767,10 +767,10 @@ class ExitPolicyRule(object):
         self._masked_bits = int(addr_extra)
 
         if self._masked_bits < 0 or self._masked_bits > 32:
-          raise ValueError("IPv4 masks must be in the range of 0-32 bits")
+          raise ValueError('IPv4 masks must be in the range of 0-32 bits')
       else:
         raise ValueError("The '%s' isn't a mask nor number of bits: %s" % (addr_extra, rule))
-    elif self.address.startswith("[") and self.address.endswith("]") and \
+    elif self.address.startswith('[') and self.address.endswith(']') and \
       stem.util.connection.is_valid_ipv6_address(self.address[1:-1]):
       # ip6spec ::= ip6 | ip6 "/" num_ip6_bits
       # ip6 ::= an IPv6 address, surrounded by square brackets.
@@ -786,7 +786,7 @@ class ExitPolicyRule(object):
         self._masked_bits = int(addr_extra)
 
         if self._masked_bits < 0 or self._masked_bits > 128:
-          raise ValueError("IPv6 masks must be in the range of 0-128 bits")
+          raise ValueError('IPv6 masks must be in the range of 0-128 bits')
       else:
         raise ValueError("The '%s' isn't a number of bits: %s" % (addr_extra, rule))
     else:
@@ -800,7 +800,7 @@ class ExitPolicyRule(object):
     # Due to a tor bug the spec says that we should accept port of zero, but
     # connections to port zero are never permitted.
 
-    if portspec == "*":
+    if portspec == '*':
       self.min_port, self.max_port = 1, 65535
     elif portspec.isdigit():
       # provided with a single port
@@ -810,7 +810,7 @@ class ExitPolicyRule(object):
         raise ValueError("'%s' isn't within a valid port range: %s" % (portspec, rule))
     elif "-" in portspec:
       # provided with a port range
-      port_comp = portspec.split("-", 1)
+      port_comp = portspec.split('-', 1)
 
       if stem.util.connection.is_valid_port(port_comp, allow_zero = True):
         self.min_port = int(port_comp[0])
@@ -819,15 +819,15 @@ class ExitPolicyRule(object):
         if self.min_port > self.max_port:
           raise ValueError("Port range has a lower bound that's greater than its upper bound: %s" % rule)
       else:
-        raise ValueError("Malformed port range: %s" % rule)
+        raise ValueError('Malformed port range: %s' % rule)
     else:
       raise ValueError("Port value isn't a wildcard, integer, or range: %s" % rule)
 
   def __eq__(self, other):
     if isinstance(other, ExitPolicyRule):
       # Our string representation encompasses our effective policy. Technically
-      # this isn't quite right since our rule attribute may differ (ie, "accept
-      # 0.0.0.0/0" == "accept 0.0.0.0/0.0.0.0" will be True), but these
+      # this isn't quite right since our rule attribute may differ (ie, 'accept
+      # 0.0.0.0/0' == 'accept 0.0.0.0/0.0.0.0' will be True), but these
       # policies are effectively equivalent.
 
       return hash(self) == hash(other)
@@ -871,7 +871,7 @@ class MicroExitPolicyRule(ExitPolicyRule):
     if self._hash is None:
       my_hash = 0
 
-      for attr in ("is_accept", "min_port", "max_port"):
+      for attr in ('is_accept', 'min_port', 'max_port'):
         my_hash *= 1024
 
         attr_value = getattr(self, attr)

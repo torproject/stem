@@ -2,4 +2,4 @@
 Unit tests for stem.control.
 """
 
-__all__ = ["controller"]
+__all__ = ['controller']

@@ -10,15 +10,15 @@ import stem.socket
 
 from test import mocking
 
-VALID_RESPONSE = "250 AUTHCHALLENGE \
+VALID_RESPONSE = '250 AUTHCHALLENGE \
 SERVERHASH=B16F72DACD4B5ED1531F3FCC04B593D46A1E30267E636EA7C7F8DD7A2B7BAA05 \
-SERVERNONCE=653574272ABBB49395BD1060D642D653CFB7A2FCE6A4955BCFED819703A9998C"
+SERVERNONCE=653574272ABBB49395BD1060D642D653CFB7A2FCE6A4955BCFED819703A9998C'
 
-VALID_HASH = b"\xb1or\xda\xcdK^\xd1S\x1f?\xcc\x04\xb5\x93\xd4j\x1e0&~cn\xa7\xc7\xf8\xddz+{\xaa\x05"
+VALID_HASH = b'\xb1or\xda\xcdK^\xd1S\x1f?\xcc\x04\xb5\x93\xd4j\x1e0&~cn\xa7\xc7\xf8\xddz+{\xaa\x05'
 VALID_NONCE = b"e5t'*\xbb\xb4\x93\x95\xbd\x10`\xd6B\xd6S\xcf\xb7\xa2\xfc\xe6\xa4\x95[\xcf\xed\x81\x97\x03\xa9\x99\x8c"
-INVALID_RESPONSE = "250 AUTHCHALLENGE \
+INVALID_RESPONSE = '250 AUTHCHALLENGE \
 SERVERHASH=FOOBARB16F72DACD4B5ED1531F3FCC04B593D46A1E30267E636EA7C7F8DD7A2B7BAA05 \
-SERVERNONCE=FOOBAR653574272ABBB49395BD1060D642D653CFB7A2FCE6A4955BCFED819703A9998C"
+SERVERNONCE=FOOBAR653574272ABBB49395BD1060D642D653CFB7A2FCE6A4955BCFED819703A9998C'
 
 
 class TestAuthChallengeResponse(unittest.TestCase):
@@ -28,7 +28,7 @@ class TestAuthChallengeResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(VALID_RESPONSE)
-    stem.response.convert("AUTHCHALLENGE", control_message)
+    stem.response.convert('AUTHCHALLENGE', control_message)
 
     # now this should be a AuthChallengeResponse (ControlMessage subclass)
     self.assertTrue(isinstance(control_message, stem.response.ControlMessage))
@@ -52,4 +52,4 @@ class TestAuthChallengeResponse(unittest.TestCase):
 
       remaining_comp = auth_challenge_comp[:index] + auth_challenge_comp[index + 1:]
       control_message = mocking.get_message(' '.join(remaining_comp))
-      self.assertRaises(stem.ProtocolError, stem.response.convert, "AUTHCHALLENGE", control_message)
+      self.assertRaises(stem.ProtocolError, stem.response.convert, 'AUTHCHALLENGE', control_message)

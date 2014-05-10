@@ -25,10 +25,10 @@ import re
 import stem.util.conf
 import stem.util.system
 
-CONFIG = stem.util.conf.config_dict("test", {
-  "pep8.ignore": [],
-  "pyflakes.ignore": [],
-  "exclude_paths": [],
+CONFIG = stem.util.conf.config_dict('test', {
+  'pep8.ignore': [],
+  'pyflakes.ignore': [],
+  'exclude_paths': [],
 })
 
 
@@ -62,7 +62,7 @@ def clean_orphaned_pyc(paths):
       # with python 3 because it's an exported copy of the python 2 codebase,
       # so skipping. However, we might want to address this for other callers.
 
-      if "__pycache__" in pyc_path:
+      if '__pycache__' in pyc_path:
         continue
 
       if not os.path.exists(pyc_path[:-1]):
@@ -164,7 +164,7 @@ def get_stylistic_issues(paths, check_two_space_indents = False, check_newlines 
         code = super(StyleReport, self).error(line_number, offset, text, check)
 
         if code:
-          issues.setdefault(self.filename, []).append((offset + line_number, "%s %s" % (code, text)))
+          issues.setdefault(self.filename, []).append((offset + line_number, '%s %s' % (code, text)))
 
     style_checker = pep8.StyleGuide(ignore = CONFIG['pep8.ignore'], reporter = StyleReport)
     style_checker.check_files(list(_python_files(paths)))
@@ -174,11 +174,11 @@ def get_stylistic_issues(paths, check_two_space_indents = False, check_newlines 
       with open(path) as f:
         file_contents = f.read()
 
-      lines, prev_indent = file_contents.split("\n"), 0
+      lines, prev_indent = file_contents.split('\n'), 0
       is_block_comment = False
 
       for index, line in enumerate(lines):
-        whitespace, content = re.match("^(\s*)(.*)$", line).groups()
+        whitespace, content = re.match('^(\s*)(.*)$', line).groups()
 
         # TODO: This does not check that block indentations are two spaces
         # because differentiating source from string blocks ("""foo""") is more
@@ -187,13 +187,13 @@ def get_stylistic_issues(paths, check_two_space_indents = False, check_newlines 
         if '"""' in content:
           is_block_comment = not is_block_comment
 
-        if check_two_space_indents and "\t" in whitespace:
-          issues.setdefault(path, []).append((index + 1, "indentation has a tab"))
-        elif check_newlines and "\r" in content:
-          issues.setdefault(path, []).append((index + 1, "contains a windows newline"))
+        if check_two_space_indents and '\t' in whitespace:
+          issues.setdefault(path, []).append((index + 1, 'indentation has a tab'))
+        elif check_newlines and '\r' in content:
+          issues.setdefault(path, []).append((index + 1, 'contains a windows newline'))
         elif check_trailing_whitespace and content != content.rstrip():
-          issues.setdefault(path, []).append((index + 1, "line has trailing whitespace"))
-        elif check_exception_keyword and content.lstrip().startswith("except") and content.endswith(", exc:"):
+          issues.setdefault(path, []).append((index + 1, 'line has trailing whitespace'))
+        elif check_exception_keyword and content.lstrip().startswith('except') and content.endswith(', exc:'):
           # Python 2.6 - 2.7 supports two forms for exceptions...
           #
           #   except ValueError, exc:
@@ -239,8 +239,8 @@ def get_pyflakes_issues(paths):
       def __init__(self):
         self._ignored_issues = {}
 
-        for line in CONFIG["pyflakes.ignore"]:
-          path, issue = line.split("=>")
+        for line in CONFIG['pyflakes.ignore']:
+          path, issue = line.split('=>')
           self._ignored_issues.setdefault(path.strip(), []).append(issue.strip())
 
       def unexpectedError(self, filename, msg):
@@ -279,7 +279,7 @@ def _python_files(paths):
     for file_path in stem.util.system.files_with_suffix(path, '.py'):
       skip = False
 
-      for exclude_path in CONFIG["exclude_paths"]:
+      for exclude_path in CONFIG['exclude_paths']:
         if re.match(exclude_path, file_path):
           skip = True
           break

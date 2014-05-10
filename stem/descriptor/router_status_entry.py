@@ -34,7 +34,7 @@ from stem.descriptor import (
 )
 
 
-def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
+def _parse_file(document_file, validate, entry_class, entry_keyword = 'r', start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
   """
   Reads a range of the document_file containing some number of entry_class
   instances. We deliminate the entry_class entries by the keyword on their
@@ -89,7 +89,7 @@ def _parse_file(document_file, validate, entry_class, entry_keyword = "r", start
       include_ending_keyword = True
     )
 
-    desc_content = bytes.join(b"", desc_lines)
+    desc_content = bytes.join(b'', desc_lines)
 
     if desc_content:
       yield entry_class(desc_content, validate, *extra_args)
@@ -178,7 +178,7 @@ class RouterStatusEntry(Descriptor):
       elif keyword == 'v':
         _parse_v_line(self, value, validate)
       else:
-        self._unrecognized_lines.append("%s %s" % (keyword, value))
+        self._unrecognized_lines.append('%s %s' % (keyword, value))
 
   def _check_constraints(self, entries):
     """
@@ -207,9 +207,9 @@ class RouterStatusEntry(Descriptor):
     """
 
     if is_plural:
-      return "Router status entries"
+      return 'Router status entries'
     else:
-      return "Router status entry"
+      return 'Router status entry'
 
   def _required_fields(self):
     """
@@ -277,9 +277,9 @@ class RouterStatusEntryV2(RouterStatusEntry):
 
   def _name(self, is_plural = False):
     if is_plural:
-      return "Router status entries (v2)"
+      return 'Router status entries (v2)'
     else:
-      return "Router status entry (v2)"
+      return 'Router status entry (v2)'
 
   def _required_fields(self):
     return ('r')
@@ -371,9 +371,9 @@ class RouterStatusEntryV3(RouterStatusEntry):
 
   def _name(self, is_plural = False):
     if is_plural:
-      return "Router status entries (v3)"
+      return 'Router status entries (v3)'
     else:
-      return "Router status entry (v3)"
+      return 'Router status entry (v3)'
 
   def _required_fields(self):
     return ('r', 's')
@@ -446,9 +446,9 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
 
   def _name(self, is_plural = False):
     if is_plural:
-      return "Router status entries (micro v3)"
+      return 'Router status entries (micro v3)'
     else:
-      return "Router status entry (micro v3)"
+      return 'Router status entry (micro v3)'
 
   def _required_fields(self):
     return ('r', 's', 'm')
@@ -485,7 +485,7 @@ def _parse_r_line(desc, value, validate, include_digest = True):
   #   "r" nickname identity publication IP ORPort DirPort
   #   example: r Konata ARIJF2zbqirB9IwsW0mQznccWww 2012-09-24 13:40:40 69.64.48.168 9001 9030
 
-  r_comp = value.split(" ")
+  r_comp = value.split(' ')
 
   # inject a None for the digest to normalize the field positioning
   if not include_digest:
@@ -504,9 +504,9 @@ def _parse_r_line(desc, value, validate, include_digest = True):
     elif not stem.util.connection.is_valid_ipv4_address(r_comp[5]):
       raise ValueError("%s address isn't a valid IPv4 address: %s" % (desc._name(), r_comp[5]))
     elif not stem.util.connection.is_valid_port(r_comp[6]):
-      raise ValueError("%s ORPort is invalid: %s" % (desc._name(), r_comp[6]))
+      raise ValueError('%s ORPort is invalid: %s' % (desc._name(), r_comp[6]))
     elif not stem.util.connection.is_valid_port(r_comp[7], allow_zero = True):
-      raise ValueError("%s DirPort is invalid: %s" % (desc._name(), r_comp[7]))
+      raise ValueError('%s DirPort is invalid: %s' % (desc._name(), r_comp[7]))
   elif not (r_comp[6].isdigit() and r_comp[7].isdigit()):
     return
 
@@ -521,8 +521,8 @@ def _parse_r_line(desc, value, validate, include_digest = True):
   desc.dir_port = None if r_comp[7] == '0' else int(r_comp[7])
 
   try:
-    published = "%s %s" % (r_comp[3], r_comp[4])
-    desc.published = datetime.datetime.strptime(published, "%Y-%m-%d %H:%M:%S")
+    published = '%s %s' % (r_comp[3], r_comp[4])
+    desc.published = datetime.datetime.strptime(published, '%Y-%m-%d %H:%M:%S')
   except ValueError:
     if validate:
       raise ValueError("Publication time time wasn't parsable: r %s" % value)
@@ -539,7 +539,7 @@ def _parse_a_line(desc, value, validate):
     raise ValueError("%s 'a' line must be of the form '[address]:[ports]': a %s" % (desc._name(), value))
 
   address, port = value.rsplit(':', 1)
-  is_ipv6 = address.startswith("[") and address.endswith("]")
+  is_ipv6 = address.startswith('[') and address.endswith(']')
 
   if is_ipv6:
     address = address[1:-1]  # remove brackets
@@ -561,13 +561,13 @@ def _parse_s_line(desc, value, validate):
   # "s" Flags
   # example: s Named Running Stable Valid
 
-  flags = [] if value == "" else value.split(" ")
+  flags = [] if value == '' else value.split(' ')
   desc.flags = flags
 
   if validate:
     for flag in flags:
       if flags.count(flag) > 1:
-        raise ValueError("%s had duplicate flags: s %s" % (desc._name(), value))
+        raise ValueError('%s had duplicate flags: s %s' % (desc._name(), value))
       elif flag == "":
         raise ValueError("%s had extra whitespace on its 's' line: s %s" % (desc._name(), value))
 
@@ -582,26 +582,26 @@ def _parse_v_line(desc, value, validate):
 
   desc.version_line = value
 
-  if value.startswith("Tor "):
+  if value.startswith('Tor '):
     try:
       desc.version = stem.version._get_version(value[4:])
     except ValueError as exc:
       if validate:
-        raise ValueError("%s has a malformed tor version (%s): v %s" % (desc._name(), exc, value))
+        raise ValueError('%s has a malformed tor version (%s): v %s' % (desc._name(), exc, value))
 
 
 def _parse_w_line(desc, value, validate):
   # "w" "Bandwidth=" INT ["Measured=" INT] ["Unmeasured=1"]
   # example: w Bandwidth=7980
 
-  w_comp = value.split(" ")
+  w_comp = value.split(' ')
 
   if len(w_comp) < 1:
     if not validate:
       return
 
     raise ValueError("%s 'w' line is blank: w %s" % (desc._name(), value))
-  elif not w_comp[0].startswith("Bandwidth="):
+  elif not w_comp[0].startswith('Bandwidth='):
     if not validate:
       return
 
@@ -613,7 +613,7 @@ def _parse_w_line(desc, value, validate):
     else:
       w_key, w_value = w_entry, None
 
-    if w_key == "Bandwidth":
+    if w_key == 'Bandwidth':
       if not (w_value and w_value.isdigit()):
         if not validate:
           return
@@ -621,7 +621,7 @@ def _parse_w_line(desc, value, validate):
         raise ValueError("%s 'Bandwidth=' entry needs to have a numeric value: w %s" % (desc._name(), value))
 
       desc.bandwidth = int(w_value)
-    elif w_key == "Measured":
+    elif w_key == 'Measured':
       if not (w_value and w_value.isdigit()):
         if not validate:
           return
@@ -629,8 +629,8 @@ def _parse_w_line(desc, value, validate):
         raise ValueError("%s 'Measured=' entry needs to have a numeric value: w %s" % (desc._name(), value))
 
       desc.measured = int(w_value)
-    elif w_key == "Unmeasured":
-      if validate and w_value != "1":
+    elif w_key == 'Unmeasured':
+      if validate and w_value != '1':
         raise ValueError("%s 'Unmeasured=' should only have the value of '1': w %s" % (desc._name(), value))
 
       desc.is_unmeasured = True
@@ -649,20 +649,20 @@ def _parse_p_line(desc, value, validate):
     if not validate:
       return
 
-    raise ValueError("%s exit policy is malformed (%s): p %s" % (desc._name(), exc, value))
+    raise ValueError('%s exit policy is malformed (%s): p %s' % (desc._name(), exc, value))
 
 
 def _parse_m_line(desc, value, validate):
   # "m" methods 1*(algorithm "=" digest)
   # example: m 8,9,10,11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs
 
-  m_comp = value.split(" ")
+  m_comp = value.split(' ')
 
   if not (desc.document and desc.document.is_vote):
     if not validate:
       return
 
-    vote_status = "vote" if desc.document else "<undefined document>"
+    vote_status = 'vote' if desc.document else '<undefined document>'
     raise ValueError("%s 'm' line should only appear in votes (appeared in a %s): m %s" % (desc._name(), vote_status, value))
   elif len(m_comp) < 1:
     if not validate:
@@ -671,12 +671,12 @@ def _parse_m_line(desc, value, validate):
     raise ValueError("%s 'm' line needs to start with a series of methods: m %s" % (desc._name(), value))
 
   try:
-    methods = [int(entry) for entry in m_comp[0].split(",")]
+    methods = [int(entry) for entry in m_comp[0].split(',')]
   except ValueError:
     if not validate:
       return
 
-    raise ValueError("%s microdescriptor methods should be a series of comma separated integers: m %s" % (desc._name(), value))
+    raise ValueError('%s microdescriptor methods should be a series of comma separated integers: m %s' % (desc._name(), value))
 
   hashes = {}
 
@@ -713,9 +713,9 @@ def _base64_to_hex(identity, validate, check_if_fingerprint = True):
 
   # trailing equal signs were stripped from the identity
   missing_padding = len(identity) % 4
-  identity += "=" * missing_padding
+  identity += '=' * missing_padding
 
-  fingerprint = ""
+  fingerprint = ''
 
   try:
     identity_decoded = base64.b64decode(stem.util.str_tools._to_bytes(identity))

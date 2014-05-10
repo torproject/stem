@@ -24,10 +24,10 @@ Tor...
       control_socket = stem.socket.ControlPort(port = 9051)
       stem.connection.authenticate(control_socket)
     except stem.SocketError as exc:
-      print "Unable to connect to tor on port 9051: %s" % exc
+      print 'Unable to connect to tor on port 9051: %s' % exc
       sys.exit(1)
     except stem.connection.AuthenticationFailure as exc:
-      print "Unable to authenticate: %s" % exc
+      print 'Unable to authenticate: %s' % exc
       sys.exit(1)
 
     print "Issuing 'GETINFO version' query...\\n"
@@ -221,7 +221,7 @@ class ControlSocket(object):
 
       with self._recv_lock:
         self._socket = self._make_socket()
-        self._socket_file = self._socket.makefile(mode = "rwb")
+        self._socket_file = self._socket.makefile(mode = 'rwb')
         self._is_alive = True
 
         # It's possible for this to have a transient failure...
@@ -321,7 +321,7 @@ class ControlSocket(object):
       * **NotImplementedError** if not implemented by a subclass
     """
 
-    raise NotImplementedError("Unsupported Operation: this should be implemented by the ControlSocket subclass")
+    raise NotImplementedError('Unsupported Operation: this should be implemented by the ControlSocket subclass')
 
 
 class ControlPort(ControlSocket):
@@ -330,7 +330,7 @@ class ControlPort(ControlSocket):
   option.
   """
 
-  def __init__(self, address = "127.0.0.1", port = 9051, connect = True):
+  def __init__(self, address = '127.0.0.1', port = 9051, connect = True):
     """
     ControlPort constructor.
 
@@ -368,7 +368,7 @@ class ControlPort(ControlSocket):
     return self._control_port
 
   def is_localhost(self):
-    return self._control_addr == "127.0.0.1"
+    return self._control_addr == '127.0.0.1'
 
   def _make_socket(self):
     try:
@@ -385,7 +385,7 @@ class ControlSocketFile(ControlSocket):
   option.
   """
 
-  def __init__(self, path = "/var/run/tor/control", connect = True):
+  def __init__(self, path = '/var/run/tor/control', connect = True):
     """
     ControlSocketFile constructor.
 
@@ -462,16 +462,16 @@ def send_message(control_file, message, raw = False):
     control_file.write(stem.util.str_tools._to_bytes(message))
     control_file.flush()
 
-    log_message = message.replace("\r\n", "\n").rstrip()
-    log.trace("Sent to tor:\n" + log_message)
+    log_message = message.replace('\r\n', '\n').rstrip()
+    log.trace('Sent to tor:\n' + log_message)
   except socket.error as exc:
-    log.info("Failed to send message: %s" % exc)
+    log.info('Failed to send message: %s' % exc)
 
     # When sending there doesn't seem to be a reliable method for
     # distinguishing between failures from a disconnect verses other things.
     # Just accounting for known disconnection responses.
 
-    if str(exc) == "[Errno 32] Broken pipe":
+    if str(exc) == '[Errno 32] Broken pipe':
       raise stem.SocketClosed(exc)
     else:
       raise stem.SocketError(exc)
@@ -479,8 +479,8 @@ def send_message(control_file, message, raw = False):
     # if the control_file has been closed then flush will receive:
     # AttributeError: 'NoneType' object has no attribute 'sendall'
 
-    log.info("Failed to send message: file has been closed")
-    raise stem.SocketClosed("file has been closed")
+    log.info('Failed to send message: file has been closed')
+    raise stem.SocketClosed('file has been closed')
 
 
 def recv_message(control_file):
@@ -499,8 +499,8 @@ def recv_message(control_file):
       a complete message
   """
 
-  parsed_content, raw_content = [], b""
-  logging_prefix = "Error while receiving a control message (%s): "
+  parsed_content, raw_content = [], b''
+  logging_prefix = 'Error while receiving a control message (%s): '
 
   while True:
     try:
@@ -513,9 +513,9 @@ def recv_message(control_file):
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
 
-      prefix = logging_prefix % "SocketClosed"
-      log.info(prefix + "socket file has been closed")
-      raise stem.SocketClosed("socket file has been closed")
+      prefix = logging_prefix % 'SocketClosed'
+      log.info(prefix + 'socket file has been closed')
+      raise stem.SocketClosed('socket file has been closed')
     except (socket.error, ValueError) as exc:
       # When disconnected we get...
       #
@@ -525,8 +525,8 @@ def recv_message(control_file):
       # Python 3:
       #   ValueError: I/O operation on closed file.
 
-      prefix = logging_prefix % "SocketClosed"
-      log.info(prefix + "received exception \"%s\"" % exc)
+      prefix = logging_prefix % 'SocketClosed'
+      log.info(prefix + 'received exception "%s"' % exc)
       raise stem.SocketClosed(exc)
 
     raw_content += line
@@ -538,21 +538,21 @@ def recv_message(control_file):
       # if the socket is disconnected then the readline() method will provide
       # empty content
 
-      prefix = logging_prefix % "SocketClosed"
-      log.info(prefix + "empty socket content")
-      raise stem.SocketClosed("Received empty socket content.")
+      prefix = logging_prefix % 'SocketClosed'
+      log.info(prefix + 'empty socket content')
+      raise stem.SocketClosed('Received empty socket content.')
     elif len(line) < 4:
-      prefix = logging_prefix % "ProtocolError"
-      log.info(prefix + "line too short, \"%s\"" % log.escape(line))
-      raise stem.ProtocolError("Badly formatted reply line: too short")
+      prefix = logging_prefix % 'ProtocolError'
+      log.info(prefix + 'line too short, "%s"' % log.escape(line))
+      raise stem.ProtocolError('Badly formatted reply line: too short')
     elif not re.match(b'^[a-zA-Z0-9]{3}[-+ ]', line):
-      prefix = logging_prefix % "ProtocolError"
-      log.info(prefix + "malformed status code/divider, \"%s\"" % log.escape(line))
-      raise stem.ProtocolError("Badly formatted reply line: beginning is malformed")
-    elif not line.endswith(b"\r\n"):
-      prefix = logging_prefix % "ProtocolError"
-      log.info(prefix + "no CRLF linebreak, \"%s\"" % log.escape(line))
-      raise stem.ProtocolError("All lines should end with CRLF")
+      prefix = logging_prefix % 'ProtocolError'
+      log.info(prefix + 'malformed status code/divider, "%s"' % log.escape(line))
+      raise stem.ProtocolError('Badly formatted reply line: beginning is malformed')
+    elif not line.endswith(b'\r\n'):
+      prefix = logging_prefix % 'ProtocolError'
+      log.info(prefix + 'no CRLF linebreak, "%s"' % log.escape(line))
+      raise stem.ProtocolError('All lines should end with CRLF')
 
     line = line[:-2]  # strips off the CRLF
     status_code, divider, content = line[:3], line[3:4], line[4:]
@@ -561,18 +561,18 @@ def recv_message(control_file):
       status_code = stem.util.str_tools._to_unicode(status_code)
       divider = stem.util.str_tools._to_unicode(divider)
 
-    if divider == "-":
+    if divider == '-':
       # mid-reply line, keep pulling for more content
       parsed_content.append((status_code, divider, content))
-    elif divider == " ":
+    elif divider == ' ':
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
 
-      log_message = raw_content.replace(b"\r\n", b"\n").rstrip()
-      log.trace("Received from tor:\n" + stem.util.str_tools._to_unicode(log_message))
+      log_message = raw_content.replace(b'\r\n', b'\n').rstrip()
+      log.trace('Received from tor:\n' + stem.util.str_tools._to_unicode(log_message))
 
       return stem.response.ControlMessage(parsed_content, raw_content)
-    elif divider == "+":
+    elif divider == '+':
       # data entry, all of the following lines belong to the content until we
       # get a line with just a period
 
@@ -580,17 +580,17 @@ def recv_message(control_file):
         try:
           line = stem.util.str_tools._to_bytes(control_file.readline())
         except socket.error as exc:
-          prefix = logging_prefix % "SocketClosed"
-          log.info(prefix + "received an exception while mid-way through a data reply (exception: \"%s\", read content: \"%s\")" % (exc, log.escape(raw_content)))
+          prefix = logging_prefix % 'SocketClosed'
+          log.info(prefix + 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(raw_content)))
           raise stem.SocketClosed(exc)
 
         raw_content += line
 
-        if not line.endswith(b"\r\n"):
-          prefix = logging_prefix % "ProtocolError"
-          log.info(prefix + "CRLF linebreaks missing from a data reply, \"%s\"" % log.escape(raw_content))
-          raise stem.ProtocolError("All lines should end with CRLF")
-        elif line == b".\r\n":
+        if not line.endswith(b'\r\n'):
+          prefix = logging_prefix % 'ProtocolError'
+          log.info(prefix + 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(raw_content))
+          raise stem.ProtocolError('All lines should end with CRLF')
+        elif line == b'.\r\n':
           break  # data block termination
 
         line = line[:-2]  # strips off the CRLF
@@ -598,20 +598,20 @@ def recv_message(control_file):
         # lines starting with a period are escaped by a second period (as per
         # section 2.4 of the control-spec)
 
-        if line.startswith(b".."):
+        if line.startswith(b'..'):
           line = line[1:]
 
         # appends to previous content, using a newline rather than CRLF
         # separator (more conventional for multi-line string content outside
         # the windows world)
 
-        content += b"\n" + line
+        content += b'\n' + line
 
       parsed_content.append((status_code, divider, content))
     else:
       # this should never be reached due to the prefix regex, but might as well
       # be safe...
-      prefix = logging_prefix % "ProtocolError"
+      prefix = logging_prefix % 'ProtocolError'
       log.warn(prefix + "\"%s\" isn't a recognized divider type" % divider)
       raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, stem.util.str_tools._to_unicode(line)))
 
@@ -637,9 +637,9 @@ def send_formatting(message):
   # section ends with a single "." on a line of its own.
 
   # if we already have \r\n entries then standardize on \n to start with
-  message = message.replace("\r\n", "\n")
+  message = message.replace('\r\n', '\n')
 
-  if "\n" in message:
-    return "+%s\r\n.\r\n" % message.replace("\n", "\r\n")
+  if '\n' in message:
+    return '+%s\r\n.\r\n' % message.replace('\n', '\r\n')
   else:
-    return message + "\r\n"
+    return message + '\r\n'

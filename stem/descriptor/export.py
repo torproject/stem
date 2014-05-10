@@ -82,7 +82,7 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
   if included_fields:
     for field in included_fields:
       if not field in desc_attr:
-        raise ValueError("%s does not have a '%s' attribute, valid fields are: %s" % (descriptor_type_label, field, ", ".join(desc_attr)))
+        raise ValueError("%s does not have a '%s' attribute, valid fields are: %s" % (descriptor_type_label, field, ', '.join(desc_attr)))
   else:
     included_fields = [attr for attr in desc_attr if not attr.startswith('_')]
 
@@ -99,8 +99,8 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
 
   for desc in descriptors:
     if not isinstance(desc, stem.descriptor.Descriptor):
-      raise ValueError("Unable to export a descriptor CSV since %s is not a descriptor." % type(desc).__name__)
+      raise ValueError('Unable to export a descriptor CSV since %s is not a descriptor.' % type(desc).__name__)
     elif descriptor_type != type(desc):
-      raise ValueError("To export a descriptor CSV all of the descriptors must be of the same type. First descriptor was a %s but we later got a %s." % (descriptor_type_label, type(desc)))
+      raise ValueError('To export a descriptor CSV all of the descriptors must be of the same type. First descriptor was a %s but we later got a %s.' % (descriptor_type_label, type(desc)))
 
     writer.writerow(vars(desc))

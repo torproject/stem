@@ -95,7 +95,7 @@ class TestConnect(unittest.TestCase):
       elif password == 'my_password':
         return None  # success
       else:
-        raise ValueError("Unexpected authenticate_mock input: %s" % password)
+        raise ValueError('Unexpected authenticate_mock input: %s' % password)
 
     authenticate_mock.side_effect = authenticate_mock_func
     getpass_mock.return_value = 'my_password'

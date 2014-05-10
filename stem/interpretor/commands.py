@@ -70,7 +70,7 @@ def _get_fingerprint(arg, controller):
       response = "There's multiple relays at %s, include a port to specify which.\n\n" % arg
 
       for i, or_port in enumerate(matches):
-        response += "  %i. %s:%s, fingerprint: %s\n" % (i + 1, address, or_port, matches[or_port])
+        response += '  %i. %s:%s, fingerprint: %s\n' % (i + 1, address, or_port, matches[or_port])
 
       raise ValueError(response)
   else:

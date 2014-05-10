@@ -19,17 +19,17 @@ content. For example...
 
   query = downloader.get_server_descriptors()
 
-  print "Exit Relays:"
+  print 'Exit Relays:'
 
   try:
     for desc in query.run():
       if desc.exit_policy.is_exiting_allowed():
-        print "  %s (%s)" % (desc.nickname, desc.fingerprint)
+        print '  %s (%s)' % (desc.nickname, desc.fingerprint)
 
     print
-    print "Query took %0.2f seconds" % query.runtime
+    print 'Query took %0.2f seconds' % query.runtime
   except Exception as exc:
-    print "Unable to retrieve the server descriptors: %s" % exc
+    print 'Unable to retrieve the server descriptors: %s' % exc
 
 If you don't care about errors then you can also simply iterate over the query
 itself...
@@ -38,7 +38,7 @@ itself...
 
   for desc in downloader.get_server_descriptors():
     if desc.exit_policy.is_exiting_allowed():
-      print "  %s (%s)" % (desc.nickname, desc.fingerprint)
+      print '  %s (%s)' % (desc.nickname, desc.fingerprint)
 
 ::
 
@@ -137,19 +137,19 @@ class Query(object):
       timeout = 30,
     )
 
-    print "Current relays:"
+    print 'Current relays:'
 
     if not query.error:
       for desc in query:
         print desc.fingerprint
     else:
-      print "Unable to retrieve the server descriptors: %s" % query.error
+      print 'Unable to retrieve the server descriptors: %s' % query.error
 
   ... while iterating fails silently...
 
   ::
 
-    print "Current relays:"
+    print 'Current relays:'
 
     for desc in Query('/tor/server/all.z', 'server-descriptor 1.0'):
       print desc.fingerprint
@@ -257,7 +257,7 @@ class Query(object):
     with self._downloader_thread_lock:
       if self._downloader_thread is None:
         self._downloader_thread = threading.Thread(
-          name = "Descriptor Query",
+          name = 'Descriptor Query',
           target = self._download_descriptors,
           args = (self.retries,)
         )
@@ -345,7 +345,7 @@ class Query(object):
     else:
       address, dirport = random.choice(self.endpoints)
 
-    return "http://%s:%i/%s" % (address, dirport, self.resource.lstrip('/'))
+    return 'http://%s:%i/%s' % (address, dirport, self.resource.lstrip('/'))
 
   def _download_descriptors(self, retries):
     try:
@@ -397,9 +397,9 @@ class DescriptorDownloader(object):
       try:
         start_time = time.time()
         self.use_directory_mirrors()
-        log.debug("Retrieved directory mirrors (took %0.2fs)" % (time.time() - start_time))
+        log.debug('Retrieved directory mirrors (took %0.2fs)' % (time.time() - start_time))
       except Exception as exc:
-        log.debug("Unable to retrieve directory mirrors: %s" % exc)
+        log.debug('Unable to retrieve directory mirrors: %s' % exc)
 
   def use_directory_mirrors(self):
     """
@@ -451,7 +451,7 @@ class DescriptorDownloader(object):
 
     if fingerprints:
       if len(fingerprints) > MAX_FINGERPRINTS:
-        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_FINGERPRINTS)
+        raise ValueError('Unable to request more than %i descriptors at a time by their fingerprints' % MAX_FINGERPRINTS)
 
       resource = '/tor/server/fp/%s.z' % '+'.join(fingerprints)
 
@@ -481,7 +481,7 @@ class DescriptorDownloader(object):
 
     if fingerprints:
       if len(fingerprints) > MAX_FINGERPRINTS:
-        raise ValueError("Unable to request more than %i descriptors at a time by their fingerprints" % MAX_FINGERPRINTS)
+        raise ValueError('Unable to request more than %i descriptors at a time by their fingerprints' % MAX_FINGERPRINTS)
 
       resource = '/tor/extra/fp/%s.z' % '+'.join(fingerprints)
 
@@ -510,7 +510,7 @@ class DescriptorDownloader(object):
       hashes = [hashes]
 
     if len(hashes) > MAX_MICRODESCRIPTOR_HASHES:
-      raise ValueError("Unable to request more than %i microdescriptors at a time by their hashes" % MAX_MICRODESCRIPTOR_HASHES)
+      raise ValueError('Unable to request more than %i microdescriptors at a time by their hashes' % MAX_MICRODESCRIPTOR_HASHES)
 
     return self.query('/tor/micro/d/%s.z' % '-'.join(hashes), **query_args)
 
@@ -582,7 +582,7 @@ class DescriptorDownloader(object):
 
     if authority_v3idents:
       if len(authority_v3idents) > MAX_FINGERPRINTS:
-        raise ValueError("Unable to request more than %i key certificates at a time by their identity fingerprints" % MAX_FINGERPRINTS)
+        raise ValueError('Unable to request more than %i key certificates at a time by their identity fingerprints' % MAX_FINGERPRINTS)
 
       resource = '/tor/keys/fp/%s.z' % '+'.join(authority_v3idents)
 

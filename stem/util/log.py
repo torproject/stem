@@ -57,7 +57,7 @@ import stem.util.str_tools
 # Logging runlevels. These are *very* commonly used so including shorter
 # aliases (so they can be referenced as log.DEBUG, log.WARN, etc).
 
-Runlevel = stem.util.enum.UppercaseEnum("TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR")
+Runlevel = stem.util.enum.UppercaseEnum('TRACE', 'DEBUG', 'INFO', 'NOTICE', 'WARN', 'ERROR')
 TRACE, DEBUG, INFO, NOTICE, WARN, ERR = list(Runlevel)
 
 # mapping of runlevels to the logger module's values, TRACE and DEBUG aren't
@@ -72,10 +72,10 @@ LOG_VALUES = {
   Runlevel.ERROR: logging.ERROR,
 }
 
-logging.addLevelName(LOG_VALUES[TRACE], "TRACE")
-logging.addLevelName(LOG_VALUES[NOTICE], "NOTICE")
+logging.addLevelName(LOG_VALUES[TRACE], 'TRACE')
+logging.addLevelName(LOG_VALUES[NOTICE], 'NOTICE')
 
-LOGGER = logging.getLogger("stem")
+LOGGER = logging.getLogger('stem')
 LOGGER.setLevel(LOG_VALUES[TRACE])
 
 # There's some messages that we don't want to log more than once. This set has
@@ -131,7 +131,7 @@ def escape(message):
   if stem.prereq.is_python_3():
     message = stem.util.str_tools._to_unicode(message)
 
-  for pattern, replacement in (("\n", "\\n"), ("\r", "\\r"), ("\t", "\\t")):
+  for pattern, replacement in (('\n', '\\n'), ('\r', '\\r'), ('\t', '\\t')):
     message = message.replace(pattern, replacement)
 
   return message

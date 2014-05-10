@@ -52,29 +52,29 @@ import test.output
 
 from test.output import STATUS, ERROR, NO_NL, println
 
-CONFIG = stem.util.conf.config_dict("test", {
-  "msg.help": "",
-  "target.description": {},
-  "target.prereq": {},
-  "target.torrc": {},
-  "integ.test_directory": "./test/data",
-  "test.unit_tests": "",
-  "test.integ_tests": "",
+CONFIG = stem.util.conf.config_dict('test', {
+  'msg.help': '',
+  'target.description': {},
+  'target.prereq': {},
+  'target.torrc': {},
+  'integ.test_directory': './test/data',
+  'test.unit_tests': '',
+  'test.integ_tests': '',
 })
 
 Target = stem.util.enum.UppercaseEnum(
-  "ONLINE",
-  "RELATIVE",
-  "CHROOT",
-  "RUN_NONE",
-  "RUN_OPEN",
-  "RUN_PASSWORD",
-  "RUN_COOKIE",
-  "RUN_MULTIPLE",
-  "RUN_SOCKET",
-  "RUN_SCOOKIE",
-  "RUN_PTRACE",
-  "RUN_ALL",
+  'ONLINE',
+  'RELATIVE',
+  'CHROOT',
+  'RUN_NONE',
+  'RUN_OPEN',
+  'RUN_PASSWORD',
+  'RUN_COOKIE',
+  'RUN_MULTIPLE',
+  'RUN_SOCKET',
+  'RUN_SCOOKIE',
+  'RUN_PTRACE',
+  'RUN_ALL',
 )
 
 # We make some paths relative to stem's base directory (the one above us)
@@ -92,7 +92,7 @@ def get_unit_tests(module_substring = None):
   :returns: an **iterator** for our unit tests
   """
 
-  return _get_tests(CONFIG["test.unit_tests"].splitlines(), module_substring)
+  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_substring)
 
 
 def get_integ_tests(module_substring = None):
@@ -104,7 +104,7 @@ def get_integ_tests(module_substring = None):
   :returns: an **iterator** for our integration tests
   """
 
-  return _get_tests(CONFIG["test.integ_tests"].splitlines(), module_substring)
+  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_substring)
 
 
 def _get_tests(modules, module_substring):
@@ -124,7 +124,7 @@ def _get_tests(modules, module_substring):
       module_name = '.'.join(import_name.split('.')[:-1])
       module = __import__(module_name)
 
-      for subcomponent in import_name.split(".")[1:]:
+      for subcomponent in import_name.split('.')[1:]:
         module = getattr(module, subcomponent)
 
       yield module
@@ -138,16 +138,16 @@ def get_help_message():
   :returns: **str** with our usage information
   """
 
-  help_msg = CONFIG["msg.help"]
+  help_msg = CONFIG['msg.help']
 
   # gets the longest target length so we can show the entries in columns
   target_name_length = max(map(len, Target))
-  description_format = "\n    %%-%is - %%s" % target_name_length
+  description_format = '\n    %%-%is - %%s' % target_name_length
 
   for target in Target:
-    help_msg += description_format % (target, CONFIG["target.description"].get(target, ""))
+    help_msg += description_format % (target, CONFIG['target.description'].get(target, ''))
 
-  help_msg += "\n"
+  help_msg += '\n'
 
   return help_msg
 
@@ -163,7 +163,7 @@ def get_prereq(target):
     **None** if there is no prerequisite
   """
 
-  target_prereq = CONFIG["target.prereq"].get(target)
+  target_prereq = CONFIG['target.prereq'].get(target)
 
   if target_prereq:
     return stem.version.Requirement[target_prereq]
@@ -185,7 +185,7 @@ def get_torrc_entries(target):
 
   # converts the 'target.torrc' csv into a list of test.runner.Torrc enums
 
-  config_csv = CONFIG["target.torrc"].get(target)
+  config_csv = CONFIG['target.torrc'].get(target)
   torrc_opts = []
 
   if config_csv:
@@ -208,7 +208,7 @@ def get_python3_destination():
   :returns: **str** with the relative path to our python 3 location
   """
 
-  return os.path.join(CONFIG["integ.test_directory"], "python3")
+  return os.path.join(CONFIG['integ.test_directory'], 'python3')
 
 
 def check_stem_version():
@@ -224,7 +224,7 @@ def check_pycrypto_version():
     import Crypto
     return Crypto.__version__
   else:
-    return "missing"
+    return 'missing'
 
 
 def check_mock_version():
@@ -236,7 +236,7 @@ def check_mock_version():
 
     return mock.__version__
   else:
-    return "missing"
+    return 'missing'
 
 
 def check_pyflakes_version():
@@ -244,7 +244,7 @@ def check_pyflakes_version():
     import pyflakes
     return pyflakes.__version__
   except ImportError:
-    return "missing"
+    return 'missing'
 
 
 def check_pep8_version():
@@ -252,7 +252,7 @@ def check_pep8_version():
     import pep8
     return pep8.__version__
   except ImportError:
-    return "missing"
+    return 'missing'
 
 
 def clean_orphaned_pyc(paths):
@@ -262,7 +262,7 @@ def clean_orphaned_pyc(paths):
   :param list paths: paths to search for orphaned pyc files
   """
 
-  return ["removed %s" % path for path in stem.util.test_tools.clean_orphaned_pyc(paths)]
+  return ['removed %s' % path for path in stem.util.test_tools.clean_orphaned_pyc(paths)]
 
 
 def check_for_unused_tests(paths):
@@ -288,7 +288,7 @@ def check_for_unused_tests(paths):
       with open(py_path) as f:
         file_contents = f.read()
 
-      test_match = re.search("^class (\S*)\(unittest.TestCase\):$", file_contents, re.MULTILINE)
+      test_match = re.search('^class (\S*)\(unittest.TestCase\):$', file_contents, re.MULTILINE)
 
       if test_match:
         class_name = test_match.groups()[0]
@@ -298,11 +298,11 @@ def check_for_unused_tests(paths):
           unused_tests.append(module_name)
 
   if unused_tests:
-    raise ValueError("Test modules are missing from our test/settings.cfg:\n%s" % "\n".join(unused_tests))
+    raise ValueError('Test modules are missing from our test/settings.cfg:\n%s' % '\n'.join(unused_tests))
 
 
 def python3_prereq():
-  for required_cmd in ("2to3", "python3"):
+  for required_cmd in ('2to3', 'python3'):
     if not stem.util.system.is_available(required_cmd):
       raise ValueError("Unable to test python 3 because %s isn't in your path" % required_cmd)
 
@@ -311,19 +311,19 @@ def python3_clean(skip = False):
   location = get_python3_destination()
 
   if not os.path.exists(location):
-    return "skipped"
+    return 'skipped'
   elif skip:
     return ["Reusing '%s'. Run again with '--clean' if you want a fresh copy." % location]
   else:
     shutil.rmtree(location, ignore_errors = True)
-    return "done"
+    return 'done'
 
 
 def python3_copy_stem():
   destination = get_python3_destination()
 
   if os.path.exists(destination):
-    return "skipped"
+    return 'skipped'
 
   # skips the python3 destination (to avoid an infinite loop)
   def _ignore(src, names):
@@ -336,22 +336,22 @@ def python3_copy_stem():
   shutil.copytree('stem', os.path.join(destination, 'stem'))
   shutil.copytree('test', os.path.join(destination, 'test'), ignore = _ignore)
   shutil.copy('run_tests.py', os.path.join(destination, 'run_tests.py'))
-  stem.util.system.call("2to3 --write --nobackups --no-diffs %s" % get_python3_destination())
+  stem.util.system.call('2to3 --write --nobackups --no-diffs %s' % get_python3_destination())
 
-  return "done"
+  return 'done'
 
 
 def python3_run_tests():
   println()
   println()
 
-  python3_runner = os.path.join(get_python3_destination(), "run_tests.py")
-  exit_status = os.system("python3 %s %s" % (python3_runner, " ".join(sys.argv[1:])))
+  python3_runner = os.path.join(get_python3_destination(), 'run_tests.py')
+  exit_status = os.system('python3 %s %s' % (python3_runner, ' '.join(sys.argv[1:])))
   sys.exit(exit_status)
 
 
 def _is_test_data(path):
-  return os.path.normpath(CONFIG["integ.test_directory"]) in path
+  return os.path.normpath(CONFIG['integ.test_directory']) in path
 
 
 def run_tasks(category, *tasks):
@@ -373,7 +373,7 @@ def run_tasks(category, *tasks):
     task.run()
 
     if task.is_required and task.error:
-      println("\n%s\n" % task.error, ERROR)
+      println('\n%s\n' % task.error, ERROR)
       sys.exit(1)
 
   println()
@@ -399,10 +399,10 @@ class Task(object):
     self.result = None
 
   def run(self):
-    println("  %s..." % self.label, STATUS, NO_NL)
+    println('  %s...' % self.label, STATUS, NO_NL)
 
     padding = 50 - len(self.label)
-    println(" " * padding, NO_NL)
+    println(' ' * padding, NO_NL)
 
     try:
       if self.args:
@@ -411,7 +411,7 @@ class Task(object):
         self.result = self.runner()
 
       self.is_successful = True
-      output_msg = "done"
+      output_msg = 'done'
 
       if self.print_result and isinstance(self.result, str):
         output_msg = self.result
@@ -420,12 +420,12 @@ class Task(object):
 
       if self.print_result and isinstance(self.result, (list, tuple)):
         for line in self.result:
-          println("    %s" % line, STATUS)
+          println('    %s' % line, STATUS)
     except Exception as exc:
       output_msg = str(exc)
 
       if not output_msg or self.is_required:
-        output_msg = "failed"
+        output_msg = 'failed'
 
       println(output_msg, ERROR)
       self.error = exc

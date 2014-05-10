@@ -55,120 +55,120 @@ WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
 
 DOC_SIG = stem.descriptor.networkstatus.DocumentSignature(
-  "sha1",
-  "14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4",
-  "BF112F1C6D5543CFD0A32215ACABD4197B5279AD",
-  "-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB)
+  'sha1',
+  '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
+  'BF112F1C6D5543CFD0A32215ACABD4197B5279AD',
+  '-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB)
 
 RELAY_SERVER_HEADER = (
-  ("router", "caerSidi 71.35.133.197 9001 0 0"),
-  ("published", "2012-03-01 17:15:27"),
-  ("bandwidth", "153600 256000 104590"),
-  ("reject", "*:*"),
-  ("onion-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
-  ("signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+  ('router', 'caerSidi 71.35.133.197 9001 0 0'),
+  ('published', '2012-03-01 17:15:27'),
+  ('bandwidth', '153600 256000 104590'),
+  ('reject', '*:*'),
+  ('onion-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
+  ('signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
 )
 
 RELAY_SERVER_FOOTER = (
-  ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+  ('router-signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
 )
 
 BRIDGE_SERVER_HEADER = (
-  ("router", "Unnamed 10.45.227.253 9001 0 0"),
-  ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
-  ("published", "2012-03-22 17:34:38"),
-  ("bandwidth", "409600 819200 5120"),
-  ("reject", "*:*"),
+  ('router', 'Unnamed 10.45.227.253 9001 0 0'),
+  ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
+  ('published', '2012-03-22 17:34:38'),
+  ('bandwidth', '409600 819200 5120'),
+  ('reject', '*:*'),
 )
 
 RELAY_EXTRAINFO_HEADER = (
-  ("extra-info", "ninja B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48"),
-  ("published", "2012-05-05 17:03:50"),
+  ('extra-info', 'ninja B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48'),
+  ('published', '2012-05-05 17:03:50'),
 )
 
 RELAY_EXTRAINFO_FOOTER = (
-  ("router-signature", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+  ('router-signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
 )
 
 BRIDGE_EXTRAINFO_HEADER = (
-  ("extra-info", "ec2bridgereaac65a3 1EC248422B57D9C0BD751892FE787585407479A4"),
-  ("published", "2012-05-05 17:03:50"),
+  ('extra-info', 'ec2bridgereaac65a3 1EC248422B57D9C0BD751892FE787585407479A4'),
+  ('published', '2012-05-05 17:03:50'),
 )
 
 BRIDGE_EXTRAINFO_FOOTER = (
-  ("router-digest", "006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4"),
+  ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
 )
 
 MICRODESCRIPTOR = (
-  ("onion-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+  ('onion-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
 )
 
 ROUTER_STATUS_ENTRY_V2_HEADER = (
-  ("r", "caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0"),
+  ('r', 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0'),
 )
 
 ROUTER_STATUS_ENTRY_V3_HEADER = (
-  ("r", "caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0"),
-  ("s", "Fast Named Running Stable Valid"),
+  ('r', 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0'),
+  ('s', 'Fast Named Running Stable Valid'),
 )
 
 ROUTER_STATUS_ENTRY_MICRO_V3_HEADER = (
-  ("r", "Konata ARIJF2zbqirB9IwsW0mQznccWww 2012-09-24 13:40:40 69.64.48.168 9001 9030"),
-  ("m", "aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70"),
-  ("s", "Fast Guard HSDir Named Running Stable V2Dir Valid"),
+  ('r', 'Konata ARIJF2zbqirB9IwsW0mQznccWww 2012-09-24 13:40:40 69.64.48.168 9001 9030'),
+  ('m', 'aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70'),
+  ('s', 'Fast Guard HSDir Named Running Stable V2Dir Valid'),
 )
 
 AUTHORITY_HEADER = (
-  ("dir-source", "turtles 27B6B5996C426270A5C95488AA5BCEB6BCC86956 no.place.com 76.73.17.194 9030 9090"),
-  ("contact", "Mike Perry <email>"),
+  ('dir-source', 'turtles 27B6B5996C426270A5C95488AA5BCEB6BCC86956 no.place.com 76.73.17.194 9030 9090'),
+  ('contact', 'Mike Perry <email>'),
 )
 
 KEY_CERTIFICATE_HEADER = (
-  ("dir-key-certificate-version", "3"),
-  ("fingerprint", "27B6B5996C426270A5C95488AA5BCEB6BCC86956"),
-  ("dir-key-published", "2011-11-28 21:51:04"),
-  ("dir-key-expires", "2012-11-28 21:51:04"),
-  ("dir-identity-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
-  ("dir-signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+  ('dir-key-certificate-version', '3'),
+  ('fingerprint', '27B6B5996C426270A5C95488AA5BCEB6BCC86956'),
+  ('dir-key-published', '2011-11-28 21:51:04'),
+  ('dir-key-expires', '2012-11-28 21:51:04'),
+  ('dir-identity-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
+  ('dir-signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
 )
 
 KEY_CERTIFICATE_FOOTER = (
-  ("dir-key-certification", "\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+  ('dir-key-certification', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
 )
 
 NETWORK_STATUS_DOCUMENT_HEADER_V2 = (
-  ("network-status-version", "2"),
-  ("dir-source", "18.244.0.114 18.244.0.114 80"),
-  ("fingerprint", "719BE45DE224B607C53707D0E2143E2D423E74CF"),
-  ("contact", "arma at mit dot edu"),
-  ("published", "2005-12-16 00:13:46"),
-  ("dir-signing-key", "\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----" % CRYPTO_BLOB),
+  ('network-status-version', '2'),
+  ('dir-source', '18.244.0.114 18.244.0.114 80'),
+  ('fingerprint', '719BE45DE224B607C53707D0E2143E2D423E74CF'),
+  ('contact', 'arma at mit dot edu'),
+  ('published', '2005-12-16 00:13:46'),
+  ('dir-signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
 )
 
 NETWORK_STATUS_DOCUMENT_FOOTER_V2 = (
-  ("directory-signature", "moria2\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----" % CRYPTO_BLOB),
+  ('directory-signature', 'moria2\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
 )
 
 NETWORK_STATUS_DOCUMENT_HEADER = (
-  ("network-status-version", "3"),
-  ("vote-status", "consensus"),
-  ("consensus-methods", None),
-  ("consensus-method", None),
-  ("published", None),
-  ("valid-after", "2012-09-02 22:00:00"),
-  ("fresh-until", "2012-09-02 22:00:00"),
-  ("valid-until", "2012-09-02 22:00:00"),
-  ("voting-delay", "300 300"),
-  ("client-versions", None),
-  ("server-versions", None),
-  ("known-flags", "Authority BadExit Exit Fast Guard HSDir Named Running Stable Unnamed V2Dir Valid"),
-  ("params", None),
+  ('network-status-version', '3'),
+  ('vote-status', 'consensus'),
+  ('consensus-methods', None),
+  ('consensus-method', None),
+  ('published', None),
+  ('valid-after', '2012-09-02 22:00:00'),
+  ('fresh-until', '2012-09-02 22:00:00'),
+  ('valid-until', '2012-09-02 22:00:00'),
+  ('voting-delay', '300 300'),
+  ('client-versions', None),
+  ('server-versions', None),
+  ('known-flags', 'Authority BadExit Exit Fast Guard HSDir Named Running Stable Unnamed V2Dir Valid'),
+  ('params', None),
 )
 
 NETWORK_STATUS_DOCUMENT_FOOTER = (
-  ("directory-footer", ""),
-  ("bandwidth-weights", None),
-  ("directory-signature", "%s %s\n%s" % (DOC_SIG.identity, DOC_SIG.key_digest, DOC_SIG.signature)),
+  ('directory-footer', ''),
+  ('bandwidth-weights', None),
+  ('directory-signature', '%s %s\n%s' % (DOC_SIG.identity, DOC_SIG.key_digest, DOC_SIG.signature)),
 )
 
 
@@ -179,7 +179,7 @@ def get_all_combinations(attr, include_empty = False):
 
   ::
 
-    >>> list(test.mocking.get_all_combinations(["a", "b", "c"]))
+    >>> list(test.mocking.get_all_combinations(['a', 'b', 'c']))
     [('a',), ('b',), ('c',), ('a', 'b'), ('a', 'c'), ('b', 'c'), ('a', 'b', 'c')]
 
   :param list attr: attributes to provide combinations for
@@ -224,10 +224,10 @@ def get_message(content, reformat = True):
   """
 
   if reformat:
-    if not content.endswith("\n"):
-      content += "\n"
+    if not content.endswith('\n'):
+      content += '\n'
 
-    content = content.replace("\n", "\r\n")
+    content = content.replace('\n', '\r\n')
 
   return stem.response.ControlMessage.from_str(content)
 
@@ -243,8 +243,8 @@ def get_protocolinfo_response(**attributes):
   :returns: stem.response.protocolinfo.ProtocolInfoResponse instance
   """
 
-  protocolinfo_response = get_message("250-PROTOCOLINFO 1\n250 OK")
-  stem.response.convert("PROTOCOLINFO", protocolinfo_response)
+  protocolinfo_response = get_message('250-PROTOCOLINFO 1\n250 OK')
+  stem.response.convert('PROTOCOLINFO', protocolinfo_response)
 
   for attr in attributes:
     setattr(protocolinfo_response, attr, attributes[attr])
@@ -307,22 +307,22 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
 
       if value is None:
         continue
-      elif value == "":
+      elif value == '':
         content.append(keyword)
-      elif keyword == "onion-key" or keyword == "signing-key" or keyword == "router-signature":
-        content.append("%s%s" % (keyword, value))
+      elif keyword == 'onion-key' or keyword == 'signing-key' or keyword == 'router-signature':
+        content.append('%s%s' % (keyword, value))
       else:
-        content.append("%s %s" % (keyword, value))
+        content.append('%s %s' % (keyword, value))
 
   remainder = []
 
   for k, v in attr.items():
     if v:
-      remainder.append("%s %s" % (k, v))
+      remainder.append('%s %s' % (k, v))
     else:
       remainder.append(k)
 
-  return stem.util.str_tools._to_bytes("\n".join(header_content + remainder + footer_content))
+  return stem.util.str_tools._to_bytes('\n'.join(header_content + remainder + footer_content))
 
 
 def get_relay_server_descriptor(attr = None, exclude = (), content = False, sign_content = False):
@@ -513,7 +513,7 @@ def get_directory_authority(attr = None, exclude = (), is_vote = False, content 
   desc_content = _get_descriptor_content(attr, exclude, AUTHORITY_HEADER)
 
   if is_vote:
-    desc_content += b"\n" + get_key_certificate(content = True)
+    desc_content += b'\n' + get_key_certificate(content = True)
 
   if content:
     return desc_content
@@ -580,10 +580,10 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
 
   # add defaults only found in a vote, consensus, or microdescriptor
 
-  if attr.get("vote-status") == "vote":
+  if attr.get('vote-status') == 'vote':
     extra_defaults = {
-      "consensus-methods": "1 9",
-      "published": "2012-09-02 22:00:00",
+      'consensus-methods': '1 9',
+      'published': '2012-09-02 22:00:00',
     }
 
     # votes need an authority to be valid
@@ -592,7 +592,7 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
       authorities = [get_directory_authority(is_vote = True)]
   else:
     extra_defaults = {
-      "consensus-method": "9",
+      'consensus-method': '9',
     }
 
   for k, v in extra_defaults.items():
@@ -603,31 +603,31 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
 
   # inject the authorities and/or routers between the header and footer
   if authorities:
-    if b"directory-footer" in desc_content:
-      footer_div = desc_content.find(b"\ndirectory-footer") + 1
-    elif b"directory-signature" in desc_content:
-      footer_div = desc_content.find(b"\ndirectory-signature") + 1
+    if b'directory-footer' in desc_content:
+      footer_div = desc_content.find(b'\ndirectory-footer') + 1
+    elif b'directory-signature' in desc_content:
+      footer_div = desc_content.find(b'\ndirectory-signature') + 1
     else:
       if routers:
-        desc_content += b"\n"
+        desc_content += b'\n'
 
       footer_div = len(desc_content) + 1
 
-    authority_content = stem.util.str_tools._to_bytes("\n".join([str(a) for a in authorities]) + "\n")
+    authority_content = stem.util.str_tools._to_bytes('\n'.join([str(a) for a in authorities]) + '\n')
     desc_content = desc_content[:footer_div] + authority_content + desc_content[footer_div:]
 
   if routers:
-    if b"directory-footer" in desc_content:
-      footer_div = desc_content.find(b"\ndirectory-footer") + 1
-    elif b"directory-signature" in desc_content:
-      footer_div = desc_content.find(b"\ndirectory-signature") + 1
+    if b'directory-footer' in desc_content:
+      footer_div = desc_content.find(b'\ndirectory-footer') + 1
+    elif b'directory-signature' in desc_content:
+      footer_div = desc_content.find(b'\ndirectory-signature') + 1
     else:
       if routers:
-        desc_content += b"\n"
+        desc_content += b'\n'
 
       footer_div = len(desc_content) + 1
 
-    router_content = stem.util.str_tools._to_bytes("\n".join([str(r) for r in routers]) + "\n")
+    router_content = stem.util.str_tools._to_bytes('\n'.join([str(r) for r in routers]) + '\n')
     desc_content = desc_content[:footer_div] + router_content + desc_content[footer_div:]
 
   if content:
@@ -675,9 +675,9 @@ def sign_descriptor_content(desc_content):
 
     # generate the new signing key string
 
-    signing_key_token = b"\nsigning-key\n"  # note the trailing '\n' is important here so as not to match the string elsewhere
-    signing_key_token_start = b"-----BEGIN RSA PUBLIC KEY-----\n"
-    signing_key_token_end = b"\n-----END RSA PUBLIC KEY-----\n"
+    signing_key_token = b'\nsigning-key\n'  # note the trailing '\n' is important here so as not to match the string elsewhere
+    signing_key_token_start = b'-----BEGIN RSA PUBLIC KEY-----\n'
+    signing_key_token_end = b'\n-----END RSA PUBLIC KEY-----\n'
     new_sk = signing_key_token + signing_key_token_start + public_key_string + signing_key_token_end
 
     # update the descriptor string with the new signing key
@@ -689,24 +689,24 @@ def sign_descriptor_content(desc_content):
     # generate the new fingerprint string
 
     key_hash = stem.util.str_tools._to_bytes(hashlib.sha1(seq_as_string).hexdigest().upper())
-    grouped_fingerprint = b""
+    grouped_fingerprint = b''
 
     for x in range(0, len(key_hash), 4):
-      grouped_fingerprint += b" " + key_hash[x:x + 4]
-      fingerprint_token = b"\nfingerprint"
+      grouped_fingerprint += b' ' + key_hash[x:x + 4]
+      fingerprint_token = b'\nfingerprint'
       new_fp = fingerprint_token + grouped_fingerprint
 
     # update the descriptor string with the new fingerprint
 
     ft_start = desc_content.find(fingerprint_token)
     if ft_start < 0:
-      fingerprint_token = b"\nopt fingerprint"
+      fingerprint_token = b'\nopt fingerprint'
       ft_start = desc_content.find(fingerprint_token)
 
     # if the descriptor does not already contain a fingerprint do not add one
 
     if ft_start >= 0:
-      ft_end = desc_content.find(b"\n", ft_start + 1)
+      ft_end = desc_content.find(b'\n', ft_start + 1)
       desc_content = desc_content[:ft_start] + new_fp + desc_content[ft_end:]
 
     # create a temporary object to use to calculate the digest
@@ -729,7 +729,7 @@ def sign_descriptor_content(desc_content):
     #  2 bytes for the type info
     #  1 byte for the separator
 
-    padding = b""
+    padding = b''
 
     for x in range(125 - len(new_digest)):
       padding += b'\xFF'
@@ -749,9 +749,9 @@ def sign_descriptor_content(desc_content):
 
     # update the descriptor string with the new signature
 
-    router_signature_token = b"\nrouter-signature\n"
-    router_signature_start = b"-----BEGIN SIGNATURE-----\n"
-    router_signature_end = b"\n-----END SIGNATURE-----\n"
+    router_signature_token = b'\nrouter-signature\n'
+    router_signature_start = b'-----BEGIN SIGNATURE-----\n'
+    router_signature_end = b'\n-----END SIGNATURE-----\n'
     rst_start = desc_content.find(router_signature_token)
     desc_content = desc_content[:rst_start] + router_signature_token + router_signature_start + signature_base64 + router_signature_end
 

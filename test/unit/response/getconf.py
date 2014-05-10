@@ -10,7 +10,7 @@ import stem.socket
 
 from test import mocking
 
-EMPTY_RESPONSE = "250 OK"
+EMPTY_RESPONSE = '250 OK'
 
 SINGLE_RESPONSE = """\
 250 DataDirectory=/home/neena/.tor"""
@@ -43,7 +43,7 @@ class TestGetConfResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(EMPTY_RESPONSE)
-    stem.response.convert("GETCONF", control_message)
+    stem.response.convert('GETCONF', control_message)
 
     # now this should be a GetConfResponse (ControlMessage subclass)
     self.assertTrue(isinstance(control_message, stem.response.ControlMessage))
@@ -57,8 +57,8 @@ class TestGetConfResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(SINGLE_RESPONSE)
-    stem.response.convert("GETCONF", control_message)
-    self.assertEqual({"DataDirectory": ["/home/neena/.tor"]}, control_message.entries)
+    stem.response.convert('GETCONF', control_message)
+    self.assertEqual({'DataDirectory': ['/home/neena/.tor']}, control_message.entries)
 
   def test_batch_response(self):
     """
@@ -66,13 +66,13 @@ class TestGetConfResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(BATCH_RESPONSE)
-    stem.response.convert("GETCONF", control_message)
+    stem.response.convert('GETCONF', control_message)
 
     expected = {
-      "CookieAuthentication": ["0"],
-      "ControlPort": ["9100"],
-      "DataDirectory": ["/tmp/fake dir"],
-      "DirPort": [],
+      'CookieAuthentication': ['0'],
+      'ControlPort': ['9100'],
+      'DataDirectory': ['/tmp/fake dir'],
+      'DirPort': [],
     }
 
     self.assertEqual(expected, control_message.entries)
@@ -83,11 +83,11 @@ class TestGetConfResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(MULTIVALUE_RESPONSE)
-    stem.response.convert("GETCONF", control_message)
+    stem.response.convert('GETCONF', control_message)
 
     expected = {
-      "ControlPort": ["9100"],
-      "ExitPolicy": ["accept 34.3.4.5", "accept 3.4.53.3", "accept 3.4.53.3", "reject 23.245.54.3"]
+      'ControlPort': ['9100'],
+      'ExitPolicy': ['accept 34.3.4.5', 'accept 3.4.53.3', 'accept 3.4.53.3', 'reject 23.245.54.3']
     }
 
     self.assertEqual(expected, control_message.entries)
@@ -98,12 +98,12 @@ class TestGetConfResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(UNRECOGNIZED_KEY_RESPONSE)
-    self.assertRaises(stem.InvalidArguments, stem.response.convert, "GETCONF", control_message)
+    self.assertRaises(stem.InvalidArguments, stem.response.convert, 'GETCONF', control_message)
 
     try:
-      stem.response.convert("GETCONF", control_message)
+      stem.response.convert('GETCONF', control_message)
     except stem.InvalidArguments as exc:
-      self.assertEqual(exc.arguments, ["brickroad", "submarine"])
+      self.assertEqual(exc.arguments, ['brickroad', 'submarine'])
 
   def test_invalid_content(self):
     """
@@ -113,4 +113,4 @@ class TestGetConfResponse(unittest.TestCase):
     """
 
     control_message = mocking.get_message(INVALID_RESPONSE)
-    self.assertRaises(stem.ProtocolError, stem.response.convert, "GETCONF", control_message)
+    self.assertRaises(stem.ProtocolError, stem.response.convert, 'GETCONF', control_message)

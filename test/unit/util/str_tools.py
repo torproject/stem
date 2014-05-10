@@ -15,15 +15,15 @@ class TestStrTools(unittest.TestCase):
     """
 
     # test the pydoc example
-    self.assertEquals("I Like Pepperjack!", str_tools._to_camel_case("I_LIKE_PEPPERJACK!"))
+    self.assertEquals('I Like Pepperjack!', str_tools._to_camel_case('I_LIKE_PEPPERJACK!'))
 
     # check a few edge cases
-    self.assertEquals("", str_tools._to_camel_case(""))
-    self.assertEquals("Hello", str_tools._to_camel_case("hello"))
-    self.assertEquals("Hello", str_tools._to_camel_case("HELLO"))
-    self.assertEquals("Hello  World", str_tools._to_camel_case("hello__world"))
-    self.assertEquals("Hello\tworld", str_tools._to_camel_case("hello\tWORLD"))
-    self.assertEquals("Hello\t\tWorld", str_tools._to_camel_case("hello__world", "_", "\t"))
+    self.assertEquals('', str_tools._to_camel_case(''))
+    self.assertEquals('Hello', str_tools._to_camel_case('hello'))
+    self.assertEquals('Hello', str_tools._to_camel_case('HELLO'))
+    self.assertEquals('Hello  World', str_tools._to_camel_case('hello__world'))
+    self.assertEquals('Hello\tworld', str_tools._to_camel_case('hello\tWORLD'))
+    self.assertEquals('Hello\t\tWorld', str_tools._to_camel_case('hello__world', '_', '\t'))
 
   def test_get_size_label(self):
     """

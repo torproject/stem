@@ -428,48 +428,48 @@ __url__ = 'https://stem.torproject.org/'
 __license__ = 'LGPLv3'
 
 __all__ = [
-  "descriptor",
-  "response",
-  "util",
-  "connection",
-  "control",
-  "exit_policy",
-  "prereq",
-  "process",
-  "socket",
-  "version",
-  "ControllerError",
-  "ProtocolError",
-  "OperationFailed",
-  "UnsatisfiableRequest",
-  "CircuitExtensionFailed",
-  "InvalidRequest",
-  "InvalidArguments",
-  "SocketError",
-  "SocketClosed",
-  "Runlevel",
-  "Signal",
-  "Flag",
-  "CircStatus",
-  "CircBuildFlag",
-  "CircPurpose",
-  "CircClosureReason",
-  "CircEvent",
-  "HiddenServiceState",
-  "HSAuth",
-  "HSDescAction",
-  "RelayEndReason",
-  "StreamStatus",
-  "StreamClosureReason",
-  "StreamSource",
-  "StreamPurpose",
-  "ORStatus",
-  "ORClosureReason",
-  "AuthDescriptorAction",
-  "StatusType",
-  "GuardType",
-  "GuardStatus",
-  "TimeoutSetType",
+  'descriptor',
+  'response',
+  'util',
+  'connection',
+  'control',
+  'exit_policy',
+  'prereq',
+  'process',
+  'socket',
+  'version',
+  'ControllerError',
+  'ProtocolError',
+  'OperationFailed',
+  'UnsatisfiableRequest',
+  'CircuitExtensionFailed',
+  'InvalidRequest',
+  'InvalidArguments',
+  'SocketError',
+  'SocketClosed',
+  'Runlevel',
+  'Signal',
+  'Flag',
+  'CircStatus',
+  'CircBuildFlag',
+  'CircPurpose',
+  'CircClosureReason',
+  'CircEvent',
+  'HiddenServiceState',
+  'HSAuth',
+  'HSDescAction',
+  'RelayEndReason',
+  'StreamStatus',
+  'StreamClosureReason',
+  'StreamSource',
+  'StreamPurpose',
+  'ORStatus',
+  'ORClosureReason',
+  'AuthDescriptorAction',
+  'StatusType',
+  'GuardType',
+  'GuardStatus',
+  'TimeoutSetType',
 ]
 
 import stem.util.enum
@@ -478,15 +478,15 @@ import stem.util.enum
 # this, but users will commonly provide None as the argument so need something
 # else fairly unique...
 
-UNDEFINED = "<Undefined_ >"
+UNDEFINED = '<Undefined_ >'
 
 
 class ControllerError(Exception):
-  "Base error for controller communication issues."
+  'Base error for controller communication issues.'
 
 
 class ProtocolError(ControllerError):
-  "Malformed content from the control socket."
+  'Malformed content from the control socket.'
 
 
 class OperationFailed(ControllerError):
@@ -544,239 +544,239 @@ class InvalidArguments(InvalidRequest):
 
 
 class SocketError(ControllerError):
-  "Error arose while communicating with the control socket."
+  'Error arose while communicating with the control socket.'
 
 
 class SocketClosed(SocketError):
-  "Control socket was closed before completing the message."
+  'Control socket was closed before completing the message.'
 
 Runlevel = stem.util.enum.UppercaseEnum(
-  "DEBUG",
-  "INFO",
-  "NOTICE",
-  "WARN",
-  "ERR",
+  'DEBUG',
+  'INFO',
+  'NOTICE',
+  'WARN',
+  'ERR',
 )
 
 Flag = stem.util.enum.Enum(
-  ("AUTHORITY", "Authority"),
-  ("BADEXIT", "BadExit"),
-  ("BADDIRECTORY", "BadDirectory"),
-  ("EXIT", "Exit"),
-  ("FAST", "Fast"),
-  ("GUARD", "Guard"),
-  ("HSDIR", "HSDir"),
-  ("NAMED", "Named"),
-  ("RUNNING", "Running"),
-  ("STABLE", "Stable"),
-  ("UNNAMED", "Unnamed"),
-  ("V2DIR", "V2Dir"),
-  ("V3DIR", "V3Dir"),
-  ("VALID", "Valid"),
+  ('AUTHORITY', 'Authority'),
+  ('BADEXIT', 'BadExit'),
+  ('BADDIRECTORY', 'BadDirectory'),
+  ('EXIT', 'Exit'),
+  ('FAST', 'Fast'),
+  ('GUARD', 'Guard'),
+  ('HSDIR', 'HSDir'),
+  ('NAMED', 'Named'),
+  ('RUNNING', 'Running'),
+  ('STABLE', 'Stable'),
+  ('UNNAMED', 'Unnamed'),
+  ('V2DIR', 'V2Dir'),
+  ('V3DIR', 'V3Dir'),
+  ('VALID', 'Valid'),
 )
 
 Signal = stem.util.enum.UppercaseEnum(
-  "RELOAD",
-  "HUP",
-  "SHUTDOWN",
-  "INT",
-  "DUMP",
-  "USR1",
-  "DEBUG",
-  "USR2",
-  "HALT",
-  "TERM",
-  "NEWNYM",
-  "CLEARDNSCACHE",
+  'RELOAD',
+  'HUP',
+  'SHUTDOWN',
+  'INT',
+  'DUMP',
+  'USR1',
+  'DEBUG',
+  'USR2',
+  'HALT',
+  'TERM',
+  'NEWNYM',
+  'CLEARDNSCACHE',
 )
 
 CircStatus = stem.util.enum.UppercaseEnum(
-  "LAUNCHED",
-  "BUILT",
-  "EXTENDED",
-  "FAILED",
-  "CLOSED",
+  'LAUNCHED',
+  'BUILT',
+  'EXTENDED',
+  'FAILED',
+  'CLOSED',
 )
 
 CircBuildFlag = stem.util.enum.UppercaseEnum(
-  "ONEHOP_TUNNEL",
-  "IS_INTERNAL",
-  "NEED_CAPACITY",
-  "NEED_UPTIME",
+  'ONEHOP_TUNNEL',
+  'IS_INTERNAL',
+  'NEED_CAPACITY',
+  'NEED_UPTIME',
 )
 
 CircPurpose = stem.util.enum.UppercaseEnum(
-  "GENERAL",
-  "HS_CLIENT_INTRO",
-  "HS_CLIENT_REND",
-  "HS_SERVICE_INTRO",
-  "HS_SERVICE_REND",
-  "TESTING",
-  "CONTROLLER",
-  "MEASURE_TIMEOUT",
+  'GENERAL',
+  'HS_CLIENT_INTRO',
+  'HS_CLIENT_REND',
+  'HS_SERVICE_INTRO',
+  'HS_SERVICE_REND',
+  'TESTING',
+  'CONTROLLER',
+  'MEASURE_TIMEOUT',
 )
 
 CircClosureReason = stem.util.enum.UppercaseEnum(
-  "NONE",
-  "TORPROTOCOL",
-  "INTERNAL",
-  "REQUESTED",
-  "HIBERNATING",
-  "RESOURCELIMIT",
-  "CONNECTFAILED",
-  "OR_IDENTITY",
-  "OR_CONN_CLOSED",
-  "FINISHED",
-  "TIMEOUT",
-  "DESTROYED",
-  "NOPATH",
-  "NOSUCHSERVICE",
-  "MEASUREMENT_EXPIRED",
+  'NONE',
+  'TORPROTOCOL',
+  'INTERNAL',
+  'REQUESTED',
+  'HIBERNATING',
+  'RESOURCELIMIT',
+  'CONNECTFAILED',
+  'OR_IDENTITY',
+  'OR_CONN_CLOSED',
+  'FINISHED',
+  'TIMEOUT',
+  'DESTROYED',
+  'NOPATH',
+  'NOSUCHSERVICE',
+  'MEASUREMENT_EXPIRED',
 )
 
 CircEvent = stem.util.enum.UppercaseEnum(
-  "PURPOSE_CHANGED",
-  "CANNIBALIZED",
+  'PURPOSE_CHANGED',
+  'CANNIBALIZED',
 )
 
 HiddenServiceState = stem.util.enum.UppercaseEnum(
-  "HSCI_CONNECTING",
-  "HSCI_INTRO_SENT",
-  "HSCI_DONE",
-  "HSCR_CONNECTING",
-  "HSCR_ESTABLISHED_IDLE",
-  "HSCR_ESTABLISHED_WAITING",
-  "HSCR_JOINED",
-  "HSSI_CONNECTING",
-  "HSSI_ESTABLISHED",
-  "HSSR_CONNECTING",
-  "HSSR_JOINED",
+  'HSCI_CONNECTING',
+  'HSCI_INTRO_SENT',
+  'HSCI_DONE',
+  'HSCR_CONNECTING',
+  'HSCR_ESTABLISHED_IDLE',
+  'HSCR_ESTABLISHED_WAITING',
+  'HSCR_JOINED',
+  'HSSI_CONNECTING',
+  'HSSI_ESTABLISHED',
+  'HSSR_CONNECTING',
+  'HSSR_JOINED',
 )
 
 RelayEndReason = stem.util.enum.UppercaseEnum(
-  "MISC",
-  "RESOLVEFAILED",
-  "CONNECTREFUSED",
-  "EXITPOLICY",
-  "DESTROY",
-  "DONE",
-  "TIMEOUT",
-  "NOROUTE",
-  "HIBERNATING",
-  "INTERNAL",
-  "RESOURCELIMIT",
-  "CONNRESET",
-  "TORPROTOCOL",
-  "NOTDIRECTORY",
+  'MISC',
+  'RESOLVEFAILED',
+  'CONNECTREFUSED',
+  'EXITPOLICY',
+  'DESTROY',
+  'DONE',
+  'TIMEOUT',
+  'NOROUTE',
+  'HIBERNATING',
+  'INTERNAL',
+  'RESOURCELIMIT',
+  'CONNRESET',
+  'TORPROTOCOL',
+  'NOTDIRECTORY',
 )
 
 StreamStatus = stem.util.enum.UppercaseEnum(
-  "NEW",
-  "NEWRESOLVE",
-  "REMAP",
-  "SENTCONNECT",
-  "SENTRESOLVE",
-  "SUCCEEDED",
-  "FAILED",
-  "DETACHED",
-  "CLOSED",
+  'NEW',
+  'NEWRESOLVE',
+  'REMAP',
+  'SENTCONNECT',
+  'SENTRESOLVE',
+  'SUCCEEDED',
+  'FAILED',
+  'DETACHED',
+  'CLOSED',
 )
 
 # StreamClosureReason is a superset of RelayEndReason
 StreamClosureReason = stem.util.enum.UppercaseEnum(*(RelayEndReason.keys() + [
-  "END",
-  "PRIVATE_ADDR",
+  'END',
+  'PRIVATE_ADDR',
 ]))
 
 StreamSource = stem.util.enum.UppercaseEnum(
-  "CACHE",
-  "EXIT",
+  'CACHE',
+  'EXIT',
 )
 
 StreamPurpose = stem.util.enum.UppercaseEnum(
-  "DIR_FETCH",
-  "DIR_UPLOAD",
-  "DNS_REQUEST",
-  "DIRPORT_TEST",
-  "USER",
+  'DIR_FETCH',
+  'DIR_UPLOAD',
+  'DNS_REQUEST',
+  'DIRPORT_TEST',
+  'USER',
 )
 
 ORStatus = stem.util.enum.UppercaseEnum(
-  "NEW",
-  "LAUNCHED",
-  "CONNECTED",
-  "FAILED",
-  "CLOSED",
+  'NEW',
+  'LAUNCHED',
+  'CONNECTED',
+  'FAILED',
+  'CLOSED',
 )
 
 ORClosureReason = stem.util.enum.UppercaseEnum(
-  "DONE",
-  "CONNECTREFUSED",
-  "IDENTITY",
-  "CONNECTRESET",
-  "TIMEOUT",
-  "NOROUTE",
-  "IOERROR",
-  "RESOURCELIMIT",
-  "MISC",
-  "PT_MISSING",
+  'DONE',
+  'CONNECTREFUSED',
+  'IDENTITY',
+  'CONNECTRESET',
+  'TIMEOUT',
+  'NOROUTE',
+  'IOERROR',
+  'RESOURCELIMIT',
+  'MISC',
+  'PT_MISSING',
 )
 
 AuthDescriptorAction = stem.util.enum.UppercaseEnum(
-  "ACCEPTED",
-  "DROPPED",
-  "REJECTED",
+  'ACCEPTED',
+  'DROPPED',
+  'REJECTED',
 )
 
 StatusType = stem.util.enum.UppercaseEnum(
-  "GENERAL",
-  "CLIENT",
-  "SERVER",
+  'GENERAL',
+  'CLIENT',
+  'SERVER',
 )
 
 GuardType = stem.util.enum.UppercaseEnum(
-  "ENTRY",
+  'ENTRY',
 )
 
 GuardStatus = stem.util.enum.UppercaseEnum(
-  "NEW",
-  "UP",
-  "DOWN",
-  "BAD",
-  "GOOD",
-  "DROPPED",
+  'NEW',
+  'UP',
+  'DOWN',
+  'BAD',
+  'GOOD',
+  'DROPPED',
 )
 
 TimeoutSetType = stem.util.enum.UppercaseEnum(
-  "COMPUTED",
-  "RESET",
-  "SUSPENDED",
-  "DISCARD",
-  "RESUME",
+  'COMPUTED',
+  'RESET',
+  'SUSPENDED',
+  'DISCARD',
+  'RESUME',
 )
 
 ConnectionType = stem.util.enum.UppercaseEnum(
-  "OR",
-  "DIR",
-  "EXIT",
+  'OR',
+  'DIR',
+  'EXIT',
 )
 
 TokenBucket = stem.util.enum.UppercaseEnum(
-  "GLOBAL",
-  "RELAY",
-  "ORCONN",
+  'GLOBAL',
+  'RELAY',
+  'ORCONN',
 )
 
 HSDescAction = stem.util.enum.UppercaseEnum(
-  "REQUESTED",
-  "RECEIVED",
-  "IGNORE",
-  "FAILED",
+  'REQUESTED',
+  'RECEIVED',
+  'IGNORE',
+  'FAILED',
 )
 
 HSAuth = stem.util.enum.UppercaseEnum(
-  "NO_AUTH",
-  "BASIC_AUTH",
-  "STEALTH_AUTH",
-  "UNKNOWN",
+  'NO_AUTH',
+  'BASIC_AUTH',
+  'STEALTH_AUTH',
+  'UNKNOWN',
 )

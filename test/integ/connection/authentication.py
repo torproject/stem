@@ -14,17 +14,17 @@ import test.runner
 # Responses given by tor for various authentication failures. These may change
 # in the future and if they do then this test should be updated.
 
-COOKIE_AUTH_FAIL = "Authentication failed: Wrong length on authentication cookie."
-SAFECOOKIE_AUTH_FAIL = "Authentication failed: Wrong length for safe cookie response."
-PASSWORD_AUTH_FAIL = "Authentication failed: Password did not match HashedControlPassword value from configuration. Maybe you tried a plain text password? If so, the standard requires that you put it in double quotes."
-MULTIPLE_AUTH_FAIL = "Authentication failed: Password did not match HashedControlPassword *or* authentication cookie."
-SAFECOOKIE_AUTHCHALLENGE_FAIL = "Cookie authentication is disabled"
+COOKIE_AUTH_FAIL = 'Authentication failed: Wrong length on authentication cookie.'
+SAFECOOKIE_AUTH_FAIL = 'Authentication failed: Wrong length for safe cookie response.'
+PASSWORD_AUTH_FAIL = 'Authentication failed: Password did not match HashedControlPassword value from configuration. Maybe you tried a plain text password? If so, the standard requires that you put it in double quotes.'
+MULTIPLE_AUTH_FAIL = 'Authentication failed: Password did not match HashedControlPassword *or* authentication cookie.'
+SAFECOOKIE_AUTHCHALLENGE_FAIL = 'Cookie authentication is disabled'
 
 # this only arises in cookie-only or password-only auth when we authenticate
 # with the wrong value
-INCORRECT_COOKIE_FAIL = "Authentication failed: Authentication cookie did not match expected value."
-INCORRECT_SAFECOOKIE_FAIL = "Authentication failed: Safe cookie response did not match expected value."
-INCORRECT_PASSWORD_FAIL = "Authentication failed: Password did not match HashedControlPassword value from configuration"
+INCORRECT_COOKIE_FAIL = 'Authentication failed: Authentication cookie did not match expected value.'
+INCORRECT_SAFECOOKIE_FAIL = 'Authentication failed: Safe cookie response did not match expected value.'
+INCORRECT_PASSWORD_FAIL = 'Authentication failed: Password did not match HashedControlPassword value from configuration'
 
 
 def _can_authenticate(auth_type):
@@ -196,9 +196,9 @@ class TestAuthenticate(unittest.TestCase):
     # tests with the incorrect password
     with runner.get_tor_socket(False) as control_socket:
       if is_password_only:
-        self.assertRaises(stem.connection.IncorrectPassword, stem.connection.authenticate, control_socket, "blarg")
+        self.assertRaises(stem.connection.IncorrectPassword, stem.connection.authenticate, control_socket, 'blarg')
       else:
-        stem.connection.authenticate(control_socket, "blarg", runner.get_chroot())
+        stem.connection.authenticate(control_socket, 'blarg', runner.get_chroot())
         test.runner.exercise_controller(self, control_socket)
 
     # tests with the right password
@@ -267,7 +267,7 @@ class TestAuthenticate(unittest.TestCase):
     # Check with an empty, invalid, and quoted password. These should work if
     # we have no authentication, and fail otherwise.
 
-    for auth_value in ("", "blarg", "this has a \" in it"):
+    for auth_value in ('', 'blarg', 'this has a " in it'):
       if _can_authenticate(stem.connection.AuthMethod.NONE):
         self._check_auth(auth_type, auth_value)
       else:
@@ -311,11 +311,11 @@ class TestAuthenticate(unittest.TestCase):
     if test.runner.require_control(self):
       return
 
-    auth_value = test.runner.get_runner().get_test_dir("fake_cookie")
+    auth_value = test.runner.get_runner().get_test_dir('fake_cookie')
 
     # we need to create a 32 byte cookie file to load from
-    fake_cookie = open(auth_value, "w")
-    fake_cookie.write("0" * 32)
+    fake_cookie = open(auth_value, 'w')
+    fake_cookie.write('0' * 32)
     fake_cookie.close()
 
     for auth_type in self.cookie_auth_methods:
@@ -369,7 +369,7 @@ class TestAuthenticate(unittest.TestCase):
     for auth_type in self.cookie_auth_methods:
       if os.path.getsize(auth_value) == 32:
         # Weird coincidence? Fail so we can pick another file to check against.
-        self.fail("Our torrc is 32 bytes, preventing the test_authenticate_cookie_wrong_size test from running.")
+        self.fail('Our torrc is 32 bytes, preventing the test_authenticate_cookie_wrong_size test from running.')
       else:
         self.assertRaises(stem.connection.IncorrectCookieSize, self._check_auth, auth_type, auth_value, False)
 

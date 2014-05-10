@@ -57,23 +57,23 @@ class TestTorDNSELDescriptor(unittest.TestCase):
     self.assertTrue(isinstance(descriptors[0], TorDNSEL))
     desc = descriptors[1]
     self.assertTrue(is_valid_fingerprint(desc.fingerprint))
-    self.assertEqual("00FF300624FECA7F40515C8D854EE925332580D6", desc.fingerprint)
+    self.assertEqual('00FF300624FECA7F40515C8D854EE925332580D6', desc.fingerprint)
     self.assertEqual(datetime.datetime(2013, 8, 18, 7, 2, 14), desc.published)
     self.assertEqual(datetime.datetime(2013, 8, 18, 9, 2, 58), desc.last_status)
     self.assertEqual(3, len(desc.exit_addresses))
     exit = desc.exit_addresses[0]
-    self.assertEqual("82.252.181.153", exit[0])
+    self.assertEqual('82.252.181.153', exit[0])
     self.assertEqual(datetime.datetime(2013, 8, 18, 8, 3, 1), exit[1])
 
     # block content raises value error
 
-    extra = b"ExtraContent goes here\n"
+    extra = b'ExtraContent goes here\n'
     descriptors = _parse_file(io.BytesIO(TEST_DESC + extra))
     self.assertRaises(ValueError, list, descriptors)
 
     # malformed fingerprint raises value errors
 
-    extra = b"ExitNode 030B22437D99B2DB2908B747B6"
+    extra = b'ExitNode 030B22437D99B2DB2908B747B6'
     self.assertRaises(ValueError, list, _parse_file(io.BytesIO(TEST_DESC + extra)))
 
     # malformed date raises value errors
@@ -84,5 +84,5 @@ class TestTorDNSELDescriptor(unittest.TestCase):
 
     desc = _parse_file(io.BytesIO(MALFORMED_ENTRY_2), validate=False).next()
     self.assertTrue(is_valid_fingerprint(desc.fingerprint))
-    self.assertEqual("030B22437D99B2DB2908B747B6962EAD13AB4038", desc.fingerprint)
+    self.assertEqual('030B22437D99B2DB2908B747B6962EAD13AB4038', desc.fingerprint)
     self.assertEqual(0, len(desc.exit_addresses))

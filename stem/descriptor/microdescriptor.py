@@ -33,17 +33,17 @@ the exit relays.
     controller.authenticate()
 
     exit_digests = set()
-    data_dir = controller.get_conf("DataDirectory")
+    data_dir = controller.get_conf('DataDirectory')
 
     for desc in controller.get_microdescriptors():
       if desc.exit_policy.is_exiting_allowed():
         exit_digests.add(desc.digest)
 
-    print "Exit Relays:"
+    print 'Exit Relays:'
 
     for desc in parse_file(os.path.join(data_dir, 'cached-microdesc-consensus')):
       if desc.digest in exit_digests:
-        print "  %s (%s)" % (desc.nickname, desc.fingerprint)
+        print '  %s (%s)' % (desc.nickname, desc.fingerprint)
 
 Doing the same is trivial with server descriptors...
 
@@ -51,11 +51,11 @@ Doing the same is trivial with server descriptors...
 
   from stem.descriptor import parse_file
 
-  print "Exit Relays:"
+  print 'Exit Relays:'
 
-  for desc in parse_file("/home/atagar/.tor/cached-descriptors"):
+  for desc in parse_file('/home/atagar/.tor/cached-descriptors'):
     if desc.exit_policy.is_exiting_allowed():
-      print "  %s (%s)" % (desc.nickname, desc.fingerprint)
+      print '  %s (%s)' % (desc.nickname, desc.fingerprint)
 
 **Module Overview:**
 
@@ -82,15 +82,15 @@ except ImportError:
   from stem.util.lru_cache import lru_cache
 
 REQUIRED_FIELDS = (
-  "onion-key",
+  'onion-key',
 )
 
 SINGLE_FIELDS = (
-  "onion-key",
-  "ntor-onion-key",
-  "family",
-  "p",
-  "p6",
+  'onion-key',
+  'ntor-onion-key',
+  'family',
+  'p',
+  'p6',
 )
 
 
@@ -111,7 +111,7 @@ def _parse_file(descriptor_file, validate = True, **kwargs):
   """
 
   while True:
-    annotations = _read_until_keywords("onion-key", descriptor_file)
+    annotations = _read_until_keywords('onion-key', descriptor_file)
 
     # read until we reach an annotation or onion-key line
     descriptor_lines = []
@@ -131,7 +131,7 @@ def _parse_file(descriptor_file, validate = True, **kwargs):
 
       if not line:
         break  # EOF
-      elif line.startswith(b"@") or line.startswith(b"onion-key"):
+      elif line.startswith(b'@') or line.startswith(b'onion-key'):
         descriptor_file.seek(last_position)
         break
       else:
@@ -141,7 +141,7 @@ def _parse_file(descriptor_file, validate = True, **kwargs):
       # strip newlines from annotations
       annotations = map(bytes.strip, annotations)
 
-      descriptor_text = bytes.join(b"", descriptor_lines)
+      descriptor_text = bytes.join(b'', descriptor_lines)
 
       yield Microdescriptor(descriptor_text, validate, annotations, **kwargs)
     else:
@@ -180,7 +180,7 @@ class Microdescriptor(Descriptor):
     self.ntor_onion_key = None
     self.or_addresses = []
     self.family = []
-    self.exit_policy = stem.exit_policy.MicroExitPolicy("reject 1-65535")
+    self.exit_policy = stem.exit_policy.MicroExitPolicy('reject 1-65535')
     self.exit_policy_v6 = None
     self.identifier_type = None
     self.identifier = None
@@ -214,8 +214,8 @@ class Microdescriptor(Descriptor):
     annotation_dict = {}
 
     for line in self._annotation_lines:
-      if b" " in line:
-        key, value = line.split(b" ", 1)
+      if b' ' in line:
+        key, value = line.split(b' ', 1)
         annotation_dict[key] = value
       else:
         annotation_dict[line] = None
@@ -249,28 +249,28 @@ class Microdescriptor(Descriptor):
       # most just work with the first (and only) value
       value, block_contents = values[0]
 
-      line = "%s %s" % (keyword, value)  # original line
+      line = '%s %s' % (keyword, value)  # original line
 
       if block_contents:
-        line += "\n%s" % block_contents
+        line += '\n%s' % block_contents
 
-      if keyword == "onion-key":
+      if keyword == 'onion-key':
         if validate and not block_contents:
-          raise ValueError("Onion key line must be followed by a public key: %s" % line)
+          raise ValueError('Onion key line must be followed by a public key: %s' % line)
 
         self.onion_key = block_contents
-      elif keyword == "ntor-onion-key":
+      elif keyword == 'ntor-onion-key':
         self.ntor_onion_key = value
-      elif keyword == "a":
+      elif keyword == 'a':
         for entry, _ in values:
           stem.descriptor.router_status_entry._parse_a_line(self, entry, validate)
-      elif keyword == "family":
-        self.family = value.split(" ")
-      elif keyword == "p":
+      elif keyword == 'family':
+        self.family = value.split(' ')
+      elif keyword == 'p':
         stem.descriptor.router_status_entry._parse_p_line(self, value, validate)
-      elif keyword == "p6":
+      elif keyword == 'p6':
         self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
-      elif keyword == "id":
+      elif keyword == 'id':
         value_comp = value.split()
 
         if len(value_comp) >= 2:

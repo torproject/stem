@@ -31,15 +31,15 @@ Parses replies from the control socket.
 """
 
 __all__ = [
-  "events",
-  "getinfo",
-  "getconf",
-  "protocolinfo",
-  "authchallenge",
-  "convert",
-  "ControlMessage",
-  "ControlLine",
-  "SingleLineResponse",
+  'events',
+  'getinfo',
+  'getconf',
+  'protocolinfo',
+  'authchallenge',
+  'convert',
+  'ControlMessage',
+  'ControlLine',
+  'SingleLineResponse',
 ]
 
 import re
@@ -48,7 +48,7 @@ import threading
 
 import stem.socket
 
-KEY_ARG = re.compile("^(\S+)=")
+KEY_ARG = re.compile('^(\S+)=')
 
 # Escape sequences from the 'esc_for_log' function of tor's 'common/util.c'.
 # It's hard to tell what controller functions use this in practice, but direct
@@ -57,8 +57,8 @@ KEY_ARG = re.compile("^(\S+)=")
 # - logged messages about bugs
 # - the 'getinfo_helper_listeners' function of control.c
 
-CONTROL_ESCAPES = {r"\\": "\\", r"\"": "\"", r"\'": "'",
-                   r"\r": "\r", r"\n": "\n", r"\t": "\t"}
+CONTROL_ESCAPES = {r'\\': '\\', r'\"': '\"', r'\'': '\'',
+                   r'\r': '\r', r'\n': '\n', r'\t': '\t'}
 
 
 def convert(response_type, message, **kwargs):
@@ -107,22 +107,22 @@ def convert(response_type, message, **kwargs):
   import stem.response.mapaddress
 
   if not isinstance(message, ControlMessage):
-    raise TypeError("Only able to convert stem.response.ControlMessage instances")
+    raise TypeError('Only able to convert stem.response.ControlMessage instances')
 
   response_types = {
-    "EVENT": stem.response.events.Event,
-    "GETINFO": stem.response.getinfo.GetInfoResponse,
-    "GETCONF": stem.response.getconf.GetConfResponse,
-    "MAPADDRESS": stem.response.mapaddress.MapAddressResponse,
-    "SINGLELINE": SingleLineResponse,
-    "PROTOCOLINFO": stem.response.protocolinfo.ProtocolInfoResponse,
-    "AUTHCHALLENGE": stem.response.authchallenge.AuthChallengeResponse,
+    'EVENT': stem.response.events.Event,
+    'GETINFO': stem.response.getinfo.GetInfoResponse,
+    'GETCONF': stem.response.getconf.GetConfResponse,
+    'MAPADDRESS': stem.response.mapaddress.MapAddressResponse,
+    'SINGLELINE': SingleLineResponse,
+    'PROTOCOLINFO': stem.response.protocolinfo.ProtocolInfoResponse,
+    'AUTHCHALLENGE': stem.response.authchallenge.AuthChallengeResponse,
   }
 
   try:
     response_class = response_types[response_type]
   except TypeError:
-    raise TypeError("Unsupported response type: %s" % response_type)
+    raise TypeError('Unsupported response type: %s' % response_type)
 
   message.__class__ = response_class
   message._parse_message(**kwargs)
@@ -171,7 +171,7 @@ class ControlMessage(object):
     """
 
     for code, _, _ in self._parsed_content:
-      if code == "250":
+      if code == '250':
         return True
 
     return False
@@ -238,7 +238,7 @@ class ControlMessage(object):
     formatting.
     """
 
-    return "\n".join(list(self))
+    return '\n'.join(list(self))
 
   def __iter__(self):
     """
@@ -323,7 +323,7 @@ class ControlLine(str):
     :returns: **True** if we have additional content, **False** otherwise
     """
 
-    return self._remainder == ""
+    return self._remainder == ''
 
   def is_next_quoted(self, escaped = False):
     """
@@ -432,7 +432,7 @@ class ControlLine(str):
 
     with self._remainder_lock:
       if self.is_empty():
-        raise IndexError("no remaining content to parse")
+        raise IndexError('no remaining content to parse')
 
       key_match = KEY_ARG.match(self._remainder)
 
@@ -463,10 +463,10 @@ def _parse_entry(line, quoted, escaped):
     * **IndexError** if there's nothing to parse from the line
   """
 
-  if line == "":
-    raise IndexError("no remaining content to parse")
+  if line == '':
+    raise IndexError('no remaining content to parse')
 
-  next_entry, remainder = "", line
+  next_entry, remainder = '', line
 
   if quoted:
     # validate and parse the quoted value
@@ -478,10 +478,10 @@ def _parse_entry(line, quoted, escaped):
     next_entry, remainder = remainder[1:end_quote], remainder[end_quote + 1:]
   else:
     # non-quoted value, just need to check if there's more data afterward
-    if " " in remainder:
-      next_entry, remainder = remainder.split(" ", 1)
+    if ' ' in remainder:
+      next_entry, remainder = remainder.split(' ', 1)
     else:
-      next_entry, remainder = remainder, ""
+      next_entry, remainder = remainder, ''
 
   if escaped:
     next_entry = _unescape(next_entry)
@@ -502,13 +502,13 @@ def _get_quote_indices(line, escaped):
   indices, quote_index = [], -1
 
   for _ in range(2):
-    quote_index = line.find("\"", quote_index + 1)
+    quote_index = line.find('"', quote_index + 1)
 
     # if we have escapes then we need to skip any r'\"' entries
     if escaped:
       # skip check if index is -1 (no match) or 0 (first character)
-      while quote_index >= 1 and line[quote_index - 1] == "\\":
-        quote_index = line.find("\"", quote_index + 1)
+      while quote_index >= 1 and line[quote_index - 1] == '\\':
+        quote_index = line.find('"', quote_index + 1)
 
     indices.append(quote_index)
 
@@ -540,7 +540,7 @@ def _unescape(entry):
     prefix, entry = _pop_with_unescape(entry)
     result.append(prefix)
 
-  return "".join(result)
+  return ''.join(result)
 
 
 class SingleLineResponse(ControlMessage):
@@ -566,15 +566,16 @@ class SingleLineResponse(ControlMessage):
     """
 
     if strict:
-      return self.content()[0] == ("250", " ", "OK")
-    return self.content()[0][0] == "250"
+      return self.content()[0] == ('250', ' ', 'OK')
+
+    return self.content()[0][0] == '250'
 
   def _parse_message(self):
     content = self.content()
 
     if len(content) > 1:
-      raise stem.ProtocolError("Received multi-line response")
+      raise stem.ProtocolError('Received multi-line response')
     elif len(content) == 0:
-      raise stem.ProtocolError("Received empty response")
+      raise stem.ProtocolError('Received empty response')
     else:
       self.code, _, self.message = content[0]

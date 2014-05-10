@@ -6,7 +6,7 @@ Handlers for text configuration files. Configurations are simple string to
 string mappings, with the configuration files using the following rules...
 
 * the key/value is separated by a space
-* anything after a "#" is ignored as a comment
+* anything after a '#' is ignored as a comment
 * excess whitespace is trimmed
 * empty lines are ignored
 * multi-line values can be defined by following the key with lines starting
@@ -31,11 +31,11 @@ For instance...
 ::
 
   config = {
-    "user.name": "Galen",
-    "user.password": "yabba1234",
-    "user.notes": "takes a fancy to pepperjack cheese",
-    "blankEntry.example": "",
-    "msg.greeting": "Multi-line message exclaiming of the\\nwonder and awe that is pepperjack!",
+    'user.name': 'Galen',
+    'user.password': 'yabba1234',
+    'user.notes': 'takes a fancy to pepperjack cheese',
+    'blankEntry.example': '',
+    'msg.greeting': 'Multi-line message exclaiming of the\\nwonder and awe that is pepperjack!',
   }
 
 Configurations are managed via the :class:`~stem.util.conf.Config` class. The
@@ -52,27 +52,27 @@ To do this use the :func:`~stem.util.conf.config_dict` function. For example...
   from stem.util import conf, connection
 
   def config_validator(key, value):
-    if key == "timeout":
+    if key == 'timeout':
       # require at least a one second timeout
       return max(1, value)
-    elif key == "endpoint":
+    elif key == 'endpoint':
       if not connection.is_valid_ipv4_address(value):
         raise ValueError("'%s' isn't a valid IPv4 address" % value)
-    elif key == "port":
+    elif key == 'port':
       if not connection.is_valid_port(value):
         raise ValueError("'%s' isn't a valid port" % value)
-    elif key == "retries":
+    elif key == 'retries':
       # negative retries really don't make sense
       return max(0, value)
 
-  CONFIG = conf.config_dict("ssh_login", {
-    "username": getpass.getuser(),
-    "password": "",
-    "timeout": 10,
-    "endpoint": "263.12.8.0",
-    "port": 22,
-    "reconnect": False,
-    "retries": 3,
+  CONFIG = conf.config_dict('ssh_login', {
+    'username': getpass.getuser(),
+    'password': '',
+    'timeout': 10,
+    'endpoint': '263.12.8.0',
+    'port': 22,
+    'reconnect': False,
+    'retries': 3,
   }, config_validator)
 
 There's several things going on here so lets take it step by step...
@@ -107,8 +107,8 @@ Now lets say our user has the following configuration file...
 ::
 
   >>> from stem.util import conf
-  >>> our_config = conf.get_config("ssh_login")
-  >>> our_config.load("/home/atagar/user_config")
+  >>> our_config = conf.get_config('ssh_login')
+  >>> our_config.load('/home/atagar/user_config')
   >>> print CONFIG  # doctest: +SKIP
   {
     "username": "waddle_doo",
@@ -385,19 +385,19 @@ class Config(object):
     # have something different in their config file (or it doesn't match this
     # type).
 
-    ssh_config = conf.config_dict("ssh_login", {
-      "login.user": "atagar",
-      "login.password": "pepperjack_is_awesome!",
-      "destination.ip": "127.0.0.1",
-      "destination.port": 22,
-      "startup.run": [],
+    ssh_config = conf.config_dict('ssh_login', {
+      'login.user': 'atagar',
+      'login.password': 'pepperjack_is_awesome!',
+      'destination.ip': '127.0.0.1',
+      'destination.port': 22,
+      'startup.run': [],
     })
 
     # Makes an empty config instance with the handle of 'ssh_login'. This is
     # a singleton so other classes can fetch this same configuration from
     # this handle.
 
-    user_config = conf.get_config("ssh_login")
+    user_config = conf.get_config('ssh_login')
 
     # Loads the user's configuration file, warning if this fails.
 
@@ -424,11 +424,11 @@ class Config(object):
     #
     # The other values are replaced, so ssh_config now becomes...
     #
-    # {"login.user": "atagar",
-    #  "login.password": "pepperjack_is_awesome!",
-    #  "destination.ip": "1.2.3.4",
-    #  "destination.port": 22,
-    #  "startup.run": ["export PATH=$PATH:~/bin", "alias l=ls"]}
+    # {'login.user': 'atagar',
+    #  'login.password': 'pepperjack_is_awesome!',
+    #  'destination.ip': '1.2.3.4',
+    #  'destination.port': 22,
+    #  'startup.run': ['export PATH=$PATH:~/bin', 'alias l=ls']}
     #
     # Information for what values fail to load and why are reported to
     # 'stem.util.log'.
@@ -462,9 +462,9 @@ class Config(object):
     if path:
       self._path = path
     elif not self._path:
-      raise ValueError("Unable to load configuration: no path provided")
+      raise ValueError('Unable to load configuration: no path provided')
 
-    with open(self._path, "r") as config_file:
+    with open(self._path, 'r') as config_file:
       read_contents = config_file.readlines()
 
     with self._contents_lock:
@@ -472,7 +472,7 @@ class Config(object):
         line = read_contents.pop(0)
 
         # strips any commenting or excess whitespace
-        comment_start = line.find("#")
+        comment_start = line.find('#')
 
         if comment_start != -1:
           line = line[:comment_start]
@@ -482,23 +482,23 @@ class Config(object):
         # parse the key/value pair
         if line:
           try:
-            key, value = line.split(" ", 1)
+            key, value = line.split(' ', 1)
             value = value.strip()
           except ValueError:
             log.debug("Config entry '%s' is expected to be of the format 'Key Value', defaulting to '%s' -> ''" % (line, line))
-            key, value = line, ""
+            key, value = line, ''
 
           if not value:
             # this might be a multi-line entry, try processing it as such
             multiline_buffer = []
 
-            while read_contents and read_contents[0].lstrip().startswith("|"):
+            while read_contents and read_contents[0].lstrip().startswith('|'):
               content = read_contents.pop(0).lstrip()[1:]  # removes '\s+|' prefix
-              content = content.rstrip("\n")           # trailing newline
+              content = content.rstrip('\n')  # trailing newline
               multiline_buffer.append(content)
 
             if multiline_buffer:
-              self.set(key, "\n".join(multiline_buffer), False)
+              self.set(key, '\n'.join(multiline_buffer), False)
               continue
 
           self.set(key, value, False)
@@ -516,15 +516,15 @@ class Config(object):
     if path:
       self._path = path
     elif not self._path:
-      raise ValueError("Unable to save configuration: no path provided")
+      raise ValueError('Unable to save configuration: no path provided')
 
     with self._contents_lock:
       with open(self._path, 'w') as output_file:
         for entry_key in sorted(self.keys()):
           for entry_value in self.get_value(entry_key, multiple = True):
             # check for multi line entries
-            if "\n" in entry_value:
-              entry_value = "\n|" + entry_value.replace("\n", "\n|")
+            if '\n' in entry_value:
+              entry_value = '\n|' + entry_value.replace('\n', '\n|')
 
             output_file.write('%s %s\n' % (entry_key, entry_value))
 
@@ -658,9 +658,9 @@ class Config(object):
       return val  # don't try to infer undefined values
 
     if isinstance(default, bool):
-      if val.lower() == "true":
+      if val.lower() == 'true':
         val = True
-      elif val.lower() == "false":
+      elif val.lower() == 'false':
         val = False
       else:
         log.debug("Config entry '%s' is expected to be a boolean, defaulting to '%s'" % (key, str(default)))
@@ -684,11 +684,11 @@ class Config(object):
     elif isinstance(default, dict):
       valMap = collections.OrderedDict()
       for entry in val:
-        if "=>" in entry:
-          entryKey, entryVal = entry.split("=>", 1)
+        if '=>' in entry:
+          entryKey, entryVal = entry.split('=>', 1)
           valMap[entryKey.strip()] = entryVal.strip()
         else:
-          log.debug("Ignoring invalid %s config entry (expected a mapping, but \"%s\" was missing \"=>\")" % (key, entry))
+          log.debug('Ignoring invalid %s config entry (expected a mapping, but "%s" was missing "=>")' % (key, entry))
       val = valMap
 
     return val
@@ -715,6 +715,6 @@ class Config(object):
         else:
           return self._contents[key][-1]
       else:
-        message_id = "stem.util.conf.missing_config_key_%s" % key
+        message_id = 'stem.util.conf.missing_config_key_%s' % key
         log.log_once(message_id, log.TRACE, "config entry '%s' not found, defaulting to '%s'" % (key, default))
         return default

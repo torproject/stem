@@ -10,8 +10,8 @@ destinations. For example...
 ::
 
   my_descriptors = [
-    "/tmp/server-descriptors-2012-03.tar.bz2",
-    "/tmp/archived_descriptors/",
+    '/tmp/server-descriptors-2012-03.tar.bz2',
+    '/tmp/archived_descriptors/',
   ]
 
   # prints the contents of all the descriptor files
@@ -33,10 +33,10 @@ and picks up where it left off if run again...
 
 ::
 
-  reader = DescriptorReader(["/tmp/descriptor_data"])
+  reader = DescriptorReader(['/tmp/descriptor_data'])
 
   try:
-    processed_files = load_processed_files("/tmp/used_descriptors")
+    processed_files = load_processed_files('/tmp/used_descriptors')
     reader.set_processed_files(processed_files)
   except: pass # could not load, maybe this is the first run
 
@@ -50,7 +50,7 @@ and picks up where it left off if run again...
 
     time.sleep(1)
 
-  save_processed_files("/tmp/used_descriptors", reader.get_processed_files())
+  save_processed_files('/tmp/used_descriptors', reader.get_processed_files())
 
 **Module Overview:**
 
@@ -87,7 +87,7 @@ import stem.descriptor
 import stem.prereq
 
 # flag to indicate when the reader thread is out of descriptor files to read
-FINISHED = "DONE"
+FINISHED = 'DONE'
 
 
 class FileSkipped(Exception):
@@ -104,7 +104,7 @@ class AlreadyRead(FileSkipped):
   """
 
   def __init__(self, last_modified, last_modified_when_read):
-    super(AlreadyRead, self).__init__("File has already been read since it was last modified. modification time: %s, last read: %s" % (last_modified, last_modified_when_read))
+    super(AlreadyRead, self).__init__('File has already been read since it was last modified. modification time: %s, last read: %s' % (last_modified, last_modified_when_read))
     self.last_modified = last_modified
     self.last_modified_when_read = last_modified_when_read
 
@@ -130,7 +130,7 @@ class UnrecognizedType(FileSkipped):
   """
 
   def __init__(self, mime_type):
-    super(UnrecognizedType, self).__init__("Unrecognized mime type: %s (%s)" % mime_type)
+    super(UnrecognizedType, self).__init__('Unrecognized mime type: %s (%s)' % mime_type)
     self.mime_type = mime_type
 
 
@@ -148,10 +148,10 @@ class ReadFailed(FileSkipped):
 
 
 class FileMissing(ReadFailed):
-  "File does not exist."
+  'File does not exist.'
 
   def __init__(self):
-    super(FileMissing, self).__init__("File does not exist")
+    super(FileMissing, self).__init__('File does not exist')
 
 
 def load_processed_files(path):
@@ -179,10 +179,10 @@ def load_processed_files(path):
       if not line:
         continue  # skip blank lines
 
-      if not " " in line:
-        raise TypeError("Malformed line: %s" % line)
+      if not ' ' in line:
+        raise TypeError('Malformed line: %s' % line)
 
-      path, timestamp = line.rsplit(" ", 1)
+      path, timestamp = line.rsplit(' ', 1)
 
       if not os.path.isabs(path):
         raise TypeError("'%s' is not an absolute path" % path)
@@ -219,12 +219,12 @@ def save_processed_files(path, processed_files):
   except OSError as exc:
     raise IOError(exc)
 
-  with open(path, "w") as output_file:
+  with open(path, 'w') as output_file:
     for path, timestamp in processed_files.items():
       if not os.path.isabs(path):
-        raise TypeError("Only absolute paths are acceptable: %s" % path)
+        raise TypeError('Only absolute paths are acceptable: %s' % path)
 
-      output_file.write("%s %i\n" % (path, timestamp))
+      output_file.write('%s %i\n' % (path, timestamp))
 
 
 class DescriptorReader(object):
@@ -378,10 +378,10 @@ class DescriptorReader(object):
 
     with self._reader_thread_lock:
       if self._reader_thread:
-        raise ValueError("Already running, you need to call stop() first")
+        raise ValueError('Already running, you need to call stop() first')
       else:
         self._is_stopped.clear()
-        self._reader_thread = threading.Thread(target = self._read_descriptor_files, name="Descriptor Reader")
+        self._reader_thread = threading.Thread(target = self._read_descriptor_files, name='Descriptor Reader')
         self._reader_thread.setDaemon(True)
         self._reader_thread.start()
 

@@ -16,7 +16,7 @@ class TestVersion(unittest.TestCase):
     Basic verification checks for the get_system_tor_version() function.
     """
 
-    if not stem.util.system.is_available("tor"):
+    if not stem.util.system.is_available('tor'):
       test.runner.skip(self, "(tor isn't in our path)")
       return
 
@@ -27,10 +27,10 @@ class TestVersion(unittest.TestCase):
     stem.version.get_system_tor_version()
 
     # try running against a command that exists, but isn't tor
-    self.assertRaises(IOError, stem.version.get_system_tor_version, "ls")
+    self.assertRaises(IOError, stem.version.get_system_tor_version, 'ls')
 
     # try running against a command that doesn't exist
-    self.assertRaises(IOError, stem.version.get_system_tor_version, "blarg")
+    self.assertRaises(IOError, stem.version.get_system_tor_version, 'blarg')
 
   def test_get_system_tor_version_value(self):
     """
@@ -55,7 +55,7 @@ class TestVersion(unittest.TestCase):
       return
 
     control_socket = test.runner.get_runner().get_tor_socket()
-    control_socket.send("GETINFO version")
+    control_socket.send('GETINFO version')
     version_response = control_socket.recv()
     control_socket.close()
 

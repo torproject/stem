@@ -39,18 +39,18 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
     auth_methods, unknown_auth_methods = [], []
     remaining_lines = list(self)
 
-    if not self.is_ok() or not remaining_lines.pop() == "OK":
+    if not self.is_ok() or not remaining_lines.pop() == 'OK':
       raise stem.ProtocolError("PROTOCOLINFO response didn't have an OK status:\n%s" % self)
 
     # sanity check that we're a PROTOCOLINFO response
-    if not remaining_lines[0].startswith("PROTOCOLINFO"):
-      raise stem.ProtocolError("Message is not a PROTOCOLINFO response:\n%s" % self)
+    if not remaining_lines[0].startswith('PROTOCOLINFO'):
+      raise stem.ProtocolError('Message is not a PROTOCOLINFO response:\n%s' % self)
 
     while remaining_lines:
       line = remaining_lines.pop(0)
       line_type = line.pop()
 
-      if line_type == "PROTOCOLINFO":
+      if line_type == 'PROTOCOLINFO':
         # Line format:
         #   FirstLine = "PROTOCOLINFO" SP PIVERSION CRLF
         #   PIVERSION = 1*DIGIT
@@ -61,16 +61,16 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
         try:
           self.protocol_version = int(line.pop())
         except ValueError:
-          raise stem.ProtocolError("PROTOCOLINFO response version is non-numeric: %s" % line)
+          raise stem.ProtocolError('PROTOCOLINFO response version is non-numeric: %s' % line)
 
-        # The piversion really should be "1" but, according to the spec, tor
+        # The piversion really should be '1' but, according to the spec, tor
         # does not necessarily need to provide the PROTOCOLINFO version that we
         # requested. Log if it's something we aren't expecting but still make
         # an effort to parse like a v1 response.
 
         if self.protocol_version != 1:
           log.info("We made a PROTOCOLINFO version 1 query but got a version %i response instead. We'll still try to use it, but this may cause problems." % self.protocol_version)
-      elif line_type == "AUTH":
+      elif line_type == 'AUTH':
         # Line format:
         #   AuthLine = "250-AUTH" SP "METHODS=" AuthMethod *("," AuthMethod)
         #              *(SP "COOKIEFILE=" AuthCookieFile) CRLF
@@ -78,21 +78,21 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
         #   AuthCookieFile = QuotedString
 
         # parse AuthMethod mapping
-        if not line.is_next_mapping("METHODS"):
+        if not line.is_next_mapping('METHODS'):
           raise stem.ProtocolError("PROTOCOLINFO response's AUTH line is missing its mandatory 'METHODS' mapping: %s" % line)
 
-        for method in line.pop_mapping()[1].split(","):
-          if method == "NULL":
+        for method in line.pop_mapping()[1].split(','):
+          if method == 'NULL':
             auth_methods.append(AuthMethod.NONE)
-          elif method == "HASHEDPASSWORD":
+          elif method == 'HASHEDPASSWORD':
             auth_methods.append(AuthMethod.PASSWORD)
-          elif method == "COOKIE":
+          elif method == 'COOKIE':
             auth_methods.append(AuthMethod.COOKIE)
-          elif method == "SAFECOOKIE":
+          elif method == 'SAFECOOKIE':
             auth_methods.append(AuthMethod.SAFECOOKIE)
           else:
             unknown_auth_methods.append(method)
-            message_id = "stem.response.protocolinfo.unknown_auth_%s" % method
+            message_id = 'stem.response.protocolinfo.unknown_auth_%s' % method
             log.log_once(message_id, log.INFO, "PROTOCOLINFO response included a type of authentication that we don't recognize: %s" % method)
 
             # our auth_methods should have a single AuthMethod.UNKNOWN entry if
@@ -101,14 +101,14 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
               auth_methods.append(AuthMethod.UNKNOWN)
 
         # parse optional COOKIEFILE mapping (quoted and can have escapes)
-        if line.is_next_mapping("COOKIEFILE", True, True):
+        if line.is_next_mapping('COOKIEFILE', True, True):
           self.cookie_path = line.pop_mapping(True, True)[1]
-      elif line_type == "VERSION":
+      elif line_type == 'VERSION':
         # Line format:
         #   VersionLine = "250-VERSION" SP "Tor=" TorVersion OptArguments CRLF
         #   TorVersion = QuotedString
 
-        if not line.is_next_mapping("Tor", True):
+        if not line.is_next_mapping('Tor', True):
           raise stem.ProtocolError("PROTOCOLINFO response's VERSION line is missing its mandatory tor version mapping: %s" % line)
 
         try:

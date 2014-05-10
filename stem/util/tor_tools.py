@@ -34,10 +34,10 @@ import re
 # case insensitive. Tor doesn't define this in the spec so flipping a coin
 # and going with case insensitive.
 
-HEX_DIGIT = "[0-9a-fA-F]"
-FINGERPRINT_PATTERN = re.compile("^%s{40}$" % HEX_DIGIT)
-NICKNAME_PATTERN = re.compile("^[a-zA-Z0-9]{1,19}$")
-CIRC_ID_PATTERN = re.compile("^[a-zA-Z0-9]{1,16}$")
+HEX_DIGIT = '[0-9a-fA-F]'
+FINGERPRINT_PATTERN = re.compile('^%s{40}$' % HEX_DIGIT)
+NICKNAME_PATTERN = re.compile('^[a-zA-Z0-9]{1,19}$')
+CIRC_ID_PATTERN = re.compile('^[a-zA-Z0-9]{1,16}$')
 
 
 def is_valid_fingerprint(entry, check_prefix = False):
@@ -55,7 +55,7 @@ def is_valid_fingerprint(entry, check_prefix = False):
   if not isinstance(entry, (str, unicode)):
     return False
   elif check_prefix:
-    if not entry or entry[0] != "$":
+    if not entry or entry[0] != '$':
       return False
 
     entry = entry[1:]
@@ -124,4 +124,4 @@ def is_hex_digits(entry, count):
   :returns: **True** if the string matches this number
   """
 
-  return bool(re.match("^%s{%i}$" % (HEX_DIGIT, count), entry))
+  return bool(re.match('^%s{%i}$' % (HEX_DIGIT, count), entry))

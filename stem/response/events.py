@@ -18,9 +18,9 @@ from stem.util import connection, log, str_tools, tor_tools
 # because some positional arguments, like circuit paths, can have an equal
 # sign.
 
-KW_ARG = re.compile("^(.*) ([A-Za-z0-9_]+)=(\S*)$")
-QUOTED_KW_ARG = re.compile("^(.*) ([A-Za-z0-9_]+)=\"(.*)\"$")
-CELL_TYPE = re.compile("^[a-z0-9_]+$")
+KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)=(\S*)$')
+QUOTED_KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)="(.*)"$')
+CELL_TYPE = re.compile('^[a-z0-9_]+$')
 
 
 class Event(stem.response.ControlMessage):
@@ -47,7 +47,7 @@ class Event(stem.response.ControlMessage):
       arrived_at = int(time.time())
 
     if not str(self).strip():
-      raise stem.ProtocolError("Received a blank tor event. Events must at the very least have a type.")
+      raise stem.ProtocolError('Received a blank tor event. Events must at the very least have a type.')
 
     self.type = str(self).split().pop(0)
     self.arrived_at = arrived_at
@@ -117,7 +117,7 @@ class Event(stem.response.ControlMessage):
             if attr_values[-1].endswith('"'):
               break
 
-          attr_value = " ".join(attr_values)[1:-1]
+          attr_value = ' '.join(attr_values)[1:-1]
         else:
           attr_value = positional.pop(0)
 
@@ -147,7 +147,7 @@ class Event(stem.response.ControlMessage):
 
       for value in attr_values:
         if not value in attr_enum:
-          log_id = "event.%s.unknown_%s.%s" % (self.type.lower(), attr, value)
+          log_id = 'event.%s.unknown_%s.%s' % (self.type.lower(), attr, value)
           unrecognized_msg = "%s event had an unrecognized %s (%s). Maybe a new addition to the control protocol? Full Event: '%s'" % (self.type, attr, value, self)
           log.log_once(log_id, log.INFO, unrecognized_msg)
 
@@ -173,34 +173,34 @@ class AddrMapEvent(Event):
     **False** otherwise or **None** if undefined
   """
 
-  _POSITIONAL_ARGS = ("hostname", "destination", "expiry")
+  _POSITIONAL_ARGS = ('hostname', 'destination', 'expiry')
   _KEYWORD_ARGS = {
-    "error": "error",
-    "EXPIRES": "utc_expiry",
-    "CACHED": "cached",
+    'error': 'error',
+    'EXPIRES': 'utc_expiry',
+    'CACHED': 'cached',
   }
-  _OPTIONALLY_QUOTED = ("expiry")
+  _OPTIONALLY_QUOTED = ('expiry')
 
   def _parse(self):
-    if self.destination == "<error>":
+    if self.destination == '<error>':
       self.destination = None
 
     if self.expiry is not None:
-      if self.expiry == "NEVER":
+      if self.expiry == 'NEVER':
         self.expiry = None
       else:
         try:
-          self.expiry = datetime.datetime.strptime(self.expiry, "%Y-%m-%d %H:%M:%S")
+          self.expiry = datetime.datetime.strptime(self.expiry, '%Y-%m-%d %H:%M:%S')
         except ValueError:
-          raise stem.ProtocolError("Unable to parse date in ADDRMAP event: %s" % self)
+          raise stem.ProtocolError('Unable to parse date in ADDRMAP event: %s' % self)
 
     if self.utc_expiry is not None:
-      self.utc_expiry = datetime.datetime.strptime(self.utc_expiry, "%Y-%m-%d %H:%M:%S")
+      self.utc_expiry = datetime.datetime.strptime(self.utc_expiry, '%Y-%m-%d %H:%M:%S')
 
     if self.cached is not None:
-      if self.cached == "YES":
+      if self.cached == 'YES':
         self.cached = True
-      elif self.cached == "NO":
+      elif self.cached == 'NO':
         self.cached = False
       else:
         raise stem.ProtocolError("An ADDRMAP event's CACHED mapping can only be 'YES' or 'NO': %s" % self)
@@ -227,7 +227,7 @@ class AuthDirNewDescEvent(Event):
 
     if len(lines) < 5:
       raise stem.ProtocolError("AUTHDIR_NEWDESCS events must contain lines for at least the type, action, message, descriptor, and terminating 'OK'")
-    elif not lines[-1] == "OK":
+    elif not lines[-1] == 'OK':
       raise stem.ProtocolError("AUTHDIR_NEWDESCS doesn't end with an 'OK'")
 
     self.action = lines[1]
@@ -246,13 +246,13 @@ class BandwidthEvent(Event):
   :var long written: bytes sent by tor that second
   """
 
-  _POSITIONAL_ARGS = ("read", "written")
+  _POSITIONAL_ARGS = ('read', 'written')
 
   def _parse(self):
     if not self.read:
-      raise stem.ProtocolError("BW event is missing its read value")
+      raise stem.ProtocolError('BW event is missing its read value')
     elif not self.written:
-      raise stem.ProtocolError("BW event is missing its written value")
+      raise stem.ProtocolError('BW event is missing its written value')
     elif not self.read.isdigit() or not self.written.isdigit():
       raise stem.ProtocolError("A BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
 
@@ -278,16 +278,16 @@ class BuildTimeoutSetEvent(Event):
   :var float close_rate: ratio of measurement circuits that are closed
   """
 
-  _POSITIONAL_ARGS = ("set_type",)
+  _POSITIONAL_ARGS = ('set_type',)
   _KEYWORD_ARGS = {
-    "TOTAL_TIMES": "total_times",
-    "TIMEOUT_MS": "timeout",
-    "XM": "xm",
-    "ALPHA": "alpha",
-    "CUTOFF_QUANTILE": "quantile",
-    "TIMEOUT_RATE": "timeout_rate",
-    "CLOSE_MS": "close_timeout",
-    "CLOSE_RATE": "close_rate",
+    'TOTAL_TIMES': 'total_times',
+    'TIMEOUT_MS': 'timeout',
+    'XM': 'xm',
+    'ALPHA': 'alpha',
+    'CUTOFF_QUANTILE': 'quantile',
+    'TIMEOUT_RATE': 'timeout_rate',
+    'CLOSE_MS': 'close_timeout',
+    'CLOSE_RATE': 'close_rate',
   }
   _VERSION_ADDED = stem.version.Requirement.EVENT_BUILDTIMEOUT_SET
 
@@ -301,7 +301,7 @@ class BuildTimeoutSetEvent(Event):
         try:
           setattr(self, param, int(param_value))
         except ValueError:
-          raise stem.ProtocolError("The %s of a BUILDTIMEOUT_SET should be an integer: %s" % (param, self))
+          raise stem.ProtocolError('The %s of a BUILDTIMEOUT_SET should be an integer: %s' % (param, self))
 
     for param in ('alpha', 'quantile', 'timeout_rate', 'close_rate'):
       param_value = getattr(self, param)
@@ -310,7 +310,7 @@ class BuildTimeoutSetEvent(Event):
         try:
           setattr(self, param, float(param_value))
         except ValueError:
-          raise stem.ProtocolError("The %s of a BUILDTIMEOUT_SET should be a float: %s" % (param, self))
+          raise stem.ProtocolError('The %s of a BUILDTIMEOUT_SET should be a float: %s' % (param, self))
 
     self._log_if_unrecognized('set_type', stem.TimeoutSetType)
 
@@ -340,15 +340,15 @@ class CircuitEvent(Event):
   :var stem.CircClosureReason remote_reason: remote side's reason for the circuit to be closed
   """
 
-  _POSITIONAL_ARGS = ("id", "status", "path")
+  _POSITIONAL_ARGS = ('id', 'status', 'path')
   _KEYWORD_ARGS = {
-    "BUILD_FLAGS": "build_flags",
-    "PURPOSE": "purpose",
-    "HS_STATE": "hs_state",
-    "REND_QUERY": "rend_query",
-    "TIME_CREATED": "created",
-    "REASON": "reason",
-    "REMOTE_REASON": "remote_reason",
+    'BUILD_FLAGS': 'build_flags',
+    'PURPOSE': 'purpose',
+    'HS_STATE': 'hs_state',
+    'REND_QUERY': 'rend_query',
+    'TIME_CREATED': 'created',
+    'REASON': 'reason',
+    'REMOTE_REASON': 'remote_reason',
   }
 
   def _parse(self):
@@ -361,7 +361,7 @@ class CircuitEvent(Event):
       try:
         self.created = str_tools._parse_iso_timestamp(self.created)
       except ValueError as exc:
-        raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
+        raise stem.ProtocolError('Unable to parse create date (%s): %s' % (exc, self))
 
     if not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
@@ -432,15 +432,15 @@ class CircMinorEvent(Event):
   :var stem.HiddenServiceState old_hs_state: prior status as a hidden service circuit
   """
 
-  _POSITIONAL_ARGS = ("id", "event", "path")
+  _POSITIONAL_ARGS = ('id', 'event', 'path')
   _KEYWORD_ARGS = {
-    "BUILD_FLAGS": "build_flags",
-    "PURPOSE": "purpose",
-    "HS_STATE": "hs_state",
-    "REND_QUERY": "rend_query",
-    "TIME_CREATED": "created",
-    "OLD_PURPOSE": "old_purpose",
-    "OLD_HS_STATE": "old_hs_state",
+    'BUILD_FLAGS': 'build_flags',
+    'PURPOSE': 'purpose',
+    'HS_STATE': 'hs_state',
+    'REND_QUERY': 'rend_query',
+    'TIME_CREATED': 'created',
+    'OLD_PURPOSE': 'old_purpose',
+    'OLD_HS_STATE': 'old_hs_state',
   }
   _VERSION_ADDED = stem.version.Requirement.EVENT_CIRC_MINOR
 
@@ -454,7 +454,7 @@ class CircMinorEvent(Event):
       try:
         self.created = str_tools._parse_iso_timestamp(self.created)
       except ValueError as exc:
-        raise stem.ProtocolError("Unable to parse create date (%s): %s" % (exc, self))
+        raise stem.ProtocolError('Unable to parse create date (%s): %s' % (exc, self))
 
     if not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
@@ -479,15 +479,15 @@ class ClientsSeenEvent(Event):
   """
 
   _KEYWORD_ARGS = {
-    "TimeStarted": "start_time",
-    "CountrySummary": "locales",
-    "IPVersions": "ip_versions",
+    'TimeStarted': 'start_time',
+    'CountrySummary': 'locales',
+    'IPVersions': 'ip_versions',
   }
   _VERSION_ADDED = stem.version.Requirement.EVENT_CLIENTS_SEEN
 
   def _parse(self):
     if self.start_time is not None:
-      self.start_time = datetime.datetime.strptime(self.start_time, "%Y-%m-%d %H:%M:%S")
+      self.start_time = datetime.datetime.strptime(self.start_time, '%Y-%m-%d %H:%M:%S')
 
     if self.locales is not None:
       locale_to_count = {}
@@ -501,7 +501,7 @@ class ClientsSeenEvent(Event):
         if len(locale) != 2:
           raise stem.ProtocolError("Locales should be a two character code, got '%s': %s" % (locale, self))
         elif not count.isdigit():
-          raise stem.ProtocolError("Locale count was non-numeric (%s): %s" % (count, self))
+          raise stem.ProtocolError('Locale count was non-numeric (%s): %s' % (count, self))
         elif locale in locale_to_count:
           raise stem.ProtocolError("CountrySummary had multiple mappings for '%s': %s" % (locale, self))
 
@@ -519,7 +519,7 @@ class ClientsSeenEvent(Event):
         protocol, count = entry.split('=', 1)
 
         if not count.isdigit():
-          raise stem.ProtocolError("IP protocol count was non-numeric (%s): %s" % (count, self))
+          raise stem.ProtocolError('IP protocol count was non-numeric (%s): %s' % (count, self))
 
         protocol_to_count[protocol] = int(count)
 
@@ -591,7 +591,7 @@ class GuardEvent(Event):
   """
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_GUARD
-  _POSITIONAL_ARGS = ("guard_type", "endpoint", "status")
+  _POSITIONAL_ARGS = ('guard_type', 'endpoint', 'status')
 
   def _parse(self):
     self.endpoint_fingerprint = None
@@ -625,7 +625,7 @@ class HSDescEvent(Event):
   """
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_HS_DESC
-  _POSITIONAL_ARGS = ("action", "address", "authentication", "directory", "descriptor_id")
+  _POSITIONAL_ARGS = ('action', 'address', 'authentication', 'directory', 'descriptor_id')
 
   def _parse(self):
     self.directory_fingerprint = None
@@ -662,7 +662,7 @@ class LogEvent(Event):
     # message is our content, minus the runlevel and ending "OK" if a
     # multi-line message
 
-    self.message = str(self)[len(self.runlevel) + 1:].rstrip("\nOK")
+    self.message = str(self)[len(self.runlevel) + 1:].rstrip('\nOK')
 
 
 class NetworkStatusEvent(Event):
@@ -679,7 +679,7 @@ class NetworkStatusEvent(Event):
   _VERSION_ADDED = stem.version.Requirement.EVENT_NS
 
   def _parse(self):
-    content = str(self).lstrip("NS\n").rstrip("\nOK")
+    content = str(self).lstrip('NS\n').rstrip('\nOK')
 
     self.desc = list(stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(str_tools._to_bytes(content)),
@@ -704,7 +704,7 @@ class NewConsensusEvent(Event):
   _VERSION_ADDED = stem.version.Requirement.EVENT_NEWCONSENSUS
 
   def _parse(self):
-    content = str(self).lstrip("NEWCONSENSUS\n").rstrip("\nOK")
+    content = str(self).lstrip('NEWCONSENSUS\n').rstrip('\nOK')
 
     self.desc = list(stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(str_tools._to_bytes(content)),
@@ -762,11 +762,11 @@ class ORConnEvent(Event):
   :var int circ_count: number of established and pending circuits
   """
 
-  _POSITIONAL_ARGS = ("endpoint", "status")
+  _POSITIONAL_ARGS = ('endpoint', 'status')
   _KEYWORD_ARGS = {
-    "REASON": "reason",
-    "NCIRCS": "circ_count",
-    "ID": "id",
+    'REASON': 'reason',
+    'NCIRCS': 'circ_count',
+    'ID': 'id',
   }
 
   def _parse(self):
@@ -792,7 +792,7 @@ class ORConnEvent(Event):
 
     if self.circ_count is not None:
       if not self.circ_count.isdigit():
-        raise stem.ProtocolError("ORCONN event got a non-numeric circuit count (%s): %s" % (self.circ_count, self))
+        raise stem.ProtocolError('ORCONN event got a non-numeric circuit count (%s): %s' % (self.circ_count, self))
 
       self.circ_count = int(self.circ_count)
 
@@ -820,7 +820,7 @@ class SignalEvent(Event):
   :var stem.Signal signal: signal that tor received
   """
 
-  _POSITIONAL_ARGS = ("signal",)
+  _POSITIONAL_ARGS = ('signal',)
   _VERSION_ADDED = stem.version.Requirement.EVENT_SIGNAL
 
   def _parse(self):
@@ -851,7 +851,7 @@ class StatusEvent(Event):
   :var str message: logged message
   """
 
-  _POSITIONAL_ARGS = ("runlevel", "action")
+  _POSITIONAL_ARGS = ('runlevel', 'action')
   _VERSION_ADDED = stem.version.Requirement.EVENT_STATUS
 
   def _parse(self):
@@ -889,13 +889,13 @@ class StreamEvent(Event):
   :var stem.StreamPurpose purpose: purpose for the stream
   """
 
-  _POSITIONAL_ARGS = ("id", "status", "circ_id", "target")
+  _POSITIONAL_ARGS = ('id', 'status', 'circ_id', 'target')
   _KEYWORD_ARGS = {
-    "REASON": "reason",
-    "REMOTE_REASON": "remote_reason",
-    "SOURCE": "source",
-    "SOURCE_ADDR": "source_addr",
-    "PURPOSE": "purpose",
+    'REASON': 'reason',
+    'REMOTE_REASON': 'remote_reason',
+    'SOURCE': 'source',
+    'SOURCE_ADDR': 'source_addr',
+    'PURPOSE': 'purpose',
   }
 
   def _parse(self):
@@ -930,7 +930,7 @@ class StreamEvent(Event):
 
     # spec specifies a circ_id of zero if the stream is unattached
 
-    if self.circ_id == "0":
+    if self.circ_id == '0':
       self.circ_id = None
 
     self._log_if_unrecognized('reason', stem.StreamClosureReason)
@@ -950,16 +950,16 @@ class StreamBwEvent(Event):
   :var long read: bytes received by the application
   """
 
-  _POSITIONAL_ARGS = ("id", "written", "read")
+  _POSITIONAL_ARGS = ('id', 'written', 'read')
   _VERSION_ADDED = stem.version.Requirement.EVENT_STREAM_BW
 
   def _parse(self):
     if not tor_tools.is_valid_stream_id(self.id):
       raise stem.ProtocolError("Stream IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     elif not self.written:
-      raise stem.ProtocolError("STREAM_BW event is missing its written value")
+      raise stem.ProtocolError('STREAM_BW event is missing its written value')
     elif not self.read:
-      raise stem.ProtocolError("STREAM_BW event is missing its read value")
+      raise stem.ProtocolError('STREAM_BW event is missing its read value')
     elif not self.read.isdigit() or not self.written.isdigit():
       raise stem.ProtocolError("A STREAM_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
 
@@ -982,7 +982,7 @@ class TransportLaunchedEvent(Event):
   :var int port: port where the transport is listening for connections
   """
 
-  _POSITIONAL_ARGS = ("type", "name", "address", "port")
+  _POSITIONAL_ARGS = ('type', 'name', 'address', 'port')
   _VERSION_ADDED = stem.version.Requirement.EVENT_TRANSPORT_LAUNCHED
 
   def _parse(self):
@@ -994,7 +994,7 @@ class TransportLaunchedEvent(Event):
       raise stem.ProtocolError("Transport address isn't a valid IPv4 or IPv6 address: %s" % self)
 
     if not connection.is_valid_port(self.port):
-      raise stem.ProtocolError("Transport port is invalid: %s" % self)
+      raise stem.ProtocolError('Transport port is invalid: %s' % self)
 
     self.port = int(self.port)
 
@@ -1015,23 +1015,23 @@ class ConnectionBandwidthEvent(Event):
   """
 
   _KEYWORD_ARGS = {
-    "ID": "id",
-    "TYPE": "type",
-    "READ": "read",
-    "WRITTEN": "written",
+    'ID': 'id',
+    'TYPE': 'type',
+    'READ': 'read',
+    'WRITTEN': 'written',
   }
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_CONN_BW
 
   def _parse(self):
     if not self.id:
-      raise stem.ProtocolError("CONN_BW event is missing its id")
+      raise stem.ProtocolError('CONN_BW event is missing its id')
     elif not self.type:
-      raise stem.ProtocolError("CONN_BW event is missing its type")
+      raise stem.ProtocolError('CONN_BW event is missing its type')
     elif not self.read:
-      raise stem.ProtocolError("CONN_BW event is missing its read value")
+      raise stem.ProtocolError('CONN_BW event is missing its read value')
     elif not self.written:
-      raise stem.ProtocolError("CONN_BW event is missing its written value")
+      raise stem.ProtocolError('CONN_BW event is missing its written value')
     elif not self.read.isdigit() or not self.written.isdigit():
       raise stem.ProtocolError("A CONN_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
     elif not tor_tools.is_valid_connection_id(self.id):
@@ -1058,20 +1058,20 @@ class CircuitBandwidthEvent(Event):
   """
 
   _KEYWORD_ARGS = {
-    "ID": "id",
-    "READ": "read",
-    "WRITTEN": "written",
+    'ID': 'id',
+    'READ': 'read',
+    'WRITTEN': 'written',
   }
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_CIRC_BW
 
   def _parse(self):
     if not self.id:
-      raise stem.ProtocolError("CIRC_BW event is missing its id")
+      raise stem.ProtocolError('CIRC_BW event is missing its id')
     elif not self.read:
-      raise stem.ProtocolError("CIRC_BW event is missing its read value")
+      raise stem.ProtocolError('CIRC_BW event is missing its read value')
     elif not self.written:
-      raise stem.ProtocolError("CIRC_BW event is missing its written value")
+      raise stem.ProtocolError('CIRC_BW event is missing its written value')
     elif not self.read.isdigit() or not self.written.isdigit():
       raise stem.ProtocolError("A CIRC_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
     elif not tor_tools.is_valid_circuit_id(self.id):
@@ -1105,17 +1105,17 @@ class CellStatsEvent(Event):
   """
 
   _KEYWORD_ARGS = {
-    "ID": "id",
-    "InboundQueue": "inbound_queue",
-    "InboundConn": "inbound_connection",
-    "InboundAdded": "inbound_added",
-    "InboundRemoved": "inbound_removed",
-    "InboundTime": "inbound_time",
-    "OutboundQueue": "outbound_queue",
-    "OutboundConn": "outbound_connection",
-    "OutboundAdded": "outbound_added",
-    "OutboundRemoved": "outbound_removed",
-    "OutboundTime": "outbound_time",
+    'ID': 'id',
+    'InboundQueue': 'inbound_queue',
+    'InboundConn': 'inbound_connection',
+    'InboundAdded': 'inbound_added',
+    'InboundRemoved': 'inbound_removed',
+    'InboundTime': 'inbound_time',
+    'OutboundQueue': 'outbound_queue',
+    'OutboundConn': 'outbound_connection',
+    'OutboundAdded': 'outbound_added',
+    'OutboundRemoved': 'outbound_removed',
+    'OutboundTime': 'outbound_time',
   }
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_CELL_STATS
@@ -1156,12 +1156,12 @@ class TokenBucketEmptyEvent(Event):
   :var int last_refill: time in milliseconds the bucket has been empty since last refilled
   """
 
-  _POSITIONAL_ARGS = ("bucket",)
+  _POSITIONAL_ARGS = ('bucket',)
   _KEYWORD_ARGS = {
-    "ID": "id",
-    "READ": "read",
-    "WRITTEN": "written",
-    "LAST": "last_refill",
+    'ID': 'id',
+    'READ': 'read',
+    'WRITTEN': 'written',
+    'LAST': 'last_refill',
   }
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_TB_EMPTY
@@ -1220,38 +1220,38 @@ def _parse_cell_type_mapping(mapping):
 
 
 EVENT_TYPE_TO_CLASS = {
-  "ADDRMAP": AddrMapEvent,
-  "AUTHDIR_NEWDESCS": AuthDirNewDescEvent,
-  "BUILDTIMEOUT_SET": BuildTimeoutSetEvent,
-  "BW": BandwidthEvent,
-  "CELL_STATS": CellStatsEvent,
-  "CIRC": CircuitEvent,
-  "CIRC_BW": CircuitBandwidthEvent,
-  "CIRC_MINOR": CircMinorEvent,
-  "CLIENTS_SEEN": ClientsSeenEvent,
-  "CONF_CHANGED": ConfChangedEvent,
-  "CONN_BW": ConnectionBandwidthEvent,
-  "DEBUG": LogEvent,
-  "DESCCHANGED": DescChangedEvent,
-  "ERR": LogEvent,
-  "GUARD": GuardEvent,
-  "HS_DESC": HSDescEvent,
-  "INFO": LogEvent,
-  "NEWCONSENSUS": NewConsensusEvent,
-  "NEWDESC": NewDescEvent,
-  "NOTICE": LogEvent,
-  "NS": NetworkStatusEvent,
-  "ORCONN": ORConnEvent,
-  "SIGNAL": SignalEvent,
-  "STATUS_CLIENT": StatusEvent,
-  "STATUS_GENERAL": StatusEvent,
-  "STATUS_SERVER": StatusEvent,
-  "STREAM": StreamEvent,
-  "STREAM_BW": StreamBwEvent,
-  "TB_EMPTY": TokenBucketEmptyEvent,
-  "TRANSPORT_LAUNCHED": TransportLaunchedEvent,
-  "WARN": LogEvent,
+  'ADDRMAP': AddrMapEvent,
+  'AUTHDIR_NEWDESCS': AuthDirNewDescEvent,
+  'BUILDTIMEOUT_SET': BuildTimeoutSetEvent,
+  'BW': BandwidthEvent,
+  'CELL_STATS': CellStatsEvent,
+  'CIRC': CircuitEvent,
+  'CIRC_BW': CircuitBandwidthEvent,
+  'CIRC_MINOR': CircMinorEvent,
+  'CLIENTS_SEEN': ClientsSeenEvent,
+  'CONF_CHANGED': ConfChangedEvent,
+  'CONN_BW': ConnectionBandwidthEvent,
+  'DEBUG': LogEvent,
+  'DESCCHANGED': DescChangedEvent,
+  'ERR': LogEvent,
+  'GUARD': GuardEvent,
+  'HS_DESC': HSDescEvent,
+  'INFO': LogEvent,
+  'NEWCONSENSUS': NewConsensusEvent,
+  'NEWDESC': NewDescEvent,
+  'NOTICE': LogEvent,
+  'NS': NetworkStatusEvent,
+  'ORCONN': ORConnEvent,
+  'SIGNAL': SignalEvent,
+  'STATUS_CLIENT': StatusEvent,
+  'STATUS_GENERAL': StatusEvent,
+  'STATUS_SERVER': StatusEvent,
+  'STREAM': StreamEvent,
+  'STREAM_BW': StreamBwEvent,
+  'TB_EMPTY': TokenBucketEmptyEvent,
+  'TRANSPORT_LAUNCHED': TransportLaunchedEvent,
+  'WARN': LogEvent,
 
   # accounting for a bug in tor 0.2.0.22
-  "STATUS_SEVER": StatusEvent,
+  'STATUS_SEVER': StatusEvent,
 }

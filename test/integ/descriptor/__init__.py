@@ -3,17 +3,17 @@ Integration tests for stem.descriptor.* contents.
 """
 
 __all__ = [
-  "reader",
-  "extrainfo_descriptor",
-  "microdescriptor",
-  "server_descriptor",
-  "get_resource",
-  "open_desc",
+  'reader',
+  'extrainfo_descriptor',
+  'microdescriptor',
+  'server_descriptor',
+  'get_resource',
+  'open_desc',
 ]
 
 import os
 
-DESCRIPTOR_TEST_DATA = os.path.join(os.path.dirname(__file__), "data")
+DESCRIPTOR_TEST_DATA = os.path.join(os.path.dirname(__file__), 'data')
 
 
 def get_resource(filename):

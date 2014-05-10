@@ -54,25 +54,27 @@ class TestSystem(unittest.TestCase):
     """
 
     # I have yet to see a platform without 'ls'
+
     if stem.util.system.is_windows():
-      self.assertTrue(stem.util.system.is_available("dir"))
+      self.assertTrue(stem.util.system.is_available('dir'))
     else:
-      self.assertTrue(stem.util.system.is_available("ls"))
+      self.assertTrue(stem.util.system.is_available('ls'))
 
     # but it would be kinda weird if this did...
-    self.assertFalse(stem.util.system.is_available("blarg_and_stuff"))
+
+    self.assertFalse(stem.util.system.is_available('blarg_and_stuff'))
 
   def test_is_running(self):
     """
     Checks the stem.util.system.is_running function.
     """
 
-    if not stem.util.system.is_available("ps"):
-      test.runner.skip(self, "(ps unavailable)")
+    if not stem.util.system.is_available('ps'):
+      test.runner.skip(self, '(ps unavailable)')
       return
 
-    self.assertTrue(stem.util.system.is_running("tor"))
-    self.assertFalse(stem.util.system.is_running("blarg_and_stuff"))
+    self.assertTrue(stem.util.system.is_running('tor'))
+    self.assertFalse(stem.util.system.is_running('blarg_and_stuff'))
 
   def test_get_pid_by_name(self):
     """
@@ -81,15 +83,15 @@ class TestSystem(unittest.TestCase):
     """
 
     if stem.util.system.is_windows():
-      test.runner.skip(self, "(unavailable on windows)")
+      test.runner.skip(self, '(unavailable on windows)')
       return
     elif self._is_extra_tor_running():
-      test.runner.skip(self, "(multiple tor instances)")
+      test.runner.skip(self, '(multiple tor instances)')
       return
 
     tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
-    self.assertEquals(None, stem.util.system.get_pid_by_name("blarg_and_stuff"))
+    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name('tor'))
+    self.assertEquals(None, stem.util.system.get_pid_by_name('blarg_and_stuff'))
 
   def test_get_pid_by_name_pgrep(self):
     """
@@ -97,13 +99,13 @@ class TestSystem(unittest.TestCase):
     """
 
     if self._is_extra_tor_running():
-      test.runner.skip(self, "(multiple tor instances)")
+      test.runner.skip(self, '(multiple tor instances)')
       return
-    elif not stem.util.system.is_available("pgrep"):
-      test.runner.skip(self, "(pgrep unavailable)")
+    elif not stem.util.system.is_available('pgrep'):
+      test.runner.skip(self, '(pgrep unavailable)')
       return
 
-    pgrep_prefix = stem.util.system.GET_PID_BY_NAME_PGREP % ""
+    pgrep_prefix = stem.util.system.GET_PID_BY_NAME_PGREP % ''
 
     call_replacement = filter_system_call([pgrep_prefix])
 
@@ -111,7 +113,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name('tor'))
 
   def test_get_pid_by_name_pidof(self):
     """
@@ -119,13 +121,13 @@ class TestSystem(unittest.TestCase):
     """
 
     if self._is_extra_tor_running():
-      test.runner.skip(self, "(multiple tor instances)")
+      test.runner.skip(self, '(multiple tor instances)')
       return
-    elif not stem.util.system.is_available("pidof"):
-      test.runner.skip(self, "(pidof unavailable)")
+    elif not stem.util.system.is_available('pidof'):
+      test.runner.skip(self, '(pidof unavailable)')
       return
 
-    pidof_prefix = stem.util.system.GET_PID_BY_NAME_PIDOF % ""
+    pidof_prefix = stem.util.system.GET_PID_BY_NAME_PIDOF % ''
 
     call_replacement = filter_system_call([pidof_prefix])
 
@@ -133,7 +135,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name('tor'))
 
   def test_get_pid_by_name_ps_linux(self):
     """
@@ -141,16 +143,16 @@ class TestSystem(unittest.TestCase):
     """
 
     if self._is_extra_tor_running():
-      test.runner.skip(self, "(multiple tor instances)")
+      test.runner.skip(self, '(multiple tor instances)')
       return
-    elif not stem.util.system.is_available("ps"):
-      test.runner.skip(self, "(ps unavailable)")
+    elif not stem.util.system.is_available('ps'):
+      test.runner.skip(self, '(ps unavailable)')
       return
     elif stem.util.system.is_bsd():
-      test.runner.skip(self, "(linux only)")
+      test.runner.skip(self, '(linux only)')
       return
 
-    ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_LINUX % ""
+    ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_LINUX % ''
 
     call_replacement = filter_system_call([ps_prefix])
 
@@ -158,7 +160,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name('tor'))
 
   def test_get_pid_by_name_ps_bsd(self):
     """
@@ -166,13 +168,13 @@ class TestSystem(unittest.TestCase):
     """
 
     if self._is_extra_tor_running():
-      test.runner.skip(self, "(multiple tor instances)")
+      test.runner.skip(self, '(multiple tor instances)')
       return
-    elif not stem.util.system.is_available("ps"):
-      test.runner.skip(self, "(ps unavailable)")
+    elif not stem.util.system.is_available('ps'):
+      test.runner.skip(self, '(ps unavailable)')
       return
     elif not stem.util.system.is_bsd():
-      test.runner.skip(self, "(bsd only)")
+      test.runner.skip(self, '(bsd only)')
       return
 
     ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_BSD
@@ -183,7 +185,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name("tor"))
+      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name('tor'))
 
   def test_get_pid_by_name_lsof(self):
     """
@@ -192,16 +194,16 @@ class TestSystem(unittest.TestCase):
 
     runner = test.runner.get_runner()
     if self._is_extra_tor_running():
-      test.runner.skip(self, "(multiple tor instances)")
+      test.runner.skip(self, '(multiple tor instances)')
       return
-    elif not stem.util.system.is_available("lsof"):
-      test.runner.skip(self, "(lsof unavailable)")
+    elif not stem.util.system.is_available('lsof'):
+      test.runner.skip(self, '(lsof unavailable)')
       return
     elif not runner.is_ptraceable():
-      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
 
-    lsof_prefix = stem.util.system.GET_PID_BY_NAME_LSOF % ""
+    lsof_prefix = stem.util.system.GET_PID_BY_NAME_LSOF % ''
 
     call_replacement = filter_system_call([lsof_prefix])
 
@@ -209,7 +211,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       our_tor_pid = test.runner.get_runner().get_pid()
-      all_tor_pids = stem.util.system.get_pid_by_name("tor", multiple = True)
+      all_tor_pids = stem.util.system.get_pid_by_name('tor', multiple = True)
 
       if len(all_tor_pids) == 1:
         self.assertEquals(our_tor_pid, all_tor_pids[0])
@@ -221,21 +223,21 @@ class TestSystem(unittest.TestCase):
 
     runner = test.runner.get_runner()
     if stem.util.system.is_windows():
-      test.runner.skip(self, "(unavailable on windows)")
+      test.runner.skip(self, '(unavailable on windows)')
       return
     elif not _has_port():
-      test.runner.skip(self, "(test instance has no port)")
+      test.runner.skip(self, '(test instance has no port)')
       return
     elif stem.util.system.is_mac():
-      test.runner.skip(self, "(resolvers unavailable)")
+      test.runner.skip(self, '(resolvers unavailable)')
       return
     elif not runner.is_ptraceable():
-      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
-    elif not (stem.util.system.is_available("netstat") or
-              stem.util.system.is_available("sockstat") or
-              stem.util.system.is_available("lsof")):
-      test.runner.skip(self, "(connection resolvers unavailable)")
+    elif not (stem.util.system.is_available('netstat') or
+              stem.util.system.is_available('sockstat') or
+              stem.util.system.is_available('lsof')):
+      test.runner.skip(self, '(connection resolvers unavailable)')
       return
 
     tor_pid, tor_port = runner.get_pid(), test.runner.CONTROL_PORT
@@ -249,16 +251,16 @@ class TestSystem(unittest.TestCase):
 
     runner = test.runner.get_runner()
     if not _has_port():
-      test.runner.skip(self, "(test instance has no port)")
+      test.runner.skip(self, '(test instance has no port)')
       return
-    elif not stem.util.system.is_available("netstat"):
-      test.runner.skip(self, "(netstat unavailable)")
+    elif not stem.util.system.is_available('netstat'):
+      test.runner.skip(self, '(netstat unavailable)')
       return
     elif stem.util.system.is_bsd() or stem.util.system.is_windows():
-      test.runner.skip(self, "(linux only)")
+      test.runner.skip(self, '(linux only)')
       return
     elif not runner.is_ptraceable():
-      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
 
     netstat_prefix = stem.util.system.GET_PID_BY_PORT_NETSTAT
@@ -278,19 +280,19 @@ class TestSystem(unittest.TestCase):
 
     runner = test.runner.get_runner()
     if not _has_port():
-      test.runner.skip(self, "(test instance has no port)")
+      test.runner.skip(self, '(test instance has no port)')
       return
-    elif not stem.util.system.is_available("sockstat"):
-      test.runner.skip(self, "(sockstat unavailable)")
+    elif not stem.util.system.is_available('sockstat'):
+      test.runner.skip(self, '(sockstat unavailable)')
       return
     elif not stem.util.system.is_bsd():
-      test.runner.skip(self, "(bsd only)")
+      test.runner.skip(self, '(bsd only)')
       return
     elif not runner.is_ptraceable():
-      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
 
-    sockstat_prefix = stem.util.system.GET_PID_BY_PORT_SOCKSTAT % ""
+    sockstat_prefix = stem.util.system.GET_PID_BY_PORT_SOCKSTAT % ''
 
     call_replacement = filter_system_call([sockstat_prefix])
 
@@ -307,16 +309,16 @@ class TestSystem(unittest.TestCase):
 
     runner = test.runner.get_runner()
     if not _has_port():
-      test.runner.skip(self, "(test instance has no port)")
+      test.runner.skip(self, '(test instance has no port)')
       return
-    elif not stem.util.system.is_available("lsof"):
-      test.runner.skip(self, "(lsof unavailable)")
+    elif not stem.util.system.is_available('lsof'):
+      test.runner.skip(self, '(lsof unavailable)')
       return
     elif stem.util.system.is_mac():
-      test.runner.skip(self, "(resolvers unavailable)")
+      test.runner.skip(self, '(resolvers unavailable)')
       return
     elif not runner.is_ptraceable():
-      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
 
     lsof_prefix = stem.util.system.GET_PID_BY_PORT_LSOF
@@ -350,10 +352,10 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if stem.util.system.is_windows():
-      test.runner.skip(self, "(unavailable on windows)")
+      test.runner.skip(self, '(unavailable on windows)')
       return
     elif not runner.is_ptraceable():
-      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
 
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
@@ -366,15 +368,17 @@ class TestSystem(unittest.TestCase):
     """
 
     runner = test.runner.get_runner()
-    if not stem.util.system.is_available("pwdx"):
-      test.runner.skip(self, "(pwdx unavailable)")
+
+    if not stem.util.system.is_available('pwdx'):
+      test.runner.skip(self, '(pwdx unavailable)')
       return
     elif not runner.is_ptraceable():
-      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
 
     # filter the call function to only allow this command
-    pwdx_prefix = stem.util.system.GET_CWD_PWDX % ""
+
+    pwdx_prefix = stem.util.system.GET_CWD_PWDX % ''
 
     call_replacement = filter_system_call([pwdx_prefix])
 
@@ -390,15 +394,17 @@ class TestSystem(unittest.TestCase):
     """
 
     runner = test.runner.get_runner()
-    if not stem.util.system.is_available("lsof"):
-      test.runner.skip(self, "(lsof unavailable)")
+
+    if not stem.util.system.is_available('lsof'):
+      test.runner.skip(self, '(lsof unavailable)')
       return
     elif not runner.is_ptraceable():
-      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
 
     # filter the call function to only allow this command
-    lsof_prefix = "lsof -a -p "
+
+    lsof_prefix = 'lsof -a -p '
 
     call_replacement = filter_system_call([lsof_prefix])
 
@@ -423,7 +429,7 @@ class TestSystem(unittest.TestCase):
     """
 
     if not stem.util.proc.is_available():
-      test.runner.skip(self, "(proc unavailable)")
+      test.runner.skip(self, '(proc unavailable)')
       return
 
     call_replacement = filter_system_call(['ps '])
@@ -442,8 +448,8 @@ class TestSystem(unittest.TestCase):
     Tests the get_user function with a ps response.
     """
 
-    if not stem.util.system.is_available("ps"):
-      test.runner.skip(self, "(ps unavailable)")
+    if not stem.util.system.is_available('ps'):
+      test.runner.skip(self, '(ps unavailable)')
       return
 
     pid = test.runner.get_runner().get_pid()
@@ -464,7 +470,7 @@ class TestSystem(unittest.TestCase):
     """
 
     if not stem.util.proc.is_available():
-      test.runner.skip(self, "(proc unavailable)")
+      test.runner.skip(self, '(proc unavailable)')
       return
 
     call_replacement = filter_system_call(['ps '])
@@ -481,8 +487,8 @@ class TestSystem(unittest.TestCase):
     Tests the get_start_time function with a ps response.
     """
 
-    if not stem.util.system.is_available("ps"):
-      test.runner.skip(self, "(ps unavailable)")
+    if not stem.util.system.is_available('ps'):
+      test.runner.skip(self, '(ps unavailable)')
       return
 
     pid = test.runner.get_runner().get_pid()
@@ -505,25 +511,25 @@ class TestSystem(unittest.TestCase):
     # Some of the following tests get confused when ran as root. For instance,
     # in my case...
     #
-    #   >>> os.path.expanduser("~")
+    #   >>> os.path.expanduser('~')
     #   '/home/atagar'
     #
-    #   >>> os.path.expanduser("~root")
+    #   >>> os.path.expanduser('~root')
     #   '/root'
 
     if getpass.getuser() == 'root':
-      test.runner.skip(self, "(running as root)")
+      test.runner.skip(self, '(running as root)')
       return
 
-    self.assertEquals(os.getcwd(), stem.util.system.expand_path("."))
-    self.assertEquals(os.getcwd(), stem.util.system.expand_path("./"))
-    self.assertEquals(os.path.join(os.getcwd(), "foo"), stem.util.system.expand_path("./foo"))
+    self.assertEquals(os.getcwd(), stem.util.system.expand_path('.'))
+    self.assertEquals(os.getcwd(), stem.util.system.expand_path('./'))
+    self.assertEquals(os.path.join(os.getcwd(), 'foo'), stem.util.system.expand_path('./foo'))
 
-    home_dir, username = os.path.expanduser("~"), getpass.getuser()
-    self.assertEquals(home_dir, stem.util.system.expand_path("~"))
-    self.assertEquals(home_dir, stem.util.system.expand_path("~/"))
-    self.assertEquals(home_dir, stem.util.system.expand_path("~%s" % username))
-    self.assertEquals(os.path.join(home_dir, "foo"), stem.util.system.expand_path("~%s/foo" % username))
+    home_dir, username = os.path.expanduser('~'), getpass.getuser()
+    self.assertEquals(home_dir, stem.util.system.expand_path('~'))
+    self.assertEquals(home_dir, stem.util.system.expand_path('~/'))
+    self.assertEquals(home_dir, stem.util.system.expand_path('~%s' % username))
+    self.assertEquals(os.path.join(home_dir, 'foo'), stem.util.system.expand_path('~%s/foo' % username))
 
   def test_set_process_name(self):
     """
@@ -531,11 +537,11 @@ class TestSystem(unittest.TestCase):
     """
 
     initial_name = stem.util.system.get_process_name()
-    self.assertTrue("run_tests.py" in initial_name)
+    self.assertTrue('run_tests.py' in initial_name)
 
     try:
-      stem.util.system.set_process_name("stem_integ")
-      self.assertEqual("stem_integ", stem.util.system.get_process_name())
+      stem.util.system.set_process_name('stem_integ')
+      self.assertEqual('stem_integ', stem.util.system.get_process_name())
     finally:
       stem.util.system.set_process_name(initial_name)
 
@@ -552,11 +558,11 @@ class TestSystem(unittest.TestCase):
         # TODO: not sure how to check for this on windows
         IS_EXTRA_TOR_RUNNING = False
       elif not stem.util.system.is_bsd():
-        pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % "tor")
+        pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % 'tor')
         IS_EXTRA_TOR_RUNNING = len(pgrep_results) > 1
       else:
         ps_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PS_BSD)
-        results = [r for r in ps_results if r.endswith(" tor")]
+        results = [r for r in ps_results if r.endswith(' tor')]
         IS_EXTRA_TOR_RUNNING = len(results) > 1
 
     return IS_EXTRA_TOR_RUNNING

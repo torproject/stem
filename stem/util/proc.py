@@ -61,13 +61,13 @@ except ImportError:
 
 # os.sysconf is only defined on unix
 try:
-  CLOCK_TICKS = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
+  CLOCK_TICKS = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
 except AttributeError:
   CLOCK_TICKS = None
 
 Stat = stem.util.enum.Enum(
-  ("COMMAND", "command"), ("CPU_UTIME", "utime"),
-  ("CPU_STIME", "stime"), ("START_TIME", "start time")
+  ('COMMAND', 'command'), ('CPU_UTIME', 'utime'),
+  ('CPU_STIME', 'stime'), ('START_TIME', 'start time')
 )
 
 
@@ -79,11 +79,11 @@ def is_available():
   :returns: **True** if proc contents exist on this platform, **False** otherwise
   """
 
-  if platform.system() != "Linux":
+  if platform.system() != 'Linux':
     return False
   else:
     # list of process independent proc paths we use
-    proc_paths = ("/proc/stat", "/proc/meminfo", "/proc/net/tcp", "/proc/net/udp")
+    proc_paths = ('/proc/stat', '/proc/meminfo', '/proc/net/tcp', '/proc/net/udp')
 
     for path in proc_paths:
       if not os.path.exists(path):
@@ -102,15 +102,15 @@ def get_system_start_time():
   :raises: **IOError** if it can't be determined
   """
 
-  start_time, parameter = time.time(), "system start time"
-  btime_line = _get_line("/proc/stat", "btime", parameter)
+  start_time, parameter = time.time(), 'system start time'
+  btime_line = _get_line('/proc/stat', 'btime', parameter)
 
   try:
     result = float(btime_line.strip().split()[1])
-    _log_runtime(parameter, "/proc/stat[btime]", start_time)
+    _log_runtime(parameter, '/proc/stat[btime]', start_time)
     return result
   except:
-    exc = IOError("unable to parse the /proc/stat btime entry: %s" % btime_line)
+    exc = IOError('unable to parse the /proc/stat btime entry: %s' % btime_line)
     _log_failure(parameter, exc)
     raise exc
 
@@ -125,15 +125,15 @@ def get_physical_memory():
   :raises: **IOError** if it can't be determined
   """
 
-  start_time, parameter = time.time(), "system physical memory"
-  mem_total_line = _get_line("/proc/meminfo", "MemTotal:", parameter)
+  start_time, parameter = time.time(), 'system physical memory'
+  mem_total_line = _get_line('/proc/meminfo', 'MemTotal:', parameter)
 
   try:
     result = int(mem_total_line.split()[1]) * 1024
-    _log_runtime(parameter, "/proc/meminfo[MemTotal]", start_time)
+    _log_runtime(parameter, '/proc/meminfo[MemTotal]', start_time)
     return result
   except:
-    exc = IOError("unable to parse the /proc/meminfo MemTotal entry: %s" % mem_total_line)
+    exc = IOError('unable to parse the /proc/meminfo MemTotal entry: %s' % mem_total_line)
     _log_failure(parameter, exc)
     raise exc
 
@@ -149,16 +149,16 @@ def get_cwd(pid):
   :raises: **IOError** if it can't be determined
   """
 
-  start_time, parameter = time.time(), "cwd"
-  proc_cwd_link = "/proc/%s/cwd" % pid
+  start_time, parameter = time.time(), 'cwd'
+  proc_cwd_link = '/proc/%s/cwd' % pid
 
   if pid == 0:
-    cwd = ""
+    cwd = ''
   else:
     try:
       cwd = os.readlink(proc_cwd_link)
     except OSError:
-      exc = IOError("unable to read %s" % proc_cwd_link)
+      exc = IOError('unable to read %s' % proc_cwd_link)
       _log_failure(parameter, exc)
       raise exc
 
@@ -177,16 +177,16 @@ def get_uid(pid):
   :raises: **IOError** if it can't be determined
   """
 
-  start_time, parameter = time.time(), "uid"
-  status_path = "/proc/%s/status" % pid
-  uid_line = _get_line(status_path, "Uid:", parameter)
+  start_time, parameter = time.time(), 'uid'
+  status_path = '/proc/%s/status' % pid
+  uid_line = _get_line(status_path, 'Uid:', parameter)
 
   try:
     result = int(uid_line.split()[1])
-    _log_runtime(parameter, "%s[Uid]" % status_path, start_time)
+    _log_runtime(parameter, '%s[Uid]' % status_path, start_time)
     return result
   except:
-    exc = IOError("unable to parse the %s Uid entry: %s" % (status_path, uid_line))
+    exc = IOError('unable to parse the %s Uid entry: %s' % (status_path, uid_line))
     _log_failure(parameter, exc)
     raise exc
 
@@ -208,18 +208,18 @@ def get_memory_usage(pid):
   if pid == 0:
     return (0, 0)
 
-  start_time, parameter = time.time(), "memory usage"
-  status_path = "/proc/%s/status" % pid
-  mem_lines = _get_lines(status_path, ("VmRSS:", "VmSize:"), parameter)
+  start_time, parameter = time.time(), 'memory usage'
+  status_path = '/proc/%s/status' % pid
+  mem_lines = _get_lines(status_path, ('VmRSS:', 'VmSize:'), parameter)
 
   try:
-    residentSize = int(mem_lines["VmRSS:"].split()[1]) * 1024
-    virtualSize = int(mem_lines["VmSize:"].split()[1]) * 1024
+    residentSize = int(mem_lines['VmRSS:'].split()[1]) * 1024
+    virtualSize = int(mem_lines['VmSize:'].split()[1]) * 1024
 
-    _log_runtime(parameter, "%s[VmRSS|VmSize]" % status_path, start_time)
+    _log_runtime(parameter, '%s[VmRSS|VmSize]' % status_path, start_time)
     return (residentSize, virtualSize)
   except:
-    exc = IOError("unable to parse the %s VmRSS and VmSize entries: %s" % (status_path, ", ".join(mem_lines)))
+    exc = IOError('unable to parse the %s VmRSS and VmSize entries: %s' % (status_path, ', '.join(mem_lines)))
     _log_failure(parameter, exc)
     raise exc
 
@@ -238,18 +238,18 @@ def get_stats(pid, *stat_types):
   """
 
   if CLOCK_TICKS is None:
-    raise IOError("Unable to look up SC_CLK_TCK")
+    raise IOError('Unable to look up SC_CLK_TCK')
 
-  start_time, parameter = time.time(), "process %s" % ", ".join(stat_types)
+  start_time, parameter = time.time(), 'process %s' % ', '.join(stat_types)
 
   # the stat file contains a single line, of the form...
   # 8438 (tor) S 8407 8438 8407 34818 8438 4202496...
-  stat_path = "/proc/%s/stat" % pid
+  stat_path = '/proc/%s/stat' % pid
   stat_line = _get_line(stat_path, str(pid), parameter)
 
   # breaks line into component values
   stat_comp = []
-  cmd_start, cmd_end = stat_line.find("("), stat_line.find(")")
+  cmd_start, cmd_end = stat_line.find('('), stat_line.find(')')
 
   if cmd_start != -1 and cmd_end != -1:
     stat_comp.append(stat_line[:cmd_start])
@@ -257,7 +257,7 @@ def get_stats(pid, *stat_types):
     stat_comp += stat_line[cmd_end + 1:].split()
 
   if len(stat_comp) < 44 and _is_float(stat_comp[13], stat_comp[14], stat_comp[21]):
-    exc = IOError("stat file had an unexpected format: %s" % stat_path)
+    exc = IOError('stat file had an unexpected format: %s' % stat_path)
     _log_failure(parameter, exc)
     raise exc
 
@@ -265,17 +265,17 @@ def get_stats(pid, *stat_types):
   for stat_type in stat_types:
     if stat_type == Stat.COMMAND:
       if pid == 0:
-        results.append("sched")
+        results.append('sched')
       else:
         results.append(stat_comp[1])
     elif stat_type == Stat.CPU_UTIME:
       if pid == 0:
-        results.append("0")
+        results.append('0')
       else:
         results.append(str(float(stat_comp[13]) / CLOCK_TICKS))
     elif stat_type == Stat.CPU_STIME:
       if pid == 0:
-        results.append("0")
+        results.append('0')
       else:
         results.append(str(float(stat_comp[14]) / CLOCK_TICKS))
     elif stat_type == Stat.START_TIME:
@@ -311,18 +311,18 @@ def get_connections(pid):
     try:
       pid = int(pid)
     except ValueError:
-      raise IOError("Process pid was non-numeric: %s" % pid)
+      raise IOError('Process pid was non-numeric: %s' % pid)
 
   if pid == 0:
     return []
 
   # fetches the inode numbers for socket file descriptors
 
-  start_time, parameter = time.time(), "process connections"
+  start_time, parameter = time.time(), 'process connections'
   inodes = []
 
-  for fd in os.listdir("/proc/%s/fd" % pid):
-    fd_path = "/proc/%s/fd/%s" % (pid, fd)
+  for fd in os.listdir('/proc/%s/fd' % pid):
+    fd_path = '/proc/%s/fd/%s' % (pid, fd)
 
     try:
       # File descriptor link, such as 'socket:[30899]'
@@ -333,7 +333,7 @@ def get_connections(pid):
         inodes.append(fd_name[8:-1])
     except OSError:
       # most likely couldn't be read due to permissions
-      exc = IOError("unable to determine file descriptor destination: %s" % fd_path)
+      exc = IOError('unable to determine file descriptor destination: %s' % fd_path)
       _log_failure(parameter, exc)
       raise exc
 
@@ -345,7 +345,7 @@ def get_connections(pid):
 
   conn = []
 
-  for proc_file_path in ("/proc/net/tcp", "/proc/net/udp"):
+  for proc_file_path in ('/proc/net/tcp', '/proc/net/udp'):
     try:
       proc_file = open(proc_file_path)
       proc_file.readline()  # skip the first line
@@ -355,7 +355,7 @@ def get_connections(pid):
 
         if inode in inodes:
           # if a tcp connection, skip if it isn't yet established
-          if proc_file_path.endswith("/tcp") and status != "01":
+          if proc_file_path.endswith('/tcp') and status != '01':
             continue
 
           local_ip, local_port = _decode_proc_address_encoding(l_addr)
@@ -373,7 +373,7 @@ def get_connections(pid):
       _log_failure(parameter, exc)
       raise exc
 
-  _log_runtime(parameter, "/proc/net/[tcp|udp]", start_time)
+  _log_runtime(parameter, '/proc/net/[tcp|udp]', start_time)
   return conn
 
 
@@ -462,9 +462,9 @@ def _get_lines(file_path, line_prefixes, parameter):
 
     if remaining_prefixes:
       if len(remaining_prefixes) == 1:
-        msg = "%s did not contain a %s entry" % (file_path, remaining_prefixes[0])
+        msg = '%s did not contain a %s entry' % (file_path, remaining_prefixes[0])
       else:
-        msg = "%s did not contain %s entries" % (file_path, ", ".join(remaining_prefixes))
+        msg = '%s did not contain %s entries' % (file_path, ', '.join(remaining_prefixes))
 
       raise IOError(msg)
     else:
@@ -484,7 +484,7 @@ def _log_runtime(parameter, proc_location, start_time):
   """
 
   runtime = time.time() - start_time
-  log.debug("proc call (%s): %s (runtime: %0.4f)" % (parameter, proc_location, runtime))
+  log.debug('proc call (%s): %s (runtime: %0.4f)' % (parameter, proc_location, runtime))
 
 
 def _log_failure(parameter, exc):
@@ -495,4 +495,4 @@ def _log_failure(parameter, exc):
   :param Exception exc: exception that we're raising
   """
 
-  log.debug("proc call failed (%s): %s" % (parameter, exc))
+  log.debug('proc call failed (%s): %s' % (parameter, exc))

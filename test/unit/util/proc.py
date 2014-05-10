@@ -62,7 +62,7 @@ class TestProc(unittest.TestCase):
       pid, uid = test_value
 
       get_line_mock.side_effect = lambda *params: {
-        ("/proc/%s/status" % pid, 'Uid:', 'uid'): 'Uid: %s' % uid,
+        ('/proc/%s/status' % pid, 'Uid:', 'uid'): 'Uid: %s' % uid,
       }[params]
 
       self.assertEquals(uid, proc.get_uid(pid))
@@ -96,7 +96,7 @@ class TestProc(unittest.TestCase):
       ('start time', '10.21'),
     ])
 
-    stat_path = "/proc/24062/stat"
+    stat_path = '/proc/24062/stat'
     stat = '1 (test_program) 2 3 4 5 6 7 8 9 10 11 12 13.0 14.0 15 16 17 18 19 20 21.0 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43'
 
     # tests the case where no stat_types are specified

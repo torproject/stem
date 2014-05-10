@@ -35,9 +35,9 @@ SOCKS5_CONN_BY_NAME = (0x05, 0x01, 0x00, 0x03)
 
 
 error_msgs = {
-  0x5a: "SOCKS4A request granted",
-  0x5b: "SOCKS4A request rejected or failed",
-  0x5c: "SOCKS4A request failed because client is not running identd (or not reachable from the server)",
+  0x5a: 'SOCKS4A request granted',
+  0x5b: 'SOCKS4A request rejected or failed',
+  0x5c: 'SOCKS4A request failed because client is not running identd (or not reachable from the server)',
   0x5d: "SOCKS4A request failed because client's identd could not confirm the user ID string in the request",
 }
 
@@ -49,7 +49,7 @@ Accept-Encoding: identity
 
 
 class ProxyError(Exception):
-  "Base error for proxy issues."
+  'Base error for proxy issues.'
 
 
 class SocksError(ProxyError):
@@ -62,14 +62,14 @@ class SocksError(ProxyError):
   # Error messages copied from http://en.wikipedia.org/wiki/SOCKS,
   # retrieved 2012-12-15 17:09:21.
   _ERROR_MESSAGE = {
-    0x01: "general failure",
-    0x02: "connection not allowed by ruleset",
-    0x03: "network unreachable",
-    0x04: "host unreachable",
-    0x05: "connection refused by destination host",
-    0x06: "TTL expired",
-    0x07: "command not supported / protocol error",
-    0x08: "address type not supported",
+    0x01: 'general failure',
+    0x02: 'connection not allowed by ruleset',
+    0x03: 'network unreachable',
+    0x04: 'host unreachable',
+    0x05: 'connection refused by destination host',
+    0x06: 'TTL expired',
+    0x07: 'command not supported / protocol error',
+    0x08: 'address type not supported',
   }
 
   def __init__(self, code):
@@ -79,7 +79,7 @@ class SocksError(ProxyError):
     code = 0x01
     if self.code in self._ERROR_MESSAGE:
       code = self.code
-    return "[%s] %s" % (code, self._ERROR_MESSAGE[code])
+    return '[%s] %s' % (code, self._ERROR_MESSAGE[code])
 
 
 class Socks(_socket_socket):
@@ -144,7 +144,7 @@ class Socks(_socket_socket):
       response = self.recv(expected_size * 2)
 
       if len(response) == 0:
-        raise socket.error("socket closed unexpectedly?")
+        raise socket.error('socket closed unexpectedly?')
       elif len(response) == expected_size:
         return response
       elif len(response) > expected_size:
@@ -195,13 +195,12 @@ class Socks(_socket_socket):
     """
 
     try:
-      return struct.pack(">%ss" % len(string_), string_)
+      return struct.pack('>%ss' % len(string_), string_)
     except struct.error:
       # Python 3: encode str to bytes
-      return struct.pack(">%ss" % len(string_), string_.encode())
+      return struct.pack('>%ss' % len(string_), string_.encode())
 
   def connect(self, address):
-
     """
     Establishes a connection to address through the SOCKS5 proxy.
 
@@ -212,9 +211,12 @@ class Socks(_socket_socket):
     """
 
     _socket_socket.connect(self, (self._proxy_addr[0], self._proxy_addr[1]))
+
     # ask for non-authenticated connection
+
     self.sendall(self._ints_to_bytes(SOCKS5_NOAUTH_GREETING))
     response = self._bytes_to_ints(self._recvall(2))
+
     if response != SOCKS5_NOAUTH_RESPONSE:
       raise SocksError(0x01)
 
@@ -223,14 +225,17 @@ class Socks(_socket_socket):
       header = header + socket.inet_aton(address[0])
     else:
       # As a last gasp, try connecting by name
+
       header = self._ints_to_bytes(SOCKS5_CONN_BY_NAME)
       header = header + self._ints_to_bytes([len(address[0])])
       header = header + self._pack_string(address[0])
 
-    header = header + struct.pack(">H", address[1])
+    header = header + struct.pack('>H', address[1])
     self.sendall(header)
     response = self._bytes_to_ints(self._recvall(10))
+
     # check the status byte
+
     if response[1] != 0x00:
       raise SocksError(response[1])
 
@@ -255,7 +260,7 @@ class SocksPatch(object):
     from test.network import SocksPatch
 
     with SocksPatch(('127.0.0.1', 9050)):
-      with urllib.urlopen("https://www.torproject.org") as f:
+      with urllib.urlopen('https://www.torproject.org') as f:
         for line in f.readline():
           print line
   """
@@ -291,16 +296,17 @@ def external_ip(host, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, int(port)))
   except Exception as exc:
-    raise SocketError("Failed to connect to the socks server: " + str(exc))
+    raise SocketError('Failed to connect to the socks server: ' + str(exc))
 
   try:
-    negotiate_socks(sock, "ifconfig.me", 80)
+    negotiate_socks(sock, 'ifconfig.me', 80)
     sock.sendall(ip_request)
     response = sock.recv(1000)
 
     # everything after the blank line is the 'data' in a HTTP response
     # The response data for our request for request should be an IP address + '\n'
-    return response[response.find("\r\n\r\n"):].strip()
+
+    return response[response.find('\r\n\r\n'):].strip()
   except Exception as exc:
     return None
 
@@ -320,12 +326,12 @@ def negotiate_socks(sock, host, port):
   """
 
   # SOCKS4a request here - http://en.wikipedia.org/wiki/SOCKS#Protocol
-  request = b"\x04\x01" + struct.pack("!H", port) + b"\x00\x00\x00\x01" + b"\x00" + stem.util.str_tools._to_bytes(host) + b"\x00"
+  request = b'\x04\x01' + struct.pack('!H', port) + b'\x00\x00\x00\x01' + b'\x00' + stem.util.str_tools._to_bytes(host) + b'\x00'
   sock.sendall(request)
   response = sock.recv(8)
 
-  if len(response) != 8 or response[0:2] != b"\x00\x5a":
+  if len(response) != 8 or response[0:2] != b'\x00\x5a':
     sock.close()
-    raise ProtocolError(error_msgs.get(response[1], "SOCKS server returned unrecognized error code"))
+    raise ProtocolError(error_msgs.get(response[1], 'SOCKS server returned unrecognized error code'))
 
-  return [socket.inet_ntoa(response[4:]), struct.unpack("!H", response[2:4])[0]]
+  return [socket.inet_ntoa(response[4:]), struct.unpack('!H', response[2:4])[0]]

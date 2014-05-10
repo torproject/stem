@@ -79,8 +79,8 @@ def _response(controller, arg, config):
         if ' -- ' in line:
           opt, summary = line.split(' -- ', 1)
 
-          output += format("%-33s" % opt, *BOLD_OUTPUT)
-          output += format(" - %s" % summary, *STANDARD_OUTPUT) + '\n'
+          output += format('%-33s' % opt, *BOLD_OUTPUT)
+          output += format(' - %s' % summary, *STANDARD_OUTPUT) + '\n'
   elif arg == 'GETCONF':
     results = controller.get_info('config/names', None)
 

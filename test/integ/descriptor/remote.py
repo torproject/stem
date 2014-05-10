@@ -26,7 +26,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, "test_using_authorities"):
+    elif test.runner.only_run_once(self, 'test_using_authorities'):
       return
 
     queries = []
@@ -43,7 +43,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       try:
         descriptors = list(query.run())
       except Exception as exc:
-        self.fail("Unable to use %s (%s:%s, %s): %s" % (authority.nickname, authority.address, authority.dir_port, type(exc), exc))
+        self.fail('Unable to use %s (%s:%s, %s): %s' % (authority.nickname, authority.address, authority.dir_port, type(exc), exc))
 
       self.assertEqual(1, len(descriptors))
       self.assertEqual('moria1', descriptors[0].nickname)
@@ -55,7 +55,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, "test_use_directory_mirrors"):
+    elif test.runner.only_run_once(self, 'test_use_directory_mirrors'):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader()
@@ -69,7 +69,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, "test_get_server_descriptors"):
+    elif test.runner.only_run_once(self, 'test_get_server_descriptors'):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader()
@@ -105,7 +105,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, "test_get_extrainfo_descriptors"):
+    elif test.runner.only_run_once(self, 'test_get_extrainfo_descriptors'):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader()
@@ -139,7 +139,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, "test_get_microdescriptors"):
+    elif test.runner.only_run_once(self, 'test_get_microdescriptors'):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader()
@@ -168,7 +168,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, "test_get_consensus"):
+    elif test.runner.only_run_once(self, 'test_get_consensus'):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader()
@@ -187,7 +187,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, "test_get_key_certificates"):
+    elif test.runner.only_run_once(self, 'test_get_key_certificates'):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader()

@@ -48,11 +48,11 @@ class TestRouterStatusEntry(unittest.TestCase):
     entry = get_router_status_entry_v2()
 
     self.assertEqual(None, entry.document)
-    self.assertEqual("caerSidi", entry.nickname)
-    self.assertEqual("A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB", entry.fingerprint)
-    self.assertEqual("A106452D87BD7B803B6CE916291ED368DC5BD091", entry.digest)
+    self.assertEqual('caerSidi', entry.nickname)
+    self.assertEqual('A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB', entry.fingerprint)
+    self.assertEqual('A106452D87BD7B803B6CE916291ED368DC5BD091', entry.digest)
     self.assertEqual(datetime.datetime(2012, 8, 6, 11, 19, 31), entry.published)
-    self.assertEqual("71.35.150.29", entry.address)
+    self.assertEqual('71.35.150.29', entry.address)
     self.assertEqual(9001, entry.or_port)
     self.assertEqual(None, entry.dir_port)
     self.assertEqual(None, entry.flags)
@@ -69,11 +69,11 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     expected_flags = set([Flag.FAST, Flag.NAMED, Flag.RUNNING, Flag.STABLE, Flag.VALID])
     self.assertEqual(None, entry.document)
-    self.assertEqual("caerSidi", entry.nickname)
-    self.assertEqual("A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB", entry.fingerprint)
-    self.assertEqual("A106452D87BD7B803B6CE916291ED368DC5BD091", entry.digest)
+    self.assertEqual('caerSidi', entry.nickname)
+    self.assertEqual('A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB', entry.fingerprint)
+    self.assertEqual('A106452D87BD7B803B6CE916291ED368DC5BD091', entry.digest)
     self.assertEqual(datetime.datetime(2012, 8, 6, 11, 19, 31), entry.published)
-    self.assertEqual("71.35.150.29", entry.address)
+    self.assertEqual('71.35.150.29', entry.address)
     self.assertEqual(9001, entry.or_port)
     self.assertEqual(None, entry.dir_port)
     self.assertEqual(expected_flags, set(entry.flags))
@@ -96,16 +96,16 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     expected_flags = set([Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING, Flag.STABLE, Flag.V2DIR, Flag.VALID])
     self.assertEqual(None, entry.document)
-    self.assertEqual("Konata", entry.nickname)
-    self.assertEqual("011209176CDBAA2AC1F48C2C5B4990CE771C5B0C", entry.fingerprint)
+    self.assertEqual('Konata', entry.nickname)
+    self.assertEqual('011209176CDBAA2AC1F48C2C5B4990CE771C5B0C', entry.fingerprint)
     self.assertEqual(datetime.datetime(2012, 9, 24, 13, 40, 40), entry.published)
-    self.assertEqual("69.64.48.168", entry.address)
+    self.assertEqual('69.64.48.168', entry.address)
     self.assertEqual(9001, entry.or_port)
     self.assertEqual(9030, entry.dir_port)
     self.assertEqual(expected_flags, set(entry.flags))
     self.assertEqual(None, entry.version_line)
     self.assertEqual(None, entry.version)
-    self.assertEqual("6A252497006BB9AF36A1B1B902C4D7FA2129923400DBE0101F167B1B031F63BD", entry.digest)
+    self.assertEqual('6A252497006BB9AF36A1B1B902C4D7FA2129923400DBE0101F167B1B031F63BD', entry.digest)
     self.assertEqual([], entry.get_unrecognized_lines())
 
   def test_missing_fields(self):
@@ -114,13 +114,13 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     content = get_router_status_entry_v3(exclude = ('r', 's'), content = True)
-    self._expect_invalid_attr(content, "address")
+    self._expect_invalid_attr(content, 'address')
 
     content = get_router_status_entry_v3(exclude = ('r',), content = True)
-    self._expect_invalid_attr(content, "address")
+    self._expect_invalid_attr(content, 'address')
 
     content = get_router_status_entry_v3(exclude = ('s',), content = True)
-    self._expect_invalid_attr(content, "flags")
+    self._expect_invalid_attr(content, 'flags')
 
   def test_unrecognized_lines(self):
     """
@@ -136,30 +136,30 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     content = b'z some stuff\n' + get_router_status_entry_v3(content = True)
-    self._expect_invalid_attr(content, "_unrecognized_lines", ['z some stuff'])
+    self._expect_invalid_attr(content, '_unrecognized_lines', ['z some stuff'])
 
   def test_blank_lines(self):
     """
     Includes blank lines, which should be ignored.
     """
 
-    content = get_router_status_entry_v3(content = True) + b"\n\nv Tor 0.2.2.35\n\n"
+    content = get_router_status_entry_v3(content = True) + b'\n\nv Tor 0.2.2.35\n\n'
     entry = RouterStatusEntryV3(content)
-    self.assertEqual("Tor 0.2.2.35", entry.version_line)
+    self.assertEqual('Tor 0.2.2.35', entry.version_line)
 
   def test_duplicate_lines(self):
     """
     Duplicates linesin the entry.
     """
 
-    lines = get_router_status_entry_v3(content = True).split(b"\n")
+    lines = get_router_status_entry_v3(content = True).split(b'\n')
 
     for index, duplicate_line in enumerate(lines):
-      content = b"\n".join(lines[:index] + [duplicate_line] + lines[index:])
+      content = b'\n'.join(lines[:index] + [duplicate_line] + lines[index:])
       self.assertRaises(ValueError, RouterStatusEntryV3, content)
 
       entry = RouterStatusEntryV3(content, False)
-      self.assertEqual("caerSidi", entry.nickname)
+      self.assertEqual('caerSidi', entry.nickname)
 
   def test_missing_r_field(self):
     """
@@ -191,13 +191,13 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = (
-      "",
-      "saberrider2008ReallyLongNickname",  # too long
-      "$aberrider2008",  # invalid characters
+      '',
+      'saberrider2008ReallyLongNickname',  # too long
+      '$aberrider2008',  # invalid characters
     )
 
     for value in test_values:
-      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace("caerSidi", value)
+      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('caerSidi', value)
       content = get_router_status_entry_v3({'r': r_line}, content = True)
 
       # TODO: Initial whitespace is consumed as part of the keyword/value
@@ -210,10 +210,10 @@ class TestRouterStatusEntry(unittest.TestCase):
       # is that our validation doesn't catch the new SP restriction on V3
       # entries.
 
-      if value == "":
+      if value == '':
         value = None
 
-      self._expect_invalid_attr(content, "nickname", value)
+      self._expect_invalid_attr(content, 'nickname', value)
 
   def test_malformed_fingerprint(self):
     """
@@ -221,15 +221,15 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = (
-      "",
-      "zzzzz",
-      "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+      '',
+      'zzzzz',
+      'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz',
     )
 
     for value in test_values:
-      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace("p1aag7VwarGxqctS7/fS0y5FU+s", value)
+      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('p1aag7VwarGxqctS7/fS0y5FU+s', value)
       content = get_router_status_entry_v3({'r': r_line}, content = True)
-      self._expect_invalid_attr(content, "fingerprint")
+      self._expect_invalid_attr(content, 'fingerprint')
 
   def test_malformed_published_date(self):
     """
@@ -237,25 +237,25 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = (
-      "",
-      "2012-08-06 11:19:",
-      "2012-08-06 11:19:71",
-      "2012-08-06 11::31",
-      "2012-08-06 11:79:31",
-      "2012-08-06 :19:31",
-      "2012-08-06 41:19:31",
-      "2012-08- 11:19:31",
-      "2012-08-86 11:19:31",
-      "2012--06 11:19:31",
-      "2012-38-06 11:19:31",
-      "-08-06 11:19:31",
-      "2012-08-06   11:19:31",
+      '',
+      '2012-08-06 11:19:',
+      '2012-08-06 11:19:71',
+      '2012-08-06 11::31',
+      '2012-08-06 11:79:31',
+      '2012-08-06 :19:31',
+      '2012-08-06 41:19:31',
+      '2012-08- 11:19:31',
+      '2012-08-86 11:19:31',
+      '2012--06 11:19:31',
+      '2012-38-06 11:19:31',
+      '-08-06 11:19:31',
+      '2012-08-06   11:19:31',
     )
 
     for value in test_values:
-      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace("2012-08-06 11:19:31", value)
+      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('2012-08-06 11:19:31', value)
       content = get_router_status_entry_v3({'r': r_line}, content = True)
-      self._expect_invalid_attr(content, "published")
+      self._expect_invalid_attr(content, 'published')
 
   def test_malformed_address(self):
     """
@@ -263,17 +263,17 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = (
-      "",
-      "71.35.150.",
-      "71.35..29",
-      "71.35.150",
-      "71.35.150.256",
+      '',
+      '71.35.150.',
+      '71.35..29',
+      '71.35.150',
+      '71.35.150.256',
     )
 
     for value in test_values:
-      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace("71.35.150.29", value)
+      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('71.35.150.29', value)
       content = get_router_status_entry_v3({'r': r_line}, content = True)
-      self._expect_invalid_attr(content, "address", value)
+      self._expect_invalid_attr(content, 'address', value)
 
   def test_malformed_port(self):
     """
@@ -281,10 +281,10 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = (
-      "",
-      "-1",
-      "399482",
-      "blarg",
+      '',
+      '-1',
+      '399482',
+      'blarg',
     )
 
     for value in test_values:
@@ -296,12 +296,12 @@ class TestRouterStatusEntry(unittest.TestCase):
           r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1]
 
           if include_or_port:
-            r_line = r_line.replace(" 9001 ", " %s " % value)
+            r_line = r_line.replace(' 9001 ', ' %s ' % value)
 
           if include_dir_port:
             r_line = r_line[:-1] + value
 
-          attr = "or_port" if include_or_port else "dir_port"
+          attr = 'or_port' if include_or_port else 'dir_port'
           expected = int(value) if value.isdigit() else None
 
           content = get_router_status_entry_v3({'r': r_line}, content = True)
@@ -313,7 +313,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = {
-      "[2607:fcd0:daaa:101::602c:bd62]:443": [
+      '[2607:fcd0:daaa:101::602c:bd62]:443': [
         ('2607:fcd0:daaa:101::602c:bd62', 443, True)],
     }
 
@@ -324,8 +324,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     # includes multiple 'a' lines
 
     content = get_router_status_entry_v3(content = True)
-    content += b"\na [2607:fcd0:daaa:101::602c:bd62]:443"
-    content += b"\na [1148:fcd0:daaa:101::602c:bd62]:80"
+    content += b'\na [2607:fcd0:daaa:101::602c:bd62]:443'
+    content += b'\na [1148:fcd0:daaa:101::602c:bd62]:80'
 
     expected = [
       ('2607:fcd0:daaa:101::602c:bd62', 443, True),
@@ -338,8 +338,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     # tries some invalid inputs
 
     test_values = (
-      "",
-      "[1148:fcd0:daaa:101::602c:bd62]:80000",
+      '',
+      '[1148:fcd0:daaa:101::602c:bd62]:80000',
     )
 
     for a_line in test_values:
@@ -352,10 +352,10 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = {
-      "": [],
-      "Fast": [Flag.FAST],
-      "Fast Valid": [Flag.FAST, Flag.VALID],
-      "Ugabuga": ["Ugabuga"],
+      '': [],
+      'Fast': [Flag.FAST],
+      'Fast Valid': [Flag.FAST, Flag.VALID],
+      'Ugabuga': ['Ugabuga'],
     }
 
     for s_line, expected in test_values.items():
@@ -364,14 +364,14 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     # tries some invalid inputs
     test_values = {
-      "Fast   ": [Flag.FAST, "", "", ""],
-      "Fast  Valid": [Flag.FAST, "", Flag.VALID],
-      "Fast Fast": [Flag.FAST, Flag.FAST],
+      'Fast   ': [Flag.FAST, '', '', ''],
+      'Fast  Valid': [Flag.FAST, '', Flag.VALID],
+      'Fast Fast': [Flag.FAST, Flag.FAST],
     }
 
     for s_line, expected in test_values.items():
       content = get_router_status_entry_v3({'s': s_line}, content = True)
-      self._expect_invalid_attr(content, "flags", expected)
+      self._expect_invalid_attr(content, 'flags', expected)
 
   def test_versions(self):
     """
@@ -379,10 +379,10 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = {
-      "Tor 0.2.2.35": Version("0.2.2.35"),
-      "Tor 0.1.2": Version("0.1.2"),
-      "Torr new_stuff": None,
-      "new_stuff and stuff": None,
+      'Tor 0.2.2.35': Version('0.2.2.35'),
+      'Tor 0.1.2': Version('0.1.2'),
+      'Torr new_stuff': None,
+      'new_stuff and stuff': None,
     }
 
     for v_line, expected in test_values.items():
@@ -391,8 +391,8 @@ class TestRouterStatusEntry(unittest.TestCase):
       self.assertEquals(v_line, entry.version_line)
 
     # tries an invalid input
-    content = get_router_status_entry_v3({'v': "Tor ugabuga"}, content = True)
-    self._expect_invalid_attr(content, "version")
+    content = get_router_status_entry_v3({'v': 'Tor ugabuga'}, content = True)
+    self._expect_invalid_attr(content, 'version')
 
   def test_bandwidth(self):
     """
@@ -400,11 +400,11 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = {
-      "Bandwidth=0": (0, None, False, []),
-      "Bandwidth=63138": (63138, None, False, []),
-      "Bandwidth=11111 Measured=482": (11111, 482, False, []),
-      "Bandwidth=11111 Measured=482 Blarg!": (11111, 482, False, ["Blarg!"]),
-      "Bandwidth=11111 Measured=482 Unmeasured=1 Blarg!": (11111, 482, True, ["Blarg!"]),
+      'Bandwidth=0': (0, None, False, []),
+      'Bandwidth=63138': (63138, None, False, []),
+      'Bandwidth=11111 Measured=482': (11111, 482, False, []),
+      'Bandwidth=11111 Measured=482 Blarg!': (11111, 482, False, ['Blarg!']),
+      'Bandwidth=11111 Measured=482 Unmeasured=1 Blarg!': (11111, 482, True, ['Blarg!']),
     }
 
     for w_line, expected in test_values.items():
@@ -416,21 +416,21 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     # tries some invalid inputs
     test_values = (
-      "",
-      "blarg",
-      "Bandwidth",
-      "Bandwidth=",
-      "Bandwidth:0",
-      "Bandwidth 0",
-      "Bandwidth=-10",
-      "Bandwidth=10 Measured",
-      "Bandwidth=10 Measured=",
-      "Bandwidth=10 Measured=-50",
-      "Bandwidth=10 Measured=482 Unmeasured",
-      "Bandwidth=10 Measured=482 Unmeasured=",
-      "Bandwidth=10 Measured=482 Unmeasured=0",
-      "Bandwidth=10 Measured=482 Unmeasured=842",
-      "Bandwidth=10 Measured=482 Unmeasured=-5",
+      '',
+      'blarg',
+      'Bandwidth',
+      'Bandwidth=',
+      'Bandwidth:0',
+      'Bandwidth 0',
+      'Bandwidth=-10',
+      'Bandwidth=10 Measured',
+      'Bandwidth=10 Measured=',
+      'Bandwidth=10 Measured=-50',
+      'Bandwidth=10 Measured=482 Unmeasured',
+      'Bandwidth=10 Measured=482 Unmeasured=',
+      'Bandwidth=10 Measured=482 Unmeasured=0',
+      'Bandwidth=10 Measured=482 Unmeasured=842',
+      'Bandwidth=10 Measured=482 Unmeasured=-5',
     )
 
     for w_line in test_values:
@@ -443,8 +443,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = {
-      "reject 1-65535": MicroExitPolicy("reject 1-65535"),
-      "accept 80,110,143,443": MicroExitPolicy("accept 80,110,143,443"),
+      'reject 1-65535': MicroExitPolicy('reject 1-65535'),
+      'accept 80,110,143,443': MicroExitPolicy('accept 80,110,143,443'),
     }
 
     for p_line, expected in test_values.items():
@@ -453,15 +453,15 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     # tries some invalid inputs
     test_values = (
-      "",
-      "blarg",
-      "reject -50",
-      "accept 80,",
+      '',
+      'blarg',
+      'reject -50',
+      'accept 80,',
     )
 
     for p_line in test_values:
       content = get_router_status_entry_v3({'p': p_line}, content = True)
-      self._expect_invalid_attr(content, "exit_policy")
+      self._expect_invalid_attr(content, 'exit_policy')
 
   def test_microdescriptor_hashes(self):
     """
@@ -469,18 +469,18 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     test_values = {
-      "8,9,10,11,12":
+      '8,9,10,11,12':
         [([8, 9, 10, 11, 12], {})],
-      "8,9,10,11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs":
-        [([8, 9, 10, 11, 12], {"sha256": "g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"})],
-      "8,9,10,11,12 sha256=g1vx9si329muxV md5=3tquWIXXySNOIwRGMeAESKs/v4DWs":
-        [([8, 9, 10, 11, 12], {"sha256": "g1vx9si329muxV", "md5": "3tquWIXXySNOIwRGMeAESKs/v4DWs"})],
+      '8,9,10,11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs':
+        [([8, 9, 10, 11, 12], {'sha256': 'g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs'})],
+      '8,9,10,11,12 sha256=g1vx9si329muxV md5=3tquWIXXySNOIwRGMeAESKs/v4DWs':
+        [([8, 9, 10, 11, 12], {'sha256': 'g1vx9si329muxV', 'md5': '3tquWIXXySNOIwRGMeAESKs/v4DWs'})],
     }
 
     # we need a document that's a vote
     mock_document = lambda x: x  # just need anything with a __dict__
-    setattr(mock_document, "is_vote", True)
-    setattr(mock_document, "is_consensus", False)
+    setattr(mock_document, 'is_vote', True)
+    setattr(mock_document, 'is_consensus', False)
 
     for m_line, expected in test_values.items():
       content = get_router_status_entry_v3({'m': m_line}, content = True)
@@ -490,26 +490,26 @@ class TestRouterStatusEntry(unittest.TestCase):
     # try with multiple 'm' lines
 
     content = get_router_status_entry_v3(content = True)
-    content += b"\nm 11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"
-    content += b"\nm 31,32 sha512=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"
+    content += b'\nm 11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs'
+    content += b'\nm 31,32 sha512=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs'
 
     expected = [
-      ([11, 12], {"sha256": "g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"}),
-      ([31, 32], {"sha512": "g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs"}),
+      ([11, 12], {'sha256': 'g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs'}),
+      ([31, 32], {'sha512': 'g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs'}),
     ]
 
     entry = RouterStatusEntryV3(content, document = mock_document)
     self.assertEquals(expected, entry.microdescriptor_hashes)
 
     # try without a document
-    content = get_router_status_entry_v3({'m': "8,9,10,11,12"}, content = True)
-    self._expect_invalid_attr(content, "microdescriptor_hashes", expected_value = [])
+    content = get_router_status_entry_v3({'m': '8,9,10,11,12'}, content = True)
+    self._expect_invalid_attr(content, 'microdescriptor_hashes', expected_value = [])
 
     # tries some invalid inputs
     test_values = (
-      "",
-      "4,a,2",
-      "1,2,3 stuff",
+      '',
+      '4,a,2',
+      '1,2,3 stuff',
     )
 
     for m_line in test_values:
@@ -529,4 +529,4 @@ class TestRouterStatusEntry(unittest.TestCase):
     if attr:
       self.assertEquals(expected_value, getattr(entry, attr))
     else:
-      self.assertEquals("caerSidi", entry.nickname)
+      self.assertEquals('caerSidi', entry.nickname)

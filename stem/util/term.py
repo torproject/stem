@@ -44,19 +44,19 @@ Utilities for working with the terminal.
 import stem.util.enum
 import stem.util.str_tools
 
-TERM_COLORS = ("BLACK", "RED", "GREEN", "YELLOW", "BLUE", "MAGENTA", "CYAN", "WHITE")
+TERM_COLORS = ('BLACK', 'RED', 'GREEN', 'YELLOW', 'BLUE', 'MAGENTA', 'CYAN', 'WHITE')
 
 Color = stem.util.enum.Enum(*TERM_COLORS)
-BgColor = stem.util.enum.Enum(*["BG_" + color for color in TERM_COLORS])
-Attr = stem.util.enum.Enum("BOLD", "UNDERLINE", "HILIGHT")
+BgColor = stem.util.enum.Enum(*['BG_' + color for color in TERM_COLORS])
+Attr = stem.util.enum.Enum('BOLD', 'UNDERLINE', 'HILIGHT')
 
 # mappings of terminal attribute enums to their ANSI escape encoding
 FG_ENCODING = dict([(list(Color)[i], str(30 + i)) for i in range(8)])
 BG_ENCODING = dict([(list(BgColor)[i], str(40 + i)) for i in range(8)])
-ATTR_ENCODING = {Attr.BOLD: "1", Attr.UNDERLINE: "4", Attr.HILIGHT: "7"}
+ATTR_ENCODING = {Attr.BOLD: '1', Attr.UNDERLINE: '4', Attr.HILIGHT: '7'}
 
-CSI = "\x1B[%sm"
-RESET = CSI % "0"
+CSI = '\x1B[%sm'
+RESET = CSI % '0'
 
 
 def format(msg, *attr):
@@ -72,7 +72,7 @@ def format(msg, *attr):
   :param str msg: string to be formatted
   :param str attr: text attributes, this can be :data:`~stem.util.term.Color`,
     :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` enums
-    and are case insensitive (so strings like "red" are fine)
+    and are case insensitive (so strings like 'red' are fine)
 
   :returns: **str** wrapped with ANSI escape encodings, starting with the given
     attributes and ending with a reset
@@ -80,10 +80,12 @@ def format(msg, *attr):
 
   # if we have reset sequences in the message then apply our attributes
   # after each of them
+
   if RESET in msg:
-    return "".join([format(comp, *attr) for comp in msg.split(RESET)])
+    return ''.join([format(comp, *attr) for comp in msg.split(RESET)])
 
   encodings = []
+
   for text_attr in attr:
     text_attr, encoding = stem.util.str_tools._to_camel_case(text_attr), None
     encoding = FG_ENCODING.get(text_attr, encoding)
@@ -94,6 +96,6 @@ def format(msg, *attr):
       encodings.append(encoding)
 
   if encodings:
-    return (CSI % ";".join(encodings)) + msg + RESET
+    return (CSI % ';'.join(encodings)) + msg + RESET
   else:
     return msg

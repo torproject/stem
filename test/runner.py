@@ -59,12 +59,12 @@ import stem.version
 from test.output import println, STATUS, ERROR, SUBSTATUS, NO_NL
 from test.util import Target, STEM_BASE
 
-CONFIG = stem.util.conf.config_dict("test", {
-  "integ.test_directory": "./test/data",
-  "integ.log": "./test/data/log",
+CONFIG = stem.util.conf.config_dict('test', {
+  'integ.test_directory': './test/data',
+  'integ.log': './test/data/log',
 })
 
-SOCKS_HOST = "127.0.0.1"
+SOCKS_HOST = '127.0.0.1'
 SOCKS_PORT = 1112
 
 BASE_TORRC = """# configuration for stem integration tests
@@ -79,16 +79,16 @@ Log notice file %%s/tor_log
 INTEG_RUNNER = None
 
 # control authentication options and attributes
-CONTROL_PASSWORD = "pw"
+CONTROL_PASSWORD = 'pw'
 CONTROL_PORT = 1111
 CONTROL_SOCKET_PATH = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()), 'socket')
 
 Torrc = stem.util.enum.Enum(
-  ("PORT", "ControlPort %i" % CONTROL_PORT),
-  ("COOKIE", "CookieAuthentication 1"),
-  ("PASSWORD", "HashedControlPassword 16:8C423A41EF4A542C6078985270AE28A4E04D056FB63F9F201505DB8E06"),
-  ("SOCKET", "ControlSocket %s" % CONTROL_SOCKET_PATH),
-  ("PTRACE", "DisableDebuggerAttachment 0"),
+  ('PORT', 'ControlPort %i' % CONTROL_PORT),
+  ('COOKIE', 'CookieAuthentication 1'),
+  ('PASSWORD', 'HashedControlPassword 16:8C423A41EF4A542C6078985270AE28A4E04D056FB63F9F201505DB8E06'),
+  ('SOCKET', 'ControlSocket %s' % CONTROL_SOCKET_PATH),
+  ('PTRACE', 'DisableDebuggerAttachment 0'),
 )
 
 # (test_instance, test_name) tuples that we've registered as having been ran
@@ -100,7 +100,7 @@ class RunnerStopped(Exception):
 
 
 class TorInaccessable(Exception):
-  "Raised when information is needed from tor but the instance we have is inaccessible"
+  'Raised when information is needed from tor but the instance we have is inaccessible'
 
 
 def skip(test_case, message):
@@ -127,7 +127,7 @@ def require_control(test_case):
   """
 
   if not get_runner().is_accessible():
-    skip(test_case, "(no connection)")
+    skip(test_case, '(no connection)')
     return True
 
 
@@ -142,7 +142,7 @@ def require_version(test_case, req_version):
   """
 
   if get_runner().get_tor_version() < req_version:
-    skip(test_case, "(requires %s)" % req_version)
+    skip(test_case, '(requires %s)' % req_version)
     return True
 
 
@@ -157,7 +157,7 @@ def require_online(test_case):
   """
 
   if not Target.ONLINE in get_runner().attribute_targets:
-    skip(test_case, "(requires online target)")
+    skip(test_case, '(requires online target)')
     return True
 
 
@@ -174,7 +174,7 @@ def only_run_once(test_case, test_name):
   """
 
   if (test_case, test_name) in RAN_TESTS:
-    skip(test_case, "(already ran)")
+    skip(test_case, '(already ran)')
     return True
   else:
     RAN_TESTS.append((test_case, test_name))
@@ -194,12 +194,12 @@ def exercise_controller(test_case, controller):
   torrc_path = runner.get_torrc_path()
 
   if isinstance(controller, stem.socket.ControlSocket):
-    controller.send("GETINFO config-file")
+    controller.send('GETINFO config-file')
     config_file_response = controller.recv()
   else:
-    config_file_response = controller.msg("GETINFO config-file")
+    config_file_response = controller.msg('GETINFO config-file')
 
-  test_case.assertEquals("config-file=%s\nOK" % torrc_path, str(config_file_response))
+  test_case.assertEquals('config-file=%s\nOK' % torrc_path, str(config_file_response))
 
 
 def get_runner():
@@ -229,7 +229,7 @@ class _MockChrootFile(object):
     self.strip_text = strip_text
 
   def readline(self):
-    return self.wrapped_file.readline().replace(self.strip_text, "")
+    return self.wrapped_file.readline().replace(self.strip_text, '')
 
 
 class Runner(object):
@@ -240,10 +240,11 @@ class Runner(object):
     self._runner_lock = threading.RLock()
 
     # runtime attributes, set by the start method
-    self._test_dir = ""
+
+    self._test_dir = ''
     self._tor_cmd = None
-    self._tor_cwd = ""
-    self._torrc_contents = ""
+    self._tor_cwd = ''
+    self._torrc_contents = ''
     self._custom_opts = None
     self._tor_process = None
     self._chroot_path = None
@@ -275,17 +276,17 @@ class Runner(object):
       if self._tor_process:
         self.stop()
 
-      println("Setting up a test instance...", STATUS)
+      println('Setting up a test instance...', STATUS)
 
       # if 'test_directory' is unset then we make a new data directory in /tmp
       # and clean it up when we're done
 
-      config_test_dir = CONFIG["integ.test_directory"]
+      config_test_dir = CONFIG['integ.test_directory']
 
       if config_test_dir:
         self._test_dir = stem.util.system.expand_path(config_test_dir, STEM_BASE)
       else:
-        self._test_dir = tempfile.mktemp("-stem-integ")
+        self._test_dir = tempfile.mktemp('-stem-integ')
 
       original_cwd, data_dir_path = os.getcwd(), self._test_dir
 
@@ -296,14 +297,14 @@ class Runner(object):
           os.makedirs(tor_cwd)
 
         os.chdir(tor_cwd)
-        data_dir_path = "./%s" % os.path.basename(self._test_dir)
+        data_dir_path = './%s' % os.path.basename(self._test_dir)
 
       self._tor_cmd = tor_cmd
       self._custom_opts = extra_torrc_opts
       self._torrc_contents = BASE_TORRC % (data_dir_path, data_dir_path)
 
       if extra_torrc_opts:
-        self._torrc_contents += "\n".join(extra_torrc_opts) + "\n"
+        self._torrc_contents += '\n'.join(extra_torrc_opts) + '\n'
 
       try:
         self._tor_cwd = os.getcwd()
@@ -337,7 +338,7 @@ class Runner(object):
     """
 
     with self._runner_lock:
-      println("Shutting down tor... ", STATUS, NO_NL)
+      println('Shutting down tor... ', STATUS, NO_NL)
 
       if self._tor_process:
         # if the tor process has stopped on its own then the following raises
@@ -351,7 +352,7 @@ class Runner(object):
         self._tor_process.communicate()  # blocks until the process is done
 
       # if we've made a temporary data directory then clean it up
-      if self._test_dir and CONFIG["integ.test_directory"] == "":
+      if self._test_dir and CONFIG['integ.test_directory'] == '':
         shutil.rmtree(self._test_dir, ignore_errors = True)
 
       # reverts any mocking of stem.socket.recv_message
@@ -365,14 +366,14 @@ class Runner(object):
       if os.path.exists(socket_dir):
         shutil.rmtree(socket_dir, ignore_errors = True)
 
-      self._test_dir = ""
+      self._test_dir = ''
       self._tor_cmd = None
-      self._tor_cwd = ""
-      self._torrc_contents = ""
+      self._tor_cwd = ''
+      self._torrc_contents = ''
       self._custom_opts = None
       self._tor_process = None
 
-      println("done", STATUS)
+      println('done', STATUS)
 
   def is_running(self):
     """
@@ -388,7 +389,7 @@ class Runner(object):
       if self._tor_process and self._tor_process.poll() is not None:
         # clean up the temporary resources and note the unexpected shutdown
         self.stop()
-        println("tor shut down unexpectedly", ERROR)
+        println('tor shut down unexpectedly', ERROR)
 
       return bool(self._tor_process)
 
@@ -437,9 +438,9 @@ class Runner(object):
     """
 
     if resource:
-      return os.path.join(self._get("_test_dir"), resource)
+      return os.path.join(self._get('_test_dir'), resource)
     else:
-      return self._get("_test_dir")
+      return self._get('_test_dir')
 
   def get_torrc_path(self, ignore_chroot = False):
     """
@@ -452,8 +453,8 @@ class Runner(object):
     :raises: RunnerStopped if we aren't running
     """
 
-    test_dir = self._get("_test_dir")
-    torrc_path = os.path.join(test_dir, "torrc")
+    test_dir = self._get('_test_dir')
+    torrc_path = os.path.join(test_dir, 'torrc')
 
     if not ignore_chroot and self._chroot_path and torrc_path.startswith(self._chroot_path):
       torrc_path = torrc_path[len(self._chroot_path):]
@@ -469,7 +470,7 @@ class Runner(object):
     :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
 
-    return self._get("_torrc_contents")
+    return self._get('_torrc_contents')
 
   def get_auth_cookie_path(self):
     """
@@ -482,15 +483,15 @@ class Runner(object):
     :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
 
-    test_dir = self._get("_test_dir")
-    return os.path.join(test_dir, "control_auth_cookie")
+    test_dir = self._get('_test_dir')
+    return os.path.join(test_dir, 'control_auth_cookie')
 
   def get_tor_cwd(self):
     """
     Provides the current working directory of our tor process.
     """
 
-    return self._get("_tor_cwd")
+    return self._get('_tor_cwd')
 
   def get_chroot(self):
     """
@@ -511,7 +512,7 @@ class Runner(object):
     :raises: :class:`test.runner.RunnerStopped` if we aren't running
     """
 
-    tor_process = self._get("_tor_process")
+    tor_process = self._get('_tor_process')
     return tor_process.pid
 
   def get_tor_socket(self, authenticate = True):
@@ -530,7 +531,7 @@ class Runner(object):
     elif Torrc.SOCKET in self._custom_opts:
       control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
     else:
-      raise TorInaccessable("Unable to connect to tor")
+      raise TorInaccessable('Unable to connect to tor')
 
     if authenticate:
       stem.connection.authenticate(control_socket, CONTROL_PASSWORD, self.get_chroot())
@@ -566,16 +567,17 @@ class Runner(object):
     try:
       # TODO: replace with higher level functions when we've completed a basic
       # controller class
+
       control_socket = self.get_tor_socket()
 
-      control_socket.send("GETINFO version")
+      control_socket.send('GETINFO version')
       version_response = control_socket.recv()
       control_socket.close()
 
       tor_version = list(version_response)[0]
       tor_version = tor_version[8:]
 
-      if " " in tor_version:
+      if ' ' in tor_version:
         tor_version = tor_version.split(' ', 1)[0]
 
       return stem.version.Version(tor_version)
@@ -587,7 +589,7 @@ class Runner(object):
     Provides the command used to run our tor instance.
     """
 
-    return self._get("_tor_cmd")
+    return self._get('_tor_cmd')
 
   def _get(self, attr):
     """
@@ -616,15 +618,15 @@ class Runner(object):
 
     # makes a temporary data directory if needed
     try:
-      println("  making test directory (%s)... " % self._test_dir, STATUS, NO_NL)
+      println('  making test directory (%s)... ' % self._test_dir, STATUS, NO_NL)
 
       if os.path.exists(self._test_dir):
-        println("skipped", STATUS)
+        println('skipped', STATUS)
       else:
         os.makedirs(self._test_dir)
-        println("done", STATUS)
+        println('done', STATUS)
     except OSError as exc:
-      println("failed (%s)" % exc, ERROR)
+      println('failed (%s)' % exc, ERROR)
       raise exc
 
     # Tor checks during startup that the directory a control socket resides in
@@ -634,28 +636,29 @@ class Runner(object):
     if Torrc.SOCKET in self._custom_opts:
       try:
         socket_dir = os.path.dirname(CONTROL_SOCKET_PATH)
-        println("  making control socket directory (%s)... " % socket_dir, STATUS, NO_NL)
+        println('  making control socket directory (%s)... ' % socket_dir, STATUS, NO_NL)
 
         if os.path.exists(socket_dir) and stat.S_IMODE(os.stat(socket_dir).st_mode) == 0700:
-          println("skipped", STATUS)
+          println('skipped', STATUS)
         else:
           if not os.path.exists(socket_dir):
             os.makedirs(socket_dir)
 
           os.chmod(socket_dir, 0700)
-          println("done", STATUS)
+          println('done', STATUS)
       except OSError as exc:
-        println("failed (%s)" % exc, ERROR)
+        println('failed (%s)' % exc, ERROR)
         raise exc
 
     # configures logging
-    logging_path = CONFIG["integ.log"]
+    logging_path = CONFIG['integ.log']
 
     if logging_path:
       logging_path = stem.util.system.expand_path(logging_path, STEM_BASE)
-      println("  configuring logger (%s)... " % logging_path, STATUS, NO_NL)
+      println('  configuring logger (%s)... ' % logging_path, STATUS, NO_NL)
 
       # delete the old log
+
       if os.path.exists(logging_path):
         os.remove(logging_path)
 
@@ -666,27 +669,27 @@ class Runner(object):
         datefmt = '%D %H:%M:%S',
       )
 
-      println("done", STATUS)
+      println('done', STATUS)
     else:
-      println("  configuring logger... skipped", STATUS)
+      println('  configuring logger... skipped', STATUS)
 
     # writes our testing torrc
-    torrc_dst = os.path.join(self._test_dir, "torrc")
+    torrc_dst = os.path.join(self._test_dir, 'torrc')
     try:
-      println("  writing torrc (%s)... " % torrc_dst, STATUS, NO_NL)
+      println('  writing torrc (%s)... ' % torrc_dst, STATUS, NO_NL)
 
-      torrc_file = open(torrc_dst, "w")
+      torrc_file = open(torrc_dst, 'w')
       torrc_file.write(self._torrc_contents)
       torrc_file.close()
 
-      println("done", STATUS)
+      println('done', STATUS)
 
       for line in self._torrc_contents.strip().splitlines():
-        println("    %s" % line.strip(), SUBSTATUS)
+        println('    %s' % line.strip(), SUBSTATUS)
 
       println()
     except Exception as exc:
-      println("failed (%s)\n" % exc, ERROR)
+      println('failed (%s)\n' % exc, ERROR)
       raise OSError(exc)
 
   def _start_tor(self, tor_cmd):
@@ -699,7 +702,7 @@ class Runner(object):
     :raises: OSError if we either fail to create the tor process or reached a timeout without success
     """
 
-    println("Starting tor...\n", STATUS)
+    println('Starting tor...\n', STATUS)
     start_time = time.time()
 
     try:
@@ -708,13 +711,13 @@ class Runner(object):
       complete_percent = 100 if Target.ONLINE in self.attribute_targets else 5
 
       # prints output from tor's stdout while it starts up
-      print_init_line = lambda line: println("  %s" % line, SUBSTATUS)
+      print_init_line = lambda line: println('  %s' % line, SUBSTATUS)
 
-      torrc_dst = os.path.join(self._test_dir, "torrc")
+      torrc_dst = os.path.join(self._test_dir, 'torrc')
       self._tor_process = stem.process.launch_tor(tor_cmd, None, torrc_dst, complete_percent, print_init_line, take_ownership = True)
 
       runtime = time.time() - start_time
-      println("  done (%i seconds)\n" % runtime, STATUS)
+      println('  done (%i seconds)\n' % runtime, STATUS)
     except OSError as exc:
-      println("  failed to start tor: %s\n" % exc, ERROR)
+      println('  failed to start tor: %s\n' % exc, ERROR)
       raise exc

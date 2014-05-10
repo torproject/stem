@@ -59,22 +59,22 @@ CMD_AVAILABLE_CACHE = {}
 
 SHELL_COMMANDS = ['ulimit']
 
-IS_RUNNING_PS_LINUX = "ps -A co command"
-IS_RUNNING_PS_BSD = "ps -ao ucomm="
-GET_NAME_BY_PID_PS = "ps -p %s -o comm"
-GET_PID_BY_NAME_PGREP = "pgrep -x %s"
-GET_PID_BY_NAME_PIDOF = "pidof %s"
-GET_PID_BY_NAME_PS_LINUX = "ps -o pid -C %s"
-GET_PID_BY_NAME_PS_BSD = "ps axc"
-GET_PID_BY_NAME_LSOF = "lsof -tc %s"
-GET_PID_BY_PORT_NETSTAT = "netstat -npltu"
-GET_PID_BY_PORT_SOCKSTAT = "sockstat -4l -P tcp -p %s"
-GET_PID_BY_PORT_LSOF = "lsof -wnP -iTCP -sTCP:LISTEN"
-GET_PID_BY_FILE_LSOF = "lsof -tw %s"
-GET_CWD_PWDX = "pwdx %s"
-GET_CWD_LSOF = "lsof -a -p %s -d cwd -Fn"
-GET_BSD_JAIL_ID_PS = "ps -p %s -o jid"
-GET_BSD_JAIL_PATH = "jls -j %s"
+IS_RUNNING_PS_LINUX = 'ps -A co command'
+IS_RUNNING_PS_BSD = 'ps -ao ucomm='
+GET_NAME_BY_PID_PS = 'ps -p %s -o comm'
+GET_PID_BY_NAME_PGREP = 'pgrep -x %s'
+GET_PID_BY_NAME_PIDOF = 'pidof %s'
+GET_PID_BY_NAME_PS_LINUX = 'ps -o pid -C %s'
+GET_PID_BY_NAME_PS_BSD = 'ps axc'
+GET_PID_BY_NAME_LSOF = 'lsof -tc %s'
+GET_PID_BY_PORT_NETSTAT = 'netstat -npltu'
+GET_PID_BY_PORT_SOCKSTAT = 'sockstat -4l -P tcp -p %s'
+GET_PID_BY_PORT_LSOF = 'lsof -wnP -iTCP -sTCP:LISTEN'
+GET_PID_BY_FILE_LSOF = 'lsof -tw %s'
+GET_CWD_PWDX = 'pwdx %s'
+GET_CWD_LSOF = 'lsof -a -p %s -d cwd -Fn'
+GET_BSD_JAIL_ID_PS = 'ps -p %s -o jid'
+GET_BSD_JAIL_PATH = 'jls -j %s'
 
 # flag for setting the process name, found in '/usr/include/linux/prctl.h'
 
@@ -118,7 +118,7 @@ def is_windows():
   :returns: **bool** to indicate if we're on Windows
   """
 
-  return platform.system() == "Windows"
+  return platform.system() == 'Windows'
 
 
 def is_mac():
@@ -128,7 +128,7 @@ def is_mac():
   :returns: **bool** to indicate if we're on a Mac
   """
 
-  return platform.system() == "Darwin"
+  return platform.system() == 'Darwin'
 
 
 def is_bsd():
@@ -139,7 +139,7 @@ def is_bsd():
   :returns: **bool** to indicate if we're on a BSD OS
   """
 
-  return platform.system() in ("Darwin", "FreeBSD", "OpenBSD")
+  return platform.system() in ('Darwin', 'FreeBSD', 'OpenBSD')
 
 
 def is_available(command, cached=True):
@@ -159,8 +159,8 @@ def is_available(command, cached=True):
     PATH, **False** otherwise
   """
 
-  if " " in command:
-    command = command.split(" ")[0]
+  if ' ' in command:
+    command = command.split(' ')[0]
 
   if command in SHELL_COMMANDS:
     # we can't actually look it up, so hope the shell really provides it...
@@ -170,11 +170,11 @@ def is_available(command, cached=True):
     return CMD_AVAILABLE_CACHE[command]
   else:
     cmd_exists = False
-    for path in os.environ["PATH"].split(os.pathsep):
+    for path in os.environ['PATH'].split(os.pathsep):
       cmd_path = os.path.join(path, command)
 
       if is_windows():
-        cmd_path += ".exe"
+        cmd_path += '.exe'
 
       if os.path.exists(cmd_path) and os.access(cmd_path, os.X_OK):
         cmd_exists = True
@@ -207,7 +207,7 @@ def is_running(command):
   #   -o ucomm= - Shows just the ucomm attribute ("name to be used for
   #               accounting")
 
-  if is_available("ps"):
+  if is_available('ps'):
     if is_bsd():
       primary_resolver = IS_RUNNING_PS_BSD
       secondary_resolver = IS_RUNNING_PS_LINUX
@@ -298,7 +298,7 @@ def get_pid_by_name(process_name, multiple = False):
   #   3283
   #   3392
 
-  if is_available("pgrep"):
+  if is_available('pgrep'):
     results = call(GET_PID_BY_NAME_PGREP % process_name, None)
 
     if results:
@@ -319,7 +319,7 @@ def get_pid_by_name(process_name, multiple = False):
   #   atagar@morrigan:~$ pidof vim
   #   3392 3283
 
-  if is_available("pidof"):
+  if is_available('pidof'):
     results = call(GET_PID_BY_NAME_PIDOF % process_name, None)
 
     if results and len(results) == 1:
@@ -349,7 +349,7 @@ def get_pid_by_name(process_name, multiple = False):
   #      11   ??  Ss     5:47.36 DirectoryService
   #      12   ??  Ss     3:01.44 notifyd
 
-  if is_available("ps"):
+  if is_available('ps'):
     if not is_bsd():
       # linux variant of ps
       results = call(GET_PID_BY_NAME_PS_LINUX % process_name, None)
@@ -371,7 +371,7 @@ def get_pid_by_name(process_name, multiple = False):
 
       if results:
         # filters results to those with our process name
-        results = [r.split()[0] for r in results if r.endswith(" %s" % process_name)]
+        results = [r.split()[0] for r in results if r.endswith(' %s' % process_name)]
 
         try:
           pids = map(int, results)
@@ -397,7 +397,7 @@ def get_pid_by_name(process_name, multiple = False):
   #   2470
   #   2561
 
-  if is_available("lsof"):
+  if is_available('lsof'):
     results = call(GET_PID_BY_NAME_LSOF % process_name, None)
 
     if results:
@@ -454,16 +454,16 @@ def get_pid_by_port(port):
   #   udp        0      0 0.0.0.0:5353            0.0.0.0:*                  -
   #   udp6       0      0 fe80::7ae4:ff:fe2f::123 :::*                       -
 
-  if is_available("netstat"):
+  if is_available('netstat'):
     results = call(GET_PID_BY_PORT_NETSTAT, None)
 
     if results:
       # filters to results with our port
-      results = [r for r in results if "127.0.0.1:%s" % port in r]
+      results = [r for r in results if '127.0.0.1:%s' % port in r]
 
       if len(results) == 1 and len(results[0].split()) == 7:
         results = results[0].split()[6]  # process field (ex. "7184/tor")
-        pid = results[:results.find("/")]
+        pid = results[:results.find('/')]
 
         if pid.isdigit():
           return int(pid)
@@ -487,12 +487,12 @@ def get_pid_by_port(port):
   #   _tor     tor        4397  15 tcp4   51.64.7.84:59374   7.42.1.102:9001
   #   _tor     tor        4397  20 tcp4   51.64.7.84:51946   32.83.7.104:443
 
-  if is_available("sockstat"):
+  if is_available('sockstat'):
     results = call(GET_PID_BY_PORT_SOCKSTAT % port, None)
 
     if results:
       # filters to results where this is the local port
-      results = [r for r in results if (len(r.split()) == 7 and (":%s" % port) in r.split()[5])]
+      results = [r for r in results if (len(r.split()) == 7 and (':%s' % port) in r.split()[5])]
 
       if len(results) == 1:
         pid = results[0].split()[2]
@@ -519,12 +519,12 @@ def get_pid_by_port(port):
   #   COMMAND  PID   USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
   #   tor     1745 atagar    6u  IPv4  14229      0t0  TCP 127.0.0.1:9051 (LISTEN)
 
-  if is_available("lsof"):
+  if is_available('lsof'):
     results = call(GET_PID_BY_PORT_LSOF, None)
 
     if results:
       # filters to results with our port
-      results = [r for r in results if (len(r.split()) == 10 and (":%s" % port) in r.split()[8])]
+      results = [r for r in results if (len(r.split()) == 10 and (':%s' % port) in r.split()[8])]
 
       if len(results) == 1:
         pid = results[0].split()[1]
@@ -561,7 +561,7 @@ def get_pid_by_open_file(path):
   #   atagar@morrigan:~$ lsof -tw /tmp/foo
   #   4762
 
-  if is_available("lsof"):
+  if is_available('lsof'):
     results = call(GET_PID_BY_FILE_LSOF % path, [])
 
     if len(results) == 1:
@@ -591,9 +591,9 @@ def get_cwd(pid):
       pass
 
   # Fall back to a pwdx query. This isn't available on BSD.
-  logging_prefix = "get_cwd(%s):" % pid
+  logging_prefix = 'get_cwd(%s):' % pid
 
-  if is_available("pwdx"):
+  if is_available('pwdx'):
     # pwdx results are of the form:
     # 3799: /home/atagar
     # 5839: No such process
@@ -602,12 +602,12 @@ def get_cwd(pid):
 
     if not results:
       log.debug("%s pwdx didn't return any results" % logging_prefix)
-    elif results[0].endswith("No such process"):
-      log.debug("%s pwdx processes reported for this pid" % logging_prefix)
-    elif len(results) != 1 or results[0].count(" ") != 1 or not results[0].startswith("%s: " % pid):
-      log.debug("%s we got unexpected output from pwdx: %s" % (logging_prefix, results))
+    elif results[0].endswith('No such process'):
+      log.debug('%s pwdx processes reported for this pid' % logging_prefix)
+    elif len(results) != 1 or results[0].count(' ') != 1 or not results[0].startswith('%s: ' % pid):
+      log.debug('%s we got unexpected output from pwdx: %s' % (logging_prefix, results))
     else:
-      return results[0].split(" ", 1)[1].strip()
+      return results[0].split(' ', 1)[1].strip()
 
   # Use lsof as the final fallback. This is available on both Linux and is the
   # only lookup method here that works for BSD...
@@ -624,20 +624,20 @@ def get_cwd(pid):
   #   p75717
   #   n/Users/atagar/tor/src/or
 
-  if is_available("lsof"):
+  if is_available('lsof'):
     results = call(GET_CWD_LSOF % pid, [])
 
-    if len(results) == 2 and results[1].startswith("n/"):
+    if len(results) == 2 and results[1].startswith('n/'):
       lsof_result = results[1][1:].strip()
 
       # If we lack read permissions for the cwd then it returns...
       # p2683
       # n/proc/2683/cwd (readlink: Permission denied)
 
-      if not " " in lsof_result:
+      if not ' ' in lsof_result:
         return lsof_result
     else:
-      log.debug("%s we got unexpected output from lsof: %s" % (logging_prefix, results))
+      log.debug('%s we got unexpected output from lsof: %s' % (logging_prefix, results))
 
   return None  # all queries failed
 
@@ -666,8 +666,8 @@ def get_user(pid):
     except:
       pass
 
-  if is_available("ps"):
-    results = call("ps -o user %s" % pid, [])
+  if is_available('ps'):
+    results = call('ps -o user %s' % pid, [])
 
     if len(results) >= 2:
       return results[1].strip()
@@ -695,7 +695,7 @@ def get_start_time(pid):
       pass
 
   try:
-    ps_results = call("ps -p %s -o etime" % pid, [])
+    ps_results = call('ps -p %s -o etime' % pid, [])
 
     if len(ps_results) >= 2:
       etime = ps_results[1].strip()
@@ -733,10 +733,10 @@ def get_bsd_jail_id(pid):
       return int(jid)
 
   os_name = platform.system()
-  if os_name == "FreeBSD":
-    log.warn("Unable to get the jail id for process %s." % pid)
+  if os_name == 'FreeBSD':
+    log.warn('Unable to get the jail id for process %s.' % pid)
   else:
-    log.debug("get_bsd_jail_id(%s): jail ids do not exist on %s" % (pid, os_name))
+    log.debug('get_bsd_jail_id(%s): jail ids do not exist on %s' % (pid, os_name))
 
   return 0
 
@@ -777,14 +777,14 @@ def expand_path(path, cwd = None):
   """
 
   if is_windows():
-    relative_path = path.replace("/", "\\").rstrip("\\")
+    relative_path = path.replace('/', '\\').rstrip('\\')
   else:
-    relative_path = path.rstrip("/")
+    relative_path = path.rstrip('/')
 
   if not relative_path or os.path.isabs(relative_path):
     # empty or already absolute - nothing to do
     pass
-  elif relative_path.startswith("~"):
+  elif relative_path.startswith('~'):
     # prefixed with a ~ or ~user entry
     relative_path = os.path.expanduser(relative_path)
   else:
@@ -795,12 +795,12 @@ def expand_path(path, cwd = None):
 
     # we'll be dealing with both "my/path/" and "./my/path" entries, so
     # cropping the later
-    if relative_path.startswith("./") or relative_path.startswith(".\\"):
+    if relative_path.startswith('./') or relative_path.startswith('.\\'):
       relative_path = relative_path[2:]
-    elif relative_path == ".":
-      relative_path = ""
+    elif relative_path == '.':
+      relative_path = ''
 
-    if relative_path == "":
+    if relative_path == '':
       relative_path = cwd
     else:
       relative_path = os.path.join(cwd, relative_path)
@@ -848,7 +848,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False):
   """
 
   try:
-    is_shell_command = command.split(" ")[0] in SHELL_COMMANDS
+    is_shell_command = command.split(' ')[0] in SHELL_COMMANDS
 
     start_time = time.time()
     process = subprocess.Popen(command.split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command)
@@ -857,27 +857,27 @@ def call(command, default = UNDEFINED, ignore_exit_status = False):
     stdout, stderr = stdout.strip(), stderr.strip()
     runtime = time.time() - start_time
 
-    log.debug("System call: %s (runtime: %0.2f)" % (command, runtime))
-    trace_prefix = "Received from system (%s)" % command
+    log.debug('System call: %s (runtime: %0.2f)' % (command, runtime))
+    trace_prefix = 'Received from system (%s)' % command
 
     if stdout and stderr:
-      log.trace(trace_prefix + ", stdout:\n%s\nstderr:\n%s" % (stdout, stderr))
+      log.trace(trace_prefix + ', stdout:\n%s\nstderr:\n%s' % (stdout, stderr))
     elif stdout:
-      log.trace(trace_prefix + ", stdout:\n%s" % stdout)
+      log.trace(trace_prefix + ', stdout:\n%s' % stdout)
     elif stderr:
-      log.trace(trace_prefix + ", stderr:\n%s" % stderr)
+      log.trace(trace_prefix + ', stderr:\n%s' % stderr)
 
     exit_code = process.poll()
 
     if not ignore_exit_status and exit_code != 0:
-      raise OSError("%s returned exit status %i" % (command, exit_code))
+      raise OSError('%s returned exit status %i' % (command, exit_code))
 
     if stdout:
-      return stdout.decode("utf-8", "replace").splitlines()
+      return stdout.decode('utf-8', 'replace').splitlines()
     else:
       return []
   except OSError as exc:
-    log.debug("System call (failed): %s (error: %s)" % (command, exc))
+    log.debug('System call (failed): %s (error: %s)' % (command, exc))
 
     if default != UNDEFINED:
       return default
@@ -900,15 +900,15 @@ def get_process_name():
     #   COMMAND
     #   python run_tests.py --unit
 
-    ps_output = call("ps -p %i -o args" % os.getpid(), [])
+    ps_output = call('ps -p %i -o args' % os.getpid(), [])
 
-    if len(ps_output) == 2 and ps_output[0] in ("COMMAND", "ARGS"):
+    if len(ps_output) == 2 and ps_output[0] in ('COMMAND', 'ARGS'):
       _PROCESS_NAME = ps_output[1]
     else:
       # Falling back on using ctypes to get our argv. Unfortunately the simple
       # method for getting this...
       #
-      #   " ".join(["python"] + sys.argv)
+      #   ' '.join(['python'] + sys.argv)
       #
       # ... doesn't do the trick since this will miss interpretor arguments.
       #
@@ -930,7 +930,7 @@ def get_process_name():
 
         args.append(str(argc[i]))
 
-      _PROCESS_NAME = " ".join(args)
+      _PROCESS_NAME = ' '.join(args)
 
     _MAX_NAME_LENGTH = len(_PROCESS_NAME)
 
@@ -963,16 +963,16 @@ def set_process_name(process_name):
 
   _set_argv(process_name)
 
-  if platform.system() == "Linux":
+  if platform.system() == 'Linux':
     _set_prctl_name(process_name)
-  elif platform.system() in ("Darwin", "FreeBSD", "OpenBSD"):
+  elif platform.system() in ('Darwin', 'FreeBSD', 'OpenBSD'):
     _set_proc_title(process_name)
 
 
 def _set_argv(process_name):
   """
   Overwrites our argv in a similar fashion to how it's done in C with:
-  strcpy(argv[0], "new_name");
+  strcpy(argv[0], 'new_name');
   """
 
   if Py_GetArgcArgv is None:
@@ -1008,7 +1008,7 @@ def _set_prctl_name(process_name):
   http://stackoverflow.com/questions/564695/is-there-a-way-to-change-effective-process-name-in-python/923034#923034
   """
 
-  libc = ctypes.CDLL(ctypes.util.find_library("c"))
+  libc = ctypes.CDLL(ctypes.util.find_library('c'))
   name_buffer = ctypes.create_string_buffer(len(process_name) + 1)
   name_buffer.value = stem.util.str_tools._to_bytes(process_name)
   libc.prctl(PR_SET_NAME, ctypes.byref(name_buffer), 0, 0, 0)
@@ -1021,7 +1021,7 @@ def _set_proc_title(process_name):
   http://www.rootr.net/man/man/setproctitle/3
   """
 
-  libc = ctypes.CDLL(ctypes.util.find_library("c"))
+  libc = ctypes.CDLL(ctypes.util.find_library('c'))
   name_buffer = ctypes.create_string_buffer(len(process_name) + 1)
   name_buffer.value = process_name
 

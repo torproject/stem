@@ -88,4 +88,4 @@ class TestDocumentation(unittest.TestCase):
         is_failed = True
 
     if is_failed:
-      self.fail("doctests encountered errors")
+      self.fail('doctests encountered errors')

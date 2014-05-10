@@ -15,11 +15,11 @@ from stem.util import system, term
 
 COLOR_SUPPORT = sys.stdout.isatty() and not system.is_windows()
 
-DIVIDER = "=" * 70
+DIVIDER = '=' * 70
 HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
 CATEGORY_ATTR = (term.Color.GREEN, term.Attr.BOLD)
 
-NO_NL = "no newline"
+NO_NL = 'no newline'
 
 # formatting for various categories of messages
 
@@ -29,13 +29,13 @@ SUBSTATUS = (term.Color.BLUE, )
 SUCCESS = (term.Color.GREEN, term.Attr.BOLD)
 ERROR = (term.Color.RED, term.Attr.BOLD)
 
-LineType = stem.util.enum.Enum("OK", "FAIL", "ERROR", "SKIPPED", "CONTENT")
+LineType = stem.util.enum.Enum('OK', 'FAIL', 'ERROR', 'SKIPPED', 'CONTENT')
 
 LINE_ENDINGS = {
-  " ... ok": LineType.OK,
-  " ... FAIL": LineType.FAIL,
-  " ... ERROR": LineType.ERROR,
-  " ... skipped": LineType.SKIPPED,
+  ' ... ok': LineType.OK,
+  ' ... FAIL': LineType.FAIL,
+  ' ... ERROR': LineType.ERROR,
+  ' ... skipped': LineType.SKIPPED,
 }
 
 LINE_ATTR = {
@@ -47,7 +47,7 @@ LINE_ATTR = {
 }
 
 
-def println(msg = "", *attr):
+def println(msg = '', *attr):
   attr = _flatten(attr)
   no_newline = False
 
@@ -67,13 +67,13 @@ def println(msg = "", *attr):
 
 def print_divider(msg, is_header = False):
   attr = HEADER_ATTR if is_header else CATEGORY_ATTR
-  println("%s\n%s\n%s\n" % (DIVIDER, msg.center(70), DIVIDER), *attr)
+  println('%s\n%s\n%s\n' % (DIVIDER, msg.center(70), DIVIDER), *attr)
 
 
 def print_logging(logging_buffer):
   if not logging_buffer.is_empty():
     for entry in logging_buffer:
-      println(entry.replace("\n", "\n  "), term.Color.MAGENTA)
+      println(entry.replace('\n', '\n  '), term.Color.MAGENTA)
 
     print
 
@@ -113,7 +113,7 @@ def apply_filters(testing_output, *filters):
     if line is not None:
       results.append(line)
 
-  return "\n".join(results) + "\n"
+  return '\n'.join(results) + '\n'
 
 
 def colorize(line_type, line_content):
@@ -133,10 +133,10 @@ def strip_module(line_type, line_content):
   repetitive, and redundant with the headers.
   """
 
-  m = re.match(".*( \(test\..*?\)).*", line_content)
+  m = re.match('.*( \(test\..*?\)).*', line_content)
 
   if m:
-    line_content = line_content.replace(m.groups()[0], "", 1)
+    line_content = line_content.replace(m.groups()[0], '', 1)
 
   return line_content
 
@@ -153,7 +153,7 @@ def align_results(line_type, line_content):
   # strip our current ending
   for ending in LINE_ENDINGS:
     if LINE_ENDINGS[ending] == line_type:
-      line_content = line_content.replace(ending, "", 1)
+      line_content = line_content.replace(ending, '', 1)
       break
 
   # skipped tests have extra single quotes around the reason
@@ -161,19 +161,19 @@ def align_results(line_type, line_content):
     line_content = line_content.replace("'(", "(", 1).replace(")'", ")", 1)
 
   if line_type == LineType.OK:
-    new_ending = "SUCCESS"
+    new_ending = 'SUCCESS'
   elif line_type in (LineType.FAIL, LineType.ERROR):
-    new_ending = "FAILURE"
+    new_ending = 'FAILURE'
   elif line_type == LineType.SKIPPED:
-    new_ending = "SKIPPED"
+    new_ending = 'SKIPPED'
   else:
-    assert False, "Unexpected line type: %s" % line_type
+    assert False, 'Unexpected line type: %s' % line_type
     return line_content
 
   if COLOR_SUPPORT:
-    return "%-61s[%s]" % (line_content, term.format(new_ending, term.Attr.BOLD))
+    return '%-61s[%s]' % (line_content, term.format(new_ending, term.Attr.BOLD))
   else:
-    return "%-61s[%s]" % (line_content, term.format(new_ending))
+    return '%-61s[%s]' % (line_content, term.format(new_ending))
 
 
 class ErrorTracker(object):
@@ -215,7 +215,7 @@ class ErrorTracker(object):
     def _error_tracker(line_type, line_content):
       if line_type in (LineType.FAIL, LineType.ERROR):
         if self._category:
-          self._errors.append("[%s] %s" % (self._category, line_content))
+          self._errors.append('[%s] %s' % (self._category, line_content))
         else:
           self._errors.append(line_content)
 

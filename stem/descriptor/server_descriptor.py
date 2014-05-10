@@ -60,35 +60,35 @@ except ImportError:
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
-  "router",
-  "bandwidth",
-  "published",
-  "onion-key",
-  "signing-key",
-  "router-signature",
+  'router',
+  'bandwidth',
+  'published',
+  'onion-key',
+  'signing-key',
+  'router-signature',
 )
 
 # optional entries that can appear at most once
 SINGLE_FIELDS = (
-  "platform",
-  "fingerprint",
-  "hibernating",
-  "uptime",
-  "contact",
-  "read-history",
-  "write-history",
-  "eventdns",
-  "family",
-  "caches-extra-info",
-  "extra-info-digest",
-  "hidden-service-dir",
-  "protocols",
-  "allow-single-hop-exits",
-  "ntor-onion-key",
+  'platform',
+  'fingerprint',
+  'hibernating',
+  'uptime',
+  'contact',
+  'read-history',
+  'write-history',
+  'eventdns',
+  'family',
+  'caches-extra-info',
+  'extra-info-digest',
+  'hidden-service-dir',
+  'protocols',
+  'allow-single-hop-exits',
+  'ntor-onion-key',
 )
 
-DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy("reject 1-65535")
-REJECT_ALL_POLICY = stem.exit_policy.ExitPolicy("reject *:*")
+DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy('reject 1-65535')
+REJECT_ALL_POLICY = stem.exit_policy.ExitPolicy('reject *:*')
 
 
 def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
@@ -126,8 +126,8 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
   # Metrics descriptor files are the same, but lack any annotations. The
   # following simply does the following...
   #
-  #   - parse as annotations until we get to "router"
-  #   - parse as descriptor content until we get to "router-signature" followed
+  #   - parse as annotations until we get to 'router'
+  #   - parse as descriptor content until we get to 'router-signature' followed
   #     by the end of the signature block
   #   - construct a descriptor and provide it back to the caller
   #
@@ -135,8 +135,8 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
   # to the caller).
 
   while True:
-    annotations = _read_until_keywords("router", descriptor_file)
-    descriptor_content = _read_until_keywords("router-signature", descriptor_file)
+    annotations = _read_until_keywords('router', descriptor_file)
+    descriptor_content = _read_until_keywords('router-signature', descriptor_file)
 
     # we've reached the 'router-signature', now include the pgp style block
     block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
@@ -146,7 +146,7 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
       # strip newlines from annotations
       annotations = map(bytes.strip, annotations)
 
-      descriptor_text = bytes.join(b"", descriptor_content)
+      descriptor_text = bytes.join(b'', descriptor_content)
 
       if is_bridge:
         yield BridgeDescriptor(descriptor_text, validate, annotations, **kwargs)
@@ -214,7 +214,7 @@ class ServerDescriptor(Descriptor):
   def __init__(self, raw_contents, validate = True, annotations = None):
     """
     Server descriptor constructor, created from an individual relay's
-    descriptor content (as provided by "GETINFO desc/*", cached descriptors,
+    descriptor content (as provided by 'GETINFO desc/*', cached descriptors,
     and metrics).
 
     By default this validates the descriptor's content as it's parsed. This
@@ -234,8 +234,8 @@ class ServerDescriptor(Descriptor):
     # Only a few things can be arbitrary bytes according to the dir-spec, so
     # parsing them separately.
 
-    self.platform = _get_bytes_field("platform", raw_contents)
-    self.contact = _get_bytes_field("contact", raw_contents)
+    self.platform = _get_bytes_field('platform', raw_contents)
+    self.contact = _get_bytes_field('contact', raw_contents)
 
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
@@ -289,7 +289,7 @@ class ServerDescriptor(Descriptor):
     # influences the resulting exit policy, but for everything else the order
     # does not matter so breaking it into key / value pairs.
 
-    entries, policy = _get_descriptor_components(raw_contents, validate, ("accept", "reject"))
+    entries, policy = _get_descriptor_components(raw_contents, validate, ('accept', 'reject'))
 
     if policy == [u'reject *:*']:
       self.exit_policy = REJECT_ALL_POLICY
@@ -309,7 +309,7 @@ class ServerDescriptor(Descriptor):
     :returns: **unicode** with the upper-case hex digest value for this server descriptor
     """
 
-    raise NotImplementedError("Unsupported Operation: this should be implemented by the ServerDescriptor subclass")
+    raise NotImplementedError('Unsupported Operation: this should be implemented by the ServerDescriptor subclass')
 
   def get_unrecognized_lines(self):
     return list(self._unrecognized_lines)
@@ -331,8 +331,8 @@ class ServerDescriptor(Descriptor):
     annotation_dict = {}
 
     for line in self._annotation_lines:
-      if b" " in line:
-        key, value = line.split(b" ", 1)
+      if b' ' in line:
+        key, value = line.split(b' ', 1)
         annotation_dict[key] = value
       else:
         annotation_dict[line] = None
@@ -366,12 +366,12 @@ class ServerDescriptor(Descriptor):
       # most just work with the first (and only) value
       value, block_contents = values[0]
 
-      line = "%s %s" % (keyword, value)  # original line
+      line = '%s %s' % (keyword, value)  # original line
 
       if block_contents:
-        line += "\n%s" % block_contents
+        line += '\n%s' % block_contents
 
-      if keyword == "router":
+      if keyword == 'router':
         # "router" nickname address ORPort SocksPort DirPort
         router_comp = value.split()
 
@@ -379,7 +379,7 @@ class ServerDescriptor(Descriptor):
           if not validate:
             continue
 
-          raise ValueError("Router line must have five values: %s" % line)
+          raise ValueError('Router line must have five values: %s' % line)
 
         if validate:
           if not stem.util.tor_tools.is_valid_nickname(router_comp[0]):
@@ -400,7 +400,7 @@ class ServerDescriptor(Descriptor):
         self.or_port = int(router_comp[2])
         self.socks_port = None if router_comp[3] == '0' else int(router_comp[3])
         self.dir_port = None if router_comp[4] == '0' else int(router_comp[4])
-      elif keyword == "bandwidth":
+      elif keyword == 'bandwidth':
         # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
         bandwidth_comp = value.split()
 
@@ -408,7 +408,7 @@ class ServerDescriptor(Descriptor):
           if not validate:
             continue
 
-          raise ValueError("Bandwidth line must have three values: %s" % line)
+          raise ValueError('Bandwidth line must have three values: %s' % line)
         elif not bandwidth_comp[0].isdigit():
           if not validate:
             continue
@@ -428,7 +428,7 @@ class ServerDescriptor(Descriptor):
         self.average_bandwidth = int(bandwidth_comp[0])
         self.burst_bandwidth = int(bandwidth_comp[1])
         self.observed_bandwidth = int(bandwidth_comp[2])
-      elif keyword == "platform":
+      elif keyword == 'platform':
         # "platform" string
 
         # The platform attribute was set earlier. This line can contain any
@@ -440,7 +440,7 @@ class ServerDescriptor(Descriptor):
         # There's no guarantee that we'll be able to pick these out the
         # version, but might as well try to save our caller the effort.
 
-        platform_match = re.match("^(?:node-)?Tor (\S*).* on (.*)$", value)
+        platform_match = re.match('^(?:node-)?Tor (\S*).* on (.*)$', value)
 
         if platform_match:
           version_str, self.operating_system = platform_match.groups()
@@ -449,54 +449,54 @@ class ServerDescriptor(Descriptor):
             self.tor_version = stem.version._get_version(version_str)
           except ValueError:
             pass
-      elif keyword == "published":
+      elif keyword == 'published':
         # "published" YYYY-MM-DD HH:MM:SS
 
         try:
-          self.published = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+          self.published = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
         except ValueError:
           if validate:
             raise ValueError("Published line's time wasn't parsable: %s" % line)
-      elif keyword == "fingerprint":
+      elif keyword == 'fingerprint':
         # This is forty hex digits split into space separated groups of four.
         # Checking that we match this pattern.
 
-        fingerprint = value.replace(" ", "")
+        fingerprint = value.replace(' ', '')
 
         if validate:
-          for grouping in value.split(" "):
+          for grouping in value.split(' '):
             if len(grouping) != 4:
-              raise ValueError("Fingerprint line should have groupings of four hex digits: %s" % value)
+              raise ValueError('Fingerprint line should have groupings of four hex digits: %s' % value)
 
           if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
-            raise ValueError("Tor relay fingerprints consist of forty hex digits: %s" % value)
+            raise ValueError('Tor relay fingerprints consist of forty hex digits: %s' % value)
 
         self.fingerprint = fingerprint
-      elif keyword == "hibernating":
+      elif keyword == 'hibernating':
         # "hibernating" 0|1 (in practice only set if one)
 
-        if validate and not value in ("0", "1"):
-          raise ValueError("Hibernating line had an invalid value, must be zero or one: %s" % value)
+        if validate and not value in ('0', '1'):
+          raise ValueError('Hibernating line had an invalid value, must be zero or one: %s' % value)
 
-        self.hibernating = value == "1"
-      elif keyword == "allow-single-hop-exits":
+        self.hibernating = value == '1'
+      elif keyword == 'allow-single-hop-exits':
         self.allow_single_hop_exits = True
-      elif keyword == "caches-extra-info":
+      elif keyword == 'caches-extra-info':
         self.extra_info_cache = True
-      elif keyword == "extra-info-digest":
+      elif keyword == 'extra-info-digest':
         # this is forty hex digits which just so happens to be the same a
         # fingerprint
 
         if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError("Extra-info digests should consist of forty hex digits: %s" % value)
+          raise ValueError('Extra-info digests should consist of forty hex digits: %s' % value)
 
         self.extra_info_digest = value
-      elif keyword == "hidden-service-dir":
+      elif keyword == 'hidden-service-dir':
         if value:
-          self.hidden_service_dir = value.split(" ")
+          self.hidden_service_dir = value.split(' ')
         else:
-          self.hidden_service_dir = ["2"]
-      elif keyword == "uptime":
+          self.hidden_service_dir = ['2']
+      elif keyword == 'uptime':
         # We need to be tolerant of negative uptimes to accommodate a past tor
         # bug...
         #
@@ -514,38 +514,38 @@ class ServerDescriptor(Descriptor):
           if not validate:
             continue
 
-          raise ValueError("Uptime line must have an integer value: %s" % value)
-      elif keyword == "contact":
+          raise ValueError('Uptime line must have an integer value: %s' % value)
+      elif keyword == 'contact':
         pass  # parsed as a bytes field earlier
-      elif keyword == "protocols":
-        protocols_match = re.match("^Link (.*) Circuit (.*)$", value)
+      elif keyword == 'protocols':
+        protocols_match = re.match('^Link (.*) Circuit (.*)$', value)
 
         if protocols_match:
           link_versions, circuit_versions = protocols_match.groups()
-          self.link_protocols = link_versions.split(" ")
-          self.circuit_protocols = circuit_versions.split(" ")
+          self.link_protocols = link_versions.split(' ')
+          self.circuit_protocols = circuit_versions.split(' ')
         elif validate:
-          raise ValueError("Protocols line did not match the expected pattern: %s" % line)
-      elif keyword == "family":
-        self.family = set(value.split(" "))
-      elif keyword == "eventdns":
-        self.eventdns = value == "1"
-      elif keyword == "ipv6-policy":
+          raise ValueError('Protocols line did not match the expected pattern: %s' % line)
+      elif keyword == 'family':
+        self.family = set(value.split(' '))
+      elif keyword == 'eventdns':
+        self.eventdns = value == '1'
+      elif keyword == 'ipv6-policy':
         self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
-      elif keyword == "or-address":
+      elif keyword == 'or-address':
         or_address_entries = [value for (value, _) in values]
 
         for entry in or_address_entries:
-          line = "%s %s" % (keyword, entry)
+          line = '%s %s' % (keyword, entry)
 
-          if not ":" in entry:
+          if not ':' in entry:
             if not validate:
               continue
             else:
-              raise ValueError("or-address line missing a colon: %s" % line)
+              raise ValueError('or-address line missing a colon: %s' % line)
 
           address, port = entry.rsplit(':', 1)
-          is_ipv6 = address.startswith("[") and address.endswith("]")
+          is_ipv6 = address.startswith('[') and address.endswith(']')
 
           if is_ipv6:
             address = address[1:-1]  # remove brackets
@@ -555,26 +555,26 @@ class ServerDescriptor(Descriptor):
             if not validate:
               continue
             else:
-              raise ValueError("or-address line has a malformed address: %s" % line)
+              raise ValueError('or-address line has a malformed address: %s' % line)
 
           if stem.util.connection.is_valid_port(port):
             self.or_addresses.append((address, int(port), is_ipv6))
           elif validate:
-            raise ValueError("or-address line has a malformed port: %s" % line)
-      elif keyword in ("read-history", "write-history"):
+            raise ValueError('or-address line has a malformed port: %s' % line)
+      elif keyword in ('read-history', 'write-history'):
         try:
           timestamp, interval, remainder = \
             stem.descriptor.extrainfo_descriptor._parse_timestamp_and_interval(keyword, value)
 
           try:
             if remainder:
-              history_values = [int(entry) for entry in remainder.split(",")]
+              history_values = [int(entry) for entry in remainder.split(',')]
             else:
               history_values = []
           except ValueError:
-            raise ValueError("%s line has non-numeric values: %s" % (keyword, line))
+            raise ValueError('%s line has non-numeric values: %s' % (keyword, line))
 
-          if keyword == "read-history":
+          if keyword == 'read-history':
             self.read_history_end = timestamp
             self.read_history_interval = interval
             self.read_history_values = history_values
@@ -592,7 +592,7 @@ class ServerDescriptor(Descriptor):
     # this bug then fail validation
 
     if validate and self.uptime and self.tor_version:
-      if self.uptime < 0 and self.tor_version >= stem.version.Version("0.1.2.7"):
+      if self.uptime < 0 and self.tor_version >= stem.version.Version('0.1.2.7'):
         raise ValueError("Descriptor for version '%s' had a negative uptime value: %i" % (self.tor_version, self.uptime))
 
   def _check_constraints(self, entries):
@@ -634,10 +634,10 @@ class ServerDescriptor(Descriptor):
     return REQUIRED_FIELDS + SINGLE_FIELDS
 
   def _first_keyword(self):
-    return "router"
+    return 'router'
 
   def _last_keyword(self):
-    return "router-signature"
+    return 'router-signature'
 
 
 class RelayDescriptor(ServerDescriptor):
@@ -679,8 +679,8 @@ class RelayDescriptor(ServerDescriptor):
     # descriptor except the router-signature.
 
     raw_descriptor = self.get_bytes()
-    start_token = b"router "
-    sig_token = b"\nrouter-signature\n"
+    start_token = b'router '
+    sig_token = b'\nrouter-signature\n'
     start = raw_descriptor.find(start_token)
     sig_start = raw_descriptor.find(sig_token)
     end = sig_start + len(sig_token)
@@ -690,7 +690,7 @@ class RelayDescriptor(ServerDescriptor):
       digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(for_digest))
       return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
     else:
-      raise ValueError("unable to calculate digest for descriptor")
+      raise ValueError('unable to calculate digest for descriptor')
 
   def _validate_content(self):
     """
@@ -709,8 +709,8 @@ class RelayDescriptor(ServerDescriptor):
       key_der_as_hash = hashlib.sha1(stem.util.str_tools._to_bytes(key_as_bytes)).hexdigest()
 
       if key_der_as_hash != self.fingerprint.lower():
-        log.warn("Signing key hash: %s != fingerprint: %s" % (key_der_as_hash, self.fingerprint.lower()))
-        raise ValueError("Fingerprint does not match hash")
+        log.warn('Signing key hash: %s != fingerprint: %s' % (key_der_as_hash, self.fingerprint.lower()))
+        raise ValueError('Fingerprint does not match hash')
 
     self._verify_digest(key_as_bytes)
 
@@ -762,9 +762,9 @@ class RelayDescriptor(ServerDescriptor):
 
     try:
       if decrypted_bytes.index(b'\x00\x01') != 0:
-        raise ValueError("Verification failed, identifier missing")
+        raise ValueError('Verification failed, identifier missing')
     except ValueError:
-      raise ValueError("Verification failed, malformed data")
+      raise ValueError('Verification failed, malformed data')
 
     try:
       identifier_offset = 2
@@ -772,7 +772,7 @@ class RelayDescriptor(ServerDescriptor):
       # find the separator
       seperator_index = decrypted_bytes.index(b'\x00', identifier_offset)
     except ValueError:
-      raise ValueError("Verification failed, seperator not found")
+      raise ValueError('Verification failed, seperator not found')
 
     digest_hex = codecs.encode(decrypted_bytes[seperator_index + 1:], 'hex_codec')
     digest = stem.util.str_tools._to_unicode(digest_hex.upper())
@@ -780,7 +780,7 @@ class RelayDescriptor(ServerDescriptor):
     local_digest = self.digest()
 
     if digest != local_digest:
-      raise ValueError("Decrypted digest does not match local digest (calculated: %s, local: %s)" % (digest, local_digest))
+      raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (digest, local_digest))
 
   def _parse(self, entries, validate):
     entries = dict(entries)  # shallow copy since we're destructive
@@ -789,29 +789,29 @@ class RelayDescriptor(ServerDescriptor):
 
     for keyword, values in entries.items():
       value, block_contents = values[0]
-      line = "%s %s" % (keyword, value)
+      line = '%s %s' % (keyword, value)
 
-      if keyword == "onion-key":
+      if keyword == 'onion-key':
         if validate and not block_contents:
-          raise ValueError("Onion key line must be followed by a public key: %s" % line)
+          raise ValueError('Onion key line must be followed by a public key: %s' % line)
 
         self.onion_key = block_contents
-        del entries["onion-key"]
-      elif keyword == "ntor-onion-key":
+        del entries['onion-key']
+      elif keyword == 'ntor-onion-key':
         self.ntor_onion_key = value
-        del entries["ntor-onion-key"]
-      elif keyword == "signing-key":
+        del entries['ntor-onion-key']
+      elif keyword == 'signing-key':
         if validate and not block_contents:
-          raise ValueError("Signing key line must be followed by a public key: %s" % line)
+          raise ValueError('Signing key line must be followed by a public key: %s' % line)
 
         self.signing_key = block_contents
-        del entries["signing-key"]
-      elif keyword == "router-signature":
+        del entries['signing-key']
+      elif keyword == 'router-signature':
         if validate and not block_contents:
-          raise ValueError("Router signature line must be followed by a signature block: %s" % line)
+          raise ValueError('Router signature line must be followed by a signature block: %s' % line)
 
         self.signature = block_contents
-        del entries["router-signature"]
+        del entries['router-signature']
 
     ServerDescriptor._parse(self, entries, validate)
 
@@ -868,14 +868,14 @@ class BridgeDescriptor(ServerDescriptor):
     # handles fields only in bridge descriptors
     for keyword, values in entries.items():
       value, block_contents = values[0]
-      line = "%s %s" % (keyword, value)
+      line = '%s %s' % (keyword, value)
 
-      if keyword == "router-digest":
+      if keyword == 'router-digest':
         if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
-          raise ValueError("Router digest line had an invalid sha1 digest: %s" % line)
+          raise ValueError('Router digest line had an invalid sha1 digest: %s' % line)
 
         self._digest = stem.util.str_tools._to_unicode(value)
-        del entries["router-digest"]
+        del entries['router-digest']
 
     ServerDescriptor._parse(self, entries, validate)
 
@@ -903,27 +903,27 @@ class BridgeDescriptor(ServerDescriptor):
 
     issues = []
 
-    if not self.address.startswith("10."):
+    if not self.address.startswith('10.'):
       issues.append("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
 
     if self.contact and self.contact != "somebody":
       issues.append("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
 
     for address, _, is_ipv6 in self.or_addresses:
-      if not is_ipv6 and not address.startswith("10."):
+      if not is_ipv6 and not address.startswith('10.'):
         issues.append("or-address line's address should be scrubbed to be '10.x.x.x': %s" % address)
-      elif is_ipv6 and not address.startswith("fd9f:2e19:3bcf::"):
+      elif is_ipv6 and not address.startswith('fd9f:2e19:3bcf::'):
         # TODO: this check isn't quite right because we aren't checking that
         # the next grouping of hex digits contains 1-2 digits
         issues.append("or-address line's address should be scrubbed to be 'fd9f:2e19:3bcf::xx:xxxx': %s" % address)
 
     for line in self.get_unrecognized_lines():
-      if line.startswith("onion-key "):
-        issues.append("Bridge descriptors should have their onion-key scrubbed: %s" % line)
-      elif line.startswith("signing-key "):
-        issues.append("Bridge descriptors should have their signing-key scrubbed: %s" % line)
-      elif line.startswith("router-signature "):
-        issues.append("Bridge descriptors should have their signature scrubbed: %s" % line)
+      if line.startswith('onion-key '):
+        issues.append('Bridge descriptors should have their onion-key scrubbed: %s' % line)
+      elif line.startswith('signing-key '):
+        issues.append('Bridge descriptors should have their signing-key scrubbed: %s' % line)
+      elif line.startswith('router-signature '):
+        issues.append('Bridge descriptors should have their signature scrubbed: %s' % line)
 
     return issues
 
@@ -932,13 +932,13 @@ class BridgeDescriptor(ServerDescriptor):
     # excluded according to the format page
 
     excluded_fields = [
-      "onion-key",
-      "signing-key",
-      "router-signature",
+      'onion-key',
+      'signing-key',
+      'router-signature',
     ]
 
     included_fields = [
-      "router-digest",
+      'router-digest',
     ]
 
     return tuple(included_fields + [f for f in REQUIRED_FIELDS if not f in excluded_fields])

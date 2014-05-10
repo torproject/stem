@@ -18,10 +18,10 @@ class TestProc(unittest.TestCase):
     """
 
     if not proc.is_available():
-      test.runner.skip(self, "(proc unavailable)")
+      test.runner.skip(self, '(proc unavailable)')
       return
     elif not test.runner.get_runner().is_ptraceable():
-      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
 
     runner = test.runner.get_runner()
@@ -34,7 +34,7 @@ class TestProc(unittest.TestCase):
     """
 
     if not proc.is_available():
-      test.runner.skip(self, "(proc unavailable)")
+      test.runner.skip(self, '(proc unavailable)')
       return
 
     tor_pid = test.runner.get_runner().get_pid()
@@ -46,7 +46,7 @@ class TestProc(unittest.TestCase):
     """
 
     if not proc.is_available():
-      test.runner.skip(self, "(proc unavailable)")
+      test.runner.skip(self, '(proc unavailable)')
       return
 
     tor_pid = test.runner.get_runner().get_pid()
@@ -62,7 +62,7 @@ class TestProc(unittest.TestCase):
     """
 
     if not proc.is_available():
-      test.runner.skip(self, "(proc unavailable)")
+      test.runner.skip(self, '(proc unavailable)')
       return
 
     tor_pid = test.runner.get_runner().get_pid()
@@ -82,13 +82,13 @@ class TestProc(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if not proc.is_available():
-      test.runner.skip(self, "(proc unavailable)")
+      test.runner.skip(self, '(proc unavailable)')
       return
     elif not test.runner.Torrc.PORT in runner.get_options():
-      test.runner.skip(self, "(no control port)")
+      test.runner.skip(self, '(no control port)')
       return
     elif not test.runner.get_runner().is_ptraceable():
-      test.runner.skip(self, "(DisableDebuggerAttachment is set)")
+      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
 
     # making a controller connection so that we have something to query for
@@ -96,7 +96,7 @@ class TestProc(unittest.TestCase):
       tor_pid = test.runner.get_runner().get_pid()
 
       for conn in proc.get_connections(tor_pid):
-        if ("127.0.0.1", test.runner.CONTROL_PORT) == conn[:2]:
+        if ('127.0.0.1', test.runner.CONTROL_PORT) == conn[:2]:
           return
 
       self.fail()

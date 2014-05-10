@@ -43,7 +43,7 @@ def check_requirements():
   major_version, minor_version = sys.version_info[0:2]
 
   if major_version < 2 or (major_version == 2 and minor_version < 6):
-    raise ImportError("stem requires python version 2.6 or greater")
+    raise ImportError('stem requires python version 2.6 or greater')
 
 
 def is_python_27():
@@ -85,7 +85,7 @@ def is_crypto_available():
     from Crypto.Util.number import long_to_bytes
     return True
   except ImportError:
-    log.log_once("stem.prereq.is_crypto_available", log.INFO, CRYPTO_UNAVAILABLE)
+    log.log_once('stem.prereq.is_crypto_available', log.INFO, CRYPTO_UNAVAILABLE)
     return False
 
 

@@ -27,7 +27,7 @@ from stem.util.term import RESET, Attr, Color, format
 #
 #   http://bugs.python.org/issue12972
 
-PROMPT = format(">>> ", Color.GREEN, Attr.BOLD) + RESET * 10
+PROMPT = format('>>> ', Color.GREEN, Attr.BOLD) + RESET * 10
 
 STANDARD_OUTPUT = (Color.BLUE, )
 BOLD_OUTPUT = (Color.BLUE, Attr.BOLD)

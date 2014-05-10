@@ -27,11 +27,11 @@ import tempfile
 import stem.prereq
 import stem.util.system
 
-NO_TORRC = "<no torrc>"
+NO_TORRC = '<no torrc>'
 DEFAULT_INIT_TIMEOUT = 90
 
 
-def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
+def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
   """
   Initializes a tor process. This blocks until initialization completes or we
   error out.
@@ -94,13 +94,13 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
 
   if torrc_path:
     if torrc_path == NO_TORRC:
-      temp_file = tempfile.mkstemp(prefix = "empty-torrc-", text = True)[1]
-      runtime_args += ["-f", temp_file]
+      temp_file = tempfile.mkstemp(prefix = 'empty-torrc-', text = True)[1]
+      runtime_args += ['-f', temp_file]
     else:
-      runtime_args += ["-f", torrc_path]
+      runtime_args += ['-f', torrc_path]
 
   if take_ownership:
-    runtime_args += ["__OwningControllerProcess", str(os.getpid())]
+    runtime_args += ['__OwningControllerProcess', str(os.getpid())]
 
   tor_process = subprocess.Popen(runtime_args, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 
@@ -115,14 +115,14 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
 
       tor_process.kill()
 
-      raise OSError("reached a %i second timeout without success" % timeout)
+      raise OSError('reached a %i second timeout without success' % timeout)
 
     signal.signal(signal.SIGALRM, timeout_handler)
     signal.alarm(timeout)
 
-  bootstrap_line = re.compile("Bootstrapped ([0-9]+)%: ")
-  problem_line = re.compile("\[(warn|err)\] (.*)$")
-  last_problem = "Timed out"
+  bootstrap_line = re.compile('Bootstrapped ([0-9]+)%: ')
+  problem_line = re.compile('\[(warn|err)\] (.*)$')
+  last_problem = 'Timed out'
 
   while True:
     # Tor's stdout will be read as ASCII bytes. This is fine for python 2, but
@@ -132,7 +132,7 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
     # It seems like python 2.x is perfectly happy for this to be unicode, so
     # normalizing to that.
 
-    init_line = tor_process.stdout.readline().decode("utf-8", "replace").strip()
+    init_line = tor_process.stdout.readline().decode('utf-8', 'replace').strip()
 
     # this will provide empty results if the process is terminated
     if not init_line:
@@ -143,7 +143,7 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
 
       tor_process.kill()
 
-      raise OSError("Process terminated: %s" % last_problem)
+      raise OSError('Process terminated: %s' % last_problem)
 
     # provide the caller with the initialization message if they want it
 
@@ -168,14 +168,14 @@ def launch_tor(tor_cmd = "tor", args = None, torrc_path = None, completion_perce
     elif problem_match:
       runlevel, msg = problem_match.groups()
 
-      if not "see warnings above" in msg:
-        if ": " in msg:
-          msg = msg.split(": ")[-1].strip()
+      if not 'see warnings above' in msg:
+        if ': ' in msg:
+          msg = msg.split(': ')[-1].strip()
 
         last_problem = msg
 
 
-def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
+def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
   """
   Initializes a tor process, like :func:`~stem.process.launch_tor`, but with a
   customized configuration. This writes a temporary torrc to disk, launches
@@ -195,7 +195,7 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
       },
     )
 
-  :param dict config: configuration options, such as '{"ControlPort": "9051"}',
+  :param dict config: configuration options, such as "{'ControlPort': '9051'}",
     values can either be a **str** or **list of str** if for multiple values
   :param str tor_cmd: command for starting tor
   :param int completion_percent: percent of bootstrap completion at which
@@ -233,16 +233,16 @@ def launch_tor_with_config(config, tor_cmd = "tor", completion_percent = 100, in
     if not has_stdout:
       config['Log'].append('NOTICE stdout')
 
-  torrc_path = tempfile.mkstemp(prefix = "torrc-", text = True)[1]
+  torrc_path = tempfile.mkstemp(prefix = 'torrc-', text = True)[1]
 
   try:
-    with open(torrc_path, "w") as torrc_file:
+    with open(torrc_path, 'w') as torrc_file:
       for key, values in config.items():
         if isinstance(values, str):
-          torrc_file.write("%s %s\n" % (key, values))
+          torrc_file.write('%s %s\n' % (key, values))
         else:
           for value in values:
-            torrc_file.write("%s %s\n" % (key, value))
+            torrc_file.write('%s %s\n' % (key, value))
 
     # prevents tor from erroring out due to a missing torrc if it gets a sighup
     args = ['__ReloadTorrcOnSIGHUP', '0']

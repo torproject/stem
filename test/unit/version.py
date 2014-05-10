@@ -29,8 +29,8 @@ class TestVersion(unittest.TestCase):
 
     version = stem.version.get_system_tor_version()
 
-    self.assert_versions_match(version, 0, 2, 2, 35, None, "git-73ff13ab3cc9570d")
-    self.assertEqual("73ff13ab3cc9570d", version.git_commit)
+    self.assert_versions_match(version, 0, 2, 2, 35, None, 'git-73ff13ab3cc9570d')
+    self.assertEqual('73ff13ab3cc9570d', version.git_commit)
     call_mock.assert_called_once_with('tor --version')
 
     self.assertEqual({'tor': version}, stem.version.VERSION_CACHE)
@@ -42,44 +42,44 @@ class TestVersion(unittest.TestCase):
 
     # valid versions with various number of compontents to the version
 
-    version = Version("0.1.2.3-tag")
-    self.assert_versions_match(version, 0, 1, 2, 3, "tag", None)
+    version = Version('0.1.2.3-tag')
+    self.assert_versions_match(version, 0, 1, 2, 3, 'tag', None)
 
-    version = Version("0.1.2.3")
+    version = Version('0.1.2.3')
     self.assert_versions_match(version, 0, 1, 2, 3, None, None)
 
-    version = Version("0.1.2-tag")
-    self.assert_versions_match(version, 0, 1, 2, None, "tag", None)
+    version = Version('0.1.2-tag')
+    self.assert_versions_match(version, 0, 1, 2, None, 'tag', None)
 
-    version = Version("0.1.2")
+    version = Version('0.1.2')
     self.assert_versions_match(version, 0, 1, 2, None, None, None)
 
     # checks an empty tag
-    version = Version("0.1.2.3-")
-    self.assert_versions_match(version, 0, 1, 2, 3, "", None)
+    version = Version('0.1.2.3-')
+    self.assert_versions_match(version, 0, 1, 2, 3, '', None)
 
-    version = Version("0.1.2-")
-    self.assert_versions_match(version, 0, 1, 2, None, "", None)
+    version = Version('0.1.2-')
+    self.assert_versions_match(version, 0, 1, 2, None, '', None)
 
     # check with extra informaton
-    version = Version("0.1.2.3-tag (git-73ff13ab3cc9570d)")
-    self.assert_versions_match(version, 0, 1, 2, 3, "tag", "git-73ff13ab3cc9570d")
-    self.assertEqual("73ff13ab3cc9570d", version.git_commit)
+    version = Version('0.1.2.3-tag (git-73ff13ab3cc9570d)')
+    self.assert_versions_match(version, 0, 1, 2, 3, 'tag', 'git-73ff13ab3cc9570d')
+    self.assertEqual('73ff13ab3cc9570d', version.git_commit)
 
-    version = Version("0.1.2.3-tag ()")
-    self.assert_versions_match(version, 0, 1, 2, 3, "tag", "")
+    version = Version('0.1.2.3-tag ()')
+    self.assert_versions_match(version, 0, 1, 2, 3, 'tag', '')
 
-    version = Version("0.1.2 (git-73ff13ab3cc9570d)")
-    self.assert_versions_match(version, 0, 1, 2, None, None, "git-73ff13ab3cc9570d")
+    version = Version('0.1.2 (git-73ff13ab3cc9570d)')
+    self.assert_versions_match(version, 0, 1, 2, None, None, 'git-73ff13ab3cc9570d')
 
     # checks invalid version strings
-    self.assertRaises(ValueError, stem.version.Version, "")
-    self.assertRaises(ValueError, stem.version.Version, "1.2.3.4nodash")
-    self.assertRaises(ValueError, stem.version.Version, "1.2.3.a")
-    self.assertRaises(ValueError, stem.version.Version, "1.2.a.4")
-    self.assertRaises(ValueError, stem.version.Version, "1x2x3x4")
-    self.assertRaises(ValueError, stem.version.Version, "12.3")
-    self.assertRaises(ValueError, stem.version.Version, "1.-2.3")
+    self.assertRaises(ValueError, stem.version.Version, '')
+    self.assertRaises(ValueError, stem.version.Version, '1.2.3.4nodash')
+    self.assertRaises(ValueError, stem.version.Version, '1.2.3.a')
+    self.assertRaises(ValueError, stem.version.Version, '1.2.a.4')
+    self.assertRaises(ValueError, stem.version.Version, '1x2x3x4')
+    self.assertRaises(ValueError, stem.version.Version, '12.3')
+    self.assertRaises(ValueError, stem.version.Version, '1.-2.3')
 
   def test_comparison(self):
     """
@@ -87,28 +87,28 @@ class TestVersion(unittest.TestCase):
     """
 
     # check for basic incrementing in each portion
-    self.assert_version_is_greater("1.1.2.3-tag", "0.1.2.3-tag")
-    self.assert_version_is_greater("0.2.2.3-tag", "0.1.2.3-tag")
-    self.assert_version_is_greater("0.1.3.3-tag", "0.1.2.3-tag")
-    self.assert_version_is_greater("0.1.2.4-tag", "0.1.2.3-tag")
-    self.assert_version_is_greater("0.1.2.3-ugg", "0.1.2.3-tag")
-    self.assert_version_is_equal("0.1.2.3-tag", "0.1.2.3-tag")
+    self.assert_version_is_greater('1.1.2.3-tag', '0.1.2.3-tag')
+    self.assert_version_is_greater('0.2.2.3-tag', '0.1.2.3-tag')
+    self.assert_version_is_greater('0.1.3.3-tag', '0.1.2.3-tag')
+    self.assert_version_is_greater('0.1.2.4-tag', '0.1.2.3-tag')
+    self.assert_version_is_greater('0.1.2.3-ugg', '0.1.2.3-tag')
+    self.assert_version_is_equal('0.1.2.3-tag', '0.1.2.3-tag')
 
     # check with common tags
-    self.assert_version_is_greater("0.1.2.3-beta", "0.1.2.3-alpha")
-    self.assert_version_is_greater("0.1.2.3-rc", "0.1.2.3-beta")
+    self.assert_version_is_greater('0.1.2.3-beta', '0.1.2.3-alpha')
+    self.assert_version_is_greater('0.1.2.3-rc', '0.1.2.3-beta')
 
     # checks that a missing patch level equals zero
-    self.assert_version_is_equal("0.1.2", "0.1.2.0")
-    self.assert_version_is_equal("0.1.2-tag", "0.1.2.0-tag")
+    self.assert_version_is_equal('0.1.2', '0.1.2.0')
+    self.assert_version_is_equal('0.1.2-tag', '0.1.2.0-tag')
 
     # checks for missing patch or status
-    self.assert_version_is_greater("0.1.2.3-tag", "0.1.2.3")
-    self.assert_version_is_greater("0.1.2.3-tag", "0.1.2-tag")
-    self.assert_version_is_greater("0.1.2.3-tag", "0.1.2")
+    self.assert_version_is_greater('0.1.2.3-tag', '0.1.2.3')
+    self.assert_version_is_greater('0.1.2.3-tag', '0.1.2-tag')
+    self.assert_version_is_greater('0.1.2.3-tag', '0.1.2')
 
-    self.assert_version_is_equal("0.1.2.3", "0.1.2.3")
-    self.assert_version_is_equal("0.1.2", "0.1.2")
+    self.assert_version_is_equal('0.1.2.3', '0.1.2.3')
+    self.assert_version_is_equal('0.1.2', '0.1.2')
 
   def test_nonversion_comparison(self):
     """
@@ -118,7 +118,7 @@ class TestVersion(unittest.TestCase):
     comparisons result in a TypeError.
     """
 
-    test_version = Version("0.1.2.3")
+    test_version = Version('0.1.2.3')
     self.assertNotEqual(test_version, None)
     self.assertNotEqual(test_version, 5)
 
@@ -128,9 +128,9 @@ class TestVersion(unittest.TestCase):
     """
 
     # checks conversion with various numbers of arguments
-    self.assert_string_matches("0.1.2.3-tag")
-    self.assert_string_matches("0.1.2.3")
-    self.assert_string_matches("0.1.2")
+    self.assert_string_matches('0.1.2.3-tag')
+    self.assert_string_matches('0.1.2.3')
+    self.assert_string_matches('0.1.2')
 
   def test_requirements_greater_than(self):
     """
@@ -138,20 +138,20 @@ class TestVersion(unittest.TestCase):
     """
 
     requirements = stem.version._VersionRequirements()
-    requirements.greater_than(Version("0.2.2.36"))
+    requirements.greater_than(Version('0.2.2.36'))
 
-    self.assertTrue(Version("0.2.2.36") >= requirements)
-    self.assertTrue(Version("0.2.2.37") >= requirements)
-    self.assertTrue(Version("0.2.3.36") >= requirements)
-    self.assertFalse(Version("0.2.2.35") >= requirements)
-    self.assertFalse(Version("0.2.1.38") >= requirements)
+    self.assertTrue(Version('0.2.2.36') >= requirements)
+    self.assertTrue(Version('0.2.2.37') >= requirements)
+    self.assertTrue(Version('0.2.3.36') >= requirements)
+    self.assertFalse(Version('0.2.2.35') >= requirements)
+    self.assertFalse(Version('0.2.1.38') >= requirements)
 
     requirements = stem.version._VersionRequirements()
-    requirements.greater_than(Version("0.2.2.36"), False)
+    requirements.greater_than(Version('0.2.2.36'), False)
 
-    self.assertFalse(Version("0.2.2.35") >= requirements)
-    self.assertFalse(Version("0.2.2.36") >= requirements)
-    self.assertTrue(Version("0.2.2.37") >= requirements)
+    self.assertFalse(Version('0.2.2.35') >= requirements)
+    self.assertFalse(Version('0.2.2.36') >= requirements)
+    self.assertTrue(Version('0.2.2.37') >= requirements)
 
   def test_requirements_less_than(self):
     """
@@ -159,20 +159,20 @@ class TestVersion(unittest.TestCase):
     """
 
     requirements = stem.version._VersionRequirements()
-    requirements.less_than(Version("0.2.2.36"))
+    requirements.less_than(Version('0.2.2.36'))
 
-    self.assertTrue(Version("0.2.2.36") >= requirements)
-    self.assertTrue(Version("0.2.2.35") >= requirements)
-    self.assertTrue(Version("0.2.1.38") >= requirements)
-    self.assertFalse(Version("0.2.2.37") >= requirements)
-    self.assertFalse(Version("0.2.3.36") >= requirements)
+    self.assertTrue(Version('0.2.2.36') >= requirements)
+    self.assertTrue(Version('0.2.2.35') >= requirements)
+    self.assertTrue(Version('0.2.1.38') >= requirements)
+    self.assertFalse(Version('0.2.2.37') >= requirements)
+    self.assertFalse(Version('0.2.3.36') >= requirements)
 
     requirements = stem.version._VersionRequirements()
-    requirements.less_than(Version("0.2.2.36"), False)
+    requirements.less_than(Version('0.2.2.36'), False)
 
-    self.assertFalse(Version("0.2.2.37") >= requirements)
-    self.assertFalse(Version("0.2.2.36") >= requirements)
-    self.assertTrue(Version("0.2.2.35") >= requirements)
+    self.assertFalse(Version('0.2.2.37') >= requirements)
+    self.assertFalse(Version('0.2.2.36') >= requirements)
+    self.assertTrue(Version('0.2.2.35') >= requirements)
 
   def test_requirements_in_range(self):
     """
@@ -180,19 +180,19 @@ class TestVersion(unittest.TestCase):
     """
 
     requirements = stem.version._VersionRequirements()
-    requirements.in_range(Version("0.2.2.36"), Version("0.2.2.38"))
+    requirements.in_range(Version('0.2.2.36'), Version('0.2.2.38'))
 
-    self.assertFalse(Version("0.2.2.35") >= requirements)
-    self.assertTrue(Version("0.2.2.36") >= requirements)
-    self.assertTrue(Version("0.2.2.37") >= requirements)
-    self.assertFalse(Version("0.2.2.38") >= requirements)
+    self.assertFalse(Version('0.2.2.35') >= requirements)
+    self.assertTrue(Version('0.2.2.36') >= requirements)
+    self.assertTrue(Version('0.2.2.37') >= requirements)
+    self.assertFalse(Version('0.2.2.38') >= requirements)
 
     # rule for 'anything in the 0.2.2.x series'
     requirements = stem.version._VersionRequirements()
-    requirements.in_range(Version("0.2.2.0"), Version("0.2.3.0"))
+    requirements.in_range(Version('0.2.2.0'), Version('0.2.3.0'))
 
     for index in xrange(0, 100):
-      self.assertTrue(Version("0.2.2.%i" % index) >= requirements)
+      self.assertTrue(Version('0.2.2.%i' % index) >= requirements)
 
   def test_requirements_multiple_rules(self):
     """
@@ -201,14 +201,14 @@ class TestVersion(unittest.TestCase):
 
     # rule to say 'anything but the 0.2.2.x series'
     requirements = stem.version._VersionRequirements()
-    requirements.greater_than(Version("0.2.3.0"))
-    requirements.less_than(Version("0.2.2.0"), False)
+    requirements.greater_than(Version('0.2.3.0'))
+    requirements.less_than(Version('0.2.2.0'), False)
 
-    self.assertTrue(Version("0.2.3.0") >= requirements)
-    self.assertFalse(Version("0.2.2.0") >= requirements)
+    self.assertTrue(Version('0.2.3.0') >= requirements)
+    self.assertFalse(Version('0.2.2.0') >= requirements)
 
     for index in xrange(0, 100):
-      self.assertFalse(Version("0.2.2.%i" % index) >= requirements)
+      self.assertFalse(Version('0.2.2.%i' % index) >= requirements)
 
   def assert_versions_match(self, version, major, minor, micro, patch, status, extra):
     """

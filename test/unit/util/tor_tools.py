@@ -14,16 +14,16 @@ class TestTorTools(unittest.TestCase):
     """
 
     valid_fingerprints = (
-      "$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB",
-      "$a7569a83b5706ab1b1a9cb52eff7d2d32e4553eb",
+      '$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB',
+      '$a7569a83b5706ab1b1a9cb52eff7d2d32e4553eb',
     )
 
     invalid_fingerprints = (
-      "",
-      "A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB",
-      "$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553E",
-      "$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553E33",
-      "$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EG",
+      '',
+      'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB',
+      '$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553E',
+      '$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553E33',
+      '$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EG',
     )
 
     for fingerprint in valid_fingerprints:
@@ -38,16 +38,16 @@ class TestTorTools(unittest.TestCase):
     """
 
     valid_nicknames = (
-      "caerSidi",
-      "a",
-      "abcABC123",
+      'caerSidi',
+      'a',
+      'abcABC123',
     )
 
     invalid_nicknames = (
       None,
-      "",
-      "toolongggggggggggggg",
-      "bad_character",
+      '',
+      'toolongggggggggggggg',
+      'bad_character',
     )
 
     for nickname in valid_nicknames:
@@ -62,18 +62,18 @@ class TestTorTools(unittest.TestCase):
     """
 
     valid_circuit_ids = (
-      "0",
-      "2",
-      "abcABC123",
+      '0',
+      '2',
+      'abcABC123',
     )
 
     invalid_circuit_ids = (
       None,
-      "",
+      '',
       0,
       2,
-      "toolonggggggggggg",
-      "bad_character",
+      'toolonggggggggggg',
+      'bad_character',
     )
 
     for circuit_id in valid_circuit_ids:

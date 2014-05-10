@@ -23,11 +23,11 @@ class TestControlLine(unittest.TestCase):
 
     line = stem.response.ControlLine("\"We're all mad here.\" says the grinning cat.")
     self.assertEquals(line.pop(True), "We're all mad here.")
-    self.assertEquals(line.pop(), "says")
-    self.assertEquals(line.remainder(), "the grinning cat.")
+    self.assertEquals(line.pop(), 'says')
+    self.assertEquals(line.remainder(), 'the grinning cat.')
 
-    line = stem.response.ControlLine("\"this has a \\\" and \\\\ in it\" foo=bar more_data")
-    self.assertEquals(line.pop(True, True), "this has a \" and \\ in it")
+    line = stem.response.ControlLine('"this has a \\" and \\\\ in it" foo=bar more_data')
+    self.assertEquals(line.pop(True, True), 'this has a " and \\ in it')
 
   def test_string(self):
     """
@@ -93,10 +93,10 @@ class TestControlLine(unittest.TestCase):
     self.assertFalse(line.is_empty())
     self.assertFalse(line.is_next_quoted())
     self.assertTrue(line.is_next_mapping())
-    self.assertTrue(line.is_next_mapping(key = "Tor"))
-    self.assertTrue(line.is_next_mapping(key = "Tor", quoted = True))
+    self.assertTrue(line.is_next_mapping(key = 'Tor'))
+    self.assertTrue(line.is_next_mapping(key = 'Tor', quoted = True))
     self.assertTrue(line.is_next_mapping(quoted = True))
-    self.assertEquals("Tor", line.peek_key())
+    self.assertEquals('Tor', line.peek_key())
 
     # try popping this as a non-quoted mapping
     self.assertEquals(line.pop_mapping(), ('Tor', '"0.2.1.30'))
@@ -128,12 +128,12 @@ class TestControlLine(unittest.TestCase):
     self.assertEquals(line, auth_line)
     self.assertEquals(line.remainder(), auth_line)
 
-    self.assertEquals(line.pop(), "AUTH")
-    self.assertEquals(line.pop_mapping(), ("METHODS", "COOKIE"))
+    self.assertEquals(line.pop(), 'AUTH')
+    self.assertEquals(line.pop_mapping(), ('METHODS', 'COOKIE'))
 
     self.assertEquals(line.remainder(), r'COOKIEFILE="/tmp/my data\\\"dir//control_auth_cookie"')
     self.assertTrue(line.is_next_mapping())
-    self.assertTrue(line.is_next_mapping(key = "COOKIEFILE"))
+    self.assertTrue(line.is_next_mapping(key = 'COOKIEFILE'))
     self.assertTrue(line.is_next_mapping(quoted = True))
     self.assertTrue(line.is_next_mapping(quoted = True, escaped = True))
     cookie_file_entry = line.remainder()

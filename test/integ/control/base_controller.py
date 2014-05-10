@@ -44,7 +44,7 @@ class TestBaseController(unittest.TestCase):
     if test.runner.require_control(self):
       return
     elif stem.util.system.is_mac():
-      test.runner.skip(self, "(ticket #6235)")
+      test.runner.skip(self, '(ticket #6235)')
       return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
@@ -76,7 +76,7 @@ class TestBaseController(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
-      response = controller.msg("invalid")
+      response = controller.msg('invalid')
       self.assertEquals('Unrecognized command "invalid"', str(response))
 
   def test_msg_invalid_getinfo(self):
@@ -89,7 +89,7 @@ class TestBaseController(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
-      response = controller.msg("GETINFO blarg")
+      response = controller.msg('GETINFO blarg')
       self.assertEquals('Unrecognized key "blarg"', str(response))
 
   def test_msg_repeatedly(self):
@@ -101,7 +101,7 @@ class TestBaseController(unittest.TestCase):
     if test.runner.require_control(self):
       return
     elif stem.util.system.is_mac():
-      test.runner.skip(self, "(ticket #6235)")
+      test.runner.skip(self, '(ticket #6235)')
       return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
@@ -110,9 +110,9 @@ class TestBaseController(unittest.TestCase):
       def run_getinfo():
         for _ in xrange(150):
           try:
-            controller.msg("GETINFO version")
-            controller.msg("GETINFO blarg")
-            controller.msg("blarg")
+            controller.msg('GETINFO version')
+            controller.msg('GETINFO blarg')
+            controller.msg('blarg')
           except stem.ControllerError:
             pass
 
@@ -157,7 +157,7 @@ class TestBaseController(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = ControlledListener(control_socket)
-      controller.msg("SETEVENTS BW")
+      controller.msg('SETEVENTS BW')
 
       # Wait for a couple events for events to be enqueued. Doing a bunch of
       # GETINFO queries while waiting to better exercise the asynchronous event
@@ -172,7 +172,7 @@ class TestBaseController(unittest.TestCase):
       # thread because it'll block on the event handling, which in turn is
       # currently blocking on the reveive_notice.
 
-      close_thread = threading.Thread(target = controller.close, name = "Closing controller")
+      close_thread = threading.Thread(target = controller.close, name = 'Closing controller')
       close_thread.setDaemon(True)
       close_thread.start()
 
@@ -185,9 +185,9 @@ class TestBaseController(unittest.TestCase):
       self.assertTrue(len(controller.received_events) >= 2)
 
       for bw_event in controller.received_events:
-        self.assertTrue(re.match("BW [0-9]+ [0-9]+", str(bw_event)))
-        self.assertTrue(re.match("650 BW [0-9]+ [0-9]+\r\n", bw_event.raw_content()))
-        self.assertEquals(("650", " "), bw_event.content()[0][:2])
+        self.assertTrue(re.match('BW [0-9]+ [0-9]+', str(bw_event)))
+        self.assertTrue(re.match('650 BW [0-9]+ [0-9]+\r\n', bw_event.raw_content()))
+        self.assertEquals(('650', ' '), bw_event.content()[0][:2])
 
   def test_get_latest_heartbeat(self):
     """
@@ -200,7 +200,7 @@ class TestBaseController(unittest.TestCase):
     # makes a getinfo query, then checks that the heartbeat is close to now
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
-      controller.msg("GETINFO version")
+      controller.msg('GETINFO version')
       self.assertTrue((time.time() - controller.get_latest_heartbeat()) < 5)
 
   def test_status_notifications(self):
@@ -233,8 +233,8 @@ class TestBaseController(unittest.TestCase):
       state_observer.reset()
 
       # cause the socket to shut down without calling close()
-      controller.msg("Blarg!")
-      self.assertRaises(stem.SocketClosed, controller.msg, "blarg")
+      controller.msg('Blarg!')
+      self.assertRaises(stem.SocketClosed, controller.msg, 'blarg')
       self.assertEquals(controller, state_observer.controller)
       self.assertEquals(stem.control.State.CLOSED, state_observer.state)
       self.assertTrue(state_observer.timestamp <= time.time())

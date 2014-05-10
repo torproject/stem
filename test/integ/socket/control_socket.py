@@ -30,12 +30,12 @@ class TestControlSocket(unittest.TestCase):
 
     with runner.get_tor_socket() as control_socket:
       for _ in range(100):
-        control_socket.send("GETINFO version")
+        control_socket.send('GETINFO version')
 
       for _ in range(100):
         response = control_socket.recv()
-        self.assertTrue(str(response).startswith("version=%s" % tor_version))
-        self.assertTrue(str(response).endswith("\nOK"))
+        self.assertTrue(str(response).startswith('version=%s' % tor_version))
+        self.assertTrue(str(response).endswith('\nOK'))
 
   def test_send_closed(self):
     """
@@ -50,7 +50,7 @@ class TestControlSocket(unittest.TestCase):
       control_socket.close()
       self.assertFalse(control_socket.is_alive())
 
-      self.assertRaises(stem.SocketClosed, control_socket.send, "blarg")
+      self.assertRaises(stem.SocketClosed, control_socket.send, 'blarg')
 
   def test_send_disconnected(self):
     """
@@ -66,18 +66,18 @@ class TestControlSocket(unittest.TestCase):
       return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
-      control_socket.send("QUIT")
-      self.assertEquals("closing connection", str(control_socket.recv()))
+      control_socket.send('QUIT')
+      self.assertEquals('closing connection', str(control_socket.recv()))
       self.assertTrue(control_socket.is_alive())
 
       # If we send another message to a port based socket then it will seem to
       # succeed. However, a file based socket should report a failure.
 
       if isinstance(control_socket, stem.socket.ControlPort):
-        control_socket.send("blarg")
+        control_socket.send('blarg')
         self.assertTrue(control_socket.is_alive())
       else:
-        self.assertRaises(stem.SocketClosed, control_socket.send, "blarg")
+        self.assertRaises(stem.SocketClosed, control_socket.send, 'blarg')
         self.assertFalse(control_socket.is_alive())
 
   def test_recv_closed(self):
@@ -105,8 +105,8 @@ class TestControlSocket(unittest.TestCase):
       return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
-      control_socket.send("QUIT")
-      self.assertEquals("closing connection", str(control_socket.recv()))
+      control_socket.send('QUIT')
+      self.assertEquals('closing connection', str(control_socket.recv()))
 
       # Neither a port or file based socket will know that tor has hung up on
       # the connection at this point. We should know after calling recv(),
@@ -130,5 +130,5 @@ class TestControlSocket(unittest.TestCase):
         stem.connection.get_protocolinfo(control_socket)
 
         control_socket.close()
-        self.assertRaises(stem.SocketClosed, control_socket.send, "PROTOCOLINFO 1")
+        self.assertRaises(stem.SocketClosed, control_socket.send, 'PROTOCOLINFO 1')
         control_socket.connect()

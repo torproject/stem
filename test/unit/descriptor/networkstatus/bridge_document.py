@@ -26,7 +26,7 @@ class TestBridgeNetworkStatusDocument(unittest.TestCase):
     Parse a document without any router status entries.
     """
 
-    document = BridgeNetworkStatusDocument(b"published 2012-06-01 04:07:04")
+    document = BridgeNetworkStatusDocument(b'published 2012-06-01 04:07:04')
     self.assertEqual(datetime.datetime(2012, 6, 1, 4, 7, 4), document.published)
     self.assertEqual({}, document.routers)
     self.assertEqual([], document.get_unrecognized_lines())
@@ -40,5 +40,5 @@ class TestBridgeNetworkStatusDocument(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 6, 1, 4, 7, 4), document.published)
 
     self.assertEqual(2, len(document.routers))
-    self.assertEqual(set(["Unnamed", "TolFuin"]), set([desc.nickname for desc in document.routers.values()]))
+    self.assertEqual(set(['Unnamed', 'TolFuin']), set([desc.nickname for desc in document.routers.values()]))
     self.assertEqual([], document.get_unrecognized_lines())

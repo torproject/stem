@@ -29,17 +29,17 @@ class TestExport(unittest.TestCase):
 
     # we won't have a header prior to python 2.7
     if not stem.prereq.is_python_27():
-      test.runner.skip(self, "(header added in python 2.7)")
+      test.runner.skip(self, '(header added in python 2.7)')
       return
 
     desc = get_relay_server_descriptor()
 
     desc_csv = export_csv(desc, included_fields = ('nickname', 'address', 'published'), header = False)
-    expected = "caerSidi,71.35.133.197,2012-03-01 17:15:27\n"
+    expected = 'caerSidi,71.35.133.197,2012-03-01 17:15:27\n'
     self.assertEquals(expected, desc_csv)
 
     desc_csv = export_csv(desc, included_fields = ('nickname', 'address', 'published'), header = True)
-    expected = "nickname,address,published\n" + expected
+    expected = 'nickname,address,published\n' + expected
     self.assertEquals(expected, desc_csv)
 
   @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
@@ -53,10 +53,10 @@ class TestExport(unittest.TestCase):
     descriptors = []
 
     for nickname in nicknames:
-      router_line = "%s 71.35.133.197 9001 0 0" % nickname
+      router_line = '%s 71.35.133.197 9001 0 0' % nickname
       descriptors.append(get_relay_server_descriptor({'router': router_line}))
 
-    expected = "\n".join(nicknames) + "\n"
+    expected = '\n'.join(nicknames) + '\n'
     self.assertEqual(expected, export_csv(descriptors, included_fields = ('nickname',), header = False))
 
   @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
@@ -82,7 +82,7 @@ class TestExport(unittest.TestCase):
 
     # we won't have a header prior to python 2.7
     if not stem.prereq.is_python_27():
-      test.runner.skip(self, "(header added in python 2.7)")
+      test.runner.skip(self, '(header added in python 2.7)')
       return
 
     desc = get_relay_server_descriptor()
@@ -97,7 +97,7 @@ class TestExport(unittest.TestCase):
     Exercises when we don't provide any descriptors.
     """
 
-    self.assertEquals("", export_csv([]))
+    self.assertEquals('', export_csv([]))
 
   @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_invalid_attributes(self):

@@ -44,55 +44,55 @@ class TestMicrodescriptor(unittest.TestCase):
     descriptor additions.
     """
 
-    if test.runner.only_run_once(self, "test_cached_microdescriptors"):
+    if test.runner.only_run_once(self, 'test_cached_microdescriptors'):
       return
 
-    descriptor_path = test.runner.get_runner().get_test_dir("cached-microdescs")
+    descriptor_path = test.runner.get_runner().get_test_dir('cached-microdescs')
 
     if not os.path.exists(descriptor_path):
-      test.runner.skip(self, "(no cached microdescriptors)")
+      test.runner.skip(self, '(no cached microdescriptors)')
       return
 
     with open(descriptor_path, 'rb') as descriptor_file:
-      for desc in stem.descriptor.parse_file(descriptor_file, "microdescriptor 1.0"):
+      for desc in stem.descriptor.parse_file(descriptor_file, 'microdescriptor 1.0'):
         unrecognized_lines = desc.get_unrecognized_lines()
 
         if unrecognized_lines:
-          self.fail("Unrecognized microdescriptor content: %s" % unrecognized_lines)
+          self.fail('Unrecognized microdescriptor content: %s' % unrecognized_lines)
 
   def test_local_microdescriptors(self):
     """
     Checks a small microdescriptor file with known contents.
     """
 
-    descriptor_path = get_resource("cached-microdescs")
+    descriptor_path = get_resource('cached-microdescs')
 
     with open(descriptor_path, 'rb') as descriptor_file:
-      descriptors = stem.descriptor.parse_file(descriptor_file, "microdescriptor 1.0")
+      descriptors = stem.descriptor.parse_file(descriptor_file, 'microdescriptor 1.0')
 
       router = next(descriptors)
       self.assertEquals(FIRST_ONION_KEY, router.onion_key)
       self.assertEquals(None, router.ntor_onion_key)
       self.assertEquals([], router.or_addresses)
       self.assertEquals([], router.family)
-      self.assertEquals(stem.exit_policy.MicroExitPolicy("reject 1-65535"), router.exit_policy)
-      self.assertEquals({b"@last-listed": b"2013-02-24 00:18:36"}, router.get_annotations())
-      self.assertEquals([b"@last-listed 2013-02-24 00:18:36"], router.get_annotation_lines())
+      self.assertEquals(stem.exit_policy.MicroExitPolicy('reject 1-65535'), router.exit_policy)
+      self.assertEquals({b'@last-listed': b'2013-02-24 00:18:36'}, router.get_annotations())
+      self.assertEquals([b'@last-listed 2013-02-24 00:18:36'], router.get_annotation_lines())
 
       router = next(descriptors)
       self.assertEquals(SECOND_ONION_KEY, router.onion_key)
       self.assertEquals(u'r5572HzD+PMPBbXlZwBhsm6YEbxnYgis8vhZ1jmdI2k=', router.ntor_onion_key)
       self.assertEquals([], router.or_addresses)
-      self.assertEquals(["$6141629FA0D15A6AEAEF3A1BEB76E64C767B3174"], router.family)
-      self.assertEquals(stem.exit_policy.MicroExitPolicy("reject 1-65535"), router.exit_policy)
-      self.assertEquals({b"@last-listed": b"2013-02-24 00:18:37"}, router.get_annotations())
-      self.assertEquals([b"@last-listed 2013-02-24 00:18:37"], router.get_annotation_lines())
+      self.assertEquals(['$6141629FA0D15A6AEAEF3A1BEB76E64C767B3174'], router.family)
+      self.assertEquals(stem.exit_policy.MicroExitPolicy('reject 1-65535'), router.exit_policy)
+      self.assertEquals({b'@last-listed': b'2013-02-24 00:18:37'}, router.get_annotations())
+      self.assertEquals([b'@last-listed 2013-02-24 00:18:37'], router.get_annotation_lines())
 
       router = next(descriptors)
       self.assertEquals(THIRD_ONION_KEY, router.onion_key)
       self.assertEquals(None, router.ntor_onion_key)
-      self.assertEquals([(u"2001:6b0:7:125::242", 9001, True)], router.or_addresses)
+      self.assertEquals([(u'2001:6b0:7:125::242', 9001, True)], router.or_addresses)
       self.assertEquals([], router.family)
-      self.assertEquals(stem.exit_policy.MicroExitPolicy("accept 80,443"), router.exit_policy)
-      self.assertEquals({b"@last-listed": b"2013-02-24 00:18:36"}, router.get_annotations())
-      self.assertEquals([b"@last-listed 2013-02-24 00:18:36"], router.get_annotation_lines())
+      self.assertEquals(stem.exit_policy.MicroExitPolicy('accept 80,443'), router.exit_policy)
+      self.assertEquals({b'@last-listed': b'2013-02-24 00:18:36'}, router.get_annotations())
+      self.assertEquals([b'@last-listed 2013-02-24 00:18:36'], router.get_annotation_lines())

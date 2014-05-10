@@ -23,52 +23,52 @@ import stem.prereq
 # label conversion tuples of the form...
 # (bits / bytes / seconds, short label, long label)
 SIZE_UNITS_BITS = (
-  (140737488355328.0, " Pb", " Petabit"),
-  (137438953472.0, " Tb", " Terabit"),
-  (134217728.0, " Gb", " Gigabit"),
-  (131072.0, " Mb", " Megabit"),
-  (128.0, " Kb", " Kilobit"),
-  (0.125, " b", " Bit"),
+  (140737488355328.0, ' Pb', ' Petabit'),
+  (137438953472.0, ' Tb', ' Terabit'),
+  (134217728.0, ' Gb', ' Gigabit'),
+  (131072.0, ' Mb', ' Megabit'),
+  (128.0, ' Kb', ' Kilobit'),
+  (0.125, ' b', ' Bit'),
 )
 
 SIZE_UNITS_BYTES = (
-  (1125899906842624.0, " PB", " Petabyte"),
-  (1099511627776.0, " TB", " Terabyte"),
-  (1073741824.0, " GB", " Gigabyte"),
-  (1048576.0, " MB", " Megabyte"),
-  (1024.0, " KB", " Kilobyte"),
-  (1.0, " B", " Byte"),
+  (1125899906842624.0, ' PB', ' Petabyte'),
+  (1099511627776.0, ' TB', ' Terabyte'),
+  (1073741824.0, ' GB', ' Gigabyte'),
+  (1048576.0, ' MB', ' Megabyte'),
+  (1024.0, ' KB', ' Kilobyte'),
+  (1.0, ' B', ' Byte'),
 )
 
 TIME_UNITS = (
-  (86400.0, "d", " day"),
-  (3600.0, "h", " hour"),
-  (60.0, "m", " minute"),
-  (1.0, "s", " second"),
+  (86400.0, 'd', ' day'),
+  (3600.0, 'h', ' hour'),
+  (60.0, 'm', ' minute'),
+  (1.0, 's', ' second'),
 )
 
 if stem.prereq.is_python_3():
   def _to_bytes_impl(msg):
     if isinstance(msg, str):
-      return codecs.latin_1_encode(msg, "replace")[0]
+      return codecs.latin_1_encode(msg, 'replace')[0]
     else:
       return msg
 
   def _to_unicode_impl(msg):
     if msg is not None and not isinstance(msg, str):
-      return msg.decode("utf-8", "replace")
+      return msg.decode('utf-8', 'replace')
     else:
       return msg
 else:
   def _to_bytes_impl(msg):
     if msg is not None and isinstance(msg, unicode):
-      return codecs.latin_1_encode(msg, "replace")[0]
+      return codecs.latin_1_encode(msg, 'replace')[0]
     else:
       return msg
 
   def _to_unicode_impl(msg):
     if msg is not None and not isinstance(msg, unicode):
-      return msg.decode("utf-8", "replace")
+      return msg.decode('utf-8', 'replace')
     else:
       return msg
 
@@ -103,13 +103,13 @@ def _to_unicode(msg):
   return _to_unicode_impl(msg)
 
 
-def _to_camel_case(label, divider = "_", joiner = " "):
+def _to_camel_case(label, divider = '_', joiner = ' '):
   """
   Converts the given string to camel case, ie:
 
   ::
 
-    >>> _to_camel_case("I_LIKE_PEPPERJACK!")
+    >>> _to_camel_case('I_LIKE_PEPPERJACK!')
     'I Like Pepperjack!'
 
   :param str label: input string to be converted
@@ -122,7 +122,7 @@ def _to_camel_case(label, divider = "_", joiner = " "):
   words = []
   for entry in label.split(divider):
     if len(entry) == 0:
-      words.append("")
+      words.append('')
     elif len(entry) == 1:
       words.append(entry.upper())
     else:
@@ -255,12 +255,12 @@ def get_short_time_label(seconds):
     seconds %= amount
     time_comp[label.strip()] = count
 
-  label = "%02i:%02i" % (time_comp["minute"], time_comp["second"])
+  label = '%02i:%02i' % (time_comp['minute'], time_comp['second'])
 
-  if time_comp["day"]:
-    label = "%i-%02i:%s" % (time_comp["day"], time_comp["hour"], label)
-  elif time_comp["hour"]:
-    label = "%02i:%s" % (time_comp["hour"], label)
+  if time_comp['day']:
+    label = '%i-%02i:%s' % (time_comp['day'], time_comp['hour'], label)
+  elif time_comp['hour']:
+    label = '%02i:%s' % (time_comp['hour'], label)
 
   return label
 
@@ -291,7 +291,7 @@ def parse_short_time_label(label):
   if '-' in label:
     days, label = label.split('-', 1)
 
-  time_comp = label.split(":")
+  time_comp = label.split(':')
 
   if len(time_comp) == 3:
     hours, minutes, seconds = time_comp
@@ -307,7 +307,7 @@ def parse_short_time_label(label):
     time_sum += int(days) * 86400
     return time_sum
   except ValueError:
-    raise ValueError("Non-numeric value in time entry: %s" % label)
+    raise ValueError('Non-numeric value in time entry: %s' % label)
 
 
 def _parse_iso_timestamp(entry):
@@ -326,7 +326,7 @@ def _parse_iso_timestamp(entry):
   """
 
   if not isinstance(entry, str):
-    raise ValueError("parse_iso_timestamp() input must be a str, got a %s" % type(entry))
+    raise ValueError('parse_iso_timestamp() input must be a str, got a %s' % type(entry))
 
   # based after suggestions from...
   # http://stackoverflow.com/questions/127803/how-to-parse-iso-formatted-date-in-python
@@ -356,14 +356,14 @@ def _get_label(units, count, decimal, is_long):
   """
 
   # formatted string for the requested number of digits
-  label_format = "%%.%if" % decimal
+  label_format = '%%.%if' % decimal
 
   if count < 0:
-    label_format = "-" + label_format
+    label_format = '-' + label_format
     count = abs(count)
   elif count == 0:
-    units_label = units[-1][2] + "s" if is_long else units[-1][1]
-    return "%s%s" % (label_format % count, units_label)
+    units_label = units[-1][2] + 's' if is_long else units[-1][1]
+    return '%s%s' % (label_format % count, units_label)
 
   for count_per_unit, short_label, long_label in units:
     if count >= count_per_unit:
@@ -382,6 +382,6 @@ def _get_label(units, count, decimal, is_long):
         else:
           is_plural = count >= count_per_unit * 2
 
-        return count_label + long_label + ("s" if is_plural else "")
+        return count_label + long_label + ('s' if is_plural else '')
       else:
         return count_label + short_label

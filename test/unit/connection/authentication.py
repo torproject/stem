@@ -107,7 +107,7 @@ class TestAuthenticate(unittest.TestCase):
       # protocolinfo input for the authenticate() call we'll be making
       protocolinfo_arg = mocking.get_protocolinfo_response(
         auth_methods = protocolinfo_auth_methods,
-        cookie_path = "/tmp/blah",
+        cookie_path = '/tmp/blah',
       )
 
       for auth_none_exc in all_auth_none_exc:
@@ -150,9 +150,9 @@ class TestAuthenticate(unittest.TestCase):
                 auth_mock.side_effect = raised_exc
 
             if expect_success:
-              stem.connection.authenticate(None, "blah", None, protocolinfo_arg)
+              stem.connection.authenticate(None, 'blah', None, protocolinfo_arg)
             else:
-              self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, "blah", None, protocolinfo_arg)
+              self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, 'blah', None, protocolinfo_arg)
 
     # revert logging back to normal
     stem_logger.setLevel(log.logging_level(log.TRACE))
