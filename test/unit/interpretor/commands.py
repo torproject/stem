@@ -205,13 +205,14 @@ class TestInterpretorCommands(unittest.TestCase):
     controller = Mock()
     interpretor = ControlInterpretor(controller)
 
-    self.assertEqual('\x1b[34mListing for BW events\n\x1b[0m\n', interpretor.run_command('SETEVENTS BW'))
+    self.assertEqual("\x1b[34mListening for BW events. You can print events we've received with\n'/events', and also interact with them via the 'events' variable.\x1b[0m\n", interpretor.run_command('SETEVENTS BW'))
     controller.add_event_listener.assert_called_with(interpretor.register_event, 'BW')
 
   def test_raw_commands(self):
     controller = Mock()
     controller.msg.return_value = 'response'
     interpretor = ControlInterpretor(controller)
+    interpretor.do_python('disable')
 
     self.assertEqual('\x1b[34mresponse\x1b[0m\n', interpretor.run_command('NEW_COMMAND spiffyness'))
     controller.msg.assert_called_with('NEW_COMMAND spiffyness')

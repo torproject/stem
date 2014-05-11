@@ -8,7 +8,6 @@ features such as tab completion, history, and IRC-style functions (like /help).
 
 __all__ = ['arguments', 'autocomplete', 'commands', 'help', 'msg']
 
-import code
 import os
 import sys
 
@@ -70,11 +69,7 @@ def main():
         print msg('msg.tor_unavailable')
         sys.exit(1)
       else:
-        user_input = raw_input(msg('msg.start_tor_prompt'))
-        print  # extra newline
-
-        if user_input.lower() not in ('y', 'yes'):
-          sys.exit()
+        print msg('msg.starting_tor')
 
         stem.process.launch_tor_with_config(
           config = {
@@ -100,25 +95,22 @@ def main():
     sys.exit(1)
 
   with controller:
-    if args.python_prompt:
-      console = code.InteractiveConsole({
-        'controller': controller,
-        'stem': stem,
-        'stem.control': stem.control,
-      })
-      console.interact(msg('msg.python_banner', version = controller.get_info('version')))
-    else:
-      autocompleter = stem.interpretor.autocomplete.Autocompleter(controller)
-      readline.parse_and_bind('tab: complete')
-      readline.set_completer(autocompleter.complete)
-      readline.set_completer_delims('\n')
+    autocompleter = stem.interpretor.autocomplete.Autocompleter(controller)
+    readline.parse_and_bind('tab: complete')
+    readline.set_completer(autocompleter.complete)
+    readline.set_completer_delims('\n')
 
-      interpretor = stem.interpretor.commands.ControlInterpretor(controller)
+    interpretor = stem.interpretor.commands.ControlInterpretor(controller)
+    print msg('msg.startup_banner')
 
-      while True:
-        try:
-          user_input = raw_input(PROMPT)
-          print interpretor.run_command(user_input)
-        except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
-          print  # move cursor to the following line
-          break
+    while True:
+      try:
+        prompt = '... ' if interpretor.is_multiline_context else PROMPT
+        user_input = raw_input(prompt)
+        response = interpretor.run_command(user_input)
+
+        if response is not None:
+          print response
+      except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
+        print  # move cursor to the following line
+        break

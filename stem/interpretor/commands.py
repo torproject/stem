@@ -2,14 +2,16 @@
 Handles making requests and formatting the responses.
 """
 
+import code
 import re
 
 import stem
+import stem.control
 import stem.interpretor.help
 import stem.util.connection
 import stem.util.tor_tools
 
-from stem.interpretor import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, msg
+from stem.interpretor import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, uses_settings, msg
 from stem.util.term import format
 
 
@@ -77,15 +79,29 @@ def _get_fingerprint(arg, controller):
     raise ValueError("'%s' isn't a fingerprint, nickname, or IP address" % arg)
 
 
-class ControlInterpretor(object):
+class ControlInterpretor(code.InteractiveConsole):
   """
   Handles issuing requests and providing nicely formed responses, with support
   for special irc style subcommands.
   """
 
   def __init__(self, controller):
-    self._controller = controller
     self._received_events = []
+
+    code.InteractiveConsole.__init__(self, {
+      'stem': stem,
+      'stem.control': stem.control,
+      'controller': controller,
+      'events': self._received_events
+    })
+
+    self._controller = controller
+    self._run_python_commands = True
+
+    # Indicates if we're processing a multiline command, such as conditional
+    # block or loop.
+
+    self.is_multiline_context = False
 
   def register_event(self, event):
     """
@@ -178,7 +194,31 @@ class ControlInterpretor(object):
 
     return '\n'.join(lines)
 
-  def run_command(self, command):
+  def do_python(self, arg):
+    """
+    Performs the '/python' operation, toggling if we accept python commands or
+    not.
+    """
+
+    if not arg:
+      status = 'enabled' if self._run_python_commands else 'disabled'
+      return format('Python support is presently %s.' % status, *STANDARD_OUTPUT)
+    elif arg.lower() == 'enable':
+      self._run_python_commands = True
+    elif arg.lower() == 'disable':
+      self._run_python_commands = False
+    else:
+      return format("'%s' is not recognized. Please run either '/python enable' or '/python disable'." % arg, *ERROR_OUTPUT)
+
+    if self._run_python_commands:
+      response = "Python support enabled, we'll now run non-interpretor commands as python."
+    else:
+      response = "Python support disabled, we'll now pass along all commands to tor."
+
+    return format(response, *STANDARD_OUTPUT)
+
+  @uses_settings
+  def run_command(self, command, config):
     """
     Runs the given command. Requests starting with a '/' are special commands
     to the interpretor, and anything else is sent to the control port.
@@ -195,8 +235,6 @@ class ControlInterpretor(object):
     if not self._controller.is_alive():
       raise stem.SocketClosed()
 
-    command = command.strip()
-
     # Commands fall into three categories:
     #
     # * Interpretor commands. These start with a '/'.
@@ -207,20 +245,24 @@ class ControlInterpretor(object):
     #
     # * Other tor commands. We pass these directly on to the control port.
 
-    if ' ' in command:
-      cmd, arg = command.split(' ', 1)
-    else:
-      cmd, arg = command, ''
+    cmd, arg = command.strip(), ''
+
+    if ' ' in cmd:
+      cmd, arg = cmd.split(' ', 1)
 
     output = ''
 
     if cmd.startswith('/'):
+      cmd = cmd.lower()
+
       if cmd == '/quit':
         raise stem.SocketClosed()
       elif cmd == '/events':
         output = self.do_events(arg)
       elif cmd == '/info':
         output = self.do_info(arg)
+      elif cmd == '/python':
+        output = self.do_python(arg)
       elif cmd == '/help':
         output = self.do_help(arg)
       else:
@@ -292,27 +334,31 @@ class ControlInterpretor(object):
           if arg:
             events = arg.split()
             self._controller.add_event_listener(self.register_event, *events)
-            output = format('Listing for %s events\n' % ', '.join(events), *STANDARD_OUTPUT)
+            output = format(msg('msg.listening_to_events', events = ', '.join(events)), *STANDARD_OUTPUT)
           else:
-            output = format('Disabled event listening\n', *STANDARD_OUTPUT)
+            output = format('Disabled event listening', *STANDARD_OUTPUT)
         except stem.ControllerError as exc:
           output = format(str(exc), *ERROR_OUTPUT)
       elif cmd.replace('+', '') in ('LOADCONF', 'POSTDESCRIPTOR'):
         # provides a notice that multi-line controller input isn't yet implemented
         output = format(msg('msg.multiline_unimplemented_notice'), *ERROR_OUTPUT)
+      elif cmd == 'QUIT':
+        self._controller.msg(command)
+        raise stem.SocketClosed()
       else:
-        try:
-          response = self._controller.msg(command)
+        is_tor_command = cmd in config.get('help.usage', {}) and cmd.lower() != 'events'
 
-          if cmd == 'QUIT':
-            raise stem.SocketClosed()
-
-          output = format(str(response), *STANDARD_OUTPUT)
-        except stem.ControllerError as exc:
-          if isinstance(exc, stem.SocketClosed):
-            raise exc
-          else:
-            output = format(str(exc), *ERROR_OUTPUT)
+        if self._run_python_commands and not is_tor_command:
+          self.is_multiline_context = code.InteractiveConsole.push(self, command)
+          return
+        else:
+          try:
+            output = format(str(self._controller.msg(command)), *STANDARD_OUTPUT)
+          except stem.ControllerError as exc:
+            if isinstance(exc, stem.SocketClosed):
+              raise exc
+            else:
+              output = format(str(exc), *ERROR_OUTPUT)
 
     output += '\n'  # give ourselves an extra line before the next prompt
 

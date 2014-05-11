@@ -22,9 +22,6 @@ class TestArgumentParsing(unittest.TestCase):
     args = parse(['--socket', '/tmp/my_socket'])
     self.assertEqual('/tmp/my_socket', args.control_socket)
 
-    args = parse(['--python'])
-    self.assertEqual(True, args.python_prompt)
-
     args = parse(['--help'])
     self.assertEqual(True, args.print_help)
 
@@ -32,8 +29,7 @@ class TestArgumentParsing(unittest.TestCase):
     args = parse(['-i', '1643'])
     self.assertEqual(1643, args.control_port)
 
-    args = parse(['-ps', '~/.tor/socket'])
-    self.assertEqual(True, args.python_prompt)
+    args = parse(['-s', '~/.tor/socket'])
     self.assertEqual('~/.tor/socket', args.control_socket)
 
   def test_that_we_reject_unrecognized_arguments(self):

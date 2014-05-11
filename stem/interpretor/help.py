@@ -67,7 +67,7 @@ def _response(controller, arg, config):
   description = config.get('help.description.%s' % arg.lower(), '')
 
   for line in description.splitlines():
-    output += format('  ' + line + '\n', *STANDARD_OUTPUT)
+    output += format('  ' + line, *STANDARD_OUTPUT) + '\n'
 
   output += '\n'
 
