@@ -16,6 +16,7 @@ import stem.connection
 import stem.process
 import stem.util.conf
 import stem.util.system
+import stem.util.term
 
 from stem.util.term import RESET, Attr, Color, format
 
@@ -59,6 +60,11 @@ def main():
   if args.print_help:
     print stem.interpretor.arguments.get_help()
     sys.exit()
+
+  if args.disable_color:
+    global PROMPT
+    stem.util.term.DISABLE_COLOR_SUPPORT = True
+    PROMPT = '>>> '
 
   # If the user isn't connecting to something in particular then offer to start
   # tor if it isn't running.

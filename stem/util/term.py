@@ -46,6 +46,11 @@ import stem.util.str_tools
 
 TERM_COLORS = ('BLACK', 'RED', 'GREEN', 'YELLOW', 'BLUE', 'MAGENTA', 'CYAN', 'WHITE')
 
+# DISABLE_COLOR_SUPPORT is *not* being vended to Stem users. This is likely to
+# go away if I can think of a more graceful method for color toggling.
+
+DISABLE_COLOR_SUPPORT = False
+
 Color = stem.util.enum.Enum(*TERM_COLORS)
 BgColor = stem.util.enum.Enum(*['BG_' + color for color in TERM_COLORS])
 Attr = stem.util.enum.Enum('BOLD', 'UNDERLINE', 'HILIGHT')
@@ -77,6 +82,9 @@ def format(msg, *attr):
   :returns: **str** wrapped with ANSI escape encodings, starting with the given
     attributes and ending with a reset
   """
+
+  if DISABLE_COLOR_SUPPORT:
+    return msg
 
   # if we have reset sequences in the message then apply our attributes
   # after each of them
