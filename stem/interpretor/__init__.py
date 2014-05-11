@@ -30,6 +30,8 @@ PROMPT = format('>>> ', Color.GREEN, Attr.BOLD) + RESET * 10
 
 STANDARD_OUTPUT = (Color.BLUE, )
 BOLD_OUTPUT = (Color.BLUE, Attr.BOLD)
+HEADER_OUTPUT = (Color.GREEN, )
+HEADER_BOLD_OUTPUT = (Color.GREEN, Attr.BOLD)
 ERROR_OUTPUT = (Attr.BOLD, Color.RED)
 
 settings_path = os.path.join(os.path.dirname(__file__), 'settings.cfg')
@@ -66,10 +68,10 @@ def main():
 
     if not is_tor_running:
       if not stem.util.system.is_available('tor'):
-        print msg('msg.tor_unavailable')
+        print format(msg('msg.tor_unavailable'), *ERROR_OUTPUT)
         sys.exit(1)
       else:
-        print msg('msg.starting_tor')
+        print format(msg('msg.starting_tor'), *HEADER_OUTPUT)
 
         stem.process.launch_tor_with_config(
           config = {
@@ -101,7 +103,12 @@ def main():
     readline.set_completer_delims('\n')
 
     interpretor = stem.interpretor.commands.ControlInterpretor(controller)
-    print msg('msg.startup_banner')
+
+    for line in msg('msg.startup_banner').splitlines():
+      line_format = HEADER_BOLD_OUTPUT if line.startswith('  ') else HEADER_OUTPUT
+      print format(line, *line_format)
+
+    print
 
     while True:
       try:
