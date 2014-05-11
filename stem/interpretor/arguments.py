@@ -93,4 +93,4 @@ def get_help():
     address = DEFAULT_ARGS['control_address'],
     port = DEFAULT_ARGS['control_port'],
     socket = DEFAULT_ARGS['control_socket'],
-  ).strip()
+  )
