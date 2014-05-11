@@ -14,7 +14,9 @@ import sys
 
 import stem
 import stem.connection
+import stem.process
 import stem.util.conf
+import stem.util.system
 
 from stem.util.term import RESET, Attr, Color, format
 
@@ -56,6 +58,34 @@ def main():
   if args.print_help:
     print stem.interpretor.arguments.get_help()
     sys.exit()
+
+  # If the user isn't connecting to something in particular then offer to start
+  # tor if it isn't running.
+
+  if not (args.user_provided_port or args.user_provided_socket):
+    is_tor_running = stem.util.system.is_running('tor') or stem.util.system.is_running('tor.real')
+
+    if not is_tor_running:
+      if not stem.util.system.is_available('tor'):
+        print msg('msg.tor_unavailable')
+        sys.exit(1)
+      else:
+        user_input = raw_input(msg('msg.start_tor_prompt'))
+        print  # extra newline
+
+        if user_input.lower() not in ('y', 'yes'):
+          sys.exit()
+
+        stem.process.launch_tor_with_config(
+          config = {
+            'SocksPort': '0',
+            'ControlPort': str(args.control_port),
+            'CookieAuthentication': '1',
+            'ExitPolicy': 'reject *:*',
+          },
+          completion_percent = 5,
+          take_ownership = True,
+        )
 
   control_port = None if args.user_provided_socket else (args.control_address, args.control_port)
   control_socket = None if args.user_provided_port else args.control_socket

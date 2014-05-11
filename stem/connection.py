@@ -266,10 +266,8 @@ def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/c
 
   if not control_connection:
     if control_socket and control_port:
-      if not stem.util.system.is_running('tor') and not stem.util.system.is_running('tor.real'):
-        error_msg = CONNECT_MESSAGES['tor_isnt_running']
-      else:
-        error_msg = CONNECT_MESSAGES['no_control_port']
+      is_tor_running = stem.util.system.is_running('tor') or stem.util.system.is_running('tor.real')
+      error_msg = CONNECT_MESSAGES['no_control_port'] if is_tor_running else CONNECT_MESSAGES['tor_isnt_running']
 
     print error_msg
     return None
