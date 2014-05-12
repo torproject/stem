@@ -38,6 +38,7 @@ Helper functions for creating mock objects.
 import base64
 import hashlib
 import itertools
+import re
 
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.microdescriptor
@@ -227,7 +228,7 @@ def get_message(content, reformat = True):
     if not content.endswith('\n'):
       content += '\n'
 
-    content = content.replace('\n', '\r\n')
+    content = re.sub('([\r]?)\n', '\r\n', content)
 
   return stem.response.ControlMessage.from_str(content)
 

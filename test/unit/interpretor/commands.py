@@ -1,4 +1,3 @@
-import collections
 import datetime
 import unittest
 
@@ -130,7 +129,7 @@ class TestInterpretorCommands(unittest.TestCase):
     for content in event_contents:
       event = mocking.get_message(content)
       stem.response.convert('EVENT', event)
-      interpretor.register_event(event)
+      interpretor._received_events.append(event)
 
     self.assertEqual(EXPECTED_EVENTS_RESPONSE, interpretor.run_command('/events'))
 
@@ -166,53 +165,34 @@ class TestInterpretorCommands(unittest.TestCase):
     self.assertEqual(expected, interpretor.run_command('/unrecognized'))
 
   def test_getinfo(self):
-    controller, getinfo = Mock(), collections.OrderedDict()
-    controller.get_info.return_value = getinfo
+    response = '250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\r\n250 OK'
+
+    controller = Mock()
+    controller.msg.return_value = mocking.get_message(response)
 
     interpretor = ControlInterpretor(controller)
 
-    getinfo['version'] = '0.2.5.1-alpha-dev (git-245ecfff36c0cecc)'
-    self.assertEqual('\x1b[34m0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\x1b[0m\n', interpretor.run_command('GETINFO version'))
-    controller.get_info.assert_called_with(['version'])
+    self.assertEqual('\x1b[34m%s\x1b[0m\n' % response, interpretor.run_command('GETINFO version'))
+    controller.msg.assert_called_with('GETINFO version')
 
-    getinfo['process/user'] = 'atagar'
-    self.assertEqual('\x1b[34m0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\natagar\x1b[0m\n', interpretor.run_command('getinfo version process/user'))
-    controller.get_info.assert_called_with(['version', 'process/user'])
-
-    controller.get_info.side_effect = stem.ControllerError('kaboom!')
+    controller.msg.side_effect = stem.ControllerError('kaboom!')
     self.assertEqual('\x1b[1;31mkaboom!\x1b[0m\n', interpretor.run_command('getinfo process/user'))
 
   def test_getconf(self):
-    controller, getconf = Mock(), collections.OrderedDict()
-    controller.get_conf_map.return_value = getconf
+    response = '250-Log=notice stdout\r\n250 Address'
 
-    interpretor = ControlInterpretor(controller)
-
-    getconf['log'] = ['notice stdout']
-    getconf['address'] = ['']
-
-    self.assertEqual(EXPECTED_GETCONF_RESPONSE, interpretor.run_command('GETCONF log address'))
-    controller.get_conf_map.assert_called_with(['log', 'address'])
-
-  def test_setconf(self):
     controller = Mock()
+    controller.msg.return_value = mocking.get_message(response)
+
     interpretor = ControlInterpretor(controller)
 
-    self.assertEqual('\n', interpretor.run_command('SETCONF ControlPort=9051'))
-    controller.set_options.assert_called_with([('ControlPort', '9051')], False)
+    self.assertEqual('\x1b[34m%s\x1b[0m\n' % response, interpretor.run_command('GETCONF log address'))
+    controller.msg.assert_called_with('GETCONF log address')
 
   def test_setevents(self):
     controller = Mock()
+    controller.msg.return_value = mocking.get_message('250 OK')
+
     interpretor = ControlInterpretor(controller)
 
-    self.assertEqual("\x1b[34mListening for BW events. You can print events we've received with\n'/events', and also interact with them via the 'events' variable.\x1b[0m\n", interpretor.run_command('SETEVENTS BW'))
-    controller.add_event_listener.assert_called_with(interpretor.register_event, 'BW')
-
-  def test_raw_commands(self):
-    controller = Mock()
-    controller.msg.return_value = 'response'
-    interpretor = ControlInterpretor(controller)
-    interpretor.do_python('disable')
-
-    self.assertEqual('\x1b[34mresponse\x1b[0m\n', interpretor.run_command('NEW_COMMAND spiffyness'))
-    controller.msg.assert_called_with('NEW_COMMAND spiffyness')
+    self.assertEqual('\x1b[34m250 OK\x1b[0m\n', interpretor.run_command('SETEVENTS BW'))

@@ -1915,6 +1915,7 @@ class Controller(BaseController):
     """
 
     # first checking that tor supports these event types
+
     with self._event_listeners_lock:
       if self.is_authenticated():
         for event_type in events:
@@ -1929,6 +1930,7 @@ class Controller(BaseController):
       failed_events = self._attach_listeners()[1]
 
       # restricted the failures to just things we requested
+
       failed_events = set(failed_events).intersection(set(events))
 
       if failed_events:

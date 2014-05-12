@@ -3,7 +3,6 @@ Handles making requests and formatting the responses.
 """
 
 import code
-import re
 
 import stem
 import stem.control
@@ -103,12 +102,16 @@ class ControlInterpretor(code.InteractiveConsole):
 
     self.is_multiline_context = False
 
-  def register_event(self, event):
-    """
-    Adds the event to our buffer so it'll be in '/events' output.
-    """
+    # Intercept events our controller hears about at a pretty low level since
+    # the user will likely be requesting them by direct 'SETEVENTS' calls.
 
-    self._received_events.append(event)
+    handle_event_real = self._controller._handle_event
+
+    def handle_event_wrapper(event_message):
+      handle_event_real(event_message)
+      self._received_events.append(event_message)
+
+    self._controller._handle_event = handle_event_wrapper
 
   def do_help(self, arg):
     """
@@ -270,76 +273,7 @@ class ControlInterpretor(code.InteractiveConsole):
     else:
       cmd = cmd.upper()  # makes commands uppercase to match the spec
 
-      if cmd == 'GETINFO':
-        try:
-          response = self._controller.get_info(arg.split())
-          output = format('\n'.join(response.values()), *STANDARD_OUTPUT)
-        except stem.ControllerError as exc:
-          output = format(str(exc), *ERROR_OUTPUT)
-      elif cmd == 'GETCONF':
-        try:
-          response = self._controller.get_conf_map(arg.split())
-
-          for arg in response:
-            output += format(arg, *BOLD_OUTPUT) + format(' => ' + ', '.join(response[arg]), *STANDARD_OUTPUT) + '\n'
-        except stem.ControllerError as exc:
-          output = format(str(exc), *ERROR_OUTPUT)
-      elif cmd in ('SETCONF', 'RESETCONF'):
-        # arguments can either be '<param>', '<param>=<value>', or
-        # '<param>="<value>"' entries
-
-        param_list = []
-
-        while arg:
-          # TODO: I'm a little dubious of this for LineList values (like the
-          # ExitPolicy) since they're parsed as a single value. However, tor
-          # seems to be happy to get a single comma separated string (though it
-          # echos back faithfully rather than being parsed) so leaving this
-          # alone for now.
-
-          quoted_match = re.match(r'^(\S+)=\"([^"]+)\"', arg)
-          nonquoted_match = re.match(r'^(\S+)=(\S+)', arg)
-
-          if quoted_match:
-            # we're dealing with a '<param>="<value>"' entry
-            param, value = quoted_match.groups()
-
-            param_list.append((param, value))
-            arg = arg[len(param) + len(value) + 3:].strip()
-          elif nonquoted_match:
-            # we're dealing with a '<param>=<value>' entry
-            param, value = nonquoted_match.groups()
-
-            param_list.append((param, value))
-            arg = arg[len(param) + len(value) + 1:].strip()
-          else:
-            # starts with just a param
-            param = arg.split()[0]
-            param_list.append((param, None))
-            arg = arg[len(param):].strip()
-
-        try:
-          is_reset = cmd == 'RESETCONF'
-          self._controller.set_options(param_list, is_reset)
-        except stem.ControllerError as exc:
-          output = format(str(exc), *ERROR_OUTPUT)
-      elif cmd == 'SETEVENTS':
-        try:
-          # first discontinue listening to prior events
-
-          self._controller.remove_event_listener(self.register_event)
-
-          # attach listeners for the given group of events
-
-          if arg:
-            events = arg.split()
-            self._controller.add_event_listener(self.register_event, *events)
-            output = format(msg('msg.listening_to_events', events = ', '.join(events)), *STANDARD_OUTPUT)
-          else:
-            output = format('Disabled event listening', *STANDARD_OUTPUT)
-        except stem.ControllerError as exc:
-          output = format(str(exc), *ERROR_OUTPUT)
-      elif cmd.replace('+', '') in ('LOADCONF', 'POSTDESCRIPTOR'):
+      if cmd.replace('+', '') in ('LOADCONF', 'POSTDESCRIPTOR'):
         # provides a notice that multi-line controller input isn't yet implemented
         output = format(msg('msg.multiline_unimplemented_notice'), *ERROR_OUTPUT)
       elif cmd == 'QUIT':
@@ -353,7 +287,7 @@ class ControlInterpretor(code.InteractiveConsole):
           return
         else:
           try:
-            output = format(str(self._controller.msg(command)), *STANDARD_OUTPUT)
+            output = format(self._controller.msg(command).raw_content().strip(), *STANDARD_OUTPUT)
           except stem.ControllerError as exc:
             if isinstance(exc, stem.SocketClosed):
               raise exc
