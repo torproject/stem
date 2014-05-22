@@ -41,16 +41,20 @@ try:
 except ImportError:
   from distutils.command.build_py import build_py
 
-setup(name = 'stem',
-      version = module_info['version'],
-      description = DESCRIPTION,
-      license = module_info['license'],
-      author = module_info['author'],
-      author_email = module_info['contact'],
-      url = module_info['url'],
-      packages = ['stem', 'stem.descriptor', 'stem.response', 'stem.util'],
-      provides = ['stem'],
-      cmdclass = {'build_py': build_py},
-      keywords = "tor onion controller",
+setup(
+  name = 'stem',
+  version = module_info['version'],
+  description = DESCRIPTION,
+  license = module_info['license'],
+  author = module_info['author'],
+  author_email = module_info['contact'],
+  url = module_info['url'],
+  packages = ['stem', 'stem.descriptor', 'stem.interpretor', 'stem.response', 'stem.util'],
+  provides = ['stem'],
+  cmdclass = {'build_py': build_py},
+  keywords = 'tor onion controller',
+  data_files = [
+    ('/usr/bin', ['tor-prompt'])
+  ],
 )
 
