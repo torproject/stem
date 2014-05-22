@@ -1,8 +1,8 @@
 """
-Tab completion for our interpretor prompt.
+Tab completion for our interpreter prompt.
 """
 
-from stem.interpretor import uses_settings
+from stem.interpreter import uses_settings
 
 try:
   # added in python 3.2

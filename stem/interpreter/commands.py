@@ -6,11 +6,11 @@ import code
 
 import stem
 import stem.control
-import stem.interpretor.help
+import stem.interpreter.help
 import stem.util.connection
 import stem.util.tor_tools
 
-from stem.interpretor import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, uses_settings, msg
+from stem.interpreter import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, uses_settings, msg
 from stem.util.term import format
 
 
@@ -119,7 +119,7 @@ class ControlInterpretor(code.InteractiveConsole):
     argument or a general summary if there wasn't one.
     """
 
-    return stem.interpretor.help.response(self._controller, arg)
+    return stem.interpreter.help.response(self._controller, arg)
 
   def do_events(self, arg):
     """
@@ -214,7 +214,7 @@ class ControlInterpretor(code.InteractiveConsole):
       return format("'%s' is not recognized. Please run either '/python enable' or '/python disable'." % arg, *ERROR_OUTPUT)
 
     if self._run_python_commands:
-      response = "Python support enabled, we'll now run non-interpretor commands as python."
+      response = "Python support enabled, we'll now run non-interpreter commands as python."
     else:
       response = "Python support disabled, we'll now pass along all commands to tor."
 
@@ -224,7 +224,7 @@ class ControlInterpretor(code.InteractiveConsole):
   def run_command(self, command, config):
     """
     Runs the given command. Requests starting with a '/' are special commands
-    to the interpretor, and anything else is sent to the control port.
+    to the interpreter, and anything else is sent to the control port.
 
     :param stem.control.Controller controller: tor control connection
     :param str command: command to be processed

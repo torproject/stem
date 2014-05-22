@@ -2,7 +2,7 @@
 # See LICENSE for licensing information
 
 """
-Interactive interpretor for interacting with Tor directly. This adds usability
+Interactive interpreter for interacting with Tor directly. This adds usability
 features such as tab completion, history, and IRC-style functions (like /help).
 """
 
@@ -36,7 +36,7 @@ HEADER_BOLD_OUTPUT = (Color.GREEN, Attr.BOLD)
 ERROR_OUTPUT = (Attr.BOLD, Color.RED)
 
 settings_path = os.path.join(os.path.dirname(__file__), 'settings.cfg')
-uses_settings = stem.util.conf.uses_settings('stem_interpretor', settings_path)
+uses_settings = stem.util.conf.uses_settings('stem_interpreter', settings_path)
 
 
 @uses_settings
@@ -47,18 +47,18 @@ def msg(message, config, **attr):
 def main():
   import readline
 
-  import stem.interpretor.arguments
-  import stem.interpretor.autocomplete
-  import stem.interpretor.commands
+  import stem.interpreter.arguments
+  import stem.interpreter.autocomplete
+  import stem.interpreter.commands
 
   try:
-    args = stem.interpretor.arguments.parse(sys.argv[1:])
+    args = stem.interpreter.arguments.parse(sys.argv[1:])
   except ValueError as exc:
     print exc
     sys.exit(1)
 
   if args.print_help:
-    print stem.interpretor.arguments.get_help()
+    print stem.interpreter.arguments.get_help()
     sys.exit()
 
   if args.disable_color:
@@ -103,12 +103,12 @@ def main():
     sys.exit(1)
 
   with controller:
-    autocompleter = stem.interpretor.autocomplete.Autocompleter(controller)
+    autocompleter = stem.interpreter.autocomplete.Autocompleter(controller)
     readline.parse_and_bind('tab: complete')
     readline.set_completer(autocompleter.complete)
     readline.set_completer_delims('\n')
 
-    interpretor = stem.interpretor.commands.ControlInterpretor(controller)
+    interpreter = stem.interpreter.commands.ControlInterpretor(controller)
 
     for line in msg('msg.startup_banner').splitlines():
       line_format = HEADER_BOLD_OUTPUT if line.startswith('  ') else HEADER_OUTPUT
@@ -118,9 +118,9 @@ def main():
 
     while True:
       try:
-        prompt = '... ' if interpretor.is_multiline_context else PROMPT
+        prompt = '... ' if interpreter.is_multiline_context else PROMPT
         user_input = raw_input(prompt)
-        response = interpretor.run_command(user_input)
+        response = interpreter.run_command(user_input)
 
         if response is not None:
           print response

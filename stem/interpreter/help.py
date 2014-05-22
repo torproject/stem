@@ -2,7 +2,7 @@
 Provides our /help responses.
 """
 
-from stem.interpretor import (
+from stem.interpreter import (
   STANDARD_OUTPUT,
   BOLD_OUTPUT,
   ERROR_OUTPUT,
@@ -24,7 +24,7 @@ def response(controller, arg):
   Provides our /help response.
 
   :param stem.control.Controller controller: tor control connection
-  :param str arg: controller or interpretor command to provide help output for
+  :param str arg: controller or interpreter command to provide help output for
 
   :returns: **str** with our help response
   """
@@ -43,7 +43,7 @@ def _normalize(arg):
 
   arg = arg.split(' ')[0]
 
-  # strip slash if someone enters an interpretor command (ex. "/help /help")
+  # strip slash if someone enters an interpreter command (ex. "/help /help")
 
   if arg.startswith('/'):
     arg = arg[1:]

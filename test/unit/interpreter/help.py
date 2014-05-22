@@ -1,8 +1,8 @@
 import unittest
 
-from stem.interpretor.help import response, _normalize
+from stem.interpreter.help import response, _normalize
 
-from test.unit.interpretor import CONTROLLER
+from test.unit.interpreter import CONTROLLER
 
 
 class TestHelpResponses(unittest.TestCase):

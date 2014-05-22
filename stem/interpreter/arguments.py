@@ -2,13 +2,13 @@
 # See LICENSE for licensing information
 
 """
-Commandline argument parsing for our interpretor prompt.
+Commandline argument parsing for our interpreter prompt.
 """
 
 import collections
 import getopt
 
-import stem.interpretor
+import stem.interpreter
 import stem.util.connection
 
 DEFAULT_ARGS = {
@@ -88,7 +88,7 @@ def get_help():
   :returns: **str** with our usage information
   """
 
-  return stem.interpretor.msg(
+  return stem.interpreter.msg(
     'msg.help',
     address = DEFAULT_ARGS['control_address'],
     port = DEFAULT_ARGS['control_port'],

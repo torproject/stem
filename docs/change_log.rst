@@ -66,7 +66,7 @@ The following are only available within Stem's `git repository
 
  * **Interpretor**
 
-  * Initial release of a Tor interactive interpretor. This included...
+  * Initial release of a Tor interactive interpreter. This included...
 
    * irc-style functions such as '/help' and '/info'
    * history scroll-back by pressing up/down

@@ -1,5 +1,5 @@
 """
-Unit tests for the stem's interpretor prompt.
+Unit tests for the stem's interpreter prompt.
 """
 
 __all__ = [

@@ -2,7 +2,7 @@
 # Copyright 2014, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 
-import stem.interpretor
+import stem.interpreter
 
 if __name__ == '__main__':
-  stem.interpretor.main()
+  stem.interpreter.main()

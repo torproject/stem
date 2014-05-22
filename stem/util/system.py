@@ -910,7 +910,7 @@ def get_process_name():
       #
       #   ' '.join(['python'] + sys.argv)
       #
-      # ... doesn't do the trick since this will miss interpretor arguments.
+      # ... doesn't do the trick since this will miss interpreter arguments.
       #
       #   python -W ignore::DeprecationWarning my_script.py
 

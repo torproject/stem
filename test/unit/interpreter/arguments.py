@@ -1,6 +1,6 @@
 import unittest
 
-from stem.interpretor.arguments import DEFAULT_ARGS, parse, get_help
+from stem.interpreter.arguments import DEFAULT_ARGS, parse, get_help
 
 
 class TestArgumentParsing(unittest.TestCase):
@@ -53,5 +53,5 @@ class TestArgumentParsing(unittest.TestCase):
 
   def test_get_help(self):
     help_text = get_help()
-    self.assertTrue('Interactive interpretor for Tor.' in help_text)
+    self.assertTrue('Interactive interpreter for Tor.' in help_text)
     self.assertTrue('change control interface from 127.0.0.1:9051' in help_text)

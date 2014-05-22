@@ -1,8 +1,8 @@
 import unittest
 
-from stem.interpretor.autocomplete import _get_commands, Autocompleter
+from stem.interpreter.autocomplete import _get_commands, Autocompleter
 
-from test.unit.interpretor import CONTROLLER
+from test.unit.interpreter import CONTROLLER
 
 try:
   # added in python 3.3

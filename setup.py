@@ -49,7 +49,7 @@ setup(
   author = module_info['author'],
   author_email = module_info['contact'],
   url = module_info['url'],
-  packages = ['stem', 'stem.descriptor', 'stem.interpretor', 'stem.response', 'stem.util'],
+  packages = ['stem', 'stem.descriptor', 'stem.interpreter', 'stem.response', 'stem.util'],
   provides = ['stem'],
   cmdclass = {'build_py': build_py},
   keywords = 'tor onion controller',
