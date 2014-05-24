@@ -126,10 +126,17 @@ class ControlInterpretor(code.InteractiveConsole):
     Performs the '/events' operation, dumping the events that we've received
     belonging to the given types. If no types are specified then this provides
     all buffered events.
+
+    If the user runs '/events clear' then this clears the list of events we've
+    received.
     """
 
     events = self._received_events
     event_types = arg.upper().split()
+
+    if 'CLEAR' in event_types:
+      del self._received_events[:]
+      return format('cleared event backlog', *STANDARD_OUTPUT)
 
     if event_types:
       events = filter(lambda event: event.type in event_types, events)
