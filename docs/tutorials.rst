@@ -31,6 +31,13 @@ Tutorial
      Author: Andrejj
      License: CC0 (https://creativecommons.org/publicdomain/zero/1.0/deed.en)
    
+   * Mad Hatter - mad_hatter.png
+     Source: http://www.krepcio.com/vitreosity/archives/MadHatter-ALL-illus600.jpg
+     Author: John Tenniel
+     License: Public Doman
+     Augmented: Colored by me, and used the card from...
+       https://openclipart.org/detail/1892/mad-hatter-with-label-on-hat-by-nayrhcrel
+   
    * Double Double Toil and Trouble - cauldron.png
      Source: https://openclipart.org/detail/174099/cauldron-by-jarda-174099
      Author: Unknown (jarda?)
@@ -91,6 +98,18 @@ feet wet by jumping straight in with some tutorials...
 
        Stem provides several utility modules frequently useful for Tor
        controller applications. Here we introduce some of them.
+
+   * - .. image:: /_static/section/tutorials/mad_hatter.png
+          :target: tutorials/down_the_rabbit_hole.html
+
+     - .. image:: /_static/label/down_the_rabbit_hole.png
+          :target: tutorials/down_the_rabbit_hole.html
+
+       Interactive interpreter for Tor that provides you with direct access to
+       Tor's `control interface
+       <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
+       via either python or direct requests. This is an easy way of
+       experimenting with Stem and learning what Tor can do.
 
    * - .. image:: /_static/section/tutorials/cauldron.png
           :target: tutorials/double_double_toil_and_trouble.html
