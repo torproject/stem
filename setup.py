@@ -53,8 +53,8 @@ setup(
   provides = ['stem'],
   cmdclass = {'build_py': build_py},
   keywords = 'tor onion controller',
-  data_files = [
-    ('/usr/bin', ['tor-prompt'])
-  ],
+  scripts = ['tor-prompt'],
+  package_dir = {'stem.interpreter': 'stem/interpreter'},
+  package_data = { 'stem.interpreter': ['settings.cfg']},
 )
 
