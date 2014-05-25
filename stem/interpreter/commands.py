@@ -91,7 +91,7 @@ class ControlInterpretor(code.InteractiveConsole):
       'stem': stem,
       'stem.control': stem.control,
       'controller': controller,
-      'events': self._received_events
+      'events': self.get_events,
     })
 
     self._controller = controller
@@ -113,6 +113,15 @@ class ControlInterpretor(code.InteractiveConsole):
 
     self._controller._handle_event = handle_event_wrapper
 
+  def get_events(self, *event_types):
+    events = list(self._received_events)
+    event_types = map(str.upper, event_types)  # make filtering case insensitive
+
+    if event_types:
+      events = filter(lambda e: e.type in event_types, events)
+
+    return events
+
   def do_help(self, arg):
     """
     Performs the '/help' operation, giving usage information for the given
@@ -131,17 +140,13 @@ class ControlInterpretor(code.InteractiveConsole):
     received.
     """
 
-    events = self._received_events
     event_types = arg.upper().split()
 
     if 'CLEAR' in event_types:
       del self._received_events[:]
       return format('cleared event backlog', *STANDARD_OUTPUT)
 
-    if event_types:
-      events = filter(lambda event: event.type in event_types, events)
-
-    return '\n'.join([format(str(event), *STANDARD_OUTPUT) for event in events])
+    return '\n'.join([format(str(e), *STANDARD_OUTPUT) for e in self.get_events(*event_types)])
 
   def do_info(self, arg):
     """

@@ -101,10 +101,14 @@ provides a quick dump of the events we've received thus far...
 .. image:: /_static/prompt/events_command.png
 
 You can list events of just a certain type by saying which (for instance
-**/events BW**). More useful though is your **events** variable, which is a
-list of :class:`~stem.response.events.Event` instances we've received...
+**/events BW**). More useful though is your **events()** function, which
+provides a list of :class:`~stem.response.events.Event` instances we've
+received...
 
 .. image:: /_static/prompt/events_variable.png
+
+You can specify event types to either **/events** or **events()** to just
+receive events of those types (for instance, **events('BW', 'DEBUG')**).
 
 To stop receiving events run **SETEVENTS** without any event types, and to
 clear the backlog of events we've received run **/events clear**.
