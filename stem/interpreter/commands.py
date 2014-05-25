@@ -3,9 +3,11 @@ Handles making requests and formatting the responses.
 """
 
 import code
+import socket
 
 import stem
 import stem.control
+import stem.descriptor.remote
 import stem.interpreter.help
 import stem.util.connection
 import stem.util.tor_tools
@@ -160,9 +162,10 @@ class ControlInterpretor(code.InteractiveConsole):
     except ValueError as exc:
       return format(str(exc), *ERROR_OUTPUT)
 
-    micro_desc = self._controller.get_microdescriptor(fingerprint, None)
-    server_desc = self._controller.get_server_descriptor(fingerprint, None)
     ns_desc = self._controller.get_network_status(fingerprint, None)
+    server_desc = self._controller.get_server_descriptor(fingerprint, None)
+    extrainfo_desc = None
+    micro_desc = self._controller.get_microdescriptor(fingerprint, None)
 
     # We'll mostly rely on the router status entry. Either the server
     # descriptor or microdescriptor will be missing, so we'll treat them as
@@ -171,25 +174,47 @@ class ControlInterpretor(code.InteractiveConsole):
     if not ns_desc:
       return format("Unable to find consensus information for %s" % fingerprint, *ERROR_OUTPUT)
 
-    locale = self._controller.get_info('ip-to-country/%s' % ns_desc.address, None)
-    locale_label = ' (%s)' % locale if locale else ''
+    # More likely than not we'll have the microdescriptor but not server and
+    # extrainfo descriptors. If so then fetching them.
+
+    downloader = stem.descriptor.remote.DescriptorDownloader(timeout = 5)
+    server_desc_query = downloader.get_server_descriptors(fingerprint)
+    extrainfo_desc_query = downloader.get_extrainfo_descriptors(fingerprint)
+
+    for desc in server_desc_query:
+      server_desc = desc
+
+    for desc in extrainfo_desc_query:
+      extrainfo_desc = desc
+
+    address_extrainfo = []
+
+    try:
+      address_extrainfo.append(socket.gethostbyaddr(ns_desc.address)[0])
+    except:
+      pass
+
+    try:
+      address_extrainfo.append(self._controller.get_info('ip-to-country/%s' % ns_desc.address))
+    except:
+      pass
+
+    address_extrainfo_label = ' (%s)' % ', '.join(address_extrainfo) if address_extrainfo else ''
 
     if server_desc:
-      exit_policy_label = server_desc.exit_policy.summary()
+      exit_policy_label = str(server_desc.exit_policy)
     elif micro_desc:
-      exit_policy_label = micro_desc.exit_policy.summary()
+      exit_policy_label = str(micro_desc.exit_policy)
     else:
       exit_policy_label = 'Unknown'
 
     lines = [
       '%s (%s)' % (ns_desc.nickname, fingerprint),
-      format('address: ', *BOLD_OUTPUT) + '%s:%s%s' % (ns_desc.address, ns_desc.or_port, locale_label),
-      format('published: ', *BOLD_OUTPUT) + ns_desc.published.strftime('%H:%M:%S %d/%m/%Y'),
+      format('address: ', *BOLD_OUTPUT) + '%s:%s%s' % (ns_desc.address, ns_desc.or_port, address_extrainfo_label),
     ]
 
     if server_desc:
-      lines.append(format('os: ', *BOLD_OUTPUT) + server_desc.platform.decode('utf-8', 'replace'))
-      lines.append(format('version: ', *BOLD_OUTPUT) + str(server_desc.tor_version))
+      lines.append(format('tor version: ', *BOLD_OUTPUT) + str(server_desc.tor_version))
 
     lines.append(format('flags: ', *BOLD_OUTPUT) + ', '.join(ns_desc.flags))
     lines.append(format('exit policy: ', *BOLD_OUTPUT) + exit_policy_label)
@@ -206,6 +231,20 @@ class ControlInterpretor(code.InteractiveConsole):
         contact = contact.replace(alias, '.')
 
       lines.append(format('contact: ', *BOLD_OUTPUT) + contact)
+
+    descriptor_section = [
+      ('Server Descriptor:', server_desc),
+      ('Extrainfo Descriptor:', extrainfo_desc),
+      ('Microdescriptor:', micro_desc),
+      ('Router Status Entry:', ns_desc),
+    ]
+
+    div = format('-' * 80, *STANDARD_OUTPUT)
+
+    for label, desc in descriptor_section:
+      if desc:
+        lines += ['', div, format(label, *BOLD_OUTPUT), div, '']
+        lines += [format(l, *STANDARD_OUTPUT) for l in str(desc).splitlines()]
 
     return '\n'.join(lines)
 

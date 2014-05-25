@@ -64,15 +64,9 @@ The following are only available within Stem's `git repository
   * Added :func:`stem.util.connection.port_usage`
   * Added :func:`stem.util.system.files_with_suffix`
 
- * **Interpretor**
+ * **Interpreter**
 
-  * Initial release of a Tor interactive interpreter. This included...
-
-   * irc-style functions such as '/help' and '/info'
-   * history scroll-back by pressing up/down
-   * tab completion
-   * terminal coloring for improved readability
-   * support for listing the asynchronous events we've received
+  * Initial release of our `interactive Tor interpreter <tutorials/down_the_rabbit_hole.html>`_!
 
  * **Website**
 
