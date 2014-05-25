@@ -32,13 +32,14 @@ Utilities for working with the terminal.
 
   Enumerations of terminal text attributes.
 
-  ============= ===========
-  Attr          Description
-  ============= ===========
-  **BOLD**      heavy typeface
-  **HILIGHT**   inverted foreground and background
-  **UNDERLINE** underlined text
-  ============= ===========
+  =================== ===========
+  Attr                Description
+  =================== ===========
+  **BOLD**            heavy typeface
+  **HILIGHT**         inverted foreground and background
+  **UNDERLINE**       underlined text
+  **READLINE_ESCAPE** wrap encodings in `RL_PROMPT_START_IGNORE and RL_PROMPT_END_IGNORE sequences <https://stackoverflow.com/questions/9468435/look-how-to-fix-column-calculation-in-python-readline-if-use-color-prompt>`_
+  =================== ===========
 """
 
 import stem.util.enum
@@ -53,7 +54,7 @@ DISABLE_COLOR_SUPPORT = False
 
 Color = stem.util.enum.Enum(*TERM_COLORS)
 BgColor = stem.util.enum.Enum(*['BG_' + color for color in TERM_COLORS])
-Attr = stem.util.enum.Enum('BOLD', 'UNDERLINE', 'HILIGHT')
+Attr = stem.util.enum.Enum('BOLD', 'UNDERLINE', 'HILIGHT', 'READLINE_ESCAPE')
 
 # mappings of terminal attribute enums to their ANSI escape encoding
 FG_ENCODING = dict([(list(Color)[i], str(30 + i)) for i in range(8)])
@@ -104,6 +105,12 @@ def format(msg, *attr):
       encodings.append(encoding)
 
   if encodings:
-    return (CSI % ';'.join(encodings)) + msg + RESET
+    prefix, suffix = CSI % ';'.join(encodings), RESET
+
+    if Attr.READLINE_ESCAPE in attr:
+      prefix = '\001%s\002' % prefix
+      suffix = '\001%s\002' % suffix
+
+    return prefix + msg + suffix
   else:
     return msg
