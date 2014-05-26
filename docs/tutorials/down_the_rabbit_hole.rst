@@ -101,7 +101,7 @@ provides a quick dump of the events we've received thus far...
 .. image:: /_static/prompt/events_command.png
 
 You can list events of just a certain type by saying which (for instance
-**/events BW**). More useful though is your **events()** function, which
+**/events BW**). More useful though is the **events()** function, which
 provides a list of :class:`~stem.response.events.Event` instances we've
 received...
 

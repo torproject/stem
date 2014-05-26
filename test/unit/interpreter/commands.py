@@ -12,9 +12,9 @@ from test.unit.interpreter import CONTROLLER
 
 try:
   # added in python 3.3
-  from unittest.mock import Mock
+  from unittest.mock import Mock, patch
 except ImportError:
-  from mock import Mock
+  from mock import Mock, patch
 
 EXPECTED_EVENTS_RESPONSE = """\
 \x1b[34mBW 15 25\x1b[0m
@@ -24,12 +24,10 @@ EXPECTED_EVENTS_RESPONSE = """\
 
 EXPECTED_INFO_RESPONSE = """\
 moria1 (9695DFC35FFEB861329B9F1AB04C46397020CE31)
-\x1b[34;1maddress: \x1b[0m128.31.0.34:9101 (us)
-\x1b[34;1mpublished: \x1b[0m05:52:05 05/05/2014
-\x1b[34;1mos: \x1b[0mLinux
-\x1b[34;1mversion: \x1b[0m0.2.5.3-alpha-dev
+\x1b[34;1maddress: \x1b[0m128.31.0.34:9101 (moria.csail.mit.edu)
+\x1b[34;1mtor version: \x1b[0m0.2.5.4-alpha-dev
 \x1b[34;1mflags: \x1b[0mAuthority, Fast, Guard, HSDir, Named, Running, Stable, V2Dir, Valid
-\x1b[34;1mexit policy: \x1b[0mreject 1-65535
+\x1b[34;1mexit policy: \x1b[0mreject *:*
 \x1b[34;1mcontact: \x1b[0m1024D/28988BF5 arma mit edu
 """
 
@@ -133,6 +131,7 @@ class TestInterpretorCommands(unittest.TestCase):
 
     self.assertEqual(EXPECTED_EVENTS_RESPONSE, interpreter.run_command('/events'))
 
+  @patch('socket.gethostbyaddr', Mock(return_value = ['moria.csail.mit.edu']))
   def test_info(self):
     controller, server_desc, ns_desc = Mock(), Mock(), Mock()
 
@@ -156,7 +155,7 @@ class TestInterpretorCommands(unittest.TestCase):
     server_desc.contact = '1024D/28988BF5 arma mit edu'
 
     interpreter = ControlInterpretor(controller)
-    self.assertEqual(EXPECTED_INFO_RESPONSE, interpreter.run_command('/info ' + FINGERPRINT))
+    self.assertTrue(interpreter.run_command('/info ' + FINGERPRINT).startswith(EXPECTED_INFO_RESPONSE))
 
   def test_unrecognized_interpreter_command(self):
     interpreter = ControlInterpretor(CONTROLLER)

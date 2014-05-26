@@ -18,7 +18,7 @@ import stem.util.conf
 import stem.util.system
 import stem.util.term
 
-from stem.util.term import RESET, Attr, Color, format
+from stem.util.term import Attr, Color, format
 
 PROMPT = format('>>> ', Color.GREEN, Attr.BOLD, Attr.READLINE_ESCAPE)
 
