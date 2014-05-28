@@ -98,10 +98,10 @@ Download
          % apt-get install python-stem
 
    * - .. image:: /_static/section/download/fedora.png
-          :target: https://apps.fedoraproject.org/packages/python-stem
+          :target: https://admin.fedoraproject.org/pkgdb/package/python-stem/
 
      - .. image:: /_static/label/fedora.png
-          :target: https://apps.fedoraproject.org/packages/python-stem
+          :target: https://admin.fedoraproject.org/pkgdb/package/python-stem/
 
        Packages maintained by Juan for Fedora. These include **python-stem**
        (Stem for Python 2.x), **python3-stem** (Stem for Python 3.x), and
