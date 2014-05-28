@@ -30,6 +30,7 @@ easily parsed and compared, for instance...
   Requirement                           Description
   ===================================== ===========
   **AUTH_SAFECOOKIE**                   SAFECOOKIE authentication method
+  **DROPGUARDS**                        DROPGUARDS requests
   **EVENT_AUTHDIR_NEWDESCS**            AUTHDIR_NEWDESC events
   **EVENT_BUILDTIMEOUT_SET**            BUILDTIMEOUT_SET events
   **EVENT_CIRC_MINOR**                  CIRC_MINOR events
@@ -333,6 +334,7 @@ safecookie_req.greater_than(Version("0.2.3.13"))
 
 Requirement = stem.util.enum.Enum(
   ("AUTH_SAFECOOKIE", safecookie_req),
+  ("DROPGUARDS", Version('0.2.5.1-alpha')),
   ("EVENT_AUTHDIR_NEWDESCS", Version('0.1.1.10-alpha')),
   ("EVENT_BUILDTIMEOUT_SET", Version('0.2.2.7-alpha')),
   ("EVENT_CIRC_MINOR", Version('0.2.3.11-alpha')),

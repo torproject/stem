@@ -122,7 +122,8 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- is_newnym_available - true if tor would presently accept a NEWNYM signal
     |- get_newnym_wait - seconds until tor would accept a NEWNYM signal
     |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
-    +- map_address - maps one address to another such that connections to the original are replaced with the other
+    |- map_address - maps one address to another such that connections to the original are replaced with the other
+    +- drop_guards - drops our set of guard relays and picks a new set
 
   BaseController - Base controller class asynchronous message handling
     |- msg - communicates with the tor process
@@ -2450,8 +2451,9 @@ class Controller(BaseController):
     :param stem.RelayEndReason reason: reason the stream is closing
     :param str flag: not currently used
 
-    :raises: :class:`stem.InvalidArguments` if the stream or reason are not recognized
-    :raises: :class:`stem.InvalidRequest` if the stream and/or reason are missing
+    :raises:
+      * :class:`stem.InvalidArguments` if the stream or reason are not recognized
+      * :class:`stem.InvalidRequest` if the stream and/or reason are missing
     """
 
     # there's a single value offset between RelayEndReason.index_of() and the
@@ -2559,6 +2561,20 @@ class Controller(BaseController):
     stem.response.convert('MAPADDRESS', response)
 
     return response.entries
+
+  def drop_guards(self):
+    """
+    Drops our present guard nodes and picks a new set.
+
+    .. versionadded:: 1.2.0
+
+    :raises: :class:`stem.ControllerError` if Tor couldn't fulfill the request
+    """
+
+    if self.get_version() < stem.version.Requirement.DROPGUARDS:
+      raise stem.UnsatisfiableRequest('DROPGUARDS was added in tor version %s' % stem.version.Requirement.DROPGUARDS)
+
+    self.msg('DROPGUARDS')
 
   def _post_authentication(self):
     super(Controller, self)._post_authentication()

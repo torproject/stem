@@ -44,6 +44,7 @@ The following are only available within Stem's `git repository
   * New, better :func:`~stem.connection.connect` function that deprecates :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file`
   * Added :func:`~stem.control.Controller.is_newnym_available` and :func:`~stem.control.Controller.get_newnym_wait` methods to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_ports` and :func:`~stem.control.Controller.get_listeners` methods to the :class:`~stem.control.Controller`
+  * Added :func:`~stem.control.Controller.drop_guards` (:trac:`10032`, :spec:`7c6c7fc`)
   * Added the id attribute to the :class:`~stem.response.events.ORConnEvent` (:spec:`6f2919a`)
   * Added `support for CONN_BW events <api/response.html#stem.response.events.ConnectionBandwidthEvent>`_ (:spec:`6f2919a`)
   * Added `support for CIRC_BW events <api/response.html#stem.response.events.CircuitBandwidthEvent>`_ (:spec:`6f2919a`)

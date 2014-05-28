@@ -525,3 +525,16 @@ class TestControl(unittest.TestCase):
 
     for test_input in malformed_inputs:
       self.assertRaises(ProtocolError, _parse_circ_path, test_input)
+
+  @patch('stem.control.Controller.get_version')
+  def test_drop_guards(self, get_version_mock):
+    """
+    Exercises the drop_guards() method.
+    """
+
+    get_version_mock.return_value = stem.version.Version('0.1.0.14')
+    self.assertRaises(UnsatisfiableRequest, self.controller.drop_guards)
+
+    with patch('stem.control.Controller.msg', Mock(return_value = None)):
+      get_version_mock.return_value = stem.version.Version('0.2.5.2')
+      self.controller.drop_guards()
