@@ -52,9 +52,10 @@ The following are only available within Stem's `git repository
   * Added `support for TB_EMPTY events <api/response.html#stem.response.events.TokenBucketEmptyEvent>`_ (:spec:`6f2919a`)
   * Added `support for HS_DESC events <api/response.html#stem.response.events.HSDescEvent>`_ (:spec:`a67ac4d`, :trac:`10807`)
   * Changed :func:`~stem.control.Controller.get_network_status` and :func:`~stem.control.Controller.get_network_statuses` to provide :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` if Tor is using microdescriptors (:trac:`7646`)
-  * The :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file` didn't properly mark the Controller it returned as being authenticated, causing event listening among other things to fail.
-  * The :func:`~stem.control.Controller.add_event_listener` method couldn't accept event types that Stem didn't already recognize.
-  * The :class:`~stem.exit_policy.ExitPolicy` class couldn't be pickled.
+  * The :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file` didn't properly mark the Controller it returned as being authenticated, causing event listening among other things to fail
+  * The :func:`~stem.control.Controller.add_event_listener` method couldn't accept event types that Stem didn't already recognize
+  * The :class:`~stem.exit_policy.ExitPolicy` class couldn't be pickled
+  * Tor instances spawned with :func:`~stem.process.launch_tor` and :func:`~stem.process.launch_tor_with_config` could hang due to unread stdout content, we now close stdout and stderr once tor finishes bootstrapping (:trac:`9862`)
 
  * **Descriptors**
 

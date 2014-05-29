@@ -159,6 +159,9 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
     if timeout:
       signal.alarm(0)  # stop alarm
 
+    tor_process.stdout.close()
+    tor_process.stderr.close()
+
     if temp_file:
       try:
         os.remove(temp_file)

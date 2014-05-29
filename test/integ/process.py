@@ -65,7 +65,7 @@ class TestProcess(unittest.TestCase):
         control_socket.close()
 
       tor_process.kill()
-      tor_process.communicate()
+      tor_process.wait()
 
   def test_launch_tor_with_timeout(self):
     """
