@@ -107,14 +107,8 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
   if timeout:
     def timeout_handler(signum, frame):
       # terminates the uninitialized tor process and raise on timeout
-      if temp_file:
-        try:
-          os.remove(temp_file)
-        except:
-          pass
 
       tor_process.kill()
-
       raise OSError('reached a %i second timeout without success' % timeout)
 
     signal.signal(signal.SIGALRM, timeout_handler)
@@ -124,55 +118,52 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
   problem_line = re.compile('\[(warn|err)\] (.*)$')
   last_problem = 'Timed out'
 
-  while True:
-    # Tor's stdout will be read as ASCII bytes. This is fine for python 2, but
-    # in python 3 that means it'll mismatch with other operations (for instance
-    # the bootstrap_line.search() call later will fail).
-    #
-    # It seems like python 2.x is perfectly happy for this to be unicode, so
-    # normalizing to that.
+  try:
+    while True:
+      # Tor's stdout will be read as ASCII bytes. This is fine for python 2, but
+      # in python 3 that means it'll mismatch with other operations (for instance
+      # the bootstrap_line.search() call later will fail).
+      #
+      # It seems like python 2.x is perfectly happy for this to be unicode, so
+      # normalizing to that.
 
-    init_line = tor_process.stdout.readline().decode('utf-8', 'replace').strip()
+      init_line = tor_process.stdout.readline().decode('utf-8', 'replace').strip()
 
-    # this will provide empty results if the process is terminated
-    if not init_line:
-      if timeout:
-        signal.alarm(0)  # stop alarm
+      # this will provide empty results if the process is terminated
 
-      # ... but best make sure
+      if not init_line:
+        tor_process.kill()  # ... but best make sure
+        raise OSError('Process terminated: %s' % last_problem)
 
-      tor_process.kill()
+      # provide the caller with the initialization message if they want it
 
-      raise OSError('Process terminated: %s' % last_problem)
+      if init_msg_handler:
+        init_msg_handler(init_line)
 
-    # provide the caller with the initialization message if they want it
+      # return the process if we're done with bootstrapping
 
-    if init_msg_handler:
-      init_msg_handler(init_line)
+      bootstrap_match = bootstrap_line.search(init_line)
+      problem_match = problem_line.search(init_line)
 
-    # return the process if we're done with bootstrapping
-    bootstrap_match = bootstrap_line.search(init_line)
-    problem_match = problem_line.search(init_line)
+      if bootstrap_match and int(bootstrap_match.group(1)) >= completion_percent:
+        return tor_process
+      elif problem_match:
+        runlevel, msg = problem_match.groups()
 
-    if bootstrap_match and int(bootstrap_match.groups()[0]) >= completion_percent:
-      if timeout:
-        signal.alarm(0)  # stop alarm
+        if not 'see warnings above' in msg:
+          if ': ' in msg:
+            msg = msg.split(': ')[-1].strip()
 
-      if temp_file:
-        try:
-          os.remove(temp_file)
-        except:
-          pass
+          last_problem = msg
+  finally:
+    if timeout:
+      signal.alarm(0)  # stop alarm
 
-      return tor_process
-    elif problem_match:
-      runlevel, msg = problem_match.groups()
-
-      if not 'see warnings above' in msg:
-        if ': ' in msg:
-          msg = msg.split(': ')[-1].strip()
-
-        last_problem = msg
+    if temp_file:
+      try:
+        os.remove(temp_file)
+      except:
+        pass
 
 
 def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
