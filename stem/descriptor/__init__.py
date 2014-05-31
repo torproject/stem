@@ -52,10 +52,12 @@ __all__ = [
 
 import os
 import re
+import tarfile
 
 import stem.prereq
 import stem.util.enum
 import stem.util.str_tools
+import stem.util.system
 
 try:
   # added in python 2.7
@@ -127,7 +129,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
 
     my_descriptor_file = open(descriptor_path, 'rb')
 
-  :param str,file descriptor_file: path or opened file with the descriptor contents
+  :param str,file,tarfile descriptor_file: path or opened file with the descriptor contents
   :param str descriptor_type: `descriptor type <https://metrics.torproject.org/formats.html#descriptortypes>`_, this is guessed if not provided
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
@@ -143,14 +145,23 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
     * **IOError** if unable to read from the descriptor_file
   """
 
-  # if we got a path then open that file for parsing
+  # Delegate to a helper if this is a path or tarfile.
+
+  handler = None
 
   if isinstance(descriptor_file, (bytes, unicode)):
-    with open(descriptor_file) as desc_file:
-      for desc in parse_file(desc_file, descriptor_type, validate, document_handler, **kwargs):
-        yield desc
+    if stem.util.system.is_tarfile(descriptor_file):
+      handler = _parse_file_for_tar_path
+    else:
+      handler = _parse_file_for_path
+  elif isinstance(descriptor_file, tarfile.TarFile):
+    handler = _parse_file_for_tarfile
 
-      return
+  if handler:
+    for desc in handler(descriptor_file, descriptor_type, validate, document_handler, **kwargs):
+      yield desc
+
+    return
 
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
@@ -208,6 +219,38 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   # Not recognized as a descriptor file.
 
   raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
+
+
+def _parse_file_for_path(descriptor_file, *args, **kwargs):
+  with open(descriptor_file, 'rb') as desc_file:
+    for desc in parse_file(desc_file, *args, **kwargs):
+      yield desc
+
+
+def _parse_file_for_tar_path(descriptor_file, *args, **kwargs):
+  # TODO: use 'with' for tarfile after dropping python 2.6 support
+  tar_file = tarfile.open(descriptor_file)
+
+  try:
+    for desc in parse_file(tar_file, *args, **kwargs):
+      desc._set_path(os.path.abspath(descriptor_file))
+      yield desc
+  finally:
+    if tar_file:
+      tar_file.close()
+
+
+def _parse_file_for_tarfile(descriptor_file, *args, **kwargs):
+  for tar_entry in descriptor_file:
+    if tar_entry.isfile():
+      entry = descriptor_file.extractfile(tar_entry)
+
+      try:
+        for desc in parse_file(entry, *args, **kwargs):
+          desc._set_archive_path(entry.name)
+          yield desc
+      finally:
+        entry.close()
 
 
 def _parse_metrics_file(descriptor_type, major_version, minor_version, descriptor_file, validate, document_handler, **kwargs):

@@ -59,6 +59,7 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * Added tarfile support to :func:`~stem.descriptor.__init__.parse_file` (:trac:`10977`)
   * Added microdescriptor's new identity and identity_type attributes (:spec:`22cda72`)
 
  * **Utilities**
@@ -116,6 +117,7 @@ and a myriad of smaller improvements and fixes.
   * Added :func:`stem.util.system.get_user`
   * Added :func:`stem.util.system.get_start_time`
   * Added :func:`stem.util.system.get_bsd_jail_path`
+  * Added :func:`stem.util.system.is_tarfile`
   * Added :func:`stem.util.connection.is_private_address`
 
  * **Website**

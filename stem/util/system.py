@@ -16,6 +16,8 @@ best-effort, providing **None** if the lookup fails.
 
   is_available - determines if a command is available on this system
   is_running - determines if a given process is running
+  call - runs the given system command and provides back the results
+
   get_name_by_pid - gets the name for a process by the given pid
   get_pid_by_name - gets the pid for a process by the given name
   get_pid_by_port - gets the pid for a process listening to a given port
@@ -25,9 +27,11 @@ best-effort, providing **None** if the lookup fails.
   get_start_time - provides the unix timestamp when the process started
   get_bsd_jail_id - provides the BSD jail id a given process is running within
   get_bsd_jail_path - provides the path of the given BSD jail
+
+  is_tarfile - checks if the given path is a tarball
   expand_path - expands relative paths and ~ entries
   files_with_suffix - provides files with the given suffix
-  call - runs the given system command and provides back the results
+
 
   get_process_name - provides our process' name
   set_process_name - changes our process' name
@@ -35,9 +39,11 @@ best-effort, providing **None** if the lookup fails.
 
 import ctypes
 import ctypes.util
+import mimetypes
 import os
 import platform
 import subprocess
+import tarfile
 import time
 
 import stem.util.proc
@@ -761,6 +767,32 @@ def get_bsd_jail_path(jid):
       return jls_output[1].split()[3]
 
   return None
+
+
+def is_tarfile(path):
+  """
+  Returns if the path belongs to a tarfile or not.
+
+  .. versionadded:: 1.2.0
+
+  :param str path: path to be checked
+
+  :returns: **True** if the path belongs to a tarball, **False** otherwise
+  """
+
+  # Checking if it's a tar file may fail due to permissions so failing back
+  # to the mime type...
+  #
+  #   IOError: [Errno 13] Permission denied: '/vmlinuz.old'
+  #
+  # With python 3 insuffient permissions raises an AttributeError instead...
+  #
+  #   http://bugs.python.org/issue17059
+
+  try:
+    return tarfile.is_tarfile(path)
+  except (IOError, AttributeError):
+    return mimetypes.guess_type(path)[0] == 'application/x-tar'
 
 
 def expand_path(path, cwd = None):

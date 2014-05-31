@@ -4,6 +4,7 @@ Integration tests for stem.descriptor.server_descriptor.
 
 import datetime
 import os
+import tarfile
 import unittest
 
 import stem.control
@@ -15,8 +16,38 @@ import test.runner
 
 from test.integ.descriptor import get_resource
 
+TARFILE_PATH = os.path.join(os.path.dirname(__file__), 'data', 'descriptor_archive.tar')
+TARFILE_FINGERPRINTS = set([
+  u'B6D83EC2D9E18B0A7A33428F8CFA9C536769E209',
+  u'E0BD57A11F00041A9789577C53A1B784473669E4',
+  u'1F43EE37A0670301AD9CB555D94AFEC2C89FDE86',
+])
+
 
 class TestServerDescriptor(unittest.TestCase):
+  def test_with_tarfile_path(self):
+    """
+    Fetch server descriptors via parse_file() for a tarfile path.
+    """
+
+    descriptors = list(stem.descriptor.parse_file(TARFILE_PATH))
+    self.assertEqual(3, len(descriptors))
+
+    fingerprints = set([desc.fingerprint for desc in descriptors])
+    self.assertEqual(TARFILE_FINGERPRINTS, fingerprints)
+
+  def test_with_tarfile_object(self):
+    """
+    Fetch server descriptors via parse_file() for a tarfile object.
+    """
+
+    with tarfile.open(TARFILE_PATH) as tar_file:
+      descriptors = list(stem.descriptor.parse_file(tar_file))
+      self.assertEqual(3, len(descriptors))
+
+      fingerprints = set([desc.fingerprint for desc in descriptors])
+      self.assertEqual(TARFILE_FINGERPRINTS, fingerprints)
+
   def test_metrics_descriptor(self):
     """
     Parses and checks our results against a server descriptor from metrics.

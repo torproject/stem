@@ -85,6 +85,7 @@ import threading
 
 import stem.descriptor
 import stem.prereq
+import stem.util.system
 
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = 'DONE'
@@ -487,24 +488,10 @@ class DescriptorReader(object):
 
     target_type = mimetypes.guess_type(target)
 
-    # Checking if it's a tar file may fail due to permissions so failing back
-    # to the mime type...
-    #
-    #   IOError: [Errno 13] Permission denied: '/vmlinuz.old'
-    #
-    # With python 3 insuffient permissions raises an AttributeError instead...
-    #
-    #   http://bugs.python.org/issue17059
-
-    try:
-      is_tar = tarfile.is_tarfile(target)
-    except (IOError, AttributeError):
-      is_tar = target_type[0] == 'application/x-tar'
-
     if target_type[0] in (None, 'text/plain'):
       # either '.txt' or an unknown type
       self._handle_descriptor_file(target, target_type)
-    elif is_tar:
+    elif stem.util.system.is_tarfile(target):
       # handles gzip, bz2, and decompressed tarballs among others
       self._handle_archive(target)
     else:
@@ -529,9 +516,10 @@ class DescriptorReader(object):
       self._notify_skip_listeners(target, ReadFailed(exc))
 
   def _handle_archive(self, target):
-    # TODO: This would be nicer via the 'with' keyword, but tarfile's __exit__
-    # method was added sometime after python 2.5. We should change this when
-    # we drop python 2.5 support.
+    # TODO: When dropping python 2.6 support go back to using 'with' for
+    # tarfiles...
+    #
+    #   http://bugs.python.org/issue7232
 
     tar_file = None
 
