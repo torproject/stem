@@ -4,6 +4,8 @@
 """
 Helper functions for testing.
 
+.. versionadded:: 1.2.0
+
 ::
 
   clean_orphaned_pyc - delete *.pyc files without corresponding *.py

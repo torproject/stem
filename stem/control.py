@@ -1047,6 +1047,8 @@ class Controller(BaseController):
     :func:`~stem.control.Controller.get_listeners`, but doesn't provide
     addresses nor include non-local endpoints.
 
+    .. versionadded:: 1.2.0
+
     :param stem.control.Listener listener_type: connection type being handled
       by the ports we return
     :param object default: response if the query fails
@@ -1072,6 +1074,8 @@ class Controller(BaseController):
     the given type. This is similar to
     :func:`~stem.control.Controller.get_ports` but includes listener addresses
     and non-local endpoints.
+
+    .. versionadded:: 1.2.0
 
     :param stem.control.Listener listener_type: connection type being handled
       by the listeners we return

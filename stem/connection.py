@@ -214,6 +214,8 @@ def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/c
   details of how this works. Messages and details of this function's behavior
   could change in the future.
 
+  .. versionadded:: 1.2.0
+
   :param tuple contol_port: address and port tuple, for instance **('127.0.0.1', 9051)**
   :param str path: path where the control socket is located
   :param str password: passphrase to authenticate to the socket

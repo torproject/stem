@@ -4,6 +4,8 @@
 """
 Miscellaneous utility functions for working with tor.
 
+.. versionadded:: 1.2.0
+
 **Module Overview:**
 
 ::
