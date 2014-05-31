@@ -4,10 +4,6 @@
 """
 Helper functions for testing.
 
-**Stem users are more than welcome to use these for their own test runs, but
-these functions are not being vended to our users. They may change in the
-future, use them at your own risk.**
-
 ::
 
   clean_orphaned_pyc - delete *.pyc files without corresponding *.py

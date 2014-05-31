@@ -53,5 +53,6 @@ Contents
    api/util/str_tools
    api/util/system
    api/util/term
+   api/util/test_tools
    api/util/tor_tools
 
