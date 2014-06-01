@@ -30,8 +30,8 @@ Getting started
 ---------------
 
 Getting started with the control prompt is easy. Assuming you have Stem
-installed it will be available under **/usr/bin/tor-prompt**, and can attach
-to either an existing Tor instance or start one of its own.
+installed it will be available under **/usr/local/bin/tor-prompt**, and can
+attach to either an existing Tor instance or start one of its own.
 
 If Tor's already running `with a control port
 <the_little_relay_that_could.html>`_ then you can attach to it using
