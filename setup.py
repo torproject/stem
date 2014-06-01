@@ -13,6 +13,10 @@ from distutils.core import setup
 
 STAT_LINE = re.compile(r"^__(.+)__ = '(.+)'$")
 
+DESCRIPTION = """\
+Stem is a Python controller library that allows applications to interact with
+Tor <https://www.torproject.org/>."""
+
 def get_module_info():
   # reads the basic __stat__ strings from our module's init
 
@@ -29,17 +33,12 @@ def get_module_info():
 
   return result
 
-module_info = get_module_info()
-
-DESCRIPTION = """\
-Stem is a python controller library for Tor <https://www.torproject.org/>.
-Like its predecessor, TorCtl, it uses Tor's control protocol to help
-developers program against the Tor process."""
-
 try:
   from distutils.command.build_py import build_py_2to3 as build_py
 except ImportError:
   from distutils.command.build_py import build_py
+
+module_info = get_module_info()
 
 setup(
   name = 'stem',
