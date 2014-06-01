@@ -40,6 +40,8 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+.. _version_1.2:
+
 Version 1.2
 -----------
 
