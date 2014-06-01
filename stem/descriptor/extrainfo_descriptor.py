@@ -175,6 +175,9 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
     extrainfo_content += _read_until_keywords(block_end_prefix, descriptor_file, True)
 
     if extrainfo_content:
+      if extrainfo_content[0].startswith('@type'):
+        extrainfo_content = extrainfo_content[1:]
+
       if is_bridge:
         yield BridgeExtraInfoDescriptor(bytes.join(b'', extrainfo_content), validate, **kwargs)
       else:

@@ -143,6 +143,9 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
     descriptor_content += _read_until_keywords(block_end_prefix, descriptor_file, True)
 
     if descriptor_content:
+      if descriptor_content[0].startswith('@type'):
+        descriptor_content = descriptor_content[1:]
+
       # strip newlines from annotations
       annotations = map(bytes.strip, annotations)
 

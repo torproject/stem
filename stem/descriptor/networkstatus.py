@@ -198,6 +198,9 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
 
   header = _read_until_keywords((ROUTERS_START, FOOTER_START, V2_FOOTER_START), document_file)
 
+  if header and header[0].startswith('@type'):
+    header = header[1:]
+
   routers_start = document_file.tell()
   _read_until_keywords((FOOTER_START, V2_FOOTER_START), document_file, skip = True)
   routers_end = document_file.tell()
