@@ -39,6 +39,13 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+Version 1.2
+-----------
+
+`Stem release 1.2 <https://blog.torproject.org/blog/stem-release-12>`_
+added our `interactive Tor interpreter <tutorials/down_the_rabbit_hole.html>`_
+among numerous other improvements and fixes.
+
  * **Controller**
 
   * New, better :func:`~stem.connection.connect` function that deprecates :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file`
