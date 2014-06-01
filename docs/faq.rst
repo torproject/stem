@@ -16,6 +16,7 @@ Frequently Asked Questions
  * :ref:`how_do_i_connect_to_tor`
  * :ref:`how_do_i_request_a_new_identity_from_tor`
  * :ref:`how_do_i_reload_my_torrc`
+ * :ref:`how_do_i_read_tar_xz_descriptor_archives`
  * :ref:`what_is_that_with_keyword_i_keep_seeing_in_the_tutorials`
 
 * **Development**
@@ -348,7 +349,10 @@ And with Stem...
 How do I reload my torrc?
 -------------------------
 
-Tor is configured through its `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. When you edit this file you need to either restart Tor or issue a **HUP** for the changes to be reflected. To issue a HUP you can either...
+Tor is configured through its `torrc
+<https://www.torproject.org/docs/faq.html.en#torrc>`_. When you edit this file
+you need to either restart Tor or issue a **HUP** for the changes to be
+reflected. To issue a HUP you can either...
 
  * Run **pkill -sighup tor**.
  * Send Tor a **HUP** signal through its control port...
@@ -361,6 +365,23 @@ Tor is configured through its `torrc <https://www.torproject.org/docs/faq.html.e
   with Controller.from_port(port = 9051) as controller:
     controller.authenticate()
     controller.signal(Signal.HUP)
+
+.. _how_do_i_read_tar_xz_descriptor_archives:
+
+How do I read \*.tar.xz descriptor archives?
+--------------------------------------------
+
+Stem's :func:`~stem.descriptor.__init__.parse_file` and
+:class:`~stem.descriptor.reader.DescriptorReader`
+can read plaintext descriptors and tarballs. However, `metrics uses *.xz
+compression
+<https://lists.torproject.org/pipermail/tor-dev/2014-May/006884.html>`_. Python
+3.3 adds builtin xz support, but if you're using an earlier version of python
+you will need to decompress the archives yourself.
+
+With modern versions of tar you can simply decompress archives via **tar xf
+archive.tar.xz**, or programmatically using `lzma
+<https://pypi.python.org/pypi/pyliblzma>`_.
 
 .. _what_is_that_with_keyword_i_keep_seeing_in_the_tutorials:
 
