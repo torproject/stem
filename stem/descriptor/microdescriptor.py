@@ -138,7 +138,7 @@ def _parse_file(descriptor_file, validate = True, **kwargs):
         descriptor_lines.append(line)
 
     if descriptor_lines:
-      if descriptor_lines[0].startswith('@type'):
+      if descriptor_lines[0].startswith(b'@type'):
         descriptor_lines = descriptor_lines[1:]
 
       # strip newlines from annotations
