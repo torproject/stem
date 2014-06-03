@@ -10,6 +10,7 @@ import stem.control
 import stem.descriptor.remote
 import stem.interpreter.help
 import stem.util.connection
+import stem.util.str_tools
 import stem.util.tor_tools
 
 from stem.interpreter import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, uses_settings, msg
@@ -220,7 +221,7 @@ class ControlInterpretor(code.InteractiveConsole):
     lines.append(format('exit policy: ', *BOLD_OUTPUT) + exit_policy_label)
 
     if server_desc:
-      contact = server_desc.contact
+      contact = stem.util.str_tools._to_unicode(server_desc.contact)
 
       # clears up some highly common obscuring
 
