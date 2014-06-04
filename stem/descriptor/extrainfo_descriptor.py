@@ -14,13 +14,15 @@ usage statistics. Tor clients cannot request these documents for bridges.
 
 Extra-info descriptors are available from a few sources...
 
-* if you have 'DownloadExtraInfo 1' in your torrc...
+* If you have 'DownloadExtraInfo 1' in your torrc...
 
  * control port via 'GETINFO extra-info/digest/\*' queries
  * the 'cached-extrainfo' file in tor's data directory
 
-* tor metrics, at https://metrics.torproject.org/data.html
-* directory authorities and mirrors via their DirPort
+* Archived descriptors provided by CollecTor
+  (https://collector.torproject.org/).
+
+* Directory authorities and mirrors via their DirPort.
 
 **Module Overview:**
 

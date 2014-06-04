@@ -6,10 +6,14 @@ Parsing for Tor server descriptors, which contains the infrequently changing
 information about a Tor relay (contact information, exit policy, public keys,
 etc). This information is provided from a few sources...
 
-* control port via 'GETINFO desc/\*' queries
-* the 'cached-descriptors' file in tor's data directory
-* tor metrics, at https://metrics.torproject.org/data.html
-* directory authorities and mirrors via their DirPort
+* The control port via 'GETINFO desc/\*' queries.
+
+* The 'cached-descriptors' file in Tor's data directory.
+
+* Archived descriptors provided by CollecTor
+  (https://collector.torproject.org/).
+
+* Directory authorities and mirrors via their DirPort.
 
 **Module Overview:**
 

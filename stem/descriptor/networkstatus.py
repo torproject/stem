@@ -5,9 +5,12 @@
 Parsing for Tor network status documents. This supports both the v2 and v3
 dir-spec. Documents can be obtained from a few sources...
 
-* the 'cached-consensus' file in tor's data directory
-* tor metrics, at https://metrics.torproject.org/data.html
-* directory authorities and mirrors via their DirPort
+* The 'cached-consensus' file in Tor's data directory.
+
+* Archived descriptors provided by CollecTor
+  (https://collector.torproject.org/).
+
+* Directory authorities and mirrors via their DirPort.
 
 ... and contain the following sections...
 

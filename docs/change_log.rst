@@ -60,7 +60,7 @@ among numerous other improvements and fixes.
   * Added `support for CIRC_BW events <api/response.html#stem.response.events.CircuitBandwidthEvent>`_ (:spec:`6f2919a`)
   * Added `support for CELL_STATS events <api/response.html#stem.response.events.CellStatsEvent>`_ (:spec:`6f2919a`)
   * Added `support for TB_EMPTY events <api/response.html#stem.response.events.TokenBucketEmptyEvent>`_ (:spec:`6f2919a`)
-  * Added `support for HS_DESC events <api/response.html#stem.response.events.HSDescEvent>`_ (:spec:`a67ac4d`, :trac:`10807`)
+  * Added `support for HS_DESC events <api/response.html#stem.response.events.HSDescEvent>`_ (:trac:`10807`, :spec:`a67ac4d`)
   * Changed :func:`~stem.control.Controller.get_network_status` and :func:`~stem.control.Controller.get_network_statuses` to provide :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` if Tor is using microdescriptors (:trac:`7646`)
   * The :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file` didn't properly mark the Controller it returned as being authenticated, causing event listening among other things to fail
   * The :func:`~stem.control.Controller.add_event_listener` method couldn't accept event types that Stem didn't already recognize

@@ -87,7 +87,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   tries to determine the descriptor type based on the following...
 
   * The @type annotation on the first line. These are generally only found in
-    the `descriptor archives <https://metrics.torproject.org>`_.
+    the `CollecTor archives <https://collector.torproject.org/formats.html#relay-descriptors>`_.
 
   * The filename if it matches something from tor's data directory. For
     instance, tor's 'cached-descriptors' contains server descriptors.

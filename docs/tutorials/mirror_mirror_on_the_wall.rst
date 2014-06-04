@@ -64,8 +64,8 @@ Listing the current relays in the Tor network is as easy as...
 Where can I get past descriptors?
 ---------------------------------
 
-Descriptor archives are available on `Tor's metrics site
-<https://metrics.torproject.org/data.html>`_. These archives can be read with
+Descriptor archives are available from `CollecTor
+<https://collector.torproject.org/>`_. These archives can be read with
 the `DescriptorReader <../api/descriptor/reader.html>`_...
 
 ::
