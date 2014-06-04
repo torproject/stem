@@ -876,7 +876,8 @@ class StreamEvent(Event):
 
   :var str id: stream identifier
   :var stem.StreamStatus status: reported status for the stream
-  :var str circ_id: circuit that the stream is attached to
+  :var str circ_id: circuit that the stream is attached to, this is **None** of
+    the stream is unattached
   :var str target: destination of the stream
   :var str target_address: destination address (ip, hostname, or '(Tor_internal)')
   :var int target_port: destination port

@@ -32,7 +32,7 @@ the requests going through Tor...
 
 
   def stream_event(controller, event):
-    if event.status == StreamStatus.SUCCEEDED:
+    if event.status == StreamStatus.SUCCEEDED and event.circ_id:
       circ = controller.get_circuit(event.circ_id)
 
       exit_fingerprint = circ.path[-1][0]
