@@ -40,6 +40,10 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Interpreter**
+
+  * The /info command errored for relays without contact information.
+
 .. _version_1.2:
 
 Version 1.2

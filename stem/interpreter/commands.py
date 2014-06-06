@@ -220,7 +220,7 @@ class ControlInterpretor(code.InteractiveConsole):
     lines.append(format('flags: ', *BOLD_OUTPUT) + ', '.join(ns_desc.flags))
     lines.append(format('exit policy: ', *BOLD_OUTPUT) + exit_policy_label)
 
-    if server_desc:
+    if server_desc and server_desc.contact:
       contact = stem.util.str_tools._to_unicode(server_desc.contact)
 
       # clears up some highly common obscuring
