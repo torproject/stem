@@ -41,12 +41,16 @@ class TestServerDescriptor(unittest.TestCase):
     Fetch server descriptors via parse_file() for a tarfile object.
     """
 
-    with tarfile.open(TARFILE_PATH) as tar_file:
-      descriptors = list(stem.descriptor.parse_file(tar_file))
-      self.assertEqual(3, len(descriptors))
+    # TODO: When dropping python 2.6 support we can go back to using the 'with'
+    # keyword here.
 
-      fingerprints = set([desc.fingerprint for desc in descriptors])
-      self.assertEqual(TARFILE_FINGERPRINTS, fingerprints)
+    tar_file = tarfile.open(TARFILE_PATH)
+    descriptors = list(stem.descriptor.parse_file(tar_file))
+    self.assertEqual(3, len(descriptors))
+
+    fingerprints = set([desc.fingerprint for desc in descriptors])
+    self.assertEqual(TARFILE_FINGERPRINTS, fingerprints)
+    tar_file.close()
 
   def test_metrics_descriptor(self):
     """
