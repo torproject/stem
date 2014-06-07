@@ -92,6 +92,12 @@ among numerous other improvements and fixes.
   * Added a section with `example scripts <tutorials/double_double_toil_and_trouble.html#scripts>`_.
   * Made FAQ and other sections quite a bit more succinct.
 
+ * **Version 1.2.2** (June 7th, 2014) - fixed an issue where the stem.util.conf
+   module would fail under Python 2.6 with an AttributeError (:trac:`12223`)
+
+ * **Version 1.2.1** (June 3rd, 2014) - fixed an issue where descriptor
+   parsersing would fail under Python 3.x with a TypeError
+
 .. _version_1.1:
 
 Version 1.1
@@ -150,6 +156,9 @@ and a myriad of smaller improvements and fixes.
   * Subtler buttons for the frontpage (`before
     <https://www.atagar.com/transfer/stem_frontpage/before.png>`_ and `after
     <https://www.atagar.com/transfer/stem_frontpage/after.png>`_).
+
+ * **Version 1.1.1** (November 9th, 2013) - fixed an issue where imports of stem.util.system
+   would fail with an ImportError for pwd under Windows (:trac:`10072`)
 
 .. _version_1.0:
 

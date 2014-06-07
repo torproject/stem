@@ -687,14 +687,14 @@ class Config(object):
     elif isinstance(default, tuple):
       val = tuple(val)
     elif isinstance(default, dict):
-      valMap = OrderedDict()
+      val_map = OrderedDict()
       for entry in val:
         if '=>' in entry:
-          entryKey, entryVal = entry.split('=>', 1)
-          valMap[entryKey.strip()] = entryVal.strip()
+          entry_key, entry_val = entry.split('=>', 1)
+          val_map[entry_key.strip()] = entry_val.strip()
         else:
           log.debug('Ignoring invalid %s config entry (expected a mapping, but "%s" was missing "=>")' % (key, entry))
-      val = valMap
+      val = val_map
 
     return val
 
