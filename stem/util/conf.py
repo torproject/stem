@@ -157,10 +157,15 @@ Here's an expanation of what happened...
     +- get_value - provides the value for a given key as a string
 """
 
-import collections
 import threading
 
 from stem.util import log
+
+try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
 
 CONFS = {}  # mapping of identifier to singleton instances of configs
 
@@ -682,7 +687,7 @@ class Config(object):
     elif isinstance(default, tuple):
       val = tuple(val)
     elif isinstance(default, dict):
-      valMap = collections.OrderedDict()
+      valMap = OrderedDict()
       for entry in val:
         if '=>' in entry:
           entryKey, entryVal = entry.split('=>', 1)
