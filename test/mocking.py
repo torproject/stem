@@ -49,6 +49,12 @@ import stem.prereq
 import stem.response
 import stem.util.str_tools
 
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
+
 CRYPTO_BLOB = """
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
 skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
@@ -347,7 +353,10 @@ def get_relay_server_descriptor(attr = None, exclude = (), content = False, sign
     if sign_content:
       desc_content = sign_descriptor_content(desc_content)
 
-    return stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate = True)
+    with patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock()):
+      desc = stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate = True)
+
+    return desc
 
 
 def get_bridge_server_descriptor(attr = None, exclude = (), content = False):

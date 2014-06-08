@@ -107,7 +107,6 @@ class TestTutorial(unittest.TestCase):
 
   @patch('sys.stdout', new_callable = StringIO.StringIO)
   @patch('stem.descriptor.reader.DescriptorReader', spec = DescriptorReader)
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_mirror_mirror_on_the_wall_4(self, reader_mock, stdout_mock):
     def tutorial_example():
       from stem.descriptor.reader import DescriptorReader

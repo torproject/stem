@@ -26,7 +26,6 @@ except ImportError:
 
 
 class TestServerDescriptor(unittest.TestCase):
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_minimal_relay_descriptor(self):
     """
     Basic sanity check that we can parse a relay server descriptor with minimal
@@ -40,7 +39,6 @@ class TestServerDescriptor(unittest.TestCase):
     self.assertEquals(None, desc.fingerprint)
     self.assertTrue(CRYPTO_BLOB in desc.onion_key)
 
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_with_opt(self):
     """
     Includes an 'opt <keyword> <value>' entry.
@@ -49,7 +47,6 @@ class TestServerDescriptor(unittest.TestCase):
     desc = get_relay_server_descriptor({'opt': 'contact www.atagar.com/contact/'})
     self.assertEquals(b'www.atagar.com/contact/', desc.contact)
 
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_unrecognized_line(self):
     """
     Includes unrecognized content in the descriptor.
@@ -144,7 +141,6 @@ class TestServerDescriptor(unittest.TestCase):
     desc = RelayDescriptor(desc_text, validate = False)
     self.assertEquals(b'', desc.platform)
 
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_platform_for_node_tor(self):
     """
     Parse a platform line belonging to a node-Tor relay.
@@ -185,7 +181,6 @@ class TestServerDescriptor(unittest.TestCase):
     desc_text = get_relay_server_descriptor({'published': '2012-01-01'}, content = True)
     self._expect_invalid_attr(desc_text, 'published')
 
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_read_and_write_history(self):
     """
     Parses a read-history and write-history entry. This is now a deprecated
@@ -209,7 +204,6 @@ class TestServerDescriptor(unittest.TestCase):
       self.assertEquals(900, attr[1])
       self.assertEquals(expected_values, attr[2])
 
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_read_history_empty(self):
     """
     Parses a read-history with an empty value.
@@ -288,7 +282,6 @@ class TestServerDescriptor(unittest.TestCase):
     desc_text = get_relay_server_descriptor({'opt fingerprint': fingerprint}, content = True)
     self._expect_invalid_attr(desc_text, 'fingerprint', fingerprint.replace(' ', ''))
 
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_ipv6_policy(self):
     """
     Checks a 'ipv6-policy' line.
@@ -298,7 +291,6 @@ class TestServerDescriptor(unittest.TestCase):
     desc = get_relay_server_descriptor({'ipv6-policy': 'accept 22-23,53,80,110'})
     self.assertEquals(expected, desc.exit_policy_v6)
 
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_ntor_onion_key(self):
     """
     Checks a 'ntor-onion-key' line.
