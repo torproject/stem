@@ -43,6 +43,7 @@ The following are only available within Stem's `git repository
  * **Utilities**
 
   * Added support for directories to :func:`stem.util.conf.Config.load`.
+  * Changed :func:`stem.util.conf.uses_settings` to only provide a 'config' keyword arument if the decorated function would accept it.
 
  * **Interpreter**
 

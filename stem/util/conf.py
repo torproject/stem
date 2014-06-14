@@ -157,6 +157,7 @@ Here's an expanation of what happened...
     +- get_value - provides the value for a given key as a string
 """
 
+import inspect
 import os
 import threading
 
@@ -247,6 +248,10 @@ def uses_settings(handle, path, lazy_load = True):
   that require settings to be loaded. Functions with this annotation will be
   provided with the configuration as its 'config' keyword argument.
 
+  .. versionchanged:: 1.3.0
+     Omits the 'config' argument if the funcion we're decorating doesn't accept
+     it.
+
   ::
 
     uses_settings = stem.util.conf.uses_settings('my_app', '/path/to/settings.cfg')
@@ -279,7 +284,10 @@ def uses_settings(handle, path, lazy_load = True):
         config.load(path)
         config.set('settings_loaded', 'true')
 
-      return func(*args, config = config, **kwargs)
+      if 'config' in inspect.getargspec(func)[0]:
+        return func(*args, config = config, **kwargs)
+      else:
+        return func(*args, **kwargs)
 
     return wrapped
 
