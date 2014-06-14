@@ -40,6 +40,10 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Utilities**
+
+  * Added support for directories to :func:`stem.util.conf.Config.load`.
+
  * **Interpreter**
 
   * The /info command errored for relays without contact information.

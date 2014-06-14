@@ -157,6 +157,7 @@ Here's an expanation of what happened...
     +- get_value - provides the value for a given key as a string
 """
 
+import os
 import threading
 
 from stem.util import log
@@ -453,10 +454,14 @@ class Config(object):
   def load(self, path = None):
     """
     Reads in the contents of the given path, adding its configuration values
-    to our current contents.
+    to our current contents. If the path is a directory then this loads each
+    of the files, recursively.
 
-    :param str path: file path to be loaded, this uses the last loaded path if
-      not provided
+    .. versionchanged:: 1.3.0
+       Added support for directories.
+
+    :param str path: file or directory path to be loaded, this uses the last
+      loaded path if not provided
 
     :raises:
       * **IOError** if we fail to read the file (it doesn't exist, insufficient
@@ -468,6 +473,13 @@ class Config(object):
       self._path = path
     elif not self._path:
       raise ValueError('Unable to load configuration: no path provided')
+
+    if os.path.isdir(self._path):
+      for root, dirnames, filenames in os.walk(self._path):
+        for filename in filenames:
+          self.load(os.path.join(root, filename))
+
+      return
 
     with open(self._path, 'r') as config_file:
       read_contents = config_file.readlines()
