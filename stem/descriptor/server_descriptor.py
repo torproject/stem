@@ -858,7 +858,7 @@ class RelayDescriptor(ServerDescriptor):
 class BridgeDescriptor(ServerDescriptor):
   """
   Bridge descriptor (`bridge descriptor specification
-  <https://metrics.torproject.org/formats.html#bridgedesc>`_)
+  <https://collector.torproject.org/formats.html#bridge-descriptors>`_)
   """
 
   def __init__(self, raw_contents, validate = True, annotations = None):
@@ -890,9 +890,8 @@ class BridgeDescriptor(ServerDescriptor):
     """
     Checks if we've been properly scrubbed in accordance with the `bridge
     descriptor specification
-    <https://metrics.torproject.org/formats.html#bridgedesc>`_. Validation is a
-    moving target so this may not
-    be fully up to date.
+    <https://collector.torproject.org/formats.html#bridge-descriptors>`_.
+    Validation is a moving target so this may not be fully up to date.
 
     :returns: **True** if we're scrubbed, **False** otherwise
     """

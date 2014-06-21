@@ -902,7 +902,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Bridge extra-info descriptor (`bridge descriptor specification
-  <https://metrics.torproject.org/formats.html#bridgedesc>`_)
+  <https://collector.torproject.org/formats.html#bridge-descriptors>`_)
   """
 
   def __init__(self, raw_contents, validate = True):
