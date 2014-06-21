@@ -6,7 +6,12 @@ Interactive interpreter for interacting with Tor directly. This adds usability
 features such as tab completion, history, and IRC-style functions (like /help).
 """
 
-__all__ = ['arguments', 'autocomplete', 'commands', 'help', 'msg']
+__all__ = [
+  'arguments',
+  'autocomplete',
+  'commands',
+  'help',
+]
 
 import os
 import sys

@@ -4,6 +4,10 @@
 """
 Parsing for `TorDNSEL <https://www.torproject.org/projects/tordnsel.html.en>`_
 exit list files.
+
+::
+
+  TorDNSEL - Exit list provided by TorDNSEL
 """
 
 import datetime

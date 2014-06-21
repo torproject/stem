@@ -11,6 +11,8 @@ Parses replies from the control socket.
   convert - translates a ControlMessage into a particular response subclass
 
   ControlMessage - Message that's read from the control socket.
+    |- SingleLineResponse - Simple tor response only including a single line of information.
+    |
     |- from_str - provides a ControlMessage for the given string
     |- is_ok - response had a 250 status
     |- content - provides the parsed message content
@@ -26,8 +28,6 @@ Parses replies from the control socket.
     |- peek_key - provides the key of the next entry
     |- pop - removes and returns the next entry
     +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
-
-  SingleLineResponse - Simple tor response only including a single line of information.
 """
 
 __all__ = [

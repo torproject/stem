@@ -25,7 +25,8 @@ exiting to a destination is permissible or not. For instance...
 ::
 
   ExitPolicy - Exit policy for a Tor relay
-    |  + MicroExitPolicy - Microdescriptor exit policy
+    |- MicroExitPolicy - Microdescriptor exit policy
+    |
     |- can_exit_to - check if exiting to this destination is allowed or not
     |- is_exiting_allowed - check if any exiting is allowed
     |- summary - provides a short label, similar to a microdescriptor
@@ -33,6 +34,8 @@ exiting to a destination is permissible or not. For instance...
     +- __iter__ - ExitPolicyRule entries that this contains
 
   ExitPolicyRule - Single rule of an exit policy chain
+    |- MicroExitPolicyRule - Single rule for a microdescriptor policy
+    |
     |- is_address_wildcard - checks if we'll accept any address
     |- is_port_wildcard - checks if we'll accept any port
     |- get_address_type - provides the protocol our ip address belongs to

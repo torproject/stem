@@ -29,8 +29,8 @@ Extra-info descriptors are available from a few sources...
 ::
 
   ExtraInfoDescriptor - Tor extra-info descriptor.
-    |  |- RelayExtraInfoDescriptor - Extra-info descriptor for a relay.
-    |  +- BridgeExtraInfoDescriptor - Extra-info descriptor for a bridge.
+    |- RelayExtraInfoDescriptor - Extra-info descriptor for a relay.
+    |- BridgeExtraInfoDescriptor - Extra-info descriptor for a bridge.
     |
     |- digest - calculates the upper-case hex digest value for our content
     +- get_unrecognized_lines - lines with unrecognized content
