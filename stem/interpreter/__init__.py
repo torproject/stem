@@ -83,8 +83,16 @@ def main():
           take_ownership = True,
         )
 
-  control_port = None if args.user_provided_socket else (args.control_address, args.control_port)
-  control_socket = None if args.user_provided_port else args.control_socket
+  control_port = (args.control_address, args.control_port)
+  control_socket = args.control_socket
+
+  # If the user explicitely specified an endpoint then just try to connect to
+  # that.
+
+  if args.user_provided_socket and not args.user_provided_port:
+    control_port = None
+  elif args.user_provided_port and not args.user_provided_socket:
+    control_socket = None
 
   controller = stem.connection.connect(
     control_port = control_port,
