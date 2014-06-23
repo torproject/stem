@@ -78,7 +78,7 @@ except ImportError:
 VERSION_CACHE = {}
 
 
-def get_system_tor_version(tor_cmd = "tor"):
+def get_system_tor_version(tor_cmd = 'tor'):
   """
   Queries tor for its version. This is os dependent, only working on linux,
   osx, and bsd.
@@ -91,14 +91,14 @@ def get_system_tor_version(tor_cmd = "tor"):
   """
 
   if not tor_cmd in VERSION_CACHE:
-    version_cmd = "%s --version" % tor_cmd
+    version_cmd = '%s --version' % tor_cmd
 
     try:
       version_output = stem.util.system.call(version_cmd)
     except OSError as exc:
       # make the error message nicer if this is due to tor being unavialable
 
-      if "No such file or directory" in str(exc):
+      if 'No such file or directory' in str(exc):
         if os.path.isabs(tor_cmd):
           exc = "Unable to check tor's version. '%s' doesn't exist." % tor_cmd
         else:
@@ -113,7 +113,7 @@ def get_system_tor_version(tor_cmd = "tor"):
 
       last_line = version_output[-1]
 
-      if last_line.startswith("Tor version ") and last_line.endswith("."):
+      if last_line.startswith('Tor version ') and last_line.endswith('.'):
         try:
           version_str = last_line[12:-1]
           VERSION_CACHE[tor_cmd] = Version(version_str)
@@ -180,7 +180,7 @@ class Version(object):
       self.status = status
       self.extra = extra
 
-      if extra and re.match("^git-[0-9a-f]{16}$", extra):
+      if extra and re.match('^git-[0-9a-f]{16}$', extra):
         self.git_commit = extra[4:]
       else:
         self.git_commit = None
@@ -202,7 +202,7 @@ class Version(object):
     if not isinstance(other, Version):
       return False
 
-    for attr in ("major", "minor", "micro", "patch"):
+    for attr in ('major', 'minor', 'micro', 'patch'):
       my_version = getattr(self, attr)
       other_version = getattr(other, attr)
 
@@ -220,8 +220,8 @@ class Version(object):
     #   If we *do* encounter two versions that differ only by status tag, we
     #   compare them lexically as ASCII byte strings.
 
-    my_status = self.status if self.status else ""
-    other_status = other.status if other.status else ""
+    my_status = self.status if self.status else ''
+    other_status = other.status if other.status else ''
 
     return method(my_status, other_status)
 
@@ -258,7 +258,7 @@ class Version(object):
     if self._hash is None:
       my_hash = 0
 
-      for attr in ("major", "minor", "micro", "patch", "status"):
+      for attr in ('major', 'minor', 'micro', 'patch', 'status'):
         my_hash *= 1024
 
         attr_value = getattr(self, attr)
@@ -329,38 +329,38 @@ class _VersionRequirements(object):
     self.rules.append(new_rule)
 
 safecookie_req = _VersionRequirements()
-safecookie_req.in_range(Version("0.2.2.36"), Version("0.2.3.0"))
-safecookie_req.greater_than(Version("0.2.3.13"))
+safecookie_req.in_range(Version('0.2.2.36'), Version('0.2.3.0'))
+safecookie_req.greater_than(Version('0.2.3.13'))
 
 Requirement = stem.util.enum.Enum(
-  ("AUTH_SAFECOOKIE", safecookie_req),
-  ("DROPGUARDS", Version('0.2.5.1-alpha')),
-  ("EVENT_AUTHDIR_NEWDESCS", Version('0.1.1.10-alpha')),
-  ("EVENT_BUILDTIMEOUT_SET", Version('0.2.2.7-alpha')),
-  ("EVENT_CIRC_MINOR", Version('0.2.3.11-alpha')),
-  ("EVENT_CLIENTS_SEEN", Version('0.2.1.10-alpha')),
-  ("EVENT_CONF_CHANGED", Version('0.2.3.3-alpha')),
-  ("EVENT_DESCCHANGED", Version('0.1.2.2-alpha')),
-  ("EVENT_GUARD", Version('0.1.2.5-alpha')),
-  ("EVENT_NS", Version('0.1.2.3-alpha')),
-  ("EVENT_NEWCONSENSUS", Version('0.2.1.13-alpha')),
-  ("EVENT_SIGNAL", Version('0.2.3.1-alpha')),
-  ("EVENT_STATUS", Version('0.1.2.3-alpha')),
-  ("EVENT_STREAM_BW", Version('0.1.2.8-beta')),
-  ("EVENT_TRANSPORT_LAUNCHED", Version('0.2.5.0-alpha')),
-  ("EVENT_CONN_BW", Version('0.2.5.2-alpha')),
-  ("EVENT_CIRC_BW", Version('0.2.5.2-alpha')),
-  ("EVENT_CELL_STATS", Version('0.2.5.2-alpha')),
-  ("EVENT_TB_EMPTY", Version('0.2.5.2-alpha')),
-  ("EVENT_HS_DESC", Version('0.2.5.2-alpha')),
-  ("EXTENDCIRCUIT_PATH_OPTIONAL", Version("0.2.2.9")),
-  ("FEATURE_EXTENDED_EVENTS", Version("0.2.2.1-alpha")),
-  ("FEATURE_VERBOSE_NAMES", Version("0.2.2.1-alpha")),
-  ("GETINFO_CONFIG_TEXT", Version("0.2.2.7-alpha")),
-  ("LOADCONF", Version("0.2.1.1")),
-  ("MICRODESCRIPTOR_IS_DEFAULT", Version("0.2.3.3")),
-  ("TAKEOWNERSHIP", Version("0.2.2.28-beta")),
-  ("TORRC_CONTROL_SOCKET", Version("0.2.0.30")),
-  ("TORRC_PORT_FORWARDING", Version("0.2.3.1-alpha")),
-  ("TORRC_DISABLE_DEBUGGER_ATTACHMENT", Version("0.2.3.9")),
+  ('AUTH_SAFECOOKIE', safecookie_req),
+  ('DROPGUARDS', Version('0.2.5.1-alpha')),
+  ('EVENT_AUTHDIR_NEWDESCS', Version('0.1.1.10-alpha')),
+  ('EVENT_BUILDTIMEOUT_SET', Version('0.2.2.7-alpha')),
+  ('EVENT_CIRC_MINOR', Version('0.2.3.11-alpha')),
+  ('EVENT_CLIENTS_SEEN', Version('0.2.1.10-alpha')),
+  ('EVENT_CONF_CHANGED', Version('0.2.3.3-alpha')),
+  ('EVENT_DESCCHANGED', Version('0.1.2.2-alpha')),
+  ('EVENT_GUARD', Version('0.1.2.5-alpha')),
+  ('EVENT_NS', Version('0.1.2.3-alpha')),
+  ('EVENT_NEWCONSENSUS', Version('0.2.1.13-alpha')),
+  ('EVENT_SIGNAL', Version('0.2.3.1-alpha')),
+  ('EVENT_STATUS', Version('0.1.2.3-alpha')),
+  ('EVENT_STREAM_BW', Version('0.1.2.8-beta')),
+  ('EVENT_TRANSPORT_LAUNCHED', Version('0.2.5.0-alpha')),
+  ('EVENT_CONN_BW', Version('0.2.5.2-alpha')),
+  ('EVENT_CIRC_BW', Version('0.2.5.2-alpha')),
+  ('EVENT_CELL_STATS', Version('0.2.5.2-alpha')),
+  ('EVENT_TB_EMPTY', Version('0.2.5.2-alpha')),
+  ('EVENT_HS_DESC', Version('0.2.5.2-alpha')),
+  ('EXTENDCIRCUIT_PATH_OPTIONAL', Version('0.2.2.9')),
+  ('FEATURE_EXTENDED_EVENTS', Version('0.2.2.1-alpha')),
+  ('FEATURE_VERBOSE_NAMES', Version('0.2.2.1-alpha')),
+  ('GETINFO_CONFIG_TEXT', Version('0.2.2.7-alpha')),
+  ('LOADCONF', Version('0.2.1.1')),
+  ('MICRODESCRIPTOR_IS_DEFAULT', Version('0.2.3.3')),
+  ('TAKEOWNERSHIP', Version('0.2.2.28-beta')),
+  ('TORRC_CONTROL_SOCKET', Version('0.2.0.30')),
+  ('TORRC_PORT_FORWARDING', Version('0.2.3.1-alpha')),
+  ('TORRC_DISABLE_DEBUGGER_ATTACHMENT', Version('0.2.3.9')),
 )
