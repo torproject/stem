@@ -1252,7 +1252,7 @@ class Controller(BaseController):
 
     :param object default: response if the query fails
 
-    :returns: int with our process' pid
+    :returns: **int** for tor's pid
 
     :raises: **ValueError** if unable to determine the pid and no default was
       provided
