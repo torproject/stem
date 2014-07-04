@@ -67,6 +67,7 @@ Applications
 `exit-funding <https://github.com/torservers/exit-funding>`_                                                Script to estimate how much exit relays have been used.
 `torsearch <https://github.com/wfn/torsearch>`_                                                             Search engine prototype for descriptor data.
 `or-applet <https://github.com/Yawning/or-applet>`_                                                         GUI widget to provide circuit information and an interactive interpreter.
+`OnionShare <https://github.com/micahflee/onionshare>`_                                                     Hidden service based file sharing application.
 =========================================================================================================== ==========
 
 Scripts
