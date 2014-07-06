@@ -131,13 +131,16 @@ class TestInterpretorCommands(unittest.TestCase):
 
     self.assertEqual(EXPECTED_EVENTS_RESPONSE, interpreter.run_command('/events'))
 
+  @patch('stem.descriptor.remote.DescriptorDownloader')
   @patch('socket.gethostbyaddr', Mock(return_value = ['moria.csail.mit.edu']))
-  def test_info(self):
+  def test_info(self, downloader_mock):
     controller, server_desc, ns_desc = Mock(), Mock(), Mock()
 
     controller.get_microdescriptor.return_value = None
     controller.get_server_descriptor.return_value = server_desc
     controller.get_network_status.return_value = ns_desc
+
+    downloader_mock().get_server_descriptors.return_value = [server_desc]
 
     controller.get_info.side_effect = lambda arg, _: {
       'ip-to-country/128.31.0.34': 'us',
@@ -149,9 +152,9 @@ class TestInterpretorCommands(unittest.TestCase):
     ns_desc.nickname = 'moria1'
     ns_desc.flags = ['Authority', 'Fast', 'Guard', 'HSDir', 'Named', 'Running', 'Stable', 'V2Dir', 'Valid']
 
-    server_desc.exit_policy.summary.return_value = 'reject 1-65535'
+    server_desc.exit_policy = 'reject *:*'
     server_desc.platform = 'Linux'
-    server_desc.tor_version = stem.version.Version('0.2.5.3-alpha-dev')
+    server_desc.tor_version = stem.version.Version('0.2.5.4-alpha-dev')
     server_desc.contact = '1024D/28988BF5 arma mit edu'
 
     interpreter = ControlInterpretor(controller)
