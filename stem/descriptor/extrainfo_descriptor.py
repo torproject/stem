@@ -459,7 +459,7 @@ class ExtraInfoDescriptor(Descriptor):
 
     for keyword, values in entries.items():
       # most just work with the first (and only) value
-      value, _ = values[0]
+      value, _, _ = values[0]
       line = '%s %s' % (keyword, value)  # original line
 
       if keyword == 'extra-info':
@@ -503,7 +503,7 @@ class ExtraInfoDescriptor(Descriptor):
         # on non-bridges in the wild when the relay operator configured it this
         # way.
 
-        for transport_value, _ in values:
+        for transport_value, _, _ in values:
           name, address, port, args = None, None, None, None
 
           if not ' ' in transport_value:
@@ -882,7 +882,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
 
     # handles fields only in server descriptors
     for keyword, values in entries.items():
-      value, block_contents = values[0]
+      value, block_type, block_contents = values[0]
 
       line = '%s %s' % (keyword, value)  # original line
 
@@ -890,8 +890,8 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
         line += '\n%s' % block_contents
 
       if keyword == 'router-signature':
-        if validate and not block_contents:
-          raise ValueError('Router signature line must be followed by a signature block: %s' % line)
+        if validate and (not block_contents or block_type != 'SIGNATURE'):
+          raise ValueError("'router-signature' should be followed by a SIGNATURE block: %s" % line)
 
         self.signature = block_contents
         del entries['router-signature']
@@ -918,7 +918,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
 
     # handles fields only in server descriptors
     for keyword, values in entries.items():
-      value, _ = values[0]
+      value, _, _ = values[0]
       line = '%s %s' % (keyword, value)  # original line
 
       if keyword == 'router-digest':

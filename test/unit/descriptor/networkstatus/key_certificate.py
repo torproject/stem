@@ -191,3 +191,11 @@ class TestKeyCertificate(unittest.TestCase):
 
       certificate = KeyCertificate(content, False)
       self.assertEquals(None, getattr(certificate, attr))
+
+  def test_wrong_block_type(self):
+    """
+    Checks that we validate the type of crypto content we receive.
+    """
+
+    content = get_key_certificate({'dir-identity-key': '\n-----BEGIN MD5SUM-----%s-----END MD5SUM-----' % CRYPTO_BLOB}, content = True)
+    self.assertRaises(ValueError, KeyCertificate, content)

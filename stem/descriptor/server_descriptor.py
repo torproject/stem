@@ -371,7 +371,7 @@ class ServerDescriptor(Descriptor):
 
     for keyword, values in entries.items():
       # most just work with the first (and only) value
-      value, block_contents = values[0]
+      value, block_type, block_contents = values[0]
 
       line = '%s %s' % (keyword, value)  # original line
 
@@ -540,7 +540,7 @@ class ServerDescriptor(Descriptor):
       elif keyword == 'ipv6-policy':
         self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
       elif keyword == 'or-address':
-        or_address_entries = [value for (value, _) in values]
+        or_address_entries = [value for (value, _, _) in values]
 
         for entry in or_address_entries:
           line = '%s %s' % (keyword, entry)
@@ -795,12 +795,12 @@ class RelayDescriptor(ServerDescriptor):
     # handles fields only in server descriptors
 
     for keyword, values in entries.items():
-      value, block_contents = values[0]
+      value, block_type, block_contents = values[0]
       line = '%s %s' % (keyword, value)
 
       if keyword == 'onion-key':
-        if validate and not block_contents:
-          raise ValueError('Onion key line must be followed by a public key: %s' % line)
+        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
+          raise ValueError("'onion-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
 
         self.onion_key = block_contents
         del entries['onion-key']
@@ -808,14 +808,14 @@ class RelayDescriptor(ServerDescriptor):
         self.ntor_onion_key = value
         del entries['ntor-onion-key']
       elif keyword == 'signing-key':
-        if validate and not block_contents:
-          raise ValueError('Signing key line must be followed by a public key: %s' % line)
+        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
+          raise ValueError("'signing-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
 
         self.signing_key = block_contents
         del entries['signing-key']
       elif keyword == 'router-signature':
-        if validate and not block_contents:
-          raise ValueError('Router signature line must be followed by a signature block: %s' % line)
+        if validate and (not block_contents or block_type != 'SIGNATURE'):
+          raise ValueError("'router-signature' should be followed by a SIGNATURE block: %s" % line)
 
         self.signature = block_contents
         del entries['router-signature']
@@ -874,7 +874,7 @@ class BridgeDescriptor(ServerDescriptor):
 
     # handles fields only in bridge descriptors
     for keyword, values in entries.items():
-      value, block_contents = values[0]
+      value, block_type, block_contents = values[0]
       line = '%s %s' % (keyword, value)
 
       if keyword == 'router-digest':

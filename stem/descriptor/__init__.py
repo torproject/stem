@@ -475,7 +475,7 @@ def _get_pseudo_pgp_block(remaining_contents):
 
   :param list remaining_contents: lines to be checked for a public key block
 
-  :returns: **str** with the armor wrapped contents or None if it doesn't exist
+  :returns: **tuple** of the (block_type, content) or None if it doesn't exist
 
   :raises: **ValueError** if the contents starts with a key block but it's
     malformed (for instance, if it lacks an ending line)
@@ -499,7 +499,7 @@ def _get_pseudo_pgp_block(remaining_contents):
       block_lines.append(line)
 
       if line == end_line:
-        return '\n'.join(block_lines)
+        return (block_type, '\n'.join(block_lines))
   else:
     return None
 
@@ -569,7 +569,12 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
       value = ''
 
     try:
-      block_contents = _get_pseudo_pgp_block(remaining_lines)
+      block_attr = _get_pseudo_pgp_block(remaining_lines)
+
+      if block_attr:
+        block_type, block_contents = block_attr
+      else:
+        block_type, block_contents = None, None
     except ValueError as exc:
       if not validate:
         continue
@@ -579,7 +584,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     if keyword in extra_keywords:
       extra_entries.append('%s %s' % (keyword, value))
     else:
-      entries.setdefault(keyword, []).append((value, block_contents))
+      entries.setdefault(keyword, []).append((value, block_type, block_contents))
 
   if extra_keywords:
     return entries, extra_entries

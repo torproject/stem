@@ -171,7 +171,7 @@ class RouterStatusEntry(Descriptor):
     """
 
     for keyword, values in entries.items():
-      value, _ = values[0]
+      value, _, _ = values[0]
 
       if keyword == 's':
         _parse_s_line(self, value, validate)
@@ -267,7 +267,7 @@ class RouterStatusEntryV2(RouterStatusEntry):
 
   def _parse(self, entries, validate):
     for keyword, values in entries.items():
-      value, _ = values[0]
+      value, _, _ = values[0]
 
       if keyword == 'r':
         _parse_r_line(self, value, validate, True)
@@ -345,13 +345,13 @@ class RouterStatusEntryV3(RouterStatusEntry):
 
   def _parse(self, entries, validate):
     for keyword, values in entries.items():
-      value, _ = values[0]
+      value, _, _ = values[0]
 
       if keyword == 'r':
         _parse_r_line(self, value, validate, True)
         del entries['r']
       elif keyword == 'a':
-        for entry, _ in values:
+        for entry, _, _ in values:
           _parse_a_line(self, entry, validate)
 
         del entries['a']
@@ -362,7 +362,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
         _parse_p_line(self, value, validate)
         del entries['p']
       elif keyword == 'm':
-        for entry, _ in values:
+        for entry, _, _ in values:
           _parse_m_line(self, entry, validate)
 
         del entries['m']
@@ -427,7 +427,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
 
   def _parse(self, entries, validate):
     for keyword, values in entries.items():
-      value, _ = values[0]
+      value, _, _ = values[0]
 
       if keyword == 'r':
         _parse_r_line(self, value, validate, False)

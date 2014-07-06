@@ -101,7 +101,7 @@ among numerous other improvements and fixes.
    module would fail under Python 2.6 with an AttributeError (:trac:`12223`)
 
  * **Version 1.2.1** (June 3rd, 2014) - fixed an issue where descriptor
-   parsersing would fail under Python 3.x with a TypeError
+   parsersing would fail under Python 3.x with a TypeError (:trac:`12185`)
 
 .. _version_1.1:
 

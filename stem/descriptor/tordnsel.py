@@ -77,7 +77,7 @@ class TorDNSEL(Descriptor):
   def _parse(self, entries, validate):
 
     for keyword, values in entries.items():
-      value, block_content = values[0]
+      value, block_type, block_content = values[0]
 
       if validate and block_content:
         raise ValueError('Unexpected block content: %s' % block_content)
@@ -100,7 +100,7 @@ class TorDNSEL(Descriptor):
           if validate:
             raise ValueError("LastStatus time wasn't parsable: %s" % value)
       elif keyword == 'ExitAddress':
-        for value, block_content in values:
+        for value, block_type, block_content in values:
           address, date = value.split(' ', 1)
 
           if validate:

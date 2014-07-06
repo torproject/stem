@@ -353,7 +353,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
 
   def _parse(self, entries, validate):
     for keyword, values in entries.items():
-      value, block_contents = values[0]
+      value, block_type, block_contents = values[0]
 
       line = '%s %s' % (keyword, value)  # original line
 
@@ -402,6 +402,9 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
       elif keyword == 'contact':
         self.contact = value
       elif keyword == 'dir-signing-key':
+        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
+          raise ValueError("'dir-signing-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
+
         self.signing_key = block_contents
       elif keyword in ('client-versions', 'server-versions'):
         # v2 documents existed while there were tor versions using the 'old'
@@ -421,6 +424,9 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
       elif keyword == 'dir-options':
         self.options = value.split()
       elif keyword == 'directory-signature':
+        if validate and (not block_contents or block_type != 'SIGNATURE'):
+          raise ValueError("'directory-signature' should be followed by a SIGNATURE block: %s" % line)
+
         self.signing_authority = value
         self.signature = block_contents
       else:
@@ -631,7 +637,7 @@ class _DocumentHeader(object):
 
   def _parse(self, entries, validate):
     for keyword, values in entries.items():
-      value, _ = values[0]
+      value, _, _ = values[0]
       line = '%s %s' % (keyword, value)
 
       # all known header fields can only appear once except
@@ -869,7 +875,7 @@ class _DocumentFooter(object):
 
   def _parse(self, entries, validate, header):
     for keyword, values in entries.items():
-      value, block_contents = values[0]
+      value, block_type, block_contents = values[0]
       line = '%s %s' % (keyword, value)
 
       # all known footer fields can only appear once except...
@@ -887,12 +893,15 @@ class _DocumentFooter(object):
       elif keyword == 'bandwidth-weights':
         self.bandwidth_weights = _parse_int_mappings(keyword, value, validate)
       elif keyword == 'directory-signature':
-        for sig_value, block_contents in values:
-          if not sig_value.count(' ') in (1, 2) or not block_contents:
+        for sig_value, block_type, block_contents in values:
+          if not sig_value.count(' ') in (1, 2):
             if not validate:
               continue
 
-            raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST\\nSIGNATURE', got:\n%s\n%s" % (sig_value, block_contents))
+            raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST', received: %s" % sig_value)
+
+          if validate and (not block_contents or block_type != 'SIGNATURE'):
+            raise ValueError("'directory-signature' should be followed by a SIGNATURE block: %s" % line)
 
           if sig_value.count(' ') == 1:
             method = 'sha1'  # default if none was provided
@@ -1133,7 +1142,7 @@ class DirectoryAuthority(Descriptor):
           raise ValueError("Authority %s shouldn't have a '%s' line:\n%s" % (type_label, keyword, content))
 
     for keyword, values in entries.items():
-      value, _ = values[0]
+      value, _, _ = values[0]
       line = '%s %s' % (keyword, value)
 
       # all known attributes can only appear at most once
@@ -1293,7 +1302,7 @@ class KeyCertificate(Descriptor):
           raise ValueError("Key certificates can only have a single '%s' line, got %i:\n%s" % (keyword, entry_count, content))
 
     for keyword, values in entries.items():
-      value, block_contents = values[0]
+      value, block_type, block_contents = values[0]
       line = '%s %s' % (keyword, value)
 
       if keyword == 'dir-key-certificate-version':
@@ -1351,23 +1360,34 @@ class KeyCertificate(Descriptor):
         except ValueError:
           if validate:
             raise ValueError("Key certificate's '%s' time wasn't parsable: %s" % (keyword, value))
-      elif keyword in ('dir-identity-key', 'dir-signing-key', 'dir-key-crosscert', 'dir-key-certification'):
+      elif keyword == 'dir-identity-key':
         # "dir-identity-key" NL a public key in PEM format
+
+        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
+          raise ValueError("'dir-identity-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
+
+        self.identity_key = block_contents
+      elif keyword == 'dir-signing-key':
         # "dir-signing-key" NL a key in PEM format
+
+        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
+          raise ValueError("'dir-signing-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
+
+        self.signing_key = block_contents
+      elif keyword == 'dir-key-crosscert':
         # "dir-key-crosscert" NL CrossSignature
+
+        if validate and (not block_contents or block_type != 'ID SIGNATURE'):
+          raise ValueError("'dir-key-crosscert' should be followed by a ID SIGNATURE block: %s" % line)
+
+        self.crosscert = block_contents
+      elif keyword == 'dir-key-certification':
         # "dir-key-certification" NL Signature
 
-        if validate and not block_contents:
-          raise ValueError("Key certificate's '%s' line must be followed by a key block: %s" % (keyword, line))
+        if validate and (not block_contents or block_type != 'SIGNATURE'):
+          raise ValueError("'dir-key-certification' should be followed by a SIGNATURE block: %s" % line)
 
-        if keyword == 'dir-identity-key':
-          self.identity_key = block_contents
-        elif keyword == 'dir-signing-key':
-          self.signing_key = block_contents
-        elif keyword == 'dir-key-crosscert':
-          self.crosscert = block_contents
-        elif keyword == 'dir-key-certification':
-          self.certification = block_contents
+        self.certification = block_contents
       else:
         self._unrecognized_lines.append(line)
 

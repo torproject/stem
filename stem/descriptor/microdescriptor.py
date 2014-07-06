@@ -250,7 +250,7 @@ class Microdescriptor(Descriptor):
 
     for keyword, values in entries.items():
       # most just work with the first (and only) value
-      value, block_contents = values[0]
+      value, block_type, block_contents = values[0]
 
       line = '%s %s' % (keyword, value)  # original line
 
@@ -258,14 +258,14 @@ class Microdescriptor(Descriptor):
         line += '\n%s' % block_contents
 
       if keyword == 'onion-key':
-        if validate and not block_contents:
-          raise ValueError('Onion key line must be followed by a public key: %s' % line)
+        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
+          raise ValueError("'onion-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
 
         self.onion_key = block_contents
       elif keyword == 'ntor-onion-key':
         self.ntor_onion_key = value
       elif keyword == 'a':
-        for entry, _ in values:
+        for entry, _, _ in values:
           stem.descriptor.router_status_entry._parse_a_line(self, entry, validate)
       elif keyword == 'family':
         self.family = value.split(' ')
