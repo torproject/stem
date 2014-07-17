@@ -68,6 +68,7 @@ Applications
 `torsearch <https://github.com/wfn/torsearch>`_                                                             Search engine prototype for descriptor data.
 `or-applet <https://github.com/Yawning/or-applet>`_                                                         GUI widget to provide circuit information and an interactive interpreter.
 `OnionShare <https://github.com/micahflee/onionshare>`_                                                     Hidden service based file sharing application.
+`Syboa <https://gitorious.org/syboa/syboa>`_                                                                GTK Tor interface similar to `TorK <http://sourceforge.net/projects/tork/>`_.
 =========================================================================================================== ==========
 
 Scripts
