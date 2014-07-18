@@ -448,7 +448,7 @@ The best way of getting involved with any project is to jump right in! Our `bug
 tracker <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_ lists
 several development tasks. In particular look for the 'easy' keyword when
 getting started. If you have any questions then I'm always more than happy to
-help! I'm **atagar** on `oftc <http://www.oftc.net/oftc/>`_ and also available
+help! I'm **atagar** on `oftc <http://www.oftc.net/>`_ and also available
 `via email <https://www.atagar.com/contact/>`_.
 
 To start hacking on Stem please do the following and don't hesitate to let me
