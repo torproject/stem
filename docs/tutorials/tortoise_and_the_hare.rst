@@ -18,7 +18,7 @@ single dedicated event thread, and blocking this thread will prevent the
 delivery of further events.
 
 With that out of the way lets see an example. The following is a `curses
-<http://docs.python.org/2/howto/curses.html>`_ application that graphs the
+<https://docs.python.org/2/howto/curses.html>`_ application that graphs the
 bandwidth usage of Tor...
 
 .. image:: /_static/bandwidth_graph_output.png

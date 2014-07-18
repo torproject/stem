@@ -68,12 +68,12 @@ RESET = CSI % '0'
 def format(msg, *attr):
   """
   Simple terminal text formatting using `ANSI escape sequences
-  <https://secure.wikimedia.org/wikipedia/en/wiki/ANSI_escape_code#CSI_codes>`_.
+  <https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_codes>`_.
   The following are some toolkits providing similar capabilities:
 
-  * `django.utils.termcolors <https://code.djangoproject.com/browser/django/trunk/django/utils/termcolors.py>`_
-  * `termcolor <http://pypi.python.org/pypi/termcolor>`_
-  * `colorama <http://pypi.python.org/pypi/colorama>`_
+  * `django.utils.termcolors <https://github.com/django/django/blob/master/django/utils/termcolors.py>`_
+  * `termcolor <https://pypi.python.org/pypi/termcolor>`_
+  * `colorama <https://pypi.python.org/pypi/colorama>`_
 
   :param str msg: string to be formatted
   :param str attr: text attributes, this can be :data:`~stem.util.term.Color`,
