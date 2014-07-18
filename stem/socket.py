@@ -7,8 +7,8 @@ allows us to send messages as basic strings, and receive responses as
 :class:`~stem.response.ControlMessage` instances.
 
 **This module only consists of low level components, and is not intended for
-users.** See our `tutorials <tutorials.html>`_ and `Control Module
-<api/control.html>`_ if you're new to Stem and looking to get started.
+users.** See our `tutorials <../tutorials.html>`_ and `Control Module
+<control.html>`_ if you're new to Stem and looking to get started.
 
 With that aside, these can still be used for raw socket communication with
 Tor...
