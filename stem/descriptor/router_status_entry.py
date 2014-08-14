@@ -715,8 +715,6 @@ def _base64_to_hex(identity, validate, check_if_fingerprint = True):
   missing_padding = len(identity) % 4
   identity += '=' * missing_padding
 
-  fingerprint = ''
-
   try:
     identity_decoded = base64.b64decode(stem.util.str_tools._to_bytes(identity))
   except (TypeError, binascii.Error):
@@ -725,19 +723,7 @@ def _base64_to_hex(identity, validate, check_if_fingerprint = True):
 
     raise ValueError("Unable to decode identity string '%s'" % identity)
 
-  for char in identity_decoded:
-    # Individual characters are either standard ASCII or hex encoded, and each
-    # represent two hex digits. For instance...
-    #
-    # >>> ord('\n')
-    # 10
-    # >>> hex(10)
-    # '0xa'
-    # >>> '0xa'[2:].zfill(2).upper()
-    # '0A'
-
-    char_int = char if isinstance(char, int) else ord(char)
-    fingerprint += hex(char_int)[2:].zfill(2).upper()
+  fingerprint = binascii.b2a_hex(identity_decoded).upper()
 
   if check_if_fingerprint:
     if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
