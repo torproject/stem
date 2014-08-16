@@ -756,15 +756,15 @@ class RelayDescriptor(ServerDescriptor):
     decrypted_bytes = long_to_bytes(decrypted_int, blocksize)
 
     ############################################################################
-    ## The decrypted bytes should have a structure exactly along these lines.
-    ## 1 byte  - [null '\x00']
-    ## 1 byte  - [block type identifier '\x01'] - Should always be 1
-    ## N bytes - [padding '\xFF' ]
-    ## 1 byte  - [separator '\x00' ]
-    ## M bytes - [message]
-    ## Total   - 128 bytes
-    ## More info here http://www.ietf.org/rfc/rfc2313.txt
-    ##                esp the Notes in section 8.1
+    # The decrypted bytes should have a structure exactly along these lines.
+    # 1 byte  - [null '\x00']
+    # 1 byte  - [block type identifier '\x01'] - Should always be 1
+    # N bytes - [padding '\xFF' ]
+    # 1 byte  - [separator '\x00' ]
+    # M bytes - [message]
+    # Total   - 128 bytes
+    # More info here http://www.ietf.org/rfc/rfc2313.txt
+    #                esp the Notes in section 8.1
     ############################################################################
 
     try:
