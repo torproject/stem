@@ -232,7 +232,7 @@ class TestController(unittest.TestCase):
 
       tor_options = test.runner.get_runner().get_options()
 
-      if not test.runner.Torrc.COOKIE in tor_options:
+      if test.runner.Torrc.COOKIE not in tor_options:
         controller.connect()
 
         if test.runner.Torrc.PASSWORD in tor_options:

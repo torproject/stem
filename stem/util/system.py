@@ -640,7 +640,7 @@ def get_cwd(pid):
       # p2683
       # n/proc/2683/cwd (readlink: Permission denied)
 
-      if not ' ' in lsof_result:
+      if ' ' not in lsof_result:
         return lsof_result
     else:
       log.debug('%s we got unexpected output from lsof: %s' % (logging_prefix, results))

@@ -44,7 +44,7 @@ class TestNetworkStatus(unittest.TestCase):
         # TODO: this should be a 'new capability' check later rather than
         # failing the tests
         for flag in router.flags:
-          if not flag in stem.Flag:
+          if flag not in stem.Flag:
             raise ValueError('Unrecognized flag type: %s, found on relay %s (%s)' % (flag, router.fingerprint, router.nickname))
 
         unrecognized_lines = router.get_unrecognized_lines()
@@ -85,7 +85,7 @@ class TestNetworkStatus(unittest.TestCase):
         # TODO: this should be a 'new capability' check later rather than
         # failing the tests
         for flag in router.flags:
-          if not flag in stem.Flag:
+          if flag not in stem.Flag:
             raise ValueError('Unrecognized flag type: %s, found on microdescriptor relay %s (%s)' % (flag, router.fingerprint, router.nickname))
 
         unrecognized_lines = router.get_unrecognized_lines()

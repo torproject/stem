@@ -555,7 +555,7 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
 
   # iterating over AuthMethods so we can try them in this order
   for auth_type in (AuthMethod.NONE, AuthMethod.PASSWORD, AuthMethod.SAFECOOKIE, AuthMethod.COOKIE):
-    if not auth_type in auth_methods:
+    if auth_type not in auth_methods:
       continue
 
     try:

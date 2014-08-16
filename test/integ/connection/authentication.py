@@ -183,7 +183,7 @@ class TestAuthenticate(unittest.TestCase):
 
     runner = test.runner.get_runner()
     tor_options = runner.get_options()
-    is_password_only = test.runner.Torrc.PASSWORD in tor_options and not test.runner.Torrc.COOKIE in tor_options
+    is_password_only = test.runner.Torrc.PASSWORD in tor_options and test.runner.Torrc.COOKIE not in tor_options
 
     # tests without a password
     with runner.get_tor_socket(False) as control_socket:
@@ -218,7 +218,7 @@ class TestAuthenticate(unittest.TestCase):
 
     runner = test.runner.get_runner()
     tor_options = runner.get_options()
-    is_cookie_only = test.runner.Torrc.COOKIE in tor_options and not test.runner.Torrc.PASSWORD in tor_options
+    is_cookie_only = test.runner.Torrc.COOKIE in tor_options and test.runner.Torrc.PASSWORD not in tor_options
 
     # test both cookie authentication mechanisms
     with runner.get_tor_socket(False) as control_socket:

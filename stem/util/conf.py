@@ -236,7 +236,7 @@ def get_config(handle):
   :param str handle: unique identifier used to access this config instance
   """
 
-  if not handle in CONFS:
+  if handle not in CONFS:
     CONFS[handle] = Config()
 
   return CONFS[handle]

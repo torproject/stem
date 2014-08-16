@@ -442,7 +442,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   def _check_constraints(self, entries):
     required_fields = [field for (field, is_mandatory) in NETWORK_STATUS_V2_FIELDS if is_mandatory]
     for keyword in required_fields:
-      if not keyword in entries:
+      if keyword not in entries:
         raise ValueError("Network status document (v2) must have a '%s' line:\n%s" % (keyword, str(self)))
 
     # all recognized fields can only appear once
@@ -749,7 +749,7 @@ class _DocumentHeader(object):
 
         if value:
           for entry in value.split(' '):
-            if not '=' in entry:
+            if '=' not in entry:
               if not validate:
                 continue
 
@@ -894,7 +894,7 @@ class _DocumentFooter(object):
         self.bandwidth_weights = _parse_int_mappings(keyword, value, validate)
       elif keyword == 'directory-signature':
         for sig_value, block_type, block_contents in values:
-          if not sig_value.count(' ') in (1, 2):
+          if sig_value.count(' ') not in (1, 2):
             if not validate:
               continue
 
@@ -931,7 +931,7 @@ def _check_for_missing_and_disallowed_fields(header, entries, fields):
   for field, in_votes, in_consensus, mandatory in fields:
     if mandatory and ((header.is_consensus and in_consensus) or (header.is_vote and in_votes)):
       # mandatory field, check that we have it
-      if not field in entries.keys():
+      if field not in entries.keys():
         missing_fields.append(field)
     elif (header.is_consensus and not in_consensus) or (header.is_vote and not in_votes):
       # field we shouldn't have, check that we don't
@@ -983,7 +983,7 @@ def _parse_int_mappings(keyword, value, validate):
   results, seen_keys = {}, []
   for entry in value.split(' '):
     try:
-      if not '=' in entry:
+      if '=' not in entry:
         raise ValueError("must only have 'key=value' entries")
 
       entry_key, entry_value = entry.split('=', 1)
@@ -1133,7 +1133,7 @@ class DirectoryAuthority(Descriptor):
         excluded_fields += ['legacy-dir-key']
 
       for keyword in required_fields:
-        if not keyword in entries:
+        if keyword not in entries:
           raise ValueError("Authority entries must have a '%s' line:\n%s" % (keyword, content))
 
       for keyword in entries:
@@ -1294,7 +1294,7 @@ class KeyCertificate(Descriptor):
       # appear once
 
       for keyword, is_mandatory in KEY_CERTIFICATE_PARAMS:
-        if is_mandatory and not keyword in entries:
+        if is_mandatory and keyword not in entries:
           raise ValueError("Key certificates must have a '%s' line:\n%s" % (keyword, content))
 
         entry_count = len(entries.get(keyword, []))
@@ -1321,7 +1321,7 @@ class KeyCertificate(Descriptor):
       elif keyword == 'dir-address':
         # "dir-address" IPPort
 
-        if not ':' in value:
+        if ':' not in value:
           if not validate:
             continue
 

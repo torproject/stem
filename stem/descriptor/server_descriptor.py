@@ -482,7 +482,7 @@ class ServerDescriptor(Descriptor):
       elif keyword == 'hibernating':
         # "hibernating" 0|1 (in practice only set if one)
 
-        if validate and not value in ('0', '1'):
+        if validate and value not in ('0', '1'):
           raise ValueError('Hibernating line had an invalid value, must be zero or one: %s' % value)
 
         self.hibernating = value == '1'
@@ -545,7 +545,7 @@ class ServerDescriptor(Descriptor):
         for entry in or_address_entries:
           line = '%s %s' % (keyword, entry)
 
-          if not ':' in entry:
+          if ':' not in entry:
             if not validate:
               continue
             else:
@@ -613,7 +613,7 @@ class ServerDescriptor(Descriptor):
     """
 
     for keyword in self._required_fields():
-      if not keyword in entries:
+      if keyword not in entries:
         raise ValueError("Descriptor must have a '%s' entry" % keyword)
 
     for keyword in self._single_fields():
@@ -947,7 +947,7 @@ class BridgeDescriptor(ServerDescriptor):
       'router-digest',
     ]
 
-    return tuple(included_fields + [f for f in REQUIRED_FIELDS if not f in excluded_fields])
+    return tuple(included_fields + [f for f in REQUIRED_FIELDS if f not in excluded_fields])
 
   def _single_fields(self):
     return self._required_fields() + SINGLE_FIELDS

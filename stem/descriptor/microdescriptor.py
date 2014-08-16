@@ -295,7 +295,7 @@ class Microdescriptor(Descriptor):
     """
 
     for keyword in REQUIRED_FIELDS:
-      if not keyword in entries:
+      if keyword not in entries:
         raise ValueError("Microdescriptor must have a '%s' entry" % keyword)
 
     for keyword in SINGLE_FIELDS:

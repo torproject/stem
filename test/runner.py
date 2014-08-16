@@ -156,7 +156,7 @@ def require_online(test_case):
   :returns: True if test should be skipped, False otherwise
   """
 
-  if not Target.ONLINE in get_runner().attribute_targets:
+  if Target.ONLINE not in get_runner().attribute_targets:
     skip(test_case, '(requires online target)')
     return True
 

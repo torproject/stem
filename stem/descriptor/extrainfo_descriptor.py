@@ -426,7 +426,7 @@ class ExtraInfoDescriptor(Descriptor):
 
     if validate:
       for keyword in self._required_fields():
-        if not keyword in entries:
+        if keyword not in entries:
           raise ValueError("Extra-info descriptor must have a '%s' entry" % keyword)
 
       for keyword in self._required_fields() + SINGLE_FIELDS:
@@ -506,7 +506,7 @@ class ExtraInfoDescriptor(Descriptor):
         for transport_value, _, _ in values:
           name, address, port, args = None, None, None, None
 
-          if not ' ' in transport_value:
+          if ' ' not in transport_value:
             # scrubbed
             name = transport_value
           else:
@@ -520,7 +520,7 @@ class ExtraInfoDescriptor(Descriptor):
 
             if len(value_comp) < 2:
               raise ValueError('Transport line is missing its address:port value: %s' % line)
-            elif not ':' in value_comp[1]:
+            elif ':' not in value_comp[1]:
               raise ValueError("Transport line's address:port entry is missing a colon: %s" % line)
             else:
               address, port_str = value_comp[1].split(':', 1)
@@ -566,7 +566,7 @@ class ExtraInfoDescriptor(Descriptor):
 
         if value:
           for entry in value.split(','):
-            if not '=' in entry:
+            if '=' not in entry:
               if validate:
                 raise ValueError(error_msg)
               else:
@@ -740,7 +740,7 @@ class ExtraInfoDescriptor(Descriptor):
 
         if value:
           for entry in value.split(','):
-            if not '=' in entry:
+            if '=' not in entry:
               if validate:
                 raise ValueError(error_msg)
               else:
@@ -775,7 +775,7 @@ class ExtraInfoDescriptor(Descriptor):
 
         if value:
           for entry in value.split(','):
-            if not '=' in entry:
+            if '=' not in entry:
               if validate:
                 raise ValueError(error_msg)
               else:
@@ -807,7 +807,7 @@ class ExtraInfoDescriptor(Descriptor):
 
         if value:
           for entry in value.split(','):
-            if not '=' in entry:
+            if '=' not in entry:
               raise stem.ProtocolError("The bridge-ip-versions should be a comma separated listing of '<protocol>=<count>' mappings: %s" % line)
 
             protocol, count = entry.split('=', 1)
@@ -821,7 +821,7 @@ class ExtraInfoDescriptor(Descriptor):
 
         if value:
           for entry in value.split(','):
-            if not '=' in entry:
+            if '=' not in entry:
               raise stem.ProtocolError("The bridge-ip-transports should be a comma separated listing of '<protocol>=<count>' mappings: %s" % line)
 
             protocol, count = entry.split('=', 1)
@@ -939,7 +939,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
       'router-digest',
     ]
 
-    return tuple(included_fields + [f for f in REQUIRED_FIELDS if not f in excluded_fields])
+    return tuple(included_fields + [f for f in REQUIRED_FIELDS if f not in excluded_fields])
 
   def _last_keyword(self):
     return None

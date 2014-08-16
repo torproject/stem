@@ -180,7 +180,7 @@ def load_processed_files(path):
       if not line:
         continue  # skip blank lines
 
-      if not ' ' in line:
+      if ' ' not in line:
         raise TypeError('Malformed line: %s' % line)
 
       path, timestamp = line.rsplit(' ', 1)

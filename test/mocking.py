@@ -211,7 +211,7 @@ def get_all_combinations(attr, include_empty = False):
       # deduplicate, sort, and only provide if we haven't seen it yet
       item = tuple(sorted(set(item)))
 
-      if not item in seen:
+      if item not in seen:
         seen.add(item)
         yield item
 

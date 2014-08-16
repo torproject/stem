@@ -1096,7 +1096,7 @@ class Controller(BaseController):
         for listener in self.get_info(query).split():
           if not (listener.startswith('"') and listener.endswith('"')):
             raise stem.ProtocolError("'GETINFO %s' responses are expected to be quoted: %s" % (query, listener))
-          elif not ':' in listener:
+          elif ':' not in listener:
             raise stem.ProtocolError("'GETINFO %s' had a listener without a colon: %s" % (query, listener))
 
           listener = listener[1:-1]  # strip quotes

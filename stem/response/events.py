@@ -146,7 +146,7 @@ class Event(stem.response.ControlMessage):
         attr_values = [attr_values]
 
       for value in attr_values:
-        if not value in attr_enum:
+        if value not in attr_enum:
           log_id = 'event.%s.unknown_%s.%s' % (self.type.lower(), attr, value)
           unrecognized_msg = "%s event had an unrecognized %s (%s). Maybe a new addition to the control protocol? Full Event: '%s'" % (self.type, attr, value, self)
           log.log_once(log_id, log.INFO, unrecognized_msg)
@@ -227,7 +227,7 @@ class AuthDirNewDescEvent(Event):
 
     if len(lines) < 5:
       raise stem.ProtocolError("AUTHDIR_NEWDESCS events must contain lines for at least the type, action, message, descriptor, and terminating 'OK'")
-    elif not lines[-1] == 'OK':
+    elif lines[-1] != 'OK':
       raise stem.ProtocolError("AUTHDIR_NEWDESCS doesn't end with an 'OK'")
 
     self.action = lines[1]
@@ -493,7 +493,7 @@ class ClientsSeenEvent(Event):
       locale_to_count = {}
 
       for entry in self.locales.split(','):
-        if not '=' in entry:
+        if '=' not in entry:
           raise stem.ProtocolError("The CLIENTS_SEEN's CountrySummary should be a comma separated listing of '<locale>=<count>' mappings: %s" % self)
 
         locale, count = entry.split('=', 1)
@@ -513,7 +513,7 @@ class ClientsSeenEvent(Event):
       protocol_to_count = {}
 
       for entry in self.ip_versions.split(','):
-        if not '=' in entry:
+        if '=' not in entry:
           raise stem.ProtocolError("The CLIENTS_SEEN's IPVersions should be a comma separated listing of '<protocol>=<count>' mappings: %s" % self)
 
         protocol, count = entry.split('=', 1)
@@ -779,7 +779,7 @@ class ORConnEvent(Event):
       self.endpoint_fingerprint, self.endpoint_nickname = \
         stem.control._parse_circ_entry(self.endpoint)
     except stem.ProtocolError:
-      if not ':' in self.endpoint:
+      if ':' not in self.endpoint:
         raise stem.ProtocolError("ORCONN endpoint is neither a relay nor 'address:port': %s" % self)
 
       address, port = self.endpoint.split(':', 1)
@@ -903,7 +903,7 @@ class StreamEvent(Event):
     if self.target is None:
       raise stem.ProtocolError("STREAM event didn't have a target: %s" % self)
     else:
-      if not ':' in self.target:
+      if ':' not in self.target:
         raise stem.ProtocolError("Target location must be of the form 'address:port': %s" % self)
 
       address, port = self.target.rsplit(':', 1)
@@ -918,7 +918,7 @@ class StreamEvent(Event):
       self.source_address = None
       self.source_port = None
     else:
-      if not ':' in self.source_addr:
+      if ':' not in self.source_addr:
         raise stem.ProtocolError("Source location must be of the form 'address:port': %s" % self)
 
       address, port = self.source_addr.split(':', 1)
@@ -987,7 +987,7 @@ class TransportLaunchedEvent(Event):
   _VERSION_ADDED = stem.version.Requirement.EVENT_TRANSPORT_LAUNCHED
 
   def _parse(self):
-    if not self.type in ('server', 'client'):
+    if self.type not in ('server', 'client'):
       raise stem.ProtocolError("Transport type should either be 'server' or 'client': %s" % self)
 
     if not connection.is_valid_ipv4_address(self.address) and \
@@ -1205,7 +1205,7 @@ def _parse_cell_type_mapping(mapping):
   results = {}
 
   for entry in mapping.split(','):
-    if not ':' in entry:
+    if ':' not in entry:
       raise stem.ProtocolError("Mappings are expected to be of the form 'key:value', got '%s': %s" % (entry, mapping))
 
     key, value = entry.split(':', 1)

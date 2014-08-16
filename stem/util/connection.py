@@ -367,7 +367,7 @@ def is_valid_ipv6_address(address, allow_brackets = False):
 
   if colon_count > 7:
     return False  # too many groups
-  elif colon_count != 7 and not '::' in address:
+  elif colon_count != 7 and '::' not in address:
     return False  # not enough groups and none are collapsed
   elif address.count('::') > 1 or ':::' in address:
     return False  # multiple groupings of zeros can't be collapsed

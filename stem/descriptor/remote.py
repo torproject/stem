@@ -550,7 +550,7 @@ class DescriptorDownloader(object):
 
     resource = '/tor/status-vote/current/authority'
 
-    if not 'endpoint' in query_args:
+    if 'endpoint' not in query_args:
       query_args['endpoints'] = [(authority.address, authority.dir_port)]
 
     return self.query(resource + '.z', **query_args)
@@ -605,10 +605,10 @@ class DescriptorDownloader(object):
     args = dict(self._default_args)
     args.update(query_args)
 
-    if not 'endpoints' in args:
+    if 'endpoints' not in args:
       args['endpoints'] = self._endpoints
 
-    if not 'fall_back_to_authority' in args:
+    if 'fall_back_to_authority' not in args:
       args['fall_back_to_authority'] = True
 
     return Query(
