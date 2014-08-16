@@ -68,6 +68,7 @@ except ImportError:
 KEYWORD_CHAR = 'a-zA-Z0-9-'
 WHITESPACE = ' \t'
 KEYWORD_LINE = re.compile('^([%s]+)(?:[%s]+(.*))?$' % (KEYWORD_CHAR, WHITESPACE))
+SPECIFIC_KEYWORD_LINE = '^(%%s)(?:[%s]+(.*))?$' % WHITESPACE
 PGP_BLOCK_START = re.compile('^-----BEGIN ([%s%s]+)-----$' % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END = '-----END %s-----'
 
@@ -425,6 +426,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   else:
     content = []
     content_append = content.append
+
   ending_keyword = None
 
   if isinstance(keywords, (bytes, unicode)):
@@ -436,7 +438,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     if first_line is not None:
       content_append(first_line)
 
-  match_re = re.compile(r'^(%s)(?:[ \t].*|)$' % "|".join(keywords))
+  keyword_match = re.compile(SPECIFIC_KEYWORD_LINE % '|'.join(keywords))
 
   while True:
     last_position = descriptor_file.tell()
@@ -449,7 +451,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     if not line:
       break  # EOF
 
-    line_match = match_re.match(stem.util.str_tools._to_unicode(line))
+    line_match = keyword_match.match(stem.util.str_tools._to_unicode(line))
 
     if line_match:
       ending_keyword = line_match.groups()[0]
