@@ -40,6 +40,10 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Descriptors**
+
+  * Improved speed for parsing consensus documents by around 30% (:trac:`12859`)
+
  * **Utilities**
 
   * Added support for directories to :func:`stem.util.conf.Config.load`.

@@ -68,6 +68,7 @@ except ImportError:
 KEYWORD_CHAR = 'a-zA-Z0-9-'
 WHITESPACE = ' \t'
 KEYWORD_LINE = re.compile('^([%s]+)(?:[%s]+(.*))?$' % (KEYWORD_CHAR, WHITESPACE))
+SPECIFIC_KEYWORD_LINE = '^(%%s)(?:[%s]+(.*))?$' % WHITESPACE
 PGP_BLOCK_START = re.compile('^-----BEGIN ([%s%s]+)-----$' % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END = '-----END %s-----'
 
@@ -419,7 +420,13 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     **True**
   """
 
-  content = None if skip else []
+  if skip:
+    content = None
+    content_append = lambda x: None
+  else:
+    content = []
+    content_append = content.append
+
   ending_keyword = None
 
   if isinstance(keywords, (bytes, unicode)):
@@ -428,8 +435,10 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   if ignore_first:
     first_line = descriptor_file.readline()
 
-    if content is not None and first_line is not None:
-      content.append(first_line)
+    if first_line is not None:
+      content_append(first_line)
+
+  keyword_match = re.compile(SPECIFIC_KEYWORD_LINE % '|'.join(keywords))
 
   while True:
     last_position = descriptor_file.tell()
@@ -442,25 +451,19 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     if not line:
       break  # EOF
 
-    line_match = KEYWORD_LINE.match(stem.util.str_tools._to_unicode(line))
+    line_match = keyword_match.match(stem.util.str_tools._to_unicode(line))
 
-    if not line_match:
-      # no spaces or tabs in the line
-      line_keyword = stem.util.str_tools._to_unicode(line.strip())
-    else:
-      line_keyword = line_match.groups()[0]
-
-    if line_keyword in keywords:
-      ending_keyword = line_keyword
+    if line_match:
+      ending_keyword = line_match.groups()[0]
 
       if not inclusive:
         descriptor_file.seek(last_position)
-      elif content is not None:
-        content.append(line)
+      else:
+        content_append(line)
 
       break
-    elif content is not None:
-      content.append(line)
+    else:
+      content_append(line)
 
   if include_ending_keyword:
     return (content, ending_keyword)
