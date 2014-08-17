@@ -9,7 +9,7 @@ easily parsed and compared, for instance...
 
   >>> from stem.version import get_system_tor_version, Requirement
   >>> my_version = get_system_tor_version()
-  >>> print my_version
+  >>> print(my_version)
   0.2.1.30
   >>> my_version >= Requirement.TORRC_CONTROL_SOCKET
   True

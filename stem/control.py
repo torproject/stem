@@ -30,7 +30,7 @@ Controller you can then authenticate yourself using its
     try:
       controller = Controller.from_port()
     except stem.SocketError as exc:
-      print "Unable to connect to tor on port 9051: %s" % exc
+      print("Unable to connect to tor on port 9051: %s" % exc)
       sys.exit(1)
 
     try:
@@ -41,13 +41,13 @@ Controller you can then authenticate yourself using its
       try:
         controller.authenticate(password = pw)
       except stem.connection.PasswordAuthFailed:
-        print "Unable to authenticate, password is incorrect"
+        print("Unable to authenticate, password is incorrect")
         sys.exit(1)
     except stem.connection.AuthenticationFailure as exc:
-      print "Unable to authenticate: %s" % exc
+      print("Unable to authenticate: %s" % exc)
       sys.exit(1)
 
-    print "Tor is running version %s" % controller.get_version()
+    print("Tor is running version %s" % controller.get_version())
     controller.close()
 
 If you're fine with allowing your script to raise exceptions then this can be more nicely done as...
@@ -60,7 +60,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     with Controller.from_port() as controller:
       controller.authenticate()
 
-      print "Tor is running version %s" % controller.get_version()
+      print("Tor is running version %s" % controller.get_version())
 
 **Module Overview:**
 
@@ -1903,7 +1903,7 @@ class Controller(BaseController):
       from stem.control import Controller, EventType
 
       def print_bw(event):
-        print 'sent: %i, received: %i' % (event.written, event.read)
+        print('sent: %i, received: %i' % (event.written, event.read))
 
       with Controller.from_port(port = 9051) as controller:
         controller.authenticate()
@@ -2256,7 +2256,7 @@ class Controller(BaseController):
       19
       >>> controller.extend_circuit('0')
       20
-      >>> print controller.get_info('circuit-status')
+      >>> print(controller.get_info('circuit-status'))
       20 EXTENDED $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA=Eskimo BUILD_FLAGS=NEED_CAPACITY PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:51:11.433755
       19 BUILT $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$30BAB8EE7606CBD12F3CC269AE976E0153E7A58D=Pascal1,$2765D8A8C4BBA3F89585A9FFE0E8575615880BEB=Anthracite PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:50:56.969938
 

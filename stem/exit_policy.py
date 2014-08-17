@@ -9,15 +9,15 @@ exiting to a destination is permissible or not. For instance...
 
   >>> from stem.exit_policy import ExitPolicy, MicroExitPolicy
   >>> policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
-  >>> print policy
+  >>> print(policy)
   accept *:80, accept *:443, reject *:*
-  >>> print policy.summary()
+  >>> print(policy.summary())
   accept 80, 443
   >>> policy.can_exit_to('75.119.206.243', 80)
   True
 
   >>> policy = MicroExitPolicy('accept 80,443')
-  >>> print policy
+  >>> print(policy)
   accept 80,443
   >>> policy.can_exit_to('75.119.206.243', 80)
   True
