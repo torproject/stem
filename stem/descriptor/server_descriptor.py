@@ -540,7 +540,7 @@ class ServerDescriptor(Descriptor):
       elif keyword == 'ipv6-policy':
         self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
       elif keyword == 'or-address':
-        or_address_entries = [value for (value, _, _) in values]
+        or_address_entries = [address_entry for (address_entry, _, _) in values]
 
         for entry in or_address_entries:
           line = '%s %s' % (keyword, entry)
