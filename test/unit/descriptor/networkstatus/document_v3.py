@@ -11,24 +11,29 @@ import stem.version
 
 from stem import Flag
 
-from stem.descriptor.networkstatus import HEADER_STATUS_DOCUMENT_FIELDS, \
-                                          FOOTER_STATUS_DOCUMENT_FIELDS, \
-                                          DEFAULT_PARAMS, \
-                                          DirectoryAuthority, \
-                                          NetworkStatusDocumentV3, \
-                                          _parse_file
+from stem.descriptor.networkstatus import (
+  HEADER_STATUS_DOCUMENT_FIELDS,
+  FOOTER_STATUS_DOCUMENT_FIELDS,
+  DEFAULT_PARAMS,
+  DirectoryAuthority,
+  NetworkStatusDocumentV3,
+  _parse_file,
+)
 
-from stem.descriptor.router_status_entry import \
-                                          RouterStatusEntryV3, \
-                                          RouterStatusEntryMicroV3
+from stem.descriptor.router_status_entry import (
+  RouterStatusEntryV3,
+  RouterStatusEntryMicroV3,
+)
 
-from test.mocking import get_router_status_entry_v3, \
-                         get_router_status_entry_micro_v3, \
-                         get_directory_authority, \
-                         get_network_status_document_v3, \
-                         CRYPTO_BLOB, \
-                         DOC_SIG, \
-                         NETWORK_STATUS_DOCUMENT_FOOTER
+from test.mocking import (
+  get_router_status_entry_v3,
+  get_router_status_entry_micro_v3,
+  get_directory_authority,
+  get_network_status_document_v3,
+  CRYPTO_BLOB,
+  DOC_SIG,
+  NETWORK_STATUS_DOCUMENT_FOOTER,
+)
 
 from test.unit.descriptor import get_resource
 

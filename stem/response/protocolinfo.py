@@ -97,7 +97,7 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
 
             # our auth_methods should have a single AuthMethod.UNKNOWN entry if
             # any unknown authentication methods exist
-            if not AuthMethod.UNKNOWN in auth_methods:
+            if AuthMethod.UNKNOWN not in auth_methods:
               auth_methods.append(AuthMethod.UNKNOWN)
 
         # parse optional COOKIEFILE mapping (quoted and can have escapes)

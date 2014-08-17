@@ -482,7 +482,7 @@ class ServerDescriptor(Descriptor):
       elif keyword == 'hibernating':
         # "hibernating" 0|1 (in practice only set if one)
 
-        if validate and not value in ('0', '1'):
+        if validate and value not in ('0', '1'):
           raise ValueError('Hibernating line had an invalid value, must be zero or one: %s' % value)
 
         self.hibernating = value == '1'
@@ -540,12 +540,12 @@ class ServerDescriptor(Descriptor):
       elif keyword == 'ipv6-policy':
         self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
       elif keyword == 'or-address':
-        or_address_entries = [value for (value, _, _) in values]
+        or_address_entries = [address_entry for (address_entry, _, _) in values]
 
         for entry in or_address_entries:
           line = '%s %s' % (keyword, entry)
 
-          if not ':' in entry:
+          if ':' not in entry:
             if not validate:
               continue
             else:
@@ -558,7 +558,7 @@ class ServerDescriptor(Descriptor):
             address = address[1:-1]  # remove brackets
 
           if not ((not is_ipv6 and stem.util.connection.is_valid_ipv4_address(address)) or
-                 (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
+                  (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
             if not validate:
               continue
             else:
@@ -613,7 +613,7 @@ class ServerDescriptor(Descriptor):
     """
 
     for keyword in self._required_fields():
-      if not keyword in entries:
+      if keyword not in entries:
         raise ValueError("Descriptor must have a '%s' entry" % keyword)
 
     for keyword in self._single_fields():
@@ -756,15 +756,15 @@ class RelayDescriptor(ServerDescriptor):
     decrypted_bytes = long_to_bytes(decrypted_int, blocksize)
 
     ############################################################################
-    ## The decrypted bytes should have a structure exactly along these lines.
-    ## 1 byte  - [null '\x00']
-    ## 1 byte  - [block type identifier '\x01'] - Should always be 1
-    ## N bytes - [padding '\xFF' ]
-    ## 1 byte  - [separator '\x00' ]
-    ## M bytes - [message]
-    ## Total   - 128 bytes
-    ## More info here http://www.ietf.org/rfc/rfc2313.txt
-    ##                esp the Notes in section 8.1
+    # The decrypted bytes should have a structure exactly along these lines.
+    # 1 byte  - [null '\x00']
+    # 1 byte  - [block type identifier '\x01'] - Should always be 1
+    # N bytes - [padding '\xFF' ]
+    # 1 byte  - [separator '\x00' ]
+    # M bytes - [message]
+    # Total   - 128 bytes
+    # More info here http://www.ietf.org/rfc/rfc2313.txt
+    #                esp the Notes in section 8.1
     ############################################################################
 
     try:
@@ -947,7 +947,7 @@ class BridgeDescriptor(ServerDescriptor):
       'router-digest',
     ]
 
-    return tuple(included_fields + [f for f in REQUIRED_FIELDS if not f in excluded_fields])
+    return tuple(included_fields + [f for f in REQUIRED_FIELDS if f not in excluded_fields])
 
   def _single_fields(self):
     return self._required_fields() + SINGLE_FIELDS

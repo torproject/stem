@@ -59,7 +59,7 @@ def _response(controller, arg, config):
 
   usage_info = config.get('help.usage', {})
 
-  if not arg in usage_info:
+  if arg not in usage_info:
     return format("No help information available for '%s'..." % arg, *ERROR_OUTPUT)
 
   output = format(usage_info[arg] + '\n', *BOLD_OUTPUT)

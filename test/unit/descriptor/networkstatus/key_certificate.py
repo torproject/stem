@@ -7,10 +7,12 @@ import unittest
 
 from stem.descriptor.networkstatus import KeyCertificate
 
-from test.mocking import get_key_certificate, \
-                         CRYPTO_BLOB, \
-                         KEY_CERTIFICATE_HEADER, \
-                         KEY_CERTIFICATE_FOOTER
+from test.mocking import (
+  get_key_certificate,
+  CRYPTO_BLOB,
+  KEY_CERTIFICATE_HEADER,
+  KEY_CERTIFICATE_FOOTER,
+)
 
 
 class TestKeyCertificate(unittest.TestCase):
@@ -183,9 +185,9 @@ class TestKeyCertificate(unittest.TestCase):
     test_value = '\n-----BEGIN ID SIGNATURE-----%s-----END UGABUGA SIGNATURE-----' % CRYPTO_BLOB
 
     for field, attr in (('dir-identity-key', 'identity_key'),
-                       ('dir-signing-key', 'signing_key'),
-                       ('dir-key-crosscert', 'crosscert'),
-                       ('dir-key-certification', 'certification')):
+                        ('dir-signing-key', 'signing_key'),
+                        ('dir-key-crosscert', 'crosscert'),
+                        ('dir-key-certification', 'certification')):
       content = get_key_certificate({field: test_value}, content = True)
       self.assertRaises(ValueError, KeyCertificate, content)
 

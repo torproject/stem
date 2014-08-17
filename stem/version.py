@@ -90,7 +90,7 @@ def get_system_tor_version(tor_cmd = 'tor'):
   :raises: **IOError** if unable to query or parse the version
   """
 
-  if not tor_cmd in VERSION_CACHE:
+  if tor_cmd not in VERSION_CACHE:
     version_cmd = '%s --version' % tor_cmd
 
     try:

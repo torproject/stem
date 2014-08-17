@@ -191,7 +191,7 @@ class RouterStatusEntry(Descriptor):
     """
 
     for keyword in self._required_fields():
-      if not keyword in entries:
+      if keyword not in entries:
         raise ValueError("%s must have a '%s' line:\n%s" % (self._name(True), keyword, str(self)))
 
     for keyword in self._single_fields():
@@ -532,7 +532,7 @@ def _parse_a_line(desc, value, validate):
   # "a" SP address ":" portlist
   # example: a [2001:888:2133:0:82:94:251:204]:9001
 
-  if not ':' in value:
+  if ':' not in value:
     if not validate:
       return
 
@@ -681,7 +681,7 @@ def _parse_m_line(desc, value, validate):
   hashes = {}
 
   for entry in m_comp[1:]:
-    if not '=' in entry:
+    if '=' not in entry:
       if not validate:
         continue
 

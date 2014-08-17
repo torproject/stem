@@ -121,7 +121,7 @@ class Enum(object):
     :raises: **ValueError** if no such element exists
     """
 
-    if not value in self._values:
+    if value not in self._values:
       raise ValueError('No such enumeration exists: %s (options: %s)' % (value, ', '.join(self._values)))
 
     next_index = (self._values.index(value) + 1) % len(self._values)
@@ -138,7 +138,7 @@ class Enum(object):
     :raises: **ValueError** if no such element exists
     """
 
-    if not value in self._values:
+    if value not in self._values:
       raise ValueError('No such enumeration exists: %s (options: %s)' % (value, ', '.join(self._values)))
 
     prev_index = (self._values.index(value) - 1) % len(self._values)

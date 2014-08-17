@@ -83,7 +83,7 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
     raise OSError("'%s' isn't available on your system. Maybe it's not in your PATH?" % tor_cmd)
 
   # double check that we have a torrc to work with
-  if not torrc_path in (None, NO_TORRC) and not os.path.exists(torrc_path):
+  if torrc_path not in (None, NO_TORRC) and not os.path.exists(torrc_path):
     raise OSError("torrc doesn't exist (%s)" % torrc_path)
 
   # starts a tor subprocess, raising an OSError if it fails
@@ -150,7 +150,7 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
       elif problem_match:
         runlevel, msg = problem_match.groups()
 
-        if not 'see warnings above' in msg:
+        if 'see warnings above' not in msg:
           if ': ' in msg:
             msg = msg.split(': ')[-1].strip()
 

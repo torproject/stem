@@ -81,7 +81,7 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
 
   if included_fields:
     for field in included_fields:
-      if not field in desc_attr:
+      if field not in desc_attr:
         raise ValueError("%s does not have a '%s' attribute, valid fields are: %s" % (descriptor_type_label, field, ', '.join(desc_attr)))
   else:
     included_fields = [attr for attr in desc_attr if not attr.startswith('_')]

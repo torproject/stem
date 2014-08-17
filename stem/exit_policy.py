@@ -116,7 +116,7 @@ def get_config_policy(rules):
     if not rule:
       continue
 
-    if not ':' in rule:
+    if ':' not in rule:
       rule = "%s:*" % rule
 
     if 'private' in rule:
@@ -211,7 +211,7 @@ class ExitPolicy(object):
     for rule in self._get_rules():
       if rule.is_accept:
         for port in xrange(rule.min_port, rule.max_port + 1):
-          if not port in rejected_ports:
+          if port not in rejected_ports:
             return True
       elif rule.is_address_wildcard():
         if rule.is_port_wildcard():
@@ -502,7 +502,7 @@ class ExitPolicyRule(object):
 
     exitpattern = exitpattern[1:]
 
-    if not ':' in exitpattern:
+    if ':' not in exitpattern:
       raise ValueError("An exitpattern must be of the form 'addrspec:portspec': %s" % rule)
 
     self.address = None

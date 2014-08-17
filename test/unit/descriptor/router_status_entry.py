@@ -10,10 +10,12 @@ from stem.descriptor.router_status_entry import RouterStatusEntryV3, _base64_to_
 from stem.exit_policy import MicroExitPolicy
 from stem.version import Version
 
-from test.mocking import get_router_status_entry_v2, \
-                         get_router_status_entry_v3, \
-                         get_router_status_entry_micro_v3, \
-                         ROUTER_STATUS_ENTRY_V3_HEADER
+from test.mocking import (
+  get_router_status_entry_v2,
+  get_router_status_entry_v3,
+  get_router_status_entry_micro_v3,
+  ROUTER_STATUS_ENTRY_V3_HEADER,
+)
 
 
 class TestRouterStatusEntry(unittest.TestCase):

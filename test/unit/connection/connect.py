@@ -137,5 +137,5 @@ class TestConnect(unittest.TestCase):
     stdout_output = stdout_mock.getvalue()
     stdout_mock.truncate(0)
 
-    if not msg in stdout_output:
+    if msg not in stdout_output:
       self.fail("Expected...\n\n%s\n\n... which couldn't be found in...\n\n%s" % (msg, stdout_output))

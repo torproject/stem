@@ -14,7 +14,7 @@ class TestConnection(unittest.TestCase):
   def test_get_connections(self):
     runner = test.runner.get_runner()
 
-    if not test.runner.Torrc.PORT in runner.get_options():
+    if test.runner.Torrc.PORT not in runner.get_options():
       test.runner.skip(self, '(no control port)')
       return
     elif not test.runner.get_runner().is_ptraceable():

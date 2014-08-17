@@ -124,7 +124,7 @@ def is_mock_available():
 
     # check for mock's new_callable argument for patch() which was introduced in version 0.8.0
 
-    if not 'new_callable' in inspect.getargspec(mock.patch).args:
+    if 'new_callable' not in inspect.getargspec(mock.patch).args:
       raise ImportError()
 
     return True

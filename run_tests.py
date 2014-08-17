@@ -364,7 +364,7 @@ def _get_args(argv):
         raise ValueError("No targets provided")
 
       for target in integ_targets:
-        if not target in Target:
+        if target not in Target:
           raise ValueError("Invalid integration target: %s" % target)
         elif target in all_run_targets:
           run_targets.append(target)
@@ -384,7 +384,7 @@ def _get_args(argv):
     elif opt in ("-l", "--log"):
       arg = arg.upper()
 
-      if not arg in stem.util.log.LOG_VALUES:
+      if arg not in stem.util.log.LOG_VALUES:
         raise ValueError(LOG_TYPE_ERROR % arg)
 
       args['logging_runlevel'] = arg

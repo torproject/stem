@@ -9,8 +9,11 @@ import stem.exit_policy
 import stem.descriptor
 
 from stem.descriptor.microdescriptor import Microdescriptor
-from test.mocking import get_microdescriptor, \
-                         CRYPTO_BLOB
+
+from test.mocking import (
+  get_microdescriptor,
+  CRYPTO_BLOB,
+)
 
 from test.unit.descriptor import get_resource
 

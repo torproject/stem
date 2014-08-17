@@ -172,7 +172,7 @@ def get_stylistic_issues(paths, check_two_space_indents = False, check_newlines 
       with open(path) as f:
         file_contents = f.read()
 
-      lines, prev_indent = file_contents.split('\n'), 0
+      lines = file_contents.split('\n')
       is_block_comment = False
 
       for index, line in enumerate(lines):

@@ -10,8 +10,10 @@ import test.runner
 
 from stem.descriptor.export import export_csv, export_csv_file
 
-from test.mocking import get_relay_server_descriptor, \
-                         get_bridge_server_descriptor
+from test.mocking import (
+  get_relay_server_descriptor,
+  get_bridge_server_descriptor,
+)
 
 
 class TestExport(unittest.TestCase):
