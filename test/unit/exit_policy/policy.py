@@ -5,10 +5,12 @@ Unit tests for the stem.exit_policy.ExitPolicy class.
 import pickle
 import unittest
 
-from stem.exit_policy import get_config_policy, \
-                             ExitPolicy, \
-                             MicroExitPolicy, \
-                             ExitPolicyRule
+from stem.exit_policy import (
+  get_config_policy,
+  ExitPolicy,
+  MicroExitPolicy,
+  ExitPolicyRule,
+)
 
 
 class TestExitPolicy(unittest.TestCase):

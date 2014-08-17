@@ -15,9 +15,11 @@ import stem.util.str_tools
 
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 
-from test.mocking import get_relay_server_descriptor, \
-                         get_bridge_server_descriptor, \
-                         CRYPTO_BLOB
+from test.mocking import (
+  get_relay_server_descriptor,
+  get_bridge_server_descriptor,
+  CRYPTO_BLOB,
+)
 
 from test.unit.descriptor import get_resource
 

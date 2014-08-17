@@ -25,8 +25,7 @@ def role_trac(name, rawtext, text, lineno, inliner, options={}, content=[]):
     if ticket_num <= 0:
       raise ValueError
   except ValueError:
-    msg = inliner.reporter.error(
-         'Invalid trac ticket: %s' % text, line=lineno)
+    msg = inliner.reporter.error('Invalid trac ticket: %s' % text, line=lineno)
     prb = inliner.problematic(rawtext, rawtext, msg)
 
     return ([prb], [msg])
@@ -48,8 +47,7 @@ def role_spec(name, rawtext, text, lineno, inliner, options={}, content=[]):
   # checking if the input is a valid short commit id
 
   if not re.match('^[0-9a-f]{7}$', text):
-    msg = inliner.reporter.error(
-         'Spec tag expects a short commit id (seven hex characters): %s' % text, line=lineno)
+    msg = inliner.reporter.error('Spec tag expects a short commit id (seven hex characters): %s' % text, line=lineno)
     prb = inliner.problematic(rawtext, rawtext, msg)
 
     return ([prb], [msg])
