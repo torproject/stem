@@ -304,7 +304,7 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
   attr = dict(attr)  # shallow copy since we're destructive
 
   for content, template in ((header_content, header_template),
-                           (footer_content, footer_template)):
+                            (footer_content, footer_template)):
     for keyword, value in template:
       if keyword in exclude:
         continue

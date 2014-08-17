@@ -695,8 +695,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc_text = b'\n'.join((get_bridge_server_descriptor(content = True),
-                           b'or-address 10.45.227.253:9001',
-                           b'or-address [fd9f:2e19:3bcf::02:9970]:443'))
+                            b'or-address 10.45.227.253:9001',
+                            b'or-address [fd9f:2e19:3bcf::02:9970]:443'))
 
     expected_or_addresses = [
       ('10.45.227.253', 9001, False),

@@ -558,7 +558,7 @@ class ServerDescriptor(Descriptor):
             address = address[1:-1]  # remove brackets
 
           if not ((not is_ipv6 and stem.util.connection.is_valid_ipv4_address(address)) or
-                 (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
+                  (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
             if not validate:
               continue
             else:
