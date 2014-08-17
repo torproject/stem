@@ -69,9 +69,19 @@ class TestConnect(unittest.TestCase):
     if result is not None:
       self.fail()
 
+    # Python 3.x seems to have an oddity where StringIO has prefixed null
+    # characters (\x00) after we call truncate(). This could be addressed
+    # a couple ways...
+    #
+    #   * Don't use a stdout mock more than once.
+    #   * Strip the null characters.
+    #
+    # Opting for the second (which is admittedly a hack) so the tests are a
+    # little nicer.
+
     stdout_output = stdout_mock.getvalue()
     stdout_mock.truncate(0)
-    self.assertEqual(msg, stdout_output.strip())
+    self.assertEqual(msg, stdout_output.strip().lstrip('\x00'))
 
   @patch('stem.connection.authenticate')
   def test_auth_success(self, authenticate_mock):
