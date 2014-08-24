@@ -900,7 +900,7 @@ class TestEvents(unittest.TestCase):
       'SUMMARY': 'Loading relay descriptors',
     }
 
-    self.assertEqual(expected_attr, event.keyword_args)
+    self.assertEqual(expected_attr, event.arguments)
 
   def test_status_event_bootstrap_stuck(self):
     event = _get_event(STATUS_CLIENT_BOOTSTRAP_STUCK)

@@ -848,7 +848,8 @@ class StatusEvent(Event):
 
   :var stem.StatusType status_type: category of the status event
   :var stem.Runlevel runlevel: runlevel of the logged message
-  :var str message: logged message
+  :var str action: activity that caused this message
+  :var dict arguments: attributes about the event
   """
 
   _POSITIONAL_ARGS = ('runlevel', 'action')
@@ -863,6 +864,13 @@ class StatusEvent(Event):
       self.status_type = stem.StatusType.SERVER
     else:
       raise ValueError("BUG: Unrecognized status type (%s), likely an EVENT_TYPE_TO_CLASS addition without revising how 'status_type' is assigned." % self.type)
+
+    # Just an alias for our parent class' keyword_args since that already
+    # parses these for us. Unlike our other event types Tor commonly supplies
+    # arbitrary key/value pairs for these, so making an alias here to better
+    # draw attention that the StatusEvent will likely have them.
+
+    self.arguments = self.keyword_args
 
     self._log_if_unrecognized('runlevel', stem.Runlevel)
 
