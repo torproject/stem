@@ -43,6 +43,7 @@ The following are only available within Stem's `git repository
  * **Descriptors**
 
   * Improved speed for parsing consensus documents by around 30% (:trac:`12859`)
+  * Don't fail if consensus method 1 is not present, as it is no longer required (:spec:`fc8a6f0`)
 
  * **Utilities**
 

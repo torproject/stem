@@ -690,9 +690,6 @@ class _DocumentHeader(object):
             raise ValueError("A network status document's consensus-methods must be a list of integer values, but was '%s'" % value)
 
         self.consensus_methods = consensus_methods
-
-        if validate and not (1 in self.consensus_methods):
-          raise ValueError('Network status votes must include consensus-method version 1')
       elif keyword == 'consensus-method':
         # "consensus-method" Integer
 
