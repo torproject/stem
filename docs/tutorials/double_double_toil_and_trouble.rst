@@ -97,3 +97,8 @@ Descriptors
   Compares the votes of two directory authorities, in this case moria1 and
   maatuska with a special interest in the 'Running' flag.
 
+* `Votes by Bandwidth Authorities <examples/votes_by_bandwidth_authorities.html>`_
+
+  Provides information about the current votes from Tor's Bandwidth
+  Authorities.
+
