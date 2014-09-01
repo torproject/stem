@@ -128,6 +128,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
   BaseController - Base controller class asynchronous message handling
     |- msg - communicates with the tor process
     |- is_alive - reports if our connection to tor is open or closed
+    |- connection_time - time when we last connected or disconnected
     |- is_authenticated - checks if we're authenticated to tor
     |- connect - connects or reconnects to tor
     |- close - shuts down our connection to the tor process

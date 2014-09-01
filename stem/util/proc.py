@@ -20,18 +20,18 @@ future, use them at your own risk.**
 ::
 
   is_available - checks if proc utilities can be used on this system
-  get_system_start_time - unix timestamp for when the system started
-  get_physical_memory - memory available on this system
-  get_cwd - provides the current working directory for a process
-  get_uid - provides the user id a process is running under
-  get_memory_usage - provides the memory usage of a process
-  get_stats - queries statistics about a process
-  get_file_descriptors_used - number of file descriptors used by a process
-  get_connections - provides the connections made by a process
+  system_start_time - unix timestamp for when the system started
+  physical_memory - memory available on this system
+  cwd - provides the current working directory for a process
+  uid - provides the user id a process is running under
+  memory_usage - provides the memory usage of a process
+  stats - queries statistics about a process
+  file_descriptors_used - number of file descriptors used by a process
+  connections - provides the connections made by a process
 
 .. data:: Stat (enum)
 
-  Types of data available via the :func:`~stem.util.proc.get_stats` function.
+  Types of data available via the :func:`~stem.util.proc.stats` function.
 
   ============== ===========
   Stat           Description
@@ -94,7 +94,7 @@ def is_available():
 
 
 @lru_cache()
-def get_system_start_time():
+def system_start_time():
   """
   Provides the unix time (seconds since epoch) when the system started.
 
@@ -117,7 +117,7 @@ def get_system_start_time():
 
 
 @lru_cache()
-def get_physical_memory():
+def physical_memory():
   """
   Provides the total physical memory on the system in bytes.
 
@@ -139,7 +139,7 @@ def get_physical_memory():
     raise exc
 
 
-def get_cwd(pid):
+def cwd(pid):
   """
   Provides the current working directory for the given process.
 
@@ -167,7 +167,7 @@ def get_cwd(pid):
   return cwd
 
 
-def get_uid(pid):
+def uid(pid):
   """
   Provides the user ID the given process is running under.
 
@@ -192,7 +192,7 @@ def get_uid(pid):
     raise exc
 
 
-def get_memory_usage(pid):
+def memory_usage(pid):
   """
   Provides the memory usage in bytes for the given process.
 
@@ -225,7 +225,7 @@ def get_memory_usage(pid):
     raise exc
 
 
-def get_stats(pid, *stat_types):
+def stats(pid, *stat_types):
   """
   Provides process specific information. See the :data:`~stem.util.proc.Stat`
   enum for valid options.
@@ -281,19 +281,19 @@ def get_stats(pid, *stat_types):
         results.append(str(float(stat_comp[14]) / CLOCK_TICKS))
     elif stat_type == Stat.START_TIME:
       if pid == 0:
-        return get_system_start_time()
+        return system_start_time()
       else:
         # According to documentation, starttime is in field 21 and the unit is
         # jiffies (clock ticks). We divide it for clock ticks, then add the
         # uptime to get the seconds since the epoch.
         p_start_time = float(stat_comp[21]) / CLOCK_TICKS
-        results.append(str(p_start_time + get_system_start_time()))
+        results.append(str(p_start_time + system_start_time()))
 
   _log_runtime(parameter, stat_path, start_time)
   return tuple(results)
 
 
-def get_file_descriptors_used(pid):
+def file_descriptors_used(pid):
   """
   Provides the number of file descriptors currently being used by a process.
 
@@ -318,7 +318,7 @@ def get_file_descriptors_used(pid):
     raise IOError("Unable to check number of file descriptors used: %s" % exc)
 
 
-def get_connections(pid):
+def connections(pid):
   """
   Queries connection related information from the proc contents. This provides
   similar results to netstat, lsof, sockstat, and other connection resolution
@@ -524,3 +524,15 @@ def _log_failure(parameter, exc):
   """
 
   log.debug('proc call failed (%s): %s' % (parameter, exc))
+
+# TODO: drop with stem 2.x
+# We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
+# names for backward compatability.
+
+get_system_start_time = system_start_time
+get_physical_memory = physical_memory
+get_cwd = cwd
+get_uid = uid
+get_memory_usage = memory_usage
+get_stats = stats
+get_connections = connections
