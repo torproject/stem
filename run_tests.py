@@ -279,7 +279,9 @@ def main():
       except OSError:
         error_tracker.register_error()
       finally:
+        println()
         integ_runner.stop()
+        println()
 
     if skipped_targets:
       println()

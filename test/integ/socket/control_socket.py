@@ -8,6 +8,7 @@ those focus on parsing and correctness of the content these are more concerned
 with the behavior of the socket itself.
 """
 
+import time
 import unittest
 
 import stem.connection
@@ -17,6 +18,42 @@ import test.runner
 
 
 class TestControlSocket(unittest.TestCase):
+  def test_connection_time(self):
+    """
+    Checks that our connection_time method tracks when our state's changed.
+    """
+
+    if test.runner.require_control(self):
+      return
+
+    test_start = time.time()
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_socket() as control_socket:
+      connection_time = control_socket.connection_time()
+
+      # connection time should be between our tests start and now
+
+      self.assertTrue(test_start <= connection_time <= time.time())
+
+      # connection time should be absolute (shouldn't change as time goes on)
+
+      time.sleep(0.1)
+      self.assertEqual(connection_time, control_socket.connection_time())
+
+      # should change to the disconnection time if we detactch
+
+      control_socket.close()
+      disconnection_time = control_socket.connection_time()
+      self.assertTrue(connection_time < disconnection_time <= time.time())
+
+      # then change again if we reconnect
+
+      time.sleep(0.1)
+      control_socket.connect()
+      reconnection_time = control_socket.connection_time()
+      self.assertTrue(disconnection_time < reconnection_time <= time.time())
+
   def test_send_buffered(self):
     """
     Sends multiple requests before receiving back any of the replies.

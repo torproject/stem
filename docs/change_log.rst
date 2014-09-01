@@ -40,6 +40,10 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Controller**
+
+  * Added :func:`~stem.control.BaseController.connection_time` to the :class:`~stem.control.BaseController`
+
  * **Descriptors**
 
   * Improved speed for parsing consensus documents by around 30% (:trac:`12859`)

@@ -72,6 +72,7 @@ from __future__ import absolute_import
 import re
 import socket
 import threading
+import time
 
 import stem.prereq
 import stem.response
@@ -93,6 +94,7 @@ class ControlSocket(object):
   def __init__(self):
     self._socket, self._socket_file = None, None
     self._is_alive = False
+    self._connection_time = 0.0  # time when we last connected or disconnected
 
     # Tracks sending and receiving separately. This should be safe, and doing
     # so prevents deadlock where we block writes because we're waiting to read
@@ -203,6 +205,18 @@ class ControlSocket(object):
 
     return False
 
+  def connection_time(self):
+    """
+    Provides the unix timestamp for when our socket was either connected or
+    disconnected. That is to say, the time we connected if we're presently
+    connected and the time we disconnected if we're not connected.
+
+    :returns: **float** for when we last connected or disconnected, zero if
+      we've never connected
+    """
+
+    return self._connection_time
+
   def connect(self):
     """
     Connects to a new socket, closing our previous one if we're already
@@ -223,6 +237,7 @@ class ControlSocket(object):
         self._socket = self._make_socket()
         self._socket_file = self._socket.makefile(mode = 'rwb')
         self._is_alive = True
+        self._connection_time = time.time()
 
         # It's possible for this to have a transient failure...
         # SocketError: [Errno 4] Interrupted system call
@@ -273,6 +288,7 @@ class ControlSocket(object):
       self._socket = None
       self._socket_file = None
       self._is_alive = False
+      self._connection_time = time.time()
 
       if is_change:
         self._close()

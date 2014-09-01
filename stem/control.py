@@ -478,6 +478,18 @@ class BaseController(object):
 
     return self._socket.is_alive()
 
+  def connection_time(self):
+    """
+    Provides the unix timestamp for when our socket was either connected or
+    disconnected. That is to say, the time we connected if we're presently
+    connected and the time we disconnected if we're not connected.
+
+    :returns: **float** for when we last connected or disconnected, zero if
+      we've never connected
+    """
+
+    return self._socket.connection_time()
+
   def is_authenticated(self):
     """
     Checks if our socket is both connected and authenticated.
