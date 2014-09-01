@@ -40,8 +40,6 @@ constructed as simple type listings...
     +- __iter__ - iterator over our enum keys
 """
 
-import stem.util.str_tools
-
 
 def UppercaseEnum(*args):
   """
@@ -70,12 +68,14 @@ class Enum(object):
   """
 
   def __init__(self, *args):
+    from stem.util.str_tools import _to_camel_case
+
     # ordered listings of our keys and values
     keys, values = [], []
 
     for entry in args:
       if isinstance(entry, (bytes, unicode)):
-        key, val = entry, stem.util.str_tools._to_camel_case(entry)
+        key, val = entry, _to_camel_case(entry)
       elif isinstance(entry, tuple) and len(entry) == 2:
         key, val = entry
       else:

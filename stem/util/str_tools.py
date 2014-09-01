@@ -8,6 +8,8 @@ Toolkit for various string activity.
 
 ::
 
+  crop - shortens string to a given length
+
   get_size_label - human readable label for a number of bytes
   get_time_label - human readable label for a number of seconds
   get_time_labels - human readable labels for each time unit
@@ -17,8 +19,11 @@ Toolkit for various string activity.
 
 import codecs
 import datetime
+import sys
 
 import stem.prereq
+import stem.util.enum
+
 
 # label conversion tuples of the form...
 # (bits / bytes / seconds, short label, long label)
@@ -129,6 +134,121 @@ def _to_camel_case(label, divider = '_', joiner = ' '):
       words.append(entry[0].upper() + entry[1:].lower())
 
   return joiner.join(words)
+
+
+# This needs to be defined after _to_camel_case() to avoid a circular
+# dependency with the enum module.
+
+Ending = stem.util.enum.Enum('ELLIPSE', 'HYPHEN')
+
+
+def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, get_remainder = False):
+  """
+  Shortens a string to a given length.
+
+  If we crop content then a given ending is included (counting itself toward
+  the size limitation). This crops on word breaks so we only include a word if
+  we can display at least **min_word_length** characters of it.
+
+  If there isn't room for even a truncated single word (or one word plus the
+  ellipse if including those) then this provides an empty string.
+
+  If a cropped string ends with a comma or period then it's stripped (unless
+  we're providing the remainder back). For example...
+
+    >>> crop('This is a looooong message', 17)
+    'This is a looo...'
+
+    >>> crop('This is a looooong message', 12)
+    'This is a...'
+
+    >>> crop('This is a looooong message', 3)
+    ''
+
+  The whole point of this method is to provide human friendly croppings, and as
+  such details of how this works might change in the future. Callers should not
+  rely on the details of how this crops.
+
+  :param str msg: text to be processed
+  :param int size: space available for text
+  :param int min_word_length: minimum characters before which a word is
+    dropped, requires whole word if **None**
+  :param int min_crop: minimum characters that must be dropped if a word is
+    cropped
+  :param Ending ending: type of ending used when truncating, no special
+    truncation is used if **None**
+  :param bool get_remainder: returns a tuple with the second part being the
+    cropped portion of the message
+
+  :returns: **str** of the text truncated to the given length
+  """
+
+  # checks if there's room for the whole message
+
+  if len(msg) <= size:
+    return (msg, '') if get_remainder else msg
+
+  if size < 0:
+    raise ValueError("Crop size can't be negative (received %i)" % size)
+  elif min_word_length and min_word_length < 0:
+    raise ValueError("Crop's min_word_length can't be negative (received %i)" % min_word_length)
+  elif min_crop < 0:
+    raise ValueError("Crop's min_crop can't be negative (received %i)" % min_crop)
+
+  # since we're cropping, the effective space available is less with an
+  # ellipse, and cropping words requires an extra space for hyphens
+
+  if ending == Ending.ELLIPSE:
+    size -= 3
+  elif min_word_length and ending == Ending.HYPHEN:
+    min_word_length += 1
+
+  if min_word_length is None:
+    min_word_length = sys.maxint
+
+  # checks if there isn't the minimum space needed to include anything
+
+  last_wordbreak = msg.rfind(' ', 0, size + 1)
+
+  if last_wordbreak == -1:
+    # we're splitting the first word
+
+    if size < min_word_length:
+      return ('', msg) if get_remainder else ''
+
+    include_crop = True
+  else:
+    last_wordbreak = len(msg[:last_wordbreak].rstrip())  # drops extra ending whitespaces
+    include_crop = size - last_wordbreak - 1 >= min_word_length
+
+  # if there's a max crop size then make sure we're cropping at least that many characters
+
+  if include_crop and min_crop:
+    next_wordbreak = msg.find(' ', size)
+
+    if next_wordbreak == -1:
+      next_wordbreak = len(msg)
+
+    include_crop = next_wordbreak - size + 1 >= min_crop
+
+  if include_crop:
+    return_msg, remainder = msg[:size], msg[size:]
+
+    if ending == Ending.HYPHEN:
+      remainder = return_msg[-1] + remainder
+      return_msg = return_msg[:-1].rstrip() + '-'
+  else:
+    return_msg, remainder = msg[:last_wordbreak], msg[last_wordbreak:]
+
+  # if this is ending with a comma or period then strip it off
+
+  if not get_remainder and return_msg and return_msg[-1] in (',', '.'):
+    return_msg = return_msg[:-1]
+
+  if ending == Ending.ELLIPSE:
+    return_msg = return_msg.rstrip() + '...'
+
+  return (return_msg, remainder) if get_remainder else return_msg
 
 
 def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):

@@ -59,6 +59,7 @@ class TestDocumentation(unittest.TestCase):
       elif path.endswith('/stem/util/str_tools.py'):
         args['globs'] = {
           '_to_camel_case': stem.util.str_tools._to_camel_case,
+          'crop': stem.util.str_tools.crop,
           'get_size_label': stem.util.str_tools.get_size_label,
           'get_time_label': stem.util.str_tools.get_time_label,
           'get_time_labels': stem.util.str_tools.get_time_labels,

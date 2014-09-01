@@ -25,6 +25,12 @@ class TestStrTools(unittest.TestCase):
     self.assertEquals('Hello\tworld', str_tools._to_camel_case('hello\tWORLD'))
     self.assertEquals('Hello\t\tWorld', str_tools._to_camel_case('hello__world', '_', '\t'))
 
+  def test_crop(self):
+    # test the pydoc examples
+    self.assertEquals('This is a looo...', str_tools.crop('This is a looooong message', 17))
+    self.assertEquals('This is a...', str_tools.crop('This is a looooong message', 12))
+    self.assertEquals('', str_tools.crop('This is a looooong message', 3))
+
   def test_get_size_label(self):
     """
     Checks the get_size_label() function.
