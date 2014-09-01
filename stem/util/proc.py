@@ -26,6 +26,7 @@ future, use them at your own risk.**
   get_uid - provides the user id a process is running under
   get_memory_usage - provides the memory usage of a process
   get_stats - queries statistics about a process
+  get_file_descriptors_used - number of file descriptors used by a process
   get_connections - provides the connections made by a process
 
 .. data:: Stat (enum)
@@ -292,6 +293,31 @@ def get_stats(pid, *stat_types):
   return tuple(results)
 
 
+def get_file_descriptors_used(pid):
+  """
+  Provides the number of file descriptors currently being used by a process.
+
+  :param int pid: process id of the process to be queried
+
+  :returns: **int** of the number of file descriptors used
+
+  :raises: **IOError** if it can't be determined
+  """
+
+  try:
+    pid = int(pid)
+
+    if pid < 0:
+      raise IOError("Process pids can't be negative: %s" % pid)
+  except (ValueError, TypeError):
+    raise IOError('Process pid was non-numeric: %s' % pid)
+
+  try:
+    return len(os.listdir('/proc/%i/fd' % pid))
+  except Exception as exc:
+    raise IOError("Unable to check number of file descriptors used: %s" % exc)
+
+
 def get_connections(pid):
   """
   Queries connection related information from the proc contents. This provides
@@ -307,11 +333,13 @@ def get_connections(pid):
   :raises: **IOError** if it can't be determined
   """
 
-  if isinstance(pid, str):
-    try:
-      pid = int(pid)
-    except ValueError:
-      raise IOError('Process pid was non-numeric: %s' % pid)
+  try:
+    pid = int(pid)
+
+    if pid < 0:
+      raise IOError("Process pids can't be negative: %s" % pid)
+  except (ValueError, TypeError):
+    raise IOError('Process pid was non-numeric: %s' % pid)
 
   if pid == 0:
     return []

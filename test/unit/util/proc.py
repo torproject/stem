@@ -144,6 +144,37 @@ class TestProc(unittest.TestCase):
       self.assertEquals(response, proc.get_stats(0, *args))
 
   @patch('os.listdir')
+  def test_get_file_descriptors_used(self, listdir_mock):
+    """
+    Tests the get_file_descriptors_used function.
+    """
+
+    # check that we reject bad pids
+
+    for arg in (None, -100, 'hello',):
+      self.assertRaises(IOError, proc.get_file_descriptors_used, arg)
+
+    # when proc directory doesn't exist
+
+    error_msg = "OSError: [Errno 2] No such file or directory: '/proc/2118/fd'"
+    listdir_mock.side_effect = OSError(error_msg)
+
+    try:
+      proc.get_file_descriptors_used(2118)
+      self.fail("We should raise when listdir() fails")
+    except IOError as exc:
+      expected = "Unable to check number of file descriptors used: %s" % error_msg
+      self.assertEqual(expected, str(exc))
+
+    # successful calls
+
+    listdir_mock.return_value = ['0', '1', '2', '3', '4', '5']
+    listdir_mock.side_effect = None
+
+    self.assertEqual(6, proc.get_file_descriptors_used(2118))
+    self.assertEqual(6, proc.get_file_descriptors_used('2118'))
+
+  @patch('os.listdir')
   @patch('os.readlink')
   @patch('stem.util.proc.open', create = True)
   def test_get_connections(self, open_mock, readlink_mock, listdir_mock):
