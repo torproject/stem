@@ -15,8 +15,9 @@ Dave Daeschler, Giampaolo Rodola' and is under the BSD license.
 **These functions are not being vended to stem users. They may change in the
 future, use them at your own risk.**
 
-**Note:** Many functions were previously named with a get_* prefix. Those names
-are now aliases, and will be dropped in Stem version 2.0.0.
+.. versionchanged:: 1.3.0
+   Dropped the get_* prefix from several function names. The old names still
+   work, but are deprecated aliases.
 
 **Module Overview:**
 

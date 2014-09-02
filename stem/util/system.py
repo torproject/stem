@@ -6,8 +6,9 @@ Helper functions for working with the underlying system. These are mostly os
 dependent, only working on linux, osx, and bsd. In almost all cases they're
 best-effort, providing **None** if the lookup fails.
 
-**Note:** Many functions were previously named with a get_* prefix. Those names
-are now aliases, and will be dropped in Stem version 2.0.0.
+.. versionchanged:: 1.3.0
+   Dropped the get_* prefix from several function names. The old names still
+   work, but are deprecated aliases.
 
 **Module Overview:**
 

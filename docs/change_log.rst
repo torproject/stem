@@ -55,6 +55,7 @@ The following are only available within Stem's `git repository
   * Changed :func:`stem.util.conf.uses_settings` to only provide a 'config' keyword arument if the decorated function would accept it.
   * Added :func:`stem.util.str_tools.crop`
   * Added :func:`stem.util.proc.get_file_descriptors_used`
+  * Dropped the 'get_*' prefix from most function names. Old names will still work, but are a deprecated alias.
 
  * **Interpreter**
 
