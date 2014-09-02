@@ -13,8 +13,8 @@ Helper functions for testing.
   is_pyflakes_available - checks if pyflakes is available
   is_pep8_available - checks if pep8 is available
 
-  get_stylistic_issues - checks for PEP8 and other stylistic issues
-  get_pyflakes_issues - static checks for problems via pyflakes
+  stylistic_issues - checks for PEP8 and other stylistic issues
+  pyflakes_issues - static checks for problems via pyflakes
 """
 
 import os
@@ -103,7 +103,7 @@ def is_pep8_available():
     return False
 
 
-def get_stylistic_issues(paths, check_two_space_indents = False, check_newlines = False, check_trailing_whitespace = False, check_exception_keyword = False):
+def stylistic_issues(paths, check_two_space_indents = False, check_newlines = False, check_trailing_whitespace = False, check_exception_keyword = False):
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
   we conform to. You can suppress PEP8 issues by making a 'test' configuration
@@ -131,10 +131,14 @@ def get_stylistic_issues(paths, check_two_space_indents = False, check_newlines 
     test_config = stem.util.conf.get_config('test')
     test_config.load('test/settings.cfg')
 
-    issues = get_stylistic_issues('my_project')
+    issues = stylistic_issues('my_project')
 
   If a 'exclude_paths' was set in our test config then we exclude any absolute
   paths matching those regexes.
+
+  .. versionchanged:: 1.3.0
+     Renamed from get_stylistic_issues() to stylistic_issues(). The old name
+     still works as an alias, but will be dropped in Stem version 2.0.0.
 
   :param list paths: paths to search for stylistic issues
   :param bool check_two_space_indents: check for two space indentations and
@@ -209,7 +213,7 @@ def get_stylistic_issues(paths, check_two_space_indents = False, check_newlines 
   return issues
 
 
-def get_pyflakes_issues(paths):
+def pyflakes_issues(paths):
   """
   Performs static checks via pyflakes. False positives can be ignored via
   'pyflakes.ignore' entries in our 'test' config. For instance...
@@ -221,6 +225,10 @@ def get_pyflakes_issues(paths):
 
   If a 'exclude_paths' was set in our test config then we exclude any absolute
   paths matching those regexes.
+
+  .. versionchanged:: 1.3.0
+     Renamed from get_pyflakes_issues() to pyflakes_issues(). The old name
+     still works as an alias, but will be dropped in Stem version 2.0.0.
 
   :param list paths: paths to search for problems
 
@@ -284,3 +292,10 @@ def _python_files(paths):
 
       if not skip:
         yield file_path
+
+# TODO: drop with stem 2.x
+# We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
+# names for backward compatability.
+
+get_stylistic_issues = stylistic_issues
+get_pyflakes_issues = pyflakes_issues
