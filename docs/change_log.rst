@@ -43,6 +43,7 @@ The following are only available within Stem's `git repository
  * **Controller**
 
   * Added :func:`~stem.control.BaseController.connection_time` to the :class:`~stem.control.BaseController`
+  * Changed :func:`~stem.control.Controller.get_microdescriptor`, :func:`~stem.control.Controller.get_server_descriptor`, and :func:`~stem.control.Controller.get_network_status` to get our own descriptor if no fingerprint or nickname is provided.
 
  * **Descriptors**
 

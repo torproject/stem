@@ -1311,11 +1311,16 @@ class Controller(BaseController):
     else:
       return default
 
-  def get_microdescriptor(self, relay, default = UNDEFINED):
+  def get_microdescriptor(self, relay = None, default = UNDEFINED):
     """
     Provides the microdescriptor for the relay with the given fingerprint or
     nickname. If the relay identifier could be either a fingerprint *or*
     nickname then it's queried as a fingerprint.
+
+    If no **relay** is provided then this defaults to ourselves. Remember that
+    this requires that we've retrieved our own descriptor from remote
+    authorities so this both won't be available for newly started relays and
+    may be up to around an hour out of date.
 
     :param str relay: fingerprint or nickname of the relay to be queried
     :param object default: response if the query fails
@@ -1331,6 +1336,12 @@ class Controller(BaseController):
     """
 
     try:
+      if relay is None:
+        try:
+          relay = self.get_info('fingerprint')
+        except stem.ControllerError as exc:
+          raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
+
       if stem.util.tor_tools.is_valid_fingerprint(relay):
         query = 'md/id/%s' % relay
       elif stem.util.tor_tools.is_valid_nickname(relay):
@@ -1395,11 +1406,16 @@ class Controller(BaseController):
           for entry in default:
             yield entry
 
-  def get_server_descriptor(self, relay, default = UNDEFINED):
+  def get_server_descriptor(self, relay = None, default = UNDEFINED):
     """
     Provides the server descriptor for the relay with the given fingerprint or
     nickname. If the relay identifier could be either a fingerprint *or*
     nickname then it's queried as a fingerprint.
+
+    If no **relay** is provided then this defaults to ourselves. Remember that
+    this requires that we've retrieved our own descriptor from remote
+    authorities so this both won't be available for newly started relays and
+    may be up to around an hour out of date.
 
     **As of Tor version 0.2.3.25 relays no longer get server descriptors by
     default.** It's advised that you use microdescriptors instead, but if you
@@ -1420,6 +1436,12 @@ class Controller(BaseController):
     """
 
     try:
+      if relay is None:
+        try:
+          relay = self.get_info('fingerprint')
+        except stem.ControllerError as exc:
+          raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
+
       if stem.util.tor_tools.is_valid_fingerprint(relay):
         query = 'desc/id/%s' % relay
       elif stem.util.tor_tools.is_valid_nickname(relay):
@@ -1487,7 +1509,7 @@ class Controller(BaseController):
     return self.get_version() < stem.version.Requirement.MICRODESCRIPTOR_IS_DEFAULT or \
            self.get_conf('UseMicrodescriptors', None) == '0'
 
-  def get_network_status(self, relay, default = UNDEFINED):
+  def get_network_status(self, relay = None, default = UNDEFINED):
     """
     Provides the router status entry for the relay with the given fingerprint
     or nickname. If the relay identifier could be either a fingerprint *or*
@@ -1503,6 +1525,11 @@ class Controller(BaseController):
 
     ... and :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
     otherwise.
+
+    If no **relay** is provided then this defaults to ourselves. Remember that
+    this requires that we've retrieved our own descriptor from remote
+    authorities so this both won't be available for newly started relays and
+    may be up to around an hour out of date.
 
     :param str relay: fingerprint or nickname of the relay to be queried
     :param object default: response if the query fails
@@ -1524,6 +1551,12 @@ class Controller(BaseController):
     # https://trac.torproject.org/7953
 
     try:
+      if relay is None:
+        try:
+          relay = self.get_info('fingerprint')
+        except stem.ControllerError as exc:
+          raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
+
       if stem.util.tor_tools.is_valid_fingerprint(relay):
         query = 'ns/id/%s' % relay
       elif stem.util.tor_tools.is_valid_nickname(relay):
