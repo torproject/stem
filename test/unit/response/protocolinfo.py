@@ -176,7 +176,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
       control_message = mocking.get_message(RELATIVE_COOKIE_PATH)
       stem.response.convert('PROTOCOLINFO', control_message)
 
-      stem.connection._expand_cookie_path(control_message, stem.util.system.get_pid_by_name, 'tor')
+      stem.connection._expand_cookie_path(control_message, stem.util.system.pid_by_name, 'tor')
 
       self.assertEquals(os.path.join('/tmp/foo', 'tor-browser_en-US', 'Data', 'control_auth_cookie'), control_message.cookie_path)
 

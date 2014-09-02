@@ -38,7 +38,7 @@ simple script that dumps Tor's present connections.
   import sys 
 
   from stem.util.connection import get_connections, get_system_resolvers
-  from stem.util.system import get_pid_by_name
+  from stem.util.system import pid_by_name
 
   resolvers = get_system_resolvers()
 
@@ -49,7 +49,7 @@ simple script that dumps Tor's present connections.
   picked_resolver = resolvers[0]  # lets just opt for the first
   print "Our platform supports connection resolution via: %s (picked %s)" % (', '.join(resolvers), picked_resolver)
 
-  tor_pids = get_pid_by_name('tor', multiple = True)
+  tor_pids = pid_by_name('tor', multiple = True)
 
   if not tor_pids:
     print "Unable to get tor's pid. Is it running?"

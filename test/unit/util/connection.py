@@ -145,7 +145,7 @@ class TestConnection(unittest.TestCase):
     self.assertEqual('BitTorrent', stem.util.connection.port_usage(6999))
     self.assertEqual(None, stem.util.connection.port_usage(30000))  # unrecognized port
 
-  @patch('stem.util.proc.get_connections')
+  @patch('stem.util.proc.connections')
   def test_get_connections_by_proc(self, proc_mock):
     """
     Checks the get_connections function with the proc resolver.

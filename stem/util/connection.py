@@ -172,7 +172,7 @@ def get_connections(resolver, process_pid = None, process_name = None):
     raise ValueError('%s resolution requires a pid' % resolver)
 
   if resolver == Resolver.PROC:
-    return [Connection(*conn) for conn in stem.util.proc.get_connections(process_pid)]
+    return [Connection(*conn) for conn in stem.util.proc.connections(process_pid)]
 
   resolver_command = RESOLVER_COMMAND[resolver].format(pid = process_pid)
 

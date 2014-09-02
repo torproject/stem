@@ -1242,7 +1242,7 @@ class Controller(BaseController):
       pid = self.get_pid(None)
 
       if pid:
-        user = stem.util.system.get_user(pid)
+        user = stem.util.system.user(pid)
 
     if user:
       self._set_cache({'user': user})
@@ -1290,15 +1290,15 @@ class Controller(BaseController):
             pid = int(pid_file_contents)
 
       if not pid:
-        pid = stem.util.system.get_pid_by_name('tor')
+        pid = stem.util.system.pid_by_name('tor')
 
       if not pid:
         control_socket = self.get_socket()
 
         if isinstance(control_socket, stem.socket.ControlPort):
-          pid = stem.util.system.get_pid_by_port(control_socket.get_port())
+          pid = stem.util.system.pid_by_port(control_socket.get_port())
         elif isinstance(control_socket, stem.socket.ControlSocketFile):
-          pid = stem.util.system.get_pid_by_open_file(control_socket.get_socket_path())
+          pid = stem.util.system.pid_by_open_file(control_socket.get_socket_path())
 
     if pid:
       self._set_cache({'pid': pid})

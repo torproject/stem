@@ -76,9 +76,9 @@ class TestSystem(unittest.TestCase):
     self.assertTrue(stem.util.system.is_running('tor'))
     self.assertFalse(stem.util.system.is_running('blarg_and_stuff'))
 
-  def test_get_pid_by_name(self):
+  def test_pid_by_name(self):
     """
-    Checks general usage of the stem.util.system.get_pid_by_name function. This
+    Checks general usage of the stem.util.system.pid_by_name function. This
     will fail if there's other tor instances running.
     """
 
@@ -90,12 +90,12 @@ class TestSystem(unittest.TestCase):
       return
 
     tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_name('tor'))
-    self.assertEquals(None, stem.util.system.get_pid_by_name('blarg_and_stuff'))
+    self.assertEquals(tor_pid, stem.util.system.pid_by_name('tor'))
+    self.assertEquals(None, stem.util.system.pid_by_name('blarg_and_stuff'))
 
-  def test_get_pid_by_name_pgrep(self):
+  def test_pid_by_name_pgrep(self):
     """
-    Tests the get_pid_by_name function with a pgrep response.
+    Tests the pid_by_name function with a pgrep response.
     """
 
     if self._is_extra_tor_running():
@@ -113,11 +113,11 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name('tor'))
+      self.assertEquals(tor_pid, stem.util.system.pid_by_name('tor'))
 
-  def test_get_pid_by_name_pidof(self):
+  def test_pid_by_name_pidof(self):
     """
-    Tests the get_pid_by_name function with a pidof response.
+    Tests the pid_by_name function with a pidof response.
     """
 
     if self._is_extra_tor_running():
@@ -135,11 +135,11 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name('tor'))
+      self.assertEquals(tor_pid, stem.util.system.pid_by_name('tor'))
 
-  def test_get_pid_by_name_ps_linux(self):
+  def test_pid_by_name_ps_linux(self):
     """
-    Tests the get_pid_by_name function with the linux variant of ps.
+    Tests the pid_by_name function with the linux variant of ps.
     """
 
     if self._is_extra_tor_running():
@@ -160,11 +160,11 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name('tor'))
+      self.assertEquals(tor_pid, stem.util.system.pid_by_name('tor'))
 
-  def test_get_pid_by_name_ps_bsd(self):
+  def test_pid_by_name_ps_bsd(self):
     """
-    Tests the get_pid_by_name function with the bsd variant of ps.
+    Tests the pid_by_name function with the bsd variant of ps.
     """
 
     if self._is_extra_tor_running():
@@ -185,11 +185,11 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_name('tor'))
+      self.assertEquals(tor_pid, stem.util.system.pid_by_name('tor'))
 
-  def test_get_pid_by_name_lsof(self):
+  def test_pid_by_name_lsof(self):
     """
-    Tests the get_pid_by_name function with a lsof response.
+    Tests the pid_by_name function with a lsof response.
     """
 
     runner = test.runner.get_runner()
@@ -211,14 +211,14 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       our_tor_pid = test.runner.get_runner().get_pid()
-      all_tor_pids = stem.util.system.get_pid_by_name('tor', multiple = True)
+      all_tor_pids = stem.util.system.pid_by_name('tor', multiple = True)
 
       if len(all_tor_pids) == 1:
         self.assertEquals(our_tor_pid, all_tor_pids[0])
 
-  def test_get_pid_by_port(self):
+  def test_pid_by_port(self):
     """
-    Checks general usage of the stem.util.system.get_pid_by_port function.
+    Checks general usage of the stem.util.system.pid_by_port function.
     """
 
     runner = test.runner.get_runner()
@@ -241,12 +241,12 @@ class TestSystem(unittest.TestCase):
       return
 
     tor_pid, tor_port = runner.get_pid(), test.runner.CONTROL_PORT
-    self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(tor_port))
-    self.assertEquals(None, stem.util.system.get_pid_by_port(99999))
+    self.assertEquals(tor_pid, stem.util.system.pid_by_port(tor_port))
+    self.assertEquals(None, stem.util.system.pid_by_port(99999))
 
-  def test_get_pid_by_port_netstat(self):
+  def test_pid_by_port_netstat(self):
     """
-    Tests the get_pid_by_port function with a netstat response.
+    Tests the pid_by_port function with a netstat response.
     """
 
     runner = test.runner.get_runner()
@@ -271,11 +271,11 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
+      self.assertEquals(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
 
-  def test_get_pid_by_port_sockstat(self):
+  def test_pid_by_port_sockstat(self):
     """
-    Tests the get_pid_by_port function with a sockstat response.
+    Tests the pid_by_port function with a sockstat response.
     """
 
     runner = test.runner.get_runner()
@@ -300,11 +300,11 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
+      self.assertEquals(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
 
-  def test_get_pid_by_port_lsof(self):
+  def test_pid_by_port_lsof(self):
     """
-    Tests the get_pid_by_port function with a lsof response.
+    Tests the pid_by_port function with a lsof response.
     """
 
     runner = test.runner.get_runner()
@@ -329,24 +329,24 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.get_pid_by_port(test.runner.CONTROL_PORT))
+      self.assertEquals(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
 
-  def test_get_pid_by_open_file(self):
+  def test_pid_by_open_file(self):
     """
-    Checks the stem.util.system.get_pid_by_open_file function.
+    Checks the stem.util.system.pid_by_open_file function.
     """
 
     # check a directory that exists, but isn't claimed by any application
     tmpdir = tempfile.mkdtemp()
-    self.assertEquals(None, stem.util.system.get_pid_by_open_file(tmpdir))
+    self.assertEquals(None, stem.util.system.pid_by_open_file(tmpdir))
 
     # check a directory that doesn't exist
     os.rmdir(tmpdir)
-    self.assertEquals(None, stem.util.system.get_pid_by_open_file(tmpdir))
+    self.assertEquals(None, stem.util.system.pid_by_open_file(tmpdir))
 
-  def test_get_cwd(self):
+  def test_cwd(self):
     """
-    Checks general usage of the stem.util.system.get_cwd function.
+    Checks general usage of the stem.util.system.cwd function.
     """
 
     runner = test.runner.get_runner()
@@ -359,12 +359,12 @@ class TestSystem(unittest.TestCase):
       return
 
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
-    self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
-    self.assertEquals(None, stem.util.system.get_cwd(99999))
+    self.assertEquals(tor_cwd, stem.util.system.cwd(runner_pid))
+    self.assertEquals(None, stem.util.system.cwd(99999))
 
-  def test_get_cwd_pwdx(self):
+  def test_cwd_pwdx(self):
     """
-    Tests the get_pid_by_cwd function with a pwdx response.
+    Tests the pid_by_cwd function with a pwdx response.
     """
 
     runner = test.runner.get_runner()
@@ -386,11 +386,11 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
-      self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
+      self.assertEquals(tor_cwd, stem.util.system.cwd(runner_pid))
 
-  def test_get_cwd_lsof(self):
+  def test_cwd_lsof(self):
     """
-    Tests the get_pid_by_cwd function with a lsof response.
+    Tests the pid_by_cwd function with a lsof response.
     """
 
     runner = test.runner.get_runner()
@@ -412,20 +412,20 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
-      self.assertEquals(tor_cwd, stem.util.system.get_cwd(runner_pid))
+      self.assertEquals(tor_cwd, stem.util.system.cwd(runner_pid))
 
-  def test_get_user_none(self):
+  def test_user_none(self):
     """
-    Tests the get_user function when the process doesn't exist.
+    Tests the user function when the process doesn't exist.
     """
 
-    self.assertEqual(None, stem.util.system.get_user(None))
-    self.assertEqual(None, stem.util.system.get_user(-5))
-    self.assertEqual(None, stem.util.system.get_start_time(98765))
+    self.assertEqual(None, stem.util.system.user(None))
+    self.assertEqual(None, stem.util.system.user(-5))
+    self.assertEqual(None, stem.util.system.start_time(98765))
 
-  def test_get_user_proc(self):
+  def test_user_proc(self):
     """
-    Tests the get_user function with a proc response.
+    Tests the user function with a proc response.
     """
 
     if not stem.util.proc.is_available():
@@ -440,12 +440,12 @@ class TestSystem(unittest.TestCase):
       # we started our tor process so it should be running with the same user
 
       pid = test.runner.get_runner().get_pid()
-      self.assertTrue(getpass.getuser(), stem.util.system.get_user(pid))
+      self.assertTrue(getpass.getuser(), stem.util.system.user(pid))
 
   @patch('stem.util.proc.is_available', Mock(return_value = False))
-  def test_get_user_ps(self):
+  def test_user_ps(self):
     """
-    Tests the get_user function with a ps response.
+    Tests the user function with a ps response.
     """
 
     if not stem.util.system.is_available('ps'):
@@ -453,20 +453,20 @@ class TestSystem(unittest.TestCase):
       return
 
     pid = test.runner.get_runner().get_pid()
-    self.assertTrue(getpass.getuser(), stem.util.system.get_user(pid))
+    self.assertTrue(getpass.getuser(), stem.util.system.user(pid))
 
-  def test_get_start_time_none(self):
+  def test_start_time_none(self):
     """
-    Tests the get_start_time function when the process doesn't exist.
+    Tests the start_time function when the process doesn't exist.
     """
 
-    self.assertEqual(None, stem.util.system.get_start_time(None))
-    self.assertEqual(None, stem.util.system.get_start_time(-5))
-    self.assertEqual(None, stem.util.system.get_start_time(98765))
+    self.assertEqual(None, stem.util.system.start_time(None))
+    self.assertEqual(None, stem.util.system.start_time(-5))
+    self.assertEqual(None, stem.util.system.start_time(98765))
 
-  def test_get_start_time_proc(self):
+  def test_start_time_proc(self):
     """
-    Tests the get_start_time function with a proc response.
+    Tests the start_time function with a proc response.
     """
 
     if not stem.util.proc.is_available():
@@ -479,12 +479,12 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       pid = test.runner.get_runner().get_pid()
-      self.assertTrue(stem.util.system.get_start_time(pid) >= 0)
+      self.assertTrue(stem.util.system.start_time(pid) >= 0)
 
   @patch('stem.util.proc.is_available', Mock(return_value = False))
-  def test_get_start_time_ps(self):
+  def test_start_time_ps(self):
     """
-    Tests the get_start_time function with a ps response.
+    Tests the start_time function with a ps response.
     """
 
     if not stem.util.system.is_available('ps'):
@@ -492,16 +492,16 @@ class TestSystem(unittest.TestCase):
       return
 
     pid = test.runner.get_runner().get_pid()
-    self.assertTrue(stem.util.system.get_start_time(pid) >= 0)
+    self.assertTrue(stem.util.system.start_time(pid) >= 0)
 
-  def test_get_bsd_jail_id(self):
+  def test_bsd_jail_id(self):
     """
-    Exercises the stem.util.system.get_bsd_jail_id function, running through
+    Exercises the stem.util.system.bsd_jail_id function, running through
     the failure case (since I'm not on BSD I can't really test this function
     properly).
     """
 
-    self.assertEquals(0, stem.util.system.get_bsd_jail_id(99999))
+    self.assertEquals(0, stem.util.system.bsd_jail_id(99999))
 
   def test_expand_path(self):
     """
