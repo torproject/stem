@@ -4,16 +4,19 @@
 """
 Toolkit for various string activity.
 
+**Note:** Many functions were previously named with a get_* prefix. Those names
+are now aliases, and will be dropped in Stem version 2.0.0.
+
 **Module Overview:**
 
 ::
 
   crop - shortens string to a given length
 
-  get_size_label - human readable label for a number of bytes
-  get_time_label - human readable label for a number of seconds
-  get_time_labels - human readable labels for each time unit
-  get_short_time_label - condensed time label output
+  size_label - human readable label for a number of bytes
+  time_label - human readable label for a number of seconds
+  time_labels - human readable labels for each time unit
+  short_time_label - condensed time label output
   parse_short_time_label - seconds represented by a short time label
 """
 
@@ -251,7 +254,7 @@ def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, 
   return (return_msg, remainder) if get_remainder else return_msg
 
 
-def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
+def size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
   """
   Converts a number of bytes into a human readable label in its most
   significant units. For instance, 7500 bytes would return "7 KB". If the
@@ -261,13 +264,13 @@ def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
 
   ::
 
-    >>> get_size_label(2000000)
+    >>> size_label(2000000)
     '1 MB'
 
-    >>> get_size_label(1050, 2)
+    >>> size_label(1050, 2)
     '1.02 KB'
 
-    >>> get_size_label(1050, 3, True)
+    >>> size_label(1050, 3, True)
     '1.025 Kilobytes'
 
   :param int byte_count: number of bytes to be converted
@@ -284,7 +287,7 @@ def get_size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
     return _get_label(SIZE_UNITS_BITS, byte_count, decimal, is_long)
 
 
-def get_time_label(seconds, decimal = 0, is_long = False):
+def time_label(seconds, decimal = 0, is_long = False):
   """
   Converts seconds into a time label truncated to its most significant units.
   For instance, 7500 seconds would return "2h". Units go up through days.
@@ -296,13 +299,13 @@ def get_time_label(seconds, decimal = 0, is_long = False):
 
   ::
 
-    >>> get_time_label(10000)
+    >>> time_label(10000)
     '2h'
 
-    >>> get_time_label(61, 1, True)
+    >>> time_label(61, 1, True)
     '1.0 minute'
 
-    >>> get_time_label(61, 2, True)
+    >>> time_label(61, 2, True)
     '1.01 minutes'
 
   :param int seconds: number of seconds to be converted
@@ -315,7 +318,7 @@ def get_time_label(seconds, decimal = 0, is_long = False):
   return _get_label(TIME_UNITS, seconds, decimal, is_long)
 
 
-def get_time_labels(seconds, is_long = False):
+def time_labels(seconds, is_long = False):
   """
   Provides a list of label conversions for each time unit, starting with its
   most significant units on down. Any counts that evaluate to zero are omitted.
@@ -323,10 +326,10 @@ def get_time_labels(seconds, is_long = False):
 
   ::
 
-    >>> get_time_labels(400)
+    >>> time_labels(400)
     ['6m', '40s']
 
-    >>> get_time_labels(3640, True)
+    >>> time_labels(3640, True)
     ['1 hour', '40 seconds']
 
   :param int seconds: number of seconds to be converted
@@ -345,17 +348,17 @@ def get_time_labels(seconds, is_long = False):
   return time_labels
 
 
-def get_short_time_label(seconds):
+def short_time_label(seconds):
   """
   Provides a time in the following format:
   [[dd-]hh:]mm:ss
 
   ::
 
-    >>> get_short_time_label(111)
+    >>> short_time_label(111)
     '01:51'
 
-    >>> get_short_time_label(544100)
+    >>> short_time_label(544100)
     '6-07:08:20'
 
   :param int seconds: number of seconds to be converted
@@ -505,3 +508,12 @@ def _get_label(units, count, decimal, is_long):
         return count_label + long_label + ('s' if is_plural else '')
       else:
         return count_label + short_label
+
+# TODO: drop with stem 2.x
+# We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
+# names for backward compatability.
+
+get_size_label = size_label
+get_time_label = time_label
+get_time_labels = time_labels
+get_short_time_label = short_time_label

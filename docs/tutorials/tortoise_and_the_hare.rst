@@ -107,10 +107,10 @@ uploaded.
 
     # show the latest values at the top
 
-    label = "Downloaded (%s/s):" % str_tools.get_size_label(download_rates[0], 1)
+    label = "Downloaded (%s/s):" % str_tools.size_label(download_rates[0], 1)
     window.addstr(0, 1, label, DOWNLOAD_COLOR, curses.A_BOLD)
 
-    label = "Uploaded (%s/s):" % str_tools.get_size_label(upload_rates[0], 1)
+    label = "Uploaded (%s/s):" % str_tools.size_label(upload_rates[0], 1)
     window.addstr(0, GRAPH_WIDTH + 7, label, UPLOAD_COLOR, curses.A_BOLD)
 
     # draw the graph bounds in KB
