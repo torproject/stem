@@ -18,7 +18,7 @@ try:
 except ImportError:
   from mock import Mock, patch
 
-# Base responses for the get_pid_by_name tests. The 'success' and
+# Base responses for the pid_by_name tests. The 'success' and
 # 'multiple_results' entries are filled in by tests.
 
 GET_PID_BY_NAME_BASE_RESULTS = {
@@ -138,9 +138,9 @@ class TestSystem(unittest.TestCase):
   @patch('stem.util.system.call')
   @patch('stem.util.proc.is_available', Mock(return_value = False))
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_name_by_pid_ps(self, call_mock):
+  def test_name_by_pid_ps(self, call_mock):
     """
-    Tests the get_name_by_pid function with ps responses.
+    Tests the name_by_pid function with ps responses.
     """
 
     responses = {
@@ -156,13 +156,13 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 'vim' if test_input == 'success' else None
-      self.assertEquals(expected_response, system.get_name_by_pid(test_input))
+      self.assertEquals(expected_response, system.name_by_pid(test_input))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_pid_by_name_pgrep(self, call_mock):
+  def test_pid_by_name_pgrep(self, call_mock):
     """
-    Tests the get_pid_by_name function with pgrep responses.
+    Tests the pid_by_name function with pgrep responses.
     """
 
     responses = dict(GET_PID_BY_NAME_BASE_RESULTS)
@@ -172,15 +172,15 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 1111 if test_input == 'success' else None
-      self.assertEquals(expected_response, system.get_pid_by_name(test_input))
+      self.assertEquals(expected_response, system.pid_by_name(test_input))
 
-    self.assertEquals([123, 456, 789], system.get_pid_by_name('multiple_results', multiple = True))
+    self.assertEquals([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_pid_by_name_pidof(self, call_mock):
+  def test_pid_by_name_pidof(self, call_mock):
     """
-    Tests the get_pid_by_name function with pidof responses.
+    Tests the pid_by_name function with pidof responses.
     """
 
     responses = dict(GET_PID_BY_NAME_BASE_RESULTS)
@@ -190,16 +190,16 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 1111 if test_input == 'success' else None
-      self.assertEquals(expected_response, system.get_pid_by_name(test_input))
+      self.assertEquals(expected_response, system.pid_by_name(test_input))
 
-    self.assertEquals([123, 456, 789], system.get_pid_by_name('multiple_results', multiple = True))
+    self.assertEquals([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_bsd', Mock(return_value = False))
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_pid_by_name_ps_linux(self, call_mock):
+  def test_pid_by_name_ps_linux(self, call_mock):
     """
-    Tests the get_pid_by_name function with the linux variant of ps.
+    Tests the pid_by_name function with the linux variant of ps.
     """
 
     responses = dict(GET_PID_BY_NAME_BASE_RESULTS)
@@ -209,32 +209,32 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 1111 if test_input == 'success' else None
-      self.assertEquals(expected_response, system.get_pid_by_name(test_input))
+      self.assertEquals(expected_response, system.pid_by_name(test_input))
 
-    self.assertEquals([123, 456, 789], system.get_pid_by_name('multiple_results', multiple = True))
+    self.assertEquals([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_bsd', Mock(return_value = True))
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_pid_by_name_ps_bsd(self, call_mock):
+  def test_pid_by_name_ps_bsd(self, call_mock):
     """
-    Tests the get_pid_by_name function with the bsd variant of ps.
+    Tests the pid_by_name function with the bsd variant of ps.
     """
 
     call_mock.side_effect = mock_call(system.GET_PID_BY_NAME_PS_BSD, GET_PID_BY_NAME_PS_BSD)
-    self.assertEquals(1, system.get_pid_by_name('launchd'))
-    self.assertEquals(11, system.get_pid_by_name('DirectoryService'))
-    self.assertEquals(None, system.get_pid_by_name('blarg'))
+    self.assertEquals(1, system.pid_by_name('launchd'))
+    self.assertEquals(11, system.pid_by_name('DirectoryService'))
+    self.assertEquals(None, system.pid_by_name('blarg'))
 
     call_mock.side_effect = mock_call(system.GET_PID_BY_NAME_PS_BSD, GET_PID_BY_NAME_PS_BSD_MULTIPLE)
 
-    self.assertEquals([1, 41], system.get_pid_by_name('launchd', multiple = True))
+    self.assertEquals([1, 41], system.pid_by_name('launchd', multiple = True))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_pid_by_name_lsof(self, call_mock):
+  def test_pid_by_name_lsof(self, call_mock):
     """
-    Tests the get_pid_by_name function with lsof responses.
+    Tests the pid_by_name function with lsof responses.
     """
 
     responses = dict(GET_PID_BY_NAME_BASE_RESULTS)
@@ -244,69 +244,69 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 1111 if test_input == 'success' else None
-      self.assertEquals(expected_response, system.get_pid_by_name(test_input))
+      self.assertEquals(expected_response, system.pid_by_name(test_input))
 
-    self.assertEquals([123, 456, 789], system.get_pid_by_name('multiple_results', multiple = True))
+    self.assertEquals([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_pid_by_port_netstat(self, call_mock):
+  def test_pid_by_port_netstat(self, call_mock):
     """
-    Tests the get_pid_by_port function with a netstat response.
+    Tests the pid_by_port function with a netstat response.
     """
 
     call_mock.side_effect = mock_call(system.GET_PID_BY_PORT_NETSTAT, GET_PID_BY_PORT_NETSTAT_RESULTS)
-    self.assertEquals(1641, system.get_pid_by_port(9051))
-    self.assertEquals(1641, system.get_pid_by_port('9051'))
-    self.assertEquals(None, system.get_pid_by_port(631))
-    self.assertEquals(None, system.get_pid_by_port(123))
+    self.assertEquals(1641, system.pid_by_port(9051))
+    self.assertEquals(1641, system.pid_by_port('9051'))
+    self.assertEquals(None, system.pid_by_port(631))
+    self.assertEquals(None, system.pid_by_port(123))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_pid_by_port_sockstat(self, call_mock):
+  def test_pid_by_port_sockstat(self, call_mock):
     """
-    Tests the get_pid_by_port function with a sockstat response.
+    Tests the pid_by_port function with a sockstat response.
     """
 
     call_mock.side_effect = mock_call(system.GET_PID_BY_PORT_SOCKSTAT % 9051, GET_PID_BY_PORT_SOCKSTAT_RESULTS)
-    self.assertEquals(4397, system.get_pid_by_port(9051))
-    self.assertEquals(4397, system.get_pid_by_port('9051'))
-    self.assertEquals(None, system.get_pid_by_port(123))
+    self.assertEquals(4397, system.pid_by_port(9051))
+    self.assertEquals(4397, system.pid_by_port('9051'))
+    self.assertEquals(None, system.pid_by_port(123))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_pid_by_port_lsof(self, call_mock):
+  def test_pid_by_port_lsof(self, call_mock):
     """
-    Tests the get_pid_by_port function with a lsof response.
+    Tests the pid_by_port function with a lsof response.
     """
 
     call_mock.side_effect = mock_call(system.GET_PID_BY_PORT_LSOF, GET_PID_BY_PORT_LSOF_RESULTS)
-    self.assertEquals(1745, system.get_pid_by_port(9051))
-    self.assertEquals(1745, system.get_pid_by_port('9051'))
-    self.assertEquals(329, system.get_pid_by_port(80))
-    self.assertEquals(None, system.get_pid_by_port(123))
+    self.assertEquals(1745, system.pid_by_port(9051))
+    self.assertEquals(1745, system.pid_by_port('9051'))
+    self.assertEquals(329, system.pid_by_port(80))
+    self.assertEquals(None, system.pid_by_port(123))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_pid_by_open_file_lsof(self, call_mock):
+  def test_pid_by_open_file_lsof(self, call_mock):
     """
-    Tests the get_pid_by_open_file function with a lsof response.
+    Tests the pid_by_open_file function with a lsof response.
     """
 
     lsof_query = system.GET_PID_BY_FILE_LSOF % '/tmp/foo'
     call_mock.side_effect = mock_call(lsof_query, ['4762'])
-    self.assertEquals(4762, system.get_pid_by_open_file('/tmp/foo'))
+    self.assertEquals(4762, system.pid_by_open_file('/tmp/foo'))
 
     call_mock.return_value = []
     call_mock.side_effect = None
-    self.assertEquals(None, system.get_pid_by_open_file('/tmp/somewhere_else'))
+    self.assertEquals(None, system.pid_by_open_file('/tmp/somewhere_else'))
 
   @patch('stem.util.system.call')
   @patch('stem.util.proc.is_available', Mock(return_value = False))
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_cwd_pwdx(self, call_mock):
+  def test_cwd_pwdx(self, call_mock):
     """
-    Tests the get_cwd function with a pwdx response.
+    Tests the cwd function with a pwdx response.
     """
 
     responses = {
@@ -320,14 +320,14 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = '/home/atagar' if test_input == '3799' else None
-      self.assertEquals(expected_response, system.get_cwd(test_input))
+      self.assertEquals(expected_response, system.cwd(test_input))
 
   @patch('stem.util.system.call')
   @patch('stem.util.proc.is_available', Mock(return_value = False))
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_cwd_lsof(self, call_mock):
+  def test_cwd_lsof(self, call_mock):
     """
-    Tests the get_cwd function with a lsof response.
+    Tests the cwd function with a lsof response.
     """
 
     responses = {
@@ -340,13 +340,13 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = '/Users/atagar/tor/src/or' if test_input == '75717' else None
-      self.assertEquals(expected_response, system.get_cwd(test_input))
+      self.assertEquals(expected_response, system.cwd(test_input))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_bsd_jail_id(self, call_mock):
+  def test_bsd_jail_id(self, call_mock):
     """
-    Tests the get_bsd_jail_id function.
+    Tests the bsd_jail_id function.
     """
 
     responses = {
@@ -362,22 +362,22 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 1 if test_input == '1111' else 0
-      self.assertEquals(expected_response, system.get_bsd_jail_id(test_input))
+      self.assertEquals(expected_response, system.bsd_jail_id(test_input))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_bsd_jail_path(self, call_mock):
+  def test_bsd_jail_path(self, call_mock):
     """
-    Tests the get_bsd_jail_path function.
+    Tests the bsd_jail_path function.
     """
 
     # check when we don't have a jail
 
     call_mock.return_value = []
-    self.assertEquals(None, system.get_bsd_jail_path(1))
+    self.assertEquals(None, system.bsd_jail_path(1))
 
     call_mock.side_effect = mock_call(system.GET_BSD_JAIL_PATH % '1', GET_BSD_JAIL_PATH_RESULTS)
-    self.assertEquals('/usr/jails/tor-jail', system.get_bsd_jail_path(1))
+    self.assertEquals('/usr/jails/tor-jail', system.bsd_jail_path(1))
 
   @patch('platform.system', Mock(return_value = 'Linux'))
   @patch('os.path.join', Mock(side_effect = posixpath.join))

@@ -6,6 +6,9 @@ Helper functions for working with the underlying system. These are mostly os
 dependent, only working on linux, osx, and bsd. In almost all cases they're
 best-effort, providing **None** if the lookup fails.
 
+**Note:** Many functions were previously named with a get_* prefix. Those names
+are now aliases, and will be dropped in Stem version 2.0.0.
+
 **Module Overview:**
 
 ::
@@ -18,15 +21,15 @@ best-effort, providing **None** if the lookup fails.
   is_running - determines if a given process is running
   call - runs the given system command and provides back the results
 
-  get_name_by_pid - gets the name for a process by the given pid
-  get_pid_by_name - gets the pid for a process by the given name
-  get_pid_by_port - gets the pid for a process listening to a given port
-  get_pid_by_open_file - gets the pid for the process with an open file
-  get_cwd - provides the current working directory for a given process
-  get_user - provides the user a process is running under
-  get_start_time - provides the unix timestamp when the process started
-  get_bsd_jail_id - provides the BSD jail id a given process is running within
-  get_bsd_jail_path - provides the path of the given BSD jail
+  name_by_pid - gets the name for a process by the given pid
+  pid_by_name - gets the pid for a process by the given name
+  pid_by_port - gets the pid for a process listening to a given port
+  pid_by_open_file - gets the pid for the process with an open file
+  cwd - provides the current working directory for a given process
+  user - provides the user a process is running under
+  start_time - provides the unix timestamp when the process started
+  bsd_jail_id - provides the BSD jail id a given process is running within
+  bsd_jail_path - provides the path of the given BSD jail
 
   is_tarfile - checks if the given path is a tarball
   expand_path - expands relative paths and ~ entries
@@ -233,7 +236,7 @@ def is_running(command):
   return None
 
 
-def get_name_by_pid(pid):
+def name_by_pid(pid):
   """
   Attempts to determine the name a given process is running under (not
   including arguments). This uses...
@@ -252,7 +255,7 @@ def get_name_by_pid(pid):
 
   if stem.util.proc.is_available():
     try:
-      process_name = stem.util.proc.get_stats(pid, stem.util.proc.Stat.COMMAND)[0]
+      process_name = stem.util.proc.stats(pid, stem.util.proc.Stat.COMMAND)[0]
     except IOError:
       pass
 
@@ -273,7 +276,7 @@ def get_name_by_pid(pid):
   return process_name
 
 
-def get_pid_by_name(process_name, multiple = False):
+def pid_by_name(process_name, multiple = False):
   """
   Attempts to determine the process id for a running process, using...
 
@@ -421,7 +424,7 @@ def get_pid_by_name(process_name, multiple = False):
   return [] if multiple else None
 
 
-def get_pid_by_port(port):
+def pid_by_port(port):
   """
   Attempts to determine the process id for a process with the given port,
   using...
@@ -541,7 +544,7 @@ def get_pid_by_port(port):
   return None  # all queries failed
 
 
-def get_pid_by_open_file(path):
+def pid_by_open_file(path):
   """
   Attempts to determine the process id for a process with the given open file,
   using...
@@ -579,7 +582,7 @@ def get_pid_by_open_file(path):
   return None  # all queries failed
 
 
-def get_cwd(pid):
+def cwd(pid):
   """
   Provides the working directory of the given process.
 
@@ -592,12 +595,12 @@ def get_cwd(pid):
   # try fetching via the proc contents if it's available
   if stem.util.proc.is_available():
     try:
-      return stem.util.proc.get_cwd(pid)
+      return stem.util.proc.cwd(pid)
     except IOError:
       pass
 
   # Fall back to a pwdx query. This isn't available on BSD.
-  logging_prefix = 'get_cwd(%s):' % pid
+  logging_prefix = 'cwd(%s):' % pid
 
   if is_available('pwdx'):
     # pwdx results are of the form:
@@ -648,7 +651,7 @@ def get_cwd(pid):
   return None  # all queries failed
 
 
-def get_user(pid):
+def user(pid):
   """
   Provides the user a process is running under.
 
@@ -665,7 +668,7 @@ def get_user(pid):
     try:
       import pwd  # only available on unix platforms
 
-      uid = stem.util.proc.get_uid(pid)
+      uid = stem.util.proc.uid(pid)
 
       if uid and uid.isdigit():
         return pwd.getpwuid(int(uid)).pw_name
@@ -681,7 +684,7 @@ def get_user(pid):
   return None
 
 
-def get_start_time(pid):
+def start_time(pid):
   """
   Provides the unix timestamp when the given process started.
 
@@ -696,7 +699,7 @@ def get_start_time(pid):
 
   if stem.util.proc.is_available():
     try:
-      return float(stem.util.proc.get_stats(pid, stem.util.proc.Stat.START_TIME)[0])
+      return float(stem.util.proc.stats(pid, stem.util.proc.Stat.START_TIME)[0])
     except IOError:
       pass
 
@@ -712,7 +715,7 @@ def get_start_time(pid):
   return None
 
 
-def get_bsd_jail_id(pid):
+def bsd_jail_id(pid):
   """
   Gets the jail id for a process. These seem to only exist for FreeBSD (this
   style for jails does not exist on Linux, OSX, or OpenBSD).
@@ -742,12 +745,12 @@ def get_bsd_jail_id(pid):
   if os_name == 'FreeBSD':
     log.warn('Unable to get the jail id for process %s.' % pid)
   else:
-    log.debug('get_bsd_jail_id(%s): jail ids do not exist on %s' % (pid, os_name))
+    log.debug('bsd_jail_id(%s): jail ids do not exist on %s' % (pid, os_name))
 
   return 0
 
 
-def get_bsd_jail_path(jid):
+def bsd_jail_path(jid):
   """
   Provides the path of the given FreeBSD jail.
 
@@ -1066,3 +1069,18 @@ def _set_proc_title(process_name):
     # AttributeError: dlsym(0x7fff6a41d1e0, setproctitle): symbol not found
 
     pass
+
+
+# TODO: drop with stem 2.x
+# We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
+# names for backward compatability.
+
+get_name_by_pid = name_by_pid
+get_pid_by_name = pid_by_name
+get_pid_by_port = pid_by_port
+get_pid_by_open_file = pid_by_open_file
+get_cwd = cwd
+get_user = user
+get_start_time = start_time
+get_bsd_jail_id = bsd_jail_id
+get_bsd_jail_path = bsd_jail_path

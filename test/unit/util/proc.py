@@ -17,45 +17,45 @@ except ImportError:
 
 class TestProc(unittest.TestCase):
   @patch('stem.util.proc._get_line')
-  def test_get_system_start_time(self, get_line_mock):
+  def test_system_start_time(self, get_line_mock):
     """
-    Tests the get_system_start_time function.
+    Tests the system_start_time function.
     """
 
     get_line_mock.side_effect = lambda *params: {
       ('/proc/stat', 'btime', 'system start time'): 'btime 1001001',
     }[params]
 
-    self.assertEquals(1001001, proc.get_system_start_time())
+    self.assertEquals(1001001, proc.system_start_time())
 
   @patch('stem.util.proc._get_line')
-  def test_get_physical_memory(self, get_line_mock):
+  def test_physical_memory(self, get_line_mock):
     """
-    Tests the get_physical_memory function.
+    Tests the physical_memory function.
     """
 
     get_line_mock.side_effect = lambda *params: {
       ('/proc/meminfo', 'MemTotal:', 'system physical memory'): 'MemTotal:       12345 kB',
     }[params]
 
-    self.assertEquals((12345 * 1024), proc.get_physical_memory())
+    self.assertEquals((12345 * 1024), proc.physical_memory())
 
   @patch('os.readlink')
-  def test_get_cwd(self, readlink_mock):
+  def test_cwd(self, readlink_mock):
     """
-    Tests the get_cwd function with a given pid.
+    Tests the cwd function with a given pid.
     """
 
     readlink_mock.side_effect = lambda param: {
       '/proc/24019/cwd': '/home/directory/TEST'
     }[param]
 
-    self.assertEquals('/home/directory/TEST', proc.get_cwd(24019))
+    self.assertEquals('/home/directory/TEST', proc.cwd(24019))
 
   @patch('stem.util.proc._get_line')
-  def test_get_uid(self, get_line_mock):
+  def test_uid(self, get_line_mock):
     """
-    Tests the get_uid function with a given pid.
+    Tests the uid function with a given pid.
     """
 
     for test_value in [(24019, 11111), (0, 22222)]:
@@ -65,12 +65,12 @@ class TestProc(unittest.TestCase):
         ('/proc/%s/status' % pid, 'Uid:', 'uid'): 'Uid: %s' % uid,
       }[params]
 
-      self.assertEquals(uid, proc.get_uid(pid))
+      self.assertEquals(uid, proc.uid(pid))
 
   @patch('stem.util.proc._get_lines')
-  def test_get_memory_usage(self, get_lines_mock):
+  def test_memory_usage(self, get_lines_mock):
     """
-    Tests the get_memory_usage function with a given pid.
+    Tests the memory_usage function with a given pid.
     """
 
     get_lines_mock.side_effect = lambda *params: {
@@ -78,14 +78,14 @@ class TestProc(unittest.TestCase):
         {'VmRSS:': 'VmRSS: 100 kB', 'VmSize:': 'VmSize: 1800 kB'}
     }[params]
 
-    self.assertEqual((0, 0), proc.get_memory_usage(0))
-    self.assertEqual((100 * 1024, 1800 * 1024), proc.get_memory_usage(1111))
+    self.assertEqual((0, 0), proc.memory_usage(0))
+    self.assertEqual((100 * 1024, 1800 * 1024), proc.memory_usage(1111))
 
   @patch('stem.util.proc._get_line')
-  @patch('stem.util.proc.get_system_start_time', Mock(return_value = 10))
-  def test_get_stats(self, get_line_mock):
+  @patch('stem.util.proc.system_start_time', Mock(return_value = 10))
+  def test_stats(self, get_line_mock):
     """
-    Tests get_stats() with all combinations of stat_type arguments.
+    Tests stats() with all combinations of stat_type arguments.
     """
 
     # list of all combinations of args with respective return values
@@ -105,7 +105,7 @@ class TestProc(unittest.TestCase):
       (stat_path, '24062', 'process '): stat
     }[params]
 
-    self.assertEquals((), proc.get_stats(24062))
+    self.assertEquals((), proc.stats(24062))
 
     for stats in stat_combinations:
       # the stats variable is...
@@ -120,7 +120,7 @@ class TestProc(unittest.TestCase):
         (stat_path, '24062', 'process %s' % ', '.join(args)): stat
       }[params]
 
-      self.assertEquals(response, proc.get_stats(24062, *args))
+      self.assertEquals(response, proc.stats(24062, *args))
 
       # tests the case where pid = 0
 
@@ -141,18 +141,18 @@ class TestProc(unittest.TestCase):
         ('/proc/0/stat', '0', 'process %s' % ', '.join(args)): stat
       }[params]
 
-      self.assertEquals(response, proc.get_stats(0, *args))
+      self.assertEquals(response, proc.stats(0, *args))
 
   @patch('os.listdir')
-  def test_get_file_descriptors_used(self, listdir_mock):
+  def test_file_descriptors_used(self, listdir_mock):
     """
-    Tests the get_file_descriptors_used function.
+    Tests the file_descriptors_used function.
     """
 
     # check that we reject bad pids
 
     for arg in (None, -100, 'hello',):
-      self.assertRaises(IOError, proc.get_file_descriptors_used, arg)
+      self.assertRaises(IOError, proc.file_descriptors_used, arg)
 
     # when proc directory doesn't exist
 
@@ -160,7 +160,7 @@ class TestProc(unittest.TestCase):
     listdir_mock.side_effect = OSError(error_msg)
 
     try:
-      proc.get_file_descriptors_used(2118)
+      proc.file_descriptors_used(2118)
       self.fail("We should raise when listdir() fails")
     except IOError as exc:
       expected = "Unable to check number of file descriptors used: %s" % error_msg
@@ -171,15 +171,15 @@ class TestProc(unittest.TestCase):
     listdir_mock.return_value = ['0', '1', '2', '3', '4', '5']
     listdir_mock.side_effect = None
 
-    self.assertEqual(6, proc.get_file_descriptors_used(2118))
-    self.assertEqual(6, proc.get_file_descriptors_used('2118'))
+    self.assertEqual(6, proc.file_descriptors_used(2118))
+    self.assertEqual(6, proc.file_descriptors_used('2118'))
 
   @patch('os.listdir')
   @patch('os.readlink')
   @patch('stem.util.proc.open', create = True)
-  def test_get_connections(self, open_mock, readlink_mock, listdir_mock):
+  def test_connections(self, open_mock, readlink_mock, listdir_mock):
     """
-    Tests the get_connections function.
+    Tests the connections function.
     """
 
     pid = 1111
@@ -204,11 +204,11 @@ class TestProc(unittest.TestCase):
     }[param]
 
     # tests the edge case of pid = 0
-    self.assertEquals([], proc.get_connections(0))
+    self.assertEquals([], proc.connections(0))
 
     expected_results = [
       ('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp'),
       ('187.187.187.187', 48059, '204.204.204.204', 52428, 'udp'),
     ]
 
-    self.assertEquals(expected_results, proc.get_connections(pid))
+    self.assertEquals(expected_results, proc.connections(pid))

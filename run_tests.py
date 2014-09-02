@@ -91,7 +91,7 @@ https://pypi.python.org/pypi/mock/
 
 PYFLAKES_TASK = Task(
   "running pyflakes",
-  stem.util.test_tools.get_pyflakes_issues,
+  stem.util.test_tools.pyflakes_issues,
   args = (SRC_PATHS,),
   is_required = False,
   print_result = False,
@@ -99,7 +99,7 @@ PYFLAKES_TASK = Task(
 
 PEP8_TASK = Task(
   "running pep8",
-  stem.util.test_tools.get_stylistic_issues,
+  stem.util.test_tools.stylistic_issues,
   args = (SRC_PATHS, True, True, True, True),
   is_required = False,
   print_result = False,

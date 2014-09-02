@@ -329,8 +329,8 @@ class TestControl(unittest.TestCase):
     self.assertEqual('atagar', self.controller.get_user())
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = True))
-  @patch('stem.util.system.get_pid_by_name', Mock(return_value = 432))
-  @patch('stem.util.system.get_user', Mock(return_value = 'atagar'))
+  @patch('stem.util.system.pid_by_name', Mock(return_value = 432))
+  @patch('stem.util.system.user', Mock(return_value = 'atagar'))
   def test_get_user_by_system(self):
     """
     Exercise the get_user() resolution via the system module.
@@ -371,7 +371,7 @@ class TestControl(unittest.TestCase):
     open_mock.assert_called_once_with('/tmp/pid_file')
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = True))
-  @patch('stem.util.system.get_pid_by_name', Mock(return_value = 432))
+  @patch('stem.util.system.pid_by_name', Mock(return_value = 432))
   def test_get_pid_by_name(self):
     """
     Exercise the get_pid() resolution via the process name.

@@ -4,10 +4,12 @@
 """
 Connection and networking based utility functions.
 
+**Module Overview:**
+
 ::
 
   get_connections - quieries the connections belonging to a given process
-  get_system_resolvers - provides connection resolution methods that are likely to be available
+  system_resolvers - provides connection resolution methods that are likely to be available
   port_usage - brief description of the common usage for a port
 
   is_valid_ipv4_address - checks if a string is a valid IPv4 address
@@ -130,7 +132,7 @@ RESOLVER_FILTER = {
 def get_connections(resolver, process_pid = None, process_name = None):
   """
   Retrieves a list of the current connections for a given process. The provides
-  a list of Connection instances, which have four attributes...
+  a list of Connection instances, which have five attributes...
 
     * local_address (str)
     * local_port (int)
@@ -172,7 +174,7 @@ def get_connections(resolver, process_pid = None, process_name = None):
     raise ValueError('%s resolution requires a pid' % resolver)
 
   if resolver == Resolver.PROC:
-    return [Connection(*conn) for conn in stem.util.proc.get_connections(process_pid)]
+    return [Connection(*conn) for conn in stem.util.proc.connections(process_pid)]
 
   resolver_command = RESOLVER_COMMAND[resolver].format(pid = process_pid)
 
@@ -230,11 +232,15 @@ def get_connections(resolver, process_pid = None, process_name = None):
   return connections
 
 
-def get_system_resolvers(system = None):
+def system_resolvers(system = None):
   """
   Provides the types of connection resolvers likely to be available on this platform.
 
   .. versionadded:: 1.1.0
+
+  .. versionchanged:: 1.3.0
+     Renamed from get_system_resolvers() to system_resolvers(). The old name
+     still works as an alias, but will be dropped in Stem version 2.0.0.
 
   :param str system: system to get resolvers for, this is determined by
     platform.system() if not provided
@@ -619,3 +625,9 @@ def _cryptovariables_equal(x, y):
   return (
     _hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
     _hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
+
+# TODO: drop with stem 2.x
+# We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
+# names for backward compatability.
+
+get_system_resolvers = system_resolvers

@@ -147,12 +147,12 @@ and a myriad of smaller improvements and fixes.
 
   * Connection resolution via the :func:`~stem.util.connection.get_connections` function (:trac:`7910`)
   * :func:`~stem.util.system.set_process_name` inserted spaces between characters (:trac:`8631`)
-  * :func:`~stem.util.system.get_pid_by_name` can now pull for all processes with a given name
+  * :func:`~stem.util.system.pid_by_name` can now pull for all processes with a given name
   * :func:`~stem.util.system.call` ignored the subprocess' exit status
-  * Added :func:`stem.util.system.get_name_by_pid`
-  * Added :func:`stem.util.system.get_user`
-  * Added :func:`stem.util.system.get_start_time`
-  * Added :func:`stem.util.system.get_bsd_jail_path`
+  * Added :func:`stem.util.system.name_by_pid`
+  * Added :func:`stem.util.system.user`
+  * Added :func:`stem.util.system.start_time`
+  * Added :func:`stem.util.system.bsd_jail_path`
   * Added :func:`stem.util.system.is_tarfile`
   * Added :func:`stem.util.connection.is_private_address`
 
