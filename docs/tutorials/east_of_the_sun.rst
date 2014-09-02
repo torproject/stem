@@ -37,10 +37,10 @@ simple script that dumps Tor's present connections.
 
   import sys 
 
-  from stem.util.connection import get_connections, get_system_resolvers
+  from stem.util.connection import get_connections, system_resolvers
   from stem.util.system import pid_by_name
 
-  resolvers = get_system_resolvers()
+  resolvers = system_resolvers()
 
   if not resolvers:
     print "Stem doesn't support any connection resolvers on our platform."

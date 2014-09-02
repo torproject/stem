@@ -107,32 +107,32 @@ BSD_PROCSTAT_OUTPUT = """\
 class TestConnection(unittest.TestCase):
   @patch('stem.util.system.is_available')
   @patch('stem.util.proc.is_available')
-  def test_get_system_resolvers(self, proc_mock, is_available_mock):
+  def test_system_resolvers(self, proc_mock, is_available_mock):
     """
-    Checks the get_system_resolvers function.
+    Checks the system_resolvers function.
     """
 
     is_available_mock.return_value = True
     proc_mock.return_value = False
 
-    self.assertEqual([], stem.util.connection.get_system_resolvers('Windows'))
-    self.assertEqual([Resolver.LSOF], stem.util.connection.get_system_resolvers('Darwin'))
-    self.assertEqual([Resolver.LSOF], stem.util.connection.get_system_resolvers('OpenBSD'))
-    self.assertEqual([Resolver.BSD_SOCKSTAT, Resolver.BSD_PROCSTAT, Resolver.LSOF], stem.util.connection.get_system_resolvers('FreeBSD'))
-    self.assertEqual([Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.get_system_resolvers('Linux'))
+    self.assertEqual([], stem.util.connection.system_resolvers('Windows'))
+    self.assertEqual([Resolver.LSOF], stem.util.connection.system_resolvers('Darwin'))
+    self.assertEqual([Resolver.LSOF], stem.util.connection.system_resolvers('OpenBSD'))
+    self.assertEqual([Resolver.BSD_SOCKSTAT, Resolver.BSD_PROCSTAT, Resolver.LSOF], stem.util.connection.system_resolvers('FreeBSD'))
+    self.assertEqual([Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.system_resolvers('Linux'))
 
     proc_mock.return_value = True
-    self.assertEqual([Resolver.PROC, Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.get_system_resolvers('Linux'))
+    self.assertEqual([Resolver.PROC, Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.system_resolvers('Linux'))
 
     # check that calling without an argument is equivilant to calling for this
     # platform
 
-    self.assertEqual(stem.util.connection.get_system_resolvers(platform.system()), stem.util.connection.get_system_resolvers())
+    self.assertEqual(stem.util.connection.system_resolvers(platform.system()), stem.util.connection.system_resolvers())
 
     # check that lacking commands in our PATH drops them from the results
 
     is_available_mock.return_value = False
-    self.assertEqual([Resolver.PROC], stem.util.connection.get_system_resolvers('Linux'))
+    self.assertEqual([Resolver.PROC], stem.util.connection.system_resolvers('Linux'))
 
   def test_port_usage(self):
     """

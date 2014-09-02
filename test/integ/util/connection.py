@@ -7,7 +7,7 @@ import unittest
 
 import test.runner
 
-from stem.util.connection import get_connections, get_system_resolvers
+from stem.util.connection import get_connections, system_resolvers
 
 
 class TestConnection(unittest.TestCase):
@@ -21,7 +21,7 @@ class TestConnection(unittest.TestCase):
       test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
 
-    for resolver in get_system_resolvers():
+    for resolver in system_resolvers():
       with runner.get_tor_socket():
         tor_pid = test.runner.get_runner().get_pid()
         connections = get_connections(resolver, process_pid = tor_pid)
