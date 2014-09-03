@@ -96,6 +96,36 @@ class TestExitPolicy(unittest.TestCase):
     policy = ExitPolicy('reject *:80-65535', 'accept *:1-65533', 'reject *:*')
     self.assertEquals('accept 1-79', policy.summary())
 
+  def test_all_private_policy(self):
+    for port in ('*', '80', '1-1024'):
+      private_policy = get_config_policy('reject private:%s' % port)
+
+      for rule in private_policy:
+        self.assertTrue(rule.is_private())
+
+      self.assertEqual(ExitPolicy(), private_policy.strip_private())
+
+    # though not commonly done, technically private policies can be accept rules too
+
+    private_policy = get_config_policy('accept private:*')
+    self.assertEqual(ExitPolicy(), private_policy.strip_private())
+
+  def test_all_non_private_policy(self):
+    nonprivate_policy = get_config_policy('reject *:80-65535, accept *:1-65533, reject *:*')
+
+    for rule in nonprivate_policy:
+      self.assertFalse(rule.is_private())
+
+    self.assertEqual(nonprivate_policy, nonprivate_policy.strip_private())
+
+  def test_mixed_private_policy(self):
+    policy = get_config_policy('accept *:80, reject private:1-65533, accept *:*')
+
+    for rule in policy:
+      self.assertTrue(rule.is_accept != rule.is_private())  # only reject rules are the private ones
+
+    self.assertEqual(get_config_policy('accept *:80, accept *:*'), policy.strip_private())
+
   def test_str(self):
     # sanity test for our __str__ method
 

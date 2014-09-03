@@ -30,6 +30,7 @@ exiting to a destination is permissible or not. For instance...
     |- can_exit_to - check if exiting to this destination is allowed or not
     |- is_exiting_allowed - check if any exiting is allowed
     |- summary - provides a short label, similar to a microdescriptor
+    |- strip_private - provides a copy of the policy without 'private' entries
     |- __str__  - string representation
     +- __iter__ - ExitPolicyRule entries that this contains
 
@@ -42,6 +43,7 @@ exiting to a destination is permissible or not. For instance...
     |- is_match - checks if we match a given destination
     |- get_mask - provides the address representation of our mask
     |- get_masked_bits - provides the bit representation of our mask
+    |- is_private - flag indicating if this was expanded from a 'private' keyword
     +- __str__ - string representation for this rule
 
   get_config_policy - provides the ExitPolicy based on torrc rules
@@ -137,6 +139,48 @@ def get_config_policy(rules):
   return ExitPolicy(*result)
 
 
+def _flag_private_rules(rules):
+  """
+  Determine if part of our policy was expanded from the 'private' keyword. This
+  doesn't differentiate if this actually came from the 'private' keyword or a
+  series of rules exactly matching it.
+  """
+
+  matches = []
+
+  for i, rule in enumerate(rules):
+    if i + len(PRIVATE_ADDRESSES) > len(rules):
+      break
+
+    rule_str = '%s/%s' % (rule.address, rule.get_masked_bits())
+
+    if rule_str == PRIVATE_ADDRESSES[0]:
+      matches.append(i)
+
+  for start_index in matches:
+    # To match the private policy the following must all be true...
+    #
+    #   * series of addresses and bit masks match PRIVATE_ADDRESSES
+    #   * all these rules have the same port range and acceptance
+    #   * all these rules must be either accept or reject entries
+
+    rule_set = rules[start_index:start_index + len(PRIVATE_ADDRESSES)]
+    min_port, max_port = rule_set[0].min_port, rule_set[0].max_port
+    is_accept = rule_set[0].is_accept
+    is_match = True
+
+    for i, rule in enumerate(rule_set):
+      rule_str = '%s/%s' % (rule.address, rule.get_masked_bits())
+
+      if rule_str != PRIVATE_ADDRESSES[i] or rule.min_port != min_port or rule.max_port != max_port or rule.is_accept != is_accept:
+        is_match = False
+        break
+
+    if is_match:
+      for rule in rule_set:
+        rule._is_private = True
+
+
 class ExitPolicy(object):
   """
   Policy for the destinations that a relay allows or denies exiting to. This
@@ -149,6 +193,7 @@ class ExitPolicy(object):
 
   def __init__(self, *rules):
     # sanity check the types
+
     for rule in rules:
       if not isinstance(rule, (bytes, unicode, ExitPolicyRule)):
         raise TypeError('Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)' % (type(rule), rules))
@@ -300,6 +345,15 @@ class ExitPolicy(object):
 
     return (label_prefix + ', '.join(display_ranges)).strip()
 
+  def strip_private(self):
+    """
+    Provides a copy of this policy without 'private' policy entries.
+
+    :returns: **ExitPolicy** without private rules
+    """
+
+    return ExitPolicy(*[rule for rule in self._get_rules() if not rule.is_private()])
+
   def _get_rules(self):
     if self._rules is None:
       rules = []
@@ -345,6 +399,8 @@ class ExitPolicy(object):
           rules = [ExitPolicyRule('accept *:*')]
         elif is_all_reject:
           rules = [ExitPolicyRule('reject *:*')]
+
+      _flag_private_rules(rules)
 
       self._rules = rules
       self._input_rules = None
@@ -526,6 +582,12 @@ class ExitPolicyRule(object):
 
     self._submask_wildcard = True
 
+    # Flags to indicate if this rule seems to be expanded from the 'private'
+    # keyword or tor's default policy suffix.
+
+    self._is_private = False
+    self._is_default_suffix = False  # TODO: implement
+
   def is_address_wildcard(self):
     """
     **True** if we'll match against any address, **False** otherwise.
@@ -570,6 +632,7 @@ class ExitPolicyRule(object):
     """
 
     # validate our input and check if the argument doesn't match our address type
+
     if address is not None:
       address_type = self.get_address_type()
 
@@ -659,6 +722,13 @@ class ExitPolicyRule(object):
     """
 
     return self._masked_bits
+
+  def is_private(self):
+    """
+    True if this rule was expanded from the 'private' keyword, False otherwise.
+    """
+
+    return self._is_private
 
   @lru_cache()
   def __str__(self):
