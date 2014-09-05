@@ -61,6 +61,9 @@ exiting to a destination is permissible or not. For instance...
   ============ ===========
 """
 
+from __future__ import absolute_import
+
+import socket
 import zlib
 
 import stem.prereq
@@ -92,7 +95,7 @@ PRIVATE_ADDRESSES = (
 )
 
 
-def get_config_policy(rules):
+def get_config_policy(rules, ip_address = None):
   """
   Converts an ExitPolicy found in a torrc to a proper exit pattern. This
   accounts for...
@@ -101,11 +104,16 @@ def get_config_policy(rules):
   * the 'private' keyword
 
   :param str,list rules: comma separated rules or list to be converted
+  :param str ip_address: this relay's IP address for the 'private' policy if
+    it's present, this defaults to the local address
 
   :returns: :class:`~stem.exit_policy.ExitPolicy` reflected by the rules
 
   :raises: **ValueError** if input isn't a valid tor exit policy
   """
+
+  if ip_address and not (stem.util.connection.is_valid_ipv4_address(ip_address) or stem.util.connection.is_valid_ipv6_address(ip_address)):
+    raise ValueError("%s isn't a valid IP address" % ip_address)
 
   if isinstance(rules, (bytes, unicode)):
     rules = rules.split(',')
@@ -125,7 +133,10 @@ def get_config_policy(rules):
       acceptance = rule.split(' ', 1)[0]
       port = rule.split(':', 1)[1]
 
-      for private_addr in PRIVATE_ADDRESSES:
+      if ip_address is None:
+        ip_address = socket.gethostbyname(socket.gethostname())
+
+      for private_addr in PRIVATE_ADDRESSES + (ip_address,):
         result.append(ExitPolicyRule("%s %s:%s" % (acceptance, private_addr, port)))
     else:
       result.append(ExitPolicyRule(rule))
@@ -149,7 +160,7 @@ def _flag_private_rules(rules):
   matches = []
 
   for i, rule in enumerate(rules):
-    if i + len(PRIVATE_ADDRESSES) > len(rules):
+    if i + len(PRIVATE_ADDRESSES) + 1 > len(rules):
       break
 
     rule_str = '%s/%s' % (rule.address, rule.get_masked_bits())
@@ -161,20 +172,28 @@ def _flag_private_rules(rules):
     # To match the private policy the following must all be true...
     #
     #   * series of addresses and bit masks match PRIVATE_ADDRESSES
-    #   * all these rules have the same port range and acceptance
-    #   * all these rules must be either accept or reject entries
+    #   * all rules have the same port range and acceptance
+    #   * all rules have the same acceptance (all accept or reject entries)
 
-    rule_set = rules[start_index:start_index + len(PRIVATE_ADDRESSES)]
-    min_port, max_port = rule_set[0].min_port, rule_set[0].max_port
-    is_accept = rule_set[0].is_accept
+    rule_set = rules[start_index:start_index + len(PRIVATE_ADDRESSES) + 1]
     is_match = True
 
-    for i, rule in enumerate(rule_set):
+    min_port, max_port = rule_set[0].min_port, rule_set[0].max_port
+    is_accept = rule_set[0].is_accept
+
+    for i, rule in enumerate(rule_set[:-1]):
       rule_str = '%s/%s' % (rule.address, rule.get_masked_bits())
 
       if rule_str != PRIVATE_ADDRESSES[i] or rule.min_port != min_port or rule.max_port != max_port or rule.is_accept != is_accept:
         is_match = False
         break
+
+    # The last rule is for the relay's public address, so it's dynamic.
+
+    last_rule = rule_set[-1]
+
+    if last_rule.is_address_wildcard() or last_rule.min_port != min_port or last_rule.max_port != max_port or last_rule.is_accept != is_accept:
+      is_match = False
 
     if is_match:
       for rule in rule_set:

@@ -225,6 +225,7 @@ class TestExitPolicy(unittest.TestCase):
         'reject 192.168.0.0/16:*',
         'reject 10.0.0.0/8:*',
         'reject 172.16.0.0/12:*',
+        'reject 12.34.56.78:*',
       ),
       'accept *:80, reject *': ExitPolicy(
         'accept *:80',
@@ -237,7 +238,7 @@ class TestExitPolicy(unittest.TestCase):
     }
 
     for test_input, expected in test_inputs.items():
-      self.assertEqual(expected, get_config_policy(test_input))
+      self.assertEqual(expected, get_config_policy(test_input, '12.34.56.78'))
 
     test_inputs = (
       'blarg',
