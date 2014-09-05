@@ -235,6 +235,7 @@ class ExitPolicy(object):
       self._input_rules = rules
 
     self._rules = None
+    self._hash = None
 
     # Result when no rules apply. According to the spec policies default to 'is
     # allowed', but our microdescriptor policy subclass might want to change
@@ -435,12 +436,16 @@ class ExitPolicy(object):
     return ', '.join([str(rule) for rule in self._get_rules()])
 
   def __hash__(self):
-    # TODO: It would be nice to provide a real hash function, but doing so is
-    # tricky due to how we lazily load the rules. Like equality checks a proper
-    # hash function would need to call _get_rules(), but that's behind
-    # @lru_cache which calls hash() forming a circular dependency.
+    if self._hash is None:
+      my_hash = 0
 
-    return id(self)
+      for rule in self._get_rules():
+        my_hash *= 1024
+        my_hash += hash(rule)
+
+      self._hash = my_hash
+
+    return self._hash
 
   def __eq__(self, other):
     if isinstance(other, ExitPolicy):
