@@ -918,7 +918,6 @@ class TestController(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_controller() as controller:
       # we should balk at invalid content
-      self.assertRaises(ValueError, controller.get_microdescriptor, None)
       self.assertRaises(ValueError, controller.get_microdescriptor, '')
       self.assertRaises(ValueError, controller.get_microdescriptor, 5)
       self.assertRaises(ValueError, controller.get_microdescriptor, 'z' * 30)
@@ -1026,7 +1025,6 @@ class TestController(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_controller() as controller:
       # we should balk at invalid content
-      self.assertRaises(ValueError, controller.get_network_status, None)
       self.assertRaises(ValueError, controller.get_network_status, '')
       self.assertRaises(ValueError, controller.get_network_status, 5)
       self.assertRaises(ValueError, controller.get_network_status, 'z' * 30)
