@@ -485,6 +485,8 @@ class BaseController(object):
     disconnected. That is to say, the time we connected if we're presently
     connected and the time we disconnected if we're not connected.
 
+    .. versionadded:: 1.3.0
+
     :returns: **float** for when we last connected or disconnected, zero if
       we've never connected
     """
@@ -1317,6 +1319,9 @@ class Controller(BaseController):
     authorities so this both won't be available for newly started relays and
     may be up to around an hour out of date.
 
+    .. versionchanged:: 1.3.0
+       Changed so we'd fetch our own descriptor if no 'relay' is provided.
+
     :param str relay: fingerprint or nickname of the relay to be queried
     :param object default: response if the query fails
 
@@ -1416,6 +1421,9 @@ class Controller(BaseController):
     default.** It's advised that you use microdescriptors instead, but if you
     really need server descriptors then you can get them by setting
     'UseMicrodescriptors 0'.
+
+    .. versionchanged:: 1.3.0
+       Changed so we'd fetch our own descriptor if no 'relay' is provided.
 
     :param str relay: fingerprint or nickname of the relay to be queried
     :param object default: response if the query fails
@@ -1525,6 +1533,9 @@ class Controller(BaseController):
     this requires that we've retrieved our own descriptor from remote
     authorities so this both won't be available for newly started relays and
     may be up to around an hour out of date.
+
+    .. versionchanged:: 1.3.0
+       Changed so we'd fetch our own descriptor if no 'relay' is provided.
 
     :param str relay: fingerprint or nickname of the relay to be queried
     :param object default: response if the query fails

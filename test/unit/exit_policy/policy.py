@@ -104,7 +104,8 @@ class TestExitPolicy(unittest.TestCase):
       self.assertFalse(rule.is_private())
       self.assertFalse(rule.is_default())
 
-    self.assertFalse(policy.is_default())
+    self.assertFalse(policy.has_private())
+    self.assertFalse(policy.has_default())
 
     self.assertEqual(policy, policy.strip_private())
     self.assertEqual(policy, policy.strip_default())
@@ -129,7 +130,7 @@ class TestExitPolicy(unittest.TestCase):
     for rule in policy:
       self.assertTrue(rule.is_default())
 
-    self.assertTrue(policy.is_default())
+    self.assertTrue(policy.has_default())
     self.assertEqual(ExitPolicy(), policy.strip_default())
 
   def test_mixed_private_policy(self):

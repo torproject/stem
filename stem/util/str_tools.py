@@ -173,6 +173,8 @@ def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, 
   such details of how this works might change in the future. Callers should not
   rely on the details of how this crops.
 
+  .. versionadded:: 1.3.0
+
   :param str msg: text to be processed
   :param int size: space available for text
   :param int min_word_length: minimum characters before which a word is

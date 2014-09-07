@@ -30,8 +30,9 @@ exiting to a destination is permissible or not. For instance...
     |- can_exit_to - check if exiting to this destination is allowed or not
     |- is_exiting_allowed - check if any exiting is allowed
     |- summary - provides a short label, similar to a microdescriptor
-    |- is_default - checks if policy ends with the defaultly appended suffix
+    |- has_private - checks if policy has anything expanded from the 'private' keyword
     |- strip_private - provides a copy of the policy without 'private' entries
+    |- has_default - checks if policy ends with the defaultly appended suffix
     |- strip_default - provides a copy of the policy without the default suffix
     |- __str__  - string representation
     +- __iter__ - ExitPolicyRule entries that this contains
@@ -45,8 +46,8 @@ exiting to a destination is permissible or not. For instance...
     |- is_match - checks if we match a given destination
     |- get_mask - provides the address representation of our mask
     |- get_masked_bits - provides the bit representation of our mask
-    |- is_private - flag indicating if this was expanded from a 'private' keyword
     |- is_default - flag indicating if this was part of the default end of a policy
+    |- is_private - flag indicating if this was expanded from a 'private' keyword
     +- __str__ - string representation for this rule
 
   get_config_policy - provides the ExitPolicy based on torrc rules
@@ -381,9 +382,40 @@ class ExitPolicy(object):
 
     return (label_prefix + ', '.join(display_ranges)).strip()
 
-  def is_default(self):
+  def has_private(self):
+    """
+    Checks if we have any rules expanded from the 'private' keyword. Tor
+    appends these by default to the start of the policy and includes a dynamic
+    address (the relay's public IP).
+
+    .. versionadded:: 1.3.0
+
+    :returns: **True** if we have any private rules expanded from the 'private'
+      keyword, **False** otherwise
+    """
+
+    for rule in self._get_rules():
+      if rule.is_private():
+        return True
+
+    return False
+
+  def strip_private(self):
+    """
+    Provides a copy of this policy without 'private' policy entries.
+
+    .. versionadded:: 1.3.0
+
+    :returns: **ExitPolicy** without private rules
+    """
+
+    return ExitPolicy(*[rule for rule in self._get_rules() if not rule.is_private()])
+
+  def has_default(self):
     """
     Checks if we have the default policy suffix.
+
+    .. versionadded:: 1.3.0
 
     :returns: **True** if we have the default policy suffix, **False** otherwise
     """
@@ -394,18 +426,11 @@ class ExitPolicy(object):
 
     return False
 
-  def strip_private(self):
-    """
-    Provides a copy of this policy without 'private' policy entries.
-
-    :returns: **ExitPolicy** without private rules
-    """
-
-    return ExitPolicy(*[rule for rule in self._get_rules() if not rule.is_private()])
-
   def strip_default(self):
     """
     Provides a copy of this policy without the default policy suffix.
+
+    .. versionadded:: 1.3.0
 
     :returns: **ExitPolicy** without default rules
     """
@@ -791,14 +816,22 @@ class ExitPolicyRule(object):
 
   def is_private(self):
     """
-    True if this rule was expanded from the 'private' keyword, False otherwise.
+    Checks if this rule was expanded from the 'private' policy keyword.
+
+    .. versionadded:: 1.3.0
+
+    :returns: **True** if this rule was expanded from the 'private' keyword, **False** otherwise.
     """
 
     return self._is_private
 
   def is_default(self):
     """
-    True if this rule was part of the default end of a policy, False otherwise.
+    Checks if this rule belongs to the default exit policy suffix.
+
+    .. versionadded:: 1.3.0
+
+    :returns: **True** if this rule was part of the default end of a policy, **False** otherwise.
     """
 
     return self._is_default_suffix

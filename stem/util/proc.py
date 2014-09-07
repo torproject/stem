@@ -301,6 +301,8 @@ def file_descriptors_used(pid):
   """
   Provides the number of file descriptors currently being used by a process.
 
+  .. versionadded:: 1.3.0
+
   :param int pid: process id of the process to be queried
 
   :returns: **int** of the number of file descriptors used

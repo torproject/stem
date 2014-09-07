@@ -211,6 +211,8 @@ class ControlSocket(object):
     disconnected. That is to say, the time we connected if we're presently
     connected and the time we disconnected if we're not connected.
 
+    .. versionadded:: 1.3.0
+
     :returns: **float** for when we last connected or disconnected, zero if
       we've never connected
     """
