@@ -1033,17 +1033,12 @@ class Controller(BaseController):
           if self.get_conf('ExitPolicyRejectPrivate') == '1':
             policy.append('reject private:*')
 
-            public_addr = self.get_info('address', None)
-
-            if public_addr:
-              policy.append('reject %s:*' % public_addr)
-
           for policy_line in self.get_conf('ExitPolicy', multiple = True):
             policy += policy_line.split(',')
 
           policy += self.get_info('exit-policy/default').split(',')
 
-          config_policy = stem.exit_policy.get_config_policy(policy)
+          config_policy = stem.exit_policy.get_config_policy(policy, self.get_info('address'))
           self._set_cache({'exit_policy': config_policy})
 
         return config_policy

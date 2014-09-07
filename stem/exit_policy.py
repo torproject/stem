@@ -30,6 +30,9 @@ exiting to a destination is permissible or not. For instance...
     |- can_exit_to - check if exiting to this destination is allowed or not
     |- is_exiting_allowed - check if any exiting is allowed
     |- summary - provides a short label, similar to a microdescriptor
+    |- is_default - checks if policy ends with the defaultly appended suffix
+    |- strip_private - provides a copy of the policy without 'private' entries
+    |- strip_default - provides a copy of the policy without the default suffix
     |- __str__  - string representation
     +- __iter__ - ExitPolicyRule entries that this contains
 
@@ -42,6 +45,8 @@ exiting to a destination is permissible or not. For instance...
     |- is_match - checks if we match a given destination
     |- get_mask - provides the address representation of our mask
     |- get_masked_bits - provides the bit representation of our mask
+    |- is_private - flag indicating if this was expanded from a 'private' keyword
+    |- is_default - flag indicating if this was part of the default end of a policy
     +- __str__ - string representation for this rule
 
   get_config_policy - provides the ExitPolicy based on torrc rules
@@ -59,6 +64,9 @@ exiting to a destination is permissible or not. For instance...
   ============ ===========
 """
 
+from __future__ import absolute_import
+
+import socket
 import zlib
 
 import stem.prereq
@@ -90,7 +98,7 @@ PRIVATE_ADDRESSES = (
 )
 
 
-def get_config_policy(rules):
+def get_config_policy(rules, ip_address = None):
   """
   Converts an ExitPolicy found in a torrc to a proper exit pattern. This
   accounts for...
@@ -99,11 +107,16 @@ def get_config_policy(rules):
   * the 'private' keyword
 
   :param str,list rules: comma separated rules or list to be converted
+  :param str ip_address: this relay's IP address for the 'private' policy if
+    it's present, this defaults to the local address
 
   :returns: :class:`~stem.exit_policy.ExitPolicy` reflected by the rules
 
   :raises: **ValueError** if input isn't a valid tor exit policy
   """
+
+  if ip_address and not (stem.util.connection.is_valid_ipv4_address(ip_address) or stem.util.connection.is_valid_ipv6_address(ip_address)):
+    raise ValueError("%s isn't a valid IP address" % ip_address)
 
   if isinstance(rules, (bytes, unicode)):
     rules = rules.split(',')
@@ -123,7 +136,10 @@ def get_config_policy(rules):
       acceptance = rule.split(' ', 1)[0]
       port = rule.split(':', 1)[1]
 
-      for private_addr in PRIVATE_ADDRESSES:
+      if ip_address is None:
+        ip_address = socket.gethostbyname(socket.gethostname())
+
+      for private_addr in PRIVATE_ADDRESSES + (ip_address,):
         result.append(ExitPolicyRule("%s %s:%s" % (acceptance, private_addr, port)))
     else:
       result.append(ExitPolicyRule(rule))
@@ -135,6 +151,69 @@ def get_config_policy(rules):
     rule._submask_wildcard = False
 
   return ExitPolicy(*result)
+
+
+def _flag_private_rules(rules):
+  """
+  Determine if part of our policy was expanded from the 'private' keyword. This
+  doesn't differentiate if this actually came from the 'private' keyword or a
+  series of rules exactly matching it.
+  """
+
+  matches = []
+
+  for i, rule in enumerate(rules):
+    if i + len(PRIVATE_ADDRESSES) + 1 > len(rules):
+      break
+
+    rule_str = '%s/%s' % (rule.address, rule.get_masked_bits())
+
+    if rule_str == PRIVATE_ADDRESSES[0]:
+      matches.append(i)
+
+  for start_index in matches:
+    # To match the private policy the following must all be true...
+    #
+    #   * series of addresses and bit masks match PRIVATE_ADDRESSES
+    #   * all rules have the same port range and acceptance
+    #   * all rules have the same acceptance (all accept or reject entries)
+
+    rule_set = rules[start_index:start_index + len(PRIVATE_ADDRESSES) + 1]
+    is_match = True
+
+    min_port, max_port = rule_set[0].min_port, rule_set[0].max_port
+    is_accept = rule_set[0].is_accept
+
+    for i, rule in enumerate(rule_set[:-1]):
+      rule_str = '%s/%s' % (rule.address, rule.get_masked_bits())
+
+      if rule_str != PRIVATE_ADDRESSES[i] or rule.min_port != min_port or rule.max_port != max_port or rule.is_accept != is_accept:
+        is_match = False
+        break
+
+    # The last rule is for the relay's public address, so it's dynamic.
+
+    last_rule = rule_set[-1]
+
+    if last_rule.is_address_wildcard() or last_rule.min_port != min_port or last_rule.max_port != max_port or last_rule.is_accept != is_accept:
+      is_match = False
+
+    if is_match:
+      for rule in rule_set:
+        rule._is_private = True
+
+
+def _flag_default_rules(rules):
+  """
+  Determine if part of our policy ends with the defaultly appended suffix.
+  """
+
+  if len(rules) >= len(DEFAULT_POLICY_RULES):
+    rules_suffix = tuple(rules[-len(DEFAULT_POLICY_RULES):])
+
+    if rules_suffix == DEFAULT_POLICY_RULES:
+      for rule in rules_suffix:
+        rule._is_default_suffix = True
 
 
 class ExitPolicy(object):
@@ -149,6 +228,7 @@ class ExitPolicy(object):
 
   def __init__(self, *rules):
     # sanity check the types
+
     for rule in rules:
       if not isinstance(rule, (bytes, unicode, ExitPolicyRule)):
         raise TypeError('Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)' % (type(rule), rules))
@@ -171,6 +251,7 @@ class ExitPolicy(object):
       self._input_rules = rules
 
     self._rules = None
+    self._hash = None
 
     # Result when no rules apply. According to the spec policies default to 'is
     # allowed', but our microdescriptor policy subclass might want to change
@@ -300,6 +381,37 @@ class ExitPolicy(object):
 
     return (label_prefix + ', '.join(display_ranges)).strip()
 
+  def is_default(self):
+    """
+    Checks if we have the default policy suffix.
+
+    :returns: **True** if we have the default policy suffix, **False** otherwise
+    """
+
+    for rule in self._get_rules():
+      if rule.is_default():
+        return True
+
+    return False
+
+  def strip_private(self):
+    """
+    Provides a copy of this policy without 'private' policy entries.
+
+    :returns: **ExitPolicy** without private rules
+    """
+
+    return ExitPolicy(*[rule for rule in self._get_rules() if not rule.is_private()])
+
+  def strip_default(self):
+    """
+    Provides a copy of this policy without the default policy suffix.
+
+    :returns: **ExitPolicy** without default rules
+    """
+
+    return ExitPolicy(*[rule for rule in self._get_rules() if not rule.is_default()])
+
   def _get_rules(self):
     if self._rules is None:
       rules = []
@@ -346,10 +458,16 @@ class ExitPolicy(object):
         elif is_all_reject:
           rules = [ExitPolicyRule('reject *:*')]
 
+      _flag_private_rules(rules)
+      _flag_default_rules(rules)
+
       self._rules = rules
       self._input_rules = None
 
     return self._rules
+
+  def __len__(self):
+    return len(self._get_rules())
 
   def __iter__(self):
     for rule in self._get_rules():
@@ -360,12 +478,16 @@ class ExitPolicy(object):
     return ', '.join([str(rule) for rule in self._get_rules()])
 
   def __hash__(self):
-    # TODO: It would be nice to provide a real hash function, but doing so is
-    # tricky due to how we lazily load the rules. Like equality checks a proper
-    # hash function would need to call _get_rules(), but that's behind
-    # @lru_cache which calls hash() forming a circular dependency.
+    if self._hash is None:
+      my_hash = 0
 
-    return id(self)
+      for rule in self._get_rules():
+        my_hash *= 1024
+        my_hash += hash(rule)
+
+      self._hash = my_hash
+
+    return self._hash
 
   def __eq__(self, other):
     if isinstance(other, ExitPolicy):
@@ -526,6 +648,12 @@ class ExitPolicyRule(object):
 
     self._submask_wildcard = True
 
+    # Flags to indicate if this rule seems to be expanded from the 'private'
+    # keyword or tor's default policy suffix.
+
+    self._is_private = False
+    self._is_default_suffix = False
+
   def is_address_wildcard(self):
     """
     **True** if we'll match against any address, **False** otherwise.
@@ -570,6 +698,7 @@ class ExitPolicyRule(object):
     """
 
     # validate our input and check if the argument doesn't match our address type
+
     if address is not None:
       address_type = self.get_address_type()
 
@@ -659,6 +788,20 @@ class ExitPolicyRule(object):
     """
 
     return self._masked_bits
+
+  def is_private(self):
+    """
+    True if this rule was expanded from the 'private' keyword, False otherwise.
+    """
+
+    return self._is_private
+
+  def is_default(self):
+    """
+    True if this rule was part of the default end of a policy, False otherwise.
+    """
+
+    return self._is_default_suffix
 
   @lru_cache()
   def __str__(self):
@@ -885,3 +1028,18 @@ class MicroExitPolicyRule(ExitPolicyRule):
       self._hash = my_hash
 
     return self._hash
+
+
+DEFAULT_POLICY_RULES = tuple([ExitPolicyRule(rule) for rule in (
+  'reject *:25',
+  'reject *:119',
+  'reject *:135-139',
+  'reject *:445',
+  'reject *:563',
+  'reject *:1214',
+  'reject *:4661-4666',
+  'reject *:6346-6429',
+  'reject *:6699',
+  'reject *:6881-6999',
+  'accept *:*',
+)])

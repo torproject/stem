@@ -6,6 +6,7 @@ import pickle
 import unittest
 
 from stem.exit_policy import (
+  DEFAULT_POLICY_RULES,
   get_config_policy,
   ExitPolicy,
   MicroExitPolicy,
@@ -95,6 +96,58 @@ class TestExitPolicy(unittest.TestCase):
 
     policy = ExitPolicy('reject *:80-65535', 'accept *:1-65533', 'reject *:*')
     self.assertEquals('accept 1-79', policy.summary())
+
+  def test_non_private_non_default_policy(self):
+    policy = get_config_policy('reject *:80-65535, accept *:1-65533, reject *:*')
+
+    for rule in policy:
+      self.assertFalse(rule.is_private())
+      self.assertFalse(rule.is_default())
+
+    self.assertFalse(policy.is_default())
+
+    self.assertEqual(policy, policy.strip_private())
+    self.assertEqual(policy, policy.strip_default())
+
+  def test_all_private_policy(self):
+    for port in ('*', '80', '1-1024'):
+      private_policy = get_config_policy('reject private:%s' % port)
+
+      for rule in private_policy:
+        self.assertTrue(rule.is_private())
+
+      self.assertEqual(ExitPolicy(), private_policy.strip_private())
+
+    # though not commonly done, technically private policies can be accept rules too
+
+    private_policy = get_config_policy('accept private:*')
+    self.assertEqual(ExitPolicy(), private_policy.strip_private())
+
+  def test_all_default_policy(self):
+    policy = ExitPolicy(*DEFAULT_POLICY_RULES)
+
+    for rule in policy:
+      self.assertTrue(rule.is_default())
+
+    self.assertTrue(policy.is_default())
+    self.assertEqual(ExitPolicy(), policy.strip_default())
+
+  def test_mixed_private_policy(self):
+    policy = get_config_policy('accept *:80, reject private:1-65533, accept *:*')
+
+    for rule in policy:
+      self.assertTrue(rule.is_accept != rule.is_private())  # only reject rules are the private ones
+
+    self.assertEqual(get_config_policy('accept *:80, accept *:*'), policy.strip_private())
+
+  def test_mixed_default_policy(self):
+    policy = ExitPolicy('accept *:80', 'accept 127.0.0.1:1-65533', *DEFAULT_POLICY_RULES)
+
+    for rule in policy:
+      # only accept-all and reject rules are the default ones
+      self.assertTrue(rule.is_accept != rule.is_default() or (rule.is_accept and rule.is_address_wildcard() and rule.is_port_wildcard()))
+
+    self.assertEqual(get_config_policy('accept *:80, accept 127.0.0.1:1-65533'), policy.strip_default())
 
   def test_str(self):
     # sanity test for our __str__ method
@@ -195,6 +248,7 @@ class TestExitPolicy(unittest.TestCase):
         'reject 192.168.0.0/16:*',
         'reject 10.0.0.0/8:*',
         'reject 172.16.0.0/12:*',
+        'reject 12.34.56.78:*',
       ),
       'accept *:80, reject *': ExitPolicy(
         'accept *:80',
@@ -207,7 +261,7 @@ class TestExitPolicy(unittest.TestCase):
     }
 
     for test_input, expected in test_inputs.items():
-      self.assertEqual(expected, get_config_policy(test_input))
+      self.assertEqual(expected, get_config_policy(test_input, '12.34.56.78'))
 
     test_inputs = (
       'blarg',
