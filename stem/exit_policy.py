@@ -30,7 +30,9 @@ exiting to a destination is permissible or not. For instance...
     |- can_exit_to - check if exiting to this destination is allowed or not
     |- is_exiting_allowed - check if any exiting is allowed
     |- summary - provides a short label, similar to a microdescriptor
+    |- is_default - checks if policy ends with the defaultly appended suffix
     |- strip_private - provides a copy of the policy without 'private' entries
+    |- strip_default - provides a copy of the policy without the default suffix
     |- __str__  - string representation
     +- __iter__ - ExitPolicyRule entries that this contains
 
@@ -44,6 +46,7 @@ exiting to a destination is permissible or not. For instance...
     |- get_mask - provides the address representation of our mask
     |- get_masked_bits - provides the bit representation of our mask
     |- is_private - flag indicating if this was expanded from a 'private' keyword
+    |- is_default - flag indicating if this was part of the default end of a policy
     +- __str__ - string representation for this rule
 
   get_config_policy - provides the ExitPolicy based on torrc rules
@@ -198,6 +201,19 @@ def _flag_private_rules(rules):
     if is_match:
       for rule in rule_set:
         rule._is_private = True
+
+
+def _flag_default_rules(rules):
+  """
+  Determine if part of our policy ends with the defaultly appended suffix.
+  """
+
+  if len(rules) >= len(DEFAULT_POLICY_RULES):
+    rules_suffix = tuple(rules[-len(DEFAULT_POLICY_RULES):])
+
+    if rules_suffix == DEFAULT_POLICY_RULES:
+      for rule in rules_suffix:
+        rule._is_default_suffix = True
 
 
 class ExitPolicy(object):
@@ -365,6 +381,19 @@ class ExitPolicy(object):
 
     return (label_prefix + ', '.join(display_ranges)).strip()
 
+  def is_default(self):
+    """
+    Checks if we have the default policy suffix.
+
+    :returns: **True** if we have the default policy suffix, **False** otherwise
+    """
+
+    for rule in self._get_rules():
+      if rule.is_default():
+        return True
+
+    return False
+
   def strip_private(self):
     """
     Provides a copy of this policy without 'private' policy entries.
@@ -373,6 +402,15 @@ class ExitPolicy(object):
     """
 
     return ExitPolicy(*[rule for rule in self._get_rules() if not rule.is_private()])
+
+  def strip_default(self):
+    """
+    Provides a copy of this policy without the default policy suffix.
+
+    :returns: **ExitPolicy** without default rules
+    """
+
+    return ExitPolicy(*[rule for rule in self._get_rules() if not rule.is_default()])
 
   def _get_rules(self):
     if self._rules is None:
@@ -421,11 +459,15 @@ class ExitPolicy(object):
           rules = [ExitPolicyRule('reject *:*')]
 
       _flag_private_rules(rules)
+      _flag_default_rules(rules)
 
       self._rules = rules
       self._input_rules = None
 
     return self._rules
+
+  def __len__(self):
+    return len(self._get_rules())
 
   def __iter__(self):
     for rule in self._get_rules():
@@ -610,7 +652,7 @@ class ExitPolicyRule(object):
     # keyword or tor's default policy suffix.
 
     self._is_private = False
-    self._is_default_suffix = False  # TODO: implement
+    self._is_default_suffix = False
 
   def is_address_wildcard(self):
     """
@@ -753,6 +795,13 @@ class ExitPolicyRule(object):
     """
 
     return self._is_private
+
+  def is_default(self):
+    """
+    True if this rule was part of the default end of a policy, False otherwise.
+    """
+
+    return self._is_default_suffix
 
   @lru_cache()
   def __str__(self):
@@ -979,3 +1028,18 @@ class MicroExitPolicyRule(ExitPolicyRule):
       self._hash = my_hash
 
     return self._hash
+
+
+DEFAULT_POLICY_RULES = tuple([ExitPolicyRule(rule) for rule in (
+  'reject *:25',
+  'reject *:119',
+  'reject *:135-139',
+  'reject *:445',
+  'reject *:563',
+  'reject *:1214',
+  'reject *:4661-4666',
+  'reject *:6346-6429',
+  'reject *:6699',
+  'reject *:6881-6999',
+  'accept *:*',
+)])
