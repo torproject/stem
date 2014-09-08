@@ -272,7 +272,7 @@ def name_by_pid(pid):
     try:
       results = call(GET_NAME_BY_PID_PS % pid)
     except OSError:
-      pass
+      results = None
 
     if results and len(results) == 2 and results[0] == 'COMMAND':
       process_name = results[1].strip()
