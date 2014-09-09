@@ -128,6 +128,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
   BaseController - Base controller class asynchronous message handling
     |- msg - communicates with the tor process
     |- is_alive - reports if our connection to tor is open or closed
+    |- is_localhost - returns if the connection is for the local system or not
     |- connection_time - time when we last connected or disconnected
     |- is_authenticated - checks if we're authenticated to tor
     |- connect - connects or reconnects to tor
@@ -478,6 +479,17 @@ class BaseController(object):
     """
 
     return self._socket.is_alive()
+
+  def is_localhost(self):
+    """
+    Returns if the connection is for the local system or not.
+
+    .. versionadded:: 1.3.0
+
+    :returns: **bool** that's **True** if the connection is for the local host and **False** otherwise
+    """
+
+    return self._socket.is_localhost()
 
   def connection_time(self):
     """
@@ -1235,7 +1247,7 @@ class Controller(BaseController):
     if not user:
       user = self.get_info('process/user', None)
 
-    if not user and self.get_socket().is_localhost():
+    if not user and self.is_localhost():
       pid = self.get_pid(None)
 
       if pid:
@@ -1245,7 +1257,7 @@ class Controller(BaseController):
       self._set_cache({'user': user})
       return user
     elif default == UNDEFINED:
-      if self.get_socket().is_localhost():
+      if self.is_localhost():
         raise ValueError("Unable to resolve tor's user")
       else:
         raise ValueError("Tor isn't running locally")
@@ -1276,7 +1288,7 @@ class Controller(BaseController):
       if getinfo_pid and getinfo_pid.isdigit():
         pid = int(getinfo_pid)
 
-    if not pid and self.get_socket().is_localhost():
+    if not pid and self.is_localhost():
       pid_file_path = self.get_conf('PidFile', None)
 
       if pid_file_path is not None:
@@ -1301,7 +1313,7 @@ class Controller(BaseController):
       self._set_cache({'pid': pid})
       return pid
     elif default == UNDEFINED:
-      if self.get_socket().is_localhost():
+      if self.is_localhost():
         raise ValueError("Unable to resolve tor's pid")
       else:
         raise ValueError("Tor isn't running locally")
@@ -2655,7 +2667,7 @@ class Controller(BaseController):
 
     owning_pid = self.get_conf('__OwningControllerProcess', None)
 
-    if owning_pid == str(os.getpid()) and self.get_socket().is_localhost():
+    if owning_pid == str(os.getpid()) and self.is_localhost():
       response = self.msg('TAKEOWNERSHIP')
       stem.response.convert('SINGLELINE', response)
 
