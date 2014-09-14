@@ -3,6 +3,7 @@ Unit tests for the stem.control module. The module's primarily exercised via
 integ tests, but a few bits lend themselves to unit testing.
 """
 
+import datetime
 import io
 import unittest
 
@@ -278,6 +279,35 @@ class TestControl(unittest.TestCase):
     for response in invalid_responses:
       get_info_mock.return_value = response
       self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
+
+  @patch('stem.control.Controller.get_info')
+  @patch('time.time', Mock(return_value = 1410723698.276578))
+  def test_get_accounting_stats(self, get_info_mock):
+    """
+    Exercises the get_accounting_stats() method.
+    """
+
+    get_info_mock.side_effect = lambda param, **kwargs: {
+      'accounting/hibernating': 'awake',
+      'accounting/interval-end': '2014-09-14 19:41:00',
+      'accounting/bytes': '4837 2050',
+      'accounting/bytes-left': '102944 7440',
+    }[param]
+
+    expected = stem.control.AccountingStats(
+      1410723698.276578,
+      'awake',
+      datetime.datetime(2014, 9, 14, 19, 41),
+      38,
+      4837, 102944, 107781,
+      2050, 7440, 9490,
+    )
+
+    self.assertEqual(expected, self.controller.get_accounting_stats())
+
+    get_info_mock.side_effect = ControllerError('nope, too bad')
+    self.assertRaises(ControllerError, self.controller.get_accounting_stats)
+    self.assertEqual('my default', self.controller.get_accounting_stats('my default'))
 
   @patch('stem.connection.get_protocolinfo')
   def test_get_protocolinfo(self, get_protocolinfo_mock):

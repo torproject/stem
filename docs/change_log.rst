@@ -42,6 +42,7 @@ The following are only available within Stem's `git repository
 
  * **Controller**
 
+  * Added :func:`~stem.control.Controller.get_accounting_stats` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.BaseController.connection_time` to the :class:`~stem.control.BaseController`
   * Changed :func:`~stem.control.Controller.get_microdescriptor`, :func:`~stem.control.Controller.get_server_descriptor`, and :func:`~stem.control.Controller.get_network_status` to get our own descriptor if no fingerprint or nickname is provided.
   * Added :class:`~stem.exit_policy.ExitPolicy` methods for more easily handling 'private' policies (the `default prefix <https://www.torproject.org/docs/tor-manual.html.en#ExitPolicyRejectPrivate>`_) and the defaultly appended suffix. This includes :func:`~stem.exit_policy.ExitPolicy.has_private`, :func:`~stem.exit_policy.ExitPolicy.strip_private`, :func:`~stem.exit_policy.ExitPolicy.has_default`, and :func:`~stem.exit_policy.ExitPolicy.strip_default` :class:`~stem.exit_policy.ExitPolicy` methods in addition to :func:`~stem.exit_policy.ExitPolicyRule.is_private` and :func:`~stem.exit_policy.ExitPolicyRule.is_default` for the :class:`~stem.exit_policy.ExitPolicyRule`. (:trac:`10107`)

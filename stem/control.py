@@ -77,6 +77,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- get_exit_policy - provides our exit policy
     |- get_ports - provides the local ports where tor is listening for connections
     |- get_listeners - provides the addresses and ports where tor is listening for connections
+    |- get_accounting_stats - provides stats related to relaying limits
     |- get_protocolinfo - information about the controller interface
     |- get_user - provides the user tor is running as
     |- get_pid - provides the pid of our tor process
@@ -212,6 +213,9 @@ If you're fine with allowing your script to raise exceptions then this can be mo
   ============= ===========
 """
 
+import calendar
+import collections
+import datetime
 import io
 import os
 import Queue
@@ -326,6 +330,19 @@ GEOIP_FAILURE_THRESHOLD = 5
 SERVER_DESCRIPTORS_UNSUPPORTED = "Tor is presently not configured to retrieve \
 server descriptors. As of Tor version 0.2.3.25 it downloads microdescriptors \
 instead unless you set 'UseMicrodescriptors 0' in your torrc."
+
+AccountingStats = collections.namedtuple('AccountingStats', [
+  'retrieved',
+  'status',
+  'interval_end',
+  'time_until_reset',
+  'read_bytes',
+  'read_bytes_left',
+  'read_limit',
+  'written_bytes',
+  'write_bytes_left',
+  'write_limit',
+])
 
 
 class BaseController(object):
@@ -1177,6 +1194,62 @@ class Controller(BaseController):
           raise stem.ProtocolError('Invalid port for a %s listener: %s' % (listener_type, port))
 
       return [(addr, int(port)) for (addr, port) in proxy_addrs]
+    except Exception as exc:
+      if default == UNDEFINED:
+        raise exc
+      else:
+        return default
+
+  def get_accounting_stats(self, default = UNDEFINED):
+    """
+    Provides stats related to our relaying limitations if AccountingMax was set
+    in our torrc. This provides a **namedtuple** with the following
+    attributes...
+
+      * retrieved (float) - unix timestamp for when this was fetched
+      * status (str) - hibernation status of 'awake', 'soft', or 'hard'
+      * interval_end (datetime)
+      * time_until_reset (int) - seconds until our limits reset
+      * read_bytes (int)
+      * read_bytes_left (int)
+      * read_limit (int)
+      * written_bytes (int)
+      * write_bytes_left (int)
+      * write_limit (int)
+
+    .. versionadded:: 1.3.0
+
+    :param object default: response if the query fails
+
+    :returns: **namedtuple** with our accounting stats
+
+    :raises: :class:`stem.ControllerError` if unable to determine the listeners
+      and no default was provided
+    """
+
+    try:
+      retrieved = time.time()
+      status = self.get_info('accounting/hibernating')
+      interval_end = self.get_info('accounting/interval-end')
+      used = self.get_info('accounting/bytes')
+      left = self.get_info('accounting/bytes-left')
+
+      interval_end = datetime.datetime.strptime(interval_end, '%Y-%m-%d %H:%M:%S')
+      used_read, used_written = [int(val) for val in used.split(' ', 1)]
+      left_read, left_written = [int(val) for val in left.split(' ', 1)]
+
+      return AccountingStats(
+        retrieved = retrieved,
+        status = status,
+        interval_end = interval_end,
+        time_until_reset = int(retrieved) - calendar.timegm(interval_end.timetuple()),
+        read_bytes = used_read,
+        read_bytes_left = left_read,
+        read_limit = used_read + left_read,
+        written_bytes = used_written,
+        write_bytes_left = left_written,
+        write_limit = used_written + left_written,
+      )
     except Exception as exc:
       if default == UNDEFINED:
         raise exc
