@@ -288,6 +288,7 @@ class TestControl(unittest.TestCase):
     """
 
     get_info_mock.side_effect = lambda param, **kwargs: {
+      'accounting/enabled': '1',
       'accounting/hibernating': 'awake',
       'accounting/interval-end': '2014-09-14 19:41:00',
       'accounting/bytes': '4837 2050',

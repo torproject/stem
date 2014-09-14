@@ -1228,6 +1228,9 @@ class Controller(BaseController):
     """
 
     try:
+      if self.get_info('accounting/enabled') != '1':
+        raise stem.ControllerError("Accounting isn't enabled")
+
       retrieved = time.time()
       status = self.get_info('accounting/hibernating')
       interval_end = self.get_info('accounting/interval-end')
