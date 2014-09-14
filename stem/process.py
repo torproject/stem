@@ -227,7 +227,7 @@ def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, in
     if not has_stdout:
       config['Log'].append('NOTICE stdout')
 
-  torrc_path = tempfile.mkstemp(prefix = 'torrc-', text = True)[1]
+  torrc_descriptor, torrc_path = tempfile.mkstemp(prefix = 'torrc-', text = True)
 
   try:
     with open(torrc_path, 'w') as torrc_file:
@@ -244,6 +244,7 @@ def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, in
     return launch_tor(tor_cmd, args, torrc_path, completion_percent, init_msg_handler, timeout, take_ownership)
   finally:
     try:
+      os.close(torrc_descriptor)
       os.remove(torrc_path)
     except:
       pass
