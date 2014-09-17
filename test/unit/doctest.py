@@ -60,6 +60,7 @@ class TestDocumentation(unittest.TestCase):
         args['globs'] = {
           '_to_camel_case': stem.util.str_tools._to_camel_case,
           'crop': stem.util.str_tools.crop,
+          'join': stem.util.str_tools.join,
           'size_label': stem.util.str_tools.size_label,
           'time_label': stem.util.str_tools.time_label,
           'time_labels': stem.util.str_tools.time_labels,

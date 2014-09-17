@@ -13,6 +13,7 @@ Toolkit for various string activity.
 ::
 
   crop - shortens string to a given length
+  join - joins a series of strings up to a given length
 
   size_label - human readable label for a number of bytes
   time_label - human readable label for a number of seconds
@@ -255,6 +256,44 @@ def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, 
     return_msg = return_msg.rstrip() + '...'
 
   return (return_msg, remainder) if get_remainder else return_msg
+
+
+def join(entries, joiner = ' ', size = None):
+  """
+  Joins a series of strings similar to str.join(), but only up to a given size.
+  This returns an empty string if none of the entries will fit. For example...
+
+    >>> join(['This', 'is', 'a', 'looooong', 'message'], size = 18)
+    'This is a looooong'
+
+    >>> join(['This', 'is', 'a', 'looooong', 'message'], size = 17)
+    'This is a'
+
+    >>> join(['This', 'is', 'a', 'looooong', 'message'], size = 2)
+    ''
+
+  :param list entries: strings to be joined
+  :param str joiner: strings to join the entries with
+  :param int size: maximum length the result can be, there's no length
+    limitation if **None**
+
+  :returns: **str** of the joined entries up to the given length
+  """
+
+  if size is None:
+    return joiner.join(entries)
+
+  result = ''
+
+  for entry in entries:
+    new_result = joiner.join((result, entry)) if result else entry
+
+    if len(new_result) > size:
+      break
+    else:
+      result = new_result
+
+  return result
 
 
 def size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
