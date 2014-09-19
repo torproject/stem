@@ -706,7 +706,7 @@ DIRECTORY_AUTHORITIES = {
   ),
   'gabelmoo': DirectoryAuthority(
     nickname = 'gabelmoo',
-    address = '212.112.245.170',
+    address = '131.188.40.189',
     or_port = 443,
     dir_port = 80,
     fingerprint = 'F2044413DAC2E02E3D6BCF4735A19BCA1DE97281',
