@@ -122,6 +122,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- signal - sends a signal to the tor client
     |- is_newnym_available - true if tor would presently accept a NEWNYM signal
     |- get_newnym_wait - seconds until tor would accept a NEWNYM signal
+    |- get_effective_rate - provides our effective relaying rate limit
     |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
     |- map_address - maps one address to another such that connections to the original are replaced with the other
     +- drop_guards - drops our set of guard relays and picks a new set
@@ -2665,6 +2666,47 @@ class Controller(BaseController):
     """
 
     return max(0.0, self._last_newnym + 10 - time.time())
+
+  def get_effective_rate(self, default = UNDEFINED, burst = False):
+    """
+    Provides the maximum rate this relay is configured to relay in bytes per
+    second. This is based on multiple torrc parameters if they're set...
+
+    * Effective Rate = min(BandwidthRate, RelayBandwidthRate, MaxAdvertisedBandwidth)
+    * Effective Burst = min(BandwidthBurst, RelayBandwidthBurst)
+
+    :param object default: response if the query fails
+    :param bool burst: provides the burst bandwidth, otherwise this provides
+      the standard rate
+
+    :returns: **int** with the effective bandwidth rate in bytes per second
+
+    :raises: :class:`stem.ControllerError` if the call fails and no default was
+      provided
+    """
+
+    if not burst:
+      attributes = ('BandwidthRate', 'RelayBandwidthRate', 'MaxAdvertisedBandwidth')
+    else:
+      attributes = ('BandwidthBurst', 'RelayBandwidthBurst')
+
+    value = None
+
+    for attr in attributes:
+      try:
+        attr_value = int(self.get_conf(attr))
+
+        if attr_value == 0 and attr.startswith('Relay'):
+          continue  # RelayBandwidthRate and RelayBandwidthBurst default to zero
+
+        value = min(value, attr_value) if value else attr_value
+      except stem.ControllerError as exc:
+        if default == UNDEFINED:
+          raise exc
+        else:
+          return default
+
+    return value
 
   def is_geoip_unavailable(self):
     """

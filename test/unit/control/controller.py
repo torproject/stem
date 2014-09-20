@@ -588,6 +588,29 @@ class TestControl(unittest.TestCase):
     for test_input in malformed_inputs:
       self.assertRaises(ProtocolError, _parse_circ_path, test_input)
 
+  @patch('stem.control.Controller.get_conf')
+  def test_get_effective_rate(self, get_conf_mock):
+    """
+    Exercise the get_effective_rate() method.
+    """
+
+    # check default if nothing was set
+
+    get_conf_mock.side_effect = lambda param, **kwargs: {
+      'BandwidthRate': '1073741824',
+      'BandwidthBurst': '1073741824',
+      'RelayBandwidthRate': '0',
+      'RelayBandwidthBurst': '0',
+      'MaxAdvertisedBandwidth': '1073741824',
+    }[param]
+
+    self.assertEqual(1073741824, self.controller.get_effective_rate())
+    self.assertEqual(1073741824, self.controller.get_effective_rate(burst = True))
+
+    get_conf_mock.side_effect = ControllerError('nope, too bad')
+    self.assertRaises(ControllerError, self.controller.get_effective_rate)
+    self.assertEqual('my_default', self.controller.get_effective_rate('my_default'))
+
   @patch('stem.control.Controller.get_version')
   def test_drop_guards(self, get_version_mock):
     """
