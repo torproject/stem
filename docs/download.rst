@@ -21,6 +21,14 @@ Download
    * Fedora
      Source: https://en.wikipedia.org/wiki/File:Fedora_logo_and_wordmark.svg
      Author: Unknown
+     
+     TODO: Switch link back to...
+     
+       https://apps.fedoraproject.org/packages/python-stem
+     
+     When the following is sorted out...
+     
+       https://github.com/fedora-infra/fedora-packages/issues/76
    
    * Red Hat
      Source: NuoveXT (http://nuovext.pwsp.net/)
