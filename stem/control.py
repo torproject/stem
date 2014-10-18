@@ -1246,7 +1246,7 @@ class Controller(BaseController):
         retrieved = retrieved,
         status = status,
         interval_end = interval_end,
-        time_until_reset = int(retrieved) - calendar.timegm(interval_end.timetuple()),
+        time_until_reset = calendar.timegm(interval_end.timetuple()) - int(retrieved),
         read_bytes = used_read,
         read_bytes_left = left_read,
         read_limit = used_read + left_read,

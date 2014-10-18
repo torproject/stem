@@ -281,7 +281,7 @@ class TestControl(unittest.TestCase):
       self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
 
   @patch('stem.control.Controller.get_info')
-  @patch('time.time', Mock(return_value = 1410723698.276578))
+  @patch('time.time', Mock(return_value = 1410723598.276578))
   def test_get_accounting_stats(self, get_info_mock):
     """
     Exercises the get_accounting_stats() method.
@@ -296,10 +296,10 @@ class TestControl(unittest.TestCase):
     }[param]
 
     expected = stem.control.AccountingStats(
-      1410723698.276578,
+      1410723598.276578,
       'awake',
       datetime.datetime(2014, 9, 14, 19, 41),
-      38,
+      62,
       4837, 102944, 107781,
       2050, 7440, 9490,
     )
