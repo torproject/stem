@@ -42,6 +42,7 @@ The following are only available within Stem's `git repository
 
  * **Controller**
 
+  * Added :class:`~stem.control.Controller` methods to more easily work with hidden service configurations: :func:`~stem.control.Controller.get_hidden_service_conf`, :func:`~stem.control.Controller.set_hidden_service_conf`, :func:`~stem.control.Controller.create_hidden_service`, and :func:`~stem.control.Controller.remove_hidden_service` (feature by federico3 and patrickod, :trac:`12533`)
   * Added :func:`~stem.control.Controller.get_accounting_stats` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_effective_rate` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.BaseController.connection_time` to the :class:`~stem.control.BaseController`
