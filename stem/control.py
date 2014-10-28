@@ -224,6 +224,12 @@ import StringIO
 import threading
 import time
 
+try:
+  # Added in 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
 import stem.descriptor.microdescriptor
 import stem.descriptor.reader
 import stem.descriptor.router_status_entry
@@ -1887,6 +1893,174 @@ class Controller(BaseController):
         return dict((param, default) for param in params)
       else:
         raise exc
+
+  def get_hidden_services_conf(self, default = UNDEFINED):
+    """
+    This provides a mapping of hidden service directories to their
+    attribute's key/value pairs.
+
+    {
+      "/var/lib/tor/hidden_service_empty/": {
+        "HiddenServicePort": [
+        ]
+      },
+      "/var/lib/tor/hidden_service_with_two_ports/": {
+        "HiddenServiceAuthorizeClient": "stealth a, b",
+        "HiddenServicePort": [
+          "8020 127.0.0.1:8020",  # the ports order is kept
+          "8021 127.0.0.1:8021"
+        ],
+        "HiddenServiceVersion": "2"
+      },
+    }
+
+    :raises:
+      * :class:`stem.ControllerError` if the call fails and we weren't provided
+        a default response
+    """
+    start_time = time.time()
+
+    try:
+      response = self.msg('GETCONF HiddenServiceOptions')
+      stem.response.convert('GETCONF', response)
+      log.debug('GETCONF HiddenServiceOptions (runtime: %0.4f)' %
+                (time.time() - start_time))
+    except stem.ControllerError as exc:
+      log.debug('GETCONF HiddenServiceOptions (failed: %s)' % exc)
+      if default != UNDEFINED:
+        return default
+      else:
+        raise exc
+
+    service_dir_map = OrderedDict()
+    directory = None
+
+    for status_code, divider, content in response.content():
+      if content == 'HiddenServiceOptions':
+        continue
+
+      if not "=" in content:
+        continue
+
+      k, v = content.split('=', 1)
+
+      if k == 'HiddenServiceDir':
+        directory = v
+        service_dir_map[directory] = {'HiddenServicePort': []}
+
+      elif k == 'HiddenServicePort':
+        service_dir_map[directory]['HiddenServicePort'].append(v)
+
+      else:
+        service_dir_map[directory][k] = v
+
+    return service_dir_map
+
+  def set_hidden_services_conf(self, conf):
+    """Update all the configured hidden services from a dictionary having
+    the same format as the output of get_hidden_services_conf()
+
+    :param dict conf: configuration dictionary
+
+    :raises:
+      * :class:`stem.ControllerError` if the call fails
+      * :class:`stem.InvalidArguments` if configuration options
+        requested was invalid
+      * :class:`stem.InvalidRequest` if the configuration setting is
+        impossible or if there's a syntax error in the configuration values
+      * :raises:
+    """
+
+    # Convert conf dictionary into a list of ordered config tuples
+    hidden_service_options = []
+    for directory in conf:
+      hidden_service_options.append(('HiddenServiceDir', directory))
+      for k, v in conf[directory].iteritems():
+        if k == 'HiddenServicePort':
+          for port in v:
+            hidden_service_options.append(('HiddenServicePort', port))
+        else:
+          hidden_service_options.append((k, str(v)))
+    self.set_options(hidden_service_options)
+
+  def create_new_hidden_service(self, dirname, virtport, target=None):
+    """Create a new hidden service+port. If the directory is already present, a
+    new port will be added. If the port is already present, return False.
+
+    :param str dirname: directory name
+    :param int virtport: virtual port
+    :param str target: optional ipaddr:port target e.g. '127.0.0.1:8080'
+    :returns: False if the hidden service and port is already in place
+      True if the creation is successful
+    """
+    if stem.util.connection.is_valid_port(virtport):
+      virtport = int(virtport)
+
+    else:
+      raise ValueError("%s isn't a valid port number" % virtport)
+
+    conf = self.get_hidden_services_conf()
+
+    if dirname in conf:
+      ports = conf[dirname]['HiddenServicePort']
+      if target is None:
+        if str(virtport) in ports:
+          return False
+
+        if "%d 127.0.0.1:%d" % (virtport, virtport) in ports:
+          return False
+
+      elif "%d %s" % (virtport, target) in ports:
+        return False
+
+    else:
+      conf[dirname] = {'HiddenServicePort': []}
+
+    if target is None:
+      conf[dirname]['HiddenServicePort'].append("%d" % virtport)
+
+    else:
+      conf[dirname]['HiddenServicePort'].append("%d %s" % (virtport, target))
+
+    self.set_hidden_services_conf(conf)
+    return True
+
+  def delete_hidden_service(self, dirname, virtport, target=None):
+    """Delete a hidden service+port.
+    :param str dirname: directory name
+    :param int virtport: virtual port
+    :param str target: optional ipaddr:port target e.g. '127.0.0.1:8080'
+    :raises:
+    """
+    if stem.util.connection.is_valid_port(virtport):
+      virtport = int(virtport)
+
+    else:
+      raise ValueError("%s isn't a valid port number" % virtport)
+
+    conf = self.get_hidden_services_conf()
+
+    if dirname not in conf:
+      raise RuntimeError("HiddenServiceDir %r not found" % dirname)
+
+    ports = conf[dirname]['HiddenServicePort']
+
+    if target is None:
+      longport = "%d 127.0.0.1:%d" % (virtport, virtport)
+      try:
+        ports.pop(ports.index(str(virtport)))
+      except ValueError:
+        raise stem.InvalidArguments
+
+    else:
+      longport = "%d %s" % (virtport, target)
+      ports.pop(ports.index(longport))
+
+    if not ports:
+      del(conf[dirname])
+
+    self.set_hidden_services_conf(conf)
+    return True
 
   def _get_conf_dict_to_response(self, config_dict, default, multiple):
     """

@@ -455,6 +455,79 @@ class TestController(unittest.TestCase):
       self.assertEqual({}, controller.get_conf_map('', 'la-di-dah'))
       self.assertEqual({}, controller.get_conf_map([], 'la-di-dah'))
 
+  def test_hidden_services_conf(self):
+    """
+    Exercises get_hidden_services_conf with valid and invalid queries.
+    """
+
+    if test.runner.require_control(self):
+      return
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+
+      conf = controller.get_hidden_services_conf()
+      self.assertDictEqual({}, conf)
+      controller.set_hidden_services_conf(conf)
+
+      initialconf = {
+        "test_hidden_service1/": {
+          "HiddenServicePort": [
+            "8020 127.0.0.1:8020",
+            "8021 127.0.0.1:8021"
+          ],
+          "HiddenServiceVersion": "2",
+        },
+        "test_hidden_service2/": {
+          "HiddenServiceAuthorizeClient": "stealth a, b",
+          "HiddenServicePort": [
+            "8030 127.0.0.1:8030",
+            "8031 127.0.0.1:8031",
+            "8032 127.0.0.1:8032"
+          ]
+        },
+        "test_hidden_service_empty/": {
+          "HiddenServicePort": []
+        }
+      }
+      controller.set_hidden_services_conf(initialconf)
+
+      conf = controller.get_hidden_services_conf()
+      self.assertDictEqual(initialconf, dict(conf))
+
+      # Add already existing services, with/without explicit target
+      r = controller.create_new_hidden_service('test_hidden_service1/', 8020)
+      self.assertFalse(r)
+      r = controller.create_new_hidden_service('test_hidden_service1/', 8021, target="127.0.0.1:8021")
+      self.assertFalse(r)
+
+      # Add new services, with/without explicit target
+      r = controller.create_new_hidden_service('test_hidden_serviceX/', 8888)
+      self.assertTrue(r)
+      r = controller.create_new_hidden_service('test_hidden_serviceX/', 8989, target="127.0.0.1:8021")
+      self.assertTrue(r)
+
+      conf = controller.get_hidden_services_conf()
+      self.assertEqual(len(conf), 4)
+      ports = conf['test_hidden_serviceX/']['HiddenServicePort']
+      self.assertEqual(len(ports), 2)
+
+      # Delete services
+      controller.delete_hidden_service('test_hidden_serviceX/', 8888)
+
+      # The service dir should be still there
+      conf = controller.get_hidden_services_conf()
+      self.assertEqual(len(conf), 4)
+
+      # Delete service
+      controller.delete_hidden_service('test_hidden_serviceX/', 8989, target="127.0.0.1:8021")
+
+      # The service dir should be gone
+      conf = controller.get_hidden_services_conf()
+      self.assertEqual(len(conf), 3)
+
+
   def test_set_conf(self):
     """
     Exercises set_conf(), reset_conf(), and set_options() methods with valid
