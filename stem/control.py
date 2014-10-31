@@ -2065,6 +2065,8 @@ class Controller(BaseController):
         },
       }
 
+    .. versionadded:: 1.3.0
+
     :param object default: response if the query fails
 
     :returns: **dict** with the hidden service configuration
@@ -2116,6 +2118,8 @@ class Controller(BaseController):
     the same format as
     :func:`~stem.control.Controller.get_hidden_service_conf`.
 
+    .. versionadded:: 1.3.0
+
     :param dict conf: configuration dictionary
 
     :raises:
@@ -2146,6 +2150,8 @@ class Controller(BaseController):
     """
     Create a new hidden service. If the directory is already present, a
     new port is added.
+
+    .. versionadded:: 1.3.0
 
     :param str path: path for the hidden service's data directory
     :param int port: hidden service port
@@ -2181,6 +2187,8 @@ class Controller(BaseController):
   def remove_hidden_service(self, path, port = None, target = None):
     """
     Discontinues a given hidden service.
+
+    .. versionadded:: 1.3.0
 
     :param str path: path for the hidden service's data directory
     :param int port: hidden service port
