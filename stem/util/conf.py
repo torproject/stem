@@ -244,9 +244,9 @@ def get_config(handle):
 
 def uses_settings(handle, path, lazy_load = True):
   """
-  Provides a function that can be used as an annotation for other functions
-  that require settings to be loaded. Functions with this annotation will be
-  provided with the configuration as its 'config' keyword argument.
+  Provides a function that can be used as a decorator for other functions that
+  require settings to be loaded. Functions with this decorator will be provided
+  with the configuration as its 'config' keyword argument.
 
   .. versionchanged:: 1.3.0
      Omits the 'config' argument if the funcion we're decorating doesn't accept
@@ -262,14 +262,14 @@ def uses_settings(handle, path, lazy_load = True):
 
   :param str handle: hande for the configuration
   :param str path: path where the configuration should be loaded from
-  :param bool lazy_load: loads the configuration file when the annotation is
+  :param bool lazy_load: loads the configuration file when the decorator is
     used if true, otherwise it's loaded right away
 
-  :returns: **function** that can be used as an annotation to provide the
+  :returns: **function** that can be used as a decorator to provide the
     configuration
 
   :raises: **IOError** if we fail to read the configuration file, if
-    **lazy_load** is true then this arises when we use the annotation
+    **lazy_load** is true then this arises when we use the decorator
   """
 
   config = get_config(handle)
@@ -278,20 +278,20 @@ def uses_settings(handle, path, lazy_load = True):
     config.load(path)
     config.set('settings_loaded', 'true')
 
-  def annotation(func):
+  def decorator(func):
     def wrapped(*args, **kwargs):
       if lazy_load and not config.get('settings_loaded', False):
         config.load(path)
         config.set('settings_loaded', 'true')
 
-      if 'config' in inspect.getargspec(func)[0]:
+      if 'config' in inspect.getargspec(func).args:
         return func(*args, config = config, **kwargs)
       else:
         return func(*args, **kwargs)
 
     return wrapped
 
-  return annotation
+  return decorator
 
 
 def parse_enum(key, value, enumeration):

@@ -318,7 +318,7 @@ An important thing to note is that a new circuit does not necessarily mean a new
 
 Tor does not have a method for cycling your IP address. This is on purpose, and done for a couple reasons. The first is that this capability is usually requested for not-so-nice reasons such as ban evasion or SEO. Second, repeated circuit creation puts a very high load on the Tor network, so please don't!
 
-With all that out of the way, how do you create a new circuit? You can customise the rate at which Tor cycles circuits with the **MaxCircuitDirtiness** option in your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <https://www.atagar.com/arm/>`_ both provide a method to request a new identity, and you can do so programmatically by sending Tor a NEWNYM signal.
+With all that out of the way, how do you create a new circuit? You can customize the rate at which Tor cycles circuits with the **MaxCircuitDirtiness** option in your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <https://www.atagar.com/arm/>`_ both provide a method to request a new identity, and you can do so programmatically by sending Tor a NEWNYM signal.
 
 To do this with telnet...
 

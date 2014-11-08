@@ -222,6 +222,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
 import calendar
 import collections
 import datetime
+import inspect
 import io
 import os
 import Queue
@@ -355,6 +356,53 @@ AccountingStats = collections.namedtuple('AccountingStats', [
   'write_bytes_left',
   'write_limit',
 ])
+
+
+def with_default(yields = False):
+  """
+  Provides a decorator to support having a default value. This should be
+  treated as private.
+  """
+
+  def decorator(func):
+    def get_default(func, args, kwargs):
+      arg_names = inspect.getargspec(func).args
+      default_position = arg_names.index('default') if 'default' in arg_names else None
+
+      if default_position and default_position < len(args):
+        return args[default_position]
+      else:
+        return kwargs.get('default', UNDEFINED)
+
+    if not yields:
+      def wrapped(*args, **kwargs):
+        try:
+          return func(*args, **kwargs)
+        except Exception as exc:
+          default = get_default(func, args, kwargs)
+
+          if default == UNDEFINED:
+            raise exc
+          else:
+            return default
+    else:
+      def wrapped(*args, **kwargs):
+        try:
+          for val in func(*args, **kwargs):
+            yield val
+        except Exception as exc:
+          default = get_default(func, args, kwargs)
+
+          if default == UNDEFINED:
+            raise exc
+          else:
+            if default is not None:
+              for val in default:
+                yield val
+
+    return wrapped
+
+  return decorator
 
 
 class BaseController(object):
@@ -894,6 +942,7 @@ class Controller(BaseController):
     import stem.connection
     stem.connection.authenticate(self, *args, **kwargs)
 
+  @with_default()
   def get_info(self, params, default = UNDEFINED, get_bytes = False):
     """
     Queries the control socket for the given GETINFO option. If provided a
@@ -950,10 +999,8 @@ class Controller(BaseController):
     for param in params:
       if param.startswith('ip-to-country/') and self.is_geoip_unavailable():
         # the geoip database already looks to be unavailable - abort the request
-        if default == UNDEFINED:
-          raise stem.ProtocolError('Tor geoip database is unavailable')
-        else:
-          return default
+
+        raise stem.ProtocolError('Tor geoip database is unavailable')
 
     # if everything was cached then short circuit making the query
     if not params:
@@ -1013,11 +1060,9 @@ class Controller(BaseController):
 
       log.debug('GETINFO %s (failed: %s)' % (' '.join(params), exc))
 
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
+      raise exc
 
+  @with_default()
   def get_version(self, default = UNDEFINED):
     """
     A convenience method to get tor version that current controller is
@@ -1035,20 +1080,15 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    try:
-      version = self._get_cache('version')
+    version = self._get_cache('version')
 
-      if not version:
-        version = stem.version.Version(self.get_info('version'))
-        self._set_cache({'version': version})
+    if not version:
+      version = stem.version.Version(self.get_info('version'))
+      self._set_cache({'version': version})
 
-      return version
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
+    return version
 
+  @with_default()
   def get_exit_policy(self, default = UNDEFINED):
     """
     Effective ExitPolicy for our relay. This accounts for
@@ -1067,30 +1107,25 @@ class Controller(BaseController):
     """
 
     with self._msg_lock:
-      try:
-        config_policy = self._get_cache('exit_policy')
+      config_policy = self._get_cache('exit_policy')
 
-        if not config_policy:
-          policy = []
+      if not config_policy:
+        policy = []
 
-          if self.get_conf('ExitPolicyRejectPrivate') == '1':
-            policy.append('reject private:*')
+        if self.get_conf('ExitPolicyRejectPrivate') == '1':
+          policy.append('reject private:*')
 
-          for policy_line in self.get_conf('ExitPolicy', multiple = True):
-            policy += policy_line.split(',')
+        for policy_line in self.get_conf('ExitPolicy', multiple = True):
+          policy += policy_line.split(',')
 
-          policy += self.get_info('exit-policy/default').split(',')
+        policy += self.get_info('exit-policy/default').split(',')
 
-          config_policy = stem.exit_policy.get_config_policy(policy, self.get_info('address'))
-          self._set_cache({'exit_policy': config_policy})
+        config_policy = stem.exit_policy.get_config_policy(policy, self.get_info('address'))
+        self._set_cache({'exit_policy': config_policy})
 
-        return config_policy
-      except Exception as exc:
-        if default == UNDEFINED:
-          raise exc
-        else:
-          return default
+      return config_policy
 
+  @with_default()
   def get_ports(self, listener_type, default = UNDEFINED):
     """
     Provides the local ports where tor is listening for the given type of
@@ -1111,14 +1146,9 @@ class Controller(BaseController):
       and no default was provided
     """
 
-    try:
-      return [port for (addr, port) in self.get_listeners(listener_type) if addr == '127.0.0.1']
-    except stem.ControllerError as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
+    return [port for (addr, port) in self.get_listeners(listener_type) if addr == '127.0.0.1']
 
+  @with_default()
   def get_listeners(self, listener_type, default = UNDEFINED):
     """
     Provides the addresses and ports where tor is listening for connections of
@@ -1139,79 +1169,74 @@ class Controller(BaseController):
       and no default was provided
     """
 
+    proxy_addrs = []
+    query = 'net/listeners/%s' % listener_type.lower()
+
     try:
-      proxy_addrs = []
-      query = 'net/listeners/%s' % listener_type.lower()
+      for listener in self.get_info(query).split():
+        if not (listener.startswith('"') and listener.endswith('"')):
+          raise stem.ProtocolError("'GETINFO %s' responses are expected to be quoted: %s" % (query, listener))
+        elif ':' not in listener:
+          raise stem.ProtocolError("'GETINFO %s' had a listener without a colon: %s" % (query, listener))
 
-      try:
-        for listener in self.get_info(query).split():
-          if not (listener.startswith('"') and listener.endswith('"')):
-            raise stem.ProtocolError("'GETINFO %s' responses are expected to be quoted: %s" % (query, listener))
-          elif ':' not in listener:
-            raise stem.ProtocolError("'GETINFO %s' had a listener without a colon: %s" % (query, listener))
+        listener = listener[1:-1]  # strip quotes
+        addr, port = listener.split(':')
 
-          listener = listener[1:-1]  # strip quotes
+        # Skip unix sockets, for instance...
+        #
+        # GETINFO net/listeners/control
+        # 250-net/listeners/control="unix:/tmp/tor/socket"
+        # 250 OK
+
+        if addr == 'unix':
+          continue
+
+        proxy_addrs.append((addr, port))
+    except stem.InvalidArguments:
+      # Tor version is old (pre-tor-0.2.2.26-beta), use get_conf() instead.
+      # Some options (like the ORPort) can have optional attributes after the
+      # actual port number.
+
+      port_option = {
+        Listener.OR: 'ORPort',
+        Listener.DIR: 'DirPort',
+        Listener.SOCKS: 'SocksPort',
+        Listener.TRANS: 'TransPort',
+        Listener.NATD: 'NatdPort',
+        Listener.DNS: 'DNSPort',
+        Listener.CONTROL: 'ControlPort',
+      }[listener_type]
+
+      listener_option = {
+        Listener.OR: 'ORListenAddress',
+        Listener.DIR: 'DirListenAddress',
+        Listener.SOCKS: 'SocksListenAddress',
+        Listener.TRANS: 'TransListenAddress',
+        Listener.NATD: 'NatdListenAddress',
+        Listener.DNS: 'DNSListenAddress',
+        Listener.CONTROL: 'ControlListenAddress',
+      }[listener_type]
+
+      port_value = self.get_conf(port_option).split()[0]
+
+      for listener in self.get_conf(listener_option, multiple = True):
+        if ':' in listener:
           addr, port = listener.split(':')
-
-          # Skip unix sockets, for instance...
-          #
-          # GETINFO net/listeners/control
-          # 250-net/listeners/control="unix:/tmp/tor/socket"
-          # 250 OK
-
-          if addr == 'unix':
-            continue
-
           proxy_addrs.append((addr, port))
-      except stem.InvalidArguments:
-        # Tor version is old (pre-tor-0.2.2.26-beta), use get_conf() instead.
-        # Some options (like the ORPort) can have optional attributes after the
-        # actual port number.
+        else:
+          proxy_addrs.append((listener, port_value))
 
-        port_option = {
-          Listener.OR: 'ORPort',
-          Listener.DIR: 'DirPort',
-          Listener.SOCKS: 'SocksPort',
-          Listener.TRANS: 'TransPort',
-          Listener.NATD: 'NatdPort',
-          Listener.DNS: 'DNSPort',
-          Listener.CONTROL: 'ControlPort',
-        }[listener_type]
+    # validate that address/ports are valid, and convert ports to ints
 
-        listener_option = {
-          Listener.OR: 'ORListenAddress',
-          Listener.DIR: 'DirListenAddress',
-          Listener.SOCKS: 'SocksListenAddress',
-          Listener.TRANS: 'TransListenAddress',
-          Listener.NATD: 'NatdListenAddress',
-          Listener.DNS: 'DNSListenAddress',
-          Listener.CONTROL: 'ControlListenAddress',
-        }[listener_type]
+    for addr, port in proxy_addrs:
+      if not stem.util.connection.is_valid_ipv4_address(addr):
+        raise stem.ProtocolError('Invalid address for a %s listener: %s' % (listener_type, addr))
+      elif not stem.util.connection.is_valid_port(port):
+        raise stem.ProtocolError('Invalid port for a %s listener: %s' % (listener_type, port))
 
-        port_value = self.get_conf(port_option).split()[0]
+    return [(addr, int(port)) for (addr, port) in proxy_addrs]
 
-        for listener in self.get_conf(listener_option, multiple = True):
-          if ':' in listener:
-            addr, port = listener.split(':')
-            proxy_addrs.append((addr, port))
-          else:
-            proxy_addrs.append((listener, port_value))
-
-      # validate that address/ports are valid, and convert ports to ints
-
-      for addr, port in proxy_addrs:
-        if not stem.util.connection.is_valid_ipv4_address(addr):
-          raise stem.ProtocolError('Invalid address for a %s listener: %s' % (listener_type, addr))
-        elif not stem.util.connection.is_valid_port(port):
-          raise stem.ProtocolError('Invalid port for a %s listener: %s' % (listener_type, port))
-
-      return [(addr, int(port)) for (addr, port) in proxy_addrs]
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
-
+  @with_default()
   def get_accounting_stats(self, default = UNDEFINED):
     """
     Provides stats related to our relaying limitations if AccountingMax was set
@@ -1239,37 +1264,31 @@ class Controller(BaseController):
       and no default was provided
     """
 
-    try:
-      if self.get_info('accounting/enabled') != '1':
-        raise stem.ControllerError("Accounting isn't enabled")
+    if self.get_info('accounting/enabled') != '1':
+      raise stem.ControllerError("Accounting isn't enabled")
 
-      retrieved = time.time()
-      status = self.get_info('accounting/hibernating')
-      interval_end = self.get_info('accounting/interval-end')
-      used = self.get_info('accounting/bytes')
-      left = self.get_info('accounting/bytes-left')
+    retrieved = time.time()
+    status = self.get_info('accounting/hibernating')
+    interval_end = self.get_info('accounting/interval-end')
+    used = self.get_info('accounting/bytes')
+    left = self.get_info('accounting/bytes-left')
 
-      interval_end = datetime.datetime.strptime(interval_end, '%Y-%m-%d %H:%M:%S')
-      used_read, used_written = [int(val) for val in used.split(' ', 1)]
-      left_read, left_written = [int(val) for val in left.split(' ', 1)]
+    interval_end = datetime.datetime.strptime(interval_end, '%Y-%m-%d %H:%M:%S')
+    used_read, used_written = [int(val) for val in used.split(' ', 1)]
+    left_read, left_written = [int(val) for val in left.split(' ', 1)]
 
-      return AccountingStats(
-        retrieved = retrieved,
-        status = status,
-        interval_end = interval_end,
-        time_until_reset = calendar.timegm(interval_end.timetuple()) - int(retrieved),
-        read_bytes = used_read,
-        read_bytes_left = left_read,
-        read_limit = used_read + left_read,
-        written_bytes = used_written,
-        write_bytes_left = left_written,
-        write_limit = used_written + left_written,
-      )
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
+    return AccountingStats(
+      retrieved = retrieved,
+      status = status,
+      interval_end = interval_end,
+      time_until_reset = calendar.timegm(interval_end.timetuple()) - int(retrieved),
+      read_bytes = used_read,
+      read_bytes_left = left_read,
+      read_limit = used_read + left_read,
+      written_bytes = used_written,
+      write_bytes_left = left_written,
+      write_limit = used_written + left_written,
+    )
 
   def get_socks_listeners(self, default = UNDEFINED):
     """
@@ -1290,6 +1309,7 @@ class Controller(BaseController):
 
     return self.get_listeners(Listener.SOCKS, default)
 
+  @with_default()
   def get_protocolinfo(self, default = UNDEFINED):
     """
     A convenience method to get the protocol info of the controller.
@@ -1308,15 +1328,9 @@ class Controller(BaseController):
     """
 
     import stem.connection
+    return stem.connection.get_protocolinfo(self)
 
-    try:
-      return stem.connection.get_protocolinfo(self)
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
-
+  @with_default()
   def get_user(self, default = UNDEFINED):
     """
     Provides the user tor is running as. This often only works if tor is
@@ -1344,14 +1358,10 @@ class Controller(BaseController):
     if user:
       self._set_cache({'user': user})
       return user
-    elif default == UNDEFINED:
-      if self.is_localhost():
-        raise ValueError("Unable to resolve tor's user")
-      else:
-        raise ValueError("Tor isn't running locally")
     else:
-      return default
+      raise ValueError("Unable to resolve tor's user" if self.is_localhost() else "Tor isn't running locally")
 
+  @with_default()
   def get_pid(self, default = UNDEFINED):
     """
     Provides the process id of tor. This often only works if tor is running
@@ -1400,14 +1410,10 @@ class Controller(BaseController):
     if pid:
       self._set_cache({'pid': pid})
       return pid
-    elif default == UNDEFINED:
-      if self.is_localhost():
-        raise ValueError("Unable to resolve tor's pid")
-      else:
-        raise ValueError("Tor isn't running locally")
     else:
-      return default
+      raise ValueError("Unable to resolve tor's pid" if self.is_localhost() else "Tor isn't running locally")
 
+  @with_default()
   def get_microdescriptor(self, relay = None, default = UNDEFINED):
     """
     Provides the microdescriptor for the relay with the given fingerprint or
@@ -1435,28 +1441,23 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    try:
-      if relay is None:
-        try:
-          relay = self.get_info('fingerprint')
-        except stem.ControllerError as exc:
-          raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
+    if relay is None:
+      try:
+        relay = self.get_info('fingerprint')
+      except stem.ControllerError as exc:
+        raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
 
-      if stem.util.tor_tools.is_valid_fingerprint(relay):
-        query = 'md/id/%s' % relay
-      elif stem.util.tor_tools.is_valid_nickname(relay):
-        query = 'md/name/%s' % relay
-      else:
-        raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
+    if stem.util.tor_tools.is_valid_fingerprint(relay):
+      query = 'md/id/%s' % relay
+    elif stem.util.tor_tools.is_valid_nickname(relay):
+      query = 'md/name/%s' % relay
+    else:
+      raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
-      desc_content = self.get_info(query, get_bytes = True)
-      return stem.descriptor.microdescriptor.Microdescriptor(desc_content)
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
+    desc_content = self.get_info(query, get_bytes = True)
+    return stem.descriptor.microdescriptor.Microdescriptor(desc_content)
 
+  @with_default(yields = True)
   def get_microdescriptors(self, default = UNDEFINED):
     """
     Provides an iterator for all of the microdescriptors that tor presently
@@ -1477,35 +1478,28 @@ class Controller(BaseController):
     """
 
     try:
-      try:
-        data_directory = self.get_conf('DataDirectory')
-      except stem.ControllerError as exc:
-        raise stem.OperationFailed(message = 'Unable to determine the data directory (%s)' % exc)
+      data_directory = self.get_conf('DataDirectory')
+    except stem.ControllerError as exc:
+      raise stem.OperationFailed(message = 'Unable to determine the data directory (%s)' % exc)
 
-      cached_descriptor_path = os.path.join(data_directory, 'cached-microdescs')
+    cached_descriptor_path = os.path.join(data_directory, 'cached-microdescs')
 
-      if not os.path.exists(data_directory):
-        raise stem.OperationFailed(message = "Data directory reported by tor doesn't exist (%s)" % data_directory)
-      elif not os.path.exists(cached_descriptor_path):
-        raise stem.OperationFailed(message = "Data directory doens't contain cached microescriptors (%s)" % cached_descriptor_path)
+    if not os.path.exists(data_directory):
+      raise stem.OperationFailed(message = "Data directory reported by tor doesn't exist (%s)" % data_directory)
+    elif not os.path.exists(cached_descriptor_path):
+      raise stem.OperationFailed(message = "Data directory doens't contain cached microescriptors (%s)" % cached_descriptor_path)
 
-      with stem.descriptor.reader.DescriptorReader([cached_descriptor_path]) as reader:
-        for desc in reader:
-          # It shouldn't be possible for these to be something other than
-          # microdescriptors but as the saying goes: trust but verify.
+    with stem.descriptor.reader.DescriptorReader([cached_descriptor_path]) as reader:
+      for desc in reader:
+        # It shouldn't be possible for these to be something other than
+        # microdescriptors but as the saying goes: trust but verify.
 
-          if not isinstance(desc, stem.descriptor.microdescriptor.Microdescriptor):
-            raise stem.OperationFailed(message = 'BUG: Descriptor reader provided non-microdescriptor content (%s)' % type(desc))
+        if not isinstance(desc, stem.descriptor.microdescriptor.Microdescriptor):
+          raise stem.OperationFailed(message = 'BUG: Descriptor reader provided non-microdescriptor content (%s)' % type(desc))
 
-          yield desc
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        if default is not None:
-          for entry in default:
-            yield entry
+        yield desc
 
+  @with_default()
   def get_server_descriptor(self, relay = None, default = UNDEFINED):
     """
     Provides the server descriptor for the relay with the given fingerprint or
@@ -1555,14 +1549,12 @@ class Controller(BaseController):
       desc_content = self.get_info(query, get_bytes = True)
       return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
     except Exception as exc:
-      if default == UNDEFINED:
-        if not self._is_server_descriptors_available():
-          raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
+      if not self._is_server_descriptors_available():
+        raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
 
-        raise exc
-      else:
-        return default
+      raise exc
 
+  @with_default(yields = True)
   def get_server_descriptors(self, default = UNDEFINED):
     """
     Provides an iterator for all of the server descriptors that tor presently
@@ -1583,26 +1575,18 @@ class Controller(BaseController):
       default was provided
     """
 
-    try:
-      # TODO: We should iterate over the descriptors as they're read from the
-      # socket rather than reading the whole thing into memory.
-      #
-      # https://trac.torproject.org/8248
+    # TODO: We should iterate over the descriptors as they're read from the
+    # socket rather than reading the whole thing into memory.
+    #
+    # https://trac.torproject.org/8248
 
-      desc_content = self.get_info('desc/all-recent', get_bytes = True)
+    desc_content = self.get_info('desc/all-recent', get_bytes = True)
 
-      if not desc_content and not self._is_server_descriptors_available():
-        raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
+    if not desc_content and not self._is_server_descriptors_available():
+      raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
 
-      for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_content)):
-        yield desc
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        if default is not None:
-          for entry in default:
-            yield entry
+    for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_content)):
+      yield desc
 
   def _is_server_descriptors_available(self):
     """
@@ -1612,6 +1596,7 @@ class Controller(BaseController):
     return self.get_version() < stem.version.Requirement.MICRODESCRIPTOR_IS_DEFAULT or \
            self.get_conf('UseMicrodescriptors', None) == '0'
 
+  @with_default()
   def get_network_status(self, relay = None, default = UNDEFINED):
     """
     Provides the router status entry for the relay with the given fingerprint
@@ -1656,32 +1641,27 @@ class Controller(BaseController):
     #
     # https://trac.torproject.org/7953
 
-    try:
-      if relay is None:
-        try:
-          relay = self.get_info('fingerprint')
-        except stem.ControllerError as exc:
-          raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
+    if relay is None:
+      try:
+        relay = self.get_info('fingerprint')
+      except stem.ControllerError as exc:
+        raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
 
-      if stem.util.tor_tools.is_valid_fingerprint(relay):
-        query = 'ns/id/%s' % relay
-      elif stem.util.tor_tools.is_valid_nickname(relay):
-        query = 'ns/name/%s' % relay
-      else:
-        raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
+    if stem.util.tor_tools.is_valid_fingerprint(relay):
+      query = 'ns/id/%s' % relay
+    elif stem.util.tor_tools.is_valid_nickname(relay):
+      query = 'ns/name/%s' % relay
+    else:
+      raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
-      desc_content = self.get_info(query, get_bytes = True)
+    desc_content = self.get_info(query, get_bytes = True)
 
-      if self.get_conf('UseMicrodescriptors', '0') == '1':
-        return stem.descriptor.router_status_entry.RouterStatusEntryMicroV3(desc_content)
-      else:
-        return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content)
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
+    if self.get_conf('UseMicrodescriptors', '0') == '1':
+      return stem.descriptor.router_status_entry.RouterStatusEntryMicroV3(desc_content)
+    else:
+      return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content)
 
+  @with_default(yields = True)
   def get_network_statuses(self, default = UNDEFINED):
     """
     Provides an iterator for all of the router status entries that tor
@@ -1713,29 +1693,21 @@ class Controller(BaseController):
     else:
       desc_class = stem.descriptor.router_status_entry.RouterStatusEntryV3
 
-    try:
-      # TODO: We should iterate over the descriptors as they're read from the
-      # socket rather than reading the whole thing into memory.
-      #
-      # https://trac.torproject.org/8248
+    # TODO: We should iterate over the descriptors as they're read from the
+    # socket rather than reading the whole thing into memory.
+    #
+    # https://trac.torproject.org/8248
 
-      desc_content = self.get_info('ns/all', get_bytes = True)
+    desc_content = self.get_info('ns/all', get_bytes = True)
 
-      desc_iterator = stem.descriptor.router_status_entry._parse_file(
-        io.BytesIO(desc_content),
-        True,
-        entry_class = desc_class,
-      )
+    desc_iterator = stem.descriptor.router_status_entry._parse_file(
+      io.BytesIO(desc_content),
+      True,
+      entry_class = desc_class,
+    )
 
-      for desc in desc_iterator:
-        yield desc
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        if default is not None:
-          for entry in default:
-            yield entry
+    for desc in desc_iterator:
+      yield desc
 
   def get_conf(self, param, default = UNDEFINED, multiple = False):
     """
@@ -2042,6 +2014,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError('Returned unexpected status code: %s' % response.code)
 
+  @with_default()
   def get_hidden_service_conf(self, default = UNDEFINED):
     """
     This provides a mapping of hidden service directories to their
@@ -2084,11 +2057,7 @@ class Controller(BaseController):
                 (time.time() - start_time))
     except stem.ControllerError as exc:
       log.debug('GETCONF HiddenServiceOptions (failed: %s)' % exc)
-
-      if default != UNDEFINED:
-        return default
-      else:
-        raise exc
+      raise exc
 
     service_dir_map = OrderedDict()
     directory = None
@@ -2513,6 +2482,7 @@ class Controller(BaseController):
 
     self._enabled_features += [entry.upper() for entry in features]
 
+  @with_default()
   def get_circuit(self, circuit_id, default = UNDEFINED):
     """
     Provides a circuit presently available from tor.
@@ -2529,18 +2499,13 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    try:
-      for circ in self.get_circuits():
-        if circ.id == circuit_id:
-          return circ
+    for circ in self.get_circuits():
+      if circ.id == circuit_id:
+        return circ
 
-      raise ValueError("Tor presently does not have a circuit with the id of '%s'" % circuit_id)
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
+    raise ValueError("Tor presently does not have a circuit with the id of '%s'" % circuit_id)
 
+  @with_default()
   def get_circuits(self, default = UNDEFINED):
     """
     Provides tor's currently available circuits.
@@ -2552,21 +2517,15 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if the call fails and no default was provided
     """
 
-    try:
-      circuits = []
-      response = self.get_info('circuit-status')
+    circuits = []
+    response = self.get_info('circuit-status')
 
-      for circ in response.splitlines():
-        circ_message = stem.socket.recv_message(StringIO.StringIO('650 CIRC ' + circ + '\r\n'))
-        stem.response.convert('EVENT', circ_message, arrived_at = 0)
-        circuits.append(circ_message)
+    for circ in response.splitlines():
+      circ_message = stem.socket.recv_message(StringIO.StringIO('650 CIRC ' + circ + '\r\n'))
+      stem.response.convert('EVENT', circ_message, arrived_at = 0)
+      circuits.append(circ_message)
 
-      return circuits
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
+    return circuits
 
   def new_circuit(self, path = None, purpose = 'general', await_build = False):
     """
@@ -2728,6 +2687,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError('CLOSECIRCUIT returned unexpected response code: %s' % response.code)
 
+  @with_default()
   def get_streams(self, default = UNDEFINED):
     """
     Provides the list of streams tor is currently handling.
@@ -2740,21 +2700,15 @@ class Controller(BaseController):
       provided
     """
 
-    try:
-      streams = []
-      response = self.get_info('stream-status')
+    streams = []
+    response = self.get_info('stream-status')
 
-      for stream in response.splitlines():
-        message = stem.socket.recv_message(StringIO.StringIO('650 STREAM ' + stream + '\r\n'))
-        stem.response.convert('EVENT', message, arrived_at = 0)
-        streams.append(message)
+    for stream in response.splitlines():
+      message = stem.socket.recv_message(StringIO.StringIO('650 STREAM ' + stream + '\r\n'))
+      stem.response.convert('EVENT', message, arrived_at = 0)
+      streams.append(message)
 
-      return streams
-    except Exception as exc:
-      if default == UNDEFINED:
-        raise exc
-      else:
-        return default
+    return streams
 
   def attach_stream(self, stream_id, circuit_id, exiting_hop = None):
     """
@@ -2870,6 +2824,7 @@ class Controller(BaseController):
 
     return max(0.0, self._last_newnym + 10 - time.time())
 
+  @with_default()
   def get_effective_rate(self, default = UNDEFINED, burst = False):
     """
     Provides the maximum rate this relay is configured to relay in bytes per
@@ -2896,18 +2851,12 @@ class Controller(BaseController):
     value = None
 
     for attr in attributes:
-      try:
-        attr_value = int(self.get_conf(attr))
+      attr_value = int(self.get_conf(attr))
 
-        if attr_value == 0 and attr.startswith('Relay'):
-          continue  # RelayBandwidthRate and RelayBandwidthBurst default to zero
+      if attr_value == 0 and attr.startswith('Relay'):
+        continue  # RelayBandwidthRate and RelayBandwidthBurst default to zero
 
-        value = min(value, attr_value) if value else attr_value
-      except stem.ControllerError as exc:
-        if default == UNDEFINED:
-          raise exc
-        else:
-          return default
+      value = min(value, attr_value) if value else attr_value
 
     return value
 
@@ -3136,6 +3085,7 @@ def _parse_circ_entry(entry):
   return (fingerprint, nickname)
 
 
+@with_default()
 def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   """
   Makes a case insensitive lookup within a list or dictionary, providing the
@@ -3160,7 +3110,4 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
         if entry.lower() == key.lower():
           return entry
 
-  if default != UNDEFINED:
-    return default
-  else:
-    raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
+  raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
