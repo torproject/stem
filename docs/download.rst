@@ -21,14 +21,6 @@ Download
    * Fedora
      Source: https://en.wikipedia.org/wiki/File:Fedora_logo_and_wordmark.svg
      Author: Unknown
-     
-     TODO: Switch link back to...
-     
-       https://apps.fedoraproject.org/packages/python-stem
-     
-     When the following is sorted out...
-     
-       https://github.com/fedora-infra/fedora-packages/issues/76
    
    * Red Hat
      Source: NuoveXT (http://nuovext.pwsp.net/)
@@ -106,10 +98,10 @@ Download
          % apt-get install python-stem
 
    * - .. image:: /_static/section/download/fedora.png
-          :target: https://admin.fedoraproject.org/pkgdb/package/python-stem/
+          :target: https://apps.fedoraproject.org/packages/python-stem
 
      - .. image:: /_static/label/fedora.png
-          :target: https://admin.fedoraproject.org/pkgdb/package/python-stem/
+          :target: https://apps.fedoraproject.org/packages/python-stem
 
        Packages maintained by Juan for Fedora. These include **python-stem**
        (Stem for Python 2.x), **python3-stem** (Stem for Python 3.x), and
