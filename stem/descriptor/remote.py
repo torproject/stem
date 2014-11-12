@@ -696,14 +696,6 @@ DIRECTORY_AUTHORITIES = {
     fingerprint = '4A0CCD2DDC7995083D73F5D667100C8A5831F16D',
     v3ident = None,  # does not vote in the consensus
   ),
-  'turtles': DirectoryAuthority(
-    nickname = 'turtles',
-    address = '76.73.17.194',
-    or_port = 9090,
-    dir_port = 9030,
-    fingerprint = 'F397038ADC51336135E7B80BD99CA3844360292B',
-    v3ident = '27B6B5996C426270A5C95488AA5BCEB6BCC86956',
-  ),
   'gabelmoo': DirectoryAuthority(
     nickname = 'gabelmoo',
     address = '131.188.40.189',
@@ -743,6 +735,14 @@ DIRECTORY_AUTHORITIES = {
     dir_port = 80,
     fingerprint = 'CF6D0AAFB385BE71B8E111FC5CFF4B47923733BC',
     v3ident = 'EFCBE720AB3A82B99F9E953CD5BF50F7EEFC7B97',
+  ),
+  'longclaw': DirectoryAuthority(
+    nickname = 'longclaw',
+    address = '202.85.227.202',
+    or_port = 443,
+    dir_port = 80,
+    fingerprint = '74A910646BCEEFBCD2E874FC1DC997430F968145',
+    v3ident = '23D15D965BC35114467363C165C4F724B64B4F66',
   ),
 }
 
