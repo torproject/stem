@@ -197,11 +197,11 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
   else:
     # Cached descriptor handling. These contain multiple descriptors per file.
 
-    if filename == 'cached-descriptors':
+    if filename == 'cached-descriptors' or filename == 'cached-descriptors.new':
       file_parser = lambda f: stem.descriptor.server_descriptor._parse_file(f, validate = validate, **kwargs)
-    elif filename == 'cached-extrainfo':
+    elif filename == 'cached-extrainfo' or filename == 'cached-extrainfo.new':
       file_parser = lambda f: stem.descriptor.extrainfo_descriptor._parse_file(f, validate = validate, **kwargs)
-    elif filename == 'cached-microdescs':
+    elif filename == 'cached-microdescs' or filename == 'cached-microdescs.new':
       file_parser = lambda f: stem.descriptor.microdescriptor._parse_file(f, validate = validate, **kwargs)
     elif filename == 'cached-consensus':
       file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, validate = validate, document_handler = document_handler, **kwargs)

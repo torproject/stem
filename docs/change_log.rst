@@ -54,6 +54,7 @@ The following are only available within Stem's `git repository
 
   * Improved speed for parsing consensus documents by around 30% (:trac:`12859`)
   * Don't fail if consensus method 1 is not present, as it is no longer required (:spec:`fc8a6f0`)
+  * Include '\*.new' files when reading from a Tor data directory (patch by oherrala, :trac:`13756`)
   * Updated the authorities we list, `replacing turtles with longclaw <https://lists.torproject.org/pipermail/tor-talk/2014-November/035650.html>`_ and `updating gabelmoo's address <https://lists.torproject.org/pipermail/tor-talk/2014-September/034898.html>`_
 
  * **Utilities**
