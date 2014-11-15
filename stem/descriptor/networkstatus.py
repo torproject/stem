@@ -836,6 +836,20 @@ class _DocumentHeader(object):
         minimum, maximum = 0, 1
       elif key == 'usecreatefast':
         minimum, maximum = 0, 1
+      elif key == 'UseNTorHandshake':
+        minimum, maximum = 0, 1
+      elif key == 'FastFlagMinThreshold':
+        minimum = 4
+      elif key == 'NumDirectoryGuards':
+        minimum, maximum = 0, 10
+      elif key == 'NumEntryGuards':
+        minimum, maximum = 1, 10
+      elif key == 'GuardLifetime':
+        minimum, maximum = 2592000, 157766400  # min: 30 days, max: 1826 days
+      elif key == 'NumNTorsPerTAP':
+        minimum, maximum = 1, 100000
+      elif key == 'AllowNonearlyExtend':
+        minimum, maximum = 0, 1
 
       if value < minimum or value > maximum:
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
