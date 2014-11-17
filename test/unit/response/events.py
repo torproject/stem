@@ -198,6 +198,10 @@ $67B2BDA4264D8A189D9270E28B1D30A262838243=europa1 b3oeducbhjmbqmgw2i3jtz4fekkrin
 HS_DESC_NO_DESC_ID = '650 HS_DESC REQUESTED ajhb7kljbiru65qo NO_AUTH \
 $67B2BDA4264D8A189D9270E28B1D30A262838243'
 
+HS_DESC_FAILED = '650 HS_DESC FAILED ajhb7kljbiru65qo NO_AUTH \
+$67B2BDA4264D8A189D9270E28B1D30A262838243 \
+b3oeducbhjmbqmgw2i3jtz4fekkrinwj REASON=NOT_FOUND'
+
 # NEWCONSENSUS event from v0.2.1.30.
 
 NEWCONSENSUS_EVENT = """650+NEWCONSENSUS
@@ -748,6 +752,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual('67B2BDA4264D8A189D9270E28B1D30A262838243', event.directory_fingerprint)
     self.assertEqual('europa1', event.directory_nickname)
     self.assertEqual('b3oeducbhjmbqmgw2i3jtz4fekkrinwj', event.descriptor_id)
+    self.assertEqual(None, event.reason)
 
     event = _get_event(HS_DESC_NO_DESC_ID)
 
@@ -755,6 +760,20 @@ class TestEvents(unittest.TestCase):
     self.assertEqual('67B2BDA4264D8A189D9270E28B1D30A262838243', event.directory_fingerprint)
     self.assertEqual(None, event.directory_nickname)
     self.assertEqual(None, event.descriptor_id)
+    self.assertEqual(None, event.reason)
+
+    event = _get_event(HS_DESC_FAILED)
+
+    self.assertTrue(isinstance(event, stem.response.events.HSDescEvent))
+    self.assertEqual(HS_DESC_FAILED.lstrip('650 '), str(event))
+    self.assertEqual(HSDescAction.FAILED, event.action)
+    self.assertEqual('ajhb7kljbiru65qo', event.address)
+    self.assertEqual(HSAuth.NO_AUTH, event.authentication)
+    self.assertEqual('$67B2BDA4264D8A189D9270E28B1D30A262838243', event.directory)
+    self.assertEqual('67B2BDA4264D8A189D9270E28B1D30A262838243', event.directory_fingerprint)
+    self.assertEqual(None, event.directory_nickname)
+    self.assertEqual('b3oeducbhjmbqmgw2i3jtz4fekkrinwj', event.descriptor_id)
+    self.assertEqual(HSDescReason.NOT_FOUND, event.reason)
 
   def test_newdesc_event(self):
     event = _get_event(NEWDESC_SINGLE)

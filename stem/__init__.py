@@ -409,6 +409,19 @@ Library for working with the tor process.
   **FAILED**      we were unable to retrieve the descriptor
   =============== ===========
 
+.. data:: HSDescReason (enum)
+
+  Reason for the hidden service descriptor to fail to be fetched.
+
+  =================== ===========
+  HSDescReason        Description
+  =================== ===========
+  **BAD_DESC**        descriptor was unparseable
+  **QUERY_REJECTED**  hidden service directory refused to provide the descriptor
+  **NOT_FOUND**       descriptor with the given identifier wasn't found
+  **UNEXPECTED**      failure type is unknown
+  =================== ===========
+
 .. data:: HSAuth (enum)
 
   Type of authentication being used for a HS_DESC event.
@@ -460,6 +473,7 @@ __all__ = [
   'HiddenServiceState',
   'HSAuth',
   'HSDescAction',
+  'HSDescReason',
   'RelayEndReason',
   'StreamStatus',
   'StreamClosureReason',
@@ -774,6 +788,13 @@ HSDescAction = stem.util.enum.UppercaseEnum(
   'RECEIVED',
   'IGNORE',
   'FAILED',
+)
+
+HSDescReason = stem.util.enum.UppercaseEnum(
+  'BAD_DESC',
+  'QUERY_REJECTED',
+  'NOT_FOUND',
+  'UNEXPECTED',
 )
 
 HSAuth = stem.util.enum.UppercaseEnum(
