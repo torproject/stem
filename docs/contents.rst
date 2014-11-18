@@ -17,6 +17,7 @@ Contents
    tutorials/examples/exit_used
    tutorials/examples/list_circuits
    tutorials/examples/outdated_relays
+   tutorials/examples/persisting_a_consensus
 
    change_log
    download

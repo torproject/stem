@@ -8,6 +8,7 @@ with what they are and where to get them then you may want to skip to the end.
 * :ref:`where-can-i-get-the-current-descriptors`
 * :ref:`where-can-i-get-past-descriptors`
 * :ref:`can-i-get-descriptors-from-the-tor-process`
+* :ref:`saving-and-loading-descriptors`
 * :ref:`putting-it-together`
 
 .. _what-is-a-descriptor:
@@ -138,8 +139,58 @@ through Tor's control socket...
 
   from stem.descriptor import parse_file
 
-  for desc in parse_file(open("/home/atagar/.tor/cached-consensus")):
-    print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
+  for desc in parse_file('/home/atagar/.tor/cached-consensus'):
+    print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
+
+.. _saving-and-loading-descriptors:
+
+Saving and loading descriptors
+------------------------------
+
+Tor descriptors are just plaintext documents. As such, if you'd rather not use
+`Pickle <https://wiki.python.org/moin/UsingPickle>`_ you can persist a
+descriptor by simply writing it to disk, then reading it back later.
+
+::
+
+  from stem.descriptor.remote import DescriptorDownloader
+
+  downloader = DescriptorDownloader()
+  server_descriptors = downloader.get_server_descriptors().run()
+
+  with open('/tmp/descriptor_dump', 'wb') as descriptor_file:
+    descriptor_file.write(''.join(map(str, server_descriptors)))
+
+Our *server_descriptors* here is a list of
+:class:`~stem.descriptor.server_descriptor.RelayDescriptor` instances. When we
+write it to a file this looks like...
+
+::
+
+  router default 68.229.17.182 443 0 9030 
+  platform Tor 0.2.4.23 on Windows XP
+  protocols Link 1 2 Circuit 1
+  published 2014-11-17 23:42:38
+  fingerprint EE04 42C3 6DB6 6903 0816 247F 2607 382A 0783 2D5A
+  uptime 63
+  bandwidth 5242880 10485760 77824
+  extra-info-digest 1ABA9FC6B912E755483D0F4F6E9BC1B23A2B7206
+  ... etc...
+
+We can then read it back with :func:`~stem.descriptor.__init__.parse_file`
+by telling it the type of descriptors we're reading...
+
+::
+
+  from stem.descriptor import parse_file
+
+  server_descriptors = parse_file('/tmp/descriptor_dump', descriptor_type = 'server-descriptor 1.0')
+
+  for relay in server_descriptors:
+    print relay.fingerprint
+
+For an example of doing this with a consensus document `see here
+<examples/persisting_a_consensus.html>`_.
 
 .. _putting-it-together:
 

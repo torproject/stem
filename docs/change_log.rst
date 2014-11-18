@@ -71,6 +71,10 @@ The following are only available within Stem's `git repository
 
   * The /info command errored for relays without contact information.
 
+ * **Website**
+
+  * Added an example for `writing descriptors to disk and reading them back <tutorials/mirror_mirror_on_the_wall.html#saving-and-loading-descriptors>`_ (:trac:`13774`)
+
 .. _version_1.2:
 
 Version 1.2

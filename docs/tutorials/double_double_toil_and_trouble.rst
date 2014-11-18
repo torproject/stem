@@ -103,3 +103,7 @@ Descriptors
   Provides information about the current votes from Tor's Bandwidth
   Authorities.
 
+* `Saving and Loading a Tor Consensus <examples/persisting_a_consensus.html>`_
+
+  Example for writing a Tor consensus to disk, and reading it back.
+
