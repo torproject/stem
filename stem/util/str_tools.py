@@ -23,6 +23,7 @@ Toolkit for various string activity.
 
 import codecs
 import datetime
+import re
 import sys
 
 import stem.prereq
@@ -55,6 +56,8 @@ TIME_UNITS = (
   (60.0, 'm', ' minute'),
   (1.0, 's', ' second'),
 )
+
+_timestamp_re = re.compile(r'(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})')
 
 if stem.prereq.is_python_3():
   def _to_bytes_impl(msg):
@@ -436,6 +439,32 @@ def parse_short_time_label(label):
     raise ValueError('Non-numeric value in time entry: %s' % label)
 
 
+def _parse_timestamp(entry):
+  """
+  Parses the date and time that in format like like...
+
+  ::
+
+    2012-11-08 16:48:41
+
+  :param str entry: timestamp to be parsed
+
+  :returns: datetime for the time represented by the timestamp
+
+  :raises: ValueError if the timestamp is malformed
+  """
+
+  if not isinstance(entry, (str, unicode)):
+    raise IOError('parse_iso_timestamp() input must be a str, got a %s' % type(entry))
+
+  try:
+    time = [int(x) for x in _timestamp_re.match(entry).groups()]
+  except AttributeError:
+    raise ValueError("Expected timestamp in format YYYY-MM-DD HH:MM:ss but got " + entry)
+
+  return datetime.datetime(time[0], time[1], time[2], time[3], time[4], time[5])
+
+
 def _parse_iso_timestamp(entry):
   """
   Parses the ISO 8601 standard that provides for timestamps like...
@@ -465,7 +494,12 @@ def _parse_iso_timestamp(entry):
   if len(microseconds) != 6 or not microseconds.isdigit():
     raise ValueError("timestamp's microseconds should be six digits")
 
-  timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S")
+  if timestamp_str[10] == 'T':
+    timestamp_str = timestamp_str[:10] + ' ' + timestamp_str[11:]
+  else:
+    raise ValueError("timestamp didn't contain delimeter 'T' between date and time")
+
+  timestamp = _parse_timestamp(timestamp_str)
   return timestamp + datetime.timedelta(microseconds = int(microseconds))
 
 
