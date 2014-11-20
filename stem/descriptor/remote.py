@@ -738,7 +738,7 @@ DIRECTORY_AUTHORITIES = {
   ),
   'longclaw': DirectoryAuthority(
     nickname = 'longclaw',
-    address = '202.85.227.202',
+    address = '199.254.238.52',
     or_port = 443,
     dir_port = 80,
     fingerprint = '74A910646BCEEFBCD2E874FC1DC997430F968145',
