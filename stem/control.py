@@ -221,7 +221,6 @@ If you're fine with allowing your script to raise exceptions then this can be mo
 
 import calendar
 import collections
-import datetime
 import inspect
 import io
 import os
@@ -1273,7 +1272,7 @@ class Controller(BaseController):
     used = self.get_info('accounting/bytes')
     left = self.get_info('accounting/bytes-left')
 
-    interval_end = datetime.datetime.strptime(interval_end, '%Y-%m-%d %H:%M:%S')
+    interval_end = stem.util.str_tools._parse_timestamp(interval_end)
     used_read, used_written = [int(val) for val in used.split(' ', 1)]
     left_read, left_written = [int(val) for val in left.split(' ', 1)]
 

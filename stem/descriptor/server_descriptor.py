@@ -34,7 +34,6 @@ etc). This information is provided from a few sources...
 
 import base64
 import codecs
-import datetime
 import hashlib
 import re
 
@@ -460,7 +459,7 @@ class ServerDescriptor(Descriptor):
         # "published" YYYY-MM-DD HH:MM:SS
 
         try:
-          self.published = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+          self.published = stem.util.str_tools._parse_timestamp(value)
         except ValueError:
           if validate:
             raise ValueError("Published line's time wasn't parsable: %s" % line)

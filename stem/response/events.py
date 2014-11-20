@@ -1,7 +1,6 @@
 # Copyright 2012-2014, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 
-import datetime
 import io
 import re
 import time
@@ -190,12 +189,12 @@ class AddrMapEvent(Event):
         self.expiry = None
       else:
         try:
-          self.expiry = datetime.datetime.strptime(self.expiry, '%Y-%m-%d %H:%M:%S')
+          self.expiry = stem.util.str_tools._parse_timestamp(self.expiry)
         except ValueError:
           raise stem.ProtocolError('Unable to parse date in ADDRMAP event: %s' % self)
 
     if self.utc_expiry is not None:
-      self.utc_expiry = datetime.datetime.strptime(self.utc_expiry, '%Y-%m-%d %H:%M:%S')
+      self.utc_expiry = stem.util.str_tools._parse_timestamp(self.utc_expiry)
 
     if self.cached is not None:
       if self.cached == 'YES':
@@ -487,7 +486,7 @@ class ClientsSeenEvent(Event):
 
   def _parse(self):
     if self.start_time is not None:
-      self.start_time = datetime.datetime.strptime(self.start_time, '%Y-%m-%d %H:%M:%S')
+      self.start_time = stem.util.str_tools._parse_timestamp(self.start_time)
 
     if self.locales is not None:
       locale_to_count = {}
