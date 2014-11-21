@@ -26,13 +26,11 @@ gets their current votes then prints how many relays it had a measurement for.
   downloader = remote.DescriptorDownloader()
 
   for authority in remote.get_authorities().values():
-    if authority.nickname not in ('moria1', 'gabelmoo', 'maatuska', 'tor26'):
-      continue  # not a bandwidth authority
-
-    queries[authority.nickname] = downloader.query(
-      '/tor/status-vote/current/authority',
-      endpoints = [(authority.address, authority.dir_port)],
-    )
+    if authority.is_bandwidth_authority:
+      queries[authority.nickname] = downloader.query(
+        '/tor/status-vote/current/authority',
+        endpoints = [(authority.address, authority.dir_port)],
+      )
 
   for authority_name, query in queries.items():
     try:

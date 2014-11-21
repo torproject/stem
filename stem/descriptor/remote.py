@@ -669,6 +669,7 @@ DIRECTORY_AUTHORITIES = {
     address = '128.31.0.39',
     or_port = 9101,
     dir_port = 9131,
+    is_bandwidth_authority = True,
     fingerprint = '9695DFC35FFEB861329B9F1AB04C46397020CE31',
     v3ident = 'D586D18309DED4CD6D57C18FDB97EFA96D330566',
   ),
@@ -677,6 +678,7 @@ DIRECTORY_AUTHORITIES = {
     address = '86.59.21.38',
     or_port = 443,
     dir_port = 80,
+    is_bandwidth_authority = True,
     fingerprint = '847B1F850344D7876491A54892F904934E4EB85D',
     v3ident = '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
   ),
@@ -685,6 +687,7 @@ DIRECTORY_AUTHORITIES = {
     address = '194.109.206.212',
     or_port = 443,
     dir_port = 80,
+    is_bandwidth_authority = False,
     fingerprint = '7EA6EAD6FD83083C538F44038BBFA077587DD755',
     v3ident = 'E8A9C45EDE6D711294FADF8E7951F4DE6CA56B58',
   ),
@@ -693,6 +696,7 @@ DIRECTORY_AUTHORITIES = {
     address = '82.94.251.203',
     or_port = 443,
     dir_port = 80,
+    is_bandwidth_authority = False,
     fingerprint = '4A0CCD2DDC7995083D73F5D667100C8A5831F16D',
     v3ident = None,  # does not vote in the consensus
   ),
@@ -701,6 +705,7 @@ DIRECTORY_AUTHORITIES = {
     address = '131.188.40.189',
     or_port = 443,
     dir_port = 80,
+    is_bandwidth_authority = True,
     fingerprint = 'F2044413DAC2E02E3D6BCF4735A19BCA1DE97281',
     v3ident = 'ED03BB616EB2F60BEC80151114BB25CEF515B226',
   ),
@@ -709,6 +714,7 @@ DIRECTORY_AUTHORITIES = {
     address = '193.23.244.244',
     or_port = 443,
     dir_port = 80,
+    is_bandwidth_authority = False,
     fingerprint = '7BE683E65D48141321C5ED92F075C55364AC7123',
     v3ident = '585769C78764D58426B8B52B6651A5A71137189A',
   ),
@@ -717,6 +723,7 @@ DIRECTORY_AUTHORITIES = {
     address = '208.83.223.34',
     or_port = 80,
     dir_port = 443,
+    is_bandwidth_authority = False,
     fingerprint = '0AD3FA884D18F89EEA2D89C019379E0E7FD94417',
     v3ident = '80550987E1D626E3EBA5E5E75A458DE0626D088C',
   ),
@@ -725,6 +732,7 @@ DIRECTORY_AUTHORITIES = {
     address = '171.25.193.9',
     or_port = 80,
     dir_port = 443,
+    is_bandwidth_authority = True,
     fingerprint = 'BD6A829255CB08E66FBE7D3748363586E46B3810',
     v3ident = '49015F787433103580E3B66A1707A00E60F2D15B',
   ),
@@ -733,6 +741,7 @@ DIRECTORY_AUTHORITIES = {
     address = '154.35.32.5',
     or_port = 443,
     dir_port = 80,
+    is_bandwidth_authority = False,
     fingerprint = 'CF6D0AAFB385BE71B8E111FC5CFF4B47923733BC',
     v3ident = 'EFCBE720AB3A82B99F9E953CD5BF50F7EEFC7B97',
   ),
@@ -741,6 +750,7 @@ DIRECTORY_AUTHORITIES = {
     address = '199.254.238.52',
     or_port = 443,
     dir_port = 80,
+    is_bandwidth_authority = True,
     fingerprint = '74A910646BCEEFBCD2E874FC1DC997430F968145',
     v3ident = '23D15D965BC35114467363C165C4F724B64B4F66',
   ),
@@ -749,10 +759,12 @@ DIRECTORY_AUTHORITIES = {
 
 def get_authorities():
   """
-  Provides the Tor directory authority information as of **Tor commit 00bcc25
-  (8/27/13)**. The directory information hardcoded into Tor and occasionally
-  changes, so the information this provides might not necessarily match your
-  version of tor.
+  Provides the Tor directory authority information as of **Tor on 11/21/14**.
+  The directory information hardcoded into Tor and occasionally changes, so the
+  information this provides might not necessarily match your version of tor.
+
+  .. versionchanged:: 1.3.0
+     Added the is_bandwidth_authority attribute.
 
   :returns: dict of str nicknames to :class:`~stem.descriptor.remote.DirectoryAuthority` instances
   """
