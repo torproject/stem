@@ -654,11 +654,12 @@ class DirectoryAuthority(object):
   :var str v3ident: identity key fingerprint used to sign votes and consensus
   """
 
-  def __init__(self, nickname = None, address = None, or_port = None, dir_port = None, fingerprint = None, v3ident = None):
+  def __init__(self, nickname = None, address = None, or_port = None, dir_port = None, is_bandwidth_authority = False, fingerprint = None, v3ident = None):
     self.nickname = nickname
     self.address = address
     self.or_port = or_port
     self.dir_port = dir_port
+    self.is_bandwidth_authority = is_bandwidth_authority
     self.fingerprint = fingerprint
     self.v3ident = v3ident
 
