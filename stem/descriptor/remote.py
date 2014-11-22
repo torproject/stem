@@ -645,6 +645,9 @@ class DirectoryAuthority(object):
      network. They in turn use this to construct their circuits and use the
      network.
 
+  .. versionchanged:: 1.3.0
+     Added the is_bandwidth_authority attribute.
+
   :var str nickname: nickname of the authority
   :var str address: IP address of the authority, presently they're all IPv4 but
     this may not always be the case
@@ -763,9 +766,6 @@ def get_authorities():
   Provides the Tor directory authority information as of **Tor on 11/21/14**.
   The directory information hardcoded into Tor and occasionally changes, so the
   information this provides might not necessarily match your version of tor.
-
-  .. versionchanged:: 1.3.0
-     Added the is_bandwidth_authority attribute.
 
   :returns: dict of str nicknames to :class:`~stem.descriptor.remote.DirectoryAuthority` instances
   """

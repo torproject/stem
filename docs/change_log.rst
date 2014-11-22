@@ -64,7 +64,6 @@ The following are only available within Stem's `git repository
   * Added support for directories to :func:`stem.util.conf.Config.load`.
   * Changed :func:`stem.util.conf.uses_settings` to only provide a 'config' keyword arument if the decorated function would accept it.
   * Added :func:`stem.util.str_tools.crop`
-  * Added :func:`stem.util.str_tools.join`
   * Added :func:`stem.util.proc.file_descriptors_used`
   * Dropped the 'get_*' prefix from most function names. Old names will still work, but are a deprecated alias.
 
