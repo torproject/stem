@@ -33,8 +33,6 @@ import re
 # case insensitive. Tor doesn't define this in the spec so flipping a coin
 # and going with case insensitive.
 
-HEX_DIGIT = '[0-9a-fA-F]'
-FINGERPRINT_PATTERN = re.compile('^%s{40}$' % HEX_DIGIT)
 NICKNAME_PATTERN = re.compile('^[a-zA-Z0-9]{1,19}$')
 CIRC_ID_PATTERN = re.compile('^[a-zA-Z0-9]{1,16}$')
 
@@ -121,13 +119,14 @@ def is_hex_digits(entry, count):
   :param str entry: string to be checked
   :param int count: number of hex digits to be checked for
 
-  :returns: **True** if the string matches this number
+  :returns: **True** if the given number of hex digits, **False** otherwise
   """
 
   try:
     if len(entry) != count:
       return False
-    int(entry, 16)
+
+    int(entry, 16)  # attempt to convert it as hex
+    return True
   except (ValueError, TypeError):
     return False
-  return True

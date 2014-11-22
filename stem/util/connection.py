@@ -337,7 +337,7 @@ def is_valid_ipv4_address(address):
   try:
     packed = socket.inet_pton(socket.AF_INET, address)
     return socket.inet_ntop(socket.AF_INET, packed) == address
-  except socket.error:
+  except (TypeError, socket.error):
     return False
 
 
@@ -358,7 +358,7 @@ def is_valid_ipv6_address(address, allow_brackets = False):
   try:
     socket.inet_pton(socket.AF_INET6, address)
     return True
-  except socket.error:
+  except (TypeError, socket.error):
     return False
 
 
@@ -374,20 +374,22 @@ def is_valid_port(entry, allow_zero = False):
 
   try:
     value = int(entry)
+
     if str(value) != str(entry):
       return False  # invalid leading char, e.g. space or zero
-    if allow_zero:
-      return value >= 0 and value < 65536
+    elif allow_zero and value == 0:
+      return True
     else:
       return value > 0 and value < 65536
-
   except TypeError:
-    # Maybe entry is list to validate?
-    for port in entry:
-      if not is_valid_port(port, allow_zero):
-        return False
-    return True
+    if isinstance(entry, (tuple, list)):
+      for port in entry:
+        if not is_valid_port(port, allow_zero):
+          return False
 
+      return True
+    else:
+      return False
   except ValueError:
     return False
 

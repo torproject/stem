@@ -449,13 +449,13 @@ def _parse_timestamp(entry):
 
   :param str entry: timestamp to be parsed
 
-  :returns: datetime for the time represented by the timestamp
+  :returns: **datetime** for the time represented by the timestamp
 
-  :raises: ValueError if the timestamp is malformed
+  :raises: **ValueError** if the timestamp is malformed
   """
 
   if not isinstance(entry, (str, unicode)):
-    raise IOError('parse_iso_timestamp() input must be a str, got a %s' % type(entry))
+    raise ValueError('parse_timestamp() input must be a str, got a %s' % type(entry))
 
   try:
     time = [int(x) for x in _timestamp_re.match(entry).groups()]
@@ -475,12 +475,12 @@ def _parse_iso_timestamp(entry):
 
   :param str entry: timestamp to be parsed
 
-  :returns: datetime for the time represented by the timestamp
+  :returns: **datetime** for the time represented by the timestamp
 
-  :raises: ValueError if the timestamp is malformed
+  :raises: **ValueError** if the timestamp is malformed
   """
 
-  if not isinstance(entry, str):
+  if not isinstance(entry, (str, unicode)):
     raise ValueError('parse_iso_timestamp() input must be a str, got a %s' % type(entry))
 
   # based after suggestions from...
