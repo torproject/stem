@@ -69,7 +69,6 @@ Extra-info descriptors are available from a few sources...
   ===================== ===========
 """
 
-import datetime
 import hashlib
 import re
 
@@ -151,6 +150,10 @@ SINGLE_FIELDS = (
 )
 
 
+_timestamp_re = re.compile('^(.*) \(([0-9]+) s\)( .*)?$')
+_locale_re = re.compile('^[a-zA-Z0-9\?]{2}$')
+
+
 def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
   """
   Iterates over the extra-info descriptors in a file.
@@ -202,7 +205,7 @@ def _parse_timestamp_and_interval(keyword, content):
   """
 
   line = '%s %s' % (keyword, content)
-  content_match = re.match('^(.*) \(([0-9]+) s\)( .*)?$', content)
+  content_match = _timestamp_re.match(content)
 
   if not content_match:
     raise ValueError('Malformed %s line: %s' % (keyword, line))
@@ -216,7 +219,7 @@ def _parse_timestamp_and_interval(keyword, content):
     raise ValueError("%s line's interval wasn't a number: %s" % (keyword, line))
 
   try:
-    timestamp = datetime.datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+    timestamp = stem.util.str_tools._parse_timestamp(timestamp_str)
     return timestamp, int(interval), remainder
   except ValueError:
     raise ValueError("%s line's timestamp wasn't parsable: %s" % (keyword, line))
@@ -648,7 +651,7 @@ class ExtraInfoDescriptor(Descriptor):
         # "<keyword>" YYYY-MM-DD HH:MM:SS
 
         try:
-          timestamp = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+          timestamp = stem.util.str_tools._parse_timestamp(value)
 
           if keyword == 'published':
             self.published = timestamp
@@ -783,7 +786,7 @@ class ExtraInfoDescriptor(Descriptor):
 
             locale, count = entry.split('=', 1)
 
-            if re.match('^[a-zA-Z0-9\?]{2}$', locale) and count.isdigit():
+            if _locale_re.match(locale) and count.isdigit():
               locale_usage[locale] = int(count)
             elif validate:
               raise ValueError(error_msg)

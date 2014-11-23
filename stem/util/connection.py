@@ -46,6 +46,7 @@ import hmac
 import os
 import platform
 import re
+import socket
 
 import stem.util.proc
 import stem.util.system
@@ -333,22 +334,11 @@ def is_valid_ipv4_address(address):
   :returns: **True** if input is a valid IPv4 address, **False** otherwise
   """
 
-  if not isinstance(address, (bytes, unicode)):
+  try:
+    packed = socket.inet_pton(socket.AF_INET, address)
+    return socket.inet_ntop(socket.AF_INET, packed) == address
+  except (TypeError, socket.error):
     return False
-
-  # checks if theres four period separated values
-
-  if address.count('.') != 3:
-    return False
-
-  # checks that each value in the octet are decimal values between 0-255
-  for entry in address.split('.'):
-    if not entry.isdigit() or int(entry) < 0 or int(entry) > 255:
-      return False
-    elif entry[0] == '0' and len(entry) > 1:
-      return False  # leading zeros, for instance in '1.2.3.001'
-
-  return True
 
 
 def is_valid_ipv6_address(address, allow_brackets = False):
@@ -365,24 +355,11 @@ def is_valid_ipv6_address(address, allow_brackets = False):
     if address.startswith('[') and address.endswith(']'):
       address = address[1:-1]
 
-  # addresses are made up of eight colon separated groups of four hex digits
-  # with leading zeros being optional
-  # https://en.wikipedia.org/wiki/IPv6#Address_format
-
-  colon_count = address.count(':')
-
-  if colon_count > 7:
-    return False  # too many groups
-  elif colon_count != 7 and '::' not in address:
-    return False  # not enough groups and none are collapsed
-  elif address.count('::') > 1 or ':::' in address:
-    return False  # multiple groupings of zeros can't be collapsed
-
-  for entry in address.split(':'):
-    if not re.match('^[0-9a-fA-f]{0,4}$', entry):
-      return False
-
-  return True
+  try:
+    socket.inet_pton(socket.AF_INET6, address)
+    return True
+  except (TypeError, socket.error):
+    return False
 
 
 def is_valid_port(entry, allow_zero = False):
@@ -395,24 +372,26 @@ def is_valid_port(entry, allow_zero = False):
   :returns: **True** if input is an integer and within the valid port range, **False** otherwise
   """
 
-  if isinstance(entry, list):
-    for port in entry:
-      if not is_valid_port(port, allow_zero):
-        return False
+  try:
+    value = int(entry)
 
-    return True
-  elif isinstance(entry, (bytes, unicode)):
-    if not entry.isdigit():
+    if str(value) != str(entry):
+      return False  # invalid leading char, e.g. space or zero
+    elif allow_zero and value == 0:
+      return True
+    else:
+      return value > 0 and value < 65536
+  except TypeError:
+    if isinstance(entry, (tuple, list)):
+      for port in entry:
+        if not is_valid_port(port, allow_zero):
+          return False
+
+      return True
+    else:
       return False
-    elif entry[0] == '0' and len(entry) > 1:
-      return False  # leading zeros, ex '001'
-
-    entry = int(entry)
-
-  if allow_zero and entry == 0:
-    return True
-
-  return entry > 0 and entry < 65536
+  except ValueError:
+    return False
 
 
 def is_private_address(address):

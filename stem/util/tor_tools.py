@@ -33,8 +33,6 @@ import re
 # case insensitive. Tor doesn't define this in the spec so flipping a coin
 # and going with case insensitive.
 
-HEX_DIGIT = '[0-9a-fA-F]'
-FINGERPRINT_PATTERN = re.compile('^%s{40}$' % HEX_DIGIT)
 NICKNAME_PATTERN = re.compile('^[a-zA-Z0-9]{1,19}$')
 CIRC_ID_PATTERN = re.compile('^[a-zA-Z0-9]{1,16}$')
 
@@ -51,15 +49,16 @@ def is_valid_fingerprint(entry, check_prefix = False):
   :returns: **True** if the string could be a relay fingerprint, **False** otherwise
   """
 
-  if not isinstance(entry, (str, unicode)):
+  try:
+    if check_prefix:
+      if not entry or entry[0] != '$':
+        return False
+
+      entry = entry[1:]
+
+    return is_hex_digits(entry, 40)
+  except TypeError:
     return False
-  elif check_prefix:
-    if not entry or entry[0] != '$':
-      return False
-
-    entry = entry[1:]
-
-  return bool(FINGERPRINT_PATTERN.match(entry))
 
 
 def is_valid_nickname(entry):
@@ -71,10 +70,10 @@ def is_valid_nickname(entry):
   :returns: **True** if the string could be a nickname, **False** otherwise
   """
 
-  if not isinstance(entry, (str, unicode)):
+  try:
+    return bool(NICKNAME_PATTERN.match(entry))
+  except TypeError:
     return False
-
-  return bool(NICKNAME_PATTERN.match(entry))
 
 
 def is_valid_circuit_id(entry):
@@ -84,10 +83,10 @@ def is_valid_circuit_id(entry):
   :returns: **True** if the string could be a circuit id, **False** otherwise
   """
 
-  if not isinstance(entry, (str, unicode)):
+  try:
+    return bool(CIRC_ID_PATTERN.match(entry))
+  except TypeError:
     return False
-
-  return bool(CIRC_ID_PATTERN.match(entry))
 
 
 def is_valid_stream_id(entry):
@@ -120,7 +119,14 @@ def is_hex_digits(entry, count):
   :param str entry: string to be checked
   :param int count: number of hex digits to be checked for
 
-  :returns: **True** if the string matches this number
+  :returns: **True** if the given number of hex digits, **False** otherwise
   """
 
-  return bool(re.match('^%s{%i}$' % (HEX_DIGIT, count), entry))
+  try:
+    if len(entry) != count:
+      return False
+
+    int(entry, 16)  # attempt to convert it as hex
+    return True
+  except (ValueError, TypeError):
+    return False

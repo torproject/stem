@@ -21,7 +21,6 @@ sources...
 
 import base64
 import binascii
-import datetime
 
 import stem.exit_policy
 import stem.prereq
@@ -523,7 +522,7 @@ def _parse_r_line(desc, value, validate, include_digest = True):
 
   try:
     published = '%s %s' % (r_comp[3], r_comp[4])
-    desc.published = datetime.datetime.strptime(published, '%Y-%m-%d %H:%M:%S')
+    desc.published = stem.util.str_tools._parse_timestamp(published)
   except ValueError:
     if validate:
       raise ValueError("Publication time time wasn't parsable: r %s" % value)

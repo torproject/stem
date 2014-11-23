@@ -19,7 +19,10 @@ class TestTorTools(unittest.TestCase):
     )
 
     invalid_fingerprints = (
+      None,
       '',
+      5,
+      ['A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'],
       'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB',
       '$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553E',
       '$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553E33',
@@ -46,6 +49,7 @@ class TestTorTools(unittest.TestCase):
     invalid_nicknames = (
       None,
       '',
+      5,
       'toolongggggggggggggg',
       'bad_character',
     )
@@ -81,3 +85,29 @@ class TestTorTools(unittest.TestCase):
 
     for circuit_id in invalid_circuit_ids:
       self.assertFalse(stem.util.tor_tools.is_valid_circuit_id(circuit_id))
+
+  def test_is_valid_hex_digits(self):
+    """
+    Checks the is_valid_hex_digits function.
+    """
+
+    valid_hex_digits = (
+      "12345",
+      "AbCdE",
+    )
+
+    invalid_hex_digits = (
+      None,
+      '',
+      5,
+      'X',
+      "1234",
+      "ABCDEF",
+      [1, "2", (3, 4)]
+    )
+
+    for hex_digits in valid_hex_digits:
+      self.assertTrue(stem.util.tor_tools.is_hex_digits(hex_digits, 5))
+
+    for hex_digits in invalid_hex_digits:
+      self.assertFalse(stem.util.tor_tools.is_hex_digits(hex_digits, 5))

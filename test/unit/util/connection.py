@@ -359,8 +359,8 @@ class TestConnection(unittest.TestCase):
     Checks the is_valid_port function.
     """
 
-    valid_ports = (1, '1', 1234, '1234', 65535, '65535')
-    invalid_ports = (0, '0', 65536, '65536', 'abc', '*', ' 15', '01')
+    valid_ports = (1, '1', 1234, '1234', 65535, '65535', [1, '2'])
+    invalid_ports = (0, '0', 65536, '65536', 'abc', '*', ' 15', '01', True, {})
 
     for port in valid_ports:
       self.assertTrue(stem.util.connection.is_valid_port(port))

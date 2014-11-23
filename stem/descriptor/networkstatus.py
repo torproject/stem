@@ -49,7 +49,6 @@ For more information see :func:`~stem.descriptor.__init__.DocumentHandler`...
   DirectoryAuthority - Directory authority as defined in a v3 network status document
 """
 
-import datetime
 import io
 
 import stem.descriptor.router_status_entry
@@ -417,7 +416,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
             self.server_versions.append(version_str)
       elif keyword == 'published':
         try:
-          self.published = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+          self.published = stem.util.str_tools._parse_timestamp(value)
         except ValueError:
           if validate:
             raise ValueError("Version 2 network status document's 'published' time wasn't parsable: %s" % value)
@@ -699,7 +698,7 @@ class _DocumentHeader(object):
           raise ValueError("A network status document's consensus-method must be an integer, but was '%s'" % value)
       elif keyword in ('published', 'valid-after', 'fresh-until', 'valid-until'):
         try:
-          date_value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+          date_value = stem.util.str_tools._parse_timestamp(value)
 
           if keyword == 'published':
             self.published = date_value
@@ -1362,7 +1361,7 @@ class KeyCertificate(Descriptor):
         # "dir-key-expires" YYYY-MM-DD HH:MM:SS
 
         try:
-          date_value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+          date_value = stem.util.str_tools._parse_timestamp(value)
 
           if keyword == 'dir-key-published':
             self.published = date_value
@@ -1498,7 +1497,7 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
       published_line = published_line.split(' ', 1)[1].strip()
 
       try:
-        self.published = datetime.datetime.strptime(published_line, '%Y-%m-%d %H:%M:%S')
+        self.published = stem.util.str_tools._parse_timestamp(published_line)
       except ValueError:
         if validate:
           raise ValueError("Bridge network status document's 'published' time wasn't parsable: %s" % published_line)
