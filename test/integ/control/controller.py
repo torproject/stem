@@ -530,6 +530,12 @@ class TestController(unittest.TestCase):
       finally:
         controller.set_hidden_service_conf({})  # drop hidden services created during the test
 
+        # clean up the hidden service directories created as part of this test
+
+        shutil.rmtree('test_hidden_service1')
+        shutil.rmtree('test_hidden_service2')
+        shutil.rmtree('test_hidden_serviceX')
+
   def test_set_conf(self):
     """
     Exercises set_conf(), reset_conf(), and set_options() methods with valid
