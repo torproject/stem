@@ -101,6 +101,8 @@ among numerous other improvements and fixes.
   * The :func:`~stem.control.Controller.add_event_listener` method couldn't accept event types that Stem didn't already recognize
   * The :class:`~stem.exit_policy.ExitPolicy` class couldn't be pickled
   * Tor instances spawned with :func:`~stem.process.launch_tor` and :func:`~stem.process.launch_tor_with_config` could hang due to unread stdout content, we now close stdout and stderr once tor finishes bootstrapping (:trac:`9862`)
+  * The :func:`~stem.control.Controller.get_exit_policy` method errored if tor couldn't determine our external address
+  * The Controller's methods for retrieving descriptors could raise unexpected ValueErrors if tor didn't have any descriptors available
 
  * **Descriptors**
 

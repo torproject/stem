@@ -221,6 +221,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
 
 import calendar
 import collections
+import functools
 import inspect
 import io
 import os
@@ -365,18 +366,19 @@ def with_default(yields = False):
 
   def decorator(func):
     def get_default(func, args, kwargs):
-      arg_names = inspect.getargspec(func).args
+      arg_names = inspect.getargspec(func).args[1:]  # drop 'self'
       default_position = arg_names.index('default') if 'default' in arg_names else None
 
-      if default_position and default_position < len(args):
+      if default_position is not None and default_position < len(args):
         return args[default_position]
       else:
         return kwargs.get('default', UNDEFINED)
 
     if not yields:
-      def wrapped(*args, **kwargs):
+      @functools.wraps(func)
+      def wrapped(self, *args, **kwargs):
         try:
-          return func(*args, **kwargs)
+          return func(self, *args, **kwargs)
         except Exception as exc:
           default = get_default(func, args, kwargs)
 
@@ -385,9 +387,10 @@ def with_default(yields = False):
           else:
             return default
     else:
-      def wrapped(*args, **kwargs):
+      @functools.wraps(func)
+      def wrapped(self, *args, **kwargs):
         try:
-          for val in func(*args, **kwargs):
+          for val in func(self, *args, **kwargs):
             yield val
         except Exception as exc:
           default = get_default(func, args, kwargs)
@@ -944,6 +947,8 @@ class Controller(BaseController):
   @with_default()
   def get_info(self, params, default = UNDEFINED, get_bytes = False):
     """
+    get_info(params, default = UNDEFINED, get_bytes = False)
+
     Queries the control socket for the given GETINFO option. If provided a
     default then that's returned if the GETINFO option is undefined or the
     call fails for any reason (error response, control port closed, initiated,
@@ -1064,6 +1069,8 @@ class Controller(BaseController):
   @with_default()
   def get_version(self, default = UNDEFINED):
     """
+    get_version(default = UNDEFINED)
+
     A convenience method to get tor version that current controller is
     connected to.
 
@@ -1090,6 +1097,8 @@ class Controller(BaseController):
   @with_default()
   def get_exit_policy(self, default = UNDEFINED):
     """
+    get_exit_policy(default = UNDEFINED)
+
     Effective ExitPolicy for our relay. This accounts for
     ExitPolicyRejectPrivate and default policies.
 
@@ -1127,6 +1136,8 @@ class Controller(BaseController):
   @with_default()
   def get_ports(self, listener_type, default = UNDEFINED):
     """
+    get_ports(listener_type, default = UNDEFINED)
+
     Provides the local ports where tor is listening for the given type of
     connections. This is similar to
     :func:`~stem.control.Controller.get_listeners`, but doesn't provide
@@ -1150,6 +1161,8 @@ class Controller(BaseController):
   @with_default()
   def get_listeners(self, listener_type, default = UNDEFINED):
     """
+    get_listeners(listener_type, default = UNDEFINED)
+
     Provides the addresses and ports where tor is listening for connections of
     the given type. This is similar to
     :func:`~stem.control.Controller.get_ports` but includes listener addresses
@@ -1238,6 +1251,8 @@ class Controller(BaseController):
   @with_default()
   def get_accounting_stats(self, default = UNDEFINED):
     """
+    get_accounting_stats(default = UNDEFINED)
+
     Provides stats related to our relaying limitations if AccountingMax was set
     in our torrc. This provides a **namedtuple** with the following
     attributes...
@@ -1311,6 +1326,8 @@ class Controller(BaseController):
   @with_default()
   def get_protocolinfo(self, default = UNDEFINED):
     """
+    get_protocolinfo(default = UNDEFINED)
+
     A convenience method to get the protocol info of the controller.
 
     :param object default: response if the query fails
@@ -1332,6 +1349,8 @@ class Controller(BaseController):
   @with_default()
   def get_user(self, default = UNDEFINED):
     """
+    get_user(default = UNDEFINED)
+
     Provides the user tor is running as. This often only works if tor is
     running locally. Also, most of its checks are platform dependent, and hence
     are not entirely reliable.
@@ -1363,6 +1382,8 @@ class Controller(BaseController):
   @with_default()
   def get_pid(self, default = UNDEFINED):
     """
+    get_pid(default = UNDEFINED)
+
     Provides the process id of tor. This often only works if tor is running
     locally. Also, most of its checks are platform dependent, and hence are not
     entirely reliable.
@@ -1415,6 +1436,8 @@ class Controller(BaseController):
   @with_default()
   def get_microdescriptor(self, relay = None, default = UNDEFINED):
     """
+    get_microdescriptor(relay = None, default = UNDEFINED)
+
     Provides the microdescriptor for the relay with the given fingerprint or
     nickname. If the relay identifier could be either a fingerprint *or*
     nickname then it's queried as a fingerprint.
@@ -1463,6 +1486,8 @@ class Controller(BaseController):
   @with_default(yields = True)
   def get_microdescriptors(self, default = UNDEFINED):
     """
+    get_microdescriptors(default = UNDEFINED)
+
     Provides an iterator for all of the microdescriptors that tor presently
     knows about.
 
@@ -1505,6 +1530,8 @@ class Controller(BaseController):
   @with_default()
   def get_server_descriptor(self, relay = None, default = UNDEFINED):
     """
+    get_server_descriptor(relay = None, default = UNDEFINED)
+
     Provides the server descriptor for the relay with the given fingerprint or
     nickname. If the relay identifier could be either a fingerprint *or*
     nickname then it's queried as a fingerprint.
@@ -1564,6 +1591,8 @@ class Controller(BaseController):
   @with_default(yields = True)
   def get_server_descriptors(self, default = UNDEFINED):
     """
+    get_server_descriptors(default = UNDEFINED)
+
     Provides an iterator for all of the server descriptors that tor presently
     knows about.
 
@@ -1609,6 +1638,8 @@ class Controller(BaseController):
   @with_default()
   def get_network_status(self, relay = None, default = UNDEFINED):
     """
+    get_network_status(relay = None, default = UNDEFINED)
+
     Provides the router status entry for the relay with the given fingerprint
     or nickname. If the relay identifier could be either a fingerprint *or*
     nickname then it's queried as a fingerprint.
@@ -1677,6 +1708,8 @@ class Controller(BaseController):
   @with_default(yields = True)
   def get_network_statuses(self, default = UNDEFINED):
     """
+    get_network_statuses(default = UNDEFINED)
+
     Provides an iterator for all of the router status entries that tor
     presently knows about.
 
@@ -2033,6 +2066,8 @@ class Controller(BaseController):
   @with_default()
   def get_hidden_service_conf(self, default = UNDEFINED):
     """
+    get_hidden_service_conf(default = UNDEFINED)
+
     This provides a mapping of hidden service directories to their
     attribute's key/value pairs. All hidden services are assured to have a
     'HiddenServicePort', but other entries may or may not exist.
@@ -2501,6 +2536,8 @@ class Controller(BaseController):
   @with_default()
   def get_circuit(self, circuit_id, default = UNDEFINED):
     """
+    get_circuit(circuit_id, default = UNDEFINED)
+
     Provides a circuit presently available from tor.
 
     :param int circuit_id: circuit to be fetched
@@ -2524,6 +2561,8 @@ class Controller(BaseController):
   @with_default()
   def get_circuits(self, default = UNDEFINED):
     """
+    get_circuits(default = UNDEFINED)
+
     Provides tor's currently available circuits.
 
     :param object default: response if the query fails
@@ -2706,6 +2745,8 @@ class Controller(BaseController):
   @with_default()
   def get_streams(self, default = UNDEFINED):
     """
+    get_streams(default = UNDEFINED)
+
     Provides the list of streams tor is currently handling.
 
     :param object default: response if the query fails
@@ -2843,6 +2884,8 @@ class Controller(BaseController):
   @with_default()
   def get_effective_rate(self, default = UNDEFINED, burst = False):
     """
+    get_effective_rate(default = UNDEFINED, burst = False)
+
     Provides the maximum rate this relay is configured to relay in bytes per
     second. This is based on multiple torrc parameters if they're set...
 
