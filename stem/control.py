@@ -1119,7 +1119,7 @@ class Controller(BaseController):
 
         policy += self.get_info('exit-policy/default').split(',')
 
-        config_policy = stem.exit_policy.get_config_policy(policy, self.get_info('address'))
+        config_policy = stem.exit_policy.get_config_policy(policy, self.get_info('address', None))
         self._set_cache({'exit_policy': config_policy})
 
       return config_policy
