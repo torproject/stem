@@ -1454,6 +1454,10 @@ class Controller(BaseController):
       raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
     desc_content = self.get_info(query, get_bytes = True)
+
+    if not desc_content:
+      raise stem.ControllerError("Descriptor information is unavailable, tor might still be downloading it")
+
     return stem.descriptor.microdescriptor.Microdescriptor(desc_content)
 
   @with_default(yields = True)
@@ -1546,6 +1550,10 @@ class Controller(BaseController):
         raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
       desc_content = self.get_info(query, get_bytes = True)
+
+      if not desc_content:
+        raise stem.ControllerError("Descriptor information is unavailable, tor might still be downloading it")
+
       return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
     except Exception as exc:
       if not self._is_server_descriptors_available():
@@ -1581,8 +1589,11 @@ class Controller(BaseController):
 
     desc_content = self.get_info('desc/all-recent', get_bytes = True)
 
-    if not desc_content and not self._is_server_descriptors_available():
-      raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
+    if not desc_content:
+      if not self._is_server_descriptors_available():
+        raise stem.ControllerError(SERVER_DESCRIPTORS_UNSUPPORTED)
+      else:
+        raise stem.ControllerError("Descriptor information is unavailable, tor might still be downloading it")
 
     for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_content)):
       yield desc
@@ -1655,6 +1666,9 @@ class Controller(BaseController):
 
     desc_content = self.get_info(query, get_bytes = True)
 
+    if not desc_content:
+      raise stem.ControllerError("Descriptor information is unavailable, tor might still be downloading it")
+
     if self.get_conf('UseMicrodescriptors', '0') == '1':
       return stem.descriptor.router_status_entry.RouterStatusEntryMicroV3(desc_content)
     else:
@@ -1698,6 +1712,9 @@ class Controller(BaseController):
     # https://trac.torproject.org/8248
 
     desc_content = self.get_info('ns/all', get_bytes = True)
+
+    if not desc_content:
+      raise stem.ControllerError("Descriptor information is unavailable, tor might still be downloading it")
 
     desc_iterator = stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(desc_content),
