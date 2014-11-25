@@ -2892,6 +2892,8 @@ class Controller(BaseController):
     * Effective Rate = min(BandwidthRate, RelayBandwidthRate, MaxAdvertisedBandwidth)
     * Effective Burst = min(BandwidthBurst, RelayBandwidthBurst)
 
+    .. versionadded:: 1.3.0
+
     :param object default: response if the query fails
     :param bool burst: provides the burst bandwidth, otherwise this provides
       the standard rate

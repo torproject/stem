@@ -50,6 +50,8 @@ The following are only available within Stem's `git repository
   * Added :class:`~stem.exit_policy.ExitPolicy` methods for more easily handling 'private' policies (the `default prefix <https://www.torproject.org/docs/tor-manual.html.en#ExitPolicyRejectPrivate>`_) and the defaultly appended suffix. This includes :func:`~stem.exit_policy.ExitPolicy.has_private`, :func:`~stem.exit_policy.ExitPolicy.strip_private`, :func:`~stem.exit_policy.ExitPolicy.has_default`, and :func:`~stem.exit_policy.ExitPolicy.strip_default` :class:`~stem.exit_policy.ExitPolicy` methods in addition to :func:`~stem.exit_policy.ExitPolicyRule.is_private` and :func:`~stem.exit_policy.ExitPolicyRule.is_default` for the :class:`~stem.exit_policy.ExitPolicyRule`. (:trac:`10107`)
   * Added the reason attribute to the :class:`~stem.response.events.HSDescEvent` (:spec:`7908c8d`)
   * :func:`~stem.process.launch_tor_with_config` could cause a "Too many open files" OSError if called too many times (:trac:`13141`)
+  * The :func:`~stem.control.Controller.get_exit_policy` method errored if tor couldn't determine our external address
+  * The Controller's methods for retrieving descriptors could raise unexpected ValueErrors if tor didn't have any descriptors available
 
  * **Descriptors**
 
@@ -101,8 +103,6 @@ among numerous other improvements and fixes.
   * The :func:`~stem.control.Controller.add_event_listener` method couldn't accept event types that Stem didn't already recognize
   * The :class:`~stem.exit_policy.ExitPolicy` class couldn't be pickled
   * Tor instances spawned with :func:`~stem.process.launch_tor` and :func:`~stem.process.launch_tor_with_config` could hang due to unread stdout content, we now close stdout and stderr once tor finishes bootstrapping (:trac:`9862`)
-  * The :func:`~stem.control.Controller.get_exit_policy` method errored if tor couldn't determine our external address
-  * The Controller's methods for retrieving descriptors could raise unexpected ValueErrors if tor didn't have any descriptors available
 
  * **Descriptors**
 

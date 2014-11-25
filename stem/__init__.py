@@ -46,6 +46,7 @@ Library for working with the tor process.
   **HALT** or **TERM**      exit tor immediately
   **NEWNYM**                switch to new circuits, so new application requests don't share any circuits with old ones (this also clears our DNS cache)
   **CLEARDNSCACHE**         clears cached DNS results
+  **HEARTBEAT**             trigger a heartbeat log message
   ========================= ===========
 
 .. data:: Flag (enum)
@@ -604,6 +605,7 @@ Signal = stem.util.enum.UppercaseEnum(
   'TERM',
   'NEWNYM',
   'CLEARDNSCACHE',
+  'HEARTBEAT',
 )
 
 CircStatus = stem.util.enum.UppercaseEnum(
