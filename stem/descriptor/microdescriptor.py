@@ -305,6 +305,9 @@ class Microdescriptor(Descriptor):
     if "onion-key" != entries.keys()[0]:
       raise ValueError("Microdescriptor must start with a 'onion-key' entry")
 
+  def _name(self, is_plural = False):
+    return 'microdescriptors' if is_plural else 'microdescriptor'
+
   def _compare(self, other, method):
     if not isinstance(other, Microdescriptor):
       return False

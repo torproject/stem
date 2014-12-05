@@ -367,6 +367,9 @@ class Descriptor(object):
   def _set_archive_path(self, path):
     self._archive_path = path
 
+  def _name(self, is_plural = False):
+    return str(type(self))
+
   def __str__(self):
     if stem.prereq.is_python_3():
       return stem.util.str_tools._to_unicode(self._raw_contents)

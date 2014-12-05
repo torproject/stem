@@ -61,6 +61,7 @@ The following are only available within Stem's `git repository
   * Include '\*.new' files when reading from a Tor data directory (:trac:`13756`)
   * Updated the authorities we list, `replacing turtles with longclaw <https://lists.torproject.org/pipermail/tor-talk/2014-November/035650.html>`_ and `updating gabelmoo's address <https://lists.torproject.org/pipermail/tor-talk/2014-September/034898.html>`_
   * Noting if authorities are also a bandwidth authority or not
+  * Microdescriptor validation issues could result in an AttributeError (:trac:`13904`)
 
  * **Utilities**
 
