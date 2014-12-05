@@ -1456,6 +1456,8 @@ class Controller(BaseController):
     :returns: :class:`~stem.descriptor.microdescriptor.Microdescriptor` for the given relay
 
     :raises:
+      * :class:`stem.DescriptorUnavailable` if unable to provide a descriptor
+        for the given relay
       * :class:`stem.ControllerError` if unable to query the descriptor
       * **ValueError** if **relay** doesn't conform with the pattern for being
         a fingerprint or nickname
@@ -1476,10 +1478,16 @@ class Controller(BaseController):
     else:
       raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
-    desc_content = self.get_info(query, get_bytes = True)
+    try:
+      desc_content = self.get_info(query, get_bytes = True)
+    except stem.InvalidArguments as exc:
+      if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
+        raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
+      else:
+        raise exc
 
     if not desc_content:
-      raise stem.ControllerError("Descriptor information is unavailable, tor might still be downloading it")
+      raise stem.DescriptorUnavailable("Descriptor information is unavailable, tor might still be downloading it")
 
     return stem.descriptor.microdescriptor.Microdescriptor(desc_content)
 
@@ -1555,6 +1563,8 @@ class Controller(BaseController):
     :returns: :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for the given relay
 
     :raises:
+      * :class:`stem.DescriptorUnavailable` if unable to provide a descriptor
+        for the given relay
       * :class:`stem.ControllerError` if unable to query the descriptor
       * **ValueError** if **relay** doesn't conform with the pattern for being
         a fingerprint or nickname
@@ -1576,10 +1586,16 @@ class Controller(BaseController):
       else:
         raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
-      desc_content = self.get_info(query, get_bytes = True)
+      try:
+        desc_content = self.get_info(query, get_bytes = True)
+      except stem.InvalidArguments as exc:
+        if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
+          raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
+        else:
+          raise exc
 
       if not desc_content:
-        raise stem.ControllerError("Descriptor information is unavailable, tor might still be downloading it")
+        raise stem.DescriptorUnavailable("Descriptor information is unavailable, tor might still be downloading it")
 
       return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
     except Exception as exc:
@@ -1622,7 +1638,7 @@ class Controller(BaseController):
       if not self._is_server_descriptors_available():
         raise stem.ControllerError(SERVER_DESCRIPTORS_UNSUPPORTED)
       else:
-        raise stem.ControllerError("Descriptor information is unavailable, tor might still be downloading it")
+        raise stem.DescriptorUnavailable("Descriptor information is unavailable, tor might still be downloading it")
 
     for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_content)):
       yield desc
@@ -1670,6 +1686,8 @@ class Controller(BaseController):
       for the given relay
 
     :raises:
+      * :class:`stem.DescriptorUnavailable` if unable to provide a descriptor
+        for the given relay
       * :class:`stem.ControllerError` if unable to query the descriptor
       * **ValueError** if **relay** doesn't conform with the pattern for being
         a fingerprint or nickname
@@ -1695,10 +1713,16 @@ class Controller(BaseController):
     else:
       raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
-    desc_content = self.get_info(query, get_bytes = True)
+    try:
+      desc_content = self.get_info(query, get_bytes = True)
+    except stem.InvalidArguments as exc:
+      if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
+        raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
+      else:
+        raise exc
 
     if not desc_content:
-      raise stem.ControllerError("Descriptor information is unavailable, tor might still be downloading it")
+      raise stem.DescriptorUnavailable("Descriptor information is unavailable, tor might still be downloading it")
 
     if self.get_conf('UseMicrodescriptors', '0') == '1':
       return stem.descriptor.router_status_entry.RouterStatusEntryMicroV3(desc_content)
@@ -1747,7 +1771,7 @@ class Controller(BaseController):
     desc_content = self.get_info('ns/all', get_bytes = True)
 
     if not desc_content:
-      raise stem.ControllerError("Descriptor information is unavailable, tor might still be downloading it")
+      raise stem.DescriptorUnavailable("Descriptor information is unavailable, tor might still be downloading it")
 
     desc_iterator = stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(desc_content),

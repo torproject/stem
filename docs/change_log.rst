@@ -52,6 +52,7 @@ The following are only available within Stem's `git repository
   * :func:`~stem.process.launch_tor_with_config` could cause a "Too many open files" OSError if called too many times (:trac:`13141`)
   * The :func:`~stem.control.Controller.get_exit_policy` method errored if tor couldn't determine our external address
   * The Controller's methods for retrieving descriptors could raise unexpected ValueErrors if tor didn't have any descriptors available
+  * Throwing a new :class:`~stem.DescriptorUnavailable` exception type when the :class:`~stem.control.Controller` can't provide the descriptor for a relay (:trac:`13879`)
 
  * **Descriptors**
 

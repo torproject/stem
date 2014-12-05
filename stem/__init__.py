@@ -13,6 +13,7 @@ Library for working with the tor process.
     |- OperationFailed - Tor was unable to successfully complete the operation.
     |  |- UnsatisfiableRequest - Tor was unable to satisfy a valid request.
     |  |  +- CircuitExtensionFailed - Attempt to make or extend a circuit failed.
+    |  |- DescriptorUnavailable - The given relay descriptor is unavailable.
     |  +- InvalidRequest - Invalid request.
     |     +- InvalidArguments - Invalid request parameters.
     +- SocketError - Communication with the socket failed.
@@ -459,6 +460,7 @@ __all__ = [
   'OperationFailed',
   'UnsatisfiableRequest',
   'CircuitExtensionFailed',
+  'DescriptorUnavailable',
   'InvalidRequest',
   'InvalidArguments',
   'SocketError',
@@ -537,6 +539,12 @@ class CircuitExtensionFailed(UnsatisfiableRequest):
   def __init__(self, message, circ = None):
     super(CircuitExtensionFailed, self).__init__(message = message)
     self.circ = circ
+
+
+class DescriptorUnavailable(OperationFailed):
+  """
+  Tor was unable to provide a descriptor for the given relay.
+  """
 
 
 class InvalidRequest(OperationFailed):
