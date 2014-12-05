@@ -13,7 +13,7 @@ import stem.socket
 import stem.util.system
 import stem.version
 
-from stem import ControllerError, InvalidArguments, InvalidRequest, ProtocolError, UnsatisfiableRequest
+from stem import ControllerError, DescriptorUnavailable, InvalidArguments, InvalidRequest, ProtocolError, UnsatisfiableRequest
 from stem.control import _parse_circ_path, Listener, Controller, EventType
 from stem.exit_policy import ExitPolicy
 from test import mocking
@@ -427,6 +427,17 @@ class TestControl(unittest.TestCase):
       self.fail("We should've raised an exception")
     except ControllerError as exc:
       self.assertEqual('Unable to determine our own fingerprint: nope, too bad', str(exc))
+
+    get_info_mock.side_effect = [
+      '5AC9C5AA75BA1F18D8459B326B4B8111A856D290',
+      InvalidArguments(None, 'GETINFO request contained unrecognized keywords: ns/id/5AC9C5AA75BA1F18D8459B326B4B8111A856D290'),
+    ]
+
+    try:
+      self.controller.get_network_status()
+      self.fail("We should've raised an exception")
+    except DescriptorUnavailable as exc:
+      self.assertEqual("Tor was unable to provide the descriptor for '5AC9C5AA75BA1F18D8459B326B4B8111A856D290'", str(exc))
 
     self.assertEqual('boom', self.controller.get_network_status(default = 'boom'))
 

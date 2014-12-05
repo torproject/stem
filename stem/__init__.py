@@ -546,6 +546,9 @@ class DescriptorUnavailable(OperationFailed):
   Tor was unable to provide a descriptor for the given relay.
   """
 
+  def __init__(self, message):
+    super(DescriptorUnavailable, self).__init__(message = message)
+
 
 class InvalidRequest(OperationFailed):
   """
