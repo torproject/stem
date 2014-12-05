@@ -41,7 +41,7 @@ def role_trac(name, rawtext, text, lineno, inliner, options={}, content=[]):
 
 def role_spec(name, rawtext, text, lineno, inliner, options={}, content=[]):
   """
-  Aliases :spec:`25b0d43` to 'https://gitweb.torproject.org/torspec.git/commitdiff/25b0d43'.
+  Aliases :spec:`25b0d43` to 'https://gitweb.torproject.org/torspec.git/commit/?id=25b0d43'.
   """
 
   # checking if the input is a valid short commit id
@@ -77,7 +77,7 @@ def make_link_node(rawtext, app, url_type, link_text, slug, options):
   if not base_url:
     raise ValueError("'%s' isn't set in our config" % url_type)
 
-  ref = base_url.rstrip('/') + '/' + slug
+  ref = base_url.format(slug = slug)
   set_classes(options)
 
   return reference(rawtext, link_text, refuri = ref, **options)

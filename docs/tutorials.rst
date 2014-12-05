@@ -107,7 +107,7 @@ feet wet by jumping straight in with some tutorials...
 
        Interactive interpreter for Tor that provides you with direct access to
        Tor's `control interface
-       <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
+       <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_
        via either python or direct requests. This is an easy way of
        experimenting with Stem and learning what Tor can do.
 

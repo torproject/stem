@@ -8,7 +8,7 @@ server descriptors these don't contain information that Tor clients require to
 function and as such aren't fetched by default.
 
 Defined in section 2.2 of the `dir-spec
-<https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_,
+<https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_,
 extra-info descriptors contain interesting but non-vital information such as
 usage statistics. Tor clients cannot request these documents for bridges.
 
@@ -861,7 +861,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Relay extra-info descriptor, constructed from data such as that provided by
   'GETINFO extra-info/digest/\*', cached descriptors, and metrics
-  (`specification <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_).
+  (`specification <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_).
 
   :var str signature: **\*** signature for this extrainfo descriptor
 

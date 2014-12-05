@@ -154,7 +154,7 @@ def _parse_file(descriptor_file, validate = True, **kwargs):
 class Microdescriptor(Descriptor):
   """
   Microdescriptor (`descriptor specification
-  <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_)
+  <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_)
 
   :var str digest: **\*** hex digest for this microdescriptor, this can be used
     to match against the corresponding digest attribute of a

@@ -26,7 +26,7 @@ class Event(stem.response.ControlMessage):
   """
   Base for events we receive asynchronously, as described in section 4.1 of the
   `control-spec
-  <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_.
+  <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_.
 
   :var str type: event type
   :var int arrived_at: unix timestamp for when the message arrived

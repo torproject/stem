@@ -158,7 +158,7 @@ class Query(object):
 
   Tor provides quite a few different descriptor resources via its directory
   protocol (see section 4.2 and later of the `dir-spec
-  <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_).
+  <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_).
   Commonly useful ones include...
 
   ===================================== ===========
@@ -520,7 +520,7 @@ class DescriptorDownloader(object):
 
     :param str authority_v3ident: fingerprint of the authority key for which
       to get the consensus, see `'v3ident' in tor's config.c
-      <https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816>`_
+      <https://gitweb.torproject.org/tor.git/tree/src/or/config.c#n819>`_
       for the values.
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
@@ -563,7 +563,7 @@ class DescriptorDownloader(object):
 
     :param str authority_v3idents: fingerprint or list of fingerprints of the
       authority keys, see `'v3ident' in tor's config.c
-      <https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816>`_
+      <https://gitweb.torproject.org/tor.git/tree/src/or/config.c#n819>`_
       for the values.
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
@@ -620,7 +620,7 @@ class DescriptorDownloader(object):
 class DirectoryAuthority(object):
   """
   Tor directory authority, a special type of relay `hardcoded into tor
-  <https://gitweb.torproject.org/tor.git/blob/f631b73:/src/or/config.c#l816>`_
+  <https://gitweb.torproject.org/tor.git/tree/src/or/config.c#n819>`_
   that enumerates the other relays within the network.
 
   At a very high level tor works as follows...

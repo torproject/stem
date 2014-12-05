@@ -649,7 +649,7 @@ class ServerDescriptor(Descriptor):
 class RelayDescriptor(ServerDescriptor):
   """
   Server descriptor (`descriptor specification
-  <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_)
+  <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_)
 
   :var str onion_key: **\*** key used to encrypt EXTEND cells
   :var str ntor_onion_key: base64 key used to encrypt EXTEND in the ntor protocol

@@ -534,7 +534,7 @@ class MicroExitPolicy(ExitPolicy):
 
   Since these policies are a subset of the exit policy information (lacking IP
   ranges) clients can only use them to guess if a relay will accept traffic or
-  not. To quote the `dir-spec <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_ (section 3.2.1)...
+  not. To quote the `dir-spec <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_ (section 3.2.1)...
 
   ::
 
@@ -611,7 +611,7 @@ class ExitPolicyRule(object):
   traffic to exit.
 
   The format of these rules are formally described in the `dir-spec
-  <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_ as an
+  <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_ as an
   'exitpattern'. Note that while these are similar to tor's man page entry for
   ExitPolicies, it's not the exact same. An exitpattern is better defined and
   stricter in what it'll accept. For instance, ports are not optional and it

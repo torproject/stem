@@ -136,7 +136,7 @@ class Version(object):
   """
   Comparable tor version. These are constructed from strings that conform to
   the 'new' style in the `tor version-spec
-  <https://gitweb.torproject.org/torspec.git/blob/HEAD:/version-spec.txt>`_,
+  <https://gitweb.torproject.org/torspec.git/tree/version-spec.txt>`_,
   such as "0.1.4" or "0.2.2.23-alpha (git-7dcd105be34a4f44)".
 
   :var int major: major version

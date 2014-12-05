@@ -2,9 +2,9 @@ Down the Rabbit Hole
 ====================
 
 Underneath it all Stem is a Python implementation of Tor's `control
-<https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_ and
+<https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_ and
 `directory specifications
-<https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_.
+<https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_.
 Anything you can do with Stem you can also do `with telnet
 <../faq.html#can-i-interact-with-tors-controller-interface-directly>`_ (albeit
 with quite a bit of extra work).

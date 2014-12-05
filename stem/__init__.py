@@ -55,7 +55,7 @@ Library for working with the tor process.
   Flag assigned to tor relays by the authorities to indicate various
   characteristics.
 
-  **Note:** The BADDIRECTORY flag was `removed from tor <https://gitweb.torproject.org/torspec.git/commitdiff/2f012f1>`_.
+  **Note:** The BADDIRECTORY flag was `removed from tor <https://gitweb.torproject.org/torspec.git/commit/dir-spec.txt?id=2f012f1>`_.
 
   ================= ===========
   Flag              Description

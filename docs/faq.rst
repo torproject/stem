@@ -36,7 +36,7 @@ What is Stem?
 
 Stem is a Python controller library that you can use to interact with `Tor <https://www.torproject.org/>`_. With it you can write scripts and applications with capabilities similar to `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <https://www.atagar.com/arm/>`_.
 
-From a technical standpoint, Stem is a Python implementation of Tor's `directory <https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec.txt>`_ and `control specifications <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_. `To get started see our tutorials! <tutorials.html>`_
+From a technical standpoint, Stem is a Python implementation of Tor's `directory <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_ and `control specifications <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_. `To get started see our tutorials! <tutorials.html>`_
 
 .. _does_stem_have_any_dependencies:
 
@@ -65,7 +65,7 @@ Can I interact with Tor's controller interface directly?
 --------------------------------------------------------
 
 Yup. You don't need a library to interact with Tor's `controller interface
-<https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_, and
+<https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_, and
 interacting with it directly is a great way to learn about what it can do. The
 exact details for how you connect to Tor depend on two things...
 

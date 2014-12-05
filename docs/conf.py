@@ -229,5 +229,5 @@ man_pages = [
      ['%s (%s)' % (__author__, __contact__)], 1)
 ]
 
-trac_url = 'https://trac.torproject.org'
-spec_url = 'https://gitweb.torproject.org/torspec.git/commitdiff'
+trac_url = 'https://trac.torproject.org/{slug}'
+spec_url = 'https://gitweb.torproject.org/torspec.git/commit/?id={slug}'
