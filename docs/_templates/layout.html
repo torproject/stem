@@ -53,7 +53,13 @@
               <li><a href="{{ pathto('download') }}">Download</a></li>
             </ul>
           </li>
-          <li><a href="https://www.atagar.com/contact/">Contact</a></li>
+          <li><a href="{{ pathto('faq') }}#where-can-i-get-help">Contact</a>
+            <ul>
+              <li><a href="https://lists.torproject.org/cgi-bin/mailman/listinfo/tor-dev">Email List</a></li>
+              <li><a href="https://www.torproject.org/about/contact.html.en#irc">IRC</a></li>
+              <li><a href="https://www.atagar.com/contact/">Author</a></li>
+            </ul>
+          </li>
         </ul>
 
         {%- block haikurel2 %}
