@@ -1,7 +1,7 @@
 Welcome to Stem!
 ================
 
-Stem is a Python controller library for `Tor <https://www.torproject.org/>`_. Like its predecessor, `TorCtl <https://gitweb.torproject.org/pytorctl.git>`_, it uses Tor's `control protocol <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_ to help developers program against the Tor process, enabling them to build things similar to `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <https://www.atagar.com/arm/>`_. Stem's latest version is **1.2.2** (released June 7th, 2014).
+Stem is a Python controller library for `Tor <https://www.torproject.org/>`_. With it you can use Tor's `control protocol <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_ to script against the Tor process, or build things similar to `Vidalia <https://www.torproject.org/projects/vidalia.html.en>`_ and `arm <https://www.atagar.com/arm/>`_. Stem's latest version is **1.2.2** (released June 7th, 2014).
 
 .. Main Stem Logo
    Source: http://www.wpclipart.com/plants/assorted/P/plant_stem.png.html
@@ -64,18 +64,6 @@ Stem is a Python controller library for `Tor <https://www.torproject.org/>`_. Li
 .. image:: /_static/buttons/download.png
    :target: download.html
 
-Subsections
-===========
-
-* `Development Wiki <https://trac.torproject.org/projects/tor/wiki/doc/stem>`_
-* `Contact <https://www.atagar.com/contact/>`_
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-* `Automated Testing <https://jenkins.torproject.org/job/stem-tor-ci/>`_
-
 .. toctree::
    :maxdepth: 1
-
-   contents
 
