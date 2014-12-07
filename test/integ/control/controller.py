@@ -996,6 +996,8 @@ class TestController(unittest.TestCase):
       return
     elif test.runner.require_version(self, Requirement.MICRODESCRIPTOR_IS_DEFAULT):
       return
+    elif test.runner.require_online(self):
+      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       # we should balk at invalid content
@@ -1103,6 +1105,8 @@ class TestController(unittest.TestCase):
 
     if test.runner.require_control(self):
       return
+    elif test.runner.require_online(self):
+      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       # we should balk at invalid content
@@ -1129,6 +1133,8 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if test.runner.require_control(self):
+      return
+    elif test.runner.require_online(self):
       return
 
     with runner.get_tor_controller() as controller:
