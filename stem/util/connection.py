@@ -255,6 +255,8 @@ def system_resolvers(system = None):
     resolvers = []
   elif system in ('Darwin', 'OpenBSD'):
     resolvers = [Resolver.LSOF]
+  elif stem.util.system.is_gentoo():
+    resolvers = []
   elif system == 'FreeBSD':
     # Netstat is available, but lacks a '-p' equivilant so we can't associate
     # the results to processes. The platform also has a ss command, but it
