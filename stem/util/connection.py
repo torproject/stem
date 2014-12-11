@@ -249,13 +249,16 @@ def system_resolvers(system = None):
   """
 
   if system is None:
-    system = platform.system()
+    if stem.util.system.is_gentoo():
+      system = 'Gentoo'
+    else:
+      system = platform.system()
 
   if system == 'Windows':
     resolvers = []
   elif system in ('Darwin', 'OpenBSD'):
     resolvers = [Resolver.LSOF]
-  elif stem.util.system.is_gentoo():
+  elif system == 'Gentoo':
     resolvers = []
   elif system == 'FreeBSD':
     # Netstat is available, but lacks a '-p' equivilant so we can't associate
@@ -274,7 +277,7 @@ def system_resolvers(system = None):
 
   # proc resolution, by far, outperforms the others so defaults to this is able
 
-  if stem.util.proc.is_available() and os.access('/proc/net/tcp', os.R_OK) and os.access('/proc/net/udp', os.R_OK) and not stem.util.system.is_gentoo():
+  if stem.util.proc.is_available() and os.access('/proc/net/tcp', os.R_OK) and os.access('/proc/net/udp', os.R_OK) and system != 'Gentoo':
     resolvers = [Resolver.PROC] + resolvers
 
   return resolvers
