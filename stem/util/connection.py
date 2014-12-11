@@ -274,7 +274,7 @@ def system_resolvers(system = None):
 
   # proc resolution, by far, outperforms the others so defaults to this is able
 
-  if stem.util.proc.is_available() and os.access('/proc/net/tcp', os.R_OK) and os.access('/proc/net/udp', os.R_OK):
+  if stem.util.proc.is_available() and os.access('/proc/net/tcp', os.R_OK) and os.access('/proc/net/udp', os.R_OK) and not stem.util.system.is_gentoo():
     resolvers = [Resolver.PROC] + resolvers
 
   return resolvers
