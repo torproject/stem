@@ -258,8 +258,6 @@ def system_resolvers(system = None):
     resolvers = []
   elif system in ('Darwin', 'OpenBSD'):
     resolvers = [Resolver.LSOF]
-  elif system == 'Gentoo':
-    resolvers = []
   elif system == 'FreeBSD':
     # Netstat is available, but lacks a '-p' equivilant so we can't associate
     # the results to processes. The platform also has a ss command, but it
@@ -277,7 +275,7 @@ def system_resolvers(system = None):
 
   # proc resolution, by far, outperforms the others so defaults to this is able
 
-  if stem.util.proc.is_available() and os.access('/proc/net/tcp', os.R_OK) and os.access('/proc/net/udp', os.R_OK) and system != 'Gentoo':
+  if stem.util.proc.is_available() and os.access('/proc/net/tcp', os.R_OK) and os.access('/proc/net/udp', os.R_OK):
     resolvers = [Resolver.PROC] + resolvers
 
   return resolvers

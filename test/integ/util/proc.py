@@ -8,7 +8,7 @@ import unittest
 
 import test.runner
 
-from stem.util import proc, system
+from stem.util import proc
 
 
 class TestProc(unittest.TestCase):
@@ -90,7 +90,7 @@ class TestProc(unittest.TestCase):
     elif not test.runner.get_runner().is_ptraceable():
       test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
-    elif not os.access('/proc/net/tcp', os.R_OK) or not os.access('/proc/net/udp', os.R_OK) or system.is_gentoo():
+    elif not os.access('/proc/net/tcp', os.R_OK) or not os.access('/proc/net/udp', os.R_OK):
       test.runner.skip(self, '(proc lacks read permissions)')
       return
 

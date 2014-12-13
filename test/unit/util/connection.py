@@ -117,7 +117,6 @@ class TestConnection(unittest.TestCase):
 
     self.assertEqual([], stem.util.connection.system_resolvers('Windows'))
     self.assertEqual([Resolver.LSOF], stem.util.connection.system_resolvers('Darwin'))
-    self.assertEqual([], stem.util.connection.system_resolvers('Gentoo'))
     self.assertEqual([Resolver.LSOF], stem.util.connection.system_resolvers('OpenBSD'))
     self.assertEqual([Resolver.BSD_SOCKSTAT, Resolver.BSD_PROCSTAT, Resolver.LSOF], stem.util.connection.system_resolvers('FreeBSD'))
     self.assertEqual([Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.system_resolvers('Linux'))
