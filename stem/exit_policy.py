@@ -136,11 +136,17 @@ def get_config_policy(rules, ip_address = None):
     if 'private' in rule:
       acceptance = rule.split(' ', 1)[0]
       port = rule.split(':', 1)[1]
+      addresses = list(PRIVATE_ADDRESSES)
 
-      if ip_address is None:
-        ip_address = socket.gethostbyname(socket.gethostname())
+      if ip_address:
+        addresses.append(ip_address)
+      else:
+        try:
+          addresses.append(socket.gethostbyname(socket.gethostname()))
+        except:
+          pass  # we might not have a network connection
 
-      for private_addr in PRIVATE_ADDRESSES + (ip_address,):
+      for private_addr in addresses:
         result.append(ExitPolicyRule("%s %s:%s" % (acceptance, private_addr, port)))
     else:
       result.append(ExitPolicyRule(rule))

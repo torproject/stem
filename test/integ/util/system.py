@@ -228,7 +228,7 @@ class TestSystem(unittest.TestCase):
     elif not _has_port():
       test.runner.skip(self, '(test instance has no port)')
       return
-    elif stem.util.system.is_mac():
+    elif stem.util.system.is_mac() or stem.util.system.is_gentoo():
       test.runner.skip(self, '(resolvers unavailable)')
       return
     elif not runner.is_ptraceable():
@@ -258,6 +258,9 @@ class TestSystem(unittest.TestCase):
       return
     elif stem.util.system.is_bsd() or stem.util.system.is_windows():
       test.runner.skip(self, '(linux only)')
+      return
+    elif stem.util.system.is_gentoo():
+      test.runner.skip(self, '(unavailable on gentoo)')
       return
     elif not runner.is_ptraceable():
       test.runner.skip(self, '(DisableDebuggerAttachment is set)')
@@ -314,7 +317,7 @@ class TestSystem(unittest.TestCase):
     elif not stem.util.system.is_available('lsof'):
       test.runner.skip(self, '(lsof unavailable)')
       return
-    elif stem.util.system.is_mac():
+    elif stem.util.system.is_mac() or stem.util.system.is_gentoo():
       test.runner.skip(self, '(resolvers unavailable)')
       return
     elif not runner.is_ptraceable():

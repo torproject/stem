@@ -28,6 +28,9 @@ Download
      License: GPL v2
      File: NuoveXT/128x128/apps/fedora.png
    
+   * Gentoo
+     Source: https://www.gentoo.org/main/en/name-logo.xml
+   
    * Slackware
      Source: NuoveXT (http://nuovext.pwsp.net/)
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
@@ -110,6 +113,18 @@ Download
        ::
 
          % yum install python-stem
+
+   * - .. image:: /_static/section/download/gentoo.png
+          :target: http://packages.gentoo.org/package/net-libs/stem
+
+     - .. image:: /_static/label/gentoo.png
+          :target: http://packages.gentoo.org/package/net-libs/stem
+
+       Package maintained by Anthony Basile for Gentoo.
+
+       ::
+
+         % emerge stem
 
    * - .. image:: /_static/section/download/slackware.png
           :target: http://slackbuilds.org/repository/14.1/python/stem/

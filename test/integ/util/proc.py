@@ -90,6 +90,9 @@ class TestProc(unittest.TestCase):
     elif not test.runner.get_runner().is_ptraceable():
       test.runner.skip(self, '(DisableDebuggerAttachment is set)')
       return
+    elif not os.access('/proc/net/tcp', os.R_OK) or not os.access('/proc/net/udp', os.R_OK):
+      test.runner.skip(self, '(proc lacks read permissions)')
+      return
 
     # making a controller connection so that we have something to query for
     with runner.get_tor_socket():

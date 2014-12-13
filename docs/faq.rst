@@ -455,6 +455,7 @@ To start hacking on Stem please do the following and don't hesitate to let me
 know if you get stuck or would like to discuss anything!
 
 #. Clone our `git <http://git-scm.com/>`_ repository: **git clone https://git.torproject.org/stem.git**
+#. Get our test depdendencies: **sudo pip install mock pep8 pyflakes**.
 #. Find a `bug or feature <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_ that sounds interesting.
 #. When you have something that you would like to contribute back do the following...
 
