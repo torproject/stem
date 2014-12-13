@@ -482,17 +482,17 @@ class TestController(unittest.TestCase):
         initialconf = {
           'test_hidden_service1/': {
             'HiddenServicePort': [
-              '8020 127.0.0.1:8020',
-              '8021 127.0.0.1:8021',
+              (8020, '127.0.0.1', 8020),
+              (8021, '127.0.0.1', 8021),
             ],
             'HiddenServiceVersion': '2',
           },
           'test_hidden_service2/': {
             'HiddenServiceAuthorizeClient': 'stealth a, b',
             'HiddenServicePort': [
-              '8030 127.0.0.1:8030',
-              '8031 127.0.0.1:8031',
-              '8032 127.0.0.1:8032',
+              (8030, '127.0.0.1', 8030),
+              (8031, '127.0.0.1', 8031),
+              (8032, '127.0.0.1', 8032),
             ]
           },
           'test_hidden_service_empty/': {
@@ -506,13 +506,13 @@ class TestController(unittest.TestCase):
         # add already existing services, with/without explicit target
 
         self.assertFalse(controller.create_hidden_service('test_hidden_service1/', 8020))
-        self.assertFalse(controller.create_hidden_service('test_hidden_service1/', 8021, target = '127.0.0.1:8021'))
+        self.assertFalse(controller.create_hidden_service('test_hidden_service1/', 8021, target_port = 8021))
         self.assertDictEqual(initialconf, controller.get_hidden_service_conf())
 
         # add a new service, with/without explicit target
 
         self.assertTrue(controller.create_hidden_service('test_hidden_serviceX/', 8888))
-        self.assertTrue(controller.create_hidden_service('test_hidden_serviceX/', 8989, target = '127.0.0.1:8021'))
+        self.assertTrue(controller.create_hidden_service('test_hidden_serviceX/', 8989, target_port = 8021))
 
         conf = controller.get_hidden_service_conf()
         self.assertEqual(4, len(conf))
@@ -525,7 +525,7 @@ class TestController(unittest.TestCase):
 
         # remove a service completely, it should now be gone
 
-        controller.remove_hidden_service('test_hidden_serviceX/', 8989, target = '127.0.0.1:8021')
+        controller.remove_hidden_service('test_hidden_serviceX/', 8989)
         self.assertEqual(3, len(controller.get_hidden_service_conf()))
       finally:
         controller.set_hidden_service_conf({})  # drop hidden services created during the test

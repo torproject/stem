@@ -2106,8 +2106,8 @@ class Controller(BaseController):
         "/var/lib/tor/hidden_service_with_two_ports/": {
           "HiddenServiceAuthorizeClient": "stealth a, b",
           "HiddenServicePort": [
-            "8020 127.0.0.1:8020",  # the ports order is kept
-            "8021 127.0.0.1:8021"
+            (8020, "127.0.0.1", 8020),  # the ports order is kept
+            (8021, "127.0.0.1", 8021)
           ],
           "HiddenServiceVersion": "2"
         },
@@ -2150,7 +2150,25 @@ class Controller(BaseController):
         directory = v
         service_dir_map[directory] = {'HiddenServicePort': []}
       elif k == 'HiddenServicePort':
-        service_dir_map[directory]['HiddenServicePort'].append(v)
+        port = target_port = v
+        target_address = '127.0.0.1'
+
+        if not v.isdigit():
+          port, target = v.split()
+
+          if target.isdigit():
+            target_port = target
+          else:
+            target_address, target_port = target.split(':')
+
+        if not stem.util.connection.is_valid_port(port):
+          raise stem.ProtocolError('GETCONF provided an invalid HiddenServicePort port (%s): %s' % (port, content))
+        elif not stem.util.connection.is_valid_ipv4_address(target_address):
+          raise stem.ProtocolError('GETCONF provided an invalid HiddenServicePort target address (%s): %s' % (target_address, content))
+        elif not stem.util.connection.is_valid_port(target_port):
+          raise stem.ProtocolError('GETCONF provided an invalid HiddenServicePort target port (%s): %s' % (target_port, content))
+
+        service_dir_map[directory]['HiddenServicePort'].append((int(port), target_address, int(target_port)))
       else:
         service_dir_map[directory][k] = v
 
@@ -2161,6 +2179,22 @@ class Controller(BaseController):
     Update all the configured hidden services from a dictionary having
     the same format as
     :func:`~stem.control.Controller.get_hidden_service_conf`.
+
+    For convenience the HiddenServicePort entries can be an integer, string, or
+    tuple. If an **int** then we treat it as just a port. If a **str** we pass
+    that directly as the HiddenServicePort. And finally, if a **tuple** then
+    it's expected to be the **(port, target_address, target_port)** as provided
+    by :func:`~stem.control.Controller.get_hidden_service_conf`.
+
+    This is to say the following three are equivalent...
+
+    ::
+
+      "HiddenServicePort": [
+        80,
+        '80 127.0.0.1:80',
+        (80, '127.0.0.1', 80),
+      ]
 
     .. versionadded:: 1.3.0
 
@@ -2183,14 +2217,22 @@ class Controller(BaseController):
 
       for k, v in conf[directory].items():
         if k == 'HiddenServicePort':
-          for port in v:
-            hidden_service_options.append(('HiddenServicePort', port))
+          for entry in v:
+            if isinstance(entry, int):
+              entry = '%s 127.0.0.1:%s' % (entry, entry)
+            elif isinstance(entry, str):
+              pass  # just pass along what the user gave us
+            elif isinstance(entry, tuple):
+              port, target_address, target_port = entry
+              entry = '%s %s:%s' % (port, target_address, target_port)
+
+            hidden_service_options.append(('HiddenServicePort', entry))
         else:
           hidden_service_options.append((k, str(v)))
 
     self.set_options(hidden_service_options)
 
-  def create_hidden_service(self, path, port, target = None):
+  def create_hidden_service(self, path, port, target_address = None, target_port = None):
     """
     Create a new hidden service. If the directory is already present, a
     new port is added.
@@ -2199,7 +2241,9 @@ class Controller(BaseController):
 
     :param str path: path for the hidden service's data directory
     :param int port: hidden service port
-    :param str target: optional ipaddr:port target e.g. '127.0.0.1:8080'
+    :param str target_address: address of the service, by default 127.0.0.1
+    :param int target_port: port of the service, by default this is the same as
+      **port**
 
     :returns: **True** if the hidden service is created, **False** if the
       hidden service port is already in use
@@ -2209,26 +2253,31 @@ class Controller(BaseController):
 
     if not stem.util.connection.is_valid_port(port):
       raise ValueError("%s isn't a valid port number" % port)
+    elif target_address and not stem.util.connection.is_valid_ipv4_address(target_address):
+      raise ValueError("%s isn't a valid IPv4 address" % target_address)
+    elif target_port is not None and not stem.util.connection.is_valid_port(target_port):
+      raise ValueError("%s isn't a valid port number" % target_port)
 
-    port, conf = str(port), self.get_hidden_service_conf()
+    port = int(port)
+    target_address = target_address if target_address else '127.0.0.1'
+    target_port = port if target_port is None else int(target_port)
+
+    conf = self.get_hidden_service_conf()
 
     if path in conf:
       ports = conf[path]['HiddenServicePort']
 
-      if target is None:
-        if port in ports or '%s 127.0.0.1:%s' % (port, port) in ports:
-          return False
-      elif '%s %s' % (port, target) in ports:
+      if (port, target_address, target_port) in ports:
         return False
     else:
       conf[path] = {'HiddenServicePort': []}
 
-    conf[path]['HiddenServicePort'].append('%s %s' % (port, target) if target else port)
+    conf[path]['HiddenServicePort'].append((port, target_address, target_port))
     self.set_hidden_service_conf(conf)
 
     return True
 
-  def remove_hidden_service(self, path, port = None, target = None):
+  def remove_hidden_service(self, path, port = None):
     """
     Discontinues a given hidden service.
 
@@ -2236,7 +2285,6 @@ class Controller(BaseController):
 
     :param str path: path for the hidden service's data directory
     :param int port: hidden service port
-    :param str target: optional ipaddr:port target e.g. '127.0.0.1:8080'
 
     :returns: **True** if the hidden service is discontinued, **False** if it
       wasn't running in the first place
@@ -2244,36 +2292,28 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    if not stem.util.connection.is_valid_port(port):
+    if port and not stem.util.connection.is_valid_port(port):
       raise ValueError("%s isn't a valid port number" % port)
 
-    port, conf = str(port), self.get_hidden_service_conf()
+    port = int(port) if port else None
+    conf = self.get_hidden_service_conf()
 
     if path not in conf:
       return False
 
-    if port:
-      if not target:
-        longport = '%s 127.0.0.1:%s' % (port, port)
+    if not port:
+      del conf[path]
+    else:
+      to_remove = [entry for entry in conf[path]['HiddenServicePort'] if entry[0] == port]
 
-        if port in conf[path]['HiddenServicePort']:
-          conf[path]['HiddenServicePort'].remove(port)
-        elif longport in conf[path]['HiddenServicePort']:
-          conf[path]['HiddenServicePort'].remove(longport)
-        else:
-          return False  # wasn't configured to be a hidden service
-      else:
-        longport = '%s %s' % (port, target)
+      if not to_remove:
+        return False
 
-        if longport in conf[path]['HiddenServicePort']:
-          conf[path]['HiddenServicePort'].remove(longport)
-        else:
-          return False  # wasn't configured to be a hidden service
+      for entry in to_remove:
+        conf[path]['HiddenServicePort'].remove(entry)
 
       if not conf[path]['HiddenServicePort']:
-        del(conf[path])  # no ports left, drop it entirely
-    else:
-      del(conf[path])
+        del conf[path]  # no ports left
 
     self.set_hidden_service_conf(conf)
     return True
