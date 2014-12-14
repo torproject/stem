@@ -2237,6 +2237,10 @@ class Controller(BaseController):
     Create a new hidden service. If the directory is already present, a
     new port is added.
 
+    This method returns our *.onion address by reading the hidden service
+    directory. However, this directory is only readable by the tor user, so if
+    unavailable this method returns None.
+
     .. versionadded:: 1.3.0
 
     :param str path: path for the hidden service's data directory
@@ -2245,8 +2249,8 @@ class Controller(BaseController):
     :param int target_port: port of the service, by default this is the same as
       **port**
 
-    :returns: **True** if the hidden service is created, **False** if the
-      hidden service port is already in use
+    :returns: **str** of the onion address for the hidden service if it can be
+      retrieved, **None** otherwise
 
     :raises: :class:`stem.ControllerError` if the call fails
     """
@@ -2268,14 +2272,37 @@ class Controller(BaseController):
       ports = conf[path]['HiddenServicePort']
 
       if (port, target_address, target_port) in ports:
-        return False
+        return
     else:
       conf[path] = {'HiddenServicePort': []}
 
     conf[path]['HiddenServicePort'].append((port, target_address, target_port))
     self.set_hidden_service_conf(conf)
 
-    return True
+    if self.is_localhost():
+      if not os.path.isabs(path):
+        cwd = stem.util.system.cwd(self.get_pid(None))
+
+        if cwd:
+          path = stem.util.system.expand_path(path, cwd)
+
+      if os.path.isabs(path):
+        start_time = time.time()
+        hostname_path = os.path.join(path, 'hostname')
+
+        while not os.path.exists(hostname_path):
+          wait_time = time.time() - start_time
+
+          if wait_time >= 3:
+            return
+          else:
+            time.sleep(0.05)
+
+        try:
+          with open(hostname_path) as hostname_file:
+            return hostname_file.read().strip()
+        except:
+          pass
 
   def remove_hidden_service(self, path, port = None):
     """

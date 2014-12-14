@@ -505,27 +505,31 @@ class TestController(unittest.TestCase):
 
         # add already existing services, with/without explicit target
 
-        self.assertFalse(controller.create_hidden_service('test_hidden_service1/', 8020))
-        self.assertFalse(controller.create_hidden_service('test_hidden_service1/', 8021, target_port = 8021))
+        self.assertEqual(None, controller.create_hidden_service('test_hidden_service1/', 8020))
+        self.assertEqual(None, controller.create_hidden_service('test_hidden_service1/', 8021, target_port = 8021))
         self.assertDictEqual(initialconf, controller.get_hidden_service_conf())
 
         # add a new service, with/without explicit target
 
-        self.assertTrue(controller.create_hidden_service('test_hidden_serviceX/', 8888))
-        self.assertTrue(controller.create_hidden_service('test_hidden_serviceX/', 8989, target_port = 8021))
+        hs_path = os.path.join(os.getcwd(), 'test_hidden_serviceX')
+        hs_address1 = controller.create_hidden_service(hs_path, 8888)
+        hs_address2 = controller.create_hidden_service(hs_path, 8989, target_port = 8021)
+
+        self.assertEqual(hs_address1, hs_address2)
+        self.assertTrue(hs_address1.endswith('.onion'))
 
         conf = controller.get_hidden_service_conf()
         self.assertEqual(4, len(conf))
-        self.assertEqual(2, len(conf['test_hidden_serviceX/']['HiddenServicePort']))
+        self.assertEqual(2, len(conf[hs_path]['HiddenServicePort']))
 
         # remove a hidden service, the service dir should still be there
 
-        controller.remove_hidden_service('test_hidden_serviceX/', 8888)
+        controller.remove_hidden_service(hs_path, 8888)
         self.assertEqual(4, len(controller.get_hidden_service_conf()))
 
         # remove a service completely, it should now be gone
 
-        controller.remove_hidden_service('test_hidden_serviceX/', 8989)
+        controller.remove_hidden_service(hs_path, 8989)
         self.assertEqual(3, len(controller.get_hidden_service_conf()))
       finally:
         controller.set_hidden_service_conf({})  # drop hidden services created during the test
