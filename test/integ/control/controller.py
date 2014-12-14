@@ -512,8 +512,8 @@ class TestController(unittest.TestCase):
         # add a new service, with/without explicit target
 
         hs_path = os.path.join(os.getcwd(), 'test_hidden_serviceX')
-        hs_address1 = controller.create_hidden_service(hs_path, 8888)
-        hs_address2 = controller.create_hidden_service(hs_path, 8989, target_port = 8021)
+        hs_address1 = controller.create_hidden_service(hs_path, 8888).hostname
+        hs_address2 = controller.create_hidden_service(hs_path, 8989, target_port = 8021).hostname
 
         self.assertEqual(hs_address1, hs_address2)
         self.assertTrue(hs_address1.endswith('.onion'))
@@ -536,9 +536,11 @@ class TestController(unittest.TestCase):
 
         # clean up the hidden service directories created as part of this test
 
-        shutil.rmtree('test_hidden_service1')
-        shutil.rmtree('test_hidden_service2')
-        shutil.rmtree('test_hidden_serviceX')
+        for path in ('test_hidden_service1', 'test_hidden_service2', 'test_hidden_serviceX'):
+          try:
+            shutil.rmtree(path)
+          except:
+            pass
 
   def test_set_conf(self):
     """

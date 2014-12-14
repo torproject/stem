@@ -357,6 +357,12 @@ AccountingStats = collections.namedtuple('AccountingStats', [
   'write_limit',
 ])
 
+CreateHiddenServiceOutput = collections.namedtuple('CreateHiddenServiceOutput', [
+  'path',
+  'hostname',
+  'config',
+])
+
 
 def with_default(yields = False):
   """
@@ -2235,11 +2241,18 @@ class Controller(BaseController):
   def create_hidden_service(self, path, port, target_address = None, target_port = None):
     """
     Create a new hidden service. If the directory is already present, a
-    new port is added.
+    new port is added. This provides a **namedtuple** of the following...
 
-    This method returns our *.onion address by reading the hidden service
-    directory. However, this directory is only readable by the tor user, so if
-    unavailable this method returns None.
+      * path (str) - hidden service directory
+
+      * hostname (str) - onion address of the service, this is only retrieved
+        if we can read the hidden service directory
+
+      * config (dict) - tor's new hidden service configuration
+
+    Our *.onion address is fetched by reading the hidden service directory.
+    However, this directory is only readable by the tor user, so if unavailable
+    the **hostname** will be **None**.
 
     .. versionadded:: 1.3.0
 
@@ -2249,8 +2262,7 @@ class Controller(BaseController):
     :param int target_port: port of the service, by default this is the same as
       **port**
 
-    :returns: **str** of the onion address for the hidden service if it can be
-      retrieved, **None** otherwise
+    :returns: **CreateHiddenServiceOutput** if we create or update a hidden service, **None** otherwise
 
     :raises: :class:`stem.ControllerError` if the call fails
     """
@@ -2268,41 +2280,46 @@ class Controller(BaseController):
 
     conf = self.get_hidden_service_conf()
 
-    if path in conf:
-      ports = conf[path]['HiddenServicePort']
+    if path in conf and (port, target_address, target_port) in conf[path]['HiddenServicePort']:
+      return None
 
-      if (port, target_address, target_port) in ports:
-        return
-    else:
-      conf[path] = {'HiddenServicePort': []}
-
-    conf[path]['HiddenServicePort'].append((port, target_address, target_port))
+    conf.setdefault(path, OrderedDict()).setdefault('HiddenServicePort', []).append((port, target_address, target_port))
     self.set_hidden_service_conf(conf)
 
+    hostname = None
+
     if self.is_localhost():
-      if not os.path.isabs(path):
+      hostname_path = os.path.join(path, 'hostname')
+
+      if not os.path.isabs(hostname_path):
         cwd = stem.util.system.cwd(self.get_pid(None))
 
         if cwd:
-          path = stem.util.system.expand_path(path, cwd)
+          hostname_path = stem.util.system.expand_path(hostname_path, cwd)
 
-      if os.path.isabs(path):
+      if os.path.isabs(hostname_path):
         start_time = time.time()
-        hostname_path = os.path.join(path, 'hostname')
 
         while not os.path.exists(hostname_path):
           wait_time = time.time() - start_time
 
           if wait_time >= 3:
-            return
+            break
           else:
             time.sleep(0.05)
 
-        try:
-          with open(hostname_path) as hostname_file:
-            return hostname_file.read().strip()
-        except:
-          pass
+        if os.path.exists(hostname_path):
+          try:
+            with open(hostname_path) as hostname_file:
+              hostname = hostname_file.read().strip()
+          except:
+            pass
+
+    return CreateHiddenServiceOutput(
+      path = path,
+      hostname = hostname,
+      config = conf,
+    )
 
   def remove_hidden_service(self, path, port = None):
     """
