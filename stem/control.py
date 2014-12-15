@@ -2214,6 +2214,13 @@ class Controller(BaseController):
         impossible or if there's a syntax error in the configuration values
     """
 
+    # If we're not adding or updating any hidden services then call RESETCONF
+    # so we drop existing values. Otherwise calling SETCONF is a no-op.
+
+    if not conf:
+      self.reset_conf('HiddenServiceDir')
+      return
+
     # Convert conf dictionary into a list of ordered config tuples
 
     hidden_service_options = []
