@@ -42,17 +42,40 @@ Circuit 10 (GENERAL)
  +- 65242C91BFF30F165DA4D132C81A9EBA94B71D62 (torexit16, 176.67.169.171)
 """
 
+EXIT_USED_OUTPUT = """\
+Tracking requests for tor exits. Press 'enter' to end.
 
-def _get_event(id, status, hop1, hop2, hop3, purpose):
-  path = PATH_CONTENT % (hop1[0], hop1[1], hop2[0], hop2[1], hop3[0], hop3[1])
-  content = CIRC_CONTENT % (id, status, path, purpose)
+Exit relay for our connection to 64.15.112.44:80
+  address: 31.172.30.2:443
+  fingerprint: A59E1E7C7EAEE083D756EE1FF6EC31CA3D8651D7
+  nickname: chaoscomputerclub19
+  locale: unknown
+
+"""
+
+
+def _get_event(content):
   controller_event = mocking.get_message(content)
   stem.response.convert('EVENT', controller_event)
   return controller_event
 
 
-def _get_router_status(address):
-  r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('71.35.150.29', address)
+def _get_circ_event(id, status, hop1, hop2, hop3, purpose):
+  path = PATH_CONTENT % (hop1[0], hop1[1], hop2[0], hop2[1], hop3[0], hop3[1])
+  content = CIRC_CONTENT % (id, status, path, purpose)
+  return _get_event(content)
+
+
+def _get_router_status(address = None, port = None, nickname = None, fingerprint_base64 = None):
+  r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1]
+  if address:
+    r_line = r_line.replace('71.35.150.29', address)
+  if port:
+    r_line = r_line.replace('9001', port)
+  if nickname:
+    r_line = r_line.replace('caerSidi', nickname)
+  if fingerprint_base64:
+    r_line = r_line.replace('p1aag7VwarGxqctS7/fS0y5FU+s', fingerprint_base64)
   content = get_router_status_entry_v3({'r': r_line})
   return content
 
@@ -92,9 +115,9 @@ class TestTutorialExamples(unittest.TestCase):
     path_6 = ('00C2C2A16AEDB51D5E5FB7D6168FC66B343D822F', 'ph3x')
     path_7 = ('65242C91BFF30F165DA4D132C81A9EBA94B71D62', 'torexit16')
 
-    circuit_4 = _get_event(4, 'BUILT', path_1, path_2, path_3, 'GENERAL')
-    circuit_6 = _get_event(6, 'BUILT', path_1, path_4, path_5, 'GENERAL')
-    circuit_10 = _get_event(10, 'BUILT', path_1, path_6, path_7, 'GENERAL')
+    circuit_4 = _get_circ_event(4, 'BUILT', path_1, path_2, path_3, 'GENERAL')
+    circuit_6 = _get_circ_event(6, 'BUILT', path_1, path_4, path_5, 'GENERAL')
+    circuit_10 = _get_circ_event(10, 'BUILT', path_1, path_6, path_7, 'GENERAL')
 
     controller = from_port_mock().__enter__()
     controller.get_circuits.return_value = [circuit_4, circuit_6, circuit_10]
@@ -109,3 +132,56 @@ class TestTutorialExamples(unittest.TestCase):
     }[fingerprint]
     tutorial_example()
     self.assertEqual(LIST_CIRCUITS_OUTPUT, stdout_mock.getvalue())
+
+  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  def test_exit_used(self, from_port_mock, stdout_mock):
+    import functools
+
+    from stem import StreamStatus
+    from stem.control import EventType, Controller
+
+    def main():
+      print "Tracking requests for tor exits. Press 'enter' to end."
+      print
+
+      with Controller.from_port() as controller:
+        controller.authenticate()
+
+        stream_listener = functools.partial(stream_event, controller)
+        controller.add_event_listener(stream_listener, EventType.STREAM)
+
+        raw_input()
+
+    def stream_event(controller, event):
+      if event.status == StreamStatus.SUCCEEDED and event.circ_id:
+        circ = controller.get_circuit(event.circ_id)
+
+        exit_fingerprint = circ.path[-1][0]
+        exit_relay = controller.get_network_status(exit_fingerprint)
+
+        print "Exit relay for our connection to %s" % (event.target)
+        print "  address: %s:%i" % (exit_relay.address, exit_relay.or_port)
+        print "  fingerprint: %s" % exit_relay.fingerprint
+        print "  nickname: %s" % exit_relay.nickname
+        print "  locale: %s" % controller.get_info("ip-to-country/%s" % exit_relay.address, 'unknown')
+        print
+
+    path_1 = ('9EA317EECA56BDF30CAEB208A253FB456EDAB1A0', 'bolobolo1')
+    path_2 = ('00C2C2A16AEDB51D5E5FB7D6168FC66B343D822F', 'ph3x')
+    path_3 = ('A59E1E7C7EAEE083D756EE1FF6EC31CA3D8651D7', 'chaoscomputerclub19')
+    circuit = _get_circ_event(1, 'BUILT', path_1, path_2, path_3, 'GENERAL')
+
+    event_content = '650 STREAM 15 SUCCEEDED 3 64.15.112.44:80'
+    event = _get_event(event_content)
+
+    controller = from_port_mock().__enter()
+    controller.get_circuit.return_value = circuit
+    controller.get_network_status.return_value = _get_router_status("31.172.30.2", "443", path_3[1], "pZ4efH6u4IPXVu4f9uwxyj2GUdc=")
+    controller.get_info.return_value = 'unknown'
+    origin_raw_input = __builtins__['raw_input']
+    __builtins__['raw_input'] = lambda: ""
+    main()
+    __builtins__['raw_input'] = origin_raw_input
+    stream_event(controller, event)
+    self.assertEqual(EXIT_USED_OUTPUT, stdout_mock.getvalue())
