@@ -9,8 +9,11 @@ import stem.response
 
 from stem.control import Controller
 from test import mocking
-from test.mocking import get_router_status_entry_v3
-from test.mocking import ROUTER_STATUS_ENTRY_V3_HEADER
+from test.mocking import (
+  get_relay_server_descriptor,
+  get_router_status_entry_v3,
+  ROUTER_STATUS_ENTRY_V3_HEADER,
+)
 
 try:
   # added in python 3.3
@@ -51,6 +54,14 @@ Exit relay for our connection to 64.15.112.44:80
   nickname: chaoscomputerclub19
   locale: unknown
 
+"""
+
+OUTDATED_RELAYS_OUTPUT = """\
+Checking for outdated relays...
+
+  0.1.0           Sambuddha Basu
+
+2 outdated relays found, 1 had contact information
 """
 
 
@@ -185,3 +196,35 @@ class TestTutorialExamples(unittest.TestCase):
     __builtins__['raw_input'] = origin_raw_input
     stream_event(controller, event)
     self.assertEqual(EXIT_USED_OUTPUT, stdout_mock.getvalue())
+
+  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('stem.descriptor.remote.DescriptorDownloader')
+  def test_outdated_relays(self, downloader_mock, stdout_mock):
+    def tutorial_example():
+      from stem.descriptor.remote import DescriptorDownloader
+      from stem.version import Version
+
+      downloader = DescriptorDownloader()
+      count, with_contact = 0, 0
+
+      print "Checking for outdated relays..."
+      print
+
+      for desc in downloader.get_server_descriptors():
+        if desc.tor_version < Version('0.2.3.0'):
+          count += 1
+
+          if desc.contact:
+            print '  %-15s %s' % (desc.tor_version, desc.contact.decode("utf-8", "replace"))
+            with_contact += 1
+
+      print
+      print "%i outdated relays found, %i had contact information" % (count, with_contact)
+
+    desc_1 = get_relay_server_descriptor({'platform': 'node-Tor 0.2.3.0 on Linux x86_64'})
+    desc_2 = get_relay_server_descriptor({'platform': 'node-Tor 0.1.0 on Linux x86_64'})
+    desc_3 = get_relay_server_descriptor({'opt': 'contact Random Person admin@gtr-10.de', 'platform': 'node-Tor 0.2.3.0 on Linux x86_64'})
+    desc_4 = get_relay_server_descriptor({'opt': 'contact Sambuddha Basu', 'platform': 'node-Tor 0.1.0 on Linux x86_64'})
+    downloader_mock().get_server_descriptors.return_value = [desc_1, desc_2, desc_3, desc_4]
+    tutorial_example()
+    self.assertEqual(OUTDATED_RELAYS_OUTPUT, stdout_mock.getvalue())
