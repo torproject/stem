@@ -6,13 +6,16 @@ import StringIO
 import unittest
 
 import stem.response
+import stem.descriptor.remote
 
 from stem.control import Controller
+from stem.descriptor.remote import DIRECTORY_AUTHORITIES
 from test import mocking
 from test.mocking import (
   get_relay_server_descriptor,
   get_router_status_entry_v3,
   ROUTER_STATUS_ENTRY_V3_HEADER,
+  get_network_status_document_v3,
 )
 
 try:
@@ -64,6 +67,14 @@ Checking for outdated relays...
 2 outdated relays found, 1 had contact information
 """
 
+COMPARE_FLAGS_OUTPUT = """\
+maatuska has the Running flag but moria1 doesn't: E2BB13AA2F6960CD93ABE5257A825687F3973C62
+moria1 has the Running flag but maatuska doesn't: 546C54E2A89D88E0794D04AECBF1AC8AC9DA81DE
+maatuska has the Running flag but moria1 doesn't: 92FCB6748A40E6088E22FBAB943AB2DD743EA818
+maatuska has the Running flag but moria1 doesn't: 6871F682350BA931838C0EC1E4A23044DAE06A73
+moria1 has the Running flag but maatuska doesn't: DCAEC3D069DC39AAE43D13C8AF31B5645E05ED61
+"""
+
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -77,7 +88,7 @@ def _get_circ_event(id, status, hop1, hop2, hop3, purpose):
   return _get_event(content)
 
 
-def _get_router_status(address = None, port = None, nickname = None, fingerprint_base64 = None):
+def _get_router_status(address = None, port = None, nickname = None, fingerprint_base64 = None, s_line = None):
   r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1]
   if address:
     r_line = r_line.replace('71.35.150.29', address)
@@ -87,7 +98,10 @@ def _get_router_status(address = None, port = None, nickname = None, fingerprint
     r_line = r_line.replace('caerSidi', nickname)
   if fingerprint_base64:
     r_line = r_line.replace('p1aag7VwarGxqctS7/fS0y5FU+s', fingerprint_base64)
-  content = get_router_status_entry_v3({'r': r_line})
+  if s_line:
+    content = get_router_status_entry_v3({'r': r_line, 's': s_line})
+  else:
+    content = get_router_status_entry_v3({'r': r_line})
   return content
 
 
@@ -228,3 +242,77 @@ class TestTutorialExamples(unittest.TestCase):
     downloader_mock().get_server_descriptors.return_value = [desc_1, desc_2, desc_3, desc_4]
     tutorial_example()
     self.assertEqual(OUTDATED_RELAYS_OUTPUT, stdout_mock.getvalue())
+
+  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('stem.descriptor.remote.Query')
+  @patch('stem.descriptor.remote.get_authorities')
+  def test_compare_flags(self, get_authorities_mock, query_mock, stdout_mock):
+    def tutorial_example():
+      from stem.descriptor import DocumentHandler, remote
+
+      # Query all authority votes asynchronously.
+
+      downloader = remote.DescriptorDownloader(document_handler = DocumentHandler.DOCUMENT)
+      queries = {}
+
+      for name, authority in remote.get_authorities().items():
+        if authority.v3ident is None:
+          continue  # authority doens't vote if it lacks a v3ident
+
+        queries[name] = downloader.get_vote(authority)
+
+      # Wait for the votes to finish being downloaded, this produces a dictionary of
+      # authority nicknames to their vote.
+
+      votes = dict((name, query.run()[0]) for (name, query) in queries.items())
+
+      # Get a superset of all the fingerprints in all the votes.
+
+      all_fingerprints = set()
+
+      for vote in votes.values():
+        all_fingerprints.update(vote.routers.keys())
+
+      # Finally, compare moria1's votes to maatuska.
+
+      for fingerprint in all_fingerprints:
+        moria1_vote = votes['moria1'].routers.get(fingerprint)
+        maatuska_vote = votes['maatuska'].routers.get(fingerprint)
+
+        if not moria1_vote and not maatuska_vote:
+          print "both moria1 and maatuska haven't voted about %s" % fingerprint
+        elif not moria1_vote:
+          print "moria1 hasn't voted about %s" % fingerprint
+        elif not maatuska_vote:
+          print "maatuska hasn't voted about %s" % fingerprint
+        elif 'Running' in moria1_vote.flags and 'Running' not in maatuska_vote.flags:
+          print "moria1 has the Running flag but maatuska doesn't: %s" % fingerprint
+        elif 'Running' in maatuska_vote.flags and 'Running' not in moria1_vote.flags:
+          print "maatuska has the Running flag but moria1 doesn't: %s" % fingerprint
+
+    get_authorities_mock().items.return_value = [('moria1', DIRECTORY_AUTHORITIES['moria1']), ('maatuska', DIRECTORY_AUTHORITIES['maatuska'])]
+    fingerprint = []
+    fingerprint.append(('92FCB6748A40E6088E22FBAB943AB2DD743EA818', 'kvy2dIpA5giOIvurlDqy3XQ+qBg='))
+    fingerprint.append(('6871F682350BA931838C0EC1E4A23044DAE06A73', 'aHH2gjULqTGDjA7B5KIwRNrganM='))
+    fingerprint.append(('E2BB13AA2F6960CD93ABE5257A825687F3973C62', '4rsTqi9pYM2Tq+UleoJWh/OXPGI='))
+    fingerprint.append(('546C54E2A89D88E0794D04AECBF1AC8AC9DA81DE', 'VGxU4qidiOB5TQSuy/Gsisnagd4='))
+    fingerprint.append(('DCAEC3D069DC39AAE43D13C8AF31B5645E05ED61', '3K7D0GncOarkPRPIrzG1ZF4F7WE='))
+    entry = []
+    # Entries for moria1.
+    entry.append(_get_router_status(fingerprint_base64 = fingerprint[0][1], s_line = ' '))
+    entry.append(_get_router_status(fingerprint_base64 = fingerprint[1][1], s_line = ' '))
+    entry.append(_get_router_status(fingerprint_base64 = fingerprint[2][1], s_line = ' '))
+    entry.append(_get_router_status(fingerprint_base64 = fingerprint[3][1]))
+    entry.append(_get_router_status(fingerprint_base64 = fingerprint[4][1]))
+    # Entries for maatuska.
+    entry.append(_get_router_status(fingerprint_base64 = fingerprint[0][1]))
+    entry.append(_get_router_status(fingerprint_base64 = fingerprint[1][1]))
+    entry.append(_get_router_status(fingerprint_base64 = fingerprint[2][1]))
+    entry.append(_get_router_status(fingerprint_base64 = fingerprint[3][1], s_line = ' '))
+    entry.append(_get_router_status(fingerprint_base64 = fingerprint[4][1], s_line = ' '))
+    network_status = []
+    network_status.append(get_network_status_document_v3(routers = (entry[0], entry[1], entry[2], entry[3], entry[4],)))
+    network_status.append(get_network_status_document_v3(routers = (entry[5], entry[6], entry[7], entry[8], entry[9],)))
+    query_mock().run.side_effect = [[network_status[0]], [network_status[1]]]
+    tutorial_example()
+    self.assertEqual(COMPARE_FLAGS_OUTPUT, stdout_mock.getvalue())
