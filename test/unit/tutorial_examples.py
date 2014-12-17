@@ -2,6 +2,7 @@
 Tests for the examples given in stem's tutorial.
 """
 
+import itertools
 import StringIO
 import unittest
 
@@ -84,6 +85,10 @@ Getting moria1's vote from http://128.31.0.39:9131/tor/status-vote/current/autho
   6647 measured entries and 625 unmeasured
 Getting maatuska's vote from http://171.25.193.9:443/tor/status-vote/current/authority:
   6313 measured entries and 1112 unmeasured
+"""
+
+PERSISTING_A_CONSENSUS_OUTPUT = """\
+A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB: caerSidi
 """
 
 
@@ -363,7 +368,6 @@ class TestTutorialExamples(unittest.TestCase):
         except Exception as exc:
           print "  failed to get the vote (%s)" % exc
 
-#    get_authorities_mock().values.return_value = [DIRECTORY_AUTHORITIES['gabelmoo'], DIRECTORY_AUTHORITIES['tor26'], DIRECTORY_AUTHORITIES['moria1'], DIRECTORY_AUTHORITIES['maatuska']]
     directory_values = []
     directory_values.append(DIRECTORY_AUTHORITIES['gabelmoo'])
     directory_values[0].address = '212.112.245.170'
@@ -403,3 +407,38 @@ class TestTutorialExamples(unittest.TestCase):
     query_run_mock.side_effect = router_status
     tutorial_example()
     self.assertEqual(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT, stdout_mock.getvalue())
+
+  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('stem.descriptor.parse_file')
+  @patch('%s.open' % __name__, create = True)
+  @patch('stem.descriptor.remote.Query')
+  def test_persisting_a_consensus(self, query_mock, open_mock, parse_file_mock, stdout_mock):
+    def tutorial_example_1():
+      from stem.descriptor import DocumentHandler
+      from stem.descriptor.remote import DescriptorDownloader
+
+      downloader = DescriptorDownloader()
+      consensus = downloader.get_consensus(document_handler = DocumentHandler.DOCUMENT).run()[0]
+
+      with open('/tmp/descriptor_dump', 'w') as descriptor_file:
+        descriptor_file.write(str(consensus))
+
+    def tutorial_example_2():
+      from stem.descriptor import DocumentHandler, parse_file
+
+      consensus = next(parse_file(
+        '/tmp/descriptor_dump',
+        descriptor_type = 'network-status-consensus-3 1.0',
+        document_handler = DocumentHandler.DOCUMENT,
+      ))
+
+      for fingerprint, relay in consensus.routers.items():
+        print "%s: %s" % (fingerprint, relay.nickname)
+
+    entry = get_router_status_entry_v3()
+    network_status = get_network_status_document_v3(routers = (entry,))
+    query_mock().run.return_value = [network_status]
+    parse_file_mock.return_value = itertools.cycle([network_status])
+    tutorial_example_1()
+    tutorial_example_2()
+    self.assertEqual(PERSISTING_A_CONSENSUS_OUTPUT, stdout_mock.getvalue())
