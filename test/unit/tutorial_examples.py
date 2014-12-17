@@ -75,6 +75,17 @@ maatuska has the Running flag but moria1 doesn't: 6871F682350BA931838C0EC1E4A230
 moria1 has the Running flag but maatuska doesn't: DCAEC3D069DC39AAE43D13C8AF31B5645E05ED61
 """
 
+VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT = """\
+Getting gabelmoo's vote from http://212.112.245.170:80/tor/status-vote/current/authority:
+  5935 measured entries and 1332 unmeasured
+Getting tor26's vote from http://86.59.21.38:80/tor/status-vote/current/authority:
+  5735 measured entries and 1690 unmeasured
+Getting moria1's vote from http://128.31.0.39:9131/tor/status-vote/current/authority:
+  6647 measured entries and 625 unmeasured
+Getting maatuska's vote from http://171.25.193.9:443/tor/status-vote/current/authority:
+  6313 measured entries and 1112 unmeasured
+"""
+
 
 def _get_event(content):
   controller_event = mocking.get_message(content)
@@ -316,3 +327,79 @@ class TestTutorialExamples(unittest.TestCase):
     query_mock().run.side_effect = [[network_status[0]], [network_status[1]]]
     tutorial_example()
     self.assertEqual(COMPARE_FLAGS_OUTPUT, stdout_mock.getvalue())
+
+  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('stem.descriptor.remote.get_authorities')
+  @patch('stem.descriptor.remote.Query.run')
+  def test_votes_by_bandwidth_authorities(self, query_run_mock, get_authorities_mock, stdout_mock):
+    def tutorial_example():
+      from stem.descriptor import remote
+
+      # request votes from all the bandwidth authorities
+
+      queries = {}
+      downloader = remote.DescriptorDownloader()
+
+      for authority in remote.get_authorities().values():
+        if authority.is_bandwidth_authority:
+          queries[authority.nickname] = downloader.query(
+            '/tor/status-vote/current/authority',
+            endpoints = [(authority.address, authority.dir_port)],
+          )
+
+      for authority_name, query in queries.items():
+        try:
+          print "Getting %s's vote from %s:" % (authority_name, query.download_url)
+
+          measured, unmeasured = 0, 0
+
+          for desc in query.run():
+            if desc.measured:
+              measured += 1
+            else:
+              unmeasured += 1
+
+          print '  %i measured entries and %i unmeasured' % (measured, unmeasured)
+        except Exception as exc:
+          print "  failed to get the vote (%s)" % exc
+
+#    get_authorities_mock().values.return_value = [DIRECTORY_AUTHORITIES['gabelmoo'], DIRECTORY_AUTHORITIES['tor26'], DIRECTORY_AUTHORITIES['moria1'], DIRECTORY_AUTHORITIES['maatuska']]
+    directory_values = []
+    directory_values.append(DIRECTORY_AUTHORITIES['gabelmoo'])
+    directory_values[0].address = '212.112.245.170'
+    directory_values.append(DIRECTORY_AUTHORITIES['tor26'])
+    directory_values.append(DIRECTORY_AUTHORITIES['moria1'])
+    directory_values.append(DIRECTORY_AUTHORITIES['maatuska'])
+    get_authorities_mock().values.return_value = directory_values
+    router_status = []
+    # Count for gabelmoo.
+    entry = []
+    for count in range(5935):
+      entry.append(get_router_status_entry_v3({'w': 'Bandwidth=1 Measured=1'}))
+    for count in range(1332):
+      entry.append(get_router_status_entry_v3())
+    router_status.append(entry)
+    # Count for tor26.
+    entry = []
+    for count in range(5735):
+      entry.append(get_router_status_entry_v3({'w': 'Bandwidth=1 Measured=1'}))
+    for count in range(1690):
+      entry.append(get_router_status_entry_v3())
+    router_status.append(entry)
+    # Count for moria1.
+    entry = []
+    for count in range(6647):
+      entry.append(get_router_status_entry_v3({'w': 'Bandwidth=1 Measured=1'}))
+    for count in range(625):
+      entry.append(get_router_status_entry_v3())
+    router_status.append(entry)
+    # Count for maatuska.
+    entry = []
+    for count in range(6313):
+      entry.append(get_router_status_entry_v3({'w': 'Bandwidth=1 Measured=1'}))
+    for count in range(1112):
+      entry.append(get_router_status_entry_v3())
+    router_status.append(entry)
+    query_run_mock.side_effect = router_status
+    tutorial_example()
+    self.assertEqual(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT, stdout_mock.getvalue())
