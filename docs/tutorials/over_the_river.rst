@@ -16,7 +16,7 @@ Hidden services can be `configured through your torrc <https://www.torproject.or
 
 The main threat to your anonymity when running a hidden service is the service itself. Debug information for instance might leak your real address, undermining what Tor provides. This includes the following example, **do not rely on it not to leak**.
 
-But with that out of the way lets take a look at a simple example based on one by `Jordan Wright <https://jordan-wright.github.io/blog/2014/10/06/creating-tor-hidden-services-with-python/>`_...
+But with that out of the way lets take a look at a simple `Flask <http://flask.pocoo.org/>`_ example based on one by `Jordan Wright <https://jordan-wright.github.io/blog/2014/10/06/creating-tor-hidden-services-with-python/>`_...
 
 ::
 
