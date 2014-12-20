@@ -9,6 +9,7 @@ Contents
    tutorials/to_russia_with_love
    tutorials/tortoise_and_the_hare
    tutorials/mirror_mirror_on_the_wall
+   tutorials/over_the_river
    tutorials/east_of_the_sun
    tutorials/down_the_rabbit_hole
    tutorials/double_double_toil_and_trouble
