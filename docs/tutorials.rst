@@ -26,6 +26,11 @@ Tutorial
      License: Public Domain
      Alternate: https://openclipart.org/detail/174179/miroir-rectangulaire-by-defaz36-174179
    
+   * Over the River and Through the Wood - riding_hood.png
+     Source: https://openclipart.org/detail/163771/little-red-riding-hood-by-tzunghaor
+     Author: tzunghaor
+     License: Public Domain
+   
    * East of the Sun & West of the Moon - windrose.png
      Source: https://commons.wikimedia.org/wiki/File:Compass_card_%28sl%29.svg
      Author: Andrejj
@@ -43,8 +48,8 @@ Tutorial
      Author: Unknown (jarda?)
      License: Public Domain
 
-Getting started with any new library can be rather daunting, so let's get our
-feet wet by jumping straight in with some tutorials...
+Getting started with any new library can be daunting, so let's get our feet wet
+by jumping straight in with some tutorials...
 
 .. list-table::
    :widths: 1 10
@@ -89,6 +94,18 @@ feet wet by jumping straight in with some tutorials...
        Relay information is provided through documents called **descriptors**.
        This walks you through both where to get them and a small script to tell
        you the fastest Tor exits.
+
+   * - .. image:: /_static/section/tutorials/riding_hood.png
+          :target: tutorials/over_the_river.html
+
+     - .. image:: /_static/label/over_the_river.png
+          :target: tutorials/over_the_river.html
+
+       `Hidden services
+       <https://www.torproject.org/docs/hidden-services.html.en>`_ are a way
+       of providing a service that isn't easily trackable. As a dissident, for
+       instance, this could let you safely publish a blog without getting your
+       door kicked down. Here we'll walk you through an example.
 
    * - .. image:: /_static/section/tutorials/windrose.png
           :target: tutorials/east_of_the_sun.html
