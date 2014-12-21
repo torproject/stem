@@ -476,12 +476,12 @@ class TestController(unittest.TestCase):
       try:
         # initially we shouldn't be running any hidden services
 
-        self.assertDictEqual({}, controller.get_hidden_service_conf())
+        self.assertEqual({}, controller.get_hidden_service_conf())
 
         # try setting a blank config, shouldn't have any impact
 
         controller.set_hidden_service_conf({})
-        self.assertDictEqual({}, controller.get_hidden_service_conf())
+        self.assertEqual({}, controller.get_hidden_service_conf())
 
         # create a hidden service
 
@@ -507,13 +507,13 @@ class TestController(unittest.TestCase):
         }
 
         controller.set_hidden_service_conf(initialconf)
-        self.assertDictEqual(initialconf, controller.get_hidden_service_conf())
+        self.assertEqual(initialconf, controller.get_hidden_service_conf())
 
         # add already existing services, with/without explicit target
 
         self.assertEqual(None, controller.create_hidden_service(service1_path, 8020))
         self.assertEqual(None, controller.create_hidden_service(service1_path, 8021, target_port = 8021))
-        self.assertDictEqual(initialconf, controller.get_hidden_service_conf())
+        self.assertEqual(initialconf, controller.get_hidden_service_conf())
 
         # add a new service, with/without explicit target
 
