@@ -466,6 +466,12 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
+    test_dir = runner.get_test_dir()
+    service1_path = os.path.join(test_dir, 'test_hidden_service1')
+    service2_path = os.path.join(test_dir, 'test_hidden_service2')
+    service3_path = os.path.join(test_dir, 'test_hidden_service3')
+    empty_service_path = os.path.join(test_dir, 'test_hidden_service_empty')
+
     with runner.get_tor_controller() as controller:
       try:
         # initially we shouldn't be running any hidden services
@@ -480,14 +486,14 @@ class TestController(unittest.TestCase):
         # create a hidden service
 
         initialconf = {
-          'test_hidden_service1/': {
+          service1_path: {
             'HiddenServicePort': [
               (8020, '127.0.0.1', 8020),
               (8021, '127.0.0.1', 8021),
             ],
             'HiddenServiceVersion': '2',
           },
-          'test_hidden_service2/': {
+          service2_path: {
             'HiddenServiceAuthorizeClient': 'stealth a, b',
             'HiddenServicePort': [
               (8030, '127.0.0.1', 8030),
@@ -495,7 +501,7 @@ class TestController(unittest.TestCase):
               (8032, '127.0.0.1', 8032),
             ]
           },
-          'test_hidden_service_empty/': {
+          empty_service_path: {
             'HiddenServicePort': []
           }
         }
@@ -505,13 +511,13 @@ class TestController(unittest.TestCase):
 
         # add already existing services, with/without explicit target
 
-        self.assertEqual(None, controller.create_hidden_service('test_hidden_service1/', 8020))
-        self.assertEqual(None, controller.create_hidden_service('test_hidden_service1/', 8021, target_port = 8021))
+        self.assertEqual(None, controller.create_hidden_service(service1_path, 8020))
+        self.assertEqual(None, controller.create_hidden_service(service1_path, 8021, target_port = 8021))
         self.assertDictEqual(initialconf, controller.get_hidden_service_conf())
 
         # add a new service, with/without explicit target
 
-        hs_path = os.path.join(os.getcwd(), 'test_hidden_serviceX')
+        hs_path = os.path.join(os.getcwd(), service3_path)
         hs_address1 = controller.create_hidden_service(hs_path, 8888).hostname
         hs_address2 = controller.create_hidden_service(hs_path, 8989, target_port = 8021).hostname
 
@@ -536,7 +542,7 @@ class TestController(unittest.TestCase):
 
         # clean up the hidden service directories created as part of this test
 
-        for path in ('test_hidden_service1', 'test_hidden_service2', 'test_hidden_serviceX'):
+        for path in (service1_path, service2_path, service3_path):
           try:
             shutil.rmtree(path)
           except:
