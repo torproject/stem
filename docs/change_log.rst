@@ -7,6 +7,7 @@ unreleased. For a monthly report on work being done see my `development log
 
 * :ref:`versioning`
 * :ref:`unreleased`
+* :ref:`version_1.3`
 * :ref:`version_1.2`
 * :ref:`version_1.1`
 * :ref:`version_1.0`
@@ -39,6 +40,16 @@ Unreleased
 
 The following are only available within Stem's `git repository
 <download.html>`_.
+
+.. _version_1.3:
+
+Version 1.3
+-----------
+
+With Stem's 1.3 release it's much easier to `work with hidden services
+<tutorials/over_the_river.html>`_. This release also improves our
+descriptor parsing performance by 40%, and includes many other
+improvements.
 
  * **Controller**
 
