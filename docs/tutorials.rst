@@ -20,16 +20,16 @@ Tutorial
      Author: arking
      License: Public Domain
    
+   * Over the River and Through the Wood - riding_hood.png
+     Source: https://openclipart.org/detail/163771/little-red-riding-hood-by-tzunghaor
+     Author: tzunghaor
+     License: Public Domain
+   
    * Mirror Mirror On The Wall - mirror.png
      Source: https://openclipart.org/detail/152155/mirror-frame-by-gsagri04
      Author: Unknown (gsagri04?)
      License: Public Domain
      Alternate: https://openclipart.org/detail/174179/miroir-rectangulaire-by-defaz36-174179
-   
-   * Over the River and Through the Wood - riding_hood.png
-     Source: https://openclipart.org/detail/163771/little-red-riding-hood-by-tzunghaor
-     Author: tzunghaor
-     License: Public Domain
    
    * East of the Sun & West of the Moon - windrose.png
      Source: https://commons.wikimedia.org/wiki/File:Compass_card_%28sl%29.svg
@@ -84,17 +84,6 @@ by jumping straight in with some tutorials...
        subscribe to be notified of. In this tutorial we'll do just that,
        writing a curses application that graphs the bandwidth usage of Tor.
 
-   * - .. image:: /_static/section/tutorials/mirror.png
-          :target: tutorials/mirror_mirror_on_the_wall.html
-
-     - .. image:: /_static/label/mirror_mirror_on_the_wall.png
-          :target: tutorials/mirror_mirror_on_the_wall.html
-
-       Getting and acting upon information about relays in the Tor network.
-       Relay information is provided through documents called **descriptors**.
-       This walks you through both where to get them and a small script to tell
-       you the fastest Tor exits.
-
    * - .. image:: /_static/section/tutorials/riding_hood.png
           :target: tutorials/over_the_river.html
 
@@ -106,6 +95,17 @@ by jumping straight in with some tutorials...
        of providing a service that isn't easily trackable. As a dissident, for
        instance, this could let you safely publish a blog without getting your
        door kicked down. Here we'll walk you through an example.
+
+   * - .. image:: /_static/section/tutorials/mirror.png
+          :target: tutorials/mirror_mirror_on_the_wall.html
+
+     - .. image:: /_static/label/mirror_mirror_on_the_wall.png
+          :target: tutorials/mirror_mirror_on_the_wall.html
+
+       Getting and acting upon information about relays in the Tor network.
+       Relay information is provided through documents called **descriptors**.
+       This walks you through both where to get them and a small script to tell
+       you the fastest Tor exits.
 
    * - .. image:: /_static/section/tutorials/windrose.png
           :target: tutorials/east_of_the_sun.html
