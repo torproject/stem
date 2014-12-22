@@ -438,7 +438,7 @@ Library for working with the tor process.
   ================= ===========
 """
 
-__version__ = '1.2.2-dev'
+__version__ = '1.3.0'
 __author__ = 'Damian Johnson'
 __contact__ = 'atagar@torproject.org'
 __url__ = 'https://stem.torproject.org/'
