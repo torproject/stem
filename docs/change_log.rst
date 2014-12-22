@@ -46,10 +46,10 @@ The following are only available within Stem's `git repository
 Version 1.3
 -----------
 
-With Stem's 1.3 release it's much easier to `work with hidden services
-<tutorials/over_the_river.html>`_. This release also improves our
-descriptor parsing performance by 40%, and includes many other
-improvements.
+With `Stem's 1.3 release <https://blog.torproject.org/blog/stem-release-13>`_
+it's now much easier to `work with hidden services
+<tutorials/over_the_river.html>`_, 40% faster to read decriptors, and includes
+a myriad of other improvements.
 
  * **Controller**
 
