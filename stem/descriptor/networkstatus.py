@@ -351,7 +351,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     self._parse(entries, validate)
 
   def _parse(self, entries, validate):
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, block_type, block_contents = values[0]
 
       line = '%s %s' % (keyword, value)  # original line
@@ -450,7 +450,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
       if keyword in entries and len(entries[keyword]) > 1:
         raise ValueError("Network status document (v2) can only have a single '%s' line, got %i:\n%s" % (keyword, len(entries[keyword]), str(self)))
 
-    if 'network-status-version' != entries.keys()[0]:
+    if 'network-status-version' != list(entries.keys())[0]:
       raise ValueError("Network status document (v2) are expected to start with a 'network-status-version' line:\n%s" % str(self))
 
 
@@ -516,7 +516,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     self._header = _DocumentHeader(document_file, validate, default_params)
 
     # merge header attributes into us
-    for attr, value in vars(self._header).items():
+    for attr, value in list(vars(self._header).items()):
       if attr != '_unrecognized_lines':
         setattr(self, attr, value)
       else:
@@ -553,7 +553,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     self._footer = _DocumentFooter(document_file, validate, self._header)
 
     # merge header attributes into us
-    for attr, value in vars(self._footer).items():
+    for attr, value in list(vars(self._footer).items()):
       if attr != '_unrecognized_lines':
         setattr(self, attr, value)
       else:
@@ -630,12 +630,12 @@ class _DocumentHeader(object):
     if self.consensus_method is not None:
       return self.consensus_method >= method
     elif self.consensus_methods is not None:
-      return bool(filter(lambda x: x >= method, self.consensus_methods))
+      return bool([x for x in self.consensus_methods if x >= method])
     else:
       return False  # malformed document
 
   def _parse(self, entries, validate):
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, _, _ = values[0]
       line = '%s %s' % (keyword, value)
 
@@ -795,7 +795,7 @@ class _DocumentHeader(object):
     Checks that the params we know about are within their documented ranges.
     """
 
-    for key, value in self.params.items():
+    for key, value in list(self.params.items()):
       # all parameters are constrained to int32 range
       minimum, maximum = -2147483648, 2147483647
 
@@ -874,17 +874,17 @@ class _DocumentFooter(object):
       # 'directory-footer'.
 
       if header.meets_consensus_method(9):
-        if entries.keys()[0] != 'directory-footer':
+        if list(entries.keys())[0] != 'directory-footer':
           raise ValueError("Network status document's footer should start with a 'directory-footer' line in consensus-method 9 or later")
       else:
-        if entries.keys()[0] != 'directory-signature':
+        if list(entries.keys())[0] != 'directory-signature':
           raise ValueError("Network status document's footer should start with a 'directory-signature' line prior to consensus-method 9")
 
       _check_for_missing_and_disallowed_fields(header, entries, FOOTER_STATUS_DOCUMENT_FIELDS)
       _check_for_misordered_fields(entries, FOOTER_FIELDS)
 
   def _parse(self, entries, validate, header):
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, block_type, block_contents = values[0]
       line = '%s %s' % (keyword, value)
 
@@ -941,11 +941,11 @@ def _check_for_missing_and_disallowed_fields(header, entries, fields):
   for field, in_votes, in_consensus, mandatory in fields:
     if mandatory and ((header.is_consensus and in_consensus) or (header.is_vote and in_votes)):
       # mandatory field, check that we have it
-      if field not in entries.keys():
+      if field not in list(entries.keys()):
         missing_fields.append(field)
     elif (header.is_consensus and not in_consensus) or (header.is_vote and not in_votes):
       # field we shouldn't have, check that we don't
-      if field in entries.keys():
+      if field in list(entries.keys()):
         disallowed_fields.append(field)
 
   if missing_fields:
@@ -972,12 +972,12 @@ def _check_for_misordered_fields(entries, expected):
   # document type or are unknown. Remove the unknown fields since they
   # reflect a spec change and can appear anywhere in the document.
 
-  actual = filter(lambda field: field in expected, entries.keys())
+  actual = [field for field in list(entries.keys()) if field in expected]
 
   # Narrow the expected to just what we have. If the lists then match then the
   # order's valid.
 
-  expected = filter(lambda field: field in actual, expected)
+  expected = [field for field in expected if field in actual]
 
   if actual != expected:
     actual_label = ', '.join(actual)
@@ -1112,7 +1112,7 @@ class DirectoryAuthority(Descriptor):
 
     entries = _get_descriptor_components(content, validate)
 
-    if validate and 'dir-source' != entries.keys()[0]:
+    if validate and 'dir-source' != list(entries.keys())[0]:
       raise ValueError("Authority entries are expected to start with a 'dir-source' line:\n%s" % (content))
 
     # check that we have mandatory fields
@@ -1151,7 +1151,7 @@ class DirectoryAuthority(Descriptor):
           type_label = 'votes' if is_vote else 'consensus entries'
           raise ValueError("Authority %s shouldn't have a '%s' line:\n%s" % (type_label, keyword, content))
 
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, _, _ = values[0]
       line = '%s %s' % (keyword, value)
 
@@ -1295,9 +1295,9 @@ class KeyCertificate(Descriptor):
     entries = _get_descriptor_components(content, validate)
 
     if validate:
-      if 'dir-key-certificate-version' != entries.keys()[0]:
+      if 'dir-key-certificate-version' != list(entries.keys())[0]:
         raise ValueError("Key certificates must start with a 'dir-key-certificate-version' line:\n%s" % (content))
-      elif 'dir-key-certification' != entries.keys()[-1]:
+      elif 'dir-key-certification' != list(entries.keys())[-1]:
         raise ValueError("Key certificates must end with a 'dir-key-certification' line:\n%s" % (content))
 
       # check that we have mandatory fields and that our known fields only
@@ -1311,7 +1311,7 @@ class KeyCertificate(Descriptor):
         if entry_count > 1:
           raise ValueError("Key certificates can only have a single '%s' line, got %i:\n%s" % (keyword, entry_count, content))
 
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, block_type, block_contents = values[0]
       line = '%s %s' % (keyword, value)
 

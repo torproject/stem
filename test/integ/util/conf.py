@@ -95,11 +95,11 @@ class TestConf(unittest.TestCase):
     user_config = stem.util.conf.get_config('integ_testing')
     user_config.load(test_config_path)
 
-    self.assertEquals('atagar', ssh_config['login.user'])
-    self.assertEquals('pepperjack_is_awesome!', ssh_config['login.password'])
-    self.assertEquals('1.2.3.4', ssh_config['destination.ip'])
-    self.assertEquals(22, ssh_config['destination.port'])
-    self.assertEquals(['export PATH=$PATH:~/bin', 'alias l=ls'], ssh_config['startup.run'])
+    self.assertEqual('atagar', ssh_config['login.user'])
+    self.assertEqual('pepperjack_is_awesome!', ssh_config['login.password'])
+    self.assertEqual('1.2.3.4', ssh_config['destination.ip'])
+    self.assertEqual(22, ssh_config['destination.port'])
+    self.assertEqual(['export PATH=$PATH:~/bin', 'alias l=ls'], ssh_config['startup.run'])
 
   def test_load_multiline(self):
     """
@@ -111,9 +111,9 @@ class TestConf(unittest.TestCase):
     test_config.load(test_config_path)
 
     for entry in ('simple', 'leading_whitespace', 'squashed_top', 'squashed_bottom'):
-      self.assertEquals('la de da\nand a ho hum', test_config.get('multiline.entry.%s' % entry))
+      self.assertEqual('la de da\nand a ho hum', test_config.get('multiline.entry.%s' % entry))
 
-    self.assertEquals('', test_config.get('multiline.entry.empty'))
+    self.assertEqual('', test_config.get('multiline.entry.empty'))
 
   def test_save(self):
     """
@@ -133,6 +133,6 @@ class TestConf(unittest.TestCase):
     test_config.clear()
     test_config.load()
 
-    self.assertEquals("yup, I'm there", test_config.get_value('single_value'))
-    self.assertEquals(['a', 'b', 'c'], test_config.get_value('multiple_values', multiple = True))
-    self.assertEquals(HERALD_POEM, test_config.get_value('multiline_value'))
+    self.assertEqual("yup, I'm there", test_config.get_value('single_value'))
+    self.assertEqual(['a', 'b', 'c'], test_config.get_value('multiple_values', multiple = True))
+    self.assertEqual(HERALD_POEM, test_config.get_value('multiline_value'))

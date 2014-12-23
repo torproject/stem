@@ -231,7 +231,7 @@ def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, in
 
   try:
     with open(torrc_path, 'w') as torrc_file:
-      for key, values in config.items():
+      for key, values in list(config.items()):
         if isinstance(values, str):
           torrc_file.write('%s %s\n' % (key, values))
         else:

@@ -41,7 +41,7 @@ class TestKeyCertificate(unittest.TestCase):
     """
 
     certificate = get_key_certificate({'pepperjack': 'is oh so tasty!'})
-    self.assertEquals(['pepperjack is oh so tasty!'], certificate.get_unrecognized_lines())
+    self.assertEqual(['pepperjack is oh so tasty!'], certificate.get_unrecognized_lines())
 
   def test_first_and_last_lines(self):
     """
@@ -92,15 +92,15 @@ class TestKeyCertificate(unittest.TestCase):
     """
 
     certificate = get_key_certificate({'dir-key-certificate-version': '3'})
-    self.assertEquals(3, certificate.version)
+    self.assertEqual(3, certificate.version)
 
     content = get_key_certificate({'dir-key-certificate-version': '4'}, content = True)
     self.assertRaises(ValueError, KeyCertificate, content)
-    self.assertEquals(4, KeyCertificate(content, False).version)
+    self.assertEqual(4, KeyCertificate(content, False).version)
 
     content = get_key_certificate({'dir-key-certificate-version': 'boo'}, content = True)
     self.assertRaises(ValueError, KeyCertificate, content)
-    self.assertEquals(None, KeyCertificate(content, False).version)
+    self.assertEqual(None, KeyCertificate(content, False).version)
 
   def test_dir_address(self):
     """
@@ -169,7 +169,7 @@ class TestKeyCertificate(unittest.TestCase):
         self.assertRaises(ValueError, KeyCertificate, content)
 
         certificate = KeyCertificate(content, False)
-        self.assertEquals(None, getattr(certificate, attr))
+        self.assertEqual(None, getattr(certificate, attr))
 
   def test_key_blocks(self):
     """
@@ -192,7 +192,7 @@ class TestKeyCertificate(unittest.TestCase):
       self.assertRaises(ValueError, KeyCertificate, content)
 
       certificate = KeyCertificate(content, False)
-      self.assertEquals(None, getattr(certificate, attr))
+      self.assertEqual(None, getattr(certificate, attr))
 
   def test_wrong_block_type(self):
     """

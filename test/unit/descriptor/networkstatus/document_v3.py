@@ -62,13 +62,13 @@ class TestNetworkStatusDocument(unittest.TestCase):
           descriptors = stem.descriptor.parse_file(descriptor_file)
 
         router = next(descriptors)
-        self.assertEquals('sumkledi', router.nickname)
-        self.assertEquals('0013D22389CD50D0B784A3E4061CB31E8CE8CEB5', router.fingerprint)
-        self.assertEquals('F260ABF1297B445E04354E236F4159140FF7768F', router.digest)
-        self.assertEquals(datetime.datetime(2012, 7, 12, 4, 1, 55), router.published)
-        self.assertEquals('178.218.213.229', router.address)
-        self.assertEquals(80, router.or_port)
-        self.assertEquals(None, router.dir_port)
+        self.assertEqual('sumkledi', router.nickname)
+        self.assertEqual('0013D22389CD50D0B784A3E4061CB31E8CE8CEB5', router.fingerprint)
+        self.assertEqual('F260ABF1297B445E04354E236F4159140FF7768F', router.digest)
+        self.assertEqual(datetime.datetime(2012, 7, 12, 4, 1, 55), router.published)
+        self.assertEqual('178.218.213.229', router.address)
+        self.assertEqual(80, router.or_port)
+        self.assertEqual(None, router.dir_port)
 
   def test_consensus_v3(self):
     """
@@ -112,56 +112,56 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
     with open(get_resource('cached-consensus'), 'rb') as descriptor_file:
       document = stem.descriptor.networkstatus.NetworkStatusDocumentV3(descriptor_file.read(), default_params = False)
 
-      self.assertEquals(3, document.version)
-      self.assertEquals(None, document.version_flavor)
-      self.assertEquals(True, document.is_consensus)
-      self.assertEquals(False, document.is_vote)
-      self.assertEquals(False, document.is_microdescriptor)
-      self.assertEquals(datetime.datetime(2012, 7, 12, 10, 0, 0), document.valid_after)
-      self.assertEquals(datetime.datetime(2012, 7, 12, 11, 0, 0), document.fresh_until)
-      self.assertEquals(datetime.datetime(2012, 7, 12, 13, 0, 0), document.valid_until)
-      self.assertEquals(300, document.vote_delay)
-      self.assertEquals(300, document.dist_delay)
-      self.assertEquals(expected_versions, document.client_versions)
-      self.assertEquals(expected_versions, document.server_versions)
-      self.assertEquals(expected_flags, set(document.known_flags))
-      self.assertEquals({'CircuitPriorityHalflifeMsec': 30000, 'bwauthpid': 1}, document.params)
+      self.assertEqual(3, document.version)
+      self.assertEqual(None, document.version_flavor)
+      self.assertEqual(True, document.is_consensus)
+      self.assertEqual(False, document.is_vote)
+      self.assertEqual(False, document.is_microdescriptor)
+      self.assertEqual(datetime.datetime(2012, 7, 12, 10, 0, 0), document.valid_after)
+      self.assertEqual(datetime.datetime(2012, 7, 12, 11, 0, 0), document.fresh_until)
+      self.assertEqual(datetime.datetime(2012, 7, 12, 13, 0, 0), document.valid_until)
+      self.assertEqual(300, document.vote_delay)
+      self.assertEqual(300, document.dist_delay)
+      self.assertEqual(expected_versions, document.client_versions)
+      self.assertEqual(expected_versions, document.server_versions)
+      self.assertEqual(expected_flags, set(document.known_flags))
+      self.assertEqual({'CircuitPriorityHalflifeMsec': 30000, 'bwauthpid': 1}, document.params)
 
-      self.assertEquals(12, document.consensus_method)
-      self.assertEquals(expected_bandwidth_weights, document.bandwidth_weights)
-      self.assertEquals([], document.consensus_methods)
-      self.assertEquals(None, document.published)
-      self.assertEquals([], document.get_unrecognized_lines())
+      self.assertEqual(12, document.consensus_method)
+      self.assertEqual(expected_bandwidth_weights, document.bandwidth_weights)
+      self.assertEqual([], document.consensus_methods)
+      self.assertEqual(None, document.published)
+      self.assertEqual([], document.get_unrecognized_lines())
 
       router = document.routers['0013D22389CD50D0B784A3E4061CB31E8CE8CEB5']
-      self.assertEquals('sumkledi', router.nickname)
-      self.assertEquals('0013D22389CD50D0B784A3E4061CB31E8CE8CEB5', router.fingerprint)
-      self.assertEquals('F260ABF1297B445E04354E236F4159140FF7768F', router.digest)
-      self.assertEquals(datetime.datetime(2012, 7, 12, 4, 1, 55), router.published)
-      self.assertEquals('178.218.213.229', router.address)
-      self.assertEquals(80, router.or_port)
-      self.assertEquals(None, router.dir_port)
-      self.assertEquals(set(['Exit', 'Fast', 'Named', 'Running', 'Valid']), set(router.flags))
+      self.assertEqual('sumkledi', router.nickname)
+      self.assertEqual('0013D22389CD50D0B784A3E4061CB31E8CE8CEB5', router.fingerprint)
+      self.assertEqual('F260ABF1297B445E04354E236F4159140FF7768F', router.digest)
+      self.assertEqual(datetime.datetime(2012, 7, 12, 4, 1, 55), router.published)
+      self.assertEqual('178.218.213.229', router.address)
+      self.assertEqual(80, router.or_port)
+      self.assertEqual(None, router.dir_port)
+      self.assertEqual(set(['Exit', 'Fast', 'Named', 'Running', 'Valid']), set(router.flags))
 
       authority = document.directory_authorities[0]
-      self.assertEquals(8, len(document.directory_authorities))
-      self.assertEquals('tor26', authority.nickname)
-      self.assertEquals('14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4', authority.fingerprint)
-      self.assertEquals('86.59.21.38', authority.hostname)
-      self.assertEquals('86.59.21.38', authority.address)
-      self.assertEquals(80, authority.dir_port)
-      self.assertEquals(443, authority.or_port)
-      self.assertEquals('Peter Palfrader', authority.contact)
-      self.assertEquals('0B6D1E9A300B895AA2D0B427F92917B6995C3C1C', authority.vote_digest)
-      self.assertEquals(None, authority.legacy_dir_key)
-      self.assertEquals(None, authority.key_certificate)
+      self.assertEqual(8, len(document.directory_authorities))
+      self.assertEqual('tor26', authority.nickname)
+      self.assertEqual('14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4', authority.fingerprint)
+      self.assertEqual('86.59.21.38', authority.hostname)
+      self.assertEqual('86.59.21.38', authority.address)
+      self.assertEqual(80, authority.dir_port)
+      self.assertEqual(443, authority.or_port)
+      self.assertEqual('Peter Palfrader', authority.contact)
+      self.assertEqual('0B6D1E9A300B895AA2D0B427F92917B6995C3C1C', authority.vote_digest)
+      self.assertEqual(None, authority.legacy_dir_key)
+      self.assertEqual(None, authority.key_certificate)
 
       signature = document.signatures[0]
-      self.assertEquals(8, len(document.signatures))
-      self.assertEquals('sha1', signature.method)
-      self.assertEquals('14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4', signature.identity)
-      self.assertEquals('BF112F1C6D5543CFD0A32215ACABD4197B5279AD', signature.key_digest)
-      self.assertEquals(expected_signature, signature.signature)
+      self.assertEqual(8, len(document.signatures))
+      self.assertEqual('sha1', signature.method)
+      self.assertEqual('14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4', signature.identity)
+      self.assertEqual('BF112F1C6D5543CFD0A32215ACABD4197B5279AD', signature.key_digest)
+      self.assertEqual(expected_signature, signature.signature)
 
   def test_metrics_vote(self):
     """
@@ -174,13 +174,13 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       descriptors = stem.descriptor.parse_file(descriptor_file)
 
       router = next(descriptors)
-      self.assertEquals('sumkledi', router.nickname)
-      self.assertEquals('0013D22389CD50D0B784A3E4061CB31E8CE8CEB5', router.fingerprint)
-      self.assertEquals('0799F806200B005F01E40A9A7F1A21C988AE8FB1', router.digest)
-      self.assertEquals(datetime.datetime(2012, 7, 11, 4, 22, 53), router.published)
-      self.assertEquals('178.218.213.229', router.address)
-      self.assertEquals(80, router.or_port)
-      self.assertEquals(None, router.dir_port)
+      self.assertEqual('sumkledi', router.nickname)
+      self.assertEqual('0013D22389CD50D0B784A3E4061CB31E8CE8CEB5', router.fingerprint)
+      self.assertEqual('0799F806200B005F01E40A9A7F1A21C988AE8FB1', router.digest)
+      self.assertEqual(datetime.datetime(2012, 7, 11, 4, 22, 53), router.published)
+      self.assertEqual('178.218.213.229', router.address)
+      self.assertEqual(80, router.or_port)
+      self.assertEqual(None, router.dir_port)
 
   def test_vote(self):
     """
@@ -235,66 +235,66 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     with open(get_resource('vote'), 'rb') as descriptor_file:
       document = stem.descriptor.networkstatus.NetworkStatusDocumentV3(descriptor_file.read(), default_params = False)
 
-      self.assertEquals(3, document.version)
-      self.assertEquals(None, document.version_flavor)
-      self.assertEquals(False, document.is_consensus)
-      self.assertEquals(True, document.is_vote)
-      self.assertEquals(False, document.is_microdescriptor)
-      self.assertEquals(datetime.datetime(2012, 7, 12, 0, 0, 0), document.valid_after)
-      self.assertEquals(datetime.datetime(2012, 7, 12, 1, 0, 0), document.fresh_until)
-      self.assertEquals(datetime.datetime(2012, 7, 12, 3, 0, 0), document.valid_until)
-      self.assertEquals(300, document.vote_delay)
-      self.assertEquals(300, document.dist_delay)
-      self.assertEquals([], document.client_versions)
-      self.assertEquals([], document.server_versions)
-      self.assertEquals(expected_flags, set(document.known_flags))
-      self.assertEquals({'CircuitPriorityHalflifeMsec': 30000, 'bwauthpid': 1}, document.params)
+      self.assertEqual(3, document.version)
+      self.assertEqual(None, document.version_flavor)
+      self.assertEqual(False, document.is_consensus)
+      self.assertEqual(True, document.is_vote)
+      self.assertEqual(False, document.is_microdescriptor)
+      self.assertEqual(datetime.datetime(2012, 7, 12, 0, 0, 0), document.valid_after)
+      self.assertEqual(datetime.datetime(2012, 7, 12, 1, 0, 0), document.fresh_until)
+      self.assertEqual(datetime.datetime(2012, 7, 12, 3, 0, 0), document.valid_until)
+      self.assertEqual(300, document.vote_delay)
+      self.assertEqual(300, document.dist_delay)
+      self.assertEqual([], document.client_versions)
+      self.assertEqual([], document.server_versions)
+      self.assertEqual(expected_flags, set(document.known_flags))
+      self.assertEqual({'CircuitPriorityHalflifeMsec': 30000, 'bwauthpid': 1}, document.params)
 
-      self.assertEquals(None, document.consensus_method)
-      self.assertEquals({}, document.bandwidth_weights)
-      self.assertEquals(range(1, 13), document.consensus_methods)
-      self.assertEquals(datetime.datetime(2012, 7, 11, 23, 50, 1), document.published)
-      self.assertEquals([], document.get_unrecognized_lines())
+      self.assertEqual(None, document.consensus_method)
+      self.assertEqual({}, document.bandwidth_weights)
+      self.assertEqual(list(range(1, 13)), document.consensus_methods)
+      self.assertEqual(datetime.datetime(2012, 7, 11, 23, 50, 1), document.published)
+      self.assertEqual([], document.get_unrecognized_lines())
 
       router = document.routers['0013D22389CD50D0B784A3E4061CB31E8CE8CEB5']
-      self.assertEquals('sumkledi', router.nickname)
-      self.assertEquals('0013D22389CD50D0B784A3E4061CB31E8CE8CEB5', router.fingerprint)
-      self.assertEquals('0799F806200B005F01E40A9A7F1A21C988AE8FB1', router.digest)
-      self.assertEquals(datetime.datetime(2012, 7, 11, 4, 22, 53), router.published)
-      self.assertEquals('178.218.213.229', router.address)
-      self.assertEquals(80, router.or_port)
-      self.assertEquals(None, router.dir_port)
+      self.assertEqual('sumkledi', router.nickname)
+      self.assertEqual('0013D22389CD50D0B784A3E4061CB31E8CE8CEB5', router.fingerprint)
+      self.assertEqual('0799F806200B005F01E40A9A7F1A21C988AE8FB1', router.digest)
+      self.assertEqual(datetime.datetime(2012, 7, 11, 4, 22, 53), router.published)
+      self.assertEqual('178.218.213.229', router.address)
+      self.assertEqual(80, router.or_port)
+      self.assertEqual(None, router.dir_port)
 
       authority = document.directory_authorities[0]
-      self.assertEquals(1, len(document.directory_authorities))
-      self.assertEquals('turtles', authority.nickname)
-      self.assertEquals('27B6B5996C426270A5C95488AA5BCEB6BCC86956', authority.fingerprint)
-      self.assertEquals('76.73.17.194', authority.hostname)
-      self.assertEquals('76.73.17.194', authority.address)
-      self.assertEquals(9030, authority.dir_port)
-      self.assertEquals(9090, authority.or_port)
-      self.assertEquals('Mike Perry <email>', authority.contact)
-      self.assertEquals(None, authority.vote_digest)
-      self.assertEquals(None, authority.legacy_dir_key)
+      self.assertEqual(1, len(document.directory_authorities))
+      self.assertEqual('turtles', authority.nickname)
+      self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', authority.fingerprint)
+      self.assertEqual('76.73.17.194', authority.hostname)
+      self.assertEqual('76.73.17.194', authority.address)
+      self.assertEqual(9030, authority.dir_port)
+      self.assertEqual(9090, authority.or_port)
+      self.assertEqual('Mike Perry <email>', authority.contact)
+      self.assertEqual(None, authority.vote_digest)
+      self.assertEqual(None, authority.legacy_dir_key)
 
       certificate = authority.key_certificate
-      self.assertEquals(3, certificate.version)
-      self.assertEquals(None, certificate.address)
-      self.assertEquals(None, certificate.dir_port)
-      self.assertEquals('27B6B5996C426270A5C95488AA5BCEB6BCC86956', certificate.fingerprint)
-      self.assertEquals(expected_identity_key, certificate.identity_key)
-      self.assertEquals(datetime.datetime(2011, 11, 28, 21, 51, 4), certificate.published)
-      self.assertEquals(datetime.datetime(2012, 11, 28, 21, 51, 4), certificate.expires)
-      self.assertEquals(expected_signing_key, certificate.signing_key)
-      self.assertEquals(expected_key_crosscert, certificate.crosscert)
-      self.assertEquals(expected_key_certification, certificate.certification)
+      self.assertEqual(3, certificate.version)
+      self.assertEqual(None, certificate.address)
+      self.assertEqual(None, certificate.dir_port)
+      self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', certificate.fingerprint)
+      self.assertEqual(expected_identity_key, certificate.identity_key)
+      self.assertEqual(datetime.datetime(2011, 11, 28, 21, 51, 4), certificate.published)
+      self.assertEqual(datetime.datetime(2012, 11, 28, 21, 51, 4), certificate.expires)
+      self.assertEqual(expected_signing_key, certificate.signing_key)
+      self.assertEqual(expected_key_crosscert, certificate.crosscert)
+      self.assertEqual(expected_key_certification, certificate.certification)
 
       signature = document.signatures[0]
-      self.assertEquals(1, len(document.signatures))
-      self.assertEquals('sha1', signature.method)
-      self.assertEquals('27B6B5996C426270A5C95488AA5BCEB6BCC86956', signature.identity)
-      self.assertEquals('D5C30C15BB3F1DA27669C2D88439939E8F418FCF', signature.key_digest)
-      self.assertEquals(expected_signature, signature.signature)
+      self.assertEqual(1, len(document.signatures))
+      self.assertEqual('sha1', signature.method)
+      self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', signature.identity)
+      self.assertEqual('D5C30C15BB3F1DA27669C2D88439939E8F418FCF', signature.key_digest)
+      self.assertEqual(expected_signature, signature.signature)
 
   def test_minimal_consensus(self):
     """
@@ -382,7 +382,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     consensus = NetworkStatusDocumentV3(consensus_file.read())
     consensus_file.close()
 
-    for router in consensus.routers.values():
+    for router in list(consensus.routers.values()):
       self.assertEqual('caerSidi', router.nickname)
 
     # second example: using stem.descriptor.parse_file
@@ -435,9 +435,9 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     descriptor_file = io.BytesIO(content)
     entries = list(_parse_file(descriptor_file))
 
-    self.assertEquals(entry1, entries[0])
-    self.assertEquals(entry2, entries[1])
-    self.assertEquals(expected_document, entries[0].document)
+    self.assertEqual(entry1, entries[0])
+    self.assertEqual(entry2, entries[1])
+    self.assertEqual(expected_document, entries[0].document)
 
   def test_missing_fields(self):
     """
@@ -461,7 +461,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     document = get_network_status_document_v3({'pepperjack': 'is oh so tasty!'})
-    self.assertEquals(['pepperjack is oh so tasty!'], document.get_unrecognized_lines())
+    self.assertEqual(['pepperjack is oh so tasty!'], document.get_unrecognized_lines())
 
   def test_misordered_fields(self):
     """
@@ -472,7 +472,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       attr = {'vote-status': 'consensus'} if is_consensus else {'vote-status': 'vote'}
       lines = get_network_status_document_v3(attr, content = True).split(b'\n')
 
-      for index in xrange(len(lines) - 1):
+      for index in range(len(lines) - 1):
         # once we reach the authority entry or later we're done since swapping
         # those won't be detected
 
@@ -526,22 +526,22 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     document = get_network_status_document_v3({'network-status-version': '3'})
-    self.assertEquals(3, document.version)
-    self.assertEquals(None, document.version_flavor)
-    self.assertEquals(False, document.is_microdescriptor)
+    self.assertEqual(3, document.version)
+    self.assertEqual(None, document.version_flavor)
+    self.assertEqual(False, document.is_microdescriptor)
 
     document = get_network_status_document_v3({'network-status-version': '3 microdesc'})
-    self.assertEquals(3, document.version)
-    self.assertEquals('microdesc', document.version_flavor)
-    self.assertEquals(True, document.is_microdescriptor)
+    self.assertEqual(3, document.version)
+    self.assertEqual('microdesc', document.version_flavor)
+    self.assertEqual(True, document.is_microdescriptor)
 
     content = get_network_status_document_v3({'network-status-version': '4'}, content = True)
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals(4, document.version)
-    self.assertEquals(None, document.version_flavor)
-    self.assertEquals(False, document.is_microdescriptor)
+    self.assertEqual(4, document.version)
+    self.assertEqual(None, document.version_flavor)
+    self.assertEqual(False, document.is_microdescriptor)
 
   def test_vote_status(self):
     """
@@ -549,13 +549,13 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     document = get_network_status_document_v3({'vote-status': 'vote'})
-    self.assertEquals(False, document.is_consensus)
-    self.assertEquals(True, document.is_vote)
+    self.assertEqual(False, document.is_consensus)
+    self.assertEqual(True, document.is_vote)
 
     content = get_network_status_document_v3({'vote-status': 'consensus'}, content = True)
     document = NetworkStatusDocumentV3(content)
-    self.assertEquals(True, document.is_consensus)
-    self.assertEquals(False, document.is_vote)
+    self.assertEqual(True, document.is_consensus)
+    self.assertEqual(False, document.is_vote)
 
     test_values = (
       '',
@@ -568,8 +568,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
       document = NetworkStatusDocumentV3(content, False)
-      self.assertEquals(True, document.is_consensus)
-      self.assertEquals(False, document.is_vote)
+      self.assertEqual(True, document.is_consensus)
+      self.assertEqual(False, document.is_vote)
 
   def test_consensus_methods(self):
     """
@@ -577,13 +577,13 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     document = get_network_status_document_v3({'vote-status': 'vote', 'consensus-methods': '12 3 1 780'})
-    self.assertEquals([12, 3, 1, 780], document.consensus_methods)
+    self.assertEqual([12, 3, 1, 780], document.consensus_methods)
 
     # check that we default to including consensus-method 1
     content = get_network_status_document_v3({'vote-status': 'vote'}, ('consensus-methods',), content = True)
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals([1], document.consensus_methods)
-    self.assertEquals(None, document.consensus_method)
+    self.assertEqual([1], document.consensus_methods)
+    self.assertEqual(None, document.consensus_method)
 
     test_values = (
       ('', []),
@@ -598,7 +598,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
       document = NetworkStatusDocumentV3(content, False)
-      self.assertEquals(expected_consensus_methods, document.consensus_methods)
+      self.assertEqual(expected_consensus_methods, document.consensus_methods)
 
   def test_consensus_method(self):
     """
@@ -606,13 +606,13 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     document = get_network_status_document_v3({'consensus-method': '12'})
-    self.assertEquals(12, document.consensus_method)
+    self.assertEqual(12, document.consensus_method)
 
     # check that we default to being consensus-method 1
     content = get_network_status_document_v3(exclude = ('consensus-method',), content = True)
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals(1, document.consensus_method)
-    self.assertEquals([], document.consensus_methods)
+    self.assertEqual(1, document.consensus_method)
+    self.assertEqual([], document.consensus_methods)
 
     test_values = (
       '',
@@ -627,7 +627,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
       document = NetworkStatusDocumentV3(content, False)
-      self.assertEquals(1, document.consensus_method)
+      self.assertEqual(1, document.consensus_method)
 
   def test_time_fields(self):
     """
@@ -646,10 +646,10 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       'valid-until': test_value,
     })
 
-    self.assertEquals(expected, document.published)
-    self.assertEquals(expected, document.valid_after)
-    self.assertEquals(expected, document.fresh_until)
-    self.assertEquals(expected, document.valid_until)
+    self.assertEqual(expected, document.published)
+    self.assertEqual(expected, document.valid_after)
+    self.assertEqual(expected, document.fresh_until)
+    self.assertEqual(expected, document.valid_until)
 
     test_values = (
       '',
@@ -667,7 +667,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
         document = NetworkStatusDocumentV3(content, False)
-        self.assertEquals(None, getattr(document, attr))
+        self.assertEqual(None, getattr(document, attr))
 
   def test_voting_delay(self):
     """
@@ -675,8 +675,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     document = get_network_status_document_v3({'voting-delay': '12 345'})
-    self.assertEquals(12, document.vote_delay)
-    self.assertEquals(345, document.dist_delay)
+    self.assertEqual(12, document.vote_delay)
+    self.assertEqual(345, document.dist_delay)
 
     test_values = (
       '',
@@ -691,8 +691,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
       document = NetworkStatusDocumentV3(content, False)
-      self.assertEquals(None, document.vote_delay)
-      self.assertEquals(None, document.dist_delay)
+      self.assertEqual(None, document.vote_delay)
+      self.assertEqual(None, document.dist_delay)
 
   def test_version_lists(self):
     """
@@ -704,8 +704,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     test_value = '1.2.3.4,56.789.12.34-alpha'
 
     document = get_network_status_document_v3({'client-versions': test_value, 'server-versions': test_value})
-    self.assertEquals(expected, document.client_versions)
-    self.assertEquals(expected, document.server_versions)
+    self.assertEqual(expected, document.client_versions)
+    self.assertEqual(expected, document.server_versions)
 
     test_values = (
       ('', []),
@@ -722,7 +722,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
         document = NetworkStatusDocumentV3(content, False)
-        self.assertEquals(expected_value, getattr(document, attr))
+        self.assertEqual(expected_value, getattr(document, attr))
 
   def test_known_flags(self):
     """
@@ -742,7 +742,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for test_value, expected_value in test_values:
       document = get_network_status_document_v3({'known-flags': test_value})
-      self.assertEquals(expected_value, document.known_flags)
+      self.assertEqual(expected_value, document.known_flags)
 
   def test_flag_thresholds(self):
     """
@@ -758,7 +758,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for test_value, expected_value in test_values:
       document = get_network_status_document_v3({'vote-status': 'vote', 'flag-thresholds': test_value})
-      self.assertEquals(expected_value, document.flag_thresholds)
+      self.assertEqual(expected_value, document.flag_thresholds)
 
     # parses a full entry found in an actual vote
 
@@ -776,7 +776,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     }
 
     document = get_network_status_document_v3({'vote-status': 'vote', 'flag-thresholds': full_line})
-    self.assertEquals(expected_value, document.flag_thresholds)
+    self.assertEqual(expected_value, document.flag_thresholds)
 
     test_values = (
       'stable-uptime 693369',   # not a key=value mapping
@@ -790,7 +790,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
       document = NetworkStatusDocumentV3(content, False)
-      self.assertEquals({}, document.flag_thresholds)
+      self.assertEqual({}, document.flag_thresholds)
 
   def test_params(self):
     """
@@ -798,18 +798,18 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     document = get_network_status_document_v3({'params': 'CircuitPriorityHalflifeMsec=30000 bwauthpid=1 unrecognized=-122'})
-    self.assertEquals(30000, document.params['CircuitPriorityHalflifeMsec'])
-    self.assertEquals(1, document.params['bwauthpid'])
-    self.assertEquals(-122, document.params['unrecognized'])
+    self.assertEqual(30000, document.params['CircuitPriorityHalflifeMsec'])
+    self.assertEqual(1, document.params['bwauthpid'])
+    self.assertEqual(-122, document.params['unrecognized'])
 
     # empty params line
     content = get_network_status_document_v3({'params': ''}, content = True)
     document = NetworkStatusDocumentV3(content, default_params = True)
-    self.assertEquals(DEFAULT_PARAMS, document.params)
+    self.assertEqual(DEFAULT_PARAMS, document.params)
 
     content = get_network_status_document_v3({'params': ''}, content = True)
     document = NetworkStatusDocumentV3(content, default_params = False)
-    self.assertEquals({}, document.params)
+    self.assertEqual({}, document.params)
 
   def test_params_malformed(self):
     """
@@ -828,7 +828,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
       document = NetworkStatusDocumentV3(content, False)
-      self.assertEquals(DEFAULT_PARAMS, document.params)
+      self.assertEqual(DEFAULT_PARAMS, document.params)
 
   def test_params_range(self):
     """
@@ -861,7 +861,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
         document = NetworkStatusDocumentV3(content, False, default_params = False)
 
-      self.assertEquals(expected_value, document.params)
+      self.assertEqual(expected_value, document.params)
 
   def test_params_misordered(self):
     """
@@ -872,7 +872,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False, default_params = False)
-    self.assertEquals({'unrecognized': -122, 'bwauthpid': 1}, document.params)
+    self.assertEqual({'unrecognized': -122, 'bwauthpid': 1}, document.params)
 
   def test_footer_consensus_method_requirement(self):
     """
@@ -936,7 +936,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       expected[key] = index - 5
 
     document = get_network_status_document_v3({'bandwidth-weights': ' '.join(weight_entries)})
-    self.assertEquals(expected, document.bandwidth_weights)
+    self.assertEqual(expected, document.bandwidth_weights)
 
   def test_bandwidth_wights_malformed(self):
     """
@@ -959,7 +959,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
       document = NetworkStatusDocumentV3(content, False)
-      self.assertEquals(expected, document.bandwidth_weights)
+      self.assertEqual(expected, document.bandwidth_weights)
 
   def test_bandwidth_wights_misordered(self):
     """
@@ -973,7 +973,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals(expected, document.bandwidth_weights)
+    self.assertEqual(expected, document.bandwidth_weights)
 
   def test_bandwidth_wights_in_vote(self):
     """
@@ -987,7 +987,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals(expected, document.bandwidth_weights)
+    self.assertEqual(expected, document.bandwidth_weights)
 
   def test_microdescriptor_signature(self):
     """
@@ -1024,7 +1024,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     )
 
     for test_value in test_values:
-      for test_attr in xrange(3):
+      for test_attr in range(3):
         attrs = [DOC_SIG.identity, DOC_SIG.key_digest, DOC_SIG.signature]
         attrs[test_attr] = test_value
 
@@ -1047,8 +1047,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     document = get_network_status_document_v3(routers = (entry1, entry2))
 
-    self.assertTrue(entry1 in document.routers.values())
-    self.assertTrue(entry2 in document.routers.values())
+    self.assertTrue(entry1 in list(document.routers.values()))
+    self.assertTrue(entry2 in list(document.routers.values()))
 
     # try with an invalid RouterStatusEntry
 
@@ -1057,7 +1057,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals([entry3], document.routers.values())
+    self.assertEqual([entry3], list(document.routers.values()))
 
     # try including with a microdescriptor consensus
 
@@ -1065,7 +1065,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEqual([RouterStatusEntryMicroV3(str(entry1), False)], document.routers.values())
+    self.assertEqual([RouterStatusEntryMicroV3(str(entry1), False)], list(document.routers.values()))
 
   def test_with_microdescriptor_router_status_entries(self):
     """
@@ -1081,8 +1081,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     document = get_network_status_document_v3({'network-status-version': '3 microdesc'}, routers = (entry1, entry2))
 
-    self.assertTrue(entry1 in document.routers.values())
-    self.assertTrue(entry2 in document.routers.values())
+    self.assertTrue(entry1 in list(document.routers.values()))
+    self.assertTrue(entry2 in list(document.routers.values()))
 
     # try with an invalid RouterStatusEntry
 
@@ -1092,7 +1092,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEquals([entry3], document.routers.values())
+    self.assertEqual([entry3], list(document.routers.values()))
 
     # try including microdescriptor entry in a normal consensus
 
@@ -1100,7 +1100,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEqual([RouterStatusEntryV3(str(entry1), False)], document.routers.values())
+    self.assertEqual([RouterStatusEntryV3(str(entry1), False)], list(document.routers.values()))
 
   def test_with_directory_authorities(self):
     """
@@ -1124,12 +1124,12 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
           else:
             document = NetworkStatusDocumentV3(content)
 
-          self.assertEquals((authority1, authority2), document.directory_authorities)
+          self.assertEqual((authority1, authority2), document.directory_authorities)
         else:
           # authority votes in a consensus or consensus authorities in a vote
           self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
           document = NetworkStatusDocumentV3(content, validate = False)
-          self.assertEquals((authority1, authority2), document.directory_authorities)
+          self.assertEqual((authority1, authority2), document.directory_authorities)
 
   def test_with_legacy_directory_authorities(self):
     """
@@ -1144,7 +1144,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     document = get_network_status_document_v3({'vote-status': 'consensus'}, authorities = (authority1, authority2, authority3))
 
-    self.assertEquals((authority1, authority2, authority3), document.directory_authorities)
+    self.assertEqual((authority1, authority2, authority3), document.directory_authorities)
 
   def test_authority_validation_flag_propagation(self):
     """
@@ -1162,4 +1162,4 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, validate = False)
-    self.assertEquals((authority,), document.directory_authorities)
+    self.assertEqual((authority,), document.directory_authorities)

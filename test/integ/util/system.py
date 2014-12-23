@@ -90,8 +90,8 @@ class TestSystem(unittest.TestCase):
       return
 
     tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(tor_pid, stem.util.system.pid_by_name('tor'))
-    self.assertEquals(None, stem.util.system.pid_by_name('blarg_and_stuff'))
+    self.assertEqual(tor_pid, stem.util.system.pid_by_name('tor'))
+    self.assertEqual(None, stem.util.system.pid_by_name('blarg_and_stuff'))
 
   def test_pid_by_name_pgrep(self):
     """
@@ -113,7 +113,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.pid_by_name('tor'))
+      self.assertEqual(tor_pid, stem.util.system.pid_by_name('tor'))
 
   def test_pid_by_name_pidof(self):
     """
@@ -135,7 +135,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.pid_by_name('tor'))
+      self.assertEqual(tor_pid, stem.util.system.pid_by_name('tor'))
 
   def test_pid_by_name_ps_linux(self):
     """
@@ -160,7 +160,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.pid_by_name('tor'))
+      self.assertEqual(tor_pid, stem.util.system.pid_by_name('tor'))
 
   def test_pid_by_name_ps_bsd(self):
     """
@@ -185,7 +185,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.pid_by_name('tor'))
+      self.assertEqual(tor_pid, stem.util.system.pid_by_name('tor'))
 
   def test_pid_by_name_lsof(self):
     """
@@ -214,7 +214,7 @@ class TestSystem(unittest.TestCase):
       all_tor_pids = stem.util.system.pid_by_name('tor', multiple = True)
 
       if len(all_tor_pids) == 1:
-        self.assertEquals(our_tor_pid, all_tor_pids[0])
+        self.assertEqual(our_tor_pid, all_tor_pids[0])
 
   def test_pid_by_port(self):
     """
@@ -241,8 +241,8 @@ class TestSystem(unittest.TestCase):
       return
 
     tor_pid, tor_port = runner.get_pid(), test.runner.CONTROL_PORT
-    self.assertEquals(tor_pid, stem.util.system.pid_by_port(tor_port))
-    self.assertEquals(None, stem.util.system.pid_by_port(99999))
+    self.assertEqual(tor_pid, stem.util.system.pid_by_port(tor_port))
+    self.assertEqual(None, stem.util.system.pid_by_port(99999))
 
   def test_pid_by_port_netstat(self):
     """
@@ -274,7 +274,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
+      self.assertEqual(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
 
   def test_pid_by_port_sockstat(self):
     """
@@ -303,7 +303,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
+      self.assertEqual(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
 
   def test_pid_by_port_lsof(self):
     """
@@ -332,7 +332,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEquals(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
+      self.assertEqual(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
 
   def test_pid_by_open_file(self):
     """
@@ -341,11 +341,11 @@ class TestSystem(unittest.TestCase):
 
     # check a directory that exists, but isn't claimed by any application
     tmpdir = tempfile.mkdtemp()
-    self.assertEquals(None, stem.util.system.pid_by_open_file(tmpdir))
+    self.assertEqual(None, stem.util.system.pid_by_open_file(tmpdir))
 
     # check a directory that doesn't exist
     os.rmdir(tmpdir)
-    self.assertEquals(None, stem.util.system.pid_by_open_file(tmpdir))
+    self.assertEqual(None, stem.util.system.pid_by_open_file(tmpdir))
 
   def test_cwd(self):
     """
@@ -362,8 +362,8 @@ class TestSystem(unittest.TestCase):
       return
 
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
-    self.assertEquals(tor_cwd, stem.util.system.cwd(runner_pid))
-    self.assertEquals(None, stem.util.system.cwd(99999))
+    self.assertEqual(tor_cwd, stem.util.system.cwd(runner_pid))
+    self.assertEqual(None, stem.util.system.cwd(99999))
 
   def test_cwd_pwdx(self):
     """
@@ -389,7 +389,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
-      self.assertEquals(tor_cwd, stem.util.system.cwd(runner_pid))
+      self.assertEqual(tor_cwd, stem.util.system.cwd(runner_pid))
 
   def test_cwd_lsof(self):
     """
@@ -415,7 +415,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
-      self.assertEquals(tor_cwd, stem.util.system.cwd(runner_pid))
+      self.assertEqual(tor_cwd, stem.util.system.cwd(runner_pid))
 
   def test_user_none(self):
     """
@@ -504,7 +504,7 @@ class TestSystem(unittest.TestCase):
     properly).
     """
 
-    self.assertEquals(0, stem.util.system.bsd_jail_id(99999))
+    self.assertEqual(0, stem.util.system.bsd_jail_id(99999))
 
   def test_expand_path(self):
     """
@@ -524,15 +524,15 @@ class TestSystem(unittest.TestCase):
       test.runner.skip(self, '(running as root)')
       return
 
-    self.assertEquals(os.getcwd(), stem.util.system.expand_path('.'))
-    self.assertEquals(os.getcwd(), stem.util.system.expand_path('./'))
-    self.assertEquals(os.path.join(os.getcwd(), 'foo'), stem.util.system.expand_path('./foo'))
+    self.assertEqual(os.getcwd(), stem.util.system.expand_path('.'))
+    self.assertEqual(os.getcwd(), stem.util.system.expand_path('./'))
+    self.assertEqual(os.path.join(os.getcwd(), 'foo'), stem.util.system.expand_path('./foo'))
 
     home_dir, username = os.path.expanduser('~'), getpass.getuser()
-    self.assertEquals(home_dir, stem.util.system.expand_path('~'))
-    self.assertEquals(home_dir, stem.util.system.expand_path('~/'))
-    self.assertEquals(home_dir, stem.util.system.expand_path('~%s' % username))
-    self.assertEquals(os.path.join(home_dir, 'foo'), stem.util.system.expand_path('~%s/foo' % username))
+    self.assertEqual(home_dir, stem.util.system.expand_path('~'))
+    self.assertEqual(home_dir, stem.util.system.expand_path('~/'))
+    self.assertEqual(home_dir, stem.util.system.expand_path('~%s' % username))
+    self.assertEqual(os.path.join(home_dir, 'foo'), stem.util.system.expand_path('~%s/foo' % username))
 
   def test_set_process_name(self):
     """

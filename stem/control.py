@@ -225,8 +225,6 @@ import functools
 import inspect
 import io
 import os
-import Queue
-import StringIO
 import threading
 import time
 
@@ -235,6 +233,13 @@ try:
   from collections import OrderedDict
 except ImportError:
   from stem.util.ordereddict import OrderedDict
+
+try:
+  import queue
+  from io import StringIO
+except ImportError:
+  import Queue as queue
+  from StringIO import StringIO
 
 import stem.descriptor.microdescriptor
 import stem.descriptor.reader
@@ -253,6 +258,7 @@ import stem.version
 
 from stem import UNDEFINED, CircStatus, Signal
 from stem.util import log
+from stem._compat import unicode
 
 # state changes a control socket can have
 
@@ -437,8 +443,8 @@ class BaseController(object):
     self._status_listeners_lock = threading.RLock()
 
     # queues where incoming messages are directed
-    self._reply_queue = Queue.Queue()
-    self._event_queue = Queue.Queue()
+    self._reply_queue = queue.Queue()
+    self._event_queue = queue.Queue()
 
     # thread to continually pull from the control socket
     self._reader_thread = None
@@ -522,7 +528,7 @@ class BaseController(object):
             log.info('Socket experienced a problem (%s)' % response)
           elif isinstance(response, stem.response.ControlMessage):
             log.info('Failed to deliver a response: %s' % response)
-        except Queue.Empty:
+        except queue.Empty:
           # the empty() method is documented to not be fully reliable so this
           # isn't entirely surprising
 
@@ -840,7 +846,7 @@ class BaseController(object):
       try:
         event_message = self._event_queue.get_nowait()
         self._handle_event(event_message)
-      except Queue.Empty:
+      except queue.Empty:
         if not self.is_alive():
           break
 
@@ -920,7 +926,7 @@ class Controller(BaseController):
       if self.is_caching_enabled():
         self._set_cache(dict((k, None) for k in event.config), 'getconf')
 
-        if 'exitpolicy' in event.config.keys():
+        if 'exitpolicy' in list(event.config.keys()):
           self._set_cache({'exitpolicy': None})
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
@@ -1014,12 +1020,12 @@ class Controller(BaseController):
 
     # if everything was cached then short circuit making the query
     if not params:
-      log.trace('GETINFO %s (cache fetch)' % ' '.join(reply.keys()))
+      log.trace('GETINFO %s (cache fetch)' % ' '.join(list(reply.keys())))
 
       if is_multiple:
         return reply
       else:
-        return reply.values()[0]
+        return list(reply.values())[0]
 
     try:
       response = self.msg('GETINFO %s' % ' '.join(params))
@@ -1029,14 +1035,14 @@ class Controller(BaseController):
       # usually we want unicode values under python 3.x
 
       if stem.prereq.is_python_3() and not get_bytes:
-        response.entries = dict((k, stem.util.str_tools._to_unicode(v)) for (k, v) in response.entries.items())
+        response.entries = dict((k, stem.util.str_tools._to_unicode(v)) for (k, v) in list(response.entries.items()))
 
       reply.update(response.entries)
 
       if self.is_caching_enabled():
         to_cache = {}
 
-        for key, value in response.entries.items():
+        for key, value in list(response.entries.items()):
           key = key.lower()  # make case insensitive
 
           if key in CACHEABLE_GETINFO_PARAMS:
@@ -1053,7 +1059,7 @@ class Controller(BaseController):
       if is_multiple:
         return reply
       else:
-        return reply.values()[0]
+        return list(reply.values())[0]
     except stem.ControllerError as exc:
       # bump geoip failure count if...
       # * we're caching results
@@ -1885,7 +1891,7 @@ class Controller(BaseController):
       params = [params]
 
     # remove strings which contain only whitespace
-    params = filter(lambda entry: entry.strip(), params)
+    params = [entry for entry in params if entry.strip()]
 
     if params == []:
       return {}
@@ -1905,7 +1911,7 @@ class Controller(BaseController):
 
     # if everything was cached then short circuit making the query
     if not lookup_params:
-      log.trace('GETCONF %s (cache fetch)' % ' '.join(reply.keys()))
+      log.trace('GETCONF %s (cache fetch)' % ' '.join(list(reply.keys())))
       return self._get_conf_dict_to_response(reply, default, multiple)
 
     try:
@@ -1914,7 +1920,7 @@ class Controller(BaseController):
       reply.update(response.entries)
 
       if self.is_caching_enabled():
-        to_cache = dict((k.lower(), v) for k, v in response.entries.items())
+        to_cache = dict((k.lower(), v) for k, v in list(response.entries.items()))
 
         for key in UNCACHEABLE_GETCONF_PARAMS:
           if key in to_cache:
@@ -1933,7 +1939,7 @@ class Controller(BaseController):
       # be sure what they wanted.
 
       for key in reply:
-        if not key.lower() in MAPPED_CONFIG_KEYS.values():
+        if not key.lower() in list(MAPPED_CONFIG_KEYS.values()):
           user_expected_key = _case_insensitive_lookup(params, key, key)
 
           if key != user_expected_key:
@@ -1959,7 +1965,7 @@ class Controller(BaseController):
 
     return_dict = {}
 
-    for key, values in config_dict.items():
+    for key, values in list(config_dict.items()):
       if values == []:
         # config option was unset
         if default != UNDEFINED:
@@ -2048,7 +2054,7 @@ class Controller(BaseController):
     query_comp = ['RESETCONF' if reset else 'SETCONF']
 
     if isinstance(params, dict):
-      params = params.items()
+      params = list(params.items())
 
     for param, value in params:
       if isinstance(value, str):
@@ -2228,7 +2234,7 @@ class Controller(BaseController):
     for directory in conf:
       hidden_service_options.append(('HiddenServiceDir', directory))
 
-      for k, v in conf[directory].items():
+      for k, v in list(conf[directory].items()):
         if k == 'HiddenServicePort':
           for entry in v:
             if isinstance(entry, int):
@@ -2432,7 +2438,7 @@ class Controller(BaseController):
     with self._event_listeners_lock:
       event_types_changed = False
 
-      for event_type, event_listeners in self._event_listeners.items():
+      for event_type, event_listeners in list(self._event_listeners.items()):
         if listener in event_listeners:
           event_listeners.remove(listener)
 
@@ -2441,7 +2447,7 @@ class Controller(BaseController):
             del self._event_listeners[event_type]
 
       if event_types_changed:
-        response = self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
+        response = self.msg('SETEVENTS %s' % ' '.join(list(self._event_listeners.keys())))
 
         if not response.is_ok():
           raise stem.ProtocolError('SETEVENTS received unexpected response\n%s' % response)
@@ -2496,7 +2502,7 @@ class Controller(BaseController):
       if not self.is_caching_enabled():
         return
 
-      for key, value in params.items():
+      for key, value in list(params.items()):
         if namespace:
           cache_key = '%s.%s' % (namespace, key)
         else:
@@ -2691,7 +2697,7 @@ class Controller(BaseController):
     response = self.get_info('circuit-status')
 
     for circ in response.splitlines():
-      circ_message = stem.socket.recv_message(StringIO.StringIO('650 CIRC ' + circ + '\r\n'))
+      circ_message = stem.socket.recv_message(StringIO('650 CIRC ' + circ + '\r\n'))
       stem.response.convert('EVENT', circ_message, arrived_at = 0)
       circuits.append(circ_message)
 
@@ -2755,7 +2761,7 @@ class Controller(BaseController):
     circ_queue, circ_listener = None, None
 
     if await_build:
-      circ_queue = Queue.Queue()
+      circ_queue = queue.Queue()
 
       def circ_listener(event):
         circ_queue.put(event)
@@ -2876,7 +2882,7 @@ class Controller(BaseController):
     response = self.get_info('stream-status')
 
     for stream in response.splitlines():
-      message = stem.socket.recv_message(StringIO.StringIO('650 STREAM ' + stream + '\r\n'))
+      message = stem.socket.recv_message(StringIO('650 STREAM ' + stream + '\r\n'))
       stem.response.convert('EVENT', message, arrived_at = 0)
       streams.append(message)
 
@@ -3070,7 +3076,7 @@ class Controller(BaseController):
     :returns: **dict** with 'original -> replacement' address mappings
     """
 
-    mapaddress_arg = ' '.join(['%s=%s' % (k, v) for (k, v) in mapping.items()])
+    mapaddress_arg = ' '.join(['%s=%s' % (k, v) for (k, v) in list(mapping.items())])
     response = self.msg('MAPADDRESS %s' % mapaddress_arg)
     stem.response.convert('MAPADDRESS', response)
 
@@ -3132,7 +3138,7 @@ class Controller(BaseController):
     stem.response.convert('EVENT', event_message, arrived_at = time.time())
 
     with self._event_listeners_lock:
-      for event_type, event_listeners in self._event_listeners.items():
+      for event_type, event_listeners in list(self._event_listeners.items()):
         if event_type == event_message.type:
           for listener in event_listeners:
             listener(event_message)
@@ -3152,10 +3158,10 @@ class Controller(BaseController):
     with self._event_listeners_lock:
       if self.is_authenticated():
         # try to set them all
-        response = self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
+        response = self.msg('SETEVENTS %s' % ' '.join(list(self._event_listeners.keys())))
 
         if response.is_ok():
-          set_events = self._event_listeners.keys()
+          set_events = list(self._event_listeners.keys())
         else:
           # One of the following likely happened...
           #
@@ -3170,7 +3176,7 @@ class Controller(BaseController):
           #
           # See if we can set some subset of our events.
 
-          for event in self._event_listeners.keys():
+          for event in list(self._event_listeners.keys()):
             response = self.msg('SETEVENTS %s' % ' '.join(set_events + [event]))
 
             if response.is_ok():
@@ -3278,7 +3284,7 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
 
   if entries is not None:
     if isinstance(entries, dict):
-      for k, v in entries.items():
+      for k, v in list(entries.items()):
         if k.lower() == key.lower():
           return v
     else:

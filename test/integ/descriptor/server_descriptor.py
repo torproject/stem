@@ -32,10 +32,10 @@ class TestServerDescriptor(unittest.TestCase):
     with open(descriptor_path, 'rb') as descriptor_file:
       for desc in stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'):
         # the following attributes should be deprecated, and not appear in the wild
-        self.assertEquals(None, desc.read_history_end)
-        self.assertEquals(None, desc.write_history_end)
-        self.assertEquals(None, desc.eventdns)
-        self.assertEquals(None, desc.socks_port)
+        self.assertEqual(None, desc.read_history_end)
+        self.assertEqual(None, desc.write_history_end)
+        self.assertEqual(None, desc.eventdns)
+        self.assertEqual(None, desc.socks_port)
 
         unrecognized_lines = desc.get_unrecognized_lines()
 

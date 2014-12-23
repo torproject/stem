@@ -45,7 +45,7 @@ class TestAuthChallengeResponse(unittest.TestCase):
 
     auth_challenge_comp = VALID_RESPONSE.split()
 
-    for index in xrange(1, len(auth_challenge_comp)):
+    for index in range(1, len(auth_challenge_comp)):
       # Attempts to parse a message without this item. The first item is
       # skipped because, without the 250 code, the message won't be
       # constructed.

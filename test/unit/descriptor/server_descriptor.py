@@ -101,35 +101,35 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 -----END SIGNATURE-----"""
 
     desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
-    self.assertEquals('caerSidi', desc.nickname)
-    self.assertEquals('A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB', desc.fingerprint)
-    self.assertEquals('71.35.133.197', desc.address)
-    self.assertEquals(9001, desc.or_port)
-    self.assertEquals(None, desc.socks_port)
-    self.assertEquals(None, desc.dir_port)
-    self.assertEquals(b'Tor 0.2.1.30 on Linux x86_64', desc.platform)
-    self.assertEquals(stem.version.Version('0.2.1.30'), desc.tor_version)
-    self.assertEquals('Linux x86_64', desc.operating_system)
-    self.assertEquals(588217, desc.uptime)
-    self.assertEquals(datetime.datetime(2012, 3, 1, 17, 15, 27), desc.published)
-    self.assertEquals(b'www.atagar.com/contact', desc.contact)
-    self.assertEquals(['1', '2'], desc.link_protocols)
-    self.assertEquals(['1'], desc.circuit_protocols)
-    self.assertEquals(False, desc.hibernating)
-    self.assertEquals(False, desc.allow_single_hop_exits)
-    self.assertEquals(False, desc.extra_info_cache)
-    self.assertEquals('D225B728768D7EA4B5587C13A7A9D22EBBEE6E66', desc.extra_info_digest)
-    self.assertEquals(['2'], desc.hidden_service_dir)
-    self.assertEquals(expected_family, desc.family)
-    self.assertEquals(153600, desc.average_bandwidth)
-    self.assertEquals(256000, desc.burst_bandwidth)
-    self.assertEquals(104590, desc.observed_bandwidth)
-    self.assertEquals(stem.exit_policy.ExitPolicy('reject *:*'), desc.exit_policy)
-    self.assertEquals(expected_onion_key, desc.onion_key)
-    self.assertEquals(expected_signing_key, desc.signing_key)
-    self.assertEquals(expected_signature, desc.signature)
-    self.assertEquals([], desc.get_unrecognized_lines())
-    self.assertEquals('2C7B27BEAB04B4E2459D89CA6D5CD1CC5F95A689', desc.digest())
+    self.assertEqual('caerSidi', desc.nickname)
+    self.assertEqual('A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB', desc.fingerprint)
+    self.assertEqual('71.35.133.197', desc.address)
+    self.assertEqual(9001, desc.or_port)
+    self.assertEqual(None, desc.socks_port)
+    self.assertEqual(None, desc.dir_port)
+    self.assertEqual(b'Tor 0.2.1.30 on Linux x86_64', desc.platform)
+    self.assertEqual(stem.version.Version('0.2.1.30'), desc.tor_version)
+    self.assertEqual('Linux x86_64', desc.operating_system)
+    self.assertEqual(588217, desc.uptime)
+    self.assertEqual(datetime.datetime(2012, 3, 1, 17, 15, 27), desc.published)
+    self.assertEqual(b'www.atagar.com/contact', desc.contact)
+    self.assertEqual(['1', '2'], desc.link_protocols)
+    self.assertEqual(['1'], desc.circuit_protocols)
+    self.assertEqual(False, desc.hibernating)
+    self.assertEqual(False, desc.allow_single_hop_exits)
+    self.assertEqual(False, desc.extra_info_cache)
+    self.assertEqual('D225B728768D7EA4B5587C13A7A9D22EBBEE6E66', desc.extra_info_digest)
+    self.assertEqual(['2'], desc.hidden_service_dir)
+    self.assertEqual(expected_family, desc.family)
+    self.assertEqual(153600, desc.average_bandwidth)
+    self.assertEqual(256000, desc.burst_bandwidth)
+    self.assertEqual(104590, desc.observed_bandwidth)
+    self.assertEqual(stem.exit_policy.ExitPolicy('reject *:*'), desc.exit_policy)
+    self.assertEqual(expected_onion_key, desc.onion_key)
+    self.assertEqual(expected_signing_key, desc.signing_key)
+    self.assertEqual(expected_signature, desc.signature)
+    self.assertEqual([], desc.get_unrecognized_lines())
+    self.assertEqual('2C7B27BEAB04B4E2459D89CA6D5CD1CC5F95A689', desc.digest())
 
   def test_metrics_descriptor_multiple(self):
     """
@@ -139,13 +139,13 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     with open(get_resource('metrics_server_desc_multiple'), 'rb') as descriptor_file:
       descriptors = list(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
 
-      self.assertEquals(2, len(descriptors))
+      self.assertEqual(2, len(descriptors))
 
-      self.assertEquals('anonion', descriptors[0].nickname)
-      self.assertEquals('9A5EC5BB866517E53962AF4D3E776536694B069E', descriptors[0].fingerprint)
+      self.assertEqual('anonion', descriptors[0].nickname)
+      self.assertEqual('9A5EC5BB866517E53962AF4D3E776536694B069E', descriptors[0].fingerprint)
 
-      self.assertEquals('Unnamed', descriptors[1].nickname)
-      self.assertEquals('5366F1D198759F8894EA6E5FF768C667F59AFD24', descriptors[1].fingerprint)
+      self.assertEqual('Unnamed', descriptors[1].nickname)
+      self.assertEqual('5366F1D198759F8894EA6E5FF768C667F59AFD24', descriptors[1].fingerprint)
 
   def test_old_descriptor(self):
     """
@@ -155,43 +155,43 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_file = open(get_resource('old_descriptor'), 'rb')
 
     desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
-    self.assertEquals('krypton', desc.nickname)
-    self.assertEquals('3E2F63E2356F52318B536A12B6445373808A5D6C', desc.fingerprint)
-    self.assertEquals('212.37.39.59', desc.address)
-    self.assertEquals(8000, desc.or_port)
-    self.assertEquals(None, desc.socks_port)
-    self.assertEquals(None, desc.dir_port)
-    self.assertEquals(b'Tor 0.1.0.14 on FreeBSD i386', desc.platform)
-    self.assertEquals(stem.version.Version('0.1.0.14'), desc.tor_version)
-    self.assertEquals('FreeBSD i386', desc.operating_system)
-    self.assertEquals(64820, desc.uptime)
-    self.assertEquals(datetime.datetime(2005, 12, 16, 18, 1, 3), desc.published)
-    self.assertEquals(None, desc.contact)
-    self.assertEquals(None, desc.link_protocols)
-    self.assertEquals(None, desc.circuit_protocols)
-    self.assertEquals(True, desc.hibernating)
-    self.assertEquals(False, desc.allow_single_hop_exits)
-    self.assertEquals(False, desc.extra_info_cache)
-    self.assertEquals(None, desc.extra_info_digest)
-    self.assertEquals(None, desc.hidden_service_dir)
-    self.assertEquals(set(), desc.family)
-    self.assertEquals(102400, desc.average_bandwidth)
-    self.assertEquals(10485760, desc.burst_bandwidth)
-    self.assertEquals(0, desc.observed_bandwidth)
-    self.assertEquals(datetime.datetime(2005, 12, 16, 18, 0, 48), desc.read_history_end)
-    self.assertEquals(900, desc.read_history_interval)
-    self.assertEquals(datetime.datetime(2005, 12, 16, 18, 0, 48), desc.write_history_end)
-    self.assertEquals(900, desc.write_history_interval)
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual('krypton', desc.nickname)
+    self.assertEqual('3E2F63E2356F52318B536A12B6445373808A5D6C', desc.fingerprint)
+    self.assertEqual('212.37.39.59', desc.address)
+    self.assertEqual(8000, desc.or_port)
+    self.assertEqual(None, desc.socks_port)
+    self.assertEqual(None, desc.dir_port)
+    self.assertEqual(b'Tor 0.1.0.14 on FreeBSD i386', desc.platform)
+    self.assertEqual(stem.version.Version('0.1.0.14'), desc.tor_version)
+    self.assertEqual('FreeBSD i386', desc.operating_system)
+    self.assertEqual(64820, desc.uptime)
+    self.assertEqual(datetime.datetime(2005, 12, 16, 18, 1, 3), desc.published)
+    self.assertEqual(None, desc.contact)
+    self.assertEqual(None, desc.link_protocols)
+    self.assertEqual(None, desc.circuit_protocols)
+    self.assertEqual(True, desc.hibernating)
+    self.assertEqual(False, desc.allow_single_hop_exits)
+    self.assertEqual(False, desc.extra_info_cache)
+    self.assertEqual(None, desc.extra_info_digest)
+    self.assertEqual(None, desc.hidden_service_dir)
+    self.assertEqual(set(), desc.family)
+    self.assertEqual(102400, desc.average_bandwidth)
+    self.assertEqual(10485760, desc.burst_bandwidth)
+    self.assertEqual(0, desc.observed_bandwidth)
+    self.assertEqual(datetime.datetime(2005, 12, 16, 18, 0, 48), desc.read_history_end)
+    self.assertEqual(900, desc.read_history_interval)
+    self.assertEqual(datetime.datetime(2005, 12, 16, 18, 0, 48), desc.write_history_end)
+    self.assertEqual(900, desc.write_history_interval)
+    self.assertEqual([], desc.get_unrecognized_lines())
 
     # The read-history and write-history lines are pretty long so just checking
     # the initial contents for the line and parsed values.
 
     read_values_start = [20774, 489973, 510022, 511163, 20949]
-    self.assertEquals(read_values_start, desc.read_history_values[:5])
+    self.assertEqual(read_values_start, desc.read_history_values[:5])
 
     write_values_start = [81, 8848, 8927, 8927, 83, 8848, 8931, 8929, 81, 8846]
-    self.assertEquals(write_values_start, desc.write_history_values[:10])
+    self.assertEqual(write_values_start, desc.write_history_values[:10])
 
   def test_non_ascii_descriptor(self):
     """
@@ -203,31 +203,31 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     expected_contact = b'1024D/04D2E818 L\xc3\xa9na\xc3\xafc Huard <lenaic dot huard AT laposte dot net>'
 
     desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
-    self.assertEquals('Coruscant', desc.nickname)
-    self.assertEquals('0B9821545C48E496AEED9ECC0DB506C49FF8158D', desc.fingerprint)
-    self.assertEquals('88.182.161.122', desc.address)
-    self.assertEquals(9001, desc.or_port)
-    self.assertEquals(None, desc.socks_port)
-    self.assertEquals(9030, desc.dir_port)
-    self.assertEquals(b'Tor 0.2.3.25 on Linux', desc.platform)
-    self.assertEquals(stem.version.Version('0.2.3.25'), desc.tor_version)
-    self.assertEquals('Linux', desc.operating_system)
-    self.assertEquals(259738, desc.uptime)
-    self.assertEquals(datetime.datetime(2013, 5, 18, 11, 16, 19), desc.published)
-    self.assertEquals(expected_contact, desc.contact)
-    self.assertEquals(['1', '2'], desc.link_protocols)
-    self.assertEquals(['1'], desc.circuit_protocols)
-    self.assertEquals(False, desc.hibernating)
-    self.assertEquals(False, desc.allow_single_hop_exits)
-    self.assertEquals(False, desc.extra_info_cache)
-    self.assertEquals('56403D838DE152421CD401B8E57DAD4483A3D56B', desc.extra_info_digest)
-    self.assertEquals(['2'], desc.hidden_service_dir)
-    self.assertEquals(set(), desc.family)
-    self.assertEquals(102400, desc.average_bandwidth)
-    self.assertEquals(204800, desc.burst_bandwidth)
-    self.assertEquals(122818, desc.observed_bandwidth)
-    self.assertEquals(stem.exit_policy.ExitPolicy('reject *:*'), desc.exit_policy)
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual('Coruscant', desc.nickname)
+    self.assertEqual('0B9821545C48E496AEED9ECC0DB506C49FF8158D', desc.fingerprint)
+    self.assertEqual('88.182.161.122', desc.address)
+    self.assertEqual(9001, desc.or_port)
+    self.assertEqual(None, desc.socks_port)
+    self.assertEqual(9030, desc.dir_port)
+    self.assertEqual(b'Tor 0.2.3.25 on Linux', desc.platform)
+    self.assertEqual(stem.version.Version('0.2.3.25'), desc.tor_version)
+    self.assertEqual('Linux', desc.operating_system)
+    self.assertEqual(259738, desc.uptime)
+    self.assertEqual(datetime.datetime(2013, 5, 18, 11, 16, 19), desc.published)
+    self.assertEqual(expected_contact, desc.contact)
+    self.assertEqual(['1', '2'], desc.link_protocols)
+    self.assertEqual(['1'], desc.circuit_protocols)
+    self.assertEqual(False, desc.hibernating)
+    self.assertEqual(False, desc.allow_single_hop_exits)
+    self.assertEqual(False, desc.extra_info_cache)
+    self.assertEqual('56403D838DE152421CD401B8E57DAD4483A3D56B', desc.extra_info_digest)
+    self.assertEqual(['2'], desc.hidden_service_dir)
+    self.assertEqual(set(), desc.family)
+    self.assertEqual(102400, desc.average_bandwidth)
+    self.assertEqual(204800, desc.burst_bandwidth)
+    self.assertEqual(122818, desc.observed_bandwidth)
+    self.assertEqual(stem.exit_policy.ExitPolicy('reject *:*'), desc.exit_policy)
+    self.assertEqual([], desc.get_unrecognized_lines())
 
     # Make sure that we can get a string representation for this descriptor
     # (having non-unicode content risks a UnicodeEncodeError)...
@@ -245,9 +245,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_file = open(get_resource('cr_in_contact_line'), 'rb')
     desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
 
-    self.assertEquals('pogonip', desc.nickname)
-    self.assertEquals('6DABD62BC65D4E6FE620293157FC76968DAB9C9B', desc.fingerprint)
-    self.assertEquals('75.5.248.48', desc.address)
+    self.assertEqual('pogonip', desc.nickname)
+    self.assertEqual('6DABD62BC65D4E6FE620293157FC76968DAB9C9B', desc.fingerprint)
+    self.assertEqual('75.5.248.48', desc.address)
 
     # the contact info block is huge so just checking the start and end,
     # including some of the embedded carriage returns
@@ -267,9 +267,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     descriptor_file = open(get_resource('negative_uptime'), 'rb')
     desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
 
-    self.assertEquals('TipTor', desc.nickname)
-    self.assertEquals('137962D4931DBF08A24E843288B8A155D6D2AEDD', desc.fingerprint)
-    self.assertEquals('62.99.247.83', desc.address)
+    self.assertEqual('TipTor', desc.nickname)
+    self.assertEqual('137962D4931DBF08A24E843288B8A155D6D2AEDD', desc.fingerprint)
+    self.assertEqual('62.99.247.83', desc.address)
 
     # modify the relay version so it's after when the negative uptime bug
     # should appear
@@ -291,32 +291,32 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     ])
 
     desc = next(stem.descriptor.parse_file(descriptor_file, 'bridge-server-descriptor 1.0'))
-    self.assertEquals('Unnamed', desc.nickname)
-    self.assertEquals('AE54E28ED069CDF45F3009F963EE3B3D6FA26A2E', desc.fingerprint)
-    self.assertEquals('10.45.227.253', desc.address)
-    self.assertEquals(9001, desc.or_port)
-    self.assertEquals(None, desc.socks_port)
-    self.assertEquals(None, desc.dir_port)
-    self.assertEquals(b'Tor 0.2.3.12-alpha (git-800942b4176ca31c) on Linux x86_64', desc.platform)
-    self.assertEquals(stem.version.Version('0.2.3.12-alpha'), desc.tor_version)
-    self.assertEquals('Linux x86_64', desc.operating_system)
-    self.assertEquals(186, desc.uptime)
-    self.assertEquals(datetime.datetime(2012, 3, 22, 17, 34, 38), desc.published)
-    self.assertEquals(b'somebody', desc.contact)
-    self.assertEquals(['1', '2'], desc.link_protocols)
-    self.assertEquals(['1'], desc.circuit_protocols)
-    self.assertEquals(False, desc.hibernating)
-    self.assertEquals(False, desc.allow_single_hop_exits)
-    self.assertEquals(False, desc.extra_info_cache)
-    self.assertEquals('134F81F7A0D270B85FCD481DD10CEA34BA7B15C9', desc.extra_info_digest)
-    self.assertEquals(['2'], desc.hidden_service_dir)
-    self.assertEquals(expected_family, desc.family)
-    self.assertEquals(409600, desc.average_bandwidth)
-    self.assertEquals(819200, desc.burst_bandwidth)
-    self.assertEquals(5120, desc.observed_bandwidth)
-    self.assertEquals(stem.exit_policy.ExitPolicy('reject *:*'), desc.exit_policy)
-    self.assertEquals('006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4', desc.digest())
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual('Unnamed', desc.nickname)
+    self.assertEqual('AE54E28ED069CDF45F3009F963EE3B3D6FA26A2E', desc.fingerprint)
+    self.assertEqual('10.45.227.253', desc.address)
+    self.assertEqual(9001, desc.or_port)
+    self.assertEqual(None, desc.socks_port)
+    self.assertEqual(None, desc.dir_port)
+    self.assertEqual(b'Tor 0.2.3.12-alpha (git-800942b4176ca31c) on Linux x86_64', desc.platform)
+    self.assertEqual(stem.version.Version('0.2.3.12-alpha'), desc.tor_version)
+    self.assertEqual('Linux x86_64', desc.operating_system)
+    self.assertEqual(186, desc.uptime)
+    self.assertEqual(datetime.datetime(2012, 3, 22, 17, 34, 38), desc.published)
+    self.assertEqual(b'somebody', desc.contact)
+    self.assertEqual(['1', '2'], desc.link_protocols)
+    self.assertEqual(['1'], desc.circuit_protocols)
+    self.assertEqual(False, desc.hibernating)
+    self.assertEqual(False, desc.allow_single_hop_exits)
+    self.assertEqual(False, desc.extra_info_cache)
+    self.assertEqual('134F81F7A0D270B85FCD481DD10CEA34BA7B15C9', desc.extra_info_digest)
+    self.assertEqual(['2'], desc.hidden_service_dir)
+    self.assertEqual(expected_family, desc.family)
+    self.assertEqual(409600, desc.average_bandwidth)
+    self.assertEqual(819200, desc.burst_bandwidth)
+    self.assertEqual(5120, desc.observed_bandwidth)
+    self.assertEqual(stem.exit_policy.ExitPolicy('reject *:*'), desc.exit_policy)
+    self.assertEqual('006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4', desc.digest())
+    self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_minimal_relay_descriptor(self):
     """
@@ -326,9 +326,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     desc = get_relay_server_descriptor()
 
-    self.assertEquals('caerSidi', desc.nickname)
-    self.assertEquals('71.35.133.197', desc.address)
-    self.assertEquals(None, desc.fingerprint)
+    self.assertEqual('caerSidi', desc.nickname)
+    self.assertEqual('71.35.133.197', desc.address)
+    self.assertEqual(None, desc.fingerprint)
     self.assertTrue(CRYPTO_BLOB in desc.onion_key)
 
   def test_with_opt(self):
@@ -337,7 +337,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc = get_relay_server_descriptor({'opt': 'contact www.atagar.com/contact/'})
-    self.assertEquals(b'www.atagar.com/contact/', desc.contact)
+    self.assertEqual(b'www.atagar.com/contact/', desc.contact)
 
   def test_unrecognized_line(self):
     """
@@ -345,7 +345,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc = get_relay_server_descriptor({'pepperjack': 'is oh so tasty!'})
-    self.assertEquals(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
+    self.assertEqual(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
 
   def test_proceeding_line(self):
     """
@@ -426,12 +426,12 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     desc_text = get_relay_server_descriptor({'platform': ''}, content = True)
     desc = RelayDescriptor(desc_text, validate = False)
-    self.assertEquals(b'', desc.platform)
+    self.assertEqual(b'', desc.platform)
 
     # does the same but with 'platform ' replaced with 'platform'
     desc_text = desc_text.replace(b'platform ', b'platform')
     desc = RelayDescriptor(desc_text, validate = False)
-    self.assertEquals(b'', desc.platform)
+    self.assertEqual(b'', desc.platform)
 
   def test_platform_for_node_tor(self):
     """
@@ -439,9 +439,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc = get_relay_server_descriptor({'platform': 'node-Tor 0.1.0 on Linux x86_64'})
-    self.assertEquals(b'node-Tor 0.1.0 on Linux x86_64', desc.platform)
-    self.assertEquals(stem.version.Version('0.1.0'), desc.tor_version)
-    self.assertEquals('Linux x86_64', desc.operating_system)
+    self.assertEqual(b'node-Tor 0.1.0 on Linux x86_64', desc.platform)
+    self.assertEqual(stem.version.Version('0.1.0'), desc.tor_version)
+    self.assertEqual('Linux x86_64', desc.operating_system)
 
   def test_protocols_no_circuit_versions(self):
     """
@@ -463,7 +463,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     desc_text = get_relay_server_descriptor({'published': '2012-02-29 04:03:19'}, content = True)
     expected_published = datetime.datetime(2012, 2, 29, 4, 3, 19)
-    self.assertEquals(expected_published, RelayDescriptor(desc_text).published)
+    self.assertEqual(expected_published, RelayDescriptor(desc_text).published)
 
   def test_published_no_time(self):
     """
@@ -492,9 +492,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       expected_end = datetime.datetime(2005, 12, 16, 18, 0, 48)
       expected_values = [81, 8848, 8927, 8927, 83, 8848]
 
-      self.assertEquals(expected_end, attr[0])
-      self.assertEquals(900, attr[1])
-      self.assertEquals(expected_values, attr[2])
+      self.assertEqual(expected_end, attr[0])
+      self.assertEqual(900, attr[1])
+      self.assertEqual(expected_values, attr[2])
 
   def test_read_history_empty(self):
     """
@@ -503,9 +503,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     value = '2005-12-17 01:23:11 (900 s) '
     desc = get_relay_server_descriptor({'opt read-history': value})
-    self.assertEquals(datetime.datetime(2005, 12, 17, 1, 23, 11), desc.read_history_end)
-    self.assertEquals(900, desc.read_history_interval)
-    self.assertEquals([], desc.read_history_values)
+    self.assertEqual(datetime.datetime(2005, 12, 17, 1, 23, 11), desc.read_history_end)
+    self.assertEqual(900, desc.read_history_interval)
+    self.assertEqual([], desc.read_history_values)
 
   @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_annotations(self):
@@ -526,14 +526,14 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text))
 
     desc_entries = list(desc_iter)
-    self.assertEquals(1, len(desc_entries))
+    self.assertEqual(1, len(desc_entries))
     desc = desc_entries[0]
 
-    self.assertEquals('caerSidi', desc.nickname)
-    self.assertEquals(b'@pepperjack very tasty', desc.get_annotation_lines()[0])
-    self.assertEquals(b'@mushrooms not so much', desc.get_annotation_lines()[1])
-    self.assertEquals({b'@pepperjack': b'very tasty', b'@mushrooms': b'not so much'}, desc.get_annotations())
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual('caerSidi', desc.nickname)
+    self.assertEqual(b'@pepperjack very tasty', desc.get_annotation_lines()[0])
+    self.assertEqual(b'@mushrooms not so much', desc.get_annotation_lines()[1])
+    self.assertEqual({b'@pepperjack': b'very tasty', b'@mushrooms': b'not so much'}, desc.get_annotations())
+    self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_duplicate_field(self):
     """
@@ -558,11 +558,11 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
       # for one of them checks that the corresponding values are None
       if attr == 'router':
-        self.assertEquals(None, desc.nickname)
-        self.assertEquals(None, desc.address)
-        self.assertEquals(None, desc.or_port)
-        self.assertEquals(None, desc.socks_port)
-        self.assertEquals(None, desc.dir_port)
+        self.assertEqual(None, desc.nickname)
+        self.assertEqual(None, desc.address)
+        self.assertEqual(None, desc.or_port)
+        self.assertEqual(None, desc.socks_port)
+        self.assertEqual(None, desc.dir_port)
 
   def test_fingerprint_invalid(self):
     """
@@ -581,7 +581,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     expected = stem.exit_policy.MicroExitPolicy('accept 22-23,53,80,110')
     desc = get_relay_server_descriptor({'ipv6-policy': 'accept 22-23,53,80,110'})
-    self.assertEquals(expected, desc.exit_policy_v6)
+    self.assertEqual(expected, desc.exit_policy_v6)
 
   def test_ntor_onion_key(self):
     """
@@ -589,7 +589,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc = get_relay_server_descriptor({'ntor-onion-key': 'Od2Sj3UXFyDjwESLXk6fhatqW9z/oBL/vAKJ+tbDqUU='})
-    self.assertEquals('Od2Sj3UXFyDjwESLXk6fhatqW9z/oBL/vAKJ+tbDqUU=', desc.ntor_onion_key)
+    self.assertEqual('Od2Sj3UXFyDjwESLXk6fhatqW9z/oBL/vAKJ+tbDqUU=', desc.ntor_onion_key)
 
   def test_minimal_bridge_descriptor(self):
     """
@@ -598,10 +598,10 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     desc = get_bridge_server_descriptor()
 
-    self.assertEquals('Unnamed', desc.nickname)
-    self.assertEquals('10.45.227.253', desc.address)
-    self.assertEquals(None, desc.fingerprint)
-    self.assertEquals('006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4', desc.digest())
+    self.assertEqual('Unnamed', desc.nickname)
+    self.assertEqual('10.45.227.253', desc.address)
+    self.assertEqual(None, desc.fingerprint)
+    self.assertEqual('006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4', desc.digest())
 
     # check that we don't have crypto fields
     self.assertRaises(AttributeError, getattr, desc, 'onion_key')
@@ -646,7 +646,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     router_digest = '068A2E28D4C934D9490303B7A645BA068DCA0504'
     desc = get_bridge_server_descriptor({'router-digest': router_digest})
-    self.assertEquals(router_digest, desc.digest())
+    self.assertEqual(router_digest, desc.digest())
 
     # checks when missing
 
@@ -655,7 +655,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     # check that we can still construct it without validation
     desc = BridgeDescriptor(desc_text, validate = False)
-    self.assertEquals(None, desc.digest())
+    self.assertEqual(None, desc.digest())
 
     # checks with invalid content
 
@@ -671,7 +671,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       self.assertRaises(ValueError, BridgeDescriptor, desc_text)
 
       desc = BridgeDescriptor(desc_text, validate = False)
-      self.assertEquals(value, desc.digest())
+      self.assertEqual(value, desc.digest())
 
   def test_or_address_v4(self):
     """
@@ -679,7 +679,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc = get_bridge_server_descriptor({'or-address': '10.45.227.253:9001'})
-    self.assertEquals([('10.45.227.253', 9001, False)], desc.or_addresses)
+    self.assertEqual([('10.45.227.253', 9001, False)], desc.or_addresses)
 
   def test_or_address_v6(self):
     """
@@ -687,7 +687,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc = get_bridge_server_descriptor({'or-address': '[fd9f:2e19:3bcf::02:9970]:9001'})
-    self.assertEquals([('fd9f:2e19:3bcf::02:9970', 9001, True)], desc.or_addresses)
+    self.assertEqual([('fd9f:2e19:3bcf::02:9970', 9001, True)], desc.or_addresses)
 
   def test_or_address_multiple(self):
     """
@@ -704,7 +704,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     ]
 
     desc = BridgeDescriptor(desc_text)
-    self.assertEquals(expected_or_addresses, desc.or_addresses)
+    self.assertEqual(expected_or_addresses, desc.or_addresses)
 
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
     """
@@ -720,7 +720,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       # check that the invalid attribute matches the expected value when
       # constructed without validation
 
-      self.assertEquals(expected_value, getattr(desc, attr))
+      self.assertEqual(expected_value, getattr(desc, attr))
     else:
       # check a default attribute
-      self.assertEquals('caerSidi', desc.nickname)
+      self.assertEqual('caerSidi', desc.nickname)

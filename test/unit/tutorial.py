@@ -3,7 +3,6 @@ Tests for the examples given in stem's tutorial.
 """
 
 import io
-import StringIO
 import unittest
 
 from stem.control import Controller
@@ -14,8 +13,10 @@ from test import mocking
 try:
   # added in python 3.3
   from unittest.mock import Mock, patch
+  from io import StringIO
 except ImportError:
   from mock import Mock, patch
+  from StringIO import StringIO
 
 OVER_THE_RIVER_OUTPUT = """\
  * Connecting to tor
@@ -32,7 +33,7 @@ MIRROR_MIRROR_OUTPUT = """\
 
 
 class TestTutorial(unittest.TestCase):
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_the_little_relay_that_could(self, from_port_mock, stdout_mock):
     def tutorial_example():
@@ -44,7 +45,7 @@ class TestTutorial(unittest.TestCase):
         bytes_read = controller.get_info('traffic/read')
         bytes_written = controller.get_info('traffic/written')
 
-        print 'My Tor relay has read %s bytes and written %s.' % (bytes_read, bytes_written)
+        print('My Tor relay has read %s bytes and written %s.' % (bytes_read, bytes_written))
 
     controller = from_port_mock().__enter__()
     controller.get_info.side_effect = lambda arg: {
@@ -55,7 +56,7 @@ class TestTutorial(unittest.TestCase):
     tutorial_example()
     self.assertEqual('My Tor relay has read 33406 bytes and written 29649.\n', stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('shutil.rmtree')
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_over_the_river(self, from_port_mock, rmtree_mock, stdout_mock):
@@ -69,7 +70,7 @@ class TestTutorial(unittest.TestCase):
       def index():
         return "<h1>Hi Grandma!</h1>"
 
-      print ' * Connecting to tor'
+      print(' * Connecting to tor')
 
       with Controller.from_port() as controller:
         controller.authenticate()
@@ -82,16 +83,16 @@ class TestTutorial(unittest.TestCase):
         # Create a hidden service where visitors of port 80 get redirected to local
         # port 5000 (this is where flask runs by default).
 
-        print " * Creating our hidden service in %s" % hidden_service_dir
+        print(" * Creating our hidden service in %s" % hidden_service_dir)
         result = controller.create_hidden_service(hidden_service_dir, 80, target_port = 5000)
 
         # The hostname is only available we can read the hidden service directory.
         # This requires us to be running with the same user as tor.
 
         if result.hostname:
-          print " * Our service is available at %s, press ctrl+c to quit" % result.hostname
+          print(" * Our service is available at %s, press ctrl+c to quit" % result.hostname)
         else:
-          print " * Unable to determine our service's hostname, probably due to being unable to read the hidden service directory"
+          print(" * Unable to determine our service's hostname, probably due to being unable to read the hidden service directory")
 
         try:
           app.run()
@@ -100,7 +101,7 @@ class TestTutorial(unittest.TestCase):
           # want to delete the hidden service directory if you'd like to have this
           # same *.onion address in the future.
 
-          print " * Shutting down our hidden service"
+          print(" * Shutting down our hidden service")
           controller.remove_hidden_service(hidden_service_dir)
           shutil.rmtree(hidden_service_dir)
 
@@ -121,7 +122,7 @@ class TestTutorial(unittest.TestCase):
 
     self.assertEqual(OVER_THE_RIVER_OUTPUT, stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_mirror_mirror_on_the_wall_1(self, downloader_mock, stdout_mock):
     def tutorial_example():
@@ -131,16 +132,16 @@ class TestTutorial(unittest.TestCase):
 
       try:
         for desc in downloader.get_consensus().run():
-          print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
+          print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
       except Exception as exc:
-        print 'Unable to retrieve the consensus: %s' % exc
+        print('Unable to retrieve the consensus: %s' % exc)
 
     downloader_mock().get_consensus().run.return_value = [mocking.get_router_status_entry_v2()]
 
     tutorial_example()
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_mirror_mirror_on_the_wall_2(self, from_port_mock, stdout_mock):
     def tutorial_example():
@@ -150,7 +151,7 @@ class TestTutorial(unittest.TestCase):
         controller.authenticate()
 
         for desc in controller.get_network_statuses():
-          print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
+          print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
 
     controller = from_port_mock().__enter__()
     controller.get_network_statuses.return_value = [mocking.get_router_status_entry_v2()]
@@ -158,14 +159,14 @@ class TestTutorial(unittest.TestCase):
     tutorial_example()
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('%s.open' % __name__, create = True)
   def test_mirror_mirror_on_the_wall_3(self, open_mock, stdout_mock):
     def tutorial_example():
       from stem.descriptor import parse_file
 
       for desc in parse_file(open('/home/atagar/.tor/cached-consensus')):
-        print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
+        print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
 
     test_file = io.BytesIO(mocking.get_network_status_document_v3(
       routers = [mocking.get_router_status_entry_v3()],
@@ -178,7 +179,7 @@ class TestTutorial(unittest.TestCase):
     tutorial_example()
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.reader.DescriptorReader', spec = DescriptorReader)
   def test_mirror_mirror_on_the_wall_4(self, reader_mock, stdout_mock):
     def tutorial_example():
@@ -186,7 +187,7 @@ class TestTutorial(unittest.TestCase):
 
       with DescriptorReader(['/home/atagar/server-descriptors-2013-03.tar']) as reader:
         for desc in reader:
-          print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
+          print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
 
     reader = reader_mock().__enter__()
     reader.__iter__.return_value = iter([mocking.get_relay_server_descriptor()])
@@ -194,7 +195,7 @@ class TestTutorial(unittest.TestCase):
     tutorial_example()
     self.assertEqual('found relay caerSidi (None)\n', stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
   def test_mirror_mirror_on_the_wall_5(self, downloader_mock, stdout_mock):
@@ -213,7 +214,7 @@ class TestTutorial(unittest.TestCase):
             if desc.exit_policy.is_exiting_allowed():
               bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
         except Exception as exc:
-          print 'Unable to retrieve the server descriptors: %s' % exc
+          print('Unable to retrieve the server descriptors: %s' % exc)
 
         return bw_to_relay
 
@@ -222,9 +223,9 @@ class TestTutorial(unittest.TestCase):
       bw_to_relay = get_bw_to_relay()
       count = 1
 
-      for bw_value in sorted(bw_to_relay.keys(), reverse = True):
+      for bw_value in sorted(list(bw_to_relay.keys()), reverse = True):
         for nickname in bw_to_relay[bw_value]:
-          print '%i. %s (%s/s)' % (count, nickname, str_tools.size_label(bw_value, 2))
+          print('%i. %s (%s/s)' % (count, nickname, str_tools.size_label(bw_value, 2)))
           count += 1
 
           if count > 15:

@@ -77,7 +77,7 @@ def parse(argv):
 
   # translates our args dict into a named tuple
 
-  Args = collections.namedtuple('Args', args.keys())
+  Args = collections.namedtuple('Args', list(args.keys()))
   return Args(**args)
 
 

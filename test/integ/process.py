@@ -59,7 +59,7 @@ class TestProcess(unittest.TestCase):
       # exercises the socket
       control_socket.send('GETCONF ControlPort')
       getconf_response = control_socket.recv()
-      self.assertEquals('ControlPort=2778', str(getconf_response))
+      self.assertEqual('ControlPort=2778', str(getconf_response))
     finally:
       if control_socket:
         control_socket.close()
@@ -121,7 +121,7 @@ class TestProcess(unittest.TestCase):
     # tor polls for the process every fifteen seconds so this may take a
     # while...
 
-    for seconds_waited in xrange(30):
+    for seconds_waited in range(30):
       if tor_process.poll() == 0:
         return  # tor exited
 
@@ -158,7 +158,7 @@ class TestProcess(unittest.TestCase):
     controller.close()
 
     # give tor a few seconds to quit
-    for seconds_waited in xrange(5):
+    for seconds_waited in range(5):
       if tor_process.poll() == 0:
         return  # tor exited
 

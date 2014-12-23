@@ -43,8 +43,12 @@ __all__ = [
 ]
 
 import re
-import StringIO
 import threading
+
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 import stem.socket
 
@@ -149,7 +153,7 @@ class ControlMessage(object):
     :returns: stem.response.ControlMessage instance
     """
 
-    msg = stem.socket.recv_message(StringIO.StringIO(content))
+    msg = stem.socket.recv_message(StringIO(content))
 
     if msg_type is not None:
       convert(msg_type, msg, **kwargs)
@@ -528,7 +532,7 @@ def _unescape(entry):
     #
     #   (unescaped prefix, remaining entry)
 
-    for esc_sequence, replacement in CONTROL_ESCAPES.items():
+    for esc_sequence, replacement in list(CONTROL_ESCAPES.items()):
       if entry.startswith(esc_sequence):
         return (replacement, entry[len(esc_sequence):])
 

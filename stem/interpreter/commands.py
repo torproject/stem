@@ -69,7 +69,7 @@ def _get_fingerprint(arg, controller):
     if len(matches) == 0:
       raise ValueError('No relays found at %s' % arg)
     elif len(matches) == 1:
-      return matches.values()[0]
+      return list(matches.values())[0]
     else:
       response = "There's multiple relays at %s, include a port to specify which.\n\n" % arg
 
@@ -118,10 +118,10 @@ class ControlInterpretor(code.InteractiveConsole):
 
   def get_events(self, *event_types):
     events = list(self._received_events)
-    event_types = map(str.upper, event_types)  # make filtering case insensitive
+    event_types = list(map(str.upper, event_types))  # make filtering case insensitive
 
     if event_types:
-      events = filter(lambda e: e.type in event_types, events)
+      events = [e for e in events if e.type in event_types]
 
     return events
 

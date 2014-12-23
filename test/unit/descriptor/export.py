@@ -2,8 +2,12 @@
 Unit tests for stem.descriptor.export.
 """
 
-import StringIO
 import unittest
+
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 import stem.prereq
 import test.runner
@@ -31,11 +35,11 @@ class TestExport(unittest.TestCase):
 
     desc_csv = export_csv(desc, included_fields = ('nickname', 'address', 'published'), header = False)
     expected = 'caerSidi,71.35.133.197,2012-03-01 17:15:27\n'
-    self.assertEquals(expected, desc_csv)
+    self.assertEqual(expected, desc_csv)
 
     desc_csv = export_csv(desc, included_fields = ('nickname', 'address', 'published'), header = True)
     expected = 'nickname,address,published\n' + expected
-    self.assertEquals(expected, desc_csv)
+    self.assertEqual(expected, desc_csv)
 
   def test_multiple_descriptors(self):
     """
@@ -62,7 +66,7 @@ class TestExport(unittest.TestCase):
     desc = get_relay_server_descriptor()
     desc_csv = export_csv(desc)
 
-    csv_buffer = StringIO.StringIO()
+    csv_buffer = StringIO()
     export_csv_file(csv_buffer, desc)
 
     self.assertEqual(desc_csv, csv_buffer.getvalue())
@@ -88,8 +92,7 @@ class TestExport(unittest.TestCase):
     """
     Exercises when we don't provide any descriptors.
     """
-
-    self.assertEquals('', export_csv([]))
+    self.assertEqual('', export_csv([]))
 
   def test_invalid_attributes(self):
     """

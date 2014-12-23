@@ -79,13 +79,18 @@ and picks up where it left off if run again...
 
 import mimetypes
 import os
-import Queue
 import tarfile
 import threading
+
+try:
+  import queue
+except ImportError:
+  import Queue as queue
 
 import stem.descriptor
 import stem.prereq
 import stem.util.system
+from stem._compat import unicode
 
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = 'DONE'
@@ -221,7 +226,7 @@ def save_processed_files(path, processed_files):
     raise IOError(exc)
 
   with open(path, 'w') as output_file:
-    for path, timestamp in processed_files.items():
+    for path, timestamp in list(processed_files.items()):
       if not os.path.isabs(path):
         raise TypeError('Only absolute paths are acceptable: %s' % path)
 
@@ -265,7 +270,7 @@ class DescriptorReader(object):
 
     # expand any relative paths we got
 
-    target = map(os.path.abspath, target)
+    target = list(map(os.path.abspath, target))
 
     self._validate = validate
     self._follow_links = follow_links
@@ -288,7 +293,7 @@ class DescriptorReader(object):
     # Descriptors that we have read but not yet provided to the caller. A
     # FINISHED entry is used by the reading thread to indicate the end.
 
-    self._unreturned_descriptors = Queue.Queue(buffer_size)
+    self._unreturned_descriptors = queue.Queue(buffer_size)
 
     if self._persistence_path:
       try:
@@ -316,7 +321,7 @@ class DescriptorReader(object):
     """
 
     # make sure that we only provide back absolute paths
-    return dict((os.path.abspath(k), v) for (k, v) in self._processed_files.items())
+    return dict((os.path.abspath(k), v) for (k, v) in list(self._processed_files.items()))
 
   def set_processed_files(self, processed_files):
     """
@@ -400,7 +405,7 @@ class DescriptorReader(object):
       try:
         while True:
           self._unreturned_descriptors.get_nowait()
-      except Queue.Empty:
+      except queue.Empty:
         pass
 
       self._reader_thread.join()
@@ -447,7 +452,7 @@ class DescriptorReader(object):
             break
           else:
             yield descriptor
-        except Queue.Empty:
+        except queue.Empty:
           self._iter_notice.wait()
           self._iter_notice.clear()
 

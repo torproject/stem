@@ -12,6 +12,7 @@ import stem.response
 import stem.version
 
 from stem.util import connection, log, str_tools, tor_tools
+from stem._compat import unicode, long
 
 # Matches keyword=value arguments. This can't be a simple "(.*)=(.*)" pattern
 # because some positional arguments, like circuit paths, can have an equal
@@ -122,7 +123,7 @@ class Event(stem.response.ControlMessage):
 
       setattr(self, attr_name, attr_value)
 
-    for controller_attr_name, attr_name in self._KEYWORD_ARGS.items():
+    for controller_attr_name, attr_name in list(self._KEYWORD_ARGS.items()):
       setattr(self, attr_name, self.keyword_args.get(controller_attr_name))
 
   # method overwritten by our subclasses for special handling that they do

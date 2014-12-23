@@ -54,31 +54,31 @@ class TestMicrodescriptor(unittest.TestCase):
       descriptors = stem.descriptor.parse_file(descriptor_file, 'microdescriptor 1.0')
 
       router = next(descriptors)
-      self.assertEquals(FIRST_ONION_KEY, router.onion_key)
-      self.assertEquals(None, router.ntor_onion_key)
-      self.assertEquals([], router.or_addresses)
-      self.assertEquals([], router.family)
-      self.assertEquals(stem.exit_policy.MicroExitPolicy('reject 1-65535'), router.exit_policy)
-      self.assertEquals({b'@last-listed': b'2013-02-24 00:18:36'}, router.get_annotations())
-      self.assertEquals([b'@last-listed 2013-02-24 00:18:36'], router.get_annotation_lines())
+      self.assertEqual(FIRST_ONION_KEY, router.onion_key)
+      self.assertEqual(None, router.ntor_onion_key)
+      self.assertEqual([], router.or_addresses)
+      self.assertEqual([], router.family)
+      self.assertEqual(stem.exit_policy.MicroExitPolicy('reject 1-65535'), router.exit_policy)
+      self.assertEqual({b'@last-listed': b'2013-02-24 00:18:36'}, router.get_annotations())
+      self.assertEqual([b'@last-listed 2013-02-24 00:18:36'], router.get_annotation_lines())
 
       router = next(descriptors)
-      self.assertEquals(SECOND_ONION_KEY, router.onion_key)
-      self.assertEquals(u'r5572HzD+PMPBbXlZwBhsm6YEbxnYgis8vhZ1jmdI2k=', router.ntor_onion_key)
-      self.assertEquals([], router.or_addresses)
-      self.assertEquals(['$6141629FA0D15A6AEAEF3A1BEB76E64C767B3174'], router.family)
-      self.assertEquals(stem.exit_policy.MicroExitPolicy('reject 1-65535'), router.exit_policy)
-      self.assertEquals({b'@last-listed': b'2013-02-24 00:18:37'}, router.get_annotations())
-      self.assertEquals([b'@last-listed 2013-02-24 00:18:37'], router.get_annotation_lines())
+      self.assertEqual(SECOND_ONION_KEY, router.onion_key)
+      self.assertEqual(u'r5572HzD+PMPBbXlZwBhsm6YEbxnYgis8vhZ1jmdI2k=', router.ntor_onion_key)
+      self.assertEqual([], router.or_addresses)
+      self.assertEqual(['$6141629FA0D15A6AEAEF3A1BEB76E64C767B3174'], router.family)
+      self.assertEqual(stem.exit_policy.MicroExitPolicy('reject 1-65535'), router.exit_policy)
+      self.assertEqual({b'@last-listed': b'2013-02-24 00:18:37'}, router.get_annotations())
+      self.assertEqual([b'@last-listed 2013-02-24 00:18:37'], router.get_annotation_lines())
 
       router = next(descriptors)
-      self.assertEquals(THIRD_ONION_KEY, router.onion_key)
-      self.assertEquals(None, router.ntor_onion_key)
-      self.assertEquals([(u'2001:6b0:7:125::242', 9001, True)], router.or_addresses)
-      self.assertEquals([], router.family)
-      self.assertEquals(stem.exit_policy.MicroExitPolicy('accept 80,443'), router.exit_policy)
-      self.assertEquals({b'@last-listed': b'2013-02-24 00:18:36'}, router.get_annotations())
-      self.assertEquals([b'@last-listed 2013-02-24 00:18:36'], router.get_annotation_lines())
+      self.assertEqual(THIRD_ONION_KEY, router.onion_key)
+      self.assertEqual(None, router.ntor_onion_key)
+      self.assertEqual([(u'2001:6b0:7:125::242', 9001, True)], router.or_addresses)
+      self.assertEqual([], router.family)
+      self.assertEqual(stem.exit_policy.MicroExitPolicy('accept 80,443'), router.exit_policy)
+      self.assertEqual({b'@last-listed': b'2013-02-24 00:18:36'}, router.get_annotations())
+      self.assertEqual([b'@last-listed 2013-02-24 00:18:36'], router.get_annotation_lines())
 
   def test_minimal_microdescriptor(self):
     """
@@ -89,14 +89,14 @@ class TestMicrodescriptor(unittest.TestCase):
     desc = get_microdescriptor()
 
     self.assertTrue(CRYPTO_BLOB in desc.onion_key)
-    self.assertEquals(None, desc.ntor_onion_key)
-    self.assertEquals([], desc.or_addresses)
-    self.assertEquals([], desc.family)
-    self.assertEquals(stem.exit_policy.MicroExitPolicy('reject 1-65535'), desc.exit_policy)
-    self.assertEquals(None, desc.exit_policy_v6)
-    self.assertEquals(None, desc.identifier_type)
-    self.assertEquals(None, desc.identifier)
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual(None, desc.ntor_onion_key)
+    self.assertEqual([], desc.or_addresses)
+    self.assertEqual([], desc.family)
+    self.assertEqual(stem.exit_policy.MicroExitPolicy('reject 1-65535'), desc.exit_policy)
+    self.assertEqual(None, desc.exit_policy_v6)
+    self.assertEqual(None, desc.identifier_type)
+    self.assertEqual(None, desc.identifier)
+    self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_unrecognized_line(self):
     """
@@ -104,7 +104,7 @@ class TestMicrodescriptor(unittest.TestCase):
     """
 
     desc = get_microdescriptor({'pepperjack': 'is oh so tasty!'})
-    self.assertEquals(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
+    self.assertEqual(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
 
   def test_proceeding_line(self):
     """
@@ -115,7 +115,7 @@ class TestMicrodescriptor(unittest.TestCase):
     self.assertRaises(ValueError, Microdescriptor, desc_text)
 
     desc = Microdescriptor(desc_text, validate = False)
-    self.assertEquals(['Amunet1'], desc.family)
+    self.assertEqual(['Amunet1'], desc.family)
 
   def test_a_line(self):
     """
@@ -132,7 +132,7 @@ class TestMicrodescriptor(unittest.TestCase):
     ]
 
     desc = Microdescriptor(desc_text)
-    self.assertEquals(expected, desc.or_addresses)
+    self.assertEqual(expected, desc.or_addresses)
 
   def test_family(self):
     """
@@ -140,7 +140,7 @@ class TestMicrodescriptor(unittest.TestCase):
     """
 
     desc = get_microdescriptor({'family': 'Amunet1 Amunet2 Amunet3'})
-    self.assertEquals(['Amunet1', 'Amunet2', 'Amunet3'], desc.family)
+    self.assertEqual(['Amunet1', 'Amunet2', 'Amunet3'], desc.family)
 
     # try multiple family lines
 
@@ -152,7 +152,7 @@ class TestMicrodescriptor(unittest.TestCase):
 
     # family entries will overwrite each other
     desc = Microdescriptor(desc_text, validate = False)
-    self.assertEquals(1, len(desc.family))
+    self.assertEqual(1, len(desc.family))
 
   def test_exit_policy(self):
     """
@@ -161,7 +161,7 @@ class TestMicrodescriptor(unittest.TestCase):
     """
 
     desc = get_microdescriptor({'p': 'accept 80,110,143,443'})
-    self.assertEquals(stem.exit_policy.MicroExitPolicy('accept 80,110,143,443'), desc.exit_policy)
+    self.assertEqual(stem.exit_policy.MicroExitPolicy('accept 80,110,143,443'), desc.exit_policy)
 
   def test_identifier(self):
     """
@@ -169,5 +169,5 @@ class TestMicrodescriptor(unittest.TestCase):
     """
 
     desc = get_microdescriptor({'id': 'rsa1024 Cd47okjCHD83YGzThGBDptXs9Z4'})
-    self.assertEquals('rsa1024', desc.identifier_type)
-    self.assertEquals('Cd47okjCHD83YGzThGBDptXs9Z4', desc.identifier)
+    self.assertEqual('rsa1024', desc.identifier_type)
+    self.assertEqual('Cd47okjCHD83YGzThGBDptXs9Z4', desc.identifier)

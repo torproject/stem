@@ -9,11 +9,15 @@ Runs unit and integration tests. For usage information run this with '--help'.
 import collections
 import getopt
 import os
-import StringIO
 import sys
 import threading
 import time
 import unittest
+
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 import stem.prereq
 import stem.util.conf
@@ -296,14 +300,14 @@ def main():
     static_check_issues = {}
 
     if pyflakes_task and pyflakes_task.is_successful:
-      for path, issues in pyflakes_task.result.items():
+      for path, issues in list(pyflakes_task.result.items()):
         for issue in issues:
           static_check_issues.setdefault(path, []).append(issue)
     elif not stem.util.test_tools.is_pyflakes_available():
       println("Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
 
     if pep8_task and pep8_task.is_successful:
-      for path, issues in pep8_task.result.items():
+      for path, issues in list(pep8_task.result.items()):
         for issue in issues:
           static_check_issues.setdefault(path, []).append(issue)
     elif not stem.util.test_tools.is_pep8_available():
@@ -399,7 +403,7 @@ def _get_args(argv):
 
   # translates our args dict into a named tuple
 
-  Args = collections.namedtuple('Args', args.keys())
+  Args = collections.namedtuple('Args', list(args.keys()))
   return Args(**args)
 
 
@@ -446,7 +450,7 @@ def _run_test(args, test_class, output_filters, logging_buffer):
 
   suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
 
-  test_results = StringIO.StringIO()
+  test_results = StringIO()
   run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
 
   if args.verbose:

@@ -50,7 +50,7 @@ class TestBaseController(unittest.TestCase):
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
 
-      for _ in xrange(250):
+      for _ in range(250):
         controller.connect()
         controller.close()
 
@@ -77,7 +77,7 @@ class TestBaseController(unittest.TestCase):
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
       response = controller.msg('invalid')
-      self.assertEquals('Unrecognized command "invalid"', str(response))
+      self.assertEqual('Unrecognized command "invalid"', str(response))
 
   def test_msg_invalid_getinfo(self):
     """
@@ -90,7 +90,7 @@ class TestBaseController(unittest.TestCase):
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
       response = controller.msg('GETINFO blarg')
-      self.assertEquals('Unrecognized key "blarg"', str(response))
+      self.assertEqual('Unrecognized key "blarg"', str(response))
 
   def test_msg_repeatedly(self):
     """
@@ -108,7 +108,7 @@ class TestBaseController(unittest.TestCase):
       controller = stem.control.BaseController(control_socket)
 
       def run_getinfo():
-        for _ in xrange(150):
+        for _ in range(150):
           try:
             controller.msg('GETINFO version')
             controller.msg('GETINFO blarg')
@@ -118,13 +118,13 @@ class TestBaseController(unittest.TestCase):
 
       message_threads = []
 
-      for _ in xrange(5):
+      for _ in range(5):
         msg_thread = threading.Thread(target = run_getinfo)
         message_threads.append(msg_thread)
         msg_thread.setDaemon(True)
         msg_thread.start()
 
-      for index in xrange(100):
+      for index in range(100):
         controller.connect()
         controller.close()
 
@@ -187,7 +187,7 @@ class TestBaseController(unittest.TestCase):
       for bw_event in controller.received_events:
         self.assertTrue(re.match('BW [0-9]+ [0-9]+', str(bw_event)))
         self.assertTrue(re.match('650 BW [0-9]+ [0-9]+\r\n', bw_event.raw_content()))
-        self.assertEquals(('650', ' '), bw_event.content()[0][:2])
+        self.assertEqual(('650', ' '), bw_event.content()[0][:2])
 
   def test_get_latest_heartbeat(self):
     """
@@ -219,15 +219,15 @@ class TestBaseController(unittest.TestCase):
       controller.add_status_listener(state_observer.listener, False)
 
       controller.close()
-      self.assertEquals(controller, state_observer.controller)
-      self.assertEquals(stem.control.State.CLOSED, state_observer.state)
+      self.assertEqual(controller, state_observer.controller)
+      self.assertEqual(stem.control.State.CLOSED, state_observer.state)
       self.assertTrue(state_observer.timestamp <= time.time())
       self.assertTrue(state_observer.timestamp > time.time() - 1.0)
       state_observer.reset()
 
       controller.connect()
-      self.assertEquals(controller, state_observer.controller)
-      self.assertEquals(stem.control.State.INIT, state_observer.state)
+      self.assertEqual(controller, state_observer.controller)
+      self.assertEqual(stem.control.State.INIT, state_observer.state)
       self.assertTrue(state_observer.timestamp <= time.time())
       self.assertTrue(state_observer.timestamp > time.time() - 1.0)
       state_observer.reset()
@@ -235,8 +235,8 @@ class TestBaseController(unittest.TestCase):
       # cause the socket to shut down without calling close()
       controller.msg('Blarg!')
       self.assertRaises(stem.SocketClosed, controller.msg, 'blarg')
-      self.assertEquals(controller, state_observer.controller)
-      self.assertEquals(stem.control.State.CLOSED, state_observer.state)
+      self.assertEqual(controller, state_observer.controller)
+      self.assertEqual(stem.control.State.CLOSED, state_observer.state)
       self.assertTrue(state_observer.timestamp <= time.time())
       self.assertTrue(state_observer.timestamp > time.time() - 1.0)
       state_observer.reset()
@@ -244,9 +244,9 @@ class TestBaseController(unittest.TestCase):
       # remove listener and make sure we don't get further notices
       controller.remove_status_listener(state_observer.listener)
       controller.connect()
-      self.assertEquals(None, state_observer.controller)
-      self.assertEquals(None, state_observer.state)
-      self.assertEquals(None, state_observer.timestamp)
+      self.assertEqual(None, state_observer.controller)
+      self.assertEqual(None, state_observer.state)
+      self.assertEqual(None, state_observer.timestamp)
       state_observer.reset()
 
       # add with spawn as true, we need a little delay on this since we then
@@ -255,8 +255,8 @@ class TestBaseController(unittest.TestCase):
       controller.add_status_listener(state_observer.listener, True)
       controller.close()
       time.sleep(0.1)  # not much work going on so this doesn't need to be much
-      self.assertEquals(controller, state_observer.controller)
-      self.assertEquals(stem.control.State.CLOSED, state_observer.state)
+      self.assertEqual(controller, state_observer.controller)
+      self.assertEqual(stem.control.State.CLOSED, state_observer.state)
       self.assertTrue(state_observer.timestamp <= time.time())
       self.assertTrue(state_observer.timestamp > time.time() - 1.0)
       state_observer.reset()

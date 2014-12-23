@@ -18,8 +18,8 @@ class TestExitPolicy(unittest.TestCase):
   def test_example(self):
     # tests the ExitPolicy and MicroExitPolicy pydoc examples
     policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
-    self.assertEquals('accept *:80, accept *:443, reject *:*', str(policy))
-    self.assertEquals('accept 80, 443', policy.summary())
+    self.assertEqual('accept *:80, accept *:443, reject *:*', str(policy))
+    self.assertEqual('accept 80, 443', policy.summary())
     self.assertTrue(policy.can_exit_to('75.119.206.243', 80))
 
     policy = MicroExitPolicy('accept 80,443')
@@ -36,20 +36,20 @@ class TestExitPolicy(unittest.TestCase):
     )
 
     policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
-    self.assertEquals(expected_policy, policy)
+    self.assertEqual(expected_policy, policy)
 
     policy = ExitPolicy(*'accept *:80, accept *:443, reject *:*'.split(','))
-    self.assertEquals(expected_policy, policy)
+    self.assertEqual(expected_policy, policy)
 
     # checks that we truncate after getting a catch-all policy
 
     policy = ExitPolicy(*'accept *:80, accept *:443, reject *:*, accept *:20-50'.split(','))
-    self.assertEquals(expected_policy, policy)
+    self.assertEqual(expected_policy, policy)
 
     # checks that we compress redundant policies
 
     policy = ExitPolicy(*'reject *:80, reject *:443, reject *:*'.split(','))
-    self.assertEquals(ExitPolicy('reject *:*'), policy)
+    self.assertEqual(ExitPolicy('reject *:*'), policy)
 
   def test_can_exit_to(self):
     # Basic sanity test for our can_exit_to() method. Most of the interesting
@@ -58,12 +58,12 @@ class TestExitPolicy(unittest.TestCase):
 
     policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
 
-    for index in xrange(1, 500):
+    for index in range(1, 500):
       ip_addr = '%i.%i.%i.%i' % (index / 2, index / 2, index / 2, index / 2)
       expected_result = index in (80, 443)
 
-      self.assertEquals(expected_result, policy.can_exit_to(ip_addr, index))
-      self.assertEquals(expected_result, policy.can_exit_to(port = index))
+      self.assertEqual(expected_result, policy.can_exit_to(ip_addr, index))
+      self.assertEqual(expected_result, policy.can_exit_to(port = index))
 
   def test_is_exiting_allowed(self):
     test_inputs = {
@@ -78,24 +78,24 @@ class TestExitPolicy(unittest.TestCase):
       ('reject 127.0.0.1:*', 'accept *:80', 'reject *:*'): True,
     }
 
-    for rules, expected_result in test_inputs.items():
+    for rules, expected_result in list(test_inputs.items()):
       policy = ExitPolicy(*rules)
-      self.assertEquals(expected_result, policy.is_exiting_allowed())
+      self.assertEqual(expected_result, policy.is_exiting_allowed())
 
   def test_summary_examples(self):
     # checks the summary() method's pydoc examples
 
     policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
-    self.assertEquals('accept 80, 443', policy.summary())
+    self.assertEqual('accept 80, 443', policy.summary())
 
     policy = ExitPolicy('accept *:443', 'reject *:1-1024', 'accept *:*')
-    self.assertEquals('reject 1-442, 444-1024', policy.summary())
+    self.assertEqual('reject 1-442, 444-1024', policy.summary())
 
   def test_summary_large_ranges(self):
     # checks the summary() method when the policy includes very large port ranges
 
     policy = ExitPolicy('reject *:80-65535', 'accept *:1-65533', 'reject *:*')
-    self.assertEquals('accept 1-79', policy.summary())
+    self.assertEqual('accept 1-79', policy.summary())
 
   def test_non_private_non_default_policy(self):
     policy = get_config_policy('reject *:80-65535, accept *:1-65533, reject *:*')
@@ -154,10 +154,10 @@ class TestExitPolicy(unittest.TestCase):
     # sanity test for our __str__ method
 
     policy = ExitPolicy('  accept *:80\n', '\taccept *:443')
-    self.assertEquals('accept *:80, accept *:443', str(policy))
+    self.assertEqual('accept *:80, accept *:443', str(policy))
 
     policy = ExitPolicy('reject 0.0.0.0/255.255.255.0:*', 'accept *:*')
-    self.assertEquals('reject 0.0.0.0/24:*, accept *:*', str(policy))
+    self.assertEqual('reject 0.0.0.0/24:*, accept *:*', str(policy))
 
   def test_iter(self):
     # sanity test for our __iter__ method
@@ -168,8 +168,8 @@ class TestExitPolicy(unittest.TestCase):
       ExitPolicyRule('reject *:*'),
     ]
 
-    self.assertEquals(rules, list(ExitPolicy(*rules)))
-    self.assertEquals(rules, list(ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')))
+    self.assertEqual(rules, list(ExitPolicy(*rules)))
+    self.assertEqual(rules, list(ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')))
 
   def test_microdescriptor_parsing(self):
     # mapping between inputs and if they should succeed or not
@@ -190,7 +190,7 @@ class TestExitPolicy(unittest.TestCase):
       'bar 80,443': False,
     }
 
-    for policy_arg, expect_success in test_inputs.items():
+    for policy_arg, expect_success in list(test_inputs.items()):
       try:
         policy = MicroExitPolicy(policy_arg)
 
@@ -225,10 +225,10 @@ class TestExitPolicy(unittest.TestCase):
       'reject 1-1024': {1: False, 1024: False, 1025: True},
     }
 
-    for policy_arg, attr in test_inputs.items():
+    for policy_arg, attr in list(test_inputs.items()):
       policy = MicroExitPolicy(policy_arg)
 
-      for port, expected_value in attr.items():
+      for port, expected_value in list(attr.items()):
         self.assertEqual(expected_value, policy.can_exit_to(port = port))
 
     # address argument should be ignored
@@ -261,7 +261,7 @@ class TestExitPolicy(unittest.TestCase):
       ),
     }
 
-    for test_input, expected in test_inputs.items():
+    for test_input, expected in list(test_inputs.items()):
       self.assertEqual(expected, get_config_policy(test_input, '12.34.56.78'))
 
     test_inputs = (

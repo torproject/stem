@@ -28,6 +28,7 @@ import sys
 
 import stem.prereq
 import stem.util.enum
+from stem._compat import unicode
 
 
 # label conversion tuples of the form...
@@ -213,7 +214,7 @@ def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, 
     min_word_length += 1
 
   if min_word_length is None:
-    min_word_length = sys.maxint
+    min_word_length = sys.maxsize
 
   # checks if there isn't the minimum space needed to include anything
 

@@ -75,6 +75,8 @@ import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
 
+from stem._compat import unicode
+
 try:
   # added in python 3.2
   from functools import lru_cache
@@ -204,7 +206,6 @@ def _flag_private_rules(rules):
 
     if last_rule.is_address_wildcard() or last_rule.min_port != min_port or last_rule.max_port != max_port or last_rule.is_accept != is_accept:
       is_match = False
-
     if is_match:
       for rule in rule_set:
         rule._is_private = True
@@ -298,14 +299,14 @@ class ExitPolicy(object):
 
     for rule in self._get_rules():
       if rule.is_accept:
-        for port in xrange(rule.min_port, rule.max_port + 1):
+        for port in range(rule.min_port, rule.max_port + 1):
           if port not in rejected_ports:
             return True
       elif rule.is_address_wildcard():
         if rule.is_port_wildcard():
           return False
         else:
-          rejected_ports.update(range(rule.min_port, rule.max_port + 1))
+          rejected_ports.update(list(range(rule.min_port, rule.max_port + 1)))
 
     return self._is_allowed_default
 
@@ -351,7 +352,7 @@ class ExitPolicy(object):
       elif rule.is_port_wildcard():
         break
 
-      for port in xrange(rule.min_port, rule.max_port + 1):
+      for port in range(rule.min_port, rule.max_port + 1):
         if port in skip_ports:
           continue
 
@@ -1025,7 +1026,7 @@ def _address_type_to_int(address_type):
 
 
 def _int_to_address_type(address_type_int):
-  return AddressType[AddressType.keys()[address_type_int]]
+  return AddressType[list(AddressType.keys())[address_type_int]]
 
 
 class MicroExitPolicyRule(ExitPolicyRule):

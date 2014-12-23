@@ -34,7 +34,7 @@ class TestRouterStatusEntry(unittest.TestCase):
       '/nHdqoKZ6bKZixxAPzYt9Qen+Is': 'FE71DDAA8299E9B2998B1C403F362DF507A7F88B',
     }
 
-    for arg, expected in test_values.items():
+    for arg, expected in list(test_values.items()):
       self.assertEqual(expected, _base64_to_hex(arg, True))
 
     # checks with some malformed inputs
@@ -130,7 +130,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     entry = get_router_status_entry_v3({'z': 'New tor feature: sparkly unicorns!'})
-    self.assertEquals(['z New tor feature: sparkly unicorns!'], entry.get_unrecognized_lines())
+    self.assertEqual(['z New tor feature: sparkly unicorns!'], entry.get_unrecognized_lines())
 
   def test_proceeding_line(self):
     """
@@ -319,9 +319,9 @@ class TestRouterStatusEntry(unittest.TestCase):
         ('2607:fcd0:daaa:101::602c:bd62', 443, True)],
     }
 
-    for a_line, expected in test_values.items():
+    for a_line, expected in list(test_values.items()):
       entry = get_router_status_entry_v3({'a': a_line})
-      self.assertEquals(expected, entry.or_addresses)
+      self.assertEqual(expected, entry.or_addresses)
 
     # includes multiple 'a' lines
 
@@ -335,7 +335,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     ]
 
     entry = RouterStatusEntryV3(content)
-    self.assertEquals(expected, entry.or_addresses)
+    self.assertEqual(expected, entry.or_addresses)
 
     # tries some invalid inputs
 
@@ -360,9 +360,9 @@ class TestRouterStatusEntry(unittest.TestCase):
       'Ugabuga': ['Ugabuga'],
     }
 
-    for s_line, expected in test_values.items():
+    for s_line, expected in list(test_values.items()):
       entry = get_router_status_entry_v3({'s': s_line})
-      self.assertEquals(expected, entry.flags)
+      self.assertEqual(expected, entry.flags)
 
     # tries some invalid inputs
     test_values = {
@@ -371,7 +371,7 @@ class TestRouterStatusEntry(unittest.TestCase):
       'Fast Fast': [Flag.FAST, Flag.FAST],
     }
 
-    for s_line, expected in test_values.items():
+    for s_line, expected in list(test_values.items()):
       content = get_router_status_entry_v3({'s': s_line}, content = True)
       self._expect_invalid_attr(content, 'flags', expected)
 
@@ -387,10 +387,10 @@ class TestRouterStatusEntry(unittest.TestCase):
       'new_stuff and stuff': None,
     }
 
-    for v_line, expected in test_values.items():
+    for v_line, expected in list(test_values.items()):
       entry = get_router_status_entry_v3({'v': v_line})
-      self.assertEquals(expected, entry.version)
-      self.assertEquals(v_line, entry.version_line)
+      self.assertEqual(expected, entry.version)
+      self.assertEqual(v_line, entry.version_line)
 
     # tries an invalid input
     content = get_router_status_entry_v3({'v': 'Tor ugabuga'}, content = True)
@@ -409,12 +409,12 @@ class TestRouterStatusEntry(unittest.TestCase):
       'Bandwidth=11111 Measured=482 Unmeasured=1 Blarg!': (11111, 482, True, ['Blarg!']),
     }
 
-    for w_line, expected in test_values.items():
+    for w_line, expected in list(test_values.items()):
       entry = get_router_status_entry_v3({'w': w_line})
-      self.assertEquals(expected[0], entry.bandwidth)
-      self.assertEquals(expected[1], entry.measured)
-      self.assertEquals(expected[2], entry.is_unmeasured)
-      self.assertEquals(expected[3], entry.unrecognized_bandwidth_entries)
+      self.assertEqual(expected[0], entry.bandwidth)
+      self.assertEqual(expected[1], entry.measured)
+      self.assertEqual(expected[2], entry.is_unmeasured)
+      self.assertEqual(expected[3], entry.unrecognized_bandwidth_entries)
 
     # tries some invalid inputs
     test_values = (
@@ -449,9 +449,9 @@ class TestRouterStatusEntry(unittest.TestCase):
       'accept 80,110,143,443': MicroExitPolicy('accept 80,110,143,443'),
     }
 
-    for p_line, expected in test_values.items():
+    for p_line, expected in list(test_values.items()):
       entry = get_router_status_entry_v3({'p': p_line})
-      self.assertEquals(expected, entry.exit_policy)
+      self.assertEqual(expected, entry.exit_policy)
 
     # tries some invalid inputs
     test_values = (
@@ -484,10 +484,10 @@ class TestRouterStatusEntry(unittest.TestCase):
     setattr(mock_document, 'is_vote', True)
     setattr(mock_document, 'is_consensus', False)
 
-    for m_line, expected in test_values.items():
+    for m_line, expected in list(test_values.items()):
       content = get_router_status_entry_v3({'m': m_line}, content = True)
       entry = RouterStatusEntryV3(content, document = mock_document)
-      self.assertEquals(expected, entry.microdescriptor_hashes)
+      self.assertEqual(expected, entry.microdescriptor_hashes)
 
     # try with multiple 'm' lines
 
@@ -501,7 +501,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     ]
 
     entry = RouterStatusEntryV3(content, document = mock_document)
-    self.assertEquals(expected, entry.microdescriptor_hashes)
+    self.assertEqual(expected, entry.microdescriptor_hashes)
 
     # try without a document
     content = get_router_status_entry_v3({'m': '8,9,10,11,12'}, content = True)
@@ -529,6 +529,6 @@ class TestRouterStatusEntry(unittest.TestCase):
     entry = RouterStatusEntryV3(content, False)
 
     if attr:
-      self.assertEquals(expected_value, getattr(entry, attr))
+      self.assertEqual(expected_value, getattr(entry, attr))
     else:
-      self.assertEquals('caerSidi', entry.nickname)
+      self.assertEqual('caerSidi', entry.nickname)

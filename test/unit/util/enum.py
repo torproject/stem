@@ -14,12 +14,12 @@ class TestEnum(unittest.TestCase):
     """
 
     insects = stem.util.enum.Enum('ANT', 'WASP', 'LADYBUG', 'FIREFLY')
-    self.assertEquals('Ant', insects.ANT)
-    self.assertEquals(('Ant', 'Wasp', 'Ladybug', 'Firefly'), tuple(insects))
+    self.assertEqual('Ant', insects.ANT)
+    self.assertEqual(('Ant', 'Wasp', 'Ladybug', 'Firefly'), tuple(insects))
 
     pets = stem.util.enum.Enum(('DOG', 'Skippy'), 'CAT', ('FISH', 'Nemo'))
-    self.assertEquals('Skippy', pets.DOG)
-    self.assertEquals('Cat', pets.CAT)
+    self.assertEqual('Skippy', pets.DOG)
+    self.assertEqual('Cat', pets.CAT)
 
   def test_uppercase_enum_example(self):
     """
@@ -28,7 +28,7 @@ class TestEnum(unittest.TestCase):
     """
 
     runlevels = stem.util.enum.UppercaseEnum('DEBUG', 'INFO', 'NOTICE', 'WARN', 'ERROR')
-    self.assertEquals('DEBUG', runlevels.DEBUG)
+    self.assertEqual('DEBUG', runlevels.DEBUG)
 
   def test_enum_methods(self):
     """
@@ -38,12 +38,12 @@ class TestEnum(unittest.TestCase):
     insects = stem.util.enum.Enum('ANT', 'WASP', 'LADYBUG', 'FIREFLY')
 
     # next method
-    self.assertEquals(insects.WASP, insects.next(insects.ANT))
-    self.assertEquals(insects.ANT, insects.next(insects.FIREFLY))
+    self.assertEqual(insects.WASP, insects.next(insects.ANT))
+    self.assertEqual(insects.ANT, insects.next(insects.FIREFLY))
 
     # previous method
-    self.assertEquals(insects.FIREFLY, insects.previous(insects.ANT))
-    self.assertEquals(insects.LADYBUG, insects.previous(insects.FIREFLY))
+    self.assertEqual(insects.FIREFLY, insects.previous(insects.ANT))
+    self.assertEqual(insects.LADYBUG, insects.previous(insects.FIREFLY))
 
     # keys method
-    self.assertEquals(['ANT', 'WASP', 'LADYBUG', 'FIREFLY'], insects.keys())
+    self.assertEqual(['ANT', 'WASP', 'LADYBUG', 'FIREFLY'], list(insects.keys()))

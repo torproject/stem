@@ -437,11 +437,11 @@ class ExtraInfoDescriptor(Descriptor):
           raise ValueError("The '%s' entry can only appear once in an extra-info descriptor" % keyword)
 
       expected_first_keyword = self._first_keyword()
-      if expected_first_keyword and expected_first_keyword != entries.keys()[0]:
+      if expected_first_keyword and expected_first_keyword != list(entries.keys())[0]:
         raise ValueError("Extra-info descriptor must start with a '%s' entry" % expected_first_keyword)
 
       expected_last_keyword = self._last_keyword()
-      if expected_last_keyword and expected_last_keyword != entries.keys()[-1]:
+      if expected_last_keyword and expected_last_keyword != list(entries.keys())[-1]:
         raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
 
     self._parse(entries, validate)
@@ -460,7 +460,7 @@ class ExtraInfoDescriptor(Descriptor):
     :raises: **ValueError** if an error occurs in validation
     """
 
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       # most just work with the first (and only) value
       value, _, _ = values[0]
       line = '%s %s' % (keyword, value)  # original line
@@ -884,7 +884,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
     entries = dict(entries)  # shallow copy since we're destructive
 
     # handles fields only in server descriptors
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, block_type, block_contents = values[0]
 
       line = '%s %s' % (keyword, value)  # original line
@@ -920,7 +920,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
     entries = dict(entries)  # shallow copy since we're destructive
 
     # handles fields only in server descriptors
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, _, _ = values[0]
       line = '%s %s' % (keyword, value)  # original line
 

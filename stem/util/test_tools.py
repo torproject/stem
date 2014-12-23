@@ -262,7 +262,7 @@ def pyflakes_issues(paths):
         # Paths in pyflakes_ignore are relative, so we need to check to see if our
         # path ends with any of them.
 
-        for ignored_path, ignored_issues in self._ignored_issues.items():
+        for ignored_path, ignored_issues in list(self._ignored_issues.items()):
           if path.endswith(ignored_path) and issue in ignored_issues:
             return True
 

@@ -403,8 +403,8 @@ class TestConnection(unittest.TestCase):
       '1::1': '0001:0000:0000:0000:0000:0000:0000:0001',
     }
 
-    for test_arg, expected in test_values.items():
-      self.assertEquals(expected, stem.util.connection.expand_ipv6_address(test_arg))
+    for test_arg, expected in list(test_values.items()):
+      self.assertEqual(expected, stem.util.connection.expand_ipv6_address(test_arg))
 
     self.assertRaises(ValueError, stem.util.connection.expand_ipv6_address, '127.0.0.1')
 
@@ -413,10 +413,10 @@ class TestConnection(unittest.TestCase):
     Checks the get_mask_ipv4 function.
     """
 
-    self.assertEquals('255.255.255.255', stem.util.connection.get_mask_ipv4(32))
-    self.assertEquals('255.255.255.248', stem.util.connection.get_mask_ipv4(29))
-    self.assertEquals('255.255.254.0', stem.util.connection.get_mask_ipv4(23))
-    self.assertEquals('0.0.0.0', stem.util.connection.get_mask_ipv4(0))
+    self.assertEqual('255.255.255.255', stem.util.connection.get_mask_ipv4(32))
+    self.assertEqual('255.255.255.248', stem.util.connection.get_mask_ipv4(29))
+    self.assertEqual('255.255.254.0', stem.util.connection.get_mask_ipv4(23))
+    self.assertEqual('0.0.0.0', stem.util.connection.get_mask_ipv4(0))
 
     self.assertRaises(ValueError, stem.util.connection.get_mask_ipv4, -1)
     self.assertRaises(ValueError, stem.util.connection.get_mask_ipv4, 33)
@@ -426,9 +426,9 @@ class TestConnection(unittest.TestCase):
     Checks the get_mask_ipv6 function.
     """
 
-    self.assertEquals('FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF', stem.util.connection.get_mask_ipv6(128))
-    self.assertEquals('FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFE:0000', stem.util.connection.get_mask_ipv6(111))
-    self.assertEquals('0000:0000:0000:0000:0000:0000:0000:0000', stem.util.connection.get_mask_ipv6(0))
+    self.assertEqual('FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF', stem.util.connection.get_mask_ipv6(128))
+    self.assertEqual('FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFE:0000', stem.util.connection.get_mask_ipv6(111))
+    self.assertEqual('0000:0000:0000:0000:0000:0000:0000:0000', stem.util.connection.get_mask_ipv6(0))
 
     self.assertRaises(ValueError, stem.util.connection.get_mask_ipv6, -1)
     self.assertRaises(ValueError, stem.util.connection.get_mask_ipv6, 129)
@@ -438,10 +438,10 @@ class TestConnection(unittest.TestCase):
     Checks the _get_masked_bits function.
     """
 
-    self.assertEquals(32, stem.util.connection._get_masked_bits('255.255.255.255'))
-    self.assertEquals(29, stem.util.connection._get_masked_bits('255.255.255.248'))
-    self.assertEquals(23, stem.util.connection._get_masked_bits('255.255.254.0'))
-    self.assertEquals(0, stem.util.connection._get_masked_bits('0.0.0.0'))
+    self.assertEqual(32, stem.util.connection._get_masked_bits('255.255.255.255'))
+    self.assertEqual(29, stem.util.connection._get_masked_bits('255.255.255.248'))
+    self.assertEqual(23, stem.util.connection._get_masked_bits('255.255.254.0'))
+    self.assertEqual(0, stem.util.connection._get_masked_bits('0.0.0.0'))
 
     self.assertRaises(ValueError, stem.util.connection._get_masked_bits, 'blarg')
     self.assertRaises(ValueError, stem.util.connection._get_masked_bits, '255.255.0.255')
@@ -462,8 +462,8 @@ class TestConnection(unittest.TestCase):
       '2001:db8::ff00:42:8329': '00100000000000010000110110111000000000000000000000000000000000000000000000000000111111110000000000000000010000101000001100101001',
     }
 
-    for test_arg, expected in test_values.items():
-      self.assertEquals(expected, stem.util.connection._get_address_binary(test_arg))
+    for test_arg, expected in list(test_values.items()):
+      self.assertEqual(expected, stem.util.connection._get_address_binary(test_arg))
 
     self.assertRaises(ValueError, stem.util.connection._get_address_binary, '')
     self.assertRaises(ValueError, stem.util.connection._get_address_binary, 'blarg')

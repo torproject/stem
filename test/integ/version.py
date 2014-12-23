@@ -43,7 +43,7 @@ class TestVersion(unittest.TestCase):
 
     runner = test.runner.get_runner()
     system_tor_version = stem.version.get_system_tor_version(runner.get_tor_command())
-    self.assertEquals(runner.get_tor_version(), system_tor_version)
+    self.assertEqual(runner.get_tor_version(), system_tor_version)
 
   def test_getinfo_version_parsing(self):
     """

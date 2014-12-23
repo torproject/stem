@@ -51,6 +51,7 @@ import stem.util.proc
 import stem.util.system
 
 from stem.util import conf, enum, log
+from stem._compat import unicode
 
 # Connection resolution is risky to log about since it's highly likely to
 # contain sensitive information. That said, it's also difficult to get right in
@@ -271,7 +272,7 @@ def system_resolvers(system = None):
 
   # remove any that aren't in the user's PATH
 
-  resolvers = filter(lambda r: stem.util.system.is_available(RESOLVER_COMMAND[r]), resolvers)
+  resolvers = [r for r in resolvers if stem.util.system.is_available(RESOLVER_COMMAND[r])]
 
   # proc resolution, by far, outperforms the others so defaults to this is able
 
@@ -303,7 +304,7 @@ def port_usage(port):
       config.load(config_path)
       port_uses = {}
 
-      for key, value in config.get('port', {}).items():
+      for key, value in list(config.get('port', {}).items()):
         if key.isdigit():
          port_uses[int(key)] = value
         elif '-' in key:
@@ -484,7 +485,7 @@ def expand_ipv6_address(address):
     address = address.replace('::', '::' + ':' * missing_groups)
 
   # inserts missing zeros
-  for index in xrange(8):
+  for index in range(8):
     start = index * 5
     end = address.index(':', start) if index != 7 else len(address)
     missing_zeros = 4 - (end - start)
@@ -515,7 +516,7 @@ def get_mask_ipv4(bits):
   mask_bin = _get_binary(2 ** bits - 1, 32)[::-1]
 
   # breaks it into eight character groupings
-  octets = [mask_bin[8 * i:8 * (i + 1)] for i in xrange(4)]
+  octets = [mask_bin[8 * i:8 * (i + 1)] for i in range(4)]
 
   # converts each octet into its integer value
   return '.'.join([str(int(octet, 2)) for octet in octets])
@@ -542,7 +543,7 @@ def get_mask_ipv6(bits):
   mask_bin = _get_binary(2 ** bits - 1, 128)[::-1]
 
   # breaks it into sixteen character groupings
-  groupings = [mask_bin[16 * i:16 * (i + 1)] for i in xrange(8)]
+  groupings = [mask_bin[16 * i:16 * (i + 1)] for i in range(8)]
 
   # converts each group into its hex value
   return ':'.join(['%04x' % int(group, 2) for group in groupings]).upper()

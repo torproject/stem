@@ -29,36 +29,36 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 -----END SIGNATURE-----"""
 
     desc = next(stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0'))
-    self.assertEquals('NINJA', desc.nickname)
-    self.assertEquals('B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48', desc.fingerprint)
-    self.assertEquals(datetime.datetime(2012, 5, 5, 17, 3, 50), desc.published)
-    self.assertEquals(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.read_history_end)
-    self.assertEquals(900, desc.read_history_interval)
-    self.assertEquals(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.write_history_end)
-    self.assertEquals(900, desc.write_history_interval)
-    self.assertEquals(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.dir_read_history_end)
-    self.assertEquals(900, desc.dir_read_history_interval)
-    self.assertEquals(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.dir_write_history_end)
-    self.assertEquals(900, desc.dir_write_history_interval)
-    self.assertEquals(expected_signature, desc.signature)
-    self.assertEquals('00A57A9AAB5EA113898E2DD02A755E31AFC27227', desc.digest())
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual('NINJA', desc.nickname)
+    self.assertEqual('B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48', desc.fingerprint)
+    self.assertEqual(datetime.datetime(2012, 5, 5, 17, 3, 50), desc.published)
+    self.assertEqual(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.read_history_end)
+    self.assertEqual(900, desc.read_history_interval)
+    self.assertEqual(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.write_history_end)
+    self.assertEqual(900, desc.write_history_interval)
+    self.assertEqual(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.dir_read_history_end)
+    self.assertEqual(900, desc.dir_read_history_interval)
+    self.assertEqual(datetime.datetime(2012, 5, 5, 17, 2, 45), desc.dir_write_history_end)
+    self.assertEqual(900, desc.dir_write_history_interval)
+    self.assertEqual(expected_signature, desc.signature)
+    self.assertEqual('00A57A9AAB5EA113898E2DD02A755E31AFC27227', desc.digest())
+    self.assertEqual([], desc.get_unrecognized_lines())
 
     # The read-history, write-history, dirreq-read-history, and
     # dirreq-write-history lines are pretty long so just checking
     # the initial contents for the line and parsed values.
 
     read_values_start = [3309568, 9216, 41984, 27648, 123904]
-    self.assertEquals(read_values_start, desc.read_history_values[:5])
+    self.assertEqual(read_values_start, desc.read_history_values[:5])
 
     write_values_start = [1082368, 19456, 50176, 272384, 485376]
-    self.assertEquals(write_values_start, desc.write_history_values[:5])
+    self.assertEqual(write_values_start, desc.write_history_values[:5])
 
     dir_read_values_start = [0, 0, 0, 0, 33792, 27648, 48128]
-    self.assertEquals(dir_read_values_start, desc.dir_read_history_values[:7])
+    self.assertEqual(dir_read_values_start, desc.dir_read_history_values[:7])
 
     dir_write_values_start = [0, 0, 0, 227328, 349184, 382976, 738304]
-    self.assertEquals(dir_write_values_start, desc.dir_write_history_values[:7])
+    self.assertEqual(dir_write_values_start, desc.dir_write_history_values[:7])
 
   def test_metrics_bridge_descriptor(self):
     """
@@ -86,40 +86,40 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     }
 
     desc = next(stem.descriptor.parse_file(descriptor_file, 'bridge-extra-info 1.0'))
-    self.assertEquals('ec2bridgereaac65a3', desc.nickname)
-    self.assertEquals('1EC248422B57D9C0BD751892FE787585407479A4', desc.fingerprint)
-    self.assertEquals(datetime.datetime(2012, 6, 8, 2, 21, 27), desc.published)
-    self.assertEquals(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.read_history_end)
-    self.assertEquals(900, desc.read_history_interval)
-    self.assertEquals(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.write_history_end)
-    self.assertEquals(900, desc.write_history_interval)
-    self.assertEquals(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.dir_read_history_end)
-    self.assertEquals(900, desc.dir_read_history_interval)
-    self.assertEquals(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.dir_write_history_end)
-    self.assertEquals(900, desc.dir_write_history_interval)
-    self.assertEquals('00A2AECCEAD3FEE033CFE29893387143146728EC', desc.digest())
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual('ec2bridgereaac65a3', desc.nickname)
+    self.assertEqual('1EC248422B57D9C0BD751892FE787585407479A4', desc.fingerprint)
+    self.assertEqual(datetime.datetime(2012, 6, 8, 2, 21, 27), desc.published)
+    self.assertEqual(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.read_history_end)
+    self.assertEqual(900, desc.read_history_interval)
+    self.assertEqual(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.write_history_end)
+    self.assertEqual(900, desc.write_history_interval)
+    self.assertEqual(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.dir_read_history_end)
+    self.assertEqual(900, desc.dir_read_history_interval)
+    self.assertEqual(datetime.datetime(2012, 6, 8, 2, 10, 38), desc.dir_write_history_end)
+    self.assertEqual(900, desc.dir_write_history_interval)
+    self.assertEqual('00A2AECCEAD3FEE033CFE29893387143146728EC', desc.digest())
+    self.assertEqual([], desc.get_unrecognized_lines())
 
     read_values_start = [337920, 437248, 3995648, 48726016]
-    self.assertEquals(read_values_start, desc.read_history_values[:4])
+    self.assertEqual(read_values_start, desc.read_history_values[:4])
 
     write_values_start = [343040, 991232, 5649408, 49548288]
-    self.assertEquals(write_values_start, desc.write_history_values[:4])
+    self.assertEqual(write_values_start, desc.write_history_values[:4])
 
     dir_read_values_start = [0, 71680, 99328, 25600]
-    self.assertEquals(dir_read_values_start, desc.dir_read_history_values[:4])
+    self.assertEqual(dir_read_values_start, desc.dir_read_history_values[:4])
 
     dir_write_values_start = [5120, 664576, 2419712, 578560]
-    self.assertEquals(dir_write_values_start, desc.dir_write_history_values[:4])
+    self.assertEqual(dir_write_values_start, desc.dir_write_history_values[:4])
 
-    self.assertEquals({}, desc.dir_v2_requests)
-    self.assertEquals({}, desc.dir_v3_requests)
+    self.assertEqual({}, desc.dir_v2_requests)
+    self.assertEqual({}, desc.dir_v3_requests)
 
-    self.assertEquals(expected_dir_v2_responses, desc.dir_v2_responses)
-    self.assertEquals(expected_dir_v3_responses, desc.dir_v3_responses)
+    self.assertEqual(expected_dir_v2_responses, desc.dir_v2_responses)
+    self.assertEqual(expected_dir_v3_responses, desc.dir_v3_responses)
 
-    self.assertEquals({}, desc.dir_v2_responses_unknown)
-    self.assertEquals({}, desc.dir_v2_responses_unknown)
+    self.assertEqual({}, desc.dir_v2_responses_unknown)
+    self.assertEqual({}, desc.dir_v2_responses_unknown)
 
   def test_minimal_extrainfo_descriptor(self):
     """
@@ -129,8 +129,8 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
     desc = get_relay_extrainfo_descriptor()
 
-    self.assertEquals('ninja', desc.nickname)
-    self.assertEquals('B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48', desc.fingerprint)
+    self.assertEqual('ninja', desc.nickname)
+    self.assertEqual('B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48', desc.fingerprint)
     self.assertTrue(CRYPTO_BLOB in desc.signature)
 
   def test_unrecognized_line(self):
@@ -139,7 +139,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     """
 
     desc = get_relay_extrainfo_descriptor({'pepperjack': 'is oh so tasty!'})
-    self.assertEquals(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
+    self.assertEqual(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
 
   def test_proceeding_line(self):
     """
@@ -174,8 +174,8 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     for entry in test_entries:
       desc_text = get_relay_extrainfo_descriptor({'extra-info': entry}, content = True)
       desc = self._expect_invalid_attr(desc_text, 'nickname')
-      self.assertEquals(None, desc.nickname)
-      self.assertEquals(None, desc.fingerprint)
+      self.assertEqual(None, desc.nickname)
+      self.assertEqual(None, desc.fingerprint)
 
   def test_geoip_db_digest(self):
     """
@@ -185,10 +185,10 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
     geoip_db_digest = '916A3CA8B7DF61473D5AE5B21711F35F301CE9E8'
     desc = get_relay_extrainfo_descriptor({'geoip-db-digest': geoip_db_digest})
-    self.assertEquals(geoip_db_digest, desc.geoip_db_digest)
+    self.assertEqual(geoip_db_digest, desc.geoip_db_digest)
 
     desc = get_relay_extrainfo_descriptor({'geoip6-db-digest': geoip_db_digest})
-    self.assertEquals(geoip_db_digest, desc.geoip6_db_digest)
+    self.assertEqual(geoip_db_digest, desc.geoip6_db_digest)
 
     test_entries = (
       '',
@@ -217,7 +217,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
     for entry in ('0', '11', '25'):
       desc = get_relay_extrainfo_descriptor({'cell-circuits-per-decile': entry})
-      self.assertEquals(int(entry), desc.cell_circuits_per_decile)
+      self.assertEqual(int(entry), desc.cell_circuits_per_decile)
 
     test_entries = (
       '',
@@ -242,11 +242,11 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
       test_value = 'ok=0,unavailable=0,not-found=984,not-modified=0,something-new=7'
       desc = get_relay_extrainfo_descriptor({keyword: test_value})
-      self.assertEquals(0, getattr(desc, attr)[DirResponse.OK])
-      self.assertEquals(0, getattr(desc, attr)[DirResponse.UNAVAILABLE])
-      self.assertEquals(984, getattr(desc, attr)[DirResponse.NOT_FOUND])
-      self.assertEquals(0, getattr(desc, attr)[DirResponse.NOT_MODIFIED])
-      self.assertEquals(7, getattr(desc, unknown_attr)['something-new'])
+      self.assertEqual(0, getattr(desc, attr)[DirResponse.OK])
+      self.assertEqual(0, getattr(desc, attr)[DirResponse.UNAVAILABLE])
+      self.assertEqual(984, getattr(desc, attr)[DirResponse.NOT_FOUND])
+      self.assertEqual(0, getattr(desc, attr)[DirResponse.NOT_MODIFIED])
+      self.assertEqual(7, getattr(desc, unknown_attr)['something-new'])
 
       test_entries = (
         'ok=-4',
@@ -272,23 +272,23 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
       test_value = 'complete=2712,timeout=32,running=4,min=741,d1=14507,d2=22702,q1=28881,d3=38277,d4=73729,md=111455,d6=168231,d7=257218,q3=319833,d8=390507,d9=616301,something-new=11,max=29917857'
       desc = get_relay_extrainfo_descriptor({keyword: test_value})
-      self.assertEquals(2712, getattr(desc, attr)[DirStat.COMPLETE])
-      self.assertEquals(32, getattr(desc, attr)[DirStat.TIMEOUT])
-      self.assertEquals(4, getattr(desc, attr)[DirStat.RUNNING])
-      self.assertEquals(741, getattr(desc, attr)[DirStat.MIN])
-      self.assertEquals(14507, getattr(desc, attr)[DirStat.D1])
-      self.assertEquals(22702, getattr(desc, attr)[DirStat.D2])
-      self.assertEquals(28881, getattr(desc, attr)[DirStat.Q1])
-      self.assertEquals(38277, getattr(desc, attr)[DirStat.D3])
-      self.assertEquals(73729, getattr(desc, attr)[DirStat.D4])
-      self.assertEquals(111455, getattr(desc, attr)[DirStat.MD])
-      self.assertEquals(168231, getattr(desc, attr)[DirStat.D6])
-      self.assertEquals(257218, getattr(desc, attr)[DirStat.D7])
-      self.assertEquals(319833, getattr(desc, attr)[DirStat.Q3])
-      self.assertEquals(390507, getattr(desc, attr)[DirStat.D8])
-      self.assertEquals(616301, getattr(desc, attr)[DirStat.D9])
-      self.assertEquals(29917857, getattr(desc, attr)[DirStat.MAX])
-      self.assertEquals(11, getattr(desc, unknown_attr)['something-new'])
+      self.assertEqual(2712, getattr(desc, attr)[DirStat.COMPLETE])
+      self.assertEqual(32, getattr(desc, attr)[DirStat.TIMEOUT])
+      self.assertEqual(4, getattr(desc, attr)[DirStat.RUNNING])
+      self.assertEqual(741, getattr(desc, attr)[DirStat.MIN])
+      self.assertEqual(14507, getattr(desc, attr)[DirStat.D1])
+      self.assertEqual(22702, getattr(desc, attr)[DirStat.D2])
+      self.assertEqual(28881, getattr(desc, attr)[DirStat.Q1])
+      self.assertEqual(38277, getattr(desc, attr)[DirStat.D3])
+      self.assertEqual(73729, getattr(desc, attr)[DirStat.D4])
+      self.assertEqual(111455, getattr(desc, attr)[DirStat.MD])
+      self.assertEqual(168231, getattr(desc, attr)[DirStat.D6])
+      self.assertEqual(257218, getattr(desc, attr)[DirStat.D7])
+      self.assertEqual(319833, getattr(desc, attr)[DirStat.Q3])
+      self.assertEqual(390507, getattr(desc, attr)[DirStat.D8])
+      self.assertEqual(616301, getattr(desc, attr)[DirStat.D9])
+      self.assertEqual(29917857, getattr(desc, attr)[DirStat.MAX])
+      self.assertEqual(11, getattr(desc, unknown_attr)['something-new'])
 
       test_entries = (
         'complete=-4',
@@ -308,12 +308,12 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     """
 
     desc = get_relay_extrainfo_descriptor({'conn-bi-direct': '2012-05-03 12:07:50 (500 s) 277431,12089,0,2134'})
-    self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.conn_bi_direct_end)
-    self.assertEquals(500, desc.conn_bi_direct_interval)
-    self.assertEquals(277431, desc.conn_bi_direct_below)
-    self.assertEquals(12089, desc.conn_bi_direct_read)
-    self.assertEquals(0, desc.conn_bi_direct_write)
-    self.assertEquals(2134, desc.conn_bi_direct_both)
+    self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.conn_bi_direct_end)
+    self.assertEqual(500, desc.conn_bi_direct_interval)
+    self.assertEqual(277431, desc.conn_bi_direct_below)
+    self.assertEqual(12089, desc.conn_bi_direct_read)
+    self.assertEqual(0, desc.conn_bi_direct_write)
+    self.assertEqual(2134, desc.conn_bi_direct_both)
 
     test_entries = (
       '',
@@ -332,12 +332,12 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     for entry in test_entries:
       desc_text = get_relay_extrainfo_descriptor({'conn-bi-direct': entry}, content = True)
       desc = self._expect_invalid_attr(desc_text)
-      self.assertEquals(None, desc.conn_bi_direct_end)
-      self.assertEquals(None, desc.conn_bi_direct_interval)
-      self.assertEquals(None, desc.conn_bi_direct_below)
-      self.assertEquals(None, desc.conn_bi_direct_read)
-      self.assertEquals(None, desc.conn_bi_direct_write)
-      self.assertEquals(None, desc.conn_bi_direct_both)
+      self.assertEqual(None, desc.conn_bi_direct_end)
+      self.assertEqual(None, desc.conn_bi_direct_interval)
+      self.assertEqual(None, desc.conn_bi_direct_below)
+      self.assertEqual(None, desc.conn_bi_direct_read)
+      self.assertEqual(None, desc.conn_bi_direct_write)
+      self.assertEqual(None, desc.conn_bi_direct_both)
 
   def test_percentage_lines(self):
     """
@@ -357,7 +357,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
       for test_value, expected_value in test_entries:
         desc = get_relay_extrainfo_descriptor({keyword: test_value})
-        self.assertEquals(expected_value, getattr(desc, attr))
+        self.assertEqual(expected_value, getattr(desc, attr))
 
       test_entries = (
         ('', None),
@@ -388,7 +388,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
       for test_value, expected_value in test_entries:
         desc = get_relay_extrainfo_descriptor({keyword: test_value})
-        self.assertEquals(expected_value, getattr(desc, attr))
+        self.assertEqual(expected_value, getattr(desc, attr))
 
       test_entries = (
         (',,11', [11.0]),
@@ -410,7 +410,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       attr = keyword.replace('-', '_')
 
       desc = get_relay_extrainfo_descriptor({keyword: '2012-05-03 12:07:50'})
-      self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, attr))
+      self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, attr))
 
       test_entries = (
         '',
@@ -434,8 +434,8 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       interval_attr = end_attr[:-4] + '_interval'
 
       desc = get_relay_extrainfo_descriptor({keyword: '2012-05-03 12:07:50 (500 s)'})
-      self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
-      self.assertEquals(500, getattr(desc, interval_attr))
+      self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
+      self.assertEqual(500, getattr(desc, interval_attr))
 
       test_entries = (
         '',
@@ -450,8 +450,8 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       for entry in test_entries:
         desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
         desc = self._expect_invalid_attr(desc_text)
-        self.assertEquals(None, getattr(desc, end_attr))
-        self.assertEquals(None, getattr(desc, interval_attr))
+        self.assertEqual(None, getattr(desc, end_attr))
+        self.assertEqual(None, getattr(desc, interval_attr))
 
   def test_timestamp_interval_and_value_lines(self):
     """
@@ -473,9 +473,9 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
       for test_values, expected_values in test_entries:
         desc = get_relay_extrainfo_descriptor({keyword: '2012-05-03 12:07:50 (500 s)%s' % test_values})
-        self.assertEquals(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
-        self.assertEquals(500, getattr(desc, interval_attr))
-        self.assertEquals(expected_values, getattr(desc, values_attr))
+        self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
+        self.assertEqual(500, getattr(desc, interval_attr))
+        self.assertEqual(expected_values, getattr(desc, values_attr))
 
       test_entries = (
         '',
@@ -491,9 +491,9 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       for entry in test_entries:
         desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
         desc = self._expect_invalid_attr(desc_text)
-        self.assertEquals(None, getattr(desc, end_attr))
-        self.assertEquals(None, getattr(desc, interval_attr))
-        self.assertEquals(None, getattr(desc, values_attr))
+        self.assertEqual(None, getattr(desc, end_attr))
+        self.assertEqual(None, getattr(desc, interval_attr))
+        self.assertEqual(None, getattr(desc, values_attr))
 
   def test_port_mapping_lines(self):
     """
@@ -512,7 +512,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
       for test_value, expected_value in test_entries:
         desc = get_relay_extrainfo_descriptor({keyword: test_value})
-        self.assertEquals(expected_value, getattr(desc, attr))
+        self.assertEqual(expected_value, getattr(desc, attr))
 
       test_entries = (
         '8000000=115533759',
@@ -543,7 +543,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
       for test_value, expected_value in test_entries:
         desc = get_relay_extrainfo_descriptor({keyword: test_value})
-        self.assertEquals(expected_value, getattr(desc, attr))
+        self.assertEqual(expected_value, getattr(desc, attr))
 
       test_entries = (
         'uk=-4',
@@ -563,10 +563,10 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
     desc = get_bridge_extrainfo_descriptor()
 
-    self.assertEquals('ec2bridgereaac65a3', desc.nickname)
-    self.assertEquals('1EC248422B57D9C0BD751892FE787585407479A4', desc.fingerprint)
-    self.assertEquals('006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4', desc.digest())
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual('ec2bridgereaac65a3', desc.nickname)
+    self.assertEqual('1EC248422B57D9C0BD751892FE787585407479A4', desc.fingerprint)
+    self.assertEqual('006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4', desc.digest())
+    self.assertEqual([], desc.get_unrecognized_lines())
 
     # check that we don't have crypto fields
     self.assertRaises(AttributeError, getattr, desc, 'signature')
@@ -577,10 +577,10 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     """
 
     desc = get_bridge_extrainfo_descriptor({'bridge-ip-versions': 'v4=16,v6=40'})
-    self.assertEquals({'v4': 16, 'v6': 40}, desc.ip_versions)
+    self.assertEqual({'v4': 16, 'v6': 40}, desc.ip_versions)
 
     desc = get_bridge_extrainfo_descriptor({'bridge-ip-versions': ''})
-    self.assertEquals({}, desc.ip_versions)
+    self.assertEqual({}, desc.ip_versions)
 
     desc_text = get_bridge_extrainfo_descriptor({'bridge-ip-versions': 'v4=24.5'}, content = True)
     self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text)
@@ -591,10 +591,10 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     """
 
     desc = get_bridge_extrainfo_descriptor({'bridge-ip-transports': '<OR>=16,<??>=40'})
-    self.assertEquals({'<OR>': 16, '<??>': 40}, desc.ip_transports)
+    self.assertEqual({'<OR>': 16, '<??>': 40}, desc.ip_transports)
 
     desc = get_bridge_extrainfo_descriptor({'bridge-ip-transports': ''})
-    self.assertEquals({}, desc.ip_transports)
+    self.assertEqual({}, desc.ip_transports)
 
     desc_text = get_bridge_extrainfo_descriptor({'bridge-ip-transports': '<OR>=24.5'}, content = True)
     self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text)
@@ -605,17 +605,17 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     """
 
     desc = get_bridge_extrainfo_descriptor({'transport': 'obfs3'})
-    self.assertEquals({'obfs3': (None, None, None)}, desc.transport)
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual({'obfs3': (None, None, None)}, desc.transport)
+    self.assertEqual([], desc.get_unrecognized_lines())
 
     desc = get_relay_extrainfo_descriptor({'transport': 'obfs2 83.212.96.201:33570'})
-    self.assertEquals({'obfs2': ('83.212.96.201', 33570, [])}, desc.transport)
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual({'obfs2': ('83.212.96.201', 33570, [])}, desc.transport)
+    self.assertEqual([], desc.get_unrecognized_lines())
 
     # multiple transport lines
     desc = get_bridge_extrainfo_descriptor({'transport': 'obfs3\ntransport obfs4'})
-    self.assertEquals({'obfs3': (None, None, None), 'obfs4': (None, None, None)}, desc.transport)
-    self.assertEquals([], desc.get_unrecognized_lines())
+    self.assertEqual({'obfs3': (None, None, None), 'obfs4': (None, None, None)}, desc.transport)
+    self.assertEqual([], desc.get_unrecognized_lines())
 
   def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
     """
@@ -631,9 +631,9 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       # check that the invalid attribute matches the expected value when
       # constructed without validation
 
-      self.assertEquals(expected_value, getattr(desc, attr))
+      self.assertEqual(expected_value, getattr(desc, attr))
     else:
       # check a default attribute
-      self.assertEquals('ninja', desc.nickname)
+      self.assertEqual('ninja', desc.nickname)
 
     return desc

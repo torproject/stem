@@ -4,8 +4,12 @@ Tests for the examples given in stem's tutorial.
 
 import collections
 import itertools
-import StringIO
 import unittest
+
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 import stem.response
 import stem.descriptor.remote
@@ -25,6 +29,8 @@ try:
   from unittest.mock import Mock, patch
 except ImportError:
   from mock import Mock, patch
+import sys
+oldstdout = sys.stdout
 
 CIRC_CONTENT = '650 CIRC %d %s \
 %s \
@@ -32,7 +38,7 @@ PURPOSE=%s'
 
 PATH_CONTENT = '$%s=%s,$%s=%s,$%s=%s'
 
-LIST_CIRCUITS_OUTPUT = """\
+LIST_CIRCUITS_OUTPUT = u"""\
 
 Circuit 4 (GENERAL)
  |- B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C (ByTORAndTheSnowDog, 173.209.180.61)
@@ -50,7 +56,7 @@ Circuit 10 (GENERAL)
  +- 65242C91BFF30F165DA4D132C81A9EBA94B71D62 (torexit16, 176.67.169.171)
 """
 
-EXIT_USED_OUTPUT = """\
+EXIT_USED_OUTPUT = u"""\
 Tracking requests for tor exits. Press 'enter' to end.
 
 Exit relay for our connection to 64.15.112.44:80
@@ -61,7 +67,7 @@ Exit relay for our connection to 64.15.112.44:80
 
 """
 
-OUTDATED_RELAYS_OUTPUT = """\
+OUTDATED_RELAYS_OUTPUT = u"""\
 Checking for outdated relays...
 
   0.1.0           Sambuddha Basu
@@ -127,7 +133,7 @@ def _get_router_status(address = None, port = None, nickname = None, fingerprint
 
 
 class TestTutorialExamples(unittest.TestCase):
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_list_circuits(self, from_port_mock, stdout_mock):
     def tutorial_example():
@@ -141,8 +147,7 @@ class TestTutorialExamples(unittest.TestCase):
           if circ.status != CircStatus.BUILT:
             continue
 
-          print
-          print "Circuit %s (%s)" % (circ.id, circ.purpose)
+          print("\nCircuit %s (%s)" % (circ.id, circ.purpose))
 
           for i, entry in enumerate(circ.path):
             div = '+' if (i == len(circ.path) - 1) else '|'
@@ -151,7 +156,7 @@ class TestTutorialExamples(unittest.TestCase):
             desc = controller.get_network_status(fingerprint, None)
             address = desc.address if desc else 'unknown'
 
-            print " %s- %s (%s, %s)" % (div, fingerprint, nickname, address)
+            print(" %s- %s (%s, %s)" % (div, fingerprint, nickname, address))
 
     path_1 = ('B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C', 'ByTORAndTheSnowDog')
     path_2 = ('0DD9935C5E939CFA1E07B8DDA6D91C1A2A9D9338', 'afo02')
@@ -181,7 +186,7 @@ class TestTutorialExamples(unittest.TestCase):
     tutorial_example()
     self.assertEqual(LIST_CIRCUITS_OUTPUT, stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_exit_used(self, from_port_mock, stdout_mock):
     def tutorial_example(mock_event):
@@ -191,8 +196,7 @@ class TestTutorialExamples(unittest.TestCase):
       from stem.control import EventType, Controller
 
       def main():
-        print "Tracking requests for tor exits. Press 'enter' to end."
-        print
+        print("Tracking requests for tor exits. Press 'enter' to end.\n")
 
         with Controller.from_port() as controller:
           controller.authenticate()
@@ -209,12 +213,11 @@ class TestTutorialExamples(unittest.TestCase):
           exit_fingerprint = circ.path[-1][0]
           exit_relay = controller.get_network_status(exit_fingerprint)
 
-          print "Exit relay for our connection to %s" % (event.target)
-          print "  address: %s:%i" % (exit_relay.address, exit_relay.or_port)
-          print "  fingerprint: %s" % exit_relay.fingerprint
-          print "  nickname: %s" % exit_relay.nickname
-          print "  locale: %s" % controller.get_info("ip-to-country/%s" % exit_relay.address, 'unknown')
-          print
+          print("Exit relay for our connection to %s" % (event.target))
+          print("  address: %s:%i" % (exit_relay.address, exit_relay.or_port))
+          print("  fingerprint: %s" % exit_relay.fingerprint)
+          print("  nickname: %s" % exit_relay.nickname)
+          print("  locale: %s\n" % controller.get_info("ip-to-country/%s" % exit_relay.address, 'unknown'))
 
       main()
 
@@ -232,10 +235,9 @@ class TestTutorialExamples(unittest.TestCase):
     controller.get_info.return_value = 'unknown'
 
     tutorial_example(event)
-
     self.assertEqual(EXIT_USED_OUTPUT, stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_outdated_relays(self, downloader_mock, stdout_mock):
     def tutorial_example():
@@ -245,19 +247,17 @@ class TestTutorialExamples(unittest.TestCase):
       downloader = DescriptorDownloader()
       count, with_contact = 0, 0
 
-      print "Checking for outdated relays..."
-      print
+      print("Checking for outdated relays...\n")
 
       for desc in downloader.get_server_descriptors():
         if desc.tor_version < Version('0.2.3.0'):
           count += 1
 
           if desc.contact:
-            print '  %-15s %s' % (desc.tor_version, desc.contact.decode("utf-8", "replace"))
+            print('  %-15s %s' % (desc.tor_version, desc.contact.decode("utf-8", "replace")))
             with_contact += 1
 
-      print
-      print "%i outdated relays found, %i had contact information" % (count, with_contact)
+      print("\n%i outdated relays found, %i had contact information" % (count, with_contact))
 
     downloader_mock().get_server_descriptors.return_value = [
       get_relay_server_descriptor({'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
@@ -270,7 +270,7 @@ class TestTutorialExamples(unittest.TestCase):
 
     self.assertEqual(OUTDATED_RELAYS_OUTPUT, stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.Query')
   @patch('stem.descriptor.remote.get_authorities')
   def test_compare_flags(self, get_authorities_mock, query_mock, stdout_mock):
@@ -282,7 +282,7 @@ class TestTutorialExamples(unittest.TestCase):
       downloader = remote.DescriptorDownloader(document_handler = DocumentHandler.DOCUMENT)
       queries = collections.OrderedDict()  # needed so output's order matches what's expected
 
-      for name, authority in remote.get_authorities().items():
+      for name, authority in list(remote.get_authorities().items()):
         if authority.v3ident is None:
           continue  # authority doens't vote if it lacks a v3ident
 
@@ -291,14 +291,14 @@ class TestTutorialExamples(unittest.TestCase):
       # Wait for the votes to finish being downloaded, this produces a dictionary of
       # authority nicknames to their vote.
 
-      votes = dict((name, query.run()[0]) for (name, query) in queries.items())
+      votes = dict((name, query.run()[0]) for (name, query) in list(queries.items()))
 
       # Get a superset of all the fingerprints in all the votes.
 
       all_fingerprints = set()
 
-      for vote in votes.values():
-        all_fingerprints.update(vote.routers.keys())
+      for vote in list(votes.values()):
+        all_fingerprints.update(list(vote.routers.keys()))
 
       # Finally, compare moria1's votes to maatuska.
 
@@ -307,15 +307,15 @@ class TestTutorialExamples(unittest.TestCase):
         maatuska_vote = votes['maatuska'].routers.get(fingerprint)
 
         if not moria1_vote and not maatuska_vote:
-          print "both moria1 and maatuska haven't voted about %s" % fingerprint
+          print("both moria1 and maatuska haven't voted about %s" % fingerprint)
         elif not moria1_vote:
-          print "moria1 hasn't voted about %s" % fingerprint
+          print("moria1 hasn't voted about %s" % fingerprint)
         elif not maatuska_vote:
-          print "maatuska hasn't voted about %s" % fingerprint
+          print("maatuska hasn't voted about %s" % fingerprint)
         elif 'Running' in moria1_vote.flags and 'Running' not in maatuska_vote.flags:
-          print "moria1 has the Running flag but maatuska doesn't: %s" % fingerprint
+          print("moria1 has the Running flag but maatuska doesn't: %s" % fingerprint)
         elif 'Running' in maatuska_vote.flags and 'Running' not in moria1_vote.flags:
-          print "maatuska has the Running flag but moria1 doesn't: %s" % fingerprint
+          print("maatuska has the Running flag but moria1 doesn't: %s" % fingerprint)
 
     get_authorities_mock().items.return_value = [('moria1', DIRECTORY_AUTHORITIES['moria1']), ('maatuska', DIRECTORY_AUTHORITIES['maatuska'])]
 
@@ -353,7 +353,7 @@ class TestTutorialExamples(unittest.TestCase):
     tutorial_example()
     self.assertEqual(COMPARE_FLAGS_OUTPUT, stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.get_authorities')
   @patch('stem.descriptor.remote.DescriptorDownloader.query')
   def test_votes_by_bandwidth_authorities(self, query_mock, get_authorities_mock, stdout_mock):
@@ -365,16 +365,16 @@ class TestTutorialExamples(unittest.TestCase):
       queries = {}
       downloader = remote.DescriptorDownloader()
 
-      for authority in remote.get_authorities().values():
+      for authority in list(remote.get_authorities().values()):
         if authority.is_bandwidth_authority:
           queries[authority.nickname] = downloader.query(
             '/tor/status-vote/current/authority',
             endpoints = [(authority.address, authority.dir_port)],
           )
 
-      for authority_name, query in queries.items():
+      for authority_name, query in list(queries.items()):
         try:
-          print "Getting %s's vote from %s:" % (authority_name, query.download_url)
+          print("Getting %s's vote from %s:" % (authority_name, query.download_url))
 
           measured, unmeasured = 0, 0
 
@@ -384,9 +384,9 @@ class TestTutorialExamples(unittest.TestCase):
             else:
               unmeasured += 1
 
-          print '  %i measured entries and %i unmeasured' % (measured, unmeasured)
+          print('  %i measured entries and %i unmeasured' % (measured, unmeasured))
         except Exception as exc:
-          print "  failed to get the vote (%s)" % exc
+          print("  failed to get the vote (%s)" % exc)
 
     directory_values = [
       DIRECTORY_AUTHORITIES['gabelmoo'],
@@ -422,7 +422,7 @@ class TestTutorialExamples(unittest.TestCase):
     tutorial_example()
     self.assertEqual(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT, stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.parse_file')
   @patch('%s.open' % __name__, create = True)
   @patch('stem.descriptor.remote.Query')
@@ -446,8 +446,8 @@ class TestTutorialExamples(unittest.TestCase):
         document_handler = DocumentHandler.DOCUMENT,
       ))
 
-      for fingerprint, relay in consensus.routers.items():
-        print "%s: %s" % (fingerprint, relay.nickname)
+      for fingerprint, relay in list(consensus.routers.items()):
+        print("%s: %s" % (fingerprint, relay.nickname))
 
     network_status = get_network_status_document_v3(routers = (get_router_status_entry_v3(),))
     query_mock().run.return_value = [network_status]

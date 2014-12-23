@@ -34,13 +34,13 @@ class TestBridgeNetworkStatusDocument(unittest.TestCase):
 
     with open(consensus_path, 'rb') as descriptor_file:
       router = next(stem.descriptor.parse_file(descriptor_file))
-      self.assertEquals('Unnamed', router.nickname)
-      self.assertEquals('0014A2055278DB3EB0E59EA701741416AF185558', router.fingerprint)
-      self.assertEquals('148EF8685B8D259650AE0967D1FF8E6A870C7743', router.digest)
-      self.assertEquals(datetime.datetime(2012, 5, 31, 15, 57, 0), router.published)
-      self.assertEquals('10.97.236.247', router.address)
-      self.assertEquals(443, router.or_port)
-      self.assertEquals(None, router.dir_port)
+      self.assertEqual('Unnamed', router.nickname)
+      self.assertEqual('0014A2055278DB3EB0E59EA701741416AF185558', router.fingerprint)
+      self.assertEqual('148EF8685B8D259650AE0967D1FF8E6A870C7743', router.digest)
+      self.assertEqual(datetime.datetime(2012, 5, 31, 15, 57, 0), router.published)
+      self.assertEqual('10.97.236.247', router.address)
+      self.assertEqual(443, router.or_port)
+      self.assertEqual(None, router.dir_port)
 
   def test_metrics_cert(self):
     """
@@ -80,17 +80,17 @@ GM9hAsAMRX9Ogqhq5UjDNqEsvDKuyVeyh7unSZEOip9Zr6K/+7VsVPNb8vfBRBjo
 
     with open(cert_path, 'rb') as cert_file:
       cert = next(stem.descriptor.parse_file(cert_file))
-      self.assertEquals(3, cert.version)
-      self.assertEquals(None, cert.address)
-      self.assertEquals(None, cert.dir_port)
-      self.assertEquals('14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4', cert.fingerprint)
-      self.assertEquals(expected_identity_key, cert.identity_key)
-      self.assertEquals(datetime.datetime(2008, 5, 9, 21, 13, 26), cert.published)
-      self.assertEquals(datetime.datetime(2009, 5, 9, 21, 13, 26), cert.expires)
-      self.assertEquals(expected_signing_key, cert.signing_key)
-      self.assertEquals(None, cert.crosscert)
-      self.assertEquals(expected_key_cert, cert.certification)
-      self.assertEquals([], cert.get_unrecognized_lines())
+      self.assertEqual(3, cert.version)
+      self.assertEqual(None, cert.address)
+      self.assertEqual(None, cert.dir_port)
+      self.assertEqual('14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4', cert.fingerprint)
+      self.assertEqual(expected_identity_key, cert.identity_key)
+      self.assertEqual(datetime.datetime(2008, 5, 9, 21, 13, 26), cert.published)
+      self.assertEqual(datetime.datetime(2009, 5, 9, 21, 13, 26), cert.expires)
+      self.assertEqual(expected_signing_key, cert.signing_key)
+      self.assertEqual(None, cert.crosscert)
+      self.assertEqual(expected_key_cert, cert.certification)
+      self.assertEqual([], cert.get_unrecognized_lines())
 
   def test_empty_document(self):
     """
@@ -111,5 +111,5 @@ GM9hAsAMRX9Ogqhq5UjDNqEsvDKuyVeyh7unSZEOip9Zr6K/+7VsVPNb8vfBRBjo
     self.assertEqual(datetime.datetime(2012, 6, 1, 4, 7, 4), document.published)
 
     self.assertEqual(2, len(document.routers))
-    self.assertEqual(set(['Unnamed', 'TolFuin']), set([desc.nickname for desc in document.routers.values()]))
+    self.assertEqual(set(['Unnamed', 'TolFuin']), set([desc.nickname for desc in list(document.routers.values())]))
     self.assertEqual([], document.get_unrecognized_lines())

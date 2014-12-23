@@ -204,8 +204,8 @@ def get_all_combinations(attr, include_empty = False):
     yield ()
 
   seen = set()
-  for index in xrange(1, len(attr) + 1):
-    product_arg = [attr for _ in xrange(index)]
+  for index in range(1, len(attr) + 1):
+    product_arg = [attr for _ in range(index)]
 
     for item in itertools.product(*product_arg):
       # deduplicate, sort, and only provide if we haven't seen it yet
@@ -323,7 +323,7 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
 
   remainder = []
 
-  for k, v in attr.items():
+  for k, v in list(attr.items()):
     if v:
       remainder.append('%s %s' % (k, v))
     else:
@@ -605,7 +605,7 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
       'consensus-method': '9',
     }
 
-  for k, v in extra_defaults.items():
+  for k, v in list(extra_defaults.items()):
     if not (k in attr or (exclude and k in exclude)):
       attr[k] = v
 

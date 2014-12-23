@@ -2,9 +2,13 @@
 Integration tests for the connect_* convenience functions.
 """
 
-import StringIO
 import sys
 import unittest
+
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 import stem.connection
 import test.runner
@@ -14,7 +18,7 @@ class TestConnect(unittest.TestCase):
   def setUp(self):
     # prevents the function from printing to the real stdout
     self.original_stdout = sys.stdout
-    sys.stdout = StringIO.StringIO()
+    sys.stdout = StringIO()
 
   def tearDown(self):
     sys.stdout = self.original_stdout
@@ -58,7 +62,7 @@ class TestConnect(unittest.TestCase):
       test.runner.exercise_controller(self, control_socket)
       control_socket.close()
     else:
-      self.assertEquals(control_socket, None)
+      self.assertEqual(control_socket, None)
 
   def test_connect_socket_file(self):
     """
@@ -80,4 +84,4 @@ class TestConnect(unittest.TestCase):
       test.runner.exercise_controller(self, control_socket)
       control_socket.close()
     else:
-      self.assertEquals(control_socket, None)
+      self.assertEqual(control_socket, None)

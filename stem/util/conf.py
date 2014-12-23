@@ -359,7 +359,7 @@ def parse_enum_csv(key, value, enumeration, count = None):
     raise ValueError("The count must be None, an int, or two value tuple. Got '%s' (%s)'" % (count, type(count)))
 
   result = []
-  enum_keys = [k.upper() for k in enumeration.keys()]
+  enum_keys = [k.upper() for k in list(enumeration.keys())]
   enum_values = list(enumeration)
 
   for val in values:
@@ -576,7 +576,7 @@ class Config(object):
       self._listeners.append(listener)
 
       if backfill:
-        for key in self.keys():
+        for key in list(self.keys()):
           listener(self, key)
 
   def clear_listeners(self):
@@ -593,7 +593,7 @@ class Config(object):
     :returns: **list** if strings for the configuration keys we've loaded
     """
 
-    return self._contents.keys()
+    return list(self._contents.keys())
 
   def unused_keys(self):
     """

@@ -31,7 +31,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     queries = []
 
-    for nickname, authority in stem.descriptor.remote.get_authorities().items():
+    for nickname, authority in list(stem.descriptor.remote.get_authorities().items()):
       queries.append((stem.descriptor.remote.Query(
         '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
         'server-descriptor 1.0',

@@ -40,6 +40,8 @@ constructed as simple type listings...
     +- __iter__ - iterator over our enum keys
 """
 
+from stem._compat import unicode
+
 
 def UppercaseEnum(*args):
   """
@@ -158,7 +160,7 @@ class Enum(object):
     if item in vars(self):
       return getattr(self, item)
     else:
-      keys = ', '.join(self.keys())
+      keys = ', '.join(list(self.keys()))
       raise ValueError("'%s' isn't among our enumeration keys, which includes: %s" % (item, keys))
 
   def __iter__(self):

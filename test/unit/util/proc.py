@@ -2,7 +2,6 @@
 Unit testing code for the stem.util.proc functions.
 """
 
-import StringIO
 import unittest
 
 from stem.util import proc
@@ -11,9 +10,10 @@ from test import mocking
 try:
   # added in python 3.3
   from unittest.mock import Mock, patch
+  from io import StringIO
 except ImportError:
   from mock import Mock, patch
-
+  from StringIO import StringIO
 
 class TestProc(unittest.TestCase):
   @patch('stem.util.proc._get_line')
@@ -26,7 +26,7 @@ class TestProc(unittest.TestCase):
       ('/proc/stat', 'btime', 'system start time'): 'btime 1001001',
     }[params]
 
-    self.assertEquals(1001001, proc.system_start_time())
+    self.assertEqual(1001001, proc.system_start_time())
 
   @patch('stem.util.proc._get_line')
   def test_physical_memory(self, get_line_mock):
@@ -38,7 +38,7 @@ class TestProc(unittest.TestCase):
       ('/proc/meminfo', 'MemTotal:', 'system physical memory'): 'MemTotal:       12345 kB',
     }[params]
 
-    self.assertEquals((12345 * 1024), proc.physical_memory())
+    self.assertEqual((12345 * 1024), proc.physical_memory())
 
   @patch('os.readlink')
   def test_cwd(self, readlink_mock):
@@ -50,7 +50,7 @@ class TestProc(unittest.TestCase):
       '/proc/24019/cwd': '/home/directory/TEST'
     }[param]
 
-    self.assertEquals('/home/directory/TEST', proc.cwd(24019))
+    self.assertEqual('/home/directory/TEST', proc.cwd(24019))
 
   @patch('stem.util.proc._get_line')
   def test_uid(self, get_line_mock):
@@ -65,7 +65,7 @@ class TestProc(unittest.TestCase):
         ('/proc/%s/status' % pid, 'Uid:', 'uid'): 'Uid: %s' % uid,
       }[params]
 
-      self.assertEquals(uid, proc.uid(pid))
+      self.assertEqual(uid, proc.uid(pid))
 
   @patch('stem.util.proc._get_lines')
   def test_memory_usage(self, get_lines_mock):
@@ -105,7 +105,7 @@ class TestProc(unittest.TestCase):
       (stat_path, '24062', 'process '): stat
     }[params]
 
-    self.assertEquals((), proc.stats(24062))
+    self.assertEqual((), proc.stats(24062))
 
     for stats in stat_combinations:
       # the stats variable is...
@@ -114,13 +114,13 @@ class TestProc(unittest.TestCase):
       # but we need...
       #   (arg1, arg2...), (resp1, resp2...).
 
-      args, response = zip(*stats)
+      args, response = list(zip(*stats))
 
       get_line_mock.side_effect = lambda *params: {
         (stat_path, '24062', 'process %s' % ', '.join(args)): stat
       }[params]
 
-      self.assertEquals(response, proc.stats(24062, *args))
+      self.assertEqual(response, proc.stats(24062, *args))
 
       # tests the case where pid = 0
 
@@ -141,7 +141,7 @@ class TestProc(unittest.TestCase):
         ('/proc/0/stat', '0', 'process %s' % ', '.join(args)): stat
       }[params]
 
-      self.assertEquals(response, proc.stats(0, *args))
+      self.assertEqual(response, proc.stats(0, *args))
 
   @patch('os.listdir')
   def test_file_descriptors_used(self, listdir_mock):
@@ -199,16 +199,16 @@ class TestProc(unittest.TestCase):
     udp = '\n A: BBBBBBBB:BBBB CCCCCCCC:CCCC DD EEEEEEEE:EEEEEEEE FF:FFFFFFFF GGGGGGGG 1111 H IIIIIIII'
 
     open_mock.side_effect = lambda param: {
-      '/proc/net/tcp': StringIO.StringIO(tcp),
-      '/proc/net/udp': StringIO.StringIO(udp)
+      '/proc/net/tcp': StringIO(tcp),
+      '/proc/net/udp': StringIO(udp)
     }[param]
 
     # tests the edge case of pid = 0
-    self.assertEquals([], proc.connections(0))
+    self.assertEqual([], proc.connections(0))
 
     expected_results = [
       ('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp'),
       ('187.187.187.187', 48059, '204.204.204.204', 52428, 'udp'),
     ]
 
-    self.assertEquals(expected_results, proc.connections(pid))
+    self.assertEqual(expected_results, proc.connections(pid))

@@ -585,7 +585,7 @@ class TestControl(unittest.TestCase):
         ],
     }
 
-    for test_input, expected in pydoc_examples.items():
+    for test_input, expected in list(pydoc_examples.items()):
       self.assertEqual(expected, _parse_circ_path(test_input))
 
     # exercise with some invalid inputs
