@@ -537,7 +537,7 @@ class DescriptorReader(object):
                 return
 
               desc._set_path(os.path.abspath(target))
-              desc._set_archive_path(entry.name)
+              desc._set_archive_path(tar_entry.name)
               self._unreturned_descriptors.put(desc)
               self._iter_notice.set()
           except TypeError as exc:
