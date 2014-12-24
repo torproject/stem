@@ -2,6 +2,7 @@
 Tests for the examples given in stem's tutorial.
 """
 
+import collections
 import itertools
 import StringIO
 import unittest
@@ -279,7 +280,7 @@ class TestTutorialExamples(unittest.TestCase):
       # Query all authority votes asynchronously.
 
       downloader = remote.DescriptorDownloader(document_handler = DocumentHandler.DOCUMENT)
-      queries = {}
+      queries = collections.OrderedDict()  # needed so output's order matches what's expected
 
       for name, authority in remote.get_authorities().items():
         if authority.v3ident is None:
