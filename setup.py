@@ -53,6 +53,6 @@ setup(
   cmdclass = {'build_py': build_py},
   keywords = 'tor onion controller',
   scripts = ['tor-prompt'],
-  package_data = { 'stem.interpreter': ['settings.cfg']},
+  package_data = {'stem.interpreter': ['settings.cfg'], 'stem.util': ['ports.cfg']},
 )
 

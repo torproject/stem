@@ -41,6 +41,10 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Utilities**
+
+  * :func:`stem.util.connection.port_usage` always returned None (:trac:`14046`)
+
 .. _version_1.3:
 
 Version 1.3
