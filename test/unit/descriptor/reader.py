@@ -18,6 +18,7 @@ import test.runner
 import test.unit.descriptor
 
 from stem.util import system
+from stem._compat import str_type
 
 try:
   # added in python 3.3
@@ -90,13 +91,13 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     test_lines = (
-      u'/dir/ 0',
-      u'/dir/file 12345',
-      u'/dir/file with spaces 7138743',
-      u'  /dir/with extra space 12345   ',
-      u'   \t   ',
-      u'',
-      u'/dir/after empty line 12345',
+      str_type('/dir/ 0'),
+      str_type('/dir/file 12345'),
+      str_type('/dir/file with spaces 7138743'),
+      str_type('  /dir/with extra space 12345   '),
+      str_type('   \t   '),
+      str_type(''),
+      str_type('/dir/after empty line 12345'),
     )
 
     expected_value = {
@@ -107,7 +108,7 @@ class TestDescriptorReader(unittest.TestCase):
       '/dir/after empty line': 12345,
     }
 
-    open_mock.return_value = StringIO(u'\n'.join(test_lines))
+    open_mock.return_value = StringIO(str_type('\n'.join(test_lines)))
     self.assertEqual(expected_value, stem.descriptor.reader.load_processed_files(''))
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -116,7 +117,7 @@ class TestDescriptorReader(unittest.TestCase):
     Tests the load_processed_files() function with an empty file.
     """
 
-    open_mock.return_value = StringIO(u'')
+    open_mock.return_value = StringIO(str_type(''))
     self.assertEqual({}, stem.descriptor.reader.load_processed_files(''))
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -126,7 +127,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is missing the file path.
     """
 
-    open_mock.return_value = StringIO(u' 12345')
+    open_mock.return_value = StringIO(str_type(' 12345'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -136,7 +137,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is missing the timestamp.
     """
 
-    open_mock.return_value = StringIO(u'/dir/file ')
+    open_mock.return_value = StringIO(str_type('/dir/file '))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -146,7 +147,7 @@ class TestDescriptorReader(unittest.TestCase):
     it has an invalid file path.
     """
 
-    open_mock.return_value = StringIO(u'not_an_absolute_file 12345')
+    open_mock.return_value = StringIO(str_type('not_an_absolute_file 12345'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -156,7 +157,7 @@ class TestDescriptorReader(unittest.TestCase):
     it has a non-numeric timestamp.
     """
 
-    open_mock.return_value = StringIO(u'/dir/file 123a')
+    open_mock.return_value = StringIO(str_type('/dir/file 123a'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   def test_load_processed_files_from_data(self):

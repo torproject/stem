@@ -10,6 +10,7 @@ import stem.descriptor
 import stem.version
 
 from stem import Flag
+from stem._compat import str_type
 
 from stem.descriptor.networkstatus import (
   HEADER_STATUS_DOCUMENT_FIELDS,
@@ -751,9 +752,9 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     test_values = (
       ('', {}),
-      ('fast-speed=40960', {u'fast-speed': 40960}),    # numeric value
-      ('guard-wfu=94.669%', {u'guard-wfu': 0.94669}),  # percentage value
-      ('guard-wfu=94.669% guard-tk=691200', {u'guard-wfu': 0.94669, u'guard-tk': 691200}),  # multiple values
+      ('fast-speed=40960', {str_type('fast-speed'): 40960}),    # numeric value
+      ('guard-wfu=94.669%', {str_type('guard-wfu'): 0.94669}),  # percentage value
+      ('guard-wfu=94.669% guard-tk=691200', {str_type('guard-wfu'): 0.94669, str_type('guard-tk'): 691200}),  # multiple values
     )
 
     for test_value, expected_value in test_values:
@@ -765,14 +766,14 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     full_line = 'stable-uptime=693369 stable-mtbf=153249 fast-speed=40960 guard-wfu=94.669% guard-tk=691200 guard-bw-inc-exits=174080 guard-bw-exc-exits=184320 enough-mtbf=1'
 
     expected_value = {
-      u'stable-uptime': 693369,
-      u'stable-mtbf': 153249,
-      u'fast-speed': 40960,
-      u'guard-wfu': 0.94669,
-      u'guard-tk': 691200,
-      u'guard-bw-inc-exits': 174080,
-      u'guard-bw-exc-exits': 184320,
-      u'enough-mtbf': 1,
+      str_type('stable-uptime'): 693369,
+      str_type('stable-mtbf'): 153249,
+      str_type('fast-speed'): 40960,
+      str_type('guard-wfu'): 0.94669,
+      str_type('guard-tk'): 691200,
+      str_type('guard-bw-inc-exits'): 174080,
+      str_type('guard-bw-exc-exits'): 184320,
+      str_type('enough-mtbf'): 1,
     }
 
     document = get_network_status_document_v3({'vote-status': 'vote', 'flag-thresholds': full_line})

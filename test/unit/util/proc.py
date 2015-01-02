@@ -8,12 +8,15 @@ from stem.util import proc
 from test import mocking
 
 try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
+  from StringIO import StringIO
+except ImportError:
   from io import StringIO
+
+try:
+  from unittest.mock import Mock, patch
 except ImportError:
   from mock import Mock, patch
-  from StringIO import StringIO
+
 
 class TestProc(unittest.TestCase):
   @patch('stem.util.proc._get_line')

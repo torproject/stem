@@ -14,6 +14,7 @@ import stem.version
 import stem.util.str_tools
 
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
+from stem._compat import str_type
 
 from test.mocking import (
   get_relay_server_descriptor,
@@ -30,9 +31,9 @@ except ImportError:
   from mock import Mock, patch
 
 TARFILE_FINGERPRINTS = set([
-  u'B6D83EC2D9E18B0A7A33428F8CFA9C536769E209',
-  u'E0BD57A11F00041A9789577C53A1B784473669E4',
-  u'1F43EE37A0670301AD9CB555D94AFEC2C89FDE86',
+  str_type('B6D83EC2D9E18B0A7A33428F8CFA9C536769E209'),
+  str_type('E0BD57A11F00041A9789577C53A1B784473669E4'),
+  str_type('1F43EE37A0670301AD9CB555D94AFEC2C89FDE86'),
 ])
 
 

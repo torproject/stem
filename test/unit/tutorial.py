@@ -11,12 +11,16 @@ from stem.descriptor.server_descriptor import RelayDescriptor
 from test import mocking
 
 try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
+
+try:
   # added in python 3.3
   from unittest.mock import Mock, patch
-  from io import StringIO
 except ImportError:
   from mock import Mock, patch
-  from StringIO import StringIO
+
 
 OVER_THE_RIVER_OUTPUT = """\
  * Connecting to tor

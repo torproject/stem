@@ -46,6 +46,7 @@ import stem.util.tor_tools
 import stem.version
 
 from stem.util import log
+from stem._compat import str_type
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -297,7 +298,7 @@ class ServerDescriptor(Descriptor):
 
     entries, policy = _get_descriptor_components(raw_contents, validate, ('accept', 'reject'))
 
-    if policy == [u'reject *:*']:
+    if policy == [str_type('reject *:*')]:
       self.exit_policy = REJECT_ALL_POLICY
     else:
       self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
