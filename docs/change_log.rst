@@ -44,6 +44,7 @@ The following are only available within Stem's `git repository
  * **Utilities**
 
   * :func:`stem.util.connection.port_usage` always returned None (:trac:`14046`)
+  * Proc connection resolution could fail on especially busy systems (:trac:`14048`)
 
 .. _version_1.3:
 

@@ -365,9 +365,12 @@ def connections(pid):
 
       if fd_name.startswith('socket:['):
         inodes.append(fd_name[8:-1])
-    except OSError:
+    except OSError as exc:
+      if not os.path.exists(fd_path):
+        continue  # descriptors may shift while we're in the middle of iterating over them
+
       # most likely couldn't be read due to permissions
-      exc = IOError('unable to determine file descriptor destination: %s' % fd_path)
+      exc = IOError('unable to determine file descriptor destination (%s): %s' % (exc, fd_path))
       _log_failure(parameter, exc)
       raise exc
 
