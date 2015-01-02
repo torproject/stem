@@ -258,7 +258,7 @@ import stem.version
 
 from stem import UNDEFINED, CircStatus, Signal
 from stem.util import log
-from stem._compat import unicode
+from stem._compat import str_type
 
 # state changes a control socket can have
 
@@ -992,7 +992,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if isinstance(params, (bytes, unicode)):
+    if isinstance(params, (bytes, str_type)):
       is_multiple = False
       params = set([params])
     else:
@@ -1887,7 +1887,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if isinstance(params, (bytes, unicode)):
+    if isinstance(params, (bytes, str_type)):
       params = [params]
 
     # remove strings which contain only whitespace
@@ -2077,7 +2077,7 @@ class Controller(BaseController):
         for param, value in params:
           param = param.lower()
 
-          if isinstance(value, (bytes, unicode)):
+          if isinstance(value, (bytes, str_type)):
             value = [value]
 
           to_cache[param] = value
@@ -2635,7 +2635,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidArguments` if features passed were invalid
     """
 
-    if isinstance(features, (bytes, unicode)):
+    if isinstance(features, (bytes, str_type)):
       features = [features]
 
     response = self.msg('USEFEATURE %s' % ' '.join(features))
@@ -2780,7 +2780,7 @@ class Controller(BaseController):
 
       args = [circuit_id]
 
-      if isinstance(path, (bytes, unicode)):
+      if isinstance(path, (bytes, str_type)):
         path = [path]
 
       if path:

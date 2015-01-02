@@ -51,7 +51,7 @@ import stem.util.proc
 import stem.util.system
 
 from stem.util import conf, enum, log
-from stem._compat import unicode
+from stem._compat import str_type
 
 # Connection resolution is risky to log about since it's highly likely to
 # contain sensitive information. That said, it's also difficult to get right in
@@ -337,7 +337,7 @@ def is_valid_ipv4_address(address):
   :returns: **True** if input is a valid IPv4 address, **False** otherwise
   """
 
-  if not isinstance(address, (bytes, unicode)):
+  if not isinstance(address, (bytes, str_type)):
     return False
 
   # checks if theres four period separated values

@@ -9,7 +9,10 @@ try:
 except ImportError:
   from io import StringIO
 
-from mock import Mock, patch
+try:
+  from mock import Mock, patch
+except ImportError:
+  from unittest.mock import Mock, patch
 
 import stem
 import stem.connection

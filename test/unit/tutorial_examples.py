@@ -280,7 +280,7 @@ class TestTutorialExamples(unittest.TestCase):
       # Query all authority votes asynchronously.
 
       downloader = remote.DescriptorDownloader(document_handler = DocumentHandler.DOCUMENT)
-      queries = collections.OrderedDict()  # needed so output's order matches what's expected
+      queries = {}
 
       for name, authority in list(remote.get_authorities().items()):
         if authority.v3ident is None:

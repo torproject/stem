@@ -90,7 +90,7 @@ except ImportError:
 import stem.descriptor
 import stem.prereq
 import stem.util.system
-from stem._compat import unicode
+from stem._compat import str_type
 
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = 'DONE'
@@ -263,7 +263,7 @@ class DescriptorReader(object):
   """
 
   def __init__(self, target, validate = True, follow_links = False, buffer_size = 100, persistence_path = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
-    if isinstance(target, (bytes, unicode)):
+    if isinstance(target, (bytes, str_type)):
       self._targets = [target]
     else:
       self._targets = target

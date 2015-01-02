@@ -28,7 +28,7 @@ import sys
 
 import stem.prereq
 import stem.util.enum
-from stem._compat import unicode
+from stem._compat import str_type
 
 
 # label conversion tuples of the form...
@@ -74,13 +74,13 @@ if stem.prereq.is_python_3():
       return msg
 else:
   def _to_bytes_impl(msg):
-    if msg is not None and isinstance(msg, unicode):
+    if msg is not None and isinstance(msg, str_type):
       return codecs.latin_1_encode(msg, 'replace')[0]
     else:
       return msg
 
   def _to_unicode_impl(msg):
-    if msg is not None and not isinstance(msg, unicode):
+    if msg is not None and not isinstance(msg, str_type):
       return msg.decode('utf-8', 'replace')
     else:
       return msg
@@ -455,7 +455,7 @@ def _parse_timestamp(entry):
   :raises: **ValueError** if the timestamp is malformed
   """
 
-  if not isinstance(entry, (str, unicode)):
+  if not isinstance(entry, (str, str_type)):
     raise ValueError('parse_timestamp() input must be a str, got a %s' % type(entry))
 
   try:
@@ -481,7 +481,7 @@ def _parse_iso_timestamp(entry):
   :raises: **ValueError** if the timestamp is malformed
   """
 
-  if not isinstance(entry, (str, unicode)):
+  if not isinstance(entry, (str, str_type)):
     raise ValueError('parse_iso_timestamp() input must be a str, got a %s' % type(entry))
 
   # based after suggestions from...

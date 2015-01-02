@@ -75,7 +75,7 @@ import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
 
-from stem._compat import unicode
+from stem._compat import str_type
 
 try:
   # added in python 3.2
@@ -121,7 +121,7 @@ def get_config_policy(rules, ip_address = None):
   if ip_address and not (stem.util.connection.is_valid_ipv4_address(ip_address) or stem.util.connection.is_valid_ipv6_address(ip_address)):
     raise ValueError("%s isn't a valid IP address" % ip_address)
 
-  if isinstance(rules, (bytes, unicode)):
+  if isinstance(rules, (bytes, str_type)):
     rules = rules.split(',')
 
   result = []
@@ -238,7 +238,7 @@ class ExitPolicy(object):
     # sanity check the types
 
     for rule in rules:
-      if not isinstance(rule, (bytes, unicode, ExitPolicyRule)):
+      if not isinstance(rule, (bytes, str_type, ExitPolicyRule)):
         raise TypeError('Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)' % (type(rule), rules))
 
     # Unparsed representation of the rules we were constructed with. Our
@@ -249,7 +249,7 @@ class ExitPolicy(object):
     is_all_str = True
 
     for rule in rules:
-      if not isinstance(rule, (bytes, unicode)):
+      if not isinstance(rule, (bytes, str_type)):
         is_all_str = False
 
     if rules and is_all_str:
@@ -458,7 +458,7 @@ class ExitPolicy(object):
         if isinstance(rule, bytes):
           rule = stem.util.str_tools._to_unicode(rule)
 
-        if isinstance(rule, unicode):
+        if isinstance(rule, str_type):
           rule = ExitPolicyRule(rule.strip())
 
         if rule.is_accept:

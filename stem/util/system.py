@@ -56,7 +56,7 @@ import stem.util.str_tools
 
 from stem import UNDEFINED
 from stem.util import log
-from stem._compat import unicode
+from stem._compat import str_type
 
 # Mapping of commands to if they're available or not.
 
@@ -243,7 +243,7 @@ def is_running(command):
       command_listing = call(secondary_resolver, None)
 
     if command_listing:
-      command_listing = list(map(unicode.strip, command_listing))
+      command_listing = list(map(str_type.strip, command_listing))
       return command in command_listing
 
   return None

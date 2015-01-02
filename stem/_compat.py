@@ -6,11 +6,11 @@ PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 
 if PY3:
-    unicode = str
+    str_type = str
 else:
-    unicode = unicode  # NOQA
+    str_type = unicode  # NOQA
 
 if PY3:
-    long = int
+    int_type = int
 else:
-    long = long  # NOQA
+    int_type = long  # NOQA

@@ -40,7 +40,7 @@ constructed as simple type listings...
     +- __iter__ - iterator over our enum keys
 """
 
-from stem._compat import unicode
+from stem._compat import str_type
 
 
 def UppercaseEnum(*args):
@@ -76,7 +76,7 @@ class Enum(object):
     keys, values = [], []
 
     for entry in args:
-      if isinstance(entry, (bytes, unicode)):
+      if isinstance(entry, (bytes, str_type)):
         key, val = entry, _to_camel_case(entry)
       elif isinstance(entry, tuple) and len(entry) == 2:
         key, val = entry
