@@ -123,7 +123,7 @@ class Event(stem.response.ControlMessage):
 
       setattr(self, attr_name, attr_value)
 
-    for controller_attr_name, attr_name in list(self._KEYWORD_ARGS.items()):
+    for controller_attr_name, attr_name in self._KEYWORD_ARGS.items():
       setattr(self, attr_name, self.keyword_args.get(controller_attr_name))
 
   # method overwritten by our subclasses for special handling that they do

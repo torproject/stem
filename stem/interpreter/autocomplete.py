@@ -70,7 +70,7 @@ def _get_commands(controller, config):
 
   usage_info = config.get('help.usage', {})
 
-  for cmd in list(usage_info.keys()):
+  for cmd in usage_info.keys():
     commands.append('/help ' + cmd)
 
   return commands

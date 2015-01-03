@@ -143,7 +143,7 @@ class TestStrTools(unittest.TestCase):
         datetime.datetime(2012, 11, 8, 16, 48, 41, 0),
     }
 
-    for arg, expected in list(test_inputs.items()):
+    for arg, expected in test_inputs.items():
       self.assertEqual(expected, str_tools._parse_iso_timestamp(arg))
 
     invalid_input = [

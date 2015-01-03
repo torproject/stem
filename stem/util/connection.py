@@ -304,7 +304,7 @@ def port_usage(port):
       config.load(config_path)
       port_uses = {}
 
-      for key, value in list(config.get('port', {}).items()):
+      for key, value in config.get('port', {}).items():
         if key.isdigit():
          port_uses[int(key)] = value
         elif '-' in key:

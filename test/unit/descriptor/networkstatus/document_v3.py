@@ -383,7 +383,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     consensus = NetworkStatusDocumentV3(consensus_file.read())
     consensus_file.close()
 
-    for router in list(consensus.routers.values()):
+    for router in consensus.routers.values():
       self.assertEqual('caerSidi', router.nickname)
 
     # second example: using stem.descriptor.parse_file
@@ -1048,8 +1048,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     document = get_network_status_document_v3(routers = (entry1, entry2))
 
-    self.assertTrue(entry1 in list(document.routers.values()))
-    self.assertTrue(entry2 in list(document.routers.values()))
+    self.assertTrue(entry1 in document.routers.values())
+    self.assertTrue(entry2 in document.routers.values())
 
     # try with an invalid RouterStatusEntry
 
@@ -1082,8 +1082,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     document = get_network_status_document_v3({'network-status-version': '3 microdesc'}, routers = (entry1, entry2))
 
-    self.assertTrue(entry1 in list(document.routers.values()))
-    self.assertTrue(entry2 in list(document.routers.values()))
+    self.assertTrue(entry1 in document.routers.values())
+    self.assertTrue(entry2 in document.routers.values())
 
     # try with an invalid RouterStatusEntry
 

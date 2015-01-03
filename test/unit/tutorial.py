@@ -227,7 +227,7 @@ class TestTutorial(unittest.TestCase):
       bw_to_relay = get_bw_to_relay()
       count = 1
 
-      for bw_value in sorted(list(bw_to_relay.keys()), reverse = True):
+      for bw_value in sorted(bw_to_relay.keys(), reverse = True):
         for nickname in bw_to_relay[bw_value]:
           print('%i. %s (%s/s)' % (count, nickname, str_tools.size_label(bw_value, 2)))
           count += 1

@@ -576,7 +576,7 @@ class Config(object):
       self._listeners.append(listener)
 
       if backfill:
-        for key in list(self.keys()):
+        for key in self.keys():
           listener(self, key)
 
   def clear_listeners(self):

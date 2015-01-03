@@ -532,7 +532,7 @@ def _unescape(entry):
     #
     #   (unescaped prefix, remaining entry)
 
-    for esc_sequence, replacement in list(CONTROL_ESCAPES.items()):
+    for esc_sequence, replacement in CONTROL_ESCAPES.items():
       if entry.startswith(esc_sequence):
         return (replacement, entry[len(esc_sequence):])
 

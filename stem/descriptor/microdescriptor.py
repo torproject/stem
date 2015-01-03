@@ -302,7 +302,7 @@ class Microdescriptor(Descriptor):
       if keyword in entries and len(entries[keyword]) > 1:
         raise ValueError("The '%s' entry can only appear once in a microdescriptor" % keyword)
 
-    if "onion-key" != list(entries.keys())[0]:
+    if 'onion-key' != list(entries.keys())[0]:
       raise ValueError("Microdescriptor must start with a 'onion-key' entry")
 
   def _name(self, is_plural = False):

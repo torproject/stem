@@ -926,7 +926,7 @@ class Controller(BaseController):
       if self.is_caching_enabled():
         self._set_cache(dict((k, None) for k in event.config), 'getconf')
 
-        if 'exitpolicy' in list(event.config.keys()):
+        if 'exitpolicy' in event.config.keys():
           self._set_cache({'exitpolicy': None})
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
@@ -1020,7 +1020,7 @@ class Controller(BaseController):
 
     # if everything was cached then short circuit making the query
     if not params:
-      log.trace('GETINFO %s (cache fetch)' % ' '.join(list(reply.keys())))
+      log.trace('GETINFO %s (cache fetch)' % ' '.join(reply.keys()))
 
       if is_multiple:
         return reply
@@ -1035,14 +1035,14 @@ class Controller(BaseController):
       # usually we want unicode values under python 3.x
 
       if stem.prereq.is_python_3() and not get_bytes:
-        response.entries = dict((k, stem.util.str_tools._to_unicode(v)) for (k, v) in list(response.entries.items()))
+        response.entries = dict((k, stem.util.str_tools._to_unicode(v)) for (k, v) in response.entries.items())
 
       reply.update(response.entries)
 
       if self.is_caching_enabled():
         to_cache = {}
 
-        for key, value in list(response.entries.items()):
+        for key, value in response.entries.items():
           key = key.lower()  # make case insensitive
 
           if key in CACHEABLE_GETINFO_PARAMS:
@@ -1911,7 +1911,7 @@ class Controller(BaseController):
 
     # if everything was cached then short circuit making the query
     if not lookup_params:
-      log.trace('GETCONF %s (cache fetch)' % ' '.join(list(reply.keys())))
+      log.trace('GETCONF %s (cache fetch)' % ' '.join(reply.keys()))
       return self._get_conf_dict_to_response(reply, default, multiple)
 
     try:
@@ -1920,7 +1920,7 @@ class Controller(BaseController):
       reply.update(response.entries)
 
       if self.is_caching_enabled():
-        to_cache = dict((k.lower(), v) for k, v in list(response.entries.items()))
+        to_cache = dict((k.lower(), v) for k, v in response.entries.items())
 
         for key in UNCACHEABLE_GETCONF_PARAMS:
           if key in to_cache:
@@ -1939,7 +1939,7 @@ class Controller(BaseController):
       # be sure what they wanted.
 
       for key in reply:
-        if not key.lower() in list(MAPPED_CONFIG_KEYS.values()):
+        if not key.lower() in MAPPED_CONFIG_KEYS.values():
           user_expected_key = _case_insensitive_lookup(params, key, key)
 
           if key != user_expected_key:
@@ -2447,7 +2447,7 @@ class Controller(BaseController):
             del self._event_listeners[event_type]
 
       if event_types_changed:
-        response = self.msg('SETEVENTS %s' % ' '.join(list(self._event_listeners.keys())))
+        response = self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
 
         if not response.is_ok():
           raise stem.ProtocolError('SETEVENTS received unexpected response\n%s' % response)
@@ -3158,7 +3158,7 @@ class Controller(BaseController):
     with self._event_listeners_lock:
       if self.is_authenticated():
         # try to set them all
-        response = self.msg('SETEVENTS %s' % ' '.join(list(self._event_listeners.keys())))
+        response = self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
 
         if response.is_ok():
           set_events = list(self._event_listeners.keys())

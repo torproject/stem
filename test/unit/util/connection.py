@@ -403,7 +403,7 @@ class TestConnection(unittest.TestCase):
       '1::1': '0001:0000:0000:0000:0000:0000:0000:0001',
     }
 
-    for test_arg, expected in list(test_values.items()):
+    for test_arg, expected in test_values.items():
       self.assertEqual(expected, stem.util.connection.expand_ipv6_address(test_arg))
 
     self.assertRaises(ValueError, stem.util.connection.expand_ipv6_address, '127.0.0.1')
@@ -462,7 +462,7 @@ class TestConnection(unittest.TestCase):
       '2001:db8::ff00:42:8329': '00100000000000010000110110111000000000000000000000000000000000000000000000000000111111110000000000000000010000101000001100101001',
     }
 
-    for test_arg, expected in list(test_values.items()):
+    for test_arg, expected in test_values.items():
       self.assertEqual(expected, stem.util.connection._get_address_binary(test_arg))
 
     self.assertRaises(ValueError, stem.util.connection._get_address_binary, '')

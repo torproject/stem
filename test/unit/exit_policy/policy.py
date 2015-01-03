@@ -78,7 +78,7 @@ class TestExitPolicy(unittest.TestCase):
       ('reject 127.0.0.1:*', 'accept *:80', 'reject *:*'): True,
     }
 
-    for rules, expected_result in list(test_inputs.items()):
+    for rules, expected_result in test_inputs.items():
       policy = ExitPolicy(*rules)
       self.assertEqual(expected_result, policy.is_exiting_allowed())
 
@@ -190,7 +190,7 @@ class TestExitPolicy(unittest.TestCase):
       'bar 80,443': False,
     }
 
-    for policy_arg, expect_success in list(test_inputs.items()):
+    for policy_arg, expect_success in test_inputs.items():
       try:
         policy = MicroExitPolicy(policy_arg)
 
@@ -225,10 +225,10 @@ class TestExitPolicy(unittest.TestCase):
       'reject 1-1024': {1: False, 1024: False, 1025: True},
     }
 
-    for policy_arg, attr in list(test_inputs.items()):
+    for policy_arg, attr in test_inputs.items():
       policy = MicroExitPolicy(policy_arg)
 
-      for port, expected_value in list(attr.items()):
+      for port, expected_value in attr.items():
         self.assertEqual(expected_value, policy.can_exit_to(port = port))
 
     # address argument should be ignored
@@ -261,7 +261,7 @@ class TestExitPolicy(unittest.TestCase):
       ),
     }
 
-    for test_input, expected in list(test_inputs.items()):
+    for test_input, expected in test_inputs.items():
       self.assertEqual(expected, get_config_policy(test_input, '12.34.56.78'))
 
     test_inputs = (

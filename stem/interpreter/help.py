@@ -97,7 +97,7 @@ def _response(controller, arg, config):
   elif arg == 'SIGNAL':
     signal_options = config.get('help.signal.options', {})
 
-    for signal, summary in list(signal_options.items()):
+    for signal, summary in signal_options.items():
       output += format('%-15s' % signal, *BOLD_OUTPUT)
       output += format(' - %s' % summary, *STANDARD_OUTPUT) + '\n'
   elif arg == 'SETEVENTS':

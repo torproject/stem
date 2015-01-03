@@ -58,7 +58,7 @@ class TestExitPolicyRule(unittest.TestCase):
       'accept [::]/128:*': 'accept [0000:0000:0000:0000:0000:0000:0000:0000]:*',
     }
 
-    for rule_arg, expected_str in list(test_inputs.items()):
+    for rule_arg, expected_str in test_inputs.items():
       rule = ExitPolicyRule(rule_arg)
       self.assertEqual(expected_str, str(rule))
 
@@ -83,7 +83,7 @@ class TestExitPolicyRule(unittest.TestCase):
       'accept 192.168.0.1:1-65534': (False, False),
     }
 
-    for rule_arg, attr in list(test_inputs.items()):
+    for rule_arg, attr in test_inputs.items():
       is_address_wildcard, is_port_wildcard = attr
 
       rule = ExitPolicyRule(rule_arg)
@@ -128,7 +128,7 @@ class TestExitPolicyRule(unittest.TestCase):
       '255.255.255.255/0': ('255.255.255.255', '0.0.0.0', 0),
     }
 
-    for rule_addr, attr in list(test_inputs.items()):
+    for rule_addr, attr in test_inputs.items():
       address, mask, masked_bits = attr
 
       rule = ExitPolicyRule('accept %s:*' % rule_addr)
@@ -167,7 +167,7 @@ class TestExitPolicyRule(unittest.TestCase):
          'FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF', 128),
     }
 
-    for rule_addr, attr in list(test_inputs.items()):
+    for rule_addr, attr in test_inputs.items():
       address, mask, masked_bits = attr
 
       rule = ExitPolicyRule('accept %s:*' % rule_addr)
@@ -199,7 +199,7 @@ class TestExitPolicyRule(unittest.TestCase):
       '80-443': (80, 443),
     }
 
-    for rule_port, attr in list(test_inputs.items()):
+    for rule_port, attr in test_inputs.items():
       min_port, max_port = attr
 
       rule = ExitPolicyRule('accept 127.0.0.1:%s' % rule_port)
@@ -246,11 +246,11 @@ class TestExitPolicyRule(unittest.TestCase):
       },
     }
 
-    for rule_arg, matches in list(test_inputs.items()):
+    for rule_arg, matches in test_inputs.items():
       rule = ExitPolicyRule(rule_arg)
       rule._submask_wildcard = False
 
-      for match_args, expected_result in list(matches.items()):
+      for match_args, expected_result in matches.items():
         self.assertEqual(expected_result, rule.is_match(*match_args))
 
     # port zero is special in that exit policies can include it, but it's not
@@ -282,10 +282,10 @@ class TestExitPolicyRule(unittest.TestCase):
       },
     }
 
-    for rule_arg, matches in list(test_inputs.items()):
+    for rule_arg, matches in test_inputs.items():
       rule = ExitPolicyRule(rule_arg)
 
-      for match_args, expected_result in list(matches.items()):
+      for match_args, expected_result in matches.items():
         self.assertEqual(expected_result, rule.is_match(*match_args))
 
   def test_is_match_ipv6(self):
@@ -313,10 +313,10 @@ class TestExitPolicyRule(unittest.TestCase):
       },
     }
 
-    for rule_arg, matches in list(test_inputs.items()):
+    for rule_arg, matches in test_inputs.items():
       rule = ExitPolicyRule(rule_arg)
 
-      for match_args, expected_result in list(matches.items()):
+      for match_args, expected_result in matches.items():
         self.assertEqual(expected_result, rule.is_match(*match_args))
 
   def test_is_match_port(self):
@@ -341,8 +341,8 @@ class TestExitPolicyRule(unittest.TestCase):
       },
     }
 
-    for rule_arg, matches in list(test_inputs.items()):
+    for rule_arg, matches in test_inputs.items():
       rule = ExitPolicyRule(rule_arg)
 
-      for match_args, expected_result in list(matches.items()):
+      for match_args, expected_result in matches.items():
         self.assertEqual(expected_result, rule.is_match(*match_args))

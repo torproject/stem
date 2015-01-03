@@ -141,7 +141,7 @@ def get_help_message():
   help_msg = CONFIG['msg.help']
 
   # gets the longest target length so we can show the entries in columns
-  target_name_length = max(list(map(len, Target)))
+  target_name_length = max(map(len, Target))
   description_format = '\n    %%-%is - %%s' % target_name_length
 
   for target in Target:
@@ -192,7 +192,7 @@ def get_torrc_entries(target):
     for opt in config_csv.split(','):
       opt = opt.strip()
 
-      if opt in list(test.runner.Torrc.keys()):
+      if opt in test.runner.Torrc.keys():
         torrc_opts.append(test.runner.Torrc[opt])
       else:
         raise ValueError("'%s' isn't a test.runner.Torrc enumeration" % opt)

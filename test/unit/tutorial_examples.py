@@ -284,7 +284,7 @@ class TestTutorialExamples(unittest.TestCase):
       downloader = remote.DescriptorDownloader(document_handler = DocumentHandler.DOCUMENT)
       queries = {}
 
-      for name, authority in list(remote.get_authorities().items()):
+      for name, authority in remote.get_authorities().items():
         if authority.v3ident is None:
           continue  # authority doens't vote if it lacks a v3ident
 
@@ -293,14 +293,14 @@ class TestTutorialExamples(unittest.TestCase):
       # Wait for the votes to finish being downloaded, this produces a dictionary of
       # authority nicknames to their vote.
 
-      votes = dict((name, query.run()[0]) for (name, query) in list(queries.items()))
+      votes = dict((name, query.run()[0]) for (name, query) in queries.items())
 
       # Get a superset of all the fingerprints in all the votes.
 
       all_fingerprints = set()
 
-      for vote in list(votes.values()):
-        all_fingerprints.update(list(vote.routers.keys()))
+      for vote in votes.values():
+        all_fingerprints.update(vote.routers.keys())
 
       # Finally, compare moria1's votes to maatuska.
 
@@ -367,14 +367,14 @@ class TestTutorialExamples(unittest.TestCase):
       queries = {}
       downloader = remote.DescriptorDownloader()
 
-      for authority in list(remote.get_authorities().values()):
+      for authority in remote.get_authorities().values():
         if authority.is_bandwidth_authority:
           queries[authority.nickname] = downloader.query(
             '/tor/status-vote/current/authority',
             endpoints = [(authority.address, authority.dir_port)],
           )
 
-      for authority_name, query in list(queries.items()):
+      for authority_name, query in queries.items():
         try:
           print("Getting %s's vote from %s:" % (authority_name, query.download_url))
 
@@ -448,7 +448,7 @@ class TestTutorialExamples(unittest.TestCase):
         document_handler = DocumentHandler.DOCUMENT,
       ))
 
-      for fingerprint, relay in list(consensus.routers.items()):
+      for fingerprint, relay in consensus.routers.items():
         print("%s: %s" % (fingerprint, relay.nickname))
 
     network_status = get_network_status_document_v3(routers = (get_router_status_entry_v3(),))

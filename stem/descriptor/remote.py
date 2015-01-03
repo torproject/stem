@@ -344,7 +344,7 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      authority = random.choice(list(filter(HAS_V3IDENT, list(get_authorities().values()))))
+      authority = random.choice(filter(HAS_V3IDENT, get_authorities().values()))
       address, dirport = authority.address, authority.dir_port
     else:
       address, dirport = random.choice(self.endpoints)
@@ -394,7 +394,7 @@ class DescriptorDownloader(object):
   def __init__(self, use_mirrors = False, **default_args):
     self._default_args = default_args
 
-    authorities = list(filter(HAS_V3IDENT, list(get_authorities().values())))
+    authorities = filter(HAS_V3IDENT, get_authorities().values())
     self._endpoints = [(auth.address, auth.dir_port) for auth in authorities]
 
     if use_mirrors:
@@ -416,12 +416,12 @@ class DescriptorDownloader(object):
     :raises: **Exception** if unable to determine the directory mirrors
     """
 
-    authorities = list(filter(HAS_V3IDENT, list(get_authorities().values())))
+    authorities = filter(HAS_V3IDENT, get_authorities().values())
     new_endpoints = set([(auth.address, auth.dir_port) for auth in authorities])
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
 
-    for desc in list(consensus.routers.values()):
+    for desc in consensus.routers.values():
       if Flag.V2DIR in desc.flags:
         new_endpoints.add((desc.address, desc.dir_port))
 

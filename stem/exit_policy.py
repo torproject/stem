@@ -306,7 +306,7 @@ class ExitPolicy(object):
         if rule.is_port_wildcard():
           return False
         else:
-          rejected_ports.update(list(range(rule.min_port, rule.max_port + 1)))
+          rejected_ports.update(range(rule.min_port, rule.max_port + 1))
 
     return self._is_allowed_default
 
@@ -1026,7 +1026,7 @@ def _address_type_to_int(address_type):
 
 
 def _int_to_address_type(address_type_int):
-  return AddressType[list(AddressType.keys())[address_type_int]]
+  return list(AddressType)[address_type_int]
 
 
 class MicroExitPolicyRule(ExitPolicyRule):

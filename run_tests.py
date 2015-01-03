@@ -300,14 +300,14 @@ def main():
     static_check_issues = {}
 
     if pyflakes_task and pyflakes_task.is_successful:
-      for path, issues in list(pyflakes_task.result.items()):
+      for path, issues in pyflakes_task.result.items():
         for issue in issues:
           static_check_issues.setdefault(path, []).append(issue)
     elif not stem.util.test_tools.is_pyflakes_available():
       println("Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
 
     if pep8_task and pep8_task.is_successful:
-      for path, issues in list(pep8_task.result.items()):
+      for path, issues in pep8_task.result.items():
         for issue in issues:
           static_check_issues.setdefault(path, []).append(issue)
     elif not stem.util.test_tools.is_pep8_available():
@@ -403,7 +403,7 @@ def _get_args(argv):
 
   # translates our args dict into a named tuple
 
-  Args = collections.namedtuple('Args', list(args.keys()))
+  Args = collections.namedtuple('Args', args.keys())
   return Args(**args)
 
 

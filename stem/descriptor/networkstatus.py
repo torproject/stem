@@ -516,7 +516,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     self._header = _DocumentHeader(document_file, validate, default_params)
 
     # merge header attributes into us
-    for attr, value in list(vars(self._header).items()):
+    for attr, value in vars(self._header).items():
       if attr != '_unrecognized_lines':
         setattr(self, attr, value)
       else:
@@ -553,7 +553,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     self._footer = _DocumentFooter(document_file, validate, self._header)
 
     # merge header attributes into us
-    for attr, value in list(vars(self._footer).items()):
+    for attr, value in vars(self._footer).items():
       if attr != '_unrecognized_lines':
         setattr(self, attr, value)
       else:
@@ -795,7 +795,7 @@ class _DocumentHeader(object):
     Checks that the params we know about are within their documented ranges.
     """
 
-    for key, value in list(self.params.items()):
+    for key, value in self.params.items():
       # all parameters are constrained to int32 range
       minimum, maximum = -2147483648, 2147483647
 
@@ -941,11 +941,11 @@ def _check_for_missing_and_disallowed_fields(header, entries, fields):
   for field, in_votes, in_consensus, mandatory in fields:
     if mandatory and ((header.is_consensus and in_consensus) or (header.is_vote and in_votes)):
       # mandatory field, check that we have it
-      if field not in list(entries.keys()):
+      if field not in entries.keys():
         missing_fields.append(field)
     elif (header.is_consensus and not in_consensus) or (header.is_vote and not in_votes):
       # field we shouldn't have, check that we don't
-      if field in list(entries.keys()):
+      if field in entries.keys():
         disallowed_fields.append(field)
 
   if missing_fields:
@@ -972,7 +972,7 @@ def _check_for_misordered_fields(entries, expected):
   # document type or are unknown. Remove the unknown fields since they
   # reflect a spec change and can appear anywhere in the document.
 
-  actual = [field for field in list(entries.keys()) if field in expected]
+  actual = [field for field in entries.keys() if field in expected]
 
   # Narrow the expected to just what we have. If the lists then match then the
   # order's valid.

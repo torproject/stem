@@ -420,7 +420,7 @@ class TestController(unittest.TestCase):
       self.assertEqual(expected, controller.get_conf_map([config_key], 'la-di-dah'))
 
       request_params = ['ControlPORT', 'dirport', 'datadirectory']
-      reply_params = list(controller.get_conf_map(request_params, multiple=False).keys())
+      reply_params = controller.get_conf_map(request_params, multiple=False).keys()
       self.assertEqual(set(request_params), set(reply_params))
 
       # queries an option that is unset
