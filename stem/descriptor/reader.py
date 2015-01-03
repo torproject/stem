@@ -270,7 +270,7 @@ class DescriptorReader(object):
 
     # expand any relative paths we got
 
-    target = list(map(os.path.abspath, target))
+    self._targets = list(map(os.path.abspath, self._targets))
 
     self._validate = validate
     self._follow_links = follow_links
