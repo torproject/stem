@@ -504,6 +504,40 @@ of all test runs.
 
 See ``run_tests.py --help`` for more usage information.
 
+.. _how_do_i_test_compatibility_with_multiple_versions_of_python
+How can I test compatibility with multiple versions of python?
+--------------------------------------------------------------
+
+Stem got support for python 2.6-3.4, testing against all these versions can be 
+delt with using tox. Fetch the ``python-dev`` package from your package manager
+and fetch the respective python versions you want to test against.
+
+Example using a debian based distro:
+
+::
+  
+  ~/stem$ sudo apt-get install python-tox
+  ~/stem$ sudo apt-get install python2.6
+  ~/stem$ sudo apt-get install python3.3
+  ~/stem$ tox
+  ...
+  ____ summary _____
+    py26: commands succeeded
+    py33: commands succeeded
+    congratulations :)
+
+Tox also allows for customization of arguments for underlying commands and 
+enviorments. Examples below.
+
+:: 
+
+  # Run tox with a specefied enviorment
+  ~/stem$ tox -e py26
+
+  # Run tox with positonal args for `run_tests.py`
+  # in a specefied enviorment
+  ~/stem$ tox -e py26 -- -u --test response.events
+ 
 .. _how_do_i_build_the_site:
 
 How do I build the site?

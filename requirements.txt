@@ -1,0 +1,5 @@
+mock
+pyflakes
+pep8
+pycrypto
+tox
