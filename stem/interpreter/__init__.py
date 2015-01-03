@@ -18,6 +18,7 @@ import sys
 
 import stem
 import stem.connection
+import stem.prereq
 import stem.process
 import stem.util.conf
 import stem.util.system
@@ -125,7 +126,12 @@ def main():
     while True:
       try:
         prompt = '... ' if interpreter.is_multiline_context else PROMPT
-        user_input = input(prompt)
+
+        if stem.prereq.is_python_3():
+          user_input = input(prompt)
+        else:
+          user_input = raw_input(prompt)
+
         response = interpreter.run_command(user_input)
 
         if response is not None:
