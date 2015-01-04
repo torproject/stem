@@ -31,9 +31,6 @@ try:
 except ImportError:
   from mock import Mock, patch
 
-import sys
-oldstdout = sys.stdout
-
 CIRC_CONTENT = '650 CIRC %d %s \
 %s \
 PURPOSE=%s'

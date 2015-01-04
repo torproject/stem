@@ -160,7 +160,7 @@ class Enum(object):
     if item in vars(self):
       return getattr(self, item)
     else:
-      keys = ', '.join(list(self.keys()))
+      keys = ', '.join(self.keys())
       raise ValueError("'%s' isn't among our enumeration keys, which includes: %s" % (item, keys))
 
   def __iter__(self):

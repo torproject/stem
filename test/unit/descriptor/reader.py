@@ -3,6 +3,7 @@ Unit tests for stem.descriptor.reader.
 """
 
 import getpass
+import io
 import os
 import shutil
 import signal
@@ -11,7 +12,6 @@ import tarfile
 import tempfile
 import time
 import unittest
-from io import StringIO
 
 import stem.descriptor.reader
 import test.runner
@@ -108,7 +108,7 @@ class TestDescriptorReader(unittest.TestCase):
       '/dir/after empty line': 12345,
     }
 
-    open_mock.return_value = StringIO(str_type('\n'.join(test_lines)))
+    open_mock.return_value = io.StringIO(str_type('\n'.join(test_lines)))
     self.assertEqual(expected_value, stem.descriptor.reader.load_processed_files(''))
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -117,7 +117,7 @@ class TestDescriptorReader(unittest.TestCase):
     Tests the load_processed_files() function with an empty file.
     """
 
-    open_mock.return_value = StringIO(str_type(''))
+    open_mock.return_value = io.StringIO(str_type(''))
     self.assertEqual({}, stem.descriptor.reader.load_processed_files(''))
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -127,7 +127,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is missing the file path.
     """
 
-    open_mock.return_value = StringIO(str_type(' 12345'))
+    open_mock.return_value = io.StringIO(str_type(' 12345'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -137,7 +137,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is missing the timestamp.
     """
 
-    open_mock.return_value = StringIO(str_type('/dir/file '))
+    open_mock.return_value = io.StringIO(str_type('/dir/file '))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -147,7 +147,7 @@ class TestDescriptorReader(unittest.TestCase):
     it has an invalid file path.
     """
 
-    open_mock.return_value = StringIO(str_type('not_an_absolute_file 12345'))
+    open_mock.return_value = io.StringIO(str_type('not_an_absolute_file 12345'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -157,7 +157,7 @@ class TestDescriptorReader(unittest.TestCase):
     it has a non-numeric timestamp.
     """
 
-    open_mock.return_value = StringIO(str_type('/dir/file 123a'))
+    open_mock.return_value = io.StringIO(str_type('/dir/file 123a'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   def test_load_processed_files_from_data(self):
