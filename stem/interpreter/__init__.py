@@ -121,7 +121,7 @@ def main():
       line_format = HEADER_BOLD_OUTPUT if line.startswith('  ') else HEADER_OUTPUT
       print(format(line, *line_format))
 
-    print()
+    print('')
 
     while True:
       try:
@@ -137,5 +137,5 @@ def main():
         if response is not None:
           print(response)
       except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
-        print()  # move cursor to the following line
+        print('')  # move cursor to the following line
         break
