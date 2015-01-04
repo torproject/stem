@@ -55,9 +55,7 @@ functionality.
 What Python versions is Stem compatible with?
 ---------------------------------------------
 
-Stem works with **Python 2.6 and greater**. This includes the Python 3.x series
-by installing Stem via python3 (see our `installation instructions
-<https://pypi.python.org/pypi/stem/>`_ for more information).
+Stem works with **Python 2.6 and greater**, including the Python 3.x series.
 
 .. _can_i_interact_with_tors_controller_interface_directly:
 

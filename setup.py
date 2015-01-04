@@ -33,11 +33,6 @@ def get_module_info():
 
   return result
 
-try:
-  from distutils.command.build_py import build_py_2to3 as build_py
-except ImportError:
-  from distutils.command.build_py import build_py
-
 module_info = get_module_info()
 
 setup(
@@ -50,7 +45,6 @@ setup(
   url = module_info['url'],
   packages = ['stem', 'stem.descriptor', 'stem.interpreter', 'stem.response', 'stem.util'],
   provides = ['stem'],
-  cmdclass = {'build_py': build_py},
   keywords = 'tor onion controller',
   scripts = ['tor-prompt'],
   package_data = {'stem.interpreter': ['settings.cfg'], 'stem.util': ['ports.cfg']},
