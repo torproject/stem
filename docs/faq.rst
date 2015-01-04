@@ -503,14 +503,6 @@ error checking and `pep8 <http://pep8.readthedocs.org/en/latest/>`_ for style
 checking. If you have them installed then they automatically take place as part
 of all test runs.
 
-If you have **Python 3** installed then you can test our Python 3 compatibility
-with the following. *Note that need to still initially execute run_tests.py
-with a 2.x version of Python.*
-
-::
-
-  ~/stem$ ./run_tests.py --all --python3
-
 See ``run_tests.py --help`` for more usage information.
 
 .. _how_do_i_build_the_site:
