@@ -75,7 +75,7 @@ import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
 
-from stem._compat import str_type
+from stem import str_type
 
 try:
   # added in python 3.2

@@ -28,11 +28,12 @@ import sys
 
 import stem.prereq
 import stem.util.enum
-from stem._compat import str_type
 
+from stem import str_type
 
 # label conversion tuples of the form...
 # (bits / bytes / seconds, short label, long label)
+
 SIZE_UNITS_BITS = (
   (140737488355328.0, ' Pb', ' Petabit'),
   (137438953472.0, ' Tb', ' Terabit'),

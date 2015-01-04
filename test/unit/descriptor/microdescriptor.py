@@ -8,8 +8,8 @@ import stem.exit_policy
 
 import stem.descriptor
 
+from stem import str_type
 from stem.descriptor.microdescriptor import Microdescriptor
-from stem._compat import str_type
 
 from test.mocking import (
   get_microdescriptor,

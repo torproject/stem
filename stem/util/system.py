@@ -54,9 +54,8 @@ import time
 import stem.util.proc
 import stem.util.str_tools
 
-from stem import UNDEFINED
+from stem import UNDEFINED, str_type
 from stem.util import log
-from stem._compat import str_type
 
 # Mapping of commands to if they're available or not.
 

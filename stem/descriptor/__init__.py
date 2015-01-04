@@ -58,7 +58,8 @@ import stem.prereq
 import stem.util.enum
 import stem.util.str_tools
 import stem.util.system
-from stem._compat import str_type
+
+from stem import str_type
 
 try:
   # added in python 2.7

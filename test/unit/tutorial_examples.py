@@ -13,9 +13,9 @@ except ImportError:
 import stem.response
 import stem.descriptor.remote
 
+from stem import str_type
 from stem.control import Controller
 from stem.descriptor.remote import DIRECTORY_AUTHORITIES
-from stem._compat import str_type
 
 from test import mocking
 from test.mocking import (

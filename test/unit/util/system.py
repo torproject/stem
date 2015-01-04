@@ -10,8 +10,8 @@ import ntpath
 import posixpath
 import unittest
 
+from stem import str_type
 from stem.util import system
-from stem._compat import str_type
 
 try:
   # added in python 3.3

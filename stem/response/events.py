@@ -11,8 +11,8 @@ import stem.descriptor.router_status_entry
 import stem.response
 import stem.version
 
+from stem import str_type, int_type
 from stem.util import connection, log, str_tools, tor_tools
-from stem._compat import str_type, int_type
 
 # Matches keyword=value arguments. This can't be a simple "(.*)=(.*)" pattern
 # because some positional arguments, like circuit paths, can have an equal

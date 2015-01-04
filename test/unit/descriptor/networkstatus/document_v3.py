@@ -9,8 +9,7 @@ import unittest
 import stem.descriptor
 import stem.version
 
-from stem import Flag
-from stem._compat import str_type
+from stem import Flag, str_type
 
 from stem.descriptor.networkstatus import (
   HEADER_STATUS_DOCUMENT_FIELDS,

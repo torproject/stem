@@ -13,8 +13,8 @@ import stem.prereq
 import stem.version
 import stem.util.str_tools
 
+from stem import str_type
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
-from stem._compat import str_type
 
 from test.mocking import (
   get_relay_server_descriptor,
