@@ -104,7 +104,7 @@ class TestControlSocket(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send('QUIT')
-      self.assertEquals('closing connection', str(control_socket.recv()))
+      self.assertEqual('closing connection', str(control_socket.recv()))
       self.assertTrue(control_socket.is_alive())
 
       # If we send another message to a port based socket then it will seem to
@@ -143,7 +143,7 @@ class TestControlSocket(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send('QUIT')
-      self.assertEquals('closing connection', str(control_socket.recv()))
+      self.assertEqual('closing connection', str(control_socket.recv()))
 
       # Neither a port or file based socket will know that tor has hung up on
       # the connection at this point. We should know after calling recv(),

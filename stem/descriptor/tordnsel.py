@@ -74,7 +74,7 @@ class TorDNSEL(Descriptor):
 
   def _parse(self, entries, validate):
 
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, block_type, block_content = values[0]
 
       if validate and block_content:

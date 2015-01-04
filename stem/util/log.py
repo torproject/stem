@@ -235,7 +235,7 @@ class _StdoutLogger(logging.Handler):
       datefmt = '%m/%d/%Y %H:%M:%S')
 
   def emit(self, record):
-    print self.formatter.format(record)
+    print(self.formatter.format(record))
 
 
 def log_to_stdout(runlevel):

@@ -77,8 +77,12 @@ import random
 import sys
 import threading
 import time
-import urllib2
 import zlib
+
+try:
+    import urllib.request as urllib
+except ImportError:
+    import urllib2 as urllib
 
 import stem.descriptor
 
@@ -353,7 +357,7 @@ class Query(object):
       self.download_url = self._pick_url(use_authority)
 
       self.start_time = time.time()
-      response = urllib2.urlopen(self.download_url, timeout = self.timeout).read()
+      response = urllib.urlopen(self.download_url, timeout = self.timeout).read()
 
       if self.download_url.endswith('.z'):
         response = zlib.decompress(response)

@@ -47,7 +47,7 @@ class TestExitPolicyRule(unittest.TestCase):
 
     for rule_arg in test_inputs:
       rule = ExitPolicyRule(rule_arg)
-      self.assertEquals(rule_arg, str(rule))
+      self.assertEqual(rule_arg, str(rule))
 
   def test_str_changed(self):
     # some instances where our rule is valid but won't match our str() representation
@@ -60,7 +60,7 @@ class TestExitPolicyRule(unittest.TestCase):
 
     for rule_arg, expected_str in test_inputs.items():
       rule = ExitPolicyRule(rule_arg)
-      self.assertEquals(expected_str, str(rule))
+      self.assertEqual(expected_str, str(rule))
 
   def test_valid_wildcard(self):
     test_inputs = {
@@ -87,18 +87,18 @@ class TestExitPolicyRule(unittest.TestCase):
       is_address_wildcard, is_port_wildcard = attr
 
       rule = ExitPolicyRule(rule_arg)
-      self.assertEquals(is_address_wildcard, rule.is_address_wildcard())
-      self.assertEquals(is_port_wildcard, rule.is_port_wildcard())
+      self.assertEqual(is_address_wildcard, rule.is_address_wildcard())
+      self.assertEqual(is_port_wildcard, rule.is_port_wildcard())
 
     # check that when appropriate a /0 is reported as *not* being a wildcard
 
     rule = ExitPolicyRule('reject 127.0.0.1/0:*')
     rule._submask_wildcard = False
-    self.assertEquals(False, rule.is_address_wildcard())
+    self.assertEqual(False, rule.is_address_wildcard())
 
     rule = ExitPolicyRule('reject [0000:0000:0000:0000:0000:0000:0000:0000]/0:80')
     rule._submask_wildcard = False
-    self.assertEquals(False, rule.is_address_wildcard())
+    self.assertEqual(False, rule.is_address_wildcard())
 
   def test_invalid_wildcard(self):
     test_inputs = (
@@ -113,12 +113,12 @@ class TestExitPolicyRule(unittest.TestCase):
 
   def test_wildcard_attributes(self):
     rule = ExitPolicyRule('reject *:*')
-    self.assertEquals(AddressType.WILDCARD, rule.get_address_type())
-    self.assertEquals(None, rule.address)
-    self.assertEquals(None, rule.get_mask())
-    self.assertEquals(None, rule.get_masked_bits())
-    self.assertEquals(1, rule.min_port)
-    self.assertEquals(65535, rule.max_port)
+    self.assertEqual(AddressType.WILDCARD, rule.get_address_type())
+    self.assertEqual(None, rule.address)
+    self.assertEqual(None, rule.get_mask())
+    self.assertEqual(None, rule.get_masked_bits())
+    self.assertEqual(1, rule.min_port)
+    self.assertEqual(65535, rule.max_port)
 
   def test_valid_ipv4_addresses(self):
     test_inputs = {
@@ -132,10 +132,10 @@ class TestExitPolicyRule(unittest.TestCase):
       address, mask, masked_bits = attr
 
       rule = ExitPolicyRule('accept %s:*' % rule_addr)
-      self.assertEquals(AddressType.IPv4, rule.get_address_type())
-      self.assertEquals(address, rule.address)
-      self.assertEquals(mask, rule.get_mask())
-      self.assertEquals(masked_bits, rule.get_masked_bits())
+      self.assertEqual(AddressType.IPv4, rule.get_address_type())
+      self.assertEqual(address, rule.address)
+      self.assertEqual(mask, rule.get_mask())
+      self.assertEqual(masked_bits, rule.get_masked_bits())
 
   def test_invalid_ipv4_addresses(self):
     test_inputs = (
@@ -171,10 +171,10 @@ class TestExitPolicyRule(unittest.TestCase):
       address, mask, masked_bits = attr
 
       rule = ExitPolicyRule('accept %s:*' % rule_addr)
-      self.assertEquals(AddressType.IPv6, rule.get_address_type())
-      self.assertEquals(address, rule.address)
-      self.assertEquals(mask, rule.get_mask())
-      self.assertEquals(masked_bits, rule.get_masked_bits())
+      self.assertEqual(AddressType.IPv6, rule.get_address_type())
+      self.assertEqual(address, rule.address)
+      self.assertEqual(mask, rule.get_mask())
+      self.assertEqual(masked_bits, rule.get_masked_bits())
 
   def test_invalid_ipv6_addresses(self):
     test_inputs = (
@@ -203,8 +203,8 @@ class TestExitPolicyRule(unittest.TestCase):
       min_port, max_port = attr
 
       rule = ExitPolicyRule('accept 127.0.0.1:%s' % rule_port)
-      self.assertEquals(min_port, rule.min_port)
-      self.assertEquals(max_port, rule.max_port)
+      self.assertEqual(min_port, rule.min_port)
+      self.assertEqual(max_port, rule.max_port)
 
   def test_invalid_ports(self):
     test_inputs = (
@@ -251,7 +251,7 @@ class TestExitPolicyRule(unittest.TestCase):
       rule._submask_wildcard = False
 
       for match_args, expected_result in matches.items():
-        self.assertEquals(expected_result, rule.is_match(*match_args))
+        self.assertEqual(expected_result, rule.is_match(*match_args))
 
     # port zero is special in that exit policies can include it, but it's not
     # something that we can match against
@@ -286,7 +286,7 @@ class TestExitPolicyRule(unittest.TestCase):
       rule = ExitPolicyRule(rule_arg)
 
       for match_args, expected_result in matches.items():
-        self.assertEquals(expected_result, rule.is_match(*match_args))
+        self.assertEqual(expected_result, rule.is_match(*match_args))
 
   def test_is_match_ipv6(self):
     test_inputs = {
@@ -317,7 +317,7 @@ class TestExitPolicyRule(unittest.TestCase):
       rule = ExitPolicyRule(rule_arg)
 
       for match_args, expected_result in matches.items():
-        self.assertEquals(expected_result, rule.is_match(*match_args))
+        self.assertEqual(expected_result, rule.is_match(*match_args))
 
   def test_is_match_port(self):
     test_inputs = {
@@ -345,4 +345,4 @@ class TestExitPolicyRule(unittest.TestCase):
       rule = ExitPolicyRule(rule_arg)
 
       for match_args, expected_result in matches.items():
-        self.assertEquals(expected_result, rule.is_match(*match_args))
+        self.assertEqual(expected_result, rule.is_match(*match_args))

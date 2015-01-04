@@ -41,6 +41,9 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+With this next release the codebase runs directly under both python2 and
+python3 without a 2to3 conversion (:trac:`14075`).
+
  * **Utilities**
 
   * :func:`stem.util.connection.port_usage` always returned None (:trac:`14046`)

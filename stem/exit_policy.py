@@ -75,6 +75,8 @@ import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
 
+from stem import str_type
+
 try:
   # added in python 3.2
   from functools import lru_cache
@@ -119,7 +121,7 @@ def get_config_policy(rules, ip_address = None):
   if ip_address and not (stem.util.connection.is_valid_ipv4_address(ip_address) or stem.util.connection.is_valid_ipv6_address(ip_address)):
     raise ValueError("%s isn't a valid IP address" % ip_address)
 
-  if isinstance(rules, (bytes, unicode)):
+  if isinstance(rules, (bytes, str_type)):
     rules = rules.split(',')
 
   result = []
@@ -204,7 +206,6 @@ def _flag_private_rules(rules):
 
     if last_rule.is_address_wildcard() or last_rule.min_port != min_port or last_rule.max_port != max_port or last_rule.is_accept != is_accept:
       is_match = False
-
     if is_match:
       for rule in rule_set:
         rule._is_private = True
@@ -237,7 +238,7 @@ class ExitPolicy(object):
     # sanity check the types
 
     for rule in rules:
-      if not isinstance(rule, (bytes, unicode, ExitPolicyRule)):
+      if not isinstance(rule, (bytes, str_type, ExitPolicyRule)):
         raise TypeError('Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)' % (type(rule), rules))
 
     # Unparsed representation of the rules we were constructed with. Our
@@ -248,7 +249,7 @@ class ExitPolicy(object):
     is_all_str = True
 
     for rule in rules:
-      if not isinstance(rule, (bytes, unicode)):
+      if not isinstance(rule, (bytes, str_type)):
         is_all_str = False
 
     if rules and is_all_str:
@@ -298,7 +299,7 @@ class ExitPolicy(object):
 
     for rule in self._get_rules():
       if rule.is_accept:
-        for port in xrange(rule.min_port, rule.max_port + 1):
+        for port in range(rule.min_port, rule.max_port + 1):
           if port not in rejected_ports:
             return True
       elif rule.is_address_wildcard():
@@ -351,7 +352,7 @@ class ExitPolicy(object):
       elif rule.is_port_wildcard():
         break
 
-      for port in xrange(rule.min_port, rule.max_port + 1):
+      for port in range(rule.min_port, rule.max_port + 1):
         if port in skip_ports:
           continue
 
@@ -457,7 +458,7 @@ class ExitPolicy(object):
         if isinstance(rule, bytes):
           rule = stem.util.str_tools._to_unicode(rule)
 
-        if isinstance(rule, unicode):
+        if isinstance(rule, str_type):
           rule = ExitPolicyRule(rule.strip())
 
         if rule.is_accept:
@@ -1025,7 +1026,7 @@ def _address_type_to_int(address_type):
 
 
 def _int_to_address_type(address_type_int):
-  return AddressType[AddressType.keys()[address_type_int]]
+  return list(AddressType)[address_type_int]
 
 
 class MicroExitPolicyRule(ExitPolicyRule):

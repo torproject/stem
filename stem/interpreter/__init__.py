@@ -18,6 +18,7 @@ import sys
 
 import stem
 import stem.connection
+import stem.prereq
 import stem.process
 import stem.util.conf
 import stem.util.system
@@ -52,11 +53,11 @@ def main():
   try:
     args = stem.interpreter.arguments.parse(sys.argv[1:])
   except ValueError as exc:
-    print exc
+    print(exc)
     sys.exit(1)
 
   if args.print_help:
-    print stem.interpreter.arguments.get_help()
+    print(stem.interpreter.arguments.get_help())
     sys.exit()
 
   if args.disable_color:
@@ -72,10 +73,10 @@ def main():
 
     if not is_tor_running:
       if not stem.util.system.is_available('tor'):
-        print format(msg('msg.tor_unavailable'), *ERROR_OUTPUT)
+        print(format(msg('msg.tor_unavailable'), *ERROR_OUTPUT))
         sys.exit(1)
       else:
-        print format(msg('msg.starting_tor'), *HEADER_OUTPUT)
+        print(format(msg('msg.starting_tor'), *HEADER_OUTPUT))
 
         stem.process.launch_tor_with_config(
           config = {
@@ -118,18 +119,23 @@ def main():
 
     for line in msg('msg.startup_banner').splitlines():
       line_format = HEADER_BOLD_OUTPUT if line.startswith('  ') else HEADER_OUTPUT
-      print format(line, *line_format)
+      print(format(line, *line_format))
 
-    print
+    print('')
 
     while True:
       try:
         prompt = '... ' if interpreter.is_multiline_context else PROMPT
-        user_input = raw_input(prompt)
+
+        if stem.prereq.is_python_3():
+          user_input = input(prompt)
+        else:
+          user_input = raw_input(prompt)
+
         response = interpreter.run_command(user_input)
 
         if response is not None:
-          print response
+          print(response)
       except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
-        print  # move cursor to the following line
+        print('')  # move cursor to the following line
         break

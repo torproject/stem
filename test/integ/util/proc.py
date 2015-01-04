@@ -26,7 +26,7 @@ class TestProc(unittest.TestCase):
 
     runner = test.runner.get_runner()
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
-    self.assertEquals(tor_cwd, proc.cwd(runner_pid))
+    self.assertEqual(tor_cwd, proc.cwd(runner_pid))
 
   def test_uid(self):
     """
@@ -38,7 +38,7 @@ class TestProc(unittest.TestCase):
       return
 
     tor_pid = test.runner.get_runner().get_pid()
-    self.assertEquals(os.geteuid(), proc.uid(tor_pid))
+    self.assertEqual(os.geteuid(), proc.uid(tor_pid))
 
   def test_memory_usage(self):
     """
@@ -68,7 +68,7 @@ class TestProc(unittest.TestCase):
     tor_pid = test.runner.get_runner().get_pid()
     command, utime, stime, start_time = proc.stats(tor_pid, 'command', 'utime', 'stime', 'start time')
 
-    self.assertEquals('tor', command)
+    self.assertEqual('tor', command)
     self.assertTrue(float(utime) > 0)
     self.assertTrue(float(stime) >= 0)
     self.assertTrue(float(start_time) > proc.system_start_time())

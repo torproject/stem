@@ -491,6 +491,15 @@ __all__ = [
   'TimeoutSetType',
 ]
 
+import stem.prereq
+
+if stem.prereq.is_python_3():
+  str_type = str
+  int_type = int
+else:
+  str_type = unicode
+  int_type = long
+
 import stem.util.enum
 
 # Constant to indicate an undefined argument default. Usually we'd use None for

@@ -56,7 +56,7 @@ if __name__ == '__main__':
   try:
     opts = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)[0]
   except getopt.GetoptError as exc:
-    print "%s (for usage provide --help)" % exc
+    print("%s (for usage provide --help)" % exc)
     sys.exit(1)
 
   repeat_rate = None
@@ -66,10 +66,10 @@ if __name__ == '__main__':
       if arg.isdigit():
         repeat_rate = int(arg)
       else:
-        print "The --repeat argument must be an integer, got '%s'" % arg
+        print("The --repeat argument must be an integer, got '%s'" % arg)
         sys.exit(1)
     elif opt in ("-h", "--help"):
-      print HELP_MSG
+      print(HELP_MSG)
       sys.exit()
 
   if repeat_rate:

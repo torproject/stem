@@ -12,7 +12,6 @@ Helper functions for our test framework.
   get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
   get_help_message - provides usage information for running our tests
-  get_python3_destination - location where a python3 copy of stem is exported to
 
 Sets of :class:`~test.util.Task` instances can be ran with
 :func:`~test.util.run_tasks`. Functions that are intended for easy use with
@@ -28,17 +27,10 @@ Tasks are...
   |- check_pep8_version - checks our version of pep8
   |- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
   +- check_for_unused_tests - checks to see if any tests are missing from our settings
-
-  Testing Python 3
-  |- python3_prereq - checks that we have python3 and 2to3
-  |- python3_clean - deletes our prior python3 export
-  |- python3_copy_stem - copies our codebase and converts with 2to3
-  +- python3_run_tests - runs python 3 tests
 """
 
 import re
 import os
-import shutil
 import sys
 
 import stem
@@ -200,17 +192,6 @@ def get_torrc_entries(target):
   return torrc_opts
 
 
-def get_python3_destination():
-  """
-  Provides the location where a python 3 copy of stem is exported to for
-  testing.
-
-  :returns: **str** with the relative path to our python 3 location
-  """
-
-  return os.path.join(CONFIG['integ.test_directory'], 'python3')
-
-
 def check_stem_version():
   return stem.__version__
 
@@ -299,55 +280,6 @@ def check_for_unused_tests(paths):
 
   if unused_tests:
     raise ValueError('Test modules are missing from our test/settings.cfg:\n%s' % '\n'.join(unused_tests))
-
-
-def python3_prereq():
-  for required_cmd in ('2to3', 'python3'):
-    if not stem.util.system.is_available(required_cmd):
-      raise ValueError("Unable to test python 3 because %s isn't in your path" % required_cmd)
-
-
-def python3_clean(skip = False):
-  location = get_python3_destination()
-
-  if not os.path.exists(location):
-    return 'skipped'
-  elif skip:
-    return ["Reusing '%s'. Run again with '--clean' if you want a fresh copy." % location]
-  else:
-    shutil.rmtree(location, ignore_errors = True)
-    return 'done'
-
-
-def python3_copy_stem():
-  destination = get_python3_destination()
-
-  if os.path.exists(destination):
-    return 'skipped'
-
-  # skips the python3 destination (to avoid an infinite loop)
-  def _ignore(src, names):
-    if src == os.path.normpath(destination):
-      return names
-    else:
-      return []
-
-  os.makedirs(destination)
-  shutil.copytree('stem', os.path.join(destination, 'stem'))
-  shutil.copytree('test', os.path.join(destination, 'test'), ignore = _ignore)
-  shutil.copy('run_tests.py', os.path.join(destination, 'run_tests.py'))
-  stem.util.system.call('2to3 --write --nobackups --no-diffs %s' % get_python3_destination())
-
-  return 'done'
-
-
-def python3_run_tests():
-  println()
-  println()
-
-  python3_runner = os.path.join(get_python3_destination(), 'run_tests.py')
-  exit_status = os.system('python3 %s %s' % (python3_runner, ' '.join(sys.argv[1:])))
-  sys.exit(exit_status)
 
 
 def _is_test_data(path):

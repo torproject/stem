@@ -54,7 +54,7 @@ import time
 import stem.util.proc
 import stem.util.str_tools
 
-from stem import UNDEFINED
+from stem import UNDEFINED, str_type
 from stem.util import log
 
 # Mapping of commands to if they're available or not.
@@ -242,7 +242,7 @@ def is_running(command):
       command_listing = call(secondary_resolver, None)
 
     if command_listing:
-      command_listing = map(unicode.strip, command_listing)
+      command_listing = map(str_type.strip, command_listing)
       return command in command_listing
 
   return None
@@ -327,7 +327,7 @@ def pid_by_name(process_name, multiple = False):
 
     if results:
       try:
-        pids = map(int, results)
+        pids = list(map(int, results))
 
         if multiple:
           return pids
@@ -348,7 +348,7 @@ def pid_by_name(process_name, multiple = False):
 
     if results and len(results) == 1:
       try:
-        pids = map(int, results[0].split())
+        pids = list(map(int, results[0].split()))
 
         if multiple:
           return pids
@@ -380,7 +380,7 @@ def pid_by_name(process_name, multiple = False):
 
       if results:
         try:
-          pids = map(int, results[1:])
+          pids = list(map(int, results[1:]))
 
           if multiple:
             return pids
@@ -398,7 +398,7 @@ def pid_by_name(process_name, multiple = False):
         results = [r.split()[0] for r in results if r.endswith(' %s' % process_name)]
 
         try:
-          pids = map(int, results)
+          pids = list(map(int, results))
 
           if multiple:
             return pids
@@ -426,7 +426,7 @@ def pid_by_name(process_name, multiple = False):
 
     if results:
       try:
-        pids = map(int, results)
+        pids = list(map(int, results))
 
         if multiple:
           return pids
@@ -966,7 +966,7 @@ def get_process_name():
 
       args, argc = [], argc_t()
 
-      for i in xrange(100):
+      for i in range(100):
         # The ending index can be either None or raise a ValueError when
         # accessed...
         #

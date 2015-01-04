@@ -51,8 +51,8 @@ if __version__.endswith('-dev'):
   __version__ = __version__[:-4]
 
 # General information about the project.
-project = u'Stem'
-copyright = u'2012, %s' % __author__
+project = 'Stem'
+copyright = '2012, %s' % __author__
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -192,8 +192,8 @@ htmlhelp_basename = 'Stemdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Stem.tex', u'Stem Documentation',
-   u'Damian Johnson', 'manual'),
+  ('index', 'Stem.tex', 'Stem Documentation',
+   'Damian Johnson', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -225,7 +225,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'stem', u'Stem Documentation',
+    ('index', 'stem', 'Stem Documentation',
      ['%s (%s)' % (__author__, __contact__)], 1)
 ]
 

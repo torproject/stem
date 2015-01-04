@@ -55,9 +55,7 @@ functionality.
 What Python versions is Stem compatible with?
 ---------------------------------------------
 
-Stem works with **Python 2.6 and greater**. This includes the Python 3.x series
-by installing Stem via python3 (see our `installation instructions
-<https://pypi.python.org/pypi/stem/>`_ for more information).
+Stem works with **Python 2.6 and greater**, including the Python 3.x series.
 
 .. _can_i_interact_with_tors_controller_interface_directly:
 
@@ -502,14 +500,6 @@ can exercise alternate Tor configurations with the ``--target`` argument (see
 error checking and `pep8 <http://pep8.readthedocs.org/en/latest/>`_ for style
 checking. If you have them installed then they automatically take place as part
 of all test runs.
-
-If you have **Python 3** installed then you can test our Python 3 compatibility
-with the following. *Note that need to still initially execute run_tests.py
-with a 2.x version of Python.*
-
-::
-
-  ~/stem$ ./run_tests.py --all --python3
 
 See ``run_tests.py --help`` for more usage information.
 

@@ -142,7 +142,7 @@ def _parse_file(descriptor_file, validate = True, **kwargs):
         descriptor_lines = descriptor_lines[1:]
 
       # strip newlines from annotations
-      annotations = map(bytes.strip, annotations)
+      annotations = list(map(bytes.strip, annotations))
 
       descriptor_text = bytes.join(b'', descriptor_lines)
 
@@ -248,7 +248,7 @@ class Microdescriptor(Descriptor):
     :raises: **ValueError** if an error occurs in validation
     """
 
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       # most just work with the first (and only) value
       value, block_type, block_contents = values[0]
 
@@ -302,7 +302,7 @@ class Microdescriptor(Descriptor):
       if keyword in entries and len(entries[keyword]) > 1:
         raise ValueError("The '%s' entry can only appear once in a microdescriptor" % keyword)
 
-    if "onion-key" != entries.keys()[0]:
+    if 'onion-key' != list(entries.keys())[0]:
       raise ValueError("Microdescriptor must start with a 'onion-key' entry")
 
   def _name(self, is_plural = False):

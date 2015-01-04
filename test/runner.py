@@ -199,7 +199,7 @@ def exercise_controller(test_case, controller):
   else:
     config_file_response = controller.msg('GETINFO config-file')
 
-  test_case.assertEquals('config-file=%s\nOK' % torrc_path, str(config_file_response))
+  test_case.assertEqual('config-file=%s\nOK' % torrc_path, str(config_file_response))
 
 
 def get_runner():
@@ -638,13 +638,13 @@ class Runner(object):
         socket_dir = os.path.dirname(CONTROL_SOCKET_PATH)
         println('  making control socket directory (%s)... ' % socket_dir, STATUS, NO_NL)
 
-        if os.path.exists(socket_dir) and stat.S_IMODE(os.stat(socket_dir).st_mode) == 0700:
+        if os.path.exists(socket_dir) and stat.S_IMODE(os.stat(socket_dir).st_mode) == 0o700:
           println('skipped', STATUS)
         else:
           if not os.path.exists(socket_dir):
             os.makedirs(socket_dir)
 
-          os.chmod(socket_dir, 0700)
+          os.chmod(socket_dir, 0o700)
           println('done', STATUS)
       except OSError as exc:
         println('failed (%s)' % exc, ERROR)

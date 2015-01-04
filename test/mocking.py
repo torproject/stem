@@ -204,8 +204,8 @@ def get_all_combinations(attr, include_empty = False):
     yield ()
 
   seen = set()
-  for index in xrange(1, len(attr) + 1):
-    product_arg = [attr for _ in xrange(index)]
+  for index in range(1, len(attr) + 1):
+    product_arg = [attr for _ in range(index)]
 
     for item in itertools.product(*product_arg):
       # deduplicate, sort, and only provide if we haven't seen it yet

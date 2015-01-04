@@ -82,7 +82,7 @@ class TestTorDNSELDescriptor(unittest.TestCase):
 
     # skip exit address if malformed date and validate is False
 
-    desc = _parse_file(io.BytesIO(MALFORMED_ENTRY_2), validate=False).next()
+    desc = next(_parse_file(io.BytesIO(MALFORMED_ENTRY_2), validate=False))
     self.assertTrue(is_valid_fingerprint(desc.fingerprint))
     self.assertEqual('030B22437D99B2DB2908B747B6962EAD13AB4038', desc.fingerprint)
     self.assertEqual(0, len(desc.exit_addresses))

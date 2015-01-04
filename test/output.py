@@ -62,7 +62,7 @@ def println(msg = '', *attr):
     sys.stdout.write(msg)
     sys.stdout.flush()
   else:
-    print msg
+    print(msg)
 
 
 def print_divider(msg, is_header = False):
@@ -75,7 +75,7 @@ def print_logging(logging_buffer):
     for entry in logging_buffer:
       println(entry.replace('\n', '\n  '), term.Color.MAGENTA)
 
-    print
+    print()
 
 
 def apply_filters(testing_output, *filters):

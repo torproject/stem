@@ -10,6 +10,7 @@ import ntpath
 import posixpath
 import unittest
 
+from stem import str_type
 from stem.util import system
 
 try:
@@ -116,7 +117,8 @@ class TestSystem(unittest.TestCase):
     """
 
     # mock response with a linux and bsd resolver
-    running_commands = [u'irssi', u'moc', u'tor', u'ps', u'  firefox  ']
+    running_commands = [str_type('irssi'), str_type('moc'), str_type('tor'),
+                        str_type('ps'), str_type('  firefox  ')]
 
     for ps_cmd in (system.IS_RUNNING_PS_LINUX, system.IS_RUNNING_PS_BSD):
       call_mock.side_effect = mock_call(ps_cmd, running_commands)
@@ -133,7 +135,7 @@ class TestSystem(unittest.TestCase):
     call_mock.return_value = None
     call_mock.side_effect = None
     self.assertFalse(system.is_running('irssi'))
-    self.assertEquals(None, system.is_running('irssi'))
+    self.assertEqual(None, system.is_running('irssi'))
 
   @patch('stem.util.system.call')
   @patch('stem.util.proc.is_available', Mock(return_value = False))
@@ -156,7 +158,7 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 'vim' if test_input == 'success' else None
-      self.assertEquals(expected_response, system.name_by_pid(test_input))
+      self.assertEqual(expected_response, system.name_by_pid(test_input))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
@@ -172,9 +174,9 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 1111 if test_input == 'success' else None
-      self.assertEquals(expected_response, system.pid_by_name(test_input))
+      self.assertEqual(expected_response, system.pid_by_name(test_input))
 
-    self.assertEquals([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
+    self.assertEqual([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
@@ -190,9 +192,9 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 1111 if test_input == 'success' else None
-      self.assertEquals(expected_response, system.pid_by_name(test_input))
+      self.assertEqual(expected_response, system.pid_by_name(test_input))
 
-    self.assertEquals([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
+    self.assertEqual([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_bsd', Mock(return_value = False))
@@ -209,9 +211,9 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 1111 if test_input == 'success' else None
-      self.assertEquals(expected_response, system.pid_by_name(test_input))
+      self.assertEqual(expected_response, system.pid_by_name(test_input))
 
-    self.assertEquals([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
+    self.assertEqual([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_bsd', Mock(return_value = True))
@@ -222,13 +224,13 @@ class TestSystem(unittest.TestCase):
     """
 
     call_mock.side_effect = mock_call(system.GET_PID_BY_NAME_PS_BSD, GET_PID_BY_NAME_PS_BSD)
-    self.assertEquals(1, system.pid_by_name('launchd'))
-    self.assertEquals(11, system.pid_by_name('DirectoryService'))
-    self.assertEquals(None, system.pid_by_name('blarg'))
+    self.assertEqual(1, system.pid_by_name('launchd'))
+    self.assertEqual(11, system.pid_by_name('DirectoryService'))
+    self.assertEqual(None, system.pid_by_name('blarg'))
 
     call_mock.side_effect = mock_call(system.GET_PID_BY_NAME_PS_BSD, GET_PID_BY_NAME_PS_BSD_MULTIPLE)
 
-    self.assertEquals([1, 41], system.pid_by_name('launchd', multiple = True))
+    self.assertEqual([1, 41], system.pid_by_name('launchd', multiple = True))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
@@ -244,9 +246,9 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 1111 if test_input == 'success' else None
-      self.assertEquals(expected_response, system.pid_by_name(test_input))
+      self.assertEqual(expected_response, system.pid_by_name(test_input))
 
-    self.assertEquals([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
+    self.assertEqual([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
@@ -256,10 +258,10 @@ class TestSystem(unittest.TestCase):
     """
 
     call_mock.side_effect = mock_call(system.GET_PID_BY_PORT_NETSTAT, GET_PID_BY_PORT_NETSTAT_RESULTS)
-    self.assertEquals(1641, system.pid_by_port(9051))
-    self.assertEquals(1641, system.pid_by_port('9051'))
-    self.assertEquals(None, system.pid_by_port(631))
-    self.assertEquals(None, system.pid_by_port(123))
+    self.assertEqual(1641, system.pid_by_port(9051))
+    self.assertEqual(1641, system.pid_by_port('9051'))
+    self.assertEqual(None, system.pid_by_port(631))
+    self.assertEqual(None, system.pid_by_port(123))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
@@ -269,9 +271,9 @@ class TestSystem(unittest.TestCase):
     """
 
     call_mock.side_effect = mock_call(system.GET_PID_BY_PORT_SOCKSTAT % 9051, GET_PID_BY_PORT_SOCKSTAT_RESULTS)
-    self.assertEquals(4397, system.pid_by_port(9051))
-    self.assertEquals(4397, system.pid_by_port('9051'))
-    self.assertEquals(None, system.pid_by_port(123))
+    self.assertEqual(4397, system.pid_by_port(9051))
+    self.assertEqual(4397, system.pid_by_port('9051'))
+    self.assertEqual(None, system.pid_by_port(123))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
@@ -281,10 +283,10 @@ class TestSystem(unittest.TestCase):
     """
 
     call_mock.side_effect = mock_call(system.GET_PID_BY_PORT_LSOF, GET_PID_BY_PORT_LSOF_RESULTS)
-    self.assertEquals(1745, system.pid_by_port(9051))
-    self.assertEquals(1745, system.pid_by_port('9051'))
-    self.assertEquals(329, system.pid_by_port(80))
-    self.assertEquals(None, system.pid_by_port(123))
+    self.assertEqual(1745, system.pid_by_port(9051))
+    self.assertEqual(1745, system.pid_by_port('9051'))
+    self.assertEqual(329, system.pid_by_port(80))
+    self.assertEqual(None, system.pid_by_port(123))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
@@ -295,11 +297,11 @@ class TestSystem(unittest.TestCase):
 
     lsof_query = system.GET_PID_BY_FILE_LSOF % '/tmp/foo'
     call_mock.side_effect = mock_call(lsof_query, ['4762'])
-    self.assertEquals(4762, system.pid_by_open_file('/tmp/foo'))
+    self.assertEqual(4762, system.pid_by_open_file('/tmp/foo'))
 
     call_mock.return_value = []
     call_mock.side_effect = None
-    self.assertEquals(None, system.pid_by_open_file('/tmp/somewhere_else'))
+    self.assertEqual(None, system.pid_by_open_file('/tmp/somewhere_else'))
 
   @patch('stem.util.system.call')
   @patch('stem.util.proc.is_available', Mock(return_value = False))
@@ -320,7 +322,7 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = '/home/atagar' if test_input == '3799' else None
-      self.assertEquals(expected_response, system.cwd(test_input))
+      self.assertEqual(expected_response, system.cwd(test_input))
 
   @patch('stem.util.system.call')
   @patch('stem.util.proc.is_available', Mock(return_value = False))
@@ -340,7 +342,7 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = '/Users/atagar/tor/src/or' if test_input == '75717' else None
-      self.assertEquals(expected_response, system.cwd(test_input))
+      self.assertEqual(expected_response, system.cwd(test_input))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
@@ -362,7 +364,7 @@ class TestSystem(unittest.TestCase):
 
     for test_input in responses:
       expected_response = 1 if test_input == '1111' else 0
-      self.assertEquals(expected_response, system.bsd_jail_id(test_input))
+      self.assertEqual(expected_response, system.bsd_jail_id(test_input))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
@@ -374,10 +376,10 @@ class TestSystem(unittest.TestCase):
     # check when we don't have a jail
 
     call_mock.return_value = []
-    self.assertEquals(None, system.bsd_jail_path(1))
+    self.assertEqual(None, system.bsd_jail_path(1))
 
     call_mock.side_effect = mock_call(system.GET_BSD_JAIL_PATH % '1', GET_BSD_JAIL_PATH_RESULTS)
-    self.assertEquals('/usr/jails/tor-jail', system.bsd_jail_path(1))
+    self.assertEqual('/usr/jails/tor-jail', system.bsd_jail_path(1))
 
   @patch('platform.system', Mock(return_value = 'Linux'))
   @patch('os.path.join', Mock(side_effect = posixpath.join))
@@ -388,13 +390,13 @@ class TestSystem(unittest.TestCase):
     tests).
     """
 
-    self.assertEquals('', system.expand_path(''))
-    self.assertEquals('/tmp', system.expand_path('/tmp'))
-    self.assertEquals('/tmp', system.expand_path('/tmp/'))
-    self.assertEquals('/tmp', system.expand_path('.', '/tmp'))
-    self.assertEquals('/tmp', system.expand_path('./', '/tmp'))
-    self.assertEquals('/tmp/foo', system.expand_path('foo', '/tmp'))
-    self.assertEquals('/tmp/foo', system.expand_path('./foo', '/tmp'))
+    self.assertEqual('', system.expand_path(''))
+    self.assertEqual('/tmp', system.expand_path('/tmp'))
+    self.assertEqual('/tmp', system.expand_path('/tmp/'))
+    self.assertEqual('/tmp', system.expand_path('.', '/tmp'))
+    self.assertEqual('/tmp', system.expand_path('./', '/tmp'))
+    self.assertEqual('/tmp/foo', system.expand_path('foo', '/tmp'))
+    self.assertEqual('/tmp/foo', system.expand_path('./foo', '/tmp'))
 
   @patch('platform.system', Mock(return_value = 'Windows'))
   @patch('os.path.join', Mock(side_effect = ntpath.join))
@@ -405,10 +407,10 @@ class TestSystem(unittest.TestCase):
     (that's left to integ tests).
     """
 
-    self.assertEquals('', system.expand_path(''))
-    self.assertEquals('C:\\tmp', system.expand_path('C:\\tmp'))
-    self.assertEquals('C:\\tmp', system.expand_path('C:\\tmp\\'))
-    self.assertEquals('C:\\tmp', system.expand_path('.', 'C:\\tmp'))
-    self.assertEquals('C:\\tmp', system.expand_path('.\\', 'C:\\tmp'))
-    self.assertEquals('C:\\tmp\\foo', system.expand_path('foo', 'C:\\tmp'))
-    self.assertEquals('C:\\tmp\\foo', system.expand_path('.\\foo', 'C:\\tmp'))
+    self.assertEqual('', system.expand_path(''))
+    self.assertEqual('C:\\tmp', system.expand_path('C:\\tmp'))
+    self.assertEqual('C:\\tmp', system.expand_path('C:\\tmp\\'))
+    self.assertEqual('C:\\tmp', system.expand_path('.', 'C:\\tmp'))
+    self.assertEqual('C:\\tmp', system.expand_path('.\\', 'C:\\tmp'))
+    self.assertEqual('C:\\tmp\\foo', system.expand_path('foo', 'C:\\tmp'))
+    self.assertEqual('C:\\tmp\\foo', system.expand_path('.\\foo', 'C:\\tmp'))

@@ -29,9 +29,11 @@ import sys
 import stem.prereq
 import stem.util.enum
 
+from stem import str_type
 
 # label conversion tuples of the form...
 # (bits / bytes / seconds, short label, long label)
+
 SIZE_UNITS_BITS = (
   (140737488355328.0, ' Pb', ' Petabit'),
   (137438953472.0, ' Tb', ' Terabit'),
@@ -73,13 +75,13 @@ if stem.prereq.is_python_3():
       return msg
 else:
   def _to_bytes_impl(msg):
-    if msg is not None and isinstance(msg, unicode):
+    if msg is not None and isinstance(msg, str_type):
       return codecs.latin_1_encode(msg, 'replace')[0]
     else:
       return msg
 
   def _to_unicode_impl(msg):
-    if msg is not None and not isinstance(msg, unicode):
+    if msg is not None and not isinstance(msg, str_type):
       return msg.decode('utf-8', 'replace')
     else:
       return msg
@@ -213,7 +215,7 @@ def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, 
     min_word_length += 1
 
   if min_word_length is None:
-    min_word_length = sys.maxint
+    min_word_length = sys.maxsize
 
   # checks if there isn't the minimum space needed to include anything
 
@@ -454,7 +456,7 @@ def _parse_timestamp(entry):
   :raises: **ValueError** if the timestamp is malformed
   """
 
-  if not isinstance(entry, (str, unicode)):
+  if not isinstance(entry, (str, str_type)):
     raise ValueError('parse_timestamp() input must be a str, got a %s' % type(entry))
 
   try:
@@ -480,7 +482,7 @@ def _parse_iso_timestamp(entry):
   :raises: **ValueError** if the timestamp is malformed
   """
 
-  if not isinstance(entry, (str, unicode)):
+  if not isinstance(entry, (str, str_type)):
     raise ValueError('parse_iso_timestamp() input must be a str, got a %s' % type(entry))
 
   # based after suggestions from...

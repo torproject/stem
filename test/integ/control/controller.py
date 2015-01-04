@@ -974,7 +974,7 @@ class TestController(unittest.TestCase):
 
       # try up to 10 times to rule out transient network failures
 
-      for _ in xrange(10):
+      for _ in range(10):
         try:
           s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
           s.settimeout(30)
@@ -1184,7 +1184,7 @@ class TestController(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_controller() as controller:
       # try 10 times to build a circuit we can connect through
-      for i in xrange(10):
+      for i in range(10):
         controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
         controller.set_conf('__LeaveStreamsUnattached', '1')
 
@@ -1208,7 +1208,7 @@ class TestController(unittest.TestCase):
     self.assertTrue(our_stream.circ_id)
     self.assertTrue(circuit_id)
 
-    self.assertEquals(our_stream.circ_id, circuit_id)
+    self.assertEqual(our_stream.circ_id, circuit_id)
 
   def test_get_circuits(self):
     """

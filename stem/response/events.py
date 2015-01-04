@@ -11,6 +11,7 @@ import stem.descriptor.router_status_entry
 import stem.response
 import stem.version
 
+from stem import str_type, int_type
 from stem.util import connection, log, str_tools, tor_tools
 
 # Matches keyword=value arguments. This can't be a simple "(.*)=(.*)" pattern
@@ -141,7 +142,7 @@ class Event(stem.response.ControlMessage):
     attr_values = getattr(self, attr)
 
     if attr_values:
-      if isinstance(attr_values, (bytes, unicode)):
+      if isinstance(attr_values, (bytes, str_type)):
         attr_values = [attr_values]
 
       for value in attr_values:
@@ -255,8 +256,8 @@ class BandwidthEvent(Event):
     elif not self.read.isdigit() or not self.written.isdigit():
       raise stem.ProtocolError("A BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
 
-    self.read = long(self.read)
-    self.written = long(self.written)
+    self.read = int_type(self.read)
+    self.written = int_type(self.written)
 
 
 class BuildTimeoutSetEvent(Event):
@@ -976,8 +977,8 @@ class StreamBwEvent(Event):
     elif not self.read.isdigit() or not self.written.isdigit():
       raise stem.ProtocolError("A STREAM_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
 
-    self.read = long(self.read)
-    self.written = long(self.written)
+    self.read = int_type(self.read)
+    self.written = int_type(self.written)
 
 
 class TransportLaunchedEvent(Event):
@@ -1050,8 +1051,8 @@ class ConnectionBandwidthEvent(Event):
     elif not tor_tools.is_valid_connection_id(self.id):
       raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
 
-    self.read = long(self.read)
-    self.written = long(self.written)
+    self.read = int_type(self.read)
+    self.written = int_type(self.written)
 
     self._log_if_unrecognized('type', stem.ConnectionType)
 
@@ -1090,8 +1091,8 @@ class CircuitBandwidthEvent(Event):
     elif not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
 
-    self.read = long(self.read)
-    self.written = long(self.written)
+    self.read = int_type(self.read)
+    self.written = int_type(self.written)
 
 
 class CellStatsEvent(Event):

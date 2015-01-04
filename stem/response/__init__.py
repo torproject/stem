@@ -43,8 +43,12 @@ __all__ = [
 ]
 
 import re
-import StringIO
 import threading
+
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 import stem.socket
 
@@ -149,7 +153,7 @@ class ControlMessage(object):
     :returns: stem.response.ControlMessage instance
     """
 
-    msg = stem.socket.recv_message(StringIO.StringIO(content))
+    msg = stem.socket.recv_message(StringIO(content))
 
     if msg_type is not None:
       convert(msg_type, msg, **kwargs)

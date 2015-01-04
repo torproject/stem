@@ -55,7 +55,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     """
 
     authority = get_directory_authority({'pepperjack': 'is oh so tasty!'})
-    self.assertEquals(['pepperjack is oh so tasty!'], authority.get_unrecognized_lines())
+    self.assertEqual(['pepperjack is oh so tasty!'], authority.get_unrecognized_lines())
 
   def test_legacy_authority(self):
     """

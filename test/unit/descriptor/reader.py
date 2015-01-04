@@ -17,6 +17,7 @@ import stem.descriptor.reader
 import test.runner
 import test.unit.descriptor
 
+from stem import str_type
 from stem.util import system
 
 try:
@@ -90,13 +91,13 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     test_lines = (
-      u'/dir/ 0',
-      u'/dir/file 12345',
-      u'/dir/file with spaces 7138743',
-      u'  /dir/with extra space 12345   ',
-      u'   \t   ',
-      u'',
-      u'/dir/after empty line 12345',
+      str_type('/dir/ 0'),
+      str_type('/dir/file 12345'),
+      str_type('/dir/file with spaces 7138743'),
+      str_type('  /dir/with extra space 12345   '),
+      str_type('   \t   '),
+      str_type(''),
+      str_type('/dir/after empty line 12345'),
     )
 
     expected_value = {
@@ -107,8 +108,8 @@ class TestDescriptorReader(unittest.TestCase):
       '/dir/after empty line': 12345,
     }
 
-    open_mock.return_value = io.StringIO(u'\n'.join(test_lines))
-    self.assertEquals(expected_value, stem.descriptor.reader.load_processed_files(''))
+    open_mock.return_value = io.StringIO(str_type('\n'.join(test_lines)))
+    self.assertEqual(expected_value, stem.descriptor.reader.load_processed_files(''))
 
   @patch('stem.descriptor.reader.open', create = True)
   def test_load_processed_files_empty(self, open_mock):
@@ -116,8 +117,8 @@ class TestDescriptorReader(unittest.TestCase):
     Tests the load_processed_files() function with an empty file.
     """
 
-    open_mock.return_value = io.StringIO(u'')
-    self.assertEquals({}, stem.descriptor.reader.load_processed_files(''))
+    open_mock.return_value = io.StringIO(str_type(''))
+    self.assertEqual({}, stem.descriptor.reader.load_processed_files(''))
 
   @patch('stem.descriptor.reader.open', create = True)
   def test_load_processed_files_no_file(self, open_mock):
@@ -126,7 +127,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is missing the file path.
     """
 
-    open_mock.return_value = io.StringIO(u' 12345')
+    open_mock.return_value = io.StringIO(str_type(' 12345'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -136,7 +137,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is missing the timestamp.
     """
 
-    open_mock.return_value = io.StringIO(u'/dir/file ')
+    open_mock.return_value = io.StringIO(str_type('/dir/file '))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -146,7 +147,7 @@ class TestDescriptorReader(unittest.TestCase):
     it has an invalid file path.
     """
 
-    open_mock.return_value = io.StringIO(u'not_an_absolute_file 12345')
+    open_mock.return_value = io.StringIO(str_type('not_an_absolute_file 12345'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -156,7 +157,7 @@ class TestDescriptorReader(unittest.TestCase):
     it has a non-numeric timestamp.
     """
 
-    open_mock.return_value = io.StringIO(u'/dir/file 123a')
+    open_mock.return_value = io.StringIO(str_type('/dir/file 123a'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   def test_load_processed_files_from_data(self):
@@ -173,7 +174,7 @@ class TestDescriptorReader(unittest.TestCase):
       '/file with spaces/and \\ stuff': 890,
     }
 
-    self.assertEquals(expected_listing, loaded_listing)
+    self.assertEqual(expected_listing, loaded_listing)
 
   def test_load_processed_files_missing(self):
     """
@@ -202,7 +203,7 @@ class TestDescriptorReader(unittest.TestCase):
       test.runner.skip(self, '(chmod not functional)')
 
     test_listing_path = self._make_processed_files_listing(BASIC_LISTING)
-    os.chmod(test_listing_path, 0077)  # remove read permissions
+    os.chmod(test_listing_path, 0o077)  # remove read permissions
     self.assertRaises(IOError, stem.descriptor.reader.load_processed_files, test_listing_path)
 
   def test_save_processed_files(self):
@@ -221,7 +222,7 @@ class TestDescriptorReader(unittest.TestCase):
     stem.descriptor.reader.save_processed_files(self.test_listing_path, initial_listing)
     loaded_listing = stem.descriptor.reader.load_processed_files(self.test_listing_path)
 
-    self.assertEquals(initial_listing, loaded_listing)
+    self.assertEqual(initial_listing, loaded_listing)
 
   def test_save_processed_files_malformed(self):
     """
@@ -262,7 +263,7 @@ class TestDescriptorReader(unittest.TestCase):
 
     # running this test multiple times to flush out concurrency issues
 
-    for _ in xrange(15):
+    for _ in range(15):
       remaining_entries = list(descriptor_entries)
 
       with stem.descriptor.reader.DescriptorReader(descriptor_path) as reader:
@@ -288,20 +289,20 @@ class TestDescriptorReader(unittest.TestCase):
     reader = stem.descriptor.reader.DescriptorReader(descriptor_path)
 
     with reader:
-      self.assertEquals(1, len(list(reader)))
+      self.assertEqual(1, len(list(reader)))
 
     # run it a second time, this shouldn't provide any descriptors because we
     # have already read it
 
     with reader:
-      self.assertEquals(0, len(list(reader)))
+      self.assertEqual(0, len(list(reader)))
 
     # clear the DescriptorReader's memory of seeing the file and run it again
 
     reader.set_processed_files([])
 
     with reader:
-      self.assertEquals(1, len(list(reader)))
+      self.assertEqual(1, len(list(reader)))
 
   def test_buffer_size(self):
     """
@@ -377,7 +378,7 @@ class TestDescriptorReader(unittest.TestCase):
 
     with stem.descriptor.reader.DescriptorReader(test_path) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
-      self.assertEquals(expected_results, read_descriptors)
+      self.assertEqual(expected_results, read_descriptors)
 
   def test_archived_gzip(self):
     """
@@ -389,7 +390,7 @@ class TestDescriptorReader(unittest.TestCase):
 
     with stem.descriptor.reader.DescriptorReader(test_path) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
-      self.assertEquals(expected_results, read_descriptors)
+      self.assertEqual(expected_results, read_descriptors)
 
   def test_archived_bz2(self):
     """
@@ -401,7 +402,7 @@ class TestDescriptorReader(unittest.TestCase):
 
     with stem.descriptor.reader.DescriptorReader(test_path) as reader:
       read_descriptors = [str(desc) for desc in list(reader)]
-      self.assertEquals(expected_results, read_descriptors)
+      self.assertEqual(expected_results, read_descriptors)
 
   def test_stop(self):
     """
@@ -452,7 +453,7 @@ class TestDescriptorReader(unittest.TestCase):
     with reader:
       list(reader)  # iterates over all of the descriptors
 
-    self.assertEquals(expected_results, reader.get_processed_files())
+    self.assertEqual(expected_results, reader.get_processed_files())
 
   def test_skip_nondescriptor_contents(self):
     """
@@ -495,24 +496,24 @@ class TestDescriptorReader(unittest.TestCase):
     # path that we want the DescriptorReader to skip
 
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, 'example_descriptor')
-    initial_processed_files = {test_path: sys.maxint}
+    initial_processed_files = {test_path: sys.maxsize}
 
     skip_listener = SkipListener()
     reader = stem.descriptor.reader.DescriptorReader(test_path)
     reader.register_skip_listener(skip_listener.listener)
     reader.set_processed_files(initial_processed_files)
 
-    self.assertEquals(initial_processed_files, reader.get_processed_files())
+    self.assertEqual(initial_processed_files, reader.get_processed_files())
 
     with reader:
       list(reader)  # iterates over all of the descriptors
 
-    self.assertEquals(1, len(skip_listener.results))
+    self.assertEqual(1, len(skip_listener.results))
 
     skipped_path, skip_exception = skip_listener.results[0]
     self.assertEqual(test_path, skipped_path)
     self.assertTrue(isinstance(skip_exception, stem.descriptor.reader.AlreadyRead))
-    self.assertEqual(sys.maxint, skip_exception.last_modified_when_read)
+    self.assertEqual(sys.maxsize, skip_exception.last_modified_when_read)
 
   def test_skip_listener_unrecognized_type(self):
     """
@@ -567,7 +568,7 @@ class TestDescriptorReader(unittest.TestCase):
       test_file.write('test data for test_skip_listener_unrecognized_type()')
       test_file.close()
 
-      os.chmod(test_path, 0077)  # remove read permissions
+      os.chmod(test_path, 0o077)  # remove read permissions
 
       skip_listener = SkipListener()
       reader = stem.descriptor.reader.DescriptorReader(test_path)

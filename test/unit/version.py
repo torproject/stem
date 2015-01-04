@@ -191,7 +191,7 @@ class TestVersion(unittest.TestCase):
     requirements = stem.version._VersionRequirements()
     requirements.in_range(Version('0.2.2.0'), Version('0.2.3.0'))
 
-    for index in xrange(0, 100):
+    for index in range(0, 100):
       self.assertTrue(Version('0.2.2.%i' % index) >= requirements)
 
   def test_requirements_multiple_rules(self):
@@ -207,7 +207,7 @@ class TestVersion(unittest.TestCase):
     self.assertTrue(Version('0.2.3.0') >= requirements)
     self.assertFalse(Version('0.2.2.0') >= requirements)
 
-    for index in xrange(0, 100):
+    for index in range(0, 100):
       self.assertFalse(Version('0.2.2.%i' % index) >= requirements)
 
   def assert_versions_match(self, version, major, minor, micro, patch, status, extra):

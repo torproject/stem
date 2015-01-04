@@ -225,8 +225,6 @@ import functools
 import inspect
 import io
 import os
-import Queue
-import StringIO
 import threading
 import time
 
@@ -235,6 +233,13 @@ try:
   from collections import OrderedDict
 except ImportError:
   from stem.util.ordereddict import OrderedDict
+
+try:
+  import queue
+  from io import StringIO
+except ImportError:
+  import Queue as queue
+  from StringIO import StringIO
 
 import stem.descriptor.microdescriptor
 import stem.descriptor.reader
@@ -251,7 +256,7 @@ import stem.util.system
 import stem.util.tor_tools
 import stem.version
 
-from stem import UNDEFINED, CircStatus, Signal
+from stem import UNDEFINED, CircStatus, Signal, str_type
 from stem.util import log
 
 # state changes a control socket can have
@@ -437,8 +442,8 @@ class BaseController(object):
     self._status_listeners_lock = threading.RLock()
 
     # queues where incoming messages are directed
-    self._reply_queue = Queue.Queue()
-    self._event_queue = Queue.Queue()
+    self._reply_queue = queue.Queue()
+    self._event_queue = queue.Queue()
 
     # thread to continually pull from the control socket
     self._reader_thread = None
@@ -522,7 +527,7 @@ class BaseController(object):
             log.info('Socket experienced a problem (%s)' % response)
           elif isinstance(response, stem.response.ControlMessage):
             log.info('Failed to deliver a response: %s' % response)
-        except Queue.Empty:
+        except queue.Empty:
           # the empty() method is documented to not be fully reliable so this
           # isn't entirely surprising
 
@@ -840,7 +845,7 @@ class BaseController(object):
       try:
         event_message = self._event_queue.get_nowait()
         self._handle_event(event_message)
-      except Queue.Empty:
+      except queue.Empty:
         if not self.is_alive():
           break
 
@@ -986,7 +991,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if isinstance(params, (bytes, unicode)):
+    if isinstance(params, (bytes, str_type)):
       is_multiple = False
       params = set([params])
     else:
@@ -1019,7 +1024,7 @@ class Controller(BaseController):
       if is_multiple:
         return reply
       else:
-        return reply.values()[0]
+        return list(reply.values())[0]
 
     try:
       response = self.msg('GETINFO %s' % ' '.join(params))
@@ -1053,7 +1058,7 @@ class Controller(BaseController):
       if is_multiple:
         return reply
       else:
-        return reply.values()[0]
+        return list(reply.values())[0]
     except stem.ControllerError as exc:
       # bump geoip failure count if...
       # * we're caching results
@@ -1881,11 +1886,11 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if isinstance(params, (bytes, unicode)):
+    if isinstance(params, (bytes, str_type)):
       params = [params]
 
     # remove strings which contain only whitespace
-    params = filter(lambda entry: entry.strip(), params)
+    params = [entry for entry in params if entry.strip()]
 
     if params == []:
       return {}
@@ -1959,7 +1964,7 @@ class Controller(BaseController):
 
     return_dict = {}
 
-    for key, values in config_dict.items():
+    for key, values in list(config_dict.items()):
       if values == []:
         # config option was unset
         if default != UNDEFINED:
@@ -2048,7 +2053,7 @@ class Controller(BaseController):
     query_comp = ['RESETCONF' if reset else 'SETCONF']
 
     if isinstance(params, dict):
-      params = params.items()
+      params = list(params.items())
 
     for param, value in params:
       if isinstance(value, str):
@@ -2071,7 +2076,7 @@ class Controller(BaseController):
         for param, value in params:
           param = param.lower()
 
-          if isinstance(value, (bytes, unicode)):
+          if isinstance(value, (bytes, str_type)):
             value = [value]
 
           to_cache[param] = value
@@ -2228,7 +2233,7 @@ class Controller(BaseController):
     for directory in conf:
       hidden_service_options.append(('HiddenServiceDir', directory))
 
-      for k, v in conf[directory].items():
+      for k, v in list(conf[directory].items()):
         if k == 'HiddenServicePort':
           for entry in v:
             if isinstance(entry, int):
@@ -2432,7 +2437,7 @@ class Controller(BaseController):
     with self._event_listeners_lock:
       event_types_changed = False
 
-      for event_type, event_listeners in self._event_listeners.items():
+      for event_type, event_listeners in list(self._event_listeners.items()):
         if listener in event_listeners:
           event_listeners.remove(listener)
 
@@ -2496,7 +2501,7 @@ class Controller(BaseController):
       if not self.is_caching_enabled():
         return
 
-      for key, value in params.items():
+      for key, value in list(params.items()):
         if namespace:
           cache_key = '%s.%s' % (namespace, key)
         else:
@@ -2629,7 +2634,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidArguments` if features passed were invalid
     """
 
-    if isinstance(features, (bytes, unicode)):
+    if isinstance(features, (bytes, str_type)):
       features = [features]
 
     response = self.msg('USEFEATURE %s' % ' '.join(features))
@@ -2691,7 +2696,7 @@ class Controller(BaseController):
     response = self.get_info('circuit-status')
 
     for circ in response.splitlines():
-      circ_message = stem.socket.recv_message(StringIO.StringIO('650 CIRC ' + circ + '\r\n'))
+      circ_message = stem.socket.recv_message(StringIO('650 CIRC ' + circ + '\r\n'))
       stem.response.convert('EVENT', circ_message, arrived_at = 0)
       circuits.append(circ_message)
 
@@ -2755,7 +2760,7 @@ class Controller(BaseController):
     circ_queue, circ_listener = None, None
 
     if await_build:
-      circ_queue = Queue.Queue()
+      circ_queue = queue.Queue()
 
       def circ_listener(event):
         circ_queue.put(event)
@@ -2774,7 +2779,7 @@ class Controller(BaseController):
 
       args = [circuit_id]
 
-      if isinstance(path, (bytes, unicode)):
+      if isinstance(path, (bytes, str_type)):
         path = [path]
 
       if path:
@@ -2876,7 +2881,7 @@ class Controller(BaseController):
     response = self.get_info('stream-status')
 
     for stream in response.splitlines():
-      message = stem.socket.recv_message(StringIO.StringIO('650 STREAM ' + stream + '\r\n'))
+      message = stem.socket.recv_message(StringIO('650 STREAM ' + stream + '\r\n'))
       stem.response.convert('EVENT', message, arrived_at = 0)
       streams.append(message)
 
@@ -3070,7 +3075,7 @@ class Controller(BaseController):
     :returns: **dict** with 'original -> replacement' address mappings
     """
 
-    mapaddress_arg = ' '.join(['%s=%s' % (k, v) for (k, v) in mapping.items()])
+    mapaddress_arg = ' '.join(['%s=%s' % (k, v) for (k, v) in list(mapping.items())])
     response = self.msg('MAPADDRESS %s' % mapaddress_arg)
     stem.response.convert('MAPADDRESS', response)
 
@@ -3132,7 +3137,7 @@ class Controller(BaseController):
     stem.response.convert('EVENT', event_message, arrived_at = time.time())
 
     with self._event_listeners_lock:
-      for event_type, event_listeners in self._event_listeners.items():
+      for event_type, event_listeners in list(self._event_listeners.items()):
         if event_type == event_message.type:
           for listener in event_listeners:
             listener(event_message)
@@ -3155,7 +3160,7 @@ class Controller(BaseController):
         response = self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
 
         if response.is_ok():
-          set_events = self._event_listeners.keys()
+          set_events = list(self._event_listeners.keys())
         else:
           # One of the following likely happened...
           #
@@ -3170,7 +3175,7 @@ class Controller(BaseController):
           #
           # See if we can set some subset of our events.
 
-          for event in self._event_listeners.keys():
+          for event in list(self._event_listeners.keys()):
             response = self.msg('SETEVENTS %s' % ' '.join(set_events + [event]))
 
             if response.is_ok():
@@ -3278,7 +3283,7 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
 
   if entries is not None:
     if isinstance(entries, dict):
-      for k, v in entries.items():
+      for k, v in list(entries.items()):
         if k.lower() == key.lower():
           return v
     else:

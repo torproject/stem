@@ -271,7 +271,7 @@ def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/c
       is_tor_running = stem.util.system.is_running('tor') or stem.util.system.is_running('tor.real')
       error_msg = CONNECT_MESSAGES['no_control_port'] if is_tor_running else CONNECT_MESSAGES['tor_isnt_running']
 
-    print error_msg
+    print(error_msg)
     return None
 
   return _connect_auth(control_connection, password, password_prompt, chroot_path, controller)
@@ -300,7 +300,7 @@ def connect_port(address = '127.0.0.1', port = 9051, password = None, chroot_pat
   try:
     control_port = stem.socket.ControlPort(address, port)
   except stem.SocketError as exc:
-    print exc
+    print(exc)
     return None
 
   return _connect_auth(control_port, password, True, chroot_path, controller)
@@ -330,7 +330,7 @@ def connect_socket_file(path = '/var/run/tor/control', password = None, chroot_p
   try:
     control_socket = stem.socket.ControlSocketFile(path)
   except stem.SocketError as exc:
-    print exc
+    print(exc)
     return None
 
   return _connect_auth(control_socket, password, True, chroot_path, controller)
@@ -361,18 +361,18 @@ def _connect_auth(control_socket, password, password_prompt, chroot_path, contro
       return controller(control_socket, is_authenticated = True)
   except IncorrectSocketType:
     if isinstance(control_socket, stem.socket.ControlPort):
-      print CONNECT_MESSAGES['wrong_port_type'].format(port = control_socket.get_port())
+      print(CONNECT_MESSAGES['wrong_port_type'].format(port = control_socket.get_port()))
     else:
-      print CONNECT_MESSAGES['wrong_socket_type']
+      print(CONNECT_MESSAGES['wrong_socket_type'])
 
     control_socket.close()
     return None
   except UnrecognizedAuthMethods as exc:
-    print CONNECT_MESSAGES['uncrcognized_auth_type'].format(auth_methods = ', '.join(exc.unknown_auth_methods))
+    print(CONNECT_MESSAGES['uncrcognized_auth_type'].format(auth_methods = ', '.join(exc.unknown_auth_methods)))
     control_socket.close()
     return None
   except IncorrectPassword:
-    print CONNECT_MESSAGES['incorrect_password']
+    print(CONNECT_MESSAGES['incorrect_password'])
     control_socket.close()
     return None
   except MissingPassword:
@@ -389,15 +389,15 @@ def _connect_auth(control_socket, password, password_prompt, chroot_path, contro
 
       return _connect_auth(control_socket, password, password_prompt, chroot_path, controller)
     else:
-      print CONNECT_MESSAGES['needs_password']
+      print(CONNECT_MESSAGES['needs_password'])
       control_socket.close()
       return None
   except UnreadableCookieFile as exc:
-    print CONNECT_MESSAGES['unreadable_cookie_file'].format(path = exc.cookie_path, issue = str(exc))
+    print(CONNECT_MESSAGES['unreadable_cookie_file'].format(path = exc.cookie_path, issue = str(exc)))
     control_socket.close()
     return None
   except AuthenticationFailure as exc:
-    print CONNECT_MESSAGES['general_auth_failure'].format(error = exc)
+    print(CONNECT_MESSAGES['general_auth_failure'].format(error = exc))
     control_socket.close()
     return None
 

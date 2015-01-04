@@ -59,6 +59,8 @@ import stem.util.enum
 import stem.util.str_tools
 import stem.util.system
 
+from stem import str_type
+
 try:
   # added in python 2.7
   from collections import OrderedDict
@@ -150,7 +152,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = True, documen
 
   handler = None
 
-  if isinstance(descriptor_file, (bytes, unicode)):
+  if isinstance(descriptor_file, (bytes, str_type)):
     if stem.util.system.is_tarfile(descriptor_file):
       handler = _parse_file_for_tar_path
     else:
@@ -432,7 +434,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
 
   ending_keyword = None
 
-  if isinstance(keywords, (bytes, unicode)):
+  if isinstance(keywords, (bytes, str_type)):
     keywords = (keywords,)
 
   if ignore_first:

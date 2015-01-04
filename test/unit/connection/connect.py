@@ -2,10 +2,17 @@
 Unit tests for the stem.connection.connect function.
 """
 
-import StringIO
 import unittest
 
-from mock import Mock, patch
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
+
+try:
+  from mock import Mock, patch
+except ImportError:
+  from unittest.mock import Mock, patch
 
 import stem
 import stem.connection
@@ -13,7 +20,7 @@ import stem.socket
 
 
 class TestConnect(unittest.TestCase):
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.util.system.is_running')
   @patch('os.path.exists', Mock(return_value = True))
   @patch('stem.socket.ControlSocketFile', Mock(side_effect = stem.SocketError('failed')))
@@ -26,7 +33,7 @@ class TestConnect(unittest.TestCase):
     is_running_mock.return_value = True
     self._assert_connect_fails_with({}, stdout_mock, "Unable to connect to tor. Maybe it's running without a ControlPort?")
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('os.path.exists')
   @patch('stem.util.system.is_running', Mock(return_value = True))
   @patch('stem.socket.ControlSocketFile', Mock(side_effect = stem.SocketError('failed')))
@@ -114,7 +121,7 @@ class TestConnect(unittest.TestCase):
     authenticate_mock.assert_any_call(control_socket, None, None)
     authenticate_mock.assert_any_call(control_socket, 'my_password', None)
 
-  @patch('sys.stdout', new_callable = StringIO.StringIO)
+  @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.connection.authenticate')
   def test_auth_failure(self, authenticate_mock, stdout_mock):
     control_socket = stem.socket.ControlPort(connect = False)

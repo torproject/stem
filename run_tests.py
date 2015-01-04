@@ -9,11 +9,15 @@ Runs unit and integration tests. For usage information run this with '--help'.
 import collections
 import getopt
 import os
-import StringIO
 import sys
 import threading
 import time
 import unittest
+
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 import stem.prereq
 import stem.util.conf
@@ -44,8 +48,6 @@ from test.util import STEM_BASE, Target, Task
 ARGS = {
   'run_unit': False,
   'run_integ': False,
-  'run_python3': False,
-  'run_python3_clean': False,
   'specific_test': None,
   'logging_runlevel': None,
   'tor_path': 'tor',
@@ -55,12 +57,12 @@ ARGS = {
   'print_help': False,
 }
 
-OPT = "auit:l:vh"
-OPT_EXPANDED = ["all", "unit", "integ", "python3", "clean", "targets=", "test=", "log=", "tor=", "verbose", "help"]
+OPT = 'auit:l:vh'
+OPT_EXPANDED = ['all', 'unit', 'integ', 'targets=', 'test=', 'log=', 'tor=', 'verbose', 'help']
 
-CONFIG = stem.util.conf.config_dict("test", {
-  "target.torrc": {},
-  "integ.test_directory": "./test/data",
+CONFIG = stem.util.conf.config_dict('test', {
+  'target.torrc': {},
+  'integ.test_directory': './test/data',
 })
 
 SRC_PATHS = [os.path.join(STEM_BASE, path) for path in (
@@ -154,7 +156,7 @@ def main():
 
   pyflakes_task, pep8_task = None, None
 
-  if not stem.prereq.is_python_3() and not args.specific_test:
+  if not args.specific_test:
     if stem.util.test_tools.is_pyflakes_available():
       pyflakes_task = PYFLAKES_TASK
 
@@ -174,18 +176,6 @@ def main():
     pyflakes_task,
     pep8_task,
   )
-
-  if args.run_python3 and sys.version_info[0] != 3:
-    test.util.run_tasks(
-      "EXPORTING TO PYTHON 3",
-      Task("checking requirements", test.util.python3_prereq),
-      Task("cleaning prior export", test.util.python3_clean, (not args.run_python3_clean,)),
-      Task("exporting python 3 copy", test.util.python3_copy_stem),
-      Task("running tests", test.util.python3_run_tests),
-    )
-
-    println("BUG: python3_run_tests() should have terminated our process", ERROR)
-    sys.exit(1)
 
   # buffer that we log messages into so they can be printed after a test has finished
 
@@ -292,24 +282,23 @@ def main():
 
       println()
 
-  if not stem.prereq.is_python_3():
-    static_check_issues = {}
+  static_check_issues = {}
 
-    if pyflakes_task and pyflakes_task.is_successful:
-      for path, issues in pyflakes_task.result.items():
-        for issue in issues:
-          static_check_issues.setdefault(path, []).append(issue)
-    elif not stem.util.test_tools.is_pyflakes_available():
-      println("Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
+  if pyflakes_task and pyflakes_task.is_successful:
+    for path, issues in pyflakes_task.result.items():
+      for issue in issues:
+        static_check_issues.setdefault(path, []).append(issue)
+  elif not stem.util.test_tools.is_pyflakes_available():
+    println("Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
 
-    if pep8_task and pep8_task.is_successful:
-      for path, issues in pep8_task.result.items():
-        for issue in issues:
-          static_check_issues.setdefault(path, []).append(issue)
-    elif not stem.util.test_tools.is_pep8_available():
-      println("Style checks require pep8 version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
+  if pep8_task and pep8_task.is_successful:
+    for path, issues in pep8_task.result.items():
+      for issue in issues:
+        static_check_issues.setdefault(path, []).append(issue)
+  elif not stem.util.test_tools.is_pep8_available():
+    println("Style checks require pep8 version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
 
-    _print_static_issues(static_check_issues)
+  _print_static_issues(static_check_issues)
 
   runtime_label = "(%i seconds)" % (time.time() - start_time)
 
@@ -350,10 +339,6 @@ def _get_args(argv):
       args['run_unit'] = True
     elif opt in ("-i", "--integ"):
       args['run_integ'] = True
-    elif opt == "--python3":
-      args['run_python3'] = True
-    elif opt == "--clean":
-      args['run_python3_clean'] = True
     elif opt in ("-t", "--targets"):
       run_targets, attribute_targets = [], []
 
@@ -446,7 +431,7 @@ def _run_test(args, test_class, output_filters, logging_buffer):
 
   suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
 
-  test_results = StringIO.StringIO()
+  test_results = StringIO()
   run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
 
   if args.verbose:

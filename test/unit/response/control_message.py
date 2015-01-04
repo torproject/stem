@@ -3,8 +3,12 @@ Unit tests for the stem.response.ControlMessage parsing and class.
 """
 
 import socket
-import StringIO
 import unittest
+
+try:
+  from StringIO import StringIO
+except:
+  from io import StringIO
 
 import stem.socket
 import stem.response
@@ -50,11 +54,11 @@ class TestControlMessage(unittest.TestCase):
     """
 
     message = self._assert_message_parses(OK_REPLY)
-    self.assertEquals('OK', str(message))
+    self.assertEqual('OK', str(message))
 
     contents = message.content()
-    self.assertEquals(1, len(contents))
-    self.assertEquals(('250', ' ', 'OK'), contents[0])
+    self.assertEqual(1, len(contents))
+    self.assertEqual(('250', ' ', 'OK'), contents[0])
 
   def test_event_response(self):
     """
@@ -63,20 +67,20 @@ class TestControlMessage(unittest.TestCase):
 
     # BW event
     message = self._assert_message_parses(EVENT_BW)
-    self.assertEquals('BW 32326 2856', str(message))
+    self.assertEqual('BW 32326 2856', str(message))
 
     contents = message.content()
-    self.assertEquals(1, len(contents))
-    self.assertEquals(('650', ' ', 'BW 32326 2856'), contents[0])
+    self.assertEqual(1, len(contents))
+    self.assertEqual(('650', ' ', 'BW 32326 2856'), contents[0])
 
     # few types of CIRC events
     for circ_content in (EVENT_CIRC_TIMEOUT, EVENT_CIRC_LAUNCHED, EVENT_CIRC_EXTENDED):
       message = self._assert_message_parses(circ_content)
-      self.assertEquals(circ_content[4:-2], str(message))
+      self.assertEqual(circ_content[4:-2], str(message))
 
       contents = message.content()
-      self.assertEquals(1, len(contents))
-      self.assertEquals(('650', ' ', str(message)), contents[0])
+      self.assertEqual(1, len(contents))
+      self.assertEqual(('650', ' ', str(message)), contents[0])
 
   def test_getinfo_response(self):
     """
@@ -85,27 +89,27 @@ class TestControlMessage(unittest.TestCase):
 
     # GETINFO version (basic single-line results)
     message = self._assert_message_parses(GETINFO_VERSION)
-    self.assertEquals(2, len(list(message)))
-    self.assertEquals(2, len(str(message).splitlines()))
+    self.assertEqual(2, len(list(message)))
+    self.assertEqual(2, len(str(message).splitlines()))
 
     # manually checks the contents
     contents = message.content()
-    self.assertEquals(2, len(contents))
-    self.assertEquals(('250', '-', 'version=0.2.2.23-alpha (git-b85eb949b528f4d7)'), contents[0])
-    self.assertEquals(('250', ' ', 'OK'), contents[1])
+    self.assertEqual(2, len(contents))
+    self.assertEqual(('250', '-', 'version=0.2.2.23-alpha (git-b85eb949b528f4d7)'), contents[0])
+    self.assertEqual(('250', ' ', 'OK'), contents[1])
 
     # GETINFO info/names (data entry)
     message = self._assert_message_parses(GETINFO_INFONAMES)
-    self.assertEquals(2, len(list(message)))
-    self.assertEquals(8, len(str(message).splitlines()))
+    self.assertEqual(2, len(list(message)))
+    self.assertEqual(8, len(str(message).splitlines()))
 
     # manually checks the contents
     contents = message.content()
-    self.assertEquals(2, len(contents))
+    self.assertEqual(2, len(contents))
 
     first_entry = (contents[0][0], contents[0][1], contents[0][2][:contents[0][2].find('\n')])
-    self.assertEquals(('250', '+', 'info/names='), first_entry)
-    self.assertEquals(('250', ' ', 'OK'), contents[1])
+    self.assertEqual(('250', '+', 'info/names='), first_entry)
+    self.assertEqual(('250', ' ', 'OK'), contents[1])
 
   def test_no_crlf(self):
     """
@@ -124,7 +128,7 @@ class TestControlMessage(unittest.TestCase):
     for index, line in enumerate(infonames_lines):
       # replace the CRLF for the line
       infonames_lines[index] = line.rstrip('\r\n') + '\n'
-      test_socket_file = StringIO.StringIO(''.join(infonames_lines))
+      test_socket_file = StringIO(''.join(infonames_lines))
       self.assertRaises(stem.ProtocolError, stem.socket.recv_message, test_socket_file)
 
       # puts the CRLF back
@@ -150,8 +154,8 @@ class TestControlMessage(unittest.TestCase):
         # - this is part of the message prefix
         # - this is disrupting the line ending
 
-        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, StringIO.StringIO(removal_test_input))
-        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, StringIO.StringIO(replacement_test_input))
+        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, StringIO(removal_test_input))
+        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, StringIO(replacement_test_input))
       else:
         # otherwise the data will be malformed, but this goes undetected
         self._assert_message_parses(removal_test_input)
@@ -175,7 +179,7 @@ class TestControlMessage(unittest.TestCase):
       stem.response.ControlMessage for the given input
     """
 
-    message = stem.socket.recv_message(StringIO.StringIO(controller_reply))
+    message = stem.socket.recv_message(StringIO(controller_reply))
 
     # checks that the raw_content equals the input value
     self.assertEqual(controller_reply, message.raw_content())

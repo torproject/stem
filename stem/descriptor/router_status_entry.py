@@ -170,7 +170,7 @@ class RouterStatusEntry(Descriptor):
     :raises: **ValueError** if a validity check fails
     """
 
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, _, _ = values[0]
 
       if keyword == 's':
@@ -198,7 +198,7 @@ class RouterStatusEntry(Descriptor):
       if keyword in entries and len(entries[keyword]) > 1:
         raise ValueError("%s can only have a single '%s' line, got %i:\n%s" % (self._name(True), keyword, len(entries[keyword]), str(self)))
 
-    if 'r' != entries.keys()[0]:
+    if 'r' != list(entries.keys())[0]:
       raise ValueError("%s are expected to start with a 'r' line:\n%s" % (self._name(True), str(self)))
 
   def _name(self, is_plural = False):
@@ -266,7 +266,7 @@ class RouterStatusEntryV2(RouterStatusEntry):
     super(RouterStatusEntryV2, self).__init__(content, validate, document)
 
   def _parse(self, entries, validate):
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, _, _ = values[0]
 
       if keyword == 'r':
@@ -346,7 +346,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
     super(RouterStatusEntryV3, self).__init__(content, validate, document)
 
   def _parse(self, entries, validate):
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, _, _ = values[0]
 
       if keyword == 'r':
@@ -428,7 +428,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     super(RouterStatusEntryMicroV3, self).__init__(content, validate, document)
 
   def _parse(self, entries, validate):
-    for keyword, values in entries.items():
+    for keyword, values in list(entries.items()):
       value, _, _ = values[0]
 
       if keyword == 'r':
