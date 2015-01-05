@@ -457,16 +457,17 @@ class ServerDescriptor(Descriptor):
 
     entries, policy = _get_descriptor_components(raw_contents, validate, ('accept', 'reject'))
 
-    if policy == [str_type('reject *:*')]:
-      self.exit_policy = REJECT_ALL_POLICY
-    else:
-      self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
-
     if validate:
+      if policy == [str_type('reject *:*')]:
+        self.exit_policy = REJECT_ALL_POLICY
+      else:
+        self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
+
       self._parse(entries, validate)
       self._check_constraints(entries)
     else:
       self._entries = entries
+      self._exit_policy_list = policy
 
   def digest(self):
     """
@@ -717,6 +718,13 @@ class ServerDescriptor(Descriptor):
           _parse_history_line(self, self._entries['read-history'][0][0], True)
         elif name in ('write_history_end', 'write_history_interval', 'write_history_values'):
           _parse_history_line(self, self._entries['write-history'][0][0], False)
+        elif name == 'exit_policy':
+          if self._exit_policy_list == [str_type('reject *:*')]:
+            self.exit_policy = REJECT_ALL_POLICY
+          else:
+            self.exit_policy = stem.exit_policy.ExitPolicy(*self._exit_policy_list)
+
+          del self._exit_policy_list
       except (ValueError, KeyError):
         if name == 'exit_policy_v6':
           default = DEFAULT_IPV6_EXIT_POLICY
