@@ -443,46 +443,8 @@ class ServerDescriptor(Descriptor):
 
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
-    self.nickname = None
-    self.fingerprint = None
-    self.published = None
-
-    self.address = None
-    self.or_port = None
-    self.socks_port = None
-    self.dir_port = None
-
-    self.tor_version = None
-    self.operating_system = None
-    self.uptime = None
-    self.exit_policy = None
-    self.exit_policy_v6 = DEFAULT_IPV6_EXIT_POLICY
-    self.family = set()
-
-    self.average_bandwidth = None
-    self.burst_bandwidth = None
-    self.observed_bandwidth = None
-
-    self.link_protocols = None
-    self.circuit_protocols = None
-    self.hibernating = False
-    self.allow_single_hop_exits = False
-    self.extra_info_cache = False
-    self.extra_info_digest = None
-    self.hidden_service_dir = None
-    self.eventdns = None
-    self.or_addresses = []
-
-    self.read_history_end = None
-    self.read_history_interval = None
-    self.read_history_values = None
-
-    self.write_history_end = None
-    self.write_history_interval = None
-    self.write_history_values = None
-
+    self._lazy_loading = not validate
     self._unrecognized_lines = []
-
     self._annotation_lines = annotations if annotations else []
 
     # A descriptor contains a series of 'keyword lines' which are simply a
@@ -500,10 +462,11 @@ class ServerDescriptor(Descriptor):
     else:
       self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
 
-    self._parse(entries, validate)
-
     if validate:
+      self._parse(entries, validate)
       self._check_constraints(entries)
+    else:
+      self._entries = entries
 
   def digest(self):
     """
@@ -516,6 +479,11 @@ class ServerDescriptor(Descriptor):
     raise NotImplementedError('Unsupported Operation: this should be implemented by the ServerDescriptor subclass')
 
   def get_unrecognized_lines(self):
+    if self._lazy_loading:
+      # we need to go ahead and parse the whole document to figure this out
+      self._parse(self._entries, False)
+      self._lazy_loading = False
+
     return list(self._unrecognized_lines)
 
   @lru_cache()
@@ -565,6 +533,43 @@ class ServerDescriptor(Descriptor):
 
     :raises: **ValueError** if an error occurs in validation
     """
+
+    self.nickname = None
+    self.fingerprint = None
+    self.published = None
+
+    self.address = None
+    self.or_port = None
+    self.socks_port = None
+    self.dir_port = None
+
+    self.tor_version = None
+    self.operating_system = None
+    self.uptime = None
+    self.exit_policy_v6 = DEFAULT_IPV6_EXIT_POLICY
+    self.family = set()
+
+    self.average_bandwidth = None
+    self.burst_bandwidth = None
+    self.observed_bandwidth = None
+
+    self.link_protocols = None
+    self.circuit_protocols = None
+    self.hibernating = False
+    self.allow_single_hop_exits = False
+    self.extra_info_cache = False
+    self.extra_info_digest = None
+    self.hidden_service_dir = None
+    self.eventdns = None
+    self.or_addresses = []
+
+    self.read_history_end = None
+    self.read_history_interval = None
+    self.read_history_values = None
+
+    self.write_history_end = None
+    self.write_history_interval = None
+    self.write_history_values = None
 
     for keyword, values in list(entries.items()):
       # most just work with the first (and only) value
@@ -670,6 +675,63 @@ class ServerDescriptor(Descriptor):
 
   def _last_keyword(self):
     return 'router-signature'
+
+  def __getattr__(self, name):
+    # If attribute isn't already present we might be lazy loading it...
+
+    if self._lazy_loading:
+      try:
+        if name in ('nickname', 'address', 'or_port', 'socks_port', 'dir_port'):
+          _parse_router_line(self, self._entries['router'][0][0])
+        elif name in ('average_bandwidth', 'burst_bandwidth', 'observed_bandwidth'):
+          _parse_bandwidth_line(self, self._entries['bandwidth'][0][0])
+        elif name in ('operating_system', 'tor_version'):
+          _parse_platform_line(self, self._entries['platform'][0][0])
+        elif name == 'published':
+          _parse_published_line(self, self._entries['published'][0][0])
+        elif name == 'fingerprint':
+          _parse_fingerprint_line(self, self._entries['fingerprint'][0][0])
+        elif name == 'hibernating':
+          _parse_hibernating_line(self, self._entries['hibernating'][0][0])
+        elif name == 'allow_single_hop_exits':
+          self.allow_single_hop_exits = 'allow-single-hop-exits' in self._entries
+        elif name == 'extra_info_cache':
+          self.extra_info_cache = 'caches-extra-info' in self._entries
+        elif name == 'extra_info_digest':
+          _parse_extrainfo_digest_line(self, self._entries['extra-info-digest'][0][0])
+        elif name == 'hidden_service_dir':
+          _parse_hidden_service_dir_line(self, self._entries['hidden-service-dir'][0][0])
+        elif name == 'uptime':
+          _parse_uptime_line(self, self._entries['uptime'][0][0])
+        elif name in ('link_protocols', 'circuit_protocols'):
+          _parse_protocols_line(self, self._entries['protocols'][0][0])
+        elif name == 'family':
+          self.family = set(self._entries['family'][0][0].split(' '))
+        elif name == 'eventdns':
+          self.eventdns = self._entries['eventdns'][0][0] == '1'
+        elif name == 'exit_policy_v6':
+          self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(self._entries['ipv6-policy'][0][0])
+        elif name == 'or_addresses':
+          _parse_or_address_line(self, [entry[0] for entry in self._entries['or-address']])
+        elif name in ('read_history_end', 'read_history_interval', 'read_history_values'):
+          _parse_history_line(self, self._entries['read-history'][0][0], True)
+        elif name in ('write_history_end', 'write_history_interval', 'write_history_values'):
+          _parse_history_line(self, self._entries['write-history'][0][0], False)
+      except (ValueError, KeyError):
+        if name == 'exit_policy_v6':
+          default = DEFAULT_IPV6_EXIT_POLICY
+        elif name == 'family':
+          default = set()
+        elif name in ('hibernating', 'allow_single_hop_exits', 'extra_info_cache'):
+          default = False
+        elif name == 'or_addresses':
+          default = []
+        else:
+          default = None
+
+        setattr(self, name, default)
+
+    return super(ServerDescriptor, self).__getattribute__(name)
 
 
 class RelayDescriptor(ServerDescriptor):
