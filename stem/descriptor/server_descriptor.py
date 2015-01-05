@@ -167,6 +167,203 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
       break  # done parsing descriptors
 
 
+def _parse_router_line(descriptor, value):
+  # "router" nickname address ORPort SocksPort DirPort
+
+  router_comp = value.split()
+
+  if len(router_comp) < 5:
+    raise ValueError('Router line must have five values: router %s' % value)
+  elif not stem.util.tor_tools.is_valid_nickname(router_comp[0]):
+    raise ValueError("Router line entry isn't a valid nickname: %s" % router_comp[0])
+  elif not stem.util.connection.is_valid_ipv4_address(router_comp[1]):
+    raise ValueError("Router line entry isn't a valid IPv4 address: %s" % router_comp[1])
+  elif not stem.util.connection.is_valid_port(router_comp[2], allow_zero = True):
+    raise ValueError("Router line's ORPort is invalid: %s" % router_comp[2])
+  elif not stem.util.connection.is_valid_port(router_comp[3], allow_zero = True):
+    raise ValueError("Router line's SocksPort is invalid: %s" % router_comp[3])
+  elif not stem.util.connection.is_valid_port(router_comp[4], allow_zero = True):
+    raise ValueError("Router line's DirPort is invalid: %s" % router_comp[4])
+
+  descriptor.nickname = router_comp[0]
+  descriptor.address = router_comp[1]
+  descriptor.or_port = int(router_comp[2])
+  descriptor.socks_port = None if router_comp[3] == '0' else int(router_comp[3])
+  descriptor.dir_port = None if router_comp[4] == '0' else int(router_comp[4])
+
+
+def _parse_bandwidth_line(descriptor, value):
+  # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
+
+  bandwidth_comp = value.split()
+
+  if len(bandwidth_comp) < 3:
+    raise ValueError('Bandwidth line must have three values: bandwidth %s' % value)
+  elif not bandwidth_comp[0].isdigit():
+    raise ValueError("Bandwidth line's average rate isn't numeric: %s" % bandwidth_comp[0])
+  elif not bandwidth_comp[1].isdigit():
+    raise ValueError("Bandwidth line's burst rate isn't numeric: %s" % bandwidth_comp[1])
+  elif not bandwidth_comp[2].isdigit():
+    raise ValueError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
+
+  descriptor.average_bandwidth = int(bandwidth_comp[0])
+  descriptor.burst_bandwidth = int(bandwidth_comp[1])
+  descriptor.observed_bandwidth = int(bandwidth_comp[2])
+
+
+def _parse_platform_line(descriptor, value):
+  # "platform" string
+
+  # The platform attribute was set earlier. This line can contain any
+  # arbitrary data, but tor seems to report its version followed by the
+  # os like the following...
+  #
+  #   platform Tor 0.2.2.35 (git-73ff13ab3cc9570d) on Linux x86_64
+  #
+  # There's no guarantee that we'll be able to pick these out the
+  # version, but might as well try to save our caller the effort.
+
+  platform_match = re.match('^(?:node-)?Tor (\S*).* on (.*)$', value)
+
+  if platform_match:
+    version_str, descriptor.operating_system = platform_match.groups()
+
+    try:
+      descriptor.tor_version = stem.version._get_version(version_str)
+    except ValueError:
+      pass
+
+
+def _parse_published_line(descriptor, value):
+  # "published" YYYY-MM-DD HH:MM:SS
+
+  try:
+    descriptor.published = stem.util.str_tools._parse_timestamp(value)
+  except ValueError:
+    raise ValueError("Published line's time wasn't parsable: published %s" % value)
+
+
+def _parse_fingerprint_line(descriptor, value):
+  # This is forty hex digits split into space separated groups of four.
+  # Checking that we match this pattern.
+
+  fingerprint = value.replace(' ', '')
+
+  for grouping in value.split(' '):
+    if len(grouping) != 4:
+      raise ValueError('Fingerprint line should have groupings of four hex digits: %s' % value)
+
+  if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
+    raise ValueError('Tor relay fingerprints consist of forty hex digits: %s' % value)
+
+  descriptor.fingerprint = fingerprint
+
+
+def _parse_hibernating_line(descriptor, value):
+  # "hibernating" 0|1 (in practice only set if one)
+
+  if value not in ('0', '1'):
+    raise ValueError('Hibernating line had an invalid value, must be zero or one: %s' % value)
+
+  descriptor.hibernating = value == '1'
+
+
+def _parse_extrainfo_digest_line(descriptor, value):
+  # this is forty hex digits which just so happens to be the same a
+  # fingerprint
+
+  if not stem.util.tor_tools.is_valid_fingerprint(value):
+    raise ValueError('Extra-info digests should consist of forty hex digits: %s' % value)
+
+  descriptor.extra_info_digest = value
+
+
+def _parse_hidden_service_dir_line(descriptor, value):
+  if value:
+    descriptor.hidden_service_dir = value.split(' ')
+  else:
+    descriptor.hidden_service_dir = ['2']
+
+
+def _parse_uptime_line(descriptor, value):
+  # We need to be tolerant of negative uptimes to accommodate a past tor
+  # bug...
+  #
+  # Changes in version 0.1.2.7-alpha - 2007-02-06
+  #  - If our system clock jumps back in time, don't publish a negative
+  #    uptime in the descriptor. Also, don't let the global rate limiting
+  #    buckets go absurdly negative.
+  #
+  # After parsing all of the attributes we'll double check that negative
+  # uptimes only occurred prior to this fix.
+
+  try:
+    descriptor.uptime = int(value)
+  except ValueError:
+    raise ValueError('Uptime line must have an integer value: %s' % value)
+
+
+def _parse_protocols_line(descriptor, value):
+  protocols_match = re.match('^Link (.*) Circuit (.*)$', value)
+
+  if not protocols_match:
+    raise ValueError('Protocols line did not match the expected pattern: protocols %s' % value)
+
+  link_versions, circuit_versions = protocols_match.groups()
+  descriptor.link_protocols = link_versions.split(' ')
+  descriptor.circuit_protocols = circuit_versions.split(' ')
+
+
+def _parse_or_address_line(descriptor, all_values):
+  or_addresses = []
+
+  for entry in all_values:
+    line = 'or-address %s' % entry
+
+    if ':' not in entry:
+      raise ValueError('or-address line missing a colon: %s' % line)
+
+    address, port = entry.rsplit(':', 1)
+    is_ipv6 = address.startswith('[') and address.endswith(']')
+
+    if is_ipv6:
+      address = address[1:-1]  # remove brackets
+
+    if not ((not is_ipv6 and stem.util.connection.is_valid_ipv4_address(address)) or
+            (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
+      raise ValueError('or-address line has a malformed address: %s' % line)
+
+    if not stem.util.connection.is_valid_port(port):
+      raise ValueError('or-address line has a malformed port: %s' % line)
+
+    or_addresses.append((address, int(port), is_ipv6))
+
+  descriptor.or_addresses = or_addresses
+
+
+def _parse_history_line(descriptor, value, is_read):
+  keyword = 'read-history' if is_read else 'write-history'
+  timestamp, interval, remainder = \
+    stem.descriptor.extrainfo_descriptor._parse_timestamp_and_interval(keyword, value)
+
+  try:
+    if remainder:
+      history_values = [int(entry) for entry in remainder.split(',')]
+    else:
+      history_values = []
+  except ValueError:
+    raise ValueError('%s line has non-numeric values: %s %s' % (keyword, keyword, value))
+
+  if is_read:
+    descriptor.read_history_end = timestamp
+    descriptor.read_history_interval = interval
+    descriptor.read_history_values = history_values
+  else:
+    descriptor.write_history_end = timestamp
+    descriptor.write_history_interval = interval
+    descriptor.write_history_values = history_values
+
+
 class ServerDescriptor(Descriptor):
   """
   Common parent for server descriptors.
@@ -378,222 +575,50 @@ class ServerDescriptor(Descriptor):
       if block_contents:
         line += '\n%s' % block_contents
 
-      if keyword == 'router':
-        # "router" nickname address ORPort SocksPort DirPort
-        router_comp = value.split()
-
-        if len(router_comp) < 5:
-          if not validate:
-            continue
-
-          raise ValueError('Router line must have five values: %s' % line)
-
-        if validate:
-          if not stem.util.tor_tools.is_valid_nickname(router_comp[0]):
-            raise ValueError("Router line entry isn't a valid nickname: %s" % router_comp[0])
-          elif not stem.util.connection.is_valid_ipv4_address(router_comp[1]):
-            raise ValueError("Router line entry isn't a valid IPv4 address: %s" % router_comp[1])
-          elif not stem.util.connection.is_valid_port(router_comp[2], allow_zero = True):
-            raise ValueError("Router line's ORPort is invalid: %s" % router_comp[2])
-          elif not stem.util.connection.is_valid_port(router_comp[3], allow_zero = True):
-            raise ValueError("Router line's SocksPort is invalid: %s" % router_comp[3])
-          elif not stem.util.connection.is_valid_port(router_comp[4], allow_zero = True):
-            raise ValueError("Router line's DirPort is invalid: %s" % router_comp[4])
-        elif not (router_comp[2].isdigit() and router_comp[3].isdigit() and router_comp[4].isdigit()):
-          continue
-
-        self.nickname = router_comp[0]
-        self.address = router_comp[1]
-        self.or_port = int(router_comp[2])
-        self.socks_port = None if router_comp[3] == '0' else int(router_comp[3])
-        self.dir_port = None if router_comp[4] == '0' else int(router_comp[4])
-      elif keyword == 'bandwidth':
-        # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
-        bandwidth_comp = value.split()
-
-        if len(bandwidth_comp) < 3:
-          if not validate:
-            continue
-
-          raise ValueError('Bandwidth line must have three values: %s' % line)
-        elif not bandwidth_comp[0].isdigit():
-          if not validate:
-            continue
-
-          raise ValueError("Bandwidth line's average rate isn't numeric: %s" % bandwidth_comp[0])
-        elif not bandwidth_comp[1].isdigit():
-          if not validate:
-            continue
-
-          raise ValueError("Bandwidth line's burst rate isn't numeric: %s" % bandwidth_comp[1])
-        elif not bandwidth_comp[2].isdigit():
-          if not validate:
-            continue
-
-          raise ValueError("Bandwidth line's observed rate isn't numeric: %s" % bandwidth_comp[2])
-
-        self.average_bandwidth = int(bandwidth_comp[0])
-        self.burst_bandwidth = int(bandwidth_comp[1])
-        self.observed_bandwidth = int(bandwidth_comp[2])
-      elif keyword == 'platform':
-        # "platform" string
-
-        # The platform attribute was set earlier. This line can contain any
-        # arbitrary data, but tor seems to report its version followed by the
-        # os like the following...
-        #
-        #   platform Tor 0.2.2.35 (git-73ff13ab3cc9570d) on Linux x86_64
-        #
-        # There's no guarantee that we'll be able to pick these out the
-        # version, but might as well try to save our caller the effort.
-
-        platform_match = re.match('^(?:node-)?Tor (\S*).* on (.*)$', value)
-
-        if platform_match:
-          version_str, self.operating_system = platform_match.groups()
-
-          try:
-            self.tor_version = stem.version._get_version(version_str)
-          except ValueError:
-            pass
-      elif keyword == 'published':
-        # "published" YYYY-MM-DD HH:MM:SS
-
-        try:
-          self.published = stem.util.str_tools._parse_timestamp(value)
-        except ValueError:
-          if validate:
-            raise ValueError("Published line's time wasn't parsable: %s" % line)
-      elif keyword == 'fingerprint':
-        # This is forty hex digits split into space separated groups of four.
-        # Checking that we match this pattern.
-
-        fingerprint = value.replace(' ', '')
-
-        if validate:
-          for grouping in value.split(' '):
-            if len(grouping) != 4:
-              raise ValueError('Fingerprint line should have groupings of four hex digits: %s' % value)
-
-          if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
-            raise ValueError('Tor relay fingerprints consist of forty hex digits: %s' % value)
-
-        self.fingerprint = fingerprint
-      elif keyword == 'hibernating':
-        # "hibernating" 0|1 (in practice only set if one)
-
-        if validate and value not in ('0', '1'):
-          raise ValueError('Hibernating line had an invalid value, must be zero or one: %s' % value)
-
-        self.hibernating = value == '1'
-      elif keyword == 'allow-single-hop-exits':
-        self.allow_single_hop_exits = True
-      elif keyword == 'caches-extra-info':
-        self.extra_info_cache = True
-      elif keyword == 'extra-info-digest':
-        # this is forty hex digits which just so happens to be the same a
-        # fingerprint
-
-        if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError('Extra-info digests should consist of forty hex digits: %s' % value)
-
-        self.extra_info_digest = value
-      elif keyword == 'hidden-service-dir':
-        if value:
-          self.hidden_service_dir = value.split(' ')
+      try:
+        if keyword == 'router':
+          _parse_router_line(self, value)
+        elif keyword == 'bandwidth':
+          _parse_bandwidth_line(self, value)
+        elif keyword == 'platform':
+          _parse_platform_line(self, value)
+        elif keyword == 'published':
+          _parse_published_line(self, value)
+        elif keyword == 'fingerprint':
+          _parse_fingerprint_line(self, value)
+        elif keyword == 'hibernating':
+          _parse_hibernating_line(self, value)
+        elif keyword == 'allow-single-hop-exits':
+          self.allow_single_hop_exits = True
+        elif keyword == 'caches-extra-info':
+          self.extra_info_cache = True
+        elif keyword == 'extra-info-digest':
+          _parse_extrainfo_digest_line(self, value)
+        elif keyword == 'hidden-service-dir':
+          _parse_hidden_service_dir_line(self, value)
+        elif keyword == 'uptime':
+          _parse_uptime_line(self, value)
+        elif keyword == 'contact':
+          pass  # parsed as a bytes field earlier
+        elif keyword == 'protocols':
+          _parse_protocols_line(self, value)
+        elif keyword == 'family':
+          self.family = set(value.split(' '))
+        elif keyword == 'eventdns':
+          self.eventdns = value == '1'
+        elif keyword == 'ipv6-policy':
+          self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
+        elif keyword == 'or-address':
+          _parse_or_address_line(self, [entry[0] for entry in values])
+        elif keyword == 'read-history':
+          _parse_history_line(self, value, True)
+        elif keyword == 'write-history':
+          _parse_history_line(self, value, False)
         else:
-          self.hidden_service_dir = ['2']
-      elif keyword == 'uptime':
-        # We need to be tolerant of negative uptimes to accommodate a past tor
-        # bug...
-        #
-        # Changes in version 0.1.2.7-alpha - 2007-02-06
-        #  - If our system clock jumps back in time, don't publish a negative
-        #    uptime in the descriptor. Also, don't let the global rate limiting
-        #    buckets go absurdly negative.
-        #
-        # After parsing all of the attributes we'll double check that negative
-        # uptimes only occurred prior to this fix.
-
-        try:
-          self.uptime = int(value)
-        except ValueError:
-          if not validate:
-            continue
-
-          raise ValueError('Uptime line must have an integer value: %s' % value)
-      elif keyword == 'contact':
-        pass  # parsed as a bytes field earlier
-      elif keyword == 'protocols':
-        protocols_match = re.match('^Link (.*) Circuit (.*)$', value)
-
-        if protocols_match:
-          link_versions, circuit_versions = protocols_match.groups()
-          self.link_protocols = link_versions.split(' ')
-          self.circuit_protocols = circuit_versions.split(' ')
-        elif validate:
-          raise ValueError('Protocols line did not match the expected pattern: %s' % line)
-      elif keyword == 'family':
-        self.family = set(value.split(' '))
-      elif keyword == 'eventdns':
-        self.eventdns = value == '1'
-      elif keyword == 'ipv6-policy':
-        self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
-      elif keyword == 'or-address':
-        or_address_entries = [address_entry for (address_entry, _, _) in values]
-
-        for entry in or_address_entries:
-          line = '%s %s' % (keyword, entry)
-
-          if ':' not in entry:
-            if not validate:
-              continue
-            else:
-              raise ValueError('or-address line missing a colon: %s' % line)
-
-          address, port = entry.rsplit(':', 1)
-          is_ipv6 = address.startswith('[') and address.endswith(']')
-
-          if is_ipv6:
-            address = address[1:-1]  # remove brackets
-
-          if not ((not is_ipv6 and stem.util.connection.is_valid_ipv4_address(address)) or
-                  (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
-            if not validate:
-              continue
-            else:
-              raise ValueError('or-address line has a malformed address: %s' % line)
-
-          if stem.util.connection.is_valid_port(port):
-            self.or_addresses.append((address, int(port), is_ipv6))
-          elif validate:
-            raise ValueError('or-address line has a malformed port: %s' % line)
-      elif keyword in ('read-history', 'write-history'):
-        try:
-          timestamp, interval, remainder = \
-            stem.descriptor.extrainfo_descriptor._parse_timestamp_and_interval(keyword, value)
-
-          try:
-            if remainder:
-              history_values = [int(entry) for entry in remainder.split(',')]
-            else:
-              history_values = []
-          except ValueError:
-            raise ValueError('%s line has non-numeric values: %s' % (keyword, line))
-
-          if keyword == 'read-history':
-            self.read_history_end = timestamp
-            self.read_history_interval = interval
-            self.read_history_values = history_values
-          else:
-            self.write_history_end = timestamp
-            self.write_history_interval = interval
-            self.write_history_values = history_values
-        except ValueError as exc:
-          if validate:
-            raise exc
-      else:
-        self._unrecognized_lines.append(line)
+          self._unrecognized_lines.append(line)
+      except ValueError as exc:
+        if validate:
+          raise exc
 
     # if we have a negative uptime and a tor version that shouldn't exhibit
     # this bug then fail validation
