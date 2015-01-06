@@ -572,6 +572,19 @@ class ServerDescriptor(Descriptor):
     self.write_history_interval = None
     self.write_history_values = None
 
+    parse_functions = {
+      'router': _parse_router_line,
+      'bandwidth': _parse_bandwidth_line,
+      'platform': _parse_platform_line,
+      'published': _parse_published_line,
+      'fingerprint': _parse_fingerprint_line,
+      'hibernating': _parse_hibernating_line,
+      'extra-info-digest': _parse_extrainfo_digest_line,
+      'hidden-service-dir': _parse_hidden_service_dir_line,
+      'uptime': _parse_uptime_line,
+      'protocols': _parse_protocols_line,
+    }
+
     for keyword, values in list(entries.items()):
       # most just work with the first (and only) value
       value, block_type, block_contents = values[0]
@@ -582,32 +595,14 @@ class ServerDescriptor(Descriptor):
         line += '\n%s' % block_contents
 
       try:
-        if keyword == 'router':
-          _parse_router_line(self, value)
-        elif keyword == 'bandwidth':
-          _parse_bandwidth_line(self, value)
-        elif keyword == 'platform':
-          _parse_platform_line(self, value)
-        elif keyword == 'published':
-          _parse_published_line(self, value)
-        elif keyword == 'fingerprint':
-          _parse_fingerprint_line(self, value)
-        elif keyword == 'hibernating':
-          _parse_hibernating_line(self, value)
+        if keyword in parse_functions:
+          parse_functions[keyword](self, value)
         elif keyword == 'allow-single-hop-exits':
           self.allow_single_hop_exits = True
         elif keyword == 'caches-extra-info':
           self.extra_info_cache = True
-        elif keyword == 'extra-info-digest':
-          _parse_extrainfo_digest_line(self, value)
-        elif keyword == 'hidden-service-dir':
-          _parse_hidden_service_dir_line(self, value)
-        elif keyword == 'uptime':
-          _parse_uptime_line(self, value)
         elif keyword == 'contact':
           pass  # parsed as a bytes field earlier
-        elif keyword == 'protocols':
-          _parse_protocols_line(self, value)
         elif keyword == 'family':
           self.family = set(value.split(' '))
         elif keyword == 'eventdns':
