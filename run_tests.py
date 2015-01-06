@@ -92,7 +92,7 @@ https://pypi.python.org/pypi/mock/
 """
 
 PYFLAKES_TASK = Task(
-  "running pyflakes",
+  'running pyflakes',
   stem.util.test_tools.pyflakes_issues,
   args = (SRC_PATHS,),
   is_required = False,
@@ -100,7 +100,7 @@ PYFLAKES_TASK = Task(
 )
 
 PEP8_TASK = Task(
-  "running pep8",
+  'running pep8',
   stem.util.test_tools.stylistic_issues,
   args = (SRC_PATHS, True, True, True, True),
   is_required = False,
@@ -114,16 +114,16 @@ def main():
   try:
     stem.prereq.check_requirements()
   except ImportError as exc:
-    println("%s\n" % exc)
+    println('%s\n' % exc)
     sys.exit(1)
 
-  test_config = stem.util.conf.get_config("test")
-  test_config.load(os.path.join(STEM_BASE, "test", "settings.cfg"))
+  test_config = stem.util.conf.get_config('test')
+  test_config.load(os.path.join(STEM_BASE, 'test', 'settings.cfg'))
 
   try:
     args = _get_args(sys.argv[1:])
   except getopt.GetoptError as exc:
-    println("%s (for usage provide --help)" % exc)
+    println('%s (for usage provide --help)' % exc)
     sys.exit(1)
   except ValueError as exc:
     println(str(exc))
@@ -133,7 +133,7 @@ def main():
     println(test.util.get_help_message())
     sys.exit()
   elif not args.run_unit and not args.run_integ:
-    println("Nothing to run (for usage provide --help)\n")
+    println('Nothing to run (for usage provide --help)\n')
     sys.exit()
 
   if not stem.prereq.is_mock_available():
@@ -164,15 +164,15 @@ def main():
       pep8_task = PEP8_TASK
 
   test.util.run_tasks(
-    "INITIALISING",
-    Task("checking stem version", test.util.check_stem_version),
-    Task("checking python version", test.util.check_python_version),
-    Task("checking pycrypto version", test.util.check_pycrypto_version),
-    Task("checking mock version", test.util.check_mock_version),
-    Task("checking pyflakes version", test.util.check_pyflakes_version),
-    Task("checking pep8 version", test.util.check_pep8_version),
-    Task("checking for orphaned .pyc files", test.util.clean_orphaned_pyc, (SRC_PATHS,)),
-    Task("checking for unused tests", test.util.check_for_unused_tests, ((os.path.join(STEM_BASE, 'test'),),)),
+    'INITIALISING',
+    Task('checking stem version', test.util.check_stem_version),
+    Task('checking python version', test.util.check_python_version),
+    Task('checking pycrypto version', test.util.check_pycrypto_version),
+    Task('checking mock version', test.util.check_mock_version),
+    Task('checking pyflakes version', test.util.check_pyflakes_version),
+    Task('checking pep8 version', test.util.check_pep8_version),
+    Task('checking for orphaned .pyc files', test.util.clean_orphaned_pyc, (SRC_PATHS,)),
+    Task('checking for unused tests', test.util.check_for_unused_tests, ((os.path.join(STEM_BASE, 'test'),),)),
     pyflakes_task,
     pep8_task,
   )
@@ -200,8 +200,8 @@ def main():
   skipped_tests = 0
 
   if args.run_unit:
-    test.output.print_divider("UNIT TESTS", True)
-    error_tracker.set_category("UNIT TEST")
+    test.output.print_divider('UNIT TESTS', True)
+    error_tracker.set_category('UNIT TEST')
 
     for test_class in test.util.get_unit_tests(args.specific_test):
       run_result = _run_test(args, test_class, output_filters, logging_buffer)
@@ -210,7 +210,7 @@ def main():
     println()
 
   if args.run_integ:
-    test.output.print_divider("INTEGRATION TESTS", True)
+    test.output.print_divider('INTEGRATION TESTS', True)
     integ_runner = test.runner.get_runner()
 
     # Determine targets we don't meet the prereqs for. Warnings are given about
@@ -233,7 +233,7 @@ def main():
       try:
         integ_runner.start(target, args.attribute_targets, args.tor_path, extra_torrc_opts = test.util.get_torrc_entries(target))
 
-        println("Running tests...\n", STATUS)
+        println('Running tests...\n', STATUS)
 
         owner = None
         if integ_runner.is_accessible():
@@ -252,14 +252,14 @@ def main():
         active_threads = threading.enumerate()
 
         if len(active_threads) > 1:
-          println("Threads lingering after test run:", ERROR)
+          println('Threads lingering after test run:', ERROR)
 
           for lingering_thread in active_threads:
-            println("  %s" % lingering_thread, ERROR)
+            println('  %s' % lingering_thread, ERROR)
 
           break
       except KeyboardInterrupt:
-        println("  aborted starting tor: keyboard interrupt\n", ERROR)
+        println('  aborted starting tor: keyboard interrupt\n', ERROR)
         break
       except ValueError as exc:
         # can arise if get_torrc_entries() runs into a bad settings.cfg data
@@ -278,7 +278,7 @@ def main():
 
       for target in skipped_targets:
         req_version = test.util.get_prereq(target)
-        println("Unable to run target %s, this requires tor version %s" % (target, req_version), ERROR)
+        println('Unable to run target %s, this requires tor version %s' % (target, req_version), ERROR)
 
       println()
 
@@ -289,29 +289,29 @@ def main():
       for issue in issues:
         static_check_issues.setdefault(path, []).append(issue)
   elif not stem.util.test_tools.is_pyflakes_available():
-    println("Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n", ERROR)
+    println('Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n', ERROR)
 
   if pep8_task and pep8_task.is_successful:
     for path, issues in pep8_task.result.items():
       for issue in issues:
         static_check_issues.setdefault(path, []).append(issue)
   elif not stem.util.test_tools.is_pep8_available():
-    println("Style checks require pep8 version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pep8\n", ERROR)
+    println('Style checks require pep8 version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pep8\n', ERROR)
 
   _print_static_issues(static_check_issues)
 
-  runtime_label = "(%i seconds)" % (time.time() - start_time)
+  runtime_label = '(%i seconds)' % (time.time() - start_time)
 
   if error_tracker.has_errors_occured():
-    println("TESTING FAILED %s" % runtime_label, ERROR)
+    println('TESTING FAILED %s' % runtime_label, ERROR)
 
     for line in error_tracker:
-      println("  %s" % line, ERROR)
+      println('  %s' % line, ERROR)
   else:
     if skipped_tests > 0:
-      println("%i TESTS WERE SKIPPED" % skipped_tests, STATUS)
+      println('%i TESTS WERE SKIPPED' % skipped_tests, STATUS)
 
-    println("TESTING PASSED %s\n" % runtime_label, SUCCESS)
+    println('TESTING PASSED %s\n' % runtime_label, SUCCESS)
 
   sys.exit(1 if error_tracker.has_errors_occured() else 0)
 
@@ -332,27 +332,27 @@ def _get_args(argv):
   args = dict(ARGS)
 
   for opt, arg in getopt.getopt(argv, OPT, OPT_EXPANDED)[0]:
-    if opt in ("-a", "--all"):
+    if opt in ('-a', '--all'):
       args['run_unit'] = True
       args['run_integ'] = True
-    elif opt in ("-u", "--unit"):
+    elif opt in ('-u', '--unit'):
       args['run_unit'] = True
-    elif opt in ("-i", "--integ"):
+    elif opt in ('-i', '--integ'):
       args['run_integ'] = True
-    elif opt in ("-t", "--targets"):
+    elif opt in ('-t', '--targets'):
       run_targets, attribute_targets = [], []
 
-      integ_targets = arg.split(",")
-      all_run_targets = [t for t in Target if CONFIG["target.torrc"].get(t) is not None]
+      integ_targets = arg.split(',')
+      all_run_targets = [t for t in Target if CONFIG['target.torrc'].get(t) is not None]
 
       # validates the targets and split them into run and attribute targets
 
       if not integ_targets:
-        raise ValueError("No targets provided")
+        raise ValueError('No targets provided')
 
       for target in integ_targets:
         if target not in Target:
-          raise ValueError("Invalid integration target: %s" % target)
+          raise ValueError('Invalid integration target: %s' % target)
         elif target in all_run_targets:
           run_targets.append(target)
         else:
@@ -366,20 +366,20 @@ def _get_args(argv):
 
       args['run_targets'] = run_targets
       args['attribute_targets'] = attribute_targets
-    elif opt in ("-l", "--test"):
+    elif opt in ('-l', '--test'):
       args['specific_test'] = arg
-    elif opt in ("-l", "--log"):
+    elif opt in ('-l', '--log'):
       arg = arg.upper()
 
       if arg not in stem.util.log.LOG_VALUES:
         raise ValueError(LOG_TYPE_ERROR % arg)
 
       args['logging_runlevel'] = arg
-    elif opt in ("--tor"):
+    elif opt in ('--tor'):
       args['tor_path'] = arg
-    elif opt in ("-v", "--verbose"):
+    elif opt in ('-v', '--verbose'):
       args['verbose'] = True
-    elif opt in ("-h", "--help"):
+    elif opt in ('-h', '--help'):
       args['print_help'] = True
 
   # translates our args dict into a named tuple
@@ -390,10 +390,10 @@ def _get_args(argv):
 
 def _print_static_issues(static_check_issues):
   if static_check_issues:
-    println("STATIC CHECKS", STATUS)
+    println('STATIC CHECKS', STATUS)
 
     for file_path in static_check_issues:
-      println("* %s" % file_path, STATUS)
+      println('* %s' % file_path, STATUS)
 
       # Make a dict of line numbers to its issues. This is so we can both sort
       # by the line number and clear any duplicate messages.
@@ -405,8 +405,8 @@ def _print_static_issues(static_check_issues):
 
       for line_number in sorted(line_to_issues.keys()):
         for msg in line_to_issues[line_number]:
-          line_count = "%-4s" % line_number
-          println("  line %s - %s" % (line_count, msg))
+          line_count = '%-4s' % line_number
+          println('  line %s - %s' % (line_count, msg))
 
       println()
 
@@ -424,8 +424,8 @@ def _run_test(args, test_class, output_filters, logging_buffer):
     elif label.startswith('test.integ.'):
       label = label[11:]
 
-    label = "  %s..." % label
-    label = "%-54s" % label
+    label = '  %s...' % label
+    label = '%-54s' % label
 
     println(label, STATUS, NO_NL)
 
@@ -438,9 +438,9 @@ def _run_test(args, test_class, output_filters, logging_buffer):
     sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
     println()
   elif not run_result.failures and not run_result.errors:
-    println(" success (%0.2fs)" % (time.time() - start_time), SUCCESS)
+    println(' success (%0.2fs)' % (time.time() - start_time), SUCCESS)
   else:
-    println(" failed (%0.2fs)" % (time.time() - start_time), ERROR)
+    println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
     sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
 
   test.output.print_logging(logging_buffer)
