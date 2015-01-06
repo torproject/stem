@@ -65,10 +65,11 @@ class TestProc(unittest.TestCase):
       test.runner.skip(self, '(proc unavailable)')
       return
 
+    tor_cmd = test.runner.get_runner().get_tor_command(True)
     tor_pid = test.runner.get_runner().get_pid()
     command, utime, stime, start_time = proc.stats(tor_pid, 'command', 'utime', 'stime', 'start time')
 
-    self.assertEqual('tor', command)
+    self.assertEqual(tor_cmd, command)
     self.assertTrue(float(utime) > 0)
     self.assertTrue(float(stime) >= 0)
     self.assertTrue(float(start_time) > proc.system_start_time())

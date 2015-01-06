@@ -584,12 +584,15 @@ class Runner(object):
     except TorInaccessable:
       return stem.version.get_system_tor_version(self.get_tor_command())
 
-  def get_tor_command(self):
+  def get_tor_command(self, base_cmd = False):
     """
     Provides the command used to run our tor instance.
+
+    :param bool base_cmd: provides just the command name if true rather than
+      the full '--tor path' argument
     """
 
-    return self._get('_tor_cmd')
+    return os.path.basename(self._get('_tor_cmd')) if base_cmd else self._get('_tor_cmd')
 
   def _get(self, attr):
     """
