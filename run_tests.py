@@ -307,13 +307,18 @@ def main():
   runtime_label = '(%i seconds)' % (time.time() - start_time)
 
   if error_tracker.has_errors_occured():
-    if args.quiet:
-      println('', STDERR)  # extra newline
-
     println('TESTING FAILED %s' % runtime_label, ERROR, STDERR)
 
     for line in error_tracker:
       println('  %s' % line, ERROR, STDERR)
+
+    error_modules = error_tracker.get_modules()
+
+    if len(error_modules) < 10 and not args.specific_test:
+      println('\nYou can re-run just these tests with:\n', ERROR, STDERR)
+
+      for module in error_modules:
+        println('  %s --test %s' % (' '.join(sys.argv), module), ERROR, STDERR)
   else:
     if skipped_tests > 0:
       println('%i TESTS WERE SKIPPED' % skipped_tests, STATUS)
@@ -373,7 +378,7 @@ def _get_args(argv):
 
       args['run_targets'] = run_targets
       args['attribute_targets'] = attribute_targets
-    elif opt in ('-l', '--test'):
+    elif opt in ('-t', '--test'):
       args['specific_test'] = arg
     elif opt in ('-l', '--log'):
       arg = arg.upper()
@@ -451,7 +456,7 @@ def _run_test(args, test_class, output_filters, logging_buffer):
     if args.quiet:
       println(label, STATUS, NO_NL, STDERR)
       println(' failed (%0.2fs)' % (time.time() - start_time), ERROR, STDERR)
-      println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL, STDERR)
+      println(test.output.apply_filters(test_results.getvalue(), *output_filters), STDERR)
     else:
       println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
       println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL)

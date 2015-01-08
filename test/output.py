@@ -196,6 +196,7 @@ class ErrorTracker(object):
 
   def __init__(self):
     self._errors = []
+    self._error_modules = set()
     self._category = None
     self._error_noted = False
 
@@ -232,9 +233,17 @@ class ErrorTracker(object):
         else:
           self._errors.append(line_content)
 
+        module_match = re.match('.*\((test\.\S+)\.\S+\).*', line_content)
+
+        if module_match:
+          self._error_modules.add(module_match.group(1))
+
       return line_content
 
     return _error_tracker
+
+  def get_modules(self):
+    return self._error_modules
 
   def __iter__(self):
     for error_line in self._errors:
