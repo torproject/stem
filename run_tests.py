@@ -30,7 +30,7 @@ import test.output
 import test.runner
 import test.util
 
-from test.output import STATUS, SUCCESS, ERROR, NO_NL, println
+from test.output import STATUS, SUCCESS, ERROR, NO_NL, STDERR, println
 from test.util import STEM_BASE, Target, Task
 
 # Our default arguments. The _get_args() function provides a named tuple of
@@ -53,12 +53,13 @@ ARGS = {
   'tor_path': 'tor',
   'run_targets': [Target.RUN_OPEN],
   'attribute_targets': [],
+  'quiet': False,
   'verbose': False,
   'print_help': False,
 }
 
-OPT = 'auit:l:vh'
-OPT_EXPANDED = ['all', 'unit', 'integ', 'targets=', 'test=', 'log=', 'tor=', 'verbose', 'help']
+OPT = 'auit:l:qvh'
+OPT_EXPANDED = ['all', 'unit', 'integ', 'targets=', 'test=', 'log=', 'tor=', 'quiet', 'verbose', 'help']
 
 CONFIG = stem.util.conf.config_dict('test', {
   'target.torrc': {},
@@ -128,6 +129,9 @@ def main():
   except ValueError as exc:
     println(str(exc))
     sys.exit(1)
+
+  if args.quiet:
+    test.output.SUPPRESS_STDOUT = True
 
   if args.print_help:
     println(test.util.get_help_message())
@@ -303,10 +307,13 @@ def main():
   runtime_label = '(%i seconds)' % (time.time() - start_time)
 
   if error_tracker.has_errors_occured():
-    println('TESTING FAILED %s' % runtime_label, ERROR)
+    if args.quiet:
+      println('', STDERR)  # extra newline
+
+    println('TESTING FAILED %s' % runtime_label, ERROR, STDERR)
 
     for line in error_tracker:
-      println('  %s' % line, ERROR)
+      println('  %s' % line, ERROR, STDERR)
   else:
     if skipped_tests > 0:
       println('%i TESTS WERE SKIPPED' % skipped_tests, STATUS)
@@ -377,6 +384,8 @@ def _get_args(argv):
       args['logging_runlevel'] = arg
     elif opt in ('--tor'):
       args['tor_path'] = arg
+    elif opt in ('-q', '--quiet'):
+      args['quiet'] = True
     elif opt in ('-v', '--verbose'):
       args['verbose'] = True
     elif opt in ('-h', '--help'):
@@ -435,13 +444,17 @@ def _run_test(args, test_class, output_filters, logging_buffer):
   run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
 
   if args.verbose:
-    sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
-    println()
+    println(test.output.apply_filters(test_results.getvalue(), *output_filters))
   elif not run_result.failures and not run_result.errors:
     println(' success (%0.2fs)' % (time.time() - start_time), SUCCESS)
   else:
-    println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
-    sys.stdout.write(test.output.apply_filters(test_results.getvalue(), *output_filters))
+    if args.quiet:
+      println(label, STATUS, NO_NL, STDERR)
+      println(' failed (%0.2fs)' % (time.time() - start_time), ERROR, STDERR)
+      println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL, STDERR)
+    else:
+      println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
+      println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL)
 
   test.output.print_logging(logging_buffer)
 

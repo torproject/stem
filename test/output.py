@@ -20,6 +20,7 @@ HEADER_ATTR = (term.Color.CYAN, term.Attr.BOLD)
 CATEGORY_ATTR = (term.Color.GREEN, term.Attr.BOLD)
 
 NO_NL = 'no newline'
+STDERR = 'stderr'
 
 # formatting for various categories of messages
 
@@ -46,23 +47,32 @@ LINE_ATTR = {
   LineType.CONTENT: (term.Color.CYAN,),
 }
 
+SUPPRESS_STDOUT = False  # prevent anything from being printed to stdout
+
 
 def println(msg = '', *attr):
+  if SUPPRESS_STDOUT and STDERR not in attr:
+    return
+
   attr = _flatten(attr)
   no_newline = False
+  stream = sys.stderr if STDERR in attr else sys.stdout
 
   if NO_NL in attr:
     no_newline = True
     attr.remove(NO_NL)
 
-  if COLOR_SUPPORT:
+  if STDERR in attr:
+    attr.remove(STDERR)
+
+  if COLOR_SUPPORT and attr:
     msg = term.format(msg, *attr)
 
-  if no_newline:
-    sys.stdout.write(msg)
-    sys.stdout.flush()
-  else:
-    print(msg)
+  if not no_newline:
+    msg += '\n'
+
+  stream.write(msg)
+  stream.flush()
 
 
 def print_divider(msg, is_header = False):
@@ -71,6 +81,9 @@ def print_divider(msg, is_header = False):
 
 
 def print_logging(logging_buffer):
+  if SUPPRESS_STDOUT:
+    return
+
   if not logging_buffer.is_empty():
     for entry in logging_buffer:
       println(entry.replace('\n', '\n  '), term.Color.MAGENTA)
