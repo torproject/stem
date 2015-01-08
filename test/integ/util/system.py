@@ -73,7 +73,7 @@ class TestSystem(unittest.TestCase):
       test.runner.skip(self, '(ps unavailable)')
       return
 
-    self.assertTrue(stem.util.system.is_running('tor'))
+    self.assertTrue(stem.util.system.is_running(test.runner.get_runner().get_tor_command(True)))
     self.assertFalse(stem.util.system.is_running('blarg_and_stuff'))
 
   def test_pid_by_name(self):
@@ -90,7 +90,8 @@ class TestSystem(unittest.TestCase):
       return
 
     tor_pid = test.runner.get_runner().get_pid()
-    self.assertEqual(tor_pid, stem.util.system.pid_by_name('tor'))
+    tor_cmd = test.runner.get_runner().get_tor_command(True)
+    self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
     self.assertEqual(None, stem.util.system.pid_by_name('blarg_and_stuff'))
 
   def test_pid_by_name_pgrep(self):
@@ -113,7 +114,8 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEqual(tor_pid, stem.util.system.pid_by_name('tor'))
+      tor_cmd = test.runner.get_runner().get_tor_command(True)
+      self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
 
   def test_pid_by_name_pidof(self):
     """
@@ -135,7 +137,8 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEqual(tor_pid, stem.util.system.pid_by_name('tor'))
+      tor_cmd = test.runner.get_runner().get_tor_command(True)
+      self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
 
   def test_pid_by_name_ps_linux(self):
     """
@@ -160,7 +163,8 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEqual(tor_pid, stem.util.system.pid_by_name('tor'))
+      tor_cmd = test.runner.get_runner().get_tor_command(True)
+      self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
 
   def test_pid_by_name_ps_bsd(self):
     """
@@ -185,7 +189,8 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      self.assertEqual(tor_pid, stem.util.system.pid_by_name('tor'))
+      tor_cmd = test.runner.get_runner().get_tor_command(True)
+      self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
 
   def test_pid_by_name_lsof(self):
     """
@@ -210,8 +215,9 @@ class TestSystem(unittest.TestCase):
     with patch('stem.util.system.call') as call_mock:
       call_mock.side_effect = call_replacement
 
+      tor_cmd = test.runner.get_runner().get_tor_command(True)
       our_tor_pid = test.runner.get_runner().get_pid()
-      all_tor_pids = stem.util.system.pid_by_name('tor', multiple = True)
+      all_tor_pids = stem.util.system.pid_by_name(tor_cmd, multiple = True)
 
       if len(all_tor_pids) == 1:
         self.assertEqual(our_tor_pid, all_tor_pids[0])
@@ -561,7 +567,8 @@ class TestSystem(unittest.TestCase):
         # TODO: not sure how to check for this on windows
         IS_EXTRA_TOR_RUNNING = False
       elif not stem.util.system.is_bsd():
-        pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % 'tor')
+        tor_cmd = test.runner.get_runner().get_tor_command(True)
+        pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % tor_cmd)
         IS_EXTRA_TOR_RUNNING = len(pgrep_results) > 1
       else:
         ps_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PS_BSD)
