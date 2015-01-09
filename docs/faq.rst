@@ -241,6 +241,7 @@ Library                                                     Language            
 `TorCtl <https://gitweb.torproject.org/pytorctl.git>`_      Python              July 2008 - November 2011
 `PHP TorCtl <https://github.com/dunglas/php-torcontrol/>`_  PHP                 February 2013
 `JTorCtl <https://gitweb.torproject.org/jtorctl.git>`_      Java                June 2005 - May 2009
+`Orc <https://github.com/sycamoreone/orc>`_                 Go                  January 2015
 ==========================================================  ================    =======================
 
 .. _what_license_is_stem_under:
