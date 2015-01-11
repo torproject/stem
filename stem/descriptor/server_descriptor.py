@@ -167,9 +167,18 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
       break  # done parsing descriptors
 
 
-def _parse_router_line(descriptor, value):
+def _value(line, entries):
+  return entries[line][0][0]
+
+
+def _values(line, entries):
+  return [entry[0] for entry in entries[line]]
+
+
+def _parse_router_line(descriptor, entries):
   # "router" nickname address ORPort SocksPort DirPort
 
+  value = _value('router', entries)
   router_comp = value.split()
 
   if len(router_comp) < 5:
@@ -192,9 +201,10 @@ def _parse_router_line(descriptor, value):
   descriptor.dir_port = None if router_comp[4] == '0' else int(router_comp[4])
 
 
-def _parse_bandwidth_line(descriptor, value):
+def _parse_bandwidth_line(descriptor, entries):
   # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
 
+  value = _value('bandwidth', entries)
   bandwidth_comp = value.split()
 
   if len(bandwidth_comp) < 3:
@@ -211,7 +221,7 @@ def _parse_bandwidth_line(descriptor, value):
   descriptor.observed_bandwidth = int(bandwidth_comp[2])
 
 
-def _parse_platform_line(descriptor, value):
+def _parse_platform_line(descriptor, entries):
   # "platform" string
 
   # The platform attribute was set earlier. This line can contain any
@@ -223,6 +233,7 @@ def _parse_platform_line(descriptor, value):
   # There's no guarantee that we'll be able to pick these out the
   # version, but might as well try to save our caller the effort.
 
+  value = _value('platform', entries)
   platform_match = re.match('^(?:node-)?Tor (\S*).* on (.*)$', value)
 
   if platform_match:
@@ -234,8 +245,10 @@ def _parse_platform_line(descriptor, value):
       pass
 
 
-def _parse_published_line(descriptor, value):
+def _parse_published_line(descriptor, entries):
   # "published" YYYY-MM-DD HH:MM:SS
+
+  value = _value('published', entries)
 
   try:
     descriptor.published = stem.util.str_tools._parse_timestamp(value)
@@ -243,10 +256,11 @@ def _parse_published_line(descriptor, value):
     raise ValueError("Published line's time wasn't parsable: published %s" % value)
 
 
-def _parse_fingerprint_line(descriptor, value):
+def _parse_fingerprint_line(descriptor, entries):
   # This is forty hex digits split into space separated groups of four.
   # Checking that we match this pattern.
 
+  value = _value('fingerprint', entries)
   fingerprint = value.replace(' ', '')
 
   for grouping in value.split(' '):
@@ -259,8 +273,10 @@ def _parse_fingerprint_line(descriptor, value):
   descriptor.fingerprint = fingerprint
 
 
-def _parse_hibernating_line(descriptor, value):
+def _parse_hibernating_line(descriptor, entries):
   # "hibernating" 0|1 (in practice only set if one)
+
+  value = _value('hibernating', entries)
 
   if value not in ('0', '1'):
     raise ValueError('Hibernating line had an invalid value, must be zero or one: %s' % value)
@@ -268,9 +284,11 @@ def _parse_hibernating_line(descriptor, value):
   descriptor.hibernating = value == '1'
 
 
-def _parse_extrainfo_digest_line(descriptor, value):
+def _parse_extrainfo_digest_line(descriptor, entries):
   # this is forty hex digits which just so happens to be the same a
   # fingerprint
+
+  value = _value('extra-info-digest', entries)
 
   if not stem.util.tor_tools.is_valid_fingerprint(value):
     raise ValueError('Extra-info digests should consist of forty hex digits: %s' % value)
@@ -278,14 +296,16 @@ def _parse_extrainfo_digest_line(descriptor, value):
   descriptor.extra_info_digest = value
 
 
-def _parse_hidden_service_dir_line(descriptor, value):
+def _parse_hidden_service_dir_line(descriptor, entries):
+  value = _value('hidden-service-dir', entries)
+
   if value:
     descriptor.hidden_service_dir = value.split(' ')
   else:
     descriptor.hidden_service_dir = ['2']
 
 
-def _parse_uptime_line(descriptor, value):
+def _parse_uptime_line(descriptor, entries):
   # We need to be tolerant of negative uptimes to accommodate a past tor
   # bug...
   #
@@ -297,13 +317,16 @@ def _parse_uptime_line(descriptor, value):
   # After parsing all of the attributes we'll double check that negative
   # uptimes only occurred prior to this fix.
 
+  value = _value('uptime', entries)
+
   try:
     descriptor.uptime = int(value)
   except ValueError:
     raise ValueError('Uptime line must have an integer value: %s' % value)
 
 
-def _parse_protocols_line(descriptor, value):
+def _parse_protocols_line(descriptor, entries):
+  value = _value('protocols', entries)
   protocols_match = re.match('^Link (.*) Circuit (.*)$', value)
 
   if not protocols_match:
@@ -314,7 +337,8 @@ def _parse_protocols_line(descriptor, value):
   descriptor.circuit_protocols = circuit_versions.split(' ')
 
 
-def _parse_or_address_line(descriptor, all_values):
+def _parse_or_address_line(descriptor, entries):
+  all_values = _values('or-address', entries)
   or_addresses = []
 
   for entry in all_values:
@@ -341,10 +365,25 @@ def _parse_or_address_line(descriptor, all_values):
   descriptor.or_addresses = or_addresses
 
 
-def _parse_history_line(descriptor, value, is_read):
-  keyword = 'read-history' if is_read else 'write-history'
-  timestamp, interval, remainder = \
-    stem.descriptor.extrainfo_descriptor._parse_timestamp_and_interval(keyword, value)
+def _parse_read_history_line(descriptor, entries):
+  timestamp, interval, history_values = _parse_history_line(descriptor, entries, 'read-history')
+
+  descriptor.read_history_end = timestamp
+  descriptor.read_history_interval = interval
+  descriptor.read_history_values = history_values
+
+
+def _parse_write_history_line(descriptor, entries):
+  timestamp, interval, history_values = _parse_history_line(descriptor, entries, 'write-history')
+
+  descriptor.write_history_end = timestamp
+  descriptor.write_history_interval = interval
+  descriptor.write_history_values = history_values
+
+
+def _parse_history_line(descriptor, entries, keyword):
+  value = _value(keyword, entries)
+  timestamp, interval, remainder = stem.descriptor.extrainfo_descriptor._parse_timestamp_and_interval(keyword, value)
 
   try:
     if remainder:
@@ -354,14 +393,7 @@ def _parse_history_line(descriptor, value, is_read):
   except ValueError:
     raise ValueError('%s line has non-numeric values: %s %s' % (keyword, keyword, value))
 
-  if is_read:
-    descriptor.read_history_end = timestamp
-    descriptor.read_history_interval = interval
-    descriptor.read_history_values = history_values
-  else:
-    descriptor.write_history_end = timestamp
-    descriptor.write_history_interval = interval
-    descriptor.write_history_values = history_values
+  return timestamp, interval, history_values
 
 
 class ServerDescriptor(Descriptor):
@@ -583,6 +615,9 @@ class ServerDescriptor(Descriptor):
       'hidden-service-dir': _parse_hidden_service_dir_line,
       'uptime': _parse_uptime_line,
       'protocols': _parse_protocols_line,
+      'or-address': _parse_or_address_line,
+      'read-history': _parse_read_history_line,
+      'write-history': _parse_write_history_line,
     }
 
     for keyword, values in list(entries.items()):
@@ -596,7 +631,7 @@ class ServerDescriptor(Descriptor):
 
       try:
         if keyword in parse_functions:
-          parse_functions[keyword](self, value)
+          parse_functions[keyword](self, entries)
         elif keyword == 'allow-single-hop-exits':
           self.allow_single_hop_exits = True
         elif keyword == 'caches-extra-info':
@@ -609,12 +644,6 @@ class ServerDescriptor(Descriptor):
           self.eventdns = value == '1'
         elif keyword == 'ipv6-policy':
           self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
-        elif keyword == 'or-address':
-          _parse_or_address_line(self, [entry[0] for entry in values])
-        elif keyword == 'read-history':
-          _parse_history_line(self, value, True)
-        elif keyword == 'write-history':
-          _parse_history_line(self, value, False)
         else:
           self._unrecognized_lines.append(line)
       except ValueError as exc:
@@ -678,29 +707,29 @@ class ServerDescriptor(Descriptor):
     if self._lazy_loading:
       try:
         if name in ('nickname', 'address', 'or_port', 'socks_port', 'dir_port'):
-          _parse_router_line(self, self._entries['router'][0][0])
+          _parse_router_line(self, self._entries)
         elif name in ('average_bandwidth', 'burst_bandwidth', 'observed_bandwidth'):
-          _parse_bandwidth_line(self, self._entries['bandwidth'][0][0])
+          _parse_bandwidth_line(self, self._entries)
         elif name in ('operating_system', 'tor_version'):
-          _parse_platform_line(self, self._entries['platform'][0][0])
+          _parse_platform_line(self, self._entries)
         elif name == 'published':
-          _parse_published_line(self, self._entries['published'][0][0])
+          _parse_published_line(self, self._entries)
         elif name == 'fingerprint':
-          _parse_fingerprint_line(self, self._entries['fingerprint'][0][0])
+          _parse_fingerprint_line(self, self._entries)
         elif name == 'hibernating':
-          _parse_hibernating_line(self, self._entries['hibernating'][0][0])
+          _parse_hibernating_line(self, self._entries)
         elif name == 'allow_single_hop_exits':
           self.allow_single_hop_exits = 'allow-single-hop-exits' in self._entries
         elif name == 'extra_info_cache':
           self.extra_info_cache = 'caches-extra-info' in self._entries
         elif name == 'extra_info_digest':
-          _parse_extrainfo_digest_line(self, self._entries['extra-info-digest'][0][0])
+          _parse_extrainfo_digest_line(self, self._entries)
         elif name == 'hidden_service_dir':
-          _parse_hidden_service_dir_line(self, self._entries['hidden-service-dir'][0][0])
+          _parse_hidden_service_dir_line(self, self._entries)
         elif name == 'uptime':
-          _parse_uptime_line(self, self._entries['uptime'][0][0])
+          _parse_uptime_line(self, self._entries)
         elif name in ('link_protocols', 'circuit_protocols'):
-          _parse_protocols_line(self, self._entries['protocols'][0][0])
+          _parse_protocols_line(self, self._entries)
         elif name == 'family':
           self.family = set(self._entries['family'][0][0].split(' '))
         elif name == 'eventdns':
@@ -708,11 +737,11 @@ class ServerDescriptor(Descriptor):
         elif name == 'exit_policy_v6':
           self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(self._entries['ipv6-policy'][0][0])
         elif name == 'or_addresses':
-          _parse_or_address_line(self, [entry[0] for entry in self._entries['or-address']])
+          _parse_or_address_line(self, self._entries)
         elif name in ('read_history_end', 'read_history_interval', 'read_history_values'):
-          _parse_history_line(self, self._entries['read-history'][0][0], True)
+          _parse_read_history_line(self, self._entries)
         elif name in ('write_history_end', 'write_history_interval', 'write_history_values'):
-          _parse_history_line(self, self._entries['write-history'][0][0], False)
+          _parse_write_history_line(self, self._entries)
         elif name == 'exit_policy':
           if self._exit_policy_list == [str_type('reject *:*')]:
             self.exit_policy = REJECT_ALL_POLICY
