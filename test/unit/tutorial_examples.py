@@ -12,6 +12,7 @@ except ImportError:
 
 import stem.response
 import stem.descriptor.remote
+import stem.prereq
 
 from stem import str_type
 from stem.control import Controller
@@ -132,6 +133,12 @@ def _get_router_status(address = None, port = None, nickname = None, fingerprint
 
 
 class TestTutorialExamples(unittest.TestCase):
+  def assert_equal_unordered(self, expected, actual):
+    if stem.prereq.is_python_3():
+      self.assertCountEqual(expected.splitlines(), actual.splitlines())
+    else:
+      self.assertListEqual(expected.splitlines(), actual.splitlines())
+
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_list_circuits(self, from_port_mock, stdout_mock):
@@ -183,7 +190,7 @@ class TestTutorialExamples(unittest.TestCase):
     }[fingerprint]
 
     tutorial_example()
-    self.assertEqual(LIST_CIRCUITS_OUTPUT, stdout_mock.getvalue())
+    self.assert_equal_unordered(LIST_CIRCUITS_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
@@ -234,7 +241,7 @@ class TestTutorialExamples(unittest.TestCase):
     controller.get_info.return_value = 'unknown'
 
     tutorial_example(event)
-    self.assertEqual(EXIT_USED_OUTPUT, stdout_mock.getvalue())
+    self.assert_equal_unordered(EXIT_USED_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
@@ -267,7 +274,7 @@ class TestTutorialExamples(unittest.TestCase):
 
     tutorial_example()
 
-    self.assertEqual(OUTDATED_RELAYS_OUTPUT, stdout_mock.getvalue())
+    self.assert_equal_unordered(OUTDATED_RELAYS_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.Query')
@@ -350,7 +357,7 @@ class TestTutorialExamples(unittest.TestCase):
     ]
 
     tutorial_example()
-    self.assertEqual(COMPARE_FLAGS_OUTPUT, stdout_mock.getvalue())
+    self.assert_equal_unordered(COMPARE_FLAGS_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.get_authorities')
@@ -419,7 +426,7 @@ class TestTutorialExamples(unittest.TestCase):
     query_mock.side_effect = [query1, query2, query3, query4]
 
     tutorial_example()
-    self.assertEqual(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT, stdout_mock.getvalue())
+    self.assert_equal_unordered(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.parse_file')
