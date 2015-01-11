@@ -396,73 +396,31 @@ def _parse_history_line(descriptor, entries, keyword):
   return timestamp, interval, history_values
 
 
+def _parse_router_digest_line(descriptor, entries):
+  descriptor._digest = _value('router-digest', entries)
+
+  if not stem.util.tor_tools.is_hex_digits(descriptor._digest, 40):
+    raise ValueError('Router digest line had an invalid sha1 digest: router-digest %s' % descriptor._digest)
+
+
+def _key_block(entries, keyword, expected_block_type):
+  value, block_type, block_contents = entries[keyword][0]
+
+  if not block_contents or block_type != expected_block_type:
+    raise ValueError("'%s' should be followed by a %s block" % (keyword, expected_block_type))
+
+  return block_contents
+
+
 _parse_ipv6_policy_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('ipv6-policy', entries)))
 _parse_allow_single_hop_exits_line = lambda descriptor, entries: setattr(descriptor, 'allow_single_hop_exits', True)
 _parse_caches_extra_info_line = lambda descriptor, entries: setattr(descriptor, 'extra_info_cache', True)
 _parse_family_line = lambda descriptor, entries: setattr(descriptor, 'family', set(_value('family', entries).split(' ')))
 _parse_eventdns_line = lambda descriptor, entries: setattr(descriptor, 'eventdns', _value('eventdns', entries) == '1')
-
-
-SERVER_DESCRIPTOR_ATTRIBUTES = {
-  'nickname': (None, _parse_router_line),
-  'fingerprint': (None, _parse_fingerprint_line),
-  'published': (None, _parse_published_line),
-
-  'address': (None, _parse_router_line),
-  'or_port': (None, _parse_router_line),
-  'socks_port': (None, _parse_router_line),
-  'dir_port': (None, _parse_router_line),
-
-  'tor_version': (None, _parse_platform_line),
-  'operating_system': (None, _parse_platform_line),
-  'uptime': (None, _parse_uptime_line),
-  'exit_policy_v6': (DEFAULT_IPV6_EXIT_POLICY, _parse_ipv6_policy_line),
-  'family': (set(), _parse_family_line),
-
-  'average_bandwidth': (None, _parse_bandwidth_line),
-  'burst_bandwidth': (None, _parse_bandwidth_line),
-  'observed_bandwidth': (None, _parse_bandwidth_line),
-
-  'link_protocols': (None, _parse_protocols_line),
-  'circuit_protocols': (None, _parse_protocols_line),
-  'hibernating': (False, _parse_hibernating_line),
-  'allow_single_hop_exits': (False, _parse_allow_single_hop_exits_line),
-  'extra_info_cache': (False, _parse_caches_extra_info_line),
-  'extra_info_digest': (None, _parse_extrainfo_digest_line),
-  'hidden_service_dir': (None, _parse_hidden_service_dir_line),
-  'eventdns': (None, _parse_eventdns_line),
-  'or_addresses': ([], _parse_or_address_line),
-
-  'read_history_end': (None, _parse_read_history_line),
-  'read_history_interval': (None, _parse_read_history_line),
-  'read_history_values': (None, _parse_read_history_line),
-
-  'write_history_end': (None, _parse_write_history_line),
-  'write_history_interval': (None, _parse_write_history_line),
-  'write_history_values': (None, _parse_write_history_line),
-}
-
-
-PARSER_FOR_LINE = {
-  'router': _parse_router_line,
-  'bandwidth': _parse_bandwidth_line,
-  'platform': _parse_platform_line,
-  'published': _parse_published_line,
-  'fingerprint': _parse_fingerprint_line,
-  'hibernating': _parse_hibernating_line,
-  'extra-info-digest': _parse_extrainfo_digest_line,
-  'hidden-service-dir': _parse_hidden_service_dir_line,
-  'uptime': _parse_uptime_line,
-  'protocols': _parse_protocols_line,
-  'or-address': _parse_or_address_line,
-  'read-history': _parse_read_history_line,
-  'write-history': _parse_write_history_line,
-  'ipv6-policy': _parse_ipv6_policy_line,
-  'allow-single-hop-exits': _parse_allow_single_hop_exits_line,
-  'caches-extra-info': _parse_caches_extra_info_line,
-  'family': _parse_family_line,
-  'eventdns': _parse_eventdns_line,
-}
+_parse_onion_key_line = lambda descriptor, entries: setattr(descriptor, 'onion_key', _key_block(entries, 'onion-key', 'RSA PUBLIC KEY'))
+_parse_signing_key_line = lambda descriptor, entries: setattr(descriptor, 'signing_key', _key_block(entries, 'signing-key', 'RSA PUBLIC KEY'))
+_parse_router_signature_line = lambda descriptor, entries: setattr(descriptor, 'signature', _key_block(entries, 'router-signature', 'SIGNATURE'))
+_parse_ntor_onion_key_line = lambda descriptor, entries: setattr(descriptor, 'ntor_onion_key', _value('ntor-onion-key', entries))
 
 
 class ServerDescriptor(Descriptor):
@@ -638,13 +596,13 @@ class ServerDescriptor(Descriptor):
 
     # set defaults
 
-    for attr in SERVER_DESCRIPTOR_ATTRIBUTES:
-      setattr(self, attr, SERVER_DESCRIPTOR_ATTRIBUTES[attr][0])
+    for attr in self._attributes():
+      setattr(self, attr, self._attributes()[attr][0])
 
     for keyword, values in list(entries.items()):
       try:
-        if keyword in PARSER_FOR_LINE:
-          PARSER_FOR_LINE[keyword](self, entries)
+        if keyword in self._parser_for_line():
+          self._parser_for_line()[keyword](self, entries)
         elif keyword == 'contact':
           pass  # parsed as a bytes field earlier
         else:
@@ -710,11 +668,85 @@ class ServerDescriptor(Descriptor):
   def _last_keyword(self):
     return 'router-signature'
 
+  @lru_cache()
+  def _attributes(self):
+    """
+    Provides a mapping of attributes we should have...
+
+      attrubute => (default_value, parsing_function)
+    """
+
+    return {
+      'nickname': (None, _parse_router_line),
+      'fingerprint': (None, _parse_fingerprint_line),
+      'published': (None, _parse_published_line),
+
+      'address': (None, _parse_router_line),
+      'or_port': (None, _parse_router_line),
+      'socks_port': (None, _parse_router_line),
+      'dir_port': (None, _parse_router_line),
+
+      'tor_version': (None, _parse_platform_line),
+      'operating_system': (None, _parse_platform_line),
+      'uptime': (None, _parse_uptime_line),
+      'exit_policy_v6': (DEFAULT_IPV6_EXIT_POLICY, _parse_ipv6_policy_line),
+      'family': (set(), _parse_family_line),
+
+      'average_bandwidth': (None, _parse_bandwidth_line),
+      'burst_bandwidth': (None, _parse_bandwidth_line),
+      'observed_bandwidth': (None, _parse_bandwidth_line),
+
+      'link_protocols': (None, _parse_protocols_line),
+      'circuit_protocols': (None, _parse_protocols_line),
+      'hibernating': (False, _parse_hibernating_line),
+      'allow_single_hop_exits': (False, _parse_allow_single_hop_exits_line),
+      'extra_info_cache': (False, _parse_caches_extra_info_line),
+      'extra_info_digest': (None, _parse_extrainfo_digest_line),
+      'hidden_service_dir': (None, _parse_hidden_service_dir_line),
+      'eventdns': (None, _parse_eventdns_line),
+      'or_addresses': ([], _parse_or_address_line),
+
+      'read_history_end': (None, _parse_read_history_line),
+      'read_history_interval': (None, _parse_read_history_line),
+      'read_history_values': (None, _parse_read_history_line),
+
+      'write_history_end': (None, _parse_write_history_line),
+      'write_history_interval': (None, _parse_write_history_line),
+      'write_history_values': (None, _parse_write_history_line),
+    }
+
+  @lru_cache()
+  def _parser_for_line(self):
+    """
+    Provides the parsing function for the line with a given keyword.
+    """
+
+    return {
+      'router': _parse_router_line,
+      'bandwidth': _parse_bandwidth_line,
+      'platform': _parse_platform_line,
+      'published': _parse_published_line,
+      'fingerprint': _parse_fingerprint_line,
+      'hibernating': _parse_hibernating_line,
+      'extra-info-digest': _parse_extrainfo_digest_line,
+      'hidden-service-dir': _parse_hidden_service_dir_line,
+      'uptime': _parse_uptime_line,
+      'protocols': _parse_protocols_line,
+      'or-address': _parse_or_address_line,
+      'read-history': _parse_read_history_line,
+      'write-history': _parse_write_history_line,
+      'ipv6-policy': _parse_ipv6_policy_line,
+      'allow-single-hop-exits': _parse_allow_single_hop_exits_line,
+      'caches-extra-info': _parse_caches_extra_info_line,
+      'family': _parse_family_line,
+      'eventdns': _parse_eventdns_line,
+    }
+
   def __getattr__(self, name):
     # If attribute isn't already present we might be lazy loading it...
 
-    if self._lazy_loading and name in SERVER_DESCRIPTOR_ATTRIBUTES:
-      default, parsing_function = SERVER_DESCRIPTOR_ATTRIBUTES[name]
+    if self._lazy_loading and name in self._attributes():
+      default, parsing_function = self._attributes()[name]
 
       try:
         if parsing_function:
@@ -727,7 +759,11 @@ class ServerDescriptor(Descriptor):
 
           del self._exit_policy_list
       except (ValueError, KeyError):
-        setattr(self, name, default)
+        try:
+          # despite having a validation failure check to see if we set something
+          return super(ServerDescriptor, self).__getattribute__(name)
+        except AttributeError:
+          setattr(self, name, default)
 
     return super(ServerDescriptor, self).__getattribute__(name)
 
@@ -746,11 +782,6 @@ class RelayDescriptor(ServerDescriptor):
   """
 
   def __init__(self, raw_contents, validate = True, annotations = None):
-    self.onion_key = None
-    self.ntor_onion_key = None
-    self.signing_key = None
-    self.signature = None
-
     super(RelayDescriptor, self).__init__(raw_contents, validate, annotations)
 
     # validate the descriptor if required
@@ -874,44 +905,29 @@ class RelayDescriptor(ServerDescriptor):
     if digest != local_digest:
       raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (digest, local_digest))
 
-  def _parse(self, entries, validate):
-    entries = dict(entries)  # shallow copy since we're destructive
-
-    # handles fields only in server descriptors
-
-    for keyword, values in list(entries.items()):
-      value, block_type, block_contents = values[0]
-      line = '%s %s' % (keyword, value)
-
-      if keyword == 'onion-key':
-        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
-          raise ValueError("'onion-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
-
-        self.onion_key = block_contents
-        del entries['onion-key']
-      elif keyword == 'ntor-onion-key':
-        self.ntor_onion_key = value
-        del entries['ntor-onion-key']
-      elif keyword == 'signing-key':
-        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
-          raise ValueError("'signing-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
-
-        self.signing_key = block_contents
-        del entries['signing-key']
-      elif keyword == 'router-signature':
-        if validate and (not block_contents or block_type != 'SIGNATURE'):
-          raise ValueError("'router-signature' should be followed by a SIGNATURE block: %s" % line)
-
-        self.signature = block_contents
-        del entries['router-signature']
-
-    ServerDescriptor._parse(self, entries, validate)
-
   def _compare(self, other, method):
     if not isinstance(other, RelayDescriptor):
       return False
 
     return method(str(self).strip(), str(other).strip())
+
+  @lru_cache()
+  def _attributes(self):
+    return dict(super(RelayDescriptor, self)._attributes(), **{
+      'onion_key': (None, _parse_onion_key_line),
+      'ntor_onion_key': (None, _parse_ntor_onion_key_line),
+      'signing_key': (None, _parse_signing_key_line),
+      'signature': (None, _parse_router_signature_line),
+    })
+
+  @lru_cache()
+  def _parser_for_line(self):
+    return dict(super(RelayDescriptor, self)._parser_for_line(), **{
+      'onion-key': _parse_onion_key_line,
+      'ntor-onion-key': _parse_ntor_onion_key_line,
+      'signing-key': _parse_signing_key_line,
+      'router-signature': _parse_router_signature_line,
+    })
 
   def __hash__(self):
     return hash(str(self).strip())
@@ -947,29 +963,10 @@ class BridgeDescriptor(ServerDescriptor):
   """
 
   def __init__(self, raw_contents, validate = True, annotations = None):
-    self._digest = None
-
     super(BridgeDescriptor, self).__init__(raw_contents, validate, annotations)
 
   def digest(self):
     return self._digest
-
-  def _parse(self, entries, validate):
-    entries = dict(entries)
-
-    # handles fields only in bridge descriptors
-    for keyword, values in list(entries.items()):
-      value, block_type, block_contents = values[0]
-      line = '%s %s' % (keyword, value)
-
-      if keyword == 'router-digest':
-        if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
-          raise ValueError('Router digest line had an invalid sha1 digest: %s' % line)
-
-        self._digest = stem.util.str_tools._to_unicode(value)
-        del entries['router-digest']
-
-    ServerDescriptor._parse(self, entries, validate)
 
   def is_scrubbed(self):
     """
@@ -1039,6 +1036,18 @@ class BridgeDescriptor(ServerDescriptor):
 
   def _last_keyword(self):
     return None
+
+  @lru_cache()
+  def _attributes(self):
+    return dict(super(BridgeDescriptor, self)._attributes(), **{
+      '_digest': (None, _parse_router_digest_line),
+    })
+
+  @lru_cache()
+  def _parser_for_line(self):
+    return dict(super(BridgeDescriptor, self)._parser_for_line(), **{
+      'router-digest': _parse_router_digest_line,
+    })
 
   def _compare(self, other, method):
     if not isinstance(other, BridgeDescriptor):
