@@ -396,6 +396,63 @@ def _parse_history_line(descriptor, entries, keyword):
   return timestamp, interval, history_values
 
 
+SERVER_DESCRIPTOR_ATTRIBUTES = {
+  'nickname': (None, _parse_router_line),
+  'fingerprint': (None, _parse_fingerprint_line),
+  'published': (None, _parse_published_line),
+
+  'address': (None, _parse_router_line),
+  'or_port': (None, _parse_router_line),
+  'socks_port': (None, _parse_router_line),
+  'dir_port': (None, _parse_router_line),
+
+  'tor_version': (None, _parse_platform_line),
+  'operating_system': (None, _parse_platform_line),
+  'uptime': (None, _parse_uptime_line),
+  'exit_policy_v6': (DEFAULT_IPV6_EXIT_POLICY, None),
+  'family': (set(), None),
+
+  'average_bandwidth': (None, _parse_bandwidth_line),
+  'burst_bandwidth': (None, _parse_bandwidth_line),
+  'observed_bandwidth': (None, _parse_bandwidth_line),
+
+  'link_protocols': (None, _parse_protocols_line),
+  'circuit_protocols': (None, _parse_protocols_line),
+  'hibernating': (False, _parse_hibernating_line),
+  'allow_single_hop_exits': (False, None),
+  'extra_info_cache': (False, None),
+  'extra_info_digest': (None, _parse_extrainfo_digest_line),
+  'hidden_service_dir': (None, _parse_hidden_service_dir_line),
+  'eventdns': (None, None),
+  'or_addresses': ([], _parse_or_address_line),
+
+  'read_history_end': (None, _parse_read_history_line),
+  'read_history_interval': (None, _parse_read_history_line),
+  'read_history_values': (None, _parse_read_history_line),
+
+  'write_history_end': (None, _parse_write_history_line),
+  'write_history_interval': (None, _parse_write_history_line),
+  'write_history_values': (None, _parse_write_history_line),
+}
+
+
+PARSER_FOR_LINE = {
+  'router': _parse_router_line,
+  'bandwidth': _parse_bandwidth_line,
+  'platform': _parse_platform_line,
+  'published': _parse_published_line,
+  'fingerprint': _parse_fingerprint_line,
+  'hibernating': _parse_hibernating_line,
+  'extra-info-digest': _parse_extrainfo_digest_line,
+  'hidden-service-dir': _parse_hidden_service_dir_line,
+  'uptime': _parse_uptime_line,
+  'protocols': _parse_protocols_line,
+  'or-address': _parse_or_address_line,
+  'read-history': _parse_read_history_line,
+  'write-history': _parse_write_history_line,
+}
+
+
 class ServerDescriptor(Descriptor):
   """
   Common parent for server descriptors.
@@ -567,58 +624,10 @@ class ServerDescriptor(Descriptor):
     :raises: **ValueError** if an error occurs in validation
     """
 
-    self.nickname = None
-    self.fingerprint = None
-    self.published = None
+    # set defaults
 
-    self.address = None
-    self.or_port = None
-    self.socks_port = None
-    self.dir_port = None
-
-    self.tor_version = None
-    self.operating_system = None
-    self.uptime = None
-    self.exit_policy_v6 = DEFAULT_IPV6_EXIT_POLICY
-    self.family = set()
-
-    self.average_bandwidth = None
-    self.burst_bandwidth = None
-    self.observed_bandwidth = None
-
-    self.link_protocols = None
-    self.circuit_protocols = None
-    self.hibernating = False
-    self.allow_single_hop_exits = False
-    self.extra_info_cache = False
-    self.extra_info_digest = None
-    self.hidden_service_dir = None
-    self.eventdns = None
-    self.or_addresses = []
-
-    self.read_history_end = None
-    self.read_history_interval = None
-    self.read_history_values = None
-
-    self.write_history_end = None
-    self.write_history_interval = None
-    self.write_history_values = None
-
-    parse_functions = {
-      'router': _parse_router_line,
-      'bandwidth': _parse_bandwidth_line,
-      'platform': _parse_platform_line,
-      'published': _parse_published_line,
-      'fingerprint': _parse_fingerprint_line,
-      'hibernating': _parse_hibernating_line,
-      'extra-info-digest': _parse_extrainfo_digest_line,
-      'hidden-service-dir': _parse_hidden_service_dir_line,
-      'uptime': _parse_uptime_line,
-      'protocols': _parse_protocols_line,
-      'or-address': _parse_or_address_line,
-      'read-history': _parse_read_history_line,
-      'write-history': _parse_write_history_line,
-    }
+    for attr in SERVER_DESCRIPTOR_ATTRIBUTES:
+      setattr(self, attr, SERVER_DESCRIPTOR_ATTRIBUTES[attr][0])
 
     for keyword, values in list(entries.items()):
       # most just work with the first (and only) value
@@ -630,8 +639,8 @@ class ServerDescriptor(Descriptor):
         line += '\n%s' % block_contents
 
       try:
-        if keyword in parse_functions:
-          parse_functions[keyword](self, entries)
+        if keyword in PARSER_FOR_LINE:
+          PARSER_FOR_LINE[keyword](self, entries)
         elif keyword == 'allow-single-hop-exits':
           self.allow_single_hop_exits = True
         elif keyword == 'caches-extra-info':
@@ -704,44 +713,22 @@ class ServerDescriptor(Descriptor):
   def __getattr__(self, name):
     # If attribute isn't already present we might be lazy loading it...
 
-    if self._lazy_loading:
+    if self._lazy_loading and name in SERVER_DESCRIPTOR_ATTRIBUTES:
+      default, parsing_function = SERVER_DESCRIPTOR_ATTRIBUTES[name]
+
       try:
-        if name in ('nickname', 'address', 'or_port', 'socks_port', 'dir_port'):
-          _parse_router_line(self, self._entries)
-        elif name in ('average_bandwidth', 'burst_bandwidth', 'observed_bandwidth'):
-          _parse_bandwidth_line(self, self._entries)
-        elif name in ('operating_system', 'tor_version'):
-          _parse_platform_line(self, self._entries)
-        elif name == 'published':
-          _parse_published_line(self, self._entries)
-        elif name == 'fingerprint':
-          _parse_fingerprint_line(self, self._entries)
-        elif name == 'hibernating':
-          _parse_hibernating_line(self, self._entries)
+        if parsing_function:
+          parsing_function(self, self._entries)
         elif name == 'allow_single_hop_exits':
           self.allow_single_hop_exits = 'allow-single-hop-exits' in self._entries
         elif name == 'extra_info_cache':
           self.extra_info_cache = 'caches-extra-info' in self._entries
-        elif name == 'extra_info_digest':
-          _parse_extrainfo_digest_line(self, self._entries)
-        elif name == 'hidden_service_dir':
-          _parse_hidden_service_dir_line(self, self._entries)
-        elif name == 'uptime':
-          _parse_uptime_line(self, self._entries)
-        elif name in ('link_protocols', 'circuit_protocols'):
-          _parse_protocols_line(self, self._entries)
         elif name == 'family':
           self.family = set(self._entries['family'][0][0].split(' '))
         elif name == 'eventdns':
           self.eventdns = self._entries['eventdns'][0][0] == '1'
         elif name == 'exit_policy_v6':
           self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(self._entries['ipv6-policy'][0][0])
-        elif name == 'or_addresses':
-          _parse_or_address_line(self, self._entries)
-        elif name in ('read_history_end', 'read_history_interval', 'read_history_values'):
-          _parse_read_history_line(self, self._entries)
-        elif name in ('write_history_end', 'write_history_interval', 'write_history_values'):
-          _parse_write_history_line(self, self._entries)
         elif name == 'exit_policy':
           if self._exit_policy_list == [str_type('reject *:*')]:
             self.exit_policy = REJECT_ALL_POLICY
@@ -750,17 +737,6 @@ class ServerDescriptor(Descriptor):
 
           del self._exit_policy_list
       except (ValueError, KeyError):
-        if name == 'exit_policy_v6':
-          default = DEFAULT_IPV6_EXIT_POLICY
-        elif name == 'family':
-          default = set()
-        elif name in ('hibernating', 'allow_single_hop_exits', 'extra_info_cache'):
-          default = False
-        elif name == 'or_addresses':
-          default = []
-        else:
-          default = None
-
         setattr(self, name, default)
 
     return super(ServerDescriptor, self).__getattribute__(name)
