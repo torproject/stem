@@ -396,6 +396,13 @@ def _parse_history_line(descriptor, entries, keyword):
   return timestamp, interval, history_values
 
 
+_parse_ipv6_policy_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('ipv6-policy', entries)))
+_parse_allow_single_hop_exits_line = lambda descriptor, entries: setattr(descriptor, 'allow_single_hop_exits', True)
+_parse_caches_extra_info_line = lambda descriptor, entries: setattr(descriptor, 'extra_info_cache', True)
+_parse_family_line = lambda descriptor, entries: setattr(descriptor, 'family', set(_value('family', entries).split(' ')))
+_parse_eventdns_line = lambda descriptor, entries: setattr(descriptor, 'eventdns', _value('eventdns', entries) == '1')
+
+
 SERVER_DESCRIPTOR_ATTRIBUTES = {
   'nickname': (None, _parse_router_line),
   'fingerprint': (None, _parse_fingerprint_line),
@@ -409,8 +416,8 @@ SERVER_DESCRIPTOR_ATTRIBUTES = {
   'tor_version': (None, _parse_platform_line),
   'operating_system': (None, _parse_platform_line),
   'uptime': (None, _parse_uptime_line),
-  'exit_policy_v6': (DEFAULT_IPV6_EXIT_POLICY, None),
-  'family': (set(), None),
+  'exit_policy_v6': (DEFAULT_IPV6_EXIT_POLICY, _parse_ipv6_policy_line),
+  'family': (set(), _parse_family_line),
 
   'average_bandwidth': (None, _parse_bandwidth_line),
   'burst_bandwidth': (None, _parse_bandwidth_line),
@@ -419,11 +426,11 @@ SERVER_DESCRIPTOR_ATTRIBUTES = {
   'link_protocols': (None, _parse_protocols_line),
   'circuit_protocols': (None, _parse_protocols_line),
   'hibernating': (False, _parse_hibernating_line),
-  'allow_single_hop_exits': (False, None),
-  'extra_info_cache': (False, None),
+  'allow_single_hop_exits': (False, _parse_allow_single_hop_exits_line),
+  'extra_info_cache': (False, _parse_caches_extra_info_line),
   'extra_info_digest': (None, _parse_extrainfo_digest_line),
   'hidden_service_dir': (None, _parse_hidden_service_dir_line),
-  'eventdns': (None, None),
+  'eventdns': (None, _parse_eventdns_line),
   'or_addresses': ([], _parse_or_address_line),
 
   'read_history_end': (None, _parse_read_history_line),
@@ -450,6 +457,11 @@ PARSER_FOR_LINE = {
   'or-address': _parse_or_address_line,
   'read-history': _parse_read_history_line,
   'write-history': _parse_write_history_line,
+  'ipv6-policy': _parse_ipv6_policy_line,
+  'allow-single-hop-exits': _parse_allow_single_hop_exits_line,
+  'caches-extra-info': _parse_caches_extra_info_line,
+  'family': _parse_family_line,
+  'eventdns': _parse_eventdns_line,
 }
 
 
@@ -630,31 +642,19 @@ class ServerDescriptor(Descriptor):
       setattr(self, attr, SERVER_DESCRIPTOR_ATTRIBUTES[attr][0])
 
     for keyword, values in list(entries.items()):
-      # most just work with the first (and only) value
-      value, block_type, block_contents = values[0]
-
-      line = '%s %s' % (keyword, value)  # original line
-
-      if block_contents:
-        line += '\n%s' % block_contents
-
       try:
         if keyword in PARSER_FOR_LINE:
           PARSER_FOR_LINE[keyword](self, entries)
-        elif keyword == 'allow-single-hop-exits':
-          self.allow_single_hop_exits = True
-        elif keyword == 'caches-extra-info':
-          self.extra_info_cache = True
         elif keyword == 'contact':
           pass  # parsed as a bytes field earlier
-        elif keyword == 'family':
-          self.family = set(value.split(' '))
-        elif keyword == 'eventdns':
-          self.eventdns = value == '1'
-        elif keyword == 'ipv6-policy':
-          self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
         else:
-          self._unrecognized_lines.append(line)
+          for value, block_type, block_contents in values:
+            line = '%s %s' % (keyword, value)
+
+            if block_contents:
+              line += '\n%s' % block_contents
+
+            self._unrecognized_lines.append(line)
       except ValueError as exc:
         if validate:
           raise exc
@@ -719,16 +719,6 @@ class ServerDescriptor(Descriptor):
       try:
         if parsing_function:
           parsing_function(self, self._entries)
-        elif name == 'allow_single_hop_exits':
-          self.allow_single_hop_exits = 'allow-single-hop-exits' in self._entries
-        elif name == 'extra_info_cache':
-          self.extra_info_cache = 'caches-extra-info' in self._entries
-        elif name == 'family':
-          self.family = set(self._entries['family'][0][0].split(' '))
-        elif name == 'eventdns':
-          self.eventdns = self._entries['eventdns'][0][0] == '1'
-        elif name == 'exit_policy_v6':
-          self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(self._entries['ipv6-policy'][0][0])
         elif name == 'exit_policy':
           if self._exit_policy_list == [str_type('reject *:*')]:
             self.exit_policy = REJECT_ALL_POLICY
