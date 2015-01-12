@@ -474,6 +474,66 @@ class ServerDescriptor(Descriptor):
   a default value, others are left as **None** if undefined
   """
 
+  ATTRIBUTES = {
+    'nickname': (None, _parse_router_line),
+    'fingerprint': (None, _parse_fingerprint_line),
+    'published': (None, _parse_published_line),
+
+    'address': (None, _parse_router_line),
+    'or_port': (None, _parse_router_line),
+    'socks_port': (None, _parse_router_line),
+    'dir_port': (None, _parse_router_line),
+
+    'tor_version': (None, _parse_platform_line),
+    'operating_system': (None, _parse_platform_line),
+    'uptime': (None, _parse_uptime_line),
+    'exit_policy_v6': (DEFAULT_IPV6_EXIT_POLICY, _parse_ipv6_policy_line),
+    'family': (set(), _parse_family_line),
+
+    'average_bandwidth': (None, _parse_bandwidth_line),
+    'burst_bandwidth': (None, _parse_bandwidth_line),
+    'observed_bandwidth': (None, _parse_bandwidth_line),
+
+    'link_protocols': (None, _parse_protocols_line),
+    'circuit_protocols': (None, _parse_protocols_line),
+    'hibernating': (False, _parse_hibernating_line),
+    'allow_single_hop_exits': (False, _parse_allow_single_hop_exits_line),
+    'extra_info_cache': (False, _parse_caches_extra_info_line),
+    'extra_info_digest': (None, _parse_extrainfo_digest_line),
+    'hidden_service_dir': (None, _parse_hidden_service_dir_line),
+    'eventdns': (None, _parse_eventdns_line),
+    'or_addresses': ([], _parse_or_address_line),
+
+    'read_history_end': (None, _parse_read_history_line),
+    'read_history_interval': (None, _parse_read_history_line),
+    'read_history_values': (None, _parse_read_history_line),
+
+    'write_history_end': (None, _parse_write_history_line),
+    'write_history_interval': (None, _parse_write_history_line),
+    'write_history_values': (None, _parse_write_history_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'router': _parse_router_line,
+    'bandwidth': _parse_bandwidth_line,
+    'platform': _parse_platform_line,
+    'published': _parse_published_line,
+    'fingerprint': _parse_fingerprint_line,
+    'hibernating': _parse_hibernating_line,
+    'extra-info-digest': _parse_extrainfo_digest_line,
+    'hidden-service-dir': _parse_hidden_service_dir_line,
+    'uptime': _parse_uptime_line,
+    'protocols': _parse_protocols_line,
+    'or-address': _parse_or_address_line,
+    'read-history': _parse_read_history_line,
+    'write-history': _parse_write_history_line,
+    'ipv6-policy': _parse_ipv6_policy_line,
+    'allow-single-hop-exits': _parse_allow_single_hop_exits_line,
+    'caches-extra-info': _parse_caches_extra_info_line,
+    'family': _parse_family_line,
+    'eventdns': _parse_eventdns_line,
+  }
+
   def __init__(self, raw_contents, validate = True, annotations = None):
     """
     Server descriptor constructor, created from an individual relay's
@@ -596,13 +656,13 @@ class ServerDescriptor(Descriptor):
 
     # set defaults
 
-    for attr in self._attributes():
-      setattr(self, attr, self._attributes()[attr][0])
+    for attr in self.ATTRIBUTES:
+      setattr(self, attr, self.ATTRIBUTES[attr][0])
 
     for keyword, values in list(entries.items()):
       try:
-        if keyword in self._parser_for_line():
-          self._parser_for_line()[keyword](self, entries)
+        if keyword in self.PARSER_FOR_LINE:
+          self.PARSER_FOR_LINE[keyword](self, entries)
         elif keyword == 'contact':
           pass  # parsed as a bytes field earlier
         else:
@@ -668,85 +728,11 @@ class ServerDescriptor(Descriptor):
   def _last_keyword(self):
     return 'router-signature'
 
-  @lru_cache()
-  def _attributes(self):
-    """
-    Provides a mapping of attributes we should have...
-
-      attrubute => (default_value, parsing_function)
-    """
-
-    return {
-      'nickname': (None, _parse_router_line),
-      'fingerprint': (None, _parse_fingerprint_line),
-      'published': (None, _parse_published_line),
-
-      'address': (None, _parse_router_line),
-      'or_port': (None, _parse_router_line),
-      'socks_port': (None, _parse_router_line),
-      'dir_port': (None, _parse_router_line),
-
-      'tor_version': (None, _parse_platform_line),
-      'operating_system': (None, _parse_platform_line),
-      'uptime': (None, _parse_uptime_line),
-      'exit_policy_v6': (DEFAULT_IPV6_EXIT_POLICY, _parse_ipv6_policy_line),
-      'family': (set(), _parse_family_line),
-
-      'average_bandwidth': (None, _parse_bandwidth_line),
-      'burst_bandwidth': (None, _parse_bandwidth_line),
-      'observed_bandwidth': (None, _parse_bandwidth_line),
-
-      'link_protocols': (None, _parse_protocols_line),
-      'circuit_protocols': (None, _parse_protocols_line),
-      'hibernating': (False, _parse_hibernating_line),
-      'allow_single_hop_exits': (False, _parse_allow_single_hop_exits_line),
-      'extra_info_cache': (False, _parse_caches_extra_info_line),
-      'extra_info_digest': (None, _parse_extrainfo_digest_line),
-      'hidden_service_dir': (None, _parse_hidden_service_dir_line),
-      'eventdns': (None, _parse_eventdns_line),
-      'or_addresses': ([], _parse_or_address_line),
-
-      'read_history_end': (None, _parse_read_history_line),
-      'read_history_interval': (None, _parse_read_history_line),
-      'read_history_values': (None, _parse_read_history_line),
-
-      'write_history_end': (None, _parse_write_history_line),
-      'write_history_interval': (None, _parse_write_history_line),
-      'write_history_values': (None, _parse_write_history_line),
-    }
-
-  @lru_cache()
-  def _parser_for_line(self):
-    """
-    Provides the parsing function for the line with a given keyword.
-    """
-
-    return {
-      'router': _parse_router_line,
-      'bandwidth': _parse_bandwidth_line,
-      'platform': _parse_platform_line,
-      'published': _parse_published_line,
-      'fingerprint': _parse_fingerprint_line,
-      'hibernating': _parse_hibernating_line,
-      'extra-info-digest': _parse_extrainfo_digest_line,
-      'hidden-service-dir': _parse_hidden_service_dir_line,
-      'uptime': _parse_uptime_line,
-      'protocols': _parse_protocols_line,
-      'or-address': _parse_or_address_line,
-      'read-history': _parse_read_history_line,
-      'write-history': _parse_write_history_line,
-      'ipv6-policy': _parse_ipv6_policy_line,
-      'allow-single-hop-exits': _parse_allow_single_hop_exits_line,
-      'caches-extra-info': _parse_caches_extra_info_line,
-      'family': _parse_family_line,
-      'eventdns': _parse_eventdns_line,
-    }
-
   def __getattr__(self, name):
     # If attribute isn't already present we might be lazy loading it...
 
-    if self._lazy_loading and name in self._attributes():
-      default, parsing_function = self._attributes()[name]
+    if self._lazy_loading and name in self.ATTRIBUTES:
+      default, parsing_function = self.ATTRIBUTES[name]
 
       try:
         if parsing_function:
@@ -780,6 +766,20 @@ class RelayDescriptor(ServerDescriptor):
 
   **\*** attribute is required when we're parsed with validation
   """
+
+  ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
+    'onion_key': (None, _parse_onion_key_line),
+    'ntor_onion_key': (None, _parse_ntor_onion_key_line),
+    'signing_key': (None, _parse_signing_key_line),
+    'signature': (None, _parse_router_signature_line),
+  })
+
+  PARSER_FOR_LINE = dict(ServerDescriptor.PARSER_FOR_LINE, **{
+    'onion-key': _parse_onion_key_line,
+    'ntor-onion-key': _parse_ntor_onion_key_line,
+    'signing-key': _parse_signing_key_line,
+    'router-signature': _parse_router_signature_line,
+  })
 
   def __init__(self, raw_contents, validate = True, annotations = None):
     super(RelayDescriptor, self).__init__(raw_contents, validate, annotations)
@@ -911,24 +911,6 @@ class RelayDescriptor(ServerDescriptor):
 
     return method(str(self).strip(), str(other).strip())
 
-  @lru_cache()
-  def _attributes(self):
-    return dict(super(RelayDescriptor, self)._attributes(), **{
-      'onion_key': (None, _parse_onion_key_line),
-      'ntor_onion_key': (None, _parse_ntor_onion_key_line),
-      'signing_key': (None, _parse_signing_key_line),
-      'signature': (None, _parse_router_signature_line),
-    })
-
-  @lru_cache()
-  def _parser_for_line(self):
-    return dict(super(RelayDescriptor, self)._parser_for_line(), **{
-      'onion-key': _parse_onion_key_line,
-      'ntor-onion-key': _parse_ntor_onion_key_line,
-      'signing-key': _parse_signing_key_line,
-      'router-signature': _parse_router_signature_line,
-    })
-
   def __hash__(self):
     return hash(str(self).strip())
 
@@ -961,6 +943,14 @@ class BridgeDescriptor(ServerDescriptor):
   Bridge descriptor (`bridge descriptor specification
   <https://collector.torproject.org/formats.html#bridge-descriptors>`_)
   """
+
+  ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
+    '_digest': (None, _parse_router_digest_line),
+  })
+
+  PARSER_FOR_LINE = dict(ServerDescriptor.PARSER_FOR_LINE, **{
+    'router-digest': _parse_router_digest_line,
+  })
 
   def __init__(self, raw_contents, validate = True, annotations = None):
     super(BridgeDescriptor, self).__init__(raw_contents, validate, annotations)
@@ -1036,18 +1026,6 @@ class BridgeDescriptor(ServerDescriptor):
 
   def _last_keyword(self):
     return None
-
-  @lru_cache()
-  def _attributes(self):
-    return dict(super(BridgeDescriptor, self)._attributes(), **{
-      '_digest': (None, _parse_router_digest_line),
-    })
-
-  @lru_cache()
-  def _parser_for_line(self):
-    return dict(super(BridgeDescriptor, self)._parser_for_line(), **{
-      'router-digest': _parse_router_digest_line,
-    })
 
   def _compare(self, other, method):
     if not isinstance(other, BridgeDescriptor):
