@@ -19,9 +19,6 @@ except ImportError:
   from mock import Mock, patch
 
 
-IS_EXTRA_TOR_RUNNING = None
-
-
 def filter_system_call(prefixes):
   """
   Provides a functor that passes calls on to the stem.util.system.call()
@@ -560,19 +557,14 @@ class TestSystem(unittest.TestCase):
     # isn't the end of the world. It's just used to skip tests if they should
     # legitemately fail.
 
-    global IS_EXTRA_TOR_RUNNING
-
-    if IS_EXTRA_TOR_RUNNING is None:
-      if stem.util.system.is_windows():
-        # TODO: not sure how to check for this on windows
-        IS_EXTRA_TOR_RUNNING = False
-      elif not stem.util.system.is_bsd():
-        tor_cmd = test.runner.get_runner().get_tor_command(True)
-        pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % tor_cmd)
-        IS_EXTRA_TOR_RUNNING = len(pgrep_results) > 1
-      else:
-        ps_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PS_BSD)
-        results = [r for r in ps_results if r.endswith(' tor')]
-        IS_EXTRA_TOR_RUNNING = len(results) > 1
-
-    return IS_EXTRA_TOR_RUNNING
+    if stem.util.system.is_windows():
+      # TODO: not sure how to check for this on windows
+      return False
+    elif not stem.util.system.is_bsd():
+      tor_cmd = test.runner.get_runner().get_tor_command(True)
+      pgrep_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PGREP % tor_cmd)
+      return len(pgrep_results) > 1
+    else:
+      ps_results = stem.util.system.call(stem.util.system.GET_PID_BY_NAME_PS_BSD)
+      results = [r for r in ps_results if r.endswith(' tor')]
+      return len(results) > 1
