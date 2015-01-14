@@ -200,10 +200,10 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
     for entry in test_entries:
       desc_text = get_relay_extrainfo_descriptor({'geoip-db-digest': entry}, content = True)
-      self._expect_invalid_attr(desc_text, 'geoip_db_digest', entry)
+      self._expect_invalid_attr(desc_text, 'geoip_db_digest')
 
       desc_text = get_relay_extrainfo_descriptor({'geoip6-db-digest': entry}, content = True)
-      self._expect_invalid_attr(desc_text, 'geoip6_db_digest', entry)
+      self._expect_invalid_attr(desc_text, 'geoip6_db_digest')
 
   def test_cell_circuits_per_decile(self):
     """
@@ -257,8 +257,8 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       for entry in test_entries:
         desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
         desc = self._expect_invalid_attr(desc_text)
-        self.assertEqual({}, getattr(desc, attr))
-        self.assertEqual({}, getattr(desc, unknown_attr))
+        self.assertEqual(None, getattr(desc, attr))
+        self.assertEqual(None, getattr(desc, unknown_attr))
 
   def test_dir_stat_lines(self):
     """
@@ -299,8 +299,8 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       for entry in test_entries:
         desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
         desc = self._expect_invalid_attr(desc_text)
-        self.assertEqual({}, getattr(desc, attr))
-        self.assertEqual({}, getattr(desc, unknown_attr))
+        self.assertEqual(None, getattr(desc, attr))
+        self.assertEqual(None, getattr(desc, unknown_attr))
 
   def test_conn_bi_direct(self):
     """
@@ -360,15 +360,15 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
         self.assertEqual(expected_value, getattr(desc, attr))
 
       test_entries = (
-        ('', None),
-        (' ', None),
-        ('100', None),
-        ('-5%', -0.05),
+        (''),
+        (' '),
+        ('100'),
+        ('-5%'),
       )
 
-      for entry, expected in test_entries:
+      for entry in test_entries:
         desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        self._expect_invalid_attr(desc_text, attr, expected)
+        self._expect_invalid_attr(desc_text, attr)
 
   def test_number_list_lines(self):
     """
@@ -525,7 +525,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
       for entry in test_entries:
         desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        self._expect_invalid_attr(desc_text, attr, {})
+        self._expect_invalid_attr(desc_text, attr)
 
   def test_locale_mapping_lines(self):
     """
@@ -554,7 +554,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
       for entry in test_entries:
         desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        self._expect_invalid_attr(desc_text, attr, {})
+        self._expect_invalid_attr(desc_text, attr)
 
   def test_minimal_bridge_descriptor(self):
     """
