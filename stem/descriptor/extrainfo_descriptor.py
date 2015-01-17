@@ -534,6 +534,24 @@ def _parse_bridge_ip_transports_line(descriptor, entries):
   descriptor.ip_transports = ip_transports
 
 
+def _parse_router_signature_line(descriptor, entries):
+  value, block_type, block_contents = entries['router-signature'][0]
+
+  if not block_contents or block_type != 'SIGNATURE':
+    raise ValueError("'router-signature' should be followed by a SIGNATURE block rather than a '%s'" % block_type)
+
+  descriptor.signature = block_contents
+
+
+def _parse_router_digest(descriptor, entries):
+  value = _value('router-digest', entries)
+
+  if not stem.util.tor_tools.is_hex_digits(value, 40):
+    raise ValueError('Router digest line had an invalid sha1 digest: router-digest %s' % value)
+
+  descriptor._digest = value
+
+
 _parse_dirreq_v2_resp_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-resp', 'dir_v2_responses', 'dir_v2_responses_unknown')
 _parse_dirreq_v3_resp_line = functools.partial(_parse_dirreq_line, 'dirreq-v3-resp', 'dir_v3_responses', 'dir_v3_responses_unknown')
 _parse_dirreq_v2_direct_dl_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-direct-dl', 'dir_v2_direct_dl', 'dir_v2_direct_dl_unknown')
@@ -673,6 +691,85 @@ class ExtraInfoDescriptor(Descriptor):
   a default value, others are left as **None** if undefined
   """
 
+  ATTRIBUTES = {
+    'nickname': (None, _parse_extra_info_line),
+    'fingerprint': (None, _parse_extra_info_line),
+    'published': (None, _parse_published_line),
+    'geoip_db_digest': (None, _parse_geoip_db_digest_line),
+    'geoip6_db_digest': (None, _parse_geoip6_db_digest_line),
+    'transport': ({}, _parse_transport_line),
+
+    'conn_bi_direct_end': (None, _parse_conn_bi_direct_line),
+    'conn_bi_direct_interval': (None, _parse_conn_bi_direct_line),
+    'conn_bi_direct_below': (None, _parse_conn_bi_direct_line),
+    'conn_bi_direct_read': (None, _parse_conn_bi_direct_line),
+    'conn_bi_direct_write': (None, _parse_conn_bi_direct_line),
+    'conn_bi_direct_both': (None, _parse_conn_bi_direct_line),
+
+    'read_history_end': (None, _parse_read_history_line),
+    'read_history_interval': (None, _parse_read_history_line),
+    'read_history_values': (None, _parse_read_history_line),
+
+    'write_history_end': (None, _parse_write_history_line),
+    'write_history_interval': (None, _parse_write_history_line),
+    'write_history_values': (None, _parse_write_history_line),
+
+    'cell_stats_end': (None, _parse_cell_stats_end_line),
+    'cell_stats_interval': (None, _parse_cell_stats_end_line),
+    'cell_processed_cells': (None, _parse_cell_processed_cells_line),
+    'cell_queued_cells': (None, _parse_cell_queued_cells_line),
+    'cell_time_in_queue': (None, _parse_cell_time_in_queue_line),
+    'cell_circuits_per_decile': (None, _parse_cell_circuits_per_decline_line),
+
+    'dir_stats_end': (None, _parse_dirreq_stats_end_line),
+    'dir_stats_interval': (None, _parse_dirreq_stats_end_line),
+    'dir_v2_ips': (None, _parse_dirreq_v2_ips_line),
+    'dir_v3_ips': (None, _parse_dirreq_v3_ips_line),
+    'dir_v2_share': (None, _parse_dirreq_v2_share_line),
+    'dir_v3_share': (None, _parse_dirreq_v3_share_line),
+    'dir_v2_requests': (None, _parse_dirreq_v2_reqs_line),
+    'dir_v3_requests': (None, _parse_dirreq_v3_reqs_line),
+    'dir_v2_responses': (None, _parse_dirreq_v2_resp_line),
+    'dir_v3_responses': (None, _parse_dirreq_v3_resp_line),
+    'dir_v2_responses_unknown': (None, _parse_dirreq_v2_resp_line),
+    'dir_v3_responses_unknown': (None, _parse_dirreq_v3_resp_line),
+    'dir_v2_direct_dl': (None, _parse_dirreq_v2_direct_dl_line),
+    'dir_v3_direct_dl': (None, _parse_dirreq_v3_direct_dl_line),
+    'dir_v2_direct_dl_unknown': (None, _parse_dirreq_v2_direct_dl_line),
+    'dir_v3_direct_dl_unknown': (None, _parse_dirreq_v3_direct_dl_line),
+    'dir_v2_tunneled_dl': (None, _parse_dirreq_v2_tunneled_dl_line),
+    'dir_v3_tunneled_dl': (None, _parse_dirreq_v3_tunneled_dl_line),
+    'dir_v2_tunneled_dl_unknown': (None, _parse_dirreq_v2_tunneled_dl_line),
+    'dir_v3_tunneled_dl_unknown': (None, _parse_dirreq_v3_tunneled_dl_line),
+
+    'dir_read_history_end': (None, _parse_dirreq_read_history_line),
+    'dir_read_history_interval': (None, _parse_dirreq_read_history_line),
+    'dir_read_history_values': (None, _parse_dirreq_read_history_line),
+
+    'dir_write_history_end': (None, _parse_dirreq_write_history_line),
+    'dir_write_history_interval': (None, _parse_dirreq_write_history_line),
+    'dir_write_history_values': (None, _parse_dirreq_write_history_line),
+
+    'entry_stats_end': (None, _parse_entry_stats_end_line),
+    'entry_stats_interval': (None, _parse_entry_stats_end_line),
+    'entry_ips': (None, _parse_entry_ips_line),
+
+    'exit_stats_end': (None, _parse_exit_stats_end_line),
+    'exit_stats_interval': (None, _parse_exit_stats_end_line),
+    'exit_kibibytes_written': (None, _parse_exit_kibibytes_written_line),
+    'exit_kibibytes_read': (None, _parse_exit_kibibytes_read_line),
+    'exit_streams_opened': (None, _parse_exit_streams_opened_line),
+
+    'bridge_stats_end': (None, _parse_bridge_stats_end_line),
+    'bridge_stats_interval': (None, _parse_bridge_stats_end_line),
+    'bridge_ips': (None, _parse_bridge_ips_line),
+    'geoip_start_time': (None, _parse_geoip_start_time_line),
+    'geoip_client_origins': (None, _parse_geoip_client_origins_line),
+
+    'ip_versions': (None, _parse_bridge_ip_versions_line),
+    'ip_transports': (None, _parse_bridge_ip_transports_line),
+  }
+
   PARSER_FOR_LINE = {
     'extra-info': _parse_extra_info_line,
     'geoip-db-digest': _parse_geoip_db_digest_line,
@@ -732,84 +829,8 @@ class ExtraInfoDescriptor(Descriptor):
     super(ExtraInfoDescriptor, self).__init__(raw_contents)
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
-    self.nickname = None
-    self.fingerprint = None
-    self.published = None
-    self.geoip_db_digest = None
-    self.geoip6_db_digest = None
-    self.transport = {}
-
-    self.conn_bi_direct_end = None
-    self.conn_bi_direct_interval = None
-    self.conn_bi_direct_below = None
-    self.conn_bi_direct_read = None
-    self.conn_bi_direct_write = None
-    self.conn_bi_direct_both = None
-
-    self.read_history_end = None
-    self.read_history_interval = None
-    self.read_history_values = None
-
-    self.write_history_end = None
-    self.write_history_interval = None
-    self.write_history_values = None
-
-    self.cell_stats_end = None
-    self.cell_stats_interval = None
-    self.cell_processed_cells = None
-    self.cell_queued_cells = None
-    self.cell_time_in_queue = None
-    self.cell_circuits_per_decile = None
-
-    self.dir_stats_end = None
-    self.dir_stats_interval = None
-    self.dir_v2_ips = None
-    self.dir_v3_ips = None
-    self.dir_v2_share = None
-    self.dir_v3_share = None
-    self.dir_v2_requests = None
-    self.dir_v3_requests = None
-    self.dir_v2_responses = None
-    self.dir_v3_responses = None
-    self.dir_v2_responses_unknown = None
-    self.dir_v3_responses_unknown = None
-    self.dir_v2_direct_dl = None
-    self.dir_v3_direct_dl = None
-    self.dir_v2_direct_dl_unknown = None
-    self.dir_v3_direct_dl_unknown = None
-    self.dir_v2_tunneled_dl = None
-    self.dir_v3_tunneled_dl = None
-    self.dir_v2_tunneled_dl_unknown = None
-    self.dir_v3_tunneled_dl_unknown = None
-
-    self.dir_read_history_end = None
-    self.dir_read_history_interval = None
-    self.dir_read_history_values = None
-
-    self.dir_write_history_end = None
-    self.dir_write_history_interval = None
-    self.dir_write_history_values = None
-
-    self.entry_stats_end = None
-    self.entry_stats_interval = None
-    self.entry_ips = None
-
-    self.exit_stats_end = None
-    self.exit_stats_interval = None
-    self.exit_kibibytes_written = None
-    self.exit_kibibytes_read = None
-    self.exit_streams_opened = None
-
-    self.bridge_stats_end = None
-    self.bridge_stats_interval = None
-    self.bridge_ips = None
-    self.geoip_start_time = None
-    self.geoip_client_origins = None
-
-    self.ip_versions = None
-    self.ip_transports = None
-
     entries = _get_descriptor_components(raw_contents, validate)
+    self._lazy_loading = not validate
 
     if validate:
       for keyword in self._required_fields():
@@ -828,7 +849,9 @@ class ExtraInfoDescriptor(Descriptor):
       if expected_last_keyword and expected_last_keyword != list(entries.keys())[-1]:
         raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
 
-    self._parse(entries, validate)
+      self._parse(entries, validate)
+    else:
+      self._entries = entries
 
   def digest(self):
     """
@@ -862,10 +885,13 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   **\*** attribute is required when we're parsed with validation
   """
 
-  def __init__(self, raw_contents, validate = True):
-    self.signature = None
+  ATTRIBUTES = dict(ExtraInfoDescriptor.ATTRIBUTES, **{
+    'signature': (None, _parse_router_signature_line),
+  })
 
-    super(RelayExtraInfoDescriptor, self).__init__(raw_contents, validate)
+  PARSER_FOR_LINE = dict(ExtraInfoDescriptor.PARSER_FOR_LINE, **{
+    'router-signature': _parse_router_signature_line,
+  })
 
   @lru_cache()
   def digest(self):
@@ -874,27 +900,6 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
     raw_content = raw_content[:raw_content.find(ending) + len(ending)]
     return hashlib.sha1(stem.util.str_tools._to_bytes(raw_content)).hexdigest().upper()
 
-  def _parse(self, entries, validate):
-    entries = dict(entries)  # shallow copy since we're destructive
-
-    # handles fields only in server descriptors
-    for keyword, values in list(entries.items()):
-      value, block_type, block_contents = values[0]
-
-      line = '%s %s' % (keyword, value)  # original line
-
-      if block_contents:
-        line += '\n%s' % block_contents
-
-      if keyword == 'router-signature':
-        if validate and (not block_contents or block_type != 'SIGNATURE'):
-          raise ValueError("'router-signature' should be followed by a SIGNATURE block: %s" % line)
-
-        self.signature = block_contents
-        del entries['router-signature']
-
-    ExtraInfoDescriptor._parse(self, entries, validate)
-
 
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
@@ -902,30 +907,16 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   <https://collector.torproject.org/formats.html#bridge-descriptors>`_)
   """
 
-  def __init__(self, raw_contents, validate = True):
-    self._digest = None
+  ATTRIBUTES = dict(ExtraInfoDescriptor.ATTRIBUTES, **{
+    '_digest': (None, _parse_router_digest),
+  })
 
-    super(BridgeExtraInfoDescriptor, self).__init__(raw_contents, validate)
+  PARSER_FOR_LINE = dict(ExtraInfoDescriptor.PARSER_FOR_LINE, **{
+    'router-digest': _parse_router_digest,
+  })
 
   def digest(self):
     return self._digest
-
-  def _parse(self, entries, validate):
-    entries = dict(entries)  # shallow copy since we're destructive
-
-    # handles fields only in server descriptors
-    for keyword, values in list(entries.items()):
-      value, _, _ = values[0]
-      line = '%s %s' % (keyword, value)  # original line
-
-      if keyword == 'router-digest':
-        if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
-          raise ValueError('Router digest line had an invalid sha1 digest: %s' % line)
-
-        self._digest = value
-        del entries['router-digest']
-
-    ExtraInfoDescriptor._parse(self, entries, validate)
 
   def _required_fields(self):
     excluded_fields = [

@@ -50,6 +50,7 @@ __all__ = [
   'Descriptor',
 ]
 
+import copy
 import os
 import re
 import tarfile
@@ -387,7 +388,7 @@ class Descriptor(object):
     # set defaults
 
     for attr in self.ATTRIBUTES:
-      setattr(self, attr, self.ATTRIBUTES[attr][0])
+      setattr(self, attr, copy.copy(self.ATTRIBUTES[attr][0]))
 
     for keyword, values in list(entries.items()):
       try:
@@ -427,7 +428,7 @@ class Descriptor(object):
           # despite having a validation failure check to see if we set something
           return super(Descriptor, self).__getattribute__(name)
         except AttributeError:
-          setattr(self, name, default)
+          setattr(self, name, copy.copy(default))
 
     return super(Descriptor, self).__getattribute__(name)
 
