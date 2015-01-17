@@ -315,10 +315,15 @@ class Descriptor(object):
   Common parent for all types of descriptors.
   """
 
+  ATTRIBUTES = {}  # mapping of 'attribute' => (default_value, parsing_function)
+  PARSER_FOR_LINE = {}  # line keyword to its associated parsing function
+
   def __init__(self, contents):
     self._path = None
     self._archive_path = None
     self._raw_contents = contents
+    self._lazy_loading = False
+    self._unrecognized_lines = []
 
   def get_path(self):
     """
@@ -361,7 +366,44 @@ class Descriptor(object):
     :returns: **list** of lines of unrecognized content
     """
 
-    raise NotImplementedError
+    if self._lazy_loading:
+      # we need to go ahead and parse the whole document to figure this out
+      self._parse(self._entries, False)
+      self._lazy_loading = False
+
+    return list(self._unrecognized_lines)
+
+  def _parse(self, entries, validate):
+    """
+    Parses a series of 'keyword => (value, pgp block)' mappings and applies
+    them as attributes.
+
+    :param dict entries: descriptor contents to be applied
+    :param bool validate: checks the validity of descriptor content if True
+
+    :raises: **ValueError** if an error occurs in validation
+    """
+
+    # set defaults
+
+    for attr in self.ATTRIBUTES:
+      setattr(self, attr, self.ATTRIBUTES[attr][0])
+
+    for keyword, values in list(entries.items()):
+      try:
+        if keyword in self.PARSER_FOR_LINE:
+          self.PARSER_FOR_LINE[keyword](self, entries)
+        else:
+          for value, block_type, block_contents in values:
+            line = '%s %s' % (keyword, value)
+
+            if block_contents:
+              line += '\n%s' % block_contents
+
+            self._unrecognized_lines.append(line)
+      except ValueError as exc:
+        if validate:
+          raise exc
 
   def _set_path(self, path):
     self._path = path
@@ -371,6 +413,23 @@ class Descriptor(object):
 
   def _name(self, is_plural = False):
     return str(type(self))
+
+  def __getattr__(self, name):
+    # If attribute isn't already present we might be lazy loading it...
+
+    if self._lazy_loading and name in self.ATTRIBUTES:
+      default, parsing_function = self.ATTRIBUTES[name]
+
+      try:
+        parsing_function(self, self._entries)
+      except (ValueError, KeyError):
+        try:
+          # despite having a validation failure check to see if we set something
+          return super(Descriptor, self).__getattribute__(name)
+        except AttributeError:
+          setattr(self, name, default)
+
+    return super(Descriptor, self).__getattribute__(name)
 
   def __str__(self):
     if stem.prereq.is_python_3():

@@ -32,8 +32,7 @@ Extra-info descriptors are available from a few sources...
     |- RelayExtraInfoDescriptor - Extra-info descriptor for a relay.
     |- BridgeExtraInfoDescriptor - Extra-info descriptor for a bridge.
     |
-    |- digest - calculates the upper-case hex digest value for our content
-    +- get_unrecognized_lines - lines with unrecognized content
+    +- digest - calculates the upper-case hex digest value for our content
 
 .. data:: DirResponse (enum)
 
@@ -810,8 +809,6 @@ class ExtraInfoDescriptor(Descriptor):
     self.ip_versions = None
     self.ip_transports = None
 
-    self._unrecognized_lines = []
-
     entries = _get_descriptor_components(raw_contents, validate)
 
     if validate:
@@ -832,36 +829,6 @@ class ExtraInfoDescriptor(Descriptor):
         raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
 
     self._parse(entries, validate)
-
-  def get_unrecognized_lines(self):
-    return list(self._unrecognized_lines)
-
-  def _parse(self, entries, validate):
-    """
-    Parses a series of 'keyword => (value, pgp block)' mappings and applies
-    them as attributes.
-
-    :param dict entries: descriptor contents to be applied
-    :param bool validate: checks the validity of descriptor content if True
-
-    :raises: **ValueError** if an error occurs in validation
-    """
-
-    for keyword, values in list(entries.items()):
-      try:
-        if keyword in self.PARSER_FOR_LINE:
-          self.PARSER_FOR_LINE[keyword](self, entries)
-        else:
-          for value, block_type, block_contents in values:
-            line = '%s %s' % (keyword, value)
-
-            if block_contents:
-              line += '\n%s' % block_contents
-
-            self._unrecognized_lines.append(line)
-      except ValueError as exc:
-        if validate:
-          raise exc
 
   def digest(self):
     """

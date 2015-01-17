@@ -27,7 +27,6 @@ etc). This information is provided from a few sources...
     |  +- get_scrubbing_issues - description of issues with our scrubbing
     |
     |- digest - calculates the upper-case hex digest value for our content
-    |- get_unrecognized_lines - lines with unrecognized content
     |- get_annotations - dictionary of content prior to the descriptor entry
     +- get_annotation_lines - lines that provided the annotations
 """
@@ -412,6 +411,16 @@ def _key_block(entries, keyword, expected_block_type):
   return block_contents
 
 
+def _parse_exit_policy(descriptor, entries):
+  if hasattr(descriptor, '_unparsed_exit_policy'):
+    if descriptor._unparsed_exit_policy == [str_type('reject *:*')]:
+      descriptor.exit_policy = REJECT_ALL_POLICY
+    else:
+      descriptor.exit_policy = stem.exit_policy.ExitPolicy(*descriptor._unparsed_exit_policy)
+
+    del descriptor._unparsed_exit_policy
+
+
 _parse_ipv6_policy_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('ipv6-policy', entries)))
 _parse_allow_single_hop_exits_line = lambda descriptor, entries: setattr(descriptor, 'allow_single_hop_exits', True)
 _parse_caches_extra_info_line = lambda descriptor, entries: setattr(descriptor, 'extra_info_cache', True)
@@ -478,6 +487,7 @@ class ServerDescriptor(Descriptor):
     'nickname': (None, _parse_router_line),
     'fingerprint': (None, _parse_fingerprint_line),
     'published': (None, _parse_published_line),
+    'exit_policy': (None, _parse_exit_policy),
 
     'address': (None, _parse_router_line),
     'or_port': (None, _parse_router_line),
@@ -532,6 +542,7 @@ class ServerDescriptor(Descriptor):
     'caches-extra-info': _parse_caches_extra_info_line,
     'family': _parse_family_line,
     'eventdns': _parse_eventdns_line,
+    'contact': lambda descriptor, entries: None,  # parsed as a bytes field earlier
   }
 
   def __init__(self, raw_contents, validate = True, annotations = None):
@@ -563,7 +574,6 @@ class ServerDescriptor(Descriptor):
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
     self._lazy_loading = not validate
-    self._unrecognized_lines = []
     self._annotation_lines = annotations if annotations else []
 
     # A descriptor contains a series of 'keyword lines' which are simply a
@@ -574,19 +584,13 @@ class ServerDescriptor(Descriptor):
     # influences the resulting exit policy, but for everything else the order
     # does not matter so breaking it into key / value pairs.
 
-    entries, policy = _get_descriptor_components(raw_contents, validate, ('accept', 'reject'))
+    entries, self._unparsed_exit_policy = _get_descriptor_components(raw_contents, validate, ('accept', 'reject'))
 
     if validate:
-      if policy == [str_type('reject *:*')]:
-        self.exit_policy = REJECT_ALL_POLICY
-      else:
-        self.exit_policy = stem.exit_policy.ExitPolicy(*policy)
-
       self._parse(entries, validate)
       self._check_constraints(entries)
     else:
       self._entries = entries
-      self._exit_policy_list = policy
 
   def digest(self):
     """
@@ -597,14 +601,6 @@ class ServerDescriptor(Descriptor):
     """
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the ServerDescriptor subclass')
-
-  def get_unrecognized_lines(self):
-    if self._lazy_loading:
-      # we need to go ahead and parse the whole document to figure this out
-      self._parse(self._entries, False)
-      self._lazy_loading = False
-
-    return list(self._unrecognized_lines)
 
   @lru_cache()
   def get_annotations(self):
@@ -654,28 +650,8 @@ class ServerDescriptor(Descriptor):
     :raises: **ValueError** if an error occurs in validation
     """
 
-    # set defaults
-
-    for attr in self.ATTRIBUTES:
-      setattr(self, attr, self.ATTRIBUTES[attr][0])
-
-    for keyword, values in list(entries.items()):
-      try:
-        if keyword in self.PARSER_FOR_LINE:
-          self.PARSER_FOR_LINE[keyword](self, entries)
-        elif keyword == 'contact':
-          pass  # parsed as a bytes field earlier
-        else:
-          for value, block_type, block_contents in values:
-            line = '%s %s' % (keyword, value)
-
-            if block_contents:
-              line += '\n%s' % block_contents
-
-            self._unrecognized_lines.append(line)
-      except ValueError as exc:
-        if validate:
-          raise exc
+    super(ServerDescriptor, self)._parse(entries, validate)
+    _parse_exit_policy(self, entries)
 
     # if we have a negative uptime and a tor version that shouldn't exhibit
     # this bug then fail validation
@@ -727,31 +703,6 @@ class ServerDescriptor(Descriptor):
 
   def _last_keyword(self):
     return 'router-signature'
-
-  def __getattr__(self, name):
-    # If attribute isn't already present we might be lazy loading it...
-
-    if self._lazy_loading and name in self.ATTRIBUTES:
-      default, parsing_function = self.ATTRIBUTES[name]
-
-      try:
-        if parsing_function:
-          parsing_function(self, self._entries)
-        elif name == 'exit_policy':
-          if self._exit_policy_list == [str_type('reject *:*')]:
-            self.exit_policy = REJECT_ALL_POLICY
-          else:
-            self.exit_policy = stem.exit_policy.ExitPolicy(*self._exit_policy_list)
-
-          del self._exit_policy_list
-      except (ValueError, KeyError):
-        try:
-          # despite having a validation failure check to see if we set something
-          return super(ServerDescriptor, self).__getattribute__(name)
-        except AttributeError:
-          setattr(self, name, default)
-
-    return super(ServerDescriptor, self).__getattribute__(name)
 
 
 class RelayDescriptor(ServerDescriptor):
