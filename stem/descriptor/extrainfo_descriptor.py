@@ -674,6 +674,49 @@ class ExtraInfoDescriptor(Descriptor):
   a default value, others are left as **None** if undefined
   """
 
+  PARSER_FOR_LINE = {
+    'extra-info': _parse_extra_info_line,
+    'geoip-db-digest': _parse_geoip_db_digest_line,
+    'geoip6-db-digest': _parse_geoip6_db_digest_line,
+    'transport': _parse_transport_line,
+    'cell-circuits-per-decile': _parse_cell_circuits_per_decline_line,
+    'dirreq-v2-resp': _parse_dirreq_v2_resp_line,
+    'dirreq-v3-resp': _parse_dirreq_v3_resp_line,
+    'dirreq-v2-direct-dl': _parse_dirreq_v2_direct_dl_line,
+    'dirreq-v3-direct-dl': _parse_dirreq_v3_direct_dl_line,
+    'dirreq-v2-tunneled-dl': _parse_dirreq_v2_tunneled_dl_line,
+    'dirreq-v3-tunneled-dl': _parse_dirreq_v3_tunneled_dl_line,
+    'dirreq-v2-share': _parse_dirreq_v2_share_line,
+    'dirreq-v3-share': _parse_dirreq_v3_share_line,
+    'cell-processed-cells': _parse_cell_processed_cells_line,
+    'cell-queued-cells': _parse_cell_queued_cells_line,
+    'cell-time-in-queue': _parse_cell_time_in_queue_line,
+    'published': _parse_published_line,
+    'geoip-start-time': _parse_geoip_start_time_line,
+    'cell-stats-end': _parse_cell_stats_end_line,
+    'entry-stats-end': _parse_entry_stats_end_line,
+    'exit-stats-end': _parse_exit_stats_end_line,
+    'bridge-stats-end': _parse_bridge_stats_end_line,
+    'dirreq-stats-end': _parse_dirreq_stats_end_line,
+    'conn-bi-direct': _parse_conn_bi_direct_line,
+    'read-history': _parse_read_history_line,
+    'write-history': _parse_write_history_line,
+    'dirreq-read-history': _parse_dirreq_read_history_line,
+    'dirreq-write-history': _parse_dirreq_write_history_line,
+    'exit-kibibytes-written': _parse_exit_kibibytes_written_line,
+    'exit-kibibytes-read': _parse_exit_kibibytes_read_line,
+    'exit-streams-opened': _parse_exit_streams_opened_line,
+    'dirreq-v2-ips': _parse_dirreq_v2_ips_line,
+    'dirreq-v3-ips': _parse_dirreq_v3_ips_line,
+    'dirreq-v2-reqs': _parse_dirreq_v2_reqs_line,
+    'dirreq-v3-reqs': _parse_dirreq_v3_reqs_line,
+    'geoip-client-origins': _parse_geoip_client_origins_line,
+    'entry-ips': _parse_entry_ips_line,
+    'bridge-ips': _parse_bridge_ips_line,
+    'bridge-ip-versions': _parse_bridge_ip_versions_line,
+    'bridge-ip-transports': _parse_bridge_ip_transports_line,
+  }
+
   def __init__(self, raw_contents, validate = True):
     """
     Extra-info descriptor constructor. By default this validates the
@@ -805,98 +848,20 @@ class ExtraInfoDescriptor(Descriptor):
     """
 
     for keyword, values in list(entries.items()):
-      # most just work with the first (and only) value
-      value, _, _ = values[0]
-      line = '%s %s' % (keyword, value)  # original line
-
       try:
-        if keyword == 'extra-info':
-          _parse_extra_info_line(self, entries)
-        elif keyword == 'geoip-db-digest':
-          _parse_geoip_db_digest_line(self, entries)
-        elif keyword == 'geoip6-db-digest':
-          _parse_geoip6_db_digest_line(self, entries)
-        elif keyword == 'transport':
-          _parse_transport_line(self, entries)
-        elif keyword == 'cell-circuits-per-decile':
-          _parse_cell_circuits_per_decline_line(self, entries)
-        elif keyword == 'dirreq-v2-resp':
-          _parse_dirreq_v2_resp_line(self, entries)
-        elif keyword == 'dirreq-v3-resp':
-          _parse_dirreq_v3_resp_line(self, entries)
-        elif keyword == 'dirreq-v2-direct-dl':
-          _parse_dirreq_v2_direct_dl_line(self, entries)
-        elif keyword == 'dirreq-v3-direct-dl':
-          _parse_dirreq_v3_direct_dl_line(self, entries)
-        elif keyword == 'dirreq-v2-tunneled-dl':
-          _parse_dirreq_v2_tunneled_dl_line(self, entries)
-        elif keyword == 'dirreq-v3-tunneled-dl':
-          _parse_dirreq_v3_tunneled_dl_line(self, entries)
-        elif keyword == 'dirreq-v2-share':
-          _parse_dirreq_v2_share_line(self, entries)
-        elif keyword == 'dirreq-v3-share':
-          _parse_dirreq_v3_share_line(self, entries)
-        elif keyword == 'cell-processed-cells':
-          _parse_cell_processed_cells_line(self, entries)
-        elif keyword == 'cell-queued-cells':
-          _parse_cell_queued_cells_line(self, entries)
-        elif keyword == 'cell-time-in-queue':
-          _parse_cell_time_in_queue_line(self, entries)
-        elif keyword == 'published':
-          _parse_published_line(self, entries)
-        elif keyword == 'geoip-start-time':
-          _parse_geoip_start_time_line(self, entries)
-        elif keyword == 'cell-stats-end':
-          _parse_cell_stats_end_line(self, entries)
-        elif keyword == 'entry-stats-end':
-          _parse_entry_stats_end_line(self, entries)
-        elif keyword == 'exit-stats-end':
-          _parse_exit_stats_end_line(self, entries)
-        elif keyword == 'bridge-stats-end':
-          _parse_bridge_stats_end_line(self, entries)
-        elif keyword == 'dirreq-stats-end':
-          _parse_dirreq_stats_end_line(self, entries)
-        elif keyword == 'conn-bi-direct':
-          _parse_conn_bi_direct_line(self, entries)
-        elif keyword == 'read-history':
-          _parse_read_history_line(self, entries)
-        elif keyword == 'write-history':
-          _parse_write_history_line(self, entries)
-        elif keyword == 'dirreq-read-history':
-          _parse_dirreq_read_history_line(self, entries)
-        elif keyword == 'dirreq-write-history':
-          _parse_dirreq_write_history_line(self, entries)
-        elif keyword == 'exit-kibibytes-written':
-          _parse_exit_kibibytes_written_line(self, entries)
-        elif keyword == 'exit-kibibytes-read':
-          _parse_exit_kibibytes_read_line(self, entries)
-        elif keyword == 'exit-streams-opened':
-          _parse_exit_streams_opened_line(self, entries)
-        elif keyword == 'dirreq-v2-ips':
-          _parse_dirreq_v2_ips_line(self, entries)
-        elif keyword == 'dirreq-v3-ips':
-          _parse_dirreq_v3_ips_line(self, entries)
-        elif keyword == 'dirreq-v2-reqs':
-          _parse_dirreq_v2_reqs_line(self, entries)
-        elif keyword == 'dirreq-v3-reqs':
-          _parse_dirreq_v3_reqs_line(self, entries)
-        elif keyword == 'geoip-client-origins':
-          _parse_geoip_client_origins_line(self, entries)
-        elif keyword == 'entry-ips':
-          _parse_entry_ips_line(self, entries)
-        elif keyword == 'bridge-ips':
-          _parse_bridge_ips_line(self, entries)
-        elif keyword == 'bridge-ip-versions':
-          _parse_bridge_ip_versions_line(self, entries)
-        elif keyword == 'bridge-ip-transports':
-          _parse_bridge_ip_transports_line(self, entries)
+        if keyword in self.PARSER_FOR_LINE:
+          self.PARSER_FOR_LINE[keyword](self, entries)
         else:
-          self._unrecognized_lines.append(line)
+          for value, block_type, block_contents in values:
+            line = '%s %s' % (keyword, value)
+
+            if block_contents:
+              line += '\n%s' % block_contents
+
+            self._unrecognized_lines.append(line)
       except ValueError as exc:
         if validate:
           raise exc
-        else:
-          continue
 
   def digest(self):
     """
