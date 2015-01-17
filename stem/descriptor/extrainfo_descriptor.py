@@ -81,6 +81,10 @@ from stem.descriptor import (
   Descriptor,
   _read_until_keywords,
   _get_descriptor_components,
+  _value,
+  _values,
+  _parse_sha1_digest_line,
+  _parse_key_block,
 )
 
 try:
@@ -225,14 +229,6 @@ def _parse_timestamp_and_interval(keyword, content):
     raise ValueError("%s line's timestamp wasn't parsable: %s" % (keyword, line))
 
 
-def _value(line, entries):
-  return entries[line][0][0]
-
-
-def _values(line, entries):
-  return [entry[0] for entry in entries[line]]
-
-
 def _parse_extra_info_line(descriptor, entries):
   # "extra-info" Nickname Fingerprint
 
@@ -248,28 +244,6 @@ def _parse_extra_info_line(descriptor, entries):
 
   descriptor.nickname = extra_info_comp[0]
   descriptor.fingerprint = extra_info_comp[1]
-
-
-def _parse_geoip_db_digest_line(descriptor, entries):
-  # "geoip-db-digest" Digest
-
-  value = _value('geoip-db-digest', entries)
-
-  if not stem.util.tor_tools.is_hex_digits(value, 40):
-    raise ValueError('Geoip digest line had an invalid sha1 digest: geoip-db-digest %s' % value)
-
-  descriptor.geoip_db_digest = value
-
-
-def _parse_geoip6_db_digest_line(descriptor, entries):
-  # "geoip6-db-digest" Digest
-
-  value = _value('geoip6-db-digest', entries)
-
-  if not stem.util.tor_tools.is_hex_digits(value, 40):
-    raise ValueError('Geoip v6 digest line had an invalid sha1 digest: geoip6-db-digest %s' % value)
-
-  descriptor.geoip6_db_digest = value
 
 
 def _parse_transport_line(descriptor, entries):
@@ -534,24 +508,8 @@ def _parse_bridge_ip_transports_line(descriptor, entries):
   descriptor.ip_transports = ip_transports
 
 
-def _parse_router_signature_line(descriptor, entries):
-  value, block_type, block_contents = entries['router-signature'][0]
-
-  if not block_contents or block_type != 'SIGNATURE':
-    raise ValueError("'router-signature' should be followed by a SIGNATURE block rather than a '%s'" % block_type)
-
-  descriptor.signature = block_contents
-
-
-def _parse_router_digest(descriptor, entries):
-  value = _value('router-digest', entries)
-
-  if not stem.util.tor_tools.is_hex_digits(value, 40):
-    raise ValueError('Router digest line had an invalid sha1 digest: router-digest %s' % value)
-
-  descriptor._digest = value
-
-
+_parse_geoip_db_digest_line = _parse_sha1_digest_line('geoip-db-digest', 'geoip_db_digest')
+_parse_geoip6_db_digest_line = _parse_sha1_digest_line('geoip6-db-digest', 'geoip6_db_digest')
 _parse_dirreq_v2_resp_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-resp', 'dir_v2_responses', 'dir_v2_responses_unknown')
 _parse_dirreq_v3_resp_line = functools.partial(_parse_dirreq_line, 'dirreq-v3-resp', 'dir_v3_responses', 'dir_v3_responses_unknown')
 _parse_dirreq_v2_direct_dl_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-direct-dl', 'dir_v2_direct_dl', 'dir_v2_direct_dl_unknown')
@@ -584,6 +542,8 @@ _parse_dirreq_v3_reqs_line = functools.partial(_parse_geoip_to_count_line, 'dirr
 _parse_geoip_client_origins_line = functools.partial(_parse_geoip_to_count_line, 'geoip-client-origins', 'geoip_client_origins')
 _parse_entry_ips_line = functools.partial(_parse_geoip_to_count_line, 'entry-ips', 'entry_ips')
 _parse_bridge_ips_line = functools.partial(_parse_geoip_to_count_line, 'bridge-ips', 'bridge_ips')
+_parse_router_digest_line = _parse_sha1_digest_line('router-digest', '_digest')
+_parse_router_signature_line = _parse_key_block('router-signature', 'signature', 'SIGNATURE')
 
 
 class ExtraInfoDescriptor(Descriptor):
@@ -908,11 +868,11 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
 
   ATTRIBUTES = dict(ExtraInfoDescriptor.ATTRIBUTES, **{
-    '_digest': (None, _parse_router_digest),
+    '_digest': (None, _parse_router_digest_line),
   })
 
   PARSER_FOR_LINE = dict(ExtraInfoDescriptor.PARSER_FOR_LINE, **{
-    'router-digest': _parse_router_digest,
+    'router-digest': _parse_router_digest_line,
   })
 
   def digest(self):

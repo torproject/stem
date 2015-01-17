@@ -311,6 +311,38 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
 
 
+def _value(line, entries):
+  return entries[line][0][0]
+
+
+def _values(line, entries):
+  return [entry[0] for entry in entries[line]]
+
+
+def _parse_sha1_digest_line(keyword, attribute):
+  def _parse(descriptor, entries):
+    value = _value(keyword, entries)
+
+    if not stem.util.tor_tools.is_hex_digits(value, 40):
+      raise ValueError('%s line had an invalid sha1 digest: %s %s' % (keyword, keyword, value))
+
+    setattr(descriptor, attribute, value)
+
+  return _parse
+
+
+def _parse_key_block(keyword, attribute, expected_block_type):
+  def _parse(descriptor, entries):
+    value, block_type, block_contents = entries[keyword][0]
+
+    if not block_contents or block_type != expected_block_type:
+      raise ValueError("'%s' should be followed by a %s block" % (keyword, expected_block_type))
+
+    setattr(descriptor, attribute, block_contents)
+
+  return _parse
+
+
 class Descriptor(object):
   """
   Common parent for all types of descriptors.

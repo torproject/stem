@@ -33,6 +33,7 @@ etc). This information is provided from a few sources...
 
 import base64
 import codecs
+import functools
 import hashlib
 import re
 
@@ -53,6 +54,10 @@ from stem.descriptor import (
   _get_bytes_field,
   _get_descriptor_components,
   _read_until_keywords,
+  _value,
+  _values,
+  _parse_sha1_digest_line,
+  _parse_key_block,
 )
 
 try:
@@ -164,14 +169,6 @@ def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
         raise ValueError('Content conform to being a server descriptor:\n%s' % orphaned_annotations)
 
       break  # done parsing descriptors
-
-
-def _value(line, entries):
-  return entries[line][0][0]
-
-
-def _values(line, entries):
-  return [entry[0] for entry in entries[line]]
 
 
 def _parse_router_line(descriptor, entries):
@@ -364,23 +361,7 @@ def _parse_or_address_line(descriptor, entries):
   descriptor.or_addresses = or_addresses
 
 
-def _parse_read_history_line(descriptor, entries):
-  timestamp, interval, history_values = _parse_history_line(descriptor, entries, 'read-history')
-
-  descriptor.read_history_end = timestamp
-  descriptor.read_history_interval = interval
-  descriptor.read_history_values = history_values
-
-
-def _parse_write_history_line(descriptor, entries):
-  timestamp, interval, history_values = _parse_history_line(descriptor, entries, 'write-history')
-
-  descriptor.write_history_end = timestamp
-  descriptor.write_history_interval = interval
-  descriptor.write_history_values = history_values
-
-
-def _parse_history_line(descriptor, entries, keyword):
+def _parse_history_line(keyword, history_end_attribute, history_interval_attribute, history_values_attribute, descriptor, entries):
   value = _value(keyword, entries)
   timestamp, interval, remainder = stem.descriptor.extrainfo_descriptor._parse_timestamp_and_interval(keyword, value)
 
@@ -392,23 +373,9 @@ def _parse_history_line(descriptor, entries, keyword):
   except ValueError:
     raise ValueError('%s line has non-numeric values: %s %s' % (keyword, keyword, value))
 
-  return timestamp, interval, history_values
-
-
-def _parse_router_digest_line(descriptor, entries):
-  descriptor._digest = _value('router-digest', entries)
-
-  if not stem.util.tor_tools.is_hex_digits(descriptor._digest, 40):
-    raise ValueError('Router digest line had an invalid sha1 digest: router-digest %s' % descriptor._digest)
-
-
-def _key_block(entries, keyword, expected_block_type):
-  value, block_type, block_contents = entries[keyword][0]
-
-  if not block_contents or block_type != expected_block_type:
-    raise ValueError("'%s' should be followed by a %s block" % (keyword, expected_block_type))
-
-  return block_contents
+  setattr(descriptor, history_end_attribute, timestamp)
+  setattr(descriptor, history_interval_attribute, interval)
+  setattr(descriptor, history_values_attribute, history_values)
 
 
 def _parse_exit_policy(descriptor, entries):
@@ -421,15 +388,18 @@ def _parse_exit_policy(descriptor, entries):
     del descriptor._unparsed_exit_policy
 
 
+_parse_read_history_line = functools.partial(_parse_history_line, 'read-history', 'read_history_end', 'read_history_interval', 'read_history_values')
+_parse_write_history_line = functools.partial(_parse_history_line, 'write-history', 'write_history_end', 'write_history_interval', 'write_history_values')
 _parse_ipv6_policy_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('ipv6-policy', entries)))
 _parse_allow_single_hop_exits_line = lambda descriptor, entries: setattr(descriptor, 'allow_single_hop_exits', True)
 _parse_caches_extra_info_line = lambda descriptor, entries: setattr(descriptor, 'extra_info_cache', True)
 _parse_family_line = lambda descriptor, entries: setattr(descriptor, 'family', set(_value('family', entries).split(' ')))
 _parse_eventdns_line = lambda descriptor, entries: setattr(descriptor, 'eventdns', _value('eventdns', entries) == '1')
-_parse_onion_key_line = lambda descriptor, entries: setattr(descriptor, 'onion_key', _key_block(entries, 'onion-key', 'RSA PUBLIC KEY'))
-_parse_signing_key_line = lambda descriptor, entries: setattr(descriptor, 'signing_key', _key_block(entries, 'signing-key', 'RSA PUBLIC KEY'))
-_parse_router_signature_line = lambda descriptor, entries: setattr(descriptor, 'signature', _key_block(entries, 'router-signature', 'SIGNATURE'))
+_parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
+_parse_signing_key_line = _parse_key_block('signing-key', 'signing_key', 'RSA PUBLIC KEY')
+_parse_router_signature_line = _parse_key_block('router-signature', 'signature', 'SIGNATURE')
 _parse_ntor_onion_key_line = lambda descriptor, entries: setattr(descriptor, 'ntor_onion_key', _value('ntor-onion-key', entries))
+_parse_router_digest_line = _parse_sha1_digest_line('router-digest', '_digest')
 
 
 class ServerDescriptor(Descriptor):

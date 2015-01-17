@@ -672,7 +672,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       self.assertRaises(ValueError, BridgeDescriptor, desc_text)
 
       desc = BridgeDescriptor(desc_text, validate = False)
-      self.assertEqual(value, desc.digest())
+      self.assertEqual(None, desc.digest())
 
   def test_or_address_v4(self):
     """
