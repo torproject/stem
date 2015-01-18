@@ -351,11 +351,11 @@ class Descriptor(object):
   ATTRIBUTES = {}  # mapping of 'attribute' => (default_value, parsing_function)
   PARSER_FOR_LINE = {}  # line keyword to its associated parsing function
 
-  def __init__(self, contents):
+  def __init__(self, contents, lazy_load = False):
     self._path = None
     self._archive_path = None
     self._raw_contents = contents
-    self._lazy_loading = False
+    self._lazy_loading = lazy_load
     self._unrecognized_lines = []
 
   def get_path(self):

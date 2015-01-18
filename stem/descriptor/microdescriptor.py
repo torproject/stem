@@ -73,6 +73,9 @@ from stem.descriptor import (
   Descriptor,
   _get_descriptor_components,
   _read_until_keywords,
+  _value,
+  _values,
+  _parse_key_block,
 )
 
 try:
@@ -151,6 +154,29 @@ def _parse_file(descriptor_file, validate = True, **kwargs):
       break  # done parsing descriptors
 
 
+def _parse_a_line(descriptor, entries):
+  for value in _values('a', entries):
+    stem.descriptor.router_status_entry._parse_a_line(descriptor, value, True)
+
+
+def _parse_id_line(descriptor, entries):
+  value = _value('id', entries)
+  value_comp = value.split()
+
+  if len(value_comp) >= 2:
+    descriptor.identifier_type = value_comp[0]
+    descriptor.identifier = value_comp[1]
+  else:
+    raise ValueError("'id' lines should contain both the key type and digest: id %s" % value)
+
+
+_parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
+_parse_ntor_onion_key_line = lambda descriptor, entries: setattr(descriptor, 'ntor_onion_key', _value('ntor-onion-key', entries))
+_parse_family_line = lambda descriptor, entries: setattr(descriptor, 'family', _value('family', entries).split(' '))
+_parse_p_line = lambda descriptor, entries: stem.descriptor.router_status_entry._parse_p_line(descriptor, _value('p', entries), True)
+_parse_p6_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('p6', entries)))
+
+
 class Microdescriptor(Descriptor):
   """
   Microdescriptor (`descriptor specification
@@ -173,33 +199,41 @@ class Microdescriptor(Descriptor):
   **\*** attribute is required when we're parsed with validation
   """
 
+  ATTRIBUTES = {
+    'onion_key': (None, _parse_onion_key_line),
+    'ntor_onion_key': (None, _parse_ntor_onion_key_line),
+    'or_addresses': ([], _parse_a_line),
+    'family': ([], _parse_family_line),
+    'exit_policy': (stem.exit_policy.MicroExitPolicy('reject 1-65535'), _parse_p_line),
+    'exit_policy_v6': (None, _parse_p6_line),
+    'identifier_type': (None, _parse_id_line),
+    'identifier': (None, _parse_id_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'onion-key': _parse_onion_key_line,
+    'ntor-onion-key': _parse_ntor_onion_key_line,
+    'a': _parse_a_line,
+    'family': _parse_family_line,
+    'p': _parse_p_line,
+    'p6': _parse_p6_line,
+    'id': _parse_id_line,
+  }
+
   def __init__(self, raw_contents, validate = True, annotations = None):
-    super(Microdescriptor, self).__init__(raw_contents)
+    super(Microdescriptor, self).__init__(raw_contents, lazy_load = not validate)
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
     self.digest = hashlib.sha256(self.get_bytes()).hexdigest().upper()
-
-    self.onion_key = None
-    self.ntor_onion_key = None
-    self.or_addresses = []
-    self.family = []
-    self.exit_policy = stem.exit_policy.MicroExitPolicy('reject 1-65535')
-    self.exit_policy_v6 = None
-    self.identifier_type = None
-    self.identifier = None
-
-    self._unrecognized_lines = []
-
     self._annotation_lines = annotations if annotations else []
 
     entries = _get_descriptor_components(raw_contents, validate)
-    self._parse(entries, validate)
 
     if validate:
+      self._parse(entries, validate)
       self._check_constraints(entries)
-
-  def get_unrecognized_lines(self):
-    return list(self._unrecognized_lines)
+    else:
+      self._entries = entries
 
   @lru_cache()
   def get_annotations(self):
@@ -236,53 +270,6 @@ class Microdescriptor(Descriptor):
     """
 
     return self._annotation_lines
-
-  def _parse(self, entries, validate):
-    """
-    Parses a series of 'keyword => (value, pgp block)' mappings and applies
-    them as attributes.
-
-    :param dict entries: descriptor contents to be applied
-    :param bool validate: checks the validity of descriptor content if **True**
-
-    :raises: **ValueError** if an error occurs in validation
-    """
-
-    for keyword, values in list(entries.items()):
-      # most just work with the first (and only) value
-      value, block_type, block_contents = values[0]
-
-      line = '%s %s' % (keyword, value)  # original line
-
-      if block_contents:
-        line += '\n%s' % block_contents
-
-      if keyword == 'onion-key':
-        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
-          raise ValueError("'onion-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
-
-        self.onion_key = block_contents
-      elif keyword == 'ntor-onion-key':
-        self.ntor_onion_key = value
-      elif keyword == 'a':
-        for entry, _, _ in values:
-          stem.descriptor.router_status_entry._parse_a_line(self, entry, validate)
-      elif keyword == 'family':
-        self.family = value.split(' ')
-      elif keyword == 'p':
-        stem.descriptor.router_status_entry._parse_p_line(self, value, validate)
-      elif keyword == 'p6':
-        self.exit_policy_v6 = stem.exit_policy.MicroExitPolicy(value)
-      elif keyword == 'id':
-        value_comp = value.split()
-
-        if len(value_comp) >= 2:
-          self.identifier_type = value_comp[0]
-          self.identifier = value_comp[1]
-        elif validate:
-          raise ValueError("'id' lines should contain both the key type and digest: %s" % line)
-      else:
-        self._unrecognized_lines.append(line)
 
   def _check_constraints(self, entries):
     """

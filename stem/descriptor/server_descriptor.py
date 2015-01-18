@@ -533,7 +533,7 @@ class ServerDescriptor(Descriptor):
     :raises: **ValueError** if the contents is malformed and validate is True
     """
 
-    super(ServerDescriptor, self).__init__(raw_contents)
+    super(ServerDescriptor, self).__init__(raw_contents, lazy_load = not validate)
 
     # Only a few things can be arbitrary bytes according to the dir-spec, so
     # parsing them separately.
@@ -541,9 +541,6 @@ class ServerDescriptor(Descriptor):
     self.platform = _get_bytes_field('platform', raw_contents)
     self.contact = _get_bytes_field('contact', raw_contents)
 
-    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
-
-    self._lazy_loading = not validate
     self._annotation_lines = annotations if annotations else []
 
     # A descriptor contains a series of 'keyword lines' which are simply a
@@ -554,6 +551,7 @@ class ServerDescriptor(Descriptor):
     # influences the resulting exit policy, but for everything else the order
     # does not matter so breaking it into key / value pairs.
 
+    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
     entries, self._unparsed_exit_policy = _get_descriptor_components(raw_contents, validate, ('accept', 'reject'))
 
     if validate:

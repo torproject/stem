@@ -786,11 +786,10 @@ class ExtraInfoDescriptor(Descriptor):
     :raises: **ValueError** if the contents is malformed and validate is True
     """
 
-    super(ExtraInfoDescriptor, self).__init__(raw_contents)
+    super(ExtraInfoDescriptor, self).__init__(raw_contents, lazy_load = not validate)
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
     entries = _get_descriptor_components(raw_contents, validate)
-    self._lazy_loading = not validate
 
     if validate:
       for keyword in self._required_fields():
