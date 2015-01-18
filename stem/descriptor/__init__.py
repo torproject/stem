@@ -319,6 +319,13 @@ def _values(line, entries):
   return [entry[0] for entry in entries[line]]
 
 
+def _parse_simple_line(keyword, attribute):
+  def _parse(descriptor, entries):
+    setattr(descriptor, attribute, _value(keyword, entries))
+
+  return _parse
+
+
 def _parse_timestamp_line(keyword, attribute):
   # "<keyword>" YYYY-MM-DD HH:MM:SS
 
@@ -347,14 +354,17 @@ def _parse_forty_character_hex(keyword, attribute):
   return _parse
 
 
-def _parse_key_block(keyword, attribute, expected_block_type):
+def _parse_key_block(keyword, attribute, expected_block_type, value_attribute = None):
   def _parse(descriptor, entries):
     value, block_type, block_contents = entries[keyword][0]
 
     if not block_contents or block_type != expected_block_type:
-      raise ValueError("'%s' should be followed by a %s block" % (keyword, expected_block_type))
+      raise ValueError("'%s' should be followed by a %s block, but was a %s" % (keyword, expected_block_type, block_type))
 
     setattr(descriptor, attribute, block_contents)
+
+    if value_attribute:
+      setattr(descriptor, value_attribute, value)
 
   return _parse
 

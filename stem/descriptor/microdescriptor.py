@@ -75,6 +75,7 @@ from stem.descriptor import (
   _read_until_keywords,
   _value,
   _values,
+  _parse_simple_line,
   _parse_key_block,
 )
 
@@ -171,7 +172,7 @@ def _parse_id_line(descriptor, entries):
 
 
 _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
-_parse_ntor_onion_key_line = lambda descriptor, entries: setattr(descriptor, 'ntor_onion_key', _value('ntor-onion-key', entries))
+_parse_ntor_onion_key_line = _parse_simple_line('ntor-onion-key', 'ntor_onion_key')
 _parse_family_line = lambda descriptor, entries: setattr(descriptor, 'family', _value('family', entries).split(' '))
 _parse_p_line = lambda descriptor, entries: stem.descriptor.router_status_entry._parse_p_line(descriptor, _value('p', entries), True)
 _parse_p6_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('p6', entries)))

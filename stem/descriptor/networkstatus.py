@@ -63,6 +63,7 @@ from stem.descriptor import (
   _get_descriptor_components,
   _read_until_keywords,
   _value,
+  _parse_simple_line,
   _parse_timestamp_line,
   _parse_forty_character_hex,
   _parse_key_block,
@@ -269,12 +270,51 @@ class NetworkStatusDocument(Descriptor):
   Common parent for network status documents.
   """
 
-  def __init__(self, raw_content):
-    super(NetworkStatusDocument, self).__init__(raw_content)
-    self._unrecognized_lines = []
 
-  def get_unrecognized_lines(self):
-    return list(self._unrecognized_lines)
+def _parse_version_line(keyword, attribute, expected_version):
+  def _parse(descriptor, entries):
+    value = _value(keyword, entries)
+
+    if not value.isdigit():
+      raise ValueError('Document has a non-numeric version: %s %s' % (keyword, value))
+
+    setattr(descriptor, attribute, int(value))
+
+    if int(value) != expected_version:
+      raise ValueError("Expected a version %i document, but got version '%s' instead" % (expected_version, value))
+
+  return _parse
+
+
+def _parse_dir_source_line(descriptor, entries):
+  value = _value('dir-source', entries)
+  dir_source_comp = value.split()
+
+  if len(dir_source_comp) < 3:
+    raise ValueError("The 'dir-source' line of a v2 network status document must have three values: dir-source %s" % value)
+
+  if not dir_source_comp[0]:
+    # https://trac.torproject.org/7055
+    raise ValueError("Authority's hostname can't be blank: dir-source %s" % value)
+  elif not stem.util.connection.is_valid_ipv4_address(dir_source_comp[1]):
+    raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[1])
+  elif not stem.util.connection.is_valid_port(dir_source_comp[2], allow_zero = True):
+    raise ValueError("Authority's DirPort is invalid: %s" % dir_source_comp[2])
+
+  descriptor.hostname = dir_source_comp[0]
+  descriptor.address = dir_source_comp[1]
+  descriptor.dir_port = None if dir_source_comp[2] == '0' else int(dir_source_comp[2])
+
+
+_parse_network_status_version_line = _parse_version_line('network-status-version', 'version', 2)
+_parse_fingerprint_line = _parse_forty_character_hex('fingerprint', 'fingerprint')
+_parse_contact_line = _parse_simple_line('contact', 'contact')
+_parse_dir_signing_key_line = _parse_key_block('dir-signing-key', 'signing_key', 'RSA PUBLIC KEY')
+_parse_client_versions_line = lambda descriptor, entries: setattr(descriptor, 'client_versions', _value('client-versions', entries).split(','))
+_parse_server_versions_line = lambda descriptor, entries: setattr(descriptor, 'server_versions', _value('server-versions', entries).split(','))
+_parse_published_line = _parse_timestamp_line('published', 'published')
+_parse_dir_options_line = lambda descriptor, entries: setattr(descriptor, 'options', _value('dir-options', entries).split())
+_parse_directory_signature_line = _parse_key_block('directory-signature', 'signature', 'SIGNATURE', value_attribute = 'signing_authority')
 
 
 class NetworkStatusDocumentV2(NetworkStatusDocument):
@@ -306,24 +346,39 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   a default value, others are left as **None** if undefined
   """
 
+  ATTRIBUTES = {
+    'version': (None, _parse_network_status_version_line),
+    'hostname': (None, _parse_dir_source_line),
+    'address': (None, _parse_dir_source_line),
+    'dir_port': (None, _parse_dir_source_line),
+    'fingerprint': (None, _parse_fingerprint_line),
+    'contact': (None, _parse_contact_line),
+    'signing_key': (None, _parse_dir_signing_key_line),
+
+    'client_versions': ([], _parse_client_versions_line),
+    'server_versions': ([], _parse_server_versions_line),
+    'published': (None, _parse_published_line),
+    'options': ([], _parse_dir_options_line),
+
+    'signing_authority': (None, _parse_directory_signature_line),
+    'signatures': (None, _parse_directory_signature_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'network-status-version': _parse_network_status_version_line,
+    'dir-source': _parse_dir_source_line,
+    'fingerprint': _parse_fingerprint_line,
+    'contact': _parse_contact_line,
+    'dir-signing-key': _parse_dir_signing_key_line,
+    'client-versions': _parse_client_versions_line,
+    'server-versions': _parse_server_versions_line,
+    'published': _parse_published_line,
+    'dir-options': _parse_dir_options_line,
+    'directory-signature': _parse_directory_signature_line,
+  }
+
   def __init__(self, raw_content, validate = True):
-    super(NetworkStatusDocumentV2, self).__init__(raw_content)
-
-    self.version = None
-    self.hostname = None
-    self.address = None
-    self.dir_port = None
-    self.fingerprint = None
-    self.contact = None
-    self.signing_key = None
-
-    self.client_versions = []
-    self.server_versions = []
-    self.published = None
-    self.options = []
-
-    self.signing_authority = None
-    self.signatures = None
+    super(NetworkStatusDocumentV2, self).__init__(raw_content, lazy_load = not validate)
 
     # Splitting the document from the routers. Unlike v3 documents we're not
     # bending over backwards on the validation by checking the field order or
@@ -351,96 +406,15 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
 
     if validate:
       self._check_constraints(entries)
+      self._parse(entries, validate)
 
-    self._parse(entries, validate)
+      # 'client-versions' and 'server-versions' are only required if 'Versions'
+      # is among the options
 
-  def _parse(self, entries, validate):
-    for keyword, values in list(entries.items()):
-      value, block_type, block_contents = values[0]
-
-      line = '%s %s' % (keyword, value)  # original line
-
-      if block_contents:
-        line += '\n%s' % block_contents
-
-      if keyword == 'network-status-version':
-        if not value.isdigit():
-          if not validate:
-            continue
-
-          raise ValueError('Network status document has a non-numeric version: %s' % line)
-
-        self.version = int(value)
-
-        if validate and self.version != 2:
-          raise ValueError("Expected a version 2 network status document, got version '%s' instead" % self.version)
-      elif keyword == 'dir-source':
-        dir_source_comp = value.split()
-
-        if len(dir_source_comp) < 3:
-          if not validate:
-            continue
-
-          raise ValueError("The 'dir-source' line of a v2 network status document must have three values: %s" % line)
-
-        if validate:
-          if not dir_source_comp[0]:
-            # https://trac.torproject.org/7055
-            raise ValueError("Authority's hostname can't be blank: %s" % line)
-          elif not stem.util.connection.is_valid_ipv4_address(dir_source_comp[1]):
-            raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[1])
-          elif not stem.util.connection.is_valid_port(dir_source_comp[2], allow_zero = True):
-            raise ValueError("Authority's DirPort is invalid: %s" % dir_source_comp[2])
-        elif not dir_source_comp[2].isdigit():
-          continue
-
-        self.hostname = dir_source_comp[0]
-        self.address = dir_source_comp[1]
-        self.dir_port = None if dir_source_comp[2] == '0' else int(dir_source_comp[2])
-      elif keyword == 'fingerprint':
-        if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError("Authority's fingerprint in a v2 network status document is malformed: %s" % line)
-
-        self.fingerprint = value
-      elif keyword == 'contact':
-        self.contact = value
-      elif keyword == 'dir-signing-key':
-        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
-          raise ValueError("'dir-signing-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
-
-        self.signing_key = block_contents
-      elif keyword in ('client-versions', 'server-versions'):
-        # v2 documents existed while there were tor versions using the 'old'
-        # style, hence we aren't attempting to parse them
-
-        for version_str in value.split(','):
-          if keyword == 'client-versions':
-            self.client_versions.append(version_str)
-          elif keyword == 'server-versions':
-            self.server_versions.append(version_str)
-      elif keyword == 'published':
-        try:
-          self.published = stem.util.str_tools._parse_timestamp(value)
-        except ValueError:
-          if validate:
-            raise ValueError("Version 2 network status document's 'published' time wasn't parsable: %s" % value)
-      elif keyword == 'dir-options':
-        self.options = value.split()
-      elif keyword == 'directory-signature':
-        if validate and (not block_contents or block_type != 'SIGNATURE'):
-          raise ValueError("'directory-signature' should be followed by a SIGNATURE block: %s" % line)
-
-        self.signing_authority = value
-        self.signature = block_contents
-      else:
-        self._unrecognized_lines.append(line)
-
-    # 'client-versions' and 'server-versions' are only required if 'Versions'
-    # is among the options
-
-    if validate and 'Versions' in self.options:
-      if not ('client-versions' in entries and 'server-versions' in entries):
+      if 'Versions' in self.options and not ('client-versions' in entries and 'server-versions' in entries):
         raise ValueError("Version 2 network status documents must have a 'client-versions' and 'server-versions' when 'Versions' is listed among its dir-options:\n%s" % str(self))
+    else:
+      self._entries = entries
 
   def _check_constraints(self, entries):
     required_fields = [field for (field, is_mandatory) in NETWORK_STATUS_V2_FIELDS if is_mandatory]
@@ -1060,7 +1034,6 @@ def _parse_dir_source_line(descriptor, entries):
   descriptor.is_legacy = descriptor.nickname.endswith('-legacy')
 
 
-_parse_contact_line = lambda descriptor, entries: setattr(descriptor, 'contact', _value('contact', entries))
 _parse_legacy_dir_key_line = _parse_forty_character_hex('legacy-dir-key', 'legacy_dir_key')
 _parse_vote_digest_line = _parse_forty_character_hex('vote-digest', 'vote_digest')
 
@@ -1207,20 +1180,6 @@ class DirectoryAuthority(Descriptor):
     return self._compare(other, lambda s, o: s <= o)
 
 
-def _parse_dir_key_certificate_version_line(descriptor, entries):
-  # "dir-key-certificate-version" version
-
-  value = _value('dir-key-certificate-version', entries)
-
-  if not value.isdigit():
-    raise ValueError('Key certificate has a non-integer version: dir-key-certificate-version %s' % value)
-
-  descriptor.version = int(value)
-
-  if descriptor.version != 3:
-    raise ValueError("Expected a version 3 key certificate, got version '%i' instead" % descriptor.version)
-
-
 def _parse_dir_address_line(descriptor, entries):
   # "dir-address" IPPort
 
@@ -1240,17 +1199,7 @@ def _parse_dir_address_line(descriptor, entries):
   descriptor.dir_port = int(dirport)
 
 
-def _parse_fingerprint_line(descriptor, entries):
-  # "fingerprint" fingerprint
-
-  value = _value('fingerprint', entries)
-
-  if not stem.util.tor_tools.is_valid_fingerprint(value):
-    raise ValueError("Key certificate's fingerprint is malformed: fingerprint %s" % value)
-
-  descriptor.fingerprint = value
-
-
+_parse_dir_key_certificate_version_line = _parse_version_line('dir-key-certificate-version', 'version', 3)
 _parse_dir_key_published_line = _parse_timestamp_line('dir-key-published', 'published')
 _parse_dir_key_expires_line = _parse_timestamp_line('dir-key-expires', 'expires')
 _parse_identity_key_line = _parse_key_block('dir-identity-key', 'identity_key', 'RSA PUBLIC KEY')

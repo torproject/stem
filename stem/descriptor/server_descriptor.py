@@ -56,6 +56,7 @@ from stem.descriptor import (
   _read_until_keywords,
   _value,
   _values,
+  _parse_simple_line,
   _parse_timestamp_line,
   _parse_forty_character_hex,
   _parse_key_block,
@@ -378,7 +379,7 @@ _parse_eventdns_line = lambda descriptor, entries: setattr(descriptor, 'eventdns
 _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
 _parse_signing_key_line = _parse_key_block('signing-key', 'signing_key', 'RSA PUBLIC KEY')
 _parse_router_signature_line = _parse_key_block('router-signature', 'signature', 'SIGNATURE')
-_parse_ntor_onion_key_line = lambda descriptor, entries: setattr(descriptor, 'ntor_onion_key', _value('ntor-onion-key', entries))
+_parse_ntor_onion_key_line = _parse_simple_line('ntor-onion-key', 'ntor_onion_key')
 _parse_router_digest_line = _parse_forty_character_hex('router-digest', '_digest')
 
 
