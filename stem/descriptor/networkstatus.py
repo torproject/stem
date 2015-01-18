@@ -62,6 +62,9 @@ from stem.descriptor import (
   DocumentHandler,
   _get_descriptor_components,
   _read_until_keywords,
+  _value,
+  _parse_timestamp_line,
+  _parse_key_block,
 )
 
 # Version 2 network status document fields, tuples of the form...
@@ -1244,6 +1247,58 @@ class DirectoryAuthority(Descriptor):
     return self._compare(other, lambda s, o: s <= o)
 
 
+def _parse_dir_key_certificate_version_line(descriptor, entries):
+  # "dir-key-certificate-version" version
+
+  value = _value('dir-key-certificate-version', entries)
+
+  if not value.isdigit():
+    raise ValueError('Key certificate has a non-integer version: dir-key-certificate-version %s' % value)
+
+  descriptor.version = int(value)
+
+  if descriptor.version != 3:
+    raise ValueError("Expected a version 3 key certificate, got version '%i' instead" % descriptor.version)
+
+
+def _parse_dir_address_line(descriptor, entries):
+  # "dir-address" IPPort
+
+  value = _value('dir-address', entries)
+
+  if ':' not in value:
+    raise ValueError("Key certificate's 'dir-address' is expected to be of the form ADDRESS:PORT: dir-address %s" % value)
+
+  address, dirport = value.split(':', 1)
+
+  if not stem.util.connection.is_valid_ipv4_address(address):
+    raise ValueError("Key certificate's address isn't a valid IPv4 address: dir-address %s" % value)
+  elif not stem.util.connection.is_valid_port(dirport):
+    raise ValueError("Key certificate's dirport is invalid: dir-address %s" % value)
+
+  descriptor.address = address
+  descriptor.dir_port = int(dirport)
+
+
+def _parse_fingerprint_line(descriptor, entries):
+  # "fingerprint" fingerprint
+
+  value = _value('fingerprint', entries)
+
+  if not stem.util.tor_tools.is_valid_fingerprint(value):
+    raise ValueError("Key certificate's fingerprint is malformed: fingerprint %s" % value)
+
+  descriptor.fingerprint = value
+
+
+_parse_dir_key_published_line = _parse_timestamp_line('dir-key-published', 'published')
+_parse_dir_key_expires_line = _parse_timestamp_line('dir-key-expires', 'expires')
+_parse_identity_key_line = _parse_key_block('dir-identity-key', 'identity_key', 'RSA PUBLIC KEY')
+_parse_signing_key_line = _parse_key_block('dir-signing-key', 'signing_key', 'RSA PUBLIC KEY')
+_parse_dir_key_crosscert_line = _parse_key_block('dir-key-crosscert', 'crosscert', 'ID SIGNATURE')
+_parse_dir_key_certification_line = _parse_key_block('dir-key-certification', 'certification', 'SIGNATURE')
+
+
 class KeyCertificate(Descriptor):
   """
   Directory key certificate for a v3 network status document.
@@ -1263,35 +1318,35 @@ class KeyCertificate(Descriptor):
   **\*** mandatory attribute
   """
 
+  ATTRIBUTES = {
+    'version': (None, _parse_dir_key_certificate_version_line),
+    'address': (None, _parse_dir_address_line),
+    'dir_port': (None, _parse_dir_address_line),
+    'fingerprint': (None, _parse_fingerprint_line),
+    'identity_key': (None, _parse_identity_key_line),
+    'published': (None, _parse_dir_key_published_line),
+    'expires': (None, _parse_dir_key_expires_line),
+    'signing_key': (None, _parse_signing_key_line),
+    'crosscert': (None, _parse_dir_key_crosscert_line),
+    'certification': (None, _parse_dir_key_certification_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'dir-key-certificate-version': _parse_dir_key_certificate_version_line,
+    'dir-address': _parse_dir_address_line,
+    'fingerprint': _parse_fingerprint_line,
+    'dir-key-published': _parse_dir_key_published_line,
+    'dir-key-expires': _parse_dir_key_expires_line,
+    'dir-identity-key': _parse_identity_key_line,
+    'dir-signing-key': _parse_signing_key_line,
+    'dir-key-crosscert': _parse_dir_key_crosscert_line,
+    'dir-key-certification': _parse_dir_key_certification_line,
+  }
+
   def __init__(self, raw_content, validate = True):
-    super(KeyCertificate, self).__init__(raw_content)
-    raw_content = stem.util.str_tools._to_unicode(raw_content)
+    super(KeyCertificate, self).__init__(raw_content, lazy_load = not validate)
 
-    self.version = None
-    self.address = None
-    self.dir_port = None
-    self.fingerprint = None
-    self.identity_key = None
-    self.published = None
-    self.expires = None
-    self.signing_key = None
-    self.crosscert = None
-    self.certification = None
-
-    self._unrecognized_lines = []
-
-    self._parse(raw_content, validate)
-
-  def _parse(self, content, validate):
-    """
-    Parses the given content and applies the attributes.
-
-    :param str content: descriptor content
-    :param bool validate: checks validity if **True**
-
-    :raises: **ValueError** if a validity check fails
-    """
-
+    content = stem.util.str_tools._to_unicode(raw_content)
     entries = _get_descriptor_components(content, validate)
 
     if validate:
@@ -1311,104 +1366,9 @@ class KeyCertificate(Descriptor):
         if entry_count > 1:
           raise ValueError("Key certificates can only have a single '%s' line, got %i:\n%s" % (keyword, entry_count, content))
 
-    for keyword, values in list(entries.items()):
-      value, block_type, block_contents = values[0]
-      line = '%s %s' % (keyword, value)
-
-      if keyword == 'dir-key-certificate-version':
-        # "dir-key-certificate-version" version
-
-        if not value.isdigit():
-          if not validate:
-            continue
-
-          raise ValueError('Key certificate has a non-integer version: %s' % line)
-
-        self.version = int(value)
-
-        if validate and self.version != 3:
-          raise ValueError("Expected a version 3 key certificate, got version '%i' instead" % self.version)
-      elif keyword == 'dir-address':
-        # "dir-address" IPPort
-
-        if ':' not in value:
-          if not validate:
-            continue
-
-          raise ValueError("Key certificate's 'dir-address' is expected to be of the form ADDRESS:PORT: %s" % line)
-
-        address, dirport = value.split(':', 1)
-
-        if validate:
-          if not stem.util.connection.is_valid_ipv4_address(address):
-            raise ValueError("Key certificate's address isn't a valid IPv4 address: %s" % line)
-          elif not stem.util.connection.is_valid_port(dirport):
-            raise ValueError("Key certificate's dirport is invalid: %s" % line)
-        elif not dirport.isdigit():
-          continue
-
-        self.address = address
-        self.dir_port = int(dirport)
-      elif keyword == 'fingerprint':
-        # "fingerprint" fingerprint
-
-        if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError("Key certificate's fingerprint is malformed: %s" % line)
-
-        self.fingerprint = value
-      elif keyword in ('dir-key-published', 'dir-key-expires'):
-        # "dir-key-published" YYYY-MM-DD HH:MM:SS
-        # "dir-key-expires" YYYY-MM-DD HH:MM:SS
-
-        try:
-          date_value = stem.util.str_tools._parse_timestamp(value)
-
-          if keyword == 'dir-key-published':
-            self.published = date_value
-          elif keyword == 'dir-key-expires':
-            self.expires = date_value
-        except ValueError:
-          if validate:
-            raise ValueError("Key certificate's '%s' time wasn't parsable: %s" % (keyword, value))
-      elif keyword == 'dir-identity-key':
-        # "dir-identity-key" NL a public key in PEM format
-
-        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
-          raise ValueError("'dir-identity-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
-
-        self.identity_key = block_contents
-      elif keyword == 'dir-signing-key':
-        # "dir-signing-key" NL a key in PEM format
-
-        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
-          raise ValueError("'dir-signing-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
-
-        self.signing_key = block_contents
-      elif keyword == 'dir-key-crosscert':
-        # "dir-key-crosscert" NL CrossSignature
-
-        if validate and (not block_contents or block_type != 'ID SIGNATURE'):
-          raise ValueError("'dir-key-crosscert' should be followed by a ID SIGNATURE block: %s" % line)
-
-        self.crosscert = block_contents
-      elif keyword == 'dir-key-certification':
-        # "dir-key-certification" NL Signature
-
-        if validate and (not block_contents or block_type != 'SIGNATURE'):
-          raise ValueError("'dir-key-certification' should be followed by a SIGNATURE block: %s" % line)
-
-        self.certification = block_contents
-      else:
-        self._unrecognized_lines.append(line)
-
-  def get_unrecognized_lines(self):
-    """
-    Returns any unrecognized lines.
-
-    :returns: **list** of unrecognized lines
-    """
-
-    return self._unrecognized_lines
+      self._parse(entries, validate)
+    else:
+      self._entries = entries
 
   def _compare(self, other, method):
     if not isinstance(other, KeyCertificate):

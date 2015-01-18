@@ -112,23 +112,23 @@ class TestKeyCertificate(unittest.TestCase):
     self.assertEqual(80, certificate.dir_port)
 
     test_values = (
-      ('', None, None),
-      ('   ', None, None),
-      ('127.0.0.1', None, None),
-      ('127.0.0.1:', None, None),
-      ('80', None, None),
-      (':80', '', 80),
-      ('127.0.0.1a:80', '127.0.0.1a', 80),
-      ('127.0.0.1:80a', None, None),
+      (''),
+      ('   '),
+      ('127.0.0.1'),
+      ('127.0.0.1:'),
+      ('80'),
+      (':80'),
+      ('127.0.0.1a:80'),
+      ('127.0.0.1:80a'),
     )
 
-    for test_value, expected_address, expected_port in test_values:
+    for test_value in test_values:
       content = get_key_certificate({'dir-address': test_value}, content = True)
       self.assertRaises(ValueError, KeyCertificate, content)
 
       certificate = KeyCertificate(content, False)
-      self.assertEqual(expected_address, certificate.address)
-      self.assertEqual(expected_port, certificate.dir_port)
+      self.assertEqual(None, certificate.address)
+      self.assertEqual(None, certificate.dir_port)
 
   def test_fingerprint(self):
     """
@@ -147,7 +147,7 @@ class TestKeyCertificate(unittest.TestCase):
       self.assertRaises(ValueError, KeyCertificate, content)
 
       certificate = KeyCertificate(content, False)
-      self.assertEqual(test_value.strip(), certificate.fingerprint)
+      self.assertEqual(None, certificate.fingerprint)
 
   def test_time_fields(self):
     """

@@ -319,6 +319,20 @@ def _values(line, entries):
   return [entry[0] for entry in entries[line]]
 
 
+def _parse_timestamp_line(keyword, attribute):
+  # "<keyword>" YYYY-MM-DD HH:MM:SS
+
+  def _parse(descriptor, entries):
+    value = _value(keyword, entries)
+
+    try:
+      setattr(descriptor, attribute, stem.util.str_tools._parse_timestamp(value))
+    except ValueError:
+      raise ValueError("Timestamp on %s line wasn't parsable: %s %s" % (keyword, keyword, value))
+
+  return _parse
+
+
 def _parse_sha1_digest_line(keyword, attribute):
   def _parse(descriptor, entries):
     value = _value(keyword, entries)

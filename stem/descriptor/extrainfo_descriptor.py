@@ -83,6 +83,7 @@ from stem.descriptor import (
   _get_descriptor_components,
   _value,
   _values,
+  _parse_timestamp_line,
   _parse_sha1_digest_line,
   _parse_key_block,
 )
@@ -366,17 +367,6 @@ def _parse_cell_line(keyword, attribute, descriptor, entries):
     raise exc
 
 
-def _parse_timestamp_line(keyword, attribute, descriptor, entries):
-  # "<keyword>" YYYY-MM-DD HH:MM:SS
-
-  value = _value(keyword, entries)
-
-  try:
-    setattr(descriptor, attribute, stem.util.str_tools._parse_timestamp(value))
-  except ValueError:
-    raise ValueError("Timestamp on %s line wasn't parsable: %s %s" % (keyword, keyword, value))
-
-
 def _parse_timestamp_and_interval_line(keyword, end_attribute, interval_attribute, descriptor, entries):
   # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
 
@@ -521,8 +511,8 @@ _parse_dirreq_v3_share_line = functools.partial(_parse_dirreq_share_line, 'dirre
 _parse_cell_processed_cells_line = functools.partial(_parse_cell_line, 'cell-processed-cells', 'cell_processed_cells')
 _parse_cell_queued_cells_line = functools.partial(_parse_cell_line, 'cell-queued-cells', 'cell_queued_cells')
 _parse_cell_time_in_queue_line = functools.partial(_parse_cell_line, 'cell-time-in-queue', 'cell_time_in_queue')
-_parse_published_line = functools.partial(_parse_timestamp_line, 'published', 'published')
-_parse_geoip_start_time_line = functools.partial(_parse_timestamp_line, 'geoip-start-time', 'geoip_start_time')
+_parse_published_line = _parse_timestamp_line('published', 'published')
+_parse_geoip_start_time_line = _parse_timestamp_line('geoip-start-time', 'geoip_start_time')
 _parse_cell_stats_end_line = functools.partial(_parse_timestamp_and_interval_line, 'cell-stats-end', 'cell_stats_end', 'cell_stats_interval')
 _parse_entry_stats_end_line = functools.partial(_parse_timestamp_and_interval_line, 'entry-stats-end', 'entry_stats_end', 'entry_stats_interval')
 _parse_exit_stats_end_line = functools.partial(_parse_timestamp_and_interval_line, 'exit-stats-end', 'exit_stats_end', 'exit_stats_interval')

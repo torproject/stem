@@ -56,6 +56,7 @@ from stem.descriptor import (
   _read_until_keywords,
   _value,
   _values,
+  _parse_timestamp_line,
   _parse_sha1_digest_line,
   _parse_key_block,
 )
@@ -241,17 +242,6 @@ def _parse_platform_line(descriptor, entries):
       pass
 
 
-def _parse_published_line(descriptor, entries):
-  # "published" YYYY-MM-DD HH:MM:SS
-
-  value = _value('published', entries)
-
-  try:
-    descriptor.published = stem.util.str_tools._parse_timestamp(value)
-  except ValueError:
-    raise ValueError("Published line's time wasn't parsable: published %s" % value)
-
-
 def _parse_fingerprint_line(descriptor, entries):
   # This is forty hex digits split into space separated groups of four.
   # Checking that we match this pattern.
@@ -388,6 +378,7 @@ def _parse_exit_policy(descriptor, entries):
     del descriptor._unparsed_exit_policy
 
 
+_parse_published_line = _parse_timestamp_line('published', 'published')
 _parse_read_history_line = functools.partial(_parse_history_line, 'read-history', 'read_history_end', 'read_history_interval', 'read_history_values')
 _parse_write_history_line = functools.partial(_parse_history_line, 'write-history', 'write_history_end', 'write_history_interval', 'write_history_values')
 _parse_ipv6_policy_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('ipv6-policy', entries)))
