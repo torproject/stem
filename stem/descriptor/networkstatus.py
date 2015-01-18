@@ -569,7 +569,175 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     return self._compare(other, lambda s, o: s <= o)
 
 
+def _parse_network_status_version_line(descriptor, entries):
+  # "network-status-version" version
+
+  value = _value('network-status-version', entries)
+
+  if ' ' in value:
+    version, flavor = value.split(' ', 1)
+  else:
+    version, flavor = value, None
+
+  if not version.isdigit():
+    raise ValueError('Network status document has a non-numeric version: network-status-version %s' % value)
+
+  descriptor.version = int(version)
+  descriptor.version_flavor = flavor
+  descriptor.is_microdescriptor = flavor == 'microdesc'
+
+  if descriptor.version != 3:
+    raise ValueError("Expected a version 3 network status document, got version '%s' instead" % descriptor.version)
+
+
+def _parse_vote_status_line(descriptor, entries):
+  # "vote-status" type
+  #
+  # The consensus-method and consensus-methods fields are optional since
+  # they weren't included in version 1. Setting a default now that we
+  # know if we're a vote or not.
+
+  value = _value('vote-status', entries)
+
+  if value == 'consensus':
+    descriptor.is_consensus, descriptor.is_vote = True, False
+  elif value == 'vote':
+    descriptor.is_consensus, descriptor.is_vote = False, True
+  else:
+    raise ValueError("A network status document's vote-status line can only be 'consensus' or 'vote', got '%s' instead" % value)
+
+
+def _parse_consensus_methods_line(descriptor, entries):
+  # "consensus-methods" IntegerList
+
+  value, consensus_methods = _value('consensus-methods', entries), []
+
+  for entry in value.split(' '):
+    if not entry.isdigit():
+      raise ValueError("A network status document's consensus-methods must be a list of integer values, but was '%s'" % value)
+
+    consensus_methods.append(int(entry))
+
+  descriptor.consensus_methods = consensus_methods
+
+
+def _parse_consensus_method_line(descriptor, entries):
+  # "consensus-method" Integer
+
+  value = _value('consensus-method', entries)
+
+  if not value.isdigit():
+    raise ValueError("A network status document's consensus-method must be an integer, but was '%s'" % value)
+
+  descriptor.consensus_method = int(value)
+
+
+def _parse_voting_delay_line(descriptor, entries):
+  # "voting-delay" VoteSeconds DistSeconds
+
+  value = _value('voting-delay', entries)
+  value_comp = value.split(' ')
+
+  if len(value_comp) == 2 and value_comp[0].isdigit() and value_comp[1].isdigit():
+    descriptor.vote_delay = int(value_comp[0])
+    descriptor.dist_delay = int(value_comp[1])
+  else:
+    raise ValueError("A network status document's 'voting-delay' line must be a pair of integer values, but was '%s'" % value)
+
+
+def _parse_versions_line(keyword, attribute):
+  def _parse(descriptor, entries):
+    value, entries = _value(keyword, entries), []
+
+    for entry in value.split(','):
+      try:
+        entries.append(stem.version._get_version(entry))
+      except ValueError:
+        raise ValueError("Network status document's '%s' line had '%s', which isn't a parsable tor version: %s %s" % (keyword, entry, keyword, value))
+
+    setattr(descriptor, attribute, entries)
+
+  return _parse
+
+
+def _parse_flag_thresholds_line(descriptor, entries):
+  # "flag-thresholds" SP THRESHOLDS
+
+  value, thresholds = _value('flag-thresholds', entries).strip(), {}
+
+  if value:
+    for entry in value.split(' '):
+      if '=' not in entry:
+        raise ValueError("Network status document's 'flag-thresholds' line is expected to be space separated key=value mappings, got: flag-thresholds %s" % value)
+
+      entry_key, entry_value = entry.split('=', 1)
+
+      try:
+        if entry_value.endswith('%'):
+          # opting for string manipulation rather than just
+          # 'float(entry_value) / 100' because floating point arithmetic
+          # will lose precision
+
+          thresholds[entry_key] = float('0.' + entry_value[:-1].replace('.', '', 1))
+        elif '.' in entry_value:
+          thresholds[entry_key] = float(entry_value)
+        else:
+          thresholds[entry_key] = int(entry_value)
+      except ValueError:
+        raise ValueError("Network status document's 'flag-thresholds' line is expected to have float values, got: flag-thresholds %s" % value)
+
+  descriptor.flag_thresholds = thresholds
+
+
+def _parse_parameters_line(descriptor, entries):
+  # "params" [Parameters]
+  # Parameter ::= Keyword '=' Int32
+  # Int32 ::= A decimal integer between -2147483648 and 2147483647.
+  # Parameters ::= Parameter | Parameters SP Parameter
+
+  value = _value('params', entries)
+
+  # should only appear in consensus-method 7 or later
+
+  if not descriptor.meets_consensus_method(7):
+    raise ValueError("A network status document's 'params' line should only appear in consensus-method 7 or later")
+
+  # skip if this is a blank line
+
+  params = dict(DEFAULT_PARAMS) if descriptor._default_params else {}
+
+  if value != '':
+    params.update(_parse_int_mappings('params', value, True))
+    descriptor.params = params
+    descriptor._check_params_constraints()
+
+
+_parse_valid_after_line = _parse_timestamp_line('valid-after', 'valid_after')
+_parse_fresh_until_line = _parse_timestamp_line('fresh-until', 'fresh_until')
+_parse_valid_until_line = _parse_timestamp_line('valid-until', 'valid_until')
+_parse_client_versions_line = _parse_versions_line('client-versions', 'client_versions')
+_parse_server_versions_line = _parse_versions_line('server-versions', 'server_versions')
+_parse_known_flags_line = lambda descriptor, entries: setattr(descriptor, 'known_flags', [entry for entry in _value('known-flags', entries).split(' ') if entry])
+
+
 class _DocumentHeader(object):
+  PARSER_FOR_LINE = {
+    'network-status-version': _parse_network_status_version_line,
+    'vote-status': _parse_vote_status_line,
+    'consensus-methods': _parse_consensus_methods_line,
+    'consensus-method': _parse_consensus_method_line,
+    'published': _parse_published_line,
+    'valid-after': _parse_valid_after_line,
+    'fresh-until': _parse_fresh_until_line,
+    'valid-until': _parse_valid_until_line,
+    'voting-delay': _parse_voting_delay_line,
+    'client-versions': _parse_client_versions_line,
+    'server-versions': _parse_server_versions_line,
+    'known-flags': _parse_known_flags_line,
+    'flag-thresholds': _parse_flag_thresholds_line,
+    'params': _parse_parameters_line,
+  }
+
   def __init__(self, document_file, validate, default_params):
     self.version = None
     self.version_flavor = None
@@ -589,6 +757,8 @@ class _DocumentHeader(object):
     self.known_flags = []
     self.flag_thresholds = {}
     self.params = dict(DEFAULT_PARAMS) if default_params else {}
+
+    self._default_params = default_params
 
     self._unrecognized_lines = []
 
@@ -621,152 +791,21 @@ class _DocumentHeader(object):
       if validate and len(values) > 1 and keyword in HEADER_FIELDS:
         raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
 
-      if keyword == 'network-status-version':
-        # "network-status-version" version
-
-        if ' ' in value:
-          version, flavor = value.split(' ', 1)
+      try:
+        if keyword in self.PARSER_FOR_LINE:
+          self.PARSER_FOR_LINE[keyword](self, entries)
         else:
-          version, flavor = value, None
-
-        if not version.isdigit():
-          if not validate:
-            continue
-
-          raise ValueError('Network status document has a non-numeric version: %s' % line)
-
-        self.version = int(version)
-        self.version_flavor = flavor
-        self.is_microdescriptor = flavor == 'microdesc'
-
-        if validate and self.version != 3:
-          raise ValueError("Expected a version 3 network status document, got version '%s' instead" % self.version)
-      elif keyword == 'vote-status':
-        # "vote-status" type
-        #
-        # The consensus-method and consensus-methods fields are optional since
-        # they weren't included in version 1. Setting a default now that we
-        # know if we're a vote or not.
-
-        if value == 'consensus':
-          self.is_consensus, self.is_vote = True, False
-          self.consensus_method = 1
-        elif value == 'vote':
-          self.is_consensus, self.is_vote = False, True
-          self.consensus_methods = [1]
-        elif validate:
-          raise ValueError("A network status document's vote-status line can only be 'consensus' or 'vote', got '%s' instead" % value)
-      elif keyword == 'consensus-methods':
-        # "consensus-methods" IntegerList
-
-        consensus_methods = []
-        for entry in value.split(' '):
-          if entry.isdigit():
-            consensus_methods.append(int(entry))
-          elif validate:
-            raise ValueError("A network status document's consensus-methods must be a list of integer values, but was '%s'" % value)
-
-        self.consensus_methods = consensus_methods
-      elif keyword == 'consensus-method':
-        # "consensus-method" Integer
-
-        if value.isdigit():
-          self.consensus_method = int(value)
-        elif validate:
-          raise ValueError("A network status document's consensus-method must be an integer, but was '%s'" % value)
-      elif keyword in ('published', 'valid-after', 'fresh-until', 'valid-until'):
-        try:
-          date_value = stem.util.str_tools._parse_timestamp(value)
-
-          if keyword == 'published':
-            self.published = date_value
-          elif keyword == 'valid-after':
-            self.valid_after = date_value
-          elif keyword == 'fresh-until':
-            self.fresh_until = date_value
-          elif keyword == 'valid-until':
-            self.valid_until = date_value
-        except ValueError:
-          if validate:
-            raise ValueError("Network status document's '%s' time wasn't parsable: %s" % (keyword, value))
-      elif keyword == 'voting-delay':
-        # "voting-delay" VoteSeconds DistSeconds
-
-        value_comp = value.split(' ')
-
-        if len(value_comp) == 2 and value_comp[0].isdigit() and value_comp[1].isdigit():
-          self.vote_delay = int(value_comp[0])
-          self.dist_delay = int(value_comp[1])
-        elif validate:
-          raise ValueError("A network status document's 'voting-delay' line must be a pair of integer values, but was '%s'" % value)
-      elif keyword in ('client-versions', 'server-versions'):
-        for entry in value.split(','):
-          try:
-            version_value = stem.version._get_version(entry)
-
-            if keyword == 'client-versions':
-              self.client_versions.append(version_value)
-            elif keyword == 'server-versions':
-              self.server_versions.append(version_value)
-          except ValueError:
-            if validate:
-              raise ValueError("Network status document's '%s' line had '%s', which isn't a parsable tor version: %s" % (keyword, entry, line))
-      elif keyword == 'known-flags':
-        # "known-flags" FlagList
-
-        # simply fetches the entries, excluding empty strings
-        self.known_flags = [entry for entry in value.split(' ') if entry]
-      elif keyword == 'flag-thresholds':
-        # "flag-thresholds" SP THRESHOLDS
-
-        value = value.strip()
-
-        if value:
-          for entry in value.split(' '):
-            if '=' not in entry:
-              if not validate:
-                continue
-
-              raise ValueError("Network status document's '%s' line is expected to be space separated key=value mappings, got: %s" % (keyword, line))
-
-            entry_key, entry_value = entry.split('=', 1)
-
-            try:
-              if entry_value.endswith('%'):
-                # opting for string manipulation rather than just
-                # 'float(entry_value) / 100' because floating point arithmetic
-                # will lose precision
-
-                self.flag_thresholds[entry_key] = float('0.' + entry_value[:-1].replace('.', '', 1))
-              elif '.' in entry_value:
-                self.flag_thresholds[entry_key] = float(entry_value)
-              else:
-                self.flag_thresholds[entry_key] = int(entry_value)
-            except ValueError:
-              if validate:
-                raise ValueError("Network status document's '%s' line is expected to have float values, got: %s" % (keyword, line))
-      elif keyword == 'params':
-        # "params" [Parameters]
-        # Parameter ::= Keyword '=' Int32
-        # Int32 ::= A decimal integer between -2147483648 and 2147483647.
-        # Parameters ::= Parameter | Parameters SP Parameter
-
-        # should only appear in consensus-method 7 or later
-
-        if validate and not self.meets_consensus_method(7):
-          raise ValueError("A network status document's 'params' line should only appear in consensus-method 7 or later")
-
-        # skip if this is a blank line
-
-        if value == '':
-          continue
-
-        self.params.update(_parse_int_mappings(keyword, value, validate))
-
+          self._unrecognized_lines.append(line)
+      except ValueError as exc:
         if validate:
-          self._check_params_constraints()
-      else:
-        self._unrecognized_lines.append(line)
+          raise exc
+
+    # default consensus_method and consensus_methods based on if we're a consensus or vote
+
+    if self.is_consensus and not self.consensus_method:
+      self.consensus_method = 1
+    elif self.is_vote and not self.consensus_methods:
+      self.consensus_methods = [1]
 
   def _check_params_constraints(self):
     """
