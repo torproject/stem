@@ -953,7 +953,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     )
 
     base_weight_entry = ' '.join(['%s=5' % e for e in BANDWIDTH_WEIGHT_ENTRIES])
-    expected = dict([(e, 5) for e in BANDWIDTH_WEIGHT_ENTRIES if e != 'Wbe'])
 
     for test_value in test_values:
       weight_entry = base_weight_entry.replace('Wbe=5', test_value)
@@ -961,7 +960,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
       document = NetworkStatusDocumentV3(content, False)
-      self.assertEqual(expected, document.bandwidth_weights)
+      self.assertEqual({}, document.bandwidth_weights)
 
   def test_bandwidth_wights_misordered(self):
     """
@@ -969,13 +968,12 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     weight_entry = ' '.join(['%s=5' % e for e in reversed(BANDWIDTH_WEIGHT_ENTRIES)])
-    expected = dict([(e, 5) for e in BANDWIDTH_WEIGHT_ENTRIES])
 
     content = get_network_status_document_v3({'bandwidth-weights': weight_entry}, content = True)
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEqual(expected, document.bandwidth_weights)
+    self.assertEqual({}, document.bandwidth_weights)
 
   def test_bandwidth_wights_in_vote(self):
     """

@@ -871,7 +871,46 @@ class _DocumentHeader(object):
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
 
 
+def _parse_directory_footer_line(descriptor, entries):
+  # nothing to parse, simply checking that we don't have a value
+
+  value = _value('directory-footer', entries)
+
+  if value:
+    raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got 'directory-footer %s'" % value)
+
+
+def _parse_directory_signature_line(descriptor, entries):
+  signatures = []
+
+  for sig_value, block_type, block_contents in entries['directory-signature']:
+    if sig_value.count(' ') not in (1, 2):
+      raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST', received: %s" % sig_value)
+
+    if not block_contents or block_type != 'SIGNATURE':
+      raise ValueError("'directory-signature' should be followed by a SIGNATURE block, but was a %s" % block_type)
+
+    if sig_value.count(' ') == 1:
+      method = 'sha1'  # default if none was provided
+      fingerprint, key_digest = sig_value.split(' ', 1)
+    else:
+      method, fingerprint, key_digest = sig_value.split(' ', 2)
+
+    signatures.append(DocumentSignature(method, fingerprint, key_digest, block_contents, True))
+
+  descriptor.signatures = signatures
+
+
+_parse_bandwidth_weights_line = lambda descriptor, entries: setattr(descriptor, 'bandwidth_weights', _parse_int_mappings('bandwidth-weights', _value('bandwidth-weights', entries), True))
+
+
 class _DocumentFooter(object):
+  PARSER_FOR_LINE = {
+    'directory-footer': _parse_directory_footer_line,
+    'bandwidth-weights': _parse_bandwidth_weights_line,
+    'directory-signature': _parse_directory_signature_line,
+  }
+
   def __init__(self, document_file, validate, header):
     self.signatures = []
     self.bandwidth_weights = {}
@@ -912,31 +951,14 @@ class _DocumentFooter(object):
         if not (keyword == 'directory-signature' and header.is_consensus):
           raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
 
-      if keyword == 'directory-footer':
-        # nothing to parse, simply checking that we don't have a value
-
-        if validate and value:
-          raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got '%s'" % line)
-      elif keyword == 'bandwidth-weights':
-        self.bandwidth_weights = _parse_int_mappings(keyword, value, validate)
-      elif keyword == 'directory-signature':
-        for sig_value, block_type, block_contents in values:
-          if sig_value.count(' ') not in (1, 2):
-            if not validate:
-              continue
-
-            raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST', received: %s" % sig_value)
-
-          if validate and (not block_contents or block_type != 'SIGNATURE'):
-            raise ValueError("'directory-signature' should be followed by a SIGNATURE block: %s" % line)
-
-          if sig_value.count(' ') == 1:
-            method = 'sha1'  # default if none was provided
-            fingerprint, key_digest = sig_value.split(' ', 1)
-          else:
-            method, fingerprint, key_digest = sig_value.split(' ', 2)
-
-          self.signatures.append(DocumentSignature(method, fingerprint, key_digest, block_contents, validate))
+      try:
+        if keyword in self.PARSER_FOR_LINE:
+          self.PARSER_FOR_LINE[keyword](self, entries)
+        else:
+          self._unrecognized_lines.append(line)
+      except ValueError as exc:
+        if validate:
+          raise exc
 
 
 def _check_for_missing_and_disallowed_fields(header, entries, fields):
