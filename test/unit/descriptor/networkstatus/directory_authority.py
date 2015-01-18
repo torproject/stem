@@ -164,7 +164,7 @@ class TestDirectoryAuthority(unittest.TestCase):
       self.assertRaises(ValueError, DirectoryAuthority, content)
 
       authority = DirectoryAuthority(content, False)
-      self.assertEqual(value, authority.fingerprint)
+      self.assertEqual(None, authority.fingerprint)
 
   def test_malformed_address(self):
     """
@@ -186,7 +186,7 @@ class TestDirectoryAuthority(unittest.TestCase):
       self.assertRaises(ValueError, DirectoryAuthority, content)
 
       authority = DirectoryAuthority(content, False)
-      self.assertEqual(value, authority.address)
+      self.assertEqual(None, authority.address)
 
   def test_malformed_port(self):
     """
@@ -219,9 +219,8 @@ class TestDirectoryAuthority(unittest.TestCase):
 
           authority = DirectoryAuthority(content, False)
 
-          expected_value = 399482 if value == '399482' else None
           actual_value = authority.or_port if include_or_port else authority.dir_port
-          self.assertEqual(expected_value, actual_value)
+          self.assertEqual(None, actual_value)
 
   def test_legacy_dir_key(self):
     """
@@ -247,7 +246,7 @@ class TestDirectoryAuthority(unittest.TestCase):
       self.assertRaises(ValueError, DirectoryAuthority, content)
 
       authority = DirectoryAuthority(content, False)
-      self.assertEqual(value, authority.legacy_dir_key)
+      self.assertEqual(None, authority.legacy_dir_key)
 
   def test_key_certificate(self):
     """

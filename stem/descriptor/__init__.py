@@ -333,12 +333,14 @@ def _parse_timestamp_line(keyword, attribute):
   return _parse
 
 
-def _parse_sha1_digest_line(keyword, attribute):
+def _parse_forty_character_hex(keyword, attribute):
+  # format of fingerprints, sha1 digests, etc
+
   def _parse(descriptor, entries):
     value = _value(keyword, entries)
 
     if not stem.util.tor_tools.is_hex_digits(value, 40):
-      raise ValueError('%s line had an invalid sha1 digest: %s %s' % (keyword, keyword, value))
+      raise ValueError('%s line had an invalid value (should be 40 hex characters): %s %s' % (keyword, keyword, value))
 
     setattr(descriptor, attribute, value)
 

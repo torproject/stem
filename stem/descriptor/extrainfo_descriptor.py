@@ -84,7 +84,7 @@ from stem.descriptor import (
   _value,
   _values,
   _parse_timestamp_line,
-  _parse_sha1_digest_line,
+  _parse_forty_character_hex,
   _parse_key_block,
 )
 
@@ -498,8 +498,8 @@ def _parse_bridge_ip_transports_line(descriptor, entries):
   descriptor.ip_transports = ip_transports
 
 
-_parse_geoip_db_digest_line = _parse_sha1_digest_line('geoip-db-digest', 'geoip_db_digest')
-_parse_geoip6_db_digest_line = _parse_sha1_digest_line('geoip6-db-digest', 'geoip6_db_digest')
+_parse_geoip_db_digest_line = _parse_forty_character_hex('geoip-db-digest', 'geoip_db_digest')
+_parse_geoip6_db_digest_line = _parse_forty_character_hex('geoip6-db-digest', 'geoip6_db_digest')
 _parse_dirreq_v2_resp_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-resp', 'dir_v2_responses', 'dir_v2_responses_unknown')
 _parse_dirreq_v3_resp_line = functools.partial(_parse_dirreq_line, 'dirreq-v3-resp', 'dir_v3_responses', 'dir_v3_responses_unknown')
 _parse_dirreq_v2_direct_dl_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-direct-dl', 'dir_v2_direct_dl', 'dir_v2_direct_dl_unknown')
@@ -532,7 +532,7 @@ _parse_dirreq_v3_reqs_line = functools.partial(_parse_geoip_to_count_line, 'dirr
 _parse_geoip_client_origins_line = functools.partial(_parse_geoip_to_count_line, 'geoip-client-origins', 'geoip_client_origins')
 _parse_entry_ips_line = functools.partial(_parse_geoip_to_count_line, 'entry-ips', 'entry_ips')
 _parse_bridge_ips_line = functools.partial(_parse_geoip_to_count_line, 'bridge-ips', 'bridge_ips')
-_parse_router_digest_line = _parse_sha1_digest_line('router-digest', '_digest')
+_parse_router_digest_line = _parse_forty_character_hex('router-digest', '_digest')
 _parse_router_signature_line = _parse_key_block('router-signature', 'signature', 'SIGNATURE')
 
 

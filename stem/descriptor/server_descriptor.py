@@ -57,7 +57,7 @@ from stem.descriptor import (
   _value,
   _values,
   _parse_timestamp_line,
-  _parse_sha1_digest_line,
+  _parse_forty_character_hex,
   _parse_key_block,
 )
 
@@ -270,18 +270,6 @@ def _parse_hibernating_line(descriptor, entries):
   descriptor.hibernating = value == '1'
 
 
-def _parse_extrainfo_digest_line(descriptor, entries):
-  # this is forty hex digits which just so happens to be the same a
-  # fingerprint
-
-  value = _value('extra-info-digest', entries)
-
-  if not stem.util.tor_tools.is_valid_fingerprint(value):
-    raise ValueError('Extra-info digests should consist of forty hex digits: %s' % value)
-
-  descriptor.extra_info_digest = value
-
-
 def _parse_hidden_service_dir_line(descriptor, entries):
   value = _value('hidden-service-dir', entries)
 
@@ -379,6 +367,7 @@ def _parse_exit_policy(descriptor, entries):
 
 
 _parse_published_line = _parse_timestamp_line('published', 'published')
+_parse_extrainfo_digest_line = _parse_forty_character_hex('extra-info-digest', 'extra_info_digest')
 _parse_read_history_line = functools.partial(_parse_history_line, 'read-history', 'read_history_end', 'read_history_interval', 'read_history_values')
 _parse_write_history_line = functools.partial(_parse_history_line, 'write-history', 'write_history_end', 'write_history_interval', 'write_history_values')
 _parse_ipv6_policy_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('ipv6-policy', entries)))
@@ -390,7 +379,7 @@ _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC K
 _parse_signing_key_line = _parse_key_block('signing-key', 'signing_key', 'RSA PUBLIC KEY')
 _parse_router_signature_line = _parse_key_block('router-signature', 'signature', 'SIGNATURE')
 _parse_ntor_onion_key_line = lambda descriptor, entries: setattr(descriptor, 'ntor_onion_key', _value('ntor-onion-key', entries))
-_parse_router_digest_line = _parse_sha1_digest_line('router-digest', '_digest')
+_parse_router_digest_line = _parse_forty_character_hex('router-digest', '_digest')
 
 
 class ServerDescriptor(Descriptor):
