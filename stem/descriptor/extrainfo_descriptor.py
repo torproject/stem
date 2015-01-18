@@ -256,6 +256,8 @@ def _parse_transport_line(descriptor, entries):
   # on non-bridges in the wild when the relay operator configured it this
   # way.
 
+  transports = {}
+
   for value in _values('transport', entries):
     name, address, port, args = None, None, None, None
 
@@ -285,7 +287,9 @@ def _parse_transport_line(descriptor, entries):
       port = int(port_str)
       args = value_comp[2:] if len(value_comp) >= 3 else []
 
-    descriptor.transport[name] = (address, port, args)
+    transports[name] = (address, port, args)
+
+  descriptor.transport = transports
 
 
 def _parse_cell_circuits_per_decline_line(descriptor, entries):
