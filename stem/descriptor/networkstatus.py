@@ -491,10 +491,10 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     super(NetworkStatusDocumentV3, self).__init__(raw_content)
     document_file = io.BytesIO(raw_content)
 
-    self._header = _DocumentHeader(document_file, validate, default_params)
+    header = _DocumentHeader(document_file, validate, default_params)
 
     # merge header attributes into us
-    for attr, value in vars(self._header).items():
+    for attr, value in vars(header).items():
       if attr != '_unrecognized_lines':
         setattr(self, attr, value)
       else:
@@ -506,13 +506,13 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       entry_class = DirectoryAuthority,
       entry_keyword = AUTH_START,
       section_end_keywords = (ROUTERS_START, FOOTER_START, V2_FOOTER_START),
-      extra_args = (self._header.is_vote,),
+      extra_args = (self.is_vote,),
     ))
 
-    if validate and self._header.is_vote and len(self.directory_authorities) != 1:
+    if validate and self.is_vote and len(self.directory_authorities) != 1:
       raise ValueError('Votes should only have an authority entry for the one that issued it, got %i: %s' % (len(self.directory_authorities), self.directory_authorities))
 
-    if not self._header.is_microdescriptor:
+    if not self.is_microdescriptor:
       router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
     else:
       router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
@@ -528,10 +528,10 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
 
-    self._footer = _DocumentFooter(document_file, validate, self._header)
+    footer = _DocumentFooter(document_file, validate, self)
 
     # merge header attributes into us
-    for attr, value in vars(self._footer).items():
+    for attr, value in vars(footer).items():
       if attr != '_unrecognized_lines':
         setattr(self, attr, value)
       else:
@@ -548,7 +548,12 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     :returns: **True** if we meet the given consensus-method, and **False** otherwise
     """
 
-    return self._header.meets_consensus_method(method)
+    if self.consensus_method is not None:
+      return self.consensus_method >= method
+    elif self.consensus_methods is not None:
+      return bool([x for x in self.consensus_methods if x >= method])
+    else:
+      return False  # malformed document
 
   def _compare(self, other, method):
     if not isinstance(other, NetworkStatusDocumentV3):
@@ -911,7 +916,7 @@ class _DocumentFooter(object):
     'directory-signature': _parse_directory_signature_line,
   }
 
-  def __init__(self, document_file, validate, header):
+  def __init__(self, document_file, validate, document):
     self.signatures = []
     self.bandwidth_weights = {}
     self._unrecognized_lines = []
@@ -922,24 +927,24 @@ class _DocumentFooter(object):
       return  # footer is optional and there's nothing to parse
 
     entries = _get_descriptor_components(content, validate)
-    self._parse(entries, validate, header)
+    self._parse(entries, validate, document)
 
     if validate:
       # Check that the footer has the right initial line. Prior to consensus
       # method 9 it's a 'directory-signature' and after that footers start with
       # 'directory-footer'.
 
-      if header.meets_consensus_method(9):
+      if document.meets_consensus_method(9):
         if list(entries.keys())[0] != 'directory-footer':
           raise ValueError("Network status document's footer should start with a 'directory-footer' line in consensus-method 9 or later")
       else:
         if list(entries.keys())[0] != 'directory-signature':
           raise ValueError("Network status document's footer should start with a 'directory-signature' line prior to consensus-method 9")
 
-      _check_for_missing_and_disallowed_fields(header, entries, FOOTER_STATUS_DOCUMENT_FIELDS)
+      _check_for_missing_and_disallowed_fields(document, entries, FOOTER_STATUS_DOCUMENT_FIELDS)
       _check_for_misordered_fields(entries, FOOTER_FIELDS)
 
-  def _parse(self, entries, validate, header):
+  def _parse(self, entries, validate, document):
     for keyword, values in list(entries.items()):
       value, block_type, block_contents = values[0]
       line = '%s %s' % (keyword, value)
@@ -948,7 +953,7 @@ class _DocumentFooter(object):
       # * 'directory-signature' in a consensus
 
       if validate and len(values) > 1 and keyword in FOOTER_FIELDS:
-        if not (keyword == 'directory-signature' and header.is_consensus):
+        if not (keyword == 'directory-signature' and document.is_consensus):
           raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
 
       try:
@@ -961,13 +966,13 @@ class _DocumentFooter(object):
           raise exc
 
 
-def _check_for_missing_and_disallowed_fields(header, entries, fields):
+def _check_for_missing_and_disallowed_fields(document, entries, fields):
   """
   Checks that we have mandatory fields for our type, and that we don't have
   any fields exclusive to the other (ie, no vote-only fields appear in a
   consensus or vice versa).
 
-  :param _DocumentHeader header: document header
+  :param NetworkStatusDocumentV3 document: network status document
   :param dict entries: ordered keyword/value mappings of the header or footer
   :param list fields: expected field attributes (either
     **HEADER_STATUS_DOCUMENT_FIELDS** or **FOOTER_STATUS_DOCUMENT_FIELDS**)
@@ -978,11 +983,11 @@ def _check_for_missing_and_disallowed_fields(header, entries, fields):
   missing_fields, disallowed_fields = [], []
 
   for field, in_votes, in_consensus, mandatory in fields:
-    if mandatory and ((header.is_consensus and in_consensus) or (header.is_vote and in_votes)):
+    if mandatory and ((document.is_consensus and in_consensus) or (document.is_vote and in_votes)):
       # mandatory field, check that we have it
       if field not in entries.keys():
         missing_fields.append(field)
-    elif (header.is_consensus and not in_consensus) or (header.is_vote and not in_votes):
+    elif (document.is_consensus and not in_consensus) or (document.is_vote and not in_votes):
       # field we shouldn't have, check that we don't
       if field in entries.keys():
         disallowed_fields.append(field)
