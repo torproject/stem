@@ -6,6 +6,12 @@ import itertools
 import unittest
 
 try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
+try:
   from StringIO import StringIO
 except ImportError:
   from io import StringIO
@@ -137,7 +143,7 @@ class TestTutorialExamples(unittest.TestCase):
     if stem.prereq.is_python_3():
       self.assertCountEqual(expected.splitlines(), actual.splitlines())
     else:
-      self.assertListEqual(expected.splitlines(), actual.splitlines())
+      self.assertEquals(sorted(expected.splitlines()), sorted(actual.splitlines()))
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
@@ -286,7 +292,7 @@ class TestTutorialExamples(unittest.TestCase):
       # Query all authority votes asynchronously.
 
       downloader = remote.DescriptorDownloader(document_handler = DocumentHandler.DOCUMENT)
-      queries = {}
+      queries = OrderedDict()
 
       for name, authority in remote.get_authorities().items():
         if authority.v3ident is None:
@@ -357,6 +363,7 @@ class TestTutorialExamples(unittest.TestCase):
     ]
 
     tutorial_example()
+
     self.assert_equal_unordered(COMPARE_FLAGS_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
