@@ -382,6 +382,7 @@ class Descriptor(object):
     self._archive_path = None
     self._raw_contents = contents
     self._lazy_loading = lazy_load
+    self._entries = {}
     self._unrecognized_lines = []
 
   def get_path(self):
@@ -432,16 +433,20 @@ class Descriptor(object):
 
     return list(self._unrecognized_lines)
 
-  def _parse(self, entries, validate):
+  def _parse(self, entries, validate, parser_for_line = None):
     """
     Parses a series of 'keyword => (value, pgp block)' mappings and applies
     them as attributes.
 
     :param dict entries: descriptor contents to be applied
     :param bool validate: checks the validity of descriptor content if True
+    :param dict parsers: mapping of lines to the function for parsing it
 
     :raises: **ValueError** if an error occurs in validation
     """
+
+    if parser_for_line is None:
+      parser_for_line = self.PARSER_FOR_LINE
 
     # set defaults
 
@@ -450,8 +455,8 @@ class Descriptor(object):
 
     for keyword, values in list(entries.items()):
       try:
-        if keyword in self.PARSER_FOR_LINE:
-          self.PARSER_FOR_LINE[keyword](self, entries)
+        if keyword in parser_for_line:
+          parser_for_line[keyword](self, entries)
         else:
           for value, block_type, block_contents in values:
             line = '%s %s' % (keyword, value)

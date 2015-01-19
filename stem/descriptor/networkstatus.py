@@ -432,6 +432,39 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
       raise ValueError("Network status document (v2) are expected to start with a 'network-status-version' line:\n%s" % str(self))
 
 
+def _parse_directory_footer_line(descriptor, entries):
+  # nothing to parse, simply checking that we don't have a value
+
+  value = _value('directory-footer', entries)
+
+  if value:
+    raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got 'directory-footer %s'" % value)
+
+
+def _parse_footer_directory_signature_line(descriptor, entries):
+  signatures = []
+
+  for sig_value, block_type, block_contents in entries['directory-signature']:
+    if sig_value.count(' ') not in (1, 2):
+      raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST', received: %s" % sig_value)
+
+    if not block_contents or block_type != 'SIGNATURE':
+      raise ValueError("'directory-signature' should be followed by a SIGNATURE block, but was a %s" % block_type)
+
+    if sig_value.count(' ') == 1:
+      method = 'sha1'  # default if none was provided
+      fingerprint, key_digest = sig_value.split(' ', 1)
+    else:
+      method, fingerprint, key_digest = sig_value.split(' ', 2)
+
+    signatures.append(DocumentSignature(method, fingerprint, key_digest, block_contents, True))
+
+  descriptor.signatures = signatures
+
+
+_parse_bandwidth_weights_line = lambda descriptor, entries: setattr(descriptor, 'bandwidth_weights', _parse_int_mappings('bandwidth-weights', _value('bandwidth-weights', entries), True))
+
+
 class NetworkStatusDocumentV3(NetworkStatusDocument):
   """
   Version 3 network status document. This could be either a vote or consensus.
@@ -476,6 +509,17 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   a default value, others are left as None if undefined
   """
 
+  ATTRIBUTES = {
+    'signatures': ([], _parse_footer_directory_signature_line),
+    'bandwidth_weights': ({}, _parse_bandwidth_weights_line),
+  }
+
+  FOOTER_PARSER_FOR_LINE = {
+    'directory-footer': _parse_directory_footer_line,
+    'bandwidth-weights': _parse_bandwidth_weights_line,
+    'directory-signature': _parse_footer_directory_signature_line,
+  }
+
   def __init__(self, raw_content, validate = True, default_params = True):
     """
     Parse a v3 network status document.
@@ -488,7 +532,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     :raises: **ValueError** if the document is invalid
     """
 
-    super(NetworkStatusDocumentV3, self).__init__(raw_content)
+    super(NetworkStatusDocumentV3, self).__init__(raw_content, lazy_load = not validate)
     document_file = io.BytesIO(raw_content)
 
     header = _DocumentHeader(document_file, validate, default_params)
@@ -528,14 +572,14 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
 
-    footer = _DocumentFooter(document_file, validate, self)
+    self._footer(document_file, validate)
 
-    # merge header attributes into us
-    for attr, value in vars(footer).items():
-      if attr != '_unrecognized_lines':
-        setattr(self, attr, value)
-      else:
-        self._unrecognized_lines += value
+  def get_unrecognized_lines(self):
+    if self._lazy_loading:
+      self._parse(self._footer_entries, False, parser_for_line = self.FOOTER_PARSER_FOR_LINE)
+      self._lazy_loading = False
+
+    return super(NetworkStatusDocumentV3, self).get_unrecognized_lines()
 
   def meets_consensus_method(self, method):
     """
@@ -560,6 +604,43 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       return False
 
     return method(str(self).strip(), str(other).strip())
+
+  def _footer(self, document_file, validate):
+    content = stem.util.str_tools._to_unicode(document_file.read())
+
+    if content:
+      entries = _get_descriptor_components(content, validate)
+    else:
+      entries = {}
+
+    if validate:
+      for keyword, values in list(entries.items()):
+        # all known footer fields can only appear once except...
+        # * 'directory-signature' in a consensus
+
+        if len(values) > 1 and keyword in FOOTER_FIELDS:
+          if not (keyword == 'directory-signature' and self.is_consensus):
+            raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
+
+      self._parse(entries, validate, parser_for_line = self.FOOTER_PARSER_FOR_LINE)
+
+      # Check that the footer has the right initial line. Prior to consensus
+      # method 9 it's a 'directory-signature' and after that footers start with
+      # 'directory-footer'.
+
+      if entries:
+        if self.meets_consensus_method(9):
+          if list(entries.keys())[0] != 'directory-footer':
+            raise ValueError("Network status document's footer should start with a 'directory-footer' line in consensus-method 9 or later")
+        else:
+          if list(entries.keys())[0] != 'directory-signature':
+            raise ValueError("Network status document's footer should start with a 'directory-signature' line prior to consensus-method 9")
+
+        _check_for_missing_and_disallowed_fields(self, entries, FOOTER_STATUS_DOCUMENT_FIELDS)
+        _check_for_misordered_fields(entries, FOOTER_FIELDS)
+    else:
+      self._footer_entries = entries
+      self._entries.update(entries)
 
   def __hash__(self):
     return hash(str(self).strip())
@@ -874,96 +955,6 @@ class _DocumentHeader(object):
 
       if value < minimum or value > maximum:
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
-
-
-def _parse_directory_footer_line(descriptor, entries):
-  # nothing to parse, simply checking that we don't have a value
-
-  value = _value('directory-footer', entries)
-
-  if value:
-    raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got 'directory-footer %s'" % value)
-
-
-def _parse_directory_signature_line(descriptor, entries):
-  signatures = []
-
-  for sig_value, block_type, block_contents in entries['directory-signature']:
-    if sig_value.count(' ') not in (1, 2):
-      raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST', received: %s" % sig_value)
-
-    if not block_contents or block_type != 'SIGNATURE':
-      raise ValueError("'directory-signature' should be followed by a SIGNATURE block, but was a %s" % block_type)
-
-    if sig_value.count(' ') == 1:
-      method = 'sha1'  # default if none was provided
-      fingerprint, key_digest = sig_value.split(' ', 1)
-    else:
-      method, fingerprint, key_digest = sig_value.split(' ', 2)
-
-    signatures.append(DocumentSignature(method, fingerprint, key_digest, block_contents, True))
-
-  descriptor.signatures = signatures
-
-
-_parse_bandwidth_weights_line = lambda descriptor, entries: setattr(descriptor, 'bandwidth_weights', _parse_int_mappings('bandwidth-weights', _value('bandwidth-weights', entries), True))
-
-
-class _DocumentFooter(object):
-  PARSER_FOR_LINE = {
-    'directory-footer': _parse_directory_footer_line,
-    'bandwidth-weights': _parse_bandwidth_weights_line,
-    'directory-signature': _parse_directory_signature_line,
-  }
-
-  def __init__(self, document_file, validate, document):
-    self.signatures = []
-    self.bandwidth_weights = {}
-    self._unrecognized_lines = []
-
-    content = stem.util.str_tools._to_unicode(document_file.read())
-
-    if not content:
-      return  # footer is optional and there's nothing to parse
-
-    entries = _get_descriptor_components(content, validate)
-    self._parse(entries, validate, document)
-
-    if validate:
-      # Check that the footer has the right initial line. Prior to consensus
-      # method 9 it's a 'directory-signature' and after that footers start with
-      # 'directory-footer'.
-
-      if document.meets_consensus_method(9):
-        if list(entries.keys())[0] != 'directory-footer':
-          raise ValueError("Network status document's footer should start with a 'directory-footer' line in consensus-method 9 or later")
-      else:
-        if list(entries.keys())[0] != 'directory-signature':
-          raise ValueError("Network status document's footer should start with a 'directory-signature' line prior to consensus-method 9")
-
-      _check_for_missing_and_disallowed_fields(document, entries, FOOTER_STATUS_DOCUMENT_FIELDS)
-      _check_for_misordered_fields(entries, FOOTER_FIELDS)
-
-  def _parse(self, entries, validate, document):
-    for keyword, values in list(entries.items()):
-      value, block_type, block_contents = values[0]
-      line = '%s %s' % (keyword, value)
-
-      # all known footer fields can only appear once except...
-      # * 'directory-signature' in a consensus
-
-      if validate and len(values) > 1 and keyword in FOOTER_FIELDS:
-        if not (keyword == 'directory-signature' and document.is_consensus):
-          raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
-
-      try:
-        if keyword in self.PARSER_FOR_LINE:
-          self.PARSER_FOR_LINE[keyword](self, entries)
-        else:
-          self._unrecognized_lines.append(line)
-      except ValueError as exc:
-        if validate:
-          raise exc
 
 
 def _check_for_missing_and_disallowed_fields(document, entries, fields):
