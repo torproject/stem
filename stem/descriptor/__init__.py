@@ -451,7 +451,8 @@ class Descriptor(object):
     # set defaults
 
     for attr in self.ATTRIBUTES:
-      setattr(self, attr, copy.copy(self.ATTRIBUTES[attr][0]))
+      if not hasattr(self, attr):
+        setattr(self, attr, copy.copy(self.ATTRIBUTES[attr][0]))
 
     for keyword, values in list(entries.items()):
       try:
