@@ -50,6 +50,7 @@ __all__ = [
   'Descriptor',
 ]
 
+import copy
 import os
 import re
 import tarfile
@@ -310,15 +311,93 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
 
 
+def _value(line, entries):
+  return entries[line][0][0]
+
+
+def _values(line, entries):
+  return [entry[0] for entry in entries[line]]
+
+
+def _parse_simple_line(keyword, attribute):
+  def _parse(descriptor, entries):
+    setattr(descriptor, attribute, _value(keyword, entries))
+
+  return _parse
+
+
+def _parse_bytes_line(keyword, attribute):
+  def _parse(descriptor, entries):
+    line_match = re.search(stem.util.str_tools._to_bytes('^(opt )?%s(?:[%s]+(.*))?$' % (keyword, WHITESPACE)), descriptor.get_bytes(), re.MULTILINE)
+    result = None
+
+    if line_match:
+      value = line_match.groups()[1]
+      result = b'' if value is None else value
+
+    setattr(descriptor, attribute, result)
+
+  return _parse
+
+
+def _parse_timestamp_line(keyword, attribute):
+  # "<keyword>" YYYY-MM-DD HH:MM:SS
+
+  def _parse(descriptor, entries):
+    value = _value(keyword, entries)
+
+    try:
+      setattr(descriptor, attribute, stem.util.str_tools._parse_timestamp(value))
+    except ValueError:
+      raise ValueError("Timestamp on %s line wasn't parsable: %s %s" % (keyword, keyword, value))
+
+  return _parse
+
+
+def _parse_forty_character_hex(keyword, attribute):
+  # format of fingerprints, sha1 digests, etc
+
+  def _parse(descriptor, entries):
+    value = _value(keyword, entries)
+
+    if not stem.util.tor_tools.is_hex_digits(value, 40):
+      raise ValueError('%s line had an invalid value (should be 40 hex characters): %s %s' % (keyword, keyword, value))
+
+    setattr(descriptor, attribute, value)
+
+  return _parse
+
+
+def _parse_key_block(keyword, attribute, expected_block_type, value_attribute = None):
+  def _parse(descriptor, entries):
+    value, block_type, block_contents = entries[keyword][0]
+
+    if not block_contents or block_type != expected_block_type:
+      raise ValueError("'%s' should be followed by a %s block, but was a %s" % (keyword, expected_block_type, block_type))
+
+    setattr(descriptor, attribute, block_contents)
+
+    if value_attribute:
+      setattr(descriptor, value_attribute, value)
+
+  return _parse
+
+
 class Descriptor(object):
   """
   Common parent for all types of descriptors.
   """
 
-  def __init__(self, contents):
+  ATTRIBUTES = {}  # mapping of 'attribute' => (default_value, parsing_function)
+  PARSER_FOR_LINE = {}  # line keyword to its associated parsing function
+
+  def __init__(self, contents, lazy_load = False):
     self._path = None
     self._archive_path = None
     self._raw_contents = contents
+    self._lazy_loading = lazy_load
+    self._entries = {}
+    self._unrecognized_lines = []
 
   def get_path(self):
     """
@@ -361,7 +440,49 @@ class Descriptor(object):
     :returns: **list** of lines of unrecognized content
     """
 
-    raise NotImplementedError
+    if self._lazy_loading:
+      # we need to go ahead and parse the whole document to figure this out
+      self._parse(self._entries, False)
+      self._lazy_loading = False
+
+    return list(self._unrecognized_lines)
+
+  def _parse(self, entries, validate, parser_for_line = None):
+    """
+    Parses a series of 'keyword => (value, pgp block)' mappings and applies
+    them as attributes.
+
+    :param dict entries: descriptor contents to be applied
+    :param bool validate: checks the validity of descriptor content if True
+    :param dict parsers: mapping of lines to the function for parsing it
+
+    :raises: **ValueError** if an error occurs in validation
+    """
+
+    if parser_for_line is None:
+      parser_for_line = self.PARSER_FOR_LINE
+
+    # set defaults
+
+    for attr in self.ATTRIBUTES:
+      if not hasattr(self, attr):
+        setattr(self, attr, copy.copy(self.ATTRIBUTES[attr][0]))
+
+    for keyword, values in list(entries.items()):
+      try:
+        if keyword in parser_for_line:
+          parser_for_line[keyword](self, entries)
+        else:
+          for value, block_type, block_contents in values:
+            line = '%s %s' % (keyword, value)
+
+            if block_contents:
+              line += '\n%s' % block_contents
+
+            self._unrecognized_lines.append(line)
+      except ValueError as exc:
+        if validate:
+          raise exc
 
   def _set_path(self, path):
     self._path = path
@@ -372,38 +493,28 @@ class Descriptor(object):
   def _name(self, is_plural = False):
     return str(type(self))
 
+  def __getattr__(self, name):
+    # If attribute isn't already present we might be lazy loading it...
+
+    if self._lazy_loading and name in self.ATTRIBUTES:
+      default, parsing_function = self.ATTRIBUTES[name]
+
+      try:
+        parsing_function(self, self._entries)
+      except (ValueError, KeyError):
+        try:
+          # despite having a validation failure check to see if we set something
+          return super(Descriptor, self).__getattribute__(name)
+        except AttributeError:
+          setattr(self, name, copy.copy(default))
+
+    return super(Descriptor, self).__getattribute__(name)
+
   def __str__(self):
     if stem.prereq.is_python_3():
       return stem.util.str_tools._to_unicode(self._raw_contents)
     else:
       return self._raw_contents
-
-
-def _get_bytes_field(keyword, content):
-  """
-  Provides the value corresponding to the given keyword. This is handy to fetch
-  values specifically allowed to be arbitrary bytes prior to converting to
-  unicode.
-
-  :param str keyword: line to look up
-  :param bytes content: content to look through
-
-  :returns: **bytes** value on the given line, **None** if the line doesn't
-    exist
-
-  :raises: **ValueError** if the content isn't bytes
-  """
-
-  if not isinstance(content, bytes):
-    raise ValueError('Content must be bytes, got a %s' % type(content))
-
-  line_match = re.search(stem.util.str_tools._to_bytes('^(opt )?%s(?:[%s]+(.*))?$' % (keyword, WHITESPACE)), content, re.MULTILINE)
-
-  if line_match:
-    value = line_match.groups()[1]
-    return b'' if value is None else value
-  else:
-    return None
 
 
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):
@@ -537,6 +648,9 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     mappings. If a extra_keywords was provided then this instead provides a two
     value tuple, the second being a list of those entries.
   """
+
+  if isinstance(raw_contents, bytes):
+    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
   entries = OrderedDict()
   extra_entries = []  # entries with a keyword in extra_keywords

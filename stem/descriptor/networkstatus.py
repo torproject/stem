@@ -62,6 +62,17 @@ from stem.descriptor import (
   DocumentHandler,
   _get_descriptor_components,
   _read_until_keywords,
+  _value,
+  _parse_simple_line,
+  _parse_timestamp_line,
+  _parse_forty_character_hex,
+  _parse_key_block,
+)
+
+from stem.descriptor.router_status_entry import (
+  RouterStatusEntryV2,
+  RouterStatusEntryV3,
+  RouterStatusEntryMicroV3,
 )
 
 # Version 2 network status document fields, tuples of the form...
@@ -148,6 +159,37 @@ KEY_CERTIFICATE_PARAMS = (
   ('dir-key-certification', True),
 )
 
+# all parameters are constrained to int32 range
+MIN_PARAM, MAX_PARAM = -2147483648, 2147483647
+
+PARAM_RANGE = {
+  'circwindow': (100, 1000),
+  'CircuitPriorityHalflifeMsec': (-1, MAX_PARAM),
+  'perconnbwrate': (-1, MAX_PARAM),
+  'perconnbwburst': (-1, MAX_PARAM),
+  'refuseunknownexits': (0, 1),
+  'bwweightscale': (1, MAX_PARAM),
+  'cbtdisabled': (0, 1),
+  'cbtnummodes': (1, 20),
+  'cbtrecentcount': (3, 1000),
+  'cbtmaxtimeouts': (3, 10000),
+  'cbtmincircs': (1, 10000),
+  'cbtquantile': (10, 99),
+  'cbtclosequantile': (MIN_PARAM, 99),
+  'cbttestfreq': (1, MAX_PARAM),
+  'cbtmintimeout': (500, MAX_PARAM),
+  'UseOptimisticData': (0, 1),
+  'Support022HiddenServices': (0, 1),
+  'usecreatefast': (0, 1),
+  'UseNTorHandshake': (0, 1),
+  'FastFlagMinThreshold': (4, MAX_PARAM),
+  'NumDirectoryGuards': (0, 10),
+  'NumEntryGuards': (1, 10),
+  'GuardLifetime': (2592000, 157766400),  # min: 30 days, max: 1826 days
+  'NumNTorsPerTAP': (1, 100000),
+  'AllowNonearlyExtend': (0, 1),
+}
+
 
 def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False, document_handler = DocumentHandler.ENTRIES, **kwargs):
   """
@@ -179,16 +221,11 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
     document_type = NetworkStatusDocumentV3
 
   if document_type == NetworkStatusDocumentV2:
-    document_type = NetworkStatusDocumentV2
-    router_type = stem.descriptor.router_status_entry.RouterStatusEntryV2
+    document_type, router_type = NetworkStatusDocumentV2, RouterStatusEntryV2
   elif document_type == NetworkStatusDocumentV3:
-    if not is_microdescriptor:
-      router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
-    else:
-      router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
+    router_type = RouterStatusEntryMicroV3 if is_microdescriptor else RouterStatusEntryV3
   elif document_type == BridgeNetworkStatusDocument:
-    document_type = BridgeNetworkStatusDocument
-    router_type = stem.descriptor.router_status_entry.RouterStatusEntryV2
+    document_type, router_type = BridgeNetworkStatusDocument, RouterStatusEntryV2
   else:
     raise ValueError("Document type %i isn't recognized (only able to parse v2, v3, and bridge)" % document_type)
 
@@ -265,12 +302,51 @@ class NetworkStatusDocument(Descriptor):
   Common parent for network status documents.
   """
 
-  def __init__(self, raw_content):
-    super(NetworkStatusDocument, self).__init__(raw_content)
-    self._unrecognized_lines = []
 
-  def get_unrecognized_lines(self):
-    return list(self._unrecognized_lines)
+def _parse_version_line(keyword, attribute, expected_version):
+  def _parse(descriptor, entries):
+    value = _value(keyword, entries)
+
+    if not value.isdigit():
+      raise ValueError('Document has a non-numeric version: %s %s' % (keyword, value))
+
+    setattr(descriptor, attribute, int(value))
+
+    if int(value) != expected_version:
+      raise ValueError("Expected a version %i document, but got version '%s' instead" % (expected_version, value))
+
+  return _parse
+
+
+def _parse_dir_source_line(descriptor, entries):
+  value = _value('dir-source', entries)
+  dir_source_comp = value.split()
+
+  if len(dir_source_comp) < 3:
+    raise ValueError("The 'dir-source' line of a v2 network status document must have three values: dir-source %s" % value)
+
+  if not dir_source_comp[0]:
+    # https://trac.torproject.org/7055
+    raise ValueError("Authority's hostname can't be blank: dir-source %s" % value)
+  elif not stem.util.connection.is_valid_ipv4_address(dir_source_comp[1]):
+    raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[1])
+  elif not stem.util.connection.is_valid_port(dir_source_comp[2], allow_zero = True):
+    raise ValueError("Authority's DirPort is invalid: %s" % dir_source_comp[2])
+
+  descriptor.hostname = dir_source_comp[0]
+  descriptor.address = dir_source_comp[1]
+  descriptor.dir_port = None if dir_source_comp[2] == '0' else int(dir_source_comp[2])
+
+
+_parse_network_status_version_line = _parse_version_line('network-status-version', 'version', 2)
+_parse_fingerprint_line = _parse_forty_character_hex('fingerprint', 'fingerprint')
+_parse_contact_line = _parse_simple_line('contact', 'contact')
+_parse_dir_signing_key_line = _parse_key_block('dir-signing-key', 'signing_key', 'RSA PUBLIC KEY')
+_parse_client_versions_line = lambda descriptor, entries: setattr(descriptor, 'client_versions', _value('client-versions', entries).split(','))
+_parse_server_versions_line = lambda descriptor, entries: setattr(descriptor, 'server_versions', _value('server-versions', entries).split(','))
+_parse_published_line = _parse_timestamp_line('published', 'published')
+_parse_dir_options_line = lambda descriptor, entries: setattr(descriptor, 'options', _value('dir-options', entries).split())
+_parse_directory_signature_line = _parse_key_block('directory-signature', 'signature', 'SIGNATURE', value_attribute = 'signing_authority')
 
 
 class NetworkStatusDocumentV2(NetworkStatusDocument):
@@ -302,24 +378,39 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   a default value, others are left as **None** if undefined
   """
 
+  ATTRIBUTES = {
+    'version': (None, _parse_network_status_version_line),
+    'hostname': (None, _parse_dir_source_line),
+    'address': (None, _parse_dir_source_line),
+    'dir_port': (None, _parse_dir_source_line),
+    'fingerprint': (None, _parse_fingerprint_line),
+    'contact': (None, _parse_contact_line),
+    'signing_key': (None, _parse_dir_signing_key_line),
+
+    'client_versions': ([], _parse_client_versions_line),
+    'server_versions': ([], _parse_server_versions_line),
+    'published': (None, _parse_published_line),
+    'options': ([], _parse_dir_options_line),
+
+    'signing_authority': (None, _parse_directory_signature_line),
+    'signatures': (None, _parse_directory_signature_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'network-status-version': _parse_network_status_version_line,
+    'dir-source': _parse_dir_source_line,
+    'fingerprint': _parse_fingerprint_line,
+    'contact': _parse_contact_line,
+    'dir-signing-key': _parse_dir_signing_key_line,
+    'client-versions': _parse_client_versions_line,
+    'server-versions': _parse_server_versions_line,
+    'published': _parse_published_line,
+    'dir-options': _parse_dir_options_line,
+    'directory-signature': _parse_directory_signature_line,
+  }
+
   def __init__(self, raw_content, validate = True):
-    super(NetworkStatusDocumentV2, self).__init__(raw_content)
-
-    self.version = None
-    self.hostname = None
-    self.address = None
-    self.dir_port = None
-    self.fingerprint = None
-    self.contact = None
-    self.signing_key = None
-
-    self.client_versions = []
-    self.server_versions = []
-    self.published = None
-    self.options = []
-
-    self.signing_authority = None
-    self.signatures = None
+    super(NetworkStatusDocumentV2, self).__init__(raw_content, lazy_load = not validate)
 
     # Splitting the document from the routers. Unlike v3 documents we're not
     # bending over backwards on the validation by checking the field order or
@@ -332,7 +423,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     router_iter = stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
-      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
+      entry_class = RouterStatusEntryV2,
       entry_keyword = ROUTERS_START,
       section_end_keywords = (V2_FOOTER_START,),
       extra_args = (self,),
@@ -340,103 +431,19 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
 
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
 
-    document_content += b'\n' + document_file.read()
-    document_content = stem.util.str_tools._to_unicode(document_content)
-
-    entries = _get_descriptor_components(document_content, validate)
+    entries = _get_descriptor_components(document_content + b'\n' + document_file.read(), validate)
 
     if validate:
       self._check_constraints(entries)
+      self._parse(entries, validate)
 
-    self._parse(entries, validate)
+      # 'client-versions' and 'server-versions' are only required if 'Versions'
+      # is among the options
 
-  def _parse(self, entries, validate):
-    for keyword, values in list(entries.items()):
-      value, block_type, block_contents = values[0]
-
-      line = '%s %s' % (keyword, value)  # original line
-
-      if block_contents:
-        line += '\n%s' % block_contents
-
-      if keyword == 'network-status-version':
-        if not value.isdigit():
-          if not validate:
-            continue
-
-          raise ValueError('Network status document has a non-numeric version: %s' % line)
-
-        self.version = int(value)
-
-        if validate and self.version != 2:
-          raise ValueError("Expected a version 2 network status document, got version '%s' instead" % self.version)
-      elif keyword == 'dir-source':
-        dir_source_comp = value.split()
-
-        if len(dir_source_comp) < 3:
-          if not validate:
-            continue
-
-          raise ValueError("The 'dir-source' line of a v2 network status document must have three values: %s" % line)
-
-        if validate:
-          if not dir_source_comp[0]:
-            # https://trac.torproject.org/7055
-            raise ValueError("Authority's hostname can't be blank: %s" % line)
-          elif not stem.util.connection.is_valid_ipv4_address(dir_source_comp[1]):
-            raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[1])
-          elif not stem.util.connection.is_valid_port(dir_source_comp[2], allow_zero = True):
-            raise ValueError("Authority's DirPort is invalid: %s" % dir_source_comp[2])
-        elif not dir_source_comp[2].isdigit():
-          continue
-
-        self.hostname = dir_source_comp[0]
-        self.address = dir_source_comp[1]
-        self.dir_port = None if dir_source_comp[2] == '0' else int(dir_source_comp[2])
-      elif keyword == 'fingerprint':
-        if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError("Authority's fingerprint in a v2 network status document is malformed: %s" % line)
-
-        self.fingerprint = value
-      elif keyword == 'contact':
-        self.contact = value
-      elif keyword == 'dir-signing-key':
-        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
-          raise ValueError("'dir-signing-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
-
-        self.signing_key = block_contents
-      elif keyword in ('client-versions', 'server-versions'):
-        # v2 documents existed while there were tor versions using the 'old'
-        # style, hence we aren't attempting to parse them
-
-        for version_str in value.split(','):
-          if keyword == 'client-versions':
-            self.client_versions.append(version_str)
-          elif keyword == 'server-versions':
-            self.server_versions.append(version_str)
-      elif keyword == 'published':
-        try:
-          self.published = stem.util.str_tools._parse_timestamp(value)
-        except ValueError:
-          if validate:
-            raise ValueError("Version 2 network status document's 'published' time wasn't parsable: %s" % value)
-      elif keyword == 'dir-options':
-        self.options = value.split()
-      elif keyword == 'directory-signature':
-        if validate and (not block_contents or block_type != 'SIGNATURE'):
-          raise ValueError("'directory-signature' should be followed by a SIGNATURE block: %s" % line)
-
-        self.signing_authority = value
-        self.signature = block_contents
-      else:
-        self._unrecognized_lines.append(line)
-
-    # 'client-versions' and 'server-versions' are only required if 'Versions'
-    # is among the options
-
-    if validate and 'Versions' in self.options:
-      if not ('client-versions' in entries and 'server-versions' in entries):
+      if 'Versions' in self.options and not ('client-versions' in entries and 'server-versions' in entries):
         raise ValueError("Version 2 network status documents must have a 'client-versions' and 'server-versions' when 'Versions' is listed among its dir-options:\n%s" % str(self))
+    else:
+      self._entries = entries
 
   def _check_constraints(self, entries):
     required_fields = [field for (field, is_mandatory) in NETWORK_STATUS_V2_FIELDS if is_mandatory]
@@ -452,6 +459,192 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
 
     if 'network-status-version' != list(entries.keys())[0]:
       raise ValueError("Network status document (v2) are expected to start with a 'network-status-version' line:\n%s" % str(self))
+
+
+def _parse_header_network_status_version_line(descriptor, entries):
+  # "network-status-version" version
+
+  value = _value('network-status-version', entries)
+
+  if ' ' in value:
+    version, flavor = value.split(' ', 1)
+  else:
+    version, flavor = value, None
+
+  if not version.isdigit():
+    raise ValueError('Network status document has a non-numeric version: network-status-version %s' % value)
+
+  descriptor.version = int(version)
+  descriptor.version_flavor = flavor
+  descriptor.is_microdescriptor = flavor == 'microdesc'
+
+  if descriptor.version != 3:
+    raise ValueError("Expected a version 3 network status document, got version '%s' instead" % descriptor.version)
+
+
+def _parse_header_vote_status_line(descriptor, entries):
+  # "vote-status" type
+  #
+  # The consensus-method and consensus-methods fields are optional since
+  # they weren't included in version 1. Setting a default now that we
+  # know if we're a vote or not.
+
+  value = _value('vote-status', entries)
+
+  if value == 'consensus':
+    descriptor.is_consensus, descriptor.is_vote = True, False
+  elif value == 'vote':
+    descriptor.is_consensus, descriptor.is_vote = False, True
+  else:
+    raise ValueError("A network status document's vote-status line can only be 'consensus' or 'vote', got '%s' instead" % value)
+
+
+def _parse_header_consensus_methods_line(descriptor, entries):
+  # "consensus-methods" IntegerList
+
+  if descriptor._lazy_loading and descriptor.is_vote:
+    descriptor.consensus_methods = [1]
+
+  value, consensus_methods = _value('consensus-methods', entries), []
+
+  for entry in value.split(' '):
+    if not entry.isdigit():
+      raise ValueError("A network status document's consensus-methods must be a list of integer values, but was '%s'" % value)
+
+    consensus_methods.append(int(entry))
+
+  descriptor.consensus_methods = consensus_methods
+
+
+def _parse_header_consensus_method_line(descriptor, entries):
+  # "consensus-method" Integer
+
+  if descriptor._lazy_loading and descriptor.is_consensus:
+    descriptor.consensus_method = 1
+
+  value = _value('consensus-method', entries)
+
+  if not value.isdigit():
+    raise ValueError("A network status document's consensus-method must be an integer, but was '%s'" % value)
+
+  descriptor.consensus_method = int(value)
+
+
+def _parse_header_voting_delay_line(descriptor, entries):
+  # "voting-delay" VoteSeconds DistSeconds
+
+  value = _value('voting-delay', entries)
+  value_comp = value.split(' ')
+
+  if len(value_comp) == 2 and value_comp[0].isdigit() and value_comp[1].isdigit():
+    descriptor.vote_delay = int(value_comp[0])
+    descriptor.dist_delay = int(value_comp[1])
+  else:
+    raise ValueError("A network status document's 'voting-delay' line must be a pair of integer values, but was '%s'" % value)
+
+
+def _parse_versions_line(keyword, attribute):
+  def _parse(descriptor, entries):
+    value, entries = _value(keyword, entries), []
+
+    for entry in value.split(','):
+      try:
+        entries.append(stem.version._get_version(entry))
+      except ValueError:
+        raise ValueError("Network status document's '%s' line had '%s', which isn't a parsable tor version: %s %s" % (keyword, entry, keyword, value))
+
+    setattr(descriptor, attribute, entries)
+
+  return _parse
+
+
+def _parse_header_flag_thresholds_line(descriptor, entries):
+  # "flag-thresholds" SP THRESHOLDS
+
+  value, thresholds = _value('flag-thresholds', entries).strip(), {}
+
+  if value:
+    for entry in value.split(' '):
+      if '=' not in entry:
+        raise ValueError("Network status document's 'flag-thresholds' line is expected to be space separated key=value mappings, got: flag-thresholds %s" % value)
+
+      entry_key, entry_value = entry.split('=', 1)
+
+      try:
+        if entry_value.endswith('%'):
+          # opting for string manipulation rather than just
+          # 'float(entry_value) / 100' because floating point arithmetic
+          # will lose precision
+
+          thresholds[entry_key] = float('0.' + entry_value[:-1].replace('.', '', 1))
+        elif '.' in entry_value:
+          thresholds[entry_key] = float(entry_value)
+        else:
+          thresholds[entry_key] = int(entry_value)
+      except ValueError:
+        raise ValueError("Network status document's 'flag-thresholds' line is expected to have float values, got: flag-thresholds %s" % value)
+
+  descriptor.flag_thresholds = thresholds
+
+
+def _parse_header_parameters_line(descriptor, entries):
+  # "params" [Parameters]
+  # Parameter ::= Keyword '=' Int32
+  # Int32 ::= A decimal integer between -2147483648 and 2147483647.
+  # Parameters ::= Parameter | Parameters SP Parameter
+
+  if descriptor._lazy_loading and descriptor._default_params:
+    descriptor.params = dict(DEFAULT_PARAMS)
+
+  value = _value('params', entries)
+
+  # should only appear in consensus-method 7 or later
+
+  if not descriptor.meets_consensus_method(7):
+    raise ValueError("A network status document's 'params' line should only appear in consensus-method 7 or later")
+
+  if value != '':
+    descriptor.params = _parse_int_mappings('params', value, True)
+    descriptor._check_params_constraints()
+
+
+def _parse_directory_footer_line(descriptor, entries):
+  # nothing to parse, simply checking that we don't have a value
+
+  value = _value('directory-footer', entries)
+
+  if value:
+    raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got 'directory-footer %s'" % value)
+
+
+def _parse_footer_directory_signature_line(descriptor, entries):
+  signatures = []
+
+  for sig_value, block_type, block_contents in entries['directory-signature']:
+    if sig_value.count(' ') not in (1, 2):
+      raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST', received: %s" % sig_value)
+
+    if not block_contents or block_type != 'SIGNATURE':
+      raise ValueError("'directory-signature' should be followed by a SIGNATURE block, but was a %s" % block_type)
+
+    if sig_value.count(' ') == 1:
+      method = 'sha1'  # default if none was provided
+      fingerprint, key_digest = sig_value.split(' ', 1)
+    else:
+      method, fingerprint, key_digest = sig_value.split(' ', 2)
+
+    signatures.append(DocumentSignature(method, fingerprint, key_digest, block_contents, True))
+
+  descriptor.signatures = signatures
+
+
+_parse_header_valid_after_line = _parse_timestamp_line('valid-after', 'valid_after')
+_parse_header_fresh_until_line = _parse_timestamp_line('fresh-until', 'fresh_until')
+_parse_header_valid_until_line = _parse_timestamp_line('valid-until', 'valid_until')
+_parse_header_client_versions_line = _parse_versions_line('client-versions', 'client_versions')
+_parse_header_server_versions_line = _parse_versions_line('server-versions', 'server_versions')
+_parse_header_known_flags_line = lambda descriptor, entries: setattr(descriptor, 'known_flags', [entry for entry in _value('known-flags', entries).split(' ') if entry])
+_parse_footer_bandwidth_weights_line = lambda descriptor, entries: setattr(descriptor, 'bandwidth_weights', _parse_int_mappings('bandwidth-weights', _value('bandwidth-weights', entries), True))
 
 
 class NetworkStatusDocumentV3(NetworkStatusDocument):
@@ -498,6 +691,53 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   a default value, others are left as None if undefined
   """
 
+  ATTRIBUTES = {
+    'version': (None, _parse_header_network_status_version_line),
+    'version_flavor': (None, _parse_header_network_status_version_line),
+    'is_consensus': (True, _parse_header_vote_status_line),
+    'is_vote': (False, _parse_header_vote_status_line),
+    'is_microdescriptor': (False, _parse_header_network_status_version_line),
+    'consensus_methods': ([], _parse_header_consensus_methods_line),
+    'published': (None, _parse_published_line),
+    'consensus_method': (None, _parse_header_consensus_method_line),
+    'valid_after': (None, _parse_header_valid_after_line),
+    'fresh_until': (None, _parse_header_fresh_until_line),
+    'valid_until': (None, _parse_header_valid_until_line),
+    'vote_delay': (None, _parse_header_voting_delay_line),
+    'dist_delay': (None, _parse_header_voting_delay_line),
+    'client_versions': ([], _parse_header_client_versions_line),
+    'server_versions': ([], _parse_header_server_versions_line),
+    'known_flags': ([], _parse_header_known_flags_line),
+    'flag_thresholds': ({}, _parse_header_flag_thresholds_line),
+    'params': ({}, _parse_header_parameters_line),
+
+    'signatures': ([], _parse_footer_directory_signature_line),
+    'bandwidth_weights': ({}, _parse_footer_bandwidth_weights_line),
+  }
+
+  HEADER_PARSER_FOR_LINE = {
+    'network-status-version': _parse_header_network_status_version_line,
+    'vote-status': _parse_header_vote_status_line,
+    'consensus-methods': _parse_header_consensus_methods_line,
+    'consensus-method': _parse_header_consensus_method_line,
+    'published': _parse_published_line,
+    'valid-after': _parse_header_valid_after_line,
+    'fresh-until': _parse_header_fresh_until_line,
+    'valid-until': _parse_header_valid_until_line,
+    'voting-delay': _parse_header_voting_delay_line,
+    'client-versions': _parse_header_client_versions_line,
+    'server-versions': _parse_header_server_versions_line,
+    'known-flags': _parse_header_known_flags_line,
+    'flag-thresholds': _parse_header_flag_thresholds_line,
+    'params': _parse_header_parameters_line,
+  }
+
+  FOOTER_PARSER_FOR_LINE = {
+    'directory-footer': _parse_directory_footer_line,
+    'bandwidth-weights': _parse_footer_bandwidth_weights_line,
+    'directory-signature': _parse_footer_directory_signature_line,
+  }
+
   def __init__(self, raw_content, validate = True, default_params = True):
     """
     Parse a v3 network status document.
@@ -510,17 +750,11 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     :raises: **ValueError** if the document is invalid
     """
 
-    super(NetworkStatusDocumentV3, self).__init__(raw_content)
+    super(NetworkStatusDocumentV3, self).__init__(raw_content, lazy_load = not validate)
     document_file = io.BytesIO(raw_content)
 
-    self._header = _DocumentHeader(document_file, validate, default_params)
-
-    # merge header attributes into us
-    for attr, value in vars(self._header).items():
-      if attr != '_unrecognized_lines':
-        setattr(self, attr, value)
-      else:
-        self._unrecognized_lines += value
+    self._default_params = default_params
+    self._header(document_file, validate)
 
     self.directory_authorities = tuple(stem.descriptor.router_status_entry._parse_file(
       document_file,
@@ -528,36 +762,31 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       entry_class = DirectoryAuthority,
       entry_keyword = AUTH_START,
       section_end_keywords = (ROUTERS_START, FOOTER_START, V2_FOOTER_START),
-      extra_args = (self._header.is_vote,),
+      extra_args = (self.is_vote,),
     ))
 
-    if validate and self._header.is_vote and len(self.directory_authorities) != 1:
+    if validate and self.is_vote and len(self.directory_authorities) != 1:
       raise ValueError('Votes should only have an authority entry for the one that issued it, got %i: %s' % (len(self.directory_authorities), self.directory_authorities))
-
-    if not self._header.is_microdescriptor:
-      router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
-    else:
-      router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
 
     router_iter = stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
-      entry_class = router_type,
+      entry_class = RouterStatusEntryMicroV3 if self.is_microdescriptor else RouterStatusEntryV3,
       entry_keyword = ROUTERS_START,
       section_end_keywords = (FOOTER_START, V2_FOOTER_START),
       extra_args = (self,),
     )
 
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
+    self._footer(document_file, validate)
 
-    self._footer = _DocumentFooter(document_file, validate, self._header)
+  def get_unrecognized_lines(self):
+    if self._lazy_loading:
+      self._parse(self._header_entries, False, parser_for_line = self.HEADER_PARSER_FOR_LINE)
+      self._parse(self._footer_entries, False, parser_for_line = self.FOOTER_PARSER_FOR_LINE)
+      self._lazy_loading = False
 
-    # merge header attributes into us
-    for attr, value in vars(self._footer).items():
-      if attr != '_unrecognized_lines':
-        setattr(self, attr, value)
-      else:
-        self._unrecognized_lines += value
+    return super(NetworkStatusDocumentV3, self).get_unrecognized_lines()
 
   def meets_consensus_method(self, method):
     """
@@ -570,13 +799,97 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     :returns: **True** if we meet the given consensus-method, and **False** otherwise
     """
 
-    return self._header.meets_consensus_method(method)
+    if self.consensus_method is not None:
+      return self.consensus_method >= method
+    elif self.consensus_methods is not None:
+      return bool([x for x in self.consensus_methods if x >= method])
+    else:
+      return False  # malformed document
 
   def _compare(self, other, method):
     if not isinstance(other, NetworkStatusDocumentV3):
       return False
 
     return method(str(self).strip(), str(other).strip())
+
+  def _header(self, document_file, validate):
+    content = bytes.join(b'', _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
+    entries = _get_descriptor_components(content, validate)
+
+    if validate:
+      # all known header fields can only appear once except
+
+      for keyword, values in list(entries.items()):
+        if len(values) > 1 and keyword in HEADER_FIELDS:
+          raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
+
+      if self._default_params:
+        self.params = dict(DEFAULT_PARAMS)
+
+      self._parse(entries, validate, parser_for_line = self.HEADER_PARSER_FOR_LINE)
+
+      _check_for_missing_and_disallowed_fields(self, entries, HEADER_STATUS_DOCUMENT_FIELDS)
+      _check_for_misordered_fields(entries, HEADER_FIELDS)
+
+      # default consensus_method and consensus_methods based on if we're a consensus or vote
+
+      if self.is_consensus and not self.consensus_method:
+        self.consensus_method = 1
+      elif self.is_vote and not self.consensus_methods:
+        self.consensus_methods = [1]
+    else:
+      self._header_entries = entries
+      self._entries.update(entries)
+
+  def _footer(self, document_file, validate):
+    entries = _get_descriptor_components(document_file.read(), validate)
+
+    if validate:
+      for keyword, values in list(entries.items()):
+        # all known footer fields can only appear once except...
+        # * 'directory-signature' in a consensus
+
+        if len(values) > 1 and keyword in FOOTER_FIELDS:
+          if not (keyword == 'directory-signature' and self.is_consensus):
+            raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
+
+      self._parse(entries, validate, parser_for_line = self.FOOTER_PARSER_FOR_LINE)
+
+      # Check that the footer has the right initial line. Prior to consensus
+      # method 9 it's a 'directory-signature' and after that footers start with
+      # 'directory-footer'.
+
+      if entries:
+        if self.meets_consensus_method(9):
+          if list(entries.keys())[0] != 'directory-footer':
+            raise ValueError("Network status document's footer should start with a 'directory-footer' line in consensus-method 9 or later")
+        else:
+          if list(entries.keys())[0] != 'directory-signature':
+            raise ValueError("Network status document's footer should start with a 'directory-signature' line prior to consensus-method 9")
+
+        _check_for_missing_and_disallowed_fields(self, entries, FOOTER_STATUS_DOCUMENT_FIELDS)
+        _check_for_misordered_fields(entries, FOOTER_FIELDS)
+    else:
+      self._footer_entries = entries
+      self._entries.update(entries)
+
+  def _check_params_constraints(self):
+    """
+    Checks that the params we know about are within their documented ranges.
+    """
+
+    for key, value in self.params.items():
+      minimum, maximum = PARAM_RANGE.get(key, (MIN_PARAM, MAX_PARAM))
+
+      # there's a few dynamic parameter ranges
+
+      if key == 'cbtclosequantile':
+        minimum = self.params.get('cbtquantile', minimum)
+      elif key == 'cbtinitialtimeout':
+        minimum = self.params.get('cbtmintimeout', minimum)
+
+      if value < minimum or value > maximum:
+        raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
 
   def __hash__(self):
     return hash(str(self).strip())
@@ -591,344 +904,13 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     return self._compare(other, lambda s, o: s <= o)
 
 
-class _DocumentHeader(object):
-  def __init__(self, document_file, validate, default_params):
-    self.version = None
-    self.version_flavor = None
-    self.is_consensus = True
-    self.is_vote = False
-    self.is_microdescriptor = False
-    self.consensus_methods = []
-    self.published = None
-    self.consensus_method = None
-    self.valid_after = None
-    self.fresh_until = None
-    self.valid_until = None
-    self.vote_delay = None
-    self.dist_delay = None
-    self.client_versions = []
-    self.server_versions = []
-    self.known_flags = []
-    self.flag_thresholds = {}
-    self.params = dict(DEFAULT_PARAMS) if default_params else {}
-
-    self._unrecognized_lines = []
-
-    content = bytes.join(b'', _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
-    content = stem.util.str_tools._to_unicode(content)
-    entries = _get_descriptor_components(content, validate)
-    self._parse(entries, validate)
-
-    # doing this validation afterward so we know our 'is_consensus' and
-    # 'is_vote' attributes
-
-    if validate:
-      _check_for_missing_and_disallowed_fields(self, entries, HEADER_STATUS_DOCUMENT_FIELDS)
-      _check_for_misordered_fields(entries, HEADER_FIELDS)
-
-  def meets_consensus_method(self, method):
-    if self.consensus_method is not None:
-      return self.consensus_method >= method
-    elif self.consensus_methods is not None:
-      return bool([x for x in self.consensus_methods if x >= method])
-    else:
-      return False  # malformed document
-
-  def _parse(self, entries, validate):
-    for keyword, values in list(entries.items()):
-      value, _, _ = values[0]
-      line = '%s %s' % (keyword, value)
-
-      # all known header fields can only appear once except
-      if validate and len(values) > 1 and keyword in HEADER_FIELDS:
-        raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
-
-      if keyword == 'network-status-version':
-        # "network-status-version" version
-
-        if ' ' in value:
-          version, flavor = value.split(' ', 1)
-        else:
-          version, flavor = value, None
-
-        if not version.isdigit():
-          if not validate:
-            continue
-
-          raise ValueError('Network status document has a non-numeric version: %s' % line)
-
-        self.version = int(version)
-        self.version_flavor = flavor
-        self.is_microdescriptor = flavor == 'microdesc'
-
-        if validate and self.version != 3:
-          raise ValueError("Expected a version 3 network status document, got version '%s' instead" % self.version)
-      elif keyword == 'vote-status':
-        # "vote-status" type
-        #
-        # The consensus-method and consensus-methods fields are optional since
-        # they weren't included in version 1. Setting a default now that we
-        # know if we're a vote or not.
-
-        if value == 'consensus':
-          self.is_consensus, self.is_vote = True, False
-          self.consensus_method = 1
-        elif value == 'vote':
-          self.is_consensus, self.is_vote = False, True
-          self.consensus_methods = [1]
-        elif validate:
-          raise ValueError("A network status document's vote-status line can only be 'consensus' or 'vote', got '%s' instead" % value)
-      elif keyword == 'consensus-methods':
-        # "consensus-methods" IntegerList
-
-        consensus_methods = []
-        for entry in value.split(' '):
-          if entry.isdigit():
-            consensus_methods.append(int(entry))
-          elif validate:
-            raise ValueError("A network status document's consensus-methods must be a list of integer values, but was '%s'" % value)
-
-        self.consensus_methods = consensus_methods
-      elif keyword == 'consensus-method':
-        # "consensus-method" Integer
-
-        if value.isdigit():
-          self.consensus_method = int(value)
-        elif validate:
-          raise ValueError("A network status document's consensus-method must be an integer, but was '%s'" % value)
-      elif keyword in ('published', 'valid-after', 'fresh-until', 'valid-until'):
-        try:
-          date_value = stem.util.str_tools._parse_timestamp(value)
-
-          if keyword == 'published':
-            self.published = date_value
-          elif keyword == 'valid-after':
-            self.valid_after = date_value
-          elif keyword == 'fresh-until':
-            self.fresh_until = date_value
-          elif keyword == 'valid-until':
-            self.valid_until = date_value
-        except ValueError:
-          if validate:
-            raise ValueError("Network status document's '%s' time wasn't parsable: %s" % (keyword, value))
-      elif keyword == 'voting-delay':
-        # "voting-delay" VoteSeconds DistSeconds
-
-        value_comp = value.split(' ')
-
-        if len(value_comp) == 2 and value_comp[0].isdigit() and value_comp[1].isdigit():
-          self.vote_delay = int(value_comp[0])
-          self.dist_delay = int(value_comp[1])
-        elif validate:
-          raise ValueError("A network status document's 'voting-delay' line must be a pair of integer values, but was '%s'" % value)
-      elif keyword in ('client-versions', 'server-versions'):
-        for entry in value.split(','):
-          try:
-            version_value = stem.version._get_version(entry)
-
-            if keyword == 'client-versions':
-              self.client_versions.append(version_value)
-            elif keyword == 'server-versions':
-              self.server_versions.append(version_value)
-          except ValueError:
-            if validate:
-              raise ValueError("Network status document's '%s' line had '%s', which isn't a parsable tor version: %s" % (keyword, entry, line))
-      elif keyword == 'known-flags':
-        # "known-flags" FlagList
-
-        # simply fetches the entries, excluding empty strings
-        self.known_flags = [entry for entry in value.split(' ') if entry]
-      elif keyword == 'flag-thresholds':
-        # "flag-thresholds" SP THRESHOLDS
-
-        value = value.strip()
-
-        if value:
-          for entry in value.split(' '):
-            if '=' not in entry:
-              if not validate:
-                continue
-
-              raise ValueError("Network status document's '%s' line is expected to be space separated key=value mappings, got: %s" % (keyword, line))
-
-            entry_key, entry_value = entry.split('=', 1)
-
-            try:
-              if entry_value.endswith('%'):
-                # opting for string manipulation rather than just
-                # 'float(entry_value) / 100' because floating point arithmetic
-                # will lose precision
-
-                self.flag_thresholds[entry_key] = float('0.' + entry_value[:-1].replace('.', '', 1))
-              elif '.' in entry_value:
-                self.flag_thresholds[entry_key] = float(entry_value)
-              else:
-                self.flag_thresholds[entry_key] = int(entry_value)
-            except ValueError:
-              if validate:
-                raise ValueError("Network status document's '%s' line is expected to have float values, got: %s" % (keyword, line))
-      elif keyword == 'params':
-        # "params" [Parameters]
-        # Parameter ::= Keyword '=' Int32
-        # Int32 ::= A decimal integer between -2147483648 and 2147483647.
-        # Parameters ::= Parameter | Parameters SP Parameter
-
-        # should only appear in consensus-method 7 or later
-
-        if validate and not self.meets_consensus_method(7):
-          raise ValueError("A network status document's 'params' line should only appear in consensus-method 7 or later")
-
-        # skip if this is a blank line
-
-        if value == '':
-          continue
-
-        self.params.update(_parse_int_mappings(keyword, value, validate))
-
-        if validate:
-          self._check_params_constraints()
-      else:
-        self._unrecognized_lines.append(line)
-
-  def _check_params_constraints(self):
-    """
-    Checks that the params we know about are within their documented ranges.
-    """
-
-    for key, value in self.params.items():
-      # all parameters are constrained to int32 range
-      minimum, maximum = -2147483648, 2147483647
-
-      if key == 'circwindow':
-        minimum, maximum = 100, 1000
-      elif key == 'CircuitPriorityHalflifeMsec':
-        minimum = -1
-      elif key in ('perconnbwrate', 'perconnbwburst'):
-        minimum = 1
-      elif key == 'refuseunknownexits':
-        minimum, maximum = 0, 1
-      elif key == 'bwweightscale':
-        minimum = 1
-      elif key == 'cbtdisabled':
-        minimum, maximum = 0, 1
-      elif key == 'cbtnummodes':
-        minimum, maximum = 1, 20
-      elif key == 'cbtrecentcount':
-        minimum, maximum = 3, 1000
-      elif key == 'cbtmaxtimeouts':
-        minimum, maximum = 3, 10000
-      elif key == 'cbtmincircs':
-        minimum, maximum = 1, 10000
-      elif key == 'cbtquantile':
-        minimum, maximum = 10, 99
-      elif key == 'cbtclosequantile':
-        minimum, maximum = self.params.get('cbtquantile', minimum), 99
-      elif key == 'cbttestfreq':
-        minimum = 1
-      elif key == 'cbtmintimeout':
-        minimum = 500
-      elif key == 'cbtinitialtimeout':
-        minimum = self.params.get('cbtmintimeout', minimum)
-      elif key == 'UseOptimisticData':
-        minimum, maximum = 0, 1
-      elif key == 'Support022HiddenServices':
-        minimum, maximum = 0, 1
-      elif key == 'usecreatefast':
-        minimum, maximum = 0, 1
-      elif key == 'UseNTorHandshake':
-        minimum, maximum = 0, 1
-      elif key == 'FastFlagMinThreshold':
-        minimum = 4
-      elif key == 'NumDirectoryGuards':
-        minimum, maximum = 0, 10
-      elif key == 'NumEntryGuards':
-        minimum, maximum = 1, 10
-      elif key == 'GuardLifetime':
-        minimum, maximum = 2592000, 157766400  # min: 30 days, max: 1826 days
-      elif key == 'NumNTorsPerTAP':
-        minimum, maximum = 1, 100000
-      elif key == 'AllowNonearlyExtend':
-        minimum, maximum = 0, 1
-
-      if value < minimum or value > maximum:
-        raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
-
-
-class _DocumentFooter(object):
-  def __init__(self, document_file, validate, header):
-    self.signatures = []
-    self.bandwidth_weights = {}
-    self._unrecognized_lines = []
-
-    content = stem.util.str_tools._to_unicode(document_file.read())
-
-    if not content:
-      return  # footer is optional and there's nothing to parse
-
-    entries = _get_descriptor_components(content, validate)
-    self._parse(entries, validate, header)
-
-    if validate:
-      # Check that the footer has the right initial line. Prior to consensus
-      # method 9 it's a 'directory-signature' and after that footers start with
-      # 'directory-footer'.
-
-      if header.meets_consensus_method(9):
-        if list(entries.keys())[0] != 'directory-footer':
-          raise ValueError("Network status document's footer should start with a 'directory-footer' line in consensus-method 9 or later")
-      else:
-        if list(entries.keys())[0] != 'directory-signature':
-          raise ValueError("Network status document's footer should start with a 'directory-signature' line prior to consensus-method 9")
-
-      _check_for_missing_and_disallowed_fields(header, entries, FOOTER_STATUS_DOCUMENT_FIELDS)
-      _check_for_misordered_fields(entries, FOOTER_FIELDS)
-
-  def _parse(self, entries, validate, header):
-    for keyword, values in list(entries.items()):
-      value, block_type, block_contents = values[0]
-      line = '%s %s' % (keyword, value)
-
-      # all known footer fields can only appear once except...
-      # * 'directory-signature' in a consensus
-
-      if validate and len(values) > 1 and keyword in FOOTER_FIELDS:
-        if not (keyword == 'directory-signature' and header.is_consensus):
-          raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
-
-      if keyword == 'directory-footer':
-        # nothing to parse, simply checking that we don't have a value
-
-        if validate and value:
-          raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got '%s'" % line)
-      elif keyword == 'bandwidth-weights':
-        self.bandwidth_weights = _parse_int_mappings(keyword, value, validate)
-      elif keyword == 'directory-signature':
-        for sig_value, block_type, block_contents in values:
-          if sig_value.count(' ') not in (1, 2):
-            if not validate:
-              continue
-
-            raise ValueError("Authority signatures in a network status document are expected to be of the form 'directory-signature [METHOD] FINGERPRINT KEY_DIGEST', received: %s" % sig_value)
-
-          if validate and (not block_contents or block_type != 'SIGNATURE'):
-            raise ValueError("'directory-signature' should be followed by a SIGNATURE block: %s" % line)
-
-          if sig_value.count(' ') == 1:
-            method = 'sha1'  # default if none was provided
-            fingerprint, key_digest = sig_value.split(' ', 1)
-          else:
-            method, fingerprint, key_digest = sig_value.split(' ', 2)
-
-          self.signatures.append(DocumentSignature(method, fingerprint, key_digest, block_contents, validate))
-
-
-def _check_for_missing_and_disallowed_fields(header, entries, fields):
+def _check_for_missing_and_disallowed_fields(document, entries, fields):
   """
   Checks that we have mandatory fields for our type, and that we don't have
   any fields exclusive to the other (ie, no vote-only fields appear in a
   consensus or vice versa).
 
-  :param _DocumentHeader header: document header
+  :param NetworkStatusDocumentV3 document: network status document
   :param dict entries: ordered keyword/value mappings of the header or footer
   :param list fields: expected field attributes (either
     **HEADER_STATUS_DOCUMENT_FIELDS** or **FOOTER_STATUS_DOCUMENT_FIELDS**)
@@ -939,11 +921,11 @@ def _check_for_missing_and_disallowed_fields(header, entries, fields):
   missing_fields, disallowed_fields = [], []
 
   for field, in_votes, in_consensus, mandatory in fields:
-    if mandatory and ((header.is_consensus and in_consensus) or (header.is_vote and in_votes)):
+    if mandatory and ((document.is_consensus and in_consensus) or (document.is_vote and in_votes)):
       # mandatory field, check that we have it
       if field not in entries.keys():
         missing_fields.append(field)
-    elif (header.is_consensus and not in_consensus) or (header.is_vote and not in_votes):
+    elif (document.is_consensus and not in_consensus) or (document.is_vote and not in_votes):
       # field we shouldn't have, check that we don't
       if field in entries.keys():
         disallowed_fields.append(field)
@@ -1024,6 +1006,42 @@ def _parse_int_mappings(keyword, value, validate):
   return results
 
 
+def _parse_dir_source_line(descriptor, entries):
+  # "dir-source" nickname identity address IP dirport orport
+
+  value = _value('dir-source', entries)
+  dir_source_comp = value.split(' ')
+
+  if len(dir_source_comp) < 6:
+    raise ValueError("Authority entry's 'dir-source' line must have six values: dir-source %s" % value)
+
+  if not stem.util.tor_tools.is_valid_nickname(dir_source_comp[0].rstrip('-legacy')):
+    raise ValueError("Authority's nickname is invalid: %s" % dir_source_comp[0])
+  elif not stem.util.tor_tools.is_valid_fingerprint(dir_source_comp[1]):
+    raise ValueError("Authority's fingerprint is invalid: %s" % dir_source_comp[1])
+  elif not dir_source_comp[2]:
+    # https://trac.torproject.org/7055
+    raise ValueError("Authority's hostname can't be blank: dir-source %s" % value)
+  elif not stem.util.connection.is_valid_ipv4_address(dir_source_comp[3]):
+    raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[3])
+  elif not stem.util.connection.is_valid_port(dir_source_comp[4], allow_zero = True):
+    raise ValueError("Authority's DirPort is invalid: %s" % dir_source_comp[4])
+  elif not stem.util.connection.is_valid_port(dir_source_comp[5]):
+    raise ValueError("Authority's ORPort is invalid: %s" % dir_source_comp[5])
+
+  descriptor.nickname = dir_source_comp[0]
+  descriptor.fingerprint = dir_source_comp[1]
+  descriptor.hostname = dir_source_comp[2]
+  descriptor.address = dir_source_comp[3]
+  descriptor.dir_port = None if dir_source_comp[4] == '0' else int(dir_source_comp[4])
+  descriptor.or_port = int(dir_source_comp[5])
+  descriptor.is_legacy = descriptor.nickname.endswith('-legacy')
+
+
+_parse_legacy_dir_key_line = _parse_forty_character_hex('legacy-dir-key', 'legacy_dir_key')
+_parse_vote_digest_line = _parse_forty_character_hex('vote-digest', 'vote_digest')
+
+
 class DirectoryAuthority(Descriptor):
   """
   Directory authority information obtained from a v3 network status document.
@@ -1056,6 +1074,26 @@ class DirectoryAuthority(Descriptor):
   **\*** mandatory attribute
   """
 
+  ATTRIBUTES = {
+    'nickname': (None, _parse_dir_source_line),
+    'fingerprint': (None, _parse_dir_source_line),
+    'hostname': (None, _parse_dir_source_line),
+    'address': (None, _parse_dir_source_line),
+    'dir_port': (None, _parse_dir_source_line),
+    'or_port': (None, _parse_dir_source_line),
+    'is_legacy': (False, _parse_dir_source_line),
+    'contact': (None, _parse_contact_line),
+    'vote_digest': (None, _parse_vote_digest_line),
+    'legacy_dir_key': (None, _parse_legacy_dir_key_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'dir-source': _parse_dir_source_line,
+    'contact': _parse_contact_line,
+    'legacy-dir-key': _parse_legacy_dir_key_line,
+    'vote-digest': _parse_vote_digest_line,
+  }
+
   def __init__(self, raw_content, validate = True, is_vote = False):
     """
     Parse a directory authority entry in a v3 network status document.
@@ -1068,47 +1106,17 @@ class DirectoryAuthority(Descriptor):
     :raises: ValueError if the descriptor data is invalid
     """
 
-    super(DirectoryAuthority, self).__init__(raw_content)
-    raw_content = stem.util.str_tools._to_unicode(raw_content)
-
-    self.nickname = None
-    self.fingerprint = None
-    self.hostname = None
-    self.address = None
-    self.dir_port = None
-    self.or_port = None
-    self.is_legacy = False
-    self.contact = None
-
-    self.vote_digest = None
-
-    self.legacy_dir_key = None
-    self.key_certificate = None
-
-    self._unrecognized_lines = []
-
-    self._parse(raw_content, validate, is_vote)
-
-  def _parse(self, content, validate, is_vote):
-    """
-    Parses the given content and applies the attributes.
-
-    :param str content: descriptor content
-    :param bool validate: checks validity if True
-    :param bool is_vote: **True** if this is for a vote, **False** if it's for
-      a consensus
-
-    :raises: **ValueError** if a validity check fails
-    """
+    super(DirectoryAuthority, self).__init__(raw_content, lazy_load = not validate)
+    content = stem.util.str_tools._to_unicode(raw_content)
 
     # separate the directory authority entry from its key certificate
     key_div = content.find('\ndir-key-certificate-version')
 
     if key_div != -1:
-      key_cert_content = content[key_div + 1:]
+      self.key_certificate = KeyCertificate(content[key_div + 1:], validate)
       content = content[:key_div + 1]
     else:
-      key_cert_content = None
+      self.key_certificate = None
 
     entries = _get_descriptor_components(content, validate)
 
@@ -1129,12 +1137,12 @@ class DirectoryAuthority(Descriptor):
         required_fields += ['contact']
 
       if is_vote:
-        if not key_cert_content:
+        if not self.key_certificate:
           raise ValueError('Authority votes must have a key certificate:\n%s' % content)
 
         excluded_fields += ['vote-digest']
       elif not is_vote:
-        if key_cert_content:
+        if self.key_certificate:
           raise ValueError("Authority consensus entries shouldn't have a key certificate:\n%s" % content)
 
         if not is_legacy:
@@ -1151,82 +1159,14 @@ class DirectoryAuthority(Descriptor):
           type_label = 'votes' if is_vote else 'consensus entries'
           raise ValueError("Authority %s shouldn't have a '%s' line:\n%s" % (type_label, keyword, content))
 
-    for keyword, values in list(entries.items()):
-      value, _, _ = values[0]
-      line = '%s %s' % (keyword, value)
-
       # all known attributes can only appear at most once
-      if validate and len(values) > 1 and keyword in ('dir-source', 'contact', 'legacy-dir-key', 'vote-digest'):
-        raise ValueError("Authority entries can only have a single '%s' line, got %i:\n%s" % (keyword, len(values), content))
+      for keyword, values in list(entries.items()):
+        if len(values) > 1 and keyword in ('dir-source', 'contact', 'legacy-dir-key', 'vote-digest'):
+          raise ValueError("Authority entries can only have a single '%s' line, got %i:\n%s" % (keyword, len(values), content))
 
-      if keyword == 'dir-source':
-        # "dir-source" nickname identity address IP dirport orport
-
-        dir_source_comp = value.split(' ')
-
-        if len(dir_source_comp) < 6:
-          if not validate:
-            continue
-
-          raise ValueError("Authority entry's 'dir-source' line must have six values: %s" % line)
-
-        if validate:
-          if not stem.util.tor_tools.is_valid_nickname(dir_source_comp[0].rstrip('-legacy')):
-            raise ValueError("Authority's nickname is invalid: %s" % dir_source_comp[0])
-          elif not stem.util.tor_tools.is_valid_fingerprint(dir_source_comp[1]):
-            raise ValueError("Authority's fingerprint is invalid: %s" % dir_source_comp[1])
-          elif not dir_source_comp[2]:
-            # https://trac.torproject.org/7055
-            raise ValueError("Authority's hostname can't be blank: %s" % line)
-          elif not stem.util.connection.is_valid_ipv4_address(dir_source_comp[3]):
-            raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[3])
-          elif not stem.util.connection.is_valid_port(dir_source_comp[4], allow_zero = True):
-            raise ValueError("Authority's DirPort is invalid: %s" % dir_source_comp[4])
-          elif not stem.util.connection.is_valid_port(dir_source_comp[5]):
-            raise ValueError("Authority's ORPort is invalid: %s" % dir_source_comp[5])
-        elif not (dir_source_comp[4].isdigit() and dir_source_comp[5].isdigit()):
-          continue
-
-        self.nickname = dir_source_comp[0]
-        self.fingerprint = dir_source_comp[1]
-        self.hostname = dir_source_comp[2]
-        self.address = dir_source_comp[3]
-        self.dir_port = None if dir_source_comp[4] == '0' else int(dir_source_comp[4])
-        self.or_port = int(dir_source_comp[5])
-        self.is_legacy = self.nickname.endswith('-legacy')
-      elif keyword == 'contact':
-        # "contact" string
-
-        self.contact = value
-      elif keyword == 'legacy-dir-key':
-        # "legacy-dir-key" FINGERPRINT
-
-        if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError('Authority has a malformed legacy directory key: %s' % line)
-
-        self.legacy_dir_key = value
-      elif keyword == 'vote-digest':
-        # "vote-digest" digest
-
-        # technically not a fingerprint, but has the same characteristics
-        if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError('Authority has a malformed vote digest: %s' % line)
-
-        self.vote_digest = value
-      else:
-        self._unrecognized_lines.append(line)
-
-    if key_cert_content:
-      self.key_certificate = KeyCertificate(key_cert_content, validate)
-
-  def get_unrecognized_lines(self):
-    """
-    Returns any unrecognized lines.
-
-    :returns: a list of unrecognized lines
-    """
-
-    return self._unrecognized_lines
+      self._parse(entries, validate)
+    else:
+      self._entries = entries
 
   def _compare(self, other, method):
     if not isinstance(other, DirectoryAuthority):
@@ -1242,6 +1182,34 @@ class DirectoryAuthority(Descriptor):
 
   def __le__(self, other):
     return self._compare(other, lambda s, o: s <= o)
+
+
+def _parse_dir_address_line(descriptor, entries):
+  # "dir-address" IPPort
+
+  value = _value('dir-address', entries)
+
+  if ':' not in value:
+    raise ValueError("Key certificate's 'dir-address' is expected to be of the form ADDRESS:PORT: dir-address %s" % value)
+
+  address, dirport = value.split(':', 1)
+
+  if not stem.util.connection.is_valid_ipv4_address(address):
+    raise ValueError("Key certificate's address isn't a valid IPv4 address: dir-address %s" % value)
+  elif not stem.util.connection.is_valid_port(dirport):
+    raise ValueError("Key certificate's dirport is invalid: dir-address %s" % value)
+
+  descriptor.address = address
+  descriptor.dir_port = int(dirport)
+
+
+_parse_dir_key_certificate_version_line = _parse_version_line('dir-key-certificate-version', 'version', 3)
+_parse_dir_key_published_line = _parse_timestamp_line('dir-key-published', 'published')
+_parse_dir_key_expires_line = _parse_timestamp_line('dir-key-expires', 'expires')
+_parse_identity_key_line = _parse_key_block('dir-identity-key', 'identity_key', 'RSA PUBLIC KEY')
+_parse_signing_key_line = _parse_key_block('dir-signing-key', 'signing_key', 'RSA PUBLIC KEY')
+_parse_dir_key_crosscert_line = _parse_key_block('dir-key-crosscert', 'crosscert', 'ID SIGNATURE')
+_parse_dir_key_certification_line = _parse_key_block('dir-key-certification', 'certification', 'SIGNATURE')
 
 
 class KeyCertificate(Descriptor):
@@ -1263,152 +1231,55 @@ class KeyCertificate(Descriptor):
   **\*** mandatory attribute
   """
 
+  ATTRIBUTES = {
+    'version': (None, _parse_dir_key_certificate_version_line),
+    'address': (None, _parse_dir_address_line),
+    'dir_port': (None, _parse_dir_address_line),
+    'fingerprint': (None, _parse_fingerprint_line),
+    'identity_key': (None, _parse_identity_key_line),
+    'published': (None, _parse_dir_key_published_line),
+    'expires': (None, _parse_dir_key_expires_line),
+    'signing_key': (None, _parse_signing_key_line),
+    'crosscert': (None, _parse_dir_key_crosscert_line),
+    'certification': (None, _parse_dir_key_certification_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'dir-key-certificate-version': _parse_dir_key_certificate_version_line,
+    'dir-address': _parse_dir_address_line,
+    'fingerprint': _parse_fingerprint_line,
+    'dir-key-published': _parse_dir_key_published_line,
+    'dir-key-expires': _parse_dir_key_expires_line,
+    'dir-identity-key': _parse_identity_key_line,
+    'dir-signing-key': _parse_signing_key_line,
+    'dir-key-crosscert': _parse_dir_key_crosscert_line,
+    'dir-key-certification': _parse_dir_key_certification_line,
+  }
+
   def __init__(self, raw_content, validate = True):
-    super(KeyCertificate, self).__init__(raw_content)
-    raw_content = stem.util.str_tools._to_unicode(raw_content)
-
-    self.version = None
-    self.address = None
-    self.dir_port = None
-    self.fingerprint = None
-    self.identity_key = None
-    self.published = None
-    self.expires = None
-    self.signing_key = None
-    self.crosscert = None
-    self.certification = None
-
-    self._unrecognized_lines = []
-
-    self._parse(raw_content, validate)
-
-  def _parse(self, content, validate):
-    """
-    Parses the given content and applies the attributes.
-
-    :param str content: descriptor content
-    :param bool validate: checks validity if **True**
-
-    :raises: **ValueError** if a validity check fails
-    """
-
-    entries = _get_descriptor_components(content, validate)
+    super(KeyCertificate, self).__init__(raw_content, lazy_load = not validate)
+    entries = _get_descriptor_components(raw_content, validate)
 
     if validate:
       if 'dir-key-certificate-version' != list(entries.keys())[0]:
-        raise ValueError("Key certificates must start with a 'dir-key-certificate-version' line:\n%s" % (content))
+        raise ValueError("Key certificates must start with a 'dir-key-certificate-version' line:\n%s" % (raw_content))
       elif 'dir-key-certification' != list(entries.keys())[-1]:
-        raise ValueError("Key certificates must end with a 'dir-key-certification' line:\n%s" % (content))
+        raise ValueError("Key certificates must end with a 'dir-key-certification' line:\n%s" % (raw_content))
 
       # check that we have mandatory fields and that our known fields only
       # appear once
 
       for keyword, is_mandatory in KEY_CERTIFICATE_PARAMS:
         if is_mandatory and keyword not in entries:
-          raise ValueError("Key certificates must have a '%s' line:\n%s" % (keyword, content))
+          raise ValueError("Key certificates must have a '%s' line:\n%s" % (keyword, raw_content))
 
         entry_count = len(entries.get(keyword, []))
         if entry_count > 1:
-          raise ValueError("Key certificates can only have a single '%s' line, got %i:\n%s" % (keyword, entry_count, content))
+          raise ValueError("Key certificates can only have a single '%s' line, got %i:\n%s" % (keyword, entry_count, raw_content))
 
-    for keyword, values in list(entries.items()):
-      value, block_type, block_contents = values[0]
-      line = '%s %s' % (keyword, value)
-
-      if keyword == 'dir-key-certificate-version':
-        # "dir-key-certificate-version" version
-
-        if not value.isdigit():
-          if not validate:
-            continue
-
-          raise ValueError('Key certificate has a non-integer version: %s' % line)
-
-        self.version = int(value)
-
-        if validate and self.version != 3:
-          raise ValueError("Expected a version 3 key certificate, got version '%i' instead" % self.version)
-      elif keyword == 'dir-address':
-        # "dir-address" IPPort
-
-        if ':' not in value:
-          if not validate:
-            continue
-
-          raise ValueError("Key certificate's 'dir-address' is expected to be of the form ADDRESS:PORT: %s" % line)
-
-        address, dirport = value.split(':', 1)
-
-        if validate:
-          if not stem.util.connection.is_valid_ipv4_address(address):
-            raise ValueError("Key certificate's address isn't a valid IPv4 address: %s" % line)
-          elif not stem.util.connection.is_valid_port(dirport):
-            raise ValueError("Key certificate's dirport is invalid: %s" % line)
-        elif not dirport.isdigit():
-          continue
-
-        self.address = address
-        self.dir_port = int(dirport)
-      elif keyword == 'fingerprint':
-        # "fingerprint" fingerprint
-
-        if validate and not stem.util.tor_tools.is_valid_fingerprint(value):
-          raise ValueError("Key certificate's fingerprint is malformed: %s" % line)
-
-        self.fingerprint = value
-      elif keyword in ('dir-key-published', 'dir-key-expires'):
-        # "dir-key-published" YYYY-MM-DD HH:MM:SS
-        # "dir-key-expires" YYYY-MM-DD HH:MM:SS
-
-        try:
-          date_value = stem.util.str_tools._parse_timestamp(value)
-
-          if keyword == 'dir-key-published':
-            self.published = date_value
-          elif keyword == 'dir-key-expires':
-            self.expires = date_value
-        except ValueError:
-          if validate:
-            raise ValueError("Key certificate's '%s' time wasn't parsable: %s" % (keyword, value))
-      elif keyword == 'dir-identity-key':
-        # "dir-identity-key" NL a public key in PEM format
-
-        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
-          raise ValueError("'dir-identity-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
-
-        self.identity_key = block_contents
-      elif keyword == 'dir-signing-key':
-        # "dir-signing-key" NL a key in PEM format
-
-        if validate and (not block_contents or block_type != 'RSA PUBLIC KEY'):
-          raise ValueError("'dir-signing-key' should be followed by a RSA PUBLIC KEY block: %s" % line)
-
-        self.signing_key = block_contents
-      elif keyword == 'dir-key-crosscert':
-        # "dir-key-crosscert" NL CrossSignature
-
-        if validate and (not block_contents or block_type != 'ID SIGNATURE'):
-          raise ValueError("'dir-key-crosscert' should be followed by a ID SIGNATURE block: %s" % line)
-
-        self.crosscert = block_contents
-      elif keyword == 'dir-key-certification':
-        # "dir-key-certification" NL Signature
-
-        if validate and (not block_contents or block_type != 'SIGNATURE'):
-          raise ValueError("'dir-key-certification' should be followed by a SIGNATURE block: %s" % line)
-
-        self.certification = block_contents
-      else:
-        self._unrecognized_lines.append(line)
-
-  def get_unrecognized_lines(self):
-    """
-    Returns any unrecognized lines.
-
-    :returns: **list** of unrecognized lines
-    """
-
-    return self._unrecognized_lines
+      self._parse(entries, validate)
+    else:
+      self._entries = entries
 
   def _compare(self, other, method):
     if not isinstance(other, KeyCertificate):
@@ -1507,7 +1378,7 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
     router_iter = stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
-      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
+      entry_class = RouterStatusEntryV2,
       extra_args = (self,),
     )
 

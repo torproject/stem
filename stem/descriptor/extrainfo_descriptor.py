@@ -32,8 +32,7 @@ Extra-info descriptors are available from a few sources...
     |- RelayExtraInfoDescriptor - Extra-info descriptor for a relay.
     |- BridgeExtraInfoDescriptor - Extra-info descriptor for a bridge.
     |
-    |- digest - calculates the upper-case hex digest value for our content
-    +- get_unrecognized_lines - lines with unrecognized content
+    +- digest - calculates the upper-case hex digest value for our content
 
 .. data:: DirResponse (enum)
 
@@ -69,6 +68,7 @@ Extra-info descriptors are available from a few sources...
   ===================== ===========
 """
 
+import functools
 import hashlib
 import re
 
@@ -81,6 +81,11 @@ from stem.descriptor import (
   Descriptor,
   _read_until_keywords,
   _get_descriptor_components,
+  _value,
+  _values,
+  _parse_timestamp_line,
+  _parse_forty_character_hex,
+  _parse_key_block,
 )
 
 try:
@@ -225,6 +230,316 @@ def _parse_timestamp_and_interval(keyword, content):
     raise ValueError("%s line's timestamp wasn't parsable: %s" % (keyword, line))
 
 
+def _parse_extra_info_line(descriptor, entries):
+  # "extra-info" Nickname Fingerprint
+
+  value = _value('extra-info', entries)
+  extra_info_comp = value.split()
+
+  if len(extra_info_comp) < 2:
+    raise ValueError('Extra-info line must have two values: extra-info %s' % value)
+  elif not stem.util.tor_tools.is_valid_nickname(extra_info_comp[0]):
+    raise ValueError("Extra-info line entry isn't a valid nickname: %s" % extra_info_comp[0])
+  elif not stem.util.tor_tools.is_valid_fingerprint(extra_info_comp[1]):
+    raise ValueError('Tor relay fingerprints consist of forty hex digits: %s' % extra_info_comp[1])
+
+  descriptor.nickname = extra_info_comp[0]
+  descriptor.fingerprint = extra_info_comp[1]
+
+
+def _parse_transport_line(descriptor, entries):
+  # "transport" transportname address:port [arglist]
+  # Everything after the transportname is scrubbed in published bridge
+  # descriptors, so we'll never see it in practice.
+  #
+  # These entries really only make sense for bridges, but have been seen
+  # on non-bridges in the wild when the relay operator configured it this
+  # way.
+
+  transports = {}
+
+  for value in _values('transport', entries):
+    name, address, port, args = None, None, None, None
+
+    if ' ' not in value:
+      # scrubbed
+      name = value
+    else:
+      # not scrubbed
+      value_comp = value.split()
+
+      if len(value_comp) < 1:
+        raise ValueError('Transport line is missing its transport name: transport %s' % value)
+      elif len(value_comp) < 2:
+        raise ValueError('Transport line is missing its address:port value: transport %s' % value)
+      elif ':' not in value_comp[1]:
+        raise ValueError("Transport line's address:port entry is missing a colon: transport %s" % value)
+
+      name = value_comp[0]
+      address, port_str = value_comp[1].split(':', 1)
+
+      if not stem.util.connection.is_valid_ipv4_address(address) or \
+             stem.util.connection.is_valid_ipv6_address(address):
+        raise ValueError('Transport line has a malformed address: transport %s' % value)
+      elif not stem.util.connection.is_valid_port(port_str):
+        raise ValueError('Transport line has a malformed port: transport %s' % value)
+
+      port = int(port_str)
+      args = value_comp[2:] if len(value_comp) >= 3 else []
+
+    transports[name] = (address, port, args)
+
+  descriptor.transport = transports
+
+
+def _parse_cell_circuits_per_decline_line(descriptor, entries):
+  # "cell-circuits-per-decile" num
+
+  value = _value('cell-circuits-per-decile', entries)
+
+  if not value.isdigit():
+    raise ValueError('Non-numeric cell-circuits-per-decile value: %s' % value)
+  elif int(value) < 0:
+    raise ValueError('Negative cell-circuits-per-decile value: %s' % value)
+
+  descriptor.cell_circuits_per_decile = int(value)
+
+
+def _parse_dirreq_line(keyword, recognized_counts_attr, unrecognized_counts_attr, descriptor, entries):
+  value = _value(keyword, entries)
+
+  recognized_counts = {}
+  unrecognized_counts = {}
+
+  is_response_stats = keyword in ('dirreq-v2-resp', 'dirreq-v3-resp')
+  key_set = DirResponse if is_response_stats else DirStat
+
+  key_type = 'STATUS' if is_response_stats else 'STAT'
+  error_msg = '%s lines should contain %s=COUNT mappings: %s %s' % (keyword, key_type, keyword, value)
+
+  if value:
+    for entry in value.split(','):
+      if '=' not in entry:
+        raise ValueError(error_msg)
+
+      status, count = entry.split('=', 1)
+
+      if count.isdigit():
+        if status in key_set:
+          recognized_counts[status] = int(count)
+        else:
+          unrecognized_counts[status] = int(count)
+      else:
+        raise ValueError(error_msg)
+
+  setattr(descriptor, recognized_counts_attr, recognized_counts)
+  setattr(descriptor, unrecognized_counts_attr, unrecognized_counts)
+
+
+def _parse_dirreq_share_line(keyword, attribute, descriptor, entries):
+  value = _value(keyword, entries)
+
+  if not value.endswith('%'):
+    raise ValueError('%s lines should be a percentage: %s %s' % (keyword, keyword, value))
+  elif float(value[:-1]) < 0:
+    raise ValueError('Negative percentage value: %s %s' % (keyword, value))
+
+  # bug means it might be above 100%: https://lists.torproject.org/pipermail/tor-dev/2012-June/003679.html
+
+  setattr(descriptor, attribute, float(value[:-1]) / 100)
+
+
+def _parse_cell_line(keyword, attribute, descriptor, entries):
+  # "<keyword>" num,...,num
+
+  value = _value(keyword, entries)
+  entries, exc = [], None
+
+  if value:
+    for entry in value.split(','):
+      try:
+        # Values should be positive but as discussed in ticket #5849
+        # there was a bug around this. It was fixed in tor 0.2.2.1.
+
+        entries.append(float(entry))
+      except ValueError:
+        exc = ValueError('Non-numeric entry in %s listing: %s %s' % (keyword, keyword, value))
+
+  setattr(descriptor, attribute, entries)
+
+  if exc:
+    raise exc
+
+
+def _parse_timestamp_and_interval_line(keyword, end_attribute, interval_attribute, descriptor, entries):
+  # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
+
+  timestamp, interval, _ = _parse_timestamp_and_interval(keyword, _value(keyword, entries))
+  setattr(descriptor, end_attribute, timestamp)
+  setattr(descriptor, interval_attribute, interval)
+
+
+def _parse_conn_bi_direct_line(descriptor, entries):
+  # "conn-bi-direct" YYYY-MM-DD HH:MM:SS (NSEC s) BELOW,READ,WRITE,BOTH
+
+  value = _value('conn-bi-direct', entries)
+  timestamp, interval, remainder = _parse_timestamp_and_interval('conn-bi-direct', value)
+  stats = remainder.split(',')
+
+  if len(stats) != 4 or not (stats[0].isdigit() and stats[1].isdigit() and stats[2].isdigit() and stats[3].isdigit()):
+    raise ValueError('conn-bi-direct line should end with four numeric values: conn-bi-direct %s' % value)
+
+  descriptor.conn_bi_direct_end = timestamp
+  descriptor.conn_bi_direct_interval = interval
+  descriptor.conn_bi_direct_below = int(stats[0])
+  descriptor.conn_bi_direct_read = int(stats[1])
+  descriptor.conn_bi_direct_write = int(stats[2])
+  descriptor.conn_bi_direct_both = int(stats[3])
+
+
+def _parse_history_line(keyword, end_attribute, interval_attribute, values_attribute, descriptor, entries):
+  # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s) NUM,NUM,NUM,NUM,NUM...
+
+  value = _value(keyword, entries)
+  timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
+  history_values = []
+
+  if remainder:
+    try:
+      history_values = [int(entry) for entry in remainder.split(',')]
+    except ValueError:
+      raise ValueError('%s line has non-numeric values: %s %s' % (keyword, keyword, value))
+
+  setattr(descriptor, end_attribute, timestamp)
+  setattr(descriptor, interval_attribute, interval)
+  setattr(descriptor, values_attribute, history_values)
+
+
+def _parse_port_count_line(keyword, attribute, descriptor, entries):
+  # "<keyword>" port=N,port=N,...
+
+  value, port_mappings = _value(keyword, entries), {}
+  error_msg = 'Entries in %s line should only be PORT=N entries: %s %s' % (keyword, keyword, value)
+
+  if value:
+    for entry in value.split(','):
+      if '=' not in entry:
+        raise ValueError(error_msg)
+
+      port, stat = entry.split('=', 1)
+
+      if (port == 'other' or stem.util.connection.is_valid_port(port)) and stat.isdigit():
+        if port != 'other':
+          port = int(port)
+
+        port_mappings[port] = int(stat)
+      else:
+        raise ValueError(error_msg)
+
+  setattr(descriptor, attribute, port_mappings)
+
+
+def _parse_geoip_to_count_line(keyword, attribute, descriptor, entries):
+  # "<keyword>" CC=N,CC=N,...
+  #
+  # The maxmind geoip (https://www.maxmind.com/app/iso3166) has numeric
+  # locale codes for some special values, for instance...
+  #   A1,"Anonymous Proxy"
+  #   A2,"Satellite Provider"
+  #   ??,"Unknown"
+
+  value, locale_usage = _value(keyword, entries), {}
+  error_msg = 'Entries in %s line should only be CC=N entries: %s %s' % (keyword, keyword, value)
+
+  if value:
+    for entry in value.split(','):
+      if '=' not in entry:
+        raise ValueError(error_msg)
+
+      locale, count = entry.split('=', 1)
+
+      if _locale_re.match(locale) and count.isdigit():
+        locale_usage[locale] = int(count)
+      else:
+        raise ValueError(error_msg)
+
+  setattr(descriptor, attribute, locale_usage)
+
+
+def _parse_bridge_ip_versions_line(descriptor, entries):
+  value, ip_versions = _value('bridge-ip-versions', entries), {}
+
+  if value:
+    for entry in value.split(','):
+      if '=' not in entry:
+        raise stem.ProtocolError("The bridge-ip-versions should be a comma separated listing of '<protocol>=<count>' mappings: bridge-ip-versions %s" % value)
+
+      protocol, count = entry.split('=', 1)
+
+      if not count.isdigit():
+        raise stem.ProtocolError('IP protocol count was non-numeric (%s): bridge-ip-versions %s' % (count, value))
+
+      ip_versions[protocol] = int(count)
+
+  descriptor.ip_versions = ip_versions
+
+
+def _parse_bridge_ip_transports_line(descriptor, entries):
+  value, ip_transports = _value('bridge-ip-transports', entries), {}
+
+  if value:
+    for entry in value.split(','):
+      if '=' not in entry:
+        raise stem.ProtocolError("The bridge-ip-transports should be a comma separated listing of '<protocol>=<count>' mappings: bridge-ip-transports %s" % value)
+
+      protocol, count = entry.split('=', 1)
+
+      if not count.isdigit():
+        raise stem.ProtocolError('Transport count was non-numeric (%s): bridge-ip-transports %s' % (count, value))
+
+      ip_transports[protocol] = int(count)
+
+  descriptor.ip_transports = ip_transports
+
+
+_parse_geoip_db_digest_line = _parse_forty_character_hex('geoip-db-digest', 'geoip_db_digest')
+_parse_geoip6_db_digest_line = _parse_forty_character_hex('geoip6-db-digest', 'geoip6_db_digest')
+_parse_dirreq_v2_resp_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-resp', 'dir_v2_responses', 'dir_v2_responses_unknown')
+_parse_dirreq_v3_resp_line = functools.partial(_parse_dirreq_line, 'dirreq-v3-resp', 'dir_v3_responses', 'dir_v3_responses_unknown')
+_parse_dirreq_v2_direct_dl_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-direct-dl', 'dir_v2_direct_dl', 'dir_v2_direct_dl_unknown')
+_parse_dirreq_v3_direct_dl_line = functools.partial(_parse_dirreq_line, 'dirreq-v3-direct-dl', 'dir_v3_direct_dl', 'dir_v3_direct_dl_unknown')
+_parse_dirreq_v2_tunneled_dl_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-tunneled-dl', 'dir_v2_tunneled_dl', 'dir_v2_tunneled_dl_unknown')
+_parse_dirreq_v3_tunneled_dl_line = functools.partial(_parse_dirreq_line, 'dirreq-v3-tunneled-dl', 'dir_v3_tunneled_dl', 'dir_v3_tunneled_dl_unknown')
+_parse_dirreq_v2_share_line = functools.partial(_parse_dirreq_share_line, 'dirreq-v2-share', 'dir_v2_share')
+_parse_dirreq_v3_share_line = functools.partial(_parse_dirreq_share_line, 'dirreq-v3-share', 'dir_v3_share')
+_parse_cell_processed_cells_line = functools.partial(_parse_cell_line, 'cell-processed-cells', 'cell_processed_cells')
+_parse_cell_queued_cells_line = functools.partial(_parse_cell_line, 'cell-queued-cells', 'cell_queued_cells')
+_parse_cell_time_in_queue_line = functools.partial(_parse_cell_line, 'cell-time-in-queue', 'cell_time_in_queue')
+_parse_published_line = _parse_timestamp_line('published', 'published')
+_parse_geoip_start_time_line = _parse_timestamp_line('geoip-start-time', 'geoip_start_time')
+_parse_cell_stats_end_line = functools.partial(_parse_timestamp_and_interval_line, 'cell-stats-end', 'cell_stats_end', 'cell_stats_interval')
+_parse_entry_stats_end_line = functools.partial(_parse_timestamp_and_interval_line, 'entry-stats-end', 'entry_stats_end', 'entry_stats_interval')
+_parse_exit_stats_end_line = functools.partial(_parse_timestamp_and_interval_line, 'exit-stats-end', 'exit_stats_end', 'exit_stats_interval')
+_parse_bridge_stats_end_line = functools.partial(_parse_timestamp_and_interval_line, 'bridge-stats-end', 'bridge_stats_end', 'bridge_stats_interval')
+_parse_dirreq_stats_end_line = functools.partial(_parse_timestamp_and_interval_line, 'dirreq-stats-end', 'dir_stats_end', 'dir_stats_interval')
+_parse_read_history_line = functools.partial(_parse_history_line, 'read-history', 'read_history_end', 'read_history_interval', 'read_history_values')
+_parse_write_history_line = functools.partial(_parse_history_line, 'write-history', 'write_history_end', 'write_history_interval', 'write_history_values')
+_parse_dirreq_read_history_line = functools.partial(_parse_history_line, 'dirreq-read-history', 'dir_read_history_end', 'dir_read_history_interval', 'dir_read_history_values')
+_parse_dirreq_write_history_line = functools.partial(_parse_history_line, 'dirreq-write-history', 'dir_write_history_end', 'dir_write_history_interval', 'dir_write_history_values')
+_parse_exit_kibibytes_written_line = functools.partial(_parse_port_count_line, 'exit-kibibytes-written', 'exit_kibibytes_written')
+_parse_exit_kibibytes_read_line = functools.partial(_parse_port_count_line, 'exit-kibibytes-read', 'exit_kibibytes_read')
+_parse_exit_streams_opened_line = functools.partial(_parse_port_count_line, 'exit-streams-opened', 'exit_streams_opened')
+_parse_dirreq_v2_ips_line = functools.partial(_parse_geoip_to_count_line, 'dirreq-v2-ips', 'dir_v2_ips')
+_parse_dirreq_v3_ips_line = functools.partial(_parse_geoip_to_count_line, 'dirreq-v3-ips', 'dir_v3_ips')
+_parse_dirreq_v2_reqs_line = functools.partial(_parse_geoip_to_count_line, 'dirreq-v2-reqs', 'dir_v2_requests')
+_parse_dirreq_v3_reqs_line = functools.partial(_parse_geoip_to_count_line, 'dirreq-v3-reqs', 'dir_v3_requests')
+_parse_geoip_client_origins_line = functools.partial(_parse_geoip_to_count_line, 'geoip-client-origins', 'geoip_client_origins')
+_parse_entry_ips_line = functools.partial(_parse_geoip_to_count_line, 'entry-ips', 'entry_ips')
+_parse_bridge_ips_line = functools.partial(_parse_geoip_to_count_line, 'bridge-ips', 'bridge_ips')
+_parse_router_digest_line = _parse_forty_character_hex('router-digest', '_digest')
+_parse_router_signature_line = _parse_key_block('router-signature', 'signature', 'SIGNATURE')
+
+
 class ExtraInfoDescriptor(Descriptor):
   """
   Extra-info descriptor document.
@@ -330,6 +645,128 @@ class ExtraInfoDescriptor(Descriptor):
   a default value, others are left as **None** if undefined
   """
 
+  ATTRIBUTES = {
+    'nickname': (None, _parse_extra_info_line),
+    'fingerprint': (None, _parse_extra_info_line),
+    'published': (None, _parse_published_line),
+    'geoip_db_digest': (None, _parse_geoip_db_digest_line),
+    'geoip6_db_digest': (None, _parse_geoip6_db_digest_line),
+    'transport': ({}, _parse_transport_line),
+
+    'conn_bi_direct_end': (None, _parse_conn_bi_direct_line),
+    'conn_bi_direct_interval': (None, _parse_conn_bi_direct_line),
+    'conn_bi_direct_below': (None, _parse_conn_bi_direct_line),
+    'conn_bi_direct_read': (None, _parse_conn_bi_direct_line),
+    'conn_bi_direct_write': (None, _parse_conn_bi_direct_line),
+    'conn_bi_direct_both': (None, _parse_conn_bi_direct_line),
+
+    'read_history_end': (None, _parse_read_history_line),
+    'read_history_interval': (None, _parse_read_history_line),
+    'read_history_values': (None, _parse_read_history_line),
+
+    'write_history_end': (None, _parse_write_history_line),
+    'write_history_interval': (None, _parse_write_history_line),
+    'write_history_values': (None, _parse_write_history_line),
+
+    'cell_stats_end': (None, _parse_cell_stats_end_line),
+    'cell_stats_interval': (None, _parse_cell_stats_end_line),
+    'cell_processed_cells': (None, _parse_cell_processed_cells_line),
+    'cell_queued_cells': (None, _parse_cell_queued_cells_line),
+    'cell_time_in_queue': (None, _parse_cell_time_in_queue_line),
+    'cell_circuits_per_decile': (None, _parse_cell_circuits_per_decline_line),
+
+    'dir_stats_end': (None, _parse_dirreq_stats_end_line),
+    'dir_stats_interval': (None, _parse_dirreq_stats_end_line),
+    'dir_v2_ips': (None, _parse_dirreq_v2_ips_line),
+    'dir_v3_ips': (None, _parse_dirreq_v3_ips_line),
+    'dir_v2_share': (None, _parse_dirreq_v2_share_line),
+    'dir_v3_share': (None, _parse_dirreq_v3_share_line),
+    'dir_v2_requests': (None, _parse_dirreq_v2_reqs_line),
+    'dir_v3_requests': (None, _parse_dirreq_v3_reqs_line),
+    'dir_v2_responses': (None, _parse_dirreq_v2_resp_line),
+    'dir_v3_responses': (None, _parse_dirreq_v3_resp_line),
+    'dir_v2_responses_unknown': (None, _parse_dirreq_v2_resp_line),
+    'dir_v3_responses_unknown': (None, _parse_dirreq_v3_resp_line),
+    'dir_v2_direct_dl': (None, _parse_dirreq_v2_direct_dl_line),
+    'dir_v3_direct_dl': (None, _parse_dirreq_v3_direct_dl_line),
+    'dir_v2_direct_dl_unknown': (None, _parse_dirreq_v2_direct_dl_line),
+    'dir_v3_direct_dl_unknown': (None, _parse_dirreq_v3_direct_dl_line),
+    'dir_v2_tunneled_dl': (None, _parse_dirreq_v2_tunneled_dl_line),
+    'dir_v3_tunneled_dl': (None, _parse_dirreq_v3_tunneled_dl_line),
+    'dir_v2_tunneled_dl_unknown': (None, _parse_dirreq_v2_tunneled_dl_line),
+    'dir_v3_tunneled_dl_unknown': (None, _parse_dirreq_v3_tunneled_dl_line),
+
+    'dir_read_history_end': (None, _parse_dirreq_read_history_line),
+    'dir_read_history_interval': (None, _parse_dirreq_read_history_line),
+    'dir_read_history_values': (None, _parse_dirreq_read_history_line),
+
+    'dir_write_history_end': (None, _parse_dirreq_write_history_line),
+    'dir_write_history_interval': (None, _parse_dirreq_write_history_line),
+    'dir_write_history_values': (None, _parse_dirreq_write_history_line),
+
+    'entry_stats_end': (None, _parse_entry_stats_end_line),
+    'entry_stats_interval': (None, _parse_entry_stats_end_line),
+    'entry_ips': (None, _parse_entry_ips_line),
+
+    'exit_stats_end': (None, _parse_exit_stats_end_line),
+    'exit_stats_interval': (None, _parse_exit_stats_end_line),
+    'exit_kibibytes_written': (None, _parse_exit_kibibytes_written_line),
+    'exit_kibibytes_read': (None, _parse_exit_kibibytes_read_line),
+    'exit_streams_opened': (None, _parse_exit_streams_opened_line),
+
+    'bridge_stats_end': (None, _parse_bridge_stats_end_line),
+    'bridge_stats_interval': (None, _parse_bridge_stats_end_line),
+    'bridge_ips': (None, _parse_bridge_ips_line),
+    'geoip_start_time': (None, _parse_geoip_start_time_line),
+    'geoip_client_origins': (None, _parse_geoip_client_origins_line),
+
+    'ip_versions': (None, _parse_bridge_ip_versions_line),
+    'ip_transports': (None, _parse_bridge_ip_transports_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'extra-info': _parse_extra_info_line,
+    'geoip-db-digest': _parse_geoip_db_digest_line,
+    'geoip6-db-digest': _parse_geoip6_db_digest_line,
+    'transport': _parse_transport_line,
+    'cell-circuits-per-decile': _parse_cell_circuits_per_decline_line,
+    'dirreq-v2-resp': _parse_dirreq_v2_resp_line,
+    'dirreq-v3-resp': _parse_dirreq_v3_resp_line,
+    'dirreq-v2-direct-dl': _parse_dirreq_v2_direct_dl_line,
+    'dirreq-v3-direct-dl': _parse_dirreq_v3_direct_dl_line,
+    'dirreq-v2-tunneled-dl': _parse_dirreq_v2_tunneled_dl_line,
+    'dirreq-v3-tunneled-dl': _parse_dirreq_v3_tunneled_dl_line,
+    'dirreq-v2-share': _parse_dirreq_v2_share_line,
+    'dirreq-v3-share': _parse_dirreq_v3_share_line,
+    'cell-processed-cells': _parse_cell_processed_cells_line,
+    'cell-queued-cells': _parse_cell_queued_cells_line,
+    'cell-time-in-queue': _parse_cell_time_in_queue_line,
+    'published': _parse_published_line,
+    'geoip-start-time': _parse_geoip_start_time_line,
+    'cell-stats-end': _parse_cell_stats_end_line,
+    'entry-stats-end': _parse_entry_stats_end_line,
+    'exit-stats-end': _parse_exit_stats_end_line,
+    'bridge-stats-end': _parse_bridge_stats_end_line,
+    'dirreq-stats-end': _parse_dirreq_stats_end_line,
+    'conn-bi-direct': _parse_conn_bi_direct_line,
+    'read-history': _parse_read_history_line,
+    'write-history': _parse_write_history_line,
+    'dirreq-read-history': _parse_dirreq_read_history_line,
+    'dirreq-write-history': _parse_dirreq_write_history_line,
+    'exit-kibibytes-written': _parse_exit_kibibytes_written_line,
+    'exit-kibibytes-read': _parse_exit_kibibytes_read_line,
+    'exit-streams-opened': _parse_exit_streams_opened_line,
+    'dirreq-v2-ips': _parse_dirreq_v2_ips_line,
+    'dirreq-v3-ips': _parse_dirreq_v3_ips_line,
+    'dirreq-v2-reqs': _parse_dirreq_v2_reqs_line,
+    'dirreq-v3-reqs': _parse_dirreq_v3_reqs_line,
+    'geoip-client-origins': _parse_geoip_client_origins_line,
+    'entry-ips': _parse_entry_ips_line,
+    'bridge-ips': _parse_bridge_ips_line,
+    'bridge-ip-versions': _parse_bridge_ip_versions_line,
+    'bridge-ip-transports': _parse_bridge_ip_transports_line,
+  }
+
   def __init__(self, raw_contents, validate = True):
     """
     Extra-info descriptor constructor. By default this validates the
@@ -343,88 +780,7 @@ class ExtraInfoDescriptor(Descriptor):
     :raises: **ValueError** if the contents is malformed and validate is True
     """
 
-    super(ExtraInfoDescriptor, self).__init__(raw_contents)
-    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
-
-    self.nickname = None
-    self.fingerprint = None
-    self.published = None
-    self.geoip_db_digest = None
-    self.geoip6_db_digest = None
-    self.transport = {}
-
-    self.conn_bi_direct_end = None
-    self.conn_bi_direct_interval = None
-    self.conn_bi_direct_below = None
-    self.conn_bi_direct_read = None
-    self.conn_bi_direct_write = None
-    self.conn_bi_direct_both = None
-
-    self.read_history_end = None
-    self.read_history_interval = None
-    self.read_history_values = None
-
-    self.write_history_end = None
-    self.write_history_interval = None
-    self.write_history_values = None
-
-    self.cell_stats_end = None
-    self.cell_stats_interval = None
-    self.cell_processed_cells = None
-    self.cell_queued_cells = None
-    self.cell_time_in_queue = None
-    self.cell_circuits_per_decile = None
-
-    self.dir_stats_end = None
-    self.dir_stats_interval = None
-    self.dir_v2_ips = None
-    self.dir_v3_ips = None
-    self.dir_v2_share = None
-    self.dir_v3_share = None
-    self.dir_v2_requests = None
-    self.dir_v3_requests = None
-    self.dir_v2_responses = None
-    self.dir_v3_responses = None
-    self.dir_v2_responses_unknown = None
-    self.dir_v3_responses_unknown = None
-    self.dir_v2_direct_dl = None
-    self.dir_v3_direct_dl = None
-    self.dir_v2_direct_dl_unknown = None
-    self.dir_v3_direct_dl_unknown = None
-    self.dir_v2_tunneled_dl = None
-    self.dir_v3_tunneled_dl = None
-    self.dir_v2_tunneled_dl_unknown = None
-    self.dir_v3_tunneled_dl_unknown = None
-
-    self.dir_read_history_end = None
-    self.dir_read_history_interval = None
-    self.dir_read_history_values = None
-
-    self.dir_write_history_end = None
-    self.dir_write_history_interval = None
-    self.dir_write_history_values = None
-
-    self.entry_stats_end = None
-    self.entry_stats_interval = None
-    self.entry_ips = None
-
-    self.exit_stats_end = None
-    self.exit_stats_interval = None
-    self.exit_kibibytes_written = None
-    self.exit_kibibytes_read = None
-    self.exit_streams_opened = None
-
-    self.bridge_stats_end = None
-    self.bridge_stats_interval = None
-    self.bridge_ips = None
-    self.geoip_start_time = None
-    self.geoip_client_origins = None
-
-    self.ip_versions = None
-    self.ip_transports = None
-
-    self._unrecognized_lines = []
-
+    super(ExtraInfoDescriptor, self).__init__(raw_contents, lazy_load = not validate)
     entries = _get_descriptor_components(raw_contents, validate)
 
     if validate:
@@ -444,397 +800,9 @@ class ExtraInfoDescriptor(Descriptor):
       if expected_last_keyword and expected_last_keyword != list(entries.keys())[-1]:
         raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
 
-    self._parse(entries, validate)
-
-  def get_unrecognized_lines(self):
-    return list(self._unrecognized_lines)
-
-  def _parse(self, entries, validate):
-    """
-    Parses a series of 'keyword => (value, pgp block)' mappings and applies
-    them as attributes.
-
-    :param dict entries: descriptor contents to be applied
-    :param bool validate: checks the validity of descriptor content if True
-
-    :raises: **ValueError** if an error occurs in validation
-    """
-
-    for keyword, values in list(entries.items()):
-      # most just work with the first (and only) value
-      value, _, _ = values[0]
-      line = '%s %s' % (keyword, value)  # original line
-
-      if keyword == 'extra-info':
-        # "extra-info" Nickname Fingerprint
-        extra_info_comp = value.split()
-
-        if len(extra_info_comp) < 2:
-          if not validate:
-            continue
-
-          raise ValueError('Extra-info line must have two values: %s' % line)
-
-        if validate:
-          if not stem.util.tor_tools.is_valid_nickname(extra_info_comp[0]):
-            raise ValueError("Extra-info line entry isn't a valid nickname: %s" % extra_info_comp[0])
-          elif not stem.util.tor_tools.is_valid_fingerprint(extra_info_comp[1]):
-            raise ValueError('Tor relay fingerprints consist of forty hex digits: %s' % extra_info_comp[1])
-
-        self.nickname = extra_info_comp[0]
-        self.fingerprint = extra_info_comp[1]
-      elif keyword == 'geoip-db-digest':
-        # "geoip-db-digest" Digest
-
-        if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
-          raise ValueError('Geoip digest line had an invalid sha1 digest: %s' % line)
-
-        self.geoip_db_digest = value
-      elif keyword == 'geoip6-db-digest':
-        # "geoip6-db-digest" Digest
-
-        if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
-          raise ValueError('Geoip v6 digest line had an invalid sha1 digest: %s' % line)
-
-        self.geoip6_db_digest = value
-      elif keyword == 'transport':
-        # "transport" transportname address:port [arglist]
-        # Everything after the transportname is scrubbed in published bridge
-        # descriptors, so we'll never see it in practice.
-        #
-        # These entries really only make sense for bridges, but have been seen
-        # on non-bridges in the wild when the relay operator configured it this
-        # way.
-
-        for transport_value, _, _ in values:
-          name, address, port, args = None, None, None, None
-
-          if ' ' not in transport_value:
-            # scrubbed
-            name = transport_value
-          else:
-            # not scrubbed
-            value_comp = transport_value.split()
-
-            if len(value_comp) < 1:
-              raise ValueError('Transport line is missing its transport name: %s' % line)
-            else:
-              name = value_comp[0]
-
-            if len(value_comp) < 2:
-              raise ValueError('Transport line is missing its address:port value: %s' % line)
-            elif ':' not in value_comp[1]:
-              raise ValueError("Transport line's address:port entry is missing a colon: %s" % line)
-            else:
-              address, port_str = value_comp[1].split(':', 1)
-
-              if not stem.util.connection.is_valid_ipv4_address(address) or \
-                     stem.util.connection.is_valid_ipv6_address(address):
-                raise ValueError('Transport line has a malformed address: %s' % line)
-              elif not stem.util.connection.is_valid_port(port_str):
-                raise ValueError('Transport line has a malformed port: %s' % line)
-
-              port = int(port_str)
-
-            if len(value_comp) >= 3:
-              args = value_comp[2:]
-            else:
-              args = []
-
-          self.transport[name] = (address, port, args)
-      elif keyword == 'cell-circuits-per-decile':
-        # "cell-circuits-per-decile" num
-
-        if not value.isdigit():
-          if validate:
-            raise ValueError('Non-numeric cell-circuits-per-decile value: %s' % line)
-          else:
-            continue
-
-        stat = int(value)
-
-        if validate and stat < 0:
-          raise ValueError('Negative cell-circuits-per-decile value: %s' % line)
-
-        self.cell_circuits_per_decile = stat
-      elif keyword in ('dirreq-v2-resp', 'dirreq-v3-resp', 'dirreq-v2-direct-dl', 'dirreq-v3-direct-dl', 'dirreq-v2-tunneled-dl', 'dirreq-v3-tunneled-dl'):
-        recognized_counts = {}
-        unrecognized_counts = {}
-
-        is_response_stats = keyword in ('dirreq-v2-resp', 'dirreq-v3-resp')
-        key_set = DirResponse if is_response_stats else DirStat
-
-        key_type = 'STATUS' if is_response_stats else 'STAT'
-        error_msg = '%s lines should contain %s=COUNT mappings: %s' % (keyword, key_type, line)
-
-        if value:
-          for entry in value.split(','):
-            if '=' not in entry:
-              if validate:
-                raise ValueError(error_msg)
-              else:
-                continue
-
-            status, count = entry.split('=', 1)
-
-            if count.isdigit():
-              if status in key_set:
-                recognized_counts[status] = int(count)
-              else:
-                unrecognized_counts[status] = int(count)
-            elif validate:
-              raise ValueError(error_msg)
-
-        if keyword == 'dirreq-v2-resp':
-          self.dir_v2_responses = recognized_counts
-          self.dir_v2_responses_unknown = unrecognized_counts
-        elif keyword == 'dirreq-v3-resp':
-          self.dir_v3_responses = recognized_counts
-          self.dir_v3_responses_unknown = unrecognized_counts
-        elif keyword == 'dirreq-v2-direct-dl':
-          self.dir_v2_direct_dl = recognized_counts
-          self.dir_v2_direct_dl_unknown = unrecognized_counts
-        elif keyword == 'dirreq-v3-direct-dl':
-          self.dir_v3_direct_dl = recognized_counts
-          self.dir_v3_direct_dl_unknown = unrecognized_counts
-        elif keyword == 'dirreq-v2-tunneled-dl':
-          self.dir_v2_tunneled_dl = recognized_counts
-          self.dir_v2_tunneled_dl_unknown = unrecognized_counts
-        elif keyword == 'dirreq-v3-tunneled-dl':
-          self.dir_v3_tunneled_dl = recognized_counts
-          self.dir_v3_tunneled_dl_unknown = unrecognized_counts
-      elif keyword in ('dirreq-v2-share', 'dirreq-v3-share'):
-        # "<keyword>" num%
-
-        try:
-          if not value.endswith('%'):
-            raise ValueError()
-
-          percentage = float(value[:-1]) / 100
-
-          # Bug lets these be above 100%, however they're soon going away...
-          # https://lists.torproject.org/pipermail/tor-dev/2012-June/003679.html
-
-          if validate and percentage < 0:
-            raise ValueError('Negative percentage value: %s' % line)
-
-          if keyword == 'dirreq-v2-share':
-            self.dir_v2_share = percentage
-          elif keyword == 'dirreq-v3-share':
-            self.dir_v3_share = percentage
-        except ValueError as exc:
-          if validate:
-            raise ValueError("Value can't be parsed as a percentage: %s" % line)
-      elif keyword in ('cell-processed-cells', 'cell-queued-cells', 'cell-time-in-queue'):
-        # "<keyword>" num,...,num
-
-        entries = []
-
-        if value:
-          for entry in value.split(','):
-            try:
-              # Values should be positive but as discussed in ticket #5849
-              # there was a bug around this. It was fixed in tor 0.2.2.1.
-
-              entries.append(float(entry))
-            except ValueError:
-              if validate:
-                raise ValueError('Non-numeric entry in %s listing: %s' % (keyword, line))
-
-        if keyword == 'cell-processed-cells':
-          self.cell_processed_cells = entries
-        elif keyword == 'cell-queued-cells':
-          self.cell_queued_cells = entries
-        elif keyword == 'cell-time-in-queue':
-          self.cell_time_in_queue = entries
-      elif keyword in ('published', 'geoip-start-time'):
-        # "<keyword>" YYYY-MM-DD HH:MM:SS
-
-        try:
-          timestamp = stem.util.str_tools._parse_timestamp(value)
-
-          if keyword == 'published':
-            self.published = timestamp
-          elif keyword == 'geoip-start-time':
-            self.geoip_start_time = timestamp
-        except ValueError:
-          if validate:
-            raise ValueError("Timestamp on %s line wasn't parsable: %s" % (keyword, line))
-      elif keyword in ('cell-stats-end', 'entry-stats-end', 'exit-stats-end', 'bridge-stats-end', 'dirreq-stats-end'):
-        # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
-
-        try:
-          timestamp, interval, _ = _parse_timestamp_and_interval(keyword, value)
-
-          if keyword == 'cell-stats-end':
-            self.cell_stats_end = timestamp
-            self.cell_stats_interval = interval
-          elif keyword == 'entry-stats-end':
-            self.entry_stats_end = timestamp
-            self.entry_stats_interval = interval
-          elif keyword == 'exit-stats-end':
-            self.exit_stats_end = timestamp
-            self.exit_stats_interval = interval
-          elif keyword == 'bridge-stats-end':
-            self.bridge_stats_end = timestamp
-            self.bridge_stats_interval = interval
-          elif keyword == 'dirreq-stats-end':
-            self.dir_stats_end = timestamp
-            self.dir_stats_interval = interval
-        except ValueError as exc:
-          if validate:
-            raise exc
-      elif keyword == 'conn-bi-direct':
-        # "conn-bi-direct" YYYY-MM-DD HH:MM:SS (NSEC s) BELOW,READ,WRITE,BOTH
-
-        try:
-          timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
-          stats = remainder.split(',')
-
-          if len(stats) != 4 or not \
-            (stats[0].isdigit() and stats[1].isdigit() and stats[2].isdigit() and stats[3].isdigit()):
-            raise ValueError('conn-bi-direct line should end with four numeric values: %s' % line)
-
-          self.conn_bi_direct_end = timestamp
-          self.conn_bi_direct_interval = interval
-          self.conn_bi_direct_below = int(stats[0])
-          self.conn_bi_direct_read = int(stats[1])
-          self.conn_bi_direct_write = int(stats[2])
-          self.conn_bi_direct_both = int(stats[3])
-        except ValueError as exc:
-          if validate:
-            raise exc
-      elif keyword in ('read-history', 'write-history', 'dirreq-read-history', 'dirreq-write-history'):
-        # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s) NUM,NUM,NUM,NUM,NUM...
-        try:
-          timestamp, interval, remainder = _parse_timestamp_and_interval(keyword, value)
-          history_values = []
-
-          if remainder:
-            try:
-              history_values = [int(entry) for entry in remainder.split(",")]
-            except ValueError:
-              raise ValueError('%s line has non-numeric values: %s' % (keyword, line))
-
-          if keyword == 'read-history':
-            self.read_history_end = timestamp
-            self.read_history_interval = interval
-            self.read_history_values = history_values
-          elif keyword == 'write-history':
-            self.write_history_end = timestamp
-            self.write_history_interval = interval
-            self.write_history_values = history_values
-          elif keyword == 'dirreq-read-history':
-            self.dir_read_history_end = timestamp
-            self.dir_read_history_interval = interval
-            self.dir_read_history_values = history_values
-          elif keyword == 'dirreq-write-history':
-            self.dir_write_history_end = timestamp
-            self.dir_write_history_interval = interval
-            self.dir_write_history_values = history_values
-        except ValueError as exc:
-          if validate:
-            raise exc
-      elif keyword in ('exit-kibibytes-written', 'exit-kibibytes-read', 'exit-streams-opened'):
-        # "<keyword>" port=N,port=N,...
-
-        port_mappings = {}
-        error_msg = 'Entries in %s line should only be PORT=N entries: %s' % (keyword, line)
-
-        if value:
-          for entry in value.split(','):
-            if '=' not in entry:
-              if validate:
-                raise ValueError(error_msg)
-              else:
-                continue
-
-            port, stat = entry.split('=', 1)
-
-            if (port == 'other' or stem.util.connection.is_valid_port(port)) and stat.isdigit():
-              if port != 'other':
-                port = int(port)
-              port_mappings[port] = int(stat)
-            elif validate:
-              raise ValueError(error_msg)
-
-        if keyword == 'exit-kibibytes-written':
-          self.exit_kibibytes_written = port_mappings
-        elif keyword == 'exit-kibibytes-read':
-          self.exit_kibibytes_read = port_mappings
-        elif keyword == 'exit-streams-opened':
-          self.exit_streams_opened = port_mappings
-      elif keyword in ('dirreq-v2-ips', 'dirreq-v3-ips', 'dirreq-v2-reqs', 'dirreq-v3-reqs', 'geoip-client-origins', 'entry-ips', 'bridge-ips'):
-        # "<keyword>" CC=N,CC=N,...
-        #
-        # The maxmind geoip (https://www.maxmind.com/app/iso3166) has numeric
-        # locale codes for some special values, for instance...
-        #   A1,"Anonymous Proxy"
-        #   A2,"Satellite Provider"
-        #   ??,"Unknown"
-
-        locale_usage = {}
-        error_msg = 'Entries in %s line should only be CC=N entries: %s' % (keyword, line)
-
-        if value:
-          for entry in value.split(','):
-            if '=' not in entry:
-              if validate:
-                raise ValueError(error_msg)
-              else:
-                continue
-
-            locale, count = entry.split('=', 1)
-
-            if _locale_re.match(locale) and count.isdigit():
-              locale_usage[locale] = int(count)
-            elif validate:
-              raise ValueError(error_msg)
-
-        if keyword == 'dirreq-v2-ips':
-          self.dir_v2_ips = locale_usage
-        elif keyword == 'dirreq-v3-ips':
-          self.dir_v3_ips = locale_usage
-        elif keyword == 'dirreq-v2-reqs':
-          self.dir_v2_requests = locale_usage
-        elif keyword == 'dirreq-v3-reqs':
-          self.dir_v3_requests = locale_usage
-        elif keyword == 'geoip-client-origins':
-          self.geoip_client_origins = locale_usage
-        elif keyword == 'entry-ips':
-          self.entry_ips = locale_usage
-        elif keyword == 'bridge-ips':
-          self.bridge_ips = locale_usage
-      elif keyword == 'bridge-ip-versions':
-        self.ip_versions = {}
-
-        if value:
-          for entry in value.split(','):
-            if '=' not in entry:
-              raise stem.ProtocolError("The bridge-ip-versions should be a comma separated listing of '<protocol>=<count>' mappings: %s" % line)
-
-            protocol, count = entry.split('=', 1)
-
-            if not count.isdigit():
-              raise stem.ProtocolError('IP protocol count was non-numeric (%s): %s' % (count, line))
-
-            self.ip_versions[protocol] = int(count)
-      elif keyword == 'bridge-ip-transports':
-        self.ip_transports = {}
-
-        if value:
-          for entry in value.split(','):
-            if '=' not in entry:
-              raise stem.ProtocolError("The bridge-ip-transports should be a comma separated listing of '<protocol>=<count>' mappings: %s" % line)
-
-            protocol, count = entry.split('=', 1)
-
-            if not count.isdigit():
-              raise stem.ProtocolError('Transport count was non-numeric (%s): %s' % (count, line))
-
-            self.ip_transports[protocol] = int(count)
-      else:
-        self._unrecognized_lines.append(line)
+      self._parse(entries, validate)
+    else:
+      self._entries = entries
 
   def digest(self):
     """
@@ -868,10 +836,13 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   **\*** attribute is required when we're parsed with validation
   """
 
-  def __init__(self, raw_contents, validate = True):
-    self.signature = None
+  ATTRIBUTES = dict(ExtraInfoDescriptor.ATTRIBUTES, **{
+    'signature': (None, _parse_router_signature_line),
+  })
 
-    super(RelayExtraInfoDescriptor, self).__init__(raw_contents, validate)
+  PARSER_FOR_LINE = dict(ExtraInfoDescriptor.PARSER_FOR_LINE, **{
+    'router-signature': _parse_router_signature_line,
+  })
 
   @lru_cache()
   def digest(self):
@@ -880,27 +851,6 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
     raw_content = raw_content[:raw_content.find(ending) + len(ending)]
     return hashlib.sha1(stem.util.str_tools._to_bytes(raw_content)).hexdigest().upper()
 
-  def _parse(self, entries, validate):
-    entries = dict(entries)  # shallow copy since we're destructive
-
-    # handles fields only in server descriptors
-    for keyword, values in list(entries.items()):
-      value, block_type, block_contents = values[0]
-
-      line = '%s %s' % (keyword, value)  # original line
-
-      if block_contents:
-        line += '\n%s' % block_contents
-
-      if keyword == 'router-signature':
-        if validate and (not block_contents or block_type != 'SIGNATURE'):
-          raise ValueError("'router-signature' should be followed by a SIGNATURE block: %s" % line)
-
-        self.signature = block_contents
-        del entries['router-signature']
-
-    ExtraInfoDescriptor._parse(self, entries, validate)
-
 
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
@@ -908,30 +858,16 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   <https://collector.torproject.org/formats.html#bridge-descriptors>`_)
   """
 
-  def __init__(self, raw_contents, validate = True):
-    self._digest = None
+  ATTRIBUTES = dict(ExtraInfoDescriptor.ATTRIBUTES, **{
+    '_digest': (None, _parse_router_digest_line),
+  })
 
-    super(BridgeExtraInfoDescriptor, self).__init__(raw_contents, validate)
+  PARSER_FOR_LINE = dict(ExtraInfoDescriptor.PARSER_FOR_LINE, **{
+    'router-digest': _parse_router_digest_line,
+  })
 
   def digest(self):
     return self._digest
-
-  def _parse(self, entries, validate):
-    entries = dict(entries)  # shallow copy since we're destructive
-
-    # handles fields only in server descriptors
-    for keyword, values in list(entries.items()):
-      value, _, _ = values[0]
-      line = '%s %s' % (keyword, value)  # original line
-
-      if keyword == 'router-digest':
-        if validate and not stem.util.tor_tools.is_hex_digits(value, 40):
-          raise ValueError('Router digest line had an invalid sha1 digest: %s' % line)
-
-        self._digest = value
-        del entries['router-digest']
-
-    ExtraInfoDescriptor._parse(self, entries, validate)
 
   def _required_fields(self):
     excluded_fields = [

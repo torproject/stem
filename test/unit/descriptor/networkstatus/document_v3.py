@@ -586,19 +586,21 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual(None, document.consensus_method)
 
     test_values = (
-      ('', []),
-      ('   ', []),
-      ('1 2 3 a 5', [1, 2, 3, 5]),
-      ('1 2 3 4.0 5', [1, 2, 3, 5]),
-      ('2 3 4', [2, 3, 4]),  # spec says version one must be included
+      (''),
+      ('   '),
+      ('1 2 3 a 5'),
+      ('1 2 3 4.0 5'),
+      ('2 3 4'),  # spec says version one must be included
     )
 
-    for test_value, expected_consensus_methods in test_values:
+    for test_value in test_values:
       content = get_network_status_document_v3({'vote-status': 'vote', 'consensus-methods': test_value}, content = True)
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
+      expected_value = [2, 3, 4] if test_value == '2 3 4' else [1]
+
       document = NetworkStatusDocumentV3(content, False)
-      self.assertEqual(expected_consensus_methods, document.consensus_methods)
+      self.assertEqual(expected_value, document.consensus_methods)
 
   def test_consensus_method(self):
     """
@@ -708,21 +710,21 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual(expected, document.server_versions)
 
     test_values = (
-      ('', []),
-      ('   ', []),
-      ('1.2.3.4,', [stem.version.Version('1.2.3.4')]),
-      ('1.2.3.4,1.2.3.a', [stem.version.Version('1.2.3.4')]),
+      (''),
+      ('   '),
+      ('1.2.3.4,'),
+      ('1.2.3.4,1.2.3.a'),
     )
 
     for field in ('client-versions', 'server-versions'):
       attr = field.replace('-', '_')
 
-      for test_value, expected_value in test_values:
+      for test_value in test_values:
         content = get_network_status_document_v3({field: test_value}, content = True)
         self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
         document = NetworkStatusDocumentV3(content, False)
-        self.assertEqual(expected_value, getattr(document, attr))
+        self.assertEqual([], getattr(document, attr))
 
   def test_known_flags(self):
     """
@@ -872,7 +874,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False, default_params = False)
-    self.assertEqual({'unrecognized': -122, 'bwauthpid': 1}, document.params)
+    self.assertEqual({}, document.params)
 
   def test_footer_consensus_method_requirement(self):
     """
@@ -951,7 +953,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     )
 
     base_weight_entry = ' '.join(['%s=5' % e for e in BANDWIDTH_WEIGHT_ENTRIES])
-    expected = dict([(e, 5) for e in BANDWIDTH_WEIGHT_ENTRIES if e != 'Wbe'])
 
     for test_value in test_values:
       weight_entry = base_weight_entry.replace('Wbe=5', test_value)
@@ -959,7 +960,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
       document = NetworkStatusDocumentV3(content, False)
-      self.assertEqual(expected, document.bandwidth_weights)
+      self.assertEqual({}, document.bandwidth_weights)
 
   def test_bandwidth_wights_misordered(self):
     """
@@ -967,13 +968,12 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     weight_entry = ' '.join(['%s=5' % e for e in reversed(BANDWIDTH_WEIGHT_ENTRIES)])
-    expected = dict([(e, 5) for e in BANDWIDTH_WEIGHT_ENTRIES])
 
     content = get_network_status_document_v3({'bandwidth-weights': weight_entry}, content = True)
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEqual(expected, document.bandwidth_weights)
+    self.assertEqual({}, document.bandwidth_weights)
 
   def test_bandwidth_wights_in_vote(self):
     """

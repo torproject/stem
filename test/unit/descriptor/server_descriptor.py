@@ -378,7 +378,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc_text = get_relay_server_descriptor({'router': 'saberrider2008ReallyLongNickname 71.35.133.197 9001 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'nickname', 'saberrider2008ReallyLongNickname')
+    self._expect_invalid_attr(desc_text, 'nickname')
 
   def test_nickname_invalid_char(self):
     """
@@ -386,7 +386,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc_text = get_relay_server_descriptor({'router': '$aberrider2008 71.35.133.197 9001 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'nickname', '$aberrider2008')
+    self._expect_invalid_attr(desc_text, 'nickname')
 
   def test_address_malformed(self):
     """
@@ -394,7 +394,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc_text = get_relay_server_descriptor({'router': 'caerSidi 371.35.133.197 9001 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'address', '371.35.133.197')
+    self._expect_invalid_attr(desc_text, 'address')
 
   def test_port_too_high(self):
     """
@@ -402,7 +402,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc_text = get_relay_server_descriptor({'router': 'caerSidi 71.35.133.197 900001 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'or_port', 900001)
+    self._expect_invalid_attr(desc_text, 'or_port')
 
   def test_port_malformed(self):
     """
@@ -672,7 +672,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       self.assertRaises(ValueError, BridgeDescriptor, desc_text)
 
       desc = BridgeDescriptor(desc_text, validate = False)
-      self.assertEqual(value, desc.digest())
+      self.assertEqual(None, desc.digest())
 
   def test_or_address_v4(self):
     """
