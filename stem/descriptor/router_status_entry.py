@@ -399,8 +399,6 @@ class RouterStatusEntry(Descriptor):
     """
 
     super(RouterStatusEntry, self).__init__(content, lazy_load = not validate)
-    content = stem.util.str_tools._to_unicode(content)
-
     self.document = document
     entries = _get_descriptor_components(content, validate)
 

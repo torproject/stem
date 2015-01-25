@@ -781,8 +781,6 @@ class ExtraInfoDescriptor(Descriptor):
     """
 
     super(ExtraInfoDescriptor, self).__init__(raw_contents, lazy_load = not validate)
-    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
-
     entries = _get_descriptor_components(raw_contents, validate)
 
     if validate:

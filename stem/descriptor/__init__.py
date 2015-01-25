@@ -649,6 +649,9 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     value tuple, the second being a list of those entries.
   """
 
+  if isinstance(raw_contents, bytes):
+    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
+
   entries = OrderedDict()
   extra_entries = []  # entries with a keyword in extra_keywords
   remaining_lines = raw_contents.split('\n')

@@ -399,10 +399,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
 
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
 
-    document_content += b'\n' + document_file.read()
-    document_content = stem.util.str_tools._to_unicode(document_content)
-
-    entries = _get_descriptor_components(document_content, validate)
+    entries = _get_descriptor_components(document_content + b'\n' + document_file.read(), validate)
 
     if validate:
       self._check_constraints(entries)
@@ -791,7 +788,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   def _header(self, document_file, validate):
     content = bytes.join(b'', _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
-    content = stem.util.str_tools._to_unicode(content)
     entries = _get_descriptor_components(content, validate)
 
     if validate:
@@ -820,8 +816,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       self._entries.update(entries)
 
   def _footer(self, document_file, validate):
-    content = stem.util.str_tools._to_unicode(document_file.read())
-    entries = _get_descriptor_components(content, validate) if content else {}
+    entries = _get_descriptor_components(document_file.read(), validate)
 
     if validate:
       for keyword, values in list(entries.items()):
@@ -1282,26 +1277,24 @@ class KeyCertificate(Descriptor):
 
   def __init__(self, raw_content, validate = True):
     super(KeyCertificate, self).__init__(raw_content, lazy_load = not validate)
-
-    content = stem.util.str_tools._to_unicode(raw_content)
-    entries = _get_descriptor_components(content, validate)
+    entries = _get_descriptor_components(raw_content, validate)
 
     if validate:
       if 'dir-key-certificate-version' != list(entries.keys())[0]:
-        raise ValueError("Key certificates must start with a 'dir-key-certificate-version' line:\n%s" % (content))
+        raise ValueError("Key certificates must start with a 'dir-key-certificate-version' line:\n%s" % (raw_content))
       elif 'dir-key-certification' != list(entries.keys())[-1]:
-        raise ValueError("Key certificates must end with a 'dir-key-certification' line:\n%s" % (content))
+        raise ValueError("Key certificates must end with a 'dir-key-certification' line:\n%s" % (raw_content))
 
       # check that we have mandatory fields and that our known fields only
       # appear once
 
       for keyword, is_mandatory in KEY_CERTIFICATE_PARAMS:
         if is_mandatory and keyword not in entries:
-          raise ValueError("Key certificates must have a '%s' line:\n%s" % (keyword, content))
+          raise ValueError("Key certificates must have a '%s' line:\n%s" % (keyword, raw_content))
 
         entry_count = len(entries.get(keyword, []))
         if entry_count > 1:
-          raise ValueError("Key certificates can only have a single '%s' line, got %i:\n%s" % (keyword, entry_count, content))
+          raise ValueError("Key certificates can only have a single '%s' line, got %i:\n%s" % (keyword, entry_count, raw_content))
 
       self._parse(entries, validate)
     else:

@@ -220,7 +220,6 @@ class Microdescriptor(Descriptor):
 
   def __init__(self, raw_contents, validate = True, annotations = None):
     super(Microdescriptor, self).__init__(raw_contents, lazy_load = not validate)
-    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
     self.digest = hashlib.sha256(self.get_bytes()).hexdigest().upper()
     self._annotation_lines = annotations if annotations else []
