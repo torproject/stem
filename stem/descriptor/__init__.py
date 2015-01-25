@@ -587,23 +587,25 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     return content
 
 
-def _get_pseudo_pgp_block(remaining_contents):
+def _get_pseudo_pgp_block(lines, i):
   """
   Checks if given contents begins with a pseudo-Open-PGP-style block and, if
   so, pops it off and provides it back to the caller.
 
-  :param list remaining_contents: lines to be checked for a public key block
+  :param list lines: lines to be checked for a public key block
+  :param int i: line to start reading from
 
-  :returns: **tuple** of the (block_type, content) or None if it doesn't exist
+  :returns: **tuple** of the (block_type, content, read_until) or None if it
+    doesn't exist
 
   :raises: **ValueError** if the contents starts with a key block but it's
     malformed (for instance, if it lacks an ending line)
   """
 
-  if not remaining_contents:
+  if len(lines) <= i:
     return None  # nothing left
 
-  block_match = PGP_BLOCK_START.match(remaining_contents[0])
+  block_match = PGP_BLOCK_START.match(lines[i])
 
   if block_match:
     block_type = block_match.groups()[0]
@@ -611,14 +613,15 @@ def _get_pseudo_pgp_block(remaining_contents):
     end_line = PGP_BLOCK_END % block_type
 
     while True:
-      if not remaining_contents:
+      if len(lines) <= i:
         raise ValueError("Unterminated pgp style block (looking for '%s'):\n%s" % (end_line, '\n'.join(block_lines)))
 
-      line = remaining_contents.pop(0)
+      line = lines[i]
       block_lines.append(line)
+      i += 1
 
       if line == end_line:
-        return (block_type, '\n'.join(block_lines))
+        return (block_type, '\n'.join(block_lines), i)
   else:
     return None
 
@@ -654,10 +657,12 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
 
   entries = OrderedDict()
   extra_entries = []  # entries with a keyword in extra_keywords
-  remaining_lines = raw_contents.split('\n')
+  lines = raw_contents.split('\n')
+  skip_until = None  # _get_pseudo_pgp_block() reads ahead, so we should skip lines its read
 
-  while remaining_lines:
-    line = remaining_lines.pop(0)
+  for i, line in enumerate(lines):
+    if skip_until and i < skip_until:
+      continue
 
     # V2 network status documents explicitly can contain blank lines...
     #
@@ -691,12 +696,12 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
       value = ''
 
     try:
-      block_attr = _get_pseudo_pgp_block(remaining_lines)
+      block_attr = _get_pseudo_pgp_block(lines, i + 1)
 
       if block_attr:
-        block_type, block_contents = block_attr
+        block_type, block_contents, skip_until = block_attr
       else:
-        block_type, block_contents = None, None
+        block_type, block_contents, skip_until = None, None, None
     except ValueError as exc:
       if not validate:
         continue
