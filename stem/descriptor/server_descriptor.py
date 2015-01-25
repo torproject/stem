@@ -838,9 +838,6 @@ class BridgeDescriptor(ServerDescriptor):
     'router-digest': _parse_router_digest_line,
   })
 
-  def __init__(self, raw_contents, validate = True, annotations = None):
-    super(BridgeDescriptor, self).__init__(raw_contents, validate, annotations)
-
   def digest(self):
     return self._digest
 

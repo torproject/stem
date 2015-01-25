@@ -403,41 +403,27 @@ class RouterStatusEntry(Descriptor):
     entries = _get_descriptor_components(content, validate)
 
     if validate:
-      self._check_constraints(entries)
+      for keyword in self._required_fields():
+        if keyword not in entries:
+          raise ValueError("%s must have a '%s' line:\n%s" % (self._name(True), keyword, str(self)))
+
+      for keyword in self._single_fields():
+        if keyword in entries and len(entries[keyword]) > 1:
+          raise ValueError("%s can only have a single '%s' line, got %i:\n%s" % (self._name(True), keyword, len(entries[keyword]), str(self)))
+
+      if 'r' != list(entries.keys())[0]:
+        raise ValueError("%s are expected to start with a 'r' line:\n%s" % (self._name(True), str(self)))
+
       self._parse(entries, validate)
     else:
       self._entries = entries
-
-  def _check_constraints(self, entries):
-    """
-    Does a basic check that the entries conform to this descriptor type's
-    constraints.
-
-    :param dict entries: keyword => (value, pgp key) entries
-
-    :raises: **ValueError** if an issue arises in validation
-    """
-
-    for keyword in self._required_fields():
-      if keyword not in entries:
-        raise ValueError("%s must have a '%s' line:\n%s" % (self._name(True), keyword, str(self)))
-
-    for keyword in self._single_fields():
-      if keyword in entries and len(entries[keyword]) > 1:
-        raise ValueError("%s can only have a single '%s' line, got %i:\n%s" % (self._name(True), keyword, len(entries[keyword]), str(self)))
-
-    if 'r' != list(entries.keys())[0]:
-      raise ValueError("%s are expected to start with a 'r' line:\n%s" % (self._name(True), str(self)))
 
   def _name(self, is_plural = False):
     """
     Name for this descriptor type.
     """
 
-    if is_plural:
-      return 'Router status entries'
-    else:
-      return 'Router status entry'
+    return 'Router status entries' if is_plural else 'Router status entry'
 
   def _required_fields(self):
     """
@@ -485,10 +471,7 @@ class RouterStatusEntryV2(RouterStatusEntry):
   })
 
   def _name(self, is_plural = False):
-    if is_plural:
-      return 'Router status entries (v2)'
-    else:
-      return 'Router status entry (v2)'
+    return 'Router status entries (v2)' if is_plural else 'Router status entry (v2)'
 
   def _required_fields(self):
     return ('r')
@@ -561,10 +544,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
   })
 
   def _name(self, is_plural = False):
-    if is_plural:
-      return 'Router status entries (v3)'
-    else:
-      return 'Router status entry (v3)'
+    return 'Router status entries (v3)' if is_plural else 'Router status entry (v3)'
 
   def _required_fields(self):
     return ('r', 's')
@@ -621,10 +601,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   })
 
   def _name(self, is_plural = False):
-    if is_plural:
-      return 'Router status entries (micro v3)'
-    else:
-      return 'Router status entry (micro v3)'
+    return 'Router status entries (micro v3)' if is_plural else 'Router status entry (micro v3)'
 
   def _required_fields(self):
     return ('r', 's', 'm')

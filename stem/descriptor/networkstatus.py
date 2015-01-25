@@ -69,6 +69,12 @@ from stem.descriptor import (
   _parse_key_block,
 )
 
+from stem.descriptor.router_status_entry import (
+  RouterStatusEntryV2,
+  RouterStatusEntryV3,
+  RouterStatusEntryMicroV3,
+)
+
 # Version 2 network status document fields, tuples of the form...
 # (keyword, is_mandatory)
 
@@ -153,6 +159,37 @@ KEY_CERTIFICATE_PARAMS = (
   ('dir-key-certification', True),
 )
 
+# all parameters are constrained to int32 range
+MIN_PARAM, MAX_PARAM = -2147483648, 2147483647
+
+PARAM_RANGE = {
+  'circwindow': (100, 1000),
+  'CircuitPriorityHalflifeMsec': (-1, MAX_PARAM),
+  'perconnbwrate': (-1, MAX_PARAM),
+  'perconnbwburst': (-1, MAX_PARAM),
+  'refuseunknownexits': (0, 1),
+  'bwweightscale': (1, MAX_PARAM),
+  'cbtdisabled': (0, 1),
+  'cbtnummodes': (1, 20),
+  'cbtrecentcount': (3, 1000),
+  'cbtmaxtimeouts': (3, 10000),
+  'cbtmincircs': (1, 10000),
+  'cbtquantile': (10, 99),
+  'cbtclosequantile': (MIN_PARAM, 99),
+  'cbttestfreq': (1, MAX_PARAM),
+  'cbtmintimeout': (500, MAX_PARAM),
+  'UseOptimisticData': (0, 1),
+  'Support022HiddenServices': (0, 1),
+  'usecreatefast': (0, 1),
+  'UseNTorHandshake': (0, 1),
+  'FastFlagMinThreshold': (4, MAX_PARAM),
+  'NumDirectoryGuards': (0, 10),
+  'NumEntryGuards': (1, 10),
+  'GuardLifetime': (2592000, 157766400),  # min: 30 days, max: 1826 days
+  'NumNTorsPerTAP': (1, 100000),
+  'AllowNonearlyExtend': (0, 1),
+}
+
 
 def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False, document_handler = DocumentHandler.ENTRIES, **kwargs):
   """
@@ -184,16 +221,11 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
     document_type = NetworkStatusDocumentV3
 
   if document_type == NetworkStatusDocumentV2:
-    document_type = NetworkStatusDocumentV2
-    router_type = stem.descriptor.router_status_entry.RouterStatusEntryV2
+    document_type, router_type = NetworkStatusDocumentV2, RouterStatusEntryV2
   elif document_type == NetworkStatusDocumentV3:
-    if not is_microdescriptor:
-      router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
-    else:
-      router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
+    router_type = RouterStatusEntryMicroV3 if is_microdescriptor else RouterStatusEntryV3
   elif document_type == BridgeNetworkStatusDocument:
-    document_type = BridgeNetworkStatusDocument
-    router_type = stem.descriptor.router_status_entry.RouterStatusEntryV2
+    document_type, router_type = BridgeNetworkStatusDocument, RouterStatusEntryV2
   else:
     raise ValueError("Document type %i isn't recognized (only able to parse v2, v3, and bridge)" % document_type)
 
@@ -391,7 +423,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     router_iter = stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
-      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
+      entry_class = RouterStatusEntryV2,
       entry_keyword = ROUTERS_START,
       section_end_keywords = (V2_FOOTER_START,),
       extra_args = (self,),
@@ -736,22 +768,16 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     if validate and self.is_vote and len(self.directory_authorities) != 1:
       raise ValueError('Votes should only have an authority entry for the one that issued it, got %i: %s' % (len(self.directory_authorities), self.directory_authorities))
 
-    if not self.is_microdescriptor:
-      router_type = stem.descriptor.router_status_entry.RouterStatusEntryV3
-    else:
-      router_type = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
-
     router_iter = stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
-      entry_class = router_type,
+      entry_class = RouterStatusEntryMicroV3 if self.is_microdescriptor else RouterStatusEntryV3,
       entry_keyword = ROUTERS_START,
       section_end_keywords = (FOOTER_START, V2_FOOTER_START),
       extra_args = (self,),
     )
 
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
-
     self._footer(document_file, validate)
 
   def get_unrecognized_lines(self):
@@ -853,59 +879,14 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     """
 
     for key, value in self.params.items():
-      # all parameters are constrained to int32 range
-      minimum, maximum = -2147483648, 2147483647
+      minimum, maximum = PARAM_RANGE.get(key, (MIN_PARAM, MAX_PARAM))
 
-      if key == 'circwindow':
-        minimum, maximum = 100, 1000
-      elif key == 'CircuitPriorityHalflifeMsec':
-        minimum = -1
-      elif key in ('perconnbwrate', 'perconnbwburst'):
-        minimum = 1
-      elif key == 'refuseunknownexits':
-        minimum, maximum = 0, 1
-      elif key == 'bwweightscale':
-        minimum = 1
-      elif key == 'cbtdisabled':
-        minimum, maximum = 0, 1
-      elif key == 'cbtnummodes':
-        minimum, maximum = 1, 20
-      elif key == 'cbtrecentcount':
-        minimum, maximum = 3, 1000
-      elif key == 'cbtmaxtimeouts':
-        minimum, maximum = 3, 10000
-      elif key == 'cbtmincircs':
-        minimum, maximum = 1, 10000
-      elif key == 'cbtquantile':
-        minimum, maximum = 10, 99
-      elif key == 'cbtclosequantile':
-        minimum, maximum = self.params.get('cbtquantile', minimum), 99
-      elif key == 'cbttestfreq':
-        minimum = 1
-      elif key == 'cbtmintimeout':
-        minimum = 500
+      # there's a few dynamic parameter ranges
+
+      if key == 'cbtclosequantile':
+        minimum = self.params.get('cbtquantile', minimum)
       elif key == 'cbtinitialtimeout':
         minimum = self.params.get('cbtmintimeout', minimum)
-      elif key == 'UseOptimisticData':
-        minimum, maximum = 0, 1
-      elif key == 'Support022HiddenServices':
-        minimum, maximum = 0, 1
-      elif key == 'usecreatefast':
-        minimum, maximum = 0, 1
-      elif key == 'UseNTorHandshake':
-        minimum, maximum = 0, 1
-      elif key == 'FastFlagMinThreshold':
-        minimum = 4
-      elif key == 'NumDirectoryGuards':
-        minimum, maximum = 0, 10
-      elif key == 'NumEntryGuards':
-        minimum, maximum = 1, 10
-      elif key == 'GuardLifetime':
-        minimum, maximum = 2592000, 157766400  # min: 30 days, max: 1826 days
-      elif key == 'NumNTorsPerTAP':
-        minimum, maximum = 1, 100000
-      elif key == 'AllowNonearlyExtend':
-        minimum, maximum = 0, 1
 
       if value < minimum or value > maximum:
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
@@ -1397,7 +1378,7 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
     router_iter = stem.descriptor.router_status_entry._parse_file(
       document_file,
       validate,
-      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV2,
+      entry_class = RouterStatusEntryV2,
       extra_args = (self,),
     )
 
