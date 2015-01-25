@@ -51,12 +51,12 @@ from stem.util import log
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
-  _get_bytes_field,
   _get_descriptor_components,
   _read_until_keywords,
   _value,
   _values,
   _parse_simple_line,
+  _parse_bytes_line,
   _parse_timestamp_line,
   _parse_forty_character_hex,
   _parse_key_block,
@@ -222,6 +222,8 @@ def _parse_bandwidth_line(descriptor, entries):
 def _parse_platform_line(descriptor, entries):
   # "platform" string
 
+  _parse_bytes_line('platform', 'platform')(descriptor, entries)
+
   # The platform attribute was set earlier. This line can contain any
   # arbitrary data, but tor seems to report its version followed by the
   # os like the following...
@@ -367,6 +369,7 @@ def _parse_exit_policy(descriptor, entries):
     del descriptor._unparsed_exit_policy
 
 
+_parse_contact_line = _parse_bytes_line('contact', 'contact')
 _parse_published_line = _parse_timestamp_line('published', 'published')
 _parse_extrainfo_digest_line = _parse_forty_character_hex('extra-info-digest', 'extra_info_digest')
 _parse_read_history_line = functools.partial(_parse_history_line, 'read-history', 'read_history_end', 'read_history_interval', 'read_history_values')
@@ -437,6 +440,7 @@ class ServerDescriptor(Descriptor):
   ATTRIBUTES = {
     'nickname': (None, _parse_router_line),
     'fingerprint': (None, _parse_fingerprint_line),
+    'contact': (None, _parse_contact_line),
     'published': (None, _parse_published_line),
     'exit_policy': (None, _parse_exit_policy),
 
@@ -445,6 +449,7 @@ class ServerDescriptor(Descriptor):
     'socks_port': (None, _parse_router_line),
     'dir_port': (None, _parse_router_line),
 
+    'platform': (None, _parse_platform_line),
     'tor_version': (None, _parse_platform_line),
     'operating_system': (None, _parse_platform_line),
     'uptime': (None, _parse_uptime_line),
@@ -480,6 +485,7 @@ class ServerDescriptor(Descriptor):
     'platform': _parse_platform_line,
     'published': _parse_published_line,
     'fingerprint': _parse_fingerprint_line,
+    'contact': _parse_contact_line,
     'hibernating': _parse_hibernating_line,
     'extra-info-digest': _parse_extrainfo_digest_line,
     'hidden-service-dir': _parse_hidden_service_dir_line,
@@ -493,7 +499,6 @@ class ServerDescriptor(Descriptor):
     'caches-extra-info': _parse_caches_extra_info_line,
     'family': _parse_family_line,
     'eventdns': _parse_eventdns_line,
-    'contact': lambda descriptor, entries: None,  # parsed as a bytes field earlier
   }
 
   def __init__(self, raw_contents, validate = True, annotations = None):
@@ -515,13 +520,6 @@ class ServerDescriptor(Descriptor):
     """
 
     super(ServerDescriptor, self).__init__(raw_contents, lazy_load = not validate)
-
-    # Only a few things can be arbitrary bytes according to the dir-spec, so
-    # parsing them separately.
-
-    self.platform = _get_bytes_field('platform', raw_contents)
-    self.contact = _get_bytes_field('contact', raw_contents)
-
     self._annotation_lines = annotations if annotations else []
 
     # A descriptor contains a series of 'keyword lines' which are simply a

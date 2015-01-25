@@ -326,6 +326,20 @@ def _parse_simple_line(keyword, attribute):
   return _parse
 
 
+def _parse_bytes_line(keyword, attribute):
+  def _parse(descriptor, entries):
+    line_match = re.search(stem.util.str_tools._to_bytes('^(opt )?%s(?:[%s]+(.*))?$' % (keyword, WHITESPACE)), descriptor.get_bytes(), re.MULTILINE)
+    result = None
+
+    if line_match:
+      value = line_match.groups()[1]
+      result = b'' if value is None else value
+
+    setattr(descriptor, attribute, result)
+
+  return _parse
+
+
 def _parse_timestamp_line(keyword, attribute):
   # "<keyword>" YYYY-MM-DD HH:MM:SS
 
@@ -501,33 +515,6 @@ class Descriptor(object):
       return stem.util.str_tools._to_unicode(self._raw_contents)
     else:
       return self._raw_contents
-
-
-def _get_bytes_field(keyword, content):
-  """
-  Provides the value corresponding to the given keyword. This is handy to fetch
-  values specifically allowed to be arbitrary bytes prior to converting to
-  unicode.
-
-  :param str keyword: line to look up
-  :param bytes content: content to look through
-
-  :returns: **bytes** value on the given line, **None** if the line doesn't
-    exist
-
-  :raises: **ValueError** if the content isn't bytes
-  """
-
-  if not isinstance(content, bytes):
-    raise ValueError('Content must be bytes, got a %s' % type(content))
-
-  line_match = re.search(stem.util.str_tools._to_bytes('^(opt )?%s(?:[%s]+(.*))?$' % (keyword, WHITESPACE)), content, re.MULTILINE)
-
-  if line_match:
-    value = line_match.groups()[1]
-    return b'' if value is None else value
-  else:
-    return None
 
 
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):
