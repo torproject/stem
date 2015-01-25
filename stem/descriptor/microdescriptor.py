@@ -169,6 +169,7 @@ def _parse_id_line(descriptor, entries):
     raise ValueError("'id' lines should contain both the key type and digest: id %s" % value)
 
 
+_parse_digest = lambda descriptor, entries: setattr(descriptor, 'digest', hashlib.sha256(descriptor.get_bytes()).hexdigest().upper())
 _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
 _parse_ntor_onion_key_line = _parse_simple_line('ntor-onion-key', 'ntor_onion_key')
 _parse_family_line = lambda descriptor, entries: setattr(descriptor, 'family', _value('family', entries).split(' '))
@@ -206,6 +207,7 @@ class Microdescriptor(Descriptor):
     'exit_policy_v6': (None, _parse_p6_line),
     'identifier_type': (None, _parse_id_line),
     'identifier': (None, _parse_id_line),
+    'digest': (None, _parse_digest),
   }
 
   PARSER_FOR_LINE = {
@@ -220,13 +222,11 @@ class Microdescriptor(Descriptor):
 
   def __init__(self, raw_contents, validate = True, annotations = None):
     super(Microdescriptor, self).__init__(raw_contents, lazy_load = not validate)
-
-    self.digest = hashlib.sha256(self.get_bytes()).hexdigest().upper()
     self._annotation_lines = annotations if annotations else []
-
     entries = _get_descriptor_components(raw_contents, validate)
 
     if validate:
+      self.digest = hashlib.sha256(self.get_bytes()).hexdigest().upper()
       self._parse(entries, validate)
       self._check_constraints(entries)
     else:
