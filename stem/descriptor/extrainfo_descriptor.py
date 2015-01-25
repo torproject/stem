@@ -159,7 +159,7 @@ _timestamp_re = re.compile('^(.*) \(([0-9]+) s\)( .*)?$')
 _locale_re = re.compile('^[a-zA-Z0-9\?]{2}$')
 
 
-def _parse_file(descriptor_file, is_bridge = False, validate = True, **kwargs):
+def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
   """
   Iterates over the extra-info descriptors in a file.
 
@@ -767,7 +767,7 @@ class ExtraInfoDescriptor(Descriptor):
     'bridge-ip-transports': _parse_bridge_ip_transports_line,
   }
 
-  def __init__(self, raw_contents, validate = True):
+  def __init__(self, raw_contents, validate = False):
     """
     Extra-info descriptor constructor. By default this validates the
     descriptor's content as it's parsed. This validation can be disabled to

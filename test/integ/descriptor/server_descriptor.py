@@ -30,7 +30,7 @@ class TestServerDescriptor(unittest.TestCase):
       return
 
     with open(descriptor_path, 'rb') as descriptor_file:
-      for desc in stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'):
+      for desc in stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True):
         # the following attributes should be deprecated, and not appear in the wild
         self.assertEqual(None, desc.read_history_end)
         self.assertEqual(None, desc.write_history_end)

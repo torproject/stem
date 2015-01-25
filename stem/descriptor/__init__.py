@@ -82,7 +82,7 @@ DocumentHandler = stem.util.enum.UppercaseEnum(
 )
 
 
-def parse_file(descriptor_file, descriptor_type = None, validate = True, document_handler = DocumentHandler.ENTRIES, **kwargs):
+def parse_file(descriptor_file, descriptor_type = None, validate = False, document_handler = DocumentHandler.ENTRIES, **kwargs):
   """
   Simple function to read the descriptor contents from a file, providing an
   iterator for its :class:`~stem.descriptor.__init__.Descriptor` contents.

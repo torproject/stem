@@ -21,7 +21,7 @@ from stem.descriptor import (
 )
 
 
-def _parse_file(tordnsel_file, validate = True, **kwargs):
+def _parse_file(tordnsel_file, validate = False, **kwargs):
   """
   Iterates over a tordnsel file.
 

@@ -53,7 +53,7 @@ class TestKeyCertificate(unittest.TestCase):
 
     for cert_text in (b'dir-address 127.0.0.1:80\n' + content,
                       content + b'\ndir-address 127.0.0.1:80'):
-      self.assertRaises(ValueError, KeyCertificate, cert_text)
+      self.assertRaises(ValueError, KeyCertificate, cert_text, True)
 
       certificate = KeyCertificate(cert_text, False)
       self.assertEqual('127.0.0.1', certificate.address)
@@ -68,7 +68,7 @@ class TestKeyCertificate(unittest.TestCase):
 
     for excluded_field in mandatory_fields:
       content = get_key_certificate(exclude = (excluded_field,), content = True)
-      self.assertRaises(ValueError, KeyCertificate, content)
+      self.assertRaises(ValueError, KeyCertificate, content, True)
 
       certificate = KeyCertificate(content, False)
 
@@ -95,11 +95,11 @@ class TestKeyCertificate(unittest.TestCase):
     self.assertEqual(3, certificate.version)
 
     content = get_key_certificate({'dir-key-certificate-version': '4'}, content = True)
-    self.assertRaises(ValueError, KeyCertificate, content)
+    self.assertRaises(ValueError, KeyCertificate, content, True)
     self.assertEqual(4, KeyCertificate(content, False).version)
 
     content = get_key_certificate({'dir-key-certificate-version': 'boo'}, content = True)
-    self.assertRaises(ValueError, KeyCertificate, content)
+    self.assertRaises(ValueError, KeyCertificate, content, True)
     self.assertEqual(None, KeyCertificate(content, False).version)
 
   def test_dir_address(self):
@@ -124,7 +124,7 @@ class TestKeyCertificate(unittest.TestCase):
 
     for test_value in test_values:
       content = get_key_certificate({'dir-address': test_value}, content = True)
-      self.assertRaises(ValueError, KeyCertificate, content)
+      self.assertRaises(ValueError, KeyCertificate, content, True)
 
       certificate = KeyCertificate(content, False)
       self.assertEqual(None, certificate.address)
@@ -144,7 +144,7 @@ class TestKeyCertificate(unittest.TestCase):
 
     for test_value in test_values:
       content = get_key_certificate({'fingerprint': test_value}, content = True)
-      self.assertRaises(ValueError, KeyCertificate, content)
+      self.assertRaises(ValueError, KeyCertificate, content, True)
 
       certificate = KeyCertificate(content, False)
       self.assertEqual(None, certificate.fingerprint)
@@ -166,7 +166,7 @@ class TestKeyCertificate(unittest.TestCase):
     for field, attr in (('dir-key-published', 'published'), ('dir-key-expires', 'expires')):
       for test_value in test_values:
         content = get_key_certificate({field: test_value}, content = True)
-        self.assertRaises(ValueError, KeyCertificate, content)
+        self.assertRaises(ValueError, KeyCertificate, content, True)
 
         certificate = KeyCertificate(content, False)
         self.assertEqual(None, getattr(certificate, attr))
@@ -189,7 +189,7 @@ class TestKeyCertificate(unittest.TestCase):
                         ('dir-key-crosscert', 'crosscert'),
                         ('dir-key-certification', 'certification')):
       content = get_key_certificate({field: test_value}, content = True)
-      self.assertRaises(ValueError, KeyCertificate, content)
+      self.assertRaises(ValueError, KeyCertificate, content, True)
 
       certificate = KeyCertificate(content, False)
       self.assertEqual(None, getattr(certificate, attr))
@@ -200,4 +200,4 @@ class TestKeyCertificate(unittest.TestCase):
     """
 
     content = get_key_certificate({'dir-identity-key': '\n-----BEGIN MD5SUM-----%s-----END MD5SUM-----' % CRYPTO_BLOB}, content = True)
-    self.assertRaises(ValueError, KeyCertificate, content)
+    self.assertRaises(ValueError, KeyCertificate, content, True)

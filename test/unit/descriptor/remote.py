@@ -72,6 +72,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
       'server-descriptor 1.0',
       endpoints = [('128.31.0.39', 9131)],
+      validate = True,
     )
 
     expeced_url = 'http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31'
@@ -101,6 +102,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
       'server-descriptor 1.0',
       endpoints = [('128.31.0.39', 9131)],
+      validate = True,
     )
 
     # checking via the iterator
@@ -126,6 +128,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       endpoints = [('128.31.0.39', 9131)],
       fall_back_to_authority = False,
       timeout = 5,
+      validate = True,
     )
 
     self.assertRaises(socket.timeout, query.run)
@@ -143,6 +146,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
       'server-descriptor 1.0',
       endpoints = [('128.31.0.39', 9131)],
+      validate = True,
     )
 
     # check that iterating over the query provides the descriptors each time

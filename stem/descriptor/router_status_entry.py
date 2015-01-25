@@ -386,7 +386,7 @@ class RouterStatusEntry(Descriptor):
     'v': _parse_v_line,
   }
 
-  def __init__(self, content, validate = True, document = None):
+  def __init__(self, content, validate = False, document = None):
     """
     Parse a router descriptor in a network status document.
 

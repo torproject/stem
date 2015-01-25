@@ -68,17 +68,17 @@ class TestTorDNSELDescriptor(unittest.TestCase):
     # block content raises value error
 
     extra = b'ExtraContent goes here\n'
-    descriptors = _parse_file(io.BytesIO(TEST_DESC + extra))
+    descriptors = _parse_file(io.BytesIO(TEST_DESC + extra), validate = True)
     self.assertRaises(ValueError, list, descriptors)
 
     # malformed fingerprint raises value errors
 
     extra = b'ExitNode 030B22437D99B2DB2908B747B6'
-    self.assertRaises(ValueError, list, _parse_file(io.BytesIO(TEST_DESC + extra)))
+    self.assertRaises(ValueError, list, _parse_file(io.BytesIO(TEST_DESC + extra), validate = True))
 
     # malformed date raises value errors
 
-    self.assertRaises(ValueError, list, _parse_file(io.BytesIO(TEST_DESC + MALFORMED_ENTRY_1)))
+    self.assertRaises(ValueError, list, _parse_file(io.BytesIO(TEST_DESC + MALFORMED_ENTRY_1), validate = True))
 
     # skip exit address if malformed date and validate is False
 

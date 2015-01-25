@@ -39,7 +39,7 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     # checks with some malformed inputs
     for arg in ('', '20wYcb', '20wYcb' * 30):
-      self.assertRaises(ValueError, _base64_to_hex, arg)
+      self.assertRaises(ValueError, _base64_to_hex, arg, True)
 
   def test_minimal_v2(self):
     """
@@ -137,7 +137,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     content = b'z some stuff\n' + get_router_status_entry_v3(content = True)
-    self.assertRaises(ValueError, RouterStatusEntryV3, content)
+    self.assertRaises(ValueError, RouterStatusEntryV3, content, True)
     self.assertEqual(['z some stuff'], RouterStatusEntryV3(content, False).get_unrecognized_lines())
 
   def test_blank_lines(self):
@@ -158,7 +158,7 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     for index, duplicate_line in enumerate(lines):
       content = b'\n'.join(lines[:index] + [duplicate_line] + lines[index:])
-      self.assertRaises(ValueError, RouterStatusEntryV3, content)
+      self.assertRaises(ValueError, RouterStatusEntryV3, content, True)
 
       entry = RouterStatusEntryV3(content, False)
       self.assertEqual('caerSidi', entry.nickname)
@@ -524,7 +524,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     value when we're constructed without validation.
     """
 
-    self.assertRaises(ValueError, RouterStatusEntryV3, content)
+    self.assertRaises(ValueError, RouterStatusEntryV3, content, True)
     entry = RouterStatusEntryV3(content, False)
 
     if attr:

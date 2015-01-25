@@ -101,7 +101,7 @@ SINGLE_FIELDS = (
 )
 
 
-def _parse_file(descriptor_file, validate = True, **kwargs):
+def _parse_file(descriptor_file, validate = False, **kwargs):
   """
   Iterates over the microdescriptors in a file.
 
@@ -220,7 +220,7 @@ class Microdescriptor(Descriptor):
     'id': _parse_id_line,
   }
 
-  def __init__(self, raw_contents, validate = True, annotations = None):
+  def __init__(self, raw_contents, validate = False, annotations = None):
     super(Microdescriptor, self).__init__(raw_contents, lazy_load = not validate)
     self._annotation_lines = annotations if annotations else []
     entries = _get_descriptor_components(raw_contents, validate)

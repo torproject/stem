@@ -191,7 +191,7 @@ PARAM_RANGE = {
 }
 
 
-def _parse_file(document_file, document_type = None, validate = True, is_microdescriptor = False, document_handler = DocumentHandler.ENTRIES, **kwargs):
+def _parse_file(document_file, document_type = None, validate = False, is_microdescriptor = False, document_handler = DocumentHandler.ENTRIES, **kwargs):
   """
   Parses a network status and iterates over the RouterStatusEntry in it. The
   document that these instances reference have an empty 'routers' attribute to
@@ -267,7 +267,7 @@ def _parse_file(document_file, document_type = None, validate = True, is_microde
     raise ValueError('Unrecognized document_handler: %s' % document_handler)
 
 
-def _parse_file_key_certs(certificate_file, validate = True):
+def _parse_file_key_certs(certificate_file, validate = False):
   """
   Parses a file containing one or more authority key certificates.
 
@@ -409,7 +409,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     'directory-signature': _parse_directory_signature_line,
   }
 
-  def __init__(self, raw_content, validate = True):
+  def __init__(self, raw_content, validate = False):
     super(NetworkStatusDocumentV2, self).__init__(raw_content, lazy_load = not validate)
 
     # Splitting the document from the routers. Unlike v3 documents we're not
@@ -593,8 +593,8 @@ def _parse_header_parameters_line(descriptor, entries):
   # Int32 ::= A decimal integer between -2147483648 and 2147483647.
   # Parameters ::= Parameter | Parameters SP Parameter
 
-  if descriptor._lazy_loading and descriptor._default_params:
-    descriptor.params = dict(DEFAULT_PARAMS)
+  if descriptor._lazy_loading:
+    descriptor.params = dict(DEFAULT_PARAMS) if descriptor._default_params else {}
 
   value = _value('params', entries)
 
@@ -738,7 +738,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'directory-signature': _parse_footer_directory_signature_line,
   }
 
-  def __init__(self, raw_content, validate = True, default_params = True):
+  def __init__(self, raw_content, validate = False, default_params = True):
     """
     Parse a v3 network status document.
 
@@ -1094,7 +1094,7 @@ class DirectoryAuthority(Descriptor):
     'vote-digest': _parse_vote_digest_line,
   }
 
-  def __init__(self, raw_content, validate = True, is_vote = False):
+  def __init__(self, raw_content, validate = False, is_vote = False):
     """
     Parse a directory authority entry in a v3 network status document.
 
@@ -1256,7 +1256,7 @@ class KeyCertificate(Descriptor):
     'dir-key-certification': _parse_dir_key_certification_line,
   }
 
-  def __init__(self, raw_content, validate = True):
+  def __init__(self, raw_content, validate = False):
     super(KeyCertificate, self).__init__(raw_content, lazy_load = not validate)
     entries = _get_descriptor_components(raw_content, validate)
 
@@ -1310,7 +1310,7 @@ class DocumentSignature(object):
   :raises: **ValueError** if a validity check fails
   """
 
-  def __init__(self, method, identity, key_digest, signature, validate = True):
+  def __init__(self, method, identity, key_digest, signature, validate = False):
     # Checking that these attributes are valid. Technically the key
     # digest isn't a fingerprint, but it has the same characteristics.
 
@@ -1356,7 +1356,7 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
   :var datetime published: time when the document was published
   """
 
-  def __init__(self, raw_content, validate = True):
+  def __init__(self, raw_content, validate = False):
     super(BridgeNetworkStatusDocument, self).__init__(raw_content)
 
     self.published = None

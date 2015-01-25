@@ -113,7 +113,7 @@ class TestMicrodescriptor(unittest.TestCase):
     """
 
     desc_text = b'family Amunet1\n' + get_microdescriptor(content = True)
-    self.assertRaises(ValueError, Microdescriptor, desc_text)
+    self.assertRaises(ValueError, Microdescriptor, desc_text, True)
 
     desc = Microdescriptor(desc_text, validate = False)
     self.assertEqual(['Amunet1'], desc.family)
@@ -149,7 +149,7 @@ class TestMicrodescriptor(unittest.TestCase):
     desc_text += b'\nfamily Amunet1'
     desc_text += b'\nfamily Amunet2'
 
-    self.assertRaises(ValueError, Microdescriptor, desc_text)
+    self.assertRaises(ValueError, Microdescriptor, desc_text, True)
 
     # family entries will overwrite each other
     desc = Microdescriptor(desc_text, validate = False)

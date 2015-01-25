@@ -37,6 +37,7 @@ class TestDescriptorDownloader(unittest.TestCase):
         'server-descriptor 1.0',
         endpoints = [(authority.address, authority.dir_port)],
         timeout = 30,
+        validate = True,
       ), authority))
 
     for query, authority in queries:
@@ -72,7 +73,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     elif test.runner.only_run_once(self, 'test_get_server_descriptors'):
       return
 
-    downloader = stem.descriptor.remote.DescriptorDownloader()
+    downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
 
     # Fetch a single descriptor and a batch. I'd love to also exercise
     # retrieving all descriptors, but that adds roughly a minute to the runtime
@@ -108,7 +109,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     elif test.runner.only_run_once(self, 'test_get_extrainfo_descriptors'):
       return
 
-    downloader = stem.descriptor.remote.DescriptorDownloader()
+    downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
 
     single_query = downloader.get_extrainfo_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31')
 
@@ -142,7 +143,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     elif test.runner.only_run_once(self, 'test_get_microdescriptors'):
       return
 
-    downloader = stem.descriptor.remote.DescriptorDownloader()
+    downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
 
     single_query = downloader.get_microdescriptors('6dCl6ab8CLo0LeMjxi/MZgVJiZgWN8WKTesWPBMtyTo')
 
@@ -171,7 +172,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     elif test.runner.only_run_once(self, 'test_get_consensus'):
       return
 
-    downloader = stem.descriptor.remote.DescriptorDownloader()
+    downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
 
     consensus_query = downloader.get_consensus()
     consensus_query.run()
@@ -190,7 +191,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     elif test.runner.only_run_once(self, 'test_get_key_certificates'):
       return
 
-    downloader = stem.descriptor.remote.DescriptorDownloader()
+    downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
 
     single_query = downloader.get_key_certificates('D586D18309DED4CD6D57C18FDB97EFA96D330566')
 

@@ -37,7 +37,7 @@ class TestNetworkStatus(unittest.TestCase):
 
     count = 0
     with open(consensus_path, 'rb') as descriptor_file:
-      for router in stem.descriptor.parse_file(descriptor_file, 'network-status-consensus-3 1.0'):
+      for router in stem.descriptor.parse_file(descriptor_file, 'network-status-consensus-3 1.0', validate = True):
         count += 1
 
         # check if there's any unknown flags
@@ -78,7 +78,7 @@ class TestNetworkStatus(unittest.TestCase):
 
     count = 0
     with open(consensus_path, 'rb') as descriptor_file:
-      for router in stem.descriptor.parse_file(descriptor_file, 'network-status-microdesc-consensus-3 1.0'):
+      for router in stem.descriptor.parse_file(descriptor_file, 'network-status-microdesc-consensus-3 1.0', validate = True):
         count += 1
 
         # check if there's any unknown flags

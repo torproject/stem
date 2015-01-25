@@ -216,7 +216,7 @@ class Query(object):
     the same as running **query.run(True)** (default is **False**)
   """
 
-  def __init__(self, resource, descriptor_type = None, endpoints = None, retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = True, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
+  def __init__(self, resource, descriptor_type = None, endpoints = None, retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
     if not resource.startswith('/'):
       raise ValueError("Resources should start with a '/': %s" % resource)
 

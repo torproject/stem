@@ -263,7 +263,7 @@ class DescriptorReader(object):
   :param dict kwargs: additional arguments for the descriptor constructor
   """
 
-  def __init__(self, target, validate = True, follow_links = False, buffer_size = 100, persistence_path = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
+  def __init__(self, target, validate = False, follow_links = False, buffer_size = 100, persistence_path = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
     if isinstance(target, (bytes, str_type)):
       self._targets = [target]
     else:

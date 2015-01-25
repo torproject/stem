@@ -452,7 +452,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
         for field, in_votes, in_consensus, is_mandatory in entries:
           if is_mandatory and ((is_consensus and in_consensus) or (is_vote and in_votes)):
             content = get_network_status_document_v3(attr, exclude = (field,), content = True)
-            self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+            self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
             NetworkStatusDocumentV3(content, False)  # constructs without validation
 
   def test_unrecognized_line(self):
@@ -486,7 +486,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
         test_lines[index], test_lines[index + 1] = test_lines[index + 1], test_lines[index]
 
         content = b'\n'.join(test_lines)
-        self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+        self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
         NetworkStatusDocumentV3(content, False)  # constructs without validation
 
   def test_duplicate_fields(self):
@@ -516,7 +516,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
         test_lines.insert(index, line)
 
         content = b'\n'.join(test_lines)
-        self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+        self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
         NetworkStatusDocumentV3(content, False)  # constructs without validation
 
   def test_version(self):
@@ -536,7 +536,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual(True, document.is_microdescriptor)
 
     content = get_network_status_document_v3({'network-status-version': '4'}, content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual(4, document.version)
@@ -565,7 +565,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for test_value in test_values:
       content = get_network_status_document_v3({'vote-status': test_value}, content = True)
-      self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
       document = NetworkStatusDocumentV3(content, False)
       self.assertEqual(True, document.is_consensus)
@@ -595,7 +595,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for test_value in test_values:
       content = get_network_status_document_v3({'vote-status': 'vote', 'consensus-methods': test_value}, content = True)
-      self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
       expected_value = [2, 3, 4] if test_value == '2 3 4' else [1]
 
@@ -626,7 +626,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for test_value in test_values:
       content = get_network_status_document_v3({'consensus-method': test_value}, content = True)
-      self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
       document = NetworkStatusDocumentV3(content, False)
       self.assertEqual(1, document.consensus_method)
@@ -666,7 +666,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
       for test_value in test_values:
         content = get_network_status_document_v3({'vote-status': 'vote', field: test_value}, content = True)
-        self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+        self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
         document = NetworkStatusDocumentV3(content, False)
         self.assertEqual(None, getattr(document, attr))
@@ -690,7 +690,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for test_value in test_values:
       content = get_network_status_document_v3({'voting-delay': test_value}, content = True)
-      self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
       document = NetworkStatusDocumentV3(content, False)
       self.assertEqual(None, document.vote_delay)
@@ -721,7 +721,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
       for test_value in test_values:
         content = get_network_status_document_v3({field: test_value}, content = True)
-        self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+        self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
         document = NetworkStatusDocumentV3(content, False)
         self.assertEqual([], getattr(document, attr))
@@ -789,7 +789,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for test_value in test_values:
       content = get_network_status_document_v3({'vote-status': 'vote', 'flag-thresholds': test_value}, content = True)
-      self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
       document = NetworkStatusDocumentV3(content, False)
       self.assertEqual({}, document.flag_thresholds)
@@ -827,7 +827,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for test_value in test_values:
       content = get_network_status_document_v3({"params": test_value}, content = True)
-      self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
       document = NetworkStatusDocumentV3(content, False)
       self.assertEqual(DEFAULT_PARAMS, document.params)
@@ -860,7 +860,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       if is_ok:
         document = NetworkStatusDocumentV3(content, default_params = False)
       else:
-        self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+        self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
         document = NetworkStatusDocumentV3(content, False, default_params = False)
 
       self.assertEqual(expected_value, document.params)
@@ -871,7 +871,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     content = get_network_status_document_v3({'params': 'unrecognized=-122 bwauthpid=1'}, content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False, default_params = False)
     self.assertEqual({}, document.params)
@@ -883,7 +883,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     content = get_network_status_document_v3({'consensus-method': '8'}, content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual([DOC_SIG], document.signatures)
@@ -918,7 +918,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     content = get_network_status_document_v3({'directory-footer': 'blarg'}, content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual([DOC_SIG], document.signatures)
@@ -958,7 +958,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       weight_entry = base_weight_entry.replace('Wbe=5', test_value)
       content = get_network_status_document_v3({'bandwidth-weights': weight_entry}, content = True)
 
-      self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
       document = NetworkStatusDocumentV3(content, False)
       self.assertEqual({}, document.bandwidth_weights)
 
@@ -970,7 +970,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     weight_entry = ' '.join(['%s=5' % e for e in reversed(BANDWIDTH_WEIGHT_ENTRIES)])
 
     content = get_network_status_document_v3({'bandwidth-weights': weight_entry}, content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual({}, document.bandwidth_weights)
@@ -984,7 +984,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     expected = dict([(e, 5) for e in BANDWIDTH_WEIGHT_ENTRIES])
 
     content = get_network_status_document_v3({'vote-status': 'vote', 'bandwidth-weights': weight_entry}, content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual(expected, document.bandwidth_weights)
@@ -1029,7 +1029,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
         attrs[test_attr] = test_value
 
         content = get_network_status_document_v3({'directory-signature': '%s %s\n%s' % tuple(attrs)}, content = True)
-        self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+        self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
         NetworkStatusDocumentV3(content, False)  # checks that it's still parsable without validation
 
   def test_with_router_status_entries(self):
@@ -1055,14 +1055,14 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     entry3 = RouterStatusEntryV3(get_router_status_entry_v3({'r': 'ugabuga'}, content = True), False)
     content = get_network_status_document_v3(routers = (entry3,), content = True)
 
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual([entry3], list(document.routers.values()))
 
     # try including with a microdescriptor consensus
 
     content = get_network_status_document_v3({'network-status-version': '3 microdesc'}, routers = (entry1,), content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual([RouterStatusEntryMicroV3(str(entry1), False)], list(document.routers.values()))
@@ -1089,7 +1089,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     entry3 = RouterStatusEntryMicroV3(get_router_status_entry_micro_v3({'r': 'ugabuga'}, content = True), False)
 
     content = get_network_status_document_v3({'network-status-version': '3 microdesc'}, routers = (entry3,), content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual([entry3], list(document.routers.values()))
@@ -1097,7 +1097,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     # try including microdescriptor entry in a normal consensus
 
     content = get_network_status_document_v3(routers = (entry1,), content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual([RouterStatusEntryV3(str(entry1), False)], list(document.routers.values()))
@@ -1119,7 +1119,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
           if is_document_vote:
             # votes can only have a single authority
 
-            self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+            self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
             document = NetworkStatusDocumentV3(content, validate = False)
           else:
             document = NetworkStatusDocumentV3(content)
@@ -1127,7 +1127,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
           self.assertEqual((authority1, authority2), document.directory_authorities)
         else:
           # authority votes in a consensus or consensus authorities in a vote
-          self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+          self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
           document = NetworkStatusDocumentV3(content, validate = False)
           self.assertEqual((authority1, authority2), document.directory_authorities)
 
@@ -1159,7 +1159,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     authority = DirectoryAuthority(authority_content, False, True)
 
     content = get_network_status_document_v3({'vote-status': 'vote'}, authorities = (authority,), content = True)
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content)
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, validate = False)
     self.assertEqual((authority,), document.directory_authorities)

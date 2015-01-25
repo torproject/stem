@@ -583,7 +583,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     self.assertEqual({}, desc.ip_versions)
 
     desc_text = get_bridge_extrainfo_descriptor({'bridge-ip-versions': 'v4=24.5'}, content = True)
-    self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text)
+    self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text, True)
 
   def test_bridge_ip_transports_line(self):
     """
@@ -597,7 +597,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     self.assertEqual({}, desc.ip_transports)
 
     desc_text = get_bridge_extrainfo_descriptor({'bridge-ip-transports': '<OR>=24.5'}, content = True)
-    self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text)
+    self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text, True)
 
   def test_transport_line(self):
     """
@@ -624,7 +624,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     value when we're constructed without validation.
     """
 
-    self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text)
+    self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text, True)
     desc = RelayExtraInfoDescriptor(desc_text, validate = False)
 
     if attr:

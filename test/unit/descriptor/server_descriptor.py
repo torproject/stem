@@ -155,7 +155,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     descriptor_file = open(get_resource('old_descriptor'), 'rb')
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
+    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
     self.assertEqual('krypton', desc.nickname)
     self.assertEqual('3E2F63E2356F52318B536A12B6445373808A5D6C', desc.fingerprint)
     self.assertEqual('212.37.39.59', desc.address)
@@ -203,7 +203,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     expected_contact = b'1024D/04D2E818 L\xc3\xa9na\xc3\xafc Huard <lenaic dot huard AT laposte dot net>'
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
+    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
     self.assertEqual('Coruscant', desc.nickname)
     self.assertEqual('0B9821545C48E496AEED9ECC0DB506C49FF8158D', desc.fingerprint)
     self.assertEqual('88.182.161.122', desc.address)
@@ -244,7 +244,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     descriptor_file = open(get_resource('cr_in_contact_line'), 'rb')
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
+    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
 
     self.assertEqual('pogonip', desc.nickname)
     self.assertEqual('6DABD62BC65D4E6FE620293157FC76968DAB9C9B', desc.fingerprint)
@@ -266,7 +266,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     descriptor_file = open(get_resource('negative_uptime'), 'rb')
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
+    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
 
     self.assertEqual('TipTor', desc.nickname)
     self.assertEqual('137962D4931DBF08A24E843288B8A155D6D2AEDD', desc.fingerprint)
@@ -275,8 +275,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     # modify the relay version so it's after when the negative uptime bug
     # should appear
 
-    descriptor_contents = str(desc).replace('Tor 0.1.1.25', 'Tor 0.1.2.7')
-    self.assertRaises(ValueError, stem.descriptor.server_descriptor.RelayDescriptor, descriptor_contents)
+    descriptor_contents = desc.get_bytes().replace(b'Tor 0.1.1.25', b'Tor 0.1.2.7')
+    self.assertRaises(ValueError, stem.descriptor.server_descriptor.RelayDescriptor, descriptor_contents, True)
 
   def test_bridge_descriptor(self):
     """
@@ -291,7 +291,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       '$8C8A470D7C23151665A7B84E75E89FCC205A3304',
     ])
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'bridge-server-descriptor 1.0'))
+    desc = next(stem.descriptor.parse_file(descriptor_file, 'bridge-server-descriptor 1.0', validate = True))
     self.assertEqual('Unnamed', desc.nickname)
     self.assertEqual('AE54E28ED069CDF45F3009F963EE3B3D6FA26A2E', desc.fingerprint)
     self.assertEqual('10.45.227.253', desc.address)
@@ -519,7 +519,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     desc_text += b'\ntrailing text that should be invalid, ho hum'
 
     # running _parse_file should provide an iterator with a single descriptor
-    desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text))
+    desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text), validate = True)
     self.assertRaises(ValueError, list, desc_iter)
 
     desc_text = b'@pepperjack very tasty\n@mushrooms not so much\n'
@@ -552,7 +552,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     for attr in stem.descriptor.server_descriptor.REQUIRED_FIELDS:
       desc_text = get_relay_server_descriptor(exclude = [attr], content = True)
-      self.assertRaises(ValueError, RelayDescriptor, desc_text)
+      self.assertRaises(ValueError, RelayDescriptor, desc_text, True)
 
       # check that we can still construct it without validation
       desc = RelayDescriptor(desc_text, validate = False)
@@ -652,7 +652,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     # checks when missing
 
     desc_text = get_bridge_server_descriptor(exclude = ['router-digest'], content = True)
-    self.assertRaises(ValueError, BridgeDescriptor, desc_text)
+    self.assertRaises(ValueError, BridgeDescriptor, desc_text, True)
 
     # check that we can still construct it without validation
     desc = BridgeDescriptor(desc_text, validate = False)
@@ -669,7 +669,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     for value in test_values:
       desc_text = get_bridge_server_descriptor({'router-digest': value}, content = True)
-      self.assertRaises(ValueError, BridgeDescriptor, desc_text)
+      self.assertRaises(ValueError, BridgeDescriptor, desc_text, True)
 
       desc = BridgeDescriptor(desc_text, validate = False)
       self.assertEqual(None, desc.digest())
@@ -714,7 +714,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     value when we're constructed without validation.
     """
 
-    self.assertRaises(ValueError, RelayDescriptor, desc_text)
+    self.assertRaises(ValueError, RelayDescriptor, desc_text, True)
     desc = RelayDescriptor(desc_text, validate = False)
 
     if attr:
