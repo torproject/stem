@@ -29,6 +29,8 @@ import stem.util.str_tools
 from stem.descriptor import (
   KEYWORD_LINE,
   Descriptor,
+  _value,
+  _values,
   _get_descriptor_components,
   _read_until_keywords,
 )
@@ -101,6 +103,248 @@ def _parse_file(document_file, validate, entry_class, entry_keyword = 'r', start
       break
 
 
+def _parse_r_line(descriptor, entries):
+  # Parses a RouterStatusEntry's 'r' line. They're very nearly identical for
+  # all current entry types (v2, v3, and microdescriptor v3) with one little
+  # wrinkle: only the microdescriptor flavor excludes a 'digest' field.
+  #
+  # For v2 and v3 router status entries:
+  #   "r" nickname identity digest publication IP ORPort DirPort
+  #   example: r mauer BD7xbfsCFku3+tgybEZsg8Yjhvw itcuKQ6PuPLJ7m/Oi928WjO2j8g 2012-06-22 13:19:32 80.101.105.103 9001 0
+  #
+  # For v3 microdescriptor router status entries:
+  #   "r" nickname identity publication IP ORPort DirPort
+  #   example: r Konata ARIJF2zbqirB9IwsW0mQznccWww 2012-09-24 13:40:40 69.64.48.168 9001 9030
+
+  value = _value('r', entries)
+  include_digest = not isinstance(descriptor, RouterStatusEntryMicroV3)
+
+  r_comp = value.split(' ')
+
+  # inject a None for the digest to normalize the field positioning
+  if not include_digest:
+    r_comp.insert(2, None)
+
+  if len(r_comp) < 8:
+    expected_field_count = 'eight' if include_digest else 'seven'
+    raise ValueError("%s 'r' line must have %s values: r %s" % (descriptor._name(), expected_field_count, value))
+
+  if not stem.util.tor_tools.is_valid_nickname(r_comp[0]):
+    raise ValueError("%s nickname isn't valid: %s" % (descriptor._name(), r_comp[0]))
+  elif not stem.util.connection.is_valid_ipv4_address(r_comp[5]):
+    raise ValueError("%s address isn't a valid IPv4 address: %s" % (descriptor._name(), r_comp[5]))
+  elif not stem.util.connection.is_valid_port(r_comp[6]):
+    raise ValueError('%s ORPort is invalid: %s' % (descriptor._name(), r_comp[6]))
+  elif not stem.util.connection.is_valid_port(r_comp[7], allow_zero = True):
+    raise ValueError('%s DirPort is invalid: %s' % (descriptor._name(), r_comp[7]))
+
+  descriptor.nickname = r_comp[0]
+  descriptor.fingerprint = _base64_to_hex(r_comp[1])
+
+  if include_digest:
+    descriptor.digest = _base64_to_hex(r_comp[2])
+
+  descriptor.address = r_comp[5]
+  descriptor.or_port = int(r_comp[6])
+  descriptor.dir_port = None if r_comp[7] == '0' else int(r_comp[7])
+
+  try:
+    published = '%s %s' % (r_comp[3], r_comp[4])
+    descriptor.published = stem.util.str_tools._parse_timestamp(published)
+  except ValueError:
+    raise ValueError("Publication time time wasn't parsable: r %s" % value)
+
+
+def _parse_a_line(descriptor, entries):
+  # "a" SP address ":" portlist
+  # example: a [2001:888:2133:0:82:94:251:204]:9001
+
+  or_addresses = []
+
+  for value in _values('a', entries):
+    if ':' not in value:
+      raise ValueError("%s 'a' line must be of the form '[address]:[ports]': a %s" % (descriptor._name(), value))
+
+    address, port = value.rsplit(':', 1)
+    is_ipv6 = address.startswith('[') and address.endswith(']')
+
+    if is_ipv6:
+      address = address[1:-1]  # remove brackets
+
+    if not ((not is_ipv6 and stem.util.connection.is_valid_ipv4_address(address)) or
+            (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
+      raise ValueError("%s 'a' line must start with an IPv6 address: a %s" % (descriptor._name(), value))
+
+    if stem.util.connection.is_valid_port(port):
+      or_addresses.append((address, int(port), is_ipv6))
+    else:
+      raise ValueError("%s 'a' line had an invalid port (%s): a %s" % (descriptor._name(), port, value))
+
+  descriptor.or_addresses = or_addresses
+
+
+def _parse_s_line(descriptor, entries):
+  # "s" Flags
+  # example: s Named Running Stable Valid
+
+  value = _value('s', entries)
+  flags = [] if value == '' else value.split(' ')
+  descriptor.flags = flags
+
+  for flag in flags:
+    if flags.count(flag) > 1:
+      raise ValueError('%s had duplicate flags: s %s' % (descriptor._name(), value))
+    elif flag == "":
+      raise ValueError("%s had extra whitespace on its 's' line: s %s" % (descriptor._name(), value))
+
+
+def _parse_v_line(descriptor, entries):
+  # "v" version
+  # example: v Tor 0.2.2.35
+  #
+  # The spec says that if this starts with "Tor " then what follows is a
+  # tor version. If not then it has "upgraded to a more sophisticated
+  # protocol versioning system".
+
+  value = _value('v', entries)
+  descriptor.version_line = value
+
+  if value.startswith('Tor '):
+    try:
+      descriptor.version = stem.version._get_version(value[4:])
+    except ValueError as exc:
+      raise ValueError('%s has a malformed tor version (%s): v %s' % (descriptor._name(), exc, value))
+
+
+def _parse_w_line(descriptor, entries):
+  # "w" "Bandwidth=" INT ["Measured=" INT] ["Unmeasured=1"]
+  # example: w Bandwidth=7980
+
+  value = _value('w', entries)
+  w_comp = value.split(' ')
+
+  if len(w_comp) < 1:
+    raise ValueError("%s 'w' line is blank: w %s" % (descriptor._name(), value))
+  elif not w_comp[0].startswith('Bandwidth='):
+    raise ValueError("%s 'w' line needs to start with a 'Bandwidth=' entry: w %s" % (descriptor._name(), value))
+
+  for w_entry in w_comp:
+    if '=' in w_entry:
+      w_key, w_value = w_entry.split('=', 1)
+    else:
+      w_key, w_value = w_entry, None
+
+    if w_key == 'Bandwidth':
+      if not (w_value and w_value.isdigit()):
+        raise ValueError("%s 'Bandwidth=' entry needs to have a numeric value: w %s" % (descriptor._name(), value))
+
+      descriptor.bandwidth = int(w_value)
+    elif w_key == 'Measured':
+      if not (w_value and w_value.isdigit()):
+        raise ValueError("%s 'Measured=' entry needs to have a numeric value: w %s" % (descriptor._name(), value))
+
+      descriptor.measured = int(w_value)
+    elif w_key == 'Unmeasured':
+      if w_value != '1':
+        raise ValueError("%s 'Unmeasured=' should only have the value of '1': w %s" % (descriptor._name(), value))
+
+      descriptor.is_unmeasured = True
+    else:
+      descriptor.unrecognized_bandwidth_entries.append(w_entry)
+
+
+def _parse_p_line(descriptor, entries):
+  # "p" ("accept" / "reject") PortList
+  # p reject 1-65535
+  # example: p accept 80,110,143,443,993,995,6660-6669,6697,7000-7001
+
+  value = _value('p', entries)
+
+  try:
+    descriptor.exit_policy = stem.exit_policy.MicroExitPolicy(value)
+  except ValueError as exc:
+    raise ValueError('%s exit policy is malformed (%s): p %s' % (descriptor._name(), exc, value))
+
+
+def _parse_m_line(descriptor, entries):
+  # "m" methods 1*(algorithm "=" digest)
+  # example: m 8,9,10,11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs
+
+  all_hashes = []
+
+  for value in _values('m', entries):
+    m_comp = value.split(' ')
+
+    if not (descriptor.document and descriptor.document.is_vote):
+      vote_status = 'vote' if descriptor.document else '<undefined document>'
+      raise ValueError("%s 'm' line should only appear in votes (appeared in a %s): m %s" % (descriptor._name(), vote_status, value))
+    elif len(m_comp) < 1:
+      raise ValueError("%s 'm' line needs to start with a series of methods: m %s" % (descriptor._name(), value))
+
+    try:
+      methods = [int(entry) for entry in m_comp[0].split(',')]
+    except ValueError:
+      raise ValueError('%s microdescriptor methods should be a series of comma separated integers: m %s' % (descriptor._name(), value))
+
+    hashes = {}
+
+    for entry in m_comp[1:]:
+      if '=' not in entry:
+        raise ValueError("%s can only have a series of 'algorithm=digest' mappings after the methods: m %s" % (descriptor._name(), value))
+
+      hash_name, digest = entry.split('=', 1)
+      hashes[hash_name] = digest
+
+    all_hashes.append((methods, hashes))
+
+  descriptor.microdescriptor_hashes = all_hashes
+
+
+def _parse_microdescriptor_m_line(descriptor, entries):
+  # "m" digest
+  # example: m aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70
+
+  descriptor.digest = _base64_to_hex(_value('m', entries), check_if_fingerprint = False)
+
+
+def _base64_to_hex(identity, check_if_fingerprint = True):
+  """
+  Decodes a base64 value to hex. For example...
+
+  ::
+
+    >>> _base64_to_hex('p1aag7VwarGxqctS7/fS0y5FU+s')
+    'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
+
+  :param str identity: encoded fingerprint from the consensus
+  :param bool check_if_fingerprint: asserts that the result is a fingerprint if **True**
+
+  :returns: **str** with the uppercase hex encoding of the relay's fingerprint
+
+  :raises: **ValueError** if the result isn't a valid fingerprint
+  """
+
+  # trailing equal signs were stripped from the identity
+  missing_padding = len(identity) % 4
+  identity += '=' * missing_padding
+
+  try:
+    identity_decoded = base64.b64decode(stem.util.str_tools._to_bytes(identity))
+  except (TypeError, binascii.Error):
+    raise ValueError("Unable to decode identity string '%s'" % identity)
+
+  fingerprint = binascii.b2a_hex(identity_decoded).upper()
+
+  if stem.prereq.is_python_3():
+    fingerprint = stem.util.str_tools._to_unicode(fingerprint)
+
+  if check_if_fingerprint:
+    if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
+      raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
+
+  return fingerprint
+
+
 class RouterStatusEntry(Descriptor):
   """
   Information about an individual router stored within a network status
@@ -122,7 +366,27 @@ class RouterStatusEntry(Descriptor):
   :var str version_line: versioning information reported by the relay
   """
 
-  def __init__(self, content, validate, document):
+  ATTRIBUTES = {
+    'nickname': (None, _parse_r_line),
+    'fingerprint': (None, _parse_r_line),
+    'published': (None, _parse_r_line),
+    'address': (None, _parse_r_line),
+    'or_port': (None, _parse_r_line),
+    'dir_port': (None, _parse_r_line),
+
+    'flags': (None, _parse_s_line),
+
+    'version_line': (None, _parse_v_line),
+    'version': (None, _parse_v_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'r': _parse_r_line,
+    's': _parse_s_line,
+    'v': _parse_v_line,
+  }
+
+  def __init__(self, content, validate = True, document = None):
     """
     Parse a router descriptor in a network status document.
 
@@ -134,51 +398,17 @@ class RouterStatusEntry(Descriptor):
     :raises: **ValueError** if the descriptor data is invalid
     """
 
-    super(RouterStatusEntry, self).__init__(content)
+    super(RouterStatusEntry, self).__init__(content, lazy_load = not validate)
     content = stem.util.str_tools._to_unicode(content)
 
     self.document = document
-
-    self.nickname = None
-    self.fingerprint = None
-    self.published = None
-    self.address = None
-    self.or_port = None
-    self.dir_port = None
-
-    self.flags = None
-
-    self.version_line = None
-    self.version = None
-
-    self._unrecognized_lines = []
-
     entries = _get_descriptor_components(content, validate)
 
     if validate:
       self._check_constraints(entries)
-
-    self._parse(entries, validate)
-
-  def _parse(self, entries, validate):
-    """
-    Parses the given content and applies the attributes.
-
-    :param dict entries: keyword => (value, pgp key) entries
-    :param bool validate: checks validity if **True**
-
-    :raises: **ValueError** if a validity check fails
-    """
-
-    for keyword, values in list(entries.items()):
-      value, _, _ = values[0]
-
-      if keyword == 's':
-        _parse_s_line(self, value, validate)
-      elif keyword == 'v':
-        _parse_v_line(self, value, validate)
-      else:
-        self._unrecognized_lines.append('%s %s' % (keyword, value))
+      self._parse(entries, validate)
+    else:
+      self._entries = entries
 
   def _check_constraints(self, entries):
     """
@@ -225,15 +455,6 @@ class RouterStatusEntry(Descriptor):
 
     return ()
 
-  def get_unrecognized_lines(self):
-    """
-    Provides any unrecognized lines.
-
-    :returns: list of unrecognized lines
-    """
-
-    return list(self._unrecognized_lines)
-
   def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntry):
       return False
@@ -261,19 +482,9 @@ class RouterStatusEntryV2(RouterStatusEntry):
   a default value, others are left as **None** if undefined
   """
 
-  def __init__(self, content, validate = True, document = None):
-    self.digest = None
-    super(RouterStatusEntryV2, self).__init__(content, validate, document)
-
-  def _parse(self, entries, validate):
-    for keyword, values in list(entries.items()):
-      value, _, _ = values[0]
-
-      if keyword == 'r':
-        _parse_r_line(self, value, validate, True)
-        del entries['r']
-
-    RouterStatusEntry._parse(self, entries, validate)
+  ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
+    'digest': (None, _parse_r_line),
+  })
 
   def _name(self, is_plural = False):
     if is_plural:
@@ -331,45 +542,25 @@ class RouterStatusEntryV3(RouterStatusEntry):
   a default value, others are left as **None** if undefined
   """
 
-  def __init__(self, content, validate = True, document = None):
-    self.or_addresses = []
-    self.digest = None
+  ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
+    'digest': (None, _parse_r_line),
+    'or_addresses': ([], _parse_a_line),
 
-    self.bandwidth = None
-    self.measured = None
-    self.is_unmeasured = False
-    self.unrecognized_bandwidth_entries = []
+    'bandwidth': (None, _parse_w_line),
+    'measured': (None, _parse_w_line),
+    'is_unmeasured': (False, _parse_w_line),
+    'unrecognized_bandwidth_entries': ([], _parse_w_line),
 
-    self.exit_policy = None
-    self.microdescriptor_hashes = []
+    'exit_policy': (None, _parse_p_line),
+    'microdescriptor_hashes': ([], _parse_m_line),
+  })
 
-    super(RouterStatusEntryV3, self).__init__(content, validate, document)
-
-  def _parse(self, entries, validate):
-    for keyword, values in list(entries.items()):
-      value, _, _ = values[0]
-
-      if keyword == 'r':
-        _parse_r_line(self, value, validate, True)
-        del entries['r']
-      elif keyword == 'a':
-        for entry, _, _ in values:
-          _parse_a_line(self, entry, validate)
-
-        del entries['a']
-      elif keyword == 'w':
-        _parse_w_line(self, value, validate)
-        del entries['w']
-      elif keyword == 'p':
-        _parse_p_line(self, value, validate)
-        del entries['p']
-      elif keyword == 'm':
-        for entry, _, _ in values:
-          _parse_m_line(self, entry, validate)
-
-        del entries['m']
-
-    RouterStatusEntry._parse(self, entries, validate)
+  PARSER_FOR_LINE = dict(RouterStatusEntry.PARSER_FOR_LINE, **{
+    'a': _parse_a_line,
+    'w': _parse_w_line,
+    'p': _parse_p_line,
+    'm': _parse_m_line,
+  })
 
   def _name(self, is_plural = False):
     if is_plural:
@@ -417,34 +608,19 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   a default value, others are left as **None** if undefined
   """
 
-  def __init__(self, content, validate = True, document = None):
-    self.bandwidth = None
-    self.measured = None
-    self.is_unmeasured = False
-    self.unrecognized_bandwidth_entries = []
+  ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
+    'bandwidth': (None, _parse_w_line),
+    'measured': (None, _parse_w_line),
+    'is_unmeasured': (False, _parse_w_line),
+    'unrecognized_bandwidth_entries': ([], _parse_w_line),
 
-    self.digest = None
+    'digest': (None, _parse_microdescriptor_m_line),
+  })
 
-    super(RouterStatusEntryMicroV3, self).__init__(content, validate, document)
-
-  def _parse(self, entries, validate):
-    for keyword, values in list(entries.items()):
-      value, _, _ = values[0]
-
-      if keyword == 'r':
-        _parse_r_line(self, value, validate, False)
-        del entries['r']
-      elif keyword == 'w':
-        _parse_w_line(self, value, validate)
-        del entries['w']
-      elif keyword == 'm':
-        # "m" digest
-        # example: m aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70
-
-        self.digest = _base64_to_hex(value, validate, False)
-        del entries['m']
-
-    RouterStatusEntry._parse(self, entries, validate)
+  PARSER_FOR_LINE = dict(RouterStatusEntry.PARSER_FOR_LINE, **{
+    'w': _parse_w_line,
+    'm': _parse_microdescriptor_m_line,
+  })
 
   def _name(self, is_plural = False):
     if is_plural:
@@ -472,269 +648,3 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
 
   def __le__(self, other):
     return self._compare(other, lambda s, o: s <= o)
-
-
-def _parse_r_line(desc, value, validate, include_digest = True):
-  # Parses a RouterStatusEntry's 'r' line. They're very nearly identical for
-  # all current entry types (v2, v3, and microdescriptor v3) with one little
-  # wrinkle: only the microdescriptor flavor excludes a 'digest' field.
-  #
-  # For v2 and v3 router status entries:
-  #   "r" nickname identity digest publication IP ORPort DirPort
-  #   example: r mauer BD7xbfsCFku3+tgybEZsg8Yjhvw itcuKQ6PuPLJ7m/Oi928WjO2j8g 2012-06-22 13:19:32 80.101.105.103 9001 0
-  #
-  # For v3 microdescriptor router status entries:
-  #   "r" nickname identity publication IP ORPort DirPort
-  #   example: r Konata ARIJF2zbqirB9IwsW0mQznccWww 2012-09-24 13:40:40 69.64.48.168 9001 9030
-
-  r_comp = value.split(' ')
-
-  # inject a None for the digest to normalize the field positioning
-  if not include_digest:
-    r_comp.insert(2, None)
-
-  if len(r_comp) < 8:
-    if not validate:
-      return
-
-    expected_field_count = 'eight' if include_digest else 'seven'
-    raise ValueError("%s 'r' line must have %s values: r %s" % (desc._name(), expected_field_count, value))
-
-  if validate:
-    if not stem.util.tor_tools.is_valid_nickname(r_comp[0]):
-      raise ValueError("%s nickname isn't valid: %s" % (desc._name(), r_comp[0]))
-    elif not stem.util.connection.is_valid_ipv4_address(r_comp[5]):
-      raise ValueError("%s address isn't a valid IPv4 address: %s" % (desc._name(), r_comp[5]))
-    elif not stem.util.connection.is_valid_port(r_comp[6]):
-      raise ValueError('%s ORPort is invalid: %s' % (desc._name(), r_comp[6]))
-    elif not stem.util.connection.is_valid_port(r_comp[7], allow_zero = True):
-      raise ValueError('%s DirPort is invalid: %s' % (desc._name(), r_comp[7]))
-  elif not (r_comp[6].isdigit() and r_comp[7].isdigit()):
-    return
-
-  desc.nickname = r_comp[0]
-  desc.fingerprint = _base64_to_hex(r_comp[1], validate)
-
-  if include_digest:
-    desc.digest = _base64_to_hex(r_comp[2], validate)
-
-  desc.address = r_comp[5]
-  desc.or_port = int(r_comp[6])
-  desc.dir_port = None if r_comp[7] == '0' else int(r_comp[7])
-
-  try:
-    published = '%s %s' % (r_comp[3], r_comp[4])
-    desc.published = stem.util.str_tools._parse_timestamp(published)
-  except ValueError:
-    if validate:
-      raise ValueError("Publication time time wasn't parsable: r %s" % value)
-
-
-def _parse_a_line(desc, value, validate):
-  # "a" SP address ":" portlist
-  # example: a [2001:888:2133:0:82:94:251:204]:9001
-
-  if ':' not in value:
-    if not validate:
-      return
-
-    raise ValueError("%s 'a' line must be of the form '[address]:[ports]': a %s" % (desc._name(), value))
-
-  address, port = value.rsplit(':', 1)
-  is_ipv6 = address.startswith('[') and address.endswith(']')
-
-  if is_ipv6:
-    address = address[1:-1]  # remove brackets
-
-  if not ((not is_ipv6 and stem.util.connection.is_valid_ipv4_address(address)) or
-          (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
-    if not validate:
-      return
-    else:
-      raise ValueError("%s 'a' line must start with an IPv6 address: a %s" % (desc._name(), value))
-
-  if stem.util.connection.is_valid_port(port):
-    desc.or_addresses.append((address, int(port), is_ipv6))
-  elif validate:
-    raise ValueError("%s 'a' line had an invalid port (%s): a %s" % (desc._name(), port, value))
-
-
-def _parse_s_line(desc, value, validate):
-  # "s" Flags
-  # example: s Named Running Stable Valid
-
-  flags = [] if value == '' else value.split(' ')
-  desc.flags = flags
-
-  if validate:
-    for flag in flags:
-      if flags.count(flag) > 1:
-        raise ValueError('%s had duplicate flags: s %s' % (desc._name(), value))
-      elif flag == "":
-        raise ValueError("%s had extra whitespace on its 's' line: s %s" % (desc._name(), value))
-
-
-def _parse_v_line(desc, value, validate):
-  # "v" version
-  # example: v Tor 0.2.2.35
-  #
-  # The spec says that if this starts with "Tor " then what follows is a
-  # tor version. If not then it has "upgraded to a more sophisticated
-  # protocol versioning system".
-
-  desc.version_line = value
-
-  if value.startswith('Tor '):
-    try:
-      desc.version = stem.version._get_version(value[4:])
-    except ValueError as exc:
-      if validate:
-        raise ValueError('%s has a malformed tor version (%s): v %s' % (desc._name(), exc, value))
-
-
-def _parse_w_line(desc, value, validate):
-  # "w" "Bandwidth=" INT ["Measured=" INT] ["Unmeasured=1"]
-  # example: w Bandwidth=7980
-
-  w_comp = value.split(' ')
-
-  if len(w_comp) < 1:
-    if not validate:
-      return
-
-    raise ValueError("%s 'w' line is blank: w %s" % (desc._name(), value))
-  elif not w_comp[0].startswith('Bandwidth='):
-    if not validate:
-      return
-
-    raise ValueError("%s 'w' line needs to start with a 'Bandwidth=' entry: w %s" % (desc._name(), value))
-
-  for w_entry in w_comp:
-    if '=' in w_entry:
-      w_key, w_value = w_entry.split('=', 1)
-    else:
-      w_key, w_value = w_entry, None
-
-    if w_key == 'Bandwidth':
-      if not (w_value and w_value.isdigit()):
-        if not validate:
-          return
-
-        raise ValueError("%s 'Bandwidth=' entry needs to have a numeric value: w %s" % (desc._name(), value))
-
-      desc.bandwidth = int(w_value)
-    elif w_key == 'Measured':
-      if not (w_value and w_value.isdigit()):
-        if not validate:
-          return
-
-        raise ValueError("%s 'Measured=' entry needs to have a numeric value: w %s" % (desc._name(), value))
-
-      desc.measured = int(w_value)
-    elif w_key == 'Unmeasured':
-      if validate and w_value != '1':
-        raise ValueError("%s 'Unmeasured=' should only have the value of '1': w %s" % (desc._name(), value))
-
-      desc.is_unmeasured = True
-    else:
-      desc.unrecognized_bandwidth_entries.append(w_entry)
-
-
-def _parse_p_line(desc, value, validate):
-  # "p" ("accept" / "reject") PortList
-  # p reject 1-65535
-  # example: p accept 80,110,143,443,993,995,6660-6669,6697,7000-7001
-
-  try:
-    desc.exit_policy = stem.exit_policy.MicroExitPolicy(value)
-  except ValueError as exc:
-    if not validate:
-      return
-
-    raise ValueError('%s exit policy is malformed (%s): p %s' % (desc._name(), exc, value))
-
-
-def _parse_m_line(desc, value, validate):
-  # "m" methods 1*(algorithm "=" digest)
-  # example: m 8,9,10,11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs
-
-  m_comp = value.split(' ')
-
-  if not (desc.document and desc.document.is_vote):
-    if not validate:
-      return
-
-    vote_status = 'vote' if desc.document else '<undefined document>'
-    raise ValueError("%s 'm' line should only appear in votes (appeared in a %s): m %s" % (desc._name(), vote_status, value))
-  elif len(m_comp) < 1:
-    if not validate:
-      return
-
-    raise ValueError("%s 'm' line needs to start with a series of methods: m %s" % (desc._name(), value))
-
-  try:
-    methods = [int(entry) for entry in m_comp[0].split(',')]
-  except ValueError:
-    if not validate:
-      return
-
-    raise ValueError('%s microdescriptor methods should be a series of comma separated integers: m %s' % (desc._name(), value))
-
-  hashes = {}
-
-  for entry in m_comp[1:]:
-    if '=' not in entry:
-      if not validate:
-        continue
-
-      raise ValueError("%s can only have a series of 'algorithm=digest' mappings after the methods: m %s" % (desc._name(), value))
-
-    hash_name, digest = entry.split('=', 1)
-    hashes[hash_name] = digest
-
-  desc.microdescriptor_hashes.append((methods, hashes))
-
-
-def _base64_to_hex(identity, validate, check_if_fingerprint = True):
-  """
-  Decodes a base64 value to hex. For example...
-
-  ::
-
-    >>> _base64_to_hex('p1aag7VwarGxqctS7/fS0y5FU+s', True)
-    'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
-
-  :param str identity: encoded fingerprint from the consensus
-  :param bool validate: checks validity if **True**
-  :param bool check_if_fingerprint: asserts that the result is a fingerprint if **True**
-
-  :returns: **str** with the uppercase hex encoding of the relay's fingerprint
-
-  :raises: **ValueError** if the result isn't a valid fingerprint
-  """
-
-  # trailing equal signs were stripped from the identity
-  missing_padding = len(identity) % 4
-  identity += '=' * missing_padding
-
-  try:
-    identity_decoded = base64.b64decode(stem.util.str_tools._to_bytes(identity))
-  except (TypeError, binascii.Error):
-    if not validate:
-      return None
-
-    raise ValueError("Unable to decode identity string '%s'" % identity)
-
-  fingerprint = binascii.b2a_hex(identity_decoded).upper()
-
-  if stem.prereq.is_python_3():
-    fingerprint = stem.util.str_tools._to_unicode(fingerprint)
-
-  if check_if_fingerprint:
-    if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
-      if not validate:
-        return None
-
-      raise ValueError("Decoded '%s' to be '%s', which isn't a valid fingerprint" % (identity, fingerprint))
-
-  return fingerprint

@@ -39,8 +39,7 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     # checks with some malformed inputs
     for arg in ('', '20wYcb', '20wYcb' * 30):
-      self.assertRaises(ValueError, _base64_to_hex, arg, True)
-      self.assertEqual(None, _base64_to_hex(arg, False))
+      self.assertRaises(ValueError, _base64_to_hex, arg)
 
   def test_minimal_v2(self):
     """
@@ -138,7 +137,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     """
 
     content = b'z some stuff\n' + get_router_status_entry_v3(content = True)
-    self._expect_invalid_attr(content, '_unrecognized_lines', ['z some stuff'])
+    self.assertRaises(ValueError, RouterStatusEntryV3, content)
+    self.assertEqual(['z some stuff'], RouterStatusEntryV3(content, False).get_unrecognized_lines())
 
   def test_blank_lines(self):
     """
@@ -215,7 +215,7 @@ class TestRouterStatusEntry(unittest.TestCase):
       if value == '':
         value = None
 
-      self._expect_invalid_attr(content, 'nickname', value)
+      self._expect_invalid_attr(content, 'nickname')
 
   def test_malformed_fingerprint(self):
     """
@@ -275,7 +275,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     for value in test_values:
       r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('71.35.150.29', value)
       content = get_router_status_entry_v3({'r': r_line}, content = True)
-      self._expect_invalid_attr(content, 'address', value)
+      self._expect_invalid_attr(content, 'address')
 
   def test_malformed_port(self):
     """
@@ -304,10 +304,9 @@ class TestRouterStatusEntry(unittest.TestCase):
             r_line = r_line[:-1] + value
 
           attr = 'or_port' if include_or_port else 'dir_port'
-          expected = int(value) if value.isdigit() else None
 
           content = get_router_status_entry_v3({'r': r_line}, content = True)
-          self._expect_invalid_attr(content, attr, expected)
+          self._expect_invalid_attr(content, attr)
 
   def test_ipv6_addresses(self):
     """

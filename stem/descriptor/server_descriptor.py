@@ -537,6 +537,16 @@ class ServerDescriptor(Descriptor):
 
     if validate:
       self._parse(entries, validate)
+
+      _parse_exit_policy(self, entries)
+
+      # if we have a negative uptime and a tor version that shouldn't exhibit
+      # this bug then fail validation
+
+      if validate and self.uptime and self.tor_version:
+        if self.uptime < 0 and self.tor_version >= stem.version.Version('0.1.2.7'):
+          raise ValueError("Descriptor for version '%s' had a negative uptime value: %i" % (self.tor_version, self.uptime))
+
       self._check_constraints(entries)
     else:
       self._entries = entries
@@ -587,27 +597,6 @@ class ServerDescriptor(Descriptor):
     """
 
     return self._annotation_lines
-
-  def _parse(self, entries, validate):
-    """
-    Parses a series of 'keyword => (value, pgp block)' mappings and applies
-    them as attributes.
-
-    :param dict entries: descriptor contents to be applied
-    :param bool validate: checks the validity of descriptor content if **True**
-
-    :raises: **ValueError** if an error occurs in validation
-    """
-
-    super(ServerDescriptor, self)._parse(entries, validate)
-    _parse_exit_policy(self, entries)
-
-    # if we have a negative uptime and a tor version that shouldn't exhibit
-    # this bug then fail validation
-
-    if validate and self.uptime and self.tor_version:
-      if self.uptime < 0 and self.tor_version >= stem.version.Version('0.1.2.7'):
-        raise ValueError("Descriptor for version '%s' had a negative uptime value: %i" % (self.tor_version, self.uptime))
 
   def _check_constraints(self, entries):
     """

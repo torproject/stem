@@ -66,7 +66,6 @@ Doing the same is trivial with server descriptors...
 
 import hashlib
 
-import stem.descriptor.router_status_entry
 import stem.exit_policy
 
 from stem.descriptor import (
@@ -74,9 +73,13 @@ from stem.descriptor import (
   _get_descriptor_components,
   _read_until_keywords,
   _value,
-  _values,
   _parse_simple_line,
   _parse_key_block,
+)
+
+from stem.descriptor.router_status_entry import (
+  _parse_a_line,
+  _parse_p_line,
 )
 
 try:
@@ -155,11 +158,6 @@ def _parse_file(descriptor_file, validate = True, **kwargs):
       break  # done parsing descriptors
 
 
-def _parse_a_line(descriptor, entries):
-  for value in _values('a', entries):
-    stem.descriptor.router_status_entry._parse_a_line(descriptor, value, True)
-
-
 def _parse_id_line(descriptor, entries):
   value = _value('id', entries)
   value_comp = value.split()
@@ -174,7 +172,6 @@ def _parse_id_line(descriptor, entries):
 _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
 _parse_ntor_onion_key_line = _parse_simple_line('ntor-onion-key', 'ntor_onion_key')
 _parse_family_line = lambda descriptor, entries: setattr(descriptor, 'family', _value('family', entries).split(' '))
-_parse_p_line = lambda descriptor, entries: stem.descriptor.router_status_entry._parse_p_line(descriptor, _value('p', entries), True)
 _parse_p6_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('p6', entries)))
 
 
