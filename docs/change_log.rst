@@ -49,6 +49,10 @@ performance
 Stem also now runs directly under both python2 and python3 without a 2to3
 conversion (:trac:`14075`).
 
+ * **Controller**
+
+  * The 'strict' argument of :func:`~stem.exit_policy.ExitPolicy.can_exit_to` didn't behave as documented (:trac:`14314`)
+
  * **Descriptors**
 
   * Lazy-loading descriptors, improving performance by 25-70% depending on what type it is (:trac:`14011`)

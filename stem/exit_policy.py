@@ -748,14 +748,21 @@ class ExitPolicyRule(object):
     if port is not None and not stem.util.connection.is_valid_port(port):
       raise ValueError("'%s' isn't a valid port" % port)
 
+    # If we're not matching against an address or port but the rule has one
+    # then we're a fuzzy match. When that happens...
+    #
+    # * If strict and a reject rule then we're a match ('can exit to *all* instances').
+    # * If not strict and an accept rule then match ('an exit ot *any* instance').
+
+    fuzzy_match = False
+
     if not self.is_address_wildcard():
       # Already got the integer representation of our mask and our address
       # with the mask applied. Just need to check if this address with the
       # mask applied matches.
 
       if address is None:
-        if strict:
-          return False
+        fuzzy_match = True
       else:
         comparison_addr_bin = int(stem.util.connection._get_address_binary(address), 2)
         comparison_addr_bin &= self._get_mask_bin()
@@ -765,12 +772,14 @@ class ExitPolicyRule(object):
 
     if not self.is_port_wildcard():
       if port is None:
-        if strict:
-          return False
+        fuzzy_match = True
       elif port < self.min_port or port > self.max_port:
         return False
 
-    return True
+    if fuzzy_match:
+      return strict != self.is_accept
+    else:
+      return True
 
   def get_address_type(self):
     """

@@ -65,6 +65,17 @@ class TestExitPolicy(unittest.TestCase):
       self.assertEqual(expected_result, policy.can_exit_to(ip_addr, index))
       self.assertEqual(expected_result, policy.can_exit_to(port = index))
 
+  def test_can_exit_to_strictness(self):
+    # Check our 'strict' argument.
+
+    policy = ExitPolicy('reject 1.0.0.0/8:80', 'accept *:*')
+    self.assertEqual(False, policy.can_exit_to(None, 80, strict = True))  # can't exit to *all* instances of port 80
+    self.assertEqual(True, policy.can_exit_to(None, 80, strict = False))  # can exit to *an* instance of port 80
+
+    policy = ExitPolicy('accept 1.0.0.0/8:80', 'reject *:*')
+    self.assertEqual(False, policy.can_exit_to(None, 80, strict = True))  # can't exit to *all* instances of port 80
+    self.assertEqual(True, policy.can_exit_to(None, 80, strict = False))  # can exit to *an* instance of port 80
+
   def test_is_exiting_allowed(self):
     test_inputs = {
       (): True,
