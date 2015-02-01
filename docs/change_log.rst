@@ -62,6 +62,10 @@ conversion (:trac:`14075`).
   * :func:`stem.util.connection.port_usage` always returned None (:trac:`14046`)
   * Proc connection resolution could fail on especially busy systems (:trac:`14048`)
 
+ * **Website**
+
+  * Added support and `instructions for tox <faq.html#how-do-i-test-compatibility-with-multiple-python-versions>`_ (:trac:`14091`)
+
 .. _version_1.3:
 
 Version 1.3
