@@ -23,6 +23,7 @@ Frequently Asked Questions
 
  * :ref:`how_do_i_get_started`
  * :ref:`how_do_i_run_the_tests`
+ * :ref:`how_do_i_test_compatibility_with_multiple_python_versions`
  * :ref:`how_do_i_build_the_site`
  * :ref:`what_is_the_copyright_for_patches`
 
@@ -504,6 +505,40 @@ of all test runs.
 
 See ``run_tests.py --help`` for more usage information.
 
+.. _how_do_i_test_compatibility_with_multiple_python_versions:
+
+How can I test compatibility with multiple python versions?
+-----------------------------------------------------------
+
+Stem supports python versions 2.6 and above, including the 3.x series. You can
+test all versions of python you presently have installed on your system with
+`tox <https://testrun.org/tox/>`_. If you're using a Debian based system this
+can be as simple as...
+
+::
+
+  ~/stem$ sudo apt-get install python-tox python2.7 python3.3 python-dev python3-dev
+  ~/stem$ tox
+  ...
+  ____ summary _____
+    py27: commands succeeded
+    py33: commands succeeded
+
+Tox fetches Stem's dependencies for each version of python. One of these
+dependencies is pycrypto which requires **python-dev** (or **python3-dev** if
+testing with python3).
+
+Tox also allows you to customize the underlying commands and environments. For
+example...
+
+:: 
+
+  # run the tests with just python 2.6
+  ~/stem$ tox -e py26
+
+  # pass arguments to 'run_tests.py'
+  ~/stem$ tox -e py26 -- -u --test response.events
+ 
 .. _how_do_i_build_the_site:
 
 How do I build the site?
