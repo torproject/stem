@@ -67,6 +67,32 @@ class TestProcess(unittest.TestCase):
       tor_process.kill()
       tor_process.wait()
 
+  def test_with_invalid_config(self):
+    """
+    Spawn a tor process with a configuration that should make it dead on arrival.
+    """
+
+    if test.runner.only_run_once(self, 'test_with_invalid_config'):
+      return
+
+    # Set the same SocksPort and ControlPort, this should fail with...
+    #
+    #   [warn] Failed to parse/validate config: Failed to bind one of the listener ports.
+    #   [err] Reading config failed--see warnings above.
+
+    try:
+      stem.process.launch_tor_with_config(
+        tor_cmd = test.runner.get_runner().get_tor_command(),
+        config = {
+          'SocksPort': '2777',
+          'ControlPort': '2777',
+          'DataDirectory': self.data_directory,
+        },
+      )
+      self.fail("We should abort when there's an identical SocksPort and ControlPort")
+    except OSError as exc:
+      self.assertEqual('Process terminated: Failed to bind one of the listener ports.', str(exc))
+
   def test_launch_tor_with_timeout(self):
     """
     Runs launch_tor where it times out before completing.
