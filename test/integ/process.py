@@ -37,6 +37,13 @@ class TestProcess(unittest.TestCase):
     with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual('Tor version %s.\n' % controller.get_version(), self.run_tor('--version'))
 
+  def test_quiet_argument(self):
+    """
+    Check that we don't provide anything on stdout when running 'tor --quiet'.
+    """
+
+    self.assertEqual('', self.run_tor('--quiet', '--invalid_argument', expect_failure = True))
+
   def test_launch_tor_with_config(self):
     """
     Exercises launch_tor_with_config.
