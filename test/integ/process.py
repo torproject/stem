@@ -29,6 +29,14 @@ class TestProcess(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.data_directory)
 
+  def test_version_argument(self):
+    """
+    Check that 'tor --version' matches 'GETINFO version'.
+    """
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      self.assertEqual('Tor version %s.\n' % controller.get_version(), self.run_tor('--version'))
+
   def test_launch_tor_with_config(self):
     """
     Exercises launch_tor_with_config.
@@ -191,3 +199,25 @@ class TestProcess(unittest.TestCase):
       time.sleep(1)
 
     self.fail("tor didn't quit after the controller that owned it disconnected")
+
+  def run_tor(self, *args, **kwargs):
+    # python doesn't allow us to have individual keyword arguments when there's
+    # an arbitrary number of positional arguments, so explicitly checking
+
+    expect_failure = kwargs.pop('expect_failure', False)
+
+    if kwargs:
+      raise ValueError("Got unexpected keyword arguments: %s" % kwargs)
+
+    args = [test.runner.get_runner().get_tor_command()] + list(args)
+    tor_process = subprocess.Popen(args, stdout = subprocess.PIPE)
+
+    stdout = tor_process.communicate()[0]
+    exit_status = tor_process.poll()
+
+    if exit_status and not expect_failure:
+      self.fail("Didn't expect tor to be able to start when we run: %s\n%s" % (' '.join(args), stdout))
+    elif not exit_status and expect_failure:
+      self.fail("Tor failed to start when we ran: %s\n%s" % (' '.join(args), stdout))
+
+    return stdout
