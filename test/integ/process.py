@@ -56,7 +56,20 @@ class TestProcess(unittest.TestCase):
     Check that we don't provide anything on stdout when running 'tor --quiet'.
     """
 
-    self.assertEqual('', self.run_tor('--quiet', '--invalid_argument', expect_failure = True))
+    self.assertEqual('', self.run_tor('--quiet', '--invalid_argument', 'true', expect_failure = True))
+
+  def test_hush_argument(self):
+    """
+    Check that we only get warnings and errors when running 'tor --hush'.
+    """
+
+    output = self.run_tor('--hush', '--invalid_argument', expect_failure = True)
+    self.assertTrue("[warn] Command-line option '--invalid_argument' with no value. Failing." in output)
+    self.assertTrue("[err] Reading config failed--see warnings above." in output)
+
+    output = self.run_tor('--hush', '--invalid_argument', 'true', expect_failure = True)
+    self.assertTrue("[warn] Failed to parse/validate config: Unknown option 'invalid_argument'.  Failing." in output)
+    self.assertTrue("[err] Reading config failed--see warnings above." in output)
 
   def test_launch_tor_with_config(self):
     """
