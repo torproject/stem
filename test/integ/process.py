@@ -37,6 +37,20 @@ class TestProcess(unittest.TestCase):
     with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual('Tor version %s.\n' % controller.get_version(), self.run_tor('--version'))
 
+  def test_help_argument(self):
+    """
+    Check that 'tor --help' provides the expected output.
+    """
+
+    help_output = self.run_tor('--help')
+
+    self.assertTrue(help_output.startswith('Copyright (c) 2001'))
+    self.assertTrue(help_output.endswith('tor -f <torrc> [args]\nSee man page for options, or https://www.torproject.org/ for documentation.\n'))
+
+    # should be an alias for 'tor -h'
+
+    self.assertEqual(help_output, self.run_tor('-h'))
+
   def test_quiet_argument(self):
     """
     Check that we don't provide anything on stdout when running 'tor --quiet'.
