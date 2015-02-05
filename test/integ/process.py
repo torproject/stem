@@ -2,6 +2,9 @@
 Tests the stem.process functions with various use cases.
 """
 
+import binascii
+import hashlib
+import re
 import shutil
 import subprocess
 import tempfile
@@ -69,6 +72,38 @@ class TestProcess(unittest.TestCase):
 
     output = self.run_tor('--hush', '--invalid_argument', 'true', expect_failure = True)
     self.assertTrue("[warn] Failed to parse/validate config: Unknown option 'invalid_argument'.  Failing." in output)
+    self.assertTrue("[err] Reading config failed--see warnings above." in output)
+
+  def test_hash_password(self):
+    """
+    Hash a controller password. It's salted so can't assert that we get a
+    particular value. Also, tor's output is unnecessarily verbose so including
+    hush to cut it down.
+    """
+
+    output = self.run_tor('--hush', '--hash-password', 'my_password')
+    self.assertTrue(re.match("^16:[0-9A-F]{58}\n$", output))
+
+    # I'm not gonna even pretend to understand the following. Ported directly
+    # from tor's test_cmdline_args.py.
+
+    output_hex = binascii.a2b_hex(output.strip()[3:])
+    salt, how, hashed = output_hex[:8], ord(output_hex[8]), output_hex[9:]
+    count = (16 + (how & 15)) << ((how >> 4) + 6)
+    stuff = salt + 'my_password'
+    repetitions = count // len(stuff) + 1
+    inp = (stuff * repetitions)[:count]
+
+    self.assertEqual(hashlib.sha1(inp).digest(), hashed)
+
+  def test_hash_password_requires_argument(self):
+    """
+    Check that 'tor --hash-password' balks if not provided with something to
+    hash.
+    """
+
+    output = self.run_tor('--hash-password', expect_failure = True)
+    self.assertTrue("[warn] Command-line option '--hash-password' with no value. Failing." in output)
     self.assertTrue("[err] Reading config failed--see warnings above." in output)
 
   def test_launch_tor_with_config(self):
