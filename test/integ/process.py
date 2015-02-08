@@ -4,6 +4,7 @@ Tests the stem.process functions with various use cases.
 
 import binascii
 import hashlib
+import os
 import re
 import shutil
 import subprocess
@@ -15,6 +16,7 @@ import stem.prereq
 import stem.process
 import stem.socket
 import stem.util.system
+import stem.util.tor_tools
 import stem.version
 import test.runner
 
@@ -23,6 +25,14 @@ try:
   from unittest.mock import patch
 except ImportError:
   from mock import patch
+
+BASIC_RELAY_TORRC = """\
+ORPort 6000
+Nickname stemIntegTest
+ExitPolicy reject *:*
+PublishServerDescriptor 0  # don't actually publish to the dirauths
+DataDirectory %s
+"""
 
 
 class TestProcess(unittest.TestCase):
@@ -133,6 +143,44 @@ class TestProcess(unittest.TestCase):
     self.assertTrue('Configuration was valid\n' in valid_output)
 
     self.run_tor('--verify-config', '-f', __file__, expect_failure = True)
+
+  def test_list_fingerprint_argument(self):
+    """
+    Exercise our 'tor --list-fingerprint' argument.
+    """
+
+    # This command should only work with a relay (which our test instance isn't).
+
+    output = self.run_tor('--list-fingerprint', with_torrc = True, expect_failure = True)
+    self.assertTrue("Clients don't have long-term identity keys. Exiting." in output)
+
+    torrc_path = os.path.join(self.data_directory, 'torrc')
+
+    with open(torrc_path, 'w') as torrc_file:
+      torrc_file.write(BASIC_RELAY_TORRC % self.data_directory)
+
+    output = self.run_tor('--list-fingerprint', '-f', torrc_path)
+    nickname, fingerprint_with_spaces = output.splitlines()[-1].split(' ', 1)
+    fingerprint = fingerprint_with_spaces.replace(' ', '')
+
+    self.assertEqual('stemIntegTest', nickname)
+    self.assertEqual(49, len(fingerprint_with_spaces))
+    self.assertTrue(stem.util.tor_tools.is_valid_fingerprint(fingerprint))
+
+    with open(os.path.join(self.data_directory, 'fingerprint')) as fingerprint_file:
+      expected = 'stemIntegTest %s\n' % fingerprint
+      self.assertEqual(expected, fingerprint_file.read())
+
+  def test_list_torrc_options_argument(self):
+    """
+    Exercise our 'tor --list-torrc-options' argument.
+    """
+
+    output = self.run_tor('--list-torrc-options')
+    self.assertTrue(len(output.splitlines()) > 50)
+    self.assertTrue(output.splitlines()[0] <= 'AccountingMax')
+    self.assertTrue('UseBridges' in output)
+    self.assertTrue('SocksPort' in output)
 
   def test_launch_tor_with_config(self):
     """
