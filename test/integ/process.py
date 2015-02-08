@@ -106,6 +106,34 @@ class TestProcess(unittest.TestCase):
     self.assertTrue("[warn] Command-line option '--hash-password' with no value. Failing." in output)
     self.assertTrue("[err] Reading config failed--see warnings above." in output)
 
+  def test_dump_config_argument(self):
+    """
+    Exercises our 'tor --dump-config' arugments.
+    """
+
+    short_output = self.run_tor('--dump-config', 'short', with_torrc = True)
+    non_builtin_output = self.run_tor('--dump-config', 'non-builtin', with_torrc = True)
+    full_output = self.run_tor('--dump-config', 'full', with_torrc = True)
+    self.run_tor('--dump-config', 'invalid_option', with_torrc = True, expect_failure = True)
+
+    torrc_contents = [line for line in test.runner.get_runner().get_torrc_contents().splitlines() if not line.startswith('#')]
+
+    self.assertItemsEqual(torrc_contents, short_output.strip().splitlines())
+    self.assertItemsEqual(torrc_contents, non_builtin_output.strip().splitlines())
+
+    for line in torrc_contents:
+      self.assertTrue(line in full_output)
+
+  def test_validate_config_argument(self):
+    """
+    Exercises our 'tor --validate-config' argument.
+    """
+
+    valid_output = self.run_tor('--hush', '--verify-config', with_torrc = True)
+    self.assertTrue('Configuration was valid\n' in valid_output)
+
+    self.run_tor('--verify-config', '-f', __file__, expect_failure = True)
+
   def test_launch_tor_with_config(self):
     """
     Exercises launch_tor_with_config.
@@ -274,9 +302,13 @@ class TestProcess(unittest.TestCase):
     # an arbitrary number of positional arguments, so explicitly checking
 
     expect_failure = kwargs.pop('expect_failure', False)
+    with_torrc = kwargs.pop('with_torrc', False)
 
     if kwargs:
       raise ValueError("Got unexpected keyword arguments: %s" % kwargs)
+
+    if with_torrc:
+      args = ['-f', test.runner.get_runner().get_torrc_path()] + list(args)
 
     args = [test.runner.get_runner().get_tor_command()] + list(args)
     tor_process = subprocess.Popen(args, stdout = subprocess.PIPE)
