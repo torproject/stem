@@ -15,6 +15,7 @@ import unittest
 import stem.prereq
 import stem.process
 import stem.socket
+import stem.util.str_tools
 import stem.util.system
 import stem.util.tor_tools
 import stem.version
@@ -98,10 +99,15 @@ class TestProcess(unittest.TestCase):
     # I'm not gonna even pretend to understand the following. Ported directly
     # from tor's test_cmdline_args.py.
 
-    output_hex = binascii.a2b_hex(output.strip()[3:])
-    salt, how, hashed = output_hex[:8], ord(output_hex[8]), output_hex[9:]
+    if stem.prereq.is_python_3():
+      output_hex = binascii.a2b_hex(stem.util.str_tools._to_bytes(output).strip()[3:])
+      salt, how, hashed = output_hex[:8], output_hex[8], output_hex[9:]
+    else:
+      output_hex = binascii.a2b_hex(output.strip()[3:])
+      salt, how, hashed = output_hex[:8], ord(output_hex[8]), output_hex[9:]
+
     count = (16 + (how & 15)) << ((how >> 4) + 6)
-    stuff = salt + 'my_password'
+    stuff = salt + b'my_password'
     repetitions = count // len(stuff) + 1
     inp = (stuff * repetitions)[:count]
 
@@ -129,8 +135,8 @@ class TestProcess(unittest.TestCase):
 
     torrc_contents = [line for line in test.runner.get_runner().get_torrc_contents().splitlines() if not line.startswith('#')]
 
-    self.assertItemsEqual(torrc_contents, short_output.strip().splitlines())
-    self.assertItemsEqual(torrc_contents, non_builtin_output.strip().splitlines())
+    self.assertEqual(sorted(torrc_contents), sorted(short_output.strip().splitlines()))
+    self.assertEqual(sorted(torrc_contents), sorted(non_builtin_output.strip().splitlines()))
 
     for line in torrc_contents:
       self.assertTrue(line in full_output)
@@ -223,7 +229,7 @@ class TestProcess(unittest.TestCase):
 
     torrc = BASIC_RELAY_TORRC % self.data_directory
     output = self.run_tor('-f', '-', '--dump-config', 'short', stdin = torrc)
-    self.assertItemsEqual(torrc.splitlines(), output.splitlines())
+    self.assertEqual(sorted(torrc.splitlines()), sorted(output.splitlines()))
 
   def test_with_missing_torrc(self):
     """
@@ -419,7 +425,7 @@ class TestProcess(unittest.TestCase):
     tor_process = subprocess.Popen(args, stdin = subprocess.PIPE, stdout = subprocess.PIPE)
 
     if stdin:
-      tor_process.stdin.write(stdin)
+      tor_process.stdin.write(stem.util.str_tools._to_bytes(stdin))
 
     stdout = tor_process.communicate()[0]
     exit_status = tor_process.poll()
@@ -429,4 +435,4 @@ class TestProcess(unittest.TestCase):
     elif not exit_status and expect_failure:
       self.fail("Tor failed to start when we ran: %s\n%s" % (' '.join(args), stdout))
 
-    return stdout
+    return stem.util.str_tools._to_unicode(stdout) if stem.prereq.is_python_3() else stdout
