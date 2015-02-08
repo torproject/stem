@@ -28,9 +28,10 @@ except ImportError:
 
 BASIC_RELAY_TORRC = """\
 ORPort 6000
+ExtORPort 6001
 Nickname stemIntegTest
 ExitPolicy reject *:*
-PublishServerDescriptor 0  # don't actually publish to the dirauths
+PublishServerDescriptor 0
 DataDirectory %s
 """
 
@@ -181,6 +182,61 @@ class TestProcess(unittest.TestCase):
     self.assertTrue(output.splitlines()[0] <= 'AccountingMax')
     self.assertTrue('UseBridges' in output)
     self.assertTrue('SocksPort' in output)
+
+  def test_torrc_arguments(self):
+    """
+    Pass configuration options on the commandline.
+    """
+
+    torrc_path = os.path.join(self.data_directory, 'torrc')
+
+    with open(torrc_path, 'w') as torrc_file:
+      torrc_file.write(BASIC_RELAY_TORRC % self.data_directory)
+
+    config_args = [
+      '+ORPort', '9003',  # appends an extra ORPort
+      'SocksPort', '9090',
+      '/ExtORPort',  # drops our ExtORPort
+      '/TransPort',  # drops a port we didn't originally have
+      '+ControlPort', '9005',  # appends a ControlPort where we didn't have any before
+    ]
+
+    output = self.run_tor('-f', torrc_path, '--dump-config', 'short', *config_args)
+    result = [line for line in output.splitlines() if not line.startswith('DataDirectory')]
+
+    expected = [
+      'ControlPort 9005',
+      'ExitPolicy reject *:*',
+      'Nickname stemIntegTest',
+      'ORPort 6000',
+      'ORPort 9003',
+      'PublishServerDescriptor 0',
+      'SocksPort 9090',
+    ]
+
+    self.assertEqual(expected, result)
+
+  def test_torrc_arguments_via_stdin(self):
+    """
+    Pass configuration options via stdin.
+    """
+
+    torrc = BASIC_RELAY_TORRC % self.data_directory
+    output = self.run_tor('-f', '-', '--dump-config', 'short', stdin = torrc)
+    self.assertItemsEqual(torrc.splitlines(), output.splitlines())
+
+  def test_with_missing_torrc(self):
+    """
+    Provide a torrc path that doesn't exist.
+    """
+
+    output = self.run_tor('-f', '/path/that/really/shouldnt/exist', '--verify-config', expect_failure = True)
+    self.assertTrue('[warn] Unable to open configuration file "/path/that/really/shouldnt/exist".' in output)
+    self.assertTrue('[err] Reading config failed--see warnings above.' in output)
+
+    output = self.run_tor('-f', '/path/that/really/shouldnt/exist', '--verify-config', '--ignore-missing-torrc')
+    self.assertTrue('[notice] Configuration file "/path/that/really/shouldnt/exist" not present, using reasonable defaults.' in output)
+    self.assertTrue('Configuration was valid' in output)
 
   def test_launch_tor_with_config(self):
     """
@@ -351,6 +407,7 @@ class TestProcess(unittest.TestCase):
 
     expect_failure = kwargs.pop('expect_failure', False)
     with_torrc = kwargs.pop('with_torrc', False)
+    stdin = kwargs.pop('stdin', None)
 
     if kwargs:
       raise ValueError("Got unexpected keyword arguments: %s" % kwargs)
@@ -359,7 +416,10 @@ class TestProcess(unittest.TestCase):
       args = ['-f', test.runner.get_runner().get_torrc_path()] + list(args)
 
     args = [test.runner.get_runner().get_tor_command()] + list(args)
-    tor_process = subprocess.Popen(args, stdout = subprocess.PIPE)
+    tor_process = subprocess.Popen(args, stdin = subprocess.PIPE, stdout = subprocess.PIPE)
+
+    if stdin:
+      tor_process.stdin.write(stdin)
 
     stdout = tor_process.communicate()[0]
     exit_status = tor_process.poll()
