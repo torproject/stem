@@ -124,7 +124,7 @@ class TestConnection(unittest.TestCase):
     proc_mock.return_value = True
     self.assertEqual([Resolver.PROC, Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.system_resolvers('Linux'))
 
-    # check that calling without an argument is equivilant to calling for this
+    # check that calling without an argument is equivalent to calling for this
     # platform
 
     self.assertEqual(stem.util.connection.system_resolvers(platform.system()), stem.util.connection.system_resolvers())

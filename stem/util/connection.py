@@ -260,7 +260,7 @@ def system_resolvers(system = None):
   elif system in ('Darwin', 'OpenBSD'):
     resolvers = [Resolver.LSOF]
   elif system == 'FreeBSD':
-    # Netstat is available, but lacks a '-p' equivilant so we can't associate
+    # Netstat is available, but lacks a '-p' equivalent so we can't associate
     # the results to processes. The platform also has a ss command, but it
     # belongs to a spreadsheet application.
 
