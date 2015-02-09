@@ -62,13 +62,13 @@ class TestDirectoryAuthority(unittest.TestCase):
     Parses an authority using the '-legacy' format.
     """
 
-    content = 'dir-source gabelmoo-legacy 81349FC1F2DBA2C2C11B45CB9706637D480AB913 212.112.245.170 212.112.245.170 80 443'
+    content = 'dir-source gabelmoo-legacy 81349FC1F2DBA2C2C11B45CB9706637D480AB913 131.188.40.189 131.188.40.189 80 443'
     authority = DirectoryAuthority(content, is_vote = False)
 
     self.assertEqual('gabelmoo-legacy', authority.nickname)
     self.assertEqual('81349FC1F2DBA2C2C11B45CB9706637D480AB913', authority.fingerprint)
-    self.assertEqual('212.112.245.170', authority.hostname)
-    self.assertEqual('212.112.245.170', authority.address)
+    self.assertEqual('131.188.40.189', authority.hostname)
+    self.assertEqual('131.188.40.189', authority.address)
     self.assertEqual(80, authority.dir_port)
     self.assertEqual(443, authority.or_port)
     self.assertEqual(True, authority.is_legacy)

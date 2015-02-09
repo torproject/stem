@@ -90,7 +90,7 @@ moria1 has the Running flag but maatuska doesn't: DCAEC3D069DC39AAE43D13C8AF31B5
 """
 
 VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT = """\
-Getting gabelmoo's vote from http://212.112.245.170:80/tor/status-vote/current/authority:
+Getting gabelmoo's vote from http://131.188.40.189:80/tor/status-vote/current/authority:
   5935 measured entries and 1332 unmeasured
 Getting tor26's vote from http://86.59.21.38:80/tor/status-vote/current/authority:
   5735 measured entries and 1690 unmeasured
@@ -408,14 +408,14 @@ class TestTutorialExamples(unittest.TestCase):
       DIRECTORY_AUTHORITIES['maatuska'],
     ]
 
-    directory_values[0].address = '212.112.245.170'
+    directory_values[0].address = '131.188.40.189'
     get_authorities_mock().values.return_value = directory_values
 
     entry_with_measurement = get_router_status_entry_v3({'w': 'Bandwidth=1 Measured=1'})
     entry_without_measurement = get_router_status_entry_v3()
 
     query1 = Mock()
-    query1.download_url = 'http://212.112.245.170:80/tor/status-vote/current/authority'
+    query1.download_url = 'http://131.188.40.189:80/tor/status-vote/current/authority'
     query1.run.return_value = [entry_with_measurement] * 5935 + [entry_without_measurement] * 1332
 
     query2 = Mock()

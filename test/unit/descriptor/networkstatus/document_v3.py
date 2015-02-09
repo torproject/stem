@@ -1136,7 +1136,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     Includes both normal authorities and those following the '-legacy' format.
     """
 
-    legacy_content = 'dir-source gabelmoo-legacy 81349FC1F2DBA2C2C11B45CB9706637D480AB913 212.112.245.170 212.112.245.170 80 443'
+    legacy_content = 'dir-source gabelmoo-legacy 81349FC1F2DBA2C2C11B45CB9706637D480AB913 131.188.40.189 131.188.40.189 80 443'
 
     authority1 = get_directory_authority({'contact': 'doctor jekyll'}, is_vote = False)
     authority2 = DirectoryAuthority(legacy_content, validate = True, is_vote = False)

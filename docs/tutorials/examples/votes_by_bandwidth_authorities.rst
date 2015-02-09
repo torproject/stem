@@ -51,7 +51,7 @@ gets their current votes then prints how many relays it had a measurement for.
 ::
 
   % python bandwidth_auth_measured_counts.py
-  Getting gabelmoo's vote from http://212.112.245.170:80/tor/status-vote/current/authority:
+  Getting gabelmoo's vote from http://131.188.40.189:80/tor/status-vote/current/authority:
     5935 measured entries and 1332 unmeasured
   Getting tor26's vote from http://86.59.21.38:80/tor/status-vote/current/authority:
     5735 measured entries and 1690 unmeasured
