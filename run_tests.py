@@ -385,11 +385,13 @@ def _get_args(argv):
         attribute_targets.remove(Target.RUN_ALL)
         run_targets = all_run_targets
 
-      args['run_targets'] = run_targets
-      args['attribute_targets'] = attribute_targets
+      # if no RUN_* targets are provided then keep the default (otherwise we
+      # won't have any tests to run)
 
-      if not args['run_targets']:
-        raise ValueError("This wouldn't run anything. You need to provide at least one target that starts with 'RUN_'.")
+      if run_targets:
+        args['run_targets'] = run_targets
+
+      args['attribute_targets'] = attribute_targets
     elif opt == '--test':
       args['specific_test'] = arg
     elif opt in ('-l', '--log'):
