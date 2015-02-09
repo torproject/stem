@@ -232,15 +232,16 @@ class TestDescriptorReader(unittest.TestCase):
     missing_filename = {'': 123}
     relative_filename = {'foobar': 123}
     string_timestamp = {'/tmp': '123a'}
+    temp_path = tempfile.mkstemp(prefix = 'stem-unit-tests-', text = True)[1]
 
     for listing in (missing_filename, relative_filename, string_timestamp):
-      self.assertRaises(TypeError, stem.descriptor.reader.save_processed_files, '/tmp/foo', listing)
+      self.assertRaises(TypeError, stem.descriptor.reader.save_processed_files, temp_path, listing)
 
     # Though our attempts to save the processed files fail we'll write an empty
     # file. Cleaning it up.
 
     try:
-      os.remove('/tmp/foo')
+      os.remove(temp_path)
     except:
       pass
 
