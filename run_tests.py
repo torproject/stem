@@ -387,6 +387,9 @@ def _get_args(argv):
 
       args['run_targets'] = run_targets
       args['attribute_targets'] = attribute_targets
+
+      if not args['run_targets']:
+        raise ValueError("This wouldn't run anything. You need to provide at least one target that starts with 'RUN_'.")
     elif opt == '--test':
       args['specific_test'] = arg
     elif opt in ('-l', '--log'):
