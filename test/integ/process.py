@@ -49,6 +49,9 @@ class TestProcess(unittest.TestCase):
     Check that 'tor --version' matches 'GETINFO version'.
     """
 
+    if test.runner.require_control(self):
+      return
+
     with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual('Tor version %s.\n' % controller.get_version(), self.run_tor('--version'))
 
