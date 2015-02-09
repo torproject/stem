@@ -378,7 +378,7 @@ def _get_args(argv):
 
       args['run_targets'] = run_targets
       args['attribute_targets'] = attribute_targets
-    elif opt in ('-t', '--test'):
+    elif opt == '--test':
       args['specific_test'] = arg
     elif opt in ('-l', '--log'):
       arg = arg.upper()
