@@ -1176,7 +1176,7 @@ class TestController(unittest.TestCase):
     host = '38.229.72.14'   # www.torproject.org
     port = 80
 
-    circuit_id = None
+    circuit_id, streams = None, []
 
     def handle_streamcreated(stream):
       if stream.status == 'NEW' and circuit_id:
