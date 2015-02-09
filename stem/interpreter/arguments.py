@@ -45,11 +45,15 @@ def parse(argv):
   args = dict(DEFAULT_ARGS)
 
   try:
-    getopt_results = getopt.getopt(argv, OPT, OPT_EXPANDED)[0]
+    recognized_args, unrecognized_args = getopt.getopt(argv, OPT, OPT_EXPANDED)
+
+    if unrecognized_args:
+      error_msg = "aren't recognized arguments" if len(unrecognized_args) > 1 else "isn't a recognized argument"
+      raise ValueError("'%s' %s" % ("', '".join(unrecognized_args), error_msg))
   except getopt.GetoptError as exc:
     raise ValueError('%s (for usage provide --help)' % exc)
 
-  for opt, arg in getopt_results:
+  for opt, arg in recognized_args:
     if opt in ('-i', '--interface'):
       if ':' in arg:
         address, port = arg.split(':', 1)

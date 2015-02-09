@@ -343,7 +343,16 @@ def _get_args(argv):
 
   args = dict(ARGS)
 
-  for opt, arg in getopt.getopt(argv, OPT, OPT_EXPANDED)[0]:
+  try:
+    recognized_args, unrecognized_args = getopt.getopt(argv, OPT, OPT_EXPANDED)
+
+    if unrecognized_args:
+      error_msg = "aren't recognized arguments" if len(unrecognized_args) > 1 else "isn't a recognized argument"
+      raise ValueError("'%s' %s" % ("', '".join(unrecognized_args), error_msg))
+  except getopt.GetoptError as exc:
+    raise ValueError('%s (for usage provide --help)' % exc)
+
+  for opt, arg in recognized_args:
     if opt in ('-a', '--all'):
       args['run_unit'] = True
       args['run_integ'] = True
