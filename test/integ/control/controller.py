@@ -898,7 +898,7 @@ class TestController(unittest.TestCase):
     elif test.runner.require_online(self):
       return
 
-    host = '38.229.72.14'   # www.torproject.org
+    host = socket.gethostbyname('www.torproject.org')
     port = 443
 
     runner = test.runner.get_runner()
@@ -1173,7 +1173,7 @@ class TestController(unittest.TestCase):
     elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
       return
 
-    host = '38.229.72.14'   # www.torproject.org
+    host = socket.gethostbyname('www.torproject.org')
     port = 80
 
     circuit_id, streams = None, []
