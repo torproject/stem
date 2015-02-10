@@ -705,7 +705,7 @@ class Runner(object):
     :raises: OSError if we either fail to create the tor process or reached a timeout without success
     """
 
-    println('Starting tor...\n', STATUS)
+    println('Starting %s...\n' % tor_cmd, STATUS)
     start_time = time.time()
 
     try:
