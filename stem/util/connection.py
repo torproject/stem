@@ -27,17 +27,18 @@ Connection and networking based utility functions.
 
   .. versionadded:: 1.1.0
 
-  ================= ===========
-  Resolver          Description
-  ================= ===========
-  **PROC**          /proc contents
-  **NETSTAT**       netstat command
-  **SS**            ss command
-  **LSOF**          lsof command
-  **SOCKSTAT**      sockstat command under *nix
-  **BSD_SOCKSTAT**  sockstat command under FreeBSD
-  **BSD_PROCSTAT**  procstat command under FreeBSD
-  ================= ===========
+  ================= 	===========
+  Resolver          	Description
+  ================= 	===========
+  **PROC**          	/proc contents
+  **NETSTAT**      		netstat 
+  **NETSTAT_WINDOWS**	netstat command under Windows
+  **SS**           	 	ss command
+  **LSOF**           	lsof command
+  **SOCKSTAT**     	 	sockstat command under *nix
+  **BSD_SOCKSTAT** 	 	sockstat command under FreeBSD
+  **BSD_PROCSTAT** 	 	procstat command under FreeBSD
+  =================	 	===========
 """
 
 import collections
@@ -63,6 +64,7 @@ LOG_CONNECTION_RESOLUTION = False
 Resolver = enum.Enum(
   ('PROC', 'proc'),
   ('NETSTAT', 'netstat'),
+  ('NETSTAT_WINDOWS', 'netstat'),
   ('SS', 'ss'),
   ('LSOF', 'lsof'),
   ('SOCKSTAT', 'sockstat'),
@@ -91,6 +93,9 @@ RESOLVER_COMMAND = {
   # -n = prevents dns lookups, -p = include process
   Resolver.NETSTAT: 'netstat -np',
 
+  #-ano is a Windows variant for netstat including pid
+  Resolver.NETSTAT_WINDOWS: 'netstat -ano',
+  
   # -n = numeric ports, -p = include process, -t = tcp sockets, -u = udp sockets
   Resolver.SS: 'ss -nptu',
 
@@ -112,6 +117,10 @@ RESOLVER_FILTER = {
 
   # tcp        0    586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843/tor
   Resolver.NETSTAT: '^{protocol}\s+.*\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED\s+{pid}/{name}\s*$',
+  
+  # tcp        586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843
+  
+  Resolver.NETSTAT_WINDOWS: '^\s*{protocol}\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED\s+{pid}\s*$',  
 
   # tcp    ESTAB      0      0           192.168.0.20:44415       38.229.79.2:443    users:(("tor",15843,9))
   Resolver.SS: '^{protocol}\s+ESTAB\s+.*\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+users:\(\("{name}",{pid},[0-9]+\)\)$',
@@ -256,11 +265,11 @@ def system_resolvers(system = None):
       system = platform.system()
 
   if system == 'Windows':
-    resolvers = []
+    resolvers = [Resolver.NETSTAT_WINDOWS]
   elif system in ('Darwin', 'OpenBSD'):
     resolvers = [Resolver.LSOF]
   elif system == 'FreeBSD':
-    # Netstat is available, but lacks a '-p' equivalent so we can't associate
+    # Netstat is available, but lacks a '-p' equivilant so we can't associate
     # the results to processes. The platform also has a ss command, but it
     # belongs to a spreadsheet application.
 
