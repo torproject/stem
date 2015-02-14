@@ -79,7 +79,7 @@ GET_PID_BY_NAME_PIDOF = 'pidof %s'
 GET_PID_BY_NAME_PS_LINUX = 'ps -o pid -C %s'
 GET_PID_BY_NAME_PS_BSD = 'ps axc'
 GET_PID_BY_NAME_LSOF = 'lsof -tc %s'
-GET_PID_BY_NAME_NETSTAT_WINDOWS = 'tasklist | findstr %s.exe'
+GET_PID_BY_NAME_TASKLIST = 'tasklist | findstr %s.exe'
 GET_PID_BY_PORT_NETSTAT = 'netstat -npltu'
 GET_PID_BY_PORT_SOCKSTAT = 'sockstat -4l -P tcp -p %s'
 GET_PID_BY_PORT_LSOF = 'lsof -wnP -iTCP -sTCP:LISTEN'
@@ -446,7 +446,7 @@ def pid_by_name(process_name, multiple = False):
     if process_name.find(".exe") == -1:
 	  process_name = process_name + '.exe'
 	  
-    command = GET_PID_BY_NAME_NETSTAT_WINDOWS % process_name
+    command = GET_PID_BY_NAME_TASKLIST % process_name
     process_ids = []
 	
     try:
