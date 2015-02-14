@@ -50,11 +50,12 @@ import platform
 import subprocess
 import tarfile
 import time
+import re
 
 import stem.util.proc
 import stem.util.str_tools
 
-from stem import UNDEFINED, str_type
+from stem import UNDEFINED
 from stem.util import log
 
 # Mapping of commands to if they're available or not.
@@ -78,6 +79,7 @@ GET_PID_BY_NAME_PIDOF = 'pidof %s'
 GET_PID_BY_NAME_PS_LINUX = 'ps -o pid -C %s'
 GET_PID_BY_NAME_PS_BSD = 'ps axc'
 GET_PID_BY_NAME_LSOF = 'lsof -tc %s'
+GET_PID_BY_NAME_NETSTAT_WINDOWS = 'tasklist | findstr %s.exe'
 GET_PID_BY_PORT_NETSTAT = 'netstat -npltu'
 GET_PID_BY_PORT_SOCKSTAT = 'sockstat -4l -P tcp -p %s'
 GET_PID_BY_PORT_LSOF = 'lsof -wnP -iTCP -sTCP:LISTEN'
@@ -242,7 +244,7 @@ def is_running(command):
       command_listing = call(secondary_resolver, None)
 
     if command_listing:
-      command_listing = map(str_type.strip, command_listing)
+      command_listing = map(unicode.strip, command_listing)
       return command in command_listing
 
   return None
@@ -302,6 +304,7 @@ def pid_by_name(process_name, multiple = False):
     3. ps -o pid -C <name> (linux)
        ps axc | egrep " <name>$" (bsd)
     4. lsof -tc <name>
+	5. tasklist | str <name>.exe
 
   :param str process_name: process name for which to fetch the pid
   :param bool multiple: provides a list of all pids if **True**, otherwise
@@ -327,7 +330,7 @@ def pid_by_name(process_name, multiple = False):
 
     if results:
       try:
-        pids = list(map(int, results))
+        pids = map(int, results)
 
         if multiple:
           return pids
@@ -348,7 +351,7 @@ def pid_by_name(process_name, multiple = False):
 
     if results and len(results) == 1:
       try:
-        pids = list(map(int, results[0].split()))
+        pids = map(int, results[0].split())
 
         if multiple:
           return pids
@@ -380,7 +383,7 @@ def pid_by_name(process_name, multiple = False):
 
       if results:
         try:
-          pids = list(map(int, results[1:]))
+          pids = map(int, results[1:])
 
           if multiple:
             return pids
@@ -398,7 +401,7 @@ def pid_by_name(process_name, multiple = False):
         results = [r.split()[0] for r in results if r.endswith(' %s' % process_name)]
 
         try:
-          pids = list(map(int, results))
+          pids = map(int, results)
 
           if multiple:
             return pids
@@ -426,7 +429,7 @@ def pid_by_name(process_name, multiple = False):
 
     if results:
       try:
-        pids = list(map(int, results))
+        pids = map(int, results)
 
         if multiple:
           return pids
@@ -434,6 +437,38 @@ def pid_by_name(process_name, multiple = False):
           return pids[0]
       except ValueError:
         pass
+
+  #Calling and Parsing tasklist command on Windows (Because call method doesn't work properly with it)
+  #Process name may or may not include .exe
+  
+  if is_available('netstat -ano'):
+  
+    if process_name.find(".exe") == -1:
+	  process_name = process_name + '.exe'
+	  
+    command = GET_PID_BY_NAME_NETSTAT_WINDOWS % process_name
+    process_ids = []
+	
+    try:
+      results = stem.util.system.call('tasklist')
+      tasklist_regex_str = '^\s*' + process_name + '\s+(?P<pid>[0-9]*)'
+      tasklist_regex = re.compile(tasklist_regex_str)
+	  
+      for line in results:
+        match = tasklist_regex.search(line)
+        if match:
+          attr = match.groupdict()
+          id = int(attr['pid'])
+          process_ids.append(id)
+	
+	  return process_ids
+	  
+    except OSError as exc:
+      log.debug("failed to query '%s': %s" % (command, exc))
+      raise IOError("Unable to query '%s': %s" % (command, exc))	
+
+    
+		
 
   log.debug("failed to resolve a pid for '%s'" % process_name)
   return [] if multiple else None
@@ -966,7 +1001,7 @@ def get_process_name():
 
       args, argc = [], argc_t()
 
-      for i in range(100):
+      for i in xrange(100):
         # The ending index can be either None or raise a ValueError when
         # accessed...
         #

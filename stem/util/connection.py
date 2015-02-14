@@ -257,7 +257,6 @@ def system_resolvers(system = None):
 
   :returns: **list** of :data:`~stem.util.connection.Resolver` instances available on this platform
   """
-
   if system is None:
     if stem.util.system.is_gentoo():
       system = 'Gentoo'
