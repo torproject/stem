@@ -1,3 +1,6 @@
+# Copyright 2014-2015, Damian Johnson and The Tor Project
+# See LICENSE for licensing information
+
 """
 Handles making requests and formatting the responses.
 """

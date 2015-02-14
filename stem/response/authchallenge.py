@@ -1,4 +1,4 @@
-# Copyright 2012-2014, Damian Johnson and The Tor Project
+# Copyright 2012-2015, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 
 import binascii

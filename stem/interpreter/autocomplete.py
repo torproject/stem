@@ -1,3 +1,6 @@
+# Copyright 2014-2015, Damian Johnson and The Tor Project
+# See LICENSE for licensing information
+
 """
 Tab completion for our interpreter prompt.
 """
