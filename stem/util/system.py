@@ -454,6 +454,9 @@ def pid_by_name(process_name, multiple = False):
       tasklist_regex_str = '^\s*' + process_name + '\s+(?P<pid>[0-9]*)'
       tasklist_regex = re.compile(tasklist_regex_str)
 	  
+      if not results:
+        raise IOError("No results found for tasklist")
+	  
       for line in results:
         match = tasklist_regex.search(line)
         if match:
@@ -461,13 +464,17 @@ def pid_by_name(process_name, multiple = False):
           id = int(attr['pid'])
           process_ids.append(id)
 	
-	  return process_ids
+	  if process_ids == []:
+	    raise IOError("Process Name not Found : %s" % process_name)
+		
+      if multiple:
+        return process_ids
+      elif len(process_ids) > 0:
+        return process_ids[0]
 	  
     except OSError as exc:
       log.debug("failed to query '%s': %s" % (command, exc))
       raise IOError("Unable to query '%s': %s" % (command, exc))	
-
-    
 		
 
   log.debug("failed to resolve a pid for '%s'" % process_name)

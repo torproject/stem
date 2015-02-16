@@ -45,6 +45,16 @@ GET_PID_BY_NAME_PS_BSD_MULTIPLE = [
   '   10   ??  Ss     0:09.97 kextd',
   '   41   ??  Ss     9:00.22 launchd']
 
+
+GET_PID_BY_NAME_TASKLIST_RESULTS = [
+  'Image Name                     PID Session Name        Session#    Mem Usage',
+  'System Idle Process              0 Services                   0         20 K',
+  'svchost.exe                    872 Services                   0      8,744 K',
+  'hpservice.exe                 1112 Services                   0      3,828 K',
+  'tor.exe                       3712 Console                    1     29,976 K',
+  'tor.exe                       3713 Console                    1     21,976 K',  
+  'conhost.exe                   3012 Console                    1      4,652 K']
+  
 GET_PID_BY_PORT_NETSTAT_RESULTS = [
   'Active Internet connections (only servers)',
   'Proto Recv-Q Send-Q Local Address           Foreign Address   State    PID/Program name',
@@ -53,7 +63,7 @@ GET_PID_BY_PORT_NETSTAT_RESULTS = [
   'tcp6       0      0 ::1:631                 :::*              LISTEN   -     ',
   'udp        0      0 0.0.0.0:5353            0.0.0.0:*                  -     ',
   'udp6       0      0 fe80::7ae4:ff:fe2f::123 :::*                       -     ']
-
+  
 GET_PID_BY_PORT_SOCKSTAT_RESULTS = [
   '_tor     tor        4397  7  tcp4   51.64.7.84:9051    *:*',
   '_tor     tor        4397  12 tcp4   51.64.7.84:54011   80.3.121.7:9051',
@@ -250,6 +260,20 @@ class TestSystem(unittest.TestCase):
 
     self.assertEqual([123, 456, 789], system.pid_by_name('multiple_results', multiple = True))
 
+  @patch('stem.util.system.call')
+  @patch('stem.util.system.is_available', Mock(return_value = True))
+  def test_pid_by_name_tasklist(self, call_mock):
+    """
+    Tests the pid_by_name function with tasklist responses.
+    """
+
+    call_mock.return_value = GET_PID_BY_NAME_TASKLIST_RESULTS   
+    self.assertEqual(3712, system.pid_by_name('tor'))
+    self.assertEqual(None, system.pid_by_name('DirectoryService'))
+    self.assertEqual(None, system.pid_by_name('blarg'))
+
+    self.assertEqual([3712, 3713], system.pid_by_name('tor', multiple = True))
+	
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_pid_by_port_netstat(self, call_mock):

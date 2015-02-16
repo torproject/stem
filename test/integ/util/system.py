@@ -79,10 +79,7 @@ class TestSystem(unittest.TestCase):
     will fail if there's other tor instances running.
     """
 
-    if stem.util.system.is_windows():
-      test.runner.skip(self, '(unavailable on windows)')
-      return
-    elif self._is_extra_tor_running():
+    if self._is_extra_tor_running():
       test.runner.skip(self, '(multiple tor instances)')
       return
 
@@ -218,6 +215,24 @@ class TestSystem(unittest.TestCase):
 
       if len(all_tor_pids) == 1:
         self.assertEqual(our_tor_pid, all_tor_pids[0])
+		
+  def test_pid_by_name_tasklist(self):
+    """
+    Tests the pid_by_name function with a tasklist response.
+    """
+
+    runner = test.runner.get_runner()
+    if self._is_extra_tor_running():
+      test.runner.skip(self, '(multiple tor instances)')
+      return
+    elif not stem.util.system.is_available('tasklist'):
+      test.runner.skip(self, '(tasklist unavailable)')
+      return
+
+    tor_pid = test.runner.get_runner().get_pid()
+    tor_cmd = test.runner.get_runner().get_tor_command(True)
+    self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
+
 
   def test_pid_by_port(self):
     """

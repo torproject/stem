@@ -64,7 +64,7 @@ LOG_CONNECTION_RESOLUTION = False
 Resolver = enum.Enum(
   ('PROC', 'proc'),
   ('NETSTAT', 'netstat'),
-  ('NETSTAT_WINDOWS', 'netstat'),
+  ('NETSTAT_WINDOWS', 'netstat (windows)'),
   ('SS', 'ss'),
   ('LSOF', 'lsof'),
   ('SOCKSTAT', 'sockstat'),
@@ -187,12 +187,17 @@ def get_connections(resolver, process_pid = None, process_name = None):
     return [Connection(*conn) for conn in stem.util.proc.connections(process_pid)]
 
   resolver_command = RESOLVER_COMMAND[resolver].format(pid = process_pid)
-
+  
+  #In case, process_name is only specified
+  if resolver == Resolver.NETSTAT_WINDOWS:
+    if not process_pid and process_name:
+		process_pid = stem.util.system.pid_by_name(process_name)[0]
+		
   try:
     results = stem.util.system.call(resolver_command)
   except OSError as exc:
     raise IOError("Unable to query '%s': %s" % (resolver_command, exc))
-
+			
   resolver_regex_str = RESOLVER_FILTER[resolver].format(
     protocol = '(?P<protocol>\S+)',
     local_address = '(?P<local_address>[0-9.]+)',
