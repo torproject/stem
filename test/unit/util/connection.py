@@ -117,15 +117,17 @@ BSD_PROCSTAT_OUTPUT = """\
 
 
 class TestConnection(unittest.TestCase):
+  @patch('os.access')
   @patch('stem.util.system.is_available')
   @patch('stem.util.proc.is_available')
-  def test_system_resolvers(self, proc_mock, is_available_mock):
+  def test_system_resolvers(self, proc_mock, is_available_mock, os_mock):
     """
     Checks the system_resolvers function.
     """
 
     is_available_mock.return_value = True
     proc_mock.return_value = False
+    os_mock.return_value = True
 
     self.assertEqual([Resolver.NETSTAT_WINDOWS], stem.util.connection.system_resolvers('Windows'))
     self.assertEqual([Resolver.LSOF], stem.util.connection.system_resolvers('Darwin'))
@@ -136,7 +138,7 @@ class TestConnection(unittest.TestCase):
     proc_mock.return_value = True
     self.assertEqual([Resolver.PROC, Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.system_resolvers('Linux'))
 
-    # check that calling without an argument is equivilant to calling for this
+    # check that calling without an argument is equivalent to calling for this
     # platform
 
     self.assertEqual(stem.util.connection.system_resolvers(platform.system()), stem.util.connection.system_resolvers())
