@@ -47,10 +47,10 @@ import ctypes.util
 import mimetypes
 import os
 import platform
+import re
 import subprocess
 import tarfile
 import time
-import re
 
 import stem.util.proc
 import stem.util.str_tools
@@ -79,7 +79,6 @@ GET_PID_BY_NAME_PIDOF = 'pidof %s'
 GET_PID_BY_NAME_PS_LINUX = 'ps -o pid -C %s'
 GET_PID_BY_NAME_PS_BSD = 'ps axc'
 GET_PID_BY_NAME_LSOF = 'lsof -tc %s'
-GET_PID_BY_NAME_TASKLIST = 'tasklist | findstr %s'
 GET_PID_BY_PORT_NETSTAT = 'netstat -npltu'
 GET_PID_BY_PORT_SOCKSTAT = 'sockstat -4l -P tcp -p %s'
 GET_PID_BY_PORT_LSOF = 'lsof -wnP -iTCP -sTCP:LISTEN'
@@ -438,48 +437,34 @@ def pid_by_name(process_name, multiple = False):
       except ValueError:
         pass
 
-  # Calling and Parsing tasklist command on Windows (Because call method doesn't work properly with it)
-  # Process name may or may not include .exe
-  if is_available('netstat -ano') and is_windows():
-
-    if process_name.find(".exe") == -1:
+  if is_available('tasklist') and is_windows():
+    if not process_name.endswith('.exe'):
       process_name = process_name + '.exe'
 
-    command = GET_PID_BY_NAME_TASKLIST % process_name
     process_ids = []
 
-    try:
-      results = stem.util.system.call('tasklist')
-      tasklist_regex_str = '^\s*' + process_name + '\s+(?P<pid>[0-9]*)'
-      tasklist_regex = re.compile(tasklist_regex_str)
+    results = stem.util.system.call('tasklist', None)
 
-      if not results:
-        raise IOError("No results found for tasklist")
+    if results:
+      tasklist_regex = re.compile('^\s*%s\s+(?P<pid>[0-9]*)' % process_name)
 
       for line in results:
         match = tasklist_regex.search(line)
+
         if match:
-          attr = match.groupdict()
-          id = int(attr['pid'])
-          process_ids.append(id)
+          process_ids.append(int(match.group('pid')))
 
       if multiple:
         return process_ids
       elif len(process_ids) > 0:
         return process_ids[0]
 
-    except OSError as exc:
-      log.debug("failed to query '%s': %s" % (command, exc))
-      raise IOError("Unable to query '%s': %s" % (command, exc))
-
   log.debug("failed to resolve a pid for '%s'" % process_name)
   return [] if multiple else None
 
 
 def pid_by_port(port):
-
   """
-
   Attempts to determine the process id for a process with the given port,
   using...
 

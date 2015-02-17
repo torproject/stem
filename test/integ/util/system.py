@@ -221,7 +221,6 @@ class TestSystem(unittest.TestCase):
     Tests the pid_by_name function with a tasklist response.
     """
 
-    runner = test.runner.get_runner()
     if self._is_extra_tor_running():
       test.runner.skip(self, '(multiple tor instances)')
       return
@@ -229,9 +228,8 @@ class TestSystem(unittest.TestCase):
       test.runner.skip(self, '(tasklist unavailable)')
       return
 
-    tor_pid = test.runner.get_runner().get_pid()
-    tor_cmd = test.runner.get_runner().get_tor_command(True)
-    self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
+    runner = test.runner.get_runner()
+    self.assertEqual(runner.get_pid(), stem.util.system.pid_by_name(runner.get_tor_command(True)))
 
   def test_pid_by_port(self):
     """
