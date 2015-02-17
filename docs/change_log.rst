@@ -59,6 +59,7 @@ conversion (:trac:`14075`).
 
  * **Utilities**
 
+  * Windows support for connection resolution (:trac:`14844`)
   * :func:`stem.util.connection.port_usage` always returned None (:trac:`14046`)
   * Proc connection resolution could fail on especially busy systems (:trac:`14048`)
 
