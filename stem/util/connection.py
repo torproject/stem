@@ -93,7 +93,7 @@ RESOLVER_COMMAND = {
   # -n = prevents dns lookups, -p = include process
   Resolver.NETSTAT: 'netstat -np',
 
-  # -ano is a Windows variant for netstat including pid
+  # -a = show all TCP/UDP connections, -n = numeric addresses and ports, -o = include pid
   Resolver.NETSTAT_WINDOWS: 'netstat -ano',
 
   # -n = numeric ports, -p = include process, -t = tcp sockets, -u = udp sockets
