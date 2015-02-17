@@ -215,7 +215,7 @@ class TestSystem(unittest.TestCase):
 
       if len(all_tor_pids) == 1:
         self.assertEqual(our_tor_pid, all_tor_pids[0])
-		
+
   def test_pid_by_name_tasklist(self):
     """
     Tests the pid_by_name function with a tasklist response.
@@ -233,12 +233,10 @@ class TestSystem(unittest.TestCase):
     tor_cmd = test.runner.get_runner().get_tor_command(True)
     self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
 
-
   def test_pid_by_port(self):
     """
     Checks general usage of the stem.util.system.pid_by_port function.
     """
-
     runner = test.runner.get_runner()
     if stem.util.system.is_windows():
       test.runner.skip(self, '(unavailable on windows)')

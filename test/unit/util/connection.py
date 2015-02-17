@@ -204,12 +204,11 @@ class TestConnection(unittest.TestCase):
     expected = [Connection('192.168.0.1', 44284, '38.229.79.2', 443, 'tcp')]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.NETSTAT_WINDOWS, process_pid = 15843, process_name = 'tor'))
 
-    #self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 15843, process_name = 'stuff')
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT_WINDOWS, process_pid = 1111, process_name = 'tor')
-
     call_mock.side_effect = OSError('Unable to call netstat')
+
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT_WINDOWS, process_pid = 1111)
-	
+
   @patch('stem.util.system.call')
   def test_get_connections_by_ss(self, call_mock):
     """

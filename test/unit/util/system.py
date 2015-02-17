@@ -52,9 +52,9 @@ GET_PID_BY_NAME_TASKLIST_RESULTS = [
   'svchost.exe                    872 Services                   0      8,744 K',
   'hpservice.exe                 1112 Services                   0      3,828 K',
   'tor.exe                       3712 Console                    1     29,976 K',
-  'tor.exe                       3713 Console                    1     21,976 K',  
+  'tor.exe                       3713 Console                    1     21,976 K',
   'conhost.exe                   3012 Console                    1      4,652 K']
-  
+
 GET_PID_BY_PORT_NETSTAT_RESULTS = [
   'Active Internet connections (only servers)',
   'Proto Recv-Q Send-Q Local Address           Foreign Address   State    PID/Program name',
@@ -63,7 +63,7 @@ GET_PID_BY_PORT_NETSTAT_RESULTS = [
   'tcp6       0      0 ::1:631                 :::*              LISTEN   -     ',
   'udp        0      0 0.0.0.0:5353            0.0.0.0:*                  -     ',
   'udp6       0      0 fe80::7ae4:ff:fe2f::123 :::*                       -     ']
-  
+
 GET_PID_BY_PORT_SOCKSTAT_RESULTS = [
   '_tor     tor        4397  7  tcp4   51.64.7.84:9051    *:*',
   '_tor     tor        4397  12 tcp4   51.64.7.84:54011   80.3.121.7:9051',
@@ -172,6 +172,7 @@ class TestSystem(unittest.TestCase):
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
+  @patch('stem.util.system.is_windows', Mock(return_value = False))
   def test_pid_by_name_pgrep(self, call_mock):
     """
     Tests the pid_by_name function with pgrep responses.
@@ -190,6 +191,7 @@ class TestSystem(unittest.TestCase):
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
+  @patch('stem.util.system.is_windows', Mock(return_value = False))
   def test_pid_by_name_pidof(self, call_mock):
     """
     Tests the pid_by_name function with pidof responses.
@@ -208,6 +210,7 @@ class TestSystem(unittest.TestCase):
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_bsd', Mock(return_value = False))
+  @patch('stem.util.system.is_windows', Mock(return_value = False))
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_pid_by_name_ps_linux(self, call_mock):
     """
@@ -227,6 +230,7 @@ class TestSystem(unittest.TestCase):
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_bsd', Mock(return_value = True))
+  @patch('stem.util.system.is_windows', Mock(return_value = False))
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_pid_by_name_ps_bsd(self, call_mock):
     """
@@ -244,6 +248,7 @@ class TestSystem(unittest.TestCase):
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
+  @patch('stem.util.system.is_windows', Mock(return_value = False))
   def test_pid_by_name_lsof(self, call_mock):
     """
     Tests the pid_by_name function with lsof responses.
@@ -267,13 +272,12 @@ class TestSystem(unittest.TestCase):
     Tests the pid_by_name function with tasklist responses.
     """
 
-    call_mock.return_value = GET_PID_BY_NAME_TASKLIST_RESULTS   
+    call_mock.return_value = GET_PID_BY_NAME_TASKLIST_RESULTS
     self.assertEqual(3712, system.pid_by_name('tor'))
     self.assertEqual(None, system.pid_by_name('DirectoryService'))
     self.assertEqual(None, system.pid_by_name('blarg'))
-
     self.assertEqual([3712, 3713], system.pid_by_name('tor', multiple = True))
-	
+
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_pid_by_port_netstat(self, call_mock):
@@ -293,7 +297,6 @@ class TestSystem(unittest.TestCase):
     """
     Tests the pid_by_port function with a sockstat response.
     """
-
     call_mock.side_effect = mock_call(system.GET_PID_BY_PORT_SOCKSTAT % 9051, GET_PID_BY_PORT_SOCKSTAT_RESULTS)
     self.assertEqual(4397, system.pid_by_port(9051))
     self.assertEqual(4397, system.pid_by_port('9051'))
@@ -334,7 +337,6 @@ class TestSystem(unittest.TestCase):
     """
     Tests the cwd function with a pwdx response.
     """
-
     responses = {
       '3799': ['3799: /home/atagar'],
       '5839': ['5839: No such process'],

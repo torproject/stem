@@ -31,7 +31,7 @@ Connection and networking based utility functions.
   Resolver          	Description
   ================= 	===========
   **PROC**          	/proc contents
-  **NETSTAT**      		netstat 
+  **NETSTAT**      		netstat
   **NETSTAT_WINDOWS**	netstat command under Windows
   **SS**           	 	ss command
   **LSOF**           	lsof command
@@ -93,9 +93,9 @@ RESOLVER_COMMAND = {
   # -n = prevents dns lookups, -p = include process
   Resolver.NETSTAT: 'netstat -np',
 
-  #-ano is a Windows variant for netstat including pid
+  # -ano is a Windows variant for netstat including pid
   Resolver.NETSTAT_WINDOWS: 'netstat -ano',
-  
+
   # -n = numeric ports, -p = include process, -t = tcp sockets, -u = udp sockets
   Resolver.SS: 'ss -nptu',
 
@@ -117,10 +117,10 @@ RESOLVER_FILTER = {
 
   # tcp        0    586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843/tor
   Resolver.NETSTAT: '^{protocol}\s+.*\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED\s+{pid}/{name}\s*$',
-  
+
   # tcp        586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843
-  
-  Resolver.NETSTAT_WINDOWS: '^\s*{protocol}\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED\s+{pid}\s*$',  
+
+  Resolver.NETSTAT_WINDOWS: '^\s*{protocol}\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED\s+{pid}\s*$',
 
   # tcp    ESTAB      0      0           192.168.0.20:44415       38.229.79.2:443    users:(("tor",15843,9))
   Resolver.SS: '^{protocol}\s+ESTAB\s+.*\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+users:\(\("{name}",{pid},[0-9]+\)\)$',
@@ -187,17 +187,17 @@ def get_connections(resolver, process_pid = None, process_name = None):
     return [Connection(*conn) for conn in stem.util.proc.connections(process_pid)]
 
   resolver_command = RESOLVER_COMMAND[resolver].format(pid = process_pid)
-  
-  #In case, process_name is only specified
+
+  # In case, process_name is only specified
   if resolver == Resolver.NETSTAT_WINDOWS:
     if not process_pid and process_name:
-		process_pid = stem.util.system.pid_by_name(process_name)[0]
-		
+      process_pid = stem.util.system.pid_by_name(process_name)
+
   try:
     results = stem.util.system.call(resolver_command)
   except OSError as exc:
     raise IOError("Unable to query '%s': %s" % (resolver_command, exc))
-			
+
   resolver_regex_str = RESOLVER_FILTER[resolver].format(
     protocol = '(?P<protocol>\S+)',
     local_address = '(?P<local_address>[0-9.]+)',
