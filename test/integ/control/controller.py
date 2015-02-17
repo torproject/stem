@@ -1228,6 +1228,25 @@ class TestController(unittest.TestCase):
       circuits = controller.get_circuits()
       self.assertTrue(new_circ in [circ.id for circ in circuits])
 
+  def test_transition_to_relay(self):
+    """
+    Transitions Tor to turn into a relay, then back to a client.
+    """
+
+    if test.runner.require_control(self):
+      return
+
+    runner = test.runner.get_runner()
+    with runner.get_tor_controller() as controller:
+      self.assertEqual(None, controller.get_conf('OrPort'))
+      # DisableNetwork ensures no port is actually opened
+      controller.set_options({ 'OrPort': '9090', 'DisableNetwork': '1', })
+      # TODO once tor 0.2.7.x exists, test that we can generate a descriptor on demand.
+      self.assertEqual('9090', controller.get_conf('OrPort'))
+      controller.reset_conf('OrPort', 'DisableNetwork')
+      self.assertEqual(None, controller.get_conf('OrPort'))
+
+
   def _get_router_status_entry(self, controller):
     """
     Provides a router status entry for a relay with a nickname other than
