@@ -1222,30 +1222,31 @@ class TestController(unittest.TestCase):
     elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
       return
 
-    runner = test.runner.get_runner()
-    with runner.get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       new_circ = controller.new_circuit()
       circuits = controller.get_circuits()
       self.assertTrue(new_circ in [circ.id for circ in circuits])
 
   def test_transition_to_relay(self):
     """
-    Transitions Tor to turn into a relay, then back to a client.
+    Transitions Tor to turn into a relay, then back to a client. This helps to
+    catch transition issues such as the one cited in :trac:`14901`.
     """
 
     if test.runner.require_control(self):
       return
 
-    runner = test.runner.get_runner()
-    with runner.get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual(None, controller.get_conf('OrPort'))
+
       # DisableNetwork ensures no port is actually opened
-      controller.set_options({ 'OrPort': '9090', 'DisableNetwork': '1', })
+      controller.set_options({'OrPort': '9090', 'DisableNetwork': '1'})
+
       # TODO once tor 0.2.7.x exists, test that we can generate a descriptor on demand.
+
       self.assertEqual('9090', controller.get_conf('OrPort'))
       controller.reset_conf('OrPort', 'DisableNetwork')
       self.assertEqual(None, controller.get_conf('OrPort'))
-
 
   def _get_router_status_entry(self, controller):
     """
