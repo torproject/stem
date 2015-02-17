@@ -267,12 +267,13 @@ class TestSystem(unittest.TestCase):
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
+  @patch('stem.util.system.is_windows', Mock(return_value = True))
   def test_pid_by_name_tasklist(self, call_mock):
     """
     Tests the pid_by_name function with tasklist responses.
     """
 
-    call_mock.return_value = GET_PID_BY_NAME_TASKLIST_RESULTS
+    call_mock.side_effect = mock_call('tasklist', GET_PID_BY_NAME_TASKLIST_RESULTS)
     self.assertEqual(3712, system.pid_by_name('tor'))
     self.assertEqual(None, system.pid_by_name('DirectoryService'))
     self.assertEqual(None, system.pid_by_name('blarg'))
