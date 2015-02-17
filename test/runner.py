@@ -161,23 +161,22 @@ def require_online(test_case):
     return True
 
 
-def only_run_once(test_case, test_name):
+def only_run_once(test_case):
   """
   Skips the test if it has ran before. If it hasn't then flags it as being ran.
   This is useful to prevent lengthy tests that are independent of integ targets
   from being run repeatedly with ``RUN_ALL``.
 
   :param unittest.TestCase test_case: test being ran
-  :param str test_name: name of the test being ran
 
   :returns: True if test should be skipped, False otherwise
   """
 
-  if (test_case, test_name) in RAN_TESTS:
+  if (test_case, test_case.id()) in RAN_TESTS:
     skip(test_case, '(already ran)')
     return True
   else:
-    RAN_TESTS.append((test_case, test_name))
+    RAN_TESTS.append((test_case, test_case.id()))
 
 
 def exercise_controller(test_case, controller):

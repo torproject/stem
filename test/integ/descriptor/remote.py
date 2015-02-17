@@ -26,7 +26,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, 'test_using_authorities'):
+    elif test.runner.only_run_once(self):
       return
 
     queries = []
@@ -56,7 +56,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, 'test_use_directory_mirrors'):
+    elif test.runner.only_run_once(self):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader()
@@ -70,7 +70,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, 'test_get_server_descriptors'):
+    elif test.runner.only_run_once(self):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
@@ -106,7 +106,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, 'test_get_extrainfo_descriptors'):
+    elif test.runner.only_run_once(self):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
@@ -140,7 +140,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, 'test_get_microdescriptors'):
+    elif test.runner.only_run_once(self):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
@@ -169,7 +169,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, 'test_get_consensus'):
+    elif test.runner.only_run_once(self):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
@@ -188,7 +188,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if test.runner.require_online(self):
       return
-    elif test.runner.only_run_once(self, 'test_get_key_certificates'):
+    elif test.runner.only_run_once(self):
       return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)

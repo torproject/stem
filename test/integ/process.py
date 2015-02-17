@@ -252,7 +252,7 @@ class TestProcess(unittest.TestCase):
     Exercises launch_tor_with_config.
     """
 
-    if test.runner.only_run_once(self, 'test_launch_tor_with_config'):
+    if test.runner.only_run_once(self):
       return
 
     # Launch tor without a torrc, but with a control port. Confirms that this
@@ -290,7 +290,7 @@ class TestProcess(unittest.TestCase):
     Spawn a tor process with a configuration that should make it dead on arrival.
     """
 
-    if test.runner.only_run_once(self, 'test_with_invalid_config'):
+    if test.runner.only_run_once(self):
       return
 
     # Set the same SocksPort and ControlPort, this should fail with...
@@ -316,7 +316,7 @@ class TestProcess(unittest.TestCase):
     Runs launch_tor where it times out before completing.
     """
 
-    if test.runner.only_run_once(self, 'test_launch_tor_with_timeout'):
+    if test.runner.only_run_once(self):
       return
 
     runner = test.runner.get_runner()
@@ -338,7 +338,7 @@ class TestProcess(unittest.TestCase):
     if not stem.util.system.is_available('sleep'):
       test.runner.skip(self, "('sleep' command is unavailable)")
       return
-    elif test.runner.only_run_once(self, 'test_take_ownership_via_pid'):
+    elif test.runner.only_run_once(self):
       return
     elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP):
       return
@@ -379,7 +379,7 @@ class TestProcess(unittest.TestCase):
     connects, then disconnects..
     """
 
-    if test.runner.only_run_once(self, 'test_take_ownership_via_controller'):
+    if test.runner.only_run_once(self):
       return
     elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP):
       return

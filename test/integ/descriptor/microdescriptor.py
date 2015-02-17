@@ -17,7 +17,7 @@ class TestMicrodescriptor(unittest.TestCase):
     descriptor additions.
     """
 
-    if test.runner.only_run_once(self, 'test_cached_microdescriptors'):
+    if test.runner.only_run_once(self):
       return
 
     descriptor_path = test.runner.get_runner().get_test_dir('cached-microdescs')

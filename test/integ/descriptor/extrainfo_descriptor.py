@@ -19,7 +19,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
 
     # lengthy test and uneffected by targets, so only run once
 
-    if test.runner.only_run_once(self, 'test_cached_descriptor'):
+    if test.runner.only_run_once(self):
       return
 
     descriptor_path = test.runner.get_runner().get_test_dir('cached-extrainfo')
