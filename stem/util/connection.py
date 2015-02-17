@@ -119,7 +119,6 @@ RESOLVER_FILTER = {
   Resolver.NETSTAT: '^{protocol}\s+.*\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED\s+{pid}/{name}\s*$',
 
   # tcp        586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843
-
   Resolver.NETSTAT_WINDOWS: '^\s*{protocol}\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED\s+{pid}\s*$',
 
   # tcp    ESTAB      0      0           192.168.0.20:44415       38.229.79.2:443    users:(("tor",15843,9))
@@ -180,18 +179,16 @@ def get_connections(resolver, process_pid = None, process_name = None):
     except ValueError:
       raise ValueError('Process pid was non-numeric: %s' % process_pid)
 
-  if process_pid is None and resolver in (Resolver.PROC, Resolver.BSD_PROCSTAT):
+  if process_pid is None and process_name and resolver == Resolver.NETSTAT_WINDOWS:
+    process_pid = stem.util.system.pid_by_name(process_name)
+
+  if process_pid is None and resolver in (Resolver.NETSTAT_WINDOWS, Resolver.PROC, Resolver.BSD_PROCSTAT):
     raise ValueError('%s resolution requires a pid' % resolver)
 
   if resolver == Resolver.PROC:
     return [Connection(*conn) for conn in stem.util.proc.connections(process_pid)]
 
   resolver_command = RESOLVER_COMMAND[resolver].format(pid = process_pid)
-
-  # In case, process_name is only specified
-  if resolver == Resolver.NETSTAT_WINDOWS:
-    if not process_pid and process_name:
-      process_pid = stem.util.system.pid_by_name(process_name)
 
   try:
     results = stem.util.system.call(resolver_command)
@@ -273,7 +270,7 @@ def system_resolvers(system = None):
   elif system in ('Darwin', 'OpenBSD'):
     resolvers = [Resolver.LSOF]
   elif system == 'FreeBSD':
-    # Netstat is available, but lacks a '-p' equivilant so we can't associate
+    # Netstat is available, but lacks a '-p' equivalent so we can't associate
     # the results to processes. The platform also has a ss command, but it
     # belongs to a spreadsheet application.
 
