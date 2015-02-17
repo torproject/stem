@@ -39,6 +39,9 @@ class TestConnection(unittest.TestCase):
   def test_get_connections_by_netstat(self):
     self.check_resolver(Resolver.NETSTAT)
 
+  def test_get_connections_by_windows_netstat(self):
+    self.check_resolver(Resolver.NETSTAT_WINDOWS)
+
   def test_get_connections_by_ss(self):
     self.check_resolver(Resolver.SS)
 
@@ -61,6 +64,7 @@ class TestConnection(unittest.TestCase):
     recognized_resolvers = (
       Resolver.PROC,
       Resolver.NETSTAT,
+      Resolver.NETSTAT_WINDOWS,
       Resolver.SS,
       Resolver.LSOF,
       Resolver.SOCKSTAT,

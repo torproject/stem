@@ -32,6 +32,18 @@ unix  3      [ ]         STREAM     CONNECTED     34164276 15843/tor
 unix  3      [ ]         STREAM     CONNECTED     7951     -
 """
 
+NETSTAT_WINDOWS_OUTPUT = """\
+Active Connections
+
+  Proto  Local Address          Foreign Address        State           PID
+  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       852
+  TCP    0.0.0.0:445            0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:902            0.0.0.0:0              LISTENING       2076
+  TCP    0.0.0.0:912            0.0.0.0:0              LISTENING       2076
+  TCP    192.168.0.1:44284      38.229.79.2:443        ESTABLISHED     15843
+  TCP    0.0.0.0:37782          0.0.0.0:0              LISTENING       4128
+"""
+
 SS_OUTPUT = """\
 Netid  State      Recv-Q Send-Q     Local Address:Port       Peer Address:Port
 tcp    CLOSE-WAIT 1      0           192.168.0.1:43780      53.203.145.45:443    users:(("firefox",20586,118))
@@ -117,7 +129,7 @@ class TestConnection(unittest.TestCase):
     proc_mock.return_value = False
     os_mock.return_value = True
 
-    self.assertEqual([], stem.util.connection.system_resolvers('Windows'))
+    self.assertEqual([Resolver.NETSTAT_WINDOWS], stem.util.connection.system_resolvers('Windows'))
     self.assertEqual([Resolver.LSOF], stem.util.connection.system_resolvers('Darwin'))
     self.assertEqual([Resolver.LSOF], stem.util.connection.system_resolvers('OpenBSD'))
     self.assertEqual([Resolver.BSD_SOCKSTAT, Resolver.BSD_PROCSTAT, Resolver.LSOF], stem.util.connection.system_resolvers('FreeBSD'))
@@ -183,6 +195,21 @@ class TestConnection(unittest.TestCase):
 
     call_mock.side_effect = OSError('Unable to call netstat')
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 1111)
+
+  @patch('stem.util.system.call')
+  def test_get_connections_by_windows_netstat(self, call_mock):
+    """
+    Checks the get_connections function with the Windows netstat resolver.
+    """
+
+    call_mock.return_value = NETSTAT_WINDOWS_OUTPUT.split('\n')
+    expected = [Connection('192.168.0.1', 44284, '38.229.79.2', 443, 'tcp')]
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.NETSTAT_WINDOWS, process_pid = 15843, process_name = 'tor'))
+
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT_WINDOWS, process_pid = 1111, process_name = 'tor')
+    call_mock.side_effect = OSError('Unable to call netstat')
+
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT_WINDOWS, process_pid = 1111)
 
   @patch('stem.util.system.call')
   def test_get_connections_by_ss(self, call_mock):

@@ -47,6 +47,7 @@ import ctypes.util
 import mimetypes
 import os
 import platform
+import re
 import subprocess
 import tarfile
 import time
@@ -302,6 +303,7 @@ def pid_by_name(process_name, multiple = False):
     3. ps -o pid -C <name> (linux)
        ps axc | egrep " <name>$" (bsd)
     4. lsof -tc <name>
+    5. tasklist | str <name>.exe
 
   :param str process_name: process name for which to fetch the pid
   :param bool multiple: provides a list of all pids if **True**, otherwise
@@ -434,6 +436,28 @@ def pid_by_name(process_name, multiple = False):
           return pids[0]
       except ValueError:
         pass
+
+  if is_available('tasklist') and is_windows():
+    if not process_name.endswith('.exe'):
+      process_name = process_name + '.exe'
+
+    process_ids = []
+
+    results = stem.util.system.call('tasklist', None)
+
+    if results:
+      tasklist_regex = re.compile('^\s*%s\s+(?P<pid>[0-9]*)' % process_name)
+
+      for line in results:
+        match = tasklist_regex.search(line)
+
+        if match:
+          process_ids.append(int(match.group('pid')))
+
+      if multiple:
+        return process_ids
+      elif len(process_ids) > 0:
+        return process_ids[0]
 
   log.debug("failed to resolve a pid for '%s'" % process_name)
   return [] if multiple else None
