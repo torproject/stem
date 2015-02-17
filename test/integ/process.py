@@ -434,8 +434,8 @@ class TestProcess(unittest.TestCase):
     exit_status = tor_process.poll()
 
     if exit_status and not expect_failure:
-      self.fail("Didn't expect tor to be able to start when we run: %s\n%s" % (' '.join(args), stdout))
-    elif not exit_status and expect_failure:
       self.fail("Tor failed to start when we ran: %s\n%s" % (' '.join(args), stdout))
+    elif not exit_status and expect_failure:
+      self.fail("Didn't expect tor to be able to start when we run: %s\n%s" % (' '.join(args), stdout))
 
     return stem.util.str_tools._to_unicode(stdout) if stem.prereq.is_python_3() else stdout
