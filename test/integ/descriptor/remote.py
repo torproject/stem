@@ -4,6 +4,7 @@ Integration tests for stem.descriptor.remote.
 
 import unittest
 
+import stem.descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.microdescriptor
 import stem.descriptor.networkstatus
@@ -14,6 +15,30 @@ import test.runner
 
 
 class TestDescriptorDownloader(unittest.TestCase):
+  def test_authorities_are_up_to_date(self):
+    """
+    Check that our hardcoded directory authority data matches the present
+    consensus.
+    """
+
+    if test.runner.require_online(self):
+      return
+    elif test.runner.only_run_once(self):
+      return
+
+    downloader = stem.descriptor.remote.DescriptorDownloader()
+    consensus = downloader.get_consensus(document_handler = stem.descriptor.DocumentHandler.BARE_DOCUMENT).run()[0]
+
+    for auth in consensus.directory_authorities:
+      stem_auth = stem.descriptor.remote.get_authorities().get(auth.nickname)
+
+      if not stem_auth:
+        self.fail("%s isn't a recognized directory authority in stem" % auth.nickname)
+
+      for attr in ('address', 'fingerprint', 'or_port', 'dir_port'):
+        if getattr(auth, attr) != getattr(stem_auth, attr):
+          self.fail("%s has %s %s, but we expected %s" % (auth.nickname, attr, getattr(auth, attr), getattr(stem_auth, attr)))
+
   def test_using_authorities(self):
     """
     Fetches a descriptor from each of the directory authorities. This is
