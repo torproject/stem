@@ -35,7 +35,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       if not stem_auth:
         self.fail("%s isn't a recognized directory authority in stem" % auth.nickname)
 
-      for attr in ('address', 'fingerprint', 'or_port', 'dir_port'):
+      for attr in ('address', 'v3ident', 'or_port', 'dir_port'):
         if getattr(auth, attr) != getattr(stem_auth, attr):
           self.fail("%s has %s %s, but we expected %s" % (auth.nickname, attr, getattr(auth, attr), getattr(stem_auth, attr)))
 

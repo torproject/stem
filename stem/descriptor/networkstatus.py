@@ -1006,7 +1006,7 @@ def _parse_int_mappings(keyword, value, validate):
   return results
 
 
-def _parse_dir_source_line(descriptor, entries):
+def _parse_dirauth_source_line(descriptor, entries):
   # "dir-source" nickname identity address IP dirport orport
 
   value = _value('dir-source', entries)
@@ -1018,7 +1018,7 @@ def _parse_dir_source_line(descriptor, entries):
   if not stem.util.tor_tools.is_valid_nickname(dir_source_comp[0].rstrip('-legacy')):
     raise ValueError("Authority's nickname is invalid: %s" % dir_source_comp[0])
   elif not stem.util.tor_tools.is_valid_fingerprint(dir_source_comp[1]):
-    raise ValueError("Authority's fingerprint is invalid: %s" % dir_source_comp[1])
+    raise ValueError("Authority's v3ident is invalid: %s" % dir_source_comp[1])
   elif not dir_source_comp[2]:
     # https://trac.torproject.org/7055
     raise ValueError("Authority's hostname can't be blank: dir-source %s" % value)
@@ -1030,7 +1030,7 @@ def _parse_dir_source_line(descriptor, entries):
     raise ValueError("Authority's ORPort is invalid: %s" % dir_source_comp[5])
 
   descriptor.nickname = dir_source_comp[0]
-  descriptor.fingerprint = dir_source_comp[1]
+  descriptor.v3ident = dir_source_comp[1]
   descriptor.hostname = dir_source_comp[2]
   descriptor.address = dir_source_comp[3]
   descriptor.dir_port = None if dir_source_comp[4] == '0' else int(dir_source_comp[4])
@@ -1053,7 +1053,7 @@ class DirectoryAuthority(Descriptor):
   * There's no **contact** or **vote_digest** attribute.
 
   :var str nickname: **\*** authority's nickname
-  :var str fingerprint: **\*** authority's fingerprint
+  :var str v3ident: **\*** identity key fingerprint used to sign votes and consensus
   :var str hostname: **\*** hostname of the authority
   :var str address: **\*** authority's IP address
   :var int dir_port: **\*** authority's DirPort
@@ -1075,20 +1075,20 @@ class DirectoryAuthority(Descriptor):
   """
 
   ATTRIBUTES = {
-    'nickname': (None, _parse_dir_source_line),
-    'fingerprint': (None, _parse_dir_source_line),
-    'hostname': (None, _parse_dir_source_line),
-    'address': (None, _parse_dir_source_line),
-    'dir_port': (None, _parse_dir_source_line),
-    'or_port': (None, _parse_dir_source_line),
-    'is_legacy': (False, _parse_dir_source_line),
+    'nickname': (None, _parse_dirauth_source_line),
+    'v3ident': (None, _parse_dirauth_source_line),
+    'hostname': (None, _parse_dirauth_source_line),
+    'address': (None, _parse_dirauth_source_line),
+    'dir_port': (None, _parse_dirauth_source_line),
+    'or_port': (None, _parse_dirauth_source_line),
+    'is_legacy': (False, _parse_dirauth_source_line),
     'contact': (None, _parse_contact_line),
     'vote_digest': (None, _parse_vote_digest_line),
     'legacy_dir_key': (None, _parse_legacy_dir_key_line),
   }
 
   PARSER_FOR_LINE = {
-    'dir-source': _parse_dir_source_line,
+    'dir-source': _parse_dirauth_source_line,
     'contact': _parse_contact_line,
     'legacy-dir-key': _parse_legacy_dir_key_line,
     'vote-digest': _parse_vote_digest_line,
@@ -1167,6 +1167,12 @@ class DirectoryAuthority(Descriptor):
       self._parse(entries, validate)
     else:
       self._entries = entries
+
+    # TODO: Due to a bug we had a 'fingerprint' rather than 'v3ident' attribute
+    # for a long while. Keeping this around for backward compatability, but
+    # this will be dropped in stem's 2.0 release.
+
+    self.fingerprint = self.v3ident
 
   def _compare(self, other, method):
     if not isinstance(other, DirectoryAuthority):
