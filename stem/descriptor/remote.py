@@ -746,7 +746,7 @@ DIRECTORY_AUTHORITIES = {
   ),
   'Faravahar': DirectoryAuthority(
     nickname = 'Faravahar',
-    address = '154.35.32.5',
+    address = '154.35.175.225',
     or_port = 443,
     dir_port = 80,
     is_bandwidth_authority = False,

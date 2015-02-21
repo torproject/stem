@@ -57,6 +57,7 @@ conversion (:trac:`14075`).
 
   * Lazy-loading descriptors, improving performance by 25-70% depending on what type it is (:trac:`14011`)
   * The :class:`~stem.descriptor.networkstatus.DirectoryAuthority` 'fingerprint' attribute was actually its 'v3ident'
+  * Updating Faravahar's address (:trac:`14487`)
 
  * **Utilities**
 
