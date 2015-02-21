@@ -12,7 +12,7 @@ about the tor test instance they're running against.
   TorInaccessable - Tor can't be queried for the information
 
   skip - skips the current test if we can
-  require_control - skips the test unless tor provides a controller endpoint
+  require_controller - skips the test unless tor provides a controller endpoint
   require_version - skips the test unless we meet a tor version requirement
   require_online - skips unless targets allow for online tests
   only_run_once - skip the test if it has been ran before
@@ -117,18 +117,18 @@ def skip(test_case, message):
     test_case.skipTest(message)
 
 
-def require_control(test_case):
+def require_controller(func):
   """
   Skips the test unless tor provides an endpoint for controllers to attach to.
-
-  :param unittest.TestCase test_case: test being ran
-
-  :returns: True if test should be skipped, False otherwise
   """
 
-  if not get_runner().is_accessible():
-    skip(test_case, '(no connection)')
-    return True
+  def wrapped(self, *args, **kwargs):
+    if get_runner().is_accessible():
+      return func(self, *args, **kwargs)
+    else:
+      skip(self, '(no connection)')
+
+  return wrapped
 
 
 def require_version(test_case, req_version):

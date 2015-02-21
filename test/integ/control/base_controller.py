@@ -8,9 +8,12 @@ import time
 import unittest
 
 import stem.control
-import test.runner
 import stem.socket
 import stem.util.system
+
+import test.runner
+
+from test.runner import require_controller
 
 
 class StateObserver(object):
@@ -35,15 +38,14 @@ class StateObserver(object):
 
 
 class TestBaseController(unittest.TestCase):
+  @require_controller
   def test_connect_repeatedly(self):
     """
     Connects and closes the socket repeatedly. This is a simple attempt to
     trigger concurrency issues.
     """
 
-    if test.runner.require_control(self):
-      return
-    elif stem.util.system.is_mac():
+    if stem.util.system.is_mac():
       test.runner.skip(self, '(ticket #6235)')
       return
 
@@ -54,53 +56,46 @@ class TestBaseController(unittest.TestCase):
         controller.connect()
         controller.close()
 
+  @require_controller
   def test_msg(self):
     """
     Tests a basic query with the msg() method.
     """
 
-    if test.runner.require_control(self):
-      return
-
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
       test.runner.exercise_controller(self, controller)
 
+  @require_controller
   def test_msg_invalid(self):
     """
     Tests the msg() method against an invalid controller command.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
       response = controller.msg('invalid')
       self.assertEqual('Unrecognized command "invalid"', str(response))
 
+  @require_controller
   def test_msg_invalid_getinfo(self):
     """
     Tests the msg() method against a non-existant GETINFO option.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
       response = controller.msg('GETINFO blarg')
       self.assertEqual('Unrecognized key "blarg"', str(response))
 
+  @require_controller
   def test_msg_repeatedly(self):
     """
     Connects, sends a burst of messages, and closes the socket repeatedly. This
     is a simple attempt to trigger concurrency issues.
     """
 
-    if test.runner.require_control(self):
-      return
-    elif stem.util.system.is_mac():
+    if stem.util.system.is_mac():
       test.runner.skip(self, '(ticket #6235)')
       return
 
@@ -131,15 +126,13 @@ class TestBaseController(unittest.TestCase):
       for msg_thread in message_threads:
         msg_thread.join()
 
+  @require_controller
   def test_asynchronous_event_handling(self):
     """
     Check that we can both receive asynchronous events while hammering our
     socket with queries, and checks that when a controller is closed the
     listeners will still receive all of the enqueued events.
     """
-
-    if test.runner.require_control(self):
-      return
 
     class ControlledListener(stem.control.BaseController):
       """
@@ -189,13 +182,11 @@ class TestBaseController(unittest.TestCase):
         self.assertTrue(re.match('650 BW [0-9]+ [0-9]+\r\n', bw_event.raw_content()))
         self.assertEqual(('650', ' '), bw_event.content()[0][:2])
 
+  @require_controller
   def test_get_latest_heartbeat(self):
     """
     Basic check for get_latest_heartbeat().
     """
-
-    if test.runner.require_control(self):
-      return
 
     # makes a getinfo query, then checks that the heartbeat is close to now
     with test.runner.get_runner().get_tor_socket() as control_socket:
@@ -203,14 +194,12 @@ class TestBaseController(unittest.TestCase):
       controller.msg('GETINFO version')
       self.assertTrue((time.time() - controller.get_latest_heartbeat()) < 5)
 
+  @require_controller
   def test_status_notifications(self):
     """
     Checks basic functionality of the add_status_listener() and
     remove_status_listener() methods.
     """
-
-    if test.runner.require_control(self):
-      return
 
     state_observer = StateObserver()
 

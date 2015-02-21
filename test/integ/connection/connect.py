@@ -13,6 +13,8 @@ except ImportError:
 import stem.connection
 import test.runner
 
+from test.runner import require_controller
+
 
 class TestConnect(unittest.TestCase):
   def setUp(self):
@@ -23,13 +25,11 @@ class TestConnect(unittest.TestCase):
   def tearDown(self):
     sys.stdout = self.original_stdout
 
+  @require_controller
   def test_connect(self):
     """
     Basic sanity checks for the connect function.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -42,13 +42,11 @@ class TestConnect(unittest.TestCase):
 
     test.runner.exercise_controller(self, control_socket)
 
+  @require_controller
   def test_connect_port(self):
     """
     Basic sanity checks for the connect_port function.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -64,13 +62,11 @@ class TestConnect(unittest.TestCase):
     else:
       self.assertEqual(control_socket, None)
 
+  @require_controller
   def test_connect_socket_file(self):
     """
     Basic sanity checks for the connect_socket_file function.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 

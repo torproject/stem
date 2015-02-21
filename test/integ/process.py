@@ -21,6 +21,8 @@ import stem.util.tor_tools
 import stem.version
 import test.runner
 
+from test.runner import require_controller
+
 try:
   # added in python 3.3
   from unittest.mock import patch
@@ -44,13 +46,11 @@ class TestProcess(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.data_directory)
 
+  @require_controller
   def test_version_argument(self):
     """
     Check that 'tor --version' matches 'GETINFO version'.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual('Tor version %s.\n' % controller.get_version(), self.run_tor('--version'))
