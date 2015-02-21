@@ -8,17 +8,17 @@ import unittest
 import stem.descriptor
 import test.runner
 
+from test.runner import only_run_once
+
 
 class TestMicrodescriptor(unittest.TestCase):
+  @only_run_once
   def test_cached_microdescriptors(self):
     """
     Parses the cached microdescriptor file in our data directory, checking that
     it doesn't raise any validation issues and looking for unrecognized
     descriptor additions.
     """
-
-    if test.runner.only_run_once(self):
-      return
 
     descriptor_path = test.runner.get_runner().get_test_dir('cached-microdescs')
 

@@ -24,6 +24,7 @@ import test.runner
 from test.runner import (
   require_controller,
   require_version,
+  only_run_once,
 )
 
 try:
@@ -250,13 +251,11 @@ class TestProcess(unittest.TestCase):
     self.assertTrue('[notice] Configuration file "/path/that/really/shouldnt/exist" not present, using reasonable defaults.' in output)
     self.assertTrue('Configuration was valid' in output)
 
+  @only_run_once
   def test_launch_tor_with_config(self):
     """
     Exercises launch_tor_with_config.
     """
-
-    if test.runner.only_run_once(self):
-      return
 
     # Launch tor without a torrc, but with a control port. Confirms that this
     # works by checking that we're still able to access the new instance.
@@ -288,13 +287,11 @@ class TestProcess(unittest.TestCase):
       tor_process.kill()
       tor_process.wait()
 
+  @only_run_once
   def test_with_invalid_config(self):
     """
     Spawn a tor process with a configuration that should make it dead on arrival.
     """
-
-    if test.runner.only_run_once(self):
-      return
 
     # Set the same SocksPort and ControlPort, this should fail with...
     #
@@ -314,13 +311,11 @@ class TestProcess(unittest.TestCase):
     except OSError as exc:
       self.assertEqual('Process terminated: Failed to bind one of the listener ports.', str(exc))
 
+  @only_run_once
   def test_launch_tor_with_timeout(self):
     """
     Runs launch_tor where it times out before completing.
     """
-
-    if test.runner.only_run_once(self):
-      return
 
     runner = test.runner.get_runner()
     start_time = time.time()
@@ -332,6 +327,7 @@ class TestProcess(unittest.TestCase):
       self.fail('Test should have taken 2-3 seconds, took %i instead' % runtime)
 
   @require_version(stem.version.Requirement.TAKEOWNERSHIP)
+  @only_run_once
   @patch('os.getpid')
   def test_take_ownership_via_pid(self, getpid_mock):
     """
@@ -341,8 +337,6 @@ class TestProcess(unittest.TestCase):
 
     if not stem.util.system.is_available('sleep'):
       test.runner.skip(self, "('sleep' command is unavailable)")
-      return
-    elif test.runner.only_run_once(self):
       return
 
     sleep_process = subprocess.Popen(['sleep', '60'])
@@ -376,14 +370,12 @@ class TestProcess(unittest.TestCase):
     self.fail("tor didn't quit after the process that owned it terminated")
 
   @require_version(stem.version.Requirement.TAKEOWNERSHIP)
+  @only_run_once
   def test_take_ownership_via_controller(self):
     """
     Checks that the tor process quits after the controller that owns it
     connects, then disconnects..
     """
-
-    if test.runner.only_run_once(self):
-      return
 
     tor_process = stem.process.launch_tor_with_config(
       tor_cmd = test.runner.get_runner().get_tor_command(),
