@@ -26,7 +26,10 @@ from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
 
-from test.runner import require_controller
+from test.runner import (
+  require_controller,
+  require_version,
+)
 
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
 # used for a few tests that need to look up a relay.
@@ -62,13 +65,11 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.SocketError, stem.control.Controller.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
 
   @require_controller
+  @require_version(Requirement.EVENT_SIGNAL)
   def test_reset_notification(self):
     """
     Checks that a notificiation listener is... well, notified of SIGHUPs.
     """
-
-    if test.runner.require_version(self, stem.version.Requirement.EVENT_SIGNAL):
-      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       received_events = []
@@ -599,13 +600,11 @@ class TestController(unittest.TestCase):
         shutil.rmtree(tmpdir)
 
   @require_controller
+  @require_version(Requirement.LOADCONF)
   def test_loadconf(self):
     """
     Exercises Controller.load_conf with valid and invalid requests.
     """
-
-    if test.runner.require_version(self, stem.version.Requirement.LOADCONF):
-      return
 
     runner = test.runner.get_runner()
 
@@ -710,6 +709,7 @@ class TestController(unittest.TestCase):
       self.assertEqual([('127.0.0.1', 1112)], controller.get_socks_listeners())
 
   @require_controller
+  @require_version(stem.version.Version('0.1.2.2-alpha'))
   def test_enable_feature(self):
     """
     Test Controller.enable_feature with valid and invalid inputs.
@@ -718,9 +718,6 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      if not test.runner.require_version(self, stem.version.Version('0.1.2.2-alpha')):
-        controller.enable_feature('VERBOSE_NAMES')
-
       self.assertTrue(controller.is_feature_enabled('VERBOSE_NAMES'))
 
       orconn_output = controller.get_info('orconn-status')
@@ -769,10 +766,9 @@ class TestController(unittest.TestCase):
       self.assertTrue(controller.get_newnym_wait() > 9.0)
 
   @require_controller
+  @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_extendcircuit(self):
     if test.runner.require_online(self):
-      return
-    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
       return
 
     with test.runner.get_runner().get_tor_controller() as controller:
@@ -788,14 +784,13 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, '0', 'thisroutershouldntexistbecausestemexists!@##$%#', 'foo')
 
   @require_controller
+  @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_repurpose_circuit(self):
     """
     Tests Controller.repurpose_circuit with valid and invalid input.
     """
 
     if test.runner.require_online(self):
-      return
-    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
       return
 
     runner = test.runner.get_runner()
@@ -814,14 +809,13 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, '4', 'fooo')
 
   @require_controller
+  @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_close_circuit(self):
     """
     Tests Controller.close_circuit with valid and invalid input.
     """
 
     if test.runner.require_online(self):
-      return
-    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
       return
 
     runner = test.runner.get_runner()
@@ -952,14 +946,13 @@ class TestController(unittest.TestCase):
       self.assertTrue(stem.util.connection.is_valid_ipv4_address(stem.util.str_tools._to_unicode(ip_addr)))
 
   @require_controller
+  @require_version(Requirement.MICRODESCRIPTOR_IS_DEFAULT)
   def test_get_microdescriptor(self):
     """
     Basic checks for get_microdescriptor().
     """
 
-    if test.runner.require_version(self, Requirement.MICRODESCRIPTOR_IS_DEFAULT):
-      return
-    elif test.runner.require_online(self):
+    if test.runner.require_online(self):
       return
 
     with test.runner.get_runner().get_tor_controller() as controller:
@@ -1112,10 +1105,9 @@ class TestController(unittest.TestCase):
           break
 
   @require_controller
+  @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_attachstream(self):
     if test.runner.require_online(self):
-      return
-    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
       return
 
     host = socket.gethostbyname('www.torproject.org')
@@ -1156,14 +1148,13 @@ class TestController(unittest.TestCase):
     self.assertEqual(our_stream.circ_id, circuit_id)
 
   @require_controller
+  @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_get_circuits(self):
     """
     Fetches circuits via the get_circuits() method.
     """
 
     if test.runner.require_online(self):
-      return
-    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
       return
 
     with test.runner.get_runner().get_tor_controller() as controller:

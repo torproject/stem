@@ -9,7 +9,10 @@ import stem.socket
 import stem.version
 import test.runner
 
-from test.runner import require_controller
+from test.runner import (
+  require_controller,
+  require_version,
+)
 
 
 class TestControlMessage(unittest.TestCase):
@@ -100,13 +103,11 @@ class TestControlMessage(unittest.TestCase):
       self.assertEqual([('250', '-', 'config-file=%s' % torrc_dst), ('250', ' ', 'OK')], config_file_response.content())
 
   @require_controller
+  @require_version(stem.version.Requirement.GETINFO_CONFIG_TEXT)
   def test_getinfo_config_text(self):
     """
     Parses the 'GETINFO config-text' response.
     """
-
-    if test.runner.require_version(self, stem.version.Requirement.GETINFO_CONFIG_TEXT):
-      return
 
     runner = test.runner.get_runner()
 

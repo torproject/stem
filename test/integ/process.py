@@ -21,7 +21,10 @@ import stem.util.tor_tools
 import stem.version
 import test.runner
 
-from test.runner import require_controller
+from test.runner import (
+  require_controller,
+  require_version,
+)
 
 try:
   # added in python 3.3
@@ -328,6 +331,7 @@ class TestProcess(unittest.TestCase):
     if not (runtime > 2 and runtime < 3):
       self.fail('Test should have taken 2-3 seconds, took %i instead' % runtime)
 
+  @require_version(stem.version.Requirement.TAKEOWNERSHIP)
   @patch('os.getpid')
   def test_take_ownership_via_pid(self, getpid_mock):
     """
@@ -339,8 +343,6 @@ class TestProcess(unittest.TestCase):
       test.runner.skip(self, "('sleep' command is unavailable)")
       return
     elif test.runner.only_run_once(self):
-      return
-    elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP):
       return
 
     sleep_process = subprocess.Popen(['sleep', '60'])
@@ -373,6 +375,7 @@ class TestProcess(unittest.TestCase):
 
     self.fail("tor didn't quit after the process that owned it terminated")
 
+  @require_version(stem.version.Requirement.TAKEOWNERSHIP)
   def test_take_ownership_via_controller(self):
     """
     Checks that the tor process quits after the controller that owns it
@@ -380,8 +383,6 @@ class TestProcess(unittest.TestCase):
     """
 
     if test.runner.only_run_once(self):
-      return
-    elif test.runner.require_version(self, stem.version.Requirement.TAKEOWNERSHIP):
       return
 
     tor_process = stem.process.launch_tor_with_config(

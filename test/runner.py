@@ -131,19 +131,23 @@ def require_controller(func):
   return wrapped
 
 
-def require_version(test_case, req_version):
+def require_version(req_version):
   """
   Skips the test unless we meet the required version.
 
-  :param unittest.TestCase test_case: test being ran
   :param stem.version.Version req_version: required tor version for the test
-
-  :returns: True if test should be skipped, False otherwise
   """
 
-  if get_runner().get_tor_version() < req_version:
-    skip(test_case, '(requires %s)' % req_version)
-    return True
+  def decorator(func):
+    def wrapped(self, *args, **kwargs):
+      if get_runner().get_tor_version() >= req_version:
+        return func(self, *args, **kwargs)
+      else:
+        skip(self, '(requires %s)' % req_version)
+
+    return wrapped
+
+  return decorator
 
 
 def require_online(test_case):
