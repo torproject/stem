@@ -150,19 +150,19 @@ def require_version(req_version):
   return decorator
 
 
-def require_online(test_case):
+def require_online(func):
   """
   Skips the test if we weren't started with the ONLINE target, which indicates
   that tests requiring network connectivity should run.
-
-  :param unittest.TestCase test_case: test being ran
-
-  :returns: True if test should be skipped, False otherwise
   """
 
-  if Target.ONLINE not in get_runner().attribute_targets:
-    skip(test_case, '(requires online target)')
-    return True
+  def wrapped(self, *args, **kwargs):
+    if Target.ONLINE in get_runner().attribute_targets:
+      return func(self, *args, **kwargs)
+    else:
+      skip(self, '(requires online target)')
+
+  return wrapped
 
 
 def only_run_once(test_case):
