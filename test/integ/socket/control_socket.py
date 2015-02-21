@@ -16,15 +16,15 @@ import stem.control
 import stem.socket
 import test.runner
 
+from test.runner import require_controller
+
 
 class TestControlSocket(unittest.TestCase):
+  @require_controller
   def test_connection_time(self):
     """
     Checks that our connection_time method tracks when our state's changed.
     """
-
-    if test.runner.require_control(self):
-      return
 
     test_start = time.time()
     runner = test.runner.get_runner()
@@ -54,13 +54,11 @@ class TestControlSocket(unittest.TestCase):
       reconnection_time = control_socket.connection_time()
       self.assertTrue(disconnection_time < reconnection_time <= time.time())
 
+  @require_controller
   def test_send_buffered(self):
     """
     Sends multiple requests before receiving back any of the replies.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
     tor_version = runner.get_tor_version()
@@ -74,13 +72,11 @@ class TestControlSocket(unittest.TestCase):
         self.assertTrue(str(response).startswith('version=%s' % tor_version))
         self.assertTrue(str(response).endswith('\nOK'))
 
+  @require_controller
   def test_send_closed(self):
     """
     Sends a message after we've closed the connection.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       self.assertTrue(control_socket.is_alive())
@@ -89,6 +85,7 @@ class TestControlSocket(unittest.TestCase):
 
       self.assertRaises(stem.SocketClosed, control_socket.send, 'blarg')
 
+  @require_controller
   def test_send_disconnected(self):
     """
     Sends a message to a socket that has been disconnected by the other end.
@@ -98,9 +95,6 @@ class TestControlSocket(unittest.TestCase):
     disconnect (is_alive() will return True) until we've made a failed recv()
     call. With a file socket, however, we'll also fail when calling send().
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send('QUIT')
@@ -117,13 +111,11 @@ class TestControlSocket(unittest.TestCase):
         self.assertRaises(stem.SocketClosed, control_socket.send, 'blarg')
         self.assertFalse(control_socket.is_alive())
 
+  @require_controller
   def test_recv_closed(self):
     """
     Receives a message after we've closed the connection.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       self.assertTrue(control_socket.is_alive())
@@ -132,14 +124,12 @@ class TestControlSocket(unittest.TestCase):
 
       self.assertRaises(stem.SocketClosed, control_socket.recv)
 
+  @require_controller
   def test_recv_disconnected(self):
     """
     Receives a message from a socket that has been disconnected by the other
     end.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send('QUIT')
@@ -153,13 +143,11 @@ class TestControlSocket(unittest.TestCase):
       self.assertRaises(stem.SocketClosed, control_socket.recv)
       self.assertFalse(control_socket.is_alive())
 
+  @require_controller
   def test_connect_repeatedly(self):
     """
     Checks that we can reconnect, use, and disconnect a socket repeatedly.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_socket(False) as control_socket:
       for _ in range(10):

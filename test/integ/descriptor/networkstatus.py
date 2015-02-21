@@ -11,17 +11,15 @@ import stem.descriptor.networkstatus
 import stem.version
 import test.runner
 
+from test.runner import only_run_once
+
 
 class TestNetworkStatus(unittest.TestCase):
+  @only_run_once
   def test_cached_consensus(self):
     """
     Parses the cached-consensus file in our data directory.
     """
-
-    # lengthy test and uneffected by targets, so only run once
-
-    if test.runner.only_run_once(self):
-      return
 
     consensus_path = test.runner.get_runner().get_test_dir('cached-consensus')
 
@@ -57,15 +55,11 @@ class TestNetworkStatus(unittest.TestCase):
 
     self.assertTrue(count > 100)
 
+  @only_run_once
   def test_cached_microdesc_consensus(self):
     """
     Parses the cached-microdesc-consensus file in our data directory.
     """
-
-    # lengthy test and uneffected by targets, so only run once
-
-    if test.runner.only_run_once(self):
-      return
 
     consensus_path = test.runner.get_runner().get_test_dir('cached-microdesc-consensus')
 

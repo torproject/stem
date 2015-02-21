@@ -26,6 +26,12 @@ from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
 
+from test.runner import (
+  require_controller,
+  require_version,
+  require_online,
+)
+
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
 # used for a few tests that need to look up a relay.
 
@@ -42,9 +48,6 @@ class TestController(unittest.TestCase):
     Basic sanity check for the from_port constructor.
     """
 
-    if test.runner.require_control(self):
-      return
-
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
       with stem.control.Controller.from_port(port = test.runner.CONTROL_PORT) as controller:
         self.assertTrue(isinstance(controller, stem.control.Controller))
@@ -56,24 +59,18 @@ class TestController(unittest.TestCase):
     Basic sanity check for the from_socket_file constructor.
     """
 
-    if test.runner.require_control(self):
-      return
-
     if test.runner.Torrc.SOCKET in test.runner.get_runner().get_options():
       with stem.control.Controller.from_socket_file(path = test.runner.CONTROL_SOCKET_PATH) as controller:
         self.assertTrue(isinstance(controller, stem.control.Controller))
     else:
       self.assertRaises(stem.SocketError, stem.control.Controller.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
 
+  @require_controller
+  @require_version(Requirement.EVENT_SIGNAL)
   def test_reset_notification(self):
     """
     Checks that a notificiation listener is... well, notified of SIGHUPs.
     """
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_version(self, stem.version.Requirement.EVENT_SIGNAL):
-      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       received_events = []
@@ -105,14 +102,12 @@ class TestController(unittest.TestCase):
 
       controller.reset_conf('__OwningControllerProcess')
 
+  @require_controller
   def test_event_handling(self):
     """
     Add a couple listeners for various events and make sure that they receive
     them. Then remove the listeners.
     """
-
-    if test.runner.require_control(self):
-      return
 
     event_notice1, event_notice2 = threading.Event(), threading.Event()
     event_buffer1, event_buffer2 = [], []
@@ -163,14 +158,12 @@ class TestController(unittest.TestCase):
         self.assertTrue(hasattr(event, 'read'))
         self.assertTrue(hasattr(event, 'written'))
 
+  @require_controller
   def test_reattaching_listeners(self):
     """
     Checks that event listeners are re-attached when a controller disconnects
     then reconnects to tor.
     """
-
-    if test.runner.require_control(self):
-      return
 
     event_notice = threading.Event()
     event_buffer = []
@@ -243,13 +236,11 @@ class TestController(unittest.TestCase):
         event_notice.wait(4)
         self.assertTrue(len(event_buffer) >= 1)
 
+  @require_controller
   def test_getinfo(self):
     """
     Exercises GETINFO with valid and invalid queries.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -283,13 +274,11 @@ class TestController(unittest.TestCase):
       self.assertEqual({}, controller.get_info([]))
       self.assertEqual({}, controller.get_info([], {}))
 
+  @require_controller
   def test_get_version(self):
     """
     Test that the convenient method get_version() works.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -298,14 +287,12 @@ class TestController(unittest.TestCase):
       self.assertTrue(isinstance(version, stem.version.Version))
       self.assertEqual(version, runner.get_tor_version())
 
+  @require_controller
   def test_get_exit_policy(self):
     """
     Sanity test for get_exit_policy(). We have the default policy (no
     ExitPolicy set) which is a little... long due to the boilerplate.
     """
-
-    if test.runner.require_control(self):
-      return
 
     expected = ExitPolicy(
       'reject 0.0.0.0/8:*',
@@ -343,13 +330,11 @@ class TestController(unittest.TestCase):
       policy_str = policy_str[:public_addr_start] + policy_str[public_addr_end:]
       self.assertEqual(str(expected), policy_str)
 
+  @require_controller
   def test_authenticate(self):
     """
     Test that the convenient method authenticate() works.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -357,13 +342,11 @@ class TestController(unittest.TestCase):
       controller.authenticate(test.runner.CONTROL_PASSWORD)
       test.runner.exercise_controller(self, controller)
 
+  @require_controller
   def test_protocolinfo(self):
     """
     Test that the convenient method protocolinfo() works.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -390,13 +373,11 @@ class TestController(unittest.TestCase):
 
       self.assertEqual(tuple(auth_methods), protocolinfo.auth_methods)
 
+  @require_controller
   def test_getconf(self):
     """
     Exercises GETCONF with valid and invalid queries.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -455,14 +436,12 @@ class TestController(unittest.TestCase):
       self.assertEqual({}, controller.get_conf_map('', 'la-di-dah'))
       self.assertEqual({}, controller.get_conf_map([], 'la-di-dah'))
 
+  @require_controller
   def test_hidden_services_conf(self):
     """
     Exercises the hidden service family of methods (get_hidden_service_conf,
     set_hidden_service_conf, create_hidden_service, and remove_hidden_service).
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -548,14 +527,12 @@ class TestController(unittest.TestCase):
           except:
             pass
 
+  @require_controller
   def test_set_conf(self):
     """
     Exercises set_conf(), reset_conf(), and set_options() methods with valid
     and invalid requests.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
     tmpdir = tempfile.mkdtemp()
@@ -623,15 +600,12 @@ class TestController(unittest.TestCase):
 
         shutil.rmtree(tmpdir)
 
+  @require_controller
+  @require_version(Requirement.LOADCONF)
   def test_loadconf(self):
     """
     Exercises Controller.load_conf with valid and invalid requests.
     """
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_version(self, stem.version.Requirement.LOADCONF):
-      return
 
     runner = test.runner.get_runner()
 
@@ -664,10 +638,8 @@ class TestController(unittest.TestCase):
         controller.load_conf(oldconf)
         controller.reset_conf('__OwningControllerProcess')
 
+  @require_controller
   def test_saveconf(self):
-    if test.runner.require_control(self):
-      return
-
     runner = test.runner.get_runner()
 
     # only testing for success, since we need to run out of disk space to test
@@ -686,13 +658,11 @@ class TestController(unittest.TestCase):
         controller.save_conf()
         controller.reset_conf('__OwningControllerProcess')
 
+  @require_controller
   def test_get_ports(self):
     """
     Test Controller.get_ports against a running tor instance.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -709,13 +679,11 @@ class TestController(unittest.TestCase):
       else:
         self.assertEqual([], controller.get_ports(Listener.CONTROL))
 
+  @require_controller
   def test_get_listeners(self):
     """
     Test Controller.get_listeners against a running tor instance.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -732,41 +700,27 @@ class TestController(unittest.TestCase):
       else:
         self.assertEqual([], controller.get_listeners(Listener.CONTROL))
 
+  @require_controller
   def test_get_socks_listeners(self):
     """
     Test Controller.get_socks_listeners against a running tor instance.
     """
 
-    if test.runner.require_control(self):
-      return
-
-    runner = test.runner.get_runner()
-
-    with runner.get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual([('127.0.0.1', 1112)], controller.get_socks_listeners())
 
+  @require_controller
+  @require_online
+  @require_version(stem.version.Version('0.1.2.2-alpha'))
   def test_enable_feature(self):
     """
     Test Controller.enable_feature with valid and invalid inputs.
     """
 
-    if test.runner.require_control(self):
-      return
-
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      if not test.runner.require_version(self, stem.version.Version('0.1.2.2-alpha')):
-        controller.enable_feature('VERBOSE_NAMES')
-
       self.assertTrue(controller.is_feature_enabled('VERBOSE_NAMES'))
-
-      orconn_output = controller.get_info('orconn-status')
-
-      # the orconn-status results will be empty if we don't have a connection
-      if orconn_output == '':
-        if test.runner.require_online(self):
-          return
 
       self.assertTrue('VERBOSE_NAMES' in controller._enabled_features)
       self.assertRaises(stem.InvalidArguments, controller.enable_feature, ['NOT', 'A', 'FEATURE'])
@@ -778,13 +732,11 @@ class TestController(unittest.TestCase):
       else:
         self.fail()
 
+  @require_controller
   def test_signal(self):
     """
     Test controller.signal with valid and invalid signals.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       # valid signal
@@ -793,13 +745,11 @@ class TestController(unittest.TestCase):
       # invalid signals
       self.assertRaises(stem.InvalidArguments, controller.signal, 'FOOBAR')
 
+  @require_controller
   def test_newnym_availability(self):
     """
     Test the is_newnym_available and get_newnym_wait methods.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual(True, controller.is_newnym_available())
@@ -810,14 +760,10 @@ class TestController(unittest.TestCase):
       self.assertEqual(False, controller.is_newnym_available())
       self.assertTrue(controller.get_newnym_wait() > 9.0)
 
+  @require_controller
+  @require_online
+  @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_extendcircuit(self):
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_online(self):
-      return
-    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
-      return
-
     with test.runner.get_runner().get_tor_controller() as controller:
       circuit_id = controller.extend_circuit('0')
 
@@ -830,17 +776,13 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, '0', 'thisroutershouldntexistbecausestemexists!@##$%#')
       self.assertRaises(stem.InvalidRequest, controller.extend_circuit, '0', 'thisroutershouldntexistbecausestemexists!@##$%#', 'foo')
 
+  @require_controller
+  @require_online
+  @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_repurpose_circuit(self):
     """
     Tests Controller.repurpose_circuit with valid and invalid input.
     """
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_online(self):
-      return
-    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
-      return
 
     runner = test.runner.get_runner()
 
@@ -857,17 +799,13 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, 'f934h9f3h4', 'fooo')
       self.assertRaises(stem.InvalidRequest, controller.repurpose_circuit, '4', 'fooo')
 
+  @require_controller
+  @require_online
+  @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_close_circuit(self):
     """
     Tests Controller.close_circuit with valid and invalid input.
     """
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_online(self):
-      return
-    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
-      return
 
     runner = test.runner.get_runner()
 
@@ -888,15 +826,12 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.InvalidArguments, controller.close_circuit, circuit_id + '1024')
       self.assertRaises(stem.InvalidRequest, controller.close_circuit, '')
 
+  @require_controller
+  @require_online
   def test_get_streams(self):
     """
     Tests Controller.get_streams().
     """
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_online(self):
-      return
 
     host = socket.gethostbyname('www.torproject.org')
     port = 443
@@ -916,15 +851,12 @@ class TestController(unittest.TestCase):
 
     self.assertTrue('%s:%s' % (host, port) in [stream.target for stream in streams])
 
+  @require_controller
+  @require_online
   def test_close_stream(self):
     """
     Tests Controller.close_stream with valid and invalid input.
     """
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_online(self):
-      return
 
     runner = test.runner.get_runner()
 
@@ -958,12 +890,9 @@ class TestController(unittest.TestCase):
 
       self.assertRaises(stem.InvalidArguments, controller.close_stream, 'blarg')
 
+  @require_controller
+  @require_online
   def test_mapaddress(self):
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_online(self):
-      return
-
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
@@ -999,17 +928,13 @@ class TestController(unittest.TestCase):
       ip_addr = response[response.find(b'\r\n\r\n'):].strip()
       self.assertTrue(stem.util.connection.is_valid_ipv4_address(stem.util.str_tools._to_unicode(ip_addr)))
 
+  @require_controller
+  @require_online
+  @require_version(Requirement.MICRODESCRIPTOR_IS_DEFAULT)
   def test_get_microdescriptor(self):
     """
     Basic checks for get_microdescriptor().
     """
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_version(self, Requirement.MICRODESCRIPTOR_IS_DEFAULT):
-      return
-    elif test.runner.require_online(self):
-      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       # we should balk at invalid content
@@ -1028,6 +953,7 @@ class TestController(unittest.TestCase):
 
       self.assertEqual(md_by_fingerprint, md_by_nickname)
 
+  @require_controller
   def test_get_microdescriptors(self):
     """
     Fetches a few descriptors via the get_microdescriptors() method.
@@ -1035,9 +961,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if test.runner.require_control(self):
-      return
-    elif not os.path.exists(runner.get_test_dir('cached-descriptors')):
+    if not os.path.exists(runner.get_test_dir('cached-descriptors')):
       test.runner.skip(self, '(no cached microdescriptors)')
       return
 
@@ -1051,6 +975,7 @@ class TestController(unittest.TestCase):
         if count > 10:
           break
 
+  @require_controller
   def test_get_server_descriptor(self):
     """
     Basic checks for get_server_descriptor().
@@ -1058,9 +983,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if test.runner.require_control(self):
-      return
-    elif runner.get_tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
+    if runner.get_tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
       test.runner.skip(self, '(requires server descriptors)')
       return
 
@@ -1082,6 +1005,7 @@ class TestController(unittest.TestCase):
 
       self.assertEqual(desc_by_fingerprint, desc_by_nickname)
 
+  @require_controller
   def test_get_server_descriptors(self):
     """
     Fetches a few descriptors via the get_server_descriptors() method.
@@ -1089,9 +1013,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if test.runner.require_control(self):
-      return
-    elif runner.get_tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
+    if runner.get_tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
       test.runner.skip(self, '(requires server descriptors)')
       return
 
@@ -1110,15 +1032,12 @@ class TestController(unittest.TestCase):
         if count > 10:
           break
 
+  @require_controller
+  @require_online
   def test_get_network_status(self):
     """
     Basic checks for get_network_status().
     """
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_online(self):
-      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       # we should balk at invalid content
@@ -1137,17 +1056,14 @@ class TestController(unittest.TestCase):
 
       self.assertEqual(desc_by_fingerprint, desc_by_nickname)
 
+  @require_controller
+  @require_online
   def test_get_network_statuses(self):
     """
     Fetches a few descriptors via the get_network_statuses() method.
     """
 
     runner = test.runner.get_runner()
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_online(self):
-      return
 
     with runner.get_tor_controller() as controller:
       count = 0
@@ -1165,14 +1081,10 @@ class TestController(unittest.TestCase):
         if count > 10:
           break
 
+  @require_controller
+  @require_online
+  @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_attachstream(self):
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_online(self):
-      return
-    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
-      return
-
     host = socket.gethostbyname('www.torproject.org')
     port = 80
 
@@ -1210,31 +1122,25 @@ class TestController(unittest.TestCase):
 
     self.assertEqual(our_stream.circ_id, circuit_id)
 
+  @require_controller
+  @require_online
+  @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_get_circuits(self):
     """
     Fetches circuits via the get_circuits() method.
     """
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_online(self):
-      return
-    elif test.runner.require_version(self, Requirement.EXTENDCIRCUIT_PATH_OPTIONAL):
-      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       new_circ = controller.new_circuit()
       circuits = controller.get_circuits()
       self.assertTrue(new_circ in [circ.id for circ in circuits])
 
+  @require_controller
   def test_transition_to_relay(self):
     """
     Transitions Tor to turn into a relay, then back to a client. This helps to
     catch transition issues such as the one cited in :trac:`14901`.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual(None, controller.get_conf('OrPort'))

@@ -9,15 +9,18 @@ import stem.socket
 import stem.version
 import test.runner
 
+from test.runner import (
+  require_controller,
+  require_version,
+)
+
 
 class TestControlMessage(unittest.TestCase):
+  @require_controller
   def test_unestablished_socket(self):
     """
     Checks message parsing when we have a valid but unauthenticated socket.
     """
-
-    if test.runner.require_control(self):
-      return
 
     # If an unauthenticated connection gets a message besides AUTHENTICATE or
     # PROTOCOLINFO then tor will give an 'Authentication required.' message and
@@ -54,13 +57,11 @@ class TestControlMessage(unittest.TestCase):
     self.assertRaises(stem.SocketClosed, control_socket.send, 'GETINFO version')
     self.assertRaises(stem.SocketClosed, control_socket.recv)
 
+  @require_controller
   def test_invalid_command(self):
     """
     Parses the response for a command which doesn't exist.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send('blarg')
@@ -70,13 +71,11 @@ class TestControlMessage(unittest.TestCase):
       self.assertEqual('510 Unrecognized command "blarg"\r\n', unrecognized_command_response.raw_content())
       self.assertEqual([('510', ' ', 'Unrecognized command "blarg"')], unrecognized_command_response.content())
 
+  @require_controller
   def test_invalid_getinfo(self):
     """
     Parses the response for a GETINFO query which doesn't exist.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send('GETINFO blarg')
@@ -86,13 +85,11 @@ class TestControlMessage(unittest.TestCase):
       self.assertEqual('552 Unrecognized key "blarg"\r\n', unrecognized_key_response.raw_content())
       self.assertEqual([('552', ' ', 'Unrecognized key "blarg"')], unrecognized_key_response.content())
 
+  @require_controller
   def test_getinfo_config_file(self):
     """
     Parses the 'GETINFO config-file' response.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
     torrc_dst = runner.get_torrc_path()
@@ -105,15 +102,12 @@ class TestControlMessage(unittest.TestCase):
       self.assertEqual('250-config-file=%s\r\n250 OK\r\n' % torrc_dst, config_file_response.raw_content())
       self.assertEqual([('250', '-', 'config-file=%s' % torrc_dst), ('250', ' ', 'OK')], config_file_response.content())
 
+  @require_controller
+  @require_version(stem.version.Requirement.GETINFO_CONFIG_TEXT)
   def test_getinfo_config_text(self):
     """
     Parses the 'GETINFO config-text' response.
     """
-
-    if test.runner.require_control(self):
-      return
-    elif test.runner.require_version(self, stem.version.Requirement.GETINFO_CONFIG_TEXT):
-      return
 
     runner = test.runner.get_runner()
 
@@ -150,13 +144,11 @@ class TestControlMessage(unittest.TestCase):
         self.assertTrue('%s\r\n' % torrc_entry in config_text_response.raw_content())
         self.assertTrue('%s' % torrc_entry in config_text_response.content()[0][2])
 
+  @require_controller
   def test_bw_event(self):
     """
     Issues 'SETEVENTS BW' and parses a couple events.
     """
-
-    if test.runner.require_control(self):
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       control_socket.send('SETEVENTS BW')

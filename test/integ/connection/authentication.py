@@ -11,6 +11,8 @@ import stem.socket
 import stem.version
 import test.runner
 
+from test.runner import require_controller
+
 # Responses given by tor for various authentication failures. These may change
 # in the future and if they do then this test should be updated.
 
@@ -105,39 +107,35 @@ class TestAuthenticate(unittest.TestCase):
     if tor_version >= stem.version.Requirement.AUTH_SAFECOOKIE:
       self.cookie_auth_methods.append(stem.connection.AuthMethod.SAFECOOKIE)
 
+  @require_controller
   def test_authenticate_general_socket(self):
     """
     Tests that the authenticate function can authenticate to our socket.
     """
 
-    if test.runner.require_control(self):
-      return
-
     runner = test.runner.get_runner()
+
     with runner.get_tor_socket(False) as control_socket:
       stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
       test.runner.exercise_controller(self, control_socket)
 
+  @require_controller
   def test_authenticate_general_controller(self):
     """
     Tests that the authenticate function can authenticate via a Controller.
     """
 
-    if test.runner.require_control(self):
-      return
-
     runner = test.runner.get_runner()
+
     with runner.get_tor_controller(False) as controller:
       stem.connection.authenticate(controller, test.runner.CONTROL_PASSWORD, runner.get_chroot())
       test.runner.exercise_controller(self, controller)
 
+  @require_controller
   def test_authenticate_general_example(self):
     """
     Tests the authenticate function with something like its pydoc example.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
     tor_options = runner.get_options()
@@ -169,13 +167,11 @@ class TestAuthenticate(unittest.TestCase):
     finally:
       control_socket.close()
 
+  @require_controller
   def test_authenticate_general_password(self):
     """
     Tests the authenticate function's password argument.
     """
-
-    if test.runner.require_control(self):
-      return
 
     # this is a much better test if we're just using password auth, since
     # authenticate will work reguardless if there's something else to
@@ -206,15 +202,13 @@ class TestAuthenticate(unittest.TestCase):
       stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
       test.runner.exercise_controller(self, control_socket)
 
+  @require_controller
   def test_authenticate_general_cookie(self):
     """
     Tests the authenticate function with only cookie authentication methods.
     This manipulates our PROTOCOLINFO response to test each method
     individually.
     """
-
-    if test.runner.require_control(self):
-      return
 
     runner = test.runner.get_runner()
     tor_options = runner.get_options()
@@ -233,13 +227,11 @@ class TestAuthenticate(unittest.TestCase):
             protocolinfo_response.auth_methods = (method, )
             stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot(), protocolinfo_response = protocolinfo_response)
 
+  @require_controller
   def test_authenticate_none(self):
     """
     Tests the authenticate_none function.
     """
-
-    if test.runner.require_control(self):
-      return
 
     auth_type = stem.connection.AuthMethod.NONE
 
@@ -248,13 +240,11 @@ class TestAuthenticate(unittest.TestCase):
     else:
       self.assertRaises(stem.connection.OpenAuthRejected, self._check_auth, auth_type)
 
+  @require_controller
   def test_authenticate_password(self):
     """
     Tests the authenticate_password function.
     """
-
-    if test.runner.require_control(self):
-      return
 
     auth_type = stem.connection.AuthMethod.PASSWORD
     auth_value = test.runner.CONTROL_PASSWORD
@@ -278,13 +268,11 @@ class TestAuthenticate(unittest.TestCase):
 
         self.assertRaises(exc_type, self._check_auth, auth_type, auth_value)
 
+  @require_controller
   def test_authenticate_cookie(self):
     """
     Tests the authenticate_cookie function.
     """
-
-    if test.runner.require_control(self):
-      return
 
     auth_value = test.runner.get_runner().get_auth_cookie_path()
 
@@ -302,14 +290,12 @@ class TestAuthenticate(unittest.TestCase):
       else:
         self.assertRaises(stem.connection.CookieAuthRejected, self._check_auth, auth_type, auth_value, False)
 
+  @require_controller
   def test_authenticate_cookie_invalid(self):
     """
     Tests the authenticate_cookie function with a properly sized but incorrect
     value.
     """
-
-    if test.runner.require_control(self):
-      return
 
     auth_value = test.runner.get_runner().get_test_dir('fake_cookie')
 
@@ -341,28 +327,24 @@ class TestAuthenticate(unittest.TestCase):
 
     os.remove(auth_value)
 
+  @require_controller
   def test_authenticate_cookie_missing(self):
     """
     Tests the authenticate_cookie function with a path that really, really
     shouldn't exist.
     """
 
-    if test.runner.require_control(self):
-      return
-
     for auth_type in self.cookie_auth_methods:
       auth_value = "/if/this/exists/then/they're/asking/for/a/failure"
       self.assertRaises(stem.connection.UnreadableCookieFile, self._check_auth, auth_type, auth_value, False)
 
+  @require_controller
   def test_authenticate_cookie_wrong_size(self):
     """
     Tests the authenticate_cookie function with our torrc as an auth cookie.
     This is to confirm that we won't read arbitrary files to the control
     socket.
     """
-
-    if test.runner.require_control(self):
-      return
 
     auth_value = test.runner.get_runner().get_torrc_path(True)
 

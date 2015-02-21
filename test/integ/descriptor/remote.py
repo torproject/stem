@@ -13,18 +13,20 @@ import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import test.runner
 
+from test.runner import (
+  require_online,
+  only_run_once,
+)
+
 
 class TestDescriptorDownloader(unittest.TestCase):
+  @require_online
+  @only_run_once
   def test_authorities_are_up_to_date(self):
     """
     Check that our hardcoded directory authority data matches the present
     consensus.
     """
-
-    if test.runner.require_online(self):
-      return
-    elif test.runner.only_run_once(self):
-      return
 
     downloader = stem.descriptor.remote.DescriptorDownloader()
     consensus = downloader.get_consensus(document_handler = stem.descriptor.DocumentHandler.BARE_DOCUMENT).run()[0]
@@ -42,6 +44,8 @@ class TestDescriptorDownloader(unittest.TestCase):
         if getattr(auth, attr) != getattr(stem_auth, attr):
           self.fail("%s has %s %s, but we expected %s" % (auth.nickname, attr, getattr(auth, attr), getattr(stem_auth, attr)))
 
+  @require_online
+  @only_run_once
   def test_using_authorities(self):
     """
     Fetches a descriptor from each of the directory authorities. This is
@@ -51,11 +55,6 @@ class TestDescriptorDownloader(unittest.TestCase):
     This is hardcoded to fetch moria1's descriptor. If its fingerprint changes
     then this test will need to be updated.
     """
-
-    if test.runner.require_online(self):
-      return
-    elif test.runner.only_run_once(self):
-      return
 
     queries = []
 
@@ -77,29 +76,23 @@ class TestDescriptorDownloader(unittest.TestCase):
       self.assertEqual(1, len(descriptors))
       self.assertEqual('moria1', descriptors[0].nickname)
 
+  @require_online
+  @only_run_once
   def test_use_directory_mirrors(self):
     """
     Checks that we can fetch and use a list of directory mirrors.
     """
 
-    if test.runner.require_online(self):
-      return
-    elif test.runner.only_run_once(self):
-      return
-
     downloader = stem.descriptor.remote.DescriptorDownloader()
     downloader.use_directory_mirrors()
     self.assertTrue(len(downloader._endpoints) > 50)
 
+  @require_online
+  @only_run_once
   def test_get_server_descriptors(self):
     """
     Exercises the downloader's get_server_descriptors() method.
     """
-
-    if test.runner.require_online(self):
-      return
-    elif test.runner.only_run_once(self):
-      return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
 
@@ -127,15 +120,12 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertEqual(2, len(list(multiple_query)))
 
+  @require_online
+  @only_run_once
   def test_get_extrainfo_descriptors(self):
     """
     Exercises the downloader's get_extrainfo_descriptors() method.
     """
-
-    if test.runner.require_online(self):
-      return
-    elif test.runner.only_run_once(self):
-      return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
 
@@ -156,6 +146,8 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertEqual(2, len(list(multiple_query)))
 
+  @require_online
+  @only_run_once
   def test_get_microdescriptors(self):
     """
     Exercises the downloader's get_microdescriptors() method.
@@ -165,11 +157,6 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     test.runner.skip(self, '(test presently broken)')
     return
-
-    if test.runner.require_online(self):
-      return
-    elif test.runner.only_run_once(self):
-      return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
 
@@ -190,15 +177,12 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertEqual(2, len(list(multiple_query)))
 
+  @require_online
+  @only_run_once
   def test_get_consensus(self):
     """
     Exercises the downloader's get_consensus() method.
     """
-
-    if test.runner.require_online(self):
-      return
-    elif test.runner.only_run_once(self):
-      return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
 
@@ -209,15 +193,12 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertTrue(len(consensus) > 50)
     self.assertTrue(isinstance(consensus[0], stem.descriptor.router_status_entry.RouterStatusEntryV3))
 
+  @require_online
+  @only_run_once
   def test_get_key_certificates(self):
     """
     Exercises the downloader's get_key_certificates() method.
     """
-
-    if test.runner.require_online(self):
-      return
-    elif test.runner.only_run_once(self):
-      return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
 
