@@ -49,7 +49,7 @@ def parse(argv):
 
     if unrecognized_args:
       error_msg = "aren't recognized arguments" if len(unrecognized_args) > 1 else "isn't a recognized argument"
-      raise ValueError("'%s' %s" % ("', '".join(unrecognized_args), error_msg))
+      raise getopt.GetoptError("'%s' %s" % ("', '".join(unrecognized_args), error_msg))
   except getopt.GetoptError as exc:
     raise ValueError('%s (for usage provide --help)' % exc)
 
