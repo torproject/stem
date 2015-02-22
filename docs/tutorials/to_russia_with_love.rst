@@ -107,7 +107,7 @@ Besides SocksiPy, you can also use `PycURL <http://pycurl.sourceforge.net/>`_ to
     query.setopt(pycurl.URL, url)
     query.setopt(pycurl.PROXY, 'localhost')
     query.setopt(pycurl.PROXYPORT, SOCKS_PORT)
-    query.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS5)
+    query.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS5_HOSTNAME)
     query.setopt(pycurl.WRITEFUNCTION, output.write)
 
     try:
