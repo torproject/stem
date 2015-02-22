@@ -59,6 +59,7 @@ easily parsed and compared, for instance...
   **TORRC_CONTROL_SOCKET**              'ControlSocket <path>' config option
   **TORRC_PORT_FORWARDING**             'PortForwarding' config option
   **TORRC_DISABLE_DEBUGGER_ATTACHMENT** 'DisableDebuggerAttachment' config option
+  **TORRC_VIA_STDIN**                   Allow torrc options via 'tor -f -' (:trac:`13865`)
   ===================================== ===========
 """
 
@@ -363,4 +364,5 @@ Requirement = stem.util.enum.Enum(
   ('TORRC_CONTROL_SOCKET', Version('0.2.0.30')),
   ('TORRC_PORT_FORWARDING', Version('0.2.3.1-alpha')),
   ('TORRC_DISABLE_DEBUGGER_ATTACHMENT', Version('0.2.3.9')),
+  ('TORRC_VIA_STDIN', Version('0.2.6.3-alpha')),
 )

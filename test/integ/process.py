@@ -229,6 +229,7 @@ class TestProcess(unittest.TestCase):
 
     self.assertEqual(expected, result)
 
+  @require_version(stem.version.Requirement.TORRC_VIA_STDIN)
   def test_torrc_arguments_via_stdin(self):
     """
     Pass configuration options via stdin.
