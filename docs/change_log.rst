@@ -51,6 +51,7 @@ conversion (:trac:`14075`).
 
  * **Controller**
 
+  * :func:`~stem.process.launch_tor_with_config` avoids writing a temporary torrc to disk if able (:trac:`13865`)
   * The 'strict' argument of :func:`~stem.exit_policy.ExitPolicy.can_exit_to` didn't behave as documented (:trac:`14314`)
 
  * **Descriptors**

@@ -25,13 +25,15 @@ import subprocess
 import tempfile
 
 import stem.prereq
+import stem.util.str_tools
 import stem.util.system
+import stem.version
 
 NO_TORRC = '<no torrc>'
 DEFAULT_INIT_TIMEOUT = 90
 
 
-def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
+def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False, stdin = None):
   """
   Initializes a tor process. This blocks until initialization completes or we
   error out.
@@ -60,6 +62,7 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
   :param bool take_ownership: asserts ownership over the tor process so it
     aborts if this python process terminates or a :class:`~stem.control.Controller`
     we establish to it disconnects
+  :param str stdin: content to provide on stdin
 
   :returns: **subprocess.Popen** instance for the tor subprocess
 
@@ -102,7 +105,11 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
   if take_ownership:
     runtime_args += ['__OwningControllerProcess', str(os.getpid())]
 
-  tor_process = subprocess.Popen(runtime_args, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+  tor_process = subprocess.Popen(runtime_args, stdout = subprocess.PIPE, stdin = subprocess.PIPE, stderr = subprocess.PIPE)
+
+  if stdin:
+    tor_process.stdin.write(stem.util.str_tools._to_bytes(stdin))
+    tor_process.stdin.close()
 
   if timeout:
     def timeout_handler(signum, frame):
@@ -208,6 +215,14 @@ def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, in
     timeout without success
   """
 
+  # TODO: Drop this version check when tor 0.2.6.3 or higher is the only game
+  # in town.
+
+  try:
+    use_stdin = stem.version.get_system_tor_version(tor_cmd) >= stem.version.Requirement.TORRC_VIA_STDIN
+  except IOError:
+    use_stdin = False
+
   # we need to be sure that we're logging to stdout to figure out when we're
   # done bootstrapping
 
@@ -227,24 +242,31 @@ def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, in
     if not has_stdout:
       config['Log'].append('NOTICE stdout')
 
-  torrc_descriptor, torrc_path = tempfile.mkstemp(prefix = 'torrc-', text = True)
+  config_str = ''
 
-  try:
-    with open(torrc_path, 'w') as torrc_file:
-      for key, values in list(config.items()):
-        if isinstance(values, str):
-          torrc_file.write('%s %s\n' % (key, values))
-        else:
-          for value in values:
-            torrc_file.write('%s %s\n' % (key, value))
+  for key, values in list(config.items()):
+    if isinstance(values, str):
+      config_str += '%s %s\n' % (key, values)
+    else:
+      for value in values:
+        config_str += '%s %s\n' % (key, value)
 
-    # prevents tor from erroring out due to a missing torrc if it gets a sighup
-    args = ['__ReloadTorrcOnSIGHUP', '0']
+  if use_stdin:
+    return launch_tor(tor_cmd, ['-f', '-'], None, completion_percent, init_msg_handler, timeout, take_ownership, stdin = config_str)
+  else:
+    torrc_descriptor, torrc_path = tempfile.mkstemp(prefix = 'torrc-', text = True)
 
-    return launch_tor(tor_cmd, args, torrc_path, completion_percent, init_msg_handler, timeout, take_ownership)
-  finally:
     try:
-      os.close(torrc_descriptor)
-      os.remove(torrc_path)
-    except:
-      pass
+      with open(torrc_path, 'w') as torrc_file:
+        torrc_file.write(config_str)
+
+      # prevents tor from erroring out due to a missing torrc if it gets a sighup
+      args = ['__ReloadTorrcOnSIGHUP', '0']
+
+      return launch_tor(tor_cmd, args, torrc_path, completion_percent, init_msg_handler, timeout, take_ownership)
+    finally:
+      try:
+        os.close(torrc_descriptor)
+        os.remove(torrc_path)
+      except:
+        pass

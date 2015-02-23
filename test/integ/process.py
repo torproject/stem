@@ -29,9 +29,9 @@ from test.runner import (
 
 try:
   # added in python 3.3
-  from unittest.mock import patch
+  from unittest.mock import patch, Mock
 except ImportError:
-  from mock import patch
+  from mock import patch, Mock
 
 BASIC_RELAY_TORRC = """\
 ORPort 6000
@@ -253,13 +253,48 @@ class TestProcess(unittest.TestCase):
     self.assertTrue('Configuration was valid' in output)
 
   @only_run_once
-  def test_launch_tor_with_config(self):
+  @patch('stem.version.get_system_tor_version', Mock(return_value = stem.version.Version('0.0.0.1')))
+  def test_launch_tor_with_config_via_file(self):
     """
-    Exercises launch_tor_with_config.
+    Exercises launch_tor_with_config when we write a torrc to disk.
     """
 
     # Launch tor without a torrc, but with a control port. Confirms that this
     # works by checking that we're still able to access the new instance.
+
+    runner = test.runner.get_runner()
+    tor_process = stem.process.launch_tor_with_config(
+      tor_cmd = runner.get_tor_command(),
+      config = {
+        'SocksPort': '2777',
+        'ControlPort': '2778',
+        'DataDirectory': self.data_directory,
+      },
+      completion_percent = 5
+    )
+
+    control_socket = None
+    try:
+      control_socket = stem.socket.ControlPort(port = 2778)
+      stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
+
+      # exercises the socket
+      control_socket.send('GETCONF ControlPort')
+      getconf_response = control_socket.recv()
+      self.assertEqual('ControlPort=2778', str(getconf_response))
+    finally:
+      if control_socket:
+        control_socket.close()
+
+      tor_process.kill()
+      tor_process.wait()
+
+  @only_run_once
+  @require_version(stem.version.Requirement.TORRC_VIA_STDIN)
+  def test_launch_tor_with_config_via_stdin(self):
+    """
+    Exercises launch_tor_with_config when we provide our torrc via stdin.
+    """
 
     runner = test.runner.get_runner()
     tor_process = stem.process.launch_tor_with_config(
