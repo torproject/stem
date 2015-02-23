@@ -326,6 +326,11 @@ class CircuitEvent(Event):
   The CIRC event was one of the first Control Protocol V1 events and was
   introduced in tor version 0.1.1.1-alpha.
 
+  .. versionchanged:: 1.4.0
+     Added the socks_username and socks_password attributes which is used for
+     `stream isolation
+     <https://gitweb.torproject.org/torspec.git/tree/proposals/171-separate-streams.txt>`_.
+
   :var str id: circuit identifier
   :var stem.CircStatus status: reported status for the circuit
   :var tuple path: relays involved in the circuit, these are
@@ -338,6 +343,8 @@ class CircuitEvent(Event):
   :var datetime created: time when the circuit was created or cannibalized
   :var stem.CircClosureReason reason: reason for the circuit to be closed
   :var stem.CircClosureReason remote_reason: remote side's reason for the circuit to be closed
+  :var str socks_username: username for using this circuit
+  :var str socks_password: password for using this circuit
   """
 
   _POSITIONAL_ARGS = ('id', 'status', 'path')
@@ -349,6 +356,8 @@ class CircuitEvent(Event):
     'TIME_CREATED': 'created',
     'REASON': 'reason',
     'REMOTE_REASON': 'remote_reason',
+    'SOCKS_USERNAME': 'socks_username',
+    'SOCKS_PASSWORD': 'socks_password',
   }
 
   def _parse(self):
@@ -377,7 +386,7 @@ class CircuitEvent(Event):
     if not isinstance(other, CircuitEvent):
       return False
 
-    for attr in ('id', 'status', 'path', 'build_flags', 'purpose', 'hs_state', 'rend_query', 'created', 'reason', 'remote_reason'):
+    for attr in ('id', 'status', 'path', 'build_flags', 'purpose', 'hs_state', 'rend_query', 'created', 'reason', 'remote_reason', 'socks_username', 'socks_port'):
       my_attr = getattr(self, attr)
       other_attr = getattr(other, attr)
 

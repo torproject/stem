@@ -109,6 +109,10 @@ TIME_CREATED=2012-11-08T16:48:36.400959 \
 REASON=DESTROYED \
 REMOTE_REASON=OR_CONN_CLOSED'
 
+CIRC_WITH_CREDENTIALS = '650 CIRC 7 LAUNCHED \
+SOCKS_USERNAME="It\'s a me, Mario!" \
+SOCKS_PASSWORD="your princess is in another castle"'
+
 # CIRC events from tor v0.2.1.30 without the VERBOSE_NAMES feature
 
 CIRC_LAUNCHED_OLD = '650 CIRC 4 LAUNCHED'
@@ -561,6 +565,8 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 11, 8, 16, 48, 38, 417238), event.created)
     self.assertEqual(None, event.reason)
     self.assertEqual(None, event.remote_reason)
+    self.assertEqual(None, event.socks_username)
+    self.assertEqual(None, event.socks_password)
 
     event = _get_event(CIRC_EXTENDED)
 
@@ -591,6 +597,23 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 11, 8, 16, 48, 36, 400959), event.created)
     self.assertEqual(CircClosureReason.DESTROYED, event.reason)
     self.assertEqual(CircClosureReason.OR_CONN_CLOSED, event.remote_reason)
+
+    event = _get_event(CIRC_WITH_CREDENTIALS)
+
+    self.assertTrue(isinstance(event, stem.response.events.CircuitEvent))
+    self.assertEqual(CIRC_WITH_CREDENTIALS.lstrip('650 '), str(event))
+    self.assertEqual('7', event.id)
+    self.assertEqual(CircStatus.LAUNCHED, event.status)
+    self.assertEqual((), event.path)
+    self.assertEqual(None, event.build_flags)
+    self.assertEqual(None, event.purpose)
+    self.assertEqual(None, event.hs_state)
+    self.assertEqual(None, event.rend_query)
+    self.assertEqual(None, event.created)
+    self.assertEqual(None, event.reason)
+    self.assertEqual(None, event.remote_reason)
+    self.assertEqual("It's a me, Mario!", event.socks_username)
+    self.assertEqual('your princess is in another castle', event.socks_password)
 
     event = _get_event(CIRC_LAUNCHED_OLD)
 
