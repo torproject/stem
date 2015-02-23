@@ -122,6 +122,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
   torperf 1.0                               **unsupported**
   bridge-pool-assignment 1.0                **unsupported**
   tordnsel 1.0                              :class:`~stem.descriptor.tordnsel.TorDNSEL`
+  hidden-service-descriptor 1.0             :class:`~stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor`
   ========================================= =====
 
   If you're using **python 3** then beware that the open() function defaults to
@@ -306,6 +307,11 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     document_type = stem.descriptor.tordnsel.TorDNSEL
 
     for desc in stem.descriptor.tordnsel._parse_file(descriptor_file, validate = validate, **kwargs):
+      yield desc
+  elif descriptor_type == 'hidden-service-descriptor' and major_version == 1:
+    document_type = stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor
+
+    for desc in stem.descriptor.hidden_service_descriptor._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
   else:
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
@@ -720,3 +726,4 @@ import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.networkstatus
 import stem.descriptor.microdescriptor
 import stem.descriptor.tordnsel
+import stem.descriptor.hidden_service_descriptor
