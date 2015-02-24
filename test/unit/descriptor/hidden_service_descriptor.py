@@ -17,7 +17,7 @@ I5gQozM65ENelfxYlysBjJ52xSDBd8C4f/p9umdzaaaCmzXG/nhzAgMBAAE=
 -----END RSA PUBLIC KEY-----\
 """
 
-EXPECTED_DDG_INTRODUCTION_POINTS_BLOB = """\
+EXPECTED_DDG_INTRODUCTION_POINTS_ENCODED = """\
 -----BEGIN MESSAGE-----
 aW50cm9kdWN0aW9uLXBvaW50IGl3a2k3N3h0YnZwNnF2ZWRmcndkem5jeHMzY2th
 eWV1CmlwLWFkZHJlc3MgMTc4LjYyLjIyMi4xMjkKb25pb24tcG9ydCA0NDMKb25p
@@ -61,12 +61,109 @@ TkQgUlNBIFBVQkxJQyBLRVktLS0tLQoK
 -----END MESSAGE-----\
 """
 
+EXPECTED_DDG_INTRODUCTION_POINTS_CONTENT = """\
+introduction-point iwki77xtbvp6qvedfrwdzncxs3ckayeu
+ip-address 178.62.222.129
+onion-port 443
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAK94BEYIHZ4KdEkeyPhbLCpRW5ESg+2WPQhrM4yuKYGuq8wFWgumZYR9
+k/WA//FYXMBz0bB+ckuZs/Yu9nK+HLzpGapV0clst4GUMcBInUCzCcpjJTQsQDgm
+3/Y3cqh0W55gOCFhomQ4/1WOYg7YCjk4XYHJE20OdG2Ll5zotK6fAgMBAAE=
+-----END RSA PUBLIC KEY-----
+service-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAJXmJb8lSydMMqCgCgfgvlB2E5rpd57kz/Aqg7/d1HKc3+l5QoUvHyuy
+ZsAlyka8Eu534hl41oqEKpAKYcMn1TM0vpJEGNVOc+05BInxI9h9f0Mg01PD0tYu
+GcLHYgBzcrfEmKwMtM8WEmcMJd7n2uffaAvJ846WubbeV7MW1YehAgMBAAE=
+-----END RSA PUBLIC KEY-----
+introduction-point em4gjk6eiiualhmlyiifrzc7lbtrsbip
+ip-address 46.4.174.52
+onion-port 443
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALBmhdF5wHxHrpLSmjAZottx220+995FdMOOtZNjRw1DBSprUZZqtxWa
+P8TKpHKzwGJKCVYIIj7lohbv9T9urmlfTE05URGenZoifOFNz3YwMJTXScQEBJ10
+9iWNLDTskLzDKCAbGhbn/MKwOfYGBhNTljdyTmNY5ECRbRzjev9vAgMBAAE=
+-----END RSA PUBLIC KEY-----
+service-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAMxMHoAmrbUMsxiICp3iTPYghn0YueKHx219wu8O/Q51QycVVLpX27d1
+hJXkPB33XQBXsBS7SxsSsSCQ3GEurQJ7GuBLpYIR/vqsakE/l8wc2CJC5WUhyFFk
++1TWIUI5txnXLyWCRcKDUrjqdosDaDosgHFg23Mnx+xXcaQ/frB/AgMBAAE=
+-----END RSA PUBLIC KEY-----
+introduction-point jqhfl364x3upe6lqnxizolewlfrsw2zy
+ip-address 62.210.82.169
+onion-port 443
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAPUkqxgfYdw0Pm/g6MbhmVsGKlujifmkhdfoEeuzgo+wnEsGvwUebzrz
+fZJRt0caXFhnCGgQD2IgmarUaUvP24fXo/4mYzLcPeI7gZneuAQJYvm98Yv9vOHl
+NaM/WvDkCsJ3GVNJ1H3wLPQRI3v7KbNuc9tCOYl/r09OhVaWkzajAgMBAAE=
+-----END RSA PUBLIC KEY-----
+service-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALbx8LeqRoP/r9w9hjwD41YUm7Po697xRtytF0McyLCS7GRiUYnji7KY
+fepXdvN/Jl5qQKHIBb602kuOTl0pN8Q+YeFUSIIDcmPBLpBDhH3PvrQMcGVaiOWH
+8w0HMZCxgwAcCC51w5VwiumxEJNBVcZsOx0mzN1Cloy+90q0lFXLAgMBAAE=
+-----END RSA PUBLIC KEY-----
+
+"""
+
 EXPECTED_DDG_SIGNATURE = """\
 -----BEGIN SIGNATURE-----
 VKMmsDIUUFOrpqvcQroIZjDZTKxqNs88a4M9Te8cR/ZvS7H2nffv6iQs0tom5X4D
 4Dy4iZiy+pwYxdHfaOxmdpgMCRvgPb34MExWr5YemH0QuGtnlp5Wxr8GYaAQVuZX
 cZjQLW0juUYCbgIGdxVEBnlEt2rgBSM9+1oR7EAfV1U=
 -----END SIGNATURE-----\
+"""
+
+EXPECT_POINT_1_ONION_KEY = """\
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAK94BEYIHZ4KdEkeyPhbLCpRW5ESg+2WPQhrM4yuKYGuq8wFWgumZYR9
+k/WA//FYXMBz0bB+ckuZs/Yu9nK+HLzpGapV0clst4GUMcBInUCzCcpjJTQsQDgm
+3/Y3cqh0W55gOCFhomQ4/1WOYg7YCjk4XYHJE20OdG2Ll5zotK6fAgMBAAE=
+-----END RSA PUBLIC KEY-----\
+"""
+
+EXPECT_POINT_1_SERVICE_KEY = """\
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAJXmJb8lSydMMqCgCgfgvlB2E5rpd57kz/Aqg7/d1HKc3+l5QoUvHyuy
+ZsAlyka8Eu534hl41oqEKpAKYcMn1TM0vpJEGNVOc+05BInxI9h9f0Mg01PD0tYu
+GcLHYgBzcrfEmKwMtM8WEmcMJd7n2uffaAvJ846WubbeV7MW1YehAgMBAAE=
+-----END RSA PUBLIC KEY-----\
+"""
+
+EXPECT_POINT_2_ONION_KEY = """\
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALBmhdF5wHxHrpLSmjAZottx220+995FdMOOtZNjRw1DBSprUZZqtxWa
+P8TKpHKzwGJKCVYIIj7lohbv9T9urmlfTE05URGenZoifOFNz3YwMJTXScQEBJ10
+9iWNLDTskLzDKCAbGhbn/MKwOfYGBhNTljdyTmNY5ECRbRzjev9vAgMBAAE=
+-----END RSA PUBLIC KEY-----\
+"""
+
+EXPECT_POINT_2_SERVICE_KEY = """\
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAMxMHoAmrbUMsxiICp3iTPYghn0YueKHx219wu8O/Q51QycVVLpX27d1
+hJXkPB33XQBXsBS7SxsSsSCQ3GEurQJ7GuBLpYIR/vqsakE/l8wc2CJC5WUhyFFk
++1TWIUI5txnXLyWCRcKDUrjqdosDaDosgHFg23Mnx+xXcaQ/frB/AgMBAAE=
+-----END RSA PUBLIC KEY-----\
+"""
+
+EXPECT_POINT_3_ONION_KEY = """\
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAPUkqxgfYdw0Pm/g6MbhmVsGKlujifmkhdfoEeuzgo+wnEsGvwUebzrz
+fZJRt0caXFhnCGgQD2IgmarUaUvP24fXo/4mYzLcPeI7gZneuAQJYvm98Yv9vOHl
+NaM/WvDkCsJ3GVNJ1H3wLPQRI3v7KbNuc9tCOYl/r09OhVaWkzajAgMBAAE=
+-----END RSA PUBLIC KEY-----\
+"""
+
+EXPECT_POINT_3_SERVICE_KEY = """\
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALbx8LeqRoP/r9w9hjwD41YUm7Po697xRtytF0McyLCS7GRiUYnji7KY
+fepXdvN/Jl5qQKHIBb602kuOTl0pN8Q+YeFUSIIDcmPBLpBDhH3PvrQMcGVaiOWH
+8w0HMZCxgwAcCC51w5VwiumxEJNBVcZsOx0mzN1Cloy+90q0lFXLAgMBAAE=
+-----END RSA PUBLIC KEY-----\
 """
 
 
@@ -110,5 +207,34 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     self.assertEqual('e24kgecavwsznj7gpbktqsiwgvngsf4e', desc.secret_id_part)
     self.assertEqual(datetime.datetime(2015, 2, 23, 20, 0, 0), desc.published)
     self.assertEqual(['2', '3'], desc.protocol_versions)
-    self.assertEqual(EXPECTED_DDG_INTRODUCTION_POINTS_BLOB, desc.introduction_points_blob)
+    self.assertEqual(EXPECTED_DDG_INTRODUCTION_POINTS_ENCODED, desc.introduction_points_encoded)
+    self.assertEqual([], desc.introduction_points_auth)
+    self.assertEqual(EXPECTED_DDG_INTRODUCTION_POINTS_CONTENT, desc.introduction_points_content)
     self.assertEqual(EXPECTED_DDG_SIGNATURE, desc.signature)
+
+    introduction_points = desc.introduction_points()
+    self.assertEqual(3, len(introduction_points))
+
+    point = introduction_points[0]
+    self.assertEqual('iwki77xtbvp6qvedfrwdzncxs3ckayeu', point.identifier)
+    self.assertEqual('178.62.222.129', point.address)
+    self.assertEqual(443, point.port)
+    self.assertEqual(EXPECT_POINT_1_ONION_KEY, point.onion_key)
+    self.assertEqual(EXPECT_POINT_1_SERVICE_KEY, point.service_key)
+    self.assertEqual([], point.intro_authentication)
+
+    point = introduction_points[1]
+    self.assertEqual('em4gjk6eiiualhmlyiifrzc7lbtrsbip', point.identifier)
+    self.assertEqual('46.4.174.52', point.address)
+    self.assertEqual(443, point.port)
+    self.assertEqual(EXPECT_POINT_2_ONION_KEY, point.onion_key)
+    self.assertEqual(EXPECT_POINT_2_SERVICE_KEY, point.service_key)
+    self.assertEqual([], point.intro_authentication)
+
+    point = introduction_points[2]
+    self.assertEqual('jqhfl364x3upe6lqnxizolewlfrsw2zy', point.identifier)
+    self.assertEqual('62.210.82.169', point.address)
+    self.assertEqual(443, point.port)
+    self.assertEqual(EXPECT_POINT_3_ONION_KEY, point.onion_key)
+    self.assertEqual(EXPECT_POINT_3_SERVICE_KEY, point.service_key)
+    self.assertEqual([], point.intro_authentication)

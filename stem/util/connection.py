@@ -140,8 +140,8 @@ RESOLVER_FILTER = {
 
 def get_connections(resolver, process_pid = None, process_name = None):
   """
-  Retrieves a list of the current connections for a given process. The provides
-  a list of Connection instances, which have five attributes...
+  Retrieves a list of the current connections for a given process. This
+  provides a list of Connection instances, which have five attributes...
 
     * local_address (str)
     * local_port (int)
