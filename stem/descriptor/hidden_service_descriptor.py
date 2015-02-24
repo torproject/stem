@@ -109,13 +109,28 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
       break  # done parsing file
 
 
-# TODO: For the 'version' and 'protocol-versions' lines should they be ints
-# instead? Presently the spec says it's a 'version-number' which is an
-# undefined type.
+def _parse_version_line(descriptor, entries):
+  value = _value('version', entries)
+
+  if value.isdigit():
+    descriptor.version = int(value)
+  else:
+    raise ValueError('version line must have a positive integer value: %s' % value)
+
 
 def _parse_protocol_versions_line(descriptor, entries):
   value = _value('protocol-versions', entries)
-  descriptor.protocol_versions = value.split(',')
+
+  try:
+    versions = [int(entry) for entry in value.split(',')]
+  except ValueError:
+    raise ValueError('protocol-versions line has non-numeric versoins: protocol-versions %s' % value)
+
+  for v in versions:
+    if v <= 0:
+      raise ValueError('protocol-versions must be positive integers: %s' % value)
+
+  descriptor.protocol_versions = versions
 
 
 def _parse_introduction_points_line(descriptor, entries):
@@ -144,7 +159,6 @@ def _parse_introduction_points_line(descriptor, entries):
   descriptor.introduction_points_content = decoded_field
 
 _parse_rendezvous_service_descriptor_line = _parse_simple_line('rendezvous-service-descriptor', 'descriptor_id')
-_parse_version_line = _parse_simple_line('version', 'version')
 _parse_permanent_key_line = _parse_key_block('permanent-key', 'permanent_key', 'RSA PUBLIC KEY')
 _parse_secret_id_part_line = _parse_simple_line('secret-id-part', 'secret_id_part')
 _parse_publication_time_line = _parse_timestamp_line('publication-time', 'published')
@@ -156,12 +170,12 @@ class HiddenServiceDescriptor(Descriptor):
   Hidden service descriptor.
 
   :var str descriptor_id: **\*** identifier for this descriptor, this is a base32 hash of several fields
-  :var str version: **\*** hidden service descriptor version
+  :var int version: **\*** hidden service descriptor version
   :var str permanent_key: **\*** long term key of the hidden service
   :var str secret_id_part: **\*** hash of the time period, cookie, and replica
     values so our descriptor_id can be validated
   :var datetime published: **\*** time in UTC when this descriptor was made
-  :var list protocol_versions: **\*** versions that are supported when establishing a connection
+  :var list protocol_versions: **\*** list of **int** versions that are supported when establishing a connection
   :var str introduction_points_encoded: **\*** raw introduction points blob
   :var list introduction_points_auth: **\*** tuples of the form
     (auth_method, auth_data) for our introduction_points_content

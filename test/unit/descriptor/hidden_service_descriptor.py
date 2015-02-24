@@ -195,18 +195,18 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
 
     desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
     self.assertEqual('utjk4arxqg6s6zzo7n6cjnq6ot34udhr', desc.descriptor_id)
-    self.assertEqual('2', desc.version)
+    self.assertEqual(2, desc.version)
     self.assertEqual('6355jaerje3bqozopwq2qmpf4iviizdn', desc.secret_id_part)
     self.assertEqual(datetime.datetime(2014, 10, 31, 23, 0, 0), desc.published)
-    self.assertEqual(['2', '3'], desc.protocol_versions)
+    self.assertEqual([2, 3], desc.protocol_versions)
 
   def _assert_matches_duckduckgo(self, desc):
     self.assertEqual('y3olqqblqw2gbh6phimfuiroechjjafa', desc.descriptor_id)
-    self.assertEqual('2', desc.version)
+    self.assertEqual(2, desc.version)
     self.assertEqual(EXPECTED_DDG_PERMANENT_KEY, desc.permanent_key)
     self.assertEqual('e24kgecavwsznj7gpbktqsiwgvngsf4e', desc.secret_id_part)
     self.assertEqual(datetime.datetime(2015, 2, 23, 20, 0, 0), desc.published)
-    self.assertEqual(['2', '3'], desc.protocol_versions)
+    self.assertEqual([2, 3], desc.protocol_versions)
     self.assertEqual(EXPECTED_DDG_INTRODUCTION_POINTS_ENCODED, desc.introduction_points_encoded)
     self.assertEqual([], desc.introduction_points_auth)
     self.assertEqual(EXPECTED_DDG_INTRODUCTION_POINTS_CONTENT, desc.introduction_points_content)
