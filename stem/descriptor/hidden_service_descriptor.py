@@ -263,7 +263,9 @@ class HiddenServiceDescriptor(Descriptor):
         if keyword == 'introduction-point':
           attr['identifier'] = value
         elif keyword == 'ip-address':
-          # TODO: need clarification about if this IPv4, IPv6, or both
+          if not stem.util.connection.is_valid_ipv4_address(value):
+            raise ValueError("'%s' is an invalid IPv4 address" % value)
+
           attr['address'] = value
         elif keyword == 'onion-port':
           if not stem.util.connection.is_valid_port(value):
