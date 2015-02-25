@@ -254,7 +254,9 @@ class HiddenServiceDescriptor(Descriptor):
     # TODO: Support fields encrypted with a desriptor-cookie. Need sample data
     # to implement this.
 
-    if not self.introduction_points_content.startswith('introduction-point '):
+    if not self.introduction_points_content:
+      return []
+    elif not self.introduction_points_content.startswith('introduction-point '):
       raise DecryptionFailure('introduction-point content is encrypted')
 
     introduction_points = []

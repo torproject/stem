@@ -7,6 +7,7 @@ import unittest
 
 import stem.descriptor
 
+from test.mocking import CRYPTO_BLOB, get_hidden_service_descriptor
 from test.unit.descriptor import get_resource
 
 EXPECTED_DDG_PERMANENT_KEY = """\
@@ -238,3 +239,22 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     self.assertEqual(EXPECT_POINT_3_ONION_KEY, point.onion_key)
     self.assertEqual(EXPECT_POINT_3_SERVICE_KEY, point.service_key)
     self.assertEqual([], point.intro_authentication)
+
+  def test_minimal_hidden_service_descriptor(self):
+    """
+    Basic sanity check that we can parse a hidden service descriptor with minimal attributes.
+    """
+
+    desc = get_hidden_service_descriptor()
+
+    self.assertEqual('y3olqqblqw2gbh6phimfuiroechjjafa', desc.descriptor_id)
+    self.assertEqual(2, desc.version)
+    self.assertTrue(CRYPTO_BLOB in desc.permanent_key)
+    self.assertEqual('e24kgecavwsznj7gpbktqsiwgvngsf4e', desc.secret_id_part)
+    self.assertEqual(datetime.datetime(2015, 2, 23, 20, 0, 0), desc.published)
+    self.assertEqual([2, 3], desc.protocol_versions)
+    self.assertEqual('-----BEGIN MESSAGE-----\n-----END MESSAGE-----', desc.introduction_points_encoded)
+    self.assertEqual([], desc.introduction_points_auth)
+    self.assertEqual('', desc.introduction_points_content)
+    self.assertTrue(CRYPTO_BLOB in desc.signature)
+    self.assertEqual([], desc.introduction_points())
