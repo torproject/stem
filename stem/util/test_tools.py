@@ -166,7 +166,7 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
         code = super(StyleReport, self).error(line_number, offset, text, check)
 
         if code:
-          issues.setdefault(self.filename, []).append((offset + line_number, '%s %s' % (code, text)))
+          issues.setdefault(self.filename, []).append((line_number, '%s %s' % (code, text)))
 
     style_checker = pep8.StyleGuide(ignore = CONFIG['pep8.ignore'], reporter = StyleReport)
     style_checker.check_files(list(_python_files(paths)))
