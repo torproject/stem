@@ -531,7 +531,7 @@ def get_hidden_service_descriptor(attr = None, exclude = (), content = False, in
   :returns: HidenServiceDescriptor for the requested descriptor content
   """
 
-  if introduction_points_lines is not None:
+  if (not attr or 'introduction-points' not in attr) and introduction_points_lines is not None:
     encoded = base64.b64encode(introduction_points_lines('\n'))
     attr['introduction-points'] = '\n-----BEGIN MESSAGE-----\n%s\n-----END MESSAGE-----' % '\n'.join(textwrap.wrap(encoded, 64))
 

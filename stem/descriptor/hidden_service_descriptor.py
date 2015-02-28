@@ -16,12 +16,8 @@ the HSDir flag.
   HiddenServiceDescriptor - Tor hidden service descriptor.
 """
 
-# TODO: Add a description for how to retrieve them when tor supports that (#14847).
-
-# TODO: We should add a '@type hidden-service-descriptor 1.0' annotation to
-# CollecTor...
-#
-# https://collector.torproject.org/formats.html
+# TODO: Add a description for how to retrieve them when tor supports that
+# (#14847) and then update #15009.
 
 import base64
 import collections
@@ -141,8 +137,11 @@ def _parse_introduction_points_line(descriptor, entries):
 
   descriptor.introduction_points_encoded = block_contents
 
-  blob = ''.join(block_contents.split('\n')[1:-1])
-  decoded_field = base64.b64decode(stem.util.str_tools._to_bytes(blob))
+  try:
+    blob = ''.join(block_contents.split('\n')[1:-1])
+    decoded_field = base64.b64decode(stem.util.str_tools._to_bytes(blob))
+  except TypeError:
+    raise ValueError("'introduction-points' isn't base64 encoded content:\n%s" % block_contents)
 
   auth_types = []
 
@@ -176,11 +175,11 @@ class HiddenServiceDescriptor(Descriptor):
     values so our descriptor_id can be validated
   :var datetime published: **\*** time in UTC when this descriptor was made
   :var list protocol_versions: **\*** list of **int** versions that are supported when establishing a connection
-  :var str introduction_points_encoded: **\*** raw introduction points blob
+  :var str introduction_points_encoded: raw introduction points blob
   :var list introduction_points_auth: **\*** tuples of the form
     (auth_method, auth_data) for our introduction_points_content
-  :var str introduction_points_content: **\*** decoded introduction-points
-    content without authentication data, if using cookie authentication this is
+  :var str introduction_points_content: decoded introduction-points content
+    without authentication data, if using cookie authentication this is
     encrypted
   :var str signature: signature of the descriptor content
 
@@ -196,6 +195,8 @@ class HiddenServiceDescriptor(Descriptor):
     'published': (None, _parse_publication_time_line),
     'protocol_versions': ([], _parse_protocol_versions_line),
     'introduction_points_encoded': (None, _parse_introduction_points_line),
+    'introduction_points_auth': ([], _parse_introduction_points_line),
+    'introduction_points_content': (None, _parse_introduction_points_line),
     'signature': (None, _parse_signature_line),
   }
 
