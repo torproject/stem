@@ -241,12 +241,12 @@ class HiddenServiceDescriptor(Descriptor):
     Provided this service's introduction points. This provides a list of
     IntroductionPoint instances, which have the following attributes...
 
-      * identifier (str): hash of this introduction point's identity key
-      * address (str): address of this introduction point
-      * port (int): port where this introduction point is listening
-      * onion_key (str): public key for communicating with this introduction point
-      * service_key (str): public key for communicating with this hidden service
-      * intro_authentication (list): tuples of the form (auth_type, auth_data)
+      * **identifier** (str): hash of this introduction point's identity key
+      * **address** (str): address of this introduction point
+      * **port** (int): port where this introduction point is listening
+      * **onion_key** (str): public key for communicating with this introduction point
+      * **service_key** (str): public key for communicating with this hidden service
+      * **intro_authentication** (list): tuples of the form (auth_type, auth_data)
         for establishing a connection
 
     :returns: **list** of IntroductionPoints instances
@@ -256,8 +256,7 @@ class HiddenServiceDescriptor(Descriptor):
       * **DecryptionFailure** if unable to decrypt this field
     """
 
-    # TODO: Support fields encrypted with a desriptor-cookie. Need sample data
-    # to implement this.
+    # TODO: Support fields encrypted with a desriptor-cookie. (#15004)
 
     if not self.introduction_points_content:
       return []
