@@ -231,3 +231,10 @@ man_pages = [
 
 trac_url = 'https://trac.torproject.org/{slug}'
 spec_url = 'https://gitweb.torproject.org/torspec.git/commit/?id={slug}'
+
+def skip_members(app, what, name, obj, skip, options):
+  if name in ('ATTRIBUTES', 'PARSER_FOR_LINE'):
+    return True  # skip the descriptor's parser constants
+
+def setup(app):
+  app.connect('autodoc-skip-member', skip_members)
