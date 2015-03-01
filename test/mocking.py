@@ -372,7 +372,7 @@ def get_relay_server_descriptor(attr = None, exclude = (), content = False, sign
     if sign_content:
       desc_content = sign_descriptor_content(desc_content)
 
-    with patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock()):
+    with patch('stem.prereq.is_crypto_available', Mock(return_value = False)):
       desc = stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate = True)
 
     return desc
@@ -540,7 +540,8 @@ def get_hidden_service_descriptor(attr = None, exclude = (), content = False, in
   if content:
     return desc_content
   else:
-    return stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor(desc_content, validate = True)
+    with patch('stem.prereq.is_crypto_available', Mock(return_value = False)):
+      return stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor(desc_content, validate = True)
 
 
 def get_directory_authority(attr = None, exclude = (), is_vote = False, content = False):

@@ -50,7 +50,10 @@ __all__ = [
   'Descriptor',
 ]
 
+import base64
+import codecs
 import copy
+import hashlib
 import os
 import re
 import tarfile
@@ -499,6 +502,97 @@ class Descriptor(object):
   def _name(self, is_plural = False):
     return str(type(self))
 
+  def _digest_for_signature(self, signing_key, signature):
+    """
+    Provides the signed digest we should have given this key and signature.
+
+    :param str signing_key: key block used to make this signature
+    :param str signature: signed digest for this descriptor content
+
+    :returns: the digest string encoded in uppercase hex
+
+    :raises: ValueError if unable to provide a validly signed digest
+    """
+
+    if not stem.prereq.is_crypto_available():
+      raise ValueError('Generating the signed digest requires pycrypto')
+
+    from Crypto.Util import asn1
+    from Crypto.Util.number import bytes_to_long, long_to_bytes
+
+    # get the ASN.1 sequence
+
+    seq = asn1.DerSequence()
+    seq.decode(_bytes_for_block(signing_key))
+    modulus, public_exponent = seq[0], seq[1]
+
+    sig_as_bytes = _bytes_for_block(signature)
+    sig_as_long = bytes_to_long(sig_as_bytes)  # convert signature to an int
+    blocksize = 128  # block size will always be 128 for a 1024 bit key
+
+    # use the public exponent[e] & the modulus[n] to decrypt the int
+
+    decrypted_int = pow(sig_as_long, public_exponent, modulus)
+
+    # convert the int to a byte array
+
+    decrypted_bytes = long_to_bytes(decrypted_int, blocksize)
+
+    ############################################################################
+    # The decrypted bytes should have a structure exactly along these lines.
+    # 1 byte  - [null '\x00']
+    # 1 byte  - [block type identifier '\x01'] - Should always be 1
+    # N bytes - [padding '\xFF' ]
+    # 1 byte  - [separator '\x00' ]
+    # M bytes - [message]
+    # Total   - 128 bytes
+    # More info here http://www.ietf.org/rfc/rfc2313.txt
+    #                esp the Notes in section 8.1
+    ############################################################################
+
+    try:
+      if decrypted_bytes.index(b'\x00\x01') != 0:
+        raise ValueError('Verification failed, identifier missing')
+    except ValueError:
+      raise ValueError('Verification failed, malformed data')
+
+    try:
+      identifier_offset = 2
+
+      # find the separator
+      seperator_index = decrypted_bytes.index(b'\x00', identifier_offset)
+    except ValueError:
+      raise ValueError('Verification failed, seperator not found')
+
+    digest_hex = codecs.encode(decrypted_bytes[seperator_index + 1:], 'hex_codec')
+    return stem.util.str_tools._to_unicode(digest_hex.upper())
+
+  def _digest_for_content(self, start, end):
+    """
+    Provides the digest of our descriptor's content in a given range.
+
+    :param bytes start: start of the range to generate a digest for
+    :param bytes end: end of the range to generate a digest for
+
+    :returns: the digest string encoded in uppercase hex
+
+    :raises: ValueError if the digest canot be calculated
+    """
+
+    raw_descriptor = self.get_bytes()
+
+    start_index = raw_descriptor.find(start)
+    end_index = raw_descriptor.find(end, start_index)
+
+    if start_index == -1:
+      raise ValueError("Digest is for the range starting with '%s' but that isn't in our descriptor" % start)
+    elif end_index == -1:
+      raise ValueError("Digest is for the range ending with '%s' but that isn't in our descriptor" % end)
+
+    digest_content = raw_descriptor[start_index:end_index + len(end)]
+    digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(digest_content))
+    return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
+
   def __getattr__(self, name):
     # If attribute isn't already present we might be lazy loading it...
 
@@ -591,6 +685,24 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     return (content, ending_keyword)
   else:
     return content
+
+
+def _bytes_for_block(content):
+  """
+  Provides the base64 decoded content of a pgp-style block.
+
+  :param str content: block to be decoded
+
+  :returns: decoded block content
+
+  :raises: **TypeError** if this isn't base64 encoded content
+  """
+
+  # strip the '-----BEGIN RSA PUBLIC KEY-----' header and footer
+
+  content = ''.join(content.split('\n')[1:-1])
+
+  return base64.b64decode(stem.util.str_tools._to_bytes(content))
 
 
 def _get_pseudo_pgp_block(remaining_contents):

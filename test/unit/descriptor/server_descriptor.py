@@ -452,7 +452,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     desc_text = get_relay_server_descriptor({'opt': 'protocols Link 1 2'}, content = True)
     self._expect_invalid_attr(desc_text, 'circuit_protocols')
 
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
+  @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
   def test_published_leap_year(self):
     """
     Constructs with a published entry for a leap year, and when the date is
@@ -508,7 +508,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(900, desc.read_history_interval)
     self.assertEqual([], desc.read_history_values)
 
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
+  @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
   def test_annotations(self):
     """
     Checks that content before a descriptor are parsed as annotations.

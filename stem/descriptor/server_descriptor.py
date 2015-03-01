@@ -31,8 +31,6 @@ etc). This information is provided from a few sources...
     +- get_annotation_lines - lines that provided the annotations
 """
 
-import base64
-import codecs
 import functools
 import hashlib
 import re
@@ -46,13 +44,13 @@ import stem.util.tor_tools
 import stem.version
 
 from stem import str_type
-from stem.util import log
 
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
   _get_descriptor_components,
   _read_until_keywords,
+  _bytes_for_block,
   _value,
   _values,
   _parse_simple_line,
@@ -670,9 +668,18 @@ class RelayDescriptor(ServerDescriptor):
   def __init__(self, raw_contents, validate = False, annotations = None):
     super(RelayDescriptor, self).__init__(raw_contents, validate, annotations)
 
-    # validate the descriptor if required
     if validate:
-      self._validate_content()
+      if self.fingerprint:
+        key_hash = hashlib.sha1(_bytes_for_block(self.signing_key)).hexdigest()
+
+        if key_hash != self.fingerprint.lower():
+          raise ValueError('Fingerprint does not match the hash of our signing key (fingerprint: %s, signing key hash: %s)' % (self.fingerprint.lower(), key_hash))
+
+      if stem.prereq.is_crypto_available():
+        signed_digest = self._digest_for_signature(self.signing_key, self.signature)
+
+        if signed_digest != self.digest():
+          raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, self.digest()))
 
   @lru_cache()
   def digest(self):
@@ -684,112 +691,7 @@ class RelayDescriptor(ServerDescriptor):
     :raises: ValueError if the digest canot be calculated
     """
 
-    # Digest is calculated from everything in the
-    # descriptor except the router-signature.
-
-    raw_descriptor = self.get_bytes()
-    start_token = b'router '
-    sig_token = b'\nrouter-signature\n'
-    start = raw_descriptor.find(start_token)
-    sig_start = raw_descriptor.find(sig_token)
-    end = sig_start + len(sig_token)
-
-    if start >= 0 and sig_start > 0 and end > start:
-      for_digest = raw_descriptor[start:end]
-      digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(for_digest))
-      return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
-    else:
-      raise ValueError('unable to calculate digest for descriptor')
-
-  def _validate_content(self):
-    """
-    Validates that the descriptor content matches the signature.
-
-    :raises: ValueError if the signature does not match the content
-    """
-
-    key_as_bytes = RelayDescriptor._get_key_bytes(self.signing_key)
-
-    # ensure the fingerprint is a hash of the signing key
-
-    if self.fingerprint:
-      # calculate the signing key hash
-
-      key_der_as_hash = hashlib.sha1(stem.util.str_tools._to_bytes(key_as_bytes)).hexdigest()
-
-      if key_der_as_hash != self.fingerprint.lower():
-        log.warn('Signing key hash: %s != fingerprint: %s' % (key_der_as_hash, self.fingerprint.lower()))
-        raise ValueError('Fingerprint does not match hash')
-
-    self._verify_digest(key_as_bytes)
-
-  def _verify_digest(self, key_as_der):
-    # check that our digest matches what was signed
-
-    if not stem.prereq.is_crypto_available():
-      return
-
-    from Crypto.Util import asn1
-    from Crypto.Util.number import bytes_to_long, long_to_bytes
-
-    # get the ASN.1 sequence
-
-    seq = asn1.DerSequence()
-    seq.decode(key_as_der)
-    modulus = seq[0]
-    public_exponent = seq[1]  # should always be 65537
-
-    sig_as_bytes = RelayDescriptor._get_key_bytes(self.signature)
-
-    # convert the descriptor signature to an int
-
-    sig_as_long = bytes_to_long(sig_as_bytes)
-
-    # use the public exponent[e] & the modulus[n] to decrypt the int
-
-    decrypted_int = pow(sig_as_long, public_exponent, modulus)
-
-    # block size will always be 128 for a 1024 bit key
-
-    blocksize = 128
-
-    # convert the int to a byte array.
-
-    decrypted_bytes = long_to_bytes(decrypted_int, blocksize)
-
-    ############################################################################
-    # The decrypted bytes should have a structure exactly along these lines.
-    # 1 byte  - [null '\x00']
-    # 1 byte  - [block type identifier '\x01'] - Should always be 1
-    # N bytes - [padding '\xFF' ]
-    # 1 byte  - [separator '\x00' ]
-    # M bytes - [message]
-    # Total   - 128 bytes
-    # More info here http://www.ietf.org/rfc/rfc2313.txt
-    #                esp the Notes in section 8.1
-    ############################################################################
-
-    try:
-      if decrypted_bytes.index(b'\x00\x01') != 0:
-        raise ValueError('Verification failed, identifier missing')
-    except ValueError:
-      raise ValueError('Verification failed, malformed data')
-
-    try:
-      identifier_offset = 2
-
-      # find the separator
-      seperator_index = decrypted_bytes.index(b'\x00', identifier_offset)
-    except ValueError:
-      raise ValueError('Verification failed, seperator not found')
-
-    digest_hex = codecs.encode(decrypted_bytes[seperator_index + 1:], 'hex_codec')
-    digest = stem.util.str_tools._to_unicode(digest_hex.upper())
-
-    local_digest = self.digest()
-
-    if digest != local_digest:
-      raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (digest, local_digest))
+    return self._digest_for_content(b'router ', b'\nrouter-signature\n')
 
   def _compare(self, other, method):
     if not isinstance(other, RelayDescriptor):
@@ -808,20 +710,6 @@ class RelayDescriptor(ServerDescriptor):
 
   def __le__(self, other):
     return self._compare(other, lambda s, o: s <= o)
-
-  @staticmethod
-  def _get_key_bytes(key_string):
-    # Remove the newlines from the key string & strip off the
-    # '-----BEGIN RSA PUBLIC KEY-----' header and
-    # '-----END RSA PUBLIC KEY-----' footer
-
-    key_as_string = ''.join(key_string.split('\n')[1:4])
-
-    # get the key representation in bytes
-
-    key_bytes = base64.b64decode(stem.util.str_tools._to_bytes(key_as_string))
-
-    return key_bytes
 
 
 class BridgeDescriptor(ServerDescriptor):

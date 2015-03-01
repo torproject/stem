@@ -74,7 +74,7 @@ TkQgUlNBIFBVQkxJQyBLRVktLS0tLQoK
 -----END MESSAGE-----\
 """
 
-EXPECTED_DDG_INTRODUCTION_POINTS_CONTENT = """\
+EXPECTED_DDG_INTRODUCTION_POINTS_CONTENT = b"""\
 introduction-point iwki77xtbvp6qvedfrwdzncxs3ckayeu
 ip-address 178.62.222.129
 onion-port 443
@@ -353,7 +353,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     self.assertEqual([2, 3], desc.protocol_versions)
     self.assertEqual('-----BEGIN MESSAGE-----\n-----END MESSAGE-----', desc.introduction_points_encoded)
     self.assertEqual([], desc.introduction_points_auth)
-    self.assertEqual('', desc.introduction_points_content)
+    self.assertEqual(b'', desc.introduction_points_content)
     self.assertTrue(CRYPTO_BLOB in desc.signature)
     self.assertEqual([], desc.introduction_points())
 
@@ -456,7 +456,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
 
     self.assertEqual((MESSAGE_BLOCK % '').strip(), empty_field_desc.introduction_points_encoded)
     self.assertEqual([], empty_field_desc.introduction_points_auth)
-    self.assertEqual('', empty_field_desc.introduction_points_content)
+    self.assertEqual(b'', empty_field_desc.introduction_points_content)
     self.assertEqual([], empty_field_desc.introduction_points())
 
   def test_introduction_points_when_not_base64(self):

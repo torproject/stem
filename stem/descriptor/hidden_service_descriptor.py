@@ -19,19 +19,17 @@ the HSDir flag.
 # TODO: Add a description for how to retrieve them when tor supports that
 # (#14847) and then update #15009.
 
-import base64
 import collections
 import io
 
 import stem.util.connection
-
-from stem import str_type
 
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
   _get_descriptor_components,
   _read_until_keywords,
+  _bytes_for_block,
   _value,
   _parse_simple_line,
   _parse_timestamp_line,
@@ -138,16 +136,15 @@ def _parse_introduction_points_line(descriptor, entries):
   descriptor.introduction_points_encoded = block_contents
 
   try:
-    blob = ''.join(block_contents.split('\n')[1:-1])
-    decoded_field = base64.b64decode(stem.util.str_tools._to_bytes(blob))
+    decoded_field = _bytes_for_block(block_contents)
   except TypeError:
     raise ValueError("'introduction-points' isn't base64 encoded content:\n%s" % block_contents)
 
   auth_types = []
 
-  while decoded_field.startswith('service-authentication ') and '\n' in decoded_field:
-    auth_line, decoded_field = decoded_field.split('\n', 1)
-    auth_line_comp = auth_line.split(' ')
+  while decoded_field.startswith(b'service-authentication ') and b'\n' in decoded_field:
+    auth_line, decoded_field = decoded_field.split(b'\n', 1)
+    auth_line_comp = auth_line.split(b' ')
 
     if len(auth_line_comp) < 3:
       raise ValueError("Within introduction-points we expected 'service-authentication [auth_type] [auth_data]', but had '%s'" % auth_line)
@@ -178,7 +175,7 @@ class HiddenServiceDescriptor(Descriptor):
   :var str introduction_points_encoded: raw introduction points blob
   :var list introduction_points_auth: **\*** tuples of the form
     (auth_method, auth_data) for our introduction_points_content
-  :var str introduction_points_content: decoded introduction-points content
+  :var bytes introduction_points_content: decoded introduction-points content
     without authentication data, if using cookie authentication this is
     encrypted
   :var str signature: signature of the descriptor content
@@ -228,6 +225,13 @@ class HiddenServiceDescriptor(Descriptor):
         raise ValueError("Hidden service descriptor must end with a 'signature' entry")
 
       self._parse(entries, validate)
+
+      if stem.prereq.is_crypto_available():
+        signed_digest = self._digest_for_signature(self.permanent_key, self.signature)
+        content_digest = self._digest_for_content(b'rendezvous-service-descriptor ', b'\nsignature\n')
+
+        if signed_digest != content_digest:
+          raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, content_digest))
     else:
       self._entries = entries
 
@@ -257,14 +261,14 @@ class HiddenServiceDescriptor(Descriptor):
 
     if not self.introduction_points_content:
       return []
-    elif not self.introduction_points_content.startswith('introduction-point '):
+    elif not self.introduction_points_content.startswith(b'introduction-point '):
       raise DecryptionFailure('introduction-point content is encrypted')
 
     introduction_points = []
-    content_io = io.StringIO(str_type(self.introduction_points_content))
+    content_io = io.BytesIO(self.introduction_points_content)
 
     while True:
-      content = ''.join(_read_until_keywords('introduction-point', content_io, ignore_first = True))
+      content = b''.join(_read_until_keywords('introduction-point', content_io, ignore_first = True))
 
       if not content:
         break  # reached the end
