@@ -33,14 +33,19 @@ Helper functions for creating mock objects.
       get_router_status_entry_v2       - RouterStatusEntryV2
       get_router_status_entry_v3       - RouterStatusEntryV3
       get_router_status_entry_micro_v3 - RouterStatusEntryMicroV3
+
+    stem.descriptor.hidden-service_descriptor
+      get_hidden_service_descriptor - HiddenServiceDescriptor
 """
 
 import base64
 import hashlib
 import itertools
 import re
+import textwrap
 
 import stem.descriptor.extrainfo_descriptor
+import stem.descriptor.hidden_service_descriptor
 import stem.descriptor.microdescriptor
 import stem.descriptor.networkstatus
 import stem.descriptor.router_status_entry
@@ -176,6 +181,20 @@ NETWORK_STATUS_DOCUMENT_FOOTER = (
   ('directory-footer', ''),
   ('bandwidth-weights', None),
   ('directory-signature', '%s %s\n%s' % (DOC_SIG.identity, DOC_SIG.key_digest, DOC_SIG.signature)),
+)
+
+HIDDEN_SERVICE_HEADER = (
+  ('rendezvous-service-descriptor', 'y3olqqblqw2gbh6phimfuiroechjjafa'),
+  ('version', '2'),
+  ('permanent-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
+  ('secret-id-part', 'e24kgecavwsznj7gpbktqsiwgvngsf4e'),
+  ('publication-time', '2015-02-23 20:00:00'),
+  ('protocol-versions', '2,3'),
+  ('introduction-points', '\n-----BEGIN MESSAGE-----\n-----END MESSAGE-----'),
+)
+
+HIDDEN_SERVICE_FOOTER = (
+  ('signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
 )
 
 
@@ -353,7 +372,7 @@ def get_relay_server_descriptor(attr = None, exclude = (), content = False, sign
     if sign_content:
       desc_content = sign_descriptor_content(desc_content)
 
-    with patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock()):
+    with patch('stem.prereq.is_crypto_available', Mock(return_value = False)):
       desc = stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate = True)
 
     return desc
@@ -497,6 +516,32 @@ def get_router_status_entry_micro_v3(attr = None, exclude = (), content = False)
     return desc_content
   else:
     return stem.descriptor.router_status_entry.RouterStatusEntryMicroV3(desc_content, validate = True)
+
+
+def get_hidden_service_descriptor(attr = None, exclude = (), content = False, introduction_points_lines = None):
+  """
+  Provides the descriptor content for...
+  stem.descriptor.hidden_service_descriptor.HidenServiceDescriptor
+
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool content: provides the str content of the descriptor rather than the class if True
+  :param list introduction_points_lines: lines to be included in the introduction-points field
+
+  :returns: HidenServiceDescriptor for the requested descriptor content
+  """
+
+  if (not attr or 'introduction-points' not in attr) and introduction_points_lines is not None:
+    encoded = base64.b64encode(introduction_points_lines('\n'))
+    attr['introduction-points'] = '\n-----BEGIN MESSAGE-----\n%s\n-----END MESSAGE-----' % '\n'.join(textwrap.wrap(encoded, 64))
+
+  desc_content = _get_descriptor_content(attr, exclude, HIDDEN_SERVICE_HEADER, HIDDEN_SERVICE_FOOTER)
+
+  if content:
+    return desc_content
+  else:
+    with patch('stem.prereq.is_crypto_available', Mock(return_value = False)):
+      return stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor(desc_content, validate = True)
 
 
 def get_directory_authority(attr = None, exclude = (), is_vote = False, content = False):

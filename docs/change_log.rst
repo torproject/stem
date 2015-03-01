@@ -58,6 +58,7 @@ conversion (:trac:`14075`).
  * **Descriptors**
 
   * Lazy-loading descriptors, improving performance by 25-70% depending on what type it is (:trac:`14011`)
+  * Added `support for hidden service descriptors <api/descriptor/hidden_service_descriptor.html>`_ (:trac:`15004`)
   * The :class:`~stem.descriptor.networkstatus.DirectoryAuthority` 'fingerprint' attribute was actually its 'v3ident'
   * Updating Faravahar's address (:trac:`14487`)
 

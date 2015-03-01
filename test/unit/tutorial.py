@@ -201,7 +201,7 @@ class TestTutorial(unittest.TestCase):
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
-  @patch('stem.descriptor.server_descriptor.RelayDescriptor._verify_digest', Mock())
+  @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
   def test_mirror_mirror_on_the_wall_5(self, downloader_mock, stdout_mock):
     def tutorial_example():
       from stem.descriptor.remote import DescriptorDownloader

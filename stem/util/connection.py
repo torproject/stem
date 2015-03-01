@@ -26,19 +26,21 @@ Connection and networking based utility functions.
   Method for resolving a process' connections.
 
   .. versionadded:: 1.1.0
+  .. versionchanged:: 1.4.0
+     Added **NETSTAT_WINDOWS**.
 
-  =================   ===========
-  Resolver            Description
-  =================   ===========
-  **PROC**            /proc contents
-  **NETSTAT**         netstat
-  **NETSTAT_WINDOWS** netstat command under Windows
-  **SS**              ss command
-  **LSOF**            lsof command
-  **SOCKSTAT**        sockstat command under *nix
-  **BSD_SOCKSTAT**    sockstat command under FreeBSD
-  **BSD_PROCSTAT**    procstat command under FreeBSD
-  =================   ===========
+  ====================  ===========
+  Resolver              Description
+  ====================  ===========
+  **PROC**              /proc contents
+  **NETSTAT**           netstat
+  **NETSTAT_WINDOWS**   netstat command under Windows
+  **SS**                ss command
+  **LSOF**              lsof command
+  **SOCKSTAT**          sockstat command under *nix
+  **BSD_SOCKSTAT**      sockstat command under FreeBSD
+  **BSD_PROCSTAT**      procstat command under FreeBSD
+  ====================  ===========
 """
 
 import collections
@@ -140,14 +142,14 @@ RESOLVER_FILTER = {
 
 def get_connections(resolver, process_pid = None, process_name = None):
   """
-  Retrieves a list of the current connections for a given process. The provides
-  a list of Connection instances, which have five attributes...
+  Retrieves a list of the current connections for a given process. This
+  provides a list of Connection instances, which have five attributes...
 
-    * local_address (str)
-    * local_port (int)
-    * remote_address (str)
-    * remote_port (int)
-    * protocol (str, generally either 'tcp' or 'udp')
+    * **local_address** (str)
+    * **local_port** (int)
+    * **remote_address** (str)
+    * **remote_port** (int)
+    * **protocol** (str, generally either 'tcp' or 'udp')
 
   .. versionadded:: 1.1.0
 
