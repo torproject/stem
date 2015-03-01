@@ -80,7 +80,7 @@ Version 1.3
 With `Stem's 1.3 release <https://blog.torproject.org/blog/stem-release-13>`_
 it's now much easier to `work with hidden services
 <tutorials/over_the_river.html>`_, 40% faster to read decriptors, and includes
-a myriad of other improvements.
+a myriad of other improvements. Released on **December 22nd, 2014**.
 
  * **Controller**
 
@@ -132,7 +132,7 @@ Version 1.2
 
 `Stem release 1.2 <https://blog.torproject.org/blog/stem-release-12>`_
 added our `interactive Tor interpreter <tutorials/down_the_rabbit_hole.html>`_
-among numerous other improvements and fixes.
+among numerous other improvements and fixes. Released on **June 1st, 2014**.
 
  * **Controller**
 
@@ -187,7 +187,8 @@ Version 1.1
 `Stem release 1.1 <https://blog.torproject.org/blog/stem-release-11>`_
 introduced `remote descriptor fetching <api/descriptor/remote.html>`_,
 `connection resolution <tutorials/east_of_the_sun.html#connection-resolution>`_
-and a myriad of smaller improvements and fixes.
+and a myriad of smaller improvements and fixes. Released on **October 14th,
+2013**.
 
  * **Controller**
 
