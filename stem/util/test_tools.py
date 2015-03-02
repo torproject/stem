@@ -53,17 +53,22 @@ def clean_orphaned_pyc(paths):
 
   for path in paths:
     for pyc_path in stem.util.system.files_with_suffix(path, '.pyc'):
+      py_path = pyc_path[:-1]
+
       # If we're running python 3 then the *.pyc files are no longer bundled
       # with the *.py. Rather, they're in a __pycache__ directory.
 
-      # TODO: At the moment there's no point in checking for orphaned bytecode
-      # with python 3 because it's an exported copy of the python 2 codebase,
-      # so skipping. However, we might want to address this for other callers.
+      pycache = '%s__pycache__%s' % (os.path.sep, os.path.sep)
 
-      if '__pycache__' in pyc_path:
-        continue
+      if pycache in pyc_path:
+        directory, pycache_filename = pyc_path.split(pycache, 1)
 
-      if not os.path.exists(pyc_path[:-1]):
+        if not pycache_filename.endswith('.pyc'):
+          continue  # should look like 'test_tools.cpython-32.pyc'
+
+        py_path = os.path.join(directory, pycache_filename.split('.')[0] + '.py')
+
+      if not os.path.exists(py_path):
         orphaned_pyc.append(pyc_path)
         os.remove(pyc_path)
 
