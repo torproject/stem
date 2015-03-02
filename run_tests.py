@@ -443,9 +443,9 @@ def _run_test(args, test_class, output_filters, logging_buffer):
   start_time = time.time()
 
   if args.verbose:
-    test.output.print_divider(test_class.__module__)
+    test.output.print_divider(test_class)
   else:
-    label = test_class.__module__
+    label = test_class
 
     if label.startswith('test.unit.'):
       label = label[10:]
@@ -457,23 +457,29 @@ def _run_test(args, test_class, output_filters, logging_buffer):
 
     println(label, STATUS, NO_NL)
 
-  suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+  suite = None
+  try:
+    suite = unittest.TestLoader().loadTestsFromName(test_class)
+  except:
+    println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
 
   test_results = StringIO()
-  run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+  run_result = None
 
-  if args.verbose:
-    println(test.output.apply_filters(test_results.getvalue(), *output_filters))
-  elif not run_result.failures and not run_result.errors:
-    println(' success (%0.2fs)' % (time.time() - start_time), SUCCESS)
-  else:
-    if args.quiet:
-      println(label, STATUS, NO_NL, STDERR)
-      println(' failed (%0.2fs)' % (time.time() - start_time), ERROR, STDERR)
-      println(test.output.apply_filters(test_results.getvalue(), *output_filters), STDERR)
+  if suite:
+    run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+    if args.verbose:
+      println(test.output.apply_filters(test_results.getvalue(), *output_filters))
+    elif not run_result.failures and not run_result.errors:
+      println(' success (%0.2fs)' % (time.time() - start_time), SUCCESS)
     else:
-      println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
-      println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL)
+      if args.quiet:
+        println(label, STATUS, NO_NL, STDERR)
+        println(' failed (%0.2fs)' % (time.time() - start_time), ERROR, STDERR)
+        println(test.output.apply_filters(test_results.getvalue(), *output_filters), STDERR)
+      else:
+        println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
+        println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL)
 
   test.output.print_logging(logging_buffer)
 

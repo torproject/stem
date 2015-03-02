@@ -83,6 +83,8 @@ def get_unit_tests(module_substring = None):
 
   :returns: an **iterator** for our unit tests
   """
+  if module_substring and module_substring.startswith('test.unit.') == False:
+    module_substring = 'test.unit.' + module_substring
 
   return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_substring)
 
@@ -95,31 +97,40 @@ def get_integ_tests(module_substring = None):
 
   :returns: an **iterator** for our integration tests
   """
+  if module_substring and module_substring.startswith('test.integ.') == False:
+    module_substring = 'test.integ.' + module_substring
 
   return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_substring)
 
 
 def _get_tests(modules, module_substring):
+  # Look for module_substring in the list of all modules
+  modules_found = 0
   for import_name in modules:
     if import_name:
       if module_substring and module_substring not in import_name:
         continue
 
-      # Dynamically imports test modules. The __import__() call has a couple
-      # quirks that make this a little clunky...
-      #
-      #   * it only accepts modules, not the actual class we want to import
-      #
-      #   * it returns the top level module, so we need to transverse into it
-      #     for the test class
+      modules_found += 1
+      yield import_name
 
-      module_name = '.'.join(import_name.split('.')[:-1])
-      module = __import__(module_name)
+  # If no modules were found, then it might be that we were given
+  # a method (e.g test.integ.process.some_method).
+  # Delete the method substring and look again in the list of modules
+  if modules_found == 0:
+    module_list = module_substring.split('.')
+    # At this point all module_substring should be test.{integ|unit}.something
+    if(len(module_list) > 3):
+      module_substring = '.'.join(module_list[:-1])
+      class_method = module_list[-1]
 
-      for subcomponent in import_name.split('.')[1:]:
-        module = getattr(module, subcomponent)
+      for import_name in modules:
+        if import_name:
+          if module_substring and module_substring not in import_name:
+            continue
 
-      yield module
+          # If found, return module.method
+          yield import_name + '.' + class_method
 
 
 def get_help_message():
