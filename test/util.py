@@ -115,12 +115,9 @@ def _get_tests(modules, module_prefix):
       if not module_prefix or module.startswith(module_prefix):
         yield import_name
       elif module_prefix.startswith(module):
-        # might be a single test in this module, check if we match any
+        # single test for this module
 
-        module, test = module_prefix.rsplit('.', 1)
-
-        # TODO: should check if the test exists
-
+        test = module_prefix.rsplit('.', 1)[1]
         yield '%s.%s' % (import_name, test)
 
 

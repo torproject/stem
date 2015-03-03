@@ -466,7 +466,8 @@ def _run_test(args, test_class, output_filters, logging_buffer):
   try:
     suite = unittest.TestLoader().loadTestsFromName(test_class)
   except:
-    println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
+    # should only come up if user provided '--test' for something that doesn't exist
+    println(" no such test", ERROR)
     return None
 
   test_results = StringIO()
