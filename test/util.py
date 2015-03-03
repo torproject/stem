@@ -75,40 +75,44 @@ Target = stem.util.enum.UppercaseEnum(
 STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 
-def get_unit_tests(module_substring = None):
+def get_unit_tests(module_prefix = None):
   """
   Provides the classes for our unit tests.
 
-  :param str module_substring: only provide the test if the module includes this substring
+  :param str module_prefix: only provide the test if the module starts with
+    this substring
 
   :returns: an **iterator** for our unit tests
   """
-  if module_substring and module_substring.startswith('test.unit.') == False:
-    module_substring = 'test.unit.' + module_substring
 
-  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_substring)
+  if module_prefix and not module_prefix.startswith('test.unit.'):
+    module_prefix = 'test.unit.' + module_prefix
+
+  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_prefix)
 
 
-def get_integ_tests(module_substring = None):
+def get_integ_tests(module_prefix = None):
   """
   Provides the classes for our integration tests.
 
-  :param str module_substring: only provide the test if the module includes this substring
+  :param str module_prefix: only provide the test if the module starts with
+    this substring
 
   :returns: an **iterator** for our integration tests
   """
-  if module_substring and module_substring.startswith('test.integ.') == False:
-    module_substring = 'test.integ.' + module_substring
 
-  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_substring)
+  if module_prefix and not module_prefix.startswith('test.integ.'):
+    module_prefix = 'test.integ.' + module_prefix
+
+  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_prefix)
 
 
-def _get_tests(modules, module_substring):
-  # Look for module_substring in the list of all modules
+def _get_tests(modules, module_prefix):
+  # Look for module_prefix in the list of all modules
   modules_found = 0
   for import_name in modules:
     if import_name:
-      if module_substring and module_substring not in import_name:
+      if module_prefix and not import_name.startswith(module_prefix):
         continue
 
       modules_found += 1
@@ -118,15 +122,15 @@ def _get_tests(modules, module_substring):
   # a method (e.g test.integ.process.some_method).
   # Delete the method substring and look again in the list of modules
   if modules_found == 0:
-    module_list = module_substring.split('.')
-    # At this point all module_substring should be test.{integ|unit}.something
+    module_list = module_prefix.split('.')
+    # At this point all module_prefix should be test.{integ|unit}.something
     if(len(module_list) > 3):
-      module_substring = '.'.join(module_list[:-1])
+      module_prefix = '.'.join(module_list[:-1])
       class_method = module_list[-1]
 
       for import_name in modules:
         if import_name:
-          if module_substring and module_substring not in import_name:
+          if module_prefix and not import_name.startswith(module_prefix):
             continue
 
           # If found, return module.method
