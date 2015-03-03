@@ -457,29 +457,27 @@ def _run_test(args, test_class, output_filters, logging_buffer):
 
     println(label, STATUS, NO_NL)
 
-  suite = None
   try:
     suite = unittest.TestLoader().loadTestsFromName(test_class)
   except:
     println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
+    return None
 
   test_results = StringIO()
-  run_result = None
+  run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
 
-  if suite:
-    run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
-    if args.verbose:
-      println(test.output.apply_filters(test_results.getvalue(), *output_filters))
-    elif not run_result.failures and not run_result.errors:
-      println(' success (%0.2fs)' % (time.time() - start_time), SUCCESS)
+  if args.verbose:
+    println(test.output.apply_filters(test_results.getvalue(), *output_filters))
+  elif not run_result.failures and not run_result.errors:
+    println(' success (%0.2fs)' % (time.time() - start_time), SUCCESS)
+  else:
+    if args.quiet:
+      println(label, STATUS, NO_NL, STDERR)
+      println(' failed (%0.2fs)' % (time.time() - start_time), ERROR, STDERR)
+      println(test.output.apply_filters(test_results.getvalue(), *output_filters), STDERR)
     else:
-      if args.quiet:
-        println(label, STATUS, NO_NL, STDERR)
-        println(' failed (%0.2fs)' % (time.time() - start_time), ERROR, STDERR)
-        println(test.output.apply_filters(test_results.getvalue(), *output_filters), STDERR)
-      else:
-        println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
-        println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL)
+      println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
+      println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL)
 
   test.output.print_logging(logging_buffer)
 
