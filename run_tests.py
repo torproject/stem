@@ -443,21 +443,32 @@ def _run_test(args, test_class, output_filters, logging_buffer):
   start_time = time.time()
 
   if args.verbose:
-    test.output.print_divider(test_class.__module__)
+    test.output.print_divider(test_class)
   else:
-    label = test_class.__module__
+    # Test classes look like...
+    #
+    #   test.unit.util.conf.TestConf.test_parse_enum_csv
+    #
+    # We want to strip the 'test.unit.' or 'test.integ.' prefix since it's
+    # redundant. We also want to drop the test class name. The individual test
+    # name at the end it optional (only present if we used the '--test'
+    # argument).
 
-    if label.startswith('test.unit.'):
-      label = label[10:]
-    elif label.startswith('test.integ.'):
-      label = label[11:]
+    label_comp = test_class.split('.')[2:]
+    del label_comp[-1 if label_comp[-1][0].isupper() else -2]
+    label = '.'.join(label_comp)
 
     label = '  %s...' % label
     label = '%-54s' % label
 
     println(label, STATUS, NO_NL)
 
-  suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
+  try:
+    suite = unittest.TestLoader().loadTestsFromName(test_class)
+  except:
+    # should only come up if user provided '--test' for something that doesn't exist
+    println(" no such test", ERROR)
+    return None
 
   test_results = StringIO()
   run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)

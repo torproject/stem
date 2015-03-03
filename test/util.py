@@ -75,51 +75,50 @@ Target = stem.util.enum.UppercaseEnum(
 STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 
-def get_unit_tests(module_substring = None):
+def get_unit_tests(module_prefix = None):
   """
   Provides the classes for our unit tests.
 
-  :param str module_substring: only provide the test if the module includes this substring
+  :param str module_prefix: only provide the test if the module starts with
+    this substring
 
   :returns: an **iterator** for our unit tests
   """
 
-  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_substring)
+  if module_prefix and not module_prefix.startswith('test.unit.'):
+    module_prefix = 'test.unit.' + module_prefix
+
+  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_prefix)
 
 
-def get_integ_tests(module_substring = None):
+def get_integ_tests(module_prefix = None):
   """
   Provides the classes for our integration tests.
 
-  :param str module_substring: only provide the test if the module includes this substring
+  :param str module_prefix: only provide the test if the module starts with
+    this substring
 
   :returns: an **iterator** for our integration tests
   """
 
-  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_substring)
+  if module_prefix and not module_prefix.startswith('test.integ.'):
+    module_prefix = 'test.integ.' + module_prefix
+
+  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_prefix)
 
 
-def _get_tests(modules, module_substring):
+def _get_tests(modules, module_prefix):
   for import_name in modules:
     if import_name:
-      if module_substring and module_substring not in import_name:
-        continue
+      module, module_name = import_name.rsplit('.', 1)  # example: util.conf.TestConf
 
-      # Dynamically imports test modules. The __import__() call has a couple
-      # quirks that make this a little clunky...
-      #
-      #   * it only accepts modules, not the actual class we want to import
-      #
-      #   * it returns the top level module, so we need to transverse into it
-      #     for the test class
+      if not module_prefix or module.startswith(module_prefix):
+        yield import_name
+      elif module_prefix.startswith(module):
+        # single test for this module
 
-      module_name = '.'.join(import_name.split('.')[:-1])
-      module = __import__(module_name)
-
-      for subcomponent in import_name.split('.')[1:]:
-        module = getattr(module, subcomponent)
-
-      yield module
+        test = module_prefix.rsplit('.', 1)[1]
+        yield '%s.%s' % (import_name, test)
 
 
 def get_help_message():
