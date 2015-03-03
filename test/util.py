@@ -110,16 +110,18 @@ def get_integ_tests(module_prefix = None):
 def _get_tests(modules, module_prefix):
   for import_name in modules:
     if import_name:
-      if not module_prefix or import_name.startswith(module_prefix):
+      module, module_name = import_name.rsplit('.', 1)  # example: util.conf.TestConf
+
+      if not module_prefix or module.startswith(module_prefix):
         yield import_name
-      elif module_prefix.startswith(import_name):
+      elif module_prefix.startswith(module):
         # might be a single test in this module, check if we match any
 
         module, test = module_prefix.rsplit('.', 1)
 
         # TODO: should check if the test exists
 
-        yield module_prefix
+        yield '%s.%s' % (import_name, test)
 
 
 def get_help_message():
