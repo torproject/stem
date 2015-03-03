@@ -108,33 +108,18 @@ def get_integ_tests(module_prefix = None):
 
 
 def _get_tests(modules, module_prefix):
-  # Look for module_prefix in the list of all modules
-  modules_found = 0
   for import_name in modules:
     if import_name:
-      if module_prefix and not import_name.startswith(module_prefix):
-        continue
+      if not module_prefix or import_name.startswith(module_prefix):
+        yield import_name
+      elif module_prefix.startswith(import_name):
+        # might be a single test in this module, check if we match any
 
-      modules_found += 1
-      yield import_name
+        module, test = module_prefix.rsplit('.', 1)
 
-  # If no modules were found, then it might be that we were given
-  # a method (e.g test.integ.process.some_method).
-  # Delete the method substring and look again in the list of modules
-  if modules_found == 0:
-    module_list = module_prefix.split('.')
-    # At this point all module_prefix should be test.{integ|unit}.something
-    if(len(module_list) > 3):
-      module_prefix = '.'.join(module_list[:-1])
-      class_method = module_list[-1]
+        # TODO: should check if the test exists
 
-      for import_name in modules:
-        if import_name:
-          if module_prefix and not import_name.startswith(module_prefix):
-            continue
-
-          # If found, return module.method
-          yield import_name + '.' + class_method
+        yield module_prefix
 
 
 def get_help_message():
