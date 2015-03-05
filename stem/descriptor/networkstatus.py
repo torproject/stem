@@ -47,8 +47,19 @@ For more information see :func:`~stem.descriptor.__init__.DocumentHandler`...
   KeyCertificate - Certificate used to authenticate an authority
   DocumentSignature - Signature of a document by a directory authority
   DirectoryAuthority - Directory authority as defined in a v3 network status document
+
+
+.. data:: PackageVersion
+
+  Latest recommended version of a package that's available.
+
+  :var str name: name of the package
+  :var str version: latest recommended version
+  :var str url: package's url
+  :var dict digests: mapping of digest types to their value
 """
 
+import collections
 import io
 
 import stem.descriptor.router_status_entry
@@ -74,6 +85,13 @@ from stem.descriptor.router_status_entry import (
   RouterStatusEntryV3,
   RouterStatusEntryMicroV3,
 )
+
+PackageVersion = collections.namedtuple('PackageVersion', [
+  'name',
+  'version',
+  'url',
+  'digests',
+])
 
 # Version 2 network status document fields, tuples of the form...
 # (keyword, is_mandatory)
@@ -109,6 +127,7 @@ HEADER_STATUS_DOCUMENT_FIELDS = (
   ('voting-delay', True, True, True),
   ('client-versions', True, True, False),
   ('server-versions', True, True, False),
+  ('package', True, True, False),
   ('known-flags', True, True, True),
   ('flag-thresholds', True, False, False),
   ('params', True, True, False),
@@ -638,6 +657,30 @@ def _parse_footer_directory_signature_line(descriptor, entries):
   descriptor.signatures = signatures
 
 
+def _parse_package_line(descriptor, entries):
+  package_versions = []
+
+  for value, _, _ in entries['package']:
+    value_comp = value.split()
+
+    if len(value_comp) < 3:
+      raise ValueError("'package' must at least have a 'PackageName Version URL': %s" % value)
+
+    name, version, url = value_comp[:3]
+    digests = {}
+
+    for digest_entry in value_comp[3:]:
+      if '=' not in digest_entry:
+        raise ValueError("'package' digest entries should be 'key=value' pairs: %s" % value)
+
+      key, value = digest_entry.split('=', 1)
+      digests[key] = value
+
+    package_versions.append(PackageVersion(name, version, url, digests))
+
+  descriptor.packages = package_versions
+
+
 _parse_header_valid_after_line = _parse_timestamp_line('valid-after', 'valid_after')
 _parse_header_fresh_until_line = _parse_timestamp_line('fresh-until', 'fresh_until')
 _parse_header_valid_until_line = _parse_timestamp_line('valid-until', 'valid_until')
@@ -669,6 +712,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     signatures from all authorities
   :var list client_versions: list of recommended client tor versions
   :var list server_versions: list of recommended server tor versions
+  :var list packages: **\*** list of :data:`~stem.descriptor.networkstatus.PackageVersion` entries
   :var list known_flags: **\*** list of :data:`~stem.Flag` for the router's flags
   :var dict params: **\*** dict of parameter(**str**) => value(**int**) mappings
   :var list directory_authorities: **\*** list of :class:`~stem.descriptor.networkstatus.DirectoryAuthority`
@@ -689,6 +733,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
+
+  .. versionchanged:: 1.4.0
+     Added the packages attribute.
   """
 
   ATTRIBUTES = {
@@ -707,6 +754,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'dist_delay': (None, _parse_header_voting_delay_line),
     'client_versions': ([], _parse_header_client_versions_line),
     'server_versions': ([], _parse_header_server_versions_line),
+    'packages': ([], _parse_package_line),
     'known_flags': ([], _parse_header_known_flags_line),
     'flag_thresholds': ({}, _parse_header_flag_thresholds_line),
     'params': ({}, _parse_header_parameters_line),
@@ -727,6 +775,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'voting-delay': _parse_header_voting_delay_line,
     'client-versions': _parse_header_client_versions_line,
     'server-versions': _parse_header_server_versions_line,
+    'package': _parse_package_line,
     'known-flags': _parse_header_known_flags_line,
     'flag-thresholds': _parse_header_flag_thresholds_line,
     'params': _parse_header_parameters_line,
@@ -820,7 +869,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       # all known header fields can only appear once except
 
       for keyword, values in list(entries.items()):
-        if len(values) > 1 and keyword in HEADER_FIELDS:
+        if len(values) > 1 and keyword in HEADER_FIELDS and keyword != 'package':
           raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
 
       if self._default_params:
@@ -1072,6 +1121,10 @@ class DirectoryAuthority(Descriptor):
     authority's key certificate
 
   **\*** mandatory attribute
+
+  .. versionchanged:: 1.4.0
+     Renamed our 'fingerprint' attribute to 'v3ident' (prior attribute exists
+     for backward compatability, but is deprecated).
   """
 
   ATTRIBUTES = {

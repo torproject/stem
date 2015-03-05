@@ -14,6 +14,8 @@ the HSDir flag.
 ::
 
   HiddenServiceDescriptor - Tor hidden service descriptor.
+
+.. versionadded:: 1.4.0
 """
 
 # TODO: Add a description for how to retrieve them when tor supports that

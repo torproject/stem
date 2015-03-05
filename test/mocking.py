@@ -173,6 +173,7 @@ NETWORK_STATUS_DOCUMENT_HEADER = (
   ('voting-delay', '300 300'),
   ('client-versions', None),
   ('server-versions', None),
+  ('package', None),
   ('known-flags', 'Authority BadExit Exit Fast Guard HSDir Named Running Stable Unnamed V2Dir Valid'),
   ('params', None),
 )

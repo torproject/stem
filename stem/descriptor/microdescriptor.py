@@ -196,6 +196,9 @@ class Microdescriptor(Descriptor):
   :var str identifier: base64 encoded identity digest, this is only used for collision prevention (:trac:`11743`)
 
   **\*** attribute is required when we're parsed with validation
+
+  .. versionchanged:: 1.1.0
+     Added the identifier and identifier_type attributes.
   """
 
   ATTRIBUTES = {

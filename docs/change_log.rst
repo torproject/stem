@@ -60,6 +60,7 @@ conversion (:trac:`14075`).
   * Lazy-loading descriptors, improving performance by 25-70% depending on what type it is (:trac:`14011`)
   * Added `support for hidden service descriptors <api/descriptor/hidden_service_descriptor.html>`_ (:trac:`15004`)
   * The :class:`~stem.descriptor.networkstatus.DirectoryAuthority` 'fingerprint' attribute was actually its 'v3ident'
+  * Added consensus' new package attribute (:spec:`ab64534`)
   * Updating Faravahar's address (:trac:`14487`)
 
  * **Utilities**
@@ -155,7 +156,7 @@ among numerous other improvements and fixes. Released on **June 1st, 2014**.
  * **Descriptors**
 
   * Added tarfile support to :func:`~stem.descriptor.__init__.parse_file` (:trac:`10977`)
-  * Added microdescriptor's new identity and identity_type attributes (:spec:`22cda72`)
+  * Added microdescriptor's new identifier and identifier_type attributes (:spec:`22cda72`)
 
  * **Utilities**
 

@@ -15,6 +15,7 @@ from stem.descriptor.networkstatus import (
   HEADER_STATUS_DOCUMENT_FIELDS,
   FOOTER_STATUS_DOCUMENT_FIELDS,
   DEFAULT_PARAMS,
+  PackageVersion,
   DirectoryAuthority,
   NetworkStatusDocumentV3,
   _parse_file,
@@ -125,6 +126,7 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       self.assertEqual(expected_versions, document.client_versions)
       self.assertEqual(expected_versions, document.server_versions)
       self.assertEqual(expected_flags, set(document.known_flags))
+      self.assertEqual([], document.packages)
       self.assertEqual({'CircuitPriorityHalflifeMsec': 30000, 'bwauthpid': 1}, document.params)
 
       self.assertEqual(12, document.consensus_method)
@@ -248,6 +250,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEqual([], document.client_versions)
       self.assertEqual([], document.server_versions)
       self.assertEqual(expected_flags, set(document.known_flags))
+      self.assertEqual([], document.packages)
       self.assertEqual({'CircuitPriorityHalflifeMsec': 30000, 'bwauthpid': 1}, document.params)
 
       self.assertEqual(None, document.consensus_method)
@@ -325,6 +328,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual([], document.client_versions)
     self.assertEqual([], document.server_versions)
     self.assertEqual(expected_known_flags, document.known_flags)
+    self.assertEqual([], document.packages)
     self.assertEqual({}, document.flag_thresholds)
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual((), document.directory_authorities)
@@ -359,6 +363,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual([], document.client_versions)
     self.assertEqual([], document.server_versions)
     self.assertEqual(expected_known_flags, document.known_flags)
+    self.assertEqual([], document.packages)
     self.assertEqual({}, document.flag_thresholds)
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual({}, document.bandwidth_weights)
@@ -725,6 +730,43 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
         document = NetworkStatusDocumentV3(content, False)
         self.assertEqual([], getattr(document, attr))
+
+  def test_packages(self):
+    """
+    Parse the package line. These can appear multiple times, and have any
+    number of digests.
+    """
+
+    test_values = (
+      (['Stem 1.3.0 https://stem.torproject.org/'],
+         [PackageVersion('Stem', '1.3.0', 'https://stem.torproject.org/', {})]),
+      (['Stem 1.3.0 https://stem.torproject.org/ sha1=5d676c8124b4be1f52ddc8e15ca143cad211eeb4 md5=600ad5e2fc4caf585c1bdaaa532b7e82'],
+         [PackageVersion('Stem', '1.3.0', 'https://stem.torproject.org/', {'sha1': '5d676c8124b4be1f52ddc8e15ca143cad211eeb4', 'md5': '600ad5e2fc4caf585c1bdaaa532b7e82'})]),
+      (['Stem 1.3.0 https://stem.torproject.org/', 'Txtorcon 0.13.0 https://github.com/meejah/txtorcon'],
+         [PackageVersion('Stem', '1.3.0', 'https://stem.torproject.org/', {}),
+          PackageVersion('Txtorcon', '0.13.0', 'https://github.com/meejah/txtorcon', {})]),
+    )
+
+    for test_value, expected_value in test_values:
+      document = get_network_status_document_v3({'package': '\npackage '.join(test_value)})
+      self.assertEqual(expected_value, document.packages)
+
+    test_values = (
+      '',
+      '    ',
+      'Stem',
+      'Stem 1.3.0',
+      'Stem 1.3.0 https://stem.torproject.org/ keyword_field',
+      'Stem 1.3.0 https://stem.torproject.org/ keyword_field key=value',
+      'Stem 1.3.0 https://stem.torproject.org/ key=value keyword_field',
+    )
+
+    for test_value in test_values:
+      content = get_network_status_document_v3({'package': test_value}, content = True)
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
+
+      document = NetworkStatusDocumentV3(content, False)
+      self.assertEqual([], document.packages)
 
   def test_known_flags(self):
     """
