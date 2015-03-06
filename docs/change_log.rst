@@ -7,10 +7,10 @@ unreleased. For a monthly report on work being done see my `development log
 
 * :ref:`versioning`
 * :ref:`unreleased`
-* :ref:`version_1.3`
-* :ref:`version_1.2`
-* :ref:`version_1.1`
-* :ref:`version_1.0`
+* :ref:`Version 1.3 <version_1.3>`
+* :ref:`Version 1.2 <version_1.2>`
+* :ref:`Version 1.1 <version_1.1>`
+* :ref:`Version 1.0 <version_1.0>`
 
 .. _versioning:
 
@@ -75,13 +75,14 @@ conversion (:trac:`14075`).
 
 .. _version_1.3:
 
-Version 1.3
------------
+Version 1.3 (December 22nd, 2014)
+---------------------------------
 
 With `Stem's 1.3 release <https://blog.torproject.org/blog/stem-release-13>`_
 it's now much easier to `work with hidden services
 <tutorials/over_the_river.html>`_, 40% faster to read decriptors, and includes
-a myriad of other improvements. Released on **December 22nd, 2014**.
+a myriad of other improvements. For a nice description of the changes this
+brings see `Nathan Willis' LWN article <http://lwn.net/Articles/632914/>`_.
 
  * **Controller**
 
@@ -128,12 +129,12 @@ a myriad of other improvements. Released on **December 22nd, 2014**.
 
 .. _version_1.2:
 
-Version 1.2
------------
+Version 1.2 (June 1st, 2014)
+----------------------------
 
 `Stem release 1.2 <https://blog.torproject.org/blog/stem-release-12>`_
 added our `interactive Tor interpreter <tutorials/down_the_rabbit_hole.html>`_
-among numerous other improvements and fixes. Released on **June 1st, 2014**.
+among numerous other improvements and fixes.
 
  * **Controller**
 
@@ -182,14 +183,13 @@ among numerous other improvements and fixes. Released on **June 1st, 2014**.
 
 .. _version_1.1:
 
-Version 1.1
------------
+Version 1.1 (October 14th, 2013)
+--------------------------------
 
 `Stem release 1.1 <https://blog.torproject.org/blog/stem-release-11>`_
 introduced `remote descriptor fetching <api/descriptor/remote.html>`_,
 `connection resolution <tutorials/east_of_the_sun.html#connection-resolution>`_
-and a myriad of smaller improvements and fixes. Released on **October 14th,
-2013**.
+and a myriad of smaller improvements and fixes.
 
  * **Controller**
 
@@ -245,12 +245,11 @@ and a myriad of smaller improvements and fixes. Released on **October 14th,
 
 .. _version_1.0:
 
-Version 1.0
------------
+Version 1.0 (March 26th, 2013)
+------------------------------
 
 This was the `initial release of Stem
-<https://blog.torproject.org/blog/stem-release-10>`_, made on **March 26th,
-2013**.
+<https://blog.torproject.org/blog/stem-release-10>`_.
 
  * **Version 1.0.1** (March 27th, 2013) - fixed an issue where installing with
    Python 3.x (python3 setup.py install) resulted in a stacktrace
