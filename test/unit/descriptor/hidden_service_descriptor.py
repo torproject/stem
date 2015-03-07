@@ -6,6 +6,9 @@ import datetime
 import unittest
 
 import stem.descriptor
+import stem.prereq
+
+import test.runner
 
 from test.mocking import CRYPTO_BLOB, get_hidden_service_descriptor
 from test.unit.descriptor import get_resource
@@ -269,6 +272,9 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     Parse a descriptor with introduction-points encrypted with basic auth.
     """
 
+    if not stem.prereq.is_crypto_available():
+      return test.runner.skip(self, 'requires pycrypto')
+
     descriptor_file = open(get_resource('hidden_service_basic_auth'), 'rb')
 
     desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
@@ -281,11 +287,42 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     self.assertEqual([], desc.introduction_points_auth)
 
     self.assertRaises(DecryptionFailure, desc.introduction_points)
+    self.assertRaises(DecryptionFailure, desc.introduction_points, 'aCmx3qIvArbil8A0KM4KgQ==')
+
+    introduction_points = desc.introduction_points('dCmx3qIvArbil8A0KM4KgQ==')
+    self.assertEqual(3, len(introduction_points))
+
+    point = introduction_points[0]
+    self.assertEqual('hmtvoobwglmmec26alnvl7x7mgmmr7xv', point.identifier)
+    self.assertEqual('195.154.82.88', point.address)
+    self.assertEqual(443, point.port)
+    self.assertTrue('MIGJAoGBANbPRD07T' in point.onion_key)
+    self.assertTrue('MIGJAoGBAN+LAdZP/' in point.service_key)
+    self.assertEqual([], point.intro_authentication)
+
+    point = introduction_points[1]
+    self.assertEqual('q5w6l2f4g5zw4rkr56fkyovbkkrnzcj5', point.identifier)
+    self.assertEqual('37.252.190.133', point.address)
+    self.assertEqual(9001, point.port)
+    self.assertTrue('MIGJAoGBAKmsbKrtt' in point.onion_key)
+    self.assertTrue('MIGJAoGBANwczLtzR' in point.service_key)
+    self.assertEqual([], point.intro_authentication)
+
+    point = introduction_points[2]
+    self.assertEqual('qcvprvmvnjb4dfyqjtxskugniliwlrx3', point.identifier)
+    self.assertEqual('193.11.114.45', point.address)
+    self.assertEqual(9002, point.port)
+    self.assertTrue('MIGJAoGBAM1ILL+7P' in point.onion_key)
+    self.assertTrue('MIGJAoGBAM7B/cymp' in point.service_key)
+    self.assertEqual([], point.intro_authentication)
 
   def test_with_stealth_auth(self):
     """
     Parse a descriptor with introduction-points encrypted with stealth auth.
     """
+
+    if not stem.prereq.is_crypto_available():
+      return test.runner.skip(self, 'requires pycrypto')
 
     descriptor_file = open(get_resource('hidden_service_stealth_auth'), 'rb')
 
@@ -298,6 +335,34 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     self.assertEqual([], desc.introduction_points_auth)
 
     self.assertRaises(DecryptionFailure, desc.introduction_points)
+    self.assertRaises(DecryptionFailure, desc.introduction_points, 'aCmx3qIvArbil8A0KM4KgQ==')
+
+    introduction_points = desc.introduction_points('dCmx3qIvArbil8A0KM4KgQ==')
+    self.assertEqual(3, len(introduction_points))
+
+    point = introduction_points[0]
+    self.assertEqual('6h4bkedts3yz2exl3vu4lsyiwkjrx5ff', point.identifier)
+    self.assertEqual('95.85.60.23', point.address)
+    self.assertEqual(443, point.port)
+    self.assertTrue('MIGJAoGBAMX5hO5hQ' in point.onion_key)
+    self.assertTrue('MIGJAoGBAMNSjfydv' in point.service_key)
+    self.assertEqual([], point.intro_authentication)
+
+    point = introduction_points[1]
+    self.assertEqual('4ghasjftsdfbbycafvlfx7czln3hrk53', point.identifier)
+    self.assertEqual('178.254.55.101', point.address)
+    self.assertEqual(9901, point.port)
+    self.assertTrue('MIGJAoGBAL2v/KNEY' in point.onion_key)
+    self.assertTrue('MIGJAoGBAOXiuIgBr' in point.service_key)
+    self.assertEqual([], point.intro_authentication)
+
+    point = introduction_points[2]
+    self.assertEqual('76tsxvudxqx47gedk3tl5qpesdzrh6yh', point.identifier)
+    self.assertEqual('193.11.164.243', point.address)
+    self.assertEqual(9001, point.port)
+    self.assertTrue('MIGJAoGBALca3zEoS' in point.onion_key)
+    self.assertTrue('MIGJAoGBAL3rWIAQ6' in point.service_key)
+    self.assertEqual([], point.intro_authentication)
 
   def _assert_matches_duckduckgo(self, desc):
     self.assertEqual('y3olqqblqw2gbh6phimfuiroechjjafa', desc.descriptor_id)

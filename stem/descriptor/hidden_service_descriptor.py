@@ -21,7 +21,10 @@ the HSDir flag.
 # TODO: Add a description for how to retrieve them when tor supports that
 # (#14847) and then update #15009.
 
+import base64
+import binascii
 import collections
+import hashlib
 import io
 
 import stem.util.connection
@@ -62,6 +65,19 @@ INTRODUCTION_POINTS_ATTR = {
   'service_key': None,
   'intro_authentication': [],
 }
+
+# introduction-point fields that can only appear once
+
+SINGLE_INTRODUCTION_POINT_FIELDS = [
+  'introduction-point',
+  'ip-address',
+  'onion-port',
+  'onion-key',
+  'service-key',
+]
+
+BASIC_AUTH = 1
+STEALTH_AUTH = 2
 
 IntroductionPoint = collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())
 
@@ -238,7 +254,7 @@ class HiddenServiceDescriptor(Descriptor):
       self._entries = entries
 
   @lru_cache()
-  def introduction_points(self):
+  def introduction_points(self, authentication_cookie = None):
     """
     Provided this service's introduction points. This provides a list of
     IntroductionPoint instances, which have the following attributes...
@@ -251,6 +267,9 @@ class HiddenServiceDescriptor(Descriptor):
       * **intro_authentication** (list): tuples of the form (auth_type, auth_data)
         for establishing a connection
 
+    :param str authentication_cookie: cookie to decrypt the introduction-points
+      if it's encrypted
+
     :returns: **list** of IntroductionPoints instances
 
     :raises:
@@ -258,15 +277,103 @@ class HiddenServiceDescriptor(Descriptor):
       * **DecryptionFailure** if unable to decrypt this field
     """
 
-    # TODO: Support fields encrypted with a desriptor-cookie. (#15004)
+    content = self.introduction_points_content
 
-    if not self.introduction_points_content:
+    if not content:
       return []
-    elif not self.introduction_points_content.startswith(b'introduction-point '):
-      raise DecryptionFailure('introduction-point content is encrypted')
+    elif authentication_cookie:
+      if not stem.prereq.is_crypto_available():
+        raise DecryptionFailure('Decrypting introduction-points requires pycrypto')
+
+      try:
+        missing_padding = len(authentication_cookie) % 4
+        authentication_cookie = base64.b64decode(authentication_cookie + '=' * missing_padding)
+      except TypeError as exc:
+        raise DecryptionFailure('authentication_cookie must be a base64 encoded string (%s)' % exc)
+
+      authentication_type = int(binascii.hexlify(content[0]), 16)
+
+      if authentication_type == BASIC_AUTH:
+        content = HiddenServiceDescriptor._decrypt_basic_auth(content, authentication_cookie)
+      elif authentication_type == STEALTH_AUTH:
+        content = HiddenServiceDescriptor._decrypt_stealth_auth(content, authentication_cookie)
+      else:
+        raise DecryptionFailure("Unrecognized authentication type '%s', presently we only support basic auth (%s) and stealth auth (%s)" % (authentication_type, BASIC_AUTH, STEALTH_AUTH))
+
+      if not content.startswith(b'introduction-point '):
+        raise DecryptionFailure("Unable to decrypt the introduction-points, maybe this is the wrong key?")
+    elif not content.startswith(b'introduction-point '):
+      raise DecryptionFailure('introduction-points content is encrypted, you need to provide its authentication_cookie')
+
+    return HiddenServiceDescriptor._parse_introduction_points(content)
+
+  @staticmethod
+  def _decrypt_basic_auth(content, authentication_cookie):
+    from Crypto.Cipher import AES
+    from Crypto.Util import Counter
+    from Crypto.Util.number import bytes_to_long
+
+    try:
+      client_blocks = int(binascii.hexlify(content[1]), 16)
+    except ValueError:
+      raise DecryptionFailure("When using basic auth the content should start with a number of blocks but wasn't a hex digit: %s" % binascii.hexlify(content[1]))
+
+    # parse the client id and encrypted session keys
+
+    client_entries_length = client_blocks * 16 * 20
+    client_entries = content[2:2 + client_entries_length]
+    client_keys = [(client_entries[i:i + 4], client_entries[i + 4:i + 20]) for i in range(0, client_entries_length, 4 + 16)]
+
+    iv = content[2 + client_entries_length:2 + client_entries_length + 16]
+    encrypted = content[2 + client_entries_length + 16:]
+
+    client_id = hashlib.sha1(authentication_cookie + iv).digest()[:4]
+
+    for entry_id, encrypted_session_key in client_keys:
+      if entry_id != client_id:
+        continue  # not the session key for this client
+
+      # try decrypting the session key
+
+      counter = Counter.new(128, initial_value = 0)
+      cipher = AES.new(authentication_cookie, AES.MODE_CTR, counter = counter)
+      session_key = cipher.decrypt(encrypted_session_key)
+
+      # attempt to decrypt the intro points with the session key
+
+      counter = Counter.new(128, initial_value = bytes_to_long(iv))
+      cipher = AES.new(session_key, AES.MODE_CTR, counter = counter)
+      decrypted = cipher.decrypt(encrypted)
+
+      # check if the decryption looks correct
+
+      if decrypted.startswith(b'introduction-point '):
+        return decrypted
+
+    return content  # nope, unable to decrypt the content
+
+  @staticmethod
+  def _decrypt_stealth_auth(content, authentication_cookie):
+    from Crypto.Cipher import AES
+    from Crypto.Util import Counter
+    from Crypto.Util.number import bytes_to_long
+
+    # byte 1 = authentication type, 2-17 = input vector, 18 on = encrypted content
+
+    iv, encrypted = content[1:17], content[17:]
+    counter = Counter.new(128, initial_value = bytes_to_long(iv))
+    cipher = AES.new(authentication_cookie, AES.MODE_CTR, counter = counter)
+
+    return cipher.decrypt(encrypted)
+
+  @staticmethod
+  def _parse_introduction_points(content):
+    """
+    Provides the parsed list of IntroductionPoint for the unencrypted content.
+    """
 
     introduction_points = []
-    content_io = io.BytesIO(self.introduction_points_content)
+    content_io = io.BytesIO(content)
 
     while True:
       content = b''.join(_read_until_keywords('introduction-point', content_io, ignore_first = True))
@@ -277,10 +384,11 @@ class HiddenServiceDescriptor(Descriptor):
       attr = dict(INTRODUCTION_POINTS_ATTR)
       entries = _get_descriptor_components(content, False)
 
-      # TODO: most fields can only appear once, we should check for that
-
       for keyword, values in list(entries.items()):
         value, block_type, block_contents = values[0]
+
+        if keyword in SINGLE_INTRODUCTION_POINT_FIELDS and len(values) > 1:
+          raise ValueError("'%s' can only appear once in an introduction-point block, but appeared %i times" % (keyword, len(values)))
 
         if keyword == 'introduction-point':
           attr['identifier'] = value
