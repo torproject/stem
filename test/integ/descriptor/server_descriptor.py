@@ -11,6 +11,8 @@ import test.runner
 
 from test.runner import only_run_once
 
+import test.util
+
 
 class TestServerDescriptor(unittest.TestCase):
   @only_run_once
@@ -43,5 +45,9 @@ class TestServerDescriptor(unittest.TestCase):
           # (along with new events, getinfo options, and such). For now though
           # there doesn't seem to be anything in practice to trigger this so
           # failing to get our attention if it does.
+          
+          for line in unrecognized_lines:
+            key = line.split()[0]
+            test.util.NEW_CAPABILITIES[key] = 'Extrainfo Descriptor Entry'
 
-          self.fail('Unrecognized descriptor content: %s' % unrecognized_lines)
+          #self.fail('Unrecognized descriptor content: %s' % unrecognized_lines)

@@ -80,6 +80,10 @@ Target = stem.util.enum.UppercaseEnum(
 
 STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
+# register new capabilities found
+
+NEW_CAPABILITIES = {}
+
 
 def get_unit_tests(module_prefix = None):
   """
@@ -263,6 +267,13 @@ def check_for_unused_tests(paths):
 
   if unused_tests:
     raise ValueError('Test modules are missing from our test/settings.cfg:\n%s' % '\n'.join(unused_tests))
+    
+
+def check_new_capabilities():
+  """
+  Return list of new capabilities found during tests
+  """
+  return NEW_CAPABILITIES
 
 
 def _is_test_data(path):
