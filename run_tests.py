@@ -6,8 +6,6 @@
 Runs unit and integration tests. For usage information run this with '--help'.
 """
 
-import collections
-import getopt
 import os
 import sys
 import threading
@@ -26,43 +24,15 @@ import stem.util.log
 import stem.util.system
 import stem.util.test_tools
 
+import test.arguments
 import test.output
 import test.runner
 import test.util
 
 from test.output import STATUS, SUCCESS, ERROR, NO_NL, STDERR, println
-from test.util import STEM_BASE, Target, Task
-
-# Our default arguments. The _get_args() function provides a named tuple of
-# this merged with our argv.
-#
-# Integration targets fall into two categories:
-#
-# * Run Targets (like RUN_COOKIE and RUN_PTRACE) which customize our torrc.
-#   We do an integration test run for each run target we get.
-#
-# * Attribute Target (like CHROOT and ONLINE) which indicates
-#   non-configuration changes to your test runs. These are applied to all
-#   integration runs that we perform.
-
-ARGS = {
-  'run_unit': False,
-  'run_integ': False,
-  'specific_test': None,
-  'logging_runlevel': None,
-  'tor_path': 'tor',
-  'run_targets': [Target.RUN_OPEN],
-  'attribute_targets': [],
-  'quiet': False,
-  'verbose': False,
-  'print_help': False,
-}
-
-OPT = 'auit:l:qvh'
-OPT_EXPANDED = ['all', 'unit', 'integ', 'targets=', 'test=', 'log=', 'tor=', 'quiet', 'verbose', 'help']
+from test.util import STEM_BASE, Task
 
 CONFIG = stem.util.conf.config_dict('test', {
-  'target.torrc': {},
   'integ.test_directory': './test/data',
 })
 
@@ -73,11 +43,6 @@ SRC_PATHS = [os.path.join(STEM_BASE, path) for path in (
   os.path.join('docs', 'republish.py'),
   os.path.join('docs', 'roles.py'),
 )]
-
-LOG_TYPE_ERROR = """\
-'%s' isn't a logging runlevel, use one of the following instead:
-  TRACE, DEBUG, INFO, NOTICE, WARN, ERROR
-"""
 
 MOCK_UNAVAILABLE_MSG = """\
 To run stem's tests you'll need mock...
@@ -122,10 +87,7 @@ def main():
   test_config.load(os.path.join(STEM_BASE, 'test', 'settings.cfg'))
 
   try:
-    args = _get_args(sys.argv[1:])
-  except getopt.GetoptError as exc:
-    println('%s (for usage provide --help)' % exc)
-    sys.exit(1)
+    args = test.arguments.parse(sys.argv[1:])
   except ValueError as exc:
     println(str(exc))
     sys.exit(1)
@@ -134,7 +96,7 @@ def main():
     test.output.SUPPRESS_STDOUT = True
 
   if args.print_help:
-    println(test.util.get_help_message())
+    println(test.arguments.get_help())
     sys.exit()
   elif not args.run_unit and not args.run_integ:
     println('Nothing to run (for usage provide --help)\n')
@@ -328,94 +290,6 @@ def main():
   sys.exit(1 if error_tracker.has_errors_occured() else 0)
 
 
-def _get_args(argv):
-  """
-  Parses our arguments, providing a named tuple with their values.
-
-  :param list argv: input arguments to be parsed
-
-  :returns: a **named tuple** with our parsed arguments
-
-  :raises: **ValueError** if we got an invalid argument
-  :raises: **getopt.GetoptError** if the arguments don't conform with what we
-    accept
-  """
-
-  args = dict(ARGS)
-
-  try:
-    recognized_args, unrecognized_args = getopt.getopt(argv, OPT, OPT_EXPANDED)
-
-    if unrecognized_args:
-      error_msg = "aren't recognized arguments" if len(unrecognized_args) > 1 else "isn't a recognized argument"
-      raise getopt.GetoptError("'%s' %s" % ("', '".join(unrecognized_args), error_msg))
-  except getopt.GetoptError as exc:
-    raise ValueError('%s (for usage provide --help)' % exc)
-
-  for opt, arg in recognized_args:
-    if opt in ('-a', '--all'):
-      args['run_unit'] = True
-      args['run_integ'] = True
-    elif opt in ('-u', '--unit'):
-      args['run_unit'] = True
-    elif opt in ('-i', '--integ'):
-      args['run_integ'] = True
-    elif opt in ('-t', '--targets'):
-      run_targets, attribute_targets = [], []
-
-      integ_targets = arg.split(',')
-      all_run_targets = [t for t in Target if CONFIG['target.torrc'].get(t) is not None]
-
-      # validates the targets and split them into run and attribute targets
-
-      if not integ_targets:
-        raise ValueError('No targets provided')
-
-      for target in integ_targets:
-        if target not in Target:
-          raise ValueError('Invalid integration target: %s' % target)
-        elif target in all_run_targets:
-          run_targets.append(target)
-        else:
-          attribute_targets.append(target)
-
-      # check if we were told to use all run targets
-
-      if Target.RUN_ALL in attribute_targets:
-        attribute_targets.remove(Target.RUN_ALL)
-        run_targets = all_run_targets
-
-      # if no RUN_* targets are provided then keep the default (otherwise we
-      # won't have any tests to run)
-
-      if run_targets:
-        args['run_targets'] = run_targets
-
-      args['attribute_targets'] = attribute_targets
-    elif opt == '--test':
-      args['specific_test'] = arg
-    elif opt in ('-l', '--log'):
-      arg = arg.upper()
-
-      if arg not in stem.util.log.LOG_VALUES:
-        raise ValueError(LOG_TYPE_ERROR % arg)
-
-      args['logging_runlevel'] = arg
-    elif opt in ('--tor'):
-      args['tor_path'] = arg
-    elif opt in ('-q', '--quiet'):
-      args['quiet'] = True
-    elif opt in ('-v', '--verbose'):
-      args['verbose'] = True
-    elif opt in ('-h', '--help'):
-      args['print_help'] = True
-
-  # translates our args dict into a named tuple
-
-  Args = collections.namedtuple('Args', args.keys())
-  return Args(**args)
-
-
 def _print_static_issues(static_check_issues):
   if static_check_issues:
     println('STATIC CHECKS', STATUS)
@@ -465,7 +339,7 @@ def _run_test(args, test_class, output_filters, logging_buffer):
 
   try:
     suite = unittest.TestLoader().loadTestsFromName(test_class)
-  except AttributeError, e:
+  except AttributeError:
     # should only come up if user provided '--test' for something that doesn't exist
     println(" no such test", ERROR)
     return None

@@ -11,7 +11,6 @@ Helper functions for our test framework.
 
   get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
-  get_help_message - provides usage information for running our tests
 
 Sets of :class:`~test.util.Task` instances can be ran with
 :func:`~test.util.run_tasks`. Functions that are intended for easy use with
@@ -45,14 +44,21 @@ import test.output
 from test.output import STATUS, ERROR, NO_NL, println
 
 CONFIG = stem.util.conf.config_dict('test', {
-  'msg.help': '',
-  'target.description': {},
   'target.prereq': {},
   'target.torrc': {},
   'integ.test_directory': './test/data',
   'test.unit_tests': '',
   'test.integ_tests': '',
 })
+
+# Integration targets fall into two categories:
+#
+# * Run Targets (like RUN_COOKIE and RUN_PTRACE) which customize our torrc.
+#   We do an integration test run for each run target we get.
+#
+# * Attribute Target (like CHROOT and ONLINE) which indicates
+#   non-configuration changes to your test runs. These are applied to all
+#   integration runs that we perform.
 
 Target = stem.util.enum.UppercaseEnum(
   'ONLINE',
@@ -119,28 +125,6 @@ def _get_tests(modules, module_prefix):
 
         test = module_prefix.rsplit('.', 1)[1]
         yield '%s.%s' % (import_name, test)
-
-
-def get_help_message():
-  """
-  Provides usage information, as provided by the '--help' argument. This
-  includes a listing of the valid integration targets.
-
-  :returns: **str** with our usage information
-  """
-
-  help_msg = CONFIG['msg.help']
-
-  # gets the longest target length so we can show the entries in columns
-  target_name_length = max(map(len, Target))
-  description_format = '\n    %%-%is - %%s' % target_name_length
-
-  for target in Target:
-    help_msg += description_format % (target, CONFIG['target.description'].get(target, ''))
-
-  help_msg += '\n'
-
-  return help_msg
 
 
 def get_prereq(target):
