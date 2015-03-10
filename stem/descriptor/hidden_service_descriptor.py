@@ -28,6 +28,7 @@ import hashlib
 import io
 
 import stem.util.connection
+import stem.util.str_tools
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -287,11 +288,11 @@ class HiddenServiceDescriptor(Descriptor):
 
       try:
         missing_padding = len(authentication_cookie) % 4
-        authentication_cookie = base64.b64decode(authentication_cookie + '=' * missing_padding)
+        authentication_cookie = base64.b64decode(stem.util.str_tools._to_bytes(authentication_cookie) + b'=' * missing_padding)
       except TypeError as exc:
         raise DecryptionFailure('authentication_cookie must be a base64 encoded string (%s)' % exc)
 
-      authentication_type = int(binascii.hexlify(content[0]), 16)
+      authentication_type = int(binascii.hexlify(content[0:1]), 16)
 
       if authentication_type == BASIC_AUTH:
         content = HiddenServiceDescriptor._decrypt_basic_auth(content, authentication_cookie)
@@ -314,7 +315,7 @@ class HiddenServiceDescriptor(Descriptor):
     from Crypto.Util.number import bytes_to_long
 
     try:
-      client_blocks = int(binascii.hexlify(content[1]), 16)
+      client_blocks = int(binascii.hexlify(content[1:2]), 16)
     except ValueError:
       raise DecryptionFailure("When using basic auth the content should start with a number of blocks but wasn't a hex digit: %s" % binascii.hexlify(content[1]))
 
