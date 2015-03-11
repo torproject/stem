@@ -317,7 +317,7 @@ class HiddenServiceDescriptor(Descriptor):
     try:
       client_blocks = int(binascii.hexlify(content[1:2]), 16)
     except ValueError:
-      raise DecryptionFailure("When using basic auth the content should start with a number of blocks but wasn't a hex digit: %s" % binascii.hexlify(content[1]))
+      raise DecryptionFailure("When using basic auth the content should start with a number of blocks but wasn't a hex digit: %s" % binascii.hexlify(content[1:2]))
 
     # parse the client id and encrypted session keys
 
