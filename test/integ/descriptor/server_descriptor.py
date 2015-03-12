@@ -39,15 +39,11 @@ class TestServerDescriptor(unittest.TestCase):
 
         unrecognized_lines = desc.get_unrecognized_lines()
 
-        if unrecognized_lines:
-          # TODO: This isn't actually a problem, and rather than failing we
-          # should alert the user about these entries at the end of the tests
-          # (along with new events, getinfo options, and such). For now though
-          # there doesn't seem to be anything in practice to trigger this so
-          # failing to get our attention if it does.
-          
+        if unrecognized_lines:          
+          # Forward-compability:
+          # 1) SHOULD function at least as it does normally (ignore the unknown)
+          # 2) Report each of the aditional (unrecognized) fields to the user
+
           for line in unrecognized_lines:
             key = line.split()[0]
-            test.util.NEW_CAPABILITIES[key] = 'Extrainfo Descriptor Entry'
-
-          #self.fail('Unrecognized descriptor content: %s' % unrecognized_lines)
+            test.util.register_new_capability(key, 'Server Descriptor Entry')
