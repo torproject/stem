@@ -153,7 +153,7 @@ class TestProcess(unittest.TestCase):
     Exercises our 'tor --validate-config' argument.
     """
 
-    valid_output = self.run_tor('--hush', '--verify-config', with_torrc = True)
+    valid_output = self.run_tor('--verify-config', with_torrc = True)
     self.assertTrue('Configuration was valid\n' in valid_output)
 
     self.run_tor('--verify-config', '-f', __file__, expect_failure = True)
@@ -454,7 +454,7 @@ class TestProcess(unittest.TestCase):
       args = ['-f', test.runner.get_runner().get_torrc_path()] + list(args)
 
     args = [test.runner.get_runner().get_tor_command()] + list(args)
-    tor_process = subprocess.Popen(args, stdin = subprocess.PIPE, stdout = subprocess.PIPE)
+    tor_process = subprocess.Popen(args, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 
     if stdin:
       tor_process.stdin.write(stem.util.str_tools._to_bytes(stdin))
