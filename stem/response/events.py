@@ -49,7 +49,7 @@ class Event(stem.response.ControlMessage):
     if not str(self).strip():
       raise stem.ProtocolError('Received a blank tor event. Events must at the very least have a type.')
 
-    self.type = str(self).split().pop(0)
+    self.type = str(self).split()[0]
     self.arrived_at = arrived_at
 
     # if we're a recognized event type then translate ourselves into that subclass
@@ -229,6 +229,9 @@ class AuthDirNewDescEvent(Event):
       raise stem.ProtocolError("AUTHDIR_NEWDESCS events must contain lines for at least the type, action, message, descriptor, and terminating 'OK'")
     elif lines[-1] != 'OK':
       raise stem.ProtocolError("AUTHDIR_NEWDESCS doesn't end with an 'OK'")
+
+    # TODO: For stem 2.0.0 we should consider changing 'descriptor' to a
+    # ServerDescriptor instance.
 
     self.action = lines[1]
     self.message = lines[2]
@@ -655,6 +658,44 @@ class HSDescEvent(Event):
     self._log_if_unrecognized('authentication', stem.HSAuth)
 
 
+class HSDescContentEvent(Event):
+  """
+  Provides the content of hidden service descriptors we fetch.
+
+  The HS_DESC_CONTENT event was introduced in tor version 0.2.7.1-alpha.
+
+  .. versionadded:: 1.4.0
+
+  :var str address: hidden service address
+  :var str descriptor_id: descriptor identifier
+  :var str directory: hidden service directory servicing the request
+  :var str directory_fingerprint: hidden service directory's finterprint
+  :var str directory_nickname: hidden service directory's nickname if it was provided
+  :var stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor descriptor: descriptor that was retrieved
+  """
+
+  # TODO: Double check that this version is correct when #14847 is merged, then add to stem.version.Requirement.
+  # _VERSION_ADDED = stem.version.Requirement.EVENT_HS_DESC_CONTENT
+  _POSITIONAL_ARGS = ('address', 'descriptor_id', 'directory')
+
+  def _parse(self):
+    if self.address == 'UNKNOWN':
+      self.address = None
+
+    self.directory_fingerprint = None
+    self.directory_nickname = None
+
+    try:
+      self.directory_fingerprint, self.directory_nickname = \
+        stem.control._parse_circ_entry(self.directory)
+    except stem.ProtocolError:
+      raise stem.ProtocolError("HS_DESC_CONTENT's directory doesn't match a ServerSpec: %s" % self)
+
+    self.descriptor = list(stem.descriptor.hidden_service_descriptor._parse_file(
+      io.BytesIO(str_tools._to_bytes('\n'.join(str(self).splitlines()[1:]))),
+    ))[0]
+
+
 class LogEvent(Event):
   """
   Tor logging event. These are the most visible kind of event since, by
@@ -695,6 +736,9 @@ class NetworkStatusEvent(Event):
   def _parse(self):
     content = str(self).lstrip('NS\n').rstrip('\nOK')
 
+    # TODO: For stem 2.0.0 consider changing 'desc' to 'descriptors' to match
+    # our other events.
+
     self.desc = list(stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(str_tools._to_bytes(content)),
       True,
@@ -719,6 +763,9 @@ class NewConsensusEvent(Event):
 
   def _parse(self):
     content = str(self).lstrip('NEWCONSENSUS\n').rstrip('\nOK')
+
+    # TODO: For stem 2.0.0 consider changing 'desc' to 'descriptors' to match
+    # our other events.
 
     self.desc = list(stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(str_tools._to_bytes(content)),
@@ -1259,6 +1306,7 @@ EVENT_TYPE_TO_CLASS = {
   'ERR': LogEvent,
   'GUARD': GuardEvent,
   'HS_DESC': HSDescEvent,
+  'HS_DESC_CONTENT': HSDescContentEvent,
   'INFO': LogEvent,
   'NEWCONSENSUS': NewConsensusEvent,
   'NEWDESC': NewDescEvent,

@@ -206,6 +206,74 @@ HS_DESC_FAILED = '650 HS_DESC FAILED ajhb7kljbiru65qo NO_AUTH \
 $67B2BDA4264D8A189D9270E28B1D30A262838243 \
 b3oeducbhjmbqmgw2i3jtz4fekkrinwj REASON=NOT_FOUND'
 
+# HS_DESC_CONTENT is unreleased (plan is tor 0.2.7.1-alpha, #14847)
+
+HS_DESC_CONTENT_EVENT = """\
+650+HS_DESC_CONTENT facebookcorewwwi riwvyw6njgvs4koel4heqs7w4bssnmlw $8A30C9E8F5954EE286D29BD65CADEA6991200804~YorkshireTOR
+rendezvous-service-descriptor riwvyw6njgvs4koel4heqs7w4bssnmlw
+version 2
+permanent-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALfng/krEfrBcvblDiM3PAkowkiAKxLoTsXt3nPEzyTP6Cw+Gdr0ODje
+hmxTngN1pKiH7szk4Q1p2RabOrUHWwXmGXeDDNs00fcyU6HupgqsCoKOqCsmPac6
+/58apC64A7xHeS02wtfWJp6qiZ8i6GGu6xWXRWux+ShPgcHvkajRAgMahU8=
+-----END RSA PUBLIC KEY-----
+secret-id-part vnb2j6ftvkvghypd4yyypsl3qmpjyq3j
+publication-time 2015-03-13 19:00:00
+protocol-versions 2,3
+introduction-points
+-----BEGIN MESSAGE-----
+aW50cm9kdWN0aW9uLXBvaW50IHNqbm1xbmdraXl3YmtkeXBjb2FqdHY2dmNtNjY2
+NmR6CmlwLWFkZHJlc3MgMTk4LjIzLjE4Ny4xNTgKb25pb24tcG9ydCA0NDMKb25p
+b24ta2V5Ci0tLS0tQkVHSU4gUlNBIFBVQkxJQyBLRVktLS0tLQpNSUdKQW9HQkFO
+MUNsaERkZDNSWHdwT0hMZUNNYlVvNFlISDNEMUxnR0pXbEFPVnBxQ3ZSbDhEbjIv
+UWpGeHNVCnJGaG9WUzRDUjlNVFIzMnlsSnJ0R2JTcWxRVm1HY3M3bnZ5RDU5YVky
+em9RVGhIdm1lWVUwS0ZzQTc5ZFNyTW0KUDR5WnZFSkZmdkpQODRySWd0TlVtZ3R4
+aHQzVzNiR2FVMUNBNGU4bjBza2hYWXdRRzg1MUFnTUJBQUU9Ci0tLS0tRU5EIFJT
+QSBQVUJMSUMgS0VZLS0tLS0Kc2VydmljZS1rZXkKLS0tLS1CRUdJTiBSU0EgUFVC
+TElDIEtFWS0tLS0tCk1JR0pBb0dCQUxDajREUTJPaTJhRjF4WE1iNjhsSHFJQnN5
+NjRSbXFjTUpNb1d3THF4WTFiREcwbnE0Nlk5eHYKVnBPVzAxTmQrYnF3b3BIa0J2
+TzllSGVKTm9NN1BYMmtVWmQ5RlFQSUJHbWdCZ0dxenV6a2lQTEFpbHhtWHRQbwpN
+cnRheGdzRTR6MjlWYnJUV2Q0SHFKSDJFOWNybDdzeHhiTGVvSDFLRjZzSm5lMFlP
+WGlyQWdNQkFBRT0KLS0tLS1FTkQgUlNBIFBVQkxJQyBLRVktLS0tLQppbnRyb2R1
+Y3Rpb24tcG9pbnQgYmhzbjVhdDNzaDIzZGZ5cmNxYnU1bDV6NGs1Z3RueHAKaXAt
+YWRkcmVzcyAxMDQuMTI4Ljc4LjEwNwpvbmlvbi1wb3J0IDMwMDIKb25pb24ta2V5
+Ci0tLS0tQkVHSU4gUlNBIFBVQkxJQyBLRVktLS0tLQpNSUdKQW9HQkFMYk5HdU0v
+RlNnZEJjOTFZSjNQOXRoVC9vQzRWOFZDZzZBcjk5WlFHRldhVGlRdXRjNGZLWC9F
+CnR1TGRjdzBsRmxVbXhPZXNXMVduaVkxaVFDOW9yUkQ3cGE1amNES0EyRThDb3kv
+WmYzYTlXNFNRRzYxakswUzcKYlNGVk9LUHQ3TDUvT21pK05icStsSnB5MmdCTnFU
+TWt0U0k0YklPUlY1aUpWWkRWU21qVkFnTUJBQUU9Ci0tLS0tRU5EIFJTQSBQVUJM
+SUMgS0VZLS0tLS0Kc2VydmljZS1rZXkKLS0tLS1CRUdJTiBSU0EgUFVCTElDIEtF
+WS0tLS0tCk1JR0pBb0dCQU5YOVJobHRobkZkbXFXQVRsNGJ4dTBrR0UyNWlYcm83
+VzFvM05GV3Q4cG8rL25oU080aVZRMHQKWVZzSGwyZEdGSVNKcWxqK3FaTXh1emVL
+ZmNwV3dHQnZMR1FaTDZJYUxJMUxkWSt6YzBaNjFFdWx5dXRFWFl5bAo3djFwRWN2
+dGFJSDhuRXdzQnZlU1ZWUVJ5cFI4b3BnbXhmMWFKWmdzZVdMSE5hZ0JwNW81QWdN
+QkFBRT0KLS0tLS1FTkQgUlNBIFBVQkxJQyBLRVktLS0tLQppbnRyb2R1Y3Rpb24t
+cG9pbnQgbTVibGd0dHRscWc1Mno1emJlcW82a2ViczQ0bG1wd2EKaXAtYWRkcmVz
+cyAxNzYuMzEuMzUuMTQ5Cm9uaW9uLXBvcnQgNDQzCm9uaW9uLWtleQotLS0tLUJF
+R0lOIFJTQSBQVUJMSUMgS0VZLS0tLS0KTUlHSkFvR0JBTnVORFlobFF2RG9TNEFa
+cE5nUkFLUmZhRjAzVWFSM0JrSXo3UC8zOVB4NjZueDc1bG5wQ1pMYwpkSHl4cGJu
+UWp2ekE0UzdjUUVnYXUyQkgyeUtzU1NBL3ZXUHk4OVJBWUVhaUV2TlZQS1hRWmNw
+cnY0WXdmejU0CmRuY2VJNG51NVFQM0E3SUpkSi9PYTlHMklhdHA3OVBlTzJkN2Rq
+L3pzWFNKMkxvRXgyZWRBZ01CQUFFPQotLS0tLUVORCBSU0EgUFVCTElDIEtFWS0t
+LS0tCnNlcnZpY2Uta2V5Ci0tLS0tQkVHSU4gUlNBIFBVQkxJQyBLRVktLS0tLQpN
+SUdKQW9HQkFLbU9KbXB6ZVphVkZXaVlkMms5SHY1TWpidUY0eDBUKzlXclV4Z041
+N2o2Uk1CVFZQZ0lVM2hUCkdCY3dwWjR2NDduNitIbVg4VHFNTFlVZkc1bTg1cm8x
+SHNKMWVObnh2cW9iZVFVMW13TXdHdDMwbkJ6Y0F2NzMKbWFsYmlYRkxiOVdsK1hl
+OTBRdXZhbjZTenhERkx5STFPbzA2aGVUeVZwQ3d0QVVvejhCVEFnTUJBQUU9Ci0t
+LS0tRU5EIFJTQSBQVUJMSUMgS0VZLS0tLS0KCg==
+-----END MESSAGE-----
+signature
+-----BEGIN SIGNATURE-----
+s9Z0zWHsoPuqLw3GOwA6cv68vCFybnitIK4vD0MbNKF5qrOfKydZzGWfN09PuShy
+H8Gr6aBYoz7HmlD7KyeGz9xdwRdouP+LW5YREOCORuwYnu5chWtB4iVJ0N1tIzSp
+nHIs1lSrV7Ux2WQ3qSVj505fTGSCmaQRBX726ZlTPW0=
+-----END SIGNATURE-----
+
+.
+650 OK
+"""
+
 # NEWCONSENSUS event from v0.2.1.30.
 
 NEWCONSENSUS_EVENT = """650+NEWCONSENSUS
@@ -797,6 +865,26 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(None, event.directory_nickname)
     self.assertEqual('b3oeducbhjmbqmgw2i3jtz4fekkrinwj', event.descriptor_id)
     self.assertEqual(HSDescReason.NOT_FOUND, event.reason)
+
+  def test_hs_desc_content_event(self):
+    event = _get_event(HS_DESC_CONTENT_EVENT)
+
+    self.assertTrue(isinstance(event, stem.response.events.HSDescContentEvent))
+    self.assertEqual('facebookcorewwwi', event.address)
+    self.assertEqual('riwvyw6njgvs4koel4heqs7w4bssnmlw', event.descriptor_id)
+    self.assertEqual('$8A30C9E8F5954EE286D29BD65CADEA6991200804~YorkshireTOR', event.directory)
+    self.assertEqual('8A30C9E8F5954EE286D29BD65CADEA6991200804', event.directory_fingerprint)
+    self.assertEqual('YorkshireTOR', event.directory_nickname)
+
+    desc = event.descriptor
+    self.assertEqual('riwvyw6njgvs4koel4heqs7w4bssnmlw', desc.descriptor_id)
+    self.assertEqual(2, desc.version)
+    self.assertTrue('MIGJAoGBALf' in desc.permanent_key)
+    self.assertEqual('vnb2j6ftvkvghypd4yyypsl3qmpjyq3j', desc.secret_id_part)
+    self.assertEqual(datetime.datetime(2015, 3, 13, 19, 0, 0), desc.published)
+    self.assertEqual([2, 3], desc.protocol_versions)
+    self.assertEqual(3, len(desc.introduction_points()))
+    self.assertTrue('s9Z0zWHsoPu' in desc.signature)
 
   def test_newdesc_event(self):
     event = _get_event(NEWDESC_SINGLE)
