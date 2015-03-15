@@ -187,6 +187,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
   **ERR**               :class:`stem.response.events.LogEvent`
   **GUARD**             :class:`stem.response.events.GuardEvent`
   **HS_DESC**           :class:`stem.response.events.HSDescEvent`
+  **HS_DESC_CONTENT**   :class:`stem.response.events.HSDescContentEvent`
   **INFO**              :class:`stem.response.events.LogEvent`
   **NEWCONSENSUS**      :class:`stem.response.events.NewConsensusEvent`
   **NEWDESC**           :class:`stem.response.events.NewDescEvent`
@@ -277,6 +278,7 @@ EventType = stem.util.enum.UppercaseEnum(
   'ERR',
   'GUARD',
   'HS_DESC',
+  'HS_DESC_CONTENT',
   'INFO',
   'NEWCONSENSUS',
   'NEWDESC',
