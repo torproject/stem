@@ -62,6 +62,7 @@ conversion (:trac:`14075`).
   * Added `support for hidden service descriptors <api/descriptor/hidden_service_descriptor.html>`_ (:trac:`15004`)
   * The :class:`~stem.descriptor.networkstatus.DirectoryAuthority` 'fingerprint' attribute was actually its 'v3ident'
   * Added consensus' new package attribute (:spec:`ab64534`)
+  * Added extra info' new hs_stats_end, hs_rend_cells, hs_rend_cells_attr, hs_dir_onions_seen, and hs_dir_onions_seen_attr attributes (:spec:`ddb630d`)
   * Updating Faravahar's address (:trac:`14487`)
 
  * **Utilities**

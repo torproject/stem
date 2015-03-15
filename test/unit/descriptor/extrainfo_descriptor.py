@@ -527,6 +527,67 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
         desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
         self._expect_invalid_attr(desc_text, attr)
 
+  def test_hidden_service_stats_end(self):
+    """
+    Exercise the hidserv-stats-end, which should be a simple date.
+    """
+
+    desc = get_relay_extrainfo_descriptor({'hidserv-stats-end': '2012-05-03 12:07:50'})
+    self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.hs_stats_end)
+
+    test_entries = (
+      '',
+      '2012',
+      '2012-05',
+      '2012-05-03',
+      '2012-05-03 12',
+      '2012-05-03 12:07',
+      '2012-05-03 12:07:-50',
+    )
+
+    for entry in test_entries:
+      desc_text = get_relay_extrainfo_descriptor({'hidserv-stats-end': entry}, content = True)
+      self._expect_invalid_attr(desc_text, 'hs_stats_end')
+
+  def test_hidden_service_stats(self):
+    """
+    Check the 'hidserv-rend-relayed-cells' and 'hidserv-dir-onions-seen', which
+    share the same format.
+    """
+
+    attributes = (
+      ('hidserv-rend-relayed-cells', 'hs_rend_cells', 'hs_rend_cells_attr'),
+      ('hidserv-dir-onions-seen', 'hs_dir_onions_seen', 'hs_dir_onions_seen_attr'),
+    )
+
+    test_entries = (
+      '',
+      '-50',
+      'hello',
+      ' key=value',
+      '40 key',
+      '40 key value',
+      '40 key key=value',
+    )
+
+    for keyword, stat_attr, extra_attr in attributes:
+      # just the numeric stat (no extra attributes)
+
+      desc = get_relay_extrainfo_descriptor({keyword: '345'})
+      self.assertEqual(345, getattr(desc, stat_attr))
+      self.assertEqual({}, getattr(desc, extra_attr))
+
+      # with extra attributes
+
+      desc = get_relay_extrainfo_descriptor({keyword: '345 spiffy=true snowmen=neat'})
+      self.assertEqual(345, getattr(desc, stat_attr))
+      self.assertEqual({'spiffy': 'true', 'snowmen': 'neat'}, getattr(desc, extra_attr))
+
+      for entry in test_entries:
+        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
+        self._expect_invalid_attr(desc_text, stat_attr)
+        self._expect_invalid_attr(desc_text, extra_attr, {})
+
   def test_locale_mapping_lines(self):
     """
     Uses valid and invalid data to tests lines of the form...

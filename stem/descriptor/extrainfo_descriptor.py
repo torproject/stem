@@ -502,6 +502,32 @@ def _parse_bridge_ip_transports_line(descriptor, entries):
   descriptor.ip_transports = ip_transports
 
 
+def _parse_hs_stats(keyword, stat_attribute, extra_attribute, descriptor, entries):
+  # "<keyword>" num key=val key=val...
+
+  value, stat, extra = _value(keyword, entries), None, {}
+
+  if value is not None:
+    value_comp = value.split()
+
+    if not value_comp:
+      raise ValueError("'%s' line was blank" % keyword)
+    elif not value_comp[0].isdigit():
+      raise ValueError("'%s' stat was non-numeric (%s): %s %s" % (keyword, value_comp[0], keyword, value))
+
+    stat = int(value_comp[0])
+
+    for entry in value_comp[1:]:
+      if '=' not in entry:
+        raise ValueError('Entries after the stat in %s lines should only be key=val entries: %s %s' % (keyword, keyword, value))
+
+      key, val = entry.split('=', 1)
+      extra[key] = val
+
+  setattr(descriptor, stat_attribute, stat)
+  setattr(descriptor, extra_attribute, extra)
+
+
 _parse_geoip_db_digest_line = _parse_forty_character_hex('geoip-db-digest', 'geoip_db_digest')
 _parse_geoip6_db_digest_line = _parse_forty_character_hex('geoip6-db-digest', 'geoip6_db_digest')
 _parse_dirreq_v2_resp_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-resp', 'dir_v2_responses', 'dir_v2_responses_unknown')
@@ -529,6 +555,9 @@ _parse_dirreq_write_history_line = functools.partial(_parse_history_line, 'dirre
 _parse_exit_kibibytes_written_line = functools.partial(_parse_port_count_line, 'exit-kibibytes-written', 'exit_kibibytes_written')
 _parse_exit_kibibytes_read_line = functools.partial(_parse_port_count_line, 'exit-kibibytes-read', 'exit_kibibytes_read')
 _parse_exit_streams_opened_line = functools.partial(_parse_port_count_line, 'exit-streams-opened', 'exit_streams_opened')
+_parse_hidden_service_stats_end_line = _parse_timestamp_line('hidserv-stats-end', 'hs_stats_end')
+_parse_hidden_service_rend_relayed_cells_line = functools.partial(_parse_hs_stats, 'hidserv-rend-relayed-cells', 'hs_rend_cells', 'hs_rend_cells_attr')
+_parse_hidden_service_dir_onions_seen_line = functools.partial(_parse_hs_stats, 'hidserv-dir-onions-seen', 'hs_dir_onions_seen', 'hs_dir_onions_seen_attr')
 _parse_dirreq_v2_ips_line = functools.partial(_parse_geoip_to_count_line, 'dirreq-v2-ips', 'dir_v2_ips')
 _parse_dirreq_v3_ips_line = functools.partial(_parse_geoip_to_count_line, 'dirreq-v3-ips', 'dir_v3_ips')
 _parse_dirreq_v2_reqs_line = functools.partial(_parse_geoip_to_count_line, 'dirreq-v2-reqs', 'dir_v2_requests')
@@ -631,6 +660,14 @@ class ExtraInfoDescriptor(Descriptor):
   :var dict exit_kibibytes_read: traffic per port (keys are ints or 'other')
   :var dict exit_streams_opened: streams per port (keys are ints or 'other')
 
+  **Hidden Service Attributes:**
+
+  :var datetime hs_stats_end: end of the sampling interval
+  :var int hs_rend_cells: rounded count of the RENDEZVOUS1 cells seen
+  :var int hs_rend_cells_attr: **\*** attributes provided for the hs_rend_cells
+  :var int hs_dir_onions_seen: rounded count of the identities seen
+  :var int hs_dir_onions_seen_attr: **\*** attributes provided for the hs_dir_onions_seen
+
   **Bridge Attributes:**
 
   :var datetime bridge_stats_end: end of the period when stats were gathered
@@ -643,6 +680,10 @@ class ExtraInfoDescriptor(Descriptor):
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
+
+  .. versionchanged:: 1.4.0
+     Added the hs_stats_end, hs_rend_cells, hs_rend_cells_attr,
+     hs_dir_onions_seen, and hs_dir_onions_seen_attr attributes.
   """
 
   ATTRIBUTES = {
@@ -714,6 +755,12 @@ class ExtraInfoDescriptor(Descriptor):
     'exit_kibibytes_read': (None, _parse_exit_kibibytes_read_line),
     'exit_streams_opened': (None, _parse_exit_streams_opened_line),
 
+    'hs_stats_end': (None, _parse_hidden_service_stats_end_line),
+    'hs_rend_cells': (None, _parse_hidden_service_rend_relayed_cells_line),
+    'hs_rend_cells_attr': ({}, _parse_hidden_service_rend_relayed_cells_line),
+    'hs_dir_onions_seen': (None, _parse_hidden_service_dir_onions_seen_line),
+    'hs_dir_onions_seen_attr': ({}, _parse_hidden_service_dir_onions_seen_line),
+
     'bridge_stats_end': (None, _parse_bridge_stats_end_line),
     'bridge_stats_interval': (None, _parse_bridge_stats_end_line),
     'bridge_ips': (None, _parse_bridge_ips_line),
@@ -756,6 +803,9 @@ class ExtraInfoDescriptor(Descriptor):
     'exit-kibibytes-written': _parse_exit_kibibytes_written_line,
     'exit-kibibytes-read': _parse_exit_kibibytes_read_line,
     'exit-streams-opened': _parse_exit_streams_opened_line,
+    'hidserv-stats-end': _parse_hidden_service_stats_end_line,
+    'hidserv-rend-relayed-cells': _parse_hidden_service_rend_relayed_cells_line,
+    'hidserv-dir-onions-seen': _parse_hidden_service_dir_onions_seen_line,
     'dirreq-v2-ips': _parse_dirreq_v2_ips_line,
     'dirreq-v3-ips': _parse_dirreq_v3_ips_line,
     'dirreq-v2-reqs': _parse_dirreq_v2_reqs_line,
