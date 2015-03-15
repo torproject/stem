@@ -159,7 +159,7 @@ Tor is using a type of authentication we do not recognize...
 
   {auth_methods}
 
-Please check that arm is up to date and if there is an existing issue on
+Please check that stem is up to date and if there is an existing issue on
 'http://bugs.torproject.org'. If there isn't one then let us know!
 """
 

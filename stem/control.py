@@ -464,6 +464,8 @@ class BaseController(object):
     self._last_heartbeat = 0.0  # timestamp for when we last heard from tor
     self._is_authenticated = False
 
+    self._state_change_threads = []  # threads we've spawned to notify of state changes
+
     if self._socket.is_alive():
       self._launch_threads()
 
@@ -626,6 +628,17 @@ class BaseController(object):
 
     self._socket.close()
 
+    # Join on any outstanding state change listeners. Closing is a state change
+    # of its own, so if we have any listeners it's quite likely there's some
+    # work in progress.
+    #
+    # It's important that we do this outside of our locks so those daemons have
+    # access to us. This is why we're doing this here rather than _close().
+
+    for t in self._state_change_threads:
+      if t.is_alive() and threading.current_thread() != t:
+        t.join()
+
   def get_socket(self):
     """
     Provides the socket used to speak with the tor process. Communicating with
@@ -665,7 +678,8 @@ class BaseController(object):
     If spawn is **True** then the callback is notified via a new daemon thread.
     If **False** then the notice is under our locks, within the thread where
     the change occurred. In general this isn't advised, especially if your
-    callback could block for a while.
+    callback could block for a while. If still outstanding these threads are
+    joined on as part of closing this controller.
 
     :param function callback: function to be notified when our state changes
     :param bool spawn: calls function via a new thread if **True**, otherwise
@@ -735,6 +749,7 @@ class BaseController(object):
         t.join()
 
     self._notify_status_listeners(State.CLOSED)
+
     self._socket_close()
 
   def _post_authentication(self):
@@ -773,6 +788,8 @@ class BaseController(object):
         if expect_alive is not None and expect_alive != self.is_alive():
           return
 
+        self._state_change_threads = filter(lambda t: t.is_alive(), self._state_change_threads)
+
         for listener, spawn in self._status_listeners:
           if spawn:
             name = '%s notification' % state
@@ -781,6 +798,7 @@ class BaseController(object):
             notice_thread = threading.Thread(target = listener, args = args, name = name)
             notice_thread.setDaemon(True)
             notice_thread.start()
+            self._state_change_threads.append(notice_thread)
           else:
             listener(self, state, change_timestamp)
 
