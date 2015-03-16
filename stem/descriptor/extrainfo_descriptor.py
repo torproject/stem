@@ -512,10 +512,11 @@ def _parse_hs_stats(keyword, stat_attribute, extra_attribute, descriptor, entrie
 
     if not value_comp:
       raise ValueError("'%s' line was blank" % keyword)
-    elif not value_comp[0].isdigit():
-      raise ValueError("'%s' stat was non-numeric (%s): %s %s" % (keyword, value_comp[0], keyword, value))
 
-    stat = int(value_comp[0])
+    try:
+      stat = int(value_comp[0])
+    except ValueError:
+      raise ValueError("'%s' stat was non-numeric (%s): %s %s" % (keyword, value_comp[0], keyword, value))
 
     for entry in value_comp[1:]:
       if '=' not in entry:

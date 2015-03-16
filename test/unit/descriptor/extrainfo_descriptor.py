@@ -562,7 +562,6 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
     test_entries = (
       '',
-      '-50',
       'hello',
       ' key=value',
       '40 key',
@@ -575,6 +574,12 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
       desc = get_relay_extrainfo_descriptor({keyword: '345'})
       self.assertEqual(345, getattr(desc, stat_attr))
+      self.assertEqual({}, getattr(desc, extra_attr))
+
+      # values can be negative (#15276)
+
+      desc = get_relay_extrainfo_descriptor({keyword: '-345'})
+      self.assertEqual(-345, getattr(desc, stat_attr))
       self.assertEqual({}, getattr(desc, extra_attr))
 
       # with extra attributes
