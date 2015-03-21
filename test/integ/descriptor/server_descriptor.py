@@ -11,7 +11,7 @@ import test.runner
 
 from test.runner import only_run_once
 
-import test.util
+from test.util import register_new_capability
 
 
 class TestServerDescriptor(unittest.TestCase):
@@ -46,4 +46,4 @@ class TestServerDescriptor(unittest.TestCase):
 
           for line in unrecognized_lines:
             key = line.split()[0]
-            test.util.register_new_capability(key, 'Server Descriptor Entry')
+            register_new_capability(key, 'Server Descriptor Entry')

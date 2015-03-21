@@ -13,6 +13,8 @@ import test.runner
 
 from test.runner import only_run_once
 
+from test.util import register_new_capability
+
 
 class TestNetworkStatus(unittest.TestCase):
   @only_run_once
@@ -38,17 +40,21 @@ class TestNetworkStatus(unittest.TestCase):
       for router in stem.descriptor.parse_file(descriptor_file, 'network-status-consensus-3 1.0', validate = True):
         count += 1
 
-        # check if there's any unknown flags
-        # TODO: this should be a 'new capability' check later rather than
-        # failing the tests
+        # check if there's any unknown flags and report them to the user
         for flag in router.flags:
           if flag not in stem.Flag:
-            raise ValueError('Unrecognized flag type: %s, found on relay %s (%s)' % (flag, router.fingerprint, router.nickname))
+            register_new_capability(flag, 'Network Flag')
 
         unrecognized_lines = router.get_unrecognized_lines()
 
         if unrecognized_lines:
-          self.fail('Unrecognized descriptor content: %s' % unrecognized_lines)
+          # Forward-compability:
+          # 1) SHOULD function at least as it does normally (ignore the unknown)
+          # 2) Report each of the aditional (unrecognized) fields to the user
+
+          for line in unrecognized_lines:
+            key = line.split()[0]
+            register_new_capability(key, 'Network Descriptor Entry')
 
     # Sanity test that there's at least a hundred relays. If that's not the
     # case then this probably isn't a real, complete tor consensus.
@@ -75,16 +81,20 @@ class TestNetworkStatus(unittest.TestCase):
       for router in stem.descriptor.parse_file(descriptor_file, 'network-status-microdesc-consensus-3 1.0', validate = True):
         count += 1
 
-        # check if there's any unknown flags
-        # TODO: this should be a 'new capability' check later rather than
-        # failing the tests
+        # check if there's any unknown flags and report them to the user
         for flag in router.flags:
           if flag not in stem.Flag:
-            raise ValueError('Unrecognized flag type: %s, found on microdescriptor relay %s (%s)' % (flag, router.fingerprint, router.nickname))
+            register_new_capability(flag, 'Network Flag')
 
         unrecognized_lines = router.get_unrecognized_lines()
 
         if unrecognized_lines:
-          self.fail('Unrecognized descriptor content: %s' % unrecognized_lines)
+          # Forward-compability:
+          # 1) SHOULD function at least as it does normally (ignore the unknown)
+          # 2) Report each of the aditional (unrecognized) fields to the user
+
+          for line in unrecognized_lines:
+            key = line.split()[0]
+            register_new_capability(key, 'Network Descriptor Entry')
 
     self.assertTrue(count > 100)

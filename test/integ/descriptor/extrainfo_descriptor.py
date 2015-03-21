@@ -10,6 +10,8 @@ import test.runner
 
 from test.runner import only_run_once
 
+from test.util import register_new_capability
+
 
 class TestExtraInfoDescriptor(unittest.TestCase):
   @only_run_once
@@ -41,10 +43,10 @@ class TestExtraInfoDescriptor(unittest.TestCase):
         elif desc.dir_v2_tunneled_dl_unknown:
           self.fail('Unrecognized stats on dirreq-v2-tunneled-dl lines: %s' % desc.dir_v2_tunneled_dl_unknown)
         elif unrecognized_lines:
-          # TODO: This isn't actually a problem, and rather than failing we
-          # should alert the user about these entries at the end of the tests
-          # (along with new events, getinfo options, and such). For now though
-          # there doesn't seem to be anything in practice to trigger this so
-          # failing to get our attention if it does.
+          # Forward-compability:
+          # 1) SHOULD function at least as it does normally (ignore the unknown)
+          # 2) Report each of the aditional (unrecognized) fields to the user
 
-          self.fail('Unrecognized descriptor content: %s' % unrecognized_lines)
+          for line in unrecognized_lines:
+            key = line.split()[0]
+            register_new_capability(key, 'Extrainfo Descriptor Entry')
