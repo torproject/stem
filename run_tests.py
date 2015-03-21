@@ -339,11 +339,13 @@ def _run_test(args, test_class, output_filters, logging_buffer):
 
   try:
     suite = unittest.TestLoader().loadTestsFromName(test_class)
-  except AttributeError:
+  except AttributeError, e:
     # should only come up if user provided '--test' for something that doesn't exist
+    println(e, ERROR)
     println(" no such test", ERROR)
     return None
-  except:
+  except Exception, e:
+    println(e, ERROR)
     println(" failed", ERROR)
     return None
 
