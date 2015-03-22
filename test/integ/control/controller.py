@@ -185,11 +185,10 @@ class TestController(unittest.TestCase):
       event_buffer = []
 
       # Spawn a second controller and trigger an event
-      controller2 = runner.get_tor_controller()
-      controller2.connect()
-      controller2.authenticate(password = test.runner.CONTROL_PASSWORD)
-      controller2.set_conf('NodeFamily', 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB')
-      controller2.close()
+
+      with runner.get_tor_controller() as controller2:
+        controller2.set_conf('NodeFamily', 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB')
+
       self.assertEqual(len(event_buffer), 0)
 
       # reconnect and check that we get events again
