@@ -2,6 +2,7 @@
 Integration tests for the stem.control.Controller class.
 """
 
+import hashlib
 import os
 import shutil
 import socket
@@ -36,6 +37,14 @@ from test.runner import (
 # used for a few tests that need to look up a relay.
 
 TEST_ROUTER_STATUS_ENTRY = None
+
+
+def random_fingerprint():
+  """
+  Provides a random 40 character hex string.
+  """
+
+  return hashlib.sha1(str(time.time())).hexdigest().upper()
 
 
 class TestController(unittest.TestCase):
@@ -123,7 +132,7 @@ class TestController(unittest.TestCase):
       controller.add_event_listener(listener2, EventType.CONF_CHANGED, EventType.DEBUG)
 
       # The NodeFamily is a harmless option we can toggle
-      controller.set_conf('NodeFamily', 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')
+      controller.set_conf('NodeFamily', random_fingerprint())
 
       # Wait for the event. Assert that we get it within 10 seconds
       self.assertTrue(event_notice1.wait(10))
@@ -140,7 +149,7 @@ class TestController(unittest.TestCase):
 
       buffer2_size = len(event_buffer2)
 
-      controller.set_conf('NodeFamily', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+      controller.set_conf('NodeFamily', random_fingerprint())
       self.assertTrue(event_notice1.wait(10))
       self.assertEqual(len(event_buffer1), 2)
       event_notice1.clear()
@@ -173,7 +182,7 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       controller.add_event_listener(listener, EventType.CONF_CHANGED)
 
-      controller.set_conf('NodeFamily', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+      controller.set_conf('NodeFamily', random_fingerprint())
       self.assertTrue(event_notice.wait(10))
       self.assertEqual(len(event_buffer), 1)
       event_notice.clear()
@@ -187,7 +196,7 @@ class TestController(unittest.TestCase):
       # Spawn a second controller and trigger an event
 
       with runner.get_tor_controller() as controller2:
-        controller2.set_conf('NodeFamily', 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB')
+        controller2.set_conf('NodeFamily', random_fingerprint())
 
       self.assertEqual(len(event_buffer), 0)
 
@@ -196,7 +205,7 @@ class TestController(unittest.TestCase):
       controller.connect()
       controller.authenticate(password = test.runner.CONTROL_PASSWORD)
 
-      controller.set_conf('NodeFamily', 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
+      controller.set_conf('NodeFamily', random_fingerprint())
       self.assertTrue(event_notice.wait(10))
       self.assertEqual(len(event_buffer), 1)
       event_notice.clear()
@@ -211,7 +220,7 @@ class TestController(unittest.TestCase):
       controller.connect()
       stem.connection.authenticate(controller, password = test.runner.CONTROL_PASSWORD)
 
-      controller.set_conf('NodeFamily', 'DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD')
+      controller.set_conf('NodeFamily', random_fingerprint())
       self.assertTrue(event_notice.wait(10))
       self.assertEqual(len(event_buffer), 1)
       event_notice.clear()
@@ -234,7 +243,7 @@ class TestController(unittest.TestCase):
         else:
           controller.msg('AUTHENTICATE')
 
-        controller.set_conf('NodeFamily', 'EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
+        controller.set_conf('NodeFamily', random_fingerprint())
         self.assertTrue(event_notice.wait(10))
         self.assertEqual(len(event_buffer), 1)
         event_notice.clear()
