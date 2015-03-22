@@ -10,8 +10,8 @@ import os
 import sys
 import threading
 import time
-import unittest
 import traceback
+import unittest
 
 try:
   from StringIO import StringIO
@@ -340,14 +340,13 @@ def _run_test(args, test_class, output_filters, logging_buffer):
 
   try:
     suite = unittest.TestLoader().loadTestsFromName(test_class)
-  except AttributeError as e:
+  except AttributeError:
     # should only come up if user provided '--test' for something that doesn't exist
-    println("%s\n" % e, ERROR)
     println(" no such test", ERROR)
     return None
-  except Exception as e:
-    println("%s\n" % e, ERROR)
+  except Exception as exc:
     println(" failed", ERROR)
+    traceback.print_exc(exc)
     return None
 
   test_results = StringIO()
