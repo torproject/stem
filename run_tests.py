@@ -10,6 +10,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 import unittest
 
 try:
@@ -343,8 +344,9 @@ def _run_test(args, test_class, output_filters, logging_buffer):
     # should only come up if user provided '--test' for something that doesn't exist
     println(" no such test", ERROR)
     return None
-  except:
+  except Exception as exc:
     println(" failed", ERROR)
+    traceback.print_exc(exc)
     return None
 
   test_results = StringIO()
