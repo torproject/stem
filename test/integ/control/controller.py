@@ -33,6 +33,7 @@ from test.runner import (
   require_controller,
   require_version,
   require_online,
+  only_run_once,
 )
 
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
@@ -50,6 +51,29 @@ def random_fingerprint():
 
 
 class TestController(unittest.TestCase):
+  @only_run_once
+  @require_controller
+  def test_missing_capabilities(self):
+    """
+    Check to see if tor supports any events, signals, or features that we
+    don't.
+    """
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      for event in controller.get_info('events/names').split():
+        if event not in EventType:
+          register_new_capability('Event', event)
+
+      for signal in controller.get_info('signal/names').split():
+        if signal not in Signal:
+          register_new_capability('Signal', signal)
+
+      # new features should simply be added to enable_feature()'s docs
+
+      for feature in controller.get_info('features/names').split():
+        if feature not in ('EXTENDED_EVENTS', 'VERBOSE_NAMES'):
+          register_new_capability('Feature', feature)
+
   def test_from_port(self):
     """
     Basic sanity check for the from_port constructor.
@@ -1087,7 +1111,7 @@ class TestController(unittest.TestCase):
         self.assertTrue(desc.nickname is not None)
 
         for line in desc.get_unrecognized_lines():
-          register_new_capability('Consensus line', line)
+          register_new_capability('Consensus Line', line)
 
         count += 1
         if count > 10:

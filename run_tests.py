@@ -65,7 +65,6 @@ If you're running the latest version of stem then please file a ticket on:
   https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs
 
 New capabilities are:
-
 """
 
 PYFLAKES_TASK = Task(

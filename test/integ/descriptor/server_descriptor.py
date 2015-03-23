@@ -37,4 +37,4 @@ class TestServerDescriptor(unittest.TestCase):
         self.assertEqual(None, desc.socks_port)
 
         for line in desc.get_unrecognized_lines():
-          register_new_capability('Server descriptor line', line)
+          register_new_capability('Server Descriptor Line', line)

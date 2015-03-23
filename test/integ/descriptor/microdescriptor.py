@@ -30,4 +30,4 @@ class TestMicrodescriptor(unittest.TestCase):
     with open(descriptor_path, 'rb') as descriptor_file:
       for desc in stem.descriptor.parse_file(descriptor_file, 'microdescriptor 1.0', validate = True):
         for line in desc.get_unrecognized_lines():
-          register_new_capability('Microdescriptor line', line)
+          register_new_capability('Microdescriptor Line', line)
