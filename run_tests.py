@@ -62,9 +62,10 @@ NEW_CAPABILITIES_FOUND = """\
 Your version of Tor has capabilities stem presently isn't taking advantage of.
 If you're running the latest version of stem then please file a ticket on:
 
-https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs
+  https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs
 
 New capabilities are:
+
 """
 
 PYFLAKES_TASK = Task(
@@ -296,15 +297,14 @@ def main():
       println('%i TESTS WERE SKIPPED' % skipped_tests, STATUS)
 
     println('TESTING PASSED %s\n' % runtime_label, SUCCESS)
-    
+
   new_capabilities = test.util.get_new_capabilities()
-  
+
   if new_capabilities:
     println(NEW_CAPABILITIES_FOUND, ERROR)
-    
-    for item in new_capabilities:
-      println('%s: %s' % (new_capabilities[item], item), ERROR)
 
+    for capability_type, msg in new_capabilities:
+      println('  [%s] %s' % (capability_type, msg), ERROR)
 
   sys.exit(1 if error_tracker.has_errors_occured() else 0)
 

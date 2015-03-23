@@ -10,7 +10,6 @@ import stem.descriptor
 import test.runner
 
 from test.runner import only_run_once
-
 from test.util import register_new_capability
 
 
@@ -37,13 +36,5 @@ class TestServerDescriptor(unittest.TestCase):
         self.assertEqual(None, desc.eventdns)
         self.assertEqual(None, desc.socks_port)
 
-        unrecognized_lines = desc.get_unrecognized_lines()
-
-        if unrecognized_lines:          
-          # Forward-compability:
-          # 1) SHOULD function at least as it does normally (ignore the unknown)
-          # 2) Report each of the aditional (unrecognized) fields to the user
-
-          for line in unrecognized_lines:
-            key = line.split()[0]
-            register_new_capability(key, 'Server Descriptor Entry')
+        for line in desc.get_unrecognized_lines():
+          register_new_capability('Server descriptor line', line)

@@ -82,7 +82,7 @@ STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 # Store new capabilities (events, descriptor entries, etc.)
 
-NEW_CAPABILITIES = {}
+NEW_CAPABILITIES = []
 
 
 def get_unit_tests(module_prefix = None):
@@ -181,8 +181,12 @@ def get_torrc_entries(target):
 
 def get_new_capabilities():
   """
-  Return list of new capabilities found during the tests
+  Provides a list of capabilities tor supports but stem doesn't, as discovered
+  while running our tests.
+
+  :returns: **list** of (type, message) tuples for the capabilities
   """
+
   return NEW_CAPABILITIES
 
 
@@ -274,16 +278,17 @@ def check_for_unused_tests(paths):
 
   if unused_tests:
     raise ValueError('Test modules are missing from our test/settings.cfg:\n%s' % '\n'.join(unused_tests))
-    
 
-def register_new_capability(key, label):
+
+def register_new_capability(capability_type, msg):
   """
   Register new capability found during the tests.
-  
-  :param str key: unique string to identify this new capability
-  :param str label: string describing where we found this new capability
+
+  :param str capability_type: type of capability this is
+  :param str msg: description of what we found
   """
-  NEW_CAPABILITIES[key] = label
+
+  NEW_CAPABILITIES.append((capability_type, msg))
 
 
 def _is_test_data(path):

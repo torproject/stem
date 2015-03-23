@@ -26,6 +26,7 @@ from stem import Flag, Signal
 from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
+
 from test.util import register_new_capability
 
 from test.runner import (
@@ -1085,16 +1086,8 @@ class TestController(unittest.TestCase):
         self.assertTrue(desc.fingerprint is not None)
         self.assertTrue(desc.nickname is not None)
 
-        unrecognized_lines = desc.get_unrecognized_lines()
-
-        if unrecognized_lines:
-          # Forward-compability:
-          # 1) SHOULD function at least as it does normally (ignore the unknown)
-          # 2) Report each of the aditional (unrecognized) fields to the user
-
-          for line in unrecognized_lines:
-            key = line.split()[0]
-            register_new_capability(key, 'Network Descriptor Entry')
+        for line in desc.get_unrecognized_lines():
+          register_new_capability('Consensus line', line)
 
         count += 1
         if count > 10:

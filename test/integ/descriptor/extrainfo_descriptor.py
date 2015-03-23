@@ -9,7 +9,6 @@ import stem.descriptor
 import test.runner
 
 from test.runner import only_run_once
-
 from test.util import register_new_capability
 
 
@@ -30,7 +29,8 @@ class TestExtraInfoDescriptor(unittest.TestCase):
 
     with open(descriptor_path, 'rb') as descriptor_file:
       for desc in stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0', validate = True):
-        unrecognized_lines = desc.get_unrecognized_lines()
+        for line in desc.get_unrecognized_lines():
+          register_new_capability('Extra-info descriptor line', line)
 
         if desc.dir_v2_responses_unknown:
           self.fail('Unrecognized statuses on dirreq-v2-resp lines: %s' % desc.dir_v2_responses_unknown)
@@ -42,11 +42,3 @@ class TestExtraInfoDescriptor(unittest.TestCase):
           self.fail('Unrecognized stats on dirreq-v3-direct-dl lines: %s' % desc.dir_v2_direct_dl_unknown)
         elif desc.dir_v2_tunneled_dl_unknown:
           self.fail('Unrecognized stats on dirreq-v2-tunneled-dl lines: %s' % desc.dir_v2_tunneled_dl_unknown)
-        elif unrecognized_lines:
-          # Forward-compability:
-          # 1) SHOULD function at least as it does normally (ignore the unknown)
-          # 2) Report each of the aditional (unrecognized) fields to the user
-
-          for line in unrecognized_lines:
-            key = line.split()[0]
-            register_new_capability(key, 'Extrainfo Descriptor Entry')
