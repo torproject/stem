@@ -171,37 +171,42 @@ If you're fine with allowing your script to raise exceptions then this can be mo
   Enums are mapped to :class:`~stem.response.events.Event` subclasses as
   follows...
 
-  ===================== ===========
-  EventType             Event Class
-  ===================== ===========
-  **ADDRMAP**           :class:`stem.response.events.AddrMapEvent`
-  **AUTHDIR_NEWDESCS**  :class:`stem.response.events.AuthDirNewDescEvent`
-  **BUILDTIMEOUT_SET**  :class:`stem.response.events.BuildTimeoutSetEvent`
-  **BW**                :class:`stem.response.events.BandwidthEvent`
-  **CIRC**              :class:`stem.response.events.CircuitEvent`
-  **CIRC_MINOR**        :class:`stem.response.events.CircMinorEvent`
-  **CLIENTS_SEEN**      :class:`stem.response.events.ClientsSeenEvent`
-  **CONF_CHANGED**      :class:`stem.response.events.ConfChangedEvent`
-  **DEBUG**             :class:`stem.response.events.LogEvent`
-  **DESCCHANGED**       :class:`stem.response.events.DescChangedEvent`
-  **ERR**               :class:`stem.response.events.LogEvent`
-  **GUARD**             :class:`stem.response.events.GuardEvent`
-  **HS_DESC**           :class:`stem.response.events.HSDescEvent`
-  **HS_DESC_CONTENT**   :class:`stem.response.events.HSDescContentEvent`
-  **INFO**              :class:`stem.response.events.LogEvent`
-  **NEWCONSENSUS**      :class:`stem.response.events.NewConsensusEvent`
-  **NEWDESC**           :class:`stem.response.events.NewDescEvent`
-  **NOTICE**            :class:`stem.response.events.LogEvent`
-  **NS**                :class:`stem.response.events.NetworkStatusEvent`
-  **ORCONN**            :class:`stem.response.events.ORConnEvent`
-  **SIGNAL**            :class:`stem.response.events.SignalEvent`
-  **STATUS_CLIENT**     :class:`stem.response.events.StatusEvent`
-  **STATUS_GENERAL**    :class:`stem.response.events.StatusEvent`
-  **STATUS_SERVER**     :class:`stem.response.events.StatusEvent`
-  **STREAM**            :class:`stem.response.events.StreamEvent`
-  **STREAM_BW**         :class:`stem.response.events.StreamBwEvent`
-  **WARN**              :class:`stem.response.events.LogEvent`
-  ===================== ===========
+  ======================= ===========
+  EventType               Event Class
+  ======================= ===========
+  **ADDRMAP**             :class:`stem.response.events.AddrMapEvent`
+  **AUTHDIR_NEWDESCS**    :class:`stem.response.events.AuthDirNewDescEvent`
+  **BUILDTIMEOUT_SET**    :class:`stem.response.events.BuildTimeoutSetEvent`
+  **BW**                  :class:`stem.response.events.BandwidthEvent`
+  **CELL_STATS**          :class:`stem.response.events.CellStatsEvent`
+  **CIRC**                :class:`stem.response.events.CircuitEvent`
+  **CIRC_BW**             :class:`stem.response.events.CircuitBandwidthEvent`
+  **CIRC_MINOR**          :class:`stem.response.events.CircMinorEvent`
+  **CLIENTS_SEEN**        :class:`stem.response.events.ClientsSeenEvent`
+  **CONF_CHANGED**        :class:`stem.response.events.ConfChangedEvent`
+  **CONN_BW**             :class:`stem.response.events.ConnectionBandwidthEvent`
+  **DEBUG**               :class:`stem.response.events.LogEvent`
+  **DESCCHANGED**         :class:`stem.response.events.DescChangedEvent`
+  **ERR**                 :class:`stem.response.events.LogEvent`
+  **GUARD**               :class:`stem.response.events.GuardEvent`
+  **HS_DESC**             :class:`stem.response.events.HSDescEvent`
+  **HS_DESC_CONTENT**     :class:`stem.response.events.HSDescContentEvent`
+  **INFO**                :class:`stem.response.events.LogEvent`
+  **NEWCONSENSUS**        :class:`stem.response.events.NewConsensusEvent`
+  **NEWDESC**             :class:`stem.response.events.NewDescEvent`
+  **NOTICE**              :class:`stem.response.events.LogEvent`
+  **NS**                  :class:`stem.response.events.NetworkStatusEvent`
+  **ORCONN**              :class:`stem.response.events.ORConnEvent`
+  **SIGNAL**              :class:`stem.response.events.SignalEvent`
+  **STATUS_CLIENT**       :class:`stem.response.events.StatusEvent`
+  **STATUS_GENERAL**      :class:`stem.response.events.StatusEvent`
+  **STATUS_SERVER**       :class:`stem.response.events.StatusEvent`
+  **STREAM**              :class:`stem.response.events.StreamEvent`
+  **STREAM_BW**           :class:`stem.response.events.StreamBwEvent`
+  **TB_EMPTY**            :class:`stem.response.events.TokenBucketEmptyEvent`
+  **TRANSPORT_LAUNCHED**  :class:`stem.response.events.TransportLaunchedEvent`
+  **WARN**                :class:`stem.response.events.LogEvent`
+  ======================= ===========
 
 .. data:: Listener (enum)
 
@@ -269,9 +274,12 @@ EventType = stem.util.enum.UppercaseEnum(
   'AUTHDIR_NEWDESCS',
   'BUILDTIMEOUT_SET',
   'BW',
+  'CELL_STATS',
   'CIRC',
+  'CIRC_BW',
   'CIRC_MINOR',
   'CONF_CHANGED',
+  'CONN_BW',
   'CLIENTS_SEEN',
   'DEBUG',
   'DESCCHANGED',
@@ -291,6 +299,8 @@ EventType = stem.util.enum.UppercaseEnum(
   'STATUS_SERVER',
   'STREAM',
   'STREAM_BW',
+  'TB_EMPTY',
+  'TRANSPORT_LAUNCHED',
   'WARN',
 )
 

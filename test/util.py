@@ -80,6 +80,10 @@ Target = stem.util.enum.UppercaseEnum(
 
 STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
+# Store new capabilities (events, descriptor entries, etc.)
+
+NEW_CAPABILITIES = []
+
 
 def get_unit_tests(module_prefix = None):
   """
@@ -175,6 +179,17 @@ def get_torrc_entries(target):
   return torrc_opts
 
 
+def get_new_capabilities():
+  """
+  Provides a list of capabilities tor supports but stem doesn't, as discovered
+  while running our tests.
+
+  :returns: **list** of (type, message) tuples for the capabilities
+  """
+
+  return NEW_CAPABILITIES
+
+
 def check_stem_version():
   return stem.__version__
 
@@ -263,6 +278,17 @@ def check_for_unused_tests(paths):
 
   if unused_tests:
     raise ValueError('Test modules are missing from our test/settings.cfg:\n%s' % '\n'.join(unused_tests))
+
+
+def register_new_capability(capability_type, msg):
+  """
+  Register new capability found during the tests.
+
+  :param str capability_type: type of capability this is
+  :param str msg: description of what we found
+  """
+
+  NEW_CAPABILITIES.append((capability_type, msg))
 
 
 def _is_test_data(path):
