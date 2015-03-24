@@ -70,7 +70,12 @@ class TestSystem(unittest.TestCase):
       test.runner.skip(self, '(ps unavailable)')
       return
 
-    self.assertTrue(stem.util.system.is_running(test.runner.get_runner().get_tor_command(True)))
+    # Check to see if the command we started tor with is running. The process
+    # might be running under another name so need to check for 'tor.real' too
+    # (#15449).
+
+    tor_cmd = test.runner.get_runner().get_tor_command(True)
+    self.assertTrue(stem.util.system.is_running(tor_cmd) or stem.util.system.is_running('tor.real'))
     self.assertFalse(stem.util.system.is_running('blarg_and_stuff'))
 
   def test_pid_by_name(self):
