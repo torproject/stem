@@ -7,6 +7,7 @@ system running the tests.
 
 import functools
 import ntpath
+import os
 import posixpath
 import unittest
 
@@ -370,6 +371,25 @@ class TestSystem(unittest.TestCase):
     for test_input in responses:
       expected_response = '/Users/atagar/tor/src/or' if test_input == '75717' else None
       self.assertEqual(expected_response, system.cwd(test_input))
+
+  def test_tail(self):
+    """
+    Exercise our tail() function with a variety of inputs.
+    """
+
+    path = os.path.join(os.path.dirname(__file__), 'text_file')
+
+    # by file handle
+
+    with open(path) as riddle_file:
+      self.assertEqual(['  both the wicked and sweet.'], system.tail(riddle_file, 1))
+
+    self.assertEqual([], system.tail(path, 0))
+    self.assertEqual(['  both the wicked and sweet.'], system.tail(path, 1))
+    self.assertEqual(["but I'm with people you meet", '  both the wicked and sweet.'], system.tail(path, 2))
+
+    self.assertEqual(14, len(system.tail(path)))
+    self.assertEqual(14, len(system.tail(path, 200)))
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))

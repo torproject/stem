@@ -30,13 +30,13 @@ best-effort, providing **None** if the lookup fails.
   cwd - provides the current working directory for a given process
   user - provides the user a process is running under
   start_time - provides the unix timestamp when the process started
+  tail - provides lines from the end of a file
   bsd_jail_id - provides the BSD jail id a given process is running within
   bsd_jail_path - provides the path of the given BSD jail
 
   is_tarfile - checks if the given path is a tarball
   expand_path - expands relative paths and ~ entries
   files_with_suffix - provides files with the given suffix
-
 
   get_process_name - provides our process' name
   set_process_name - changes our process' name
@@ -49,6 +49,7 @@ import os
 import platform
 import re
 import subprocess
+import sys
 import tarfile
 import time
 
@@ -87,6 +88,8 @@ GET_CWD_PWDX = 'pwdx %s'
 GET_CWD_LSOF = 'lsof -a -p %s -d cwd -Fn'
 GET_BSD_JAIL_ID_PS = 'ps -p %s -o jid'
 GET_BSD_JAIL_PATH = 'jls -j %s'
+
+BLOCK_SIZE = 1024
 
 # flag for setting the process name, found in '/usr/include/linux/prctl.h'
 
@@ -752,6 +755,51 @@ def start_time(pid):
     pass
 
   return None
+
+
+def tail(target, lines = None):
+  """
+  Provides the last lines from a file, similar to 'tail -n 50 /tmp/my_log'.
+
+  :param str,file target: path or file object to read from
+  :param int lines: number of lines to read
+
+  :returns: **list** of lines the file ends with
+  """
+
+  if isinstance(target, str):
+    with open(target) as target_file:
+      return tail(target_file, lines)
+
+  if lines is None:
+    lines = sys.maxint
+
+  # based on snippet from...
+  # https://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-with-python-similar-to-tail
+
+  target.seek(0, 2)  # go to the end of the file
+  block_end_byte = target.tell()
+  lines_left = lines
+  block_number = -1
+  blocks = []  # blocks of size BLOCK_SIZE, in reverse order
+
+  while lines_left > 0 and block_end_byte > 0:
+    if (block_end_byte - BLOCK_SIZE > 0):
+      # read the last block we haven't yet read
+      target.seek(block_number * BLOCK_SIZE, 2)
+      blocks.insert(0, target.read(BLOCK_SIZE))
+    else:
+      # reached the start of the file, just read what's left
+      target.seek(0, 0)
+      blocks.insert(0, target.read(block_end_byte))
+
+    lines_found = blocks[-1].count('\n')
+    lines_left -= lines_found
+    block_end_byte -= BLOCK_SIZE
+    block_number -= 1
+
+  text = ''.join(blocks)
+  return text.splitlines()[-lines:]
 
 
 def bsd_jail_id(pid):
