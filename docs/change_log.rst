@@ -60,6 +60,7 @@ conversion (:trac:`14075`).
 
   * Lazy-loading descriptors, improving performance by 25-70% depending on what type it is (:trac:`14011`)
   * Added `support for hidden service descriptors <api/descriptor/hidden_service_descriptor.html>`_ (:trac:`15004`)
+  * When reading sanitised bridge descriptors (server or extrainfo), :func:`~stem.descriptor.__init__.parse_file` treated the whole file as a single descriptor
   * The :class:`~stem.descriptor.networkstatus.DirectoryAuthority` 'fingerprint' attribute was actually its 'v3ident'
   * Added consensus' new package attribute (:spec:`ab64534`)
   * Added extra info' new hs_stats_end, hs_rend_cells, hs_rend_cells_attr, hs_dir_onions_seen, and hs_dir_onions_seen_attr attributes (:spec:`ddb630d`)

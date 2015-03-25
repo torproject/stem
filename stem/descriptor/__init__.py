@@ -651,7 +651,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   if ignore_first:
     first_line = descriptor_file.readline()
 
-    if first_line is not None:
+    if first_line:
       content_append(first_line)
 
   keyword_match = re.compile(SPECIFIC_KEYWORD_LINE % '|'.join(keywords))

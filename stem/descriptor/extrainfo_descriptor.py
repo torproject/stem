@@ -178,11 +178,18 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
   """
 
   while True:
-    extrainfo_content = _read_until_keywords('router-signature', descriptor_file)
+    if not is_bridge:
+      extrainfo_content = _read_until_keywords('router-signature', descriptor_file)
 
-    # we've reached the 'router-signature', now include the pgp style block
-    block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
-    extrainfo_content += _read_until_keywords(block_end_prefix, descriptor_file, True)
+      # we've reached the 'router-signature', now include the pgp style block
+
+      block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
+      extrainfo_content += _read_until_keywords(block_end_prefix, descriptor_file, True)
+    else:
+      # bridge descriptors lack a well defined ending, so checking for a @type
+      # annotation
+
+      extrainfo_content = _read_until_keywords('@type', descriptor_file, ignore_first = True)
 
     if extrainfo_content:
       if extrainfo_content[0].startswith(b'@type'):

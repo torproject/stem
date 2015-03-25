@@ -121,6 +121,22 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     self.assertEqual({}, desc.dir_v2_responses_unknown)
     self.assertEqual({}, desc.dir_v2_responses_unknown)
 
+  def test_multiple_metrics_bridge_descriptors(self):
+    """
+    Check that we can read bridge descriptors when there's multiple in a file.
+    """
+
+    descriptor_file = open(get_resource('extrainfo_bridge_descriptor_multiple'), 'rb')
+    desc_list = list(stem.descriptor.parse_file(descriptor_file))
+
+    self.assertEqual(6, len(desc_list))
+    self.assertEqual('909B07DB17E21D263C55794AB815BF1DB195FDD9', desc_list[0].fingerprint)
+    self.assertEqual('7F7798A3CBB0F643B1CFCE3FD4F2B7C553764498', desc_list[1].fingerprint)
+    self.assertEqual('B4869206C1EEA4A090FE614155BD6942701F80F1', desc_list[2].fingerprint)
+    self.assertEqual('C18896EB6274DC8123491FAE1DD17E1769C54C4F', desc_list[3].fingerprint)
+    self.assertEqual('478B4CB438302981DE9AAF246F48DBE57F69050A', desc_list[4].fingerprint)
+    self.assertEqual('25D9D52A0350B42E69C8AB7CE945DB1CA38DA0CF', desc_list[5].fingerprint)
+
   def test_minimal_extrainfo_descriptor(self):
     """
     Basic sanity check that we can parse an extrainfo descriptor with minimal
