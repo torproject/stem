@@ -206,12 +206,13 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      controller.add_event_listener(listener, EventType.CONF_CHANGED)
+      controller.add_event_listener(listener, EventType.BW)
 
-      controller.set_conf('NodeFamily', random_fingerprint())
-      self.assertTrue(event_notice.wait(10))
-      self.assertEqual(len(event_buffer), 1)
-      event_notice.clear()
+      # Get a BW event or two. These should be emitted each second but under
+      # heavy system load that's not always the case.
+
+      event_notice.wait(4)
+      self.assertTrue(len(event_buffer) >= 1)
 
       # disconnect and check that we stop getting events
 
@@ -219,26 +220,21 @@ class TestController(unittest.TestCase):
       event_notice.clear()
       event_buffer = []
 
-      # Spawn a second controller and trigger an event
-
-      with runner.get_tor_controller() as controller2:
-        controller2.set_conf('NodeFamily', random_fingerprint())
-
-      self.assertEqual(len(event_buffer), 0)
+      event_notice.wait(2)
+      self.assertTrue(len(event_buffer) == 0)
 
       # reconnect and check that we get events again
 
       controller.connect()
       controller.authenticate(password = test.runner.CONTROL_PASSWORD)
 
-      controller.set_conf('NodeFamily', random_fingerprint())
-      self.assertTrue(event_notice.wait(10))
-      self.assertEqual(len(event_buffer), 1)
-      event_notice.clear()
+      event_notice.wait(4)
+      self.assertTrue(len(event_buffer) >= 1)
 
       # disconnect
 
       controller.close()
+      event_notice.clear()
       event_buffer = []
 
       # reconnect and check that we get events again
@@ -246,14 +242,13 @@ class TestController(unittest.TestCase):
       controller.connect()
       stem.connection.authenticate(controller, password = test.runner.CONTROL_PASSWORD)
 
-      controller.set_conf('NodeFamily', random_fingerprint())
-      self.assertTrue(event_notice.wait(10))
-      self.assertEqual(len(event_buffer), 1)
-      event_notice.clear()
+      event_notice.wait(4)
+      self.assertTrue(len(event_buffer) >= 1)
 
       # disconnect
 
       controller.close()
+      event_notice.clear()
       event_buffer = []
 
       # Reconnect and check that we get events again. This is being done by
@@ -269,10 +264,8 @@ class TestController(unittest.TestCase):
         else:
           controller.msg('AUTHENTICATE')
 
-        controller.set_conf('NodeFamily', random_fingerprint())
-        self.assertTrue(event_notice.wait(10))
-        self.assertEqual(len(event_buffer), 1)
-        event_notice.clear()
+        event_notice.wait(4)
+        self.assertTrue(len(event_buffer) >= 1)
 
   @require_controller
   def test_getinfo(self):
