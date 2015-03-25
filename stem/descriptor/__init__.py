@@ -121,7 +121,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
   network-status-microdesc-consensus-3 1.0  :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` (with a :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`)
   bridge-network-status 1.0                 :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` (with a :class:`~stem.descriptor.networkstatus.BridgeNetworkStatusDocument`)
   bridge-server-descriptor 1.0              :class:`~stem.descriptor.server_descriptor.BridgeDescriptor`
-  bridge-extra-info 1.1                     :class:`~stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor`
+  bridge-extra-info 1.1 or 1.2              :class:`~stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor`
   torperf 1.0                               **unsupported**
   bridge-pool-assignment 1.0                **unsupported**
   tordnsel 1.0                              :class:`~stem.descriptor.tordnsel.TorDNSEL`
