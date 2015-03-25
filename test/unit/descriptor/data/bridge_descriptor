@@ -1,15 +1,12 @@
 @type bridge-server-descriptor 1.0
-router Unnamed 10.45.227.253 9001 0 0
-router-digest 006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4
-or-address [fd9f:2e19:3bcf::02:9970]:9001
-platform Tor 0.2.3.12-alpha (git-800942b4176ca31c) on Linux x86_64
+router Unnamed 10.18.111.71 9001 0 0
+platform Tor 0.2.0.26-rc (r14597) on Linux i686
 opt protocols Link 1 2 Circuit 1
-published 2012-03-22 17:34:38
-opt fingerprint AE54 E28E D069 CDF4 5F30 09F9 63EE 3B3D 6FA2 6A2E
-uptime 186
-bandwidth 409600 819200 5120
-opt extra-info-digest 134F81F7A0D270B85FCD481DD10CEA34BA7B15C9
-family $CE396C72A3D0880F74C064FEA79D68C15BD380B9 $AB8B00C00B1347BA80A88E548FAC9EDF701D7D0E $8C8A470D7C23151665A7B84E75E89FCC205A3304
-opt hidden-service-dir
-contact somebody
+published 2008-05-20 19:45:00
+opt fingerprint 4ED5 7358 2B16 ACDA F6E4 2AA0 44A0 38F8 3A7F 6333
+uptime 204
+bandwidth 3220480 6441984 59408
+opt extra-info-digest BB1F13AA431421BEA29B840A2E33BB1C31C2990B
+opt caches-extra-info
 reject *:*
+router-digest 00F1CD29AD308A59A9AB5A88B49ECB46E0F215FD

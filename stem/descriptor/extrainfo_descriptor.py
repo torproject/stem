@@ -186,10 +186,7 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
       block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
       extrainfo_content += _read_until_keywords(block_end_prefix, descriptor_file, True)
     else:
-      # bridge descriptors lack a well defined ending, so checking for a @type
-      # annotation
-
-      extrainfo_content = _read_until_keywords('@type', descriptor_file, ignore_first = True)
+      extrainfo_content = _read_until_keywords('router-digest', descriptor_file, True)
 
     if extrainfo_content:
       if extrainfo_content[0].startswith(b'@type'):

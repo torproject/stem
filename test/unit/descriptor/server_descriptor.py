@@ -285,38 +285,32 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     descriptor_file = open(get_resource('bridge_descriptor'), 'rb')
 
-    expected_family = set([
-      '$CE396C72A3D0880F74C064FEA79D68C15BD380B9',
-      '$AB8B00C00B1347BA80A88E548FAC9EDF701D7D0E',
-      '$8C8A470D7C23151665A7B84E75E89FCC205A3304',
-    ])
-
     desc = next(stem.descriptor.parse_file(descriptor_file, 'bridge-server-descriptor 1.0', validate = True))
     self.assertEqual('Unnamed', desc.nickname)
-    self.assertEqual('AE54E28ED069CDF45F3009F963EE3B3D6FA26A2E', desc.fingerprint)
-    self.assertEqual('10.45.227.253', desc.address)
+    self.assertEqual('4ED573582B16ACDAF6E42AA044A038F83A7F6333', desc.fingerprint)
+    self.assertEqual('10.18.111.71', desc.address)
     self.assertEqual(9001, desc.or_port)
     self.assertEqual(None, desc.socks_port)
     self.assertEqual(None, desc.dir_port)
-    self.assertEqual(b'Tor 0.2.3.12-alpha (git-800942b4176ca31c) on Linux x86_64', desc.platform)
-    self.assertEqual(stem.version.Version('0.2.3.12-alpha'), desc.tor_version)
-    self.assertEqual('Linux x86_64', desc.operating_system)
-    self.assertEqual(186, desc.uptime)
-    self.assertEqual(datetime.datetime(2012, 3, 22, 17, 34, 38), desc.published)
-    self.assertEqual(b'somebody', desc.contact)
+    self.assertEqual(b'Tor 0.2.0.26-rc (r14597) on Linux i686', desc.platform)
+    self.assertEqual(stem.version.Version('0.2.0.26-rc'), desc.tor_version)
+    self.assertEqual('Linux i686', desc.operating_system)
+    self.assertEqual(204, desc.uptime)
+    self.assertEqual(datetime.datetime(2008, 5, 20, 19, 45, 0), desc.published)
+    self.assertEqual(None, desc.contact)
     self.assertEqual(['1', '2'], desc.link_protocols)
     self.assertEqual(['1'], desc.circuit_protocols)
     self.assertEqual(False, desc.hibernating)
     self.assertEqual(False, desc.allow_single_hop_exits)
     self.assertEqual(False, desc.extra_info_cache)
-    self.assertEqual('134F81F7A0D270B85FCD481DD10CEA34BA7B15C9', desc.extra_info_digest)
-    self.assertEqual(['2'], desc.hidden_service_dir)
-    self.assertEqual(expected_family, desc.family)
-    self.assertEqual(409600, desc.average_bandwidth)
-    self.assertEqual(819200, desc.burst_bandwidth)
-    self.assertEqual(5120, desc.observed_bandwidth)
+    self.assertEqual('BB1F13AA431421BEA29B840A2E33BB1C31C2990B', desc.extra_info_digest)
+    self.assertEqual(None, desc.hidden_service_dir)
+    self.assertEqual(set(), desc.family)
+    self.assertEqual(3220480, desc.average_bandwidth)
+    self.assertEqual(6441984, desc.burst_bandwidth)
+    self.assertEqual(59408, desc.observed_bandwidth)
     self.assertEqual(stem.exit_policy.ExitPolicy('reject *:*'), desc.exit_policy)
-    self.assertEqual('006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4', desc.digest())
+    self.assertEqual('00F1CD29AD308A59A9AB5A88B49ECB46E0F215FD', desc.digest())
     self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_minimal_relay_descriptor(self):
