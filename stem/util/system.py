@@ -44,6 +44,7 @@ best-effort, providing **None** if the lookup fails.
 
 import ctypes
 import ctypes.util
+import distutils.spawn
 import mimetypes
 import os
 import platform
@@ -194,17 +195,7 @@ def is_available(command, cached=True):
   elif cached and command in CMD_AVAILABLE_CACHE:
     return CMD_AVAILABLE_CACHE[command]
   else:
-    cmd_exists = False
-    for path in os.environ['PATH'].split(os.pathsep):
-      cmd_path = os.path.join(path, command)
-
-      if is_windows():
-        cmd_path += '.exe'
-
-      if os.path.exists(cmd_path) and os.access(cmd_path, os.X_OK):
-        cmd_exists = True
-        break
-
+    cmd_exists = distutils.spawn.find_executable(command) is not None
     CMD_AVAILABLE_CACHE[command] = cmd_exists
     return cmd_exists
 
