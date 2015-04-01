@@ -635,8 +635,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is located.
     """
 
-    test_listing_file = open(self.test_listing_path, 'w')
-    test_listing_file.write(contents)
-    test_listing_file.close()
+    with open(self.test_listing_path, 'w') as test_listing_file:
+      test_listing_file.write(contents)
 
     return self.test_listing_path

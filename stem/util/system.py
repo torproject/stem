@@ -756,6 +756,8 @@ def tail(target, lines = None):
   :param int lines: number of lines to read
 
   :returns: **list** of lines the file ends with
+
+  :raises: **IOError** if unable to read the file
   """
 
   if isinstance(target, str):

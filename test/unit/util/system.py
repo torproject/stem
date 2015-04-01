@@ -9,6 +9,7 @@ import functools
 import ntpath
 import os
 import posixpath
+import tempfile
 import unittest
 
 from stem import str_type
@@ -390,6 +391,14 @@ class TestSystem(unittest.TestCase):
 
     self.assertEqual(14, len(system.tail(path)))
     self.assertEqual(14, len(system.tail(path, 200)))
+
+    self.assertRaises(IOError, system.tail, '/path/doesnt/exist')
+
+    fd, temp_path = tempfile.mkstemp()
+    os.chmod(temp_path, 0o077)  # remove read permissions
+    self.assertRaises(IOError, system.tail, temp_path)
+    os.close(fd)
+    os.remove(temp_path)
 
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
