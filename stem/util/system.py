@@ -750,19 +750,27 @@ def start_time(pid):
 
 def tail(target, lines = None):
   """
-  Provides the last lines from a file, similar to 'tail -n 50 /tmp/my_log'.
+  Provides lines of a file starting with the end. For instance,
+  'tail -n 50 /tmp/my_log' could be done with...
+
+  ::
+
+    reversed(list(tail('/tmp/my_log', 50)))
 
   :param str,file target: path or file object to read from
   :param int lines: number of lines to read
 
-  :returns: **list** of lines the file ends with
+  :returns: **generator** that reads lines, starting with the end
 
   :raises: **IOError** if unable to read the file
   """
 
   if isinstance(target, str):
     with open(target) as target_file:
-      return tail(target_file, lines)
+      for line in tail(target_file, lines):
+        yield line
+
+      return
 
   if lines is None:
     lines = sys.maxint
@@ -774,25 +782,25 @@ def tail(target, lines = None):
   block_end_byte = target.tell()
   lines_left = lines
   block_number = -1
-  blocks = []  # blocks of size BLOCK_SIZE, in reverse order
+  content = ''
 
   while lines_left > 0 and block_end_byte > 0:
     if (block_end_byte - BLOCK_SIZE > 0):
       # read the last block we haven't yet read
       target.seek(block_number * BLOCK_SIZE, 2)
-      blocks.insert(0, target.read(BLOCK_SIZE))
+      content, completed_lines = (target.read(BLOCK_SIZE) + content).split('\n', 1)
     else:
       # reached the start of the file, just read what's left
       target.seek(0, 0)
-      blocks.insert(0, target.read(block_end_byte))
+      completed_lines = target.read(block_end_byte) + content
 
-    lines_found = blocks[-1].count('\n')
-    lines_left -= lines_found
+    for line in reversed(completed_lines.splitlines()):
+      if lines_left > 0:
+        lines_left -= 1
+        yield line
+
     block_end_byte -= BLOCK_SIZE
     block_number -= 1
-
-  text = ''.join(blocks)
-  return text.splitlines()[-lines:]
 
 
 def bsd_jail_id(pid):

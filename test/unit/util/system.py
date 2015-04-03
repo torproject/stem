@@ -383,20 +383,20 @@ class TestSystem(unittest.TestCase):
     # by file handle
 
     with open(path) as riddle_file:
-      self.assertEqual(['  both the wicked and sweet.'], system.tail(riddle_file, 1))
+      self.assertEqual(['  both the wicked and sweet.'], list(system.tail(riddle_file, 1)))
 
-    self.assertEqual([], system.tail(path, 0))
-    self.assertEqual(['  both the wicked and sweet.'], system.tail(path, 1))
-    self.assertEqual(["but I'm with people you meet", '  both the wicked and sweet.'], system.tail(path, 2))
+    self.assertEqual([], list(system.tail(path, 0)))
+    self.assertEqual(['  both the wicked and sweet.'], list(system.tail(path, 1)))
+    self.assertEqual(['  both the wicked and sweet.', "but I'm with people you meet"], list(system.tail(path, 2)))
 
-    self.assertEqual(14, len(system.tail(path)))
-    self.assertEqual(14, len(system.tail(path, 200)))
+    self.assertEqual(14, len(list(system.tail(path))))
+    self.assertEqual(14, len(list(system.tail(path, 200))))
 
-    self.assertRaises(IOError, system.tail, '/path/doesnt/exist')
+    self.assertRaises(IOError, list, system.tail('/path/doesnt/exist'))
 
     fd, temp_path = tempfile.mkstemp()
     os.chmod(temp_path, 0o077)  # remove read permissions
-    self.assertRaises(IOError, system.tail, temp_path)
+    self.assertRaises(IOError, list, system.tail(temp_path))
     os.close(fd)
     os.remove(temp_path)
 
