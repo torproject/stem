@@ -116,7 +116,7 @@ def is_pep8_available():
     return False
 
 
-def stylistic_issues(paths, check_two_space_indents = False, check_newlines = False, check_trailing_whitespace = False, check_exception_keyword = False):
+def stylistic_issues(paths, check_two_space_indents = False, check_newlines = False, check_trailing_whitespace = False, check_exception_keyword = False, prefer_single_quotes = False):
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
   we conform to. You can suppress PEP8 issues by making a 'test' configuration
@@ -157,6 +157,9 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
      Changing tuples in return value to be namedtuple instances, and adding the
      line that had the issue.
 
+  .. versionchanged:: 1.4.0
+     Added the prefer_single_quotes option.
+
   :param list paths: paths to search for stylistic issues
   :param bool check_two_space_indents: check for two space indentations and
     that no tabs snuck in
@@ -166,6 +169,8 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
     trailing whitespace
   :param bool check_exception_keyword: checks that we're using 'as' for
     exceptions rather than a comma
+  :param bool prefer_single_quotes: standardize on using single rather than
+    double quotes for strings, when reasonable
 
   :returns: **dict** of the form ``path => [(line_number, message)...]``
   """
@@ -226,6 +231,16 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
           # too.
 
           issues.setdefault(path, []).append(Issue(index + 1, "except clause should use 'as', not comma", line))
+
+        if prefer_single_quotes and line and not is_block_comment:
+          content = line.strip().split('#', 1)[0]
+
+          if '"' in content and "'" not in content and '"""' not in content:
+            # Checking if the line already has any single quotes since that
+            # usually means double quotes are preferable for the content (for
+            # instance "I'm hungry").
+
+            issues.setdefault(path, []).append(Issue(index + 1, "use single rather than double quotes", line))
 
   return issues
 

@@ -78,7 +78,7 @@ PYFLAKES_TASK = Task(
 PEP8_TASK = Task(
   'running pep8',
   stem.util.test_tools.stylistic_issues,
-  args = (SRC_PATHS, True, True, True, True),
+  args = (SRC_PATHS, True, True, True, True, True),
   is_required = False,
   print_result = False,
 )
