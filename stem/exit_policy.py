@@ -133,7 +133,7 @@ def get_config_policy(rules, ip_address = None):
       continue
 
     if ':' not in rule:
-      rule = "%s:*" % rule
+      rule = '%s:*' % rule
 
     if 'private' in rule:
       acceptance = rule.split(' ', 1)[0]
@@ -149,7 +149,7 @@ def get_config_policy(rules, ip_address = None):
           pass  # we might not have a network connection
 
       for private_addr in addresses:
-        result.append(ExitPolicyRule("%s %s:%s" % (acceptance, private_addr, port)))
+        result.append(ExitPolicyRule('%s %s:%s' % (acceptance, private_addr, port)))
     else:
       result.append(ExitPolicyRule(rule))
 
@@ -1003,7 +1003,7 @@ class ExitPolicyRule(object):
         self.min_port = self.max_port = int(portspec)
       else:
         raise ValueError("'%s' isn't within a valid port range: %s" % (portspec, rule))
-    elif "-" in portspec:
+    elif '-' in portspec:
       # provided with a port range
       port_comp = portspec.split('-', 1)
 

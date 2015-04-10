@@ -4,7 +4,7 @@ import subprocess
 import sys
 import time
 
-LOGGER = logging.getLogger("republish")
+LOGGER = logging.getLogger('republish')
 LOGGER.setLevel(logging.INFO)
 
 handler = logging.FileHandler('/home/stem/republish.log')
@@ -14,8 +14,8 @@ handler.setFormatter(logging.Formatter(
 ))
 LOGGER.addHandler(handler)
 
-OPT = "r:h"
-OPT_EXPANDED = ["repeat=", "help"]
+OPT = 'r:h'
+OPT_EXPANDED = ['repeat=', 'help']
 
 HELP_MSG = """\
 Republishes stem's website. This can either be done or on a reoccurring basis.
@@ -49,31 +49,31 @@ def republish_site():
     run('sudo -u mirroradm static-master-update-component stem.torproject.org')
 
     runtime = int(time.time() - start_time)
-    LOGGER.log(logging.INFO, "  site republished (took %s seconds)" % runtime)
+    LOGGER.log(logging.INFO, '  site republished (took %s seconds)' % runtime)
 
 
 if __name__ == '__main__':
   try:
     opts = getopt.getopt(sys.argv[1:], OPT, OPT_EXPANDED)[0]
   except getopt.GetoptError as exc:
-    print("%s (for usage provide --help)" % exc)
+    print('%s (for usage provide --help)' % exc)
     sys.exit(1)
 
   repeat_rate = None
 
   for opt, arg in opts:
-    if opt in ("-r", "--repeat"):
+    if opt in ('-r', '--repeat'):
       if arg.isdigit():
         repeat_rate = int(arg)
       else:
         print("The --repeat argument must be an integer, got '%s'" % arg)
         sys.exit(1)
-    elif opt in ("-h", "--help"):
+    elif opt in ('-h', '--help'):
       print(HELP_MSG)
       sys.exit()
 
   if repeat_rate:
-    LOGGER.log(logging.INFO, "Starting stem site republisher")
+    LOGGER.log(logging.INFO, 'Starting stem site republisher')
     latest_run = 0  # unix timestamp for when we last ran
 
     while True:

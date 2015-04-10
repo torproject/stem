@@ -901,7 +901,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
         raise UnrecognizedAuthChallengeMethod(authchallenge_response_str, cookie_path)
       elif 'Invalid base16 client nonce' in authchallenge_response_str:
         raise InvalidClientNonce(authchallenge_response_str, cookie_path)
-      elif "Cookie authentication is disabled" in authchallenge_response_str:
+      elif 'Cookie authentication is disabled' in authchallenge_response_str:
         raise CookieAuthRejected(authchallenge_response_str, cookie_path, True)
       else:
         raise AuthChallengeFailed(authchallenge_response, cookie_path)

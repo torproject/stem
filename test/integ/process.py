@@ -87,11 +87,11 @@ class TestProcess(unittest.TestCase):
 
     output = self.run_tor('--hush', '--invalid_argument', expect_failure = True)
     self.assertTrue("[warn] Command-line option '--invalid_argument' with no value. Failing." in output)
-    self.assertTrue("[err] Reading config failed--see warnings above." in output)
+    self.assertTrue('[err] Reading config failed--see warnings above.' in output)
 
     output = self.run_tor('--hush', '--invalid_argument', 'true', expect_failure = True)
     self.assertTrue("[warn] Failed to parse/validate config: Unknown option 'invalid_argument'.  Failing." in output)
-    self.assertTrue("[err] Reading config failed--see warnings above." in output)
+    self.assertTrue('[err] Reading config failed--see warnings above.' in output)
 
   def test_hash_password(self):
     """
@@ -101,7 +101,7 @@ class TestProcess(unittest.TestCase):
     """
 
     output = self.run_tor('--hush', '--hash-password', 'my_password')
-    self.assertTrue(re.match("^16:[0-9A-F]{58}\n$", output))
+    self.assertTrue(re.match('^16:[0-9A-F]{58}\n$', output))
 
     # I'm not gonna even pretend to understand the following. Ported directly
     # from tor's test_cmdline_args.py.
@@ -128,7 +128,7 @@ class TestProcess(unittest.TestCase):
 
     output = self.run_tor('--hash-password', expect_failure = True)
     self.assertTrue("[warn] Command-line option '--hash-password' with no value. Failing." in output)
-    self.assertTrue("[err] Reading config failed--see warnings above." in output)
+    self.assertTrue('[err] Reading config failed--see warnings above.' in output)
 
   def test_dump_config_argument(self):
     """
@@ -448,7 +448,7 @@ class TestProcess(unittest.TestCase):
     stdin = kwargs.pop('stdin', None)
 
     if kwargs:
-      raise ValueError("Got unexpected keyword arguments: %s" % kwargs)
+      raise ValueError('Got unexpected keyword arguments: %s' % kwargs)
 
     if with_torrc:
       args = ['-f', test.runner.get_runner().get_torrc_path()] + list(args)

@@ -492,7 +492,7 @@ def expand_ipv6_address(address):
 
   # expands collapsed groupings, there can only be a single '::' in a valid
   # address
-  if "::" in address:
+  if '::' in address:
     missing_groups = 7 - address.count(':')
     address = address.replace('::', '::' + ':' * missing_groups)
 

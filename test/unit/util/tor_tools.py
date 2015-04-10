@@ -92,8 +92,8 @@ class TestTorTools(unittest.TestCase):
     """
 
     valid_hex_digits = (
-      "12345",
-      "AbCdE",
+      '12345',
+      'AbCdE',
     )
 
     invalid_hex_digits = (
@@ -101,9 +101,9 @@ class TestTorTools(unittest.TestCase):
       '',
       5,
       'X',
-      "1234",
-      "ABCDEF",
-      [1, "2", (3, 4)]
+      '1234',
+      'ABCDEF',
+      [1, '2', (3, 4)]
     )
 
     for hex_digits in valid_hex_digits:

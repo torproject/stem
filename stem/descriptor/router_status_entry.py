@@ -194,7 +194,7 @@ def _parse_s_line(descriptor, entries):
   for flag in flags:
     if flags.count(flag) > 1:
       raise ValueError('%s had duplicate flags: s %s' % (descriptor._name(), value))
-    elif flag == "":
+    elif flag == '':
       raise ValueError("%s had extra whitespace on its 's' line: s %s" % (descriptor._name(), value))
 
 

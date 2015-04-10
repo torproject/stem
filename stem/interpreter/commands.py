@@ -176,7 +176,7 @@ class ControlInterpretor(code.InteractiveConsole):
     # being optional.
 
     if not ns_desc:
-      return format("Unable to find consensus information for %s" % fingerprint, *ERROR_OUTPUT)
+      return format('Unable to find consensus information for %s' % fingerprint, *ERROR_OUTPUT)
 
     # More likely than not we'll have the microdescriptor but not server and
     # extrainfo descriptors. If so then fetching them.

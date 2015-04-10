@@ -235,10 +235,11 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
         if prefer_single_quotes and line and not is_block_comment:
           content = line.strip().split('#', 1)[0]
 
-          if '"' in content and "'" not in content and '"""' not in content:
+          if '"' in content and "'" not in content and '"""' not in content and not content.endswith('\\'):
             # Checking if the line already has any single quotes since that
             # usually means double quotes are preferable for the content (for
-            # instance "I'm hungry").
+            # instance "I'm hungry"). Also checking for '\' at the end since
+            # that can indicate a multi-line string.
 
             issues.setdefault(path, []).append(Issue(index + 1, "use single rather than double quotes", line))
 

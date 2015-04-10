@@ -861,14 +861,14 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     """
 
     test_values = (
-      "foo=",
-      "foo=abc",
-      "foo=+123",
-      "foo=12\tbar=12",
+      'foo=',
+      'foo=abc',
+      'foo=+123',
+      'foo=12\tbar=12',
     )
 
     for test_value in test_values:
-      content = get_network_status_document_v3({"params": test_value}, content = True)
+      content = get_network_status_document_v3({'params': test_value}, content = True)
       self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
       document = NetworkStatusDocumentV3(content, False)

@@ -321,7 +321,7 @@ def file_descriptors_used(pid):
   try:
     return len(os.listdir('/proc/%i/fd' % pid))
   except Exception as exc:
-    raise IOError("Unable to check number of file descriptors used: %s" % exc)
+    raise IOError('Unable to check number of file descriptors used: %s' % exc)
 
 
 def connections(pid):

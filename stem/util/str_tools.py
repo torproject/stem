@@ -462,7 +462,7 @@ def _parse_timestamp(entry):
   try:
     time = [int(x) for x in _timestamp_re.match(entry).groups()]
   except AttributeError:
-    raise ValueError("Expected timestamp in format YYYY-MM-DD HH:MM:ss but got " + entry)
+    raise ValueError('Expected timestamp in format YYYY-MM-DD HH:MM:ss but got ' + entry)
 
   return datetime.datetime(time[0], time[1], time[2], time[3], time[4], time[5])
 

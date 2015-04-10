@@ -164,9 +164,9 @@ class TestProc(unittest.TestCase):
 
     try:
       proc.file_descriptors_used(2118)
-      self.fail("We should raise when listdir() fails")
+      self.fail('We should raise when listdir() fails')
     except IOError as exc:
-      expected = "Unable to check number of file descriptors used: %s" % error_msg
+      expected = 'Unable to check number of file descriptors used: %s' % error_msg
       self.assertEqual(expected, str(exc))
 
     # successful calls

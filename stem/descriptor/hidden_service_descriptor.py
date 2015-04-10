@@ -302,7 +302,7 @@ class HiddenServiceDescriptor(Descriptor):
         raise DecryptionFailure("Unrecognized authentication type '%s', presently we only support basic auth (%s) and stealth auth (%s)" % (authentication_type, BASIC_AUTH, STEALTH_AUTH))
 
       if not content.startswith(b'introduction-point '):
-        raise DecryptionFailure("Unable to decrypt the introduction-points, maybe this is the wrong key?")
+        raise DecryptionFailure('Unable to decrypt the introduction-points, maybe this is the wrong key?')
     elif not content.startswith(b'introduction-point '):
       raise DecryptionFailure('introduction-points content is encrypted, you need to provide its authentication_cookie')
 

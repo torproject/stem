@@ -760,7 +760,7 @@ class BridgeDescriptor(ServerDescriptor):
     if not self.address.startswith('10.'):
       issues.append("Router line's address should be scrubbed to be '10.x.x.x': %s" % self.address)
 
-    if self.contact and self.contact != "somebody":
+    if self.contact and self.contact != 'somebody':
       issues.append("Contact line should be scrubbed to be 'somebody', but instead had '%s'" % self.contact)
 
     for address, _, is_ipv6 in self.or_addresses:

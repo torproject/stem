@@ -159,7 +159,7 @@ class TestTutorialExamples(unittest.TestCase):
           if circ.status != CircStatus.BUILT:
             continue
 
-          print("\nCircuit %s (%s)" % (circ.id, circ.purpose))
+          print('\nCircuit %s (%s)' % (circ.id, circ.purpose))
 
           for i, entry in enumerate(circ.path):
             div = '+' if (i == len(circ.path) - 1) else '|'
@@ -168,7 +168,7 @@ class TestTutorialExamples(unittest.TestCase):
             desc = controller.get_network_status(fingerprint, None)
             address = desc.address if desc else 'unknown'
 
-            print(" %s- %s (%s, %s)" % (div, fingerprint, nickname, address))
+            print(' %s- %s (%s, %s)' % (div, fingerprint, nickname, address))
 
     path_1 = ('B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C', 'ByTORAndTheSnowDog')
     path_2 = ('0DD9935C5E939CFA1E07B8DDA6D91C1A2A9D9338', 'afo02')
@@ -186,13 +186,13 @@ class TestTutorialExamples(unittest.TestCase):
     controller.get_circuits.return_value = [circuit_4, circuit_6, circuit_10]
 
     controller.get_network_status.side_effect = lambda fingerprint, *args: {
-      path_1[0]: _get_router_status("173.209.180.61"),
-      path_2[0]: _get_router_status("87.238.194.176"),
-      path_3[0]: _get_router_status("109.163.234.10"),
-      path_4[0]: _get_router_status("46.165.197.96"),
-      path_5[0]: _get_router_status("96.47.226.20"),
-      path_6[0]: _get_router_status("86.59.119.83"),
-      path_7[0]: _get_router_status("176.67.169.171")
+      path_1[0]: _get_router_status('173.209.180.61'),
+      path_2[0]: _get_router_status('87.238.194.176'),
+      path_3[0]: _get_router_status('109.163.234.10'),
+      path_4[0]: _get_router_status('46.165.197.96'),
+      path_5[0]: _get_router_status('96.47.226.20'),
+      path_6[0]: _get_router_status('86.59.119.83'),
+      path_7[0]: _get_router_status('176.67.169.171')
     }[fingerprint]
 
     tutorial_example()
@@ -225,11 +225,11 @@ class TestTutorialExamples(unittest.TestCase):
           exit_fingerprint = circ.path[-1][0]
           exit_relay = controller.get_network_status(exit_fingerprint)
 
-          print("Exit relay for our connection to %s" % (event.target))
-          print("  address: %s:%i" % (exit_relay.address, exit_relay.or_port))
-          print("  fingerprint: %s" % exit_relay.fingerprint)
-          print("  nickname: %s" % exit_relay.nickname)
-          print("  locale: %s\n" % controller.get_info("ip-to-country/%s" % exit_relay.address, 'unknown'))
+          print('Exit relay for our connection to %s' % (event.target))
+          print('  address: %s:%i' % (exit_relay.address, exit_relay.or_port))
+          print('  fingerprint: %s' % exit_relay.fingerprint)
+          print('  nickname: %s' % exit_relay.nickname)
+          print('  locale: %s\n' % controller.get_info('ip-to-country/%s' % exit_relay.address, 'unknown'))
 
       main()
 
@@ -259,17 +259,17 @@ class TestTutorialExamples(unittest.TestCase):
       downloader = DescriptorDownloader()
       count, with_contact = 0, 0
 
-      print("Checking for outdated relays...\n")
+      print('Checking for outdated relays...\n')
 
       for desc in downloader.get_server_descriptors():
         if desc.tor_version < Version('0.2.3.0'):
           count += 1
 
           if desc.contact:
-            print('  %-15s %s' % (desc.tor_version, desc.contact.decode("utf-8", "replace")))
+            print('  %-15s %s' % (desc.tor_version, desc.contact.decode('utf-8', 'replace')))
             with_contact += 1
 
-      print("\n%i outdated relays found, %i had contact information" % (count, with_contact))
+      print('\n%i outdated relays found, %i had contact information' % (count, with_contact))
 
     downloader_mock().get_server_descriptors.return_value = [
       get_relay_server_descriptor({'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
@@ -399,7 +399,7 @@ class TestTutorialExamples(unittest.TestCase):
 
           print('  %i measured entries and %i unmeasured' % (measured, unmeasured))
         except Exception as exc:
-          print("  failed to get the vote (%s)" % exc)
+          print('  failed to get the vote (%s)' % exc)
 
     directory_values = [
       DIRECTORY_AUTHORITIES['gabelmoo'],
@@ -460,7 +460,7 @@ class TestTutorialExamples(unittest.TestCase):
       ))
 
       for fingerprint, relay in consensus.routers.items():
-        print("%s: %s" % (fingerprint, relay.nickname))
+        print('%s: %s' % (fingerprint, relay.nickname))
 
     network_status = get_network_status_document_v3(routers = (get_router_status_entry_v3(),))
     query_mock().run.return_value = [network_status]

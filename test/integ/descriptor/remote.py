@@ -42,7 +42,7 @@ class TestDescriptorDownloader(unittest.TestCase):
           continue  # skip due to https://trac.torproject.org/projects/tor/ticket/14955
 
         if getattr(auth, attr) != getattr(stem_auth, attr):
-          self.fail("%s has %s %s, but we expected %s" % (auth.nickname, attr, getattr(auth, attr), getattr(stem_auth, attr)))
+          self.fail('%s has %s %s, but we expected %s' % (auth.nickname, attr, getattr(auth, attr), getattr(stem_auth, attr)))
 
   @require_online
   @only_run_once

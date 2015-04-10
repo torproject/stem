@@ -18,7 +18,7 @@ from collections import namedtuple
 from functools import update_wrapper
 from threading import RLock
 
-_CacheInfo = namedtuple("CacheInfo", ["hits", "misses", "maxsize", "currsize"])
+_CacheInfo = namedtuple('CacheInfo', ['hits', 'misses', 'maxsize', 'currsize'])
 
 
 class _HashedSeq(list):
