@@ -17,6 +17,8 @@ Helper functions for testing.
   pyflakes_issues - static checks for problems via pyflakes
 """
 
+import collections
+import linecache
 import os
 import re
 
@@ -28,6 +30,12 @@ CONFIG = stem.util.conf.config_dict('test', {
   'pyflakes.ignore': [],
   'exclude_paths': [],
 })
+
+Issue = collections.namedtuple('Issue', [
+  'line_number',
+  'message',
+  'line',
+])
 
 
 def clean_orphaned_pyc(paths):
@@ -145,6 +153,10 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
      Renamed from get_stylistic_issues() to stylistic_issues(). The old name
      still works as an alias, but will be dropped in Stem version 2.0.0.
 
+  .. versionchanged:: 1.4.0
+     Changing tuples in return value to be namedtuple instances, and adding the
+     line that had the issue.
+
   :param list paths: paths to search for stylistic issues
   :param bool check_two_space_indents: check for two space indentations and
     that no tabs snuck in
@@ -171,7 +183,7 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
         code = super(StyleReport, self).error(line_number, offset, text, check)
 
         if code:
-          issues.setdefault(self.filename, []).append((line_number, '%s %s' % (code, text)))
+          issues.setdefault(self.filename, []).append(Issue(line_number, '%s %s' % (code, text), text))
 
     style_checker = pep8.StyleGuide(ignore = CONFIG['pep8.ignore'], reporter = StyleReport)
     style_checker.check_files(list(_python_files(paths)))
@@ -195,11 +207,11 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
           is_block_comment = not is_block_comment
 
         if check_two_space_indents and '\t' in whitespace:
-          issues.setdefault(path, []).append((index + 1, 'indentation has a tab'))
+          issues.setdefault(path, []).append(Issue(index + 1, 'indentation has a tab', line))
         elif check_newlines and '\r' in content:
-          issues.setdefault(path, []).append((index + 1, 'contains a windows newline'))
+          issues.setdefault(path, []).append(Issue(index + 1, 'contains a windows newline', line))
         elif check_trailing_whitespace and content != content.rstrip():
-          issues.setdefault(path, []).append((index + 1, 'line has trailing whitespace'))
+          issues.setdefault(path, []).append(Issue(index + 1, 'line has trailing whitespace', line))
         elif check_exception_keyword and content.lstrip().startswith('except') and content.endswith(', exc:'):
           # Python 2.6 - 2.7 supports two forms for exceptions...
           #
@@ -213,7 +225,7 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
           # 'exc'. We should generalize this via a regex so other names work
           # too.
 
-          issues.setdefault(path, []).append((index + 1, "except clause should use 'as', not comma"))
+          issues.setdefault(path, []).append(Issue(index + 1, "except clause should use 'as', not comma", line))
 
   return issues
 
@@ -235,6 +247,10 @@ def pyflakes_issues(paths):
      Renamed from get_pyflakes_issues() to pyflakes_issues(). The old name
      still works as an alias, but will be dropped in Stem version 2.0.0.
 
+  .. versionchanged:: 1.4.0
+     Changing tuples in return value to be namedtuple instances, and adding the
+     line that had the issue.
+
   :param list paths: paths to search for problems
 
   :returns: dict of the form ``path => [(line_number, message)...]``
@@ -255,13 +271,13 @@ def pyflakes_issues(paths):
           self._ignored_issues.setdefault(path.strip(), []).append(issue.strip())
 
       def unexpectedError(self, filename, msg):
-        self._register_issue(filename, None, msg)
+        self._register_issue(filename, None, msg, None)
 
       def syntaxError(self, filename, msg, lineno, offset, text):
-        self._register_issue(filename, lineno, msg)
+        self._register_issue(filename, lineno, msg, text)
 
       def flake(self, msg):
-        self._register_issue(msg.filename, msg.lineno, msg.message % msg.message_args)
+        self._register_issue(msg.filename, msg.lineno, msg.message % msg.message_args, None)
 
       def _is_ignored(self, path, issue):
         # Paths in pyflakes_ignore are relative, so we need to check to see if our
@@ -273,9 +289,12 @@ def pyflakes_issues(paths):
 
         return False
 
-      def _register_issue(self, path, line_number, issue):
+      def _register_issue(self, path, line_number, issue, line):
         if not self._is_ignored(path, issue):
-          issues.setdefault(path, []).append((line_number, issue))
+          if path and line_number and not line:
+            line = linecache.getline(path, line_number)
+
+          issues.setdefault(path, []).append(Issue(line_number, issue, line))
 
     reporter = Reporter()
 

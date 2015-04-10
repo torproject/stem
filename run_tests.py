@@ -320,13 +320,13 @@ def _print_static_issues(static_check_issues):
 
       line_to_issues = {}
 
-      for line_number, msg in static_check_issues[file_path]:
-        line_to_issues.setdefault(line_number, set()).add(msg)
+      for issue in static_check_issues[file_path]:
+        line_to_issues.setdefault(issue.line_number, set()).add((issue.message, issue.line))
 
       for line_number in sorted(line_to_issues.keys()):
-        for msg in line_to_issues[line_number]:
+        for msg, line in line_to_issues[line_number]:
           line_count = '%-4s' % line_number
-          println('  line %s - %s' % (line_count, msg))
+          println('  line %s - %-40s %s' % (line_count, msg, line.strip()))
 
       println()
 

@@ -70,6 +70,7 @@ conversion (:trac:`14075`).
 
   * Windows support for connection resolution (:trac:`14844`)
   * :func:`stem.util.connection.port_usage` always returned None (:trac:`14046`)
+  * :func:`~stem.util.test_tools.stylistic_issues` and :func:`~stem.util.test_tools.pyflakes_issues` now provide namedtuples that also includes the line
   * Added :func:`stem.util.system.tail`
   * Proc connection resolution could fail on especially busy systems (:trac:`14048`)
 
