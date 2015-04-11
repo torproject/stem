@@ -50,7 +50,6 @@ import os
 import platform
 import re
 import subprocess
-import sys
 import tarfile
 import time
 
@@ -772,19 +771,15 @@ def tail(target, lines = None):
 
       return
 
-  if lines is None:
-    lines = sys.maxint
-
   # based on snippet from...
   # https://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-with-python-similar-to-tail
 
   target.seek(0, 2)  # go to the end of the file
   block_end_byte = target.tell()
-  lines_left = lines
   block_number = -1
   content = ''
 
-  while lines_left > 0 and block_end_byte > 0:
+  while (lines is None or lines > 0) and block_end_byte > 0:
     if (block_end_byte - BLOCK_SIZE > 0):
       # read the last block we haven't yet read
       target.seek(block_number * BLOCK_SIZE, 2)
@@ -795,8 +790,10 @@ def tail(target, lines = None):
       completed_lines = target.read(block_end_byte) + content
 
     for line in reversed(completed_lines.splitlines()):
-      if lines_left > 0:
-        lines_left -= 1
+      if lines is None or lines > 0:
+        if lines is not None:
+          lines -= 1
+
         yield line
 
     block_end_byte -= BLOCK_SIZE

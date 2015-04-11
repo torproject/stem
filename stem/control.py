@@ -800,7 +800,7 @@ class BaseController(object):
         if expect_alive is not None and expect_alive != self.is_alive():
           return
 
-        self._state_change_threads = filter(lambda t: t.is_alive(), self._state_change_threads)
+        self._state_change_threads = list(filter(lambda t: t.is_alive(), self._state_change_threads))
 
         for listener, spawn in self._status_listeners:
           if spawn:
