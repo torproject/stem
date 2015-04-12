@@ -83,9 +83,9 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- get_pid - provides the pid of our tor process
     |
     |- get_microdescriptor - querying the microdescriptor for a relay
-    |- get_microdescriptors - provides all presently available microdescriptors
+    |- get_microdescriptors - provides all currently available microdescriptors
     |- get_server_descriptor - querying the server descriptor for a relay
-    |- get_server_descriptors - provides all presently available server descriptors
+    |- get_server_descriptors - provides all currently available server descriptors
     |- get_network_status - querying the router status entry for a relay
     |- get_network_statuses - provides all preently available router status entries
     |
@@ -125,7 +125,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- close_stream - close a stream
     |
     |- signal - sends a signal to the tor client
-    |- is_newnym_available - true if tor would presently accept a NEWNYM signal
+    |- is_newnym_available - true if tor would currently accept a NEWNYM signal
     |- get_newnym_wait - seconds until tor would accept a NEWNYM signal
     |- get_effective_rate - provides our effective relaying rate limit
     |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
@@ -357,7 +357,7 @@ UNCACHEABLE_GETCONF_PARAMS = (
 # is unavailable
 GEOIP_FAILURE_THRESHOLD = 5
 
-SERVER_DESCRIPTORS_UNSUPPORTED = "Tor is presently not configured to retrieve \
+SERVER_DESCRIPTORS_UNSUPPORTED = "Tor is currently not configured to retrieve \
 server descriptors. As of Tor version 0.2.3.25 it downloads microdescriptors \
 instead unless you set 'UseMicrodescriptors 0' in your torrc."
 
@@ -598,7 +598,7 @@ class BaseController(object):
   def connection_time(self):
     """
     Provides the unix timestamp for when our socket was either connected or
-    disconnected. That is to say, the time we connected if we're presently
+    disconnected. That is to say, the time we connected if we're currently
     connected and the time we disconnected if we're not connected.
 
     .. versionadded:: 1.3.0
@@ -1537,7 +1537,7 @@ class Controller(BaseController):
     """
     get_microdescriptors(default = UNDEFINED)
 
-    Provides an iterator for all of the microdescriptors that tor presently
+    Provides an iterator for all of the microdescriptors that tor currently
     knows about.
 
     **Tor does not expose this information via the control protocol**
@@ -1650,7 +1650,7 @@ class Controller(BaseController):
     """
     get_server_descriptors(default = UNDEFINED)
 
-    Provides an iterator for all of the server descriptors that tor presently
+    Provides an iterator for all of the server descriptors that tor currently
     knows about.
 
     **As of Tor version 0.2.3.25 relays no longer get server descriptors by
@@ -1776,7 +1776,7 @@ class Controller(BaseController):
     get_network_statuses(default = UNDEFINED)
 
     Provides an iterator for all of the router status entries that tor
-    presently knows about.
+    currently knows about.
 
     This provides
     :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3`
@@ -2688,7 +2688,7 @@ class Controller(BaseController):
     """
     get_circuit(circuit_id, default = UNDEFINED)
 
-    Provides a circuit presently available from tor.
+    Provides a circuit currently available from tor.
 
     :param int circuit_id: circuit to be fetched
     :param object default: response if the query fails
@@ -2706,7 +2706,7 @@ class Controller(BaseController):
       if circ.id == circuit_id:
         return circ
 
-    raise ValueError("Tor presently does not have a circuit with the id of '%s'" % circuit_id)
+    raise ValueError("Tor currently does not have a circuit with the id of '%s'" % circuit_id)
 
   @with_default()
   def get_circuits(self, default = UNDEFINED):
@@ -3004,12 +3004,12 @@ class Controller(BaseController):
 
   def is_newnym_available(self):
     """
-    Indicates if tor would presently accept a NEWNYM signal. This can only
+    Indicates if tor would currently accept a NEWNYM signal. This can only
     account for signals sent via this controller.
 
     .. versionadded:: 1.2.0
 
-    :returns: **True** if tor would presently accept a NEWNYM signal, **False**
+    :returns: **True** if tor would currently accept a NEWNYM signal, **False**
       otherwise
     """
 
@@ -3175,7 +3175,7 @@ class Controller(BaseController):
   def _attach_listeners(self):
     """
     Attempts to subscribe to the self._event_listeners events from tor. This is
-    a no-op if we're not presently authenticated.
+    a no-op if we're not currently authenticated.
 
     :returns: tuple of the form (set_events, failed_events)
 

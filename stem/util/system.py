@@ -158,7 +158,7 @@ def is_gentoo():
 
 def is_bsd():
   """
-  Checks if we are within the BSD family of operating systems. This presently
+  Checks if we are within the BSD family of operating systems. This currently
   recognizes Macs, FreeBSD, and OpenBSD but may be expanded later.
 
   :returns: **bool** to indicate if we're on a BSD OS

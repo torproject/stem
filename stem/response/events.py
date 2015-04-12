@@ -621,7 +621,7 @@ class GuardEvent(Event):
 
 class HSDescEvent(Event):
   """
-  Event triggered when we fetch a hidden service descriptor that presently isn't in our cache.
+  Event triggered when we fetch a hidden service descriptor that currently isn't in our cache.
 
   The HS_DESC event was introduced in tor version 0.2.5.2-alpha.
 

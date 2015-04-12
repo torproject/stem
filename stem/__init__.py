@@ -70,7 +70,7 @@ Library for working with the tor process.
   **NAMED**         relay can be referred to by its nickname
   **RUNNING**       relay is currently usable
   **STABLE**        relay's suitable for long-lived circuits
-  **UNNAMED**       relay isn't presently bound to a nickname
+  **UNNAMED**       relay isn't currently bound to a nickname
   **V2DIR**         relay supports the v2 directory protocol
   **VALID**         relay has been validated
   ================= ===========
@@ -133,7 +133,7 @@ Library for working with the tor process.
   **TORPROTOCOL**           violation in the tor protocol
   **INTERNAL**              internal error
   **REQUESTED**             requested by the client via a TRUNCATE command
-  **HIBERNATING**           relay is presently hibernating
+  **HIBERNATING**           relay is currently hibernating
   **RESOURCELIMIT**         relay is out of memory, sockets, or circuit IDs
   **CONNECTFAILED**         unable to contact the relay
   **OR_IDENTITY**           relay had the wrong OR identification

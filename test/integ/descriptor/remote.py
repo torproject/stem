@@ -155,7 +155,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     # TODO: method needs to be fixed - not quite sure what's going wrong...
 
-    test.runner.skip(self, '(test presently broken)')
+    test.runner.skip(self, '(test currently broken)')
     return
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)

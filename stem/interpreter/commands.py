@@ -260,7 +260,7 @@ class ControlInterpretor(code.InteractiveConsole):
 
     if not arg:
       status = 'enabled' if self._run_python_commands else 'disabled'
-      return format('Python support is presently %s.' % status, *STANDARD_OUTPUT)
+      return format('Python support is currently %s.' % status, *STANDARD_OUTPUT)
     elif arg.lower() == 'enable':
       self._run_python_commands = True
     elif arg.lower() == 'disable':

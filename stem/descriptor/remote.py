@@ -653,7 +653,7 @@ class DirectoryAuthority(object):
      Added the is_bandwidth_authority attribute.
 
   :var str nickname: nickname of the authority
-  :var str address: IP address of the authority, presently they're all IPv4 but
+  :var str address: IP address of the authority, currently they're all IPv4 but
     this may not always be the case
   :var int or_port: port on which the relay services relay traffic
   :var int dir_port: port on which directory information is available

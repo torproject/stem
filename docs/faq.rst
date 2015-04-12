@@ -512,7 +512,7 @@ How can I test compatibility with multiple python versions?
 -----------------------------------------------------------
 
 Stem supports python versions 2.6 and above, including the 3.x series. You can
-test all versions of python you presently have installed on your system with
+test all versions of python you currently have installed on your system with
 `tox <https://testrun.org/tox/>`_. If you're using a Debian based system this
 can be as simple as...
 

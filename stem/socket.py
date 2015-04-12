@@ -208,7 +208,7 @@ class ControlSocket(object):
   def connection_time(self):
     """
     Provides the unix timestamp for when our socket was either connected or
-    disconnected. That is to say, the time we connected if we're presently
+    disconnected. That is to say, the time we connected if we're currently
     connected and the time we disconnected if we're not connected.
 
     .. versionadded:: 1.3.0
