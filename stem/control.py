@@ -350,7 +350,6 @@ UNCACHEABLE_GETCONF_PARAMS = (
   'hiddenserviceport',
   'hiddenserviceversion',
   'hiddenserviceauthorizeclient',
-  'hiddenserviceoptions',
 )
 
 # number of sequential attempts before we decide that the Tor geoip database
