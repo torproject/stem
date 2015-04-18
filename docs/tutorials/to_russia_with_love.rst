@@ -121,33 +121,91 @@ Besides SocksiPy, you can also use `PycURL <http://pycurl.sourceforge.net/>`_ to
 Reading Twitter
 ---------------
 
-Now lets do somthing a little more interesting, and read a Twitter feed over Tor. This can be easily done `using thier API <https://dev.twitter.com/docs/api/1/get/statuses/user_timeline>`_ (**warning: Twitter has deprecated the API that this example uses,** :trac:`9003`)...
+Now lets do somthing a little more interesting, and read a Twitter feed over Tor. This can be easily done `using thier API <https://dev.twitter.com/rest/reference/get/statuses/user_timeline>`_
 
 ::
 
   import json
   import socket
   import urllib
+  import urllib2
+  import time
+  import binascii
+  import hmac
+  from hashlib import sha1, md5
 
   import socks  # SockiPy module
   import stem.process
 
   SOCKS_PORT = 7000
-  TWITTER_API_URL = "http://api.twitter.com/1/statuses/user_timeline.json?screen_name=%s&count=%i&include_rts=1"
+  KEY_DICT = dict()
+  TWITTER_API_URL = "https://api.twitter.com/1.1/statuses/user_timeline.json"
+  CONSUMER_KEY = ""
+  CONSUMER_SECRET = ""
+  ACCESS_TOKEN = ""
+  ACCESS_TOKEN_SECRET = ""
+  HTTP_METHOD = "GET"
+  OAUTH_VERSION = "1.0"
 
   socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, '127.0.0.1', SOCKS_PORT)
   socket.socket = socks.socksocket
 
+
+  def init_key_dict():
+    """
+    Initializes KEY_DICT
+    """
+
+    global KEY_DICT
+    KEY_DICT['oauth_consumer_key'] = urllib.quote(CONSUMER_KEY, '')
+    KEY_DICT['oauth_nonce'] = urllib.quote(md5(str(time.time())).hexdigest(), '')
+    KEY_DICT['oauth_signature_method'] = urllib.quote("HMAC-SHA1", '')
+    KEY_DICT['oauth_timestamp'] = urllib.quote(str(int(time.time())), '')
+    KEY_DICT['oauth_token'] = urllib.quote(ACCESS_TOKEN, '')
+    KEY_DICT['oauth_version'] = urllib.quote(OAUTH_VERSION, '')
+
+  def get_signature(values):
+    """
+    Generates KEY_DICT['oauth_signature']
+    """
+    for value in values:
+      KEY_DICT[value] = urllib.quote(values[value], '')
+    fin_key = ""
+    for key in sorted(KEY_DICT.keys()):
+      fin_key += key + "=" + KEY_DICT[key] + "&"
+    fin_key =  fin_key[:-1]
+    fin_key = HTTP_METHOD + "&" + urllib.quote(TWITTER_API_URL, '') + "&" + urllib.quote(fin_key, '')
+    key = urllib.quote(CONSUMER_SECRET, '') + "&" + urllib.quote(ACCESS_TOKEN_SECRET, '')
+    hashed = hmac.new(key, fin_key, sha1)
+    fin_key = binascii.b2a_base64(hashed.digest())[:-1]
+    KEY_DICT['oauth_signature'] = urllib.quote(fin_key, '')
+
+  def get_header_string():
+    """
+    Returns the header string
+    """
+    ret = "OAuth "
+    key_list =['oauth_consumer_key', 'oauth_nonce', 'oauth_signature', 'oauth_signature_method', 'oauth_timestamp', 'oauth_token', 'oauth_version']
+    for key in key_list:
+      ret = ret + key + "=\"" + KEY_DICT[key] + "\", "
+    ret = ret[:-2]
+    return ret
 
   def poll_twitter_feed(user_id, tweet_count):
     """
     Polls Twitter for the tweets from a given user.
     """
 
-    api_url = TWITTER_API_URL % (user_id, tweet_count)
+    init_key_dict()
+    values = {'screen_name': user_id, 'count': str(tweet_count), 'include_rts': '1'}
+    api_url = TWITTER_API_URL
+    get_signature(values)
+    headers = {'Authorization': get_header_string()}
+    data = urllib.urlencode(values)
+    api_request = urllib2.Request(api_url + "?" + data, headers= headers)
 
     try:
-      api_response = urllib.urlopen(api_url).read()
+      api_response = urllib2.urlopen(api_request).read()
     except:
       raise IOError("Unable to reach %s" % api_url)
 
