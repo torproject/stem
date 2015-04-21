@@ -957,7 +957,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False):
   results. This is not actually ran in a shell so pipes and other shell syntax
   are not permitted.
 
-  :param str command: command to be issued
+  :param str,list command: command to be issued
   :param object default: response if the query fails
   :param bool ignore_exit_status: reports failure if our command's exit status
     was non-zero
@@ -967,11 +967,16 @@ def call(command, default = UNDEFINED, ignore_exit_status = False):
   :raises: **OSError** if this fails and no default was provided
   """
 
+  if isinstance(command, str):
+    command_list = command.split(' ')
+  else:
+    command_list = command
+
   try:
-    is_shell_command = command.split(' ')[0] in SHELL_COMMANDS
+    is_shell_command = command_list[0] in SHELL_COMMANDS
 
     start_time = time.time()
-    process = subprocess.Popen(command.split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command)
+    process = subprocess.Popen(command_list, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command)
 
     stdout, stderr = process.communicate()
     stdout, stderr = stdout.strip(), stderr.strip()
