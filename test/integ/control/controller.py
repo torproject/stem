@@ -480,6 +480,7 @@ class TestController(unittest.TestCase):
     service1_path = os.path.join(test_dir, 'test_hidden_service1')
     service2_path = os.path.join(test_dir, 'test_hidden_service2')
     service3_path = os.path.join(test_dir, 'test_hidden_service3')
+    service4_path = os.path.join(test_dir, 'test_hidden_service4')
     empty_service_path = os.path.join(test_dir, 'test_hidden_service_empty')
 
     with runner.get_tor_controller() as controller:
@@ -547,12 +548,31 @@ class TestController(unittest.TestCase):
 
         controller.remove_hidden_service(hs_path, 8989)
         self.assertEqual(3, len(controller.get_hidden_service_conf()))
+
+        # add a new service, this time with client authentication
+
+        hs_path = os.path.join(os.getcwd(), service4_path)
+        hs_attributes = controller.create_hidden_service(hs_path, 8888, auth_type = 'basic', client_names = ['c1', 'c2'])
+
+        self.assertEqual(2, len(hs_attributes.hostname.splitlines()))
+        self.assertEqual(2, len(hs_attributes.hostname_for_client))
+        self.assertTrue(hs_attributes.hostname_for_client['c1'].endswith('.onion'))
+        self.assertTrue(hs_attributes.hostname_for_client['c2'].endswith('.onion'))
+
+        conf = controller.get_hidden_service_conf()
+        self.assertEqual(4, len(conf))
+        self.assertEqual(1, len(conf[hs_path]['HiddenServicePort']))
+
+        # remove a hidden service
+
+        controller.remove_hidden_service(hs_path, 8888)
+        self.assertEqual(3, len(controller.get_hidden_service_conf()))
       finally:
         controller.set_hidden_service_conf({})  # drop hidden services created during the test
 
         # clean up the hidden service directories created as part of this test
 
-        for path in (service1_path, service2_path, service3_path):
+        for path in (service1_path, service2_path, service3_path, service4_path):
           try:
             shutil.rmtree(path)
           except:
