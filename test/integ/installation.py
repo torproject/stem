@@ -22,7 +22,7 @@ class TestInstallation(unittest.TestCase):
     try:
       os.chdir(base_directory)
       stem.util.system.call('python setup.py install --prefix /tmp/stem_test')
-      site_packages_paths = glob.glob('/tmp/stem_test/lib/*/site-packages')
+      site_packages_paths = glob.glob('/tmp/stem_test/lib*/*/site-packages')
 
       if len(site_packages_paths) != 1:
         self.fail('We should only have a single site-packages directory, but instead had: %s' % site_packages_paths)
