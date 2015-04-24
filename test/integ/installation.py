@@ -27,7 +27,7 @@ class TestInstallation(unittest.TestCase):
       if len(site_packages_paths) != 1:
         self.fail('We should only have a single site-packages directory, but instead had: %s' % site_packages_paths)
 
-      self.assertEqual(stem.__version__, stem.util.system.call(['python', '-c', "import sys;sys.path.insert(0, '%s');import stem;print stem.__version__" % site_packages_paths[0]])[0])
+      self.assertEqual(stem.__version__, stem.util.system.call(['python', '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % site_packages_paths[0]])[0])
     finally:
       shutil.rmtree('/tmp/stem_test')
       os.chdir(original_cwd)
