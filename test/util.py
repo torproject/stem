@@ -127,8 +127,8 @@ def _get_tests(modules, module_prefix):
       elif module_prefix.startswith(module):
         # single test for this module
 
-        test = module_prefix.rsplit('.', 1)[1]
-        yield '%s.%s' % (import_name, test)
+        test_module = module_prefix.rsplit('.', 1)[1]
+        yield '%s.%s' % (import_name, test_module)
 
 
 def get_prereq(target):
