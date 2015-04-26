@@ -691,9 +691,13 @@ class HSDescContentEvent(Event):
     except stem.ProtocolError:
       raise stem.ProtocolError("HS_DESC_CONTENT's directory doesn't match a ServerSpec: %s" % self)
 
-    self.descriptor = list(stem.descriptor.hidden_service_descriptor._parse_file(
-      io.BytesIO(str_tools._to_bytes('\n'.join(str(self).splitlines()[1:]))),
-    ))[0]
+    # skip the first line (our positional arguments) and last ('OK')
+
+    desc_content = str_tools._to_bytes('\n'.join(str(self).splitlines()[1:-1]))
+    self.descriptor = None
+
+    if desc_content:
+      self.descriptor = list(stem.descriptor.hidden_service_descriptor._parse_file(io.BytesIO(desc_content)))[0]
 
 
 class LogEvent(Event):

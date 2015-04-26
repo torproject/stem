@@ -274,6 +274,13 @@ nHIs1lSrV7Ux2WQ3qSVj505fTGSCmaQRBX726ZlTPW0=
 650 OK
 """
 
+HS_DESC_CONTENT_EMPTY_EVENT = """\
+650+HS_DESC_CONTENT 3g2upl4pq6kufc4n 255tjwttk3wi7r2df57nuprs72j2daa3 $D7A0C3262724F2BC9646F6836E967A2777A3AF83~tsunaminitor
+
+.
+650 OK
+"""
+
 # NEWCONSENSUS event from v0.2.1.30.
 
 NEWCONSENSUS_EVENT = """650+NEWCONSENSUS
@@ -885,6 +892,16 @@ class TestEvents(unittest.TestCase):
     self.assertEqual([2, 3], desc.protocol_versions)
     self.assertEqual(3, len(desc.introduction_points()))
     self.assertTrue('s9Z0zWHsoPu' in desc.signature)
+
+    event = _get_event(HS_DESC_CONTENT_EMPTY_EVENT)
+
+    self.assertTrue(isinstance(event, stem.response.events.HSDescContentEvent))
+    self.assertEqual('3g2upl4pq6kufc4n', event.address)
+    self.assertEqual('255tjwttk3wi7r2df57nuprs72j2daa3', event.descriptor_id)
+    self.assertEqual('$D7A0C3262724F2BC9646F6836E967A2777A3AF83~tsunaminitor', event.directory)
+    self.assertEqual('D7A0C3262724F2BC9646F6836E967A2777A3AF83', event.directory_fingerprint)
+    self.assertEqual('tsunaminitor', event.directory_nickname)
+    self.assertEqual(None, event.descriptor)
 
   def test_newdesc_event(self):
     event = _get_event(NEWDESC_SINGLE)
