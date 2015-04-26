@@ -88,6 +88,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- get_server_descriptors - provides all currently available server descriptors
     |- get_network_status - querying the router status entry for a relay
     |- get_network_statuses - provides all preently available router status entries
+    |- get_hidden_service_descriptor - queries the given hidden service descriptor
     |
     |- get_conf - gets the value of a configuration option
     |- get_conf_map - gets the values of multiple configuration options
@@ -1823,6 +1824,99 @@ class Controller(BaseController):
     for desc in desc_iterator:
       yield desc
 
+  @with_default()
+  def get_hidden_service_descriptor(self, address, default = UNDEFINED, servers = None, await_result = True):
+    """
+    get_hidden_service_descriptor(address, default = UNDEFINED, servers = None, await_result = True)
+
+    Provides the descriptor for a hidden service. The **address** is the
+    '.onion' address of the hidden service (for instance 3g2upl4pq6kufc4m.onion
+    for DuckDuckGo).
+
+    If **await_result** is **True** then this blocks until we either receive
+    the descriptor or the request fails. If **False** this returns right away.
+
+    .. versionadded:: 1.4.0
+
+    :param str address: address of the hidden service descriptor, the '.onion' suffix is optional
+    :param object default: response if the query fails
+    :param list servers: requrest the descriptor from these specific servers
+
+    :returns: :class:`~stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor`
+      for the given service if **await_result** is **True**, or **None** otherwise
+
+    :raises:
+      * :class:`stem.DescriptorUnavailable` if **await_result** is **True** and
+        unable to provide a descriptor for the given service
+      * :class:`stem.ControllerError` if unable to query the descriptor
+      * **ValueError** if **address** doesn't conform with the pattern of a
+        hidden service address
+
+      An exception is only raised if we weren't provided a default response.
+    """
+
+    if address.endswith('.onion'):
+      address = address[:-6]
+
+    if not stem.util.tor_tools.is_valid_hidden_service_address(address):
+      raise ValueError("'%s.onion' isn't a valid hidden service address" % address)
+
+    # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
+    # if self.get_version() < stem.version.Requirement.HSFETCH:
+    #   raise stem.UnsatisfiableRequest(message = 'HSFETCH was added in tor version %s' % stem.version.Requirement.HSFETCH)
+
+    hs_desc_queue, hs_desc_listener = queue.Queue(), None
+    hs_desc_content_queue, hs_desc_content_listener = queue.Queue(), None
+
+    if await_result:
+      def hs_desc_listener(event):
+        hs_desc_queue.put(event)
+
+      def hs_desc_content_listener(event):
+        hs_desc_content_queue.put(event)
+
+      self.add_event_listener(hs_desc_listener, EventType.HS_DESC)
+      self.add_event_listener(hs_desc_content_listener, EventType.HS_DESC_CONTENT)
+
+    try:
+      request = 'HSFETCH %s' % address
+
+      if servers:
+        request += ' '.join(['SERVER=%s' % s for s in servers])
+
+      response = self.msg(request)
+      stem.response.convert('SINGLELINE', response)
+
+      if not response.is_ok():
+        raise stem.ProtocolError('HSFETCH returned unexpected response code: %s' % response.code)
+
+      if not await_result:
+        return None  # not waiting, so nothing to provide back
+      else:
+        while True:
+          event = hs_desc_content_queue.get()
+
+          if event.address == address:
+            if event.descriptor:
+              return event.descriptor
+            else:
+              # no descriptor, looking through HS_DESC to figure out why
+
+              while True:
+                event = hs_desc_queue.get()
+
+                if event.address == address and event.action == stem.HSDescAction.FAILED:
+                  if event.reason == stem.HSDescReason.NOT_FOUND:
+                    raise stem.DescriptorUnavailable('No running hidden service at %s.onion' % address)
+                  else:
+                    raise stem.DescriptorUnavailable('Unable to retrieve the descriptor for %s.onion (retrieved from %s): %s' % (address, event.directory_fingerprint, event.reason))
+    finally:
+      if hs_desc_listener:
+        self.remove_event_listener(hs_desc_listener)
+
+      if hs_desc_content_listener:
+        self.remove_event_listener(hs_desc_content_listener)
+
   def get_conf(self, param, default = UNDEFINED, multiple = False):
     """
     Queries the current value for a configuration option. Some configuration
@@ -2818,11 +2912,9 @@ class Controller(BaseController):
     # to build. This is icky, but we can't reliably do this via polling since
     # we then can't get the failure if it can't be created.
 
-    circ_queue, circ_listener = None, None
+    circ_queue, circ_listener = queue.Queue(), None
 
     if await_build:
-      circ_queue = queue.Queue()
-
       def circ_listener(event):
         circ_queue.put(event)
 
@@ -3152,7 +3244,7 @@ class Controller(BaseController):
     """
 
     if self.get_version() < stem.version.Requirement.DROPGUARDS:
-      raise stem.UnsatisfiableRequest('DROPGUARDS was added in tor version %s' % stem.version.Requirement.DROPGUARDS)
+      raise stem.UnsatisfiableRequest(message = 'DROPGUARDS was added in tor version %s' % stem.version.Requirement.DROPGUARDS)
 
     self.msg('DROPGUARDS')
 

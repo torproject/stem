@@ -38,6 +38,7 @@ easily parsed and compared, for instance...
   **EVENT_CONF_CHANGED**                CONF_CHANGED events
   **EVENT_DESCCHANGED**                 DESCCHANGED events
   **EVENT_GUARD**                       GUARD events
+  **EVENT_HS_DESC_CONTENT**             HS_DESC_CONTENT events
   **EVENT_NEWCONSENSUS**                NEWCONSENSUS events
   **EVENT_NS**                          NS events
   **EVENT_SIGNAL**                      SIGNAL events
@@ -53,6 +54,7 @@ easily parsed and compared, for instance...
   **FEATURE_EXTENDED_EVENTS**           'EXTENDED_EVENTS' optional feature
   **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
   **GETINFO_CONFIG_TEXT**               'GETINFO config-text' query
+  **HSFETCH**                           HSFETCH requests
   **LOADCONF**                          LOADCONF requests
   **MICRODESCRIPTOR_IS_DEFAULT**        Tor gets microdescriptors by default rather than server descriptors
   **TAKEOWNERSHIP**                     TAKEOWNERSHIP requests
@@ -343,6 +345,7 @@ Requirement = stem.util.enum.Enum(
   ('EVENT_CONF_CHANGED', Version('0.2.3.3-alpha')),
   ('EVENT_DESCCHANGED', Version('0.1.2.2-alpha')),
   ('EVENT_GUARD', Version('0.1.2.5-alpha')),
+  ('EVENT_HS_DESC_CONTENT', Version('0.2.7.1-alpha')),
   ('EVENT_NS', Version('0.1.2.3-alpha')),
   ('EVENT_NEWCONSENSUS', Version('0.2.1.13-alpha')),
   ('EVENT_SIGNAL', Version('0.2.3.1-alpha')),
@@ -358,6 +361,7 @@ Requirement = stem.util.enum.Enum(
   ('FEATURE_EXTENDED_EVENTS', Version('0.2.2.1-alpha')),
   ('FEATURE_VERBOSE_NAMES', Version('0.2.2.1-alpha')),
   ('GETINFO_CONFIG_TEXT', Version('0.2.2.7-alpha')),
+  ('HSFETCH', Version('0.2.7.1-alpha')),
   ('LOADCONF', Version('0.2.1.1')),
   ('MICRODESCRIPTOR_IS_DEFAULT', Version('0.2.3.3')),
   ('TAKEOWNERSHIP', Version('0.2.2.28-beta')),

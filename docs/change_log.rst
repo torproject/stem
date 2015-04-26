@@ -51,6 +51,7 @@ conversion (:trac:`14075`).
 
  * **Controller**
 
+  * Added :func:`~stem.control.Controller.get_hidden_service_descriptor` and `support for HS_DESC_CONTENT events <api/response.html#stem.response.events.HSDescContentEvent>`_ (:trac:`14847`, :spec:`aaf2434`)
   * :func:`~stem.process.launch_tor_with_config` avoids writing a temporary torrc to disk if able (:trac:`13865`)
   * :class:`~stem.response.events.CircuitEvent` support for the new SOCKS_USERNAME and SOCKS_PASSWORD arguments (:trac:`14555`, :spec:`2975974`)
   * The 'strict' argument of :func:`~stem.exit_policy.ExitPolicy.can_exit_to` didn't behave as documented (:trac:`14314`)

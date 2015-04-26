@@ -674,7 +674,7 @@ class HSDescContentEvent(Event):
   :var stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor descriptor: descriptor that was retrieved
   """
 
-  # TODO: Double check that this version is correct when #14847 is merged, then add to stem.version.Requirement.
+  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
   # _VERSION_ADDED = stem.version.Requirement.EVENT_HS_DESC_CONTENT
   _POSITIONAL_ARGS = ('address', 'descriptor_id', 'directory')
 

@@ -15,6 +15,7 @@ Miscellaneous utility functions for working with tor.
   is_valid_circuit_id - checks if a string is a valid tor circuit id
   is_valid_stream_id - checks if a string is a valid tor stream id
   is_valid_connection_id - checks if a string is a valid tor connection id
+  is_valid_hidden_service_address - checks if a string is a valid hidden service address
   is_hex_digits - checks if a string is only made up of hex digits
 """
 
@@ -35,6 +36,10 @@ import re
 
 NICKNAME_PATTERN = re.compile('^[a-zA-Z0-9]{1,19}$')
 CIRC_ID_PATTERN = re.compile('^[a-zA-Z0-9]{1,16}$')
+
+# Hidden service addresses are sixteen base32 characters.
+
+HS_ADDRESS_PATTERN = re.compile('^[a-z2-7]{16}$')
 
 
 def is_valid_fingerprint(entry, check_prefix = False):
@@ -109,6 +114,20 @@ def is_valid_connection_id(entry):
   """
 
   return is_valid_circuit_id(entry)
+
+
+def is_valid_hidden_service_address(entry):
+  """
+  Checks if a string is a valid format for being a hidden service address (not
+  including the '.onion' suffix).
+
+  :returns: **True** if the string could be a hidden service address, **False** otherwise
+  """
+
+  try:
+    return bool(HS_ADDRESS_PATTERN.match(entry))
+  except TypeError:
+    return False
 
 
 def is_hex_digits(entry, count):

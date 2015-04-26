@@ -1130,6 +1130,37 @@ class TestController(unittest.TestCase):
         if count > 10:
           break
 
+  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
+  # @require_version(Requirement.HSFETCH)
+
+  @require_controller
+  @require_online
+  def test_get_hidden_service_descriptor(self):
+    """
+    Fetches a few descriptors via the get_hidden_service_descriptor() method.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      # fetch the descriptor for DuckDuckGo
+
+      desc = controller.get_hidden_service_descriptor('3g2upl4pq6kufc4m.onion')
+      self.assertTrue('MIGJAoGBAJ' in desc.permanent_key)
+
+      # try to fetch something that doesn't exist
+
+      try:
+        desc = controller.get_hidden_service_descriptor('m4cfuk6qp4lpu2g3')
+        self.fail("Didn't expect m4cfuk6qp4lpu2g3.onion to exist, but provided: %s" % desc)
+      except stem.DescriptorUnavailable as exc:
+        self.assertEqual('No running hidden service at m4cfuk6qp4lpu2g3.onion', str(exc))
+
+      # ... but shouldn't fail if we have a default argument or aren't awaiting the descriptor
+
+      self.assertEqual('pop goes the weasel', controller.get_hidden_service_descriptor('m4cfuk6qp4lpu2g5', 'pop goes the weasel'))
+      self.assertEqual(None, controller.get_hidden_service_descriptor('m4cfuk6qp4lpu2g5', await_result = False))
+
   @require_controller
   @require_online
   @require_version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
