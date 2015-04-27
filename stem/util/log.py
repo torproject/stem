@@ -200,7 +200,7 @@ class LogBuffer(logging.Handler):
   read later. Log entries are cleared as they are read.
   """
 
-  def __init__(self, runlevel):
+  def __init__(self, runlevel, yield_records = False):
     # TODO: At least in python 2.6 logging.Handler has a bug in that it doesn't
     # extend object, causing our super() call to fail. When we drop python 2.6
     # support we should switch back to using super() instead.
@@ -214,13 +214,15 @@ class LogBuffer(logging.Handler):
       datefmt = '%m/%d/%Y %H:%M:%S')
 
     self._buffer = []
+    self._yield_records = yield_records
 
   def is_empty(self):
     return not bool(self._buffer)
 
   def __iter__(self):
     while self._buffer:
-      yield self.formatter.format(self._buffer.pop(0))
+      record = self._buffer.pop(0)
+      yield record if self._yield_records else self.formatter.format(record)
 
   def emit(self, record):
     self._buffer.append(record)
