@@ -7,6 +7,11 @@ Download
      Source: http://www.python.org/community/logos/
      License: http://www.python.org/psf/trademarks
    
+   * OSX
+     Source: IconArchive (http://www.iconarchive.com/show/papercut-social-icons-by-graphicloads/Apple-icon.html)
+     Author: GraphicLoads, Papercut Social Icons
+     License: Freeware
+   
    * Debian
      Source: NuoveXT (http://nuovext.pwsp.net/)
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
@@ -65,16 +70,27 @@ Download
           :target: https://pypi.python.org/pypi/stem/
 
        Signed releases and instructions for both Python 2.x and 3.x. You can
-       install from its `tarball
+       easily install from its `tarball
        <https://pypi.python.org/packages/source/s/stem/stem-1.3.0.tar.bz2>`_
        (`sig
        <https://pypi.python.org/packages/source/s/stem/stem-1.3.0.tar.bz2.asc>`_),
-       or if you have **pip** installed then getting stem can be as simple
-       as...
+       or with **pip**...
 
        ::
 
-         % pip install stem
+         % sudo easy_install pip
+         % sudo pip install stem
+
+   * - .. image:: /_static/section/download/osx.png
+
+     - .. image:: /_static/label/osx.png
+
+       As of OSX 10.8 the platform bundles Python 2.7 by default. This makes
+       installation easy...
+
+       ::
+
+         % sudo pip install stem
 
    * - .. image:: /_static/section/download/debian.png
           :target: http://packages.debian.org/sid/python-stem
@@ -86,7 +102,7 @@ Download
 
        ::
 
-         % apt-get install python-stem
+         % sudo apt-get install python-stem
 
    * - .. image:: /_static/section/download/ubuntu.png
           :target: https://launchpad.net/ubuntu/+source/python-stem
@@ -98,7 +114,7 @@ Download
 
        ::
 
-         % apt-get install python-stem
+         % sudo apt-get install python-stem
 
    * - .. image:: /_static/section/download/fedora.png
           :target: https://apps.fedoraproject.org/packages/python-stem
@@ -112,7 +128,7 @@ Download
 
        ::
 
-         % yum install python-stem
+         % sudo yum install python-stem
 
    * - .. image:: /_static/section/download/gentoo.png
           :target: http://packages.gentoo.org/package/net-libs/stem
@@ -124,7 +140,7 @@ Download
 
        ::
 
-         % emerge stem
+         % sudo emerge stem
 
    * - .. image:: /_static/section/download/slackware.png
           :target: http://slackbuilds.org/repository/14.1/python/stem/
