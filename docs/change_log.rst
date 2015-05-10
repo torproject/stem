@@ -51,6 +51,7 @@ conversion (:trac:`14075`).
 
  * **Controller**
 
+  * Added :class:`~stem.control.Controller` methods for a new style of hidden services that don't touch disk: :func:`~stem.control.Controller.list_ephemeral_hidden_services`, :func:`~stem.control.Controller.create_ephemeral_hidden_service`, and :func:`~stem.control.Controller.remove_ephemeral_hidden_service` (:spec:`f5ff369`)
   * Added :func:`~stem.control.Controller.get_hidden_service_descriptor` and `support for HS_DESC_CONTENT events <api/response.html#stem.response.events.HSDescContentEvent>`_ (:trac:`14847`, :spec:`aaf2434`)
   * :func:`~stem.process.launch_tor_with_config` avoids writing a temporary torrc to disk if able (:trac:`13865`)
   * :class:`~stem.response.events.CircuitEvent` support for the new SOCKS_USERNAME and SOCKS_PASSWORD arguments (:trac:`14555`, :spec:`2975974`)
@@ -79,6 +80,8 @@ conversion (:trac:`14075`).
  * **Website**
 
   * Added support and `instructions for tox <faq.html#how-do-i-test-compatibility-with-multiple-python-versions>`_ (:trac:`14091`)
+  * Added OSX to our `download page <download.html>`_ (:trac:`8588`)
+  * Updated our twitter example to work with the service's 1.1 API (:trac:`9003`)
 
 .. _version_1.3:
 

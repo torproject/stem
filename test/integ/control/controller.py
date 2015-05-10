@@ -578,6 +578,151 @@ class TestController(unittest.TestCase):
           except:
             pass
 
+  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
+  # @require_version(Requirement.ADD_ONION)
+
+  @require_controller
+  def test_without_ephemeral_hidden_services(self):
+    """
+    Exercises ephemeral hidden service methods when none are present.
+    """
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      self.assertEqual([], controller.list_ephemeral_hidden_services())
+      self.assertEqual([], controller.list_ephemeral_hidden_services(detached = True))
+      self.assertEqual(False, controller.remove_ephemeral_hidden_service('gfzprpioee3hoppz'))
+
+  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
+  # @require_version(Requirement.ADD_ONION)
+
+  @require_controller
+  def test_with_ephemeral_hidden_services(self):
+    """
+    Exercises creating ephemeral hidden services and methods when they're
+    present.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      for ports in (4567890, [4567, 4567890], {4567: 'not_an_address:4567'}):
+        try:
+          # try creating a service with an invalid port
+          response = controller.create_ephemeral_hidden_service(ports)
+          self.fail("we should've raised a stem.ProtocolError")
+        except stem.ProtocolError as exc:
+          self.assertEqual("ADD_ONION response didn't have an OK status: Invalid VIRTPORT/TARGET", str(exc))
+
+      response = controller.create_ephemeral_hidden_service(4567)
+      self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
+      self.assertTrue(response.private_key is not None)
+
+      # drop the service
+
+      self.assertEqual(True, controller.remove_ephemeral_hidden_service(response.service_id))
+      self.assertEqual([], controller.list_ephemeral_hidden_services())
+
+      # recreate the service with the same private key
+
+      recreate_response = controller.create_ephemeral_hidden_service(4567, key_type = response.private_key_type, key_content = response.private_key)
+      self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
+      self.assertEqual(response.service_id, recreate_response.service_id)
+
+      # the response only includes the private key when making a new one
+
+      self.assertEqual(None, recreate_response.private_key)
+      self.assertEqual(None, recreate_response.private_key_type)
+
+      # create a service where we never see the private key
+
+      response = controller.create_ephemeral_hidden_service(4568, discard_key = True)
+      self.assertTrue(response.service_id in controller.list_ephemeral_hidden_services())
+      self.assertEqual(None, response.private_key)
+      self.assertEqual(None, response.private_key_type)
+
+      # other controllers shouldn't be able to see these hidden services
+
+      with runner.get_tor_controller() as second_controller:
+        self.assertEqual(2, len(controller.list_ephemeral_hidden_services()))
+        self.assertEqual(0, len(second_controller.list_ephemeral_hidden_services()))
+
+  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
+  # @require_version(Requirement.ADD_ONION)
+
+  @require_controller
+  def test_with_detached_ephemeral_hidden_services(self):
+    """
+    Exercises creating detached ephemeral hidden services and methods when
+    they're present.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      response = controller.create_ephemeral_hidden_service(4567, detached = True)
+      self.assertEqual([], controller.list_ephemeral_hidden_services())
+      self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services(detached = True))
+
+      # drop and recreate the service
+
+      self.assertEqual(True, controller.remove_ephemeral_hidden_service(response.service_id))
+      self.assertEqual([], controller.list_ephemeral_hidden_services(detached = True))
+      controller.create_ephemeral_hidden_service(4567, key_type = response.private_key_type, key_content = response.private_key, detached = True)
+      self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services(detached = True))
+
+      # other controllers should be able to see this service, and drop it
+
+      with runner.get_tor_controller() as second_controller:
+        self.assertEqual([response.service_id], second_controller.list_ephemeral_hidden_services(detached = True))
+        self.assertEqual(True, second_controller.remove_ephemeral_hidden_service(response.service_id))
+        self.assertEqual([], controller.list_ephemeral_hidden_services(detached = True))
+
+        # recreate the service and confirms that it outlives this controller
+
+        response = second_controller.create_ephemeral_hidden_service(4567, detached = True)
+
+      self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services(detached = True))
+      controller.remove_ephemeral_hidden_service(response.service_id)
+
+  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
+  # @require_version(Requirement.ADD_ONION)
+
+  @require_online
+  @require_controller
+  def test_using_ephemeral_hidden_services(self):
+    """
+    Create and use a live ephemeral hidden service.
+    """
+
+    # TODO: Not having success getting... well, just about any damn hidden
+    # serivce working. Even our prior tutorial is failing right now. >:(
+
+    return
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      incoming_socket, incoming_address = None, None
+
+      def run_server():
+        serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serversocket.bind(('localhost', 4567))
+        serversocket.listen(5)
+        incoming_socket, incoming_address = serversocket.accept()
+        incoming_socket.write('hello world')
+        serversocket.shutdown(socket.SHUT_RDWR)
+
+      server_thread = threading.Thread(target = run_server)
+      server_thread.setDaemon(True)
+      server_thread.start()
+
+      response = controller.create_ephemeral_hidden_service({80: 4567})
+
+      with test.network.Socks(controller.get_socks_listeners()[0]) as s:
+        s.settimeout(30)
+        s.connect(('%s.onion' % response.service_id, 80))
+        print s.read()
+
+      server_thread.join()
+
   @require_controller
   def test_set_conf(self):
     """

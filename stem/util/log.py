@@ -198,6 +198,9 @@ class LogBuffer(logging.Handler):
   """
   Basic log handler that listens for stem events and stores them so they can be
   read later. Log entries are cleared as they are read.
+
+    .. versionchanged:: 1.4.0
+       Added the yield_records argument.
   """
 
   def __init__(self, runlevel, yield_records = False):

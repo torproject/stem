@@ -55,6 +55,8 @@ easily parsed and compared, for instance...
   **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
   **GETINFO_CONFIG_TEXT**               'GETINFO config-text' query
   **HSFETCH**                           HSFETCH requests
+  **HSPOST**                            HSPOST requests
+  **ADD_ONION**                         ADD_ONION and DEL_ONION requests
   **LOADCONF**                          LOADCONF requests
   **MICRODESCRIPTOR_IS_DEFAULT**        Tor gets microdescriptors by default rather than server descriptors
   **TAKEOWNERSHIP**                     TAKEOWNERSHIP requests
@@ -362,6 +364,8 @@ Requirement = stem.util.enum.Enum(
   ('FEATURE_VERBOSE_NAMES', Version('0.2.2.1-alpha')),
   ('GETINFO_CONFIG_TEXT', Version('0.2.2.7-alpha')),
   ('HSFETCH', Version('0.2.7.1-alpha')),
+  ('HSPOST', Version('0.2.7.1-alpha')),
+  ('ADD_ONION', Version('0.2.7.1-alpha')),
   ('LOADCONF', Version('0.2.1.1')),
   ('MICRODESCRIPTOR_IS_DEFAULT', Version('0.2.3.3')),
   ('TAKEOWNERSHIP', Version('0.2.2.28-beta')),

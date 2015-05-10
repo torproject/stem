@@ -101,6 +101,10 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- create_hidden_service - creates a new hidden service or adds a new port
     |- remove_hidden_service - removes a hidden service or drops a port
     |
+    |- list_ephemeral_hidden_services - list ephemeral hidden serivces
+    |- create_ephemeral_hidden_service - create a new ephemeral hidden service
+    |- remove_ephemeral_hidden_service - removes an ephemeral hidden service
+    |
     |- add_event_listener - attaches an event listener to be notified of tor events
     |- remove_event_listener - removes a listener so it isn't notified of further events
     |
@@ -2395,6 +2399,10 @@ class Controller(BaseController):
     However, this directory is only readable by the tor user, so if unavailable
     the **hostname** will be **None**.
 
+    **As of Tor 0.2.7.1 there's two ways for creating hidden services. This is
+    no longer the recommended method.** Rather, try using
+    :func:`~stem.control.Controller.create_ephemeral_hidden_service` instead.
+
     .. versionadded:: 1.3.0
 
     .. versionchanged:: 1.4.0
@@ -2528,6 +2536,155 @@ class Controller(BaseController):
 
     self.set_hidden_service_conf(conf)
     return True
+
+  @with_default()
+  def list_ephemeral_hidden_services(self, default = UNDEFINED, our_services = True, detached = False):
+    """
+    list_ephemeral_hidden_services(default = UNDEFINED, our_services = True, detached = False)
+
+    Lists hidden service addresses created by
+    :func:`~stem.control.Controller.create_ephemeral_hidden_service`.
+
+    .. versionadded:: 1.4.0
+
+    :param object default: response if the query fails
+    :param bool our_services: include services created with this controller
+      that weren't flagged as 'detached'
+    :param bool detached: include services whos contiuation isn't tied to a
+      controller
+
+    :returns: **list** of hidden service addresses without their '.onion'
+      suffix
+
+    :raises: :class:`stem.ControllerError` if the call fails and we weren't
+      provided a default response
+    """
+
+    # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
+    # if self.get_version() < stem.version.Requirement.ADD_ONION:
+    #   raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
+
+    result = []
+
+    if our_services:
+      try:
+        result += self.get_info('onions/current').split('\n')
+      except stem.ProtocolError as exc:
+        if 'No onion services of the specified type.' not in str(exc):
+          raise exc
+
+    if detached:
+      try:
+        result += self.get_info('onions/detached').split('\n')
+      except stem.ProtocolError as exc:
+        if 'No onion services of the specified type.' not in str(exc):
+          raise exc
+
+    return result
+
+  def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False):
+    """
+    Creates a new hidden service. Unlike
+    :func:`~stem.control.Controller.create_hidden_service` this style of
+    hidden service doesn't touch disk, carrying with it a lot of advantages.
+    This is the suggested method for making hidden services.
+
+    Our **ports** argument can be a single port...
+
+    ::
+
+      create_ephemeral_hidden_service(80)
+
+    ... list of ports the service is available on...
+
+    ::
+
+      create_ephemeral_hidden_service([80, 443])
+
+    ... or a mapping of hidden service ports to their targets...
+
+    ::
+
+      create_ephemeral_hidden_service({80: 80, 443: '173.194.33.133:443'})
+
+    .. versionadded:: 1.4.0
+
+    :param int,list,dict ports: hidden service port(s) or mapping of hidden
+      service ports to their targets
+    :param str key_type: type of key being provided, generates a new key if
+      'NEW' (options are: **NEW** and **RSA1024**)
+    :param str key_content: key for the service to use or type of key to be
+      generated (options when **key_type** is **NEW** are **BEST** and
+      **RSA1024**)
+    :param bool discard_key: avoid providing the key back in our response
+    :param bool detached: continue this hidden service even after this control
+      connection is closed if **True**
+
+    :returns: :class:`~stem.response.AddOnionResponse` with the response
+
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+
+    # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
+    # if self.get_version() < stem.version.Requirement.ADD_ONION:
+    #   raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
+
+    request = 'ADD_ONION %s:%s' % (key_type, key_content)
+
+    flags = []
+
+    if discard_key:
+      flags.append('DiscardPK')
+
+    if detached:
+      flags.append('Detach')
+
+    if flags:
+      request += ' Flags=%s' % ','.join(flags)
+
+    if isinstance(ports, int):
+      request += ' Port=%s' % ports
+    elif isinstance(ports, list):
+      for port in ports:
+        request += ' Port=%s' % port
+    elif isinstance(ports, dict):
+      for port, target in ports.items():
+        request += ' Port=%s,%s' % (port, target)
+    else:
+      raise ValueError("The 'ports' argument of create_ephemeral_hidden_service() needs to be an int, list, or dict")
+
+    response = self.msg(request)
+    stem.response.convert('ADD_ONION', response)
+    return response
+
+  def remove_ephemeral_hidden_service(self, service_id):
+    """
+    Discontinues a given hidden service that was created with
+    :func:`~stem.control.Controller.create_ephemeral_hidden_service`.
+
+    .. versionadded:: 1.4.0
+
+    :param str service_id: hidden service address without the '.onion' suffix
+
+    :returns: **True** if the hidden service is discontinued, **False** if it
+      wasn't running in the first place
+
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+
+    # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
+    # if self.get_version() < stem.version.Requirement.ADD_ONION:
+    #   raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
+
+    response = self.msg('DEL_ONION %s' % service_id)
+    stem.response.convert('SINGLELINE', response)
+
+    if response.is_ok():
+      return True
+    elif response.code == '552':
+      return False  # no hidden service to discontinue
+    else:
+      raise stem.ProtocolError('DEL_ONION returned unexpected response code: %s' % response.code)
 
   def add_event_listener(self, listener, *events):
     """
