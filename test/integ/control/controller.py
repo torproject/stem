@@ -700,7 +700,7 @@ class TestController(unittest.TestCase):
     return
 
     with test.runner.get_runner().get_tor_controller() as controller:
-      incoming_socket, incoming_address = None, None
+      incoming_address = None, None
 
       def run_server():
         serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -720,6 +720,8 @@ class TestController(unittest.TestCase):
         s.settimeout(30)
         s.connect(('%s.onion' % response.service_id, 80))
         print s.read()
+
+      self.assertTrue(incoming_address is not None)
 
       server_thread.join()
 
