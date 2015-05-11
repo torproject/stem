@@ -100,3 +100,74 @@ Now if we run this...
 
 .. image:: /_static/hidden_service.png
 
+.. _how-can-i-get--hidden-service-descriptors:
+
+How can I get hidden service descriptors?
+-----------------------------------------
+
+Like relays, hidden services publish documents about themselves called **hidden
+service descriptors**. These contain low level details for establishing
+connections. Hidden service descriptors are available from the tor process via
+its :func:`~stem.control.Controller.get_hidden_service_descriptor` method...
+
+::
+
+  from stem.control import Controller
+
+  with Controller.from_port(port = 9051) as controller:
+    controller.authenticate()
+
+    # descriptor of duck-duck-go's hidden service (http://3g2upl4pq6kufc4m.onion)
+
+    print controller.get_hidden_service_descriptor('3g2upl4pq6kufc4m')
+
+::
+
+  % python print_duck_duck_go_descriptor.py
+
+  rendezvous-service-descriptor e5dkwgp6vt7axoozixrbgjymyof7ab6u
+  version 2
+  permanent-key
+  -----BEGIN RSA PUBLIC KEY-----
+  MIGJAoGBAJ/SzzgrXPxTlFrKVhXh3buCWv2QfcNgncUpDpKouLn3AtPH5Ocys0jE
+  aZSKdvaiQ62md2gOwj4x61cFNdi05tdQjS+2thHKEm/KsB9BGLSLBNJYY356bupg
+  I5gQozM65ENelfxYlysBjJ52xSDBd8C4f/p9umdzaaaCmzXG/nhzAgMBAAE=
+  -----END RSA PUBLIC KEY-----
+  secret-id-part bmsctib2pzirgo7cltlxdm5fxqcitt5e
+  publication-time 2015-05-11 20:00:00
+  protocol-versions 2,3
+  introduction-points
+  -----BEGIN MESSAGE-----
+  aW50cm9kdWN0aW9uLXBvaW50IHZzcm4ycGNtdzNvZ21mNGo3dGpxeHptdml1Y2Rr
+  NGtpCmlwLWFkZHJlc3MgMTc2LjkuNTkuMTcxCm9uaW9uLXBvcnQgOTAwMQpvbmlv
+  ... etc...
+
+A hidden service's introduction points are a base64 encoded field that's
+possibly encrypted. These can be decoded (and decrypted if necessary) with the
+descriptor's
+:func:`~stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor.introduction_points`
+method.
+
+::
+
+  from stem.control import Controller
+
+  with Controller.from_port(port = 9051) as controller:
+    controller.authenticate()
+    desc = controller.get_hidden_service_descriptor('3g2upl4pq6kufc4m')
+
+    print "DuckDuckGo's introduction points are...\n"
+
+    for introduction_point in desc.introduction_points():
+      print '  %s:%s => %s' % (introduction_point.address, introduction_point.port, introduction_point.identifier)
+
+::
+
+  % python print_duck_duck_go_introduction_points.py
+
+  DuckDuckGo's introduction points are...
+
+    176.9.59.171:9001 => vsrn2pcmw3ogmf4j7tjqxzmviucdk4ki
+    104.131.106.181:9001 => gcl2kpqx5qnkpgxjf6x7ulqncoqj7ghh
+    188.166.58.218:443 => jeymnbhs2d6l2oib7jjvweavg45m6gju
+

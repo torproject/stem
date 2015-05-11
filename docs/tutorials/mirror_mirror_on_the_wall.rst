@@ -22,15 +22,16 @@ up of documents called **descriptors**.
 
 There are several different kinds of descriptors, the most common ones being...
 
-====================================================================== ===========
-Descriptor Type                                                        Description
-====================================================================== ===========
-`Server Descriptor <../api/descriptor/server_descriptor.html>`_        Information that relays publish about themselves. Tor clients once downloaded this information, but now they use microdescriptors instead.
-`ExtraInfo Descriptor <../api/descriptor/extrainfo_descriptor.html>`_  Relay information that Tor clients do not need in order to function. This is self-published, like server descriptors, but not downloaded by default.
-`Microdescriptor <../api/descriptor/microdescriptor.html>`_            Minimalistic document that just includes the information necessary for Tor clients to work.
-`Network Status Document <../api/descriptor/networkstatus.html>`_      Though Tor relays are decentralized, the directories that track the overall network are not. These central points are called **directory authorities**, and every hour they publish a document called a **consensus** (aka, network status document). The consensus in turn is made up of **router status entries**.
-`Router Status Entry <../api/descriptor/router_status_entry.html>`_    Relay information provided by the directory authorities including flags, heuristics used for relay selection, etc.
-====================================================================== ===========
+================================================================================ ===========
+Descriptor Type                                                                  Description
+================================================================================ ===========
+`Server Descriptor <../api/descriptor/server_descriptor.html>`_                  Information that relays publish about themselves. Tor clients once downloaded this information, but now they use microdescriptors instead.
+`ExtraInfo Descriptor <../api/descriptor/extrainfo_descriptor.html>`_            Relay information that Tor clients do not need in order to function. This is self-published, like server descriptors, but not downloaded by default.
+`Microdescriptor <../api/descriptor/microdescriptor.html>`_                      Minimalistic document that just includes the information necessary for Tor clients to work.
+`Network Status Document <../api/descriptor/networkstatus.html>`_                Though Tor relays are decentralized, the directories that track the overall network are not. These central points are called **directory authorities**, and every hour they publish a document called a **consensus** (aka, network status document). The consensus in turn is made up of **router status entries**.
+`Router Status Entry <../api/descriptor/router_status_entry.html>`_              Relay information provided by the directory authorities including flags, heuristics used for relay selection, etc.
+`Hidden Service Descriptor <../api/descriptor/hidden_service_descriptor.html>`_  Information pertaining to a `Hidden Service <https://www.torproject.org/docs/hidden-services.html.en>`_. These can only be `queried through the tor process <over_the_river.html#how-can-i-get-hidden-service-descriptors>`_.
+================================================================================ ===========
 
 .. _where-can-i-get-the-current-descriptors:
 
