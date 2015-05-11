@@ -2582,7 +2582,7 @@ class Controller(BaseController):
 
     return result
 
-  def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False):
+  def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False, await_publication = False):
     """
     Creates a new hidden service. Unlike
     :func:`~stem.control.Controller.create_hidden_service` this style of
@@ -2619,6 +2619,8 @@ class Controller(BaseController):
     :param bool discard_key: avoid providing the key back in our response
     :param bool detached: continue this hidden service even after this control
       connection is closed if **True**
+    :param bool await_publication: blocks until our descriptor is successfully
+      published if **True**
 
     :returns: :class:`~stem.response.AddOnionResponse` with the response
 
@@ -2628,6 +2630,15 @@ class Controller(BaseController):
     # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
     # if self.get_version() < stem.version.Requirement.ADD_ONION:
     #   raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
+
+    hs_desc_queue, hs_desc_listener = queue.Queue(), None
+
+    if await_publication:
+      def hs_desc_listener(event):
+        print event
+        hs_desc_queue.put(event)
+
+      self.add_event_listener(hs_desc_listener, EventType.HS_DESC)
 
     request = 'ADD_ONION %s:%s' % (key_type, key_content)
 
@@ -2655,6 +2666,27 @@ class Controller(BaseController):
 
     response = self.msg(request)
     stem.response.convert('ADD_ONION', response)
+
+    if await_publication:
+      # We should receive five UPLOAD events, followed by up to another five
+      # UPLOADED to indicate they've finished. Presently tor seems to have an
+      # issue where the address is provided for UPLOAD but not UPLOADED so need
+      # to just guess that if it's for the same hidden service authority then
+      # it's what we're looking for.
+
+      authorities_uploaded_to = []
+
+      try:
+        while True:
+          event = hs_desc_queue.get()
+
+          if event.action == stem.HSDescAction.UPLOAD and event.address == response.service_id:
+            authorities_uploaded_to.append(event.directory_fingerprint)
+          elif event.action == stem.HSDescAction.UPLOADED and event.directory_fingerprint in authorities_uploaded_to:
+            break  # successfully uploaded to a HS authority... maybe
+      finally:
+        self.remove_event_listener(hs_desc_listener)
+
     return response
 
   def remove_ephemeral_hidden_service(self, service_id):
