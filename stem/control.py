@@ -2635,7 +2635,6 @@ class Controller(BaseController):
 
     if await_publication:
       def hs_desc_listener(event):
-        print event
         hs_desc_queue.put(event)
 
       self.add_event_listener(hs_desc_listener, EventType.HS_DESC)
