@@ -100,7 +100,71 @@ Now if we run this...
 
 .. image:: /_static/hidden_service.png
 
-.. _how-can-i-get--hidden-service-descriptors:
+.. _ephemeral-hidden-services:
+
+Ephemeral hidden services
+-------------------------
+
+In the above example you may have noticed the note that said...
+
+::
+
+  # The hostname is only available when we can read the hidden service
+  # directory. This requires us to be running with the same user as tor.
+
+This has been a limitation of hidden services for years. However, as of version
+0.2.7.1 Tor offers another style for making services called **ephemeral hidden
+services**.
+
+Ephemeral hidden services do not touch disk, and as such are easier to work
+with but require you to persist your service's private key yourself if you want
+to reuse a '.onion' address.
+
+Ephemeral services can only be created through the controller, and only exist
+as long as your controller is attached unless you provide the **detached**
+flag. Controllers can only see their own ephemeral services, and ephemeral
+services that are detached. In other words, attached ephemeral services can
+only be managed by their own controller.
+
+Stem provides three methods to work with ephemeral hidden services...
+
+  * :func:`~stem.control.Controller.list_ephemeral_hidden_services`
+  * :func:`~stem.control.Controller.create_ephemeral_hidden_service`
+  * :func:`~stem.control.Controller.remove_ephemeral_hidden_service`
+
+For example, with a ephemeral service our earlier example becomes as simple as...
+
+::
+
+  from stem.control import Controller
+  from flask import Flask
+
+  app = Flask(__name__)
+
+
+  @app.route('/')
+  def index():
+    return "<h1>Hi Grandma!</h1>"
+
+
+  print ' * Connecting to tor'
+
+  with Controller.from_port() as controller:
+    controller.authenticate()
+
+    # Create a hidden service where visitors of port 80 get redirected to local
+    # port 5000 (this is where Flask runs by default).
+
+    print " * Creating our hidden service in %s" % hidden_service_dir
+    response = controller.create_ephemeral_hidden_service({80: 5000}, await_publication = True)
+    print " * Our service is available at %s.onion, press ctrl+c to quit" % response.service_id
+
+    try:
+      app.run()
+    finally:
+      print " * Shutting down our hidden service"
+
+.. _how-can-i-get-hidden-service-descriptors:
 
 How can I get hidden service descriptors?
 -----------------------------------------
