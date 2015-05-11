@@ -406,7 +406,9 @@ Library for working with the tor process.
   HSDescAction    Description
   =============== ===========
   **REQUESTED**   uncached hidden service descriptor is being requested
+  **UPLOAD**      descriptor is being uploaded with HSPOST
   **RECEIVED**    hidden service descriptor has been retrieved
+  **UPLOADED**    descriptor was uploaded with HSPOST
   **IGNORE**      fetched descriptor was ignored because we already have its v0 descriptor
   **FAILED**      we were unable to retrieve the descriptor
   =============== ===========
@@ -420,6 +422,7 @@ Library for working with the tor process.
   =================== ===========
   **BAD_DESC**        descriptor was unparseable
   **QUERY_REJECTED**  hidden service directory refused to provide the descriptor
+  **UPLOAD_REJECTED** descriptor was rejected by the hidden service directory
   **NOT_FOUND**       descriptor with the given identifier wasn't found
   **UNEXPECTED**      failure type is unknown
   =================== ===========
@@ -807,7 +810,9 @@ TokenBucket = stem.util.enum.UppercaseEnum(
 
 HSDescAction = stem.util.enum.UppercaseEnum(
   'REQUESTED',
+  'UPLOAD',
   'RECEIVED',
+  'UPLOADED',
   'IGNORE',
   'FAILED',
 )
@@ -815,6 +820,7 @@ HSDescAction = stem.util.enum.UppercaseEnum(
 HSDescReason = stem.util.enum.UppercaseEnum(
   'BAD_DESC',
   'QUERY_REJECTED',
+  'UPLOAD_REJECTED',
   'NOT_FOUND',
   'UNEXPECTED',
 )
