@@ -1,11 +1,26 @@
 Over the River and Through the Wood
 ===================================
 
-`Hidden services <https://www.torproject.org/docs/hidden-services.html.en>`_ give you a way of providing a service without exposing your address. These services are only accessible through Tor or `Tor2web <https://tor2web.org/>`_, and useful for a surprising number of things...
+`Hidden services <https://www.torproject.org/docs/hidden-services.html.en>`_
+give you a way of providing a service without exposing your address. These
+services are only accessible through Tor or `Tor2web <https://tor2web.org/>`_,
+and useful for a surprising number of things...
 
-  * Hosting an anonymized site. This is usually the first thing that comes to mind, and something we'll demonstrate in a sec.
-  * Providing an endpoint Tor users can reach without exiting the Tor network. This eliminates the risk of an unreliable or malicious exit getting in the way. A great example of this is `Facebook <http://arstechnica.com/security/2014/10/facebook-offers-hidden-service-to-tor-users/>`_.
-  * Personal services. For instance you can host your home SSH server as a hidden service to prevent eavesdroppers from knowing where you live while traveling abroad.
+  * **Hosting an anonymized site**. This is usually the first thing that comes to mind, and something we'll demonstrate in a sec.
+  * Providing an **endpoint Tor users can reach** without exiting the Tor network. This eliminates the risk of an unreliable or malicious exit getting in the way. Great examples of this are `Facebook <http://arstechnica.com/security/2014/10/facebook-offers-hidden-service-to-tor-users/>`_ (*facebookcorewwwi.onion*) and `DuckDuckGo <https://lists.torproject.org/pipermail/tor-talk/2010-August/003095.html>`_ (*3g2upl4pq6kufc4m.onion*).
+  * **Personal services**. For instance you can host your home SSH server as a hidden service to prevent eavesdroppers from knowing where you live while traveling abroad.
+
+`Tor2web <https://tor2web.org/>`_ provides a quick and easy way of seeing if
+your hidden service is working. To use it simply replace the **.onion** of
+your address with **.tor2web.org**...
+
+.. image:: /_static/duck_duck_go_hidden_service.png
+   :target: https://3g2upl4pq6kufc4m.tor2web.org/
+
+.. _running-a-hidden-service
+
+Running a hidden service
+------------------------
 
 Hidden services can be `configured through your torrc <https://www.torproject.org/docs/tor-manual.html.en#_hidden_service_options>`_, but Stem also provides some methods to easily work with them...
 
