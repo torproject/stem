@@ -1741,11 +1741,6 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    # TODO: It would be great to add support for v3 router status entries. This
-    # is pending...
-    #
-    # https://trac.torproject.org/7953
-
     if relay is None:
       try:
         relay = self.get_info('fingerprint')
@@ -1804,15 +1799,15 @@ class Controller(BaseController):
       default was provided
     """
 
-    if self.get_conf('UseMicrodescriptors', '0') == '1':
-      desc_class = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
-    else:
-      desc_class = stem.descriptor.router_status_entry.RouterStatusEntryV3
-
     # TODO: We should iterate over the descriptors as they're read from the
     # socket rather than reading the whole thing into memory.
     #
     # https://trac.torproject.org/8248
+
+    if self.get_conf('UseMicrodescriptors', '0') == '1':
+      desc_class = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
+    else:
+      desc_class = stem.descriptor.router_status_entry.RouterStatusEntryV3
 
     desc_content = self.get_info('ns/all', get_bytes = True)
 
@@ -1865,9 +1860,8 @@ class Controller(BaseController):
     if not stem.util.tor_tools.is_valid_hidden_service_address(address):
       raise ValueError("'%s.onion' isn't a valid hidden service address" % address)
 
-    # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
-    # if self.get_version() < stem.version.Requirement.HSFETCH:
-    #   raise stem.UnsatisfiableRequest(message = 'HSFETCH was added in tor version %s' % stem.version.Requirement.HSFETCH)
+    if self.get_version() < stem.version.Requirement.HSFETCH:
+      raise stem.UnsatisfiableRequest(message = 'HSFETCH was added in tor version %s' % stem.version.Requirement.HSFETCH)
 
     hs_desc_queue, hs_desc_listener = queue.Queue(), None
     hs_desc_content_queue, hs_desc_content_listener = queue.Queue(), None
@@ -2560,9 +2554,8 @@ class Controller(BaseController):
       provided a default response
     """
 
-    # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
-    # if self.get_version() < stem.version.Requirement.ADD_ONION:
-    #   raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
+    if self.get_version() < stem.version.Requirement.ADD_ONION:
+      raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
 
     result = []
 
@@ -2627,9 +2620,8 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
-    # if self.get_version() < stem.version.Requirement.ADD_ONION:
-    #   raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
+    if self.get_version() < stem.version.Requirement.ADD_ONION:
+      raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
 
     hs_desc_queue, hs_desc_listener = queue.Queue(), None
 
@@ -2708,9 +2700,8 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
-    # if self.get_version() < stem.version.Requirement.ADD_ONION:
-    #   raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
+    if self.get_version() < stem.version.Requirement.ADD_ONION:
+      raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
 
     response = self.msg('DEL_ONION %s' % service_id)
     stem.response.convert('SINGLELINE', response)

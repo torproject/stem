@@ -578,10 +578,8 @@ class TestController(unittest.TestCase):
           except:
             pass
 
-  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
-  # @require_version(Requirement.ADD_ONION)
-
   @require_controller
+  @require_version(Requirement.ADD_ONION)
   def test_without_ephemeral_hidden_services(self):
     """
     Exercises ephemeral hidden service methods when none are present.
@@ -592,10 +590,8 @@ class TestController(unittest.TestCase):
       self.assertEqual([], controller.list_ephemeral_hidden_services(detached = True))
       self.assertEqual(False, controller.remove_ephemeral_hidden_service('gfzprpioee3hoppz'))
 
-  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
-  # @require_version(Requirement.ADD_ONION)
-
   @require_controller
+  @require_version(Requirement.ADD_ONION)
   def test_with_ephemeral_hidden_services(self):
     """
     Exercises creating ephemeral hidden services and methods when they're
@@ -646,10 +642,8 @@ class TestController(unittest.TestCase):
         self.assertEqual(2, len(controller.list_ephemeral_hidden_services()))
         self.assertEqual(0, len(second_controller.list_ephemeral_hidden_services()))
 
-  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
-  # @require_version(Requirement.ADD_ONION)
-
   @require_controller
+  @require_version(Requirement.ADD_ONION)
   def test_with_detached_ephemeral_hidden_services(self):
     """
     Exercises creating detached ephemeral hidden services and methods when
@@ -684,11 +678,9 @@ class TestController(unittest.TestCase):
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services(detached = True))
       controller.remove_ephemeral_hidden_service(response.service_id)
 
-  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
-  # @require_version(Requirement.ADD_ONION)
-
   @require_online
   @require_controller
+  @require_version(Requirement.ADD_ONION)
   def test_using_ephemeral_hidden_services(self):
     """
     Create and use a live ephemeral hidden service.
@@ -1277,11 +1269,9 @@ class TestController(unittest.TestCase):
         if count > 10:
           break
 
-  # TODO: Uncomment the below when tor makes its 0.2.7.1 release.
-  # @require_version(Requirement.HSFETCH)
-
   @require_controller
   @require_online
+  @require_version(Requirement.HSFETCH)
   def test_get_hidden_service_descriptor(self):
     """
     Fetches a few descriptors via the get_hidden_service_descriptor() method.
