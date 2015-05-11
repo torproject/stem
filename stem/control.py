@@ -2673,16 +2673,21 @@ class Controller(BaseController):
       # to just guess that if it's for the same hidden service authority then
       # it's what we're looking for.
 
-      authorities_uploaded_to = []
+      directories_uploaded_to, failures = [], []
 
       try:
         while True:
           event = hs_desc_queue.get()
 
           if event.action == stem.HSDescAction.UPLOAD and event.address == response.service_id:
-            authorities_uploaded_to.append(event.directory_fingerprint)
-          elif event.action == stem.HSDescAction.UPLOADED and event.directory_fingerprint in authorities_uploaded_to:
+            directories_uploaded_to.append(event.directory_fingerprint)
+          elif event.action == stem.HSDescAction.UPLOADED and event.directory_fingerprint in directories_uploaded_to:
             break  # successfully uploaded to a HS authority... maybe
+          elif event.action == stem.HSDescAction.FAILED and event.directory_fingerprint in directories_uploaded_to:
+            failures.append('%s (%s)' % (event.directory_fingerprint, event.reason))
+
+            if len(directories_uploaded_to) == len(failures):
+              raise stem.OperationFailed(message = 'Failed to upload our hidden service descriptor to %s' % ', '.join(failures))
       finally:
         self.remove_event_listener(hs_desc_listener)
 
