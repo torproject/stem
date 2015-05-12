@@ -6,6 +6,7 @@ Controller Responses
 Responses
 ---------
 
+.. autoclass:: stem.response.add_onion.AddOnionResponse
 .. autoclass:: stem.response.authchallenge.AuthChallengeResponse
 .. autoclass:: stem.response.getconf.GetConfResponse
 .. autoclass:: stem.response.getinfo.GetInfoResponse

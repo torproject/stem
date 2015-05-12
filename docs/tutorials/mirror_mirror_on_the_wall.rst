@@ -8,6 +8,7 @@ with what they are and where to get them then you may want to skip to the end.
 * :ref:`where-can-i-get-the-current-descriptors`
 * :ref:`where-can-i-get-past-descriptors`
 * :ref:`can-i-get-descriptors-from-the-tor-process`
+* :ref:`validating-the-descriptors-content`
 * :ref:`saving-and-loading-descriptors`
 * :ref:`putting-it-together`
 
@@ -141,6 +142,38 @@ through Tor's control socket...
   from stem.descriptor import parse_file
 
   for desc in parse_file('/home/atagar/.tor/cached-consensus'):
+    print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
+
+.. _validating-the-descriptors-content:
+
+Validating the descriptor's content
+-----------------------------------
+
+Stem can optionally validate descriptors, checking their integrity and
+compliance with Tor's specs. This does the following...
+
+* Checks that we have mandatory fields, and that their content conforms with
+  what Tor's spec says they should have. This can be useful when data
+  integrity is important to you since it provides an upfront assurance that
+  the descriptor's correct (no need for 'None' checks).
+
+* If you have **pycrypto** we'll validate signatures for descriptor types
+  where that has been implemented (such as server and hidden service
+  descriptors).
+
+Prior to Stem 1.4.0 descriptors were validated by default, but this has become
+opt-in since then.
+
+General rule of thumb: if *speed* is your chief concern then leave it off, but
+if *correctness* or *signature validation* is important then turn it on.
+Validating is as simple as including **validate = True** in any method that
+provides descriptors...
+
+::
+
+  from stem.descriptor import parse_file
+
+  for desc in parse_file('/home/atagar/.tor/cached-consensus', validate = True):
     print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
 
 .. _saving-and-loading-descriptors:

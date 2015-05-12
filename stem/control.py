@@ -2615,7 +2615,7 @@ class Controller(BaseController):
     :param bool await_publication: blocks until our descriptor is successfully
       published if **True**
 
-    :returns: :class:`~stem.response.AddOnionResponse` with the response
+    :returns: :class:`~stem.response.add_onion.AddOnionResponse` with the response
 
     :raises: :class:`stem.ControllerError` if the call fails
     """

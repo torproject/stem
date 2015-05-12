@@ -6,9 +6,20 @@ give you a way of providing a service without exposing your address. These
 services are only accessible through Tor or `Tor2web <https://tor2web.org/>`_,
 and useful for a surprising number of things...
 
-  * **Hosting an anonymized site**. This is usually the first thing that comes to mind, and something we'll demonstrate in a sec.
-  * Providing an **endpoint Tor users can reach** without exiting the Tor network. This eliminates the risk of an unreliable or malicious exit getting in the way. Great examples of this are `Facebook <http://arstechnica.com/security/2014/10/facebook-offers-hidden-service-to-tor-users/>`_ (*facebookcorewwwi.onion*) and `DuckDuckGo <https://lists.torproject.org/pipermail/tor-talk/2010-August/003095.html>`_ (*3g2upl4pq6kufc4m.onion*).
-  * **Personal services**. For instance you can host your home SSH server as a hidden service to prevent eavesdroppers from knowing where you live while traveling abroad.
+* **Hosting an anonymized site**. This is usually the first thing that comes to
+  mind, and something we'll demonstrate in a sec.
+
+* Providing an **endpoint Tor users can reach** without exiting the Tor
+  network. This eliminates the risk of an unreliable or malicious exit getting
+  in the way. Great examples of this are `Facebook
+  <http://arstechnica.com/security/2014/10/facebook-offers-hidden-service-to-tor-users/>`_
+  (*facebookcorewwwi.onion*) and `DuckDuckGo
+  <https://lists.torproject.org/pipermail/tor-talk/2010-August/003095.html>`_
+  (*3g2upl4pq6kufc4m.onion*).
+
+* **Personal services**. For instance you can host your home SSH server as a
+  hidden service to prevent eavesdroppers from knowing where you live while
+  traveling abroad.
 
 `Tor2web <https://tor2web.org/>`_ provides a quick and easy way of seeing if
 your hidden service is working. To use it simply replace the **.onion** of
@@ -22,16 +33,23 @@ your address with **.tor2web.org**...
 Running a hidden service
 ------------------------
 
-Hidden services can be `configured through your torrc <https://www.torproject.org/docs/tor-manual.html.en#_hidden_service_options>`_, but Stem also provides some methods to easily work with them...
+Hidden services can be `configured through your torrc
+<https://www.torproject.org/docs/tor-manual.html.en#_hidden_service_options>`_,
+but Stem also provides some methods to easily work with them...
 
   * :func:`~stem.control.Controller.create_hidden_service`
   * :func:`~stem.control.Controller.remove_hidden_service`
   * :func:`~stem.control.Controller.get_hidden_service_conf`
   * :func:`~stem.control.Controller.set_hidden_service_conf`
 
-The main threat to your anonymity when running a hidden service is the service itself. Debug information for instance might leak your real address, undermining what Tor provides. This includes the following example, **do not rely on it not to leak**.
+The main threat to your anonymity when running a hidden service is the service
+itself. Debug information for instance might leak your real address,
+undermining what Tor provides. This includes the following example, **do not
+rely on it not to leak**.
 
-But with that out of the way lets take a look at a simple `Flask <http://flask.pocoo.org/>`_ example based on one by `Jordan Wright <https://jordan-wright.github.io/blog/2014/10/06/creating-tor-hidden-services-with-python/>`_...
+But with that out of the way lets take a look at a simple `Flask
+<http://flask.pocoo.org/>`_ example based on one by `Jordan Wright
+<https://jordan-wright.github.io/blog/2014/10/06/creating-tor-hidden-services-with-python/>`_...
 
 ::
 
