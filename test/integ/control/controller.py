@@ -678,45 +678,6 @@ class TestController(unittest.TestCase):
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services(detached = True))
       controller.remove_ephemeral_hidden_service(response.service_id)
 
-  @require_online
-  @require_controller
-  @require_version(Requirement.ADD_ONION)
-  def test_using_ephemeral_hidden_services(self):
-    """
-    Create and use a live ephemeral hidden service.
-    """
-
-    # TODO: Not having success getting... well, just about any damn hidden
-    # serivce working. Even our prior tutorial is failing right now. >:(
-
-    return
-
-    with test.runner.get_runner().get_tor_controller() as controller:
-      incoming_address = None, None
-
-      def run_server():
-        serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        serversocket.bind(('localhost', 4567))
-        serversocket.listen(5)
-        incoming_socket, incoming_address = serversocket.accept()
-        incoming_socket.write('hello world')
-        serversocket.shutdown(socket.SHUT_RDWR)
-
-      server_thread = threading.Thread(target = run_server)
-      server_thread.setDaemon(True)
-      server_thread.start()
-
-      response = controller.create_ephemeral_hidden_service({80: 4567})
-
-      with test.network.Socks(controller.get_socks_listeners()[0]) as s:
-        s.settimeout(30)
-        s.connect(('%s.onion' % response.service_id, 80))
-        print s.read()
-
-      self.assertTrue(incoming_address is not None)
-
-      server_thread.join()
-
   @require_controller
   def test_set_conf(self):
     """

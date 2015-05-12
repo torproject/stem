@@ -28,7 +28,7 @@ your address with **.tor2web.org**...
 .. image:: /_static/duck_duck_go_hidden_service.png
    :target: https://3g2upl4pq6kufc4m.tor2web.org/
 
-.. _running-a-hidden-service
+.. _running-a-hidden-service:
 
 Running a hidden service
 ------------------------
