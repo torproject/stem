@@ -182,10 +182,10 @@ For example, with a ephemeral service our earlier example becomes as simple as..
     finally:
       print " * Shutting down our hidden service"
 
-.. _how-can-i-get-hidden-service-descriptors:
+.. _hidden-service-descriptors:
 
-How can I get hidden service descriptors?
------------------------------------------
+Hidden service descriptors
+--------------------------
 
 Like relays, hidden services publish documents about themselves called **hidden
 service descriptors**. These contain low level details for establishing

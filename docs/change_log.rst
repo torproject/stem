@@ -7,6 +7,7 @@ unreleased. For a monthly report on work being done see my `development log
 
 * :ref:`versioning`
 * :ref:`unreleased`
+* :ref:`Version 1.4 <version_1.4>`
 * :ref:`Version 1.3 <version_1.3>`
 * :ref:`Version 1.2 <version_1.2>`
 * :ref:`Version 1.1 <version_1.1>`
@@ -41,13 +42,22 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
-With this next release descriptor validation is now opt-in rather than opt-out,
-and when unvalidated content is lazy-loaded. This `greatly improves our
-performance
+.. _version_1.4:
+
+Version 1.4 (May 13th, 2015)
+----------------------------
+
+`Stem's 1.4 release <https://blog.torproject.org/blog/stem-release-14>`_ brings
+with it new hidden service capabilities. Most notably, `ephemeral hidden
+services <tutorials/over_the_river.html#ephemeral-hidden-services>`_ and the
+ability to `read hidden service descriptors
+<tutorials/over_the_river.html#hidden-service-descriptors>`_. This release also
+changes descriptor validation to now be opt-in rather than opt-out. When
+unvalidated content is lazy-loaded, `greatly improving our performance
 <https://lists.torproject.org/pipermail/tor-dev/2015-January/008211.html>`_.
 
-Stem also now runs directly under both python2 and python3 without a 2to3
-conversion (:trac:`14075`).
+And last, Stem also now runs directly under both python2 and python3 without a
+2to3 conversion (:trac:`14075`)!
 
  * **Controller**
 

@@ -71,9 +71,9 @@ Download
 
        Signed releases and instructions for both Python 2.x and 3.x. You can
        easily install from its `tarball
-       <https://pypi.python.org/packages/source/s/stem/stem-1.3.0.tar.bz2>`_
+       <https://pypi.python.org/packages/source/s/stem/stem-1.4.0.tar.bz2>`_
        (`sig
-       <https://pypi.python.org/packages/source/s/stem/stem-1.3.0.tar.bz2.asc>`_),
+       <https://pypi.python.org/packages/source/s/stem/stem-1.4.0.tar.bz2.asc>`_),
        or with **pip**...
 
        ::
