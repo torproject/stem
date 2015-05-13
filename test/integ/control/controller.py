@@ -161,11 +161,11 @@ class TestController(unittest.TestCase):
       controller.set_conf('NodeFamily', random_fingerprint())
 
       # Wait for the event. Assert that we get it within 10 seconds
-      self.assertTrue(event_notice1.wait(10))
+      event_notice1.wait(10)
       self.assertEqual(len(event_buffer1), 1)
       event_notice1.clear()
 
-      self.assertTrue(event_notice2.wait(10))
+      event_notice2.wait(10)
       self.assertTrue(len(event_buffer2) >= 1)
       event_notice2.clear()
 
@@ -176,7 +176,7 @@ class TestController(unittest.TestCase):
       buffer2_size = len(event_buffer2)
 
       controller.set_conf('NodeFamily', random_fingerprint())
-      self.assertTrue(event_notice1.wait(10))
+      event_notice1.wait(10)
       self.assertEqual(len(event_buffer1), 2)
       event_notice1.clear()
 
