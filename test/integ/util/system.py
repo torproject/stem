@@ -136,7 +136,7 @@ class TestSystem(unittest.TestCase):
       call_mock.side_effect = call_replacement
 
       tor_pid = test.runner.get_runner().get_pid()
-      tor_cmd = test.runner.get_runner().get_tor_command(True)
+      tor_cmd = test.runner.get_runner().get_tor_command()
       self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
 
   def test_pid_by_name_ps_linux(self):
