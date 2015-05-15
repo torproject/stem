@@ -5,6 +5,7 @@ The following is an overview of **Tor descriptors**. If you're already familiar
 with what they are and where to get them then you may want to skip to the end.
 
 * :ref:`what-is-a-descriptor`
+* :ref:`where-do-descriptors-come-from`
 * :ref:`where-can-i-get-the-current-descriptors`
 * :ref:`where-can-i-get-past-descriptors`
 * :ref:`can-i-get-descriptors-from-the-tor-process`
@@ -33,6 +34,31 @@ Descriptor Type                                                                 
 `Router Status Entry <../api/descriptor/router_status_entry.html>`_              Relay information provided by the directory authorities including flags, heuristics used for relay selection, etc.
 `Hidden Service Descriptor <../api/descriptor/hidden_service_descriptor.html>`_  Information pertaining to a `Hidden Service <https://www.torproject.org/docs/hidden-services.html.en>`_. These can only be `queried through the tor process <over_the_river.html#hidden-service-descriptors>`_.
 ================================================================================ ===========
+
+.. _where-do-descriptors-come-from:
+
+Where do descriptors come from?
+-------------------------------
+
+Descriptors fall into two camps:
+
+* **Server**, **extra-info**, and **hidden service** descriptors are
+  **self-published documents**. Relays and hidden services publish these about
+  themselves, and so naturally can indicate anything they'd like in them (true
+  or not).
+  
+  These are **self contained documents**, bundling within themselves a
+  signiture Stem can `optionally check
+  <./mirror_mirror_on_the_wall.html#validating-the-descriptors-content>`_.
+
+* **Network status documents** (aka **votes**, the **consensus**, and **router
+  status entries** they contain) are created by the **directory authorities**.
+  For a great overview on how this works see `Jordan Wright's article on how
+  the consensus is made
+  <https://jordan-wright.github.io/blog/2015/05/14/how-tor-works-part-three-the-consensus/>`_.
+
+**Microdescriptors** are merely a distilled copy of a **server descriptor**,
+and so belong to the first camp.
 
 .. _where-can-i-get-the-current-descriptors:
 
