@@ -4,6 +4,7 @@ Unit tests for stem.descriptor.server_descriptor.
 
 import datetime
 import io
+import pickle
 import tarfile
 import unittest
 
@@ -70,8 +71,6 @@ class TestServerDescriptor(unittest.TestCase):
     Parses and checks our results against a server descriptor from metrics.
     """
 
-    descriptor_file = open(get_resource('example_descriptor'), 'rb')
-
     expected_family = set([
       '$0CE3CFB1E9CC47B63EA8869813BF6FAB7D4540C1',
       '$1FD187E8F69A9B74C9202DC16A25B9E7744AB9F6',
@@ -101,7 +100,9 @@ dskLSPz8beUW7bzwDjR6EVNGpyoZde83Ejvau+5F2c6cGnlu91fiZN3suE88iE6e
 Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 -----END SIGNATURE-----"""
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
+    with open(get_resource('example_descriptor'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
+
     self.assertEqual('caerSidi', desc.nickname)
     self.assertEqual('A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB', desc.fingerprint)
     self.assertEqual('71.35.133.197', desc.address)
@@ -153,9 +154,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a relay server descriptor from 2005.
     """
 
-    descriptor_file = open(get_resource('old_descriptor'), 'rb')
+    with open(get_resource('old_descriptor'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
     self.assertEqual('krypton', desc.nickname)
     self.assertEqual('3E2F63E2356F52318B536A12B6445373808A5D6C', desc.fingerprint)
     self.assertEqual('212.37.39.59', desc.address)
@@ -199,11 +200,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a descriptor with non-ascii content.
     """
 
-    descriptor_file = open(get_resource('non-ascii_descriptor'), 'rb')
+    with open(get_resource('non-ascii_descriptor'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
 
-    expected_contact = b'1024D/04D2E818 L\xc3\xa9na\xc3\xafc Huard <lenaic dot huard AT laposte dot net>'
-
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
     self.assertEqual('Coruscant', desc.nickname)
     self.assertEqual('0B9821545C48E496AEED9ECC0DB506C49FF8158D', desc.fingerprint)
     self.assertEqual('88.182.161.122', desc.address)
@@ -215,7 +214,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual('Linux', desc.operating_system)
     self.assertEqual(259738, desc.uptime)
     self.assertEqual(datetime.datetime(2013, 5, 18, 11, 16, 19), desc.published)
-    self.assertEqual(expected_contact, desc.contact)
+    self.assertEqual(b'1024D/04D2E818 L\xc3\xa9na\xc3\xafc Huard <lenaic dot huard AT laposte dot net>', desc.contact)
     self.assertEqual(['1', '2'], desc.link_protocols)
     self.assertEqual(['1'], desc.circuit_protocols)
     self.assertEqual(False, desc.hibernating)
@@ -243,8 +242,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     returns ('\r' entries).
     """
 
-    descriptor_file = open(get_resource('cr_in_contact_line'), 'rb')
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
+    with open(get_resource('cr_in_contact_line'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
 
     self.assertEqual('pogonip', desc.nickname)
     self.assertEqual('6DABD62BC65D4E6FE620293157FC76968DAB9C9B', desc.fingerprint)
@@ -265,8 +264,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     where we shouldn't be.
     """
 
-    descriptor_file = open(get_resource('negative_uptime'), 'rb')
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
+    with open(get_resource('negative_uptime'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
 
     self.assertEqual('TipTor', desc.nickname)
     self.assertEqual('137962D4931DBF08A24E843288B8A155D6D2AEDD', desc.fingerprint)
@@ -283,9 +282,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a bridge descriptor.
     """
 
-    descriptor_file = open(get_resource('bridge_descriptor'), 'rb')
+    with open(get_resource('bridge_descriptor'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'bridge-server-descriptor 1.0', validate = True))
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'bridge-server-descriptor 1.0', validate = True))
     self.assertEqual('Unnamed', desc.nickname)
     self.assertEqual('4ED573582B16ACDAF6E42AA044A038F83A7F6333', desc.fingerprint)
     self.assertEqual('10.18.111.71', desc.address)
@@ -719,3 +718,20 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     else:
       # check a default attribute
       self.assertEqual('caerSidi', desc.nickname)
+
+  def test_pickleability(self):
+    """
+    Checks that we can unpickle lazy loaded server descriptors.
+    """
+
+    with open(get_resource('example_descriptor'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
+
+      encoded_desc = pickle.dumps(desc)
+      restored_desc = pickle.loads(encoded_desc)
+
+      self.assertEqual('caerSidi', restored_desc.nickname)
+      self.assertEqual('A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB', restored_desc.fingerprint)
+      self.assertEqual('71.35.133.197', restored_desc.address)
+      self.assertEqual(9001, restored_desc.or_port)
+      self.assertEqual(None, restored_desc.socks_port)

@@ -596,7 +596,7 @@ class Descriptor(object):
   def __getattr__(self, name):
     # If attribute isn't already present we might be lazy loading it...
 
-    if self._lazy_loading and name in self.ATTRIBUTES:
+    if hasattr(self, '_lazy_loading') and self._lazy_loading and name in self.ATTRIBUTES:
       default, parsing_function = self.ATTRIBUTES[name]
 
       try:
