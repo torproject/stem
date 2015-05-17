@@ -3,12 +3,13 @@
 
 """
 Parsing for Tor network status documents. This supports both the v2 and v3
-dir-spec. Documents can be obtained from a few sources...
+`dir-spec <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_.
+Documents can be obtained from a few sources...
 
 * The 'cached-consensus' file in Tor's data directory.
 
-* Archived descriptors provided by CollecTor
-  (https://collector.torproject.org/).
+* Archived descriptors provided by `CollecTor
+  <https://collector.torproject.org/>`_.
 
 * Directory authorities and mirrors via their DirPort.
 
@@ -18,6 +19,10 @@ dir-spec. Documents can be obtained from a few sources...
 * list of :class:`stem.descriptor.networkstatus.DirectoryAuthority`
 * list of :class:`stem.descriptor.router_status_entry.RouterStatusEntry`
 * document footer
+
+**For a great graphical overview see** `Jordan Wright's chart describing the
+anatomy of the consensus
+<https://jordan-wright.github.io/images/blog/how_tor_works/consensus.png>`_.
 
 Of these, the router status entry section can be quite large (on the order of
 hundreds of kilobytes). As such we provide a couple of methods for reading
