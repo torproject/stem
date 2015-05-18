@@ -228,6 +228,11 @@ def _parse_w_line(descriptor, entries):
   elif not w_comp[0].startswith('Bandwidth='):
     raise ValueError("%s 'w' line needs to start with a 'Bandwidth=' entry: w %s" % (descriptor._name(), value))
 
+  bandwidth = None
+  measured = None
+  is_unmeasured = False
+  unrecognized_bandwidth_entries = []
+
   for w_entry in w_comp:
     if '=' in w_entry:
       w_key, w_value = w_entry.split('=', 1)
@@ -238,19 +243,24 @@ def _parse_w_line(descriptor, entries):
       if not (w_value and w_value.isdigit()):
         raise ValueError("%s 'Bandwidth=' entry needs to have a numeric value: w %s" % (descriptor._name(), value))
 
-      descriptor.bandwidth = int(w_value)
+      bandwidth = int(w_value)
     elif w_key == 'Measured':
       if not (w_value and w_value.isdigit()):
         raise ValueError("%s 'Measured=' entry needs to have a numeric value: w %s" % (descriptor._name(), value))
 
-      descriptor.measured = int(w_value)
+      measured = int(w_value)
     elif w_key == 'Unmeasured':
       if w_value != '1':
         raise ValueError("%s 'Unmeasured=' should only have the value of '1': w %s" % (descriptor._name(), value))
 
-      descriptor.is_unmeasured = True
+      is_unmeasured = True
     else:
-      descriptor.unrecognized_bandwidth_entries.append(w_entry)
+      unrecognized_bandwidth_entries.append(w_entry)
+
+  descriptor.bandwidth = bandwidth
+  descriptor.measured = measured
+  descriptor.is_unmeasured = is_unmeasured
+  descriptor.unrecognized_bandwidth_entries = unrecognized_bandwidth_entries
 
 
 def _parse_p_line(descriptor, entries):

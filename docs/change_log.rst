@@ -93,6 +93,10 @@ And last, Stem also now runs directly under both python2 and python3 without a
   * Added OSX to our `download page <download.html>`_ (:trac:`8588`)
   * Updated our twitter example to work with the service's 1.1 API (:trac:`9003`)
 
+ * **Version 1.4.1** (May 18th, 2015) - fixed issue where descriptors couldn't
+   be unpickled (:trac:`16054`) and a parsing issue for router status entry
+   bandwidth lines (:trac:`16048`)
+
 .. _version_1.3:
 
 Version 1.3 (December 22nd, 2014)
