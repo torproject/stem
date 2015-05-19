@@ -39,6 +39,7 @@ easily parsed and compared, for instance...
   **EVENT_DESCCHANGED**                 DESCCHANGED events
   **EVENT_GUARD**                       GUARD events
   **EVENT_HS_DESC_CONTENT**             HS_DESC_CONTENT events
+  **EVENT_NETWORK_LIVENESS**            NETWORK_LIVENESS events
   **EVENT_NEWCONSENSUS**                NEWCONSENSUS events
   **EVENT_NS**                          NS events
   **EVENT_SIGNAL**                      SIGNAL events
@@ -349,6 +350,7 @@ Requirement = stem.util.enum.Enum(
   ('EVENT_GUARD', Version('0.1.2.5-alpha')),
   ('EVENT_HS_DESC_CONTENT', Version('0.2.7.1-alpha')),
   ('EVENT_NS', Version('0.1.2.3-alpha')),
+  ('EVENT_NETWORK_LIVENESS', Version('0.2.7.2-alpha')),
   ('EVENT_NEWCONSENSUS', Version('0.2.1.13-alpha')),
   ('EVENT_SIGNAL', Version('0.2.3.1-alpha')),
   ('EVENT_STATUS', Version('0.1.2.3-alpha')),

@@ -197,6 +197,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
   **HS_DESC**             :class:`stem.response.events.HSDescEvent`
   **HS_DESC_CONTENT**     :class:`stem.response.events.HSDescContentEvent`
   **INFO**                :class:`stem.response.events.LogEvent`
+  **NETWORK_LIVENESS**    :class:`stem.response.events.NetworkLivenessEvent`
   **NEWCONSENSUS**        :class:`stem.response.events.NewConsensusEvent`
   **NEWDESC**             :class:`stem.response.events.NewDescEvent`
   **NOTICE**              :class:`stem.response.events.LogEvent`
@@ -293,6 +294,7 @@ EventType = stem.util.enum.UppercaseEnum(
   'HS_DESC',
   'HS_DESC_CONTENT',
   'INFO',
+  'NETWORK_LIVENESS',
   'NEWCONSENSUS',
   'NEWDESC',
   'NOTICE',

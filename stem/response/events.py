@@ -749,6 +749,22 @@ class NetworkStatusEvent(Event):
     ))
 
 
+class NetworkLivenessEvent(Event):
+  """
+  Event for when the network becomes reachable or unreachable.
+
+  The NETWORK_LIVENESS event was introduced in tor version 0.2.7.2-alpha.
+
+  .. versionadded:: 1.5.0
+
+  :var str status: status of the network ('UP', 'DOWN', or possibly other
+    statuses in the future)
+  """
+
+  _VERSION_ADDED = stem.version.Requirement.EVENT_NETWORK_LIVENESS
+  _POSITIONAL_ARGS = ('status',)
+
+
 class NewConsensusEvent(Event):
   """
   Event for when we have a new consensus. This is similar to
@@ -1311,6 +1327,7 @@ EVENT_TYPE_TO_CLASS = {
   'HS_DESC': HSDescEvent,
   'HS_DESC_CONTENT': HSDescContentEvent,
   'INFO': LogEvent,
+  'NETWORK_LIVENESS': NetworkLivenessEvent,
   'NEWCONSENSUS': NewConsensusEvent,
   'NEWDESC': NewDescEvent,
   'NOTICE': LogEvent,

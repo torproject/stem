@@ -919,6 +919,18 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(NEWDESC_MULTIPLE.lstrip('650 '), str(event))
     self.assertEqual(expected_relays, event.relays)
 
+  def test_network_liveness_event(self):
+    event = _get_event('650 NETWORK_LIVENESS UP')
+    self.assertTrue(isinstance(event, stem.response.events.NetworkLivenessEvent))
+    self.assertEqual('NETWORK_LIVENESS UP', str(event))
+    self.assertEqual('UP', event.status)
+
+    event = _get_event('650 NETWORK_LIVENESS DOWN')
+    self.assertEqual('DOWN', event.status)
+
+    event = _get_event('650 NETWORK_LIVENESS OTHER_STATUS key=value')
+    self.assertEqual('OTHER_STATUS', event.status)
+
   def test_new_consensus_event(self):
     expected_desc = []
 
