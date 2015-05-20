@@ -22,6 +22,7 @@ class TestInstallation(unittest.TestCase):
     try:
       os.chdir(base_directory)
       stem.util.system.call('python setup.py install --prefix /tmp/stem_test')
+      stem.util.system.call('python setup.py clean --all')  # tidy up the build directory
       site_packages_paths = glob.glob('/tmp/stem_test/lib*/*/site-packages')
 
       if len(site_packages_paths) != 1:
