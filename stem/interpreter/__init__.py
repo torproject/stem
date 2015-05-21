@@ -78,10 +78,12 @@ def main():
       else:
         print(format(msg('msg.starting_tor'), *HEADER_OUTPUT))
 
+        control_port = '9051' if args.control_port == 'default' else str(args.control_port)
+
         stem.process.launch_tor_with_config(
           config = {
             'SocksPort': '0',
-            'ControlPort': str(args.control_port),
+            'ControlPort': control_port,
             'CookieAuthentication': '1',
             'ExitPolicy': 'reject *:*',
           },

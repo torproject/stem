@@ -897,9 +897,16 @@ class Controller(BaseController):
   """
 
   @staticmethod
-  def from_port(address = '127.0.0.1', port = 9051):
+  def from_port(address = '127.0.0.1', port = 'default'):
     """
     Constructs a :class:`~stem.socket.ControlPort` based Controller.
+
+    If the **port** is **'default'** then this checks on both 9051 (default
+    for relays) and 9151 (default for the Tor Browser). This default may change
+    in the future.
+
+    .. versionchanged:: 1.5.0
+       Use both port 9051 and 9151 by default.
 
     :param str address: ip address of the controller
     :param int port: port number of the controller
@@ -914,7 +921,11 @@ class Controller(BaseController):
     elif not stem.util.connection.is_valid_port(port):
       raise ValueError('Invalid port: %s' % port)
 
-    control_port = stem.socket.ControlPort(address, port)
+    if port == 'default':
+      control_port = stem.connection._connection_for_default_port(address)
+    else:
+      control_port = stem.socket.ControlPort(address, port)
+
     return Controller(control_port)
 
   @staticmethod
@@ -989,7 +1000,6 @@ class Controller(BaseController):
     pass-through to :func:`stem.connection.authenticate`.
     """
 
-    import stem.connection
     stem.connection.authenticate(self, *args, **kwargs)
 
   @with_default()
@@ -1391,7 +1401,6 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    import stem.connection
     return stem.connection.get_protocolinfo(self)
 
   @with_default()
@@ -3631,3 +3640,8 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
           return entry
 
   raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
+
+
+# importing at the end to avoid circular dependency
+
+import stem.connection

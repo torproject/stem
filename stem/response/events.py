@@ -163,7 +163,7 @@ class AddrMapEvent(Event):
      Added the cached attribute.
 
   :var str hostname: address being resolved
-  :var str destination: destionation of the resolution, this is usually an ip,
+  :var str destination: destination of the resolution, this is usually an ip,
     but could be a hostname if TrackHostExits is enabled or **NONE** if the
     resolution failed
   :var datetime expiry: expiration time of the resolution in local time

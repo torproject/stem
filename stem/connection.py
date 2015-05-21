@@ -199,7 +199,7 @@ CONNECT_MESSAGES = {
 }
 
 
-def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/control', password = None, password_prompt = False, chroot_path = None, controller = stem.control.Controller):
+def connect(control_port = ('127.0.0.1', 'default'), control_socket = '/var/run/tor/control', password = None, password_prompt = False, chroot_path = None, controller = stem.control.Controller):
   """
   Convenience function for quickly getting a control connection. This is very
   handy for debugging or CLI setup, handling setup and prompting for a password
@@ -214,7 +214,14 @@ def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/c
   details of how this works. Messages and details of this function's behavior
   could change in the future.
 
+  If the **port** is **'default'** then this checks on both 9051 (default for
+  relays) and 9151 (default for the Tor Browser). This default may change in
+  the future.
+
   .. versionadded:: 1.2.0
+
+  .. versionchanged:: 1.5.0
+     Use both port 9051 and 9151 by default.
 
   :param tuple contol_port: address and port tuple, for instance **('127.0.0.1', 9051)**
   :param str path: path where the control socket is located
@@ -238,7 +245,7 @@ def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/c
       raise ValueError('The control_port argument for connect() should be an (address, port) tuple.')
     elif not stem.util.connection.is_valid_ipv4_address(control_port[0]):
       raise ValueError("'%s' isn't a vaid IPv4 address" % control_port[0])
-    elif not stem.util.connection.is_valid_port(control_port[1]):
+    elif control_port[1] != 'default' and not stem.util.connection.is_valid_port(control_port[1]):
       raise ValueError("'%s' isn't a valid port" % control_port[1])
 
   control_connection, error_msg = None, ''
@@ -256,7 +263,10 @@ def connect(control_port = ('127.0.0.1', 9051), control_socket = '/var/run/tor/c
     address, port = control_port
 
     try:
-      control_connection = stem.socket.ControlPort(address, port)
+      if port == 'default':
+        control_connection = _connection_for_default_port(address)
+      else:
+        control_connection = stem.socket.ControlPort(address, port)
     except stem.SocketError as exc:
       error_msg = CONNECT_MESSAGES['unable_to_use_port'].format(address = address, port = port, error = exc)
 
@@ -1043,6 +1053,28 @@ def _msg(controller, message):
     return controller.recv()
   else:
     return controller.msg(message)
+
+
+def _connection_for_default_port(address):
+  """
+  Attempts to provide a controller connection for either port 9051 (default for
+  relays) or 9151 (default for Tor Browser). If both fail then this raises the
+  exception for port 9051.
+
+  :param str address: address to connect to
+
+  :returns: :class:`~stem.socket.ControlPort` for the controller conneciton
+
+  :raises: :class:`stem.SocketError` if we're unable to establish a connection
+  """
+
+  try:
+    return stem.socket.ControlPort(address, 9051)
+  except stem.SocketError as exc:
+    try:
+      return stem.socket.ControlPort(address, 9151)
+    except stem.SocketError:
+      raise exc
 
 
 def _read_cookie(cookie_path, is_safecookie):

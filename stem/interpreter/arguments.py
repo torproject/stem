@@ -13,7 +13,7 @@ import stem.util.connection
 
 DEFAULT_ARGS = {
   'control_address': '127.0.0.1',
-  'control_port': 9051,
+  'control_port': 'default',
   'user_provided_port': False,
   'control_socket': '/var/run/tor/control',
   'user_provided_socket': False,

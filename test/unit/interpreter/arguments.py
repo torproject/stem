@@ -54,4 +54,4 @@ class TestArgumentParsing(unittest.TestCase):
   def test_get_help(self):
     help_text = get_help()
     self.assertTrue('Interactive interpreter for Tor.' in help_text)
-    self.assertTrue('change control interface from 127.0.0.1:9051' in help_text)
+    self.assertTrue('change control interface from 127.0.0.1:default' in help_text)

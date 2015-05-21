@@ -44,6 +44,7 @@ The following are only available within Stem's `git repository
 
  * **Controller**
 
+  * :func:`~stem.connection.connect` and :func:`~stem.control.Controller.from_port` now connect to both port 9051 (relay's default) and 9151 (Tor Browser's default) (:trac:`16075`)
   * Added `support for NETWORK_LIVENESS events <api/response.html#stem.response.events.NetworkLivenessEvent>`_ (:spec:`44aac63`)
 
 .. _version_1.4:
