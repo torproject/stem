@@ -517,7 +517,7 @@ def recv_message(control_file):
       a complete message
   """
 
-  parsed_content, raw_content = [], b''
+  parsed_content, raw_content = [], []
   logging_prefix = 'Error while receiving a control message (%s): '
 
   while True:
@@ -547,7 +547,7 @@ def recv_message(control_file):
       log.info(prefix + 'received exception "%s"' % exc)
       raise stem.SocketClosed(exc)
 
-    raw_content += line
+    raw_content.append(line)
 
     # Parses the tor control lines. These are of the form...
     # <status code><divider><content>\r\n
@@ -574,6 +574,7 @@ def recv_message(control_file):
 
     line = line[:-2]  # strips off the CRLF
     status_code, divider, content = line[:3], line[3:4], line[4:]
+    content_lines = [content]
 
     if stem.prereq.is_python_3():
       status_code = stem.util.str_tools._to_unicode(status_code)
@@ -586,6 +587,7 @@ def recv_message(control_file):
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
 
+      raw_content = b''.join(raw_content)
       log_message = raw_content.replace(b'\r\n', b'\n').rstrip()
       log.trace('Received from tor:\n' + stem.util.str_tools._to_unicode(log_message))
 
@@ -599,14 +601,14 @@ def recv_message(control_file):
           line = stem.util.str_tools._to_bytes(control_file.readline())
         except socket.error as exc:
           prefix = logging_prefix % 'SocketClosed'
-          log.info(prefix + 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(raw_content)))
+          log.info(prefix + 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(b''.join(raw_content))))
           raise stem.SocketClosed(exc)
 
-        raw_content += line
+        raw_content.append(line)
 
         if not line.endswith(b'\r\n'):
           prefix = logging_prefix % 'ProtocolError'
-          log.info(prefix + 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(raw_content))
+          log.info(prefix + 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(b''.join(raw_content)))
           raise stem.ProtocolError('All lines should end with CRLF')
         elif line == b'.\r\n':
           break  # data block termination
@@ -623,9 +625,9 @@ def recv_message(control_file):
         # separator (more conventional for multi-line string content outside
         # the windows world)
 
-        content += b'\n' + line
+        content_lines.append(line)
 
-      parsed_content.append((status_code, divider, content))
+      parsed_content.append((status_code, divider, b'\n'.join(content_lines)))
     else:
       # this should never be reached due to the prefix regex, but might as well
       # be safe...
