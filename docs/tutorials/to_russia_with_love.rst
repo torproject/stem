@@ -4,6 +4,7 @@ To Russia With Love
 * :ref:`using-pycurl`
 * :ref:`using-socksipy`
 * :ref:`reading-twitter`
+* :ref:`custom-path-selection`
 
 .. _using-pycurl:
 
@@ -153,8 +154,8 @@ with...
 Reading Twitter
 ---------------
 
-Now lets do somthing a little more interesting, and read a Twitter feed over
-Tor. This can be done `using thier API
+Now lets do something a little more interesting, and read a Twitter feed over
+Tor. This can be done `using their API
 <https://dev.twitter.com/rest/reference/get/statuses/user_timeline>`_, for
 authentication `see their instructions
 <https://dev.twitter.com/oauth/overview/application-owner-access-tokens>`_...
@@ -250,4 +251,131 @@ authentication `see their instructions
     tor_process.kill()  # stops tor
 
 .. image:: /_static/twitter_output.png
+
+.. _custom-path-selection:
+
+Custom Path Selection
+---------------------
+
+Routing requests over Tor is all well and good, but what if you want to do
+something more sophisticated? Through Tor's controller interface you can manage
+your own **circuits** and **streams**.
+
+A **circuit** is your path through the Tor network. Circuits must consist of at
+least two relays, and must end with a relay that allows connections to the
+destination you want to reach.
+
+**Streams** by contrast are TCP connections carried over a circuit. Tor handles
+attaching streams to a circuit that can service it. To instead manage this
+yourself call...
+
+::
+
+  controller.set_conf('__LeaveStreamsUnattached', '1')
+
+For an example of this lets fetch a site over each relay to determine it's
+reachability and speed. **Naturally doing this causes quite a bit of load so
+please be careful not to leave this running!**
+
+::
+
+  import StringIO
+  import time
+
+  import pycurl
+
+  import stem.control
+
+  # Static exit for us to make 2-hop circuits through. Picking aurora, a
+  # particularly beefy one...
+  #
+  #   https://atlas.torproject.org/#details/379FB450010D17078B3766C2273303C358C3A442
+
+  EXIT_FINGERPRINT = '379FB450010D17078B3766C2273303C358C3A442'
+
+  SOCKS_PORT = 9050
+  CONNECTION_TIMEOUT = 30  # timeout before we give up on a circuit
+
+  def query(url):
+    """
+    Uses pycurl to fetch a site using the proxy on the SOCKS_PORT.
+    """
+
+    output = StringIO.StringIO()
+
+    query = pycurl.Curl()
+    query.setopt(pycurl.URL, url)
+    query.setopt(pycurl.PROXY, 'localhost')
+    query.setopt(pycurl.PROXYPORT, SOCKS_PORT)
+    query.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS5_HOSTNAME)
+    query.setopt(pycurl.CONNECTTIMEOUT, CONNECTION_TIMEOUT)
+    query.setopt(pycurl.WRITEFUNCTION, output.write)
+
+    try:
+      query.perform()
+      return output.getvalue()
+    except pycurl.error as exc:
+      raise ValueError("Unable to reach %s (%s)" % (url, exc))
+
+
+  def scan(controller, path):
+    """
+    Fetch check.torproject.org through the given path of relays, providing back
+    the time it took.
+    """
+
+    circuit_id = controller.new_circuit(path, await_build = True)
+
+    def attach_stream(stream):
+      if stream.status == 'NEW':
+        controller.attach_stream(stream.id, circuit_id)
+
+    controller.add_event_listener(attach_stream, stem.control.EventType.STREAM)
+
+    try:
+      controller.set_conf('__LeaveStreamsUnattached', '1')  # leave stream management to us
+      start_time = time.time()
+
+      check_page = query('https://check.torproject.org/')
+
+      if 'Congratulations. This browser is configured to use Tor.' not in check_page:
+        raise ValueError("Request didn't have the right content")
+
+      return time.time() - start_time
+    finally:
+      controller.remove_event_listener(attach_stream)
+      controller.reset_conf('__LeaveStreamsUnattached')
+
+
+  with stem.control.Controller.from_port() as controller:
+    controller.authenticate()
+
+    relay_fingerprints = [desc.fingerprint for desc in controller.get_network_statuses()]
+
+    for fingerprint in relay_fingerprints:
+      try:
+        time_taken = scan(controller, [fingerprint, EXIT_FINGERPRINT])
+        print '%s => %0.2f seconds' % (fingerprint, time_taken)
+      except Exception as exc:
+        print '%s => %s' % (fingerprint, exc)
+
+::
+
+  % python scan_network.py 
+  000050888CF58A50E824E534063FF71A762CB227 => 2.62 seconds
+  000149E6EF7102AACA9690D6E8DD2932124B94AB => 2.50 seconds
+  000A10D43011EA4928A35F610405F92B4433B4DC => 2.18 seconds
+  000F18AC2CDAE4C710BA0898DC9E21E72E0117D8 => 2.40 seconds
+  0011BD2485AD45D984EC4159C88FC066E5E3300E => 2.03 seconds
+  003000C32D9E16FCCAEFD89336467C01E16FB00D => 11.41 seconds
+  008E9B9D7FF523CE1C5026B480E0127E64FA7A19 => 2.24 seconds
+  009851DF933754B00DDE876FCE4088CE1B4940C1 => 2.39 seconds
+  0098C475875ABC4AA864738B1D1079F711C38287 => Unable to reach https://check.torproject.org/ ((28, 'SSL connection timeout'))
+  00B70D1F261EBF4576D06CE0DA69E1F700598239 => 2.41 seconds
+  00DFA1137D178EE012B96F64D12F03B4D69CA0B2 => 4.53 seconds
+  00EF4569C8E4E165286DE6D293DCCE1BB1F280F7 => Circuit failed to be created: CHANNEL_CLOSED
+  00F12AB035D62C919A1F37C2A67144F17ACC9E75 => 3.58 seconds
+  00F2D93EBAF2F51D6EE4DCB0F37D91D72F824B16 => 2.12 seconds
+  00FCFBC5770DC6B716D917C73A0DE722CCF2DFE5 => 2.16 seconds
+  ...
 
