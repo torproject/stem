@@ -587,11 +587,11 @@ def recv_message(control_file):
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
 
-      raw_content = b''.join(raw_content)
-      log_message = raw_content.replace(b'\r\n', b'\n').rstrip()
+      raw_content_str = b''.join(raw_content)
+      log_message = raw_content_str.replace(b'\r\n', b'\n').rstrip()
       log.trace('Received from tor:\n' + stem.util.str_tools._to_unicode(log_message))
 
-      return stem.response.ControlMessage(parsed_content, raw_content)
+      return stem.response.ControlMessage(parsed_content, raw_content_str)
     elif divider == '+':
       # data entry, all of the following lines belong to the content until we
       # get a line with just a period
@@ -621,11 +621,10 @@ def recv_message(control_file):
         if line.startswith(b'..'):
           line = line[1:]
 
-        # appends to previous content, using a newline rather than CRLF
-        # separator (more conventional for multi-line string content outside
-        # the windows world)
-
         content_lines.append(line)
+
+      # joins the content using a newline rather than CRLF separator (more
+      # conventional for multi-line string content outside the windows world)
 
       parsed_content.append((status_code, divider, b'\n'.join(content_lines)))
     else:
