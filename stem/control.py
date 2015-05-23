@@ -916,6 +916,8 @@ class Controller(BaseController):
     :raises: :class:`stem.SocketError` if we're unable to establish a connection
     """
 
+    import stem.connection
+
     if not stem.util.connection.is_valid_ipv4_address(address):
       raise ValueError('Invalid IP address: %s' % address)
     elif not stem.util.connection.is_valid_port(port):
@@ -1000,6 +1002,7 @@ class Controller(BaseController):
     pass-through to :func:`stem.connection.authenticate`.
     """
 
+    import stem.connection
     stem.connection.authenticate(self, *args, **kwargs)
 
   @with_default()
@@ -1401,6 +1404,7 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
+    import stem.connection
     return stem.connection.get_protocolinfo(self)
 
   @with_default()
@@ -3640,8 +3644,3 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
           return entry
 
   raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
-
-
-# importing at the end to avoid circular dependency
-
-import stem.connection
