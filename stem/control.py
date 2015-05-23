@@ -920,7 +920,7 @@ class Controller(BaseController):
 
     if not stem.util.connection.is_valid_ipv4_address(address):
       raise ValueError('Invalid IP address: %s' % address)
-    elif not stem.util.connection.is_valid_port(port):
+    elif port != 'default' and not stem.util.connection.is_valid_port(port):
       raise ValueError('Invalid port: %s' % port)
 
     if port == 'default':
