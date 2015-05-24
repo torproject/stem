@@ -862,7 +862,7 @@ class ORConnEvent(Event):
       if ':' not in self.endpoint:
         raise stem.ProtocolError("ORCONN endpoint is neither a relay nor 'address:port': %s" % self)
 
-      address, port = self.endpoint.split(':', 1)
+      address, port = self.endpoint.rsplit(':', 1)
 
       if not connection.is_valid_port(port):
         raise stem.ProtocolError("ORCONN's endpoint location's port is invalid: %s" % self)
@@ -1009,7 +1009,7 @@ class StreamEvent(Event):
       if ':' not in self.source_addr:
         raise stem.ProtocolError("Source location must be of the form 'address:port': %s" % self)
 
-      address, port = self.source_addr.split(':', 1)
+      address, port = self.source_addr.rsplit(':', 1)
 
       if not connection.is_valid_port(port, allow_zero = True):
         raise stem.ProtocolError("Source location's port is invalid: %s" % self)
@@ -1296,7 +1296,7 @@ def _parse_cell_type_mapping(mapping):
     if ':' not in entry:
       raise stem.ProtocolError("Mappings are expected to be of the form 'key:value', got '%s': %s" % (entry, mapping))
 
-    key, value = entry.split(':', 1)
+    key, value = entry.rsplit(':', 1)
 
     if not CELL_TYPE.match(key):
       raise stem.ProtocolError("Key had invalid characters, got '%s': %s" % (key, mapping))

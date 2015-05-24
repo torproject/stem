@@ -50,7 +50,7 @@ def parse(argv):
   for opt, arg in recognized_args:
     if opt in ('-i', '--interface'):
       if ':' in arg:
-        address, port = arg.split(':', 1)
+        address, port = arg.rsplit(':', 1)
       else:
         address, port = None, arg
 

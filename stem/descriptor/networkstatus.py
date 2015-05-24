@@ -1256,7 +1256,7 @@ def _parse_dir_address_line(descriptor, entries):
   if ':' not in value:
     raise ValueError("Key certificate's 'dir-address' is expected to be of the form ADDRESS:PORT: dir-address %s" % value)
 
-  address, dirport = value.split(':', 1)
+  address, dirport = value.rsplit(':', 1)
 
   if not stem.util.connection.is_valid_ipv4_address(address):
     raise ValueError("Key certificate's address isn't a valid IPv4 address: dir-address %s" % value)

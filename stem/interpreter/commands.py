@@ -51,7 +51,7 @@ def _get_fingerprint(arg, controller):
       raise ValueError("Unable to find a relay with the nickname of '%s'" % arg)
   elif ':' in arg or stem.util.connection.is_valid_ipv4_address(arg):
     if ':' in arg:
-      address, port = arg.split(':', 1)
+      address, port = arg.rsplit(':', 1)
 
       if not stem.util.connection.is_valid_ipv4_address(address):
         raise ValueError("'%s' isn't a valid IPv4 address" % address)

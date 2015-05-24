@@ -1253,7 +1253,7 @@ class Controller(BaseController):
           raise stem.ProtocolError("'GETINFO %s' had a listener without a colon: %s" % (query, listener))
 
         listener = listener[1:-1]  # strip quotes
-        addr, port = listener.split(':')
+        addr, port = listener.rsplit(':', 1)
 
         # Skip unix sockets, for instance...
         #
@@ -1294,7 +1294,7 @@ class Controller(BaseController):
 
       for listener in self.get_conf(listener_option, multiple = True):
         if ':' in listener:
-          addr, port = listener.split(':')
+          addr, port = listener.rsplit(':', 1)
           proxy_addrs.append((addr, port))
         else:
           proxy_addrs.append((listener, port_value))
@@ -2307,7 +2307,7 @@ class Controller(BaseController):
           if target.isdigit():
             target_port = target
           else:
-            target_address, target_port = target.split(':')
+            target_address, target_port = target.rsplit(':', 1)
 
         if not stem.util.connection.is_valid_port(port):
           raise stem.ProtocolError('GETCONF provided an invalid HiddenServicePort port (%s): %s' % (port, content))

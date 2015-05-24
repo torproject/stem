@@ -429,7 +429,7 @@ def _decode_proc_address_encoding(addr):
   :returns: **tuple** of the form **(addr, port)**, with addr as a string and port an int
   """
 
-  ip, port = addr.split(':')
+  ip, port = addr.rsplit(':', 1)
 
   # the port is represented as a two-byte hexadecimal number
   port = int(port, 16)

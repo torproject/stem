@@ -137,7 +137,7 @@ def get_config_policy(rules, ip_address = None):
 
     if 'private' in rule:
       acceptance = rule.split(' ', 1)[0]
-      port = rule.split(':', 1)[1]
+      port = rule.rsplit(':', 1)[1]
       addresses = list(PRIVATE_ADDRESSES)
 
       if ip_address:

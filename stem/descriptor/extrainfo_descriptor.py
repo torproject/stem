@@ -280,7 +280,7 @@ def _parse_transport_line(descriptor, entries):
         raise ValueError("Transport line's address:port entry is missing a colon: transport %s" % value)
 
       name = value_comp[0]
-      address, port_str = value_comp[1].split(':', 1)
+      address, port_str = value_comp[1].rsplit(':', 1)
 
       if not stem.util.connection.is_valid_ipv4_address(address) or \
              stem.util.connection.is_valid_ipv6_address(address):
