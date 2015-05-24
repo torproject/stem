@@ -2,47 +2,18 @@
 # Copyright 2012-2015, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 
-# We cannot import anything from the stem module since this would risk
-# importing code that does not work under python 3 *without* being converted.
-#
-# I hate to do this, but reading our module file's information directly.
+import distutils.core
+import stem
 
-import os
-import re
-from distutils.core import setup
 
-STAT_LINE = re.compile(r"^__(.+)__ = '(.+)'$")
-
-DESCRIPTION = """\
-Stem is a Python controller library that allows applications to interact with
-Tor <https://www.torproject.org/>."""
-
-def get_module_info():
-  # reads the basic __stat__ strings from our module's init
-
-  result = {}
-  cwd = os.path.sep.join(__file__.split(os.path.sep)[:-1])
-
-  with open(os.path.join(cwd, 'stem', '__init__.py')) as init_file:
-    for line in init_file.readlines():
-      line_match = STAT_LINE.match(line)
-
-      if line_match:
-        keyword, value = line_match.groups()
-        result[keyword] = value
-
-  return result
-
-module_info = get_module_info()
-
-setup(
+distutils.core.setup(
   name = 'stem',
-  version = module_info['version'],
-  description = DESCRIPTION,
-  license = module_info['license'],
-  author = module_info['author'],
-  author_email = module_info['contact'],
-  url = module_info['url'],
+  version = stem.__version__,
+  description = "Python controller library that allows applications to interact with Tor <https://www.torproject.org/>.",
+  license = stem.__license__,
+  author = stem.__author__,
+  author_email = stem.__contact__,
+  url = stem.__url__,
   packages = ['stem', 'stem.descriptor', 'stem.interpreter', 'stem.response', 'stem.util'],
   provides = ['stem'],
   keywords = 'tor onion controller',
