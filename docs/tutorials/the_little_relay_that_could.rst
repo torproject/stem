@@ -47,17 +47,11 @@ many bytes Tor has sent and received since it started. Note that there are a
 unfamiliar with the '**with**' keyword then see `here
 <../faq.html#what-is-that-with-keyword-i-keep-seeing-in-the-tutorials>`_...
 
-::
+.. literalinclude:: /_static/example/the_little_relay_that_could.py
+   :language: python
 
-  from stem.control import Controller
-  
-  with Controller.from_port(port = 9051) as controller:
-    controller.authenticate()  # provide the password here if you set one
-
-    bytes_read = controller.get_info("traffic/read")
-    bytes_written = controller.get_info("traffic/written")
-
-    print "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
+The above code snippet can be downloaded by clicking `here
+<../_static/example/the_little_relay_that_could.py>`_.
 
 ::
 
