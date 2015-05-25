@@ -76,17 +76,9 @@ irresponsible script can make Tor worse for everyone.
 
 Listing the current relays in the Tor network is as easy as...
 
-::
-
-  from stem.descriptor.remote import DescriptorDownloader
-
-  downloader = DescriptorDownloader()
-
-  try:
-    for desc in downloader.get_consensus().run():
-      print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
-  except Exception as exc:
-    print "Unable to retrieve the consensus: %s" % exc 
+.. literalinclude:: /_static/example/current_descriptors.py
+   :caption: `[Download] <../_static/example/current_descriptors.py>`__
+   :language: python
 
 .. _where-can-i-get-past-descriptors:
 
@@ -97,13 +89,9 @@ Descriptor archives are available from `CollecTor
 <https://collector.torproject.org/>`_. These archives can be read with
 the `DescriptorReader <../api/descriptor/reader.html>`_...
 
-::
-
-  from stem.descriptor.reader import DescriptorReader
-
-  with DescriptorReader(["/home/atagar/server-descriptors-2013-03.tar"]) as reader:
-    for desc in reader:
-      print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
+.. literalinclude:: /_static/example/past_descriptors.py
+   :caption: `[Download] <../_static/example/past_descriptors.py>`__
+   :language: python
 
 .. _can-i-get-descriptors-from-the-tor-process:
 
@@ -151,24 +139,15 @@ the network!
 Now that Tor is happy chugging along, up-to-date descriptors are available
 through Tor's control socket...
 
-::
-
-  from stem.control import Controller
-
-  with Controller.from_port(port = 9051) as controller:
-    controller.authenticate()
-
-    for desc in controller.get_network_statuses():
-      print "found relay %s (%s)" % (desc.nickname, desc.fingerprint)
+.. literalinclude:: /_static/example/descriptor_from_tor_control_socket.py
+   :caption: `[Download] <../_static/example/descriptor_from_tor_control_socket.py>`__
+   :language: python
 
 ... or by reading directly from Tor's data directory...
 
-::
-
-  from stem.descriptor import parse_file
-
-  for desc in parse_file('/home/atagar/.tor/cached-consensus'):
-    print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
+.. literalinclude:: /_static/example/descriptor_from_tor_data_directory.py
+   :caption: `[Download] <../_static/example/descriptor_from_tor_data_directory.py>`__
+   :language: python
 
 .. _validating-the-descriptors-content:
 
@@ -195,12 +174,9 @@ if *correctness* or *signature validation* is important then turn it on.
 Validating is as simple as including **validate = True** in any method that
 provides descriptors...
 
-::
-
-  from stem.descriptor import parse_file
-
-  for desc in parse_file('/home/atagar/.tor/cached-consensus', validate = True):
-    print 'found relay %s (%s)' % (desc.nickname, desc.fingerprint)
+.. literalinclude:: /_static/example/validate_descriptor_content.py
+   :caption: `[Download] <../_static/example/validate_descriptor_content.py>`__
+   :language: python
 
 .. _saving-and-loading-descriptors:
 
@@ -211,15 +187,9 @@ Tor descriptors are just plaintext documents. As such, if you'd rather not use
 `Pickle <https://wiki.python.org/moin/UsingPickle>`_ you can persist a
 descriptor by simply writing it to disk, then reading it back later.
 
-::
-
-  from stem.descriptor.remote import DescriptorDownloader
-
-  downloader = DescriptorDownloader()
-  server_descriptors = downloader.get_server_descriptors().run()
-
-  with open('/tmp/descriptor_dump', 'wb') as descriptor_file:
-    descriptor_file.write(''.join(map(str, server_descriptors)))
+.. literalinclude:: /_static/example/saving_and_loading_descriptors.py
+   :caption: `[Download] <../_static/example/saving_and_loading_descriptors.py>`__
+   :language: python
 
 Our *server_descriptors* here is a list of
 :class:`~stem.descriptor.server_descriptor.RelayDescriptor` instances. When we
@@ -240,14 +210,9 @@ write it to a file this looks like...
 We can then read it back with :func:`~stem.descriptor.__init__.parse_file`
 by telling it the type of descriptors we're reading...
 
-::
-
-  from stem.descriptor import parse_file
-
-  server_descriptors = parse_file('/tmp/descriptor_dump', descriptor_type = 'server-descriptor 1.0')
-
-  for relay in server_descriptors:
-    print relay.fingerprint
+.. literalinclude:: /_static/example/read_with_parse_file.py
+   :caption: `[Download] <../_static/example/read_with_parse_file.py>`__
+   :language: python
 
 For an example of doing this with a consensus document `see here
 <examples/persisting_a_consensus.html>`_.
@@ -268,40 +233,9 @@ Now lets say you want to figure out who the *biggest* exit relays are. You
 could use any of the methods above, but for this example we'll use
 `stem.descriptor.remote <../api/descriptor/remote.html>`_...
 
-::
-
-  import sys 
-
-  from stem.descriptor.remote import DescriptorDownloader
-  from stem.util import str_tools
-
-  # provides a mapping of observed bandwidth to the relay nicknames
-  def get_bw_to_relay():
-    bw_to_relay = {}
-
-    downloader = DescriptorDownloader()
-
-    try:
-      for desc in downloader.get_server_descriptors().run():
-        if desc.exit_policy.is_exiting_allowed():
-          bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
-    except Exception as exc:
-      print "Unable to retrieve the server descriptors: %s" % exc 
-
-    return bw_to_relay
-
-  # prints the top fifteen relays
-
-  bw_to_relay = get_bw_to_relay()
-  count = 1
-
-  for bw_value in sorted(bw_to_relay.keys(), reverse = True):
-    for nickname in bw_to_relay[bw_value]:
-      print "%i. %s (%s/s)" % (count, nickname, str_tools.size_label(bw_value, 2))
-      count += 1
-
-      if count > 15:
-        sys.exit()
+.. literalinclude:: /_static/example/tor_descriptors.py
+   :caption: `[Download] <../_static/example/tor_descriptors.py>`__
+   :language: python
 
 ::
 
