@@ -51,56 +51,9 @@ But with that out of the way lets take a look at a simple `Flask
 <http://flask.pocoo.org/>`_ example based on one by `Jordan Wright
 <https://jordan-wright.github.io/blog/2014/10/06/creating-tor-hidden-services-with-python/>`_...
 
-::
-
-  import os
-  import shutil
-
-  from stem.control import Controller
-  from flask import Flask
-
-  app = Flask(__name__)
-
-
-  @app.route('/')
-  def index():
-    return "<h1>Hi Grandma!</h1>"
-
-
-  print ' * Connecting to tor'
-
-  with Controller.from_port() as controller:
-    controller.authenticate()
-
-    # All hidden services have a directory on disk. Lets put ours in tor's data
-    # directory.
-
-    hidden_service_dir = os.path.join(controller.get_conf('DataDirectory', '/tmp'), 'hello_world')
-
-    # Create a hidden service where visitors of port 80 get redirected to local
-    # port 5000 (this is where Flask runs by default).
-
-    print " * Creating our hidden service in %s" % hidden_service_dir
-    result = controller.create_hidden_service(hidden_service_dir, 80, target_port = 5000)
-
-    # The hostname is only available when we can read the hidden service
-    # directory. This requires us to be running with the same user as tor.
-
-    if result.hostname:
-      print " * Our service is available at %s, press ctrl+c to quit" % result.hostname
-    else:
-      print " * Unable to determine our service's hostname, probably due to being unable to read the hidden service directory"
-
-    try:
-      app.run()
-    finally:
-      # Shut down the hidden service and clean it off disk. Note that you *don't*
-      # want to delete the hidden service directory if you'd like to have this
-      # same *.onion address in the future.
-
-      print " * Shutting down our hidden service"
-      controller.remove_hidden_service(hidden_service_dir)
-      shutil.rmtree(hidden_service_dir)
+.. literalinclude:: /_static/example/running_hidden_service.py
+   :caption: `[Download] <../_static/example/running_hidden_service.py>`__
+   :language: python
 
 Now if we run this...
 
@@ -152,35 +105,9 @@ Stem provides three methods to work with ephemeral hidden services...
 
 For example, with a ephemeral service our earlier example becomes as simple as...
 
-::
-
-  from stem.control import Controller
-  from flask import Flask
-
-  app = Flask(__name__)
-
-
-  @app.route('/')
-  def index():
-    return "<h1>Hi Grandma!</h1>"
-
-
-  print ' * Connecting to tor'
-
-  with Controller.from_port() as controller:
-    controller.authenticate()
-
-    # Create a hidden service where visitors of port 80 get redirected to local
-    # port 5000 (this is where Flask runs by default).
-
-    print " * Creating our hidden service in %s" % hidden_service_dir
-    response = controller.create_ephemeral_hidden_service({80: 5000}, await_publication = True)
-    print " * Our service is available at %s.onion, press ctrl+c to quit" % response.service_id
-
-    try:
-      app.run()
-    finally:
-      print " * Shutting down our hidden service"
+.. literalinclude:: /_static/example/ephemeral_hidden_services.py
+   :caption: `[Download] <../_static/example/ephemeral_hidden_services.py>`__
+   :language: python
 
 .. _hidden-service-descriptors:
 
@@ -192,16 +119,9 @@ service descriptors**. These contain low level details for establishing
 connections. Hidden service descriptors are available from the tor process via
 its :func:`~stem.control.Controller.get_hidden_service_descriptor` method...
 
-::
-
-  from stem.control import Controller
-
-  with Controller.from_port(port = 9051) as controller:
-    controller.authenticate()
-
-    # descriptor of duck-duck-go's hidden service (http://3g2upl4pq6kufc4m.onion)
-
-    print controller.get_hidden_service_descriptor('3g2upl4pq6kufc4m')
+.. literalinclude:: /_static/example/get_hidden_service_descriptor.py
+   :caption: `[Download] <../_static/example/get_hidden_service_descriptor.py>`__
+   :language: python
 
 ::
 
@@ -230,18 +150,9 @@ descriptor's
 :func:`~stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor.introduction_points`
 method.
 
-::
-
-  from stem.control import Controller
-
-  with Controller.from_port(port = 9051) as controller:
-    controller.authenticate()
-    desc = controller.get_hidden_service_descriptor('3g2upl4pq6kufc4m')
-
-    print "DuckDuckGo's introduction points are...\n"
-
-    for introduction_point in desc.introduction_points():
-      print '  %s:%s => %s' % (introduction_point.address, introduction_point.port, introduction_point.identifier)
+.. literalinclude:: /_static/example/introduction_points.py
+   :caption: `[Download] <../_static/example/introduction_points.py>`__
+   :language: python
 
 ::
 
