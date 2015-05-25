@@ -9,6 +9,8 @@
 #}
 {% extends "basic/layout.html" %}
 
+{% set css_files = css_files + ['_static/style.css'] %}
+
 {# do not display relbars #}
 {% block relbar1 %}{% endblock %}
 {% block relbar2 %}{% endblock %}

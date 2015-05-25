@@ -52,6 +52,7 @@ The following are only available within Stem's `git repository
  * **Website**
 
   * Example for `custom path selection for circuits <tutorials/to_russia_with_love.html#custom-path-selection>`_ (:trac:`8728`)
+  * Download link for tutorial examples (:trac:`10411`)
 
 .. _version_1.4:
 

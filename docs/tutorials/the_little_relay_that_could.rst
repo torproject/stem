@@ -47,17 +47,9 @@ many bytes Tor has sent and received since it started. Note that there are a
 unfamiliar with the '**with**' keyword then see `here
 <../faq.html#what-is-that-with-keyword-i-keep-seeing-in-the-tutorials>`_...
 
-::
-
-  from stem.control import Controller
-  
-  with Controller.from_port(port = 9051) as controller:
-    controller.authenticate()  # provide the password here if you set one
-
-    bytes_read = controller.get_info("traffic/read")
-    bytes_written = controller.get_info("traffic/written")
-
-    print "My Tor relay has read %s bytes and written %s." % (bytes_read, bytes_written)
+.. literalinclude:: /_static/example/hello_world.py
+   :caption: `[Download] <../_static/example/hello_world.py>`_
+   :language: python
 
 ::
 

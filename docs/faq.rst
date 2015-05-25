@@ -545,7 +545,7 @@ example...
 How do I build the site?
 ------------------------
 
-If you have `Sphinx <http://sphinx-doc.org/>`_ version 1.1 or later installed
+If you have `Sphinx <http://sphinx-doc.org/>`_ version 1.3 or later installed
 then building our site is as easy as...
 
 ::

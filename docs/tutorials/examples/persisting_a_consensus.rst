@@ -30,16 +30,9 @@ So how do we get it? Just tell Stem that's what you want. The
 :class:`~stem.descriptor.__init__.DocumentHandler` tells Stem how to read the
 consensus. For example, to write the consensus simply do the following...
 
-::
-
-  from stem.descriptor import DocumentHandler
-  from stem.descriptor.remote import DescriptorDownloader
-
-  downloader = DescriptorDownloader()
-  consensus = downloader.get_consensus(document_handler = DocumentHandler.DOCUMENT).run()[0]
-
-  with open('/tmp/descriptor_dump', 'w') as descriptor_file:
-    descriptor_file.write(str(consensus))
+.. literalinclude:: /_static/example/persisting_a_consensus.py
+   :caption: `[Download] <../../_static/example/persisting_a_consensus.py>`__
+   :language: python
 
 Our *consensus* here is the current
 :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`. The
@@ -58,15 +51,6 @@ Our *consensus* here is the current
 
 You can then read it back with :func:`~stem.descriptor.__init__.parse_file`...
 
-::
-
-  from stem.descriptor import DocumentHandler, parse_file
-
-  consensus = next(parse_file(
-    '/tmp/descriptor_dump',
-    descriptor_type = 'network-status-consensus-3 1.0',
-    document_handler = DocumentHandler.DOCUMENT,
-  ))
-
-  for fingerprint, relay in consensus.routers.items():
-    print "%s: %s" % (fingerprint, relay.nickname)
+.. literalinclude:: /_static/example/persisting_a_consensus_with_parse_file.py
+   :caption: `[Download] <../../_static/example/persisting_a_consensus_with_parse_file.py>`__
+   :language: python
