@@ -7,29 +7,9 @@ List Circuits
 Tor creates new circuits and tears down old ones on your behalf, so how can you
 get information about circuits Tor currently has available?
 
-::
-
-  from stem import CircStatus
-  from stem.control import Controller
-
-  with Controller.from_port(port = 9051) as controller:
-    controller.authenticate()
-
-    for circ in sorted(controller.get_circuits()):
-      if circ.status != CircStatus.BUILT:
-        continue
-
-      print
-      print "Circuit %s (%s)" % (circ.id, circ.purpose)
-
-      for i, entry in enumerate(circ.path):
-        div = '+' if (i == len(circ.path) - 1) else '|'
-        fingerprint, nickname = entry
-
-        desc = controller.get_network_status(fingerprint, None)
-        address = desc.address if desc else 'unknown'
-
-        print " %s- %s (%s, %s)" % (div, fingerprint, nickname, address)
+.. literalinclude:: /_static/example/list_circuits.py
+   :caption: `[Download] <../../_static/example/list_circuits.py>`__
+   :language: python
 
 ::
 

@@ -8,27 +8,9 @@ Time marches on. Tor makes new releases, and at some point needs to drop
 support for old ones. Below is the script we used on :trac:`9476` to reach out
 to relay operators that needed to upgrade.
 
-::
-
-  from stem.descriptor.remote import DescriptorDownloader
-  from stem.version import Version
-
-  downloader = DescriptorDownloader()
-  count, with_contact = 0, 0
-
-  print "Checking for outdated relays..."
-  print
-
-  for desc in downloader.get_server_descriptors():
-    if desc.tor_version < Version('0.2.3.0'):
-      count += 1
-
-      if desc.contact:
-        print '  %-15s %s' % (desc.tor_version, desc.contact.decode("utf-8", "replace"))
-        with_contact += 1
-
-  print
-  print "%i outdated relays found, %i had contact information" % (count, with_contact)
+.. literalinclude:: /_static/example/outdated_relays.py
+   :caption: `[Download] <../../_static/example/outdated_relays.py>`__
+   :language: python
 
 ::
 
