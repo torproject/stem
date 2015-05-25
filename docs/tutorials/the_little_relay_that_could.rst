@@ -47,11 +47,9 @@ many bytes Tor has sent and received since it started. Note that there are a
 unfamiliar with the '**with**' keyword then see `here
 <../faq.html#what-is-that-with-keyword-i-keep-seeing-in-the-tutorials>`_...
 
-.. literalinclude:: /_static/example/the_little_relay_that_could.py
+.. literalinclude:: /_static/example/hello_world.py
+   :caption: `[Download] <../_static/example/hello_world.py>`_
    :language: python
-
-The above code snippet can be downloaded by clicking `here
-<../_static/example/the_little_relay_that_could.py>`_.
 
 ::
 
