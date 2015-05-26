@@ -74,6 +74,6 @@ with stem.control.Controller.from_port() as controller:
   for fingerprint in relay_fingerprints:
     try:
       time_taken = scan(controller, [fingerprint, EXIT_FINGERPRINT])
-      print '%s => %0.2f seconds' % (fingerprint, time_taken)
+      print('%s => %0.2f seconds' % (fingerprint, time_taken))
     except Exception as exc:
-      print '%s => %s' % (fingerprint, exc)
+      print('%s => %s' % (fingerprint, exc))

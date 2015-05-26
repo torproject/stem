@@ -35,10 +35,10 @@ def query(url):
 
 def print_bootstrap_lines(line):
   if "Bootstrapped " in line:
-    print term.format(line, term.Color.BLUE)
+    print(term.format(line, term.Color.BLUE))
 
 
-print term.format("Starting Tor:\n", term.Attr.BOLD)
+print(term.format("Starting Tor:\n", term.Attr.BOLD))
 
 tor_process = stem.process.launch_tor_with_config(
   config = {
@@ -48,7 +48,7 @@ tor_process = stem.process.launch_tor_with_config(
   init_msg_handler = print_bootstrap_lines,
 )
 
-print term.format("\nChecking our endpoint:\n", term.Attr.BOLD)
-print term.format(query("https://www.atagar.com/echo.php"), term.Color.BLUE)
+print(term.format("\nChecking our endpoint:\n", term.Attr.BOLD))
+print(term.format(query("https://www.atagar.com/echo.php"), term.Color.BLUE))
 
 tor_process.kill()  # stops tor

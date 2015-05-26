@@ -14,7 +14,7 @@ for authority in remote.get_authorities().values():
 
 for authority_name, query in queries.items():
   try:
-    print "Getting %s's vote from %s:" % (authority_name, query.download_url)
+    print("Getting %s's vote from %s:" % (authority_name, query.download_url))
 
     measured, unmeasured = 0, 0
 
@@ -24,6 +24,6 @@ for authority_name, query in queries.items():
       else:
         unmeasured += 1
 
-    print '  %i measured entries and %i unmeasured' % (measured, unmeasured)
+    print('  %i measured entries and %i unmeasured' % (measured, unmeasured))
   except Exception as exc:
-    print "  failed to get the vote (%s)" % exc
+    print("  failed to get the vote (%s)" % exc)

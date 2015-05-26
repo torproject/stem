@@ -78,10 +78,10 @@ tor_process = stem.process.launch_tor_with_config(
 
 try:
   for index, tweet in enumerate(poll_twitter_feed('ioerror', 3)):
-    print "%i. %s" % (index + 1, tweet["created_at"])
-    print tweet["text"]
-    print
+    print("%i. %s" % (index + 1, tweet["created_at"]))
+    print(tweet["text"])
+    print("")
 except IOError, exc:
-  print exc
+  print(exc)
 finally:
   tor_process.kill()  # stops tor

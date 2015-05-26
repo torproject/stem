@@ -7,4 +7,4 @@ consensus = next(parse_file(
 ))
 
 for fingerprint, relay in consensus.routers.items():
-  print "%s: %s" % (fingerprint, relay.nickname)
+  print("%s: %s" % (fingerprint, relay.nickname))
