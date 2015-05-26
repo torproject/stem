@@ -40,24 +40,13 @@ class TestTutorial(unittest.TestCase):
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_the_little_relay_that_could(self, from_port_mock, stdout_mock):
-    def tutorial_example():
-      from stem.control import Controller
-
-      with Controller.from_port(control_port = 9051) as controller:
-        controller.authenticate()  # provide the password here if you set one
-
-        bytes_read = controller.get_info('traffic/read')
-        bytes_written = controller.get_info('traffic/written')
-
-        print('My Tor relay has read %s bytes and written %s.' % (bytes_read, bytes_written))
-
     controller = from_port_mock().__enter__()
     controller.get_info.side_effect = lambda arg: {
       'traffic/read': '33406',
       'traffic/written': '29649',
     }[arg]
 
-    tutorial_example()
+    execfile('docs/_static/example/hello_world.py')
     self.assertEqual('My Tor relay has read 33406 bytes and written 29649.\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
@@ -129,38 +118,18 @@ class TestTutorial(unittest.TestCase):
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_mirror_mirror_on_the_wall_1(self, downloader_mock, stdout_mock):
-    def tutorial_example():
-      from stem.descriptor.remote import DescriptorDownloader
-
-      downloader = DescriptorDownloader()
-
-      try:
-        for desc in downloader.get_consensus().run():
-          print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
-      except Exception as exc:
-        print('Unable to retrieve the consensus: %s' % exc)
-
     downloader_mock().get_consensus().run.return_value = [mocking.get_router_status_entry_v2()]
 
-    tutorial_example()
+    execfile('docs/_static/example/current_descriptors.py')
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_mirror_mirror_on_the_wall_2(self, from_port_mock, stdout_mock):
-    def tutorial_example():
-      from stem.control import Controller
-
-      with Controller.from_port(control_port = 9051) as controller:
-        controller.authenticate()
-
-        for desc in controller.get_network_statuses():
-          print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
-
     controller = from_port_mock().__enter__()
     controller.get_network_statuses.return_value = [mocking.get_router_status_entry_v2()]
 
-    tutorial_example()
+    execfile('docs/_static/example/descriptor_from_tor_control_socket.py')
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
@@ -186,17 +155,10 @@ class TestTutorial(unittest.TestCase):
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.reader.DescriptorReader', spec = DescriptorReader)
   def test_mirror_mirror_on_the_wall_4(self, reader_mock, stdout_mock):
-    def tutorial_example():
-      from stem.descriptor.reader import DescriptorReader
-
-      with DescriptorReader(['/home/atagar/server-descriptors-2013-03.tar']) as reader:
-        for desc in reader:
-          print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
-
     reader = reader_mock().__enter__()
     reader.__iter__.return_value = iter([mocking.get_relay_server_descriptor()])
 
-    tutorial_example()
+    execfile('docs/_static/example/past_descriptors.py')
     self.assertEqual('found relay caerSidi (None)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
