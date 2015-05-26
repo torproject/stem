@@ -6,12 +6,6 @@ import itertools
 import unittest
 
 try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
-try:
   from StringIO import StringIO
 except ImportError:
   from io import StringIO
@@ -37,6 +31,8 @@ try:
   from unittest.mock import Mock, patch
 except ImportError:
   from mock import Mock, patch
+
+OPEN_FUNCTION = open  # make a reference so mocking open() won't mess with us
 
 CIRC_CONTENT = '650 CIRC %d %s \
 %s \
@@ -105,6 +101,12 @@ A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB: caerSidi
 """
 
 
+def exec_file(path):
+  with OPEN_FUNCTION(path, 'rb') as f:
+    code = compile(f.read(), path, 'exec')
+    exec(code)
+
+
 def _get_event(content):
   controller_event = mocking.get_message(content)
   stem.response.convert('EVENT', controller_event)
@@ -148,28 +150,6 @@ class TestTutorialExamples(unittest.TestCase):
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_list_circuits(self, from_port_mock, stdout_mock):
-    def tutorial_example():
-      from stem import CircStatus
-      from stem.control import Controller
-
-      with Controller.from_port(port = 9051) as controller:
-        controller.authenticate()
-
-        for circ in sorted(controller.get_circuits()):
-          if circ.status != CircStatus.BUILT:
-            continue
-
-          print('\nCircuit %s (%s)' % (circ.id, circ.purpose))
-
-          for i, entry in enumerate(circ.path):
-            div = '+' if (i == len(circ.path) - 1) else '|'
-            fingerprint, nickname = entry
-
-            desc = controller.get_network_status(fingerprint, None)
-            address = desc.address if desc else 'unknown'
-
-            print(' %s- %s (%s, %s)' % (div, fingerprint, nickname, address))
-
     path_1 = ('B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C', 'ByTORAndTheSnowDog')
     path_2 = ('0DD9935C5E939CFA1E07B8DDA6D91C1A2A9D9338', 'afo02')
     path_3 = ('DB3B1CFBD3E4D97B84B548ADD5B9A31451EEC4CC', 'edwardsnowden3')
@@ -195,7 +175,7 @@ class TestTutorialExamples(unittest.TestCase):
       path_7[0]: _get_router_status('176.67.169.171')
     }[fingerprint]
 
-    tutorial_example()
+    exec_file('docs/_static/example/list_circuits.py')
     self.assert_equal_unordered(LIST_CIRCUITS_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
@@ -252,25 +232,6 @@ class TestTutorialExamples(unittest.TestCase):
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_outdated_relays(self, downloader_mock, stdout_mock):
-    def tutorial_example():
-      from stem.descriptor.remote import DescriptorDownloader
-      from stem.version import Version
-
-      downloader = DescriptorDownloader()
-      count, with_contact = 0, 0
-
-      print('Checking for outdated relays...\n')
-
-      for desc in downloader.get_server_descriptors():
-        if desc.tor_version < Version('0.2.3.0'):
-          count += 1
-
-          if desc.contact:
-            print('  %-15s %s' % (desc.tor_version, desc.contact.decode('utf-8', 'replace')))
-            with_contact += 1
-
-      print('\n%i outdated relays found, %i had contact information' % (count, with_contact))
-
     downloader_mock().get_server_descriptors.return_value = [
       get_relay_server_descriptor({'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
       get_relay_server_descriptor({'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
@@ -278,7 +239,7 @@ class TestTutorialExamples(unittest.TestCase):
       get_relay_server_descriptor({'opt': 'contact Sambuddha Basu', 'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
     ]
 
-    tutorial_example()
+    exec_file('docs/_static/example/outdated_relays.py')
 
     self.assert_equal_unordered(OUTDATED_RELAYS_OUTPUT, stdout_mock.getvalue())
 
@@ -286,49 +247,6 @@ class TestTutorialExamples(unittest.TestCase):
   @patch('stem.descriptor.remote.Query')
   @patch('stem.descriptor.remote.get_authorities')
   def test_compare_flags(self, get_authorities_mock, query_mock, stdout_mock):
-    def tutorial_example():
-      from stem.descriptor import DocumentHandler, remote
-
-      # Query all authority votes asynchronously.
-
-      downloader = remote.DescriptorDownloader(document_handler = DocumentHandler.DOCUMENT)
-      queries = OrderedDict()
-
-      for name, authority in remote.get_authorities().items():
-        if authority.v3ident is None:
-          continue  # authority doens't vote if it lacks a v3ident
-
-        queries[name] = downloader.get_vote(authority)
-
-      # Wait for the votes to finish being downloaded, this produces a dictionary of
-      # authority nicknames to their vote.
-
-      votes = dict((name, query.run()[0]) for (name, query) in queries.items())
-
-      # Get a superset of all the fingerprints in all the votes.
-
-      all_fingerprints = set()
-
-      for vote in votes.values():
-        all_fingerprints.update(vote.routers.keys())
-
-      # Finally, compare moria1's votes to maatuska.
-
-      for fingerprint in all_fingerprints:
-        moria1_vote = votes['moria1'].routers.get(fingerprint)
-        maatuska_vote = votes['maatuska'].routers.get(fingerprint)
-
-        if not moria1_vote and not maatuska_vote:
-          print("both moria1 and maatuska haven't voted about %s" % fingerprint)
-        elif not moria1_vote:
-          print("moria1 hasn't voted about %s" % fingerprint)
-        elif not maatuska_vote:
-          print("maatuska hasn't voted about %s" % fingerprint)
-        elif 'Running' in moria1_vote.flags and 'Running' not in maatuska_vote.flags:
-          print("moria1 has the Running flag but maatuska doesn't: %s" % fingerprint)
-        elif 'Running' in maatuska_vote.flags and 'Running' not in moria1_vote.flags:
-          print("maatuska has the Running flag but moria1 doesn't: %s" % fingerprint)
-
     get_authorities_mock().items.return_value = [('moria1', DIRECTORY_AUTHORITIES['moria1']), ('maatuska', DIRECTORY_AUTHORITIES['maatuska'])]
 
     fingerprint = [
@@ -362,7 +280,7 @@ class TestTutorialExamples(unittest.TestCase):
       [get_network_status_document_v3(routers = (entry[5], entry[6], entry[7], entry[8], entry[9]))],
     ]
 
-    tutorial_example()
+    exec_file('docs/_static/example/compare_flags.py')
 
     self.assert_equal_unordered(COMPARE_FLAGS_OUTPUT, stdout_mock.getvalue())
 
@@ -370,37 +288,6 @@ class TestTutorialExamples(unittest.TestCase):
   @patch('stem.descriptor.remote.get_authorities')
   @patch('stem.descriptor.remote.DescriptorDownloader.query')
   def test_votes_by_bandwidth_authorities(self, query_mock, get_authorities_mock, stdout_mock):
-    def tutorial_example():
-      from stem.descriptor import remote
-
-      # request votes from all the bandwidth authorities
-
-      queries = {}
-      downloader = remote.DescriptorDownloader()
-
-      for authority in remote.get_authorities().values():
-        if authority.is_bandwidth_authority:
-          queries[authority.nickname] = downloader.query(
-            '/tor/status-vote/current/authority',
-            endpoints = [(authority.address, authority.dir_port)],
-          )
-
-      for authority_name, query in queries.items():
-        try:
-          print("Getting %s's vote from %s:" % (authority_name, query.download_url))
-
-          measured, unmeasured = 0, 0
-
-          for desc in query.run():
-            if desc.measured:
-              measured += 1
-            else:
-              unmeasured += 1
-
-          print('  %i measured entries and %i unmeasured' % (measured, unmeasured))
-        except Exception as exc:
-          print('  failed to get the vote (%s)' % exc)
-
     directory_values = [
       DIRECTORY_AUTHORITIES['gabelmoo'],
       DIRECTORY_AUTHORITIES['tor26'],
@@ -432,7 +319,7 @@ class TestTutorialExamples(unittest.TestCase):
 
     query_mock.side_effect = [query1, query2, query3, query4]
 
-    tutorial_example()
+    exec_file('docs/_static/example/votes_by_bandwidth_authorities.py')
     self.assert_equal_unordered(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
@@ -440,16 +327,6 @@ class TestTutorialExamples(unittest.TestCase):
   @patch('%s.open' % __name__, create = True)
   @patch('stem.descriptor.remote.Query')
   def test_persisting_a_consensus(self, query_mock, open_mock, parse_file_mock, stdout_mock):
-    def tutorial_example_1():
-      from stem.descriptor import DocumentHandler
-      from stem.descriptor.remote import DescriptorDownloader
-
-      downloader = DescriptorDownloader()
-      consensus = downloader.get_consensus(document_handler = DocumentHandler.DOCUMENT).run()[0]
-
-      with open('/tmp/descriptor_dump', 'w') as descriptor_file:
-        descriptor_file.write(str(consensus))
-
     def tutorial_example_2():
       from stem.descriptor import DocumentHandler, parse_file
 
@@ -466,7 +343,7 @@ class TestTutorialExamples(unittest.TestCase):
     query_mock().run.return_value = [network_status]
     parse_file_mock.return_value = itertools.cycle([network_status])
 
-    tutorial_example_1()
-    tutorial_example_2()
+    exec_file('docs/_static/example/persisting_a_consensus.py')
+    exec_file('docs/_static/example/persisting_a_consensus_with_parse_file.py')
 
     self.assertEqual(PERSISTING_A_CONSENSUS_OUTPUT, stdout_mock.getvalue())

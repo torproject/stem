@@ -30,12 +30,12 @@ for fingerprint in all_fingerprints:
   maatuska_vote = votes['maatuska'].routers.get(fingerprint)
 
   if not moria1_vote and not maatuska_vote:
-    print "both moria1 and maatuska haven't voted about %s" % fingerprint
+    print("both moria1 and maatuska haven't voted about %s" % fingerprint)
   elif not moria1_vote:
-    print "moria1 hasn't voted about %s" % fingerprint
+    print("moria1 hasn't voted about %s" % fingerprint)
   elif not maatuska_vote:
-    print "maatuska hasn't voted about %s" % fingerprint
+    print("maatuska hasn't voted about %s" % fingerprint)
   elif 'Running' in moria1_vote.flags and 'Running' not in maatuska_vote.flags:
-    print "moria1 has the Running flag but maatuska doesn't: %s" % fingerprint
+    print("moria1 has the Running flag but maatuska doesn't: %s" % fingerprint)
   elif 'Running' in maatuska_vote.flags and 'Running' not in moria1_vote.flags:
-    print "maatuska has the Running flag but moria1 doesn't: %s" % fingerprint
+    print("maatuska has the Running flag but moria1 doesn't: %s" % fingerprint)
