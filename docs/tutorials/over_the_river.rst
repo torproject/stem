@@ -52,7 +52,6 @@ But with that out of the way lets take a look at a simple `Flask
 <https://jordan-wright.github.io/blog/2014/10/06/creating-tor-hidden-services-with-python/>`_...
 
 .. literalinclude:: /_static/example/running_hidden_service.py
-   :caption: `[Download] <../_static/example/running_hidden_service.py>`__
    :language: python
 
 Now if we run this...
@@ -106,7 +105,6 @@ Stem provides three methods to work with ephemeral hidden services...
 For example, with a ephemeral service our earlier example becomes as simple as...
 
 .. literalinclude:: /_static/example/ephemeral_hidden_services.py
-   :caption: `[Download] <../_static/example/ephemeral_hidden_services.py>`__
    :language: python
 
 .. _hidden-service-descriptors:
@@ -120,7 +118,6 @@ connections. Hidden service descriptors are available from the tor process via
 its :func:`~stem.control.Controller.get_hidden_service_descriptor` method...
 
 .. literalinclude:: /_static/example/get_hidden_service_descriptor.py
-   :caption: `[Download] <../_static/example/get_hidden_service_descriptor.py>`__
    :language: python
 
 ::
@@ -151,7 +148,6 @@ descriptor's
 method.
 
 .. literalinclude:: /_static/example/introduction_points.py
-   :caption: `[Download] <../_static/example/introduction_points.py>`__
    :language: python
 
 ::

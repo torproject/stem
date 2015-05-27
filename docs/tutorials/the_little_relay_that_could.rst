@@ -48,7 +48,6 @@ unfamiliar with the '**with**' keyword then see `here
 <../faq.html#what-is-that-with-keyword-i-keep-seeing-in-the-tutorials>`_...
 
 .. literalinclude:: /_static/example/hello_world.py
-   :caption: `[Download] <../_static/example/hello_world.py>`_
    :language: python
 
 ::

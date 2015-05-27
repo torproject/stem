@@ -77,7 +77,6 @@ irresponsible script can make Tor worse for everyone.
 Listing the current relays in the Tor network is as easy as...
 
 .. literalinclude:: /_static/example/current_descriptors.py
-   :caption: `[Download] <../_static/example/current_descriptors.py>`__
    :language: python
 
 .. _where-can-i-get-past-descriptors:
@@ -90,7 +89,6 @@ Descriptor archives are available from `CollecTor
 the `DescriptorReader <../api/descriptor/reader.html>`_...
 
 .. literalinclude:: /_static/example/past_descriptors.py
-   :caption: `[Download] <../_static/example/past_descriptors.py>`__
    :language: python
 
 .. _can-i-get-descriptors-from-the-tor-process:
@@ -140,13 +138,11 @@ Now that Tor is happy chugging along, up-to-date descriptors are available
 through Tor's control socket...
 
 .. literalinclude:: /_static/example/descriptor_from_tor_control_socket.py
-   :caption: `[Download] <../_static/example/descriptor_from_tor_control_socket.py>`__
    :language: python
 
 ... or by reading directly from Tor's data directory...
 
 .. literalinclude:: /_static/example/descriptor_from_tor_data_directory.py
-   :caption: `[Download] <../_static/example/descriptor_from_tor_data_directory.py>`__
    :language: python
 
 .. _validating-the-descriptors-content:
@@ -175,7 +171,6 @@ Validating is as simple as including **validate = True** in any method that
 provides descriptors...
 
 .. literalinclude:: /_static/example/validate_descriptor_content.py
-   :caption: `[Download] <../_static/example/validate_descriptor_content.py>`__
    :language: python
 
 .. _saving-and-loading-descriptors:
@@ -188,7 +183,6 @@ Tor descriptors are just plaintext documents. As such, if you'd rather not use
 descriptor by simply writing it to disk, then reading it back later.
 
 .. literalinclude:: /_static/example/saving_and_loading_descriptors.py
-   :caption: `[Download] <../_static/example/saving_and_loading_descriptors.py>`__
    :language: python
 
 Our *server_descriptors* here is a list of
@@ -211,7 +205,6 @@ We can then read it back with :func:`~stem.descriptor.__init__.parse_file`
 by telling it the type of descriptors we're reading...
 
 .. literalinclude:: /_static/example/read_with_parse_file.py
-   :caption: `[Download] <../_static/example/read_with_parse_file.py>`__
    :language: python
 
 For an example of doing this with a consensus document `see here
@@ -234,7 +227,6 @@ could use any of the methods above, but for this example we'll use
 `stem.descriptor.remote <../api/descriptor/remote.html>`_...
 
 .. literalinclude:: /_static/example/tor_descriptors.py
-   :caption: `[Download] <../_static/example/tor_descriptors.py>`__
    :language: python
 
 ::

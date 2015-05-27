@@ -34,7 +34,6 @@ With that out of the way, how do you look up this information? Below is a
 simple script that dumps Tor's present connections.
 
 .. literalinclude:: /_static/example/utilities.py
-   :caption: `[Download] <../_static/example/utilities.py>`__
    :language: python
 
 ::

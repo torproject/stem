@@ -29,7 +29,6 @@ are events that Tor emits each second saying the number of bytes downloaded and
 uploaded.
 
 .. literalinclude:: /_static/example/event_listening.py
-   :caption: `[Download] <../_static/example/event_listening.py>`__
    :emphasize-lines: 53-55,62-67
    :language: python
 
