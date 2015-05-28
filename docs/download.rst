@@ -36,14 +36,14 @@ Download
    * Gentoo
      Source: https://www.gentoo.org/main/en/name-logo.xml
    
+   * Arch Linux
+     Source: https://en.wikipedia.org/wiki/File:Archlinux-official-fullcolour.svg
+   
    * Slackware
      Source: NuoveXT (http://nuovext.pwsp.net/)
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
      License: GPL v2
      File: NuoveXT/128x128/apps/slackware.png
-   
-   * Arch Linux
-     Source: https://en.wikipedia.org/wiki/File:Archlinux-official-fullcolour.svg
    
    * FreeBSD
      Source: https://en.wikipedia.org/wiki/File:Freebsd_logo.svg
@@ -90,6 +90,7 @@ Download
 
        ::
 
+         % sudo easy_install pip
          % sudo pip install stem
 
    * - .. image:: /_static/section/download/debian.png
@@ -142,23 +143,30 @@ Download
 
          % sudo emerge stem
 
-   * - .. image:: /_static/section/download/slackware.png
-          :target: http://slackbuilds.org/repository/14.1/python/stem/
-
-     - .. image:: /_static/label/slackware.png
-          :target: http://slackbuilds.org/repository/14.1/python/stem/
-
-       Package maintained by Markus for Slackware (`instructions
-       <http://slackbuilds.org/howto/>`_).
-
    * - .. image:: /_static/section/download/archlinux.png
           :target: https://aur.archlinux.org/packages/stem/
 
      - .. image:: /_static/label/archlinux.png
           :target: https://aur.archlinux.org/packages/stem/
 
-       Package maintained by Sjon for Arch Linux (`instructions
-       <https://wiki.archlinux.org/index.php/AUR#Installing_packages>`_).
+       Package maintained by Sjon for `Arch Linux
+       <https://wiki.archlinux.org/index.php/AUR#Installing_packages>`_.
+
+       ::
+
+           % wget https://aur.archlinux.org/packages/st/stem/stem.tar.gz
+           % tar -xvf stem.tar.gz
+           % cd stem
+           % makepkg --install
+
+   * - .. image:: /_static/section/download/slackware.png
+          :target: http://slackbuilds.org/repository/14.1/python/stem/
+
+     - .. image:: /_static/label/slackware.png
+          :target: http://slackbuilds.org/repository/14.1/python/stem/
+
+       Package maintained by Markus for `Slackware
+       <http://slackbuilds.org/howto/>`_.
 
    * - .. image:: /_static/section/download/freebsd.png
           :target: http://www.freshports.org/security/py-stem/
@@ -166,8 +174,8 @@ Download
      - .. image:: /_static/label/freebsd.png
           :target: http://www.freshports.org/security/py-stem/
 
-       Port maintained by Carlo for FreeBSD (`instructions
-       <http://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/ports.html>`_).
+       Port maintained by Carlo for `FreeBSD
+       <http://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/ports.html>`_.
 
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
