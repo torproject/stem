@@ -236,6 +236,45 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     self.assertTrue(isinstance(str(desc), str))
 
+  def test_with_ed25519(self):
+    """
+    Parses a descriptor with a ed25519 identity key, as added by proposal 228
+    (cross certification onionkeys).
+    """
+
+    with open(get_resource('server_descriptor_with_ed25519'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
+
+    self.assertEqual('Truie', desc.nickname)
+    self.assertEqual('A69221A7EC7498D2F88A0FB795261013FA36CAAE', desc.fingerprint)
+    self.assertEqual('198.50.156.78', desc.address)
+    self.assertEqual(9001, desc.or_port)
+    self.assertEqual(None, desc.socks_port)
+    self.assertEqual(9030, desc.dir_port)
+    self.assertEqual(b'Tor 0.2.7.1-alpha-dev on Linux', desc.platform)
+    self.assertEqual(stem.version.Version('0.2.7.1-alpha-dev'), desc.tor_version)
+    self.assertEqual('Linux', desc.operating_system)
+    self.assertEqual(61, desc.uptime)
+    self.assertEqual(datetime.datetime(2015, 5, 28, 15, 44, 47), desc.published)
+    self.assertEqual(b'0x11F48D36 David Goulet <dgoulet AT ev0ke dot net>', desc.contact)
+    self.assertEqual(['1', '2'], desc.link_protocols)
+    self.assertEqual(['1'], desc.circuit_protocols)
+    self.assertEqual(False, desc.hibernating)
+    self.assertEqual(False, desc.allow_single_hop_exits)
+    self.assertEqual(False, desc.extra_info_cache)
+    self.assertEqual('0879DB7B765218D7B3AE7557669D20307BB21CAA', desc.extra_info_digest)
+    self.assertEqual(['2'], desc.hidden_service_dir)
+    self.assertEqual(set(), desc.family)
+    self.assertEqual(1073741824, desc.average_bandwidth)
+    self.assertEqual(1073741824, desc.burst_bandwidth)
+    self.assertEqual(9506816, desc.observed_bandwidth)
+    self.assertEqual(stem.exit_policy.ExitPolicy('reject *:*'), desc.exit_policy)
+    self.assertTrue('MIGJAoGBALbTpn' in desc.onion_key)
+    self.assertTrue('MIGJAoGBALDSt2' in desc.signing_key)
+    self.assertTrue('mSkveaqx79vzX' in desc.signature)
+    self.assertEqual(4, len(desc.get_unrecognized_lines()))
+    self.assertEqual('B0445BC590F004B8FD3BE922EB19EC490DBA9077', desc.digest())
+
   def test_cr_in_contact_line(self):
     """
     Parses a descriptor with a huge contact line containing anomalous carriage

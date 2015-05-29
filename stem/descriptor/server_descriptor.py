@@ -265,6 +265,16 @@ def _parse_fingerprint_line(descriptor, entries):
   descriptor.fingerprint = fingerprint
 
 
+def _parse_extrainfo_digest_line(descriptor, entries):
+  value = _value('extra-info-digest', entries)
+  value = value.split(' ')[0]  # lines have additional content from propsal 228, waiting for it to be documented: #16227
+
+  if not stem.util.tor_tools.is_hex_digits(value, 40):
+    raise ValueError('extra-info-digest should be 40 hex characters: %s' % value)
+
+  descriptor.extra_info_digest = value
+
+
 def _parse_hibernating_line(descriptor, entries):
   # "hibernating" 0|1 (in practice only set if one)
 
@@ -374,7 +384,6 @@ def _parse_exit_policy(descriptor, entries):
 
 _parse_contact_line = _parse_bytes_line('contact', 'contact')
 _parse_published_line = _parse_timestamp_line('published', 'published')
-_parse_extrainfo_digest_line = _parse_forty_character_hex('extra-info-digest', 'extra_info_digest')
 _parse_read_history_line = functools.partial(_parse_history_line, 'read-history', 'read_history_end', 'read_history_interval', 'read_history_values')
 _parse_write_history_line = functools.partial(_parse_history_line, 'write-history', 'write_history_end', 'write_history_interval', 'write_history_values')
 _parse_ipv6_policy_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('ipv6-policy', entries)))

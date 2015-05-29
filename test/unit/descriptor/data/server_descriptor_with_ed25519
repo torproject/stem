@@ -1,0 +1,50 @@
+@type server-descriptor 1.0
+router Truie 198.50.156.78 9001 0 9030
+identity-ed25519
+-----BEGIN ED25519 CERT-----
+AQQABhWIAZTz0r0KRagr6X9SHfm4oiIuMLVhJQQmNchtkBuR5SuFAQAgBAAVkw7m
+0YJgO/A8VMioco097sIOutDiM7UqqPvoIyKErk1akOm3f6VAO/juOzxEeAgzgfA7
+DiRsSjeVjp0xUdE43bXhK/8Uh+SPMwYKj47drjgTHGgzjTmlY9B/jFJ1Wgs=
+-----END ED25519 CERT-----
+platform Tor 0.2.7.1-alpha-dev on Linux
+protocols Link 1 2 Circuit 1
+published 2015-05-28 15:44:47
+fingerprint A692 21A7 EC74 98D2 F88A 0FB7 9526 1013 FA36 CAAE
+uptime 61
+bandwidth 1073741824 1073741824 9506816
+extra-info-digest 0879DB7B765218D7B3AE7557669D20307BB21CAA V609l+N6ActBveebfNbH5lQ6wHDNstDkFgyqEhBHwtA
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALbTpnPvhaGET+2ACtLdG6jhQXN8uVJ0iF9RwMh2hwu351yp3eVPt7os
+ditUF6w7KV+6emkvLu9EBpNN7vWrpDAhRNOGTOZhZKLnGFaxp+eGNX6+5AhmiWYt
+/+w+f6dvVKEjsaX3XZsMqcTBjw2hzVpHxh/AjgDx/b9mJKC85vENAgMBAAE=
+-----END RSA PUBLIC KEY-----
+signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALDSt2G+Zjl20a59HZsuag913ONdnnNa/uVMRbsZZkbnNRONf2aXBGgu
+wrW7XtPLeAKl+d0d5g9XnePVvefcEdKvoKNCFv6s8s3S2KB/CEkeyE7Lxx1Pc6Qx
+f/jgS3T3TFHUlvtZvHLZ/3WaXMyuTTRlGadpzDkQx5oWR6aNn065AgMBAAE=
+-----END RSA PUBLIC KEY-----
+onion-key-crosscert
+-----BEGIN CROSSCERT-----
+TCcCIv38fGcSzUO+DKxudFme2XBRuDkf5FjEr+6UbtDyuDjvjJDFYagN+zMJf/4K
+RyBScjyKYK6MVMxAmf25QjAGx3KHV00ozVSzlN3WDAS2iicuKYvBsehG9g/tr6mI
+luS5EoSKJIlmM2jOhN1QyR+Rpi37z/E6VTksk/bd69A=
+-----END CROSSCERT-----
+ntor-onion-key-crosscert 0
+-----BEGIN ED25519 CERT-----
+AQoABhNgARWTDubRgmA78DxUyKhyjT3uwg660OIztSqo++gjIoSuAEW8gwMcFUSD
+mfkijKN6KyZxHloENGcgJMeJsR9kvfYp/u7O+VoPQ1kTxaw1lajTrnGQF+PV1MlK
+niid4Nq5ZgM=
+-----END ED25519 CERT-----
+hidden-service-dir
+contact 0x11F48D36 David Goulet <dgoulet AT ev0ke dot net>
+ntor-onion-key qDcuoDpDD36bIapIbXBVhkIoiuMIXD9jNfjF1+7Vaks=
+reject *:*
+router-sig-ed25519 AxqrLz7QL/e+xGhhihs/rNzWsBW0Qla7Cwru1q88A5i+pcQBgfzfECiecptqYbDAsUPXMtwFsLp7Ls2BMOzvCQ
+router-signature
+-----BEGIN SIGNATURE-----
+mSkveaqx79vzXLc6yC2+x8yZMQPe74ihw9tZJDdSOK5VqhzZOKHFM+JoD12noxQd
+wgxa+IX0RG65KlguYE7NEZ7M6JOwr6r0zK/pWSZE8ZeHyt7FDx9ygc3k2ybQ6RWE
+Hd7QXPiyVgs9cIgnvGFVt/5vzjMV+BELpOtehBrUJbs=
+-----END SIGNATURE-----
