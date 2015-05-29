@@ -9,6 +9,7 @@ from stem.control import Controller
 from stem.descriptor.reader import DescriptorReader
 from stem.descriptor.server_descriptor import RelayDescriptor
 from test import mocking
+from test.unit import exec_documentation_example
 
 try:
   from StringIO import StringIO
@@ -36,12 +37,6 @@ MIRROR_MIRROR_OUTPUT = """\
 """
 
 
-def exec_file(path):
-  with open(path) as f:
-    code = compile(f.read(), path, 'exec')
-    exec(code)
-
-
 class TestTutorial(unittest.TestCase):
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
@@ -52,7 +47,7 @@ class TestTutorial(unittest.TestCase):
       'traffic/written': '29649',
     }[arg]
 
-    exec_file('docs/_static/example/hello_world.py')
+    exec_documentation_example('hello_world.py')
     self.assertEqual('My Tor relay has read 33406 bytes and written 29649.\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
@@ -126,7 +121,7 @@ class TestTutorial(unittest.TestCase):
   def test_mirror_mirror_on_the_wall_1(self, downloader_mock, stdout_mock):
     downloader_mock().get_consensus().run.return_value = [mocking.get_router_status_entry_v2()]
 
-    exec_file('docs/_static/example/current_descriptors.py')
+    exec_documentation_example('current_descriptors.py')
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
@@ -135,7 +130,7 @@ class TestTutorial(unittest.TestCase):
     controller = from_port_mock().__enter__()
     controller.get_network_statuses.return_value = [mocking.get_router_status_entry_v2()]
 
-    exec_file('docs/_static/example/descriptor_from_tor_control_socket.py')
+    exec_documentation_example('descriptor_from_tor_control_socket.py')
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
@@ -164,7 +159,7 @@ class TestTutorial(unittest.TestCase):
     reader = reader_mock().__enter__()
     reader.__iter__.return_value = iter([mocking.get_relay_server_descriptor()])
 
-    exec_file('docs/_static/example/past_descriptors.py')
+    exec_documentation_example('past_descriptors.py')
     self.assertEqual('found relay caerSidi (None)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)

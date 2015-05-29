@@ -19,6 +19,7 @@ from stem.control import Controller
 from stem.descriptor.remote import DIRECTORY_AUTHORITIES
 
 from test import mocking
+from test.unit import exec_documentation_example
 from test.mocking import (
   get_relay_server_descriptor,
   get_router_status_entry_v3,
@@ -101,12 +102,6 @@ A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB: caerSidi
 """
 
 
-def exec_file(path):
-  with OPEN_FUNCTION(path, 'rb') as f:
-    code = compile(f.read(), path, 'exec')
-    exec(code)
-
-
 def _get_event(content):
   controller_event = mocking.get_message(content)
   stem.response.convert('EVENT', controller_event)
@@ -175,7 +170,7 @@ class TestTutorialExamples(unittest.TestCase):
       path_7[0]: _get_router_status('176.67.169.171')
     }[fingerprint]
 
-    exec_file('docs/_static/example/list_circuits.py')
+    exec_documentation_example('list_circuits.py')
     self.assert_equal_unordered(LIST_CIRCUITS_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
@@ -239,7 +234,7 @@ class TestTutorialExamples(unittest.TestCase):
       get_relay_server_descriptor({'opt': 'contact Sambuddha Basu', 'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
     ]
 
-    exec_file('docs/_static/example/outdated_relays.py')
+    exec_documentation_example('outdated_relays.py')
 
     self.assert_equal_unordered(OUTDATED_RELAYS_OUTPUT, stdout_mock.getvalue())
 
@@ -280,7 +275,7 @@ class TestTutorialExamples(unittest.TestCase):
       [get_network_status_document_v3(routers = (entry[5], entry[6], entry[7], entry[8], entry[9]))],
     ]
 
-    exec_file('docs/_static/example/compare_flags.py')
+    exec_documentation_example('compare_flags.py')
 
     self.assert_equal_unordered(COMPARE_FLAGS_OUTPUT, stdout_mock.getvalue())
 
@@ -319,7 +314,7 @@ class TestTutorialExamples(unittest.TestCase):
 
     query_mock.side_effect = [query1, query2, query3, query4]
 
-    exec_file('docs/_static/example/votes_by_bandwidth_authorities.py')
+    exec_documentation_example('votes_by_bandwidth_authorities.py')
     self.assert_equal_unordered(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
@@ -343,7 +338,7 @@ class TestTutorialExamples(unittest.TestCase):
     query_mock().run.return_value = [network_status]
     parse_file_mock.return_value = itertools.cycle([network_status])
 
-    exec_file('docs/_static/example/persisting_a_consensus.py')
-    exec_file('docs/_static/example/persisting_a_consensus_with_parse_file.py')
+    exec_documentation_example('persisting_a_consensus.py')
+    exec_documentation_example('persisting_a_consensus_with_parse_file.py')
 
     self.assertEqual(PERSISTING_A_CONSENSUS_OUTPUT, stdout_mock.getvalue())
