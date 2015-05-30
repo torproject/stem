@@ -177,6 +177,10 @@ Download
        Port maintained by Carlo for `FreeBSD
        <http://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/ports.html>`_.
 
+       ::
+
+           % pkg install security/py-stem
+
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
 
