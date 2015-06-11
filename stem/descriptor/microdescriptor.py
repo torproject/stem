@@ -19,7 +19,7 @@ corresponding router status entry. For added fun as of this writing the
 controller doesn't even surface those router status entries
 (:trac:`7953`).
 
-For instance, here's an example that prints the nickname and fignerprints of
+For instance, here's an example that prints the nickname and fingerprints of
 the exit relays.
 
 ::
