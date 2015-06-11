@@ -777,13 +777,13 @@ def tail(target, lines = None):
   target.seek(0, 2)  # go to the end of the file
   block_end_byte = target.tell()
   block_number = -1
-  content = ''
+  content = b''
 
   while (lines is None or lines > 0) and block_end_byte > 0:
     if (block_end_byte - BLOCK_SIZE > 0):
       # read the last block we haven't yet read
       target.seek(block_number * BLOCK_SIZE, 2)
-      content, completed_lines = (target.read(BLOCK_SIZE) + content).split('\n', 1)
+      content, completed_lines = (target.read(BLOCK_SIZE) + content).split(b'\n', 1)
     else:
       # reached the start of the file, just read what's left
       target.seek(0, 0)
@@ -794,7 +794,7 @@ def tail(target, lines = None):
         if lines is not None:
           lines -= 1
 
-        yield line
+        yield stem.util.str_tools._to_unicode(line)
 
     block_end_byte -= BLOCK_SIZE
     block_number -= 1

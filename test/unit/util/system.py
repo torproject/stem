@@ -382,7 +382,7 @@ class TestSystem(unittest.TestCase):
 
     # by file handle
 
-    with open(path) as riddle_file:
+    with open(path, 'rb') as riddle_file:
       self.assertEqual(['  both the wicked and sweet.'], list(system.tail(riddle_file, 1)))
 
     self.assertEqual([], list(system.tail(path, 0)))
