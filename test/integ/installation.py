@@ -1,6 +1,7 @@
 import glob
 import os
 import shutil
+import sys
 import unittest
 
 import stem
@@ -21,14 +22,14 @@ class TestInstallation(unittest.TestCase):
 
     try:
       os.chdir(base_directory)
-      stem.util.system.call('python setup.py install --prefix /tmp/stem_test')
-      stem.util.system.call('python setup.py clean --all')  # tidy up the build directory
+      stem.util.system.call(sys.executable + ' setup.py install --prefix /tmp/stem_test')
+      stem.util.system.call(sys.executable + ' setup.py clean --all')  # tidy up the build directory
       site_packages_paths = glob.glob('/tmp/stem_test/lib*/*/site-packages')
 
       if len(site_packages_paths) != 1:
         self.fail('We should only have a single site-packages directory, but instead had: %s' % site_packages_paths)
 
-      self.assertEqual(stem.__version__, stem.util.system.call(['python', '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % site_packages_paths[0]])[0])
+      self.assertEqual(stem.__version__, stem.util.system.call([sys.executable, '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % site_packages_paths[0]])[0])
     finally:
       shutil.rmtree('/tmp/stem_test')
       os.chdir(original_cwd)
