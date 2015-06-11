@@ -765,7 +765,7 @@ def tail(target, lines = None):
   """
 
   if isinstance(target, str):
-    with open(target) as target_file:
+    with open(target, 'rb') as target_file:
       for line in tail(target_file, lines):
         yield line
 
