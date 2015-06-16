@@ -665,7 +665,7 @@ def authenticate_none(controller, suppress_ctl_errors = True):
       pass
 
     if not suppress_ctl_errors:
-      raise exc
+      raise
     else:
       raise OpenAuthRejected('Socket failed (%s)' % exc)
 
@@ -735,7 +735,7 @@ def authenticate_password(controller, password, suppress_ctl_errors = True):
       pass
 
     if not suppress_ctl_errors:
-      raise exc
+      raise
     else:
       raise PasswordAuthRejected('Socket failed (%s)' % exc)
 
@@ -825,7 +825,7 @@ def authenticate_cookie(controller, cookie_path, suppress_ctl_errors = True):
       pass
 
     if not suppress_ctl_errors:
-      raise exc
+      raise
     else:
       raise CookieAuthRejected('Socket failed (%s)' % exc, cookie_path, False)
 
@@ -922,7 +922,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
       pass
 
     if not suppress_ctl_errors:
-      raise exc
+      raise
     else:
       raise AuthChallengeFailed('Socket failed (%s)' % exc, cookie_path, True)
 
@@ -930,7 +930,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
     stem.response.convert('AUTHCHALLENGE', authchallenge_response)
   except stem.ProtocolError as exc:
     if not suppress_ctl_errors:
-      raise exc
+      raise
     else:
       raise AuthChallengeFailed('Unable to parse AUTHCHALLENGE response: %s' % exc, cookie_path)
 
@@ -954,7 +954,7 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
       pass
 
     if not suppress_ctl_errors:
-      raise exc
+      raise
     else:
       raise CookieAuthRejected('Socket failed (%s)' % exc, cookie_path, True, auth_response)
 

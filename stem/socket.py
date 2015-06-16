@@ -122,14 +122,14 @@ class ControlSocket(object):
           raise stem.SocketClosed()
 
         send_message(self._socket_file, message, raw)
-      except stem.SocketClosed as exc:
+      except stem.SocketClosed:
         # if send_message raises a SocketClosed then we should properly shut
         # everything down
 
         if self.is_alive():
           self.close()
 
-        raise exc
+        raise
 
   def recv(self):
     """
@@ -154,7 +154,7 @@ class ControlSocket(object):
           raise stem.SocketClosed()
 
         return recv_message(socket_file)
-      except stem.SocketClosed as exc:
+      except stem.SocketClosed:
         # If recv_message raises a SocketClosed then we should properly shut
         # everything down. However, there's a couple cases where this will
         # cause deadlock...
@@ -174,7 +174,7 @@ class ControlSocket(object):
             self.close()
             self._send_lock.release()
 
-        raise exc
+        raise
 
   def is_alive(self):
     """

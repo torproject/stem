@@ -508,7 +508,7 @@ def _get_lines(file_path, line_prefixes, parameter):
       return results
   except IOError as exc:
     _log_failure(parameter, exc)
-    raise exc
+    raise
 
 
 def _log_runtime(parameter, proc_location, start_time):

@@ -409,11 +409,11 @@ def with_default(yields = False):
       def wrapped(self, *args, **kwargs):
         try:
           return func(self, *args, **kwargs)
-        except Exception as exc:
+        except:
           default = get_default(func, args, kwargs)
 
           if default == UNDEFINED:
-            raise exc
+            raise
           else:
             return default
     else:
@@ -422,11 +422,11 @@ def with_default(yields = False):
         try:
           for val in func(self, *args, **kwargs):
             yield val
-        except Exception as exc:
+        except:
           default = get_default(func, args, kwargs)
 
           if default == UNDEFINED:
-            raise exc
+            raise
           else:
             if default is not None:
               for val in default:
@@ -572,14 +572,14 @@ class BaseController(object):
             self._post_authentication()
 
           return response
-      except stem.SocketClosed as exc:
+      except stem.SocketClosed:
         # If the recv() thread caused the SocketClosed then we could still be
         # in the process of closing. Calling close() here so that we can
         # provide an assurance to the caller that when we raise a SocketClosed
         # exception we are shut down afterward for realz.
 
         self.close()
-        raise exc
+        raise
 
   def is_alive(self):
     """
@@ -1125,7 +1125,7 @@ class Controller(BaseController):
 
       log.debug('GETINFO %s (failed: %s)' % (' '.join(params), exc))
 
-      raise exc
+      raise
 
   @with_default()
   def get_version(self, default = UNDEFINED):
@@ -1545,7 +1545,7 @@ class Controller(BaseController):
       if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
         raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
       else:
-        raise exc
+        raise
 
     if not desc_content:
       raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
@@ -1653,7 +1653,7 @@ class Controller(BaseController):
         if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
           raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
         else:
-          raise exc
+          raise
 
       if not desc_content:
         raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
@@ -1663,7 +1663,7 @@ class Controller(BaseController):
       if not self._is_server_descriptors_available():
         raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
 
-      raise exc
+      raise
 
   @with_default(yields = True)
   def get_server_descriptors(self, default = UNDEFINED):
@@ -1775,7 +1775,7 @@ class Controller(BaseController):
       if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
         raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
       else:
-        raise exc
+        raise
 
     if not desc_content:
       raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
@@ -2090,7 +2090,7 @@ class Controller(BaseController):
       if default != UNDEFINED:
         return dict((param, default) for param in params)
       else:
-        raise exc
+        raise
 
   def _get_conf_dict_to_response(self, config_dict, default, multiple):
     """
@@ -2280,7 +2280,7 @@ class Controller(BaseController):
                 (time.time() - start_time))
     except stem.ControllerError as exc:
       log.debug('GETCONF HiddenServiceOptions (failed: %s)' % exc)
-      raise exc
+      raise
 
     service_dir_map = OrderedDict()
     directory = None
@@ -2579,14 +2579,14 @@ class Controller(BaseController):
         result += self.get_info('onions/current').split('\n')
       except stem.ProtocolError as exc:
         if 'No onion services of the specified type.' not in str(exc):
-          raise exc
+          raise
 
     if detached:
       try:
         result += self.get_info('onions/detached').split('\n')
       except stem.ProtocolError as exc:
         if 'No onion services of the specified type.' not in str(exc):
-          raise exc
+          raise
 
     return result
 

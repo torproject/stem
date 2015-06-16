@@ -953,6 +953,8 @@ def files_with_suffix(base_path, suffix):
 
 def call(command, default = UNDEFINED, ignore_exit_status = False):
   """
+  call(command, default = UNDEFINED, ignore_exit_status = False)
+
   Issues a command in a subprocess, blocking until completion and returning the
   results. This is not actually ran in a shell so pipes and other shell syntax
   are not permitted.
@@ -1007,7 +1009,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False):
     if default != UNDEFINED:
       return default
     else:
-      raise exc
+      raise
 
 
 def get_process_name():

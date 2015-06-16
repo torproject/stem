@@ -345,7 +345,7 @@ class ControlInterpretor(code.InteractiveConsole):
             output = format(self._controller.msg(command).raw_content().strip(), *STANDARD_OUTPUT)
           except stem.ControllerError as exc:
             if isinstance(exc, stem.SocketClosed):
-              raise exc
+              raise
             else:
               output = format(str(exc), *ERROR_OUTPUT)
 

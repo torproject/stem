@@ -489,9 +489,9 @@ class Descriptor(object):
               line += '\n%s' % block_contents
 
             self._unrecognized_lines.append(line)
-      except ValueError as exc:
+      except ValueError:
         if validate:
-          raise exc
+          raise
 
   def _set_path(self, path):
     self._path = path
@@ -821,11 +821,11 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
         block_type, block_contents = block_attr
       else:
         block_type, block_contents = None, None
-    except ValueError as exc:
+    except ValueError:
       if not validate:
         continue
 
-      raise exc
+      raise
 
     if keyword in extra_keywords:
       extra_entries.append('%s %s' % (keyword, value))
