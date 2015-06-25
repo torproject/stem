@@ -7,7 +7,7 @@ queries = {}
 
 for name, authority in remote.get_authorities().items():
   if authority.v3ident is None:
-    continue  # authority doens't vote if it lacks a v3ident
+    continue  # authority doesn't vote if it lacks a v3ident
 
   queries[name] = downloader.get_vote(authority)
 
