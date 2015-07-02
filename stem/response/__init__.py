@@ -76,12 +76,13 @@ def convert(response_type, message, **kwargs):
   =================== =====
   response_type       Class
   =================== =====
-  **GETINFO**         :class:`stem.response.getinfo.GetInfoResponse`
-  **GETCONF**         :class:`stem.response.getconf.GetConfResponse`
-  **MAPADDRESS**      :class:`stem.response.mapaddress.MapAddressResponse`
-  **EVENT**           :class:`stem.response.events.Event` subclass
-  **PROTOCOLINFO**    :class:`stem.response.protocolinfo.ProtocolInfoResponse`
+  **ADD_ONION**       :class:`stem.response.add_onion.AddOnionResponse`
   **AUTHCHALLENGE**   :class:`stem.response.authchallenge.AuthChallengeResponse`
+  **EVENT**           :class:`stem.response.events.Event` subclass
+  **GETCONF**         :class:`stem.response.getconf.GetConfResponse`
+  **GETINFO**         :class:`stem.response.getinfo.GetInfoResponse`
+  **MAPADDRESS**      :class:`stem.response.mapaddress.MapAddressResponse`
+  **PROTOCOLINFO**    :class:`stem.response.protocolinfo.ProtocolInfoResponse`
   **SINGLELINE**      :class:`stem.response.SingleLineResponse`
   =================== =====
 
@@ -119,11 +120,11 @@ def convert(response_type, message, **kwargs):
     'ADD_ONION': stem.response.add_onion.AddOnionResponse,
     'AUTHCHALLENGE': stem.response.authchallenge.AuthChallengeResponse,
     'EVENT': stem.response.events.Event,
-    'GETINFO': stem.response.getinfo.GetInfoResponse,
     'GETCONF': stem.response.getconf.GetConfResponse,
+    'GETINFO': stem.response.getinfo.GetInfoResponse,
     'MAPADDRESS': stem.response.mapaddress.MapAddressResponse,
-    'SINGLELINE': SingleLineResponse,
     'PROTOCOLINFO': stem.response.protocolinfo.ProtocolInfoResponse,
+    'SINGLELINE': SingleLineResponse,
   }
 
   try:
