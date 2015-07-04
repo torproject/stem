@@ -81,6 +81,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- get_protocolinfo - information about the controller interface
     |- get_user - provides the user tor is running as
     |- get_pid - provides the pid of our tor process
+    |- is_user_traffic_allowed - checks if we send or receive direct user traffic
     |
     |- get_microdescriptor - querying the microdescriptor for a relay
     |- get_microdescriptors - provides all currently available microdescriptors
@@ -378,6 +379,11 @@ AccountingStats = collections.namedtuple('AccountingStats', [
   'written_bytes',
   'write_bytes_left',
   'write_limit',
+])
+
+UserTrafficAllowed = collections.namedtuple('UserTrafficAllowed', [
+  'inbound',
+  'outbound',
 ])
 
 CreateHiddenServiceOutput = collections.namedtuple('CreateHiddenServiceOutput', [
@@ -1493,6 +1499,46 @@ class Controller(BaseController):
       return pid
     else:
       raise ValueError("Unable to resolve tor's pid" if self.is_localhost() else "Tor isn't running locally")
+
+  def is_user_traffic_allowed(self):
+    """
+    Checks if we're likely to service direct user traffic. This essentially
+    boils down to...
+
+      * If we're a bridge or guard relay, inbound connections are possibly from
+        users.
+
+      * If our exit policy allows traffic then output connections are possibly
+        from users.
+
+    Note the word 'likely'. These is a decent guess in practice, but not always
+    correct. For instance, information about which flags we have are only
+    fetched periodically.
+
+    This method is intended to help you avoid eavesdropping on user traffic.
+    Monitoring user connections is not only unethical, but likely a violation
+    of wiretapping laws.
+
+    .. versionadded:: 1.5.0
+
+    :returns: **namedtuple** with an **inbound** and **outbound** boolean
+      attribute to indicate if we're likely to have user traffic there
+    """
+
+    inbound_allowed, outbound_allowed = False, False
+
+    if self.get_conf('BridgeRelay', None) == '1':
+      inbound_allowed = True
+
+    if self.get_conf('ORPort', None):
+      if not inbound_allowed:
+        consensus_entry = self.get_network_status(default = None)
+        inbound_allowed = consensus_entry and 'Guard' in consensus_entry.flags
+
+      exit_policy = self.get_exit_policy(None)
+      outbound_allowed = exit_policy and exit_policy.is_exiting_allowed()
+
+    return UserTrafficAllowed(inbound_allowed, outbound_allowed)
 
   @with_default()
   def get_microdescriptor(self, relay = None, default = UNDEFINED):

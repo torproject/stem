@@ -47,6 +47,7 @@ The following are only available within Stem's `git repository
   * Dramatic, `300x performance improvement <https://github.com/DonnchaC/stem/pull/1>`_ for reading from the control port with python 3
   * :func:`~stem.connection.connect` and :func:`~stem.control.Controller.from_port` now connect to both port 9051 (relay's default) and 9151 (Tor Browser's default) (:trac:`16075`)
   * Added `support for NETWORK_LIVENESS events <api/response.html#stem.response.events.NetworkLivenessEvent>`_ (:spec:`44aac63`)
+  * Added :func:`~stem.control.Controller.is_user_traffic_allowed` to the :class:`~stem.control.Controller`
   * IPv6 addresses could trigger errors in :func:`~stem.control.Controller.get_listeners`, :class:`~stem.response.events.ORConnEvent`, and quite a few other things (:trac:`16174`)
   * Don't obscure stacktraces, most notably :class:`~stem.control.Controller` getter methods with default values
 
