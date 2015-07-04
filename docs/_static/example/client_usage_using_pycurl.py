@@ -1,5 +1,5 @@
+import io
 import pycurl
-import StringIO
 
 import stem.process
 
@@ -13,7 +13,7 @@ def query(url):
   Uses pycurl to fetch a site using the proxy on the SOCKS_PORT.
   """
 
-  output = StringIO.StringIO()
+  output = io.BytesIO()
 
   query = pycurl.Curl()
   query.setopt(pycurl.URL, url)
