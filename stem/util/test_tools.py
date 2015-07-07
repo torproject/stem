@@ -116,7 +116,7 @@ def is_pep8_available():
     return False
 
 
-def stylistic_issues(paths, check_two_space_indents = False, check_newlines = False, check_trailing_whitespace = False, check_exception_keyword = False, prefer_single_quotes = False):
+def stylistic_issues(paths, check_newlines = False, check_trailing_whitespace = False, check_exception_keyword = False, prefer_single_quotes = False):
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
   we conform to. You can suppress PEP8 issues by making a 'test' configuration
@@ -161,8 +161,6 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
      Added the prefer_single_quotes option.
 
   :param list paths: paths to search for stylistic issues
-  :param bool check_two_space_indents: check for two space indentations and
-    that no tabs snuck in
   :param bool check_newlines: check that we have standard newlines (\\n), not
     windows (\\r\\n) nor classic mac (\\r)
   :param bool check_trailing_whitespace: check that our lines don't end with
@@ -194,7 +192,7 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
     style_checker = pep8.StyleGuide(ignore = CONFIG['pep8.ignore'], reporter = StyleReport)
     style_checker.check_files(list(_python_files(paths)))
 
-  if check_two_space_indents or check_newlines or check_trailing_whitespace or check_exception_keyword:
+  if check_newlines or check_trailing_whitespace or check_exception_keyword:
     for path in _python_files(paths):
       with open(path) as f:
         file_contents = f.read()
@@ -212,9 +210,7 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
         if '"""' in content:
           is_block_comment = not is_block_comment
 
-        if check_two_space_indents and '\t' in whitespace:
-          issues.setdefault(path, []).append(Issue(index + 1, 'indentation has a tab', line))
-        elif check_newlines and '\r' in content:
+        if check_newlines and '\r' in content:
           issues.setdefault(path, []).append(Issue(index + 1, 'contains a windows newline', line))
         elif check_trailing_whitespace and content != content.rstrip():
           issues.setdefault(path, []).append(Issue(index + 1, 'line has trailing whitespace', line))
