@@ -116,7 +116,7 @@ def is_pep8_available():
     return False
 
 
-def stylistic_issues(paths, check_newlines = False, check_trailing_whitespace = False, check_exception_keyword = False, prefer_single_quotes = False):
+def stylistic_issues(paths, check_newlines = False, check_exception_keyword = False, prefer_single_quotes = False):
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
   we conform to. You can suppress PEP8 issues by making a 'test' configuration
@@ -163,8 +163,6 @@ def stylistic_issues(paths, check_newlines = False, check_trailing_whitespace = 
   :param list paths: paths to search for stylistic issues
   :param bool check_newlines: check that we have standard newlines (\\n), not
     windows (\\r\\n) nor classic mac (\\r)
-  :param bool check_trailing_whitespace: check that our lines don't end with
-    trailing whitespace
   :param bool check_exception_keyword: checks that we're using 'as' for
     exceptions rather than a comma
   :param bool prefer_single_quotes: standardize on using single rather than
@@ -192,7 +190,7 @@ def stylistic_issues(paths, check_newlines = False, check_trailing_whitespace = 
     style_checker = pep8.StyleGuide(ignore = CONFIG['pep8.ignore'], reporter = StyleReport)
     style_checker.check_files(list(_python_files(paths)))
 
-  if check_newlines or check_trailing_whitespace or check_exception_keyword:
+  if check_newlines or check_exception_keyword:
     for path in _python_files(paths):
       with open(path) as f:
         file_contents = f.read()
@@ -212,8 +210,6 @@ def stylistic_issues(paths, check_newlines = False, check_trailing_whitespace = 
 
         if check_newlines and '\r' in content:
           issues.setdefault(path, []).append(Issue(index + 1, 'contains a windows newline', line))
-        elif check_trailing_whitespace and content != content.rstrip():
-          issues.setdefault(path, []).append(Issue(index + 1, 'line has trailing whitespace', line))
         elif check_exception_keyword and content.lstrip().startswith('except') and content.endswith(', exc:'):
           # Python 2.6 - 2.7 supports two forms for exceptions...
           #
