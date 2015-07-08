@@ -116,7 +116,7 @@ def is_pep8_available():
     return False
 
 
-def stylistic_issues(paths, check_two_space_indents = False, check_newlines = False, check_trailing_whitespace = False, check_exception_keyword = False, prefer_single_quotes = False):
+def stylistic_issues(paths, check_newlines = False, check_exception_keyword = False, prefer_single_quotes = False):
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
   we conform to. You can suppress PEP8 issues by making a 'test' configuration
@@ -161,12 +161,8 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
      Added the prefer_single_quotes option.
 
   :param list paths: paths to search for stylistic issues
-  :param bool check_two_space_indents: check for two space indentations and
-    that no tabs snuck in
   :param bool check_newlines: check that we have standard newlines (\\n), not
     windows (\\r\\n) nor classic mac (\\r)
-  :param bool check_trailing_whitespace: check that our lines don't end with
-    trailing whitespace
   :param bool check_exception_keyword: checks that we're using 'as' for
     exceptions rather than a comma
   :param bool prefer_single_quotes: standardize on using single rather than
@@ -188,12 +184,13 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
         code = super(StyleReport, self).error(line_number, offset, text, check)
 
         if code:
-          issues.setdefault(self.filename, []).append(Issue(line_number, '%s %s' % (code, text), text))
+          line = linecache.getline(self.filename, line_number)
+          issues.setdefault(self.filename, []).append(Issue(line_number, text, line))
 
     style_checker = pep8.StyleGuide(ignore = CONFIG['pep8.ignore'], reporter = StyleReport)
     style_checker.check_files(list(_python_files(paths)))
 
-  if check_two_space_indents or check_newlines or check_trailing_whitespace or check_exception_keyword:
+  if check_newlines or check_exception_keyword:
     for path in _python_files(paths):
       with open(path) as f:
         file_contents = f.read()
@@ -202,22 +199,12 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
       is_block_comment = False
 
       for index, line in enumerate(lines):
-        whitespace, content = re.match('^(\s*)(.*)$', line).groups()
-
-        # TODO: This does not check that block indentations are two spaces
-        # because differentiating source from string blocks ("""foo""") is more
-        # of a pita than I want to deal with right now.
-
-        if '"""' in content:
+        if '"""' in line:
           is_block_comment = not is_block_comment
 
-        if check_two_space_indents and '\t' in whitespace:
-          issues.setdefault(path, []).append(Issue(index + 1, 'indentation has a tab', line))
-        elif check_newlines and '\r' in content:
+        if check_newlines and '\r' in line:
           issues.setdefault(path, []).append(Issue(index + 1, 'contains a windows newline', line))
-        elif check_trailing_whitespace and content != content.rstrip():
-          issues.setdefault(path, []).append(Issue(index + 1, 'line has trailing whitespace', line))
-        elif check_exception_keyword and content.lstrip().startswith('except') and content.endswith(', exc:'):
+        elif check_exception_keyword and line.strip().startswith('except') and line.strip().endswith(', exc:'):
           # Python 2.6 - 2.7 supports two forms for exceptions...
           #
           #   except ValueError, exc:
@@ -241,7 +228,7 @@ def stylistic_issues(paths, check_two_space_indents = False, check_newlines = Fa
             # instance "I'm hungry"). Also checking for '\' at the end since
             # that can indicate a multi-line string.
 
-            issues.setdefault(path, []).append(Issue(index + 1, "use single rather than double quotes", line))
+            issues.setdefault(path, []).append(Issue(index + 1, 'use single rather than double quotes', line))
 
   return issues
 

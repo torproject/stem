@@ -78,7 +78,7 @@ PYFLAKES_TASK = Task(
 PEP8_TASK = Task(
   'running pep8',
   stem.util.test_tools.stylistic_issues,
-  args = (SRC_PATHS, True, True, True, True, True),
+  args = (SRC_PATHS, True, True, True),
   is_required = False,
   print_result = False,
 )
@@ -326,7 +326,7 @@ def _print_static_issues(static_check_issues):
       for line_number in sorted(line_to_issues.keys()):
         for msg, line in line_to_issues[line_number]:
           line_count = '%-4s' % line_number
-          println('  line %s - %-40s %s' % (line_count, msg, line.strip()))
+          println('  line %s - %-40s (%s)' % (line_count, msg, line.strip()))
 
       println()
 
