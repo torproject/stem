@@ -199,18 +199,12 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
       is_block_comment = False
 
       for index, line in enumerate(lines):
-        whitespace, content = re.match('^(\s*)(.*)$', line).groups()
-
-        # TODO: This does not check that block indentations are two spaces
-        # because differentiating source from string blocks ("""foo""") is more
-        # of a pita than I want to deal with right now.
-
-        if '"""' in content:
+        if '"""' in line:
           is_block_comment = not is_block_comment
 
-        if check_newlines and '\r' in content:
+        if check_newlines and '\r' in line:
           issues.setdefault(path, []).append(Issue(index + 1, 'contains a windows newline', line))
-        elif check_exception_keyword and content.lstrip().startswith('except') and content.endswith(', exc:'):
+        elif check_exception_keyword and line.strip().startswith('except') and line.strip().endswith(', exc:'):
           # Python 2.6 - 2.7 supports two forms for exceptions...
           #
           #   except ValueError, exc:
@@ -234,7 +228,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
             # instance "I'm hungry"). Also checking for '\' at the end since
             # that can indicate a multi-line string.
 
-            issues.setdefault(path, []).append(Issue(index + 1, "use single rather than double quotes", line))
+            issues.setdefault(path, []).append(Issue(index + 1, 'use single rather than double quotes', line))
 
   return issues
 
