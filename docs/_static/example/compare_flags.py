@@ -1,9 +1,14 @@
+from collections import OrderedDict
 from stem.descriptor import DocumentHandler, remote
 
 # Query all authority votes asynchronously.
 
-downloader = remote.DescriptorDownloader(document_handler = DocumentHandler.DOCUMENT)
-queries = {}
+downloader = remote.DescriptorDownloader(document_handler=DocumentHandler.DOCUMENT)
+
+# An ordered dictionary ensures queries are finished in the order they were
+# added.
+
+queries = OrderedDict()
 
 for name, authority in remote.get_authorities().items():
   if authority.v3ident is None:
@@ -23,7 +28,7 @@ all_fingerprints = set()
 for vote in votes.values():
   all_fingerprints.update(vote.routers.keys())
 
-# Finally, compare moria1's votes to maatuska.
+# Finally, compare moria1's votes to maatuska's votes.
 
 for fingerprint in all_fingerprints:
   moria1_vote = votes['moria1'].routers.get(fingerprint)

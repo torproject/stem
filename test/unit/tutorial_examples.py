@@ -140,7 +140,7 @@ class TestTutorialExamples(unittest.TestCase):
     if stem.prereq.is_python_3():
       self.assertCountEqual(expected.splitlines(), actual.splitlines())
     else:
-      self.assertEquals(sorted(expected.splitlines()), sorted(actual.splitlines()))
+      self.assertItemsEqual(expected.splitlines(), actual.splitlines())
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
