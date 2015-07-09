@@ -69,6 +69,7 @@ Applications
 `torsearch <https://github.com/wfn/torsearch>`_                                                             Search engine prototype for descriptor data.
 `or-applet <https://github.com/Yawning/or-applet>`_                                                         GUI widget to provide circuit information and an interactive interpreter.
 `OnionBalance <https://github.com/DonnchaC/onionbalance>`_                                                  Tool for making distributed hidden service requests.
+`OnionPerf <https://github.com/robgjansen/onionperf>`_                                                      Measures onion service performance over time using customizable client behavior models.
 `OnionShare <https://github.com/micahflee/onionshare>`_                                                     Hidden service based file sharing application.
 `Syboa <https://gitorious.org/syboa/syboa>`_                                                                GTK Tor interface similar to `TorK <http://sourceforge.net/projects/tork/>`_.
 `hs-health <https://gitlab.com/hs-health/hs-health>`_                                                       Experiment to measure churn and reachability of hidden services.
