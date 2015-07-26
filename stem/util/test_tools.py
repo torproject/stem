@@ -295,7 +295,7 @@ def pyflakes_issues(paths):
       def _register_issue(self, path, line_number, issue, line):
         if not self._is_ignored(path, issue):
           if path and line_number and not line:
-            line = linecache.getline(path, line_number)
+            line = linecache.getline(path, line_number).strip()
 
           issues.setdefault(path, []).append(Issue(line_number, issue, line))
 
