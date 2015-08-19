@@ -749,7 +749,7 @@ DIRECTORY_AUTHORITIES = {
     address = '154.35.175.225',
     or_port = 443,
     dir_port = 80,
-    is_bandwidth_authority = False,
+    is_bandwidth_authority = True,
     fingerprint = 'CF6D0AAFB385BE71B8E111FC5CFF4B47923733BC',
     v3ident = 'EFCBE720AB3A82B99F9E953CD5BF50F7EEFC7B97',
   ),
