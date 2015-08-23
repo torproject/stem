@@ -53,6 +53,7 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * Support for ed25519 descriptor fields (:spec:`5a79d67`)
   * Server descriptor validation fails with 'extra-info-digest line had an invalid value' from additions in proposal 228 (:trac:`16227`)
 
  * **Website**

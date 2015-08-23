@@ -137,6 +137,20 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     self.assertEqual('478B4CB438302981DE9AAF246F48DBE57F69050A', desc_list[4].fingerprint)
     self.assertEqual('25D9D52A0350B42E69C8AB7CE945DB1CA38DA0CF', desc_list[5].fingerprint)
 
+  def test_with_ed25519(self):
+    """
+    Parses a descriptor with a ed25519 identity key.
+    """
+
+    with open(get_resource('extrainfo_descriptor_with_ed25519'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0', validate = True))
+
+    self.assertEqual('silverfoxden', desc.nickname)
+    self.assertEqual('4970B1DC3DBC8D82D7F1E43FF44B28DBF4765A4E', desc.fingerprint)
+    self.assertTrue('AQQABhz0AQFcf5tGWLvPvr' in desc.ed25519_certificate)
+    self.assertEqual('g6Zg7Er8K7C1etmt7p20INE1ExIvMRPvhwt6sjbLqEK+EtQq8hT+86hQ1xu7cnz6bHee+Zhhmcc4JamV4eiMAw', desc.ed25519_signature)
+    self.assertEqual([], desc.get_unrecognized_lines())
+
   def test_minimal_extrainfo_descriptor(self):
     """
     Basic sanity check that we can parse an extrainfo descriptor with minimal

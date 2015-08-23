@@ -83,6 +83,7 @@ from stem.descriptor import (
   _get_descriptor_components,
   _value,
   _values,
+  _parse_simple_line,
   _parse_timestamp_line,
   _parse_forty_character_hex,
   _parse_key_block,
@@ -533,6 +534,7 @@ def _parse_hs_stats(keyword, stat_attribute, extra_attribute, descriptor, entrie
   setattr(descriptor, extra_attribute, extra)
 
 
+_parse_identity_ed25519_line = _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')
 _parse_geoip_db_digest_line = _parse_forty_character_hex('geoip-db-digest', 'geoip_db_digest')
 _parse_geoip6_db_digest_line = _parse_forty_character_hex('geoip6-db-digest', 'geoip6_db_digest')
 _parse_dirreq_v2_resp_line = functools.partial(_parse_dirreq_line, 'dirreq-v2-resp', 'dir_v2_responses', 'dir_v2_responses_unknown')
@@ -570,6 +572,7 @@ _parse_dirreq_v3_reqs_line = functools.partial(_parse_geoip_to_count_line, 'dirr
 _parse_geoip_client_origins_line = functools.partial(_parse_geoip_to_count_line, 'geoip-client-origins', 'geoip_client_origins')
 _parse_entry_ips_line = functools.partial(_parse_geoip_to_count_line, 'entry-ips', 'entry_ips')
 _parse_bridge_ips_line = functools.partial(_parse_geoip_to_count_line, 'bridge-ips', 'bridge_ips')
+_parse_router_sig_ed25519_line = _parse_simple_line('router-sig-ed25519', 'ed25519_signature')
 _parse_router_digest_line = _parse_forty_character_hex('router-digest', '_digest')
 _parse_router_signature_line = _parse_key_block('router-signature', 'signature', 'SIGNATURE')
 
@@ -586,6 +589,9 @@ class ExtraInfoDescriptor(Descriptor):
   :var dict transport: **\*** mapping of transport methods to their (address,
     port, args) tuple, these usually appear on bridges in which case all of
     those are **None**
+
+  :var ed25519_certificate str: base64 encoded ed25519 certificate
+  :var ed25519_signature str: signature of this document using ed25519
 
   **Bi-directional connection usage:**
 
@@ -689,6 +695,9 @@ class ExtraInfoDescriptor(Descriptor):
   .. versionchanged:: 1.4.0
      Added the hs_stats_end, hs_rend_cells, hs_rend_cells_attr,
      hs_dir_onions_seen, and hs_dir_onions_seen_attr attributes.
+
+  .. versionchanged:: 1.5.0
+     Added the ed25519_certificate and ed25519_signature attributes.
   """
 
   ATTRIBUTES = {
@@ -698,6 +707,9 @@ class ExtraInfoDescriptor(Descriptor):
     'geoip_db_digest': (None, _parse_geoip_db_digest_line),
     'geoip6_db_digest': (None, _parse_geoip6_db_digest_line),
     'transport': ({}, _parse_transport_line),
+
+    'ed25519_certificate': (None, _parse_identity_ed25519_line),
+    'ed25519_signature': (None, _parse_router_sig_ed25519_line),
 
     'conn_bi_direct_end': (None, _parse_conn_bi_direct_line),
     'conn_bi_direct_interval': (None, _parse_conn_bi_direct_line),
@@ -778,6 +790,8 @@ class ExtraInfoDescriptor(Descriptor):
 
   PARSER_FOR_LINE = {
     'extra-info': _parse_extra_info_line,
+    'identity-ed25519': _parse_identity_ed25519_line,
+    'router-sig-ed25519': _parse_router_sig_ed25519_line,
     'geoip-db-digest': _parse_geoip_db_digest_line,
     'geoip6-db-digest': _parse_geoip6_db_digest_line,
     'transport': _parse_transport_line,

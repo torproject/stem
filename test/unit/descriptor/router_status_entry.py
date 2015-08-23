@@ -17,6 +17,39 @@ from test.mocking import (
   ROUTER_STATUS_ENTRY_V3_HEADER,
 )
 
+ENTRY_WITHOUT_ED25519 = """\
+r seele AAoQ1DAR6kkoo19hBAX5K0QztNw m0ynPuwzSextzsiXYJYA0Hce+Cs 2015-08-23 00:26:35 73.15.150.172 9001 0
+s Running Stable Valid
+v Tor 0.2.6.10
+w Bandwidth=102 Measured=31
+p reject 1-65535
+id ed25519 none
+m 13,14,15 sha256=uaAYTOVuYRqUwJpNfP2WizjzO0FiNQB4U97xSQu+vMc
+m 16,17 sha256=G6FmPe/ehgfb6tsRzFKDCwvvae+RICeP1MaP0vWDGyI
+m 18,19,20,21 sha256=/XhIMOnhElo2UiKjL2S10uRka/fhg1CFfNd+9wgUwEE
+"""
+
+ENTRY_WITH_ED25519 = """\
+r PDrelay1 AAFJ5u9xAqrKlpDW6N0pMhJLlKs yrJ6b/73pmHBiwsREgw+inf8WFw 2015-08-23 16:52:37 95.215.44.189 8080 0
+s Fast Running Stable Valid
+v Tor 0.2.7.2-alpha-dev
+w Bandwidth=608 Measured=472
+p reject 1-65535
+id ed25519 8RH34kO07Pp+XYwzdoATVyCibIvmbslUjRkAm7J4IA8
+m 13 sha256=PTSHzE7RKnRGZMRmBddSzDiZio254FUhv9+V4F5zq8s
+m 14,15 sha256=0wsEwBbxJ8RtPmGYwilHQTVEw2pWzUBEVlSgEO77OyU
+m 16,17 sha256=JK2xhYr/VsCF60px+LsT990BCpfKfQTeMxRbD63o2vE
+m 18,19,20 sha256=AkZH3gIvz3wunsroqh5izBJizdYuR7kn2oVbsvqgML8
+m 21 sha256=AVp41YVxKEJCaoEf0+77Cdvyw5YgpyDXdob0+LSv/pE
+"""
+
+
+def vote_document():
+  mock_document = lambda x: x  # just need anything with a __dict__
+  setattr(mock_document, 'is_vote', True)
+  setattr(mock_document, 'is_consensus', False)
+  return mock_document
+
 
 class TestRouterStatusEntry(unittest.TestCase):
   def test_fingerprint_decoding(self):
@@ -86,6 +119,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual([], entry.unrecognized_bandwidth_entries)
     self.assertEqual(None, entry.exit_policy)
     self.assertEqual([], entry.microdescriptor_hashes)
+    self.assertEqual(None, entry.identifier_type)
+    self.assertEqual(None, entry.identifier)
     self.assertEqual([], entry.get_unrecognized_lines())
 
   def test_minimal_micro_v3(self):
@@ -107,6 +142,72 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual(None, entry.version_line)
     self.assertEqual(None, entry.version)
     self.assertEqual('6A252497006BB9AF36A1B1B902C4D7FA2129923400DBE0101F167B1B031F63BD', entry.digest)
+    self.assertEqual([], entry.get_unrecognized_lines())
+
+  def test_without_ed25519(self):
+    """
+    Parses a router status entry without a ed25519 value.
+    """
+
+    microdescriptor_hashes = [
+      ([13, 14, 15], {'sha256': 'uaAYTOVuYRqUwJpNfP2WizjzO0FiNQB4U97xSQu+vMc'}),
+      ([16, 17], {'sha256': 'G6FmPe/ehgfb6tsRzFKDCwvvae+RICeP1MaP0vWDGyI'}),
+      ([18, 19, 20, 21], {'sha256': '/XhIMOnhElo2UiKjL2S10uRka/fhg1CFfNd+9wgUwEE'}),
+    ]
+
+    entry = RouterStatusEntryV3(ENTRY_WITHOUT_ED25519, document = vote_document(), validate = True)
+    self.assertEqual('seele', entry.nickname)
+    self.assertEqual('000A10D43011EA4928A35F610405F92B4433B4DC', entry.fingerprint)
+    self.assertEqual(datetime.datetime(2015, 8, 23, 0, 26, 35), entry.published)
+    self.assertEqual('73.15.150.172', entry.address)
+    self.assertEqual(9001, entry.or_port)
+    self.assertEqual(None, entry.dir_port)
+    self.assertEqual(set([Flag.RUNNING, Flag.STABLE, Flag.VALID]), set(entry.flags))
+    self.assertEqual('Tor 0.2.6.10', entry.version_line)
+    self.assertEqual(Version('0.2.6.10'), entry.version)
+    self.assertEqual(102, entry.bandwidth)
+    self.assertEqual(31, entry.measured)
+    self.assertEqual(False, entry.is_unmeasured)
+    self.assertEqual([], entry.unrecognized_bandwidth_entries)
+    self.assertEqual(MicroExitPolicy('reject 1-65535'), entry.exit_policy)
+    self.assertEqual(microdescriptor_hashes, entry.microdescriptor_hashes)
+    self.assertEqual('ed25519', entry.identifier_type)
+    self.assertEqual('none', entry.identifier)
+    self.assertEqual('9B4CA73EEC3349EC6DCEC897609600D0771EF82B', entry.digest)
+    self.assertEqual([], entry.get_unrecognized_lines())
+
+  def test_with_ed25519(self):
+    """
+    Parses a router status entry with a ed25519 value.
+    """
+
+    microdescriptor_hashes = [
+      ([13], {'sha256': 'PTSHzE7RKnRGZMRmBddSzDiZio254FUhv9+V4F5zq8s'}),
+      ([14, 15], {'sha256': '0wsEwBbxJ8RtPmGYwilHQTVEw2pWzUBEVlSgEO77OyU'}),
+      ([16, 17], {'sha256': 'JK2xhYr/VsCF60px+LsT990BCpfKfQTeMxRbD63o2vE'}),
+      ([18, 19, 20], {'sha256': 'AkZH3gIvz3wunsroqh5izBJizdYuR7kn2oVbsvqgML8'}),
+      ([21], {'sha256': 'AVp41YVxKEJCaoEf0+77Cdvyw5YgpyDXdob0+LSv/pE'}),
+    ]
+
+    entry = RouterStatusEntryV3(ENTRY_WITH_ED25519, document = vote_document(), validate = True)
+    self.assertEqual('PDrelay1', entry.nickname)
+    self.assertEqual('000149E6EF7102AACA9690D6E8DD2932124B94AB', entry.fingerprint)
+    self.assertEqual(datetime.datetime(2015, 8, 23, 16, 52, 37), entry.published)
+    self.assertEqual('95.215.44.189', entry.address)
+    self.assertEqual(8080, entry.or_port)
+    self.assertEqual(None, entry.dir_port)
+    self.assertEqual(set([Flag.FAST, Flag.RUNNING, Flag.STABLE, Flag.VALID]), set(entry.flags))
+    self.assertEqual('Tor 0.2.7.2-alpha-dev', entry.version_line)
+    self.assertEqual(Version('0.2.7.2-alpha-dev'), entry.version)
+    self.assertEqual(608, entry.bandwidth)
+    self.assertEqual(472, entry.measured)
+    self.assertEqual(False, entry.is_unmeasured)
+    self.assertEqual([], entry.unrecognized_bandwidth_entries)
+    self.assertEqual(MicroExitPolicy('reject 1-65535'), entry.exit_policy)
+    self.assertEqual(microdescriptor_hashes, entry.microdescriptor_hashes)
+    self.assertEqual('ed25519', entry.identifier_type)
+    self.assertEqual('8RH34kO07Pp+XYwzdoATVyCibIvmbslUjRkAm7J4IA8', entry.identifier)
+    self.assertEqual('CAB27A6FFEF7A661C18B0B11120C3E8A77FC585C', entry.digest)
     self.assertEqual([], entry.get_unrecognized_lines())
 
   def test_missing_fields(self):
@@ -478,14 +579,9 @@ class TestRouterStatusEntry(unittest.TestCase):
         [([8, 9, 10, 11, 12], {'sha256': 'g1vx9si329muxV', 'md5': '3tquWIXXySNOIwRGMeAESKs/v4DWs'})],
     }
 
-    # we need a document that's a vote
-    mock_document = lambda x: x  # just need anything with a __dict__
-    setattr(mock_document, 'is_vote', True)
-    setattr(mock_document, 'is_consensus', False)
-
     for m_line, expected in test_values.items():
       content = get_router_status_entry_v3({'m': m_line}, content = True)
-      entry = RouterStatusEntryV3(content, document = mock_document)
+      entry = RouterStatusEntryV3(content, document = vote_document())
       self.assertEqual(expected, entry.microdescriptor_hashes)
 
     # try with multiple 'm' lines
@@ -499,7 +595,7 @@ class TestRouterStatusEntry(unittest.TestCase):
       ([31, 32], {'sha512': 'g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs'}),
     ]
 
-    entry = RouterStatusEntryV3(content, document = mock_document)
+    entry = RouterStatusEntryV3(content, document = vote_document())
     self.assertEqual(expected, entry.microdescriptor_hashes)
 
     # try without a document
@@ -515,7 +611,7 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     for m_line in test_values:
       content = get_router_status_entry_v3({'m': m_line}, content = True)
-      self.assertRaises(ValueError, RouterStatusEntryV3, content, True, mock_document)
+      self.assertRaises(ValueError, RouterStatusEntryV3, content, True, vote_document())
 
   def _expect_invalid_attr(self, content, attr = None, expected_value = None):
     """

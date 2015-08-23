@@ -1,50 +1,72 @@
 @type server-descriptor 1.0
-router Truie 198.50.156.78 9001 0 9030
+router destiny 94.242.246.23 9001 0 443
 identity-ed25519
 -----BEGIN ED25519 CERT-----
-AQQABhWIAZTz0r0KRagr6X9SHfm4oiIuMLVhJQQmNchtkBuR5SuFAQAgBAAVkw7m
-0YJgO/A8VMioco097sIOutDiM7UqqPvoIyKErk1akOm3f6VAO/juOzxEeAgzgfA7
-DiRsSjeVjp0xUdE43bXhK/8Uh+SPMwYKj47drjgTHGgzjTmlY9B/jFJ1Wgs=
+AQQABhtZAaW2GoBED1IjY3A6f6GNqBEl5A83fD2Za9upGke51JGqAQAgBABnprVR
+ptIr43bWPo2fIzo3uOywfoMrryprpbm4HhCkZMaO064LP+1KNuLvlc8sGG8lTjx1
+g4k3ELuWYgHYWU5rAia7nl4gUfBZOEfHAfKES7l3d63dBEjEX98Ljhdp2w4=
 -----END ED25519 CERT-----
-platform Tor 0.2.7.1-alpha-dev on Linux
+master-key-ed25519 Z6a1UabSK+N21j6NnyM6N7jssH6DK68qa6W5uB4QpGQ
+or-address [2a01:608:ffff:ff07::1:23]:9003
+platform Tor 0.2.7.2-alpha-dev on Linux
 protocols Link 1 2 Circuit 1
-published 2015-05-28 15:44:47
-fingerprint A692 21A7 EC74 98D2 F88A 0FB7 9526 1013 FA36 CAAE
-uptime 61
-bandwidth 1073741824 1073741824 9506816
-extra-info-digest 0879DB7B765218D7B3AE7557669D20307BB21CAA V609l+N6ActBveebfNbH5lQ6wHDNstDkFgyqEhBHwtA
+published 2015-08-22 15:21:45
+fingerprint F65E 0196 C94D FFF4 8AFB F2F5 F9E3 E19A AE58 3FD0
+uptime 1362680
+bandwidth 149715200 1048576000 51867731
+extra-info-digest 44E9B679AF0B4EB09296985BAF4066AE9CA5BB93 r+roMxhsjd1GPpn5knQoBvtE9Rhsv8zQHCqiYL6u2CA
 onion-key
 -----BEGIN RSA PUBLIC KEY-----
-MIGJAoGBALbTpnPvhaGET+2ACtLdG6jhQXN8uVJ0iF9RwMh2hwu351yp3eVPt7os
-ditUF6w7KV+6emkvLu9EBpNN7vWrpDAhRNOGTOZhZKLnGFaxp+eGNX6+5AhmiWYt
-/+w+f6dvVKEjsaX3XZsMqcTBjw2hzVpHxh/AjgDx/b9mJKC85vENAgMBAAE=
+MIGJAoGBAKpPOeBPFBZhH32k0CmIVsXMi4mbbkpEAYpZD0Z3/zLc9k05qAvhE55h
++LXqG6C6k23JnR7H1a4EtFU0UQVWxUa4xUL9pi/0tj3Zsu842Z18K3sL8hYWDw6x
+b6afVdSKIcY6guG5fevmobUd/6437oSwM7IeXrWy28s0PtWKHhQzAgMBAAE=
 -----END RSA PUBLIC KEY-----
 signing-key
 -----BEGIN RSA PUBLIC KEY-----
-MIGJAoGBALDSt2G+Zjl20a59HZsuag913ONdnnNa/uVMRbsZZkbnNRONf2aXBGgu
-wrW7XtPLeAKl+d0d5g9XnePVvefcEdKvoKNCFv6s8s3S2KB/CEkeyE7Lxx1Pc6Qx
-f/jgS3T3TFHUlvtZvHLZ/3WaXMyuTTRlGadpzDkQx5oWR6aNn065AgMBAAE=
+MIGJAoGBAOUS7xm+1d/FAk7VHx2SaYzjYoGpNaCHHWXlmDz2+iWEqcDRjjnVFekV
+sfAPysNnB0a/lHdrqzyKjCkzAoeut5Ts3bj6eMrF3psFian2IqdlqsFaAcBov7fo
+J6ipwr8lP72LOMHlB2AwP3BEWtHZX7nmARV7ekbPs21R06lEhzLLAgMBAAE=
 -----END RSA PUBLIC KEY-----
 onion-key-crosscert
 -----BEGIN CROSSCERT-----
-TCcCIv38fGcSzUO+DKxudFme2XBRuDkf5FjEr+6UbtDyuDjvjJDFYagN+zMJf/4K
-RyBScjyKYK6MVMxAmf25QjAGx3KHV00ozVSzlN3WDAS2iicuKYvBsehG9g/tr6mI
-luS5EoSKJIlmM2jOhN1QyR+Rpi37z/E6VTksk/bd69A=
+iW8BqwH5VKqZaiMgPcuHIQFpiQnRsd2b1zc+PXVN3AFT0cQx6J4rZhIdxiqHeNqj
+fVEoi4+iHkbksGABZKlB/x7Kv2Kvbj3ZH46m22KEASkRL+i9EhCYdf3Ju7czIi/7
+U/jQTwhn7+o8LCLsLhw3aV/v/sXEtbxePhMbCMHI7hE=
 -----END CROSSCERT-----
 ntor-onion-key-crosscert 0
 -----BEGIN ED25519 CERT-----
-AQoABhNgARWTDubRgmA78DxUyKhyjT3uwg660OIztSqo++gjIoSuAEW8gwMcFUSD
-mfkijKN6KyZxHloENGcgJMeJsR9kvfYp/u7O+VoPQ1kTxaw1lajTrnGQF+PV1MlK
-niid4Nq5ZgM=
+AQoABhtwAWemtVGm0ivjdtY+jZ8jOje47LB+gyuvKmulubgeEKRkAHj4IPqm+osx
+vbKfvRHeZ0uaghFPZr76UVPYwuK4N+VcW75yq2vuFSsFTCJqamPB3PIdSz6rbx4U
+4F3iroztLAQ=
 -----END ED25519 CERT-----
+family $379FB450010D17078B3766C2273303C358C3A442 $3EB46C1D8D8B1C0BBCB6E4F08301EF68B7F5308D $B0279A521375F3CB2AE210BDBFC645FDD2E1973A $EC116BCB80565A408CE67F8EC3FE3B0B02C3A065
 hidden-service-dir
-contact 0x11F48D36 David Goulet <dgoulet AT ev0ke dot net>
-ntor-onion-key qDcuoDpDD36bIapIbXBVhkIoiuMIXD9jNfjF1+7Vaks=
-reject *:*
-router-sig-ed25519 AxqrLz7QL/e+xGhhihs/rNzWsBW0Qla7Cwru1q88A5i+pcQBgfzfECiecptqYbDAsUPXMtwFsLp7Ls2BMOzvCQ
+contact 0x02225522 Frenn vun der Enn (FVDE) <info AT enn DOT lu>
+ntor-onion-key JCj8BOqk0Khfp1hfoJaDbSTzNgeA/u2pSAXnaR3vhl0=
+reject 0.0.0.0/8:*
+reject 169.254.0.0/16:*
+reject 127.0.0.0/8:*
+reject 192.168.0.0/16:*
+reject 10.0.0.0/8:*
+reject 172.16.0.0/12:*
+reject 94.242.246.23:*
+reject *:25
+reject *:587
+reject *:465
+reject 176.67.160.187:*
+reject 185.35.77.160:*
+reject 185.35.77.250:*
+reject *:10000
+reject *:14464
+reject 94.100.180.202:*
+reject 217.69.139.215:*
+reject 217.69.140.233:*
+accept *:*
+ipv6-policy reject 25,465,587,10000,14464
+router-sig-ed25519 w+cKNZTlL7vz/4WgYdFUblzJy3VdTw0mfFK4N3SPFCt20fNKt9SgiZ5V/2ai3kgGsc6oCsyUesSiYtPcTXMLCw
 router-signature
 -----BEGIN SIGNATURE-----
-mSkveaqx79vzXLc6yC2+x8yZMQPe74ihw9tZJDdSOK5VqhzZOKHFM+JoD12noxQd
-wgxa+IX0RG65KlguYE7NEZ7M6JOwr6r0zK/pWSZE8ZeHyt7FDx9ygc3k2ybQ6RWE
-Hd7QXPiyVgs9cIgnvGFVt/5vzjMV+BELpOtehBrUJbs=
+y72z1dZOYxVQVLRMvEJOn9lOFxBsjojpwiYxw+3vWFHnhkOdGqolxJ6gTLhiIXNu
+ckBPqxjbpFbmt6qgk0oeivwyLo9o4nZT737d3tx1EuBmxo+gqzNtukXWzJzZFIj5
+xE0eo9e/zKPSCF/LK6zv0FSefdBpnEkYYFuGN0BCrZo=
 -----END SIGNATURE-----

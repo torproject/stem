@@ -1,0 +1,26 @@
+@type extra-info 1.0
+extra-info silverfoxden 4970B1DC3DBC8D82D7F1E43FF44B28DBF4765A4E
+identity-ed25519
+-----BEGIN ED25519 CERT-----
+AQQABhz0AQFcf5tGWLvPvr1sktoezBB95j6tAWSECa3Eo2ZuBtRNAQAgBABFAwSN
+GcRlGIte4I1giLvQSTcXefT93rvx2PZ8wEDewxWdy6tzcLouPfE3Beu/eUyg8ntt
+YuVlzi50WXzGlGnPmeounGLo0EDHTGzcLucFWpe0g/0ia6UDqgQiAySMBwI=
+-----END ED25519 CERT-----
+published 2015-08-22 19:21:12
+write-history 2015-08-22 19:20:44 (14400 s) 14409728,23076864,7756800,6234112,7446528,12290048
+read-history 2015-08-22 19:20:44 (14400 s) 20449280,23888896,9099264,7185408,8880128,13230080
+geoip-db-digest 6882B8663F74C23E26E3C2274C24CAB2E82D67A2
+geoip6-db-digest F063BD5247EB9829E6B9E586393D7036656DAF44
+dirreq-stats-end 2015-08-22 11:58:30 (86400 s)
+dirreq-v3-ips 
+dirreq-v3-reqs 
+dirreq-v3-resp ok=0,not-enough-sigs=0,unavailable=0,not-found=0,not-modified=0,busy=0
+dirreq-v3-direct-dl complete=0,timeout=0,running=0
+dirreq-v3-tunneled-dl complete=0,timeout=0,running=0
+router-sig-ed25519 g6Zg7Er8K7C1etmt7p20INE1ExIvMRPvhwt6sjbLqEK+EtQq8hT+86hQ1xu7cnz6bHee+Zhhmcc4JamV4eiMAw
+router-signature
+-----BEGIN SIGNATURE-----
+R7kNaIWZrg3n3FWFBRMlEK2cbnha7gUIs8ToksLe+SF0dgoZiLyV3GKrnzdE/K6D
+qdiOMN7eK04MOZVlgxkA5ayi61FTYVveK1HrDbJ+sEUwsviVGdif6kk/9DXOiyIJ
+7wP/tofgHj/aCbFZb1PGU0zrEVLa72hVJ6cCW8w/t1s=
+-----END SIGNATURE-----
