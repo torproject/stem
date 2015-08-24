@@ -1,0 +1,25 @@
+@type bridge-extra-info 1.3
+extra-info Unnamed B8AB331047F1C1637EFE07FB1B94CCC0FE0ABFFA
+master-key-ed25519 VigmhxML9uw8CT1XeGqZ8KLMhKk6AOKnChQt24usBbI
+published 2015-08-21 16:08:15
+write-history 2015-08-21 12:51:16 (14400 s) 2371584,40206336,45142016,8745984,6049792,1072128
+read-history 2015-08-21 12:51:16 (14400 s) 5175296,43838464,50509824,13580288,8732672,4001792
+dirreq-write-history 2015-08-21 12:51:16 (14400 s) 1630208,565248,29696,28672,1993728,581632
+dirreq-read-history 2015-08-21 12:51:16 (14400 s) 1024,3072,5120,4096,285696,11264
+geoip-db-digest 6882B8663F74C23E26E3C2274C24CAB2E82D67A2
+geoip6-db-digest F063BD5247EB9829E6B9E586393D7036656DAF44
+dirreq-stats-end 2015-08-21 12:51:16 (86400 s)
+dirreq-v3-ips ie=8,in=8,kz=8,nl=8,qa=8
+dirreq-v3-reqs ie=8,in=8,kz=8,nl=8,qa=8
+dirreq-v3-resp ok=8,not-enough-sigs=0,unavailable=0,not-found=0,not-modified=0,busy=0
+dirreq-v3-direct-dl complete=0,timeout=0,running=0
+dirreq-v3-tunneled-dl complete=4,timeout=4,running=0
+transport scramblesuit
+transport obfs3
+transport obfs4
+bridge-stats-end 2015-08-21 12:51:21 (86400 s)
+bridge-ips ie=8,in=8,kz=8,nl=8,qa=8
+bridge-ip-versions v4=8,v6=0
+bridge-ip-transports <OR>=8,obfs3=8,obfs4=8
+router-digest-sha256 7DSOQz9eGgjDX6GT7qcrVViK8yqJD4aoEnuhdAgYtgA
+router-digest 3DBE6840376F3EC277002396832788DB2FB38393

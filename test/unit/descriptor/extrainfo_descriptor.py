@@ -143,12 +143,27 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     """
 
     with open(get_resource('extrainfo_descriptor_with_ed25519'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0', validate = True))
+      desc = next(stem.descriptor.parse_file(descriptor_file, validate = True))
 
     self.assertEqual('silverfoxden', desc.nickname)
     self.assertEqual('4970B1DC3DBC8D82D7F1E43FF44B28DBF4765A4E', desc.fingerprint)
     self.assertTrue('AQQABhz0AQFcf5tGWLvPvr' in desc.ed25519_certificate)
     self.assertEqual('g6Zg7Er8K7C1etmt7p20INE1ExIvMRPvhwt6sjbLqEK+EtQq8hT+86hQ1xu7cnz6bHee+Zhhmcc4JamV4eiMAw', desc.ed25519_signature)
+    self.assertEqual([], desc.get_unrecognized_lines())
+
+  def test_bridge_with_ed25519(self):
+    """
+    Parses a bridge descriptor with a ed25519 identity key.
+    """
+
+    with open(get_resource('bridge_extrainfo_descriptor_with_ed25519'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, validate = True))
+
+    self.assertEqual('Unnamed', desc.nickname)
+    self.assertEqual('B8AB331047F1C1637EFE07FB1B94CCC0FE0ABFFA', desc.fingerprint)
+    self.assertFalse(hasattr(desc, 'ed25519_certificate'))
+    self.assertEqual('VigmhxML9uw8CT1XeGqZ8KLMhKk6AOKnChQt24usBbI', desc.ed25519_certificate_hash)
+    self.assertEqual('7DSOQz9eGgjDX6GT7qcrVViK8yqJD4aoEnuhdAgYtgA', desc.router_digest_sha256)
     self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_minimal_extrainfo_descriptor(self):
