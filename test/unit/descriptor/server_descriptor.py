@@ -249,7 +249,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     with open(get_resource('server_descriptor_with_ed25519'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
+      desc = next(stem.descriptor.parse_file(descriptor_file, validate = True))
 
     family = set([
       '$379FB450010D17078B3766C2273303C358C3A442',
@@ -292,8 +292,28 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual('0', desc.ntor_onion_key_crosscert_sign)
     self.assertTrue('MIGJAoGBAOUS7x' in desc.signing_key)
     self.assertTrue('y72z1dZOYxVQVL' in desc.signature)
-    self.assertEqual([], desc.get_unrecognized_lines())
     self.assertEqual('B5E441051D139CCD84BC765D130B01E44DAC29AD', desc.digest())
+    self.assertEqual([], desc.get_unrecognized_lines())
+
+  def test_bridge_with_ed25519(self):
+    """
+    Parses a bridge descriptor with ed25519.
+    """
+
+    with open(get_resource('bridge_descriptor_with_ed25519'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, validate = True))
+
+    self.assertEqual('ChandlerObfs11', desc.nickname)
+    self.assertEqual('678912ABD7398DF8EFC8FA2BC7DEF610710360C4', desc.fingerprint)
+    self.assertEqual('10.162.85.172', desc.address)
+    self.assertFalse(hasattr(desc, 'ed25519_certificate'))
+    self.assertEqual('lgIuiAJCoXPRwWoHgG4ZAoKtmrv47aPr4AsbmESj8AA', desc.ed25519_certificate_hash)
+    self.assertEqual('OB/fqLD8lYmjti09R+xXH/D4S2qlizxdZqtudnsunxE', desc.router_digest_sha256)
+
+    # TODO: Turns out sanitized descriptors have ntor-onion-key. Need to double
+    # check this is intended.
+    #
+    # self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_cr_in_contact_line(self):
     """
