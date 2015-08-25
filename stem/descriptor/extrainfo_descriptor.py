@@ -927,7 +927,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   <https://collector.torproject.org/formats.html#bridge-descriptors>`_)
 
   :var str ed25519_certificate_hash: sha256 hash of the original identity-ed25519
-  :var str router_digest_sha256: **todo**, needs clarification
+  :var str router_digest_sha256: sha256 digest of this document
 
   .. versionchanged:: 1.5.0
      Added the ed25519_certificate_hash and router_digest_sha256 attributes.

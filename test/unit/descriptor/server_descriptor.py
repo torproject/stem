@@ -309,11 +309,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertFalse(hasattr(desc, 'ed25519_certificate'))
     self.assertEqual('lgIuiAJCoXPRwWoHgG4ZAoKtmrv47aPr4AsbmESj8AA', desc.ed25519_certificate_hash)
     self.assertEqual('OB/fqLD8lYmjti09R+xXH/D4S2qlizxdZqtudnsunxE', desc.router_digest_sha256)
-
-    # TODO: Turns out sanitized descriptors have ntor-onion-key. Need to double
-    # check this is intended.
-    #
-    # self.assertEqual([], desc.get_unrecognized_lines())
+    self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_cr_in_contact_line(self):
     """
