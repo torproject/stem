@@ -78,6 +78,8 @@ REQUIRED_FIELDS = (
 
 # optional entries that can appear at most once
 SINGLE_FIELDS = (
+  'identity-ed25519',
+  'master-key-ed25519',
   'platform',
   'fingerprint',
   'hibernating',
@@ -92,7 +94,10 @@ SINGLE_FIELDS = (
   'hidden-service-dir',
   'protocols',
   'allow-single-hop-exits',
+  'onion-key-crosscert',
   'ntor-onion-key',
+  'ntor-onion-key-crosscert',
+  'router-sig-ed25519',
 )
 
 DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy('reject 1-65535')
@@ -382,6 +387,9 @@ def _parse_exit_policy(descriptor, entries):
     del descriptor._unparsed_exit_policy
 
 
+_parse_identity_ed25519_line = _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')
+_parse_master_key_ed25519_line = _parse_simple_line('master-key-ed25519', 'ed25519_master_key')
+_parse_master_key_ed25519_for_hash_line = _parse_simple_line('master-key-ed25519', 'ed25519_certificate_hash')
 _parse_contact_line = _parse_bytes_line('contact', 'contact')
 _parse_published_line = _parse_timestamp_line('published', 'published')
 _parse_read_history_line = functools.partial(_parse_history_line, 'read-history', 'read_history_end', 'read_history_interval', 'read_history_values')
@@ -392,9 +400,13 @@ _parse_caches_extra_info_line = lambda descriptor, entries: setattr(descriptor, 
 _parse_family_line = lambda descriptor, entries: setattr(descriptor, 'family', set(_value('family', entries).split(' ')))
 _parse_eventdns_line = lambda descriptor, entries: setattr(descriptor, 'eventdns', _value('eventdns', entries) == '1')
 _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
+_parse_onion_key_crosscert_line = _parse_key_block('onion-key-crosscert', 'onion_key_crosscert', 'CROSSCERT')
 _parse_signing_key_line = _parse_key_block('signing-key', 'signing_key', 'RSA PUBLIC KEY')
 _parse_router_signature_line = _parse_key_block('router-signature', 'signature', 'SIGNATURE')
 _parse_ntor_onion_key_line = _parse_simple_line('ntor-onion-key', 'ntor_onion_key')
+_parse_ntor_onion_key_crosscert_line = _parse_key_block('ntor-onion-key-crosscert', 'ntor_onion_key_crosscert', 'ED25519 CERT', 'ntor_onion_key_crosscert_sign')
+_parse_router_sig_ed25519_line = _parse_simple_line('router-sig-ed25519', 'ed25519_signature')
+_parse_router_digest_sha256_line = _parse_simple_line('router-digest-sha256', 'router_digest_sha256')
 _parse_router_digest_line = _parse_forty_character_hex('router-digest', '_digest')
 
 
@@ -431,6 +443,7 @@ class ServerDescriptor(Descriptor):
   :var bool extra_info_cache: **\*** flag if a mirror for extra-info documents
   :var str extra_info_digest: upper-case hex encoded digest of our extra-info document
   :var bool eventdns: flag for evdns backend (deprecated, always unset)
+  :var str ntor_onion_key: base64 key used to encrypt EXTEND in the ntor protocol
   :var list or_addresses: **\*** alternative for our address/or_port
     attributes, each entry is a tuple of the form (address (**str**), port
     (**int**), is_ipv6 (**bool**))
@@ -480,6 +493,7 @@ class ServerDescriptor(Descriptor):
     'extra_info_digest': (None, _parse_extrainfo_digest_line),
     'hidden_service_dir': (None, _parse_hidden_service_dir_line),
     'eventdns': (None, _parse_eventdns_line),
+    'ntor_onion_key': (None, _parse_ntor_onion_key_line),
     'or_addresses': ([], _parse_or_address_line),
 
     'read_history_end': (None, _parse_read_history_line),
@@ -503,6 +517,7 @@ class ServerDescriptor(Descriptor):
     'hidden-service-dir': _parse_hidden_service_dir_line,
     'uptime': _parse_uptime_line,
     'protocols': _parse_protocols_line,
+    'ntor-onion-key': _parse_ntor_onion_key_line,
     'or-address': _parse_or_address_line,
     'read-history': _parse_read_history_line,
     'write-history': _parse_write_history_line,
@@ -657,24 +672,45 @@ class RelayDescriptor(ServerDescriptor):
   Server descriptor (`descriptor specification
   <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_)
 
+  :var str ed25519_certificate: base64 encoded ed25519 certificate
+  :var str ed25519_master_key: base64 encoded master key for our ed25519 certificate
+  :var str ed25519_signature: signature of this document using ed25519
+
   :var str onion_key: **\*** key used to encrypt EXTEND cells
-  :var str ntor_onion_key: base64 key used to encrypt EXTEND in the ntor protocol
+  :var str onion_key_crosscert: signature generated using the onion_key
+  :var str ntor_onion_key_crosscert: signature generated using the ntor-onion-key
+  :var str ntor_onion_key_crosscert_sign: sign of the corresponding ed25519 public key
   :var str signing_key: **\*** relay's long-term identity key
   :var str signature: **\*** signature for this descriptor
 
   **\*** attribute is required when we're parsed with validation
+
+  .. versionchanged:: 1.5.0
+     Added the ed25519_certificate, ed25519_master_key, ed25519_signature,
+     onion_key_crosscert, ntor_onion_key_crosscert, and
+     ntor_onion_key_crosscert_sign attributes.
   """
 
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
+    'ed25519_certificate': (None, _parse_identity_ed25519_line),
+    'ed25519_master_key': (None, _parse_master_key_ed25519_line),
+    'ed25519_signature': (None, _parse_router_sig_ed25519_line),
+
     'onion_key': (None, _parse_onion_key_line),
-    'ntor_onion_key': (None, _parse_ntor_onion_key_line),
+    'onion_key_crosscert': (None, _parse_onion_key_crosscert_line),
+    'ntor_onion_key_crosscert': (None, _parse_ntor_onion_key_crosscert_line),
+    'ntor_onion_key_crosscert_sign': (None, _parse_ntor_onion_key_crosscert_line),
     'signing_key': (None, _parse_signing_key_line),
     'signature': (None, _parse_router_signature_line),
   })
 
   PARSER_FOR_LINE = dict(ServerDescriptor.PARSER_FOR_LINE, **{
+    'identity-ed25519': _parse_identity_ed25519_line,
+    'master-key-ed25519': _parse_master_key_ed25519_line,
+    'router-sig-ed25519': _parse_router_sig_ed25519_line,
     'onion-key': _parse_onion_key_line,
-    'ntor-onion-key': _parse_ntor_onion_key_line,
+    'onion-key-crosscert': _parse_onion_key_crosscert_line,
+    'ntor-onion-key-crosscert': _parse_ntor_onion_key_crosscert_line,
     'signing-key': _parse_signing_key_line,
     'router-signature': _parse_router_signature_line,
   })
@@ -713,6 +749,15 @@ class RelayDescriptor(ServerDescriptor):
 
     return method(str(self).strip(), str(other).strip())
 
+  def _check_constraints(self, entries):
+    super(RelayDescriptor, self)._check_constraints(entries)
+
+    if self.ed25519_certificate:
+      if not self.onion_key_crosscert:
+        raise ValueError("Descriptor must have a 'onion-key-crosscert' when identity-ed25519 is present")
+      elif not self.ed25519_signature:
+        raise ValueError("Descriptor must have a 'router-sig-ed25519' when identity-ed25519 is present")
+
   def __hash__(self):
     return hash(str(self).strip())
 
@@ -730,13 +775,25 @@ class BridgeDescriptor(ServerDescriptor):
   """
   Bridge descriptor (`bridge descriptor specification
   <https://collector.torproject.org/formats.html#bridge-descriptors>`_)
+
+  :var str ed25519_certificate_hash: sha256 hash of the original identity-ed25519
+  :var str router_digest_sha256: sha256 digest of this document
+
+  .. versionchanged:: 1.5.0
+     Added the ed25519_certificate_hash and router_digest_sha256 attributes.
+     Also added ntor_onion_key (previously this only belonged to unsanitized
+     descriptors).
   """
 
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
+    'ed25519_certificate_hash': (None, _parse_master_key_ed25519_for_hash_line),
+    'router_digest_sha256': (None, _parse_router_digest_sha256_line),
     '_digest': (None, _parse_router_digest_line),
   })
 
   PARSER_FOR_LINE = dict(ServerDescriptor.PARSER_FOR_LINE, **{
+    'master-key-ed25519': _parse_master_key_ed25519_for_hash_line,
+    'router-digest-sha256': _parse_router_digest_sha256_line,
     'router-digest': _parse_router_digest_line,
   })
 

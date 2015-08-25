@@ -265,8 +265,11 @@ def _parse_w_line(descriptor, entries):
 
 def _parse_p_line(descriptor, entries):
   # "p" ("accept" / "reject") PortList
-  # p reject 1-65535
-  # example: p accept 80,110,143,443,993,995,6660-6669,6697,7000-7001
+  #
+  # examples:
+  #
+  #   p accept 80,110,143,443,993,995,6660-6669,6697,7000-7001
+  #   p reject 1-65535
 
   value = _value('p', entries)
 
@@ -274,6 +277,30 @@ def _parse_p_line(descriptor, entries):
     descriptor.exit_policy = stem.exit_policy.MicroExitPolicy(value)
   except ValueError as exc:
     raise ValueError('%s exit policy is malformed (%s): p %s' % (descriptor._name(), exc, value))
+
+
+def _parse_id_line(descriptor, entries):
+  # "id" "ed25519" ed25519-identity
+  #
+  # examples:
+  #
+  #   id ed25519 none
+  #   id ed25519 8RH34kO07Pp+XYwzdoATVyCibIvmbslUjRkAm7J4IA8
+
+  value = _value('id', entries)
+
+  if value:
+    if not (descriptor.document and descriptor.document.is_vote):
+      vote_status = 'vote' if descriptor.document else '<undefined document>'
+      raise ValueError("%s 'id' line should only appear in votes (appeared in a %s): id %s" % (descriptor._name(), vote_status, value))
+
+    value_comp = value.split()
+
+    if len(value_comp) >= 2:
+      descriptor.identifier_type = value_comp[0]
+      descriptor.identifier = value_comp[1]
+    else:
+      raise ValueError("'id' lines should contain both the key type and digest: id %s" % value)
 
 
 def _parse_m_line(descriptor, entries):
@@ -512,6 +539,8 @@ class RouterStatusEntryV3(RouterStatusEntry):
 
   :var list or_addresses: **\*** relay's OR addresses, this is a tuple listing
     of the form (address (**str**), port (**int**), is_ipv6 (**bool**))
+  :var str identifier_type: identity digest key type
+  :var str identifier: base64 encoded identity digest
   :var str digest: **\*** router's upper-case hex digest
 
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
@@ -531,11 +560,16 @@ class RouterStatusEntryV3(RouterStatusEntry):
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
+
+  .. versionchanged:: 1.5.0
+     Added the identifier and identifier_type attributes.
   """
 
   ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
     'digest': (None, _parse_r_line),
     'or_addresses': ([], _parse_a_line),
+    'identifier_type': (None, _parse_id_line),
+    'identifier': (None, _parse_id_line),
 
     'bandwidth': (None, _parse_w_line),
     'measured': (None, _parse_w_line),
@@ -550,6 +584,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
     'a': _parse_a_line,
     'w': _parse_w_line,
     'p': _parse_p_line,
+    'id': _parse_id_line,
     'm': _parse_m_line,
   })
 

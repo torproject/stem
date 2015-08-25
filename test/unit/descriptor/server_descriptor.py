@@ -109,6 +109,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(9001, desc.or_port)
     self.assertEqual(None, desc.socks_port)
     self.assertEqual(None, desc.dir_port)
+    self.assertEqual(None, desc.ed25519_certificate)
+    self.assertEqual(None, desc.ed25519_master_key)
+    self.assertEqual(None, desc.ed25519_signature)
     self.assertEqual(b'Tor 0.2.1.30 on Linux x86_64', desc.platform)
     self.assertEqual(stem.version.Version('0.2.1.30'), desc.tor_version)
     self.assertEqual('Linux x86_64', desc.operating_system)
@@ -128,6 +131,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(104590, desc.observed_bandwidth)
     self.assertEqual(stem.exit_policy.ExitPolicy('reject *:*'), desc.exit_policy)
     self.assertEqual(expected_onion_key, desc.onion_key)
+    self.assertEqual(None, desc.onion_key_crosscert)
+    self.assertEqual(None, desc.ntor_onion_key_crosscert)
+    self.assertEqual(None, desc.onion_key_crosscert)
     self.assertEqual(expected_signing_key, desc.signing_key)
     self.assertEqual(expected_signature, desc.signature)
     self.assertEqual([], desc.get_unrecognized_lines())
@@ -243,37 +249,67 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     with open(get_resource('server_descriptor_with_ed25519'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
+      desc = next(stem.descriptor.parse_file(descriptor_file, validate = True))
 
-    self.assertEqual('Truie', desc.nickname)
-    self.assertEqual('A69221A7EC7498D2F88A0FB795261013FA36CAAE', desc.fingerprint)
-    self.assertEqual('198.50.156.78', desc.address)
+    family = set([
+      '$379FB450010D17078B3766C2273303C358C3A442',
+      '$3EB46C1D8D8B1C0BBCB6E4F08301EF68B7F5308D',
+      '$B0279A521375F3CB2AE210BDBFC645FDD2E1973A',
+      '$EC116BCB80565A408CE67F8EC3FE3B0B02C3A065',
+    ])
+
+    self.assertEqual('destiny', desc.nickname)
+    self.assertEqual('F65E0196C94DFFF48AFBF2F5F9E3E19AAE583FD0', desc.fingerprint)
+    self.assertEqual('94.242.246.23', desc.address)
     self.assertEqual(9001, desc.or_port)
     self.assertEqual(None, desc.socks_port)
-    self.assertEqual(9030, desc.dir_port)
-    self.assertEqual(b'Tor 0.2.7.1-alpha-dev on Linux', desc.platform)
-    self.assertEqual(stem.version.Version('0.2.7.1-alpha-dev'), desc.tor_version)
+    self.assertEqual(443, desc.dir_port)
+    self.assertTrue('bWPo2fIzo3uOywfoM' in desc.ed25519_certificate)
+    self.assertEqual('Z6a1UabSK+N21j6NnyM6N7jssH6DK68qa6W5uB4QpGQ', desc.ed25519_master_key)
+    self.assertEqual('w+cKNZTlL7vz/4WgYdFUblzJy3VdTw0mfFK4N3SPFCt20fNKt9SgiZ5V/2ai3kgGsc6oCsyUesSiYtPcTXMLCw', desc.ed25519_signature)
+    self.assertEqual(b'Tor 0.2.7.2-alpha-dev on Linux', desc.platform)
+    self.assertEqual(stem.version.Version('0.2.7.2-alpha-dev'), desc.tor_version)
     self.assertEqual('Linux', desc.operating_system)
-    self.assertEqual(61, desc.uptime)
-    self.assertEqual(datetime.datetime(2015, 5, 28, 15, 44, 47), desc.published)
-    self.assertEqual(b'0x11F48D36 David Goulet <dgoulet AT ev0ke dot net>', desc.contact)
+    self.assertEqual(1362680, desc.uptime)
+    self.assertEqual(datetime.datetime(2015, 8, 22, 15, 21, 45), desc.published)
+    self.assertEqual(b'0x02225522 Frenn vun der Enn (FVDE) <info AT enn DOT lu>', desc.contact)
     self.assertEqual(['1', '2'], desc.link_protocols)
     self.assertEqual(['1'], desc.circuit_protocols)
     self.assertEqual(False, desc.hibernating)
     self.assertEqual(False, desc.allow_single_hop_exits)
     self.assertEqual(False, desc.extra_info_cache)
-    self.assertEqual('0879DB7B765218D7B3AE7557669D20307BB21CAA', desc.extra_info_digest)
+    self.assertEqual('44E9B679AF0B4EB09296985BAF4066AE9CA5BB93', desc.extra_info_digest)
     self.assertEqual(['2'], desc.hidden_service_dir)
-    self.assertEqual(set(), desc.family)
-    self.assertEqual(1073741824, desc.average_bandwidth)
-    self.assertEqual(1073741824, desc.burst_bandwidth)
-    self.assertEqual(9506816, desc.observed_bandwidth)
-    self.assertEqual(stem.exit_policy.ExitPolicy('reject *:*'), desc.exit_policy)
-    self.assertTrue('MIGJAoGBALbTpn' in desc.onion_key)
-    self.assertTrue('MIGJAoGBALDSt2' in desc.signing_key)
-    self.assertTrue('mSkveaqx79vzX' in desc.signature)
-    self.assertEqual(4, len(desc.get_unrecognized_lines()))
-    self.assertEqual('B0445BC590F004B8FD3BE922EB19EC490DBA9077', desc.digest())
+    self.assertEqual(family, desc.family)
+    self.assertEqual(149715200, desc.average_bandwidth)
+    self.assertEqual(1048576000, desc.burst_bandwidth)
+    self.assertEqual(51867731, desc.observed_bandwidth)
+    self.assertTrue(desc.exit_policy is not None)
+    self.assertEqual(stem.exit_policy.MicroExitPolicy('reject 25,465,587,10000,14464'), desc.exit_policy_v6)
+    self.assertTrue('MIGJAoGBAKpPOe' in desc.onion_key)
+    self.assertTrue('iW8BqwH5VKqZai' in desc.onion_key_crosscert)
+    self.assertTrue('AQoABhtwAWemtV' in desc.ntor_onion_key_crosscert)
+    self.assertEqual('0', desc.ntor_onion_key_crosscert_sign)
+    self.assertTrue('MIGJAoGBAOUS7x' in desc.signing_key)
+    self.assertTrue('y72z1dZOYxVQVL' in desc.signature)
+    self.assertEqual('B5E441051D139CCD84BC765D130B01E44DAC29AD', desc.digest())
+    self.assertEqual([], desc.get_unrecognized_lines())
+
+  def test_bridge_with_ed25519(self):
+    """
+    Parses a bridge descriptor with ed25519.
+    """
+
+    with open(get_resource('bridge_descriptor_with_ed25519'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, validate = True))
+
+    self.assertEqual('ChandlerObfs11', desc.nickname)
+    self.assertEqual('678912ABD7398DF8EFC8FA2BC7DEF610710360C4', desc.fingerprint)
+    self.assertEqual('10.162.85.172', desc.address)
+    self.assertFalse(hasattr(desc, 'ed25519_certificate'))
+    self.assertEqual('lgIuiAJCoXPRwWoHgG4ZAoKtmrv47aPr4AsbmESj8AA', desc.ed25519_certificate_hash)
+    self.assertEqual('OB/fqLD8lYmjti09R+xXH/D4S2qlizxdZqtudnsunxE', desc.router_digest_sha256)
+    self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_cr_in_contact_line(self):
     """

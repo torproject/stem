@@ -1,0 +1,17 @@
+@type bridge-server-descriptor 1.1
+router ChandlerObfs11 10.162.85.172 443 0 0
+or-address [fd9f:2e19:3bcf::3d:b3f9]:443
+master-key-ed25519 lgIuiAJCoXPRwWoHgG4ZAoKtmrv47aPr4AsbmESj8AA
+platform Tor 0.2.7.1-alpha-dev on Linux
+protocols Link 1 2 Circuit 1
+published 2015-08-20 20:09:42
+fingerprint 6789 12AB D739 8DF8 EFC8 FA2B C7DE F610 7103 60C4
+uptime 2693146
+bandwidth 1073741824 1073741824 779171
+extra-info-digest 5229E98EAB41A32E83159FA45BED21B5B405BF3B lTSVvW/NMR2HsLaJwhndqTULAtsaaSilmvm/orV9y/s
+hidden-service-dir
+contact somebody
+ntor-onion-key bVvxUCi8drAVRkFPuFQ4DYBsV1m2M+GpHOUReOopXEk=
+reject *:*
+router-digest-sha256 OB/fqLD8lYmjti09R+xXH/D4S2qlizxdZqtudnsunxE
+router-digest 402AC6E2BB371923E637A1D23C2D8EA55D6EB7D5
