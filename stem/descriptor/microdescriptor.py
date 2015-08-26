@@ -73,6 +73,7 @@ from stem.descriptor import (
   _get_descriptor_components,
   _read_until_keywords,
   _value,
+  _values,
   _parse_simple_line,
   _parse_key_block,
 )
@@ -159,14 +160,24 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
 
 
 def _parse_id_line(descriptor, entries):
-  value = _value('id', entries)
-  value_comp = value.split()
+  identities = {}
 
-  if len(value_comp) >= 2:
-    descriptor.identifier_type = value_comp[0]
-    descriptor.identifier = value_comp[1]
-  else:
-    raise ValueError("'id' lines should contain both the key type and digest: id %s" % value)
+  for entry in _values('id', entries):
+    entry_comp = entry.split()
+
+    if len(entry_comp) >= 2:
+      key_type, key_value = entry_comp[0], entry_comp[1]
+
+      if key_type in identities:
+        raise ValueError("There can only be one 'id' line per a key type, but '%s' appeared multiple times" % key_type)
+
+      descriptor.identifier_type = key_type
+      descriptor.identifier = key_value
+      identities[key_type] = key_value
+    else:
+      raise ValueError("'id' lines should contain both the key type and digest: id %s" % entry)
+
+  descriptor.identifiers = identities
 
 
 _parse_digest = lambda descriptor, entries: setattr(descriptor, 'digest', hashlib.sha256(descriptor.get_bytes()).hexdigest().upper())
@@ -192,13 +203,23 @@ class Microdescriptor(Descriptor):
   :var list family: **\*** nicknames or fingerprints of declared family
   :var stem.exit_policy.MicroExitPolicy exit_policy: **\*** relay's exit policy
   :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\*** exit policy for IPv6
-  :var str identifier_type: identity digest key type
-  :var str identifier: base64 encoded identity digest, this is only used for collision prevention (:trac:`11743`)
+  :var hash identifiers: mapping of key types (like rsa1024 or ed25519) to
+    their base64 encoded identity, this is only used for collision prevention
+    (:trac:`11743`)
+
+  :var str identifier: base64 encoded identity digest (**deprecated**, use
+    identifiers instead)
+  :var str identifier_type: identity digest key type (**deprecated**, use
+    identifiers instead)
 
   **\*** attribute is required when we're parsed with validation
 
   .. versionchanged:: 1.1.0
      Added the identifier and identifier_type attributes.
+
+  .. versionchanged:: 1.5.0
+     Added the identifiers attribute, and deprecated identifier and
+     identifier_type since the field can now appear multiple times.
   """
 
   ATTRIBUTES = {
@@ -208,8 +229,9 @@ class Microdescriptor(Descriptor):
     'family': ([], _parse_family_line),
     'exit_policy': (stem.exit_policy.MicroExitPolicy('reject 1-65535'), _parse_p_line),
     'exit_policy_v6': (None, _parse_p6_line),
-    'identifier_type': (None, _parse_id_line),
-    'identifier': (None, _parse_id_line),
+    'identifier_type': (None, _parse_id_line),  # deprecated in favor of identifiers
+    'identifier': (None, _parse_id_line),  # deprecated in favor of identifiers
+    'identifiers': ({}, _parse_id_line),
     'digest': (None, _parse_digest),
   }
 

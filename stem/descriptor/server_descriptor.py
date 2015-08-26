@@ -420,7 +420,7 @@ class ServerDescriptor(Descriptor):
 
   :var str address: **\*** IPv4 address of the relay
   :var int or_port: **\*** port used for relaying
-  :var int socks_port: **\*** port used as client (deprecated, always **None**)
+  :var int socks_port: **\*** port used as client (**deprecated**, always **None**)
   :var int dir_port: **\*** port used for descriptor mirroring
 
   :var bytes platform: line with operating system and tor version
@@ -442,13 +442,13 @@ class ServerDescriptor(Descriptor):
   :var bool allow_single_hop_exits: **\*** flag if single hop exiting is allowed
   :var bool extra_info_cache: **\*** flag if a mirror for extra-info documents
   :var str extra_info_digest: upper-case hex encoded digest of our extra-info document
-  :var bool eventdns: flag for evdns backend (deprecated, always unset)
+  :var bool eventdns: flag for evdns backend (**deprecated**, always unset)
   :var str ntor_onion_key: base64 key used to encrypt EXTEND in the ntor protocol
   :var list or_addresses: **\*** alternative for our address/or_port
     attributes, each entry is a tuple of the form (address (**str**), port
     (**int**), is_ipv6 (**bool**))
 
-  Deprecated, moved to extra-info descriptor...
+  **Deprecated**, moved to extra-info descriptor...
 
   :var datetime read_history_end: end of the sampling interval
   :var int read_history_interval: seconds per interval
