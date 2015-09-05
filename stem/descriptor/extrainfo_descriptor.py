@@ -7,7 +7,7 @@ their server descriptor is published and have a similar format. However, unlike
 server descriptors these don't contain information that Tor clients require to
 function and as such aren't fetched by default.
 
-Defined in section 2.2 of the `dir-spec
+Defined in section 2.1.2 of the `dir-spec
 <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_,
 extra-info descriptors contain interesting but non-vital information such as
 usage statistics. Tor clients cannot request these documents for bridges.
