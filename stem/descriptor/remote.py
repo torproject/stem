@@ -344,7 +344,7 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      authority = random.choice(filter(HAS_V3IDENT, get_authorities().values()))
+      authority = random.choice(list(filter(HAS_V3IDENT, get_authorities().values())))
       address, dirport = authority.address, authority.dir_port
     else:
       address, dirport = random.choice(self.endpoints)

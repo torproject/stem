@@ -57,6 +57,7 @@ The following are only available within Stem's `git repository
   * Server descriptor validation fails with 'extra-info-digest line had an invalid value' from additions in proposal 228 (:trac:`16227`)
   * :class:`~stem.descriptor.server_descriptor.BridgeDescriptor` now has 'ntor_onion_key' like its unsanitized counterparts
   * Replaced the :class:`~stem.descriptor.microdescriptor.Microdescriptor` identifier and identifier_type attributes with an identifiers hash since it can now appear multiple times (:spec:`09ff9e2`)
+  * TypeError under python3 when using 'use_mirrors = True' (:trac:`17083`)
 
  * **Website**
 
