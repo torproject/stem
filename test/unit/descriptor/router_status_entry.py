@@ -5,10 +5,14 @@ Unit tests for stem.descriptor.router_status_entry.
 import datetime
 import unittest
 
+import stem.descriptor
+
 from stem import Flag
 from stem.descriptor.router_status_entry import RouterStatusEntryV3, _base64_to_hex
 from stem.exit_policy import MicroExitPolicy
 from stem.version import Version
+
+from test.unit.descriptor import get_resource
 
 from test.mocking import (
   get_router_status_entry_v2,
@@ -612,6 +616,21 @@ class TestRouterStatusEntry(unittest.TestCase):
     for m_line in test_values:
       content = get_router_status_entry_v3({'m': m_line}, content = True)
       self.assertRaises(ValueError, RouterStatusEntryV3, content, True, vote_document())
+
+  def test_with_carriage_returns(self):
+    """
+    Read a descriptor file with windows newlines (CRLF).
+    """
+
+    descriptor_path = get_resource('cached-microdesc-consensus_with_carriage_returns')
+
+    with open(descriptor_path, 'rb') as descriptor_file:
+      descriptors = stem.descriptor.parse_file(descriptor_file, 'network-status-microdesc-consensus-3 1.0', normalize_newlines = True)
+
+      # if we didn't strip \r then it would be part of the last flag
+
+      router = next(descriptors)
+      self.assertEqual([Flag.FAST, Flag.RUNNING, Flag.STABLE, Flag.VALID], router.flags)
 
   def _expect_invalid_attr(self, content, attr = None, expected_value = None):
     """

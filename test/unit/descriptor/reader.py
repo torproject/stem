@@ -466,7 +466,7 @@ class TestDescriptorReader(unittest.TestCase):
     reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA)
     reader.register_skip_listener(skip_listener.listener)
 
-    expected_skip_files = ('riddle', 'tiny.png', 'vote', 'new_metrics_type')
+    expected_skip_files = ('riddle', 'tiny.png', 'vote', 'new_metrics_type', 'cached-microdesc-consensus_with_carriage_returns')
 
     with reader:
       list(reader)  # iterates over all of the descriptors

@@ -85,7 +85,7 @@ DocumentHandler = stem.util.enum.UppercaseEnum(
 )
 
 
-def parse_file(descriptor_file, descriptor_type = None, validate = False, document_handler = DocumentHandler.ENTRIES, **kwargs):
+def parse_file(descriptor_file, descriptor_type = None, validate = False, document_handler = DocumentHandler.ENTRIES, normalize_newlines = False, **kwargs):
   """
   Simple function to read the descriptor contents from a file, providing an
   iterator for its :class:`~stem.descriptor.__init__.Descriptor` contents.
@@ -143,6 +143,8 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
     **True**, skips these checks otherwise
   :param stem.descriptor.__init__.DocumentHandler document_handler: method in
     which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+  :param bool normalize_newlines: converts windows newlines (CRLF), this is the
+    default when reading data directories on windows
   :param dict kwargs: additional arguments for the descriptor constructor
 
   :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor` instances in the file
@@ -204,6 +206,8 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
   else:
     # Cached descriptor handling. These contain multiple descriptors per file.
 
+    normalize_newlines |= stem.util.system.is_windows()
+
     if filename == 'cached-descriptors' or filename == 'cached-descriptors.new':
       file_parser = lambda f: stem.descriptor.server_descriptor._parse_file(f, validate = validate, **kwargs)
     elif filename == 'cached-extrainfo' or filename == 'cached-extrainfo.new':
@@ -214,6 +218,9 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
       file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, validate = validate, document_handler = document_handler, **kwargs)
     elif filename == 'cached-microdesc-consensus':
       file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, is_microdescriptor = True, validate = validate, document_handler = document_handler, **kwargs)
+
+  if normalize_newlines:
+    descriptor_file = NewlineNormalizer(descriptor_file)
 
   if file_parser:
     for desc in file_parser(descriptor_file):
@@ -621,6 +628,31 @@ class Descriptor(object):
       return stem.util.str_tools._to_unicode(self._raw_contents)
     else:
       return self._raw_contents
+
+
+class NewlineNormalizer(object):
+  """
+  File wrapper that normalizes CRLF line endings.
+  """
+
+  def __init__(self, wrapped_file):
+    self._wrapped_file = wrapped_file
+    self.name = getattr(wrapped_file, 'name', None)
+
+  def read(self, *args):
+    return self._wrapped_file.read(*args).replace('\r\n', '\n')
+
+  def readline(self, *args):
+    return self._wrapped_file.readline(*args).replace('\r\n', '\n')
+
+  def readlines(self, *args):
+    return [line.rstrip('\r') for line in self._wrapped_file.readlines(*args)]
+
+  def seek(self, *args):
+    return self._wrapped_file.seek(*args)
+
+  def tell(self, *args):
+    return self._wrapped_file.tell(*args)
 
 
 def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):
