@@ -85,7 +85,7 @@ DocumentHandler = stem.util.enum.UppercaseEnum(
 )
 
 
-def parse_file(descriptor_file, descriptor_type = None, validate = False, document_handler = DocumentHandler.ENTRIES, normalize_newlines = False, **kwargs):
+def parse_file(descriptor_file, descriptor_type = None, validate = False, document_handler = DocumentHandler.ENTRIES, normalize_newlines = None, **kwargs):
   """
   Simple function to read the descriptor contents from a file, providing an
   iterator for its :class:`~stem.descriptor.__init__.Descriptor` contents.
@@ -206,7 +206,8 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
   else:
     # Cached descriptor handling. These contain multiple descriptors per file.
 
-    normalize_newlines |= stem.util.system.is_windows()
+    if normalize_newlines is None and stem.util.system.is_windows():
+      normalize_newlines = True
 
     if filename == 'cached-descriptors' or filename == 'cached-descriptors.new':
       file_parser = lambda f: stem.descriptor.server_descriptor._parse_file(f, validate = validate, **kwargs)
@@ -640,13 +641,13 @@ class NewlineNormalizer(object):
     self.name = getattr(wrapped_file, 'name', None)
 
   def read(self, *args):
-    return self._wrapped_file.read(*args).replace('\r\n', '\n')
+    return self._wrapped_file.read(*args).replace(b'\r\n', b'\n')
 
   def readline(self, *args):
-    return self._wrapped_file.readline(*args).replace('\r\n', '\n')
+    return self._wrapped_file.readline(*args).replace(b'\r\n', b'\n')
 
   def readlines(self, *args):
-    return [line.rstrip('\r') for line in self._wrapped_file.readlines(*args)]
+    return [line.rstrip(b'\r') for line in self._wrapped_file.readlines(*args)]
 
   def seek(self, *args):
     return self._wrapped_file.seek(*args)
