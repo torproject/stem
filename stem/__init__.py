@@ -37,6 +37,9 @@ Library for working with the tor process.
 
   Signals that the tor process will accept.
 
+  .. versionchanged:: 1.3.0
+     Added the HEARTBEAT signal.
+
   ========================= ===========
   Signal                    Description
   ========================= ===========
@@ -378,6 +381,8 @@ Library for working with the tor process.
 
   The meaning behind these values is a bit unclear, pending :trac:`10086`.
 
+  .. versionadded:: 1.2.0
+
   =============== ===========
   ConnectionType  Description
   =============== ===========
@@ -390,6 +395,8 @@ Library for working with the tor process.
 
   Bucket categories of TB_EMPTY events.
 
+  .. versionadded:: 1.2.0
+
   =============== ===========
   TokenBucket     Description
   =============== ===========
@@ -401,6 +408,11 @@ Library for working with the tor process.
 .. data:: HSDescAction (enum)
 
   Action beeing taken in a HS_DESC event.
+
+  .. versionadded:: 1.2.0
+
+  .. versionchanged:: 1.4.0
+     Added the UPLOAD and UPLOADED actions.
 
   =============== ===========
   HSDescAction    Description
@@ -417,6 +429,11 @@ Library for working with the tor process.
 
   Reason for the hidden service descriptor to fail to be fetched.
 
+  .. versionadded:: 1.3.0
+
+  .. versionchanged:: 1.4.0
+     Added the UPLOAD_REJECTED reason.
+
   =================== ===========
   HSDescReason        Description
   =================== ===========
@@ -430,6 +447,8 @@ Library for working with the tor process.
 .. data:: HSAuth (enum)
 
   Type of authentication being used for a HS_DESC event.
+
+  .. versionadded:: 1.2.0
 
   ================= ===========
   HSAuth            Description
