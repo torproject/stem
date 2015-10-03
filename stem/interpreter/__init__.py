@@ -72,7 +72,7 @@ def main():
     is_tor_running = stem.util.system.is_running('tor') or stem.util.system.is_running('tor.real')
 
     if not is_tor_running:
-      if not stem.util.system.is_available('tor'):
+      if args.tor_path == 'tor' and not stem.util.system.is_available('tor'):
         print(format(msg('msg.tor_unavailable'), *ERROR_OUTPUT))
         sys.exit(1)
       else:
@@ -80,16 +80,21 @@ def main():
 
         control_port = '9051' if args.control_port == 'default' else str(args.control_port)
 
-        stem.process.launch_tor_with_config(
-          config = {
-            'SocksPort': '0',
-            'ControlPort': control_port,
-            'CookieAuthentication': '1',
-            'ExitPolicy': 'reject *:*',
-          },
-          completion_percent = 5,
-          take_ownership = True,
-        )
+        try:
+          stem.process.launch_tor_with_config(
+            config = {
+              'SocksPort': '0',
+              'ControlPort': control_port,
+              'CookieAuthentication': '1',
+              'ExitPolicy': 'reject *:*',
+            },
+            tor_cmd = args.tor_path,
+            completion_percent = 5,
+            take_ownership = True,
+          )
+        except OSError as exc:
+          print(format(msg('msg.unable_to_start_tor', error = exc), *ERROR_OUTPUT))
+          sys.exit(1)
 
   control_port = (args.control_address, args.control_port)
   control_socket = args.control_socket

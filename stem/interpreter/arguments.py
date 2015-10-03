@@ -17,12 +17,13 @@ DEFAULT_ARGS = {
   'user_provided_port': False,
   'control_socket': '/var/run/tor/control',
   'user_provided_socket': False,
+  'tor_path': 'tor',
   'disable_color': False,
   'print_help': False,
 }
 
 OPT = 'i:s:h'
-OPT_EXPANDED = ['interface=', 'socket=', 'no-color', 'help']
+OPT_EXPANDED = ['interface=', 'socket=', 'tor=', 'no-color', 'help']
 
 
 def parse(argv):
@@ -68,6 +69,8 @@ def parse(argv):
     elif opt in ('-s', '--socket'):
       args['control_socket'] = arg
       args['user_provided_socket'] = True
+    elif opt in ('--tor'):
+      args['tor_path'] = arg
     elif opt == '--no-color':
       args['disable_color'] = True
     elif opt in ('-h', '--help'):

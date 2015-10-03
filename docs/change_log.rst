@@ -60,6 +60,10 @@ The following are only available within Stem's `git repository
   * Unable to read descriptors from data directories on Windows due to their CRLF newlines (:trac:`17051`)
   * TypeError under python3 when using 'use_mirrors = True' (:trac:`17083`)
 
+ * **Interpreter**
+
+  * Added a '--tor [path]' argument to specify the tor binary to run.
+
  * **Website**
 
   * Example for `custom path selection for circuits <tutorials/to_russia_with_love.html#custom-path-selection>`_ (:trac:`8728`)
