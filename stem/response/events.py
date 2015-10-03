@@ -630,6 +630,9 @@ class HSDescEvent(Event):
   .. versionchanged:: 1.3.0
      Added the reason attribute.
 
+  .. versionchanged:: 1.5.0
+     Added the replica attribute.
+
   :var stem.HSDescAction action: what is happening with the descriptor
   :var str address: hidden service address
   :var stem.HSAuth authentication: service's authentication method
@@ -638,11 +641,12 @@ class HSDescEvent(Event):
   :var str directory_nickname: hidden service directory's nickname if it was provided
   :var str descriptor_id: descriptor identifier
   :var stem.HSDescReason reason: reason the descriptor failed to be fetched
+  :var int replica: unknown (:trac:`17226`)
   """
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_HS_DESC
   _POSITIONAL_ARGS = ('action', 'address', 'authentication', 'directory', 'descriptor_id')
-  _KEYWORD_ARGS = {'REASON': 'reason'}
+  _KEYWORD_ARGS = {'REASON': 'reason', 'REPLICA': 'replica'}
 
   def _parse(self):
     self.directory_fingerprint = None
@@ -653,6 +657,12 @@ class HSDescEvent(Event):
         stem.control._parse_circ_entry(self.directory)
     except stem.ProtocolError:
       raise stem.ProtocolError("HS_DESC's directory doesn't match a ServerSpec: %s" % self)
+
+    if self.replica is not None:
+      if not self.replica.isdigit():
+        raise stem.ProtocolError('HS_DESC event got a non-numeric replica count (%s): %s' % (self.replica, self))
+
+      self.replica = int(self.replica)
 
     self._log_if_unrecognized('action', stem.HSDescAction)
     self._log_if_unrecognized('authentication', stem.HSAuth)

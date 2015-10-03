@@ -414,6 +414,9 @@ Library for working with the tor process.
   .. versionchanged:: 1.4.0
      Added the UPLOAD and UPLOADED actions.
 
+  .. versionchanged:: 1.5.0
+     Added the CREATED action.
+
   =============== ===========
   HSDescAction    Description
   =============== ===========
@@ -423,6 +426,7 @@ Library for working with the tor process.
   **UPLOADED**    descriptor was uploaded with HSPOST
   **IGNORE**      fetched descriptor was ignored because we already have its v0 descriptor
   **FAILED**      we were unable to retrieve the descriptor
+  **CREATED**     unknown (:trac:`17226`)
   =============== ===========
 
 .. data:: HSDescReason (enum)
@@ -834,6 +838,7 @@ HSDescAction = stem.util.enum.UppercaseEnum(
   'UPLOADED',
   'IGNORE',
   'FAILED',
+  'CREATED',
 )
 
 HSDescReason = stem.util.enum.UppercaseEnum(
