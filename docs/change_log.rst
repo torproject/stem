@@ -61,6 +61,10 @@ The following are only available within Stem's `git repository
   * Unable to read descriptors from data directories on Windows due to their CRLF newlines (:trac:`17051`)
   * TypeError under python3 when using 'use_mirrors = True' (:trac:`17083`)
 
+ * **Utilities**
+
+  * Added :func:`stem.util.datetime_to_unix`
+
  * **Interpreter**
 
   * Added a '--tor [path]' argument to specify the tor binary to run.
