@@ -535,7 +535,9 @@ class Config(object):
 
     :param str path: location to be saved to
 
-    :raises: **ValueError** if no path was provided and we've never been provided one
+    :raises:
+      * **IOError** if we fail to save the file (insufficient permissions, etc)
+      * **ValueError** if no path was provided and we've never been provided one
     """
 
     if path:
