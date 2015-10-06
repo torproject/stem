@@ -426,7 +426,7 @@ Library for working with the tor process.
   **UPLOADED**    descriptor was uploaded with HSPOST
   **IGNORE**      fetched descriptor was ignored because we already have its v0 descriptor
   **FAILED**      we were unable to retrieve the descriptor
-  **CREATED**     unknown (:trac:`17226`)
+  **CREATED**     hidden service descriptor was just created
   =============== ===========
 
 .. data:: HSDescReason (enum)

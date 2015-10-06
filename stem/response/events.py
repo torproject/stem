@@ -641,7 +641,7 @@ class HSDescEvent(Event):
   :var str directory_nickname: hidden service directory's nickname if it was provided
   :var str descriptor_id: descriptor identifier
   :var stem.HSDescReason reason: reason the descriptor failed to be fetched
-  :var int replica: unknown (:trac:`17226`)
+  :var int replica: replica number the descriptor involves
   """
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_HS_DESC
