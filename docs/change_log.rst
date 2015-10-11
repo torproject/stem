@@ -63,7 +63,7 @@ The following are only available within Stem's `git repository
 
  * **Utilities**
 
-  * Added :func:`stem.util.datetime_to_unix`
+  * Added :func:`~stem.util.__init__.datetime_to_unix`
 
  * **Interpreter**
 

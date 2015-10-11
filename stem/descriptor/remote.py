@@ -686,7 +686,7 @@ DIRECTORY_AUTHORITIES = {
     address = '86.59.21.38',
     or_port = 443,
     dir_port = 80,
-    is_bandwidth_authority = True,
+    is_bandwidth_authority = False,
     fingerprint = '847B1F850344D7876491A54892F904934E4EB85D',
     v3ident = '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
   ),
