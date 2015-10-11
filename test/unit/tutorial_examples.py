@@ -89,8 +89,6 @@ moria1 has the Running flag but maatuska doesn't: DCAEC3D069DC39AAE43D13C8AF31B5
 VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT = """\
 Getting gabelmoo's vote from http://131.188.40.189:80/tor/status-vote/current/authority:
   5935 measured entries and 1332 unmeasured
-Getting tor26's vote from http://86.59.21.38:80/tor/status-vote/current/authority:
-  5735 measured entries and 1690 unmeasured
 Getting moria1's vote from http://128.31.0.39:9131/tor/status-vote/current/authority:
   6647 measured entries and 625 unmeasured
 Getting maatuska's vote from http://171.25.193.9:443/tor/status-vote/current/authority:
@@ -285,7 +283,6 @@ class TestTutorialExamples(unittest.TestCase):
   def test_votes_by_bandwidth_authorities(self, query_mock, get_authorities_mock, stdout_mock):
     directory_values = [
       DIRECTORY_AUTHORITIES['gabelmoo'],
-      DIRECTORY_AUTHORITIES['tor26'],
       DIRECTORY_AUTHORITIES['moria1'],
       DIRECTORY_AUTHORITIES['maatuska'],
     ]
@@ -301,18 +298,14 @@ class TestTutorialExamples(unittest.TestCase):
     query1.run.return_value = [entry_with_measurement] * 5935 + [entry_without_measurement] * 1332
 
     query2 = Mock()
-    query2.download_url = 'http://86.59.21.38:80/tor/status-vote/current/authority'
-    query2.run.return_value = [entry_with_measurement] * 5735 + [entry_without_measurement] * 1690
+    query2.download_url = 'http://128.31.0.39:9131/tor/status-vote/current/authority'
+    query2.run.return_value = [entry_with_measurement] * 6647 + [entry_without_measurement] * 625
 
     query3 = Mock()
-    query3.download_url = 'http://128.31.0.39:9131/tor/status-vote/current/authority'
-    query3.run.return_value = [entry_with_measurement] * 6647 + [entry_without_measurement] * 625
+    query3.download_url = 'http://171.25.193.9:443/tor/status-vote/current/authority'
+    query3.run.return_value = [entry_with_measurement] * 6313 + [entry_without_measurement] * 1112
 
-    query4 = Mock()
-    query4.download_url = 'http://171.25.193.9:443/tor/status-vote/current/authority'
-    query4.run.return_value = [entry_with_measurement] * 6313 + [entry_without_measurement] * 1112
-
-    query_mock.side_effect = [query1, query2, query3, query4]
+    query_mock.side_effect = [query1, query2, query3]
 
     exec_documentation_example('votes_by_bandwidth_authorities.py')
     self.assert_equal_unordered(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT, stdout_mock.getvalue())
