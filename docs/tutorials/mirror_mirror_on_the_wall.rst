@@ -270,7 +270,7 @@ Language                    :green:`Python`   :green:`Java`   :green:`Go`
 Checks signatures           :green:`Mostly`   :red:`No`       :red:`No`
 Create new descriptors      :red:`No`         :red:`No`       :red:`No`
 Lazy parsing                :green:`Yes`      :red:`No`       :green:`Yes`
-Type detection by @type     :green:`Yes`      :green:`Yes`    :red:`No`
+Type detection by @type     :green:`Yes`      :green:`Yes`    :green:`Yes`
 Type detection by filename  :green:`Yes`      :red:`No`       :red:`No`
 Packages                    :green:`Several`  :red:`None`     :red:`None`
 **Can Read/Download From**
