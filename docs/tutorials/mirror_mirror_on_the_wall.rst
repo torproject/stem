@@ -12,6 +12,7 @@ with what they are and where to get them then you may want to skip to the end.
 * :ref:`validating-the-descriptors-content`
 * :ref:`saving-and-loading-descriptors`
 * :ref:`putting-it-together`
+* :ref:`are-there-any-other-parsing-libraries`
 
 .. _what-is-a-descriptor:
 
@@ -247,4 +248,45 @@ could use any of the methods above, but for this example we'll use
   13. ndnr1 (25.36 MB/s)
   14. politkovskaja2 (24.93 MB/s)
   15. wau (24.72 MB/s)
+
+.. _are-there-any-other-parsing-libraries:
+
+Are there any other parsing libraries?
+--------------------------------------
+
+Yup! Stem isn't the only game in town when it comes to parsing. `Metrics-lib
+<https://gitweb.torproject.org/metrics-lib.git/>`_ is a highly mature parsing
+library for Java, and `Zoossh
+<https://gitweb.torproject.org/user/phw/zoossh.git/>`_ is available for Go.
+Each library has its own capabilities...
+
+.. role:: red
+.. role:: green
+
+=========================== ================= =============== ==============
+Capability                  Stem              Metrics-lib     Zoossh
+=========================== ================= =============== ==============
+Language                    :green:`Python`   :green:`Java`   :green:`Go`
+Checks signatures           :green:`Mostly`   :red:`No`       :red:`No`
+Create new descriptors      :red:`No`         :red:`No`       :red:`No`
+Lazy parsing                :green:`Yes`      :red:`No`       :green:`Yes`
+Type detection by @type     :green:`Yes`      :green:`Yes`    :red:`No`
+Type detection by filename  :green:`Yes`      :red:`No`       :red:`No`
+Packages                    :green:`Several`  :red:`None`     :red:`None`
+**Can Read/Download From**
+Files                       :green:`Yes`      :green:`Yes`    :green:`Yes`
+Tarballs                    :green:`Yes`      :green:`Yes`    :red:`No`
+Directory Authorities       :green:`Yes`      :green:`Yes`    :red:`No`
+CollecTor                   :red:`No`         :green:`Yes`    :red:`No`
+**Supported Types**
+Server Descriptors          :green:`Yes`      :green:`Yes`    :green:`Partly`
+Extrainfo Descriptors       :green:`Yes`      :green:`Yes`    :red:`No`
+Microdescriptors            :green:`Yes`      :green:`Yes`    :red:`No`
+Consensus                   :green:`Yes`      :green:`Yes`    :green:`Partly`
+Bridge Descriptors          :green:`Yes`      :green:`Yes`    :red:`No`
+Hidden Service Descriptors  :green:`Yes`      :red:`No`       :red:`No`
+Bridge Pool Assignments     :red:`No`         :green:`Yes`    :red:`No`
+Torperf                     :red:`No`         :green:`Yes`    :red:`No`
+Tordnsel                    :green:`Yes`      :green:`Yes`    :red:`No`
+=========================== ================= =============== ==============
 

@@ -5,3 +5,13 @@ div.literal-block-wrapper {
 span.caption-text {
     float: right;
 }
+
+span.red {
+    color: red;
+    font-weight: bold;
+}
+
+span.green {
+    color: green;
+    font-weight: bold;
+}
