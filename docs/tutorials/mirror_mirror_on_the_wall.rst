@@ -276,6 +276,7 @@ Packages                    :green:`Several`  :red:`None`     :red:`None`
 **Can Read/Download From**
 Files                       :green:`Yes`      :green:`Yes`    :green:`Yes`
 Tarballs                    :green:`Yes`      :green:`Yes`    :red:`No`
+Tor Process                 :green:`Yes`      :red:`No`       :red:`No`
 Directory Authorities       :green:`Yes`      :green:`Yes`    :red:`No`
 CollecTor                   :red:`No`         :green:`Yes`    :red:`No`
 **Supported Types**
