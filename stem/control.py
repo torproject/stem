@@ -2044,6 +2044,9 @@ class Controller(BaseController):
     **HiddenServiceOptions** was the only option that falls into the third
     category.
 
+    **Note:** HiddenServiceOptions are best retrieved via the
+    :func:`~stem.control.Controller.get_hidden_service_conf` method instead.
+
     :param str,list params: configuration option(s) to be queried
     :param object default: value for the mappings if the configuration option
       is either undefined or the query fails
