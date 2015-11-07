@@ -153,25 +153,12 @@ def _parse_introduction_points_line(descriptor, entries):
     raise ValueError("'introduction-points' should be followed by a MESSAGE block, but was a %s" % block_type)
 
   descriptor.introduction_points_encoded = block_contents
+  descriptor.introduction_points_auth = []  # field was never implemented in tor (#15190)
 
   try:
-    decoded_field = _bytes_for_block(block_contents)
+    descriptor.introduction_points_content = _bytes_for_block(block_contents)
   except TypeError:
     raise ValueError("'introduction-points' isn't base64 encoded content:\n%s" % block_contents)
-
-  auth_types = []
-
-  while decoded_field.startswith(b'service-authentication ') and b'\n' in decoded_field:
-    auth_line, decoded_field = decoded_field.split(b'\n', 1)
-    auth_line_comp = auth_line.split(b' ')
-
-    if len(auth_line_comp) < 3:
-      raise ValueError("Within introduction-points we expected 'service-authentication [auth_type] [auth_data]', but had '%s'" % auth_line)
-
-    auth_types.append((auth_line_comp[1], auth_line_comp[2]))
-
-  descriptor.introduction_points_auth = auth_types
-  descriptor.introduction_points_content = decoded_field
 
 _parse_rendezvous_service_descriptor_line = _parse_simple_line('rendezvous-service-descriptor', 'descriptor_id')
 _parse_permanent_key_line = _parse_key_block('permanent-key', 'permanent_key', 'RSA PUBLIC KEY')
@@ -194,6 +181,7 @@ class HiddenServiceDescriptor(Descriptor):
   :var str introduction_points_encoded: raw introduction points blob
   :var list introduction_points_auth: **\*** tuples of the form
     (auth_method, auth_data) for our introduction_points_content
+    (**deprecated**, always **[]**)
   :var bytes introduction_points_content: decoded introduction-points content
     without authentication data, if using cookie authentication this is
     encrypted

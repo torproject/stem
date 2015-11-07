@@ -60,6 +60,7 @@ The following are only available within Stem's `git repository
   * Replaced the :class:`~stem.descriptor.microdescriptor.Microdescriptor` identifier and identifier_type attributes with an identifiers hash since it can now appear multiple times (:spec:`09ff9e2`)
   * Unable to read descriptors from data directories on Windows due to their CRLF newlines (:trac:`17051`)
   * TypeError under python3 when using 'use_mirrors = True' (:trac:`17083`)
+  * Deprecated hidden service descriptor's *introduction_points_auth* field, which was never implemented in tor (:trac:`15190`, :spec:`9c218f9`)
 
  * **Utilities**
 
