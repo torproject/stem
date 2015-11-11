@@ -17,6 +17,7 @@ __all__ = [
   'term',
   'test_tools',
   'tor_tools',
+  'datetime_to_unix',
 ]
 
 import datetime

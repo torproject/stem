@@ -49,6 +49,7 @@ Contents
    api/descriptor/reader
    api/descriptor/remote
 
+   api/util/init
    api/util/conf
    api/util/connection
    api/util/enum
