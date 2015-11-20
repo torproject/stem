@@ -117,17 +117,20 @@ class TestManual(unittest.TestCase):
       test.runner.skip(self, '(unavailable on windows)')
       return
 
-    test.runner.skip(self, 'coming soon!')  # TODO: yup, got a few to fill in...
-
     manual = stem.manual.Manual.from_man(TEST_MAN_PAGE)
-    missing_summary = []
+    present = set(manual.config_options.keys())
+    expected = set([key[15:] for key in stem.manual._config(lowercase = False) if key.startswith('manual.summary.')])
 
-    for config_option in manual.config_options.values():
-      if not config_option.summary and config_option.category != Category.TESTING:
-        missing_summary.append(config_option.name)
+    # TODO: The 'Recognized' config name is due to our man page being slightly
+    # malformed. Sending a tor patch later to fix it.
 
-    if missing_summary:
-      self.fail("The following config options are missing summaries: %s" % ', '.join(missing_summary))
+    missing_options = present.difference(expected).difference(set(['Recognized']))
+    extra_options = expected.difference(present)
+
+    if missing_options:
+      self.fail("The following config options are missing summaries: %s" % ', '.join(missing_options))
+    elif extra_options:
+      self.fail("The following config options no longer exist in tor, so don't need summaries: %s" % ', '.join(extra_options))
 
   def test_attributes(self):
     if stem.util.system.is_windows():

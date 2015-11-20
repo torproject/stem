@@ -53,15 +53,15 @@ CATEGORY_SECTIONS = {
 
 
 @lru_cache()
-def _config():
+def _config(lowercase = True):
   """
   Provides a dictionary for our manual.cfg. This has a couple categories...
 
-    * manual.important (list) - list of lowercase configuration options
-      considered to be important
+    * manual.important (list) - configuration options considered to be important
+    * manual.summary.* (str) - summary descriptions of config options
 
-    * manual.summary.* (str) - summary descriptions of config options, key uses
-      the lowercase configuration option
+  :param bool lowercase: uses lowercase keys if **True** to allow for case
+    insensitive lookups
   """
 
   config = stem.util.conf.Config()
@@ -69,8 +69,8 @@ def _config():
 
   try:
     config.load(config_path)
-    config_dict = dict([(key.lower(), config.get_value(key)) for key in config.keys()])
-    config_dict['manual.important'] = [name.lower() for name in config.get_value('manual.important', [], multiple = True)]
+    config_dict = dict([(key.lower() if lowercase else key, config.get_value(key)) for key in config.keys()])
+    config_dict['manual.important'] = [name.lower() if lowercase else name for name in config.get_value('manual.important', [], multiple = True)]
     return config_dict
   except Exception as exc:
     stem.util.log.warn("BUG: stem failed to load its internal manual information from '%s': %s" % (config_path, exc))
