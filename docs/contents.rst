@@ -34,6 +34,7 @@ Contents
    api/response
 
    api/exit_policy
+   api/manual
    api/version
 
    api/descriptor/descriptor
