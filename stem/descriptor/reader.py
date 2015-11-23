@@ -218,6 +218,7 @@ def save_processed_files(path, processed_files):
   """
 
   # makes the parent directory if it doesn't already exist
+
   try:
     path_dir = os.path.dirname(path)
 

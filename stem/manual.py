@@ -10,15 +10,20 @@ Provides information available about Tor from `its manual
 ::
 
   is_important - Indicates if a configuration option is of particularly common importance.
+  download_man_page - Downloads tor's latest man page.
 
   Manual - Information about Tor available from its manual.
-   +- from_man - Retrieves manual information from its man page.
+   |- from_man - Retrieves manual information from its man page.
+   +- from_remote - Retrieves manual information remotely from tor's latest manual.
 
 .. versionadded:: 1.5.0
 """
 
 import collections
 import os
+import shutil
+import sys
+import tempfile
 
 import stem.prereq
 import stem.util.conf
@@ -38,8 +43,16 @@ try:
 except ImportError:
   from stem.util.lru_cache import lru_cache
 
+try:
+  # account for urllib's change between python 2.x and 3.x
+  import urllib.request as urllib
+except ImportError:
+  import urllib2 as urllib
+
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'TESTING', 'UNKNOWN')
 ConfigOption = collections.namedtuple('ConfigOption', ['category', 'name', 'usage', 'summary', 'description'])
+
+GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
 
 CATEGORY_SECTIONS = {
   'GENERAL OPTIONS': Category.GENERAL,
@@ -55,7 +68,7 @@ CATEGORY_SECTIONS = {
 @lru_cache()
 def _config(lowercase = True):
   """
-  Provides a dictionary for our manual.cfg. This has a couple categories...
+  Provides a dictionary for our settings.cfg. This has a couple categories...
 
     * manual.important (list) - configuration options considered to be important
     * manual.summary.* (str) - summary descriptions of config options
@@ -65,7 +78,7 @@ def _config(lowercase = True):
   """
 
   config = stem.util.conf.Config()
-  config_path = os.path.join(os.path.dirname(__file__), 'manual.cfg')
+  config_path = os.path.join(os.path.dirname(__file__), 'settings.cfg')
 
   try:
     config.load(config_path)
@@ -88,6 +101,65 @@ def is_important(option):
   """
 
   return option.lower() in _config()['manual.important']
+
+
+def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, timeout = 20):
+  """
+  Downloads tor's latest man page from `gitweb.torproject.org
+  <https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt>`_. This method is
+  both slow and unreliable - please see the warnings on
+  :func:`~stem.manual.Manual.from_remote`.
+
+  :param str path: path to save tor's man page to
+  :param file file_handle: file handler to save tor's man page to
+  :param str url: url to download tor's asciidoc manual from
+  :param int timeout: seconds to wait before timing out the request
+
+  :raises: **IOError** if unable to retrieve the manual
+  """
+
+  if not path and not file_handle:
+    raise ValueError("Either the path or file_handle we're saving to must be provided")
+  elif not stem.util.system.is_available('a2x'):
+    raise IOError('We require a2x from asciidoc to provide a man page')
+
+  dirpath = tempfile.mkdtemp()
+  asciidoc_path = os.path.join(dirpath, 'tor.1.txt')
+  manual_path = os.path.join(dirpath, 'tor.1')
+
+  try:
+    try:
+      with open(asciidoc_path, 'wb') as asciidoc_file:
+        request = urllib.urlopen(url, timeout = timeout)
+        shutil.copyfileobj(request, asciidoc_file)
+    except:
+      exc = sys.exc_info()[1]
+      raise IOError("Unable to download tor's manual from %s to %s: %s" % (url, asciidoc_path, exc))
+
+    try:
+      stem.util.system.call('a2x -f manpage %s' % asciidoc_path)
+
+      if not os.path.exists(manual_path):
+        raise OSError('no man page was generated')
+    except OSError as exc:
+      raise IOError("Unable to run 'a2x -f manpage %s': %s" % (asciidoc_path, exc))
+
+    if path:
+      try:
+        path_dir = os.path.dirname(path)
+
+        if not os.path.exists(path_dir):
+          os.makedirs(path_dir)
+
+        shutil.copyfile(manual_path, path)
+      except OSError as exc:
+        raise IOError(exc)
+
+    if file_handle:
+      with open(manual_path) as manual_file:
+        shutil.copyfileobj(manual_file, file_handle)
+  finally:
+    shutil.rmtree(dirpath)
 
 
 class Manual(object):
@@ -129,6 +201,10 @@ class Manual(object):
 
     :param str man_path: path argument for 'man', for example you might want
       '/path/to/tor/doc/tor.1' to read from tor's git repository
+
+    :returns: :class:`~stem.manual.Manual` for the system's man page
+
+    :raises: **IOError** if unable to retrieve the manual
     """
 
     try:
@@ -154,6 +230,40 @@ class Manual(object):
       _get_indented_descriptions(categories.get('FILES', [])),
       config_options,
     )
+
+  @staticmethod
+  def from_remote(timeout = 20):
+    """
+    Reads and parses the latest tor man page `from gitweb.torproject.org
+    <https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt>`_. Note that
+    while convenient, this reliance on GitWeb means you should alway call with
+    a fallback, such as...
+
+    ::
+
+      try:
+        manual = stem.manual.from_remote()
+      except IOError:
+        manual = stem.manual.from_cache()
+
+    In addition to our GitWeb dependency this requires 'a2x' which is part of
+    `asciidoc <http://asciidoc.org/INSTALL.html>`_ and... isn't quick.
+    Personally this takes ~7.41s, breaking down for me as follows...
+
+      * 1.67s to download tor.1.txt
+      * 5.57s to convert the asciidoc to a man page
+      * 0.17s for stem to read and parse the manual
+
+    :param int timeout: seconds to wait before timing out the request
+
+    :returns: latest :class:`~stem.manual.Manual` available for tor
+
+    :raises: **IOError** if unable to retrieve the manual
+    """
+
+    with tempfile.NamedTemporaryFile() as tmp:
+      download_man_page(file_handle = tmp, timeout = timeout)
+      return Manual.from_man(tmp)
 
 
 def _get_categories(content):

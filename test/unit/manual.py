@@ -1,77 +1,32 @@
 """
-Unit tessts for the stem.manual module. Test data comes from the following...
-
-  * test/unit/tor.1 - Tor version 0.2.8.0-alpha-dev (git-3c6782395743a089)
+Unit testing for the stem.manual module.
 """
 
-import codecs
-import os
+import io
 import unittest
 
+import stem.prereq
 import stem.manual
-import stem.util.system
-import test.runner
-
-from stem.manual import Category
 
 try:
-  # added in python 3.2
-  from functools import lru_cache
+  # account for urllib's change between python 2.x and 3.x
+  import urllib.request as urllib
 except ImportError:
-  from stem.util.lru_cache import lru_cache
+  import urllib2 as urllib
 
-TEST_MAN_PAGE = os.path.join(os.path.dirname(__file__), 'tor.1')
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
 
-EXPECTED_CATEGORIES = set([
-  'NAME',
-  'SYNOPSIS',
-  'DESCRIPTION',
-  'COMMAND-LINE OPTIONS',
-  'THE CONFIGURATION FILE FORMAT',
-  'GENERAL OPTIONS',
-  'CLIENT OPTIONS',
-  'SERVER OPTIONS',
-  'DIRECTORY SERVER OPTIONS',
-  'DIRECTORY AUTHORITY SERVER OPTIONS',
-  'HIDDEN SERVICE OPTIONS',
-  'TESTING NETWORK OPTIONS',
-  'SIGNALS',
-  'FILES',
-  'SEE ALSO',
-  'BUGS',
-  'AUTHORS',
-])
+try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
 
-EXPECTED_CLI_OPTIONS = set(['-h, -help', '-f FILE', '--allow-missing-torrc', '--defaults-torrc FILE', '--ignore-missing-torrc', '--hash-password PASSWORD', '--list-fingerprint', '--verify-config', '--service install [--options command-line options]', '--service remove|start|stop', '--nt-service', '--list-torrc-options', '--version', '--quiet|--hush'])
-EXPECTED_SIGNALS = set(['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGUSR1', 'SIGUSR2', 'SIGCHLD', 'SIGPIPE', 'SIGXFSZ'])
-
-EXPECTED_OPTION_COUNTS = {
-  Category.GENERAL: 74,
-  Category.CLIENT: 86,
-  Category.RELAY: 47,
-  Category.DIRECTORY: 5,
-  Category.AUTHORITY: 34,
-  Category.HIDDEN_SERVICE: 11,
-  Category.TESTING: 32,
-  Category.UNKNOWN: 0,
-}
-
-EXPECTED_DESCRIPTION = """
-Tor is a connection-oriented anonymizing communication service. Users choose a source-routed path through a set of nodes, and negotiate a "virtual circuit" through the network, in which each node knows its predecessor and successor, but no others. Traffic flowing down the circuit is unwrapped by a symmetric key at each node, which reveals the downstream node.
-
-Basically, Tor provides a distributed network of servers or relays ("onion routers"). Users bounce their TCP streams - web traffic, ftp, ssh, etc. - around the network, and recipients, observers, and even the relays themselves have difficulty tracking the source of the stream.
-
-By default, tor will only act as a client only. To help the network by providing bandwidth as a relay, change the ORPort configuration option - see below. Please also consult the documentation on the Tor Project's website.
-""".strip()
-
-EXPECTED_FILE_DESCRIPTION = 'Specify a new configuration file to contain further Tor configuration options OR pass - to make Tor read its configuration from standard input. (Default: /usr/local/etc/tor/torrc, or $HOME/.torrc if that file is not found)'
-
-EXPECTED_BANDWIDTH_RATE_DESCRIPTION = 'A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 30 KBytes (that is, 30720 bytes). (Default: 1 GByte)\n\nWith this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\'s easy to forget that "B" means bytes, not bits.'
-
-
-@lru_cache()
-def man_content():
-  return stem.util.system.call('man -P cat %s' % TEST_MAN_PAGE)
+URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
 
 
 class TestManual(unittest.TestCase):
@@ -82,105 +37,89 @@ class TestManual(unittest.TestCase):
 
     self.assertFalse(stem.manual.is_important('ConstrainedSockSize'))
 
-  def test_get_categories(self):
-    if stem.util.system.is_windows():
-      test.runner.skip(self, '(unavailable on windows)')
-      return
+  def test_download_man_page_without_arguments(self):
+    try:
+      stem.manual.download_man_page()
+      self.fail('we should fail without a path or file handler')
+    except ValueError as exc:
+      self.assertEqual("Either the path or file_handle we're saving to must be provided", str(exc))
 
-    categories = stem.manual._get_categories(man_content())
-    self.assertEqual(EXPECTED_CATEGORIES, set(categories.keys()))
-    self.assertEqual(['tor - The second-generation onion router'], categories['NAME'])
-    self.assertEqual(['tor [OPTION value]...'], categories['SYNOPSIS'])
-    self.assertEqual(8, len(categories['DESCRIPTION']))  # check parsing of multi-line entries
+  @patch('stem.util.system.is_available', Mock(return_value = False))
+  def test_download_man_page_requires_a2x(self):
+    try:
+      stem.manual.download_man_page('/tmp/no_such_file')
+      self.fail('we should require a2x to be available')
+    except IOError as exc:
+      self.assertEqual('We require a2x from asciidoc to provide a man page', str(exc))
 
-  def test_escapes_non_ascii(self):
-    if stem.util.system.is_windows():
-      test.runner.skip(self, '(unavailable on windows)')
-      return
+  @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
+  @patch('shutil.rmtree', Mock())
+  @patch('stem.manual.open', Mock(side_effect = IOError('unable to write to file')), create = True)
+  def test_download_man_page_when_unable_to_write(self):
+    try:
+      stem.manual.download_man_page('/tmp/no_such_file')
+      self.fail("we shouldn't be able to write to /no/such/path")
+    except IOError as exc:
+      self.assertEqual("Unable to download tor's manual from https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt to /no/such/path/tor.1.txt: unable to write to file", str(exc))
 
-    def check(content):
-      try:
-        codecs.ascii_encode(content, 'strict')
-      except UnicodeEncodeError as exc:
-        self.fail("Unable to read '%s' as ascii: %s" % (content, exc))
+  @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
+  @patch('shutil.rmtree', Mock())
+  @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
+  @patch(URL_OPEN, Mock(side_effect = urllib.URLError('<urlopen error [Errno -2] Name or service not known>')))
+  def test_download_man_page_when_download_fails(self):
+    try:
+      stem.manual.download_man_page('/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
+      self.fail("downloading from test_invalid_url.org shouldn't work")
+    except IOError as exc:
+      self.assertEqual("Unable to download tor's manual from https://www.atagar.com/foo/bar to /no/such/path/tor.1.txt: <urlopen error <urlopen error [Errno -2] Name or service not known>>", str(exc))
 
-    categories = stem.manual._get_categories(man_content())
+  @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
+  @patch('shutil.rmtree', Mock())
+  @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
+  @patch('stem.util.system.call', Mock(side_effect = OSError('call failed')))
+  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
+  def test_download_man_page_when_a2x_fails(self):
+    try:
+      stem.manual.download_man_page('/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
+      self.fail("downloading from test_invalid_url.org shouldn't work")
+    except IOError as exc:
+      self.assertEqual("Unable to run 'a2x -f manpage /no/such/path/tor.1.txt': call failed", str(exc))
 
-    for category, lines in categories.items():
-      check(category)
+  @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
+  @patch('shutil.rmtree', Mock())
+  @patch('stem.manual.open', create = True)
+  @patch('stem.util.system.call')
+  @patch('os.path.exists', Mock(return_value = True))
+  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
+  def test_download_man_page_when_successful(self, call_mock, open_mock):
+    open_mock.side_effect = lambda path, *args: {
+      '/no/such/path/tor.1.txt': io.BytesIO(),
+      '/no/such/path/tor.1': io.BytesIO(b'a2x output'),
+    }[path]
 
-      for line in lines:
-        check(line)
+    call_mock.return_value = Mock()
 
-  def test_has_all_summaries(self):
-    if stem.util.system.is_windows():
-      test.runner.skip(self, '(unavailable on windows)')
-      return
+    output = io.BytesIO()
+    stem.manual.download_man_page(file_handle = output)
+    self.assertEqual(b'a2x output', output.getvalue())
+    call_mock.assert_called_once_with('a2x -f manpage /no/such/path/tor.1.txt')
 
-    manual = stem.manual.Manual.from_man(TEST_MAN_PAGE)
-    present = set(manual.config_options.keys())
-    expected = set([key[15:] for key in stem.manual._config(lowercase = False) if key.startswith('manual.summary.')])
+  @patch('stem.util.system.call', Mock(side_effect = OSError('man -P cat tor returned exit status 16')))
+  def test_from_man_when_manual_is_unavailable(self):
+    try:
+      stem.manual.Manual.from_man()
+      self.fail("fetching the manual should fail when it's unavailable")
+    except IOError as exc:
+      self.assertEqual("Unable to run 'man -P cat tor': man -P cat tor returned exit status 16", str(exc))
 
-    # TODO: The 'Recognized' config name is due to our man page being slightly
-    # malformed. Sending a tor patch later to fix it.
+  @patch('stem.util.system.call', Mock(return_value = []))
+  def test_when_man_is_empty(self):
+    manual = stem.manual.Manual.from_man()
 
-    missing_options = present.difference(expected).difference(set(['Recognized']))
-    extra_options = expected.difference(present)
-
-    if missing_options:
-      self.fail("The following config options are missing summaries: %s" % ', '.join(missing_options))
-    elif extra_options:
-      self.fail("The following config options no longer exist in tor, so don't need summaries: %s" % ', '.join(extra_options))
-
-  def test_attributes(self):
-    if stem.util.system.is_windows():
-      test.runner.skip(self, '(unavailable on windows)')
-      return
-
-    manual = stem.manual.Manual.from_man(TEST_MAN_PAGE)
-
-    self.assertEqual('tor - The second-generation onion router', manual.name)
-    self.assertEqual('tor [OPTION value]...', manual.synopsis)
-    self.assertEqual(EXPECTED_DESCRIPTION, manual.description)
-
-    self.assertEqual(EXPECTED_CLI_OPTIONS, set(manual.commandline_options.keys()))
-    self.assertEqual('Display a short help message and exit.', manual.commandline_options['-h, -help'])
-    self.assertEqual(EXPECTED_FILE_DESCRIPTION, manual.commandline_options['-f FILE'])
-
-    self.assertEqual(EXPECTED_SIGNALS, set(manual.signals.keys()))
-    self.assertEqual('Tor will catch this, clean up and sync to disk if necessary, and exit.', manual.signals['SIGTERM'])
-
-    self.assertEqual(31, len(manual.files))
-    self.assertEqual('The tor process stores keys and other data here.', manual.files['/usr/local/var/lib/tor/'])
-
-    for category, expected_count in EXPECTED_OPTION_COUNTS.items():
-      self.assertEqual(expected_count, len([entry for entry in manual.config_options.values() if entry.category == category]))
-
-    option = manual.config_options['BandwidthRate']
-    self.assertEqual(Category.GENERAL, option.category)
-    self.assertEqual('BandwidthRate', option.name)
-    self.assertEqual('N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits', option.usage)
-    self.assertEqual('Average bandwidth usage limit', option.summary)
-    self.assertEqual(EXPECTED_BANDWIDTH_RATE_DESCRIPTION, option.description)
-
-  def test_with_unknown_options(self):
-    if stem.util.system.is_windows():
-      test.runner.skip(self, '(unavailable on windows)')
-      return
-
-    manual = stem.manual.Manual.from_man(TEST_MAN_PAGE + '_with_unknown')
-
-    self.assertEqual('tor - The second-generation onion router', manual.name)
+    self.assertEqual('', manual.name)
     self.assertEqual('', manual.synopsis)
     self.assertEqual('', manual.description)
     self.assertEqual({}, manual.commandline_options)
     self.assertEqual({}, manual.signals)
-
-    self.assertEqual(2, len(manual.config_options))
-
-    option = [entry for entry in manual.config_options.values() if entry.category == Category.UNKNOWN][0]
-    self.assertEqual(Category.UNKNOWN, option.category)
-    self.assertEqual('SpiffyNewOption', option.name)
-    self.assertEqual('transport exec path-to-binary [options]', option.usage)
-    self.assertEqual('', option.summary)
-    self.assertEqual('Description of this new option.', option.description)
+    self.assertEqual({}, manual.files)
+    self.assertEqual(OrderedDict(), manual.config_options)

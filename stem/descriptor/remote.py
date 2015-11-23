@@ -80,9 +80,10 @@ import time
 import zlib
 
 try:
-    import urllib.request as urllib
+  # account for urllib's change between python 2.x and 3.x
+  import urllib.request as urllib
 except ImportError:
-    import urllib2 as urllib
+  import urllib2 as urllib
 
 import stem.descriptor
 
