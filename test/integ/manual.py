@@ -99,26 +99,42 @@ class TestManual(unittest.TestCase):
 
     return False
 
-  def test_get_categories(self):
-    if self.requires_downloaded_manual():
+  def test_with_unknown_options(self):
+    """
+    Check that we can read a local mock man page that contains unrecognized
+    options. Unlike most other tests this doesn't require network access.
+    """
+
+    if stem.util.system.is_windows():
+      test.runner.skip(self, '(unavailable on windows)')  # needs to run 'man'
       return
 
-    categories = stem.manual._get_categories(self.man_content)
+    manual = stem.manual.Manual.from_man(os.path.join(os.path.dirname(__file__), 'tor.1_with_unknown'))
 
-    present = set(categories.keys())
-    missing_categories = present.difference(EXPECTED_CATEGORIES)
-    extra_categories = EXPECTED_CATEGORIES.difference(present)
+    self.assertEqual('tor - The second-generation onion router', manual.name)
+    self.assertEqual('', manual.synopsis)
+    self.assertEqual('', manual.description)
+    self.assertEqual({}, manual.commandline_options)
+    self.assertEqual({}, manual.signals)
+    self.assertEqual({}, manual.files)
 
-    if missing_categories:
-      self.fail("Changed tor's man page? We expected the %s man page sections but they're no longer around, if expected then please update our test." % ', '.join(missing_categories))
-    elif extra_categories:
-      self.fail("Changed tor's man page? We weren't expecting the %s man page sections, if expected then please update our test." % ', '.join(extra_categories))
+    self.assertEqual(2, len(manual.config_options))
 
-    self.assertEqual(['tor - The second-generation onion router'], categories['NAME'])
-    self.assertEqual(['tor [OPTION value]...'], categories['SYNOPSIS'])
-    self.assertEqual(8, len(categories['DESCRIPTION']))  # check parsing of multi-line entries
+    option = [entry for entry in manual.config_options.values() if entry.category == Category.UNKNOWN][0]
+    self.assertEqual(Category.UNKNOWN, option.category)
+    self.assertEqual('SpiffyNewOption', option.name)
+    self.assertEqual('transport exec path-to-binary [options]', option.usage)
+    self.assertEqual('', option.summary)
+    self.assertEqual('Description of this new option.', option.description)
 
   def test_escapes_non_ascii(self):
+    """
+    Check that our manual parser escapes all non-ascii characters. If this
+    fails then that means someone probably added a new type of non-ascii
+    character. Easy to fix: please simply add an escape for it in
+    stem/manual.py's _get_categories().
+    """
+
     if self.requires_downloaded_manual():
       return
 
@@ -136,26 +152,12 @@ class TestManual(unittest.TestCase):
       for line in lines:
         check(line)
 
-  def test_has_all_summaries(self):
-    if self.requires_downloaded_manual():
-      return
-
-    manual = stem.manual.Manual.from_man(self.man_path)
-    present = set(manual.config_options.keys())
-    expected = set([key[15:] for key in stem.manual._config(lowercase = False) if key.startswith('manual.summary.')])
-
-    # TODO: The 'Recognized' config name is due to our man page being slightly
-    # malformed. Sending a tor patch later to fix it.
-
-    missing_options = present.difference(expected).difference(set(['Recognized']))
-    extra_options = expected.difference(present)
-
-    if missing_options:
-      self.fail("Changed tor's man page? Please update Stem's settings.cfg with summaries of the following config options: %s" % ', '.join(missing_options))
-    elif extra_options:
-      self.fail("Changed tor's man page? Please remove the following summaries from Stem's settings.cfg: %s" % ', '.join(extra_options))
-
   def test_attributes(self):
+    """
+    General assertions against a few manual fields. If you update tor's manual
+    then go ahead and simply update these assertions.
+    """
+
     if self.requires_downloaded_manual():
       return
 
@@ -189,25 +191,121 @@ class TestManual(unittest.TestCase):
     self.assertEqual('Average bandwidth usage limit', option.summary)
     self.assertEqual(EXPECTED_BANDWIDTH_RATE_DESCRIPTION, option.description)
 
-  def test_with_unknown_options(self):
-    if stem.util.system.is_windows():
-      test.runner.skip(self, '(unavailable on windows)')
+  def test_has_all_categories(self):
+    """
+    Check that the categories in tor's manual matches what we expect. If these
+    change then we likely want to add/remove attributes from Stem's Manual
+    class to match.
+    """
+
+    if self.requires_downloaded_manual():
       return
 
-    manual = stem.manual.Manual.from_man(os.path.join(os.path.dirname(__file__), 'tor.1_with_unknown'))
+    categories = stem.manual._get_categories(self.man_content)
 
-    self.assertEqual('tor - The second-generation onion router', manual.name)
-    self.assertEqual('', manual.synopsis)
-    self.assertEqual('', manual.description)
-    self.assertEqual({}, manual.commandline_options)
-    self.assertEqual({}, manual.signals)
-    self.assertEqual({}, manual.files)
+    present = set(categories.keys())
+    missing_categories = present.difference(EXPECTED_CATEGORIES)
+    extra_categories = EXPECTED_CATEGORIES.difference(present)
 
-    self.assertEqual(2, len(manual.config_options))
+    if missing_categories:
+      self.fail("Changed tor's man page? We expected the %s man page sections but they're no longer around. Might need to update our Manual class." % ', '.join(missing_categories))
+    elif extra_categories:
+      self.fail("Changed tor's man page? We weren't expecting the %s man page sections. Might need to update our Manual class." % ', '.join(extra_categories))
 
-    option = [entry for entry in manual.config_options.values() if entry.category == Category.UNKNOWN][0]
-    self.assertEqual(Category.UNKNOWN, option.category)
-    self.assertEqual('SpiffyNewOption', option.name)
-    self.assertEqual('transport exec path-to-binary [options]', option.usage)
-    self.assertEqual('', option.summary)
-    self.assertEqual('Description of this new option.', option.description)
+    self.assertEqual(['tor - The second-generation onion router'], categories['NAME'])
+    self.assertEqual(['tor [OPTION value]...'], categories['SYNOPSIS'])
+    self.assertEqual(8, len(categories['DESCRIPTION']))  # check parsing of multi-line entries
+
+  def test_has_all_summaries(self):
+    """
+    Check that we have brief, human readable summaries for all of tor's
+    configuration options. If you add a new config entry then please take a sec
+    to write a little summary. They're located in 'stem/settings.cfg'.
+    """
+
+    if self.requires_downloaded_manual():
+      return
+
+    manual = stem.manual.Manual.from_man(self.man_path)
+    present = set(manual.config_options.keys())
+    expected = set([key[15:] for key in stem.manual._config(lowercase = False) if key.startswith('manual.summary.')])
+
+    # TODO: Typo in man page (s/TestingLinkCertifetime/TestingLinkCertLifetime)
+
+    present.remove('TestingLinkCertifetime')
+    present.add('TestingLinkCertLifetime')
+
+    # TODO: The 'Recognized' config name is due to our man page being slightly
+    # malformed. Sending a tor patch later to fix it.
+
+    missing_options = present.difference(expected).difference(set(['Recognized']))
+    extra_options = expected.difference(present)
+
+    if missing_options:
+      self.fail("Changed tor's man page? Please update Stem's settings.cfg with summaries of the following config options: %s" % ', '.join(missing_options))
+    elif extra_options:
+      self.fail("Changed tor's man page? Please remove the following summaries from Stem's settings.cfg: %s" % ', '.join(extra_options))
+
+  def test_has_all_tor_config_options(self):
+    """
+    Check that all the configuration options tor supports are in the man page.
+    """
+
+    if self.requires_downloaded_manual():
+      return
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      config_options_in_tor = set([line.split()[0] for line in controller.get_info('config/names').splitlines()])
+
+      # options starting with an underscore are hidden by convention
+
+      for name in list(config_options_in_tor):
+        if name.startswith('_'):
+          config_options_in_tor.remove(name)
+
+      # hidden service options are a special snowflake
+
+      if 'HiddenServiceOptions' in config_options_in_tor:
+        config_options_in_tor.remove('HiddenServiceOptions')
+
+      # TODO: Addressing some errors in the man page I'll be sending fixes for.
+
+      config_options_in_tor.remove('SocksPort')
+      config_options_in_tor.add('SOCKSPort')
+
+      config_options_in_tor.remove('SocksListenAddress')
+      config_options_in_tor.add('SOCKSListenAddress')
+
+      config_options_in_tor.remove('TestingLinkCertLifetime')
+      config_options_in_tor.add('TestingLinkCertifetime')
+
+      config_options_in_tor.remove('TestingSigningKeySlop')
+      config_options_in_tor.remove('TestingAuthKeySlop')
+
+      config_options_in_tor.remove('RecommendedPackages')
+      config_options_in_tor.add('RecommendedPackageVersions')
+
+      config_options_in_tor.add('Recognized')
+      config_options_in_tor.add('VoteOnHidServDirectoriesV2')
+      config_options_in_tor.add('HidServDirectoryV2')
+
+      # TODO: Looks like options we should remove from tor...
+      #
+      # https://trac.torproject.org/projects/tor/ticket/17665
+
+      config_options_in_tor.remove('SchedulerMaxFlushCells__')
+      config_options_in_tor.remove('SchedulerLowWaterMark__')
+      config_options_in_tor.remove('SchedulerHighWaterMark__')
+
+    manual = stem.manual.Manual.from_man(self.man_path)
+    config_options_in_manual = set(manual.config_options.keys())
+
+    missing_from_manual = config_options_in_tor.difference(config_options_in_manual)
+
+    if missing_from_manual:
+      self.fail("The %s config options supported by tor isn't in its man page. Maybe we need to add them?" % ', '.join(missing_from_manual))
+
+    extra_in_manual = config_options_in_manual.difference(config_options_in_tor)
+
+    if extra_in_manual:
+      self.fail("The %s config options in our man page aren't presently supported by tor. Maybe we need to remove them?" % ', '.join(extra_in_manual))
