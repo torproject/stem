@@ -2,8 +2,33 @@
 # See LICENSE for licensing information
 
 """
-Provides information available about Tor from `its manual
-<https://www.torproject.org/docs/tor-manual.html.en>`_.
+Information available about Tor from `its manual
+<https://www.torproject.org/docs/tor-manual.html.en>`_. This provides three
+methods of getting this information...
+
+* :func:`~stem.manual.Manual.from_cache` provides manual content bundled with
+  Stem. This is the fastest and most reliable method but only as up-to-date as
+  Stem's release.
+
+* :func:`~stem.manual.Manual.from_man` reads Tor's local man page for
+  information about it.
+
+* :func:`~stem.manual.Manual.from_remote` fetches the latest manual information
+  remotely. This is the slowest and least reliable method but provides the most
+  recent information about Tor.
+
+Manual information includes arguments, signals, and probably most usefully the
+torrc configuration options. For example, say we want a little script that told
+us what our torrc options do...
+
+.. literalinclude::  /_static/example/manual_config_options.py
+   :language: python
+
+|
+
+.. image:: /_static/manual_output.png
+
+|
 
 **Module Overview:**
 
@@ -263,7 +288,7 @@ class Manual(object):
 
     with tempfile.NamedTemporaryFile() as tmp:
       download_man_page(file_handle = tmp, timeout = timeout)
-      return Manual.from_man(tmp)
+      return Manual.from_man(tmp.name)
 
 
 def _get_categories(content):
