@@ -37,17 +37,6 @@ EXPECTED_CATEGORIES = set([
 EXPECTED_CLI_OPTIONS = set(['-h, -help', '-f FILE', '--allow-missing-torrc', '--defaults-torrc FILE', '--ignore-missing-torrc', '--hash-password PASSWORD', '--list-fingerprint', '--verify-config', '--service install [--options command-line options]', '--service remove|start|stop', '--nt-service', '--list-torrc-options', '--version', '--quiet|--hush'])
 EXPECTED_SIGNALS = set(['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGUSR1', 'SIGUSR2', 'SIGCHLD', 'SIGPIPE', 'SIGXFSZ'])
 
-EXPECTED_OPTION_COUNTS = {
-  Category.GENERAL: 74,
-  Category.CLIENT: 86,
-  Category.RELAY: 47,
-  Category.DIRECTORY: 5,
-  Category.AUTHORITY: 34,
-  Category.HIDDEN_SERVICE: 11,
-  Category.TESTING: 32,
-  Category.UNKNOWN: 0,
-}
-
 EXPECTED_DESCRIPTION = """
 Tor is a connection-oriented anonymizing communication service. Users choose a source-routed path through a set of nodes, and negotiate a "virtual circuit" through the network, in which each node knows its predecessor and successor, but no others. Traffic flowing down the circuit is unwrapped by a symmetric key at each node, which reveals the downstream node.
 
@@ -181,8 +170,14 @@ class TestManual(unittest.TestCase):
     assert_equal('number of files', 31, len(manual.files))
     assert_equal('lib path description', 'The tor process stores keys and other data here.', manual.files['@LOCALSTATEDIR@/lib/tor/'])
 
-    for category, expected_count in EXPECTED_OPTION_COUNTS.items():
-      assert_equal('number of %s category entries' % category, expected_count, len([entry for entry in manual.config_options.values() if entry.category == category]))
+    for category in Category:
+      if len([entry for entry in manual.config_options.values() if entry.category == category]) == 0 and category != Category.UNKNOWN:
+        self.fail('We had an empty %s section, did we intentionally drop it?' % category)
+
+    unknown_options = [entry for entry in manual.config_options.values() if entry.category == Category.UNKNOWN]
+
+    if unknown_options:
+      self.fail("We don't recognize the category for the %s options. Maybe a new man page section? If so then please update the Category enum in stem/manual.py." % ', '.join(unknown_options))
 
     option = manual.config_options['BandwidthRate']
     self.assertEqual(Category.GENERAL, option.category)
@@ -230,15 +225,7 @@ class TestManual(unittest.TestCase):
     present = set(manual.config_options.keys())
     expected = set([key[15:] for key in stem.manual._config(lowercase = False) if key.startswith('manual.summary.')])
 
-    # TODO: Typo in man page (s/TestingLinkCertifetime/TestingLinkCertLifetime)
-
-    present.remove('TestingLinkCertifetime')
-    present.add('TestingLinkCertLifetime')
-
-    # TODO: The 'Recognized' config name is due to our man page being slightly
-    # malformed. Sending a tor patch later to fix it.
-
-    missing_options = present.difference(expected).difference(set(['Recognized']))
+    missing_options = present.difference(expected)
     extra_options = expected.difference(present)
 
     if missing_options:
@@ -267,27 +254,6 @@ class TestManual(unittest.TestCase):
 
       if 'HiddenServiceOptions' in config_options_in_tor:
         config_options_in_tor.remove('HiddenServiceOptions')
-
-      # TODO: Addressing some errors in the man page I'll be sending fixes for.
-
-      config_options_in_tor.remove('SocksPort')
-      config_options_in_tor.add('SOCKSPort')
-
-      config_options_in_tor.remove('SocksListenAddress')
-      config_options_in_tor.add('SOCKSListenAddress')
-
-      config_options_in_tor.remove('TestingLinkCertLifetime')
-      config_options_in_tor.add('TestingLinkCertifetime')
-
-      config_options_in_tor.remove('TestingSigningKeySlop')
-      config_options_in_tor.remove('TestingAuthKeySlop')
-
-      config_options_in_tor.remove('RecommendedPackages')
-      config_options_in_tor.add('RecommendedPackageVersions')
-
-      config_options_in_tor.add('Recognized')
-      config_options_in_tor.add('VoteOnHidServDirectoriesV2')
-      config_options_in_tor.add('HidServDirectoryV2')
 
       # TODO: Looks like options we should remove from tor...
       #
