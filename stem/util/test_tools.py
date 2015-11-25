@@ -31,11 +31,15 @@ CONFIG = stem.util.conf.config_dict('test', {
   'exclude_paths': [],
 })
 
-Issue = collections.namedtuple('Issue', [
-  'line_number',
-  'message',
-  'line',
-])
+
+class Issue(collections.namedtuple('Issue', ['line_number', 'message', 'line'])):
+  """
+  Issue encountered by pyflakes or pep8.
+
+  :var int line_number: line number the issue occured on
+  :var str message: description of the issue
+  :var str line: content of the line the issue is about
+  """
 
 
 def clean_orphaned_pyc(paths):
@@ -168,7 +172,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
   :param bool prefer_single_quotes: standardize on using single rather than
     double quotes for strings, when reasonable
 
-  :returns: **dict** of the form ``path => [(line_number, message)...]``
+  :returns: dict of paths list of :class:`stem.util.test_tools.Issue` instances
   """
 
   issues = {}
@@ -256,7 +260,7 @@ def pyflakes_issues(paths):
 
   :param list paths: paths to search for problems
 
-  :returns: dict of the form ``path => [(line_number, message)...]``
+  :returns: dict of paths list of :class:`stem.util.test_tools.Issue` instances
   """
 
   issues = {}

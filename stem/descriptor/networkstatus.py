@@ -52,16 +52,6 @@ For more information see :func:`~stem.descriptor.__init__.DocumentHandler`...
   KeyCertificate - Certificate used to authenticate an authority
   DocumentSignature - Signature of a document by a directory authority
   DirectoryAuthority - Directory authority as defined in a v3 network status document
-
-
-.. data:: PackageVersion
-
-  Latest recommended version of a package that's available.
-
-  :var str name: name of the package
-  :var str version: latest recommended version
-  :var str url: package's url
-  :var dict digests: mapping of digest types to their value
 """
 
 import collections
@@ -90,13 +80,6 @@ from stem.descriptor.router_status_entry import (
   RouterStatusEntryV3,
   RouterStatusEntryMicroV3,
 )
-
-PackageVersion = collections.namedtuple('PackageVersion', [
-  'name',
-  'version',
-  'url',
-  'digests',
-])
 
 # Version 2 network status document fields, tuples of the form...
 # (keyword, is_mandatory)
@@ -213,6 +196,17 @@ PARAM_RANGE = {
   'NumNTorsPerTAP': (1, 100000),
   'AllowNonearlyExtend': (0, 1),
 }
+
+
+class PackageVersion(collections.namedtuple('PackageVersion', ['name', 'version', 'url', 'digests'])):
+  """
+  Latest recommended version of a package that's available.
+
+  :var str name: name of the package
+  :var str version: latest recommended version
+  :var str url: package's url
+  :var dict digests: mapping of digest types to their value
+  """
 
 
 def _parse_file(document_file, document_type = None, validate = False, is_microdescriptor = False, document_handler = DocumentHandler.ENTRIES, **kwargs):

@@ -75,8 +75,6 @@ except ImportError:
   import urllib2 as urllib
 
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'TESTING', 'UNKNOWN')
-ConfigOption = collections.namedtuple('ConfigOption', ['category', 'name', 'usage', 'summary', 'description'])
-
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
 
 CATEGORY_SECTIONS = {
@@ -88,6 +86,19 @@ CATEGORY_SECTIONS = {
   'HIDDEN SERVICE OPTIONS': Category.HIDDEN_SERVICE,
   'TESTING NETWORK OPTIONS': Category.TESTING,
 }
+
+
+class ConfigOption(collections.namedtuple('ConfigOption', ['category', 'name', 'usage', 'summary', 'description'])):
+  """
+  Tor configuration attribute found in its torrc.
+
+  :var stem.manual.Category category: category the config option was listed
+    under, this is Category.UNKNOWN if we didn't recognize the category
+  :var str name: name of the configuration option
+  :var str usage: arguments accepted by the option
+  :var str summary: brief description of what the option does
+  :var str description: longer manual description with details
+  """
 
 
 @lru_cache()
@@ -207,7 +218,7 @@ class Manual(object):
   :var dict signals: mapping of signals tor accepts to their description
   :var dict files: mapping of file paths to their description
 
-  :var dict config_option: **ConfigOption** tuples for tor configuration options
+  :var dict config_option: :class:`~stem.manual.ConfigOption` tuples for tor configuration options
   """
 
   def __init__(self, name, synopsis, description, commandline_options, signals, files, config_options):

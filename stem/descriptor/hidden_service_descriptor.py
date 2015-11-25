@@ -80,7 +80,17 @@ SINGLE_INTRODUCTION_POINT_FIELDS = [
 BASIC_AUTH = 1
 STEALTH_AUTH = 2
 
-IntroductionPoint = collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())
+
+class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())):
+  """
+  :var str identifier: hash of this introduction point's identity key
+  :var str address: address of this introduction point
+  :var int port: port where this introduction point is listening
+  :var str onion_key: public key for communicating with this introduction point
+  :var str service_key: public key for communicating with this hidden service
+  :var list intro_authentication: tuples of the form (auth_type, auth_data) for
+    establishing a connection
+  """
 
 
 class DecryptionFailure(Exception):
@@ -245,21 +255,9 @@ class HiddenServiceDescriptor(Descriptor):
   @lru_cache()
   def introduction_points(self, authentication_cookie = None):
     """
-    Provided this service's introduction points. This provides a list of
-    IntroductionPoint instances, which have the following attributes...
+    Provided this service's introduction points.
 
-      * **identifier** (str): hash of this introduction point's identity key
-      * **address** (str): address of this introduction point
-      * **port** (int): port where this introduction point is listening
-      * **onion_key** (str): public key for communicating with this introduction point
-      * **service_key** (str): public key for communicating with this hidden service
-      * **intro_authentication** (list): tuples of the form (auth_type, auth_data)
-        for establishing a connection
-
-    :param str authentication_cookie: cookie to decrypt the introduction-points
-      if it's encrypted
-
-    :returns: **list** of IntroductionPoints instances
+    :returns: **list** of :class:`~stem.descriptor.hidden_service_descriptor.IntroductionPoints`
 
     :raises:
       * **ValueError** if the our introduction-points is malformed
@@ -358,7 +356,7 @@ class HiddenServiceDescriptor(Descriptor):
   @staticmethod
   def _parse_introduction_points(content):
     """
-    Provides the parsed list of IntroductionPoint for the unencrypted content.
+    Provides the parsed list of IntroductionPoints for the unencrypted content.
     """
 
     introduction_points = []
@@ -405,6 +403,6 @@ class HiddenServiceDescriptor(Descriptor):
             auth_type, auth_data = auth_value.split(' ')[:2]
             auth_entries.append((auth_type, auth_data))
 
-      introduction_points.append(IntroductionPoint(**attr))
+      introduction_points.append(IntroductionPoints(**attr))
 
     return introduction_points
