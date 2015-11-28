@@ -209,7 +209,7 @@ class TestManual(unittest.TestCase):
 
     self.assertEqual(['tor - The second-generation onion router'], categories['NAME'])
     self.assertEqual(['tor [OPTION value]...'], categories['SYNOPSIS'])
-    self.assertEqual(8, len(categories['DESCRIPTION']))  # check parsing of multi-line entries
+    self.assertTrue(len(categories['DESCRIPTION']) > 5)  # check parsing of multi-line entries
 
   def test_has_all_summaries(self):
     """
