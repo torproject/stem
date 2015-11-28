@@ -40,14 +40,14 @@ EXPECTED_SIGNALS = set(['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGUSR1', 'SIGUSR2', 'SI
 EXPECTED_DESCRIPTION = """
 Tor is a connection-oriented anonymizing communication service. Users choose a source-routed path through a set of nodes, and negotiate a "virtual circuit" through the network, in which each node knows its predecessor and successor, but no others. Traffic flowing down the circuit is unwrapped by a symmetric key at each node, which reveals the downstream node.
 
-Basically, Tor provides a distributed network of servers or relays ("onion routers"). Users bounce their TCP streams - web traffic, ftp, ssh, etc. - around the network, and recipients, observers, and even the relays themselves have difficulty tracking the source of the stream.
+Basically, Tor provides a distributed network of servers or relays ("onion routers"). Users bounce their TCP streams -- web traffic, ftp, ssh, etc. -- around the network, and recipients, observers, and even the relays themselves have difficulty tracking the source of the stream.
 
-By default, tor will only act as a client only. To help the network by providing bandwidth as a relay, change the ORPort configuration option - see below. Please also consult the documentation on the Tor Project's website.
+By default, tor will only act as a client only. To help the network by providing bandwidth as a relay, change the ORPort configuration option -- see below. Please also consult the documentation on the Tor Project's website.
 """.strip()
 
 EXPECTED_FILE_DESCRIPTION = 'Specify a new configuration file to contain further Tor configuration options OR pass - to make Tor read its configuration from standard input. (Default: @CONFDIR@/torrc, or $HOME/.torrc if that file is not found)'
 
-EXPECTED_BANDWIDTH_RATE_DESCRIPTION = 'A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) - but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible. (Default: 1 GByte)\n\nWith this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\'s easy to forget that "B" means bytes, not bits.'
+EXPECTED_BANDWIDTH_RATE_DESCRIPTION = 'A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) -- but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible. (Default: 1 GByte)\n\nWith this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\'s easy to forget that "B" means bytes, not bits.'
 
 
 class TestManual(unittest.TestCase):
@@ -259,9 +259,9 @@ class TestManual(unittest.TestCase):
       #
       # https://trac.torproject.org/projects/tor/ticket/17665
 
-      config_options_in_tor.remove('SchedulerMaxFlushCells__')
-      config_options_in_tor.remove('SchedulerLowWaterMark__')
-      config_options_in_tor.remove('SchedulerHighWaterMark__')
+      for option in ('SchedulerMaxFlushCells__', 'SchedulerLowWaterMark__', 'SchedulerHighWaterMark__'):
+        if option in config_options_in_tor:
+          config_options_in_tor.remove(option)
 
     manual = stem.manual.Manual.from_man(self.man_path)
     config_options_in_manual = set(manual.config_options.keys())

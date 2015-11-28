@@ -104,13 +104,13 @@ class TestManual(unittest.TestCase):
     self.assertEqual(b'a2x output', output.getvalue())
     call_mock.assert_called_once_with('a2x -f manpage /no/such/path/tor.1.txt')
 
-  @patch('stem.util.system.call', Mock(side_effect = OSError('man -P cat tor returned exit status 16')))
+  @patch('stem.util.system.call', Mock(side_effect = OSError('man --encoding=ascii -P cat tor returned exit status 16')))
   def test_from_man_when_manual_is_unavailable(self):
     try:
       stem.manual.Manual.from_man()
       self.fail("fetching the manual should fail when it's unavailable")
     except IOError as exc:
-      self.assertEqual("Unable to run 'man -P cat tor': man -P cat tor returned exit status 16", str(exc))
+      self.assertEqual("Unable to run 'man --encoding=ascii -P cat tor': man --encoding=ascii -P cat tor returned exit status 16", str(exc))
 
   @patch('stem.util.system.call', Mock(return_value = []))
   def test_when_man_is_empty(self):

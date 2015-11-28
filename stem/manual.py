@@ -244,9 +244,9 @@ class Manual(object):
     """
 
     try:
-      man_output = stem.util.system.call('man -P cat %s' % man_path)
+      man_output = stem.util.system.call('man --encoding=ascii -P cat %s' % man_path, env = {'MANWIDTH': '10000000'})
     except OSError as exc:
-      raise IOError("Unable to run 'man -P cat %s': %s" % (man_path, exc))
+      raise IOError("Unable to run 'man --encoding=ascii -P cat %s': %s" % (man_path, exc))
 
     categories, config_options = _get_categories(man_output), OrderedDict()
 
@@ -425,20 +425,7 @@ def _add_config_options(config_options, category, lines):
 
 def _join_lines(lines):
   """
-  The man page provides line-wrapped content. Attempting to undo that. This is
-  close to a simple join, but we still want empty lines to provide newlines.
+  Simple join, except we want empty lines to still provide a newline.
   """
 
-  content = []
-
-  for line in lines:
-    if line:
-      if content and content[-1][-1] != '\n':
-        line = ' ' + line
-
-      content.append(line)
-    else:
-      if content and content[-1][-1] != '\n':
-        content.append('\n\n')
-
-  return ''.join(content)
+  return ''.join([line if line else '\n\n' for line in lines])

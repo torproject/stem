@@ -951,7 +951,7 @@ def files_with_suffix(base_path, suffix):
           yield os.path.join(root, filename)
 
 
-def call(command, default = UNDEFINED, ignore_exit_status = False):
+def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
   """
   call(command, default = UNDEFINED, ignore_exit_status = False)
 
@@ -959,10 +959,14 @@ def call(command, default = UNDEFINED, ignore_exit_status = False):
   results. This is not actually ran in a shell so pipes and other shell syntax
   are not permitted.
 
+  .. versionchanged:: 1.5.0
+     Added env argument.
+
   :param str,list command: command to be issued
   :param object default: response if the query fails
   :param bool ignore_exit_status: reports failure if our command's exit status
     was non-zero
+  :param dict env: environment variables
 
   :returns: **list** with the lines of output from the command
 
@@ -978,7 +982,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False):
     is_shell_command = command_list[0] in SHELL_COMMANDS
 
     start_time = time.time()
-    process = subprocess.Popen(command_list, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command)
+    process = subprocess.Popen(command_list, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command, env = env)
 
     stdout, stderr = process.communicate()
     stdout, stderr = stdout.strip(), stderr.strip()
