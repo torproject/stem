@@ -161,6 +161,8 @@ import inspect
 import os
 import threading
 
+import stem.prereq
+
 from stem.util import log
 
 try:
@@ -621,7 +623,9 @@ class Config(object):
     """
 
     with self._contents_lock:
-      if isinstance(value, str):
+      unicode_type = str if stem.prereq.is_python_3() else unicode
+
+      if isinstance(value, bytes) or isinstance(value, unicode_type):
         if not overwrite and key in self._contents:
           self._contents[key].append(value)
         else:
@@ -638,7 +642,7 @@ class Config(object):
         for listener in self._listeners:
           listener(self, key)
       else:
-        raise ValueError("Config.set() only accepts str, list, or tuple. Provided value was a '%s'" % type(value))
+        raise ValueError("Config.set() only accepts str (bytes or unicode), list, or tuple. Provided value was a '%s'" % type(value))
 
   def get(self, key, default = None):
     """
