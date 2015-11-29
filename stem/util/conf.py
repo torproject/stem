@@ -452,7 +452,7 @@ class Config(object):
 
   def __init__(self):
     self._path = None        # location we last loaded from or saved to
-    self._contents = {}      # configuration key/value pairs
+    self._contents = OrderedDict()  # configuration key/value pairs
     self._listeners = []     # functors to be notified of config changes
 
     # used for accessing _contents
@@ -549,7 +549,7 @@ class Config(object):
 
     with self._contents_lock:
       with open(self._path, 'w') as output_file:
-        for entry_key in sorted(self.keys()):
+        for entry_key in self.keys():
           for entry_value in self.get_value(entry_key, multiple = True):
             # check for multi line entries
             if '\n' in entry_value:
