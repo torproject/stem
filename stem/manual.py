@@ -218,7 +218,7 @@ class Manual(object):
   :var dict signals: mapping of signals tor accepts to their description
   :var dict files: mapping of file paths to their description
 
-  :var dict config_option: :class:`~stem.manual.ConfigOption` tuples for tor configuration options
+  :var dict config_options: :class:`~stem.manual.ConfigOption` tuples for tor configuration options
   """
 
   def __init__(self, name, synopsis, description, commandline_options, signals, files, config_options):
