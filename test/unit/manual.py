@@ -4,6 +4,7 @@ Unit testing for the stem.manual module.
 
 import io
 import os
+import tempfile
 import unittest
 
 import stem.prereq
@@ -28,6 +29,7 @@ except ImportError:
   from stem.util.ordereddict import OrderedDict
 
 URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
+EXAMPLE_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_example')
 
 EXPECTED_DESCRIPTION = 'Tor is a connection-oriented anonymizing communication service. Users choose a source-routed path through a set of nodes, and negotiate a "virtual circuit" through the network, in which each node knows its predecessor and successor, but no others. Traffic flowing down the circuit is unwrapped by a symmetric key at each node, which reveals the downstream node.'
 
@@ -113,8 +115,7 @@ class TestManual(unittest.TestCase):
     expand our example (or add another).
     """
 
-    man_path = os.path.join(os.path.dirname(__file__), 'tor_man_example')
-    manual = stem.manual.Manual.from_man(man_path)
+    manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
     self.assertEqual('tor - The second-generation onion router', manual.name)
     self.assertEqual('tor [OPTION value]...', manual.synopsis)
@@ -123,6 +124,29 @@ class TestManual(unittest.TestCase):
     self.assertEqual(EXPECTED_SIGNALS, manual.signals)
     self.assertEqual(EXPECTED_FILES, manual.files)
     self.assertEqual(EXPECTED_CONFIG_OPTIONS, manual.config_options)
+
+  def test_saving_manual(self):
+    """
+    Check that we can save and reload manuals.
+    """
+
+    manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
+
+    with tempfile.NamedTemporaryFile(prefix = 'saved_test_manual.') as tmp:
+      manual.save(tmp.name)
+      loaded_manual = stem.manual.Manual.from_cache(tmp.name)
+      self.assertEqual(manual, loaded_manual)
+
+  def test_cached_manual(self):
+    manual = stem.manual.Manual.from_cache()
+
+    self.assertEqual('tor - The second-generation onion router', manual.name)
+    self.assertEqual('tor [OPTION value]...', manual.synopsis)
+    self.assertTrue(manual.description.startswith(EXPECTED_DESCRIPTION))
+    self.assertEqual(14, len(manual.commandline_options))
+    self.assertEqual(8, len(manual.signals))
+    self.assertEqual(17, len(manual.files))
+    self.assertEqual(288, len(manual.config_options))
 
   def test_download_man_page_without_arguments(self):
     try:

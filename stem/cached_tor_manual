@@ -1,0 +1,1729 @@
+name tor - The second-generation onion router
+synopsis tor [OPTION value]...
+description 
+|Tor is a connection-oriented anonymizing communication service. Users choose a source-routed path through a set of nodes, and negotiate a "virtual circuit" through the network, in which each node knows its predecessor and successor, but no others. Traffic flowing down the circuit is unwrapped by a symmetric key at each node, which reveals the downstream node.
+|
+|Basically, Tor provides a distributed network of servers or relays ("onion routers"). Users bounce their TCP streams -- web traffic, ftp, ssh, etc. -- around the network, and recipients, observers, and even the relays themselves have difficulty tracking the source of the stream.
+|
+|By default, tor will only act as a client only. To help the network by providing bandwidth as a relay, change the ORPort configuration option -- see below. Please also consult the documentation on the Tor Project's website.
+commandline_options -f FILE => Specify a new configuration file to contain further Tor configuration options OR pass - to make Tor read its configuration from standard input. (Default: @CONFDIR@/torrc, or $HOME/.torrc if that file is not found)
+commandline_options --ignore-missing-torrc => Specifies that Tor should treat a missing torrc file as though it were empty. Ordinarily, Tor does this for missing default torrc files, but not for those specified on the command line.
+commandline_options --list-fingerprint => Generate your keys and output your nickname and fingerprint.
+commandline_options --defaults-torrc FILE => Specify a file in which to find default values for Tor options. The contents of this file are overridden by those in the regular configuration file, and by those on the command line. (Default: @CONFDIR@/torrc-defaults.)
+commandline_options --allow-missing-torrc => Do not require that configuration file specified by -f exist if default torrc can be accessed.
+commandline_options --nt-service => Used internally to implement a Windows service.
+commandline_options --verify-config => Verify the configuration file is valid.
+commandline_options --service remove|start|stop => Remove, start, or stop a configured Tor Windows service.
+commandline_options --quiet|--hush => Override the default console log. By default, Tor starts out logging messages at level "notice" and higher to the console. It stops doing so after it parses its configuration, if the configuration tells it to log anywhere else. You can override this behavior with the --hush option, which tells Tor to only send warnings and errors to the console, or with the --quiet option, which tells Tor not to log to the console at all.
+commandline_options --list-torrc-options => List all valid options.
+commandline_options --service install [--options command-line options] => Install an instance of Tor as a Windows service, with the provided command-line options. Current instructions can be found at https://www.torproject.org/docs/faq#NTService
+commandline_options --version => Display Tor version and exit.
+commandline_options --hash-password PASSWORD => Generates a hashed password for control port access.
+commandline_options -h, -help => Display a short help message and exit.
+signals SIGHUP => The signal instructs Tor to reload its configuration (including closing and reopening logs), and kill and restart its helper processes if applicable.
+signals SIGUSR2 => Switch all logs to loglevel debug. You can go back to the old loglevels by sending a SIGHUP.
+signals SIGCHLD => Tor receives this signal when one of its helper processes has exited, so it can clean up.
+signals SIGUSR1 => Log statistics about current connections, past connections, and throughput.
+signals SIGINT => Tor clients behave as with SIGTERM; but Tor servers will do a controlled slow shutdown, closing listeners and waiting 30 seconds before exiting. (The delay can be configured with the ShutdownWaitLength config option.)
+signals SIGPIPE => Tor catches this signal and ignores it.
+signals SIGTERM => Tor will catch this, clean up and sync to disk if necessary, and exit.
+signals SIGXFSZ => If this signal exists on your platform, Tor catches and ignores it.
+files @LOCALSTATEDIR@/lib/tor/ => The tor process stores keys and other data here.
+files DataDirectory/cached-status/ => The most recently downloaded network status document for each authority. Each file holds one such document; the filenames are the hexadecimal identity key fingerprints of the directory authorities. Mostly obsolete.
+files DataDirectory/cached-microdescs and cached-microdescs.new => These files hold downloaded microdescriptors. Lines beginning with @-signs are annotations that contain more information about a given router. The ".new" file is an append-only journal; when it gets too large, all entries are merged into a new cached-microdescs file.
+files DataDirectory/lock => This file is used to prevent two Tor instances from using same data directory. If access to this file is locked, data directory is already in use by Tor.
+files DataDirectory/bw_accounting => Used to track bandwidth accounting values (when the current period starts and ends; how much has been read and written so far this period). This file is obsolete, and the data is now stored in the 'state' file as well. Only used when bandwidth accounting is enabled.
+files DataDirectory/fingerprint => Only used by servers. Holds the fingerprint of the server's identity key.
+files DataDirectory/cached-certs => This file holds downloaded directory key certificates that are used to verify authenticity of documents generated by Tor directory authorities.
+files DataDirectory/keys/* => Only used by servers. Holds identity keys and onion keys.
+files DataDirectory/state => A set of persistent key-value mappings. These are documented in the file. These include: o   The current entry guards and their status. o   The current bandwidth accounting values (unused so far; see below). o   When the file was last written o   What version of Tor generated the state file o   A short history of bandwidth usage, as produced in the server descriptors.
+files DataDirectory/cached-consensus and/or cached-microdesc-consensus => The most recent consensus network status document we've downloaded.
+files DataDirectory/hashed-fingerprint => Only used by bridges. Holds the hashed fingerprint of the bridge's identity key. (That is, the hash of the hash of the identity key.)
+files @CONFDIR@/torrc => The configuration file, which contains "option value" pairs.
+files DataDirectory/cached-descriptors and cached-descriptors.new => These files hold downloaded router statuses. Some routers may appear more than once; if so, the most recently published descriptor is used. Lines beginning with @-signs are annotations that contain more information about a given router. The ".new" file is an append-only journal; when it gets too large, all entries are merged into a new cached-descriptors file.
+files DataDirectory/cached-routers and cached-routers.new => Obsolete versions of cached-descriptors and cached-descriptors.new. When Tor can't find the newer files, it looks here instead.
+files $HOME/.torrc => Fallback location for torrc, if @CONFDIR@/torrc is not found.
+files DataDirectory/v3-status-votes => Only for authoritative directory servers. This file contains status
+files DataDirectory/control_auth_cookie => Used for cookie authentication with the controller. Location can be overridden by the CookieAuthFile config option. Regenerated on startup. See control-spec.txt in torspec for details. Only used when cookie authentication is enabled.
+config_options.AllowInvalidNodes.category Client
+config_options.AllowInvalidNodes.name AllowInvalidNodes
+config_options.AllowInvalidNodes.usage entry|exit|middle|introduction|rendezvous|...
+config_options.AllowInvalidNodes.summary Permits use of relays flagged as invalid by authorities
+config_options.AllowInvalidNodes.description If some Tor servers are obviously not working right, the directory authorities can manually mark them as invalid, meaning that it's not recommended you use them for entry or exit positions in your circuits. You can opt to use them in some circuit positions, though. The default is "middle,rendezvous", and other choices are not advised.
+config_options.ExcludeSingleHopRelays.category Client
+config_options.ExcludeSingleHopRelays.name ExcludeSingleHopRelays
+config_options.ExcludeSingleHopRelays.usage 0|1
+config_options.ExcludeSingleHopRelays.summary Permits use of relays that allow single hop connections
+config_options.ExcludeSingleHopRelays.description This option controls whether circuits built by Tor will include relays with the AllowSingleHopExits flag set to true. If ExcludeSingleHopRelays is set to 0, these relays will be included. Note that these relays might be at higher risk of being seized or observed, so they are not normally included. Also note that relatively few clients turn off this option, so using these relays might make your client stand out. (Default: 1)
+config_options.Bridge.category Client
+config_options.Bridge.name Bridge
+config_options.Bridge.usage [transport] IP:ORPort [fingerprint]
+config_options.Bridge.summary Available bridges
+config_options.Bridge.description 
+|When set along with UseBridges, instructs Tor to use the relay at "IP:ORPort" as a "bridge" relaying into the Tor network. If "fingerprint" is provided (using the same format as for DirAuthority), we will verify that the relay running at that location has the right fingerprint. We also use fingerprint to look up the bridge descriptor at the bridge authority, if it's provided and if UpdateBridgesFromAuthority is set too.
+|
+|If "transport" is provided, and matches to a ClientTransportPlugin line, we use that pluggable transports proxy to transfer data to the bridge.
+config_options.LearnCircuitBuildTimeout.category Client
+config_options.LearnCircuitBuildTimeout.name LearnCircuitBuildTimeout
+config_options.LearnCircuitBuildTimeout.usage 0|1
+config_options.LearnCircuitBuildTimeout.summary Toggles adaptive timeouts for circuit creation
+config_options.LearnCircuitBuildTimeout.description If 0, CircuitBuildTimeout adaptive learning is disabled. (Default: 1)
+config_options.CircuitBuildTimeout.category Client
+config_options.CircuitBuildTimeout.name CircuitBuildTimeout
+config_options.CircuitBuildTimeout.usage NUM
+config_options.CircuitBuildTimeout.summary Initial timeout for circuit creation
+config_options.CircuitBuildTimeout.description Try for at most NUM seconds when building circuits. If the circuit isn't open in that time, give up on it. If LearnCircuitBuildTimeout is 1, this value serves as the initial value to use before a timeout is learned. If LearnCircuitBuildTimeout is 0, this value is the only value used. (Default: 60 seconds)
+config_options.CircuitIdleTimeout.category Client
+config_options.CircuitIdleTimeout.name CircuitIdleTimeout
+config_options.CircuitIdleTimeout.usage NUM
+config_options.CircuitIdleTimeout.summary Timeout for closing circuits that have never been used
+config_options.CircuitIdleTimeout.description If we have kept a clean (never used) circuit around for NUM seconds, then close it. This way when the Tor client is entirely idle, it can expire all of its circuits, and then expire its TLS connections. Also, if we end up making a circuit that is not useful for exiting any of the requests we're receiving, it won't forever take up a slot in the circuit list. (Default: 1 hour)
+config_options.CircuitStreamTimeout.category Client
+config_options.CircuitStreamTimeout.name CircuitStreamTimeout
+config_options.CircuitStreamTimeout.usage NUM
+config_options.CircuitStreamTimeout.summary Timeout for shifting streams among circuits
+config_options.CircuitStreamTimeout.description If non-zero, this option overrides our internal timeout schedule for how many seconds until we detach a stream from a circuit and try a new circuit. If your network is particularly slow, you might want to set this to a number like 60. (Default: 0)
+config_options.ClientOnly.category Client
+config_options.ClientOnly.name ClientOnly
+config_options.ClientOnly.usage 0|1
+config_options.ClientOnly.summary Ensures that we aren't used as a relay or directory mirror
+config_options.ClientOnly.description If set to 1, Tor will not run as a relay or serve directory requests, even if the ORPort, ExtORPort, or DirPort options are set. (This config option is mostly unnecessary: we added it back when we were considering having Tor clients auto-promote themselves to being relays if they were stable and fast enough. The current behavior is simply that Tor is a client unless ORPort, ExtORPort, or DirPort are configured.) (Default: 0)
+config_options.ExcludeNodes.category Client
+config_options.ExcludeNodes.name ExcludeNodes
+config_options.ExcludeNodes.usage node,node,...
+config_options.ExcludeNodes.summary Relays or locales never to be used in circuits
+config_options.ExcludeNodes.description 
+|A list of identity fingerprints, country codes, and address patterns of nodes to avoid when building a circuit. Country codes must be wrapped in braces; fingerprints may be preceded by a dollar sign. (Example: ExcludeNodes ABCD1234CDEF5678ABCD1234CDEF5678ABCD1234, {cc}, 255.254.0.0/8)
+|
+|By default, this option is treated as a preference that Tor is allowed to override in order to keep working. For example, if you try to connect to a hidden service, but you have excluded all of the hidden service's introduction points, Tor will connect to one of them anyway. If you do not want this behavior, set the StrictNodes option (documented below).
+|
+|Note also that if you are a relay, this (and the other node selection options below) only affects your own circuits that Tor builds for you. Clients can still build circuits through you to any node. Controllers can tell Tor to build circuits through any node.
+|
+|Country codes are case-insensitive. The code "{??}" refers to nodes whose country can't be identified. No country code, including {??}, works if no GeoIPFile can be loaded. See also the GeoIPExcludeUnknown option below.
+config_options.ExcludeExitNodes.category Client
+config_options.ExcludeExitNodes.name ExcludeExitNodes
+config_options.ExcludeExitNodes.usage node,node,...
+config_options.ExcludeExitNodes.summary Relays or locales never to be used for exits
+config_options.ExcludeExitNodes.description A list of identity fingerprints, country codes, and address patterns of nodes to never use when picking an exit node---that is, a node that delivers traffic for you outside the Tor network. Note that any node listed in ExcludeNodes is automatically considered to be part of this list too. See the ExcludeNodes option for more information on how to specify nodes. See also the caveats on the "ExitNodes" option below.
+config_options.GeoIPExcludeUnknown.category Client
+config_options.GeoIPExcludeUnknown.name GeoIPExcludeUnknown
+config_options.GeoIPExcludeUnknown.usage 0|1|auto
+config_options.GeoIPExcludeUnknown.summary Don't use relays with an unknown locale in circuits
+config_options.GeoIPExcludeUnknown.description If this option is set to auto, then whenever any country code is set in ExcludeNodes or ExcludeExitNodes, all nodes with unknown country ({??} and possibly {A1}) are treated as excluded as well. If this option is set to 1, then all unknown countries are treated as excluded in ExcludeNodes and ExcludeExitNodes. This option has no effect when a GeoIP file isn't configured or can't be found. (Default: auto)
+config_options.ExitNodes.category Client
+config_options.ExitNodes.name ExitNodes
+config_options.ExitNodes.usage node,node,...
+config_options.ExitNodes.summary Preferred final hop for circuits
+config_options.ExitNodes.description 
+|A list of identity fingerprints, country codes, and address patterns of nodes to use as exit node---that is, a node that delivers traffic for you outside the Tor network. See the ExcludeNodes option for more information on how to specify nodes.
+|
+|Note that if you list too few nodes here, or if you exclude too many exit nodes with ExcludeExitNodes, you can degrade functionality. For example, if none of the exits you list allows traffic on port 80 or 443, you won't be able to browse the web.
+|
+|Note also that not every circuit is used to deliver traffic outside of the Tor network. It is normal to see non-exit circuits (such as those used to connect to hidden services, those that do directory fetches, those used for relay reachability self-tests, and so on) that end at a non-exit node. To keep a node from being used entirely, see ExcludeNodes and StrictNodes.
+|
+|The ExcludeNodes option overrides this option: any node listed in both ExitNodes and ExcludeNodes is treated as excluded.
+|
+|The .exit address notation, if enabled via AllowDotExit, overrides this option.
+config_options.EntryNodes.category Client
+config_options.EntryNodes.name EntryNodes
+config_options.EntryNodes.usage node,node,...
+config_options.EntryNodes.summary Preferred first hops for circuits
+config_options.EntryNodes.description 
+|A list of identity fingerprints and country codes of nodes to use for the first hop in your normal circuits. Normal circuits include all circuits except for direct connections to directory servers. The Bridge option overrides this option; if you have configured bridges and UseBridges is 1, the Bridges are used as your entry nodes.
+|
+|The ExcludeNodes option overrides this option: any node listed in both EntryNodes and ExcludeNodes is treated as excluded. See the ExcludeNodes option for more information on how to specify nodes.
+config_options.StrictNodes.category Client
+config_options.StrictNodes.name StrictNodes
+config_options.StrictNodes.usage 0|1
+config_options.StrictNodes.summary Never uses notes outside of Entry/ExitNodes
+config_options.StrictNodes.description If StrictNodes is set to 1, Tor will treat the ExcludeNodes option as a requirement to follow for all the circuits you generate, even if doing so will break functionality for you. If StrictNodes is set to 0, Tor will still try to avoid nodes in the ExcludeNodes list, but it will err on the side of avoiding unexpected errors. Specifically, StrictNodes 0 tells Tor that it is okay to use an excluded node when it is necessary to perform relay reachability self-tests, connect to a hidden service, provide a hidden service to a client, fulfill a .exit request, upload directory information, or download directory information. (Default: 0)
+config_options.FascistFirewall.category Client
+config_options.FascistFirewall.name FascistFirewall
+config_options.FascistFirewall.usage 0|1
+config_options.FascistFirewall.summary Only make outbound connections on FirewallPorts
+config_options.FascistFirewall.description If 1, Tor will only create outgoing connections to ORs running on ports that your firewall allows (defaults to 80 and 443; see FirewallPorts). This will allow you to run Tor as a client behind a firewall with restrictive policies, but will not allow you to run as a server behind such a firewall. If you prefer more fine-grained control, use ReachableAddresses instead.
+config_options.FirewallPorts.category Client
+config_options.FirewallPorts.name FirewallPorts
+config_options.FirewallPorts.usage PORTS
+config_options.FirewallPorts.summary Ports used by FascistFirewall
+config_options.FirewallPorts.description A list of ports that your firewall allows you to connect to. Only used when FascistFirewall is set. This option is deprecated; use ReachableAddresses instead. (Default: 80, 443)
+config_options.ReachableAddresses.category Client
+config_options.ReachableAddresses.name ReachableAddresses
+config_options.ReachableAddresses.usage ADDR[/MASK][:PORT]...
+config_options.ReachableAddresses.summary Rules for bypassing the local firewall
+config_options.ReachableAddresses.description A comma-separated list of IP addresses and ports that your firewall allows you to connect to. The format is as for the addresses in ExitPolicy, except that "accept" is understood unless "reject" is explicitly provided. For example, 'ReachableAddresses 99.0.0.0/8, reject 18.0.0.0/8:80, accept *:80' means that your firewall allows connections to everything inside net 99, rejects port 80 connections to net 18, and accepts connections to port 80 otherwise. (Default: 'accept *:*'.)
+config_options.ReachableDirAddresses.category Client
+config_options.ReachableDirAddresses.name ReachableDirAddresses
+config_options.ReachableDirAddresses.usage ADDR[/MASK][:PORT]...
+config_options.ReachableDirAddresses.summary Rules for bypassing the local firewall (directory fetches)
+config_options.ReachableDirAddresses.description Like ReachableAddresses, a list of addresses and ports. Tor will obey these restrictions when fetching directory information, using standard HTTP GET requests. If not set explicitly then the value of ReachableAddresses is used. If HTTPProxy is set then these connections will go through that proxy.
+config_options.ReachableORAddresses.category Client
+config_options.ReachableORAddresses.name ReachableORAddresses
+config_options.ReachableORAddresses.usage ADDR[/MASK][:PORT]...
+config_options.ReachableORAddresses.summary Rules for bypassing the local firewall (OR connections)
+config_options.ReachableORAddresses.description 
+|Like ReachableAddresses, a list of addresses and ports. Tor will obey these restrictions when connecting to Onion Routers, using TLS/SSL. If not set explicitly then the value of ReachableAddresses is used. If HTTPSProxy is set then these connections will go through that proxy.
+|
+|The separation between ReachableORAddresses and ReachableDirAddresses is only interesting when you are connecting through proxies (see HTTPProxy and HTTPSProxy). Most proxies limit TLS connections (which Tor uses to connect to Onion Routers) to port 443, and some limit HTTP GET requests (which Tor uses for fetching directory information) to port 80.
+config_options.HidServAuth.category Client
+config_options.HidServAuth.name HidServAuth
+config_options.HidServAuth.usage onion-address auth-cookie [service-name]
+config_options.HidServAuth.summary Authentication credentials for connecting to a hidden service
+config_options.HidServAuth.description Client authorization for a hidden service. Valid onion addresses contain 16 characters in a-z2-7 plus ".onion", and valid auth cookies contain 22 characters in A-Za-z0-9+/. The service name is only used for internal purposes, e.g., for Tor controllers. This option may be used multiple times for different hidden services. If a hidden service uses authorization and this option is not set, the hidden service is not accessible. Hidden services can be configured to require authorization using the HiddenServiceAuthorizeClient option.
+config_options.CloseHSClientCircuitsImmediatelyOnTimeout.category Client
+config_options.CloseHSClientCircuitsImmediatelyOnTimeout.name CloseHSClientCircuitsImmediatelyOnTimeout
+config_options.CloseHSClientCircuitsImmediatelyOnTimeout.usage 0|1
+config_options.CloseHSClientCircuitsImmediatelyOnTimeout.summary Close hidden service circuits that timeout
+config_options.CloseHSClientCircuitsImmediatelyOnTimeout.description If 1, Tor will close unfinished hidden service client circuits which have not moved closer to connecting to their destination hidden service when their internal state has not changed for the duration of the current circuit-build timeout. Otherwise, such circuits will be left open, in the hope that they will finish connecting to their destination hidden services. In either case, another set of introduction and rendezvous circuits for the same destination hidden service will be launched. (Default: 0)
+config_options.CloseHSServiceRendCircuitsImmediatelyOnTimeout.category Client
+config_options.CloseHSServiceRendCircuitsImmediatelyOnTimeout.name CloseHSServiceRendCircuitsImmediatelyOnTimeout
+config_options.CloseHSServiceRendCircuitsImmediatelyOnTimeout.usage 0|1
+config_options.CloseHSServiceRendCircuitsImmediatelyOnTimeout.summary Close hidden service rendezvous circuits that timeout
+config_options.CloseHSServiceRendCircuitsImmediatelyOnTimeout.description If 1, Tor will close unfinished hidden-service-side rendezvous circuits after the current circuit-build timeout. Otherwise, such circuits will be left open, in the hope that they will finish connecting to their destinations. In either case, another rendezvous circuit for the same destination client will be launched. (Default: 0)
+config_options.LongLivedPorts.category Client
+config_options.LongLivedPorts.name LongLivedPorts
+config_options.LongLivedPorts.usage PORTS
+config_options.LongLivedPorts.summary Ports requiring highly reliable relays
+config_options.LongLivedPorts.description A list of ports for services that tend to have long-running connections (e.g. chat and interactive shells). Circuits for streams that use these ports will contain only high-uptime nodes, to reduce the chance that a node will go down before the stream is finished. Note that the list is also honored for circuits (both client and service side) involving hidden services whose virtual port is in this list. (Default: 21, 22, 706, 1863, 5050, 5190, 5222, 5223, 6523, 6667, 6697, 8300)
+config_options.MapAddress.category Client
+config_options.MapAddress.name MapAddress
+config_options.MapAddress.usage address newaddress
+config_options.MapAddress.summary Alias mappings for address requests
+config_options.MapAddress.description 
+|When a request for address arrives to Tor, it will transform to newaddress before processing it. For example, if you always want connections to www.example.com to exit via torserver (where torserver is the nickname of the server), use "MapAddress www.example.com www.example.com.torserver.exit". If the value is prefixed with a "*.", matches an entire domain. For example, if you always want connections to example.com and any if its subdomains to exit via torserver (where torserver is the nickname of the server), use "MapAddress *.example.com *.example.com.torserver.exit". (Note the leading "*." in each part of the directive.) You can also redirect all subdomains of a domain to a single address. For example, "MapAddress *.example.com www.example.com".
+|
+|NOTES:
+|
+| 1. When evaluating MapAddress expressions Tor stops when it hits the most recently added expression that matches the requested address. So if you have the following in your torrc, www.torproject.org will map to 1.1.1.1:
+|
+|        MapAddress www.torproject.org 2.2.2.2        MapAddress www.torproject.org 1.1.1.1
+|
+| 2. Tor evaluates the MapAddress configuration until it finds no matches. So if you have the following in your torrc, www.torproject.org will map to 2.2.2.2:
+|
+|        MapAddress 1.1.1.1 2.2.2.2        MapAddress www.torproject.org 1.1.1.1
+|
+| 3. The following MapAddress expression is invalid (and will be ignored) because you cannot map from a specific address to a wildcard address:
+|
+|        MapAddress www.torproject.org *.torproject.org.torserver.exit
+|
+| 4. Using a wildcard to match only part of a string (as in *ample.com) is also invalid.
+config_options.NewCircuitPeriod.category Client
+config_options.NewCircuitPeriod.name NewCircuitPeriod
+config_options.NewCircuitPeriod.usage NUM
+config_options.NewCircuitPeriod.summary Period for considering the creation of new circuits
+config_options.NewCircuitPeriod.description Every NUM seconds consider whether to build a new circuit. (Default: 30 seconds)
+config_options.MaxCircuitDirtiness.category Client
+config_options.MaxCircuitDirtiness.name MaxCircuitDirtiness
+config_options.MaxCircuitDirtiness.usage NUM
+config_options.MaxCircuitDirtiness.summary Duration for reusing constructed circuits
+config_options.MaxCircuitDirtiness.description Feel free to reuse a circuit that was first used at most NUM seconds ago, but never attach a new stream to a circuit that is too old. For hidden services, this applies to the last time a circuit was used, not the first. Circuits with streams constructed with SOCKS authentication via SocksPorts that have KeepAliveIsolateSOCKSAuth ignore this value. (Default: 10 minutes)
+config_options.MaxClientCircuitsPending.category Client
+config_options.MaxClientCircuitsPending.name MaxClientCircuitsPending
+config_options.MaxClientCircuitsPending.usage NUM
+config_options.MaxClientCircuitsPending.summary Number of circuits that can be in construction at once
+config_options.MaxClientCircuitsPending.description Do not allow more than NUM circuits to be pending at a time for handling client streams. A circuit is pending if we have begun constructing it, but it has not yet been completely constructed. (Default: 32)
+config_options.NodeFamily.category Client
+config_options.NodeFamily.name NodeFamily
+config_options.NodeFamily.usage node,node,...
+config_options.NodeFamily.summary Define relays as belonging to a family
+config_options.NodeFamily.description The Tor servers, defined by their identity fingerprints, constitute a "family" of similar or co-administered servers, so never use any two of them in the same circuit. Defining a NodeFamily is only needed when a server doesn't list the family itself (with MyFamily). This option can be used multiple times; each instance defines a separate family. In addition to nodes, you can also list IP address and ranges and country codes in {curly braces}. See the ExcludeNodes option for more information on how to specify nodes.
+config_options.EnforceDistinctSubnets.category Client
+config_options.EnforceDistinctSubnets.name EnforceDistinctSubnets
+config_options.EnforceDistinctSubnets.usage 0|1
+config_options.EnforceDistinctSubnets.summary Prevent use of multiple relays from the same subnet on a circuit
+config_options.EnforceDistinctSubnets.description If 1, Tor will not put two servers whose IP addresses are "too close" on the same circuit. Currently, two addresses are "too close" if they lie in the same /16 range. (Default: 1)
+config_options.SocksPort.category Client
+config_options.SocksPort.name SocksPort
+config_options.SocksPort.usage [address:]port|unix:path|auto [flags] [isolation flags]
+config_options.SocksPort.summary Port for using tor as a Socks proxy
+config_options.SocksPort.description 
+|Open this port to listen for connections from SOCKS-speaking applications. Set this to 0 if you don't want to allow application connections via SOCKS. Set it to "auto" to have Tor pick a port for you. This directive can be specified multiple times to bind to multiple addresses/ports. (Default: 9050)
+|
+|NOTE: Although this option allows you to specify an IP address other than localhost, you should do so only with extreme caution. The SOCKS protocol is unencrypted and (as we use it) unauthenticated, so exposing it in this way could leak your information to anybody watching your network, and allow anybody to use your computer as an open proxy.
+|
+|The isolation flags arguments give Tor rules for which streams received on this SocksPort are allowed to share circuits with one another. Recognized isolation flags are:
+|
+|IsolateClientAddr    Don't share circuits with streams from a different client address. (On by default and strongly recommended; you can disable it with NoIsolateClientAddr.)
+|
+|IsolateSOCKSAuth    Don't share circuits with streams for which different SOCKS authentication was provided. (On by default; you can disable it with NoIsolateSOCKSAuth.)
+|
+|IsolateClientProtocol    Don't share circuits with streams using a different protocol. (SOCKS 4, SOCKS 5, TransPort connections, NATDPort connections, and DNSPort requests are all considered to be different protocols.)
+|
+|IsolateDestPort    Don't share circuits with streams targeting a different destination port.
+|
+|IsolateDestAddr    Don't share circuits with streams targeting a different destination address.
+|
+|KeepAliveIsolateSOCKSAuth    If IsolateSOCKSAuth is enabled, keep alive circuits that have streams with SOCKS authentication set indefinitely.
+|
+|SessionGroup=INT    If no other isolation rules would prevent it, allow streams on this port to share circuits with streams from every other port with the same session group. (By default, streams received on different SocksPorts, TransPorts, etc are always isolated from one another. This option overrides that behavior.)
+|
+|Other recognized flags for a SocksPort are:
+|
+|NoIPv4Traffic    Tell exits to not connect to IPv4 addresses in response to SOCKS requests on this connection.
+|
+|IPv6Traffic    Tell exits to allow IPv6 addresses in response to SOCKS requests on this connection, so long as SOCKS5 is in use. (SOCKS4 can't handle IPv6.)
+|
+|PreferIPv6    Tells exits that, if a host has both an IPv4 and an IPv6 address, we would prefer to connect to it via IPv6. (IPv4 is the default.)
+|
+|CacheIPv4DNS    Tells the client to remember IPv4 DNS answers we receive from exit nodes via this connection. (On by default.)
+|
+|CacheIPv6DNS    Tells the client to remember IPv6 DNS answers we receive from exit nodes via this connection.
+|
+|GroupWritable    Unix domain sockets only: makes the socket get created as group-writable.
+|
+|WorldWritable    Unix domain sockets only: makes the socket get created as world-writable.
+|
+|CacheDNS    Tells the client to remember all DNS answers we receive from exit nodes via this connection.
+|
+|UseIPv4Cache    Tells the client to use any cached IPv4 DNS answers we have when making requests via this connection. (NOTE: This option, along UseIPv6Cache and UseDNSCache, can harm your anonymity, and probably won't help performance as much as you might expect. Use with care!)
+|
+|UseIPv6Cache    Tells the client to use any cached IPv6 DNS answers we have when making requests via this connection.
+|
+|UseDNSCache    Tells the client to use any cached DNS answers we have when making requests via this connection.
+|
+|PreferIPv6Automap    When serving a hostname lookup request on this port that should get automapped (according to AutomapHostsOnResolve), if we could return either an IPv4 or an IPv6 answer, prefer an IPv6 answer. (On by default.)
+|
+|PreferSOCKSNoAuth    Ordinarily, when an application offers both "username/password authentication" and "no authentication" to Tor via SOCKS5, Tor selects username/password authentication so that IsolateSOCKSAuth can work. This can confuse some applications, if they offer a username/password combination then get confused when asked for one. You can disable this behavior, so that Tor will select "No authentication" when IsolateSOCKSAuth is disabled, or when this option is set.
+config_options.SocksListenAddress.category Client
+config_options.SocksListenAddress.name SocksListenAddress
+config_options.SocksListenAddress.usage IP[:PORT]
+config_options.SocksListenAddress.summary Address from which Socks connections can be made
+config_options.SocksListenAddress.description Bind to this address to listen for connections from Socks-speaking applications. (Default: 127.0.0.1) You can also specify a port (e.g. 192.168.0.1:9100). This directive can be specified multiple times to bind to multiple addresses/ports. (DEPRECATED: As of 0.2.3.x-alpha, you can now use multiple SocksPort entries, and provide addresses for SocksPort entries, so SocksListenAddress no longer has a purpose. For backward compatibility, SocksListenAddress is only allowed when SocksPort is just a port number.)
+config_options.SocksPolicy.category Client
+config_options.SocksPolicy.name SocksPolicy
+config_options.SocksPolicy.usage policy,policy,...
+config_options.SocksPolicy.summary Access policy for the pocks port
+config_options.SocksPolicy.description Set an entrance policy for this server, to limit who can connect to the SocksPort and DNSPort ports. The policies have the same form as exit policies below, except that port specifiers are ignored. Any address not matched by some entry in the policy is accepted.
+config_options.SocksTimeout.category Client
+config_options.SocksTimeout.name SocksTimeout
+config_options.SocksTimeout.usage NUM
+config_options.SocksTimeout.summary Time until idle or unestablished socks connections are closed
+config_options.SocksTimeout.description Let a socks connection wait NUM seconds handshaking, and NUM seconds unattached waiting for an appropriate circuit, before we fail it. (Default: 2 minutes)
+config_options.TokenBucketRefillInterval.category Client
+config_options.TokenBucketRefillInterval.name TokenBucketRefillInterval
+config_options.TokenBucketRefillInterval.usage NUM [msec|second]
+config_options.TokenBucketRefillInterval.summary Frequency at which exhausted connections are checked for new traffic
+config_options.TokenBucketRefillInterval.description Set the refill interval of Tor's token bucket to NUM milliseconds. NUM must be between 1 and 1000, inclusive. Note that the configured bandwidth limits are still expressed in bytes per second: this option only affects the frequency with which Tor checks to see whether previously exhausted connections may read again. (Default: 100 msec)
+config_options.TrackHostExits.category Client
+config_options.TrackHostExits.name TrackHostExits
+config_options.TrackHostExits.usage host,.domain,...
+config_options.TrackHostExits.summary Maintains use of the same exit whenever connecting to this destination
+config_options.TrackHostExits.description For each value in the comma separated list, Tor will track recent connections to hosts that match this value and attempt to reuse the same exit node for each. If the value is prepended with a '.', it is treated as matching an entire domain. If one of the values is just a '.', it means match everything. This option is useful if you frequently connect to sites that will expire all your authentication cookies (i.e. log you out) if your IP address changes. Note that this option does have the disadvantage of making it more clear that a given history is associated with a single user. However, most people who would wish to observe this will observe it through cookies or other protocol-specific means anyhow.
+config_options.TrackHostExitsExpire.category Client
+config_options.TrackHostExitsExpire.name TrackHostExitsExpire
+config_options.TrackHostExitsExpire.usage NUM
+config_options.TrackHostExitsExpire.summary Time until use of an exit for tracking expires
+config_options.TrackHostExitsExpire.description Since exit servers go up and down, it is desirable to expire the association between host and exit server after NUM seconds. The default is 1800 seconds (30 minutes).
+config_options.UpdateBridgesFromAuthority.category Client
+config_options.UpdateBridgesFromAuthority.name UpdateBridgesFromAuthority
+config_options.UpdateBridgesFromAuthority.usage 0|1
+config_options.UpdateBridgesFromAuthority.summary Toggles fetching bridge descriptors from the authorities
+config_options.UpdateBridgesFromAuthority.description When set (along with UseBridges), Tor will try to fetch bridge descriptors from the configured bridge authorities when feasible. It will fall back to a direct request if the authority responds with a 404. (Default: 0)
+config_options.UseBridges.category Client
+config_options.UseBridges.name UseBridges
+config_options.UseBridges.usage 0|1
+config_options.UseBridges.summary Make use of configured bridges
+config_options.UseBridges.description When set, Tor will fetch descriptors for each bridge listed in the "Bridge" config lines, and use these relays as both entry guards and directory guards. (Default: 0)
+config_options.UseEntryGuards.category Client
+config_options.UseEntryGuards.name UseEntryGuards
+config_options.UseEntryGuards.usage 0|1
+config_options.UseEntryGuards.summary Use guard relays for first hop
+config_options.UseEntryGuards.description If this option is set to 1, we pick a few long-term entry servers, and try to stick with them. This is desirable because constantly changing servers increases the odds that an adversary who owns some servers will observe a fraction of your paths. (Default: 1)
+config_options.UseEntryGuardsAsDirGuards.category Client
+config_options.UseEntryGuardsAsDirGuards.name UseEntryGuardsAsDirGuards
+config_options.UseEntryGuardsAsDirGuards.usage 0|1
+config_options.UseEntryGuardsAsDirGuards.summary Retrieve descriptors via guards when able
+config_options.UseEntryGuardsAsDirGuards.description If this option is set to 1, and UseEntryGuards is also set to 1, we try to use our entry guards as directory guards, and failing that, pick more nodes to act as our directory guards. This helps prevent an adversary from enumerating clients. It's only available for clients (non-relay, non-bridge) that aren't configured to download any non-default directory material. It doesn't currently do anything when we lack a live consensus. (Default: 1)
+config_options.GuardfractionFile.category Client
+config_options.GuardfractionFile.name GuardfractionFile
+config_options.GuardfractionFile.usage FILENAME
+config_options.GuardfractionFile.summary File containing information with duration of our guards
+config_options.GuardfractionFile.description V3 authoritative directories only. Configures the location of the guardfraction file which contains information about how long relays have been guards. (Default: unset)
+config_options.UseGuardFraction.category Client
+config_options.UseGuardFraction.name UseGuardFraction
+config_options.UseGuardFraction.usage 0|1|auto
+config_options.UseGuardFraction.summary Take guardfraction into account for path selection
+config_options.UseGuardFraction.description This torrc option specifies whether clients should use the guardfraction information found in the consensus during path selection. If it's set to auto, clients will do what the UseGuardFraction consensus parameter tells them to do. (Default: auto)
+config_options.NumEntryGuards.category Client
+config_options.NumEntryGuards.name NumEntryGuards
+config_options.NumEntryGuards.usage NUM
+config_options.NumEntryGuards.summary Pool size of guard relays we'll select from
+config_options.NumEntryGuards.description If UseEntryGuards is set to 1, we will try to pick a total of NUM routers as long-term entries for our circuits. If NUM is 0, we try to learn the number from the NumEntryGuards consensus parameter, and default to 3 if the consensus parameter isn't set. (Default: 0)
+config_options.NumDirectoryGuards.category Client
+config_options.NumDirectoryGuards.name NumDirectoryGuards
+config_options.NumDirectoryGuards.usage NUM
+config_options.NumDirectoryGuards.summary Pool size of directory guards we'll select from
+config_options.NumDirectoryGuards.description If UseEntryGuardsAsDirectoryGuards is enabled, we try to make sure we have at least NUM routers to use as directory guards. If this option is set to 0, use the value from the NumDirectoryGuards consensus parameter, falling back to the value from NumEntryGuards if the consensus parameter is 0 or isn't set. (Default: 0)
+config_options.GuardLifetime.category Client
+config_options.GuardLifetime.name GuardLifetime
+config_options.GuardLifetime.usage N days|weeks|months
+config_options.GuardLifetime.summary Minimum time to keep entry guards
+config_options.GuardLifetime.description If nonzero, and UseEntryGuards is set, minimum time to keep a guard before picking a new one. If zero, we use the GuardLifetime parameter from the consensus directory. No value here may be less than 1 month or greater than 5 years; out-of-range values are clamped. (Default: 0)
+config_options.SafeSocks.category Client
+config_options.SafeSocks.name SafeSocks
+config_options.SafeSocks.usage 0|1
+config_options.SafeSocks.summary Toggles rejecting unsafe variants of the socks protocol
+config_options.SafeSocks.description When this option is enabled, Tor will reject application connections that use unsafe variants of the socks protocol -- ones that only provide an IP address, meaning the application is doing a DNS resolve first. Specifically, these are socks4 and socks5 when not doing remote DNS. (Default: 0)
+config_options.TestSocks.category Client
+config_options.TestSocks.name TestSocks
+config_options.TestSocks.usage 0|1
+config_options.TestSocks.summary Provide notices for if socks connections are of the safe or unsafe variants
+config_options.TestSocks.description When this option is enabled, Tor will make a notice-level log entry for each connection to the Socks port indicating whether the request used a safe socks protocol or an unsafe one (see above entry on SafeSocks). This helps to determine whether an application using Tor is possibly leaking DNS requests. (Default: 0)
+config_options.WarnUnsafeSocks.category Client
+config_options.WarnUnsafeSocks.name WarnUnsafeSocks
+config_options.WarnUnsafeSocks.usage 0|1
+config_options.WarnUnsafeSocks.summary Toggle warning of unsafe socks connection
+config_options.WarnUnsafeSocks.description When this option is enabled, Tor will warn whenever a request is received that only contains an IP address instead of a hostname. Allowing applications to do DNS resolves themselves is usually a bad idea and can leak your location to attackers. (Default: 1)
+config_options.VirtualAddrNetworkIPv4.category Client
+config_options.VirtualAddrNetworkIPv4.name VirtualAddrNetworkIPv4
+config_options.VirtualAddrNetworkIPv4.usage Address/bits
+config_options.VirtualAddrNetworkIPv4.summary IPv4 address range to use when needing a virtual address
+config_options.VirtualAddrNetworkIPv4.description 
+config_options.VirtualAddrNetworkIPv6.category Client
+config_options.VirtualAddrNetworkIPv6.name VirtualAddrNetworkIPv6
+config_options.VirtualAddrNetworkIPv6.usage [Address]/bits
+config_options.VirtualAddrNetworkIPv6.summary IPv6 address range to use when needing a virtual address
+config_options.VirtualAddrNetworkIPv6.description 
+|When Tor needs to assign a virtual (unused) address because of a MAPADDRESS command from the controller or the AutomapHostsOnResolve feature, Tor picks an unassigned address from this range. (Defaults: 127.192.0.0/10 and [FE80::]/10 respectively.)
+|
+|When providing proxy server service to a network of computers using a tool like dns-proxy-tor, change the IPv4 network to "10.192.0.0/10" or "172.16.0.0/12" and change the IPv6 network to "[FC00]/7". The default VirtualAddrNetwork address ranges on a properly configured machine will route to the loopback or link-local interface. For local use, no change to the default VirtualAddrNetwork setting is needed.
+config_options.AllowNonRFC953Hostnames.category Client
+config_options.AllowNonRFC953Hostnames.name AllowNonRFC953Hostnames
+config_options.AllowNonRFC953Hostnames.usage 0|1
+config_options.AllowNonRFC953Hostnames.summary Toggles blocking invalid characters in hostname resolution
+config_options.AllowNonRFC953Hostnames.description When this option is disabled, Tor blocks hostnames containing illegal characters (like @ and :) rather than sending them to an exit node to be resolved. This helps trap accidental attempts to resolve URLs and so on. (Default: 0)
+config_options.AllowDotExit.category Client
+config_options.AllowDotExit.name AllowDotExit
+config_options.AllowDotExit.usage 0|1
+config_options.AllowDotExit.summary Toggles allowing exit notation in addresses
+config_options.AllowDotExit.description If enabled, we convert "www.google.com.foo.exit" addresses on the SocksPort/TransPort/NATDPort into "www.google.com" addresses that exit from the node "foo". Disabled by default since attacking websites and exit relays can use it to manipulate your path selection. (Default: 0)
+config_options.FastFirstHopPK.category Client
+config_options.FastFirstHopPK.name FastFirstHopPK
+config_options.FastFirstHopPK.usage 0|1|auto
+config_options.FastFirstHopPK.summary Toggle public key usage for the first hop
+config_options.FastFirstHopPK.description 
+|When this option is disabled, Tor uses the public key step for the first hop of creating circuits. Skipping it is generally safe since we have already used TLS to authenticate the relay and to establish forward-secure keys. Turning this option off makes circuit building a little slower. Setting this option to "auto" takes advice from the authorities in the latest consensus about whether to use this feature.
+|
+|Note that Tor will always use the public key step for the first hop if it's operating as a relay, and it will never use the public key step if it doesn't yet know the onion key of the first hop. (Default: auto)
+config_options.TransPort.category Client
+config_options.TransPort.name TransPort
+config_options.TransPort.usage [address:]port|auto [isolation flags]
+config_options.TransPort.summary Port for transparent proxying if the OS supports it
+config_options.TransPort.description 
+|Open this port to listen for transparent proxy connections. Set this to 0 if you don't want to allow transparent proxy connections. Set the port to "auto" to have Tor pick a port for you. This directive can be specified multiple times to bind to multiple addresses/ports. See SOCKSPort for an explanation of isolation flags.
+|
+|TransPort requires OS support for transparent proxies, such as BSDs' pf or Linux's IPTables. If you're planning to use Tor as a transparent proxy for a network, you'll want to examine and change VirtualAddrNetwork from the default setting. You'll also want to set the TransListenAddress option for the network you'd like to proxy. (Default: 0)
+config_options.TransListenAddress.category Client
+config_options.TransListenAddress.name TransListenAddress
+config_options.TransListenAddress.usage IP[:PORT]
+config_options.TransListenAddress.summary Address from which transparent proxy connections can be made
+config_options.TransListenAddress.description Bind to this address to listen for transparent proxy connections. (Default: 127.0.0.1). This is useful for exporting a transparent proxy server to an entire network. (DEPRECATED: As of 0.2.3.x-alpha, you can now use multiple TransPort entries, and provide addresses for TransPort entries, so TransListenAddress no longer has a purpose. For backward compatibility, TransListenAddress is only allowed when TransPort is just a port number.)
+config_options.TransProxyType.category Client
+config_options.TransProxyType.name TransProxyType
+config_options.TransProxyType.usage default|TPROXY|ipfw|pf-divert
+config_options.TransProxyType.summary Proxy type to be used
+config_options.TransProxyType.description 
+|TransProxyType may only be enabled when there is transparent proxy listener enabled.
+|
+|Set this to "TPROXY" if you wish to be able to use the TPROXY Linux module to transparently proxy connections that are configured using the TransPort option. This setting lets the listener on the TransPort accept connections for all addresses, even when the TransListenAddress is configured for an internal address. Detailed information on how to configure the TPROXY feature can be found in the Linux kernel source tree in the file Documentation/networking/tproxy.txt.
+|
+|Set this option to "ipfw" to use the FreeBSD ipfw interface.
+|
+|On *BSD operating systems when using pf, set this to "pf-divert" to take advantage of divert-to rules, which do not modify the packets like rdr-to rules do. Detailed information on how to configure pf to use divert-to rules can be found in the pf.conf(5) manual page. On OpenBSD, divert-to is available to use on versions greater than or equal to OpenBSD 4.4.
+|
+|Set this to "default", or leave it unconfigured, to use regular IPTables on Linux, or to use pf rdr-to rules on *BSD systems.
+|
+|(Default: "default".)
+config_options.NATDPort.category Client
+config_options.NATDPort.name NATDPort
+config_options.NATDPort.usage [address:]port|auto [isolation flags]
+config_options.NATDPort.summary Port for forwarding ipfw NATD connections
+config_options.NATDPort.description 
+|Open this port to listen for connections from old versions of ipfw (as included in old versions of FreeBSD, etc) using the NATD protocol. Use 0 if you don't want to allow NATD connections. Set the port to "auto" to have Tor pick a port for you. This directive can be specified multiple times to bind to multiple addresses/ports. See SocksPort for an explanation of isolation flags.
+|
+|This option is only for people who cannot use TransPort. (Default: 0)
+config_options.NATDListenAddress.category Client
+config_options.NATDListenAddress.name NATDListenAddress
+config_options.NATDListenAddress.usage IP[:PORT]
+config_options.NATDListenAddress.summary Address from which NATD forwarded connections can be made
+config_options.NATDListenAddress.description Bind to this address to listen for NATD connections. (DEPRECATED: As of 0.2.3.x-alpha, you can now use multiple NATDPort entries, and provide addresses for NATDPort entries, so NATDListenAddress no longer has a purpose. For backward compatibility, NATDListenAddress is only allowed when NATDPort is just a port number.)
+config_options.AutomapHostsOnResolve.category Client
+config_options.AutomapHostsOnResolve.name AutomapHostsOnResolve
+config_options.AutomapHostsOnResolve.usage 0|1
+config_options.AutomapHostsOnResolve.summary Map addresses ending with special suffixes to virtual addresses
+config_options.AutomapHostsOnResolve.description When this option is enabled, and we get a request to resolve an address that ends with one of the suffixes in AutomapHostsSuffixes, we map an unused virtual address to that address, and return the new virtual address. This is handy for making ".onion" addresses work with applications that resolve an address and then connect to it. (Default: 0)
+config_options.AutomapHostsSuffixes.category Client
+config_options.AutomapHostsSuffixes.name AutomapHostsSuffixes
+config_options.AutomapHostsSuffixes.usage SUFFIX,SUFFIX,...
+config_options.AutomapHostsSuffixes.summary Address suffixes recognized by AutomapHostsOnResolve
+config_options.AutomapHostsSuffixes.description A comma-separated list of suffixes to use with AutomapHostsOnResolve. The "." suffix is equivalent to "all addresses." (Default: .exit,.onion).
+config_options.DNSPort.category Client
+config_options.DNSPort.name DNSPort
+config_options.DNSPort.usage [address:]port|auto [isolation flags]
+config_options.DNSPort.summary Port from which DNS responses are fetched instead of tor
+config_options.DNSPort.description If non-zero, open this port to listen for UDP DNS requests, and resolve them anonymously. This port only handles A, AAAA, and PTR requests---it doesn't handle arbitrary DNS request types. Set the port to "auto" to have Tor pick a port for you. This directive can be specified multiple times to bind to multiple addresses/ports. See SocksPort for an explanation of isolation flags. (Default: 0)
+config_options.DNSListenAddress.category Client
+config_options.DNSListenAddress.name DNSListenAddress
+config_options.DNSListenAddress.usage IP[:PORT]
+config_options.DNSListenAddress.summary Address for performing DNS resolution
+config_options.DNSListenAddress.description Bind to this address to listen for DNS connections. (DEPRECATED: As of 0.2.3.x-alpha, you can now use multiple DNSPort entries, and provide addresses for DNSPort entries, so DNSListenAddress no longer has a purpose. For backward compatibility, DNSListenAddress is only allowed when DNSPort is just a port number.)
+config_options.ClientDNSRejectInternalAddresses.category Client
+config_options.ClientDNSRejectInternalAddresses.name ClientDNSRejectInternalAddresses
+config_options.ClientDNSRejectInternalAddresses.usage 0|1
+config_options.ClientDNSRejectInternalAddresses.summary Ignores DNS responses for internal addresses
+config_options.ClientDNSRejectInternalAddresses.description If true, Tor does not believe any anonymously retrieved DNS answer that tells it that an address resolves to an internal address (like 127.0.0.1 or 192.168.0.1). This option prevents certain browser-based attacks; don't turn it off unless you know what you're doing. (Default: 1)
+config_options.ClientRejectInternalAddresses.category Client
+config_options.ClientRejectInternalAddresses.name ClientRejectInternalAddresses
+config_options.ClientRejectInternalAddresses.usage 0|1
+config_options.ClientRejectInternalAddresses.summary Disables use of Tor for internal connections
+config_options.ClientRejectInternalAddresses.description If true, Tor does not try to fulfill requests to connect to an internal address (like 127.0.0.1 or 192.168.0.1) unless a exit node is specifically requested (for example, via a .exit hostname, or a controller request). (Default: 1)
+config_options.DownloadExtraInfo.category Client
+config_options.DownloadExtraInfo.name DownloadExtraInfo
+config_options.DownloadExtraInfo.usage 0|1
+config_options.DownloadExtraInfo.summary Toggles fetching of extra information about relays
+config_options.DownloadExtraInfo.description If true, Tor downloads and caches "extra-info" documents. These documents contain information about servers other than the information in their regular server descriptors. Tor does not use this information for anything itself; to save bandwidth, leave this option turned off. (Default: 0)
+config_options.WarnPlaintextPorts.category Client
+config_options.WarnPlaintextPorts.name WarnPlaintextPorts
+config_options.WarnPlaintextPorts.usage port,port,...
+config_options.WarnPlaintextPorts.summary Toggles warnings for using risky ports
+config_options.WarnPlaintextPorts.description Tells Tor to issue a warnings whenever the user tries to make an anonymous connection to one of these ports. This option is designed to alert users to services that risk sending passwords in the clear. (Default: 23,109,110,143)
+config_options.RejectPlaintextPorts.category Client
+config_options.RejectPlaintextPorts.name RejectPlaintextPorts
+config_options.RejectPlaintextPorts.usage port,port,...
+config_options.RejectPlaintextPorts.summary Prevents connections on risky ports
+config_options.RejectPlaintextPorts.description Like WarnPlaintextPorts, but instead of warning about risky port uses, Tor will instead refuse to make the connection. (Default: None)
+config_options.AllowSingleHopCircuits.category Client
+config_options.AllowSingleHopCircuits.name AllowSingleHopCircuits
+config_options.AllowSingleHopCircuits.usage 0|1
+config_options.AllowSingleHopCircuits.summary Makes use of single hop exits if able
+config_options.AllowSingleHopCircuits.description When this option is set, the attached Tor controller can use relays that have the AllowSingleHopExits option turned on to build one-hop Tor connections. (Default: 0)
+config_options.OptimisticData.category Client
+config_options.OptimisticData.name OptimisticData
+config_options.OptimisticData.usage 0|1|auto
+config_options.OptimisticData.summary Use exits without confirmation that prior connections succeeded
+config_options.OptimisticData.description When this option is set, and Tor is using an exit node that supports the feature, it will try optimistically to send data to the exit node without waiting for the exit node to report whether the connection succeeded. This can save a round-trip time for protocols like HTTP where the client talks first. If OptimisticData is set to auto, Tor will look at the UseOptimisticData parameter in the networkstatus. (Default: auto)
+config_options.Tor2webMode.category Client
+config_options.Tor2webMode.name Tor2webMode
+config_options.Tor2webMode.usage 0|1
+config_options.Tor2webMode.summary Establish non-anonymous hidden service connections
+config_options.Tor2webMode.description When this option is set, Tor connects to hidden services non-anonymously. This option also disables client connections to non-hidden-service hostnames through Tor. It must only be used when running a tor2web Hidden Service web proxy. To enable this option the compile time flag --enable-tor2webmode must be specified. (Default: 0)
+config_options.Tor2webRendezvousPoints.category Client
+config_options.Tor2webRendezvousPoints.name Tor2webRendezvousPoints
+config_options.Tor2webRendezvousPoints.usage node,node,...
+config_options.Tor2webRendezvousPoints.summary Rendezvous points to use for hidden services when in Tor2webMode
+config_options.Tor2webRendezvousPoints.description 
+|A list of identity fingerprints, nicknames, country codes and address patterns of nodes that are allowed to be used as RPs in HS circuits; any other nodes will not be used as RPs. (Example: Tor2webRendezvousPoints Fastyfasty, ABCD1234CDEF5678ABCD1234CDEF5678ABCD1234, {cc}, 255.254.0.0/8)
+|
+|This feature can only be used if Tor2webMode is also enabled.
+|
+|ExcludeNodes have higher priority than Tor2webRendezvousPoints, which means that nodes specified in ExcludeNodes will not be picked as RPs.
+|
+|If no nodes in Tor2webRendezvousPoints are currently available for use, Tor will choose a random node when building HS circuits.
+config_options.UseMicrodescriptors.category Client
+config_options.UseMicrodescriptors.name UseMicrodescriptors
+config_options.UseMicrodescriptors.usage 0|1|auto
+config_options.UseMicrodescriptors.summary Retrieve microdescriptors rather than server descriptors
+config_options.UseMicrodescriptors.description Microdescriptors are a smaller version of the information that Tor needs in order to build its circuits. Using microdescriptors makes Tor clients download less directory information, thus saving bandwidth. Directory caches need to fetch regular descriptors and microdescriptors, so this option doesn't save any bandwidth for them. If this option is set to "auto" (recommended) then it is on for all clients that do not set FetchUselessDescriptors. (Default: auto)
+config_options.UseNTorHandshake.category Client
+config_options.UseNTorHandshake.name UseNTorHandshake
+config_options.UseNTorHandshake.usage 0|1|auto
+config_options.UseNTorHandshake.summary Use ntor for establishing circuits with relays
+config_options.UseNTorHandshake.description The "ntor" circuit-creation handshake is faster and (we think) more secure than the original ("TAP") circuit handshake, but starting to use it too early might make your client stand out. If this option is 0, your Tor client won't use the ntor handshake. If it's 1, your Tor client will use the ntor handshake to extend circuits through servers that support it. If this option is "auto", then your client will use the ntor handshake once enough directory authorities recommend it. (Default: 1)
+config_options.PathBiasCircThreshold.category Client
+config_options.PathBiasCircThreshold.name PathBiasCircThreshold
+config_options.PathBiasCircThreshold.usage NUM
+config_options.PathBiasCircThreshold.summary Number of circuits through a guard before applying bias checks
+config_options.PathBiasCircThreshold.description 
+config_options.PathBiasNoticeRate.category Client
+config_options.PathBiasNoticeRate.name PathBiasNoticeRate
+config_options.PathBiasNoticeRate.usage NUM
+config_options.PathBiasNoticeRate.summary Fraction of circuits that must succeed before logging a notice
+config_options.PathBiasNoticeRate.description 
+config_options.PathBiasWarnRate.category Client
+config_options.PathBiasWarnRate.name PathBiasWarnRate
+config_options.PathBiasWarnRate.usage NUM
+config_options.PathBiasWarnRate.summary Fraction of circuits that must succeed before logging a warning
+config_options.PathBiasWarnRate.description 
+config_options.PathBiasExtremeRate.category Client
+config_options.PathBiasExtremeRate.name PathBiasExtremeRate
+config_options.PathBiasExtremeRate.usage NUM
+config_options.PathBiasExtremeRate.summary Fraction of circuits that must succeed before logging an error
+config_options.PathBiasExtremeRate.description 
+config_options.PathBiasDropGuards.category Client
+config_options.PathBiasDropGuards.name PathBiasDropGuards
+config_options.PathBiasDropGuards.usage NUM
+config_options.PathBiasDropGuards.summary Drop guards failing to establish circuits
+config_options.PathBiasDropGuards.description 
+config_options.PathBiasScaleThreshold.category Client
+config_options.PathBiasScaleThreshold.name PathBiasScaleThreshold
+config_options.PathBiasScaleThreshold.usage NUM
+config_options.PathBiasScaleThreshold.summary Circuits through a guard before scaling past observations down
+config_options.PathBiasScaleThreshold.description 
+|These options override the default behavior of Tor's (currently experimental) path bias detection algorithm. To try to find broken or misbehaving guard nodes, Tor looks for nodes where more than a certain fraction of circuits through that guard fail to get built.
+|
+|The PathBiasCircThreshold option controls how many circuits we need to build through a guard before we make these checks. The PathBiasNoticeRate, PathBiasWarnRate and PathBiasExtremeRate options control what fraction of circuits must succeed through a guard so we won't write log messages. If less than PathBiasExtremeRate circuits succeed and PathBiasDropGuards is set to 1, we disable use of that guard.
+|
+|When we have seen more than PathBiasScaleThreshold circuits through a guard, we scale our observations by 0.5 (governed by the consensus) so that new observations don't get swamped by old ones.
+|
+|By default, or if a negative value is provided for one of these options, Tor uses reasonable defaults from the networkstatus consensus document. If no defaults are available there, these options default to 150, .70, .50, .30, 0, and 300 respectively.
+config_options.PathBiasUseThreshold.category Client
+config_options.PathBiasUseThreshold.name PathBiasUseThreshold
+config_options.PathBiasUseThreshold.usage NUM
+config_options.PathBiasUseThreshold.summary Number of streams through a circuit before applying bias checks
+config_options.PathBiasUseThreshold.description 
+config_options.PathBiasNoticeUseRate.category Client
+config_options.PathBiasNoticeUseRate.name PathBiasNoticeUseRate
+config_options.PathBiasNoticeUseRate.usage NUM
+config_options.PathBiasNoticeUseRate.summary Fraction of streams that must succeed before logging a notice
+config_options.PathBiasNoticeUseRate.description 
+config_options.PathBiasExtremeUseRate.category Client
+config_options.PathBiasExtremeUseRate.name PathBiasExtremeUseRate
+config_options.PathBiasExtremeUseRate.usage NUM
+config_options.PathBiasExtremeUseRate.summary Fraction of streams that must succeed before logging an error
+config_options.PathBiasExtremeUseRate.description 
+config_options.PathBiasScaleUseThreshold.category Client
+config_options.PathBiasScaleUseThreshold.name PathBiasScaleUseThreshold
+config_options.PathBiasScaleUseThreshold.usage NUM
+config_options.PathBiasScaleUseThreshold.summary Streams through a circuit before scaling past observations down
+config_options.PathBiasScaleUseThreshold.description 
+|Similar to the above options, these options override the default behavior of Tor's (currently experimental) path use bias detection algorithm.
+|
+|Where as the path bias parameters govern thresholds for successfully building circuits, these four path use bias parameters govern thresholds only for circuit usage. Circuits which receive no stream usage are not counted by this detection algorithm. A used circuit is considered successful if it is capable of carrying streams or otherwise receiving well-formed responses to RELAY cells.
+|
+|By default, or if a negative value is provided for one of these options, Tor uses reasonable defaults from the networkstatus consensus document. If no defaults are available there, these options default to 20, .80, .60, and 100, respectively.
+config_options.ClientUseIPv6.category Client
+config_options.ClientUseIPv6.name ClientUseIPv6
+config_options.ClientUseIPv6.usage 0|1
+config_options.ClientUseIPv6.summary Allow IPv6 connections to guards
+config_options.ClientUseIPv6.description If this option is set to 1, Tor might connect to entry nodes over IPv6. Note that clients configured with an IPv6 address in a Bridge line will try connecting over IPv6 even if ClientUseIPv6 is set to 0. (Default: 0)
+config_options.ClientPreferIPv6ORPort.category Client
+config_options.ClientPreferIPv6ORPort.name ClientPreferIPv6ORPort
+config_options.ClientPreferIPv6ORPort.usage 0|1
+config_options.ClientPreferIPv6ORPort.summary Prefer a guard's IPv6 rather than IPv4 endpoint
+config_options.ClientPreferIPv6ORPort.description If this option is set to 1, Tor prefers an OR port with an IPv6 address over one with IPv4 if a given entry node has both. Other things may influence the choice. This option breaks a tie to the favor of IPv6. (Default: 0)
+config_options.PathsNeededToBuildCircuits.category Client
+config_options.PathsNeededToBuildCircuits.name PathsNeededToBuildCircuits
+config_options.PathsNeededToBuildCircuits.usage NUM
+config_options.PathsNeededToBuildCircuits.summary Portion of relays to require information for before making circuits
+config_options.PathsNeededToBuildCircuits.description Tor clients don't build circuits for user traffic until they know about enough of the network so that they could potentially construct enough of the possible paths through the network. If this option is set to a fraction between 0.25 and 0.95, Tor won't build circuits until it has enough descriptors or microdescriptors to construct that fraction of possible paths. Note that setting this option too low can make your Tor client less anonymous, and setting it too high can prevent your Tor client from bootstrapping. If this option is negative, Tor will use a default value chosen by the directory authorities. (Default: -1.)
+config_options.DirPortFrontPage.category Directory
+config_options.DirPortFrontPage.name DirPortFrontPage
+config_options.DirPortFrontPage.usage FILENAME
+config_options.DirPortFrontPage.summary Publish this html file on the DirPort
+config_options.DirPortFrontPage.description When this option is set, it takes an HTML file and publishes it as "/" on the DirPort. Now relay operators can provide a disclaimer without needing to set up a separate webserver. There's a sample disclaimer in contrib/operator-tools/tor-exit-notice.html.
+config_options.DirPort.category Directory
+config_options.DirPort.name DirPort
+config_options.DirPort.usage [address:]PORT|auto [flags]
+config_options.DirPort.summary Port for directory connections
+config_options.DirPort.description 
+|If this option is nonzero, advertise the directory service on this port. Set it to "auto" to have Tor pick a port for you. This option can occur more than once, but only one advertised DirPort is supported: all but one DirPort must have the NoAdvertise flag set. (Default: 0)
+|
+|    The same flags are supported here as are supported by ORPort.
+config_options.DirListenAddress.category Directory
+config_options.DirListenAddress.name DirListenAddress
+config_options.DirListenAddress.usage IP[:PORT]
+config_options.DirListenAddress.summary Address the directory service is bound to
+config_options.DirListenAddress.description 
+|Bind the directory service to this address. If you specify a port, bind to this port rather than the one specified in DirPort. (Default: 0.0.0.0) This directive can be specified multiple times to bind to multiple addresses/ports.
+|
+|    This option is deprecated; you can get the same behavior with DirPort now    that it supports NoAdvertise and explicit addresses.
+config_options.DirPolicy.category Directory
+config_options.DirPolicy.name DirPolicy
+config_options.DirPolicy.usage policy,policy,...
+config_options.DirPolicy.summary Access policy for the DirPort
+config_options.DirPolicy.description Set an entrance policy for this server, to limit who can connect to the directory ports. The policies have the same form as exit policies above, except that port specifiers are ignored. Any address not matched by some entry in the policy is accepted.
+config_options.BandwidthRate.category General
+config_options.BandwidthRate.name BandwidthRate
+config_options.BandwidthRate.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.BandwidthRate.summary Average bandwidth usage limit
+config_options.BandwidthRate.description 
+|A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) -- but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible. (Default: 1 GByte)
+|
+|With this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it's easy to forget that "B" means bytes, not bits.
+config_options.BandwidthBurst.category General
+config_options.BandwidthBurst.name BandwidthBurst
+config_options.BandwidthBurst.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.BandwidthBurst.summary Maximum bandwidth usage limit
+config_options.BandwidthBurst.description Limit the maximum token bucket size (also known as the burst) to the given number of bytes in each direction. (Default: 1 GByte)
+config_options.MaxAdvertisedBandwidth.category General
+config_options.MaxAdvertisedBandwidth.name MaxAdvertisedBandwidth
+config_options.MaxAdvertisedBandwidth.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.MaxAdvertisedBandwidth.summary Limit for the bandwidth we advertise as being available for relaying
+config_options.MaxAdvertisedBandwidth.description If set, we will not advertise more than this amount of bandwidth for our BandwidthRate. Server operators who want to reduce the number of clients who ask to build circuits through them (since this is proportional to advertised bandwidth rate) can thus reduce the CPU demands on their server without impacting network performance.
+config_options.RelayBandwidthRate.category General
+config_options.RelayBandwidthRate.name RelayBandwidthRate
+config_options.RelayBandwidthRate.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.RelayBandwidthRate.summary Average bandwidth usage limit for relaying
+config_options.RelayBandwidthRate.description If not 0, a separate token bucket limits the average incoming bandwidth usage for _relayed traffic_ on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. Relayed traffic currently is calculated to include answers to directory requests, but that may change in future versions. (Default: 0)
+config_options.RelayBandwidthBurst.category General
+config_options.RelayBandwidthBurst.name RelayBandwidthBurst
+config_options.RelayBandwidthBurst.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.RelayBandwidthBurst.summary Maximum bandwidth usage limit for relaying
+config_options.RelayBandwidthBurst.description If not 0, limit the maximum token bucket size (also known as the burst) for _relayed traffic_ to the given number of bytes in each direction. (Default: 0)
+config_options.PerConnBWRate.category General
+config_options.PerConnBWRate.name PerConnBWRate
+config_options.PerConnBWRate.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.PerConnBWRate.summary Average relayed bandwidth limit per connection
+config_options.PerConnBWRate.description If set, do separate rate limiting for each connection from a non-relay. You should never need to change this value, since a network-wide value is published in the consensus and your relay will use that value. (Default: 0)
+config_options.PerConnBWBurst.category General
+config_options.PerConnBWBurst.name PerConnBWBurst
+config_options.PerConnBWBurst.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.PerConnBWBurst.summary Maximum relayed bandwidth limit per connection
+config_options.PerConnBWBurst.description If set, do separate rate limiting for each connection from a non-relay. You should never need to change this value, since a network-wide value is published in the consensus and your relay will use that value. (Default: 0)
+config_options.ClientTransportPlugin.category General
+config_options.ClientTransportPlugin.name ClientTransportPlugin
+config_options.ClientTransportPlugin.usage transport socks4|socks5 IP:PORT, ClientTransportPlugin transport exec path-to-binary [options]
+config_options.ClientTransportPlugin.summary Proxy when establishing bridge connections
+config_options.ClientTransportPlugin.description 
+|In its first form, when set along with a corresponding Bridge line, the Tor client forwards its traffic to a SOCKS-speaking proxy on "IP:PORT". It's the duty of that proxy to properly forward the traffic to the bridge.
+|
+|In its second form, when set along with a corresponding Bridge line, the Tor client launches the pluggable transport proxy executable in path-to-binary using options as its command-line options, and forwards its traffic to it. It's the duty of that proxy to properly forward the traffic to the bridge.
+config_options.ServerTransportPlugin.category General
+config_options.ServerTransportPlugin.name ServerTransportPlugin
+config_options.ServerTransportPlugin.usage transport exec path-to-binary [options]
+config_options.ServerTransportPlugin.summary Proxy when servicing bridge connections
+config_options.ServerTransportPlugin.description The Tor relay launches the pluggable transport proxy in path-to-binary using options as its command-line options, and expects to receive proxied client traffic from it.
+config_options.ServerTransportListenAddr.category General
+config_options.ServerTransportListenAddr.name ServerTransportListenAddr
+config_options.ServerTransportListenAddr.usage transport IP:PORT
+config_options.ServerTransportListenAddr.summary Endpoint for bridge's pluggable transport proxy
+config_options.ServerTransportListenAddr.description When this option is set, Tor will suggest IP:PORT as the listening address of any pluggable transport proxy that tries to launch transport.
+config_options.ServerTransportOptions.category General
+config_options.ServerTransportOptions.name ServerTransportOptions
+config_options.ServerTransportOptions.usage transport k=v k=v ...
+config_options.ServerTransportOptions.summary Additional arguments for bridge's proxy
+config_options.ServerTransportOptions.description 
+|When this option is set, Tor will pass the k=v parameters to any pluggable transport proxy that tries to launch transport.
+|
+|(Example: ServerTransportOptions obfs45 shared-secret=bridgepasswd cache=/var/lib/tor/cache)
+config_options.ExtORPort.category General
+config_options.ExtORPort.name ExtORPort
+config_options.ExtORPort.usage [address:]port|auto
+config_options.ExtORPort.summary Endpoint for extended ORPort connections
+config_options.ExtORPort.description Open this port to listen for Extended ORPort connections from your pluggable transports.
+config_options.ExtORPortCookieAuthFile.category General
+config_options.ExtORPortCookieAuthFile.name ExtORPortCookieAuthFile
+config_options.ExtORPortCookieAuthFile.usage Path
+config_options.ExtORPortCookieAuthFile.summary Location of the ExtORPort's authentication cookie
+config_options.ExtORPortCookieAuthFile.description If set, this option overrides the default location and file name for the Extended ORPort's cookie file -- the cookie file is needed for pluggable transports to communicate through the Extended ORPort.
+config_options.ExtORPortCookieAuthFileGroupReadable.category General
+config_options.ExtORPortCookieAuthFileGroupReadable.name ExtORPortCookieAuthFileGroupReadable
+config_options.ExtORPortCookieAuthFileGroupReadable.usage 0|1
+config_options.ExtORPortCookieAuthFileGroupReadable.summary Group read permissions for the ExtORPort's authentication cookie
+config_options.ExtORPortCookieAuthFileGroupReadable.description If this option is set to 0, don't allow the filesystem group to read the Extended OR Port cookie file. If the option is set to 1, make the cookie file readable by the default GID. [Making the file readable by other groups is not yet implemented; let us know if you need this for some reason.] (Default: 0)
+config_options.ConnLimit.category General
+config_options.ConnLimit.name ConnLimit
+config_options.ConnLimit.usage NUM
+config_options.ConnLimit.summary Minimum number of file descriptors for Tor to start
+config_options.ConnLimit.description 
+|The minimum number of file descriptors that must be available to the Tor process before it will start. Tor will ask the OS for as many file descriptors as the OS will allow (you can find this by "ulimit -H -n"). If this number is less than ConnLimit, then Tor will refuse to start.
+|
+|You probably don't need to adjust this. It has no effect on Windows since that platform lacks getrlimit(). (Default: 1000)
+config_options.DisableNetwork.category General
+config_options.DisableNetwork.name DisableNetwork
+config_options.DisableNetwork.usage 0|1
+config_options.DisableNetwork.summary Don't accept non-controller connections
+config_options.DisableNetwork.description When this option is set, we don't listen for or accept any connections other than controller connections, and we close (and don't reattempt) any outbound connections. Controllers sometimes use this option to avoid using the network until Tor is fully configured. (Default: 0)
+config_options.ConstrainedSockets.category General
+config_options.ConstrainedSockets.name ConstrainedSockets
+config_options.ConstrainedSockets.usage 0|1
+config_options.ConstrainedSockets.summary Shrinks sockets to ConstrainedSockSize
+config_options.ConstrainedSockets.description 
+|If set, Tor will tell the kernel to attempt to shrink the buffers for all sockets to the size specified in ConstrainedSockSize. This is useful for virtual servers and other environments where system level TCP buffers may be limited. If you're on a virtual server, and you encounter the "Error creating network socket: No buffer space available" message, you are likely experiencing this problem.
+|
+|The preferred solution is to have the admin increase the buffer pool for the host itself via /proc/sys/net/ipv4/tcp_mem or equivalent facility; this configuration option is a second-resort.
+|
+|The DirPort option should also not be used if TCP buffers are scarce. The cached directory requests consume additional sockets which exacerbates the problem.
+|
+|You should not enable this feature unless you encounter the "no buffer space available" issue. Reducing the TCP buffers affects window size for the TCP stream and will reduce throughput in proportion to round trip time on long paths. (Default: 0)
+config_options.ConstrainedSockSize.category General
+config_options.ConstrainedSockSize.name ConstrainedSockSize
+config_options.ConstrainedSockSize.usage N bytes|KBytes
+config_options.ConstrainedSockSize.summary Limit for the received and transmit buffers of sockets
+config_options.ConstrainedSockSize.description When ConstrainedSockets is enabled the receive and transmit buffers for all sockets will be set to this limit. Must be a value between 2048 and 262144, in 1024 byte increments. Default of 8192 is recommended.
+config_options.ControlPort.category General
+config_options.ControlPort.name ControlPort
+config_options.ControlPort.usage PORT|unix:path|auto [flags]
+config_options.ControlPort.summary Port providing access to tor controllers (nyx, vidalia, etc)
+config_options.ControlPort.description 
+|If set, Tor will accept connections on this port and allow those connections to control the Tor process using the Tor Control Protocol (described in control-spec.txt in torspec). Note: unless you also specify one or more of HashedControlPassword or CookieAuthentication, setting this option will cause Tor to allow any process on the local host to control it. (Setting both authentication methods means eithermethod is sufficient to authenticate to Tor.) This option is required for many Tor controllers; most use the value of 9051. Set it to "auto" to have Tor pick a port for you. (Default: 0)
+|
+|Recognized flags are...
+|
+|GroupWritable    Unix domain sockets only: makes the socket get created as group-writable.
+|
+|WorldWritable    Unix domain sockets only: makes the socket get created as world-writable.
+config_options.ControlListenAddress.category General
+config_options.ControlListenAddress.name ControlListenAddress
+config_options.ControlListenAddress.usage IP[:PORT]
+config_options.ControlListenAddress.summary Address providing controller access
+config_options.ControlListenAddress.description Bind the controller listener to this address. If you specify a port, bind to this port rather than the one specified in ControlPort. We strongly recommend that you leave this alone unless you know what you're doing, since giving attackers access to your control listener is really dangerous. This directive can be specified multiple times to bind to multiple addresses/ports. (Default: 127.0.0.1)
+config_options.ControlSocket.category General
+config_options.ControlSocket.name ControlSocket
+config_options.ControlSocket.usage Path
+config_options.ControlSocket.summary Socket providing controller access
+config_options.ControlSocket.description Like ControlPort, but listens on a Unix domain socket, rather than a TCP socket.  0 disables ControlSocket (Unix and Unix-like systems only.)
+config_options.ControlSocketsGroupWritable.category General
+config_options.ControlSocketsGroupWritable.name ControlSocketsGroupWritable
+config_options.ControlSocketsGroupWritable.usage 0|1
+config_options.ControlSocketsGroupWritable.summary Group read permissions for the control socket
+config_options.ControlSocketsGroupWritable.description If this option is set to 0, don't allow the filesystem group to read and write unix sockets (e.g. ControlSocket). If the option is set to 1, make the control socket readable and writable by the default GID. (Default: 0)
+config_options.HashedControlPassword.category General
+config_options.HashedControlPassword.name HashedControlPassword
+config_options.HashedControlPassword.usage hashed_password
+config_options.HashedControlPassword.summary Hash of the password for authenticating to the control port
+config_options.HashedControlPassword.description Allow connections on the control port if they present the password whose one-way hash is hashed_password. You can compute the hash of a password by running "tor --hash-password password". You can provide several acceptable passwords by using more than one HashedControlPassword line.
+config_options.CookieAuthentication.category General
+config_options.CookieAuthentication.name CookieAuthentication
+config_options.CookieAuthentication.usage 0|1
+config_options.CookieAuthentication.summary If set, authenticates controllers via a cookie
+config_options.CookieAuthentication.description If this option is set to 1, allow connections on the control port when the connecting process knows the contents of a file named "control_auth_cookie", which Tor will create in its data directory. This authentication method should only be used on systems with good filesystem security. (Default: 0)
+config_options.CookieAuthFile.category General
+config_options.CookieAuthFile.name CookieAuthFile
+config_options.CookieAuthFile.usage Path
+config_options.CookieAuthFile.summary Location of the authentication cookie
+config_options.CookieAuthFile.description If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)
+config_options.CookieAuthFileGroupReadable.category General
+config_options.CookieAuthFileGroupReadable.name CookieAuthFileGroupReadable
+config_options.CookieAuthFileGroupReadable.usage 0|1
+config_options.CookieAuthFileGroupReadable.summary Group read permissions for the authentication cookie
+config_options.CookieAuthFileGroupReadable.description If this option is set to 0, don't allow the filesystem group to read the cookie file. If the option is set to 1, make the cookie file readable by the default GID. [Making the file readable by other groups is not yet implemented; let us know if you need this for some reason.] (Default: 0)
+config_options.ControlPortWriteToFile.category General
+config_options.ControlPortWriteToFile.name ControlPortWriteToFile
+config_options.ControlPortWriteToFile.usage Path
+config_options.ControlPortWriteToFile.summary Path for a file tor writes containing its control port
+config_options.ControlPortWriteToFile.description If set, Tor writes the address and port of any control port it opens to this address. Usable by controllers to learn the actual control port when ControlPort is set to "auto".
+config_options.ControlPortFileGroupReadable.category General
+config_options.ControlPortFileGroupReadable.name ControlPortFileGroupReadable
+config_options.ControlPortFileGroupReadable.usage 0|1
+config_options.ControlPortFileGroupReadable.summary Group read permissions for the control port file
+config_options.ControlPortFileGroupReadable.description If this option is set to 0, don't allow the filesystem group to read the control port file. If the option is set to 1, make the control port file readable by the default GID. (Default: 0)
+config_options.DataDirectory.category General
+config_options.DataDirectory.name DataDirectory
+config_options.DataDirectory.usage DIR
+config_options.DataDirectory.summary Location for storing runtime data (state, keys, etc)
+config_options.DataDirectory.description Store working data in DIR (Default: @LOCALSTATEDIR@/lib/tor)
+config_options.FallbackDir.category General
+config_options.FallbackDir.name FallbackDir
+config_options.FallbackDir.usage address:port orport=port id=fingerprint [weight=num]
+config_options.FallbackDir.summary Fallback when unable to retrieve descriptor information
+config_options.FallbackDir.description When we're unable to connect to any directory cache for directory info (usually because we don't know about any yet) we try a FallbackDir. By default, the directory authorities are also FallbackDirs.
+config_options.DirAuthority.category General
+config_options.DirAuthority.name DirAuthority
+config_options.DirAuthority.usage [nickname] [flags] address:port fingerprint
+config_options.DirAuthority.summary Alternative directory authorities
+config_options.DirAuthority.description 
+|Use a nonstandard authoritative directory server at the provided address and port, with the specified key fingerprint. This option can be repeated many times, for multiple authoritative directory servers. Flags are separated by spaces, and determine what kind of an authority this directory is. By default, an authority is not authoritative for any directory style or version unless an appropriate flag is given. Tor will use this authority as a bridge authoritative directory if the "bridge" flag is set. If a flag "orport=port" is given, Tor will use the given port when opening encrypted tunnels to the dirserver. If a flag "weight=num" is given, then the directory server is chosen randomly with probability proportional to that weight (default 1.0). Lastly, if a flag "v3ident=fp" is given, the dirserver is a v3 directory authority whose v3 long-term signing key has the fingerprint fp.
+|
+|If no DirAuthority line is given, Tor will use the default directory authorities. NOTE: this option is intended for setting up a private Tor network with its own directory authorities. If you use it, you will be distinguishable from other users, because you won't believe the same authorities they do.
+config_options.DirAuthorityFallbackRate.category General
+config_options.DirAuthorityFallbackRate.name DirAuthorityFallbackRate
+config_options.DirAuthorityFallbackRate.usage NUM
+config_options.DirAuthorityFallbackRate.summary Rate at which to use fallback directory
+config_options.DirAuthorityFallbackRate.description When configured to use both directory authorities and fallback directories, the directory authorities also work as fallbacks. They are chosen with their regular weights, multiplied by this number, which should be 1.0 or less. (Default: 1.0)
+config_options.AlternateDirAuthority.category General
+config_options.AlternateDirAuthority.name AlternateDirAuthority
+config_options.AlternateDirAuthority.usage [nickname] [flags] address:port fingerprint
+config_options.AlternateDirAuthority.summary Alternative directory authorities (consensus only)
+config_options.AlternateDirAuthority.description 
+config_options.AlternateBridgeAuthority.category General
+config_options.AlternateBridgeAuthority.name AlternateBridgeAuthority
+config_options.AlternateBridgeAuthority.usage [nickname] [flags] address:port  fingerprint
+config_options.AlternateBridgeAuthority.summary Alternative directory authorities (bridges only)
+config_options.AlternateBridgeAuthority.description These options behave as DirAuthority, but they replace fewer of the default directory authorities. Using AlternateDirAuthority replaces the default Tor directory authorities, but leaves the default bridge authorities in place. Similarly, AlternateBridgeAuthority replaces the default bridge authority, but leaves the directory authorities alone.
+config_options.DisableAllSwap.category General
+config_options.DisableAllSwap.name DisableAllSwap
+config_options.DisableAllSwap.usage 0|1
+config_options.DisableAllSwap.summary Locks all allocated memory so they can't be paged out
+config_options.DisableAllSwap.description If set to 1, Tor will attempt to lock all current and future memory pages, so that memory cannot be paged out. Windows, OS X and Solaris are currently not supported. We believe that this feature works on modern Gnu/Linux distributions, and that it should work on *BSD systems (untested). This option requires that you start your Tor as root, and you should use the User option to properly reduce Tor's privileges. (Default: 0)
+config_options.DisableDebuggerAttachment.category General
+config_options.DisableDebuggerAttachment.name DisableDebuggerAttachment
+config_options.DisableDebuggerAttachment.usage 0|1
+config_options.DisableDebuggerAttachment.summary Limit information applications can retrieve about the process
+config_options.DisableDebuggerAttachment.description If set to 1, Tor will attempt to prevent basic debugging attachment attempts by other processes. This may also keep Tor from generating core files if it crashes. It has no impact for users who wish to attach if they have CAP_SYS_PTRACE or if they are root. We believe that this feature works on modern Gnu/Linux distributions, and that it may also work on *BSD systems (untested). Some modern Gnu/Linux systems such as Ubuntu have the kernel.yama.ptrace_scope sysctl and by default enable it as an attempt to limit the PTRACE scope for all user processes by default. This feature will attempt to limit the PTRACE scope for Tor specifically - it will not attempt to alter the system wide ptrace scope as it may not even exist. If you wish to attach to Tor with a debugger such as gdb or strace you will want to set this to 0 for the duration of your debugging. Normal users should leave it on. Disabling this option while Tor is running is prohibited. (Default: 1)
+config_options.FetchDirInfoEarly.category General
+config_options.FetchDirInfoEarly.name FetchDirInfoEarly
+config_options.FetchDirInfoEarly.usage 0|1
+config_options.FetchDirInfoEarly.summary Keeps consensus information up to date, even if unnecessary
+config_options.FetchDirInfoEarly.description If set to 1, Tor will always fetch directory information like other directory caches, even if you don't meet the normal criteria for fetching early. Normal users should leave it off. (Default: 0)
+config_options.FetchDirInfoExtraEarly.category General
+config_options.FetchDirInfoExtraEarly.name FetchDirInfoExtraEarly
+config_options.FetchDirInfoExtraEarly.usage 0|1
+config_options.FetchDirInfoExtraEarly.summary Updates consensus information when it's first available
+config_options.FetchDirInfoExtraEarly.description If set to 1, Tor will fetch directory information before other directory caches. It will attempt to download directory information closer to the start of the consensus period. Normal users should leave it off. (Default: 0)
+config_options.FetchHidServDescriptors.category General
+config_options.FetchHidServDescriptors.name FetchHidServDescriptors
+config_options.FetchHidServDescriptors.usage 0|1
+config_options.FetchHidServDescriptors.summary Toggles if hidden service descriptors are fetched automatically or not
+config_options.FetchHidServDescriptors.description If set to 0, Tor will never fetch any hidden service descriptors from the rendezvous directories. This option is only useful if you're using a Tor controller that handles hidden service fetches for you. (Default: 1)
+config_options.FetchServerDescriptors.category General
+config_options.FetchServerDescriptors.name FetchServerDescriptors
+config_options.FetchServerDescriptors.usage 0|1
+config_options.FetchServerDescriptors.summary Toggles if the consensus is fetched automatically or not
+config_options.FetchServerDescriptors.description If set to 0, Tor will never fetch any network status summaries or server descriptors from the directory servers. This option is only useful if you're using a Tor controller that handles directory fetches for you. (Default: 1)
+config_options.FetchUselessDescriptors.category General
+config_options.FetchUselessDescriptors.name FetchUselessDescriptors
+config_options.FetchUselessDescriptors.usage 0|1
+config_options.FetchUselessDescriptors.summary Toggles if relay descriptors are fetched when they aren't strictly necessary
+config_options.FetchUselessDescriptors.description If set to 1, Tor will fetch every non-obsolete descriptor from the authorities that it hears about. Otherwise, it will avoid fetching useless descriptors, for example for routers that are not running. This option is useful if you're using the contributed "exitlist" script to enumerate Tor nodes that exit to certain addresses. (Default: 0)
+config_options.HTTPProxy.category General
+config_options.HTTPProxy.name HTTPProxy
+config_options.HTTPProxy.usage host[:port]
+config_options.HTTPProxy.summary HTTP proxy for connecting to tor
+config_options.HTTPProxy.description Tor will make all its directory requests through this host:port (or host:80 if port is not specified), rather than connecting directly to any directory servers.
+config_options.HTTPProxyAuthenticator.category General
+config_options.HTTPProxyAuthenticator.name HTTPProxyAuthenticator
+config_options.HTTPProxyAuthenticator.usage username:password
+config_options.HTTPProxyAuthenticator.summary Authentication credentials for HTTPProxy
+config_options.HTTPProxyAuthenticator.description If defined, Tor will use this username:password for Basic HTTP proxy authentication, as in RFC 2617. This is currently the only form of HTTP proxy authentication that Tor supports; feel free to submit a patch if you want it to support others.
+config_options.HTTPSProxy.category General
+config_options.HTTPSProxy.name HTTPSProxy
+config_options.HTTPSProxy.usage host[:port]
+config_options.HTTPSProxy.summary SSL proxy for connecting to tor
+config_options.HTTPSProxy.description Tor will make all its OR (SSL) connections through this host:port (or host:443 if port is not specified), via HTTP CONNECT rather than connecting directly to servers. You may want to set FascistFirewall to restrict the set of ports you might try to connect to, if your HTTPS proxy only allows connecting to certain ports.
+config_options.HTTPSProxyAuthenticator.category General
+config_options.HTTPSProxyAuthenticator.name HTTPSProxyAuthenticator
+config_options.HTTPSProxyAuthenticator.usage username:password
+config_options.HTTPSProxyAuthenticator.summary Authentication credentials for HTTPSProxy
+config_options.HTTPSProxyAuthenticator.description If defined, Tor will use this username:password for Basic HTTPS proxy authentication, as in RFC 2617. This is currently the only form of HTTPS proxy authentication that Tor supports; feel free to submit a patch if you want it to support others.
+config_options.Sandbox.category General
+config_options.Sandbox.name Sandbox
+config_options.Sandbox.usage 0|1
+config_options.Sandbox.summary Run within a syscall sandbox
+config_options.Sandbox.description If set to 1, Tor will run securely through the use of a syscall sandbox. Otherwise the sandbox will be disabled. The option is currently an experimental feature. (Default: 0)
+config_options.Socks4Proxy.category General
+config_options.Socks4Proxy.name Socks4Proxy
+config_options.Socks4Proxy.usage host[:port]
+config_options.Socks4Proxy.summary SOCKS 4 proxy for connecting to tor
+config_options.Socks4Proxy.description Tor will make all OR connections through the SOCKS 4 proxy at host:port (or host:1080 if port is not specified).
+config_options.Socks5Proxy.category General
+config_options.Socks5Proxy.name Socks5Proxy
+config_options.Socks5Proxy.usage host[:port]
+config_options.Socks5Proxy.summary SOCKS 5 for connecting to tor
+config_options.Socks5Proxy.description Tor will make all OR connections through the SOCKS 5 proxy at host:port (or host:1080 if port is not specified).
+config_options.Socks5ProxyUsername.category General
+config_options.Socks5ProxyUsername.name Socks5ProxyUsername
+config_options.Socks5ProxyUsername.usage username
+config_options.Socks5ProxyUsername.summary Username for connecting to the Socks5Proxy
+config_options.Socks5ProxyUsername.description 
+config_options.Socks5ProxyPassword.category General
+config_options.Socks5ProxyPassword.name Socks5ProxyPassword
+config_options.Socks5ProxyPassword.usage password
+config_options.Socks5ProxyPassword.summary Password for connecting to the Socks5Proxy
+config_options.Socks5ProxyPassword.description If defined, authenticate to the SOCKS 5 server using username and password in accordance to RFC 1929. Both username and password must be between 1 and 255 characters.
+config_options.SocksSocketsGroupWritable.category General
+config_options.SocksSocketsGroupWritable.name SocksSocketsGroupWritable
+config_options.SocksSocketsGroupWritable.usage 0|1
+config_options.SocksSocketsGroupWritable.summary Group write permissions for the socks socket
+config_options.SocksSocketsGroupWritable.description If this option is set to 0, don't allow the filesystem group to read and write unix sockets (e.g. SocksSocket). If the option is set to 1, make the SocksSocket socket readable and writable by the default GID. (Default: 0)
+config_options.KeepalivePeriod.category General
+config_options.KeepalivePeriod.name KeepalivePeriod
+config_options.KeepalivePeriod.usage NUM
+config_options.KeepalivePeriod.summary Rate at which to send keepalive packets
+config_options.KeepalivePeriod.description To keep firewalls from expiring connections, send a padding keepalive cell every NUM seconds on open connections that are in use. If the connection has no open circuits, it will instead be closed after NUM seconds of idleness. (Default: 5 minutes)
+config_options.Log.category General
+config_options.Log.name Log
+config_options.Log.usage [domain,...]minSeverity[-maxSeverity] ... stderr|stdout|syslog
+config_options.Log.summary Runlevels and location for tor logging
+config_options.Log.description 
+|As above, but select messages by range of log severity and by a set of "logging domains". Each logging domain corresponds to an area of functionality inside Tor. You can specify any number of severity ranges for a single log statement, each of them prefixed by a comma-separated list of logging domains. You can prefix a domain with ~ to indicate negation, and use * to indicate "all domains". If you specify a severity range without a list of domains, it matches all domains.
+|
+|This is an advanced feature which is most useful for debugging one or two of Tor's subsystems at a time.
+|
+|The currently recognized domains are: general, crypto, net, config, fs, protocol, mm, http, app, control, circ, rend, bug, dir, dirserv, or, edge, acct, hist, and handshake. Domain names are case-insensitive.
+|
+|For example, "Log [handshake]debug [~net,~mm]info notice stdout" sends to stdout: all handshake messages of any severity, all info-and-higher messages from domains other than networking and memory management, and all messages of severity notice or higher.
+config_options.LogMessageDomains.category General
+config_options.LogMessageDomains.name LogMessageDomains
+config_options.LogMessageDomains.usage 0|1
+config_options.LogMessageDomains.summary Includes a domain when logging messages
+config_options.LogMessageDomains.description If 1, Tor includes message domains with each log message. Every log message currently has at least one domain; most currently have exactly one. This doesn't affect controller log messages. (Default: 0)
+config_options.OutboundBindAddress.category General
+config_options.OutboundBindAddress.name OutboundBindAddress
+config_options.OutboundBindAddress.usage IP
+config_options.OutboundBindAddress.summary Sets the IP used for connecting to tor
+config_options.OutboundBindAddress.description Make all outbound connections originate from the IP address specified. This is only useful when you have multiple network interfaces, and you want all of Tor's outgoing connections to use a single one. This option may be used twice, once with an IPv4 address and once with an IPv6 address. This setting will be ignored for connections to the loopback addresses (127.0.0.0/8 and ::1).
+config_options.PidFile.category General
+config_options.PidFile.name PidFile
+config_options.PidFile.usage FILE
+config_options.PidFile.summary Path for a file tor writes containing its process id
+config_options.PidFile.description On startup, write our PID to FILE. On clean shutdown, remove FILE.
+config_options.ProtocolWarnings.category General
+config_options.ProtocolWarnings.name ProtocolWarnings
+config_options.ProtocolWarnings.usage 0|1
+config_options.ProtocolWarnings.summary Toggles if protocol errors give warnings or not
+config_options.ProtocolWarnings.description If 1, Tor will log with severity 'warn' various cases of other parties not following the Tor specification. Otherwise, they are logged with severity 'info'. (Default: 0)
+config_options.PredictedPortsRelevanceTime.category General
+config_options.PredictedPortsRelevanceTime.name PredictedPortsRelevanceTime
+config_options.PredictedPortsRelevanceTime.usage NUM
+config_options.PredictedPortsRelevanceTime.summary Duration to ensure circuits for previously used ports remain available
+config_options.PredictedPortsRelevanceTime.description Set how long, after the client has made an anonymized connection to a given port, we will try to make sure that we build circuits to exits that support that port. The maximum value for this option is 1 hour. (Default: 1 hour)
+config_options.RunAsDaemon.category General
+config_options.RunAsDaemon.name RunAsDaemon
+config_options.RunAsDaemon.usage 0|1
+config_options.RunAsDaemon.summary Toggles if tor runs as a daemon process
+config_options.RunAsDaemon.description If 1, Tor forks and daemonizes to the background. This option has no effect on Windows; instead you should use the --service command-line option. (Default: 0)
+config_options.LogTimeGranularity.category General
+config_options.LogTimeGranularity.name LogTimeGranularity
+config_options.LogTimeGranularity.usage NUM
+config_options.LogTimeGranularity.summary limits granularity of log message timestamps
+config_options.LogTimeGranularity.description Set the resolution of timestamps in Tor's logs to NUM milliseconds. NUM must be positive and either a divisor or a multiple of 1 second. Note that this option only controls the granularity written by Tor to a file or console log. Tor does not (for example) "batch up" log messages to affect times logged by a controller, times attached to syslog messages, or the mtime fields on log files. (Default: 1 second)
+config_options.TruncateLogFile.category General
+config_options.TruncateLogFile.name TruncateLogFile
+config_options.TruncateLogFile.usage 0|1
+config_options.TruncateLogFile.summary Overwrites log file rather than appending when restarted
+config_options.TruncateLogFile.description If 1, Tor will overwrite logs at startup and in response to a HUP signal, instead of appending to them. (Default: 0)
+config_options.SyslogIdentityTag.category General
+config_options.SyslogIdentityTag.name SyslogIdentityTag
+config_options.SyslogIdentityTag.usage tag
+config_options.SyslogIdentityTag.summary Tag logs appended to the syslog as being from tor
+config_options.SyslogIdentityTag.description When logging to syslog, adds a tag to the syslog identity such that log entries are marked with "Tor-tag". (Default: none)
+config_options.SafeLogging.category General
+config_options.SafeLogging.name SafeLogging
+config_options.SafeLogging.usage 0|1|relay
+config_options.SafeLogging.summary Toggles if logs are scrubbed of sensitive information
+config_options.SafeLogging.description 
+|Tor can scrub potentially sensitive strings from log messages (e.g. addresses) by replacing them with the string [scrubbed]. This way logs can still be useful, but they don't leave behind personally identifying information about what sites a user might have visited.
+|
+|If this option is set to 0, Tor will not perform any scrubbing, if it is set to 1, all potentially sensitive strings are replaced. If it is set to relay, all log messages generated when acting as a relay are sanitized, but all messages generated when acting as a client are not. (Default: 1)
+config_options.User.category General
+config_options.User.name User
+config_options.User.usage UID
+config_options.User.summary UID for the process when started
+config_options.User.description On startup, setuid to this user and setgid to their primary group.
+config_options.HardwareAccel.category General
+config_options.HardwareAccel.name HardwareAccel
+config_options.HardwareAccel.usage 0|1
+config_options.HardwareAccel.summary Toggles if tor attempts to use hardware acceleration
+config_options.HardwareAccel.description If non-zero, try to use built-in (static) crypto hardware acceleration when available. (Default: 0)
+config_options.AccelName.category General
+config_options.AccelName.name AccelName
+config_options.AccelName.usage NAME
+config_options.AccelName.summary OpenSSL engine name for crypto acceleration
+config_options.AccelName.description When using OpenSSL hardware crypto acceleration attempt to load the dynamic engine of this name. This must be used for any dynamic hardware engine. Names can be verified with the openssl engine command.
+config_options.AccelDir.category General
+config_options.AccelDir.name AccelDir
+config_options.AccelDir.usage DIR
+config_options.AccelDir.summary Crypto acceleration library path
+config_options.AccelDir.description Specify this option if using dynamic hardware acceleration and the engine implementation library resides somewhere other than the OpenSSL default.
+config_options.AvoidDiskWrites.category General
+config_options.AvoidDiskWrites.name AvoidDiskWrites
+config_options.AvoidDiskWrites.usage 0|1
+config_options.AvoidDiskWrites.summary Toggles if tor avoids frequently writing to disk
+config_options.AvoidDiskWrites.description If non-zero, try to write to disk less frequently than we would otherwise. This is useful when running on flash memory or other media that support only a limited number of writes. (Default: 0)
+config_options.CircuitPriorityHalflife.category General
+config_options.CircuitPriorityHalflife.name CircuitPriorityHalflife
+config_options.CircuitPriorityHalflife.usage NUM1
+config_options.CircuitPriorityHalflife.summary Overwrite method for prioritizing traffic among relayed connections
+config_options.CircuitPriorityHalflife.description If this value is set, we override the default algorithm for choosing which circuit's cell to deliver or relay next. When the value is 0, we round-robin between the active circuits on a connection, delivering one cell from each in turn. When the value is positive, we prefer delivering cells from whichever connection has the lowest weighted cell count, where cells are weighted exponentially according to the supplied CircuitPriorityHalflife value (in seconds). If this option is not set at all, we use the behavior recommended in the current consensus networkstatus. This is an advanced option; you generally shouldn't have to mess with it. (Default: not set)
+config_options.DisableIOCP.category General
+config_options.DisableIOCP.name DisableIOCP
+config_options.DisableIOCP.usage 0|1
+config_options.DisableIOCP.summary Disables use of the Windows IOCP networking API
+config_options.DisableIOCP.description If Tor was built to use the Libevent's "bufferevents" networking code and you're running on Windows, setting this option to 1 will tell Libevent not to use the Windows IOCP networking API. (Default: 1)
+config_options.UserspaceIOCPBuffers.category General
+config_options.UserspaceIOCPBuffers.name UserspaceIOCPBuffers
+config_options.UserspaceIOCPBuffers.usage 0|1
+config_options.UserspaceIOCPBuffers.summary Disable kernel-space IOCP TCP buffers
+config_options.UserspaceIOCPBuffers.description If IOCP is enabled (see DisableIOCP above), setting this option to 1 will tell Tor to disable kernel-space TCP buffers, in order to avoid needless copy operations and try not to run out of non-paged RAM. This feature is experimental; don't use it yet unless you're eager to help tracking down bugs. (Default: 0)
+config_options.UseFilteringSSLBufferevents.category General
+config_options.UseFilteringSSLBufferevents.name UseFilteringSSLBufferevents
+config_options.UseFilteringSSLBufferevents.usage 0|1
+config_options.UseFilteringSSLBufferevents.summary Use SSL for a chain of bufferevents
+config_options.UseFilteringSSLBufferevents.description Tells Tor to do its SSL communication using a chain of bufferevents: one for SSL and one for networking. This option has no effect if bufferevents are disabled (in which case it can't turn on), or if IOCP bufferevents are enabled (in which case it can't turn off). This option is useful for debugging only; most users shouldn't touch it. (Default: 0)
+config_options.CountPrivateBandwidth.category General
+config_options.CountPrivateBandwidth.name CountPrivateBandwidth
+config_options.CountPrivateBandwidth.usage 0|1
+config_options.CountPrivateBandwidth.summary Applies rate limiting to private IP addresses
+config_options.CountPrivateBandwidth.description If this option is set, then Tor's rate-limiting applies not only to remote connections, but also to connections to private addresses like 127.0.0.1 or 10.0.0.1. This is mostly useful for debugging rate-limiting. (Default: 0)
+config_options.Address.category Relay
+config_options.Address.name Address
+config_options.Address.usage address
+config_options.Address.summary Overwrites address others will use to reach this relay
+config_options.Address.description The IP address or fully qualified domain name of this server (e.g. moria.mit.edu). You can leave this unset, and Tor will guess your IP address. This IP address is the one used to tell clients and other servers where to find your Tor server; it doesn't affect the IP that your Tor client binds to. To bind to a different address, use the *ListenAddress and OutboundBindAddress options.
+config_options.AllowSingleHopExits.category Relay
+config_options.AllowSingleHopExits.name AllowSingleHopExits
+config_options.AllowSingleHopExits.usage 0|1
+config_options.AllowSingleHopExits.summary Toggles permitting use of this relay as a single hop proxy
+config_options.AllowSingleHopExits.description This option controls whether clients can use this server as a single hop proxy. If set to 1, clients can use this server as an exit even if it is the only hop in the circuit. Note that most clients will refuse to use servers that set this option, since most clients have ExcludeSingleHopRelays set. (Default: 0)
+config_options.AssumeReachable.category Relay
+config_options.AssumeReachable.name AssumeReachable
+config_options.AssumeReachable.usage 0|1
+config_options.AssumeReachable.summary Skips reachability test at startup
+config_options.AssumeReachable.description This option is used when bootstrapping a new Tor network. If set to 1, don't do self-reachability testing; just upload your server descriptor immediately. If AuthoritativeDirectory is also set, this option instructs the dirserver to bypass remote reachability testing too and list all connected servers as running.
+config_options.BridgeRelay.category Relay
+config_options.BridgeRelay.name BridgeRelay
+config_options.BridgeRelay.usage 0|1
+config_options.BridgeRelay.summary Act as a bridge
+config_options.BridgeRelay.description Sets the relay to act as a "bridge" with respect to relaying connections from bridge users to the Tor network. It mainly causes Tor to publish a server descriptor to the bridge database, rather than to the public directory authorities.
+config_options.ContactInfo.category Relay
+config_options.ContactInfo.name ContactInfo
+config_options.ContactInfo.usage email_address
+config_options.ContactInfo.summary Contact information for this relay
+config_options.ContactInfo.description Administrative contact information for this relay or bridge. This line can be used to contact you if your relay or bridge is misconfigured or something else goes wrong. Note that we archive and publish all descriptors containing these lines and that Google indexes them, so spammers might also collect them. You may want to obscure the fact that it's an email address and/or generate a new address for this purpose.
+config_options.ExitRelay.category Relay
+config_options.ExitRelay.name ExitRelay
+config_options.ExitRelay.usage 0|1|auto
+config_options.ExitRelay.summary Allow relaying of exit traffic
+config_options.ExitRelay.description 
+|Tells Tor whether to run as an exit relay. If Tor is running as a non-bridge server, and ExitRelay is set to 1, then Tor allows traffic to exit according to the ExitPolicy option (or the default ExitPolicy if none is specified).
+|
+|If ExitRelay is set to 0, no traffic is allowed to exit, and the ExitPolicy option is ignored.
+|
+|If ExitRelay is set to "auto", then Tor behaves as if it were set to 1, but warns the user if this would cause traffic to exit. In a future version, the default value will be 0. (Default: auto)
+config_options.ExitPolicy.category Relay
+config_options.ExitPolicy.name ExitPolicy
+config_options.ExitPolicy.usage policy,policy,...
+config_options.ExitPolicy.summary Traffic destinations that can exit from this relay
+config_options.ExitPolicy.description 
+|Set an exit policy for this server. Each policy is of the form "accept[6]|reject[6]ADDR[/MASK][:PORT]". If /MASK is omitted then this policy just applies to the host given. Instead of giving a host or network you can also use "*" to denote the universe (0.0.0.0/0 and ::/128), or *4 to denote all IPv4 addresses, and *6 to denote all IPv6 addresses.  PORT can be a single port number, an interval of ports "FROM_PORT-TO_PORT", or "*". If PORT is omitted, that means "*".
+|
+|For example, "accept 18.7.22.69:*,reject 18.0.0.0/8:*,accept *:*" would reject any IPv4 traffic destined for MIT except for web.mit.edu, and accept any other IPv4 or IPv6 traffic.
+|
+|Tor also allows IPv6 exit policy entries. For instance, "reject6 [FC00::]/7:*" rejects all destinations that share 7 most significant bit prefix with address FC00::. Respectively, "accept6 [C000::]/3:*" accepts all destinations that share 3 most significant bit prefix with address C000::.
+|
+|accept6 and reject6 only produce IPv6 exit policy entries. Using an IPv4 address with accept6 or reject6 is ignored and generates a warning. accept/reject allows either IPv4 or IPv6 addresses. Use *4 as an IPv4 wildcard address, and *6 as an IPv6 wildcard address. accept/reject * expands to matching IPv4 and IPv6 wildcard address rules.
+|
+|To specify all IPv4 and IPv6 internal and link-local networks (including 0.0.0.0/8, 169.254.0.0/16, 127.0.0.0/8, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, [::]/8, [FC00::]/7, [FE80::]/10, [FEC0::]/10, [FF00::]/8, and [::]/127), you can use the "private" alias instead of an address. ("private" always produces rules for IPv4 and IPv6 addresses, even when used with accept6/reject6.)
+|
+|Private addresses are rejected by default (at the beginning of your exit policy), along with any configured primary public IPv4 and IPv6 addresses, and any public IPv4 and IPv6 addresses on any interface on the relay. These private addresses are rejected unless you set the ExitPolicyRejectPrivate config option to 0. For example, once you've done that, you could allow HTTP to 127.0.0.1 and block all other connections to internal networks with "accept 127.0.0.1:80,reject private:*", though that may also allow connections to your own computer that are addressed to its public (external) IP address. See RFC 1918 and RFC 3330 for more details about internal and reserved IP address space.
+|
+|This directive can be specified multiple times so you don't have to put it all on one line.
+|
+|Policies are considered first to last, and the first match wins. If you want to allow the same ports on IPv4 and IPv6, write your rules using accept/reject *. If you want to allow different ports on IPv4 and IPv6, write your IPv6 rules using accept6/reject6 *6, and your IPv4 rules using accept/reject *4. If you want to _replace_ the default exit policy, end your exit policy with either a reject *:* or an accept *:*. Otherwise, you're _augmenting_ (prepending to) the default exit policy. The default exit policy is:
+|
+|
+|
+|    reject *:25    reject *:119    reject *:135-139    reject *:445    reject *:563    reject *:1214    reject *:4661-4666    reject *:6346-6429    reject *:6699    reject *:6881-6999    accept *:*
+|
+|    Since the default exit policy uses accept/reject *, it applies to both    IPv4 and IPv6 addresses.
+config_options.ExitPolicyRejectPrivate.category Relay
+config_options.ExitPolicyRejectPrivate.name ExitPolicyRejectPrivate
+config_options.ExitPolicyRejectPrivate.usage 0|1
+config_options.ExitPolicyRejectPrivate.summary Prevent exiting connection on the local network
+config_options.ExitPolicyRejectPrivate.description Reject all private (local) networks, along with any configured public IPv4 and IPv6 addresses, at the beginning of your exit policy. (This includes the IPv4 and IPv6 addresses advertised by the relay, any OutboundBindAddress, and the bind addresses of any port options, such as ORPort and DirPort.) This also rejects any public IPv4 and IPv6 addresses on any interface on the relay. (If IPv6Exit is not set, all IPv6 addresses will be rejected anyway.) See above entry on ExitPolicy. (Default: 1)
+config_options.IPv6Exit.category Relay
+config_options.IPv6Exit.name IPv6Exit
+config_options.IPv6Exit.usage 0|1
+config_options.IPv6Exit.summary Allow clients to use us for IPv6 traffic
+config_options.IPv6Exit.description If set, and we are an exit node, allow clients to use us for IPv6 traffic. (Default: 0)
+config_options.MaxOnionQueueDelay.category Relay
+config_options.MaxOnionQueueDelay.name MaxOnionQueueDelay
+config_options.MaxOnionQueueDelay.usage NUM [msec|second]
+config_options.MaxOnionQueueDelay.summary Duration to reject new onionskins if we have more than we can process
+config_options.MaxOnionQueueDelay.description If we have more onionskins queued for processing than we can process in this amount of time, reject new ones. (Default: 1750 msec)
+config_options.MyFamily.category Relay
+config_options.MyFamily.name MyFamily
+config_options.MyFamily.usage node,node,...
+config_options.MyFamily.summary Other relays this operator administers
+config_options.MyFamily.description 
+|Declare that this Tor server is controlled or administered by a group or organization identical or similar to that of the other servers, defined by their identity fingerprints. When two servers both declare that they are in the same 'family', Tor clients will not use them in the same circuit. (Each server only needs to list the other servers in its family; it doesn't need to list itself, but it won't hurt.) Do not list any bridge relay as it would compromise its concealment.
+|
+|When listing a node, it's better to list it by fingerprint than by nickname: fingerprints are more reliable.
+config_options.Nickname.category Relay
+config_options.Nickname.name Nickname
+config_options.Nickname.usage name
+config_options.Nickname.summary Identifier for this relay
+config_options.Nickname.description Set the server's nickname to 'name'. Nicknames must be between 1 and 19 characters inclusive, and must contain only the characters [a-zA-Z0-9].
+config_options.NumCPUs.category Relay
+config_options.NumCPUs.name NumCPUs
+config_options.NumCPUs.usage num
+config_options.NumCPUs.summary Number of processes spawned for decryption
+config_options.NumCPUs.description How many processes to use at once for decrypting onionskins and other parallelizable operations. If this is set to 0, Tor will try to detect how many CPUs you have, defaulting to 1 if it can't tell. (Default: 0)
+config_options.ORPort.category Relay
+config_options.ORPort.name ORPort
+config_options.ORPort.usage [address:]PORT|auto [flags]
+config_options.ORPort.summary Port used to accept relay traffic
+config_options.ORPort.description 
+|Advertise this port to listen for connections from Tor clients and servers. This option is required to be a Tor server. Set it to "auto" to have Tor pick a port for you. Set it to 0 to not run an ORPort at all. This option can occur more than once. (Default: 0)
+|
+|    Tor recognizes these flags on each ORPort:    **NoAdvertise**::        By default, we bind to a port and tell our users about it. If        NoAdvertise is specified, we don't advertise, but listen anyway.  This        can be useful if the port everybody will be connecting to (for        example, one that's opened on our firewall) is somewhere else.    **NoListen**::        By default, we bind to a port and tell our users about it. If        NoListen is specified, we don't bind, but advertise anyway.  This        can be useful if something else  (for example, a firewall's port        forwarding configuration) is causing connections to reach us.    **IPv4Only**::        If the address is absent, or resolves to both an IPv4 and an IPv6        address, only listen to the IPv4 address.    **IPv6Only**::        If the address is absent, or resolves to both an IPv4 and an IPv6        address, only listen to the IPv6 address.
+|
+|    For obvious reasons, NoAdvertise and NoListen are mutually exclusive, and    IPv4Only and IPv6Only are mutually exclusive.
+config_options.ORListenAddress.category Relay
+config_options.ORListenAddress.name ORListenAddress
+config_options.ORListenAddress.usage IP[:PORT]
+config_options.ORListenAddress.summary Address for relay connections
+config_options.ORListenAddress.description 
+|Bind to this IP address to listen for connections from Tor clients and servers. If you specify a port, bind to this port rather than the one specified in ORPort. (Default: 0.0.0.0) This directive can be specified multiple times to bind to multiple addresses/ports.
+|
+|    This option is deprecated; you can get the same behavior with ORPort now    that it supports NoAdvertise and explicit addresses.
+config_options.PortForwarding.category Relay
+config_options.PortForwarding.name PortForwarding
+config_options.PortForwarding.usage 0|1
+config_options.PortForwarding.summary Use UPnP or NAT-PMP if needed to relay
+config_options.PortForwarding.description Attempt to automatically forward the DirPort and ORPort on a NAT router connecting this Tor server to the Internet. If set, Tor will try both NAT-PMP (common on Apple routers) and UPnP (common on routers from other manufacturers). (Default: 0)
+config_options.PortForwardingHelper.category Relay
+config_options.PortForwardingHelper.name PortForwardingHelper
+config_options.PortForwardingHelper.usage filename|pathname
+config_options.PortForwardingHelper.summary Executable for configuring port forwarding
+config_options.PortForwardingHelper.description If PortForwarding is set, use this executable to configure the forwarding. If set to a filename, the system path will be searched for the executable. If set to a path, only the specified path will be executed. (Default: tor-fw-helper)
+config_options.PublishServerDescriptor.category Relay
+config_options.PublishServerDescriptor.name PublishServerDescriptor
+config_options.PublishServerDescriptor.usage 0|1|v3|bridge,...
+config_options.PublishServerDescriptor.summary Types of descriptors published
+config_options.PublishServerDescriptor.description 
+|This option specifies which descriptors Tor will publish when acting as a relay. You can choose multiple arguments, separated by commas.
+|
+|If this option is set to 0, Tor will not publish its descriptors to any directories. (This is useful if you're testing out your server, or if you're using a Tor controller that handles directory publishing for you.) Otherwise, Tor will publish its descriptors of all type(s) specified. The default is "1", which means "if running as a server, publish the appropriate descriptors to the authorities".
+config_options.ShutdownWaitLength.category Relay
+config_options.ShutdownWaitLength.name ShutdownWaitLength
+config_options.ShutdownWaitLength.usage NUM
+config_options.ShutdownWaitLength.summary Delay before quitting after receiving a SIGINT signal
+config_options.ShutdownWaitLength.description When we get a SIGINT and we're a server, we begin shutting down: we close listeners and start refusing new circuits. After NUM seconds, we exit. If we get a second SIGINT, we exit immediately. (Default: 30 seconds)
+config_options.SSLKeyLifetime.category Relay
+config_options.SSLKeyLifetime.name SSLKeyLifetime
+config_options.SSLKeyLifetime.usage N minutes|hours|days|weeks
+config_options.SSLKeyLifetime.summary Lifetime for our link certificate
+config_options.SSLKeyLifetime.description When creating a link certificate for our outermost SSL handshake, set its lifetime to this amount of time. If set to 0, Tor will choose some reasonable random defaults. (Default: 0)
+config_options.HeartbeatPeriod.category Relay
+config_options.HeartbeatPeriod.name HeartbeatPeriod
+config_options.HeartbeatPeriod.usage N minutes|hours|days|weeks
+config_options.HeartbeatPeriod.summary Rate at which an INFO level heartbeat message is sent
+config_options.HeartbeatPeriod.description Log a heartbeat message every HeartbeatPeriod seconds. This is a log level notice message, designed to let you know your Tor server is still alive and doing useful things. Settings this to 0 will disable the heartbeat. (Default: 6 hours)
+config_options.AccountingMax.category Relay
+config_options.AccountingMax.name AccountingMax
+config_options.AccountingMax.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits|TBytes
+config_options.AccountingMax.summary Amount of traffic before hibernating
+config_options.AccountingMax.description Limits the max number of bytes sent and received within a set time period using a given calculation rule (see: AccountingStart, AccountingRule). Useful if you need to stay under a specific bandwidth. By default, the number used for calculation is the max of either the bytes sent or received. For example, with AccountingMax set to 1 GByte, a server could send 900 MBytes and receive 800 MBytes and continue running. It will only hibernate once one of the two reaches 1 GByte. This can be changed to use the sum of the both bytes received and sent by setting the AccountingRule option to "sum" (total bandwidth in/out). When the number of bytes remaining gets low, Tor will stop accepting new connections and circuits. When the number of bytes is exhausted, Tor will hibernate until some time in the next accounting period. To prevent all servers from waking at the same time, Tor will also wait until a random point in each period before waking up. If you have bandwidth cost issues, enabling hibernation is preferable to setting a low bandwidth, since it provides users with a collection of fast servers that are up some of the time, which is more useful than a set of slow servers that are always "available".
+config_options.AccountingRule.category Relay
+config_options.AccountingRule.name AccountingRule
+config_options.AccountingRule.usage sum|max
+config_options.AccountingRule.summary Method to determine when the accounting limit is reached
+config_options.AccountingRule.description How we determine when our AccountingMax has been reached (when we should hibernate) during a time interval. Set to "max" to calculate using the higher of either the sent or received bytes (this is the default functionality). Set to "sum" to calculate using the sent plus received bytes. (Default: max)
+config_options.AccountingStart.category Relay
+config_options.AccountingStart.name AccountingStart
+config_options.AccountingStart.usage day|week|month [day] HH:MM
+config_options.AccountingStart.summary Duration of an accounting period
+config_options.AccountingStart.description Specify how long accounting periods last. If month is given, each accounting period runs from the time HH:MM on the dayth day of one month to the same day and time of the next. (The day must be between 1 and 28.) If week is given, each accounting period runs from the time HH:MM of the dayth day of one week to the same day and time of the next week, with Monday as day 1 and Sunday as day 7. If day is given, each accounting period runs from the time HH:MM each day to the same time on the next day. All times are local, and given in 24-hour time. (Default: "month 1 0:00")
+config_options.RefuseUnknownExits.category Relay
+config_options.RefuseUnknownExits.name RefuseUnknownExits
+config_options.RefuseUnknownExits.usage 0|1|auto
+config_options.RefuseUnknownExits.summary Prevents relays not in the consensus from using us as an exit
+config_options.RefuseUnknownExits.description Prevent nodes that don't appear in the consensus from exiting using this relay. If the option is 1, we always block exit attempts from such nodes; if it's 0, we never do, and if the option is "auto", then we do whatever the authorities suggest in the consensus (and block if the consensus is quiet on the issue). (Default: auto)
+config_options.ServerDNSResolvConfFile.category Relay
+config_options.ServerDNSResolvConfFile.name ServerDNSResolvConfFile
+config_options.ServerDNSResolvConfFile.usage filename
+config_options.ServerDNSResolvConfFile.summary Overriding resolver config for DNS queries we provide
+config_options.ServerDNSResolvConfFile.description Overrides the default DNS configuration with the configuration in filename. The file format is the same as the standard Unix "resolv.conf" file (7). This option, like all other ServerDNS options, only affects name lookups that your server does on behalf of clients. (Defaults to use the system DNS configuration.)
+config_options.ServerDNSAllowBrokenConfig.category Relay
+config_options.ServerDNSAllowBrokenConfig.name ServerDNSAllowBrokenConfig
+config_options.ServerDNSAllowBrokenConfig.usage 0|1
+config_options.ServerDNSAllowBrokenConfig.summary Toggles if we persist despite configuration parsing errors or not
+config_options.ServerDNSAllowBrokenConfig.description If this option is false, Tor exits immediately if there are problems parsing the system DNS configuration or connecting to nameservers. Otherwise, Tor continues to periodically retry the system nameservers until it eventually succeeds. (Default: 1)
+config_options.ServerDNSSearchDomains.category Relay
+config_options.ServerDNSSearchDomains.name ServerDNSSearchDomains
+config_options.ServerDNSSearchDomains.usage 0|1
+config_options.ServerDNSSearchDomains.summary Toggles if our DNS queries search for addresses in the local domain
+config_options.ServerDNSSearchDomains.description If set to 1, then we will search for addresses in the local search domain. For example, if this system is configured to believe it is in "example.com", and a client tries to connect to "www", the client will be connected to "www.example.com". This option only affects name lookups that your server does on behalf of clients. (Default: 0)
+config_options.ServerDNSDetectHijacking.category Relay
+config_options.ServerDNSDetectHijacking.name ServerDNSDetectHijacking
+config_options.ServerDNSDetectHijacking.usage 0|1
+config_options.ServerDNSDetectHijacking.summary Toggles testing for DNS hijacking
+config_options.ServerDNSDetectHijacking.description When this option is set to 1, we will test periodically to determine whether our local nameservers have been configured to hijack failing DNS requests (usually to an advertising site). If they are, we will attempt to correct this. This option only affects name lookups that your server does on behalf of clients. (Default: 1)
+config_options.ServerDNSTestAddresses.category Relay
+config_options.ServerDNSTestAddresses.name ServerDNSTestAddresses
+config_options.ServerDNSTestAddresses.usage address,address,...
+config_options.ServerDNSTestAddresses.summary Addresses to test to see if valid DNS queries are being hijacked
+config_options.ServerDNSTestAddresses.description When we're detecting DNS hijacking, make sure that these valid addresses aren't getting redirected. If they are, then our DNS is completely useless, and we'll reset our exit policy to "reject :". This option only affects name lookups that your server does on behalf of clients. (Default: "www.google.com, www.mit.edu, www.yahoo.com, www.slashdot.org")
+config_options.ServerDNSAllowNonRFC953Hostnames.category Relay
+config_options.ServerDNSAllowNonRFC953Hostnames.name ServerDNSAllowNonRFC953Hostnames
+config_options.ServerDNSAllowNonRFC953Hostnames.usage 0|1
+config_options.ServerDNSAllowNonRFC953Hostnames.summary Toggles if we reject DNS queries with invalid characters
+config_options.ServerDNSAllowNonRFC953Hostnames.description When this option is disabled, Tor does not try to resolve hostnames containing illegal characters (like @ and :) rather than sending them to an exit node to be resolved. This helps trap accidental attempts to resolve URLs and so on. This option only affects name lookups that your server does on behalf of clients. (Default: 0)
+config_options.BridgeRecordUsageByCountry.category Relay
+config_options.BridgeRecordUsageByCountry.name BridgeRecordUsageByCountry
+config_options.BridgeRecordUsageByCountry.usage 0|1
+config_options.BridgeRecordUsageByCountry.summary Tracks geoip information on bridge usage
+config_options.BridgeRecordUsageByCountry.description When this option is enabled and BridgeRelay is also enabled, and we have GeoIP data, Tor keeps a per-country count of how many client addresses have contacted it so that it can help the bridge authority guess which countries have blocked access to it. (Default: 1)
+config_options.ServerDNSRandomizeCase.category Relay
+config_options.ServerDNSRandomizeCase.name ServerDNSRandomizeCase
+config_options.ServerDNSRandomizeCase.usage 0|1
+config_options.ServerDNSRandomizeCase.summary Toggles DNS query case randomization
+config_options.ServerDNSRandomizeCase.description When this option is set, Tor sets the case of each character randomly in outgoing DNS requests, and makes sure that the case matches in DNS replies. This so-called "0x20 hack" helps resist some types of DNS poisoning attack. For more information, see "Increased DNS Forgery Resistance through 0x20-Bit Encoding". This option only affects name lookups that your server does on behalf of clients. (Default: 1)
+config_options.GeoIPFile.category Relay
+config_options.GeoIPFile.name GeoIPFile
+config_options.GeoIPFile.usage filename
+config_options.GeoIPFile.summary Path to file containing IPv4 geoip information
+config_options.GeoIPFile.description A filename containing IPv4 GeoIP data, for use with by-country statistics.
+config_options.GeoIPv6File.category Relay
+config_options.GeoIPv6File.name GeoIPv6File
+config_options.GeoIPv6File.usage filename
+config_options.GeoIPv6File.summary Path to file containing IPv6 geoip information
+config_options.GeoIPv6File.description A filename containing IPv6 GeoIP data, for use with by-country statistics.
+config_options.TLSECGroup.category Relay
+config_options.TLSECGroup.name TLSECGroup
+config_options.TLSECGroup.usage P224|P256
+config_options.TLSECGroup.summary EC group for incoming SSL connections
+config_options.TLSECGroup.description What EC group should we try to use for incoming TLS connections? P224 is faster, but makes us stand out more. Has no effect if we're a client, or if our OpenSSL version lacks support for ECDHE. (Default: P256)
+config_options.CellStatistics.category Relay
+config_options.CellStatistics.name CellStatistics
+config_options.CellStatistics.usage 0|1
+config_options.CellStatistics.summary Toggles storing circuit queue duration to disk
+config_options.CellStatistics.description Relays only. When this option is enabled, Tor collects statistics about cell processing (i.e. mean time a cell is spending in a queue, mean number of cells in a queue and mean number of processed cells per circuit) and writes them into disk every 24 hours. Onion router operators may use the statistics for performance monitoring. If ExtraInfoStatistics is enabled, it will published as part of extra-info document. (Default: 0)
+config_options.DirReqStatistics.category Relay
+config_options.DirReqStatistics.name DirReqStatistics
+config_options.DirReqStatistics.usage 0|1
+config_options.DirReqStatistics.summary Toggles storing network status counts and performance to disk
+config_options.DirReqStatistics.description Relays and bridges only. When this option is enabled, a Tor directory writes statistics on the number and response time of network status requests to disk every 24 hours. Enables relay and bridge operators to monitor how much their server is being used by clients to learn about Tor network. If ExtraInfoStatistics is enabled, it will published as part of extra-info document. (Default: 1)
+config_options.EntryStatistics.category Relay
+config_options.EntryStatistics.name EntryStatistics
+config_options.EntryStatistics.usage 0|1
+config_options.EntryStatistics.summary Toggles storing client connection counts to disk
+config_options.EntryStatistics.description Relays only. When this option is enabled, Tor writes statistics on the number of directly connecting clients to disk every 24 hours. Enables relay operators to monitor how much inbound traffic that originates from Tor clients passes through their server to go further down the Tor network. If ExtraInfoStatistics is enabled, it will be published as part of extra-info document. (Default: 0)
+config_options.ExitPortStatistics.category Relay
+config_options.ExitPortStatistics.name ExitPortStatistics
+config_options.ExitPortStatistics.usage 0|1
+config_options.ExitPortStatistics.summary Toggles storing traffic and port usage data to disk
+config_options.ExitPortStatistics.description Exit relays only. When this option is enabled, Tor writes statistics on the number of relayed bytes and opened stream per exit port to disk every 24 hours. Enables exit relay operators to measure and monitor amounts of traffic that leaves Tor network through their exit node. If ExtraInfoStatistics is enabled, it will be published as part of extra-info document. (Default: 0)
+config_options.ConnDirectionStatistics.category Relay
+config_options.ConnDirectionStatistics.name ConnDirectionStatistics
+config_options.ConnDirectionStatistics.usage 0|1
+config_options.ConnDirectionStatistics.summary Toggles storing connection use to disk
+config_options.ConnDirectionStatistics.description Relays only. When this option is enabled, Tor writes statistics on the amounts of traffic it passes between itself and other relays to disk every 24 hours. Enables relay operators to monitor how much their relay is being used as middle node in the circuit. If ExtraInfoStatistics is enabled, it will be published as part of extra-info document. (Default: 0)
+config_options.HiddenServiceStatistics.category Relay
+config_options.HiddenServiceStatistics.name HiddenServiceStatistics
+config_options.HiddenServiceStatistics.usage 0|1
+config_options.HiddenServiceStatistics.summary Toggles storing hidden service stats to disk
+config_options.HiddenServiceStatistics.description Relays only. When this option is enabled, a Tor relay writes obfuscated statistics on its role as hidden-service directory, introduction point, or rendezvous point to disk every 24 hours. If ExtraInfoStatistics is also enabled, these statistics are further published to the directory authorities. (Default: 1)
+config_options.ExtraInfoStatistics.category Relay
+config_options.ExtraInfoStatistics.name ExtraInfoStatistics
+config_options.ExtraInfoStatistics.usage 0|1
+config_options.ExtraInfoStatistics.summary Publishes statistic data in the extra-info documents
+config_options.ExtraInfoStatistics.description When this option is enabled, Tor includes previously gathered statistics in its extra-info documents that it uploads to the directory authorities. (Default: 1)
+config_options.ExtendAllowPrivateAddresses.category Relay
+config_options.ExtendAllowPrivateAddresses.name ExtendAllowPrivateAddresses
+config_options.ExtendAllowPrivateAddresses.usage 0|1
+config_options.ExtendAllowPrivateAddresses.summary Allow circuits to be extended to the local network
+config_options.ExtendAllowPrivateAddresses.description When this option is enabled, Tor routers allow EXTEND request to localhost, RFC1918 addresses, and so on. This can create security issues; you should probably leave it off. (Default: 0)
+config_options.MaxMemInQueues.category Relay
+config_options.MaxMemInQueues.name MaxMemInQueues
+config_options.MaxMemInQueues.usage N bytes|KB|MB|GB
+config_options.MaxMemInQueues.summary Threshold at which tor will terminate circuits to avoid running out of memory
+config_options.MaxMemInQueues.description This option configures a threshold above which Tor will assume that it needs to stop queueing or buffering data because it's about to run out of memory. If it hits this threshold, it will begin killing circuits until it has recovered at least 10% of this memory. Do not set this option too low, or your relay may be unreliable under load. This option only affects some queues, so the actual process size will be larger than this. If this option is set to 0, Tor will try to pick a reasonable default based on your system's physical memory. (Default: 0)
+config_options.SigningKeyLifetime.category Relay
+config_options.SigningKeyLifetime.name SigningKeyLifetime
+config_options.SigningKeyLifetime.usage N days|weeks|months
+config_options.SigningKeyLifetime.summary Duration the Ed25519 signing key is valid for
+config_options.SigningKeyLifetime.description For how long should each Ed25519 signing key be valid? Tor uses a permanent master identity key that can be kept offline, and periodically generates new "signing" keys that it uses online. This option configures their lifetime. (Default: 30 days)
+config_options.OfflineMasterKey.category Relay
+config_options.OfflineMasterKey.name OfflineMasterKey
+config_options.OfflineMasterKey.usage 0|1
+config_options.OfflineMasterKey.summary Don't generate the master secret key
+config_options.OfflineMasterKey.description If non-zero, the Tor relay will never generate or load its master secret key. Instead, you'll have to use "tor --keygen" to manage the master secret key. (Default: 0)
+config_options.HiddenServiceDir.category Hidden Service
+config_options.HiddenServiceDir.name HiddenServiceDir
+config_options.HiddenServiceDir.usage DIRECTORY
+config_options.HiddenServiceDir.summary Directory contents for the hidden service
+config_options.HiddenServiceDir.description Store data files for a hidden service in DIRECTORY. Every hidden service must have a separate directory. You may use this option multiple times to specify multiple services. DIRECTORY must be an existing directory. (Note: in current versions of Tor, if DIRECTORY is a relative path, it will be relative to current working directory of Tor instance, not to its DataDirectory. Do not rely on this behavior; it is not guaranteed to remain the same in future versions.)
+config_options.HiddenServicePort.category Hidden Service
+config_options.HiddenServicePort.name HiddenServicePort
+config_options.HiddenServicePort.usage VIRTPORT [TARGET]
+config_options.HiddenServicePort.summary Port the hidden service is provided on
+config_options.HiddenServicePort.description Configure a virtual port VIRTPORT for a hidden service. You may use this option multiple times; each time applies to the service using the most recent HiddenServiceDir. By default, this option maps the virtual port to the same port on 127.0.0.1 over TCP. You may override the target port, address, or both by specifying a target of addr, port, addr:port, or unix:path. (You can specify an IPv6 target as [addr]:port.) You may also have multiple lines with the same VIRTPORT: when a user connects to that VIRTPORT, one of the TARGETs from those lines will be chosen at random.
+config_options.PublishHidServDescriptors.category Hidden Service
+config_options.PublishHidServDescriptors.name PublishHidServDescriptors
+config_options.PublishHidServDescriptors.usage 0|1
+config_options.PublishHidServDescriptors.summary Toggles automated publishing of the hidden service to the rendezvous directory
+config_options.PublishHidServDescriptors.description If set to 0, Tor will run any hidden services you configure, but it won't advertise them to the rendezvous directory. This option is only useful if you're using a Tor controller that handles hidserv publishing for you. (Default: 1)
+config_options.HiddenServiceVersion.category Hidden Service
+config_options.HiddenServiceVersion.name HiddenServiceVersion
+config_options.HiddenServiceVersion.usage version,version,...
+config_options.HiddenServiceVersion.summary Version for published hidden service descriptors
+config_options.HiddenServiceVersion.description A list of rendezvous service descriptor versions to publish for the hidden service. Currently, only version 2 is supported. (Default: 2)
+config_options.HiddenServiceAuthorizeClient.category Hidden Service
+config_options.HiddenServiceAuthorizeClient.name HiddenServiceAuthorizeClient
+config_options.HiddenServiceAuthorizeClient.usage auth-type client-name,client-name,...
+config_options.HiddenServiceAuthorizeClient.summary Restricts access to the hidden service
+config_options.HiddenServiceAuthorizeClient.description If configured, the hidden service is accessible for authorized clients only. The auth-type can either be 'basic' for a general-purpose authorization protocol or 'stealth' for a less scalable protocol that also hides service activity from unauthorized clients. Only clients that are listed here are authorized to access the hidden service. Valid client names are 1 to 16 characters long and only use characters in A-Za-z0-9+-_ (no spaces). If this option is set, the hidden service is not accessible for clients without authorization any more. Generated authorization data can be found in the hostname file. Clients need to put this authorization data in their configuration file using HidServAuth.
+config_options.HiddenServiceAllowUnknownPorts.category Hidden Service
+config_options.HiddenServiceAllowUnknownPorts.name HiddenServiceAllowUnknownPorts
+config_options.HiddenServiceAllowUnknownPorts.usage 0|1
+config_options.HiddenServiceAllowUnknownPorts.summary Allow rendezvous circuits on unrecognized ports
+config_options.HiddenServiceAllowUnknownPorts.description If set to 1, then connections to unrecognized ports do not cause the current hidden service to close rendezvous circuits. (Setting this to 0 is not an authorization mechanism; it is instead meant to be a mild inconvenience to port-scanners.) (Default: 0)
+config_options.HiddenServiceMaxStreams.category Hidden Service
+config_options.HiddenServiceMaxStreams.name HiddenServiceMaxStreams
+config_options.HiddenServiceMaxStreams.usage N
+config_options.HiddenServiceMaxStreams.summary Maximum streams per rendezvous circuit
+config_options.HiddenServiceMaxStreams.description The maximum number of simultaneous streams (connections) per rendezvous circuit. (Setting this to 0 will allow an unlimited number of simultanous streams.) (Default: 0)
+config_options.HiddenServiceMaxStreamsCloseCircuit.category Hidden Service
+config_options.HiddenServiceMaxStreamsCloseCircuit.name HiddenServiceMaxStreamsCloseCircuit
+config_options.HiddenServiceMaxStreamsCloseCircuit.usage 0|1
+config_options.HiddenServiceMaxStreamsCloseCircuit.summary Closes rendezvous circuits that exceed the maximum number of streams
+config_options.HiddenServiceMaxStreamsCloseCircuit.description If set to 1, then exceeding HiddenServiceMaxStreams will cause the offending rendezvous circuit to be torn down, as opposed to stream creation requests that exceed the limit being silently ignored. (Default: 0)
+config_options.RendPostPeriod.category Hidden Service
+config_options.RendPostPeriod.name RendPostPeriod
+config_options.RendPostPeriod.usage N seconds|minutes|hours|days|weeks
+config_options.RendPostPeriod.summary Period at which the rendezvous service descriptors are refreshed
+config_options.RendPostPeriod.description Every time the specified period elapses, Tor uploads any rendezvous service descriptors to the directory servers. This information is also uploaded whenever it changes. (Default: 1 hour)
+config_options.HiddenServiceDirGroupReadable.category Hidden Service
+config_options.HiddenServiceDirGroupReadable.name HiddenServiceDirGroupReadable
+config_options.HiddenServiceDirGroupReadable.usage 0|1
+config_options.HiddenServiceDirGroupReadable.summary Group read permissions for the hidden service directory
+config_options.HiddenServiceDirGroupReadable.description If this option is set to 1, allow the filesystem group to read the hidden service directory and hostname file. If the option is set to 0, only owner is able to read the hidden service directory. (Default: 0) Has no effect on Windows.
+config_options.HiddenServiceNumIntroductionPoints.category Hidden Service
+config_options.HiddenServiceNumIntroductionPoints.name HiddenServiceNumIntroductionPoints
+config_options.HiddenServiceNumIntroductionPoints.usage NUM
+config_options.HiddenServiceNumIntroductionPoints.summary Number of introduction points the hidden service will have
+config_options.HiddenServiceNumIntroductionPoints.description Number of introduction points the hidden service will have. You can't have more than 10. (Default: 3)
+config_options.TestingTorNetwork.category Testing
+config_options.TestingTorNetwork.name TestingTorNetwork
+config_options.TestingTorNetwork.usage 0|1
+config_options.TestingTorNetwork.summary Overrides other options to be a testing network
+config_options.TestingTorNetwork.description 
+|If set to 1, Tor adjusts default values of the configuration options below, so that it is easier to set up a testing Tor network. May only be set if non-default set of DirAuthorities is set. Cannot be unset while Tor is running. (Default: 0)
+|
+|
+|
+|    ServerDNSAllowBrokenConfig 1    DirAllowPrivateAddresses 1    EnforceDistinctSubnets 0    AssumeReachable 1    AuthDirMaxServersPerAddr 0    AuthDirMaxServersPerAuthAddr 0    ClientDNSRejectInternalAddresses 0    ClientRejectInternalAddresses 0    CountPrivateBandwidth 1    ExitPolicyRejectPrivate 0    ExtendAllowPrivateAddresses 1    V3AuthVotingInterval 5 minutes    V3AuthVoteDelay 20 seconds    V3AuthDistDelay 20 seconds    MinUptimeHidServDirectoryV2 0 seconds    TestingV3AuthInitialVotingInterval 5 minutes    TestingV3AuthInitialVoteDelay 20 seconds    TestingV3AuthInitialDistDelay 20 seconds    TestingAuthDirTimeToLearnReachability 0 minutes    TestingEstimatedDescriptorPropagationTime 0 minutes    TestingServerDownloadSchedule 0, 0, 0, 5, 10, 15, 20, 30, 60    TestingClientDownloadSchedule 0, 0, 5, 10, 15, 20, 30, 60    TestingServerConsensusDownloadSchedule 0, 0, 5, 10, 15, 20, 30, 60    TestingClientConsensusDownloadSchedule 0, 0, 5, 10, 15, 20, 30, 60    TestingBridgeDownloadSchedule 60, 30, 30, 60    TestingClientMaxIntervalWithoutRequest 5 seconds    TestingDirConnectionMaxStall 30 seconds    TestingConsensusMaxDownloadTries 80    TestingDescriptorMaxDownloadTries 80    TestingMicrodescMaxDownloadTries 80    TestingCertMaxDownloadTries 80    TestingEnableConnBwEvent 1    TestingEnableCellStatsEvent 1    TestingEnableTbEmptyEvent 1
+config_options.TestingV3AuthInitialVotingInterval.category Testing
+config_options.TestingV3AuthInitialVotingInterval.name TestingV3AuthInitialVotingInterval
+config_options.TestingV3AuthInitialVotingInterval.usage N minutes|hours
+config_options.TestingV3AuthInitialVotingInterval.summary Overrides V3AuthVotingInterval for the first consensus
+config_options.TestingV3AuthInitialVotingInterval.description Like V3AuthVotingInterval, but for initial voting interval before the first consensus has been created. Changing this requires that TestingTorNetwork is set. (Default: 30 minutes)
+config_options.TestingV3AuthInitialVoteDelay.category Testing
+config_options.TestingV3AuthInitialVoteDelay.name TestingV3AuthInitialVoteDelay
+config_options.TestingV3AuthInitialVoteDelay.usage N minutes|hours
+config_options.TestingV3AuthInitialVoteDelay.summary Overrides TestingV3AuthInitialVoteDelay for the first consensus
+config_options.TestingV3AuthInitialVoteDelay.description Like V3AuthVoteDelay, but for initial voting interval before the first consensus has been created. Changing this requires that TestingTorNetwork is set. (Default: 5 minutes)
+config_options.TestingV3AuthInitialDistDelay.category Testing
+config_options.TestingV3AuthInitialDistDelay.name TestingV3AuthInitialDistDelay
+config_options.TestingV3AuthInitialDistDelay.usage N minutes|hours
+config_options.TestingV3AuthInitialDistDelay.summary Overrides TestingV3AuthInitialDistDelay for the first consensus
+config_options.TestingV3AuthInitialDistDelay.description Like V3AuthDistDelay, but for initial voting interval before the first consensus has been created. Changing this requires that TestingTorNetwork is set. (Default: 5 minutes)
+config_options.TestingV3AuthVotingStartOffset.category Testing
+config_options.TestingV3AuthVotingStartOffset.name TestingV3AuthVotingStartOffset
+config_options.TestingV3AuthVotingStartOffset.usage N seconds|minutes|hours
+config_options.TestingV3AuthVotingStartOffset.summary Offset for the point at which the authority votes
+config_options.TestingV3AuthVotingStartOffset.description Directory authorities offset voting start time by this much. Changing this requires that TestingTorNetwork is set. (Default: 0)
+config_options.TestingAuthDirTimeToLearnReachability.category Testing
+config_options.TestingAuthDirTimeToLearnReachability.name TestingAuthDirTimeToLearnReachability
+config_options.TestingAuthDirTimeToLearnReachability.usage N minutes|hours
+config_options.TestingAuthDirTimeToLearnReachability.summary Delay until opinions are given about which relays are running or not
+config_options.TestingAuthDirTimeToLearnReachability.description After starting as an authority, do not make claims about whether routers are Running until this much time has passed. Changing this requires that TestingTorNetwork is set. (Default: 30 minutes)
+config_options.TestingEstimatedDescriptorPropagationTime.category Testing
+config_options.TestingEstimatedDescriptorPropagationTime.name TestingEstimatedDescriptorPropagationTime
+config_options.TestingEstimatedDescriptorPropagationTime.usage N minutes|hours
+config_options.TestingEstimatedDescriptorPropagationTime.summary Delay before clients attempt to fetch descriptors from directory caches
+config_options.TestingEstimatedDescriptorPropagationTime.description Clients try downloading server descriptors from directory caches after this time. Changing this requires that TestingTorNetwork is set. (Default: 10 minutes)
+config_options.TestingMinFastFlagThreshold.category Testing
+config_options.TestingMinFastFlagThreshold.name TestingMinFastFlagThreshold
+config_options.TestingMinFastFlagThreshold.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.TestingMinFastFlagThreshold.summary Minimum value for the Fast flag
+config_options.TestingMinFastFlagThreshold.description Minimum value for the Fast flag. Overrides the ordinary minimum taken from the consensus when TestingTorNetwork is set. (Default: 0.)
+config_options.TestingServerDownloadSchedule.category Testing
+config_options.TestingServerDownloadSchedule.name TestingServerDownloadSchedule
+config_options.TestingServerDownloadSchedule.usage N,N,...
+config_options.TestingServerDownloadSchedule.summary Schedule for when we should download resources as a relay
+config_options.TestingServerDownloadSchedule.description Schedule for when servers should download things in general. Changing this requires that TestingTorNetwork is set. (Default: 0, 0, 0, 60, 60, 120, 300, 900, 2147483647)
+config_options.TestingClientDownloadSchedule.category Testing
+config_options.TestingClientDownloadSchedule.name TestingClientDownloadSchedule
+config_options.TestingClientDownloadSchedule.usage N,N,...
+config_options.TestingClientDownloadSchedule.summary Schedule for when we should download resources as a client
+config_options.TestingClientDownloadSchedule.description Schedule for when clients should download things in general. Changing this requires that TestingTorNetwork is set. (Default: 0, 0, 60, 300, 600, 2147483647)
+config_options.TestingServerConsensusDownloadSchedule.category Testing
+config_options.TestingServerConsensusDownloadSchedule.name TestingServerConsensusDownloadSchedule
+config_options.TestingServerConsensusDownloadSchedule.usage N,N,...
+config_options.TestingServerConsensusDownloadSchedule.summary Schedule for when we should download the consensus as a relay
+config_options.TestingServerConsensusDownloadSchedule.description Schedule for when servers should download consensuses. Changing this requires that TestingTorNetwork is set. (Default: 0, 0, 60, 300, 600, 1800, 1800, 1800, 1800, 1800, 3600, 7200)
+config_options.TestingClientConsensusDownloadSchedule.category Testing
+config_options.TestingClientConsensusDownloadSchedule.name TestingClientConsensusDownloadSchedule
+config_options.TestingClientConsensusDownloadSchedule.usage N,N,...
+config_options.TestingClientConsensusDownloadSchedule.summary Schedule for when we should download the consensus as a client
+config_options.TestingClientConsensusDownloadSchedule.description Schedule for when clients should download consensuses. Changing this requires that TestingTorNetwork is set. (Default: 0, 0, 60, 300, 600, 1800, 3600, 3600, 3600, 10800, 21600, 43200)
+config_options.TestingBridgeDownloadSchedule.category Testing
+config_options.TestingBridgeDownloadSchedule.name TestingBridgeDownloadSchedule
+config_options.TestingBridgeDownloadSchedule.usage N,N,...
+config_options.TestingBridgeDownloadSchedule.summary Schedule for when we should download bridge descriptors
+config_options.TestingBridgeDownloadSchedule.description Schedule for when clients should download bridge descriptors. Changing this requires that TestingTorNetwork is set. (Default: 3600, 900, 900, 3600)
+config_options.TestingClientMaxIntervalWithoutRequest.category Testing
+config_options.TestingClientMaxIntervalWithoutRequest.name TestingClientMaxIntervalWithoutRequest
+config_options.TestingClientMaxIntervalWithoutRequest.usage N seconds|minutes
+config_options.TestingClientMaxIntervalWithoutRequest.summary Maximum time to wait to batch requests for missing descriptors
+config_options.TestingClientMaxIntervalWithoutRequest.description When directory clients have only a few descriptors to request, they batch them until they have more, or until this amount of time has passed. Changing this requires that TestingTorNetwork is set. (Default: 10 minutes)
+config_options.TestingDirConnectionMaxStall.category Testing
+config_options.TestingDirConnectionMaxStall.name TestingDirConnectionMaxStall
+config_options.TestingDirConnectionMaxStall.usage N seconds|minutes
+config_options.TestingDirConnectionMaxStall.summary Duration to let directory connections stall before timing out
+config_options.TestingDirConnectionMaxStall.description Let a directory connection stall this long before expiring it. Changing this requires that TestingTorNetwork is set. (Default: 5 minutes)
+config_options.TestingConsensusMaxDownloadTries.category Testing
+config_options.TestingConsensusMaxDownloadTries.name TestingConsensusMaxDownloadTries
+config_options.TestingConsensusMaxDownloadTries.usage NUM
+config_options.TestingConsensusMaxDownloadTries.summary Retries for downloading the consensus
+config_options.TestingConsensusMaxDownloadTries.description Try this often to download a consensus before giving up. Changing this requires that TestingTorNetwork is set. (Default: 8)
+config_options.TestingDescriptorMaxDownloadTries.category Testing
+config_options.TestingDescriptorMaxDownloadTries.name TestingDescriptorMaxDownloadTries
+config_options.TestingDescriptorMaxDownloadTries.usage NUM
+config_options.TestingDescriptorMaxDownloadTries.summary Retries for downloading server descriptors
+config_options.TestingDescriptorMaxDownloadTries.description Try this often to download a server descriptor before giving up. Changing this requires that TestingTorNetwork is set. (Default: 8)
+config_options.TestingMicrodescMaxDownloadTries.category Testing
+config_options.TestingMicrodescMaxDownloadTries.name TestingMicrodescMaxDownloadTries
+config_options.TestingMicrodescMaxDownloadTries.usage NUM
+config_options.TestingMicrodescMaxDownloadTries.summary Retries for downloading microdescriptors
+config_options.TestingMicrodescMaxDownloadTries.description Try this often to download a microdesc descriptor before giving up. Changing this requires that TestingTorNetwork is set. (Default: 8)
+config_options.TestingCertMaxDownloadTries.category Testing
+config_options.TestingCertMaxDownloadTries.name TestingCertMaxDownloadTries
+config_options.TestingCertMaxDownloadTries.usage NUM
+config_options.TestingCertMaxDownloadTries.summary Retries for downloading authority certificates
+config_options.TestingCertMaxDownloadTries.description Try this often to download a v3 authority certificate before giving up. Changing this requires that TestingTorNetwork is set. (Default: 8)
+config_options.TestingDirAuthVoteExit.category Testing
+config_options.TestingDirAuthVoteExit.name TestingDirAuthVoteExit
+config_options.TestingDirAuthVoteExit.usage node,node,...
+config_options.TestingDirAuthVoteExit.summary Relays to give the Exit flag to
+config_options.TestingDirAuthVoteExit.description 
+|A list of identity fingerprints, country codes, and address patterns of nodes to vote Exit for regardless of their uptime, bandwidth, or exit policy. See the ExcludeNodes option for more information on how to specify nodes.
+|
+|In order for this option to have any effect, TestingTorNetwork has to be set. See the ExcludeNodes option for more information on how to specify nodes.
+config_options.TestingDirAuthVoteExitIsStrict.category Testing
+config_options.TestingDirAuthVoteExitIsStrict.name TestingDirAuthVoteExitIsStrict
+config_options.TestingDirAuthVoteExitIsStrict.usage 0|1
+config_options.TestingDirAuthVoteExitIsStrict.summary Only grant the Exit flag to relays listed by TestingDirAuthVoteExit
+config_options.TestingDirAuthVoteExitIsStrict.description 
+|If True (1), a node will never receive the Exit flag unless it is specified in the TestingDirAuthVoteExit list, regardless of its uptime, bandwidth, or exit policy.
+|
+|In order for this option to have any effect, TestingTorNetwork has to be set.
+config_options.TestingDirAuthVoteGuard.category Testing
+config_options.TestingDirAuthVoteGuard.name TestingDirAuthVoteGuard
+config_options.TestingDirAuthVoteGuard.usage node,node,...
+config_options.TestingDirAuthVoteGuard.summary Relays to give the Guard flag to
+config_options.TestingDirAuthVoteGuard.description 
+|A list of identity fingerprints and country codes and address patterns of nodes to vote Guard for regardless of their uptime and bandwidth. See the ExcludeNodes option for more information on how to specify nodes.
+|
+|In order for this option to have any effect, TestingTorNetwork has to be set.
+config_options.TestingDirAuthVoteGuardIsStrict.category Testing
+config_options.TestingDirAuthVoteGuardIsStrict.name TestingDirAuthVoteGuardIsStrict
+config_options.TestingDirAuthVoteGuardIsStrict.usage 0|1
+config_options.TestingDirAuthVoteGuardIsStrict.summary Only grant the Guard flag to relays listed by TestingDirAuthVoteGuard
+config_options.TestingDirAuthVoteGuardIsStrict.description 
+|If True (1), a node will never receive the Guard flag unless it is specified in the TestingDirAuthVoteGuard list, regardless of its uptime and bandwidth.
+|
+|In order for this option to have any effect, TestingTorNetwork has to be set.
+config_options.TestingDirAuthVoteHSDir.category Testing
+config_options.TestingDirAuthVoteHSDir.name TestingDirAuthVoteHSDir
+config_options.TestingDirAuthVoteHSDir.usage node,node,...
+config_options.TestingDirAuthVoteHSDir.summary Relays to give the HSDir flag to
+config_options.TestingDirAuthVoteHSDir.description 
+|A list of identity fingerprints and country codes and address patterns of nodes to vote HSDir for regardless of their uptime and DirPort. See the ExcludeNodes option for more information on how to specify nodes.
+|
+|In order for this option to have any effect, TestingTorNetwork must be set.
+config_options.TestingDirAuthVoteHSDirIsStrict.category Testing
+config_options.TestingDirAuthVoteHSDirIsStrict.name TestingDirAuthVoteHSDirIsStrict
+config_options.TestingDirAuthVoteHSDirIsStrict.usage 0|1
+config_options.TestingDirAuthVoteHSDirIsStrict.summary Only grant the HSDir flag to relays listed by TestingDirAuthVoteHSDir
+config_options.TestingDirAuthVoteHSDirIsStrict.description 
+|If True (1), a node will never receive the HSDir flag unless it is specified in the TestingDirAuthVoteHSDir list, regardless of its uptime and DirPort.
+|
+|In order for this option to have any effect, TestingTorNetwork has to be set.
+config_options.TestingEnableConnBwEvent.category Testing
+config_options.TestingEnableConnBwEvent.name TestingEnableConnBwEvent
+config_options.TestingEnableConnBwEvent.usage 0|1
+config_options.TestingEnableConnBwEvent.summary Allow controllers to request CONN_BW events
+config_options.TestingEnableConnBwEvent.description If this option is set, then Tor controllers may register for CONN_BW events. Changing this requires that TestingTorNetwork is set. (Default: 0)
+config_options.TestingEnableCellStatsEvent.category Testing
+config_options.TestingEnableCellStatsEvent.name TestingEnableCellStatsEvent
+config_options.TestingEnableCellStatsEvent.usage 0|1
+config_options.TestingEnableCellStatsEvent.summary Allow controllers to request CELL_STATS events
+config_options.TestingEnableCellStatsEvent.description If this option is set, then Tor controllers may register for CELL_STATS events. Changing this requires that TestingTorNetwork is set. (Default: 0)
+config_options.TestingEnableTbEmptyEvent.category Testing
+config_options.TestingEnableTbEmptyEvent.name TestingEnableTbEmptyEvent
+config_options.TestingEnableTbEmptyEvent.usage 0|1
+config_options.TestingEnableTbEmptyEvent.summary Allow controllers to request TB_EMPTY events
+config_options.TestingEnableTbEmptyEvent.description If this option is set, then Tor controllers may register for TB_EMPTY events. Changing this requires that TestingTorNetwork is set. (Default: 0)
+config_options.TestingMinExitFlagThreshold.category Testing
+config_options.TestingMinExitFlagThreshold.name TestingMinExitFlagThreshold
+config_options.TestingMinExitFlagThreshold.usage N KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.TestingMinExitFlagThreshold.summary Lower bound for assigning the Exit flag
+config_options.TestingMinExitFlagThreshold.description Sets a lower-bound for assigning an exit flag when running as an authority on a testing network. Overrides the usual default lower bound of 4 KB. (Default: 0)
+config_options.TestingLinkCertLifetime.category Testing
+config_options.TestingLinkCertLifetime.name TestingLinkCertLifetime
+config_options.TestingLinkCertLifetime.usage N seconds|minutes|hours|days|weeks|months
+config_options.TestingLinkCertLifetime.summary Duration of our ed25519 certificate
+config_options.TestingLinkCertLifetime.description Overrides the default lifetime for the certificates used to authenticate our X509 link cert with our ed25519 signing key. (Default: 2 days)
+config_options.TestingAuthKeyLifetime.category Testing
+config_options.TestingAuthKeyLifetime.name TestingAuthKeyLifetime
+config_options.TestingAuthKeyLifetime.usage N seconds|minutes|hours|days|weeks|months
+config_options.TestingAuthKeyLifetime.summary Duration for our ed25519 signing key
+config_options.TestingAuthKeyLifetime.description Overrides the default lifetime for a signing Ed25519 TLS Link authentication key. (Default: 2 days)
+config_options.TestingLinkKeySlop.category Testing
+config_options.TestingLinkKeySlop.name TestingLinkKeySlop
+config_options.TestingLinkKeySlop.usage N seconds|minutes|hours
+config_options.TestingLinkKeySlop.summary Time before expiration that we replace our ed25519 link key
+config_options.TestingLinkKeySlop.description 
+config_options.TestingAuthKeySlop.category Testing
+config_options.TestingAuthKeySlop.name TestingAuthKeySlop
+config_options.TestingAuthKeySlop.usage N seconds|minutes|hours
+config_options.TestingAuthKeySlop.summary Time before expiration that we replace our ed25519 authentication key
+config_options.TestingAuthKeySlop.description 
+config_options.TestingSigningKeySlop.category Testing
+config_options.TestingSigningKeySlop.name TestingSigningKeySlop
+config_options.TestingSigningKeySlop.usage N seconds|minutes|hours
+config_options.TestingSigningKeySlop.summary Time before expiration that we replace our ed25519 signing key
+config_options.TestingSigningKeySlop.description How early before the official expiration of a an Ed25519 signing key do we replace it and issue a new key? (Default: 3 hours for link and auth; 1 day for signing.)
+config_options.AuthoritativeDirectory.category Authority
+config_options.AuthoritativeDirectory.name AuthoritativeDirectory
+config_options.AuthoritativeDirectory.usage 0|1
+config_options.AuthoritativeDirectory.summary Act as a directory authority
+config_options.AuthoritativeDirectory.description When this option is set to 1, Tor operates as an authoritative directory server. Instead of caching the directory, it generates its own list of good servers, signs it, and sends that to the clients. Unless the clients already have you listed as a trusted directory, you probably do not want to set this option. Please coordinate with the other admins at tor-ops@torproject.org if you think you should be a directory.
+config_options.V3AuthoritativeDirectory.category Authority
+config_options.V3AuthoritativeDirectory.name V3AuthoritativeDirectory
+config_options.V3AuthoritativeDirectory.usage 0|1
+config_options.V3AuthoritativeDirectory.summary Generates a version 3 consensus
+config_options.V3AuthoritativeDirectory.description When this option is set in addition to AuthoritativeDirectory, Tor generates version 3 network statuses and serves descriptors, etc as described in dir-spec.txt file of torspec (for Tor clients and servers running atleast 0.2.0.x).
+config_options.VersioningAuthoritativeDirectory.category Authority
+config_options.VersioningAuthoritativeDirectory.name VersioningAuthoritativeDirectory
+config_options.VersioningAuthoritativeDirectory.usage 0|1
+config_options.VersioningAuthoritativeDirectory.summary Provides opinions on recommended versions of tor
+config_options.VersioningAuthoritativeDirectory.description When this option is set to 1, Tor adds information on which versions of Tor are still believed safe for use to the published directory. Each version 1 authority is automatically a versioning authority; version 2 authorities provide this service optionally. See RecommendedVersions, RecommendedClientVersions, and RecommendedServerVersions.
+config_options.RecommendedVersions.category Authority
+config_options.RecommendedVersions.name RecommendedVersions
+config_options.RecommendedVersions.usage STRING
+config_options.RecommendedVersions.summary Suggested versions of tor
+config_options.RecommendedVersions.description STRING is a comma-separated list of Tor versions currently believed to be safe. The list is included in each directory, and nodes which pull down the directory learn whether they need to upgrade. This option can appear multiple times: the values from multiple lines are spliced together. When this is set then VersioningAuthoritativeDirectory should be set too.
+config_options.RecommendedPackages.category Authority
+config_options.RecommendedPackages.name RecommendedPackages
+config_options.RecommendedPackages.usage PACKAGENAME VERSION URL DIGESTTYPE=DIGEST
+config_options.RecommendedPackages.summary Suggested versions of applications other than tor
+config_options.RecommendedPackages.description Adds "package" line to the directory authority's vote. This information is used to vote on the correct URL and digest for the released versions of different Tor-related packages, so that the consensus can certify them. This line may appear any number of times.
+config_options.RecommendedClientVersions.category Authority
+config_options.RecommendedClientVersions.name RecommendedClientVersions
+config_options.RecommendedClientVersions.usage STRING
+config_options.RecommendedClientVersions.summary Tor versions believed to be safe for clients
+config_options.RecommendedClientVersions.description STRING is a comma-separated list of Tor versions currently believed to be safe for clients to use. This information is included in version 2 directories. If this is not set then the value of RecommendedVersions is used. When this is set then VersioningAuthoritativeDirectory should be set too.
+config_options.BridgeAuthoritativeDir.category Authority
+config_options.BridgeAuthoritativeDir.name BridgeAuthoritativeDir
+config_options.BridgeAuthoritativeDir.usage 0|1
+config_options.BridgeAuthoritativeDir.summary Acts as a bridge authority
+config_options.BridgeAuthoritativeDir.description When this option is set in addition to AuthoritativeDirectory, Tor accepts and serves server descriptors, but it caches and serves the main networkstatus documents rather than generating its own. (Default: 0)
+config_options.MinUptimeHidServDirectoryV2.category Authority
+config_options.MinUptimeHidServDirectoryV2.name MinUptimeHidServDirectoryV2
+config_options.MinUptimeHidServDirectoryV2.usage N seconds|minutes|hours|days|weeks
+config_options.MinUptimeHidServDirectoryV2.summary Required uptime before accepting hidden service directory
+config_options.MinUptimeHidServDirectoryV2.description Minimum uptime of a v2 hidden service directory to be accepted as such by authoritative directories. (Default: 25 hours)
+config_options.RecommendedServerVersions.category Authority
+config_options.RecommendedServerVersions.name RecommendedServerVersions
+config_options.RecommendedServerVersions.usage STRING
+config_options.RecommendedServerVersions.summary Tor versions believed to be safe for relays
+config_options.RecommendedServerVersions.description STRING is a comma-separated list of Tor versions currently believed to be safe for servers to use. This information is included in version 2 directories. If this is not set then the value of RecommendedVersions is used. When this is set then VersioningAuthoritativeDirectory should be set too.
+config_options.ConsensusParams.category Authority
+config_options.ConsensusParams.name ConsensusParams
+config_options.ConsensusParams.usage STRING
+config_options.ConsensusParams.summary Params entry of the networkstatus vote
+config_options.ConsensusParams.description STRING is a space-separated list of key=value pairs that Tor will include in the "params" line of its networkstatus vote.
+config_options.DirAllowPrivateAddresses.category Authority
+config_options.DirAllowPrivateAddresses.name DirAllowPrivateAddresses
+config_options.DirAllowPrivateAddresses.usage 0|1
+config_options.DirAllowPrivateAddresses.summary Toggles allowing arbitrary input or non-public IPs in descriptors
+config_options.DirAllowPrivateAddresses.description If set to 1, Tor will accept server descriptors with arbitrary "Address" elements. Otherwise, if the address is not an IP address or is a private IP address, it will reject the server descriptor. (Default: 0)
+config_options.AuthDirBadExit.category Authority
+config_options.AuthDirBadExit.name AuthDirBadExit
+config_options.AuthDirBadExit.usage AddressPattern...
+config_options.AuthDirBadExit.summary Relays to be flagged as bad exits
+config_options.AuthDirBadExit.description 
+|Authoritative directories only. A set of address patterns for servers that will be listed as bad exits in any network status document this authority publishes, if AuthDirListBadExits is set.
+|
+|(The address pattern syntax here and in the options below is the same as for exit policies, except that you don't need to say "accept" or "reject", and ports are not needed.)
+config_options.AuthDirInvalid.category Authority
+config_options.AuthDirInvalid.name AuthDirInvalid
+config_options.AuthDirInvalid.usage AddressPattern...
+config_options.AuthDirInvalid.summary Relays from which the valid flag is withheld
+config_options.AuthDirInvalid.description Authoritative directories only. A set of address patterns for servers that will never be listed as "valid" in any network status document that this authority publishes.
+config_options.AuthDirReject.category Authority
+config_options.AuthDirReject.name AuthDirReject
+config_options.AuthDirReject.usage AddressPattern...
+config_options.AuthDirReject.summary Relays to be dropped from the consensus
+config_options.AuthDirReject.description Authoritative directories only. A set of address patterns for servers that will never be listed at all in any network status document that this authority publishes, or accepted as an OR address in any descriptor submitted for publication by this authority.
+config_options.AuthDirBadExitCCs.category Authority
+config_options.AuthDirBadExitCCs.name AuthDirBadExitCCs
+config_options.AuthDirBadExitCCs.usage CC,...
+config_options.AuthDirBadExitCCs.summary Countries for which to flag all relays as bad exits
+config_options.AuthDirBadExitCCs.description 
+config_options.AuthDirInvalidCCs.category Authority
+config_options.AuthDirInvalidCCs.name AuthDirInvalidCCs
+config_options.AuthDirInvalidCCs.usage CC,...
+config_options.AuthDirInvalidCCs.summary Countries for which the valid flag is withheld
+config_options.AuthDirInvalidCCs.description 
+config_options.AuthDirRejectCCs.category Authority
+config_options.AuthDirRejectCCs.name AuthDirRejectCCs
+config_options.AuthDirRejectCCs.usage CC,...
+config_options.AuthDirRejectCCs.summary Countries for which relays aren't accepted into the consensus
+config_options.AuthDirRejectCCs.description Authoritative directories only. These options contain a comma-separated list of country codes such that any server in one of those country codes will be marked as a bad exit/invalid for use, or rejected entirely.
+config_options.AuthDirListBadExits.category Authority
+config_options.AuthDirListBadExits.name AuthDirListBadExits
+config_options.AuthDirListBadExits.usage 0|1
+config_options.AuthDirListBadExits.summary Toggles if we provide an opinion on bad exits
+config_options.AuthDirListBadExits.description Authoritative directories only. If set to 1, this directory has some opinion about which nodes are unsuitable as exit nodes. (Do not set this to 1 unless you plan to list non-functioning exits as bad; otherwise, you are effectively voting in favor of every declared exit as an exit.)
+config_options.AuthDirMaxServersPerAddr.category Authority
+config_options.AuthDirMaxServersPerAddr.name AuthDirMaxServersPerAddr
+config_options.AuthDirMaxServersPerAddr.usage NUM
+config_options.AuthDirMaxServersPerAddr.summary Limit on the number of relays accepted per ip
+config_options.AuthDirMaxServersPerAddr.description Authoritative directories only. The maximum number of servers that we will list as acceptable on a single IP address. Set this to "0" for "no limit". (Default: 2)
+config_options.AuthDirMaxServersPerAuthAddr.category Authority
+config_options.AuthDirMaxServersPerAuthAddr.name AuthDirMaxServersPerAuthAddr
+config_options.AuthDirMaxServersPerAuthAddr.usage NUM
+config_options.AuthDirMaxServersPerAuthAddr.summary Limit on the number of relays accepted per an authority's ip
+config_options.AuthDirMaxServersPerAuthAddr.description Authoritative directories only. Like AuthDirMaxServersPerAddr, but applies to addresses shared with directory authorities. (Default: 5)
+config_options.AuthDirFastGuarantee.category Authority
+config_options.AuthDirFastGuarantee.name AuthDirFastGuarantee
+config_options.AuthDirFastGuarantee.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.AuthDirFastGuarantee.summary Advertised rate at which the Fast flag is granted
+config_options.AuthDirFastGuarantee.description Authoritative directories only. If non-zero, always vote the Fast flag for any relay advertising this amount of capacity or more. (Default: 100 KBytes)
+config_options.AuthDirGuardBWGuarantee.category Authority
+config_options.AuthDirGuardBWGuarantee.name AuthDirGuardBWGuarantee
+config_options.AuthDirGuardBWGuarantee.usage N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits
+config_options.AuthDirGuardBWGuarantee.summary Advertised rate necessary to be a guard
+config_options.AuthDirGuardBWGuarantee.description Authoritative directories only. If non-zero, this advertised capacity or more is always sufficient to satisfy the bandwidth requirement for the Guard flag. (Default: 250 KBytes)
+config_options.AuthDirPinKeys.category Authority
+config_options.AuthDirPinKeys.name AuthDirPinKeys
+config_options.AuthDirPinKeys.usage 0|1
+config_options.AuthDirPinKeys.summary Don't accept descriptors with conflicting identity keypairs
+config_options.AuthDirPinKeys.description Authoritative directories only. If non-zero, do not allow any relay to publish a descriptor if any other relay has reserved its <Ed25519,RSA> identity keypair. In all cases, Tor records every keypair it accepts in a journal if it is new, or if it differs from the most recently accepted pinning for one of the keys it contains. (Default: 0)
+config_options.BridgePassword.category Authority
+config_options.BridgePassword.name BridgePassword
+config_options.BridgePassword.usage Password
+config_options.BridgePassword.summary Password for requesting bridge information
+config_options.BridgePassword.description If set, contains an HTTP authenticator that tells a bridge authority to serve all requested bridge information. Used by the (only partially implemented) "bridge community" design, where a community of bridge relay operators all use an alternate bridge directory authority, and their target user audience can periodically fetch the list of available community bridges to stay up-to-date. (Default: not set)
+config_options.V3AuthVotingInterval.category Authority
+config_options.V3AuthVotingInterval.name V3AuthVotingInterval
+config_options.V3AuthVotingInterval.usage N minutes|hours
+config_options.V3AuthVotingInterval.summary Consensus voting interval
+config_options.V3AuthVotingInterval.description V3 authoritative directories only. Configures the server's preferred voting interval. Note that voting will actually happen at an interval chosen by consensus from all the authorities' preferred intervals. This time SHOULD divide evenly into a day. (Default: 1 hour)
+config_options.V3AuthVoteDelay.category Authority
+config_options.V3AuthVoteDelay.name V3AuthVoteDelay
+config_options.V3AuthVoteDelay.usage N minutes|hours
+config_options.V3AuthVoteDelay.summary Wait time to collect votes of other authorities
+config_options.V3AuthVoteDelay.description V3 authoritative directories only. Configures the server's preferred delay between publishing its vote and assuming it has all the votes from all the other authorities. Note that the actual time used is not the server's preferred time, but the consensus of all preferences. (Default: 5 minutes)
+config_options.V3AuthDistDelay.category Authority
+config_options.V3AuthDistDelay.name V3AuthDistDelay
+config_options.V3AuthDistDelay.usage N minutes|hours
+config_options.V3AuthDistDelay.summary Wait time to collect the signatures of other authorities
+config_options.V3AuthDistDelay.description V3 authoritative directories only. Configures the server's preferred delay between publishing its consensus and signature and assuming it has all the signatures from all the other authorities. Note that the actual time used is not the server's preferred time, but the consensus of all preferences. (Default: 5 minutes)
+config_options.V3AuthNIntervalsValid.category Authority
+config_options.V3AuthNIntervalsValid.name V3AuthNIntervalsValid
+config_options.V3AuthNIntervalsValid.usage NUM
+config_options.V3AuthNIntervalsValid.summary Number of voting intervals a consensus is valid for
+config_options.V3AuthNIntervalsValid.description V3 authoritative directories only. Configures the number of VotingIntervals for which each consensus should be valid for. Choosing high numbers increases network partitioning risks; choosing low numbers increases directory traffic. Note that the actual number of intervals used is not the server's preferred number, but the consensus of all preferences. Must be at least 2. (Default: 3)
+config_options.V3BandwidthsFile.category Authority
+config_options.V3BandwidthsFile.name V3BandwidthsFile
+config_options.V3BandwidthsFile.usage FILENAME
+config_options.V3BandwidthsFile.summary Path to a file containing measured relay bandwidths
+config_options.V3BandwidthsFile.description V3 authoritative directories only. Configures the location of the bandwidth-authority generated file storing information on relays' measured bandwidth capacities. (Default: unset)
+config_options.V3AuthUseLegacyKey.category Authority
+config_options.V3AuthUseLegacyKey.name V3AuthUseLegacyKey
+config_options.V3AuthUseLegacyKey.usage 0|1
+config_options.V3AuthUseLegacyKey.summary Signs consensus with both the current and legacy keys
+config_options.V3AuthUseLegacyKey.description If set, the directory authority will sign consensuses not only with its own signing key, but also with a "legacy" key and certificate with a different identity. This feature is used to migrate directory authority keys in the event of a compromise. (Default: 0)
+config_options.RephistTrackTime.category Authority
+config_options.RephistTrackTime.name RephistTrackTime
+config_options.RephistTrackTime.usage N seconds|minutes|hours|days|weeks
+config_options.RephistTrackTime.summary Discards old, unchanged reliability information
+config_options.RephistTrackTime.description Tells an authority, or other node tracking node reliability and history, that fine-grained information about nodes can be discarded when it hasn't changed for a given amount of time. (Default: 24 hours)
+config_options.AuthDirHasIPv6Connectivity.category Authority
+config_options.AuthDirHasIPv6Connectivity.name AuthDirHasIPv6Connectivity
+config_options.AuthDirHasIPv6Connectivity.usage 0|1
+config_options.AuthDirHasIPv6Connectivity.summary Descriptors can be retrieved over the authority's IPv6 ORPort
+config_options.AuthDirHasIPv6Connectivity.description Authoritative directories only. When set to 0, OR ports with an IPv6 address are being accepted without reachability testing. When set to 1, IPv6 OR ports are being tested just like IPv4 OR ports. (Default: 0)
+config_options.MinMeasuredBWsForAuthToIgnoreAdvertised.category Authority
+config_options.MinMeasuredBWsForAuthToIgnoreAdvertised.name MinMeasuredBWsForAuthToIgnoreAdvertised
+config_options.MinMeasuredBWsForAuthToIgnoreAdvertised.usage N
+config_options.MinMeasuredBWsForAuthToIgnoreAdvertised.summary Total measured value before advertised bandwidths are treated as unreliable
+config_options.MinMeasuredBWsForAuthToIgnoreAdvertised.description A total value, in abstract bandwidth units, describing how much measured total bandwidth an authority should have observed on the network before it will treat advertised bandwidths as wholly unreliable. (Default: 500)

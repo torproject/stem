@@ -141,6 +141,20 @@ class TestManual(unittest.TestCase):
       for line in lines:
         check(line)
 
+  def test_that_cache_is_up_to_date(self):
+    """
+    Check if the cached manual information bundled with Stem is up to date or not.
+    """
+
+    if self.requires_downloaded_manual():
+      return
+
+    cached_manual = stem.manual.Manual.from_cache()
+    latest_manual = stem.manual.Manual.from_man(self.man_path)
+
+    if cached_manual != latest_manual:
+      self.fail("Stem's cached manual information is out of date. Please run 'cache_manual.py'.")
+
   def test_attributes(self):
     """
     General assertions against a few manual fields. If you update tor's manual

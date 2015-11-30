@@ -461,7 +461,7 @@ class Config(object):
     # keys that have been requested (used to provide unused config contents)
     self._requested_keys = set()
 
-  def load(self, path = None):
+  def load(self, path = None, commenting = True):
     """
     Reads in the contents of the given path, adding its configuration values
     to our current contents. If the path is a directory then this loads each
@@ -470,8 +470,13 @@ class Config(object):
     .. versionchanged:: 1.3.0
        Added support for directories.
 
+    .. versionchanged:: 1.3.0
+       Added the **commenting** argument.
+
     :param str path: file or directory path to be loaded, this uses the last
       loaded path if not provided
+    :param bool commenting: ignore line content after a '#' if **True**, read
+      otherwise
 
     :raises:
       * **IOError** if we fail to read the file (it doesn't exist, insufficient
@@ -499,7 +504,7 @@ class Config(object):
         line = read_contents.pop(0)
 
         # strips any commenting or excess whitespace
-        comment_start = line.find('#')
+        comment_start = line.find('#') if commenting else -1
 
         if comment_start != -1:
           line = line[:comment_start]

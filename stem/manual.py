@@ -38,8 +38,11 @@ us what our torrc options do...
   download_man_page - Downloads tor's latest man page.
 
   Manual - Information about Tor available from its manual.
-   |- from_man - Retrieves manual information from its man page.
-   +- from_remote - Retrieves manual information remotely from tor's latest manual.
+   | |- from_cache - Provides manual information cached with Stem.
+   | |- from_man - Retrieves manual information from its man page.
+   | +- from_remote - Retrieves manual information remotely from tor's latest manual.
+   |
+   +- save - writes the manual contents to a given location
 
 .. versionadded:: 1.5.0
 """
@@ -76,6 +79,7 @@ except ImportError:
 
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
+CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual')
 
 CATEGORY_SECTIONS = {
   'GENERAL OPTIONS': Category.GENERAL,
@@ -192,7 +196,7 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
         raise IOError(exc)
 
     if file_handle:
-      with open(manual_path) as manual_file:
+      with open(manual_path, 'rb') as manual_file:
         shutil.copyfileobj(manual_file, file_handle)
   finally:
     shutil.rmtree(dirpath)
@@ -229,6 +233,51 @@ class Manual(object):
     self.signals = signals
     self.files = files
     self.config_options = config_options
+
+  @staticmethod
+  def from_cache(path = None):
+    """
+    Provides manual information cached with Stem. Unlike
+    :func:`~stem.manual.Manual.from_man` and
+    :func:`~stem.manual.Manual.from_remote` this doesn't have any system
+    requirements, and is faster too. Only drawback is that this manual
+    content is only as up to date as the Stem release we're using.
+
+    :param str path: cached manual content to read, if not provided this uses
+      the bundled manual information
+
+    :returns: :class:`~stem.manual.Manual` with our bundled manual information
+
+    :raises: **IOError** if a **path** was provided and we were unable to read it
+    """
+
+    conf = stem.util.conf.Config()
+    conf.load(path if path else CACHE_PATH, commenting = False)
+
+    config_options = OrderedDict()
+
+    for key in conf.keys():
+      if key.startswith('config_options.'):
+        key = key.split('.')[1]
+
+        if key not in config_options:
+          config_options[key] = ConfigOption(
+            conf.get('config_options.%s.category' % key, ''),
+            conf.get('config_options.%s.name' % key, ''),
+            conf.get('config_options.%s.usage' % key, ''),
+            conf.get('config_options.%s.summary' % key, ''),
+            conf.get('config_options.%s.description' % key, '')
+          )
+
+    return Manual(
+      conf.get('name', ''),
+      conf.get('synopsis', ''),
+      conf.get('description', ''),
+      conf.get('commandline_options', {}),
+      conf.get('signals', {}),
+      conf.get('files', {}),
+      config_options,
+    )
 
   @staticmethod
   def from_man(man_path = 'tor'):
@@ -268,7 +317,7 @@ class Manual(object):
     )
 
   @staticmethod
-  def from_remote(timeout = 20):
+  def from_remote(timeout = 60):
     """
     Reads and parses the latest tor man page `from gitweb.torproject.org
     <https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt>`_. Note that
@@ -300,6 +349,48 @@ class Manual(object):
     with tempfile.NamedTemporaryFile() as tmp:
       download_man_page(file_handle = tmp, timeout = timeout)
       return Manual.from_man(tmp.name)
+
+  def save(self, path):
+    """
+    Persists the manual content to a given location.
+
+    :param str path: path to save our manual content to
+
+    :raises: **IOError** if unsuccessful
+    """
+
+    conf = stem.util.conf.Config()
+    conf.set('name', self.name)
+    conf.set('synopsis', self.synopsis)
+    conf.set('description', self.description)
+
+    for k, v in self.commandline_options.items():
+      conf.set('commandline_options', '%s => %s' % (k, v), overwrite = False)
+
+    for k, v in self.signals.items():
+      conf.set('signals', '%s => %s' % (k, v), overwrite = False)
+
+    for k, v in self.files.items():
+      conf.set('files', '%s => %s' % (k, v), overwrite = False)
+
+    for k, v in self.config_options.items():
+      conf.set('config_options.%s.category' % k, v.category)
+      conf.set('config_options.%s.name' % k, v.name)
+      conf.set('config_options.%s.usage' % k, v.usage)
+      conf.set('config_options.%s.summary' % k, v.summary)
+      conf.set('config_options.%s.description' % k, v.description)
+
+    conf.save(path)
+
+  def __eq__(self, other):
+    if not isinstance(other, Manual):
+      return False
+
+    for attr in ('name', 'synopsis', 'description', 'commandline_options', 'signals', 'files', 'config_options'):
+      if getattr(self, attr) != getattr(other, attr):
+        return False
+
+    return True
 
 
 def _get_categories(content):
