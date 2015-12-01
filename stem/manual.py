@@ -519,4 +519,13 @@ def _join_lines(lines):
   Simple join, except we want empty lines to still provide a newline.
   """
 
-  return ''.join([line if line else '\n\n' for line in lines])
+  result = []
+
+  for line in lines:
+    if not line:
+      if result and result[-1] != '\n\n':
+        result.append('\n\n')
+    else:
+      result.append(line)
+
+  return ''.join(result)
