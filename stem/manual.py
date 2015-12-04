@@ -523,9 +523,9 @@ def _join_lines(lines):
 
   for line in lines:
     if not line:
-      if result and result[-1] != '\n\n':
-        result.append('\n\n')
+      if result and result[-1] != '\n':
+        result.append('\n')
     else:
-      result.append(line)
+      result.append(line + '\n')
 
-  return ''.join(result)
+  return ''.join(result).strip()
