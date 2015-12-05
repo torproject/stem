@@ -224,6 +224,10 @@ class Manual(object):
   :var dict files: mapping of file paths to their description
 
   :var dict config_options: :class:`~stem.manual.ConfigOption` tuples for tor configuration options
+
+  :var str man_commit: latest tor commit editing the man page when this
+    information was cached
+  :var str stem_commit: stem commit to cache this manual information
   """
 
   def __init__(self, name, synopsis, description, commandline_options, signals, files, config_options):
@@ -234,6 +238,8 @@ class Manual(object):
     self.signals = signals
     self.files = files
     self.config_options = config_options
+    self.man_commit = None
+    self.stem_commit = None
 
   @staticmethod
   def from_cache(path = None):
@@ -270,7 +276,7 @@ class Manual(object):
             conf.get('config_options.%s.description' % key, '')
           )
 
-    return Manual(
+    manual = Manual(
       conf.get('name', ''),
       conf.get('synopsis', ''),
       conf.get('description', ''),
@@ -279,6 +285,11 @@ class Manual(object):
       conf.get('files', {}),
       config_options,
     )
+
+    manual.man_commit = conf.get('man_commit', None)
+    manual.stem_commit = conf.get('stem_commit', None)
+
+    return manual
 
   @staticmethod
   def from_man(man_path = 'tor'):
@@ -364,6 +375,12 @@ class Manual(object):
     conf.set('name', self.name)
     conf.set('synopsis', self.synopsis)
     conf.set('description', self.description)
+
+    if self.man_commit:
+      conf.set('man_commit', self.man_commit)
+
+    if self.stem_commit:
+      conf.set('stem_commit', self.stem_commit)
 
     for k, v in self.commandline_options.items():
       conf.set('commandline_options', '%s => %s' % (k, v), overwrite = False)
