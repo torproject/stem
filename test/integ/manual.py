@@ -104,7 +104,7 @@ class TestManual(unittest.TestCase):
           stem.manual.download_man_page(file_handle = tmp)
           self.man_path = tmp.name
 
-        self.man_content = stem.util.system.call('man -P cat %s' % self.man_path)
+        self.man_content = stem.util.system.call('man --encoding=ascii -P cat %s' % self.man_path, env = {'MANWIDTH': '10000000'})
       except Exception as exc:
         self.download_error = 'Unable to download the man page: %s' % exc
 
@@ -259,8 +259,8 @@ class TestManual(unittest.TestCase):
     categories = stem.manual._get_categories(self.man_content)
 
     present = set(categories.keys())
-    missing_categories = present.difference(EXPECTED_CATEGORIES)
-    extra_categories = EXPECTED_CATEGORIES.difference(present)
+    missing_categories = EXPECTED_CATEGORIES.difference(present)
+    extra_categories = present.difference(EXPECTED_CATEGORIES)
 
     if missing_categories:
       self.fail("Changed tor's man page? We expected the %s man page sections but they're no longer around. Might need to update our Manual class." % ', '.join(missing_categories))
@@ -269,7 +269,6 @@ class TestManual(unittest.TestCase):
 
     self.assertEqual(['tor - The second-generation onion router'], categories['NAME'])
     self.assertEqual(['tor [OPTION value]...'], categories['SYNOPSIS'])
-    self.assertTrue(len(categories['DESCRIPTION']) > 5)  # check parsing of multi-line entries
 
   def test_has_all_summaries(self):
     """

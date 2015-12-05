@@ -422,7 +422,7 @@ def _get_categories(content):
   if content and 'TOR(1)' in content[0]:
     content = content[1:]
 
-  if content and 'TOR(1)' in content[-1]:
+  if content and content[-1].startswith('Tor'):
     content = content[:-1]
 
   categories = {}
