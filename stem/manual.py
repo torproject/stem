@@ -198,6 +198,7 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
     if file_handle:
       with open(manual_path, 'rb') as manual_file:
         shutil.copyfileobj(manual_file, file_handle)
+        file_handle.flush()
   finally:
     shutil.rmtree(dirpath)
 
