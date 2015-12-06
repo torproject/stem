@@ -485,6 +485,9 @@ class RouterStatusEntry(Descriptor):
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 
+  def __ne__(self, other):
+    return not self == other
+
   def __lt__(self, other):
     return self._compare(other, lambda s, o: s < o)
 
@@ -524,6 +527,9 @@ class RouterStatusEntryV2(RouterStatusEntry):
 
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
+
+  def __ne__(self, other):
+    return not self == other
 
   def __lt__(self, other):
     return self._compare(other, lambda s, o: s < o)
@@ -606,6 +612,9 @@ class RouterStatusEntryV3(RouterStatusEntry):
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 
+  def __ne__(self, other):
+    return not self == other
+
   def __lt__(self, other):
     return self._compare(other, lambda s, o: s < o)
 
@@ -662,6 +671,9 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
 
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
+
+  def __ne__(self, other):
+    return not self == other
 
   def __lt__(self, other):
     return self._compare(other, lambda s, o: s < o)

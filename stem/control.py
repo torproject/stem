@@ -368,30 +368,49 @@ SERVER_DESCRIPTORS_UNSUPPORTED = "Tor is currently not configured to retrieve \
 server descriptors. As of Tor version 0.2.3.25 it downloads microdescriptors \
 instead unless you set 'UseMicrodescriptors 0' in your torrc."
 
-AccountingStats = collections.namedtuple('AccountingStats', [
-  'retrieved',
-  'status',
-  'interval_end',
-  'time_until_reset',
-  'read_bytes',
-  'read_bytes_left',
-  'read_limit',
-  'written_bytes',
-  'write_bytes_left',
-  'write_limit',
-])
 
-UserTrafficAllowed = collections.namedtuple('UserTrafficAllowed', [
-  'inbound',
-  'outbound',
-])
+class AccountingStats(collections.namedtuple('AccountingStats', ['retrieved', 'status', 'interval_end', 'time_until_reset', 'read_bytes', 'read_bytes_left', 'read_limit', 'written_bytes', 'write_bytes_left', 'write_limit'])):
+  """
+  Accounting information, determining the limits where our relay suspends
+  itself.
 
-CreateHiddenServiceOutput = collections.namedtuple('CreateHiddenServiceOutput', [
-  'path',
-  'hostname',
-  'hostname_for_client',
-  'config',
-])
+  :var float retrieved: unix timestamp for when this was fetched
+  :var str status: hibernation status of 'awake', 'soft', or 'hard'
+  :var datetime interval_end: time when our limits reset
+  :var int time_until_reset: seconds until our limits reset
+  :var int read_bytes: number of bytes we've read relaying
+  :var int read_bytes_left: number of bytes we can read until we suspend
+  :var int read_limit: reading threshold where we suspend
+  :var int written_bytes: number of bytes we've written relaying
+  :var int write_bytes_left: number of bytes we can write until we suspend
+  :var int write_limit: writing threshold where we suspend
+  """
+
+
+class UserTrafficAllowed(collections.namedtuple('UserTrafficAllowed', ['inbound', 'outbound'])):
+  """
+  Indicates if we're likely to be servicing direct user traffic or not.
+
+  :var bool inbound: if **True** we're likely providing guard or bridge connnections
+  :var bool outbound: if **True** we're likely providng exit connections
+  """
+
+
+class CreateHiddenServiceOutput(collections.namedtuple('CreateHiddenServiceOutput', ['path', 'hostname', 'hostname_for_client', 'config'])):
+  """
+  Attributes of a hidden service we've created.
+
+  Both the **hostnames** and **hostname_for_client** attributes can only be
+  provided if we're able to read the hidden service directory. If the method
+  was called with **client_names** then we may provide the
+  **hostname_for_client**, and otherwise can provide the **hostnames**.
+
+  :var str path: hidden service directory
+  :var str hostname: content of the hostname file if available
+  :var dict hostname_for_client:mapping of client names to their onion address
+    if available
+  :var dict config: tor's new hidden service configuration
+  """
 
 
 def with_default(yields = False):
@@ -1321,25 +1340,13 @@ class Controller(BaseController):
     get_accounting_stats(default = UNDEFINED)
 
     Provides stats related to our relaying limitations if AccountingMax was set
-    in our torrc. This provides a **namedtuple** with the following
-    attributes...
-
-      * retrieved (float) - unix timestamp for when this was fetched
-      * status (str) - hibernation status of 'awake', 'soft', or 'hard'
-      * interval_end (datetime)
-      * time_until_reset (int) - seconds until our limits reset
-      * read_bytes (int)
-      * read_bytes_left (int)
-      * read_limit (int)
-      * written_bytes (int)
-      * write_bytes_left (int)
-      * write_limit (int)
+    in our torrc.
 
     .. versionadded:: 1.3.0
 
     :param object default: response if the query fails
 
-    :returns: **namedtuple** with our accounting stats
+    :returns: :class:`~stem.control.AccountingStats` with our accounting stats
 
     :raises: :class:`stem.ControllerError` if unable to determine the listeners
       and no default was provided
@@ -1521,8 +1528,9 @@ class Controller(BaseController):
 
     .. versionadded:: 1.5.0
 
-    :returns: **namedtuple** with an **inbound** and **outbound** boolean
-      attribute to indicate if we're likely to have user traffic there
+    :returns: :class:`~stem.cotroller.UserTrafficAllowed` with **inbound** and
+      **outbound** boolean attributes to indicate if we're likely servicing
+      direct user traffic
     """
 
     inbound_allowed, outbound_allowed = False, False
@@ -2439,26 +2447,14 @@ class Controller(BaseController):
   def create_hidden_service(self, path, port, target_address = None, target_port = None, auth_type = None, client_names = None):
     """
     Create a new hidden service. If the directory is already present, a
-    new port is added. This provides a **namedtuple** of the following...
-
-      * path (str) - hidden service directory
-
-      * hostname (str) - Content of the hostname file, if no **client_names**
-        are provided this is the onion address of the service. This is only
-        retrieved if we can read the hidden service directory.
-
-      * hostname_for_client (dict) - mapping of client names to their onion
-        address, this is only set if the **client_names** was provided and we
-        can read the hidden service directory
-
-      * config (dict) - tor's new hidden service configuration
+    new port is added.
 
     Our *.onion address is fetched by reading the hidden service directory.
     However, this directory is only readable by the tor user, so if unavailable
     the **hostname** will be **None**.
 
-    **As of Tor 0.2.7.1 there's two ways for creating hidden services. This is
-    no longer the recommended method.** Rather, try using
+    **As of Tor 0.2.7.1 there's two ways for creating hidden services, and this
+    method is no longer recommended.** Rather, try using
     :func:`~stem.control.Controller.create_ephemeral_hidden_service` instead.
 
     .. versionadded:: 1.3.0
@@ -2474,7 +2470,8 @@ class Controller(BaseController):
     :param str auth_type: authentication type: basic, stealth or None to disable auth
     :param list client_names: client names (1-16 characters "A-Za-z0-9+-_")
 
-    :returns: **CreateHiddenServiceOutput** if we create or update a hidden service, **None** otherwise
+    :returns: :class:`~stem.cotroller.CreateHiddenServiceOutput` if we create
+      or update a hidden service, **None** otherwise
 
     :raises: :class:`stem.ControllerError` if the call fails
     """

@@ -17,6 +17,5 @@ distutils.core.setup(
   packages = ['stem', 'stem.descriptor', 'stem.interpreter', 'stem.response', 'stem.util'],
   keywords = 'tor onion controller',
   scripts = ['tor-prompt'],
-  package_data = {'stem.interpreter': ['settings.cfg'], 'stem.util': ['ports.cfg']},
+  package_data = {'stem': ['cached_tor_manual.cfg', 'settings.cfg'], 'stem.interpreter': ['settings.cfg'], 'stem.util': ['ports.cfg']},
 )
-

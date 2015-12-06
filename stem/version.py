@@ -234,6 +234,9 @@ class Version(object):
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 
+  def __ne__(self, other):
+    return not self == other
+
   def __gt__(self, other):
     """
     Checks if this version meets the requirements for a given feature. We can

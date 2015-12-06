@@ -37,7 +37,7 @@ Connection and networking based utility functions.
   **NETSTAT_WINDOWS**   netstat command under Windows
   **SS**                ss command
   **LSOF**              lsof command
-  **SOCKSTAT**          sockstat command under *nix
+  **SOCKSTAT**          sockstat command under \*nix
   **BSD_SOCKSTAT**      sockstat command under FreeBSD
   **BSD_PROCSTAT**      procstat command under FreeBSD
   ====================  ===========
@@ -73,14 +73,6 @@ Resolver = enum.Enum(
   ('BSD_SOCKSTAT', 'sockstat (bsd)'),
   ('BSD_PROCSTAT', 'procstat (bsd)')
 )
-
-Connection = collections.namedtuple('Connection', [
-  'local_address',
-  'local_port',
-  'remote_address',
-  'remote_port',
-  'protocol',
-])
 
 FULL_IPv4_MASK = '255.255.255.255'
 FULL_IPv6_MASK = 'FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF'
@@ -140,16 +132,22 @@ RESOLVER_FILTER = {
 }
 
 
+class Connection(collections.namedtuple('Connection', ['local_address', 'local_port', 'remote_address', 'remote_port', 'protocol'])):
+  """
+  Network connection information.
+
+  :var str local_address: ip address the connection originates from
+  :var int local_port: port the connection originates from
+  :var str remote_address: destionation ip address
+  :var int remote_port: destination port
+  :var str protocol: protocol of the connection ('tcp', 'udp', etc)
+  """
+
+
 def get_connections(resolver, process_pid = None, process_name = None):
   """
   Retrieves a list of the current connections for a given process. This
-  provides a list of Connection instances, which have five attributes...
-
-    * **local_address** (str)
-    * **local_port** (int)
-    * **remote_address** (str)
-    * **remote_port** (int)
-    * **protocol** (str, generally either 'tcp' or 'udp')
+  provides a list of :class:`~stem.util.connection.Connection`.
 
   .. versionadded:: 1.1.0
 
@@ -157,7 +155,7 @@ def get_connections(resolver, process_pid = None, process_name = None):
   :param int process_pid: pid of the process to retrieve
   :param str process_name: name of the process to retrieve
 
-  :returns: **list** of Connection instances
+  :returns: **list** of :class:`~stem.util.connection.Connection` instances
 
   :raises:
     * **ValueError** if using **Resolver.PROC** or **Resolver.BSD_PROCSTAT**

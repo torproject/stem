@@ -41,6 +41,9 @@ SRC_PATHS = [os.path.join(STEM_BASE, path) for path in (
   'stem',
   'test',
   'run_tests.py',
+  'cache_manual.py',
+  'setup.py',
+  'tor-prompt',
   os.path.join('docs', 'republish.py'),
   os.path.join('docs', 'roles.py'),
 )]
@@ -326,7 +329,8 @@ def _print_static_issues(static_check_issues):
       for line_number in sorted(line_to_issues.keys()):
         for msg, line in line_to_issues[line_number]:
           line_count = '%-4s' % line_number
-          println('  line %s - %-40s (%s)' % (line_count, msg, line.strip()))
+          content = ' | %s' % line.strip() if line.strip() else ''
+          println('  line %s - %-40s%s' % (line_count, msg, content))
 
       println()
 

@@ -1,0 +1,227 @@
+'\" t
+.\"     Title: tor
+.\"    Author: [see the "AUTHORS" section]
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 11/29/2015
+.\"    Manual: Tor Manual
+.\"    Source: Tor
+.\"  Language: English
+.\"
+.TH "TOR" "1" "11/29/2015" "Tor" "Tor Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+tor \- The second\-generation onion router
+.SH "SYNOPSIS"
+.sp
+\fBtor\fR [\fIOPTION\fR \fIvalue\fR]\&...
+.SH "DESCRIPTION"
+.sp
+Tor is a connection\-oriented anonymizing communication service\&. Users choose a source\-routed path through a set of nodes, and negotiate a "virtual circuit" through the network, in which each node knows its predecessor and successor, but no others\&. Traffic flowing down the circuit is unwrapped by a symmetric key at each node, which reveals the downstream node\&.
+.SH "COMMAND-LINE OPTIONS"
+.PP
+\fB\-h\fR, \fB\-help\fR
+.RS 4
+Display a short help message and exit\&.
+.RE
+.PP
+\fB\-f\fR \fIFILE\fR
+.RS 4
+Specify a new configuration file to contain further Tor configuration options OR pass
+\fB\-\fR
+to make Tor read its configuration from standard input\&. (Default: @CONFDIR@/torrc, or $HOME/\&.torrc if that file is not found)
+.RE
+.PP
+\fB\-\-allow\-missing\-torrc\fR
+.RS 4
+Do not require that configuration file specified by
+\fB\-f\fR
+exist if default torrc can be accessed\&.
+.RE
+.PP
+.sp
+Options on the command line override those in configuration files\&. See the next section for more information\&.
+.SH "THE CONFIGURATION FILE FORMAT"
+.sp
+All configuration options in a configuration are written on a single line by default\&. They take the form of an option name and a value, or an option name and a quoted value (option value or option "value")\&. Anything after a # character is treated as a comment\&. Options are case\-insensitive\&. C\-style escaped characters are allowed inside quoted values\&. To split one configuration entry into multiple lines, use a single backslash character (\e) before the end of the line\&. Comments can be used in such multiline entries, but they must start at the beginning of a line\&.
+.sp
+By default, an option on the command line overrides an option found in the configuration file, and an option in a configuration file overrides one in the defaults file\&.
+.SH "GENERAL OPTIONS"
+.PP
+\fBBandwidthRate\fR \fIN\fR \fBbytes\fR|\fBKBytes\fR|\fBMBytes\fR|\fBGBytes\fR|\fBKBits\fR|\fBMBits\fR|\fBGBits\fR
+.RS 4
+A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value\&. If you want to run a relay in the public network, this needs to be
+\fIat the very least\fR
+75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) \(em but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible\&. (Default: 1 GByte)
+
+With this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported\&. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth\&. Tor also accepts "byte" and "bit" in the singular\&. The prefixes "tera" and "T" are also recognized\&. If no units are given, we default to bytes\&. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\(cqs easy to forget that "B" means bytes, not bits\&.
+.RE
+.PP
+\fBBandwidthBurst\fR \fIN\fR \fBbytes\fR|\fBKBytes\fR|\fBMBytes\fR|\fBGBytes\fR|\fBKBits\fR|\fBMBits\fR|\fBGBits\fR
+.RS 4
+Limit the maximum token bucket size (also known as the burst) to the given number of bytes in each direction\&. (Default: 1 GByte)
+.RE
+.PP
+\fBMaxAdvertisedBandwidth\fR \fIN\fR \fBbytes\fR|\fBKBytes\fR|\fBMBytes\fR|\fBGBytes\fR|\fBKBits\fR|\fBMBits\fR|\fBGBits\fR
+.RS 4
+If set, we will not advertise more than this amount of bandwidth for our BandwidthRate\&. Server operators who want to reduce the number of clients who ask to build circuits through them (since this is proportional to advertised bandwidth rate) can thus reduce the CPU demands on their server without impacting network performance\&.
+.RE
+.SH "CLIENT OPTIONS"
+.sp
+The following options are useful only for clients (that is, if \fBSocksPort\fR, \fBTransPort\fR, \fBDNSPort\fR, or \fBNATDPort\fR is non\-zero):
+.PP
+\fBAllowInvalidNodes\fR \fBentry\fR|\fBexit\fR|\fBmiddle\fR|\fBintroduction\fR|\fBrendezvous\fR|\fB\&...\fR
+.RS 4
+If some Tor servers are obviously not working right, the directory authorities can manually mark them as invalid, meaning that it\(cqs not recommended you use them for entry or exit positions in your circuits\&. You can opt to use them in some circuit positions, though\&. The default is "middle,rendezvous", and other choices are not advised\&.
+.RE
+.PP
+\fBExcludeSingleHopRelays\fR \fB0\fR|\fB1\fR
+.RS 4
+This option controls whether circuits built by Tor will include relays with the AllowSingleHopExits flag set to true\&. If ExcludeSingleHopRelays is set to 0, these relays will be included\&. Note that these relays might be at higher risk of being seized or observed, so they are not normally included\&. Also note that relatively few clients turn off this option, so using these relays might make your client stand out\&. (Default: 1)
+.RE
+.PP
+\fBBridge\fR [\fItransport\fR] \fIIP\fR:\fIORPort\fR [\fIfingerprint\fR]
+.RS 4
+When set along with UseBridges, instructs Tor to use the relay at "IP:ORPort" as a "bridge" relaying into the Tor network\&. If "fingerprint" is provided (using the same format as for DirAuthority), we will verify that the relay running at that location has the right fingerprint\&. We also use fingerprint to look up the bridge descriptor at the bridge authority, if it\(cqs provided and if UpdateBridgesFromAuthority is set too\&.
+
+If "transport" is provided, and matches to a ClientTransportPlugin line, we use that pluggable transports proxy to transfer data to the bridge\&.
+.RE
+.SH "SIGNALS"
+.sp
+Tor catches the following signals:
+.PP
+\fBSIGTERM\fR
+.RS 4
+Tor will catch this, clean up and sync to disk if necessary, and exit\&.
+.RE
+.PP
+\fBSIGINT\fR
+.RS 4
+Tor clients behave as with SIGTERM; but Tor servers will do a controlled slow shutdown, closing listeners and waiting 30 seconds before exiting\&. (The delay can be configured with the ShutdownWaitLength config option\&.)
+.RE
+.PP
+\fBSIGHUP\fR
+.RS 4
+The signal instructs Tor to reload its configuration (including closing and reopening logs), and kill and restart its helper processes if applicable\&.
+.RE
+.SH "FILES"
+.PP
+\fB@CONFDIR@/torrc\fR
+.RS 4
+The configuration file, which contains "option value" pairs\&.
+.RE
+.PP
+\fB$HOME/\&.torrc\fR
+.RS 4
+Fallback location for torrc, if @CONFDIR@/torrc is not found\&.
+.RE
+.PP
+\fB@LOCALSTATEDIR@/lib/tor/\fR
+.RS 4
+The tor process stores keys and other data here\&.
+.RE
+.PP
+\fIDataDirectory\fR\fB/cached\-status/\fR
+.RS 4
+The most recently downloaded network status document for each authority\&. Each file holds one such document; the filenames are the hexadecimal identity key fingerprints of the directory authorities\&. Mostly obsolete\&.
+.RE
+.PP
+\fIDataDirectory\fR\fB/cached\-certs\fR
+.RS 4
+This file holds downloaded directory key certificates that are used to verify authenticity of documents generated by Tor directory authorities\&.
+.RE
+.PP
+\fIDataDirectory\fR\fB/state\fR
+.RS 4
+A set of persistent key\-value mappings\&. These are documented in the file\&. These include:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+The current entry guards and their status\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+The current bandwidth accounting values (unused so far; see below)\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+When the file was last written
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+What version of Tor generated the state file
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A short history of bandwidth usage, as produced in the server descriptors\&.
+.RE
+.RE
+.PP
+\fIDataDirectory\fR\fB/bw_accounting\fR
+.RS 4
+Used to track bandwidth accounting values (when the current period starts and ends; how much has been read and written so far this period)\&. This file is obsolete, and the data is now stored in the \*(Aqstate\*(Aq file as well\&. Only used when bandwidth accounting is enabled\&.
+.RE
+.SH "SEE ALSO"
+.sp
+\fBtorsocks\fR(1), \fBtorify\fR(1)
+.sp
+\fBhttps://www\&.torproject\&.org/\fR
+.sp
+\fBtorspec: \fR\fBhttps://spec\&.torproject\&.org\fR\fB \fR
+.SH "BUGS"
+.sp
+Plenty, probably\&. Tor is still in development\&. Please report them at https://trac\&.torproject\&.org/\&.
+.SH "AUTHORS"
+.sp
+Roger Dingledine [arma at mit\&.edu], Nick Mathewson [nickm at alum\&.mit\&.edu]\&.

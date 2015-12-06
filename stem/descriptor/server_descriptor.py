@@ -764,6 +764,9 @@ class RelayDescriptor(ServerDescriptor):
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 
+  def __ne__(self, other):
+    return not self == other
+
   def __lt__(self, other):
     return self._compare(other, lambda s, o: s < o)
 
@@ -880,6 +883,9 @@ class BridgeDescriptor(ServerDescriptor):
 
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
+
+  def __ne__(self, other):
+    return not self == other
 
   def __lt__(self, other):
     return self._compare(other, lambda s, o: s < o)

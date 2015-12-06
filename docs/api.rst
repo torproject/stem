@@ -15,6 +15,7 @@ Controller
 * **Types**
 
  * `stem.exit_policy <api/exit_policy.html>`_ - Relay policy for the destinations it will or won't allow traffic to.
+ * `stem.manual <api/manual.html>`_ - Information available about Tor from `its manual <https://www.torproject.org/docs/tor-manual.html.en>`_.
  * `stem.version <api/version.html>`_ - Tor versions that can be compared to determine Tor's capabilities.
 
 Descriptors

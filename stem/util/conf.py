@@ -161,6 +161,8 @@ import inspect
 import os
 import threading
 
+import stem.prereq
+
 from stem.util import log
 
 try:
@@ -450,7 +452,7 @@ class Config(object):
 
   def __init__(self):
     self._path = None        # location we last loaded from or saved to
-    self._contents = {}      # configuration key/value pairs
+    self._contents = OrderedDict()  # configuration key/value pairs
     self._listeners = []     # functors to be notified of config changes
 
     # used for accessing _contents
@@ -459,7 +461,7 @@ class Config(object):
     # keys that have been requested (used to provide unused config contents)
     self._requested_keys = set()
 
-  def load(self, path = None):
+  def load(self, path = None, commenting = True):
     """
     Reads in the contents of the given path, adding its configuration values
     to our current contents. If the path is a directory then this loads each
@@ -468,8 +470,13 @@ class Config(object):
     .. versionchanged:: 1.3.0
        Added support for directories.
 
+    .. versionchanged:: 1.3.0
+       Added the **commenting** argument.
+
     :param str path: file or directory path to be loaded, this uses the last
       loaded path if not provided
+    :param bool commenting: ignore line content after a '#' if **True**, read
+      otherwise
 
     :raises:
       * **IOError** if we fail to read the file (it doesn't exist, insufficient
@@ -497,7 +504,7 @@ class Config(object):
         line = read_contents.pop(0)
 
         # strips any commenting or excess whitespace
-        comment_start = line.find('#')
+        comment_start = line.find('#') if commenting else -1
 
         if comment_start != -1:
           line = line[:comment_start]
@@ -547,7 +554,7 @@ class Config(object):
 
     with self._contents_lock:
       with open(self._path, 'w') as output_file:
-        for entry_key in sorted(self.keys()):
+        for entry_key in self.keys():
           for entry_value in self.get_value(entry_key, multiple = True):
             # check for multi line entries
             if '\n' in entry_value:
@@ -621,7 +628,9 @@ class Config(object):
     """
 
     with self._contents_lock:
-      if isinstance(value, str):
+      unicode_type = str if stem.prereq.is_python_3() else unicode
+
+      if isinstance(value, bytes) or isinstance(value, unicode_type):
         if not overwrite and key in self._contents:
           self._contents[key].append(value)
         else:
@@ -638,7 +647,7 @@ class Config(object):
         for listener in self._listeners:
           listener(self, key)
       else:
-        raise ValueError("Config.set() only accepts str, list, or tuple. Provided value was a '%s'" % type(value))
+        raise ValueError("Config.set() only accepts str (bytes or unicode), list, or tuple. Provided value was a '%s'" % type(value))
 
   def get(self, key, default = None):
     """

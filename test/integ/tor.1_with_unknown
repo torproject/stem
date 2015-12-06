@@ -1,0 +1,51 @@
+'\" t
+.\"     Title: tor
+.\"    Author: [see the "AUTHORS" section]
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 10/03/2015
+.\"    Manual: Tor Manual
+.\"    Source: Tor
+.\"  Language: English
+.\"
+.TH "TOR" "1" "10/03/2015" "Tor" "Tor Manual"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+tor \- The second\-generation onion router
+.SH "GENERAL OPTIONS"
+.PP
+\fBBandwidthRate\fR \fIN\fR \fBbytes\fR|\fBKBytes\fR|\fBMBytes\fR|\fBGBytes\fR|\fBKBits\fR|\fBMBits\fR|\fBGBits\fR
+.RS 4
+A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value\&. If you want to run a relay in the public network, this needs to be
+\fIat the very least\fR
+30 KBytes (that is, 30720 bytes)\&. (Default: 1 GByte)
+
+
+With this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported\&. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth\&. Tor also accepts "byte" and "bit" in the singular\&. The prefixes "tera" and "T" are also recognized\&. If no units are given, we default to bytes\&. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\(cqs easy to forget that "B" means bytes, not bits\&.
+.RE
+.PP
+.SH "NEW OPTIONS"
+.PP
+\fBSpiffyNewOption\fR \fItransport\fR exec \fIpath\-to\-binary\fR [options]
+.RS 4
+Description of this new option.
+.RE
+.PP
+
