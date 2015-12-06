@@ -9,6 +9,9 @@ import unittest
 
 import stem.prereq
 import stem.manual
+import stem.util.system
+
+import test.runner
 
 try:
   # account for urllib's change between python 2.x and 3.x
@@ -115,6 +118,10 @@ class TestManual(unittest.TestCase):
     expand our example (or add another).
     """
 
+    if not stem.util.system.is_available('man'):
+      test.runner.skip(self, '(require man command)')
+      return
+
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
     self.assertEqual('tor - The second-generation onion router', manual.name)
@@ -129,6 +136,10 @@ class TestManual(unittest.TestCase):
     """
     Check that we can save and reload manuals.
     """
+
+    if not stem.util.system.is_available('man'):
+      test.runner.skip(self, '(require man command)')
+      return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 

@@ -128,8 +128,8 @@ class TestManual(unittest.TestCase):
     options. Unlike most other tests this doesn't require network access.
     """
 
-    if stem.util.system.is_windows():
-      test.runner.skip(self, '(unavailable on windows)')  # needs to run 'man'
+    if not stem.util.system.is_available('man'):
+      test.runner.skip(self, '(require man command)')
       return
 
     manual = stem.manual.Manual.from_man(os.path.join(os.path.dirname(__file__), 'tor.1_with_unknown'))
