@@ -79,7 +79,7 @@ except ImportError:
 
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
-CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual')
+CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual.cfg')
 
 CATEGORY_SECTIONS = {
   'GENERAL OPTIONS': Category.GENERAL,

@@ -19,7 +19,7 @@ try:
 except ImportError:
   import urllib2 as urllib
 
-CACHE_PATH = os.path.join(os.path.dirname(__file__), 'stem', 'cached_tor_manual')
+CACHE_PATH = os.path.join(os.path.dirname(__file__), 'stem', 'cached_tor_manual.cfg')
 GITWEB_MAN_LOG = 'https://gitweb.torproject.org/tor.git/log/doc/tor.1.txt'
 MAN_LOG_LINK = "href='/tor.git/commit/doc/tor.1.txt\?id=([^']*)'"
 
