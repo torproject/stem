@@ -130,6 +130,38 @@ def _config(lowercase = True):
     return {}
 
 
+def _manual_differences(previous_manual, new_manual):
+  """
+  Provides a description of how two manuals differ.
+  """
+
+  lines = []
+
+  for attr in ('name', 'synopsis', 'description', 'commandline_options', 'signals', 'files', 'config_options'):
+    previous_attr = getattr(previous_manual, attr)
+    new_attr = getattr(new_manual, attr)
+
+    if previous_attr != new_attr:
+      lines.append("* Manual's %s attribute changed\n" % attr)
+
+      if attr in ('name', 'synopsis', 'description'):
+        lines.append('  Previously...\n\n%s\n' % previous_attr)
+        lines.append('  Updating to...\n\n%s' % new_attr)
+      else:
+        added_items = set(new_attr.items()).difference(previous_attr.items())
+        removed_items = set(previous_attr.items()).difference(new_attr.items())
+
+        for added_item in added_items:
+          lines.append('  adding %s => %s' % added_item)
+
+        for removed_item in removed_items:
+          lines.append('  removing %s => %s' % removed_item)
+
+      lines.append('\n')
+
+  return '\n'.join(lines)
+
+
 def is_important(option):
   """
   Indicates if a configuration option of particularly common importance or not.

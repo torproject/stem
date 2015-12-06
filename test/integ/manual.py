@@ -199,7 +199,7 @@ class TestManual(unittest.TestCase):
     latest_manual = stem.manual.Manual.from_man(self.man_path)
 
     if cached_manual != latest_manual:
-      self.fail("Stem's cached manual information is out of date. Please run 'cache_manual.py'.")
+      self.fail("Stem's cached manual information is out of date. Please run 'cache_manual.py'...\n\n%s" % stem.manual._manual_differences(cached_manual, latest_manual))
 
   def test_attributes(self):
     """
