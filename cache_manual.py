@@ -28,13 +28,13 @@ if __name__ == '__main__':
     man_log_page = urllib.urlopen(GITWEB_MAN_LOG).read()
     man_commit = re.search(MAN_LOG_LINK, man_log_page).group(1)
   except:
-    print "Unable to determine the latest commit to edit tor's man page: %s" % sys.exc_info()[1]
+    print("Unable to determine the latest commit to edit tor's man page: %s" % sys.exc_info()[1])
     sys.exit(1)
 
   try:
     stem_commit = stem.util.system.call('git rev-parse HEAD')[0]
   except IOError as exc:
-    print "Unable to determine stem's current commit: %s" % exc
+    print("Unable to determine stem's current commit: %s" % exc)
     sys.exit(1)
 
   print('Latest tor commit editing man page: %s' % man_commit)
