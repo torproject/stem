@@ -527,6 +527,9 @@ class ExitPolicy(object):
     else:
       return False
 
+  def __ne__(self, other):
+    return not self == other
+
 
 class MicroExitPolicy(ExitPolicy):
   """
@@ -609,6 +612,9 @@ class MicroExitPolicy(ExitPolicy):
       return str(self) == str(other)
     else:
       return False
+
+  def __ne__(self, other):
+    return not self == other
 
 
 class ExitPolicyRule(object):
@@ -1028,6 +1034,9 @@ class ExitPolicyRule(object):
       return hash(self) == hash(other)
     else:
       return False
+
+  def __ne__(self, other):
+    return not self == other
 
 
 def _address_type_to_int(address_type):

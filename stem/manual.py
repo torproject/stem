@@ -442,6 +442,9 @@ class Manual(object):
 
     return True
 
+  def __ne__(self, other):
+    return not self == other
+
 
 def _get_categories(content):
   """

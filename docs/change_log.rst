@@ -52,6 +52,7 @@ The following are only available within Stem's `git repository
   * Added the replica attribute to the :class:`~stem.response.events.HSDescEvent` (:spec:`4989e73`)
   * IPv6 addresses could trigger errors in :func:`~stem.control.Controller.get_listeners`, :class:`~stem.response.events.ORConnEvent`, and quite a few other things (:trac:`16174`)
   * Don't obscure stacktraces, most notably :class:`~stem.control.Controller` getter methods with default values
+  * Classes with custom equality checks didn't provide a corresponding inequality method
 
  * **Descriptors**
 
