@@ -37,7 +37,7 @@ Connection and networking based utility functions.
   **NETSTAT_WINDOWS**   netstat command under Windows
   **SS**                ss command
   **LSOF**              lsof command
-  **SOCKSTAT**          sockstat command under *nix
+  **SOCKSTAT**          sockstat command under \*nix
   **BSD_SOCKSTAT**      sockstat command under FreeBSD
   **BSD_PROCSTAT**      procstat command under FreeBSD
   ====================  ===========
