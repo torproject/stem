@@ -166,6 +166,7 @@ class TestManual(unittest.TestCase):
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
   @patch('stem.manual.open', Mock(side_effect = IOError('unable to write to file')), create = True)
+  @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_download_man_page_when_unable_to_write(self):
     try:
       stem.manual.download_man_page('/tmp/no_such_file')
@@ -176,6 +177,7 @@ class TestManual(unittest.TestCase):
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
   @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
+  @patch('stem.util.system.is_available', Mock(return_value = True))
   @patch(URL_OPEN, Mock(side_effect = urllib.URLError('<urlopen error [Errno -2] Name or service not known>')))
   def test_download_man_page_when_download_fails(self):
     try:
@@ -188,6 +190,7 @@ class TestManual(unittest.TestCase):
   @patch('shutil.rmtree', Mock())
   @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
   @patch('stem.util.system.call', Mock(side_effect = OSError('call failed')))
+  @patch('stem.util.system.is_available', Mock(return_value = True))
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
   def test_download_man_page_when_a2x_fails(self):
     try:
@@ -200,6 +203,7 @@ class TestManual(unittest.TestCase):
   @patch('shutil.rmtree', Mock())
   @patch('stem.manual.open', create = True)
   @patch('stem.util.system.call')
+  @patch('stem.util.system.is_available', Mock(return_value = True))
   @patch('os.path.exists', Mock(return_value = True))
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
   def test_download_man_page_when_successful(self, call_mock, open_mock):
