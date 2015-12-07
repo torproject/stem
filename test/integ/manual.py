@@ -122,34 +122,6 @@ class TestManual(unittest.TestCase):
 
     return False
 
-  def test_with_unknown_options(self):
-    """
-    Check that we can read a local mock man page that contains unrecognized
-    options. Unlike most other tests this doesn't require network access.
-    """
-
-    if not stem.util.system.is_available('man'):
-      test.runner.skip(self, '(require man command)')
-      return
-
-    manual = stem.manual.Manual.from_man(os.path.join(os.path.dirname(__file__), 'tor.1_with_unknown'))
-
-    self.assertEqual('tor - The second-generation onion router', manual.name)
-    self.assertEqual('', manual.synopsis)
-    self.assertEqual('', manual.description)
-    self.assertEqual({}, manual.commandline_options)
-    self.assertEqual({}, manual.signals)
-    self.assertEqual({}, manual.files)
-
-    self.assertEqual(2, len(manual.config_options))
-
-    option = [entry for entry in manual.config_options.values() if entry.category == Category.UNKNOWN][0]
-    self.assertEqual(Category.UNKNOWN, option.category)
-    self.assertEqual('SpiffyNewOption', option.name)
-    self.assertEqual('transport exec path-to-binary [options]', option.usage)
-    self.assertEqual('', option.summary)
-    self.assertEqual('Description of this new option.', option.description)
-
   def test_escapes_non_ascii(self):
     """
     Check that our manual parser escapes all non-ascii characters. If this

@@ -33,6 +33,7 @@ except ImportError:
 
 URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
 EXAMPLE_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_example')
+UNKNOWN_OPTIONS_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_with_unknown')
 
 EXPECTED_DESCRIPTION = 'Tor is a connection-oriented anonymizing communication service. Users choose a source-routed path through a set of nodes, and negotiate a "virtual circuit" through the network, in which each node knows its predecessor and successor, but no others. Traffic flowing down the circuit is unwrapped by a symmetric key at each node, which reveals the downstream node.'
 
@@ -111,7 +112,7 @@ class TestManual(unittest.TestCase):
 
     self.assertFalse(stem.manual.is_important('ConstrainedSockSize'))
 
-  def test_parsing_example_man_page(self):
+  def test_parsing_with_example(self):
     """
     Read a trimmed copy of tor's man page. This gives a good exercise of our
     parser with static content. As new oddball man oddities appear feel free to
@@ -131,6 +132,34 @@ class TestManual(unittest.TestCase):
     self.assertEqual(EXPECTED_SIGNALS, manual.signals)
     self.assertEqual(EXPECTED_FILES, manual.files)
     self.assertEqual(EXPECTED_CONFIG_OPTIONS, manual.config_options)
+
+  def test_parsing_with_unknown_options(self):
+    """
+    Check that we can read a local mock man page that contains unrecognized
+    options. Unlike most other tests this doesn't require network access.
+    """
+
+    if not stem.util.system.is_available('man'):
+      test.runner.skip(self, '(require man command)')
+      return
+
+    manual = stem.manual.Manual.from_man(UNKNOWN_OPTIONS_MAN_PATH)
+
+    self.assertEqual('tor - The second-generation onion router', manual.name)
+    self.assertEqual('', manual.synopsis)
+    self.assertEqual('', manual.description)
+    self.assertEqual({}, manual.commandline_options)
+    self.assertEqual({}, manual.signals)
+    self.assertEqual({}, manual.files)
+
+    self.assertEqual(2, len(manual.config_options))
+
+    option = [entry for entry in manual.config_options.values() if entry.category == stem.manual.Category.UNKNOWN][0]
+    self.assertEqual(stem.manual.Category.UNKNOWN, option.category)
+    self.assertEqual('SpiffyNewOption', option.name)
+    self.assertEqual('transport exec path-to-binary [options]', option.usage)
+    self.assertEqual('', option.summary)
+    self.assertEqual('Description of this new option.', option.description)
 
   def test_saving_manual(self):
     """
