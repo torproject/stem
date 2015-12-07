@@ -215,9 +215,8 @@ def config_dict(handle, conf_mappings, handler = None):
   For more information about how we convert types see our
   :func:`~stem.util.conf.Config.get` method.
 
-  **The dictionary you get from this is manged by the
-  :class:`~stem.util.conf.Config` class and should be treated as being
-  read-only.**
+  **The dictionary you get from this is manged by the Config class and should
+  be treated as being read-only.**
 
   :param str handle: unique identifier for a config instance
   :param dict conf_mappings: config key/value mappings used as our defaults
