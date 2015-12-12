@@ -37,7 +37,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       if not stem_auth:
         self.fail("%s isn't a recognized directory authority in stem" % auth.nickname)
 
-      for attr in ('address', 'v3ident', 'or_port', 'dir_port'):
+      for attr in ('v3ident', 'or_port', 'dir_port'):
         if auth.nickname == 'moria1' and attr == 'address':
           continue  # skip due to https://trac.torproject.org/projects/tor/ticket/14955
 
