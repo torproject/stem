@@ -186,7 +186,7 @@ class TestManual(unittest.TestCase):
     self.assertEqual(14, len(manual.commandline_options))
     self.assertEqual(8, len(manual.signals))
     self.assertEqual(31, len(manual.files))
-    self.assertEqual(288, len(manual.config_options))
+    self.assertEqual(289, len(manual.config_options))
 
   def test_download_man_page_without_arguments(self):
     try:
