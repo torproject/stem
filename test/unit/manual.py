@@ -183,10 +183,10 @@ class TestManual(unittest.TestCase):
     self.assertEqual('tor - The second-generation onion router', manual.name)
     self.assertEqual('tor [OPTION value]...', manual.synopsis)
     self.assertTrue(manual.description.startswith(EXPECTED_DESCRIPTION))
-    self.assertEqual(14, len(manual.commandline_options))
-    self.assertEqual(8, len(manual.signals))
-    self.assertEqual(31, len(manual.files))
-    self.assertEqual(289, len(manual.config_options))
+    self.assertTrue(len(manual.commandline_options) > 10)
+    self.assertTrue(len(manual.signals) > 5)
+    self.assertTrue(len(manual.files) > 20)
+    self.assertTrue(len(manual.config_options) > 200)
 
   def test_download_man_page_without_arguments(self):
     try:
