@@ -189,6 +189,8 @@ class TestController(unittest.TestCase):
 
         self.assertTrue(isinstance(event, stem.response.events.ConfChangedEvent))
 
+      controller.reset_conf('NodeFamily')
+
   @require_controller
   def test_reattaching_listeners(self):
     """
@@ -466,6 +468,24 @@ class TestController(unittest.TestCase):
       self.assertEqual('la-di-dah', controller.get_conf('', 'la-di-dah'))
       self.assertEqual({}, controller.get_conf_map('', 'la-di-dah'))
       self.assertEqual({}, controller.get_conf_map([], 'la-di-dah'))
+
+  @require_controller
+  def test_get_custom_conf(self):
+    """
+    Exercises our get_custom_conf() method.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      custom_options = controller.get_custom_conf()
+      self.assertTrue('ControlPort' in custom_options or 'ControlSocket' in custom_options)
+      self.assertTrue('DownloadExtraInfo' in custom_options)
+      self.assertTrue('SocksListenAddress' in custom_options)
+
+      custom_options = controller.get_custom_conf(include_values = True)
+      self.assertTrue('DownloadExtraInfo 1' in custom_options)
+      self.assertTrue('SocksListenAddress 127.0.0.1:1112' in custom_options)
 
   @require_controller
   def test_hidden_services_conf(self):
