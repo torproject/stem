@@ -305,4 +305,4 @@ class TestManual(unittest.TestCase):
     extra_in_manual = config_options_in_manual.difference(config_options_in_tor)
 
     if extra_in_manual:
-      self.fail("The %s config options in our man page aren't presently supported by tor. Maybe we need to remove them?" % ', '.join(extra_in_manual))
+      self.fail("The %s config options in our man page aren't presently supported by tor. Are we using the latest git commit of tor? If so, maybe we need to remove them?" % ', '.join(extra_in_manual))
