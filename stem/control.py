@@ -93,7 +93,6 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |
     |- get_conf - gets the value of a configuration option
     |- get_conf_map - gets the values of multiple configuration options
-    |- get_custom_conf - provides configuration options that differ from their defaults
     |- set_conf - sets the value of a configuration option
     |- reset_conf - reverts configuration options to their default values
     |- set_options - sets or resets the values of multiple configuration options
@@ -1987,8 +1986,6 @@ class Controller(BaseController):
 
   def get_conf(self, param, default = UNDEFINED, multiple = False):
     """
-    get_conf(param, default = UNDEFINED, multiple = False)
-
     Queries the current value for a configuration option. Some configuration
     options (like the ExitPolicy) can have multiple values. This provides a
     **list** with all of the values if **multiple** is **True**. Otherwise this
@@ -2036,8 +2033,6 @@ class Controller(BaseController):
 
   def get_conf_map(self, params, default = UNDEFINED, multiple = True):
     """
-    get_conf_map(params, default = UNDEFINED, multiple = True)
-
     Similar to :func:`~stem.control.Controller.get_conf` but queries multiple
     configuration options, providing back a mapping of those options to their
     values.
@@ -2174,49 +2169,6 @@ class Controller(BaseController):
         return_dict[key] = values if multiple else values[0]
 
     return return_dict
-
-  @with_default()
-  def get_custom_conf(self, default = UNDEFINED, include_values = False):
-    """
-    get_custom_conf(params, default = UNDEFINED, multiple = True)
-
-    Provides tor configuration options that differ from their defaults.
-
-    .. versionadded:: 1.5.0
-
-    :param object default: response if the query fails
-    :param bool include_values: provides full configuration lines that can be
-      saved, similar to 'GETINFO config-text'
-
-    :returns: **list** of configuration options that have been set, or config
-      lines if **include_values** is **True**
-
-    :raises: :class:`stem.ControllerError` if the call fails and we weren't
-      provided a default response
-    """
-
-    config_lines = self.get_info('config-text').splitlines()
-
-    # Tor provides some config options even if they haven't been set...
-    #
-    # https://trac.torproject.org/projects/tor/ticket/2362
-    # https://trac.torproject.org/projects/tor/ticket/17909
-
-    default_lines = (
-      'Log notice stdout',
-      'Log notice file /var/log/tor/log',
-      'DataDirectory /home/%s/.tor' % self.get_user('undefined'),
-      'HiddenServiceStatistics 0',
-    )
-
-    for line in default_lines:
-      if line in config_lines:
-        config_lines.remove(line)
-
-    if include_values:
-      return config_lines
-    else:
-      return list(set([line.split(' ')[0] for line in config_lines]))
 
   def set_conf(self, param, value):
     """
