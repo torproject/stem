@@ -1713,7 +1713,7 @@ class Controller(BaseController):
         raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
 
       return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
-    except Exception as exc:
+    except:
       if not self._is_server_descriptors_available():
         raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
 

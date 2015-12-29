@@ -22,6 +22,7 @@ import os
 import re
 import signal
 import subprocess
+import sys
 import tempfile
 
 import stem.prereq
@@ -105,27 +106,26 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
   if take_ownership:
     runtime_args += ['__OwningControllerProcess', str(os.getpid())]
 
-  tor_process = subprocess.Popen(runtime_args, stdout = subprocess.PIPE, stdin = subprocess.PIPE, stderr = subprocess.PIPE)
-
-  if stdin:
-    tor_process.stdin.write(stem.util.str_tools._to_bytes(stdin))
-    tor_process.stdin.close()
-
-  if timeout:
-    def timeout_handler(signum, frame):
-      # terminates the uninitialized tor process and raise on timeout
-
-      tor_process.kill()
-      raise OSError('reached a %i second timeout without success' % timeout)
-
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(timeout)
-
-  bootstrap_line = re.compile('Bootstrapped ([0-9]+)%: ')
-  problem_line = re.compile('\[(warn|err)\] (.*)$')
-  last_problem = 'Timed out'
+  tor_process = None
 
   try:
+    tor_process = subprocess.Popen(runtime_args, stdout = subprocess.PIPE, stdin = subprocess.PIPE, stderr = subprocess.PIPE)
+
+    if stdin:
+      tor_process.stdin.write(stem.util.str_tools._to_bytes(stdin))
+      tor_process.stdin.close()
+
+    if timeout:
+      def timeout_handler(signum, frame):
+        raise OSError('reached a %i second timeout without success' % timeout)
+
+      signal.signal(signal.SIGALRM, timeout_handler)
+      signal.alarm(timeout)
+
+    bootstrap_line = re.compile('Bootstrapped ([0-9]+)%: ')
+    problem_line = re.compile('\[(warn|err)\] (.*)$')
+    last_problem = 'Timed out'
+
     while True:
       # Tor's stdout will be read as ASCII bytes. This is fine for python 2, but
       # in python 3 that means it'll mismatch with other operations (for instance
@@ -139,7 +139,6 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
       # this will provide empty results if the process is terminated
 
       if not init_line:
-        tor_process.kill()  # ... but best make sure
         raise OSError('Process terminated: %s' % last_problem)
 
       # provide the caller with the initialization message if they want it
@@ -162,12 +161,26 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
             msg = msg.split(': ')[-1].strip()
 
           last_problem = msg
+  except:
+    if tor_process:
+      tor_process.kill()  # don't leave a lingering process
+      tor_process.wait()
+
+    exc = sys.exc_info()[1]
+
+    if type(exc) == OSError:
+      raise  # something we're raising ourselves
+    else:
+      raise OSError('Unexpected exception while starting tor (%s): %s' % (type(exc).__name__, exc))
   finally:
     if timeout:
       signal.alarm(0)  # stop alarm
 
-    tor_process.stdout.close()
-    tor_process.stderr.close()
+    if tor_process and tor_process.stdout:
+      tor_process.stdout.close()
+
+    if tor_process and tor_process.stderr:
+      tor_process.stderr.close()
 
     if temp_file:
       try:

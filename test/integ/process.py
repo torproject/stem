@@ -196,6 +196,28 @@ class TestProcess(unittest.TestCase):
     self.assertTrue('UseBridges' in output)
     self.assertTrue('SocksPort' in output)
 
+  @patch('re.compile', Mock(side_effect = KeyboardInterrupt('nope')))
+  def test_no_orphaned_process(self):
+    """
+    Check that when an exception arises in the middle of spawning tor that we
+    don't leave a lingering process.
+    """
+
+    # We don't need to actually run tor for this test. Rather, any process will
+    # do the trick. Picking sleep so this'll clean itself up if our test fails.
+
+    mock_tor_process = subprocess.Popen(['sleep', '60'])
+
+    with patch('subprocess.Popen', Mock(return_value = mock_tor_process)):
+      try:
+        stem.process.launch_tor()
+        self.fail("tor shoudn't have started")
+      except OSError as exc:
+        if os.path.exists('/proc/%s' % mock_tor_process.pid):
+          self.fail("launch_tor() left a lingering tor process")
+
+        self.assertEqual('Unexpected exception while starting tor (KeyboardInterrupt): nope', str(exc))
+
   def test_torrc_arguments(self):
     """
     Pass configuration options on the commandline.

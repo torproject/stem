@@ -50,6 +50,7 @@ The following are only available within Stem's `git repository
   * Added `support for NETWORK_LIVENESS events <api/response.html#stem.response.events.NetworkLivenessEvent>`_ (:spec:`44aac63`)
   * Added :func:`~stem.control.Controller.is_user_traffic_allowed` to the :class:`~stem.control.Controller`
   * Added the replica attribute to the :class:`~stem.response.events.HSDescEvent` (:spec:`4989e73`)
+  * :func:`~stem.process.launch_tor` could leave a lingering process during an unexpected exception (:trac:`17946`)
   * IPv6 addresses could trigger errors in :func:`~stem.control.Controller.get_listeners`, :class:`~stem.response.events.ORConnEvent`, and quite a few other things (:trac:`16174`)
   * Don't obscure stacktraces, most notably :class:`~stem.control.Controller` getter methods with default values
   * Classes with custom equality checks didn't provide a corresponding inequality method
