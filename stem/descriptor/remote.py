@@ -96,11 +96,6 @@ from stem.util import log
 MAX_FINGERPRINTS = 96
 MAX_MICRODESCRIPTOR_HASHES = 92
 
-# We commonly only want authorities that vote in the consensus, and hence have
-# a v3ident.
-
-HAS_V3IDENT = lambda auth: auth.v3ident is not None
-
 
 def _guess_descriptor_type(resource):
   # Attempts to determine the descriptor type based on the resource url. This
@@ -345,7 +340,7 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      authority = random.choice(list(filter(HAS_V3IDENT, get_authorities().values())))
+      authority = random.choice(list(filter(lambda auth: auth.v3ident is not None, get_authorities().values())))
       address, dirport = authority.address, authority.dir_port
     else:
       address, dirport = random.choice(self.endpoints)
@@ -395,7 +390,7 @@ class DescriptorDownloader(object):
   def __init__(self, use_mirrors = False, **default_args):
     self._default_args = default_args
 
-    authorities = filter(HAS_V3IDENT, get_authorities().values())
+    authorities = filter(lambda auth: auth.v3ident is not None, get_authorities().values())
     self._endpoints = [(auth.address, auth.dir_port) for auth in authorities]
 
     if use_mirrors:
@@ -417,7 +412,7 @@ class DescriptorDownloader(object):
     :raises: **Exception** if unable to determine the directory mirrors
     """
 
-    authorities = filter(HAS_V3IDENT, get_authorities().values())
+    authorities = filter(lambda auth: auth.v3ident is not None, get_authorities().values())
     new_endpoints = set([(auth.address, auth.dir_port) for auth in authorities])
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]

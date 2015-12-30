@@ -328,12 +328,13 @@ class _VersionRequirements(object):
     :param bool to_inclusive: if comparison is inclusive with the ending version
     """
 
-    if from_inclusive and to_inclusive:
-      new_rule = lambda v: from_version <= v <= to_version
-    elif from_inclusive:
-      new_rule = lambda v: from_version <= v < to_version
-    else:
-      new_rule = lambda v: from_version < v < to_version
+    def new_rule(v):
+      if from_inclusive and to_inclusive:
+        return from_version <= v <= to_version
+      elif from_inclusive:
+        return from_version <= v < to_version
+      else:
+        return from_version < v < to_version
 
     self.rules.append(new_rule)
 

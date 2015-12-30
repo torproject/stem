@@ -376,7 +376,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(['1'], desc.circuit_protocols)
     self.assertEqual(False, desc.hibernating)
     self.assertEqual(False, desc.allow_single_hop_exits)
-    self.assertEqual(False, desc.extra_info_cache)
+    self.assertEqual(True, desc.extra_info_cache)
     self.assertEqual('BB1F13AA431421BEA29B840A2E33BB1C31C2990B', desc.extra_info_digest)
     self.assertEqual(None, desc.hidden_service_dir)
     self.assertEqual(set(), desc.family)

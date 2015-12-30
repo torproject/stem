@@ -360,10 +360,10 @@ _parse_network_status_version_line = _parse_version_line('network-status-version
 _parse_fingerprint_line = _parse_forty_character_hex('fingerprint', 'fingerprint')
 _parse_contact_line = _parse_simple_line('contact', 'contact')
 _parse_dir_signing_key_line = _parse_key_block('dir-signing-key', 'signing_key', 'RSA PUBLIC KEY')
-_parse_client_versions_line = lambda descriptor, entries: setattr(descriptor, 'client_versions', _value('client-versions', entries).split(','))
-_parse_server_versions_line = lambda descriptor, entries: setattr(descriptor, 'server_versions', _value('server-versions', entries).split(','))
+_parse_client_versions_line = _parse_simple_line('client-versions', 'client_versions', func = lambda v: v.split(','))
+_parse_server_versions_line = _parse_simple_line('server-versions', 'server_versions', func = lambda v: v.split(','))
 _parse_published_line = _parse_timestamp_line('published', 'published')
-_parse_dir_options_line = lambda descriptor, entries: setattr(descriptor, 'options', _value('dir-options', entries).split())
+_parse_dir_options_line = _parse_simple_line('dir-options', 'options', func = lambda v: v.split())
 _parse_directory_signature_line = _parse_key_block('directory-signature', 'signature', 'SIGNATURE', value_attribute = 'signing_authority')
 
 
@@ -685,8 +685,8 @@ _parse_header_fresh_until_line = _parse_timestamp_line('fresh-until', 'fresh_unt
 _parse_header_valid_until_line = _parse_timestamp_line('valid-until', 'valid_until')
 _parse_header_client_versions_line = _parse_versions_line('client-versions', 'client_versions')
 _parse_header_server_versions_line = _parse_versions_line('server-versions', 'server_versions')
-_parse_header_known_flags_line = lambda descriptor, entries: setattr(descriptor, 'known_flags', [entry for entry in _value('known-flags', entries).split(' ') if entry])
-_parse_footer_bandwidth_weights_line = lambda descriptor, entries: setattr(descriptor, 'bandwidth_weights', _parse_int_mappings('bandwidth-weights', _value('bandwidth-weights', entries), True))
+_parse_header_known_flags_line = _parse_simple_line('known-flags', 'known_flags', func = lambda v: [entry for entry in v.split(' ') if entry])
+_parse_footer_bandwidth_weights_line = _parse_simple_line('bandwidth-weights', 'bandwidth_weights', func = lambda v: _parse_int_mappings('bandwidth-weights', v, True))
 
 
 class NetworkStatusDocumentV3(NetworkStatusDocument):

@@ -72,7 +72,6 @@ from stem.descriptor import (
   Descriptor,
   _get_descriptor_components,
   _read_until_keywords,
-  _value,
   _values,
   _parse_simple_line,
   _parse_key_block,
@@ -180,11 +179,14 @@ def _parse_id_line(descriptor, entries):
   descriptor.identifiers = identities
 
 
-_parse_digest = lambda descriptor, entries: setattr(descriptor, 'digest', hashlib.sha256(descriptor.get_bytes()).hexdigest().upper())
+def _parse_digest(descriptor, entries):
+  setattr(descriptor, 'digest', hashlib.sha256(descriptor.get_bytes()).hexdigest().upper())
+
+
 _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
 _parse_ntor_onion_key_line = _parse_simple_line('ntor-onion-key', 'ntor_onion_key')
-_parse_family_line = lambda descriptor, entries: setattr(descriptor, 'family', _value('family', entries).split(' '))
-_parse_p6_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('p6', entries)))
+_parse_family_line = _parse_simple_line('family', 'family', func = lambda v: v.split(' '))
+_parse_p6_line = _parse_simple_line('p6', 'exit_policy_v6', func = lambda v: stem.exit_policy.MicroExitPolicy(v))
 
 
 class Microdescriptor(Descriptor):

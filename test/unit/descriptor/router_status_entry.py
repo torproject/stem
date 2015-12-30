@@ -49,7 +49,10 @@ m 21 sha256=AVp41YVxKEJCaoEf0+77Cdvyw5YgpyDXdob0+LSv/pE
 
 
 def vote_document():
-  mock_document = lambda x: x  # just need anything with a __dict__
+  class Stub(object):
+    pass
+
+  mock_document = Stub()  # just need anything with a __dict__
   setattr(mock_document, 'is_vote', True)
   setattr(mock_document, 'is_consensus', False)
   return mock_document

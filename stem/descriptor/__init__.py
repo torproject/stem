@@ -188,53 +188,48 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
 
   descriptor_path = getattr(descriptor_file, 'name', None)
   filename = '<undefined>' if descriptor_path is None else os.path.basename(descriptor_file.name)
-  file_parser = None
 
-  if descriptor_type is not None:
-    descriptor_type_match = re.match('^(\S+) (\d+).(\d+)$', descriptor_type)
+  def parse(descriptor_file):
+    if normalize_newlines:
+      descriptor_file = NewlineNormalizer(descriptor_file)
 
-    if descriptor_type_match:
-      desc_type, major_version, minor_version = descriptor_type_match.groups()
-      file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f, validate, document_handler, **kwargs)
+    if descriptor_type is not None:
+      descriptor_type_match = re.match('^(\S+) (\d+).(\d+)$', descriptor_type)
+
+      if descriptor_type_match:
+        desc_type, major_version, minor_version = descriptor_type_match.groups()
+        return _parse_metrics_file(desc_type, int(major_version), int(minor_version), descriptor_file, validate, document_handler, **kwargs)
+      else:
+        raise ValueError("The descriptor_type must be of the form '<type> <major_version>.<minor_version>'")
+    elif metrics_header_match:
+      # Metrics descriptor handling
+
+      desc_type, major_version, minor_version = metrics_header_match.groups()
+      return _parse_metrics_file(desc_type, int(major_version), int(minor_version), descriptor_file, validate, document_handler, **kwargs)
     else:
-      raise ValueError("The descriptor_type must be of the form '<type> <major_version>.<minor_version>'")
-  elif metrics_header_match:
-    # Metrics descriptor handling
+      # Cached descriptor handling. These contain multiple descriptors per file.
 
-    desc_type, major_version, minor_version = metrics_header_match.groups()
-    file_parser = lambda f: _parse_metrics_file(desc_type, int(major_version), int(minor_version), f, validate, document_handler, **kwargs)
-  else:
-    # Cached descriptor handling. These contain multiple descriptors per file.
+      if normalize_newlines is None and stem.util.system.is_windows():
+        descriptor_file = NewlineNormalizer(descriptor_file)
 
-    if normalize_newlines is None and stem.util.system.is_windows():
-      normalize_newlines = True
+      if filename == 'cached-descriptors' or filename == 'cached-descriptors.new':
+        return stem.descriptor.server_descriptor._parse_file(descriptor_file, validate = validate, **kwargs)
+      elif filename == 'cached-extrainfo' or filename == 'cached-extrainfo.new':
+        return stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, validate = validate, **kwargs)
+      elif filename == 'cached-microdescs' or filename == 'cached-microdescs.new':
+        return stem.descriptor.microdescriptor._parse_file(descriptor_file, validate = validate, **kwargs)
+      elif filename == 'cached-consensus':
+        return stem.descriptor.networkstatus._parse_file(descriptor_file, validate = validate, document_handler = document_handler, **kwargs)
+      elif filename == 'cached-microdesc-consensus':
+        return stem.descriptor.networkstatus._parse_file(descriptor_file, is_microdescriptor = True, validate = validate, document_handler = document_handler, **kwargs)
+      else:
+        raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
 
-    if filename == 'cached-descriptors' or filename == 'cached-descriptors.new':
-      file_parser = lambda f: stem.descriptor.server_descriptor._parse_file(f, validate = validate, **kwargs)
-    elif filename == 'cached-extrainfo' or filename == 'cached-extrainfo.new':
-      file_parser = lambda f: stem.descriptor.extrainfo_descriptor._parse_file(f, validate = validate, **kwargs)
-    elif filename == 'cached-microdescs' or filename == 'cached-microdescs.new':
-      file_parser = lambda f: stem.descriptor.microdescriptor._parse_file(f, validate = validate, **kwargs)
-    elif filename == 'cached-consensus':
-      file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, validate = validate, document_handler = document_handler, **kwargs)
-    elif filename == 'cached-microdesc-consensus':
-      file_parser = lambda f: stem.descriptor.networkstatus._parse_file(f, is_microdescriptor = True, validate = validate, document_handler = document_handler, **kwargs)
+  for desc in parse(descriptor_file):
+    if descriptor_path is not None:
+      desc._set_path(os.path.abspath(descriptor_path))
 
-  if normalize_newlines:
-    descriptor_file = NewlineNormalizer(descriptor_file)
-
-  if file_parser:
-    for desc in file_parser(descriptor_file):
-      if descriptor_path is not None:
-        desc._set_path(os.path.abspath(descriptor_path))
-
-      yield desc
-
-    return
-
-  # Not recognized as a descriptor file.
-
-  raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
+    yield desc
 
 
 def _parse_file_for_path(descriptor_file, *args, **kwargs):
@@ -336,11 +331,16 @@ def _values(line, entries):
   return [entry[0] for entry in entries[line]]
 
 
-def _parse_simple_line(keyword, attribute):
+def _parse_simple_line(keyword, attribute, func = None):
   def _parse(descriptor, entries):
-    setattr(descriptor, attribute, _value(keyword, entries))
+    value = _value(keyword, entries)
+    setattr(descriptor, attribute, func(value) if func else value)
 
   return _parse
+
+
+def _parse_if_present(keyword, attribute):
+  return lambda descriptor, entries: setattr(descriptor, attribute, keyword in entries)
 
 
 def _parse_bytes_line(keyword, attribute):
@@ -675,13 +675,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     **True**
   """
 
-  if skip:
-    content = None
-    content_append = lambda x: None
-  else:
-    content = []
-    content_append = content.append
-
+  content = None if skip else []
   ending_keyword = None
 
   if isinstance(keywords, (bytes, str_type)):
@@ -690,8 +684,8 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   if ignore_first:
     first_line = descriptor_file.readline()
 
-    if first_line:
-      content_append(first_line)
+    if first_line and content is not None:
+      content.append(first_line)
 
   keyword_match = re.compile(SPECIFIC_KEYWORD_LINE % '|'.join(keywords))
 
@@ -713,12 +707,12 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
 
       if not inclusive:
         descriptor_file.seek(last_position)
-      else:
-        content_append(line)
+      elif content is not None:
+        content.append(line)
 
       break
-    else:
-      content_append(line)
+    elif content is not None:
+      content.append(line)
 
   if include_ending_keyword:
     return (content, ending_keyword)

@@ -54,6 +54,7 @@ from stem.descriptor import (
   _value,
   _values,
   _parse_simple_line,
+  _parse_if_present,
   _parse_bytes_line,
   _parse_timestamp_line,
   _parse_forty_character_hex,
@@ -394,11 +395,11 @@ _parse_contact_line = _parse_bytes_line('contact', 'contact')
 _parse_published_line = _parse_timestamp_line('published', 'published')
 _parse_read_history_line = functools.partial(_parse_history_line, 'read-history', 'read_history_end', 'read_history_interval', 'read_history_values')
 _parse_write_history_line = functools.partial(_parse_history_line, 'write-history', 'write_history_end', 'write_history_interval', 'write_history_values')
-_parse_ipv6_policy_line = lambda descriptor, entries: setattr(descriptor, 'exit_policy_v6', stem.exit_policy.MicroExitPolicy(_value('ipv6-policy', entries)))
-_parse_allow_single_hop_exits_line = lambda descriptor, entries: setattr(descriptor, 'allow_single_hop_exits', 'allow_single_hop_exits' in entries)
-_parse_caches_extra_info_line = lambda descriptor, entries: setattr(descriptor, 'extra_info_cache', 'extra_info_cache' in entries)
-_parse_family_line = lambda descriptor, entries: setattr(descriptor, 'family', set(_value('family', entries).split(' ')))
-_parse_eventdns_line = lambda descriptor, entries: setattr(descriptor, 'eventdns', _value('eventdns', entries) == '1')
+_parse_ipv6_policy_line = _parse_simple_line('ipv6-policy', 'exit_policy_v6', func = lambda v: stem.exit_policy.MicroExitPolicy(v))
+_parse_allow_single_hop_exits_line = _parse_if_present('allow-single-hop-exits', 'allow_single_hop_exits')
+_parse_caches_extra_info_line = _parse_if_present('caches-extra-info', 'extra_info_cache')
+_parse_family_line = _parse_simple_line('family', 'family', func = lambda v: set(v.split(' ')))
+_parse_eventdns_line = _parse_simple_line('eventdns', 'eventdns', func = lambda v: v == '1')
 _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
 _parse_onion_key_crosscert_line = _parse_key_block('onion-key-crosscert', 'onion_key_crosscert', 'CROSSCERT')
 _parse_signing_key_line = _parse_key_block('signing-key', 'signing_key', 'RSA PUBLIC KEY')

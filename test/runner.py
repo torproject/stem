@@ -713,10 +713,11 @@ class Runner(object):
     try:
       # wait to fully complete if we're running tests with network activity,
       # otherwise finish after local bootstraping
+
       complete_percent = 100 if Target.ONLINE in self.attribute_targets else 5
 
-      # prints output from tor's stdout while it starts up
-      print_init_line = lambda line: println('  %s' % line, SUBSTATUS)
+      def print_init_line(line):
+        println('  %s' % line, SUBSTATUS)
 
       torrc_dst = os.path.join(self._test_dir, 'torrc')
       self._tor_process = stem.process.launch_tor(tor_cmd, None, torrc_dst, complete_percent, print_init_line, take_ownership = True)
