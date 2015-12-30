@@ -22,7 +22,6 @@ import os
 import re
 import signal
 import subprocess
-import sys
 import tempfile
 
 import stem.prereq
@@ -166,12 +165,7 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
       tor_process.kill()  # don't leave a lingering process
       tor_process.wait()
 
-    exc = sys.exc_info()[1]
-
-    if type(exc) == OSError:
-      raise  # something we're raising ourselves
-    else:
-      raise OSError('Unexpected exception while starting tor (%s): %s' % (type(exc).__name__, exc))
+    raise
   finally:
     if timeout:
       signal.alarm(0)  # stop alarm

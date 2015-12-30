@@ -212,11 +212,11 @@ class TestProcess(unittest.TestCase):
       try:
         stem.process.launch_tor()
         self.fail("tor shoudn't have started")
-      except OSError as exc:
+      except KeyboardInterrupt as exc:
         if os.path.exists('/proc/%s' % mock_tor_process.pid):
-          self.fail("launch_tor() left a lingering tor process")
+          self.fail('launch_tor() left a lingering tor process')
 
-        self.assertEqual('Unexpected exception while starting tor (KeyboardInterrupt): nope', str(exc))
+        self.assertEqual('nope', str(exc))
 
   def test_torrc_arguments(self):
     """
