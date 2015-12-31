@@ -6,13 +6,6 @@ Interactive interpreter for interacting with Tor directly. This adds usability
 features such as tab completion, history, and IRC-style functions (like /help).
 """
 
-__all__ = [
-  'arguments',
-  'autocomplete',
-  'commands',
-  'help',
-]
-
 import os
 import sys
 
@@ -25,6 +18,13 @@ import stem.util.system
 import stem.util.term
 
 from stem.util.term import Attr, Color, format
+
+__all__ = [
+  'arguments',
+  'autocomplete',
+  'commands',
+  'help',
+]
 
 PROMPT = format('>>> ', Color.GREEN, Attr.BOLD, Attr.READLINE_ESCAPE)
 

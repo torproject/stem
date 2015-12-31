@@ -36,20 +36,6 @@ Package for parsing and processing descriptor data.
   =================== ===========
 """
 
-__all__ = [
-  'export',
-  'reader',
-  'remote',
-  'extrainfo_descriptor',
-  'server_descriptor',
-  'microdescriptor',
-  'networkstatus',
-  'router_status_entry',
-  'tordnsel',
-  'parse_file',
-  'Descriptor',
-]
-
 import base64
 import codecs
 import copy
@@ -70,6 +56,20 @@ try:
   from collections import OrderedDict
 except ImportError:
   from stem.util.ordereddict import OrderedDict
+
+__all__ = [
+  'export',
+  'reader',
+  'remote',
+  'extrainfo_descriptor',
+  'server_descriptor',
+  'microdescriptor',
+  'networkstatus',
+  'router_status_entry',
+  'tordnsel',
+  'parse_file',
+  'Descriptor',
+]
 
 KEYWORD_CHAR = 'a-zA-Z0-9-'
 WHITESPACE = ' \t'

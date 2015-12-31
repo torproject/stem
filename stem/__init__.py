@@ -464,6 +464,17 @@ Library for working with the tor process.
   ================= ===========
 """
 
+import stem.prereq
+
+if stem.prereq.is_python_3():
+  str_type = str
+  int_type = int
+else:
+  str_type = unicode
+  int_type = long
+
+import stem.util.enum
+
 __version__ = '1.4.1-dev'
 __author__ = 'Damian Johnson'
 __contact__ = 'atagar@torproject.org'
@@ -516,17 +527,6 @@ __all__ = [
   'GuardStatus',
   'TimeoutSetType',
 ]
-
-import stem.prereq
-
-if stem.prereq.is_python_3():
-  str_type = str
-  int_type = int
-else:
-  str_type = unicode
-  int_type = long
-
-import stem.util.enum
 
 # Constant to indicate an undefined argument default. Usually we'd use None for
 # this, but users will commonly provide None as the argument so need something

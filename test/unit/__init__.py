@@ -2,6 +2,9 @@
 Unit tests for the stem library.
 """
 
+import os
+import test.util
+
 __all__ = [
   'connection',
   'control',
@@ -11,10 +14,6 @@ __all__ = [
   'util',
   'version',
 ]
-
-
-import os
-import test.util
 
 
 def exec_documentation_example(filename):

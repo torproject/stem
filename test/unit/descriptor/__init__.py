@@ -2,6 +2,8 @@
 Unit tests for stem.descriptor.
 """
 
+import os
+
 __all__ = [
   'export',
   'extrainfo_descriptor',
@@ -11,8 +13,6 @@ __all__ = [
   'router_status_entry',
   'server_descriptor',
 ]
-
-import os
 
 DESCRIPTOR_TEST_DATA = os.path.join(os.path.dirname(__file__), 'data')
 

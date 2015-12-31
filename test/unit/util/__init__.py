@@ -2,6 +2,12 @@
 Unit tests for stem.util.* contents.
 """
 
+import datetime
+import time
+import unittest
+
+from stem.util import datetime_to_unix
+
 __all__ = [
   'conf',
   'connection',
@@ -11,12 +17,6 @@ __all__ = [
   'system',
   'tor_tools',
 ]
-
-import datetime
-import time
-import unittest
-
-from stem.util import datetime_to_unix
 
 
 class TestBaseUtil(unittest.TestCase):

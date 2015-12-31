@@ -5,6 +5,8 @@
 Utility functions used by the stem library.
 """
 
+import datetime
+
 __all__ = [
   'conf',
   'connection',
@@ -19,8 +21,6 @@ __all__ = [
   'tor_tools',
   'datetime_to_unix',
 ]
-
-import datetime
 
 
 def datetime_to_unix(timestamp):

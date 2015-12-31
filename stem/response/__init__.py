@@ -30,6 +30,11 @@ Parses replies from the control socket.
     +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
 """
 
+import re
+import threading
+
+import stem.socket
+
 __all__ = [
   'add_onion',
   'events',
@@ -43,15 +48,10 @@ __all__ = [
   'SingleLineResponse',
 ]
 
-import re
-import threading
-
 try:
   from StringIO import StringIO
 except ImportError:
   from io import StringIO
-
-import stem.socket
 
 KEY_ARG = re.compile('^(\S+)=')
 

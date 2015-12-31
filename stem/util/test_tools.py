@@ -139,6 +139,8 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
     pep8.ignore E121
     pep8.ignore E501
 
+    pep8.ignore run_tests.py => E402: import stem.util.enum
+
   ... you can then run tests with...
 
   ::
@@ -177,6 +179,26 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
 
   issues = {}
 
+  ignore_rules = []
+  ignore_for_file = []
+
+  for rule in CONFIG['pep8.ignore']:
+    if '=>' in rule:
+      path, rule_entry = rule.split('=>', 1)
+
+      if ':' in rule_entry:
+        rule, code = rule_entry.split(':', 1)
+        ignore_for_file.append((path.strip(), rule.strip(), code.strip()))
+    else:
+      ignore_rules.append(rule)
+
+  def is_ignored(path, rule, code):
+    for ignored_path, ignored_rule, ignored_code in ignore_for_file:
+      if path.endswith(ignored_path) and ignored_rule == rule and ignored_code == code.strip():
+        return True
+
+    return False
+
   if is_pep8_available():
     import pep8
 
@@ -189,9 +211,11 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
 
         if code:
           line = linecache.getline(self.filename, line_number)
-          issues.setdefault(self.filename, []).append(Issue(line_number, text, line))
 
-    style_checker = pep8.StyleGuide(ignore = CONFIG['pep8.ignore'], reporter = StyleReport)
+          if not is_ignored(self.filename, code, line):
+            issues.setdefault(self.filename, []).append(Issue(line_number, text, line))
+
+    style_checker = pep8.StyleGuide(ignore = ignore_rules, reporter = StyleReport)
     style_checker.check_files(list(_python_files(paths)))
 
   if check_newlines or check_exception_keyword:
