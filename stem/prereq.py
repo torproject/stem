@@ -3,7 +3,8 @@
 
 """
 Checks for stem dependencies. We require python 2.6 or greater (including the
-3.x series). Other requirements for complete functionality are...
+3.x series), but note we'll be bumping our requirements to python 2.7 in stem
+2.0. Other requirements for complete functionality are...
 
 * pycrypto module
 
@@ -12,10 +13,7 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
 ::
 
   check_requirements - checks for minimum requirements for running stem
-
-  is_python_27 - checks if python 2.7 or later is available
   is_python_3 - checks if python 3.0 or later is available
-
   is_crypto_available - checks if the pycrypto module is available
 """
 
@@ -46,9 +44,25 @@ def check_requirements():
     raise ImportError('stem requires python version 2.6 or greater')
 
 
+def _is_python_26():
+  """
+  Checks if we're running python 2.6. This isn't for users as it'll be removed
+  in stem 2.0 (when python 2.6 support goes away).
+
+  :returns: **True** if we're running python 2.6, **False** otherwise
+  """
+
+  major_version, minor_version = sys.version_info[0:2]
+
+  return major_version == 2 and minor_version == 6
+
+
 def is_python_27():
   """
   Checks if we're running python 2.7 or above (including the 3.x series).
+
+  .. deprecated:: 1.5.0
+     Function lacks much utility and will be eventually removed.
 
   :returns: **True** if we meet this requirement and **False** otherwise
   """

@@ -86,6 +86,12 @@ PEP8_TASK = Task(
   print_result = False,
 )
 
+if stem.prereq._is_python_26():
+  def assertItemsEqual(self, expected, actual):
+    self.assertEqual(set(expected), set(actual))
+
+  unittest.TestCase.assertItemsEqual = assertItemsEqual
+
 
 def main():
   start_time = time.time()

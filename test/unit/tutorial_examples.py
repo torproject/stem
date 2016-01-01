@@ -14,6 +14,8 @@ import stem.response
 import stem.descriptor.remote
 import stem.prereq
 
+import test.runner
+
 from stem import str_type
 from stem.control import Controller
 from stem.descriptor.remote import DIRECTORY_AUTHORITIES
@@ -240,6 +242,13 @@ class TestTutorialExamples(unittest.TestCase):
   @patch('stem.descriptor.remote.Query')
   @patch('stem.descriptor.remote.get_authorities')
   def test_compare_flags(self, get_authorities_mock, query_mock, stdout_mock):
+    if stem.prereq._is_python_26():
+      # example imports OrderedDict from collections which doesn't work under
+      # python 2.6
+
+      test.runner.skip(self, "(example doesn't support python 2.6)")
+      return
+
     get_authorities_mock().items.return_value = [('moria1', DIRECTORY_AUTHORITIES['moria1']), ('maatuska', DIRECTORY_AUTHORITIES['maatuska'])]
 
     fingerprint = [

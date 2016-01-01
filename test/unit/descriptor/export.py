@@ -26,8 +26,7 @@ class TestExport(unittest.TestCase):
     Exports a single minimal tor server descriptor.
     """
 
-    # we won't have a header prior to python 2.7
-    if not stem.prereq.is_python_27():
+    if stem.prereq._is_python_26():
       test.runner.skip(self, '(header added in python 2.7)')
       return
 
@@ -76,8 +75,7 @@ class TestExport(unittest.TestCase):
     Checks that the default attributes for our csv output doesn't include private fields.
     """
 
-    # we won't have a header prior to python 2.7
-    if not stem.prereq.is_python_27():
+    if stem.prereq._is_python_26():
       test.runner.skip(self, '(header added in python 2.7)')
       return
 

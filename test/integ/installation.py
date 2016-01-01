@@ -13,6 +13,9 @@ BASE_DIRECTORY = os.path.sep.join(__file__.split(os.path.sep)[:-3])
 
 
 class TestInstallation(unittest.TestCase):
+  # TODO: remove when dropping support for python 2.6
+  skip_reason = 'setUpClass() unsupported in python 2.6'
+
   @classmethod
   def setUpClass(self):
     self.site_packages_path = None
