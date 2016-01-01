@@ -113,7 +113,7 @@ def skip(test_case, message):
   :param str message: message to skip the test with
   """
 
-  if stem.prereq.is_python_27():
+  if not stem.prereq._is_python_26():
     test_case.skipTest(message)
 
 
