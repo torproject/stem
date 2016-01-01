@@ -46,6 +46,19 @@ def check_requirements():
     raise ImportError('stem requires python version 2.6 or greater')
 
 
+def _is_python_26():
+  """
+  Checks if we're running python 2.6. This isn't for users as it'll be removed
+  in stem 2.0 (when python 2.6 support goes away).
+
+  :returns: **True** if we're running python 2.6, **False** otherwise
+  """
+
+  major_version, minor_version = sys.version_info[0:2]
+
+  return major_version == 2 and minor_version == 6
+
+
 def is_python_27():
   """
   Checks if we're running python 2.7 or above (including the 3.x series).

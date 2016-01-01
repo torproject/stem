@@ -86,7 +86,7 @@ PEP8_TASK = Task(
   print_result = False,
 )
 
-if (2, 6) == sys.version_info[0:2]:
+if stem.prereq._is_python_26():
   def assertItemsEqual(self, expected, actual):
     self.assertEqual(set(expected), set(actual))
 
