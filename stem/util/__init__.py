@@ -7,6 +7,8 @@ Utility functions used by the stem library.
 
 import datetime
 
+import stem.prereq
+
 __all__ = [
   'conf',
   'connection',
@@ -34,4 +36,7 @@ def datetime_to_unix(timestamp):
   :returns: **float** for the unix timestamp of the given datetime object
   """
 
-  return (timestamp - datetime.datetime(1970, 1, 1)).total_seconds()
+  if stem.prereq._is_python_26():
+    return int(timestamp.strftime('%s')) - int(datetime.datetime(1970, 1, 1).strftime('%s')) + 3600
+  else:
+    return (timestamp - datetime.datetime(1970, 1, 1)).total_seconds()
