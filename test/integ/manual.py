@@ -85,6 +85,9 @@ Policies are considered first to last, and the first match wins. If you want to 
 
 
 class TestManual(unittest.TestCase):
+  # TODO: remove when dropping support for python 2.6
+  skip_reason = 'setUpClass() unsupported in python 2.6'
+
   @classmethod
   def setUpClass(self):
     self.man_path = None
