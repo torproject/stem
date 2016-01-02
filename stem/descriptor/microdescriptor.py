@@ -1,4 +1,4 @@
-# Copyright 2013-2015, Damian Johnson and The Tor Project
+# Copyright 2013-2016, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 
 """
