@@ -62,43 +62,43 @@ EXPECTED_FILES = {
 EXPECTED_CONFIG_OPTIONS = OrderedDict()
 
 EXPECTED_CONFIG_OPTIONS['AllowInvalidNodes'] = stem.manual.ConfigOption(
-  category = 'Client',
   name = 'AllowInvalidNodes',
+  category = 'Client',
   usage = 'entry|exit|middle|introduction|rendezvous|...',
   summary = 'Permits use of relays flagged as invalid by authorities',
   description = 'If some Tor servers are obviously not working right, the directory authorities can manually mark them as invalid, meaning that it\'s not recommended you use them for entry or exit positions in your circuits. You can opt to use them in some circuit positions, though. The default is "middle,rendezvous", and other choices are not advised.')
 
 EXPECTED_CONFIG_OPTIONS['ExcludeSingleHopRelays'] = stem.manual.ConfigOption(
-  category = 'Client',
   name = 'ExcludeSingleHopRelays',
+  category = 'Client',
   usage = '0|1',
   summary = 'Permits use of relays that allow single hop connections',
   description = 'This option controls whether circuits built by Tor will include relays with the AllowSingleHopExits flag set to true. If ExcludeSingleHopRelays is set to 0, these relays will be included. Note that these relays might be at higher risk of being seized or observed, so they are not normally included. Also note that relatively few clients turn off this option, so using these relays might make your client stand out. (Default: 1)')
 
 EXPECTED_CONFIG_OPTIONS['Bridge'] = stem.manual.ConfigOption(
-  category = 'Client',
   name = 'Bridge',
+  category = 'Client',
   usage = '[transport] IP:ORPort [fingerprint]',
   summary = 'Available bridges',
   description = 'When set along with UseBridges, instructs Tor to use the relay at "IP:ORPort" as a "bridge" relaying into the Tor network. If "fingerprint" is provided (using the same format as for DirAuthority), we will verify that the relay running at that location has the right fingerprint. We also use fingerprint to look up the bridge descriptor at the bridge authority, if it\'s provided and if UpdateBridgesFromAuthority is set too.\n\nIf "transport" is provided, and matches to a ClientTransportPlugin line, we use that pluggable transports proxy to transfer data to the bridge.')
 
 EXPECTED_CONFIG_OPTIONS['BandwidthRate'] = stem.manual.ConfigOption(
-  category = 'General',
   name = 'BandwidthRate',
+  category = 'General',
   usage = 'N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits',
   summary = 'Average bandwidth usage limit',
   description = 'A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) -- but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible. (Default: 1 GByte)\n\nWith this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\'s easy to forget that "B" means bytes, not bits.')
 
 EXPECTED_CONFIG_OPTIONS['BandwidthBurst'] = stem.manual.ConfigOption(
-  category = 'General',
   name = 'BandwidthBurst',
+  category = 'General',
   usage = 'N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits',
   summary = 'Maximum bandwidth usage limit',
   description = 'Limit the maximum token bucket size (also known as the burst) to the given number of bytes in each direction. (Default: 1 GByte)')
 
 EXPECTED_CONFIG_OPTIONS['MaxAdvertisedBandwidth'] = stem.manual.ConfigOption(
-  category = 'General',
   name = 'MaxAdvertisedBandwidth',
+  category = 'General',
   usage = 'N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits',
   summary = 'Limit for the bandwidth we advertise as being available for relaying',
   description = 'If set, we will not advertise more than this amount of bandwidth for our BandwidthRate. Server operators who want to reduce the number of clients who ask to build circuits through them (since this is proportional to advertised bandwidth rate) can thus reduce the CPU demands on their server without impacting network performance.')
@@ -111,6 +111,15 @@ class TestManual(unittest.TestCase):
     self.assertTrue(stem.manual.is_important('EXITPOLICY'))
 
     self.assertFalse(stem.manual.is_important('ConstrainedSockSize'))
+
+  def test_minimal_config_option(self):
+    blank = stem.manual.ConfigOption('UnknownOption')
+
+    self.assertEqual(stem.manual.Category.UNKNOWN, blank.category)
+    self.assertEqual('UnknownOption', blank.name)
+    self.assertEqual('', blank.usage)
+    self.assertEqual('', blank.summary)
+    self.assertEqual('', blank.description)
 
   def test_parsing_with_example(self):
     """

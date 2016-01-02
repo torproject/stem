@@ -47,7 +47,6 @@ us what our torrc options do...
 .. versionadded:: 1.5.0
 """
 
-import collections
 import os
 import shutil
 import sys
@@ -92,17 +91,37 @@ CATEGORY_SECTIONS = {
 }
 
 
-class ConfigOption(collections.namedtuple('ConfigOption', ['category', 'name', 'usage', 'summary', 'description'])):
+class ConfigOption(object):
   """
   Tor configuration attribute found in its torrc.
 
+  :var str name: name of the configuration option
   :var stem.manual.Category category: category the config option was listed
     under, this is Category.UNKNOWN if we didn't recognize the category
-  :var str name: name of the configuration option
   :var str usage: arguments accepted by the option
   :var str summary: brief description of what the option does
   :var str description: longer manual description with details
   """
+
+  def __init__(self, name, category = Category.UNKNOWN, usage = '', summary = '', description = ''):
+    self.name = name
+    self.category = category
+    self.usage = usage
+    self.summary = summary
+    self.description = description
+
+  def __eq__(self, other):
+    if not isinstance(other, ConfigOption):
+      return False
+
+    for attr in ('name', 'category', 'usage', 'summary', 'description'):
+      if getattr(self, attr) != getattr(other, attr):
+        return False
+
+    return True
+
+  def __ne__(self, other):
+    return not self == other
 
 
 @lru_cache()
@@ -301,8 +320,8 @@ class Manual(object):
 
         if key not in config_options:
           config_options[key] = ConfigOption(
-            conf.get('config_options.%s.category' % key, ''),
             conf.get('config_options.%s.name' % key, ''),
+            conf.get('config_options.%s.category' % key, ''),
             conf.get('config_options.%s.usage' % key, ''),
             conf.get('config_options.%s.summary' % key, ''),
             conf.get('config_options.%s.description' % key, '')
@@ -548,7 +567,7 @@ def _add_config_options(config_options, category, lines):
     if line and not line.startswith(' '):
       if last_option:
         summary = _config().get('manual.summary.%s' % last_option.lower(), '')
-        config_options[last_option] = ConfigOption(category, last_option, usage, summary, _join_lines(description).strip())
+        config_options[last_option] = ConfigOption(last_option, category, usage, summary, _join_lines(description).strip())
 
       if ' ' in line:
         last_option, usage = line.split(' ', 1)
@@ -564,7 +583,7 @@ def _add_config_options(config_options, category, lines):
 
   if last_option:
     summary = _config().get('manual.summary.%s' % last_option.lower(), '')
-    config_options[last_option] = ConfigOption(category, last_option, usage, summary, _join_lines(description).strip())
+    config_options[last_option] = ConfigOption(last_option, category, usage, summary, _join_lines(description).strip())
 
 
 def _join_lines(lines):
