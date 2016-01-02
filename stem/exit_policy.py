@@ -578,10 +578,10 @@ class MicroExitPolicy(ExitPolicy):
 
     policy = policy[6:]
 
-    if not policy.startswith(' ') or (len(policy) - 1 != len(policy.lstrip())):
+    if not policy.startswith(' '):
       raise ValueError('A microdescriptor exit policy should have a space separating accept/reject from its port list: %s' % self._policy)
 
-    policy = policy[1:]
+    policy = policy.lstrip()
 
     # convert our port list into MicroExitPolicyRule
     rules = []
@@ -657,10 +657,10 @@ class ExitPolicyRule(object):
 
     exitpattern = rule[6:]
 
-    if not exitpattern.startswith(' ') or (len(exitpattern) - 1 != len(exitpattern.lstrip())):
+    if not exitpattern.startswith(' '):
       raise ValueError('An exit policy should have a space separating its accept/reject from the exit pattern: %s' % rule)
 
-    exitpattern = exitpattern[1:]
+    exitpattern = exitpattern.lstrip()
 
     if ':' not in exitpattern:
       raise ValueError("An exitpattern must be of the form 'addrspec:portspec': %s" % rule)

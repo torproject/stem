@@ -4,7 +4,7 @@ Unit tests for the stem.exit_policy.ExitPolicyRule class.
 
 import unittest
 
-from stem.exit_policy import AddressType, ExitPolicyRule
+from stem.exit_policy import AddressType, ExitPolicyRule, MicroExitPolicy
 
 
 class TestExitPolicyRule(unittest.TestCase):
@@ -15,7 +15,6 @@ class TestExitPolicyRule(unittest.TestCase):
     invalid_inputs = (
       'accept',
       'reject',
-      'accept  *:*',
       'accept\t*:*',
       'accept\n*:*',
       'acceptt *:*',
@@ -28,6 +27,13 @@ class TestExitPolicyRule(unittest.TestCase):
 
     for rule_arg in invalid_inputs:
       self.assertRaises(ValueError, ExitPolicyRule, rule_arg)
+
+  def test_with_multiple_spaces(self):
+    rule = ExitPolicyRule('accept    *:80')
+    self.assertEqual('accept *:80', str(rule))
+
+    policy = MicroExitPolicy('accept      80,443')
+    self.assertTrue(policy.can_exit_to('75.119.206.243', 80))
 
   def test_str_unchanged(self):
     # provides a series of test inputs where the str() representation should
