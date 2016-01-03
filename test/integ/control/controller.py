@@ -189,6 +189,8 @@ class TestController(unittest.TestCase):
 
         self.assertTrue(isinstance(event, stem.response.events.ConfChangedEvent))
 
+      controller.reset_conf('NodeFamily')
+
   @require_controller
   def test_reattaching_listeners(self):
     """
@@ -466,6 +468,33 @@ class TestController(unittest.TestCase):
       self.assertEqual('la-di-dah', controller.get_conf('', 'la-di-dah'))
       self.assertEqual({}, controller.get_conf_map('', 'la-di-dah'))
       self.assertEqual({}, controller.get_conf_map([], 'la-di-dah'))
+
+  @require_controller
+  def test_is_set(self):
+    """
+    Exercises our is_set() method.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      custom_options = controller._get_custom_options()
+      self.assertTrue('ControlPort' in custom_options or 'ControlSocket' in custom_options)
+      self.assertEqual('1', custom_options['DownloadExtraInfo'])
+      self.assertEqual('127.0.0.1:1112', custom_options['SocksListenAddress'])
+
+      self.assertTrue(controller.is_set('DownloadExtraInfo'))
+      self.assertTrue(controller.is_set('SocksListenAddress'))
+      self.assertFalse(controller.is_set('CellStatistics'))
+      self.assertFalse(controller.is_set('ConnLimit'))
+
+      # check we update when setting and resetting values
+
+      controller.set_conf('ConnLimit', '1005')
+      self.assertTrue(controller.is_set('ConnLimit'))
+
+      controller.reset_conf('ConnLimit')
+      self.assertFalse(controller.is_set('ConnLimit'))
 
   @require_controller
   def test_hidden_services_conf(self):

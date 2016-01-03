@@ -93,6 +93,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |
     |- get_conf - gets the value of a configuration option
     |- get_conf_map - gets the values of multiple configuration options
+    |- is_set - determines if an option differs from its default
     |- set_conf - sets the value of a configuration option
     |- reset_conf - reverts configuration options to their default values
     |- set_options - sets or resets the values of multiple configuration options
@@ -1986,6 +1987,8 @@ class Controller(BaseController):
 
   def get_conf(self, param, default = UNDEFINED, multiple = False):
     """
+    get_conf(param, default = UNDEFINED, multiple = False)
+
     Queries the current value for a configuration option. Some configuration
     options (like the ExitPolicy) can have multiple values. This provides a
     **list** with all of the values if **multiple** is **True**. Otherwise this
@@ -2033,6 +2036,8 @@ class Controller(BaseController):
 
   def get_conf_map(self, params, default = UNDEFINED, multiple = True):
     """
+    get_conf_map(params, default = UNDEFINED, multiple = True)
+
     Similar to :func:`~stem.control.Controller.get_conf` but queries multiple
     configuration options, providing back a mapping of those options to their
     values.
@@ -2170,6 +2175,54 @@ class Controller(BaseController):
 
     return return_dict
 
+  @with_default()
+  def is_set(self, param, default = UNDEFINED):
+    """
+    is_set(param, default = UNDEFINED)
+
+    Checks if a configuration option differs from its default or not.
+
+    .. versionadded:: 1.5.0
+
+    :param str param: configuration option to check
+    :param object default: response if the query fails
+
+    :returns: **True** if option differs from its default and **False**
+      otherwise
+
+    :raises: :class:`stem.ControllerError` if the call fails and we weren't
+      provided a default response
+    """
+
+    return param in self._get_custom_options()
+
+  def _get_custom_options(self):
+    result = self._get_cache('get_custom_options')
+
+    if not result:
+      config_lines = self.get_info('config-text').splitlines()
+
+      # Tor provides some config options even if they haven't been set...
+      #
+      # https://trac.torproject.org/projects/tor/ticket/2362
+      # https://trac.torproject.org/projects/tor/ticket/17909
+
+      default_lines = (
+        'Log notice stdout',
+        'Log notice file /var/log/tor/log',
+        'DataDirectory /home/%s/.tor' % self.get_user('undefined'),
+        'HiddenServiceStatistics 0',
+      )
+
+      for line in default_lines:
+        if line in config_lines:
+          config_lines.remove(line)
+
+      result = dict([line.split(' ', 1) for line in config_lines])
+      self._set_cache({'get_custom_options': result})
+
+    return result
+
   def set_conf(self, param, value):
     """
     Changes the value of a tor configuration option. Our value can be any of
@@ -2279,6 +2332,7 @@ class Controller(BaseController):
             self._set_cache({'exitpolicy': None})
 
         self._set_cache(to_cache, 'getconf')
+        self._set_cache({'get_custom_options': None})
     else:
       log.debug('%s (failed, code: %s, message: %s)' % (query, response.code, response.message))
 
