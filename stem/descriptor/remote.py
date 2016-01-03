@@ -720,7 +720,7 @@ DIRECTORY_AUTHORITIES = {
     dir_port = 80,
     is_bandwidth_authority = False,
     fingerprint = '7BE683E65D48141321C5ED92F075C55364AC7123',
-    v3ident = '585769C78764D58426B8B52B6651A5A71137189A',
+    v3ident = '0232AF901C31A04EE9848595AF9BB7620D4C5B2E',
   ),
   'urras': DirectoryAuthority(
     nickname = 'urras',
