@@ -344,19 +344,14 @@ def _parse_or_address_line(descriptor, entries):
       raise ValueError('or-address line missing a colon: %s' % line)
 
     address, port = entry.rsplit(':', 1)
-    is_ipv6 = address.startswith('[') and address.endswith(']')
 
-    if is_ipv6:
-      address = address[1:-1]  # remove brackets
-
-    if not ((not is_ipv6 and stem.util.connection.is_valid_ipv4_address(address)) or
-            (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address))):
+    if not stem.util.connection.is_valid_ipv4_address(address) and not stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True):
       raise ValueError('or-address line has a malformed address: %s' % line)
 
     if not stem.util.connection.is_valid_port(port):
       raise ValueError('or-address line has a malformed port: %s' % line)
 
-    or_addresses.append((address, int(port), is_ipv6))
+    or_addresses.append((address.lstrip('[').rstrip(']'), int(port), stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True)))
 
   descriptor.or_addresses = or_addresses
 

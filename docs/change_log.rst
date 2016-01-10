@@ -66,6 +66,7 @@ The following are only available within Stem's `git repository
   * TypeError under python3 when using 'use_mirrors = True' (:trac:`17083`)
   * Deprecated hidden service descriptor's *introduction_points_auth* field, which was never implemented in tor (:trac:`15190`, :spec:`9c218f9`)
   * Fixed parsing of server descriptor's *allow-single-hop-exits* and *caches-extra-info* lines
+  * Bracketed IPv6 addresses were mistreated as being invalid content
   * Updated dannenberg's v3ident (:trac:`17906`)
 
  * **Utilities**
