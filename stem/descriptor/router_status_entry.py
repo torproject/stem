@@ -166,17 +166,12 @@ def _parse_a_line(descriptor, entries):
       raise ValueError("%s 'a' line must be of the form '[address]:[ports]': a %s" % (descriptor._name(), value))
 
     address, port = value.rsplit(':', 1)
-    is_ipv6 = address.startswith('[') and address.endswith(']')
 
-    if is_ipv6:
-      address = address[1:-1]  # remove brackets
-
-    if not ((not is_ipv6 and stem.util.connection.is_valid_ipv4_address(address)) or
-            (is_ipv6 and stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True))):
+    if not stem.util.connection.is_valid_ipv4_address(address) and not stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True):
       raise ValueError("%s 'a' line must start with an IPv6 address: a %s" % (descriptor._name(), value))
 
     if stem.util.connection.is_valid_port(port):
-      or_addresses.append((address.lstrip('[').rstrip(']'), int(port), is_ipv6))
+      or_addresses.append((address.lstrip('[').rstrip(']'), int(port), stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True)))
     else:
       raise ValueError("%s 'a' line had an invalid port (%s): a %s" % (descriptor._name(), port, value))
 
