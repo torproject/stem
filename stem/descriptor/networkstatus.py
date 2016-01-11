@@ -693,8 +693,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   """
   Version 3 network status document. This could be either a vote or consensus.
 
-  :var tuple routers: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
-    contained in the document
+  :var dict routers: fingerprint to :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
+    mapping for relays contained in the document
 
   :var int version: **\*** document version
   :var str version_flavor: **\*** flavor associated with the document (such as 'microdesc')
@@ -1421,8 +1421,8 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
   Network status document containing bridges. This is only available through
   the metrics site.
 
-  :var tuple routers: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2`
-    contained in the document
+  :var dict routers: fingerprint to :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
+    mapping for relays contained in the document
   :var datetime published: time when the document was published
   """
 
