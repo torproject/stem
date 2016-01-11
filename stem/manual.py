@@ -166,6 +166,19 @@ def _manual_differences(previous_manual, new_manual):
       if attr in ('name', 'synopsis', 'description'):
         lines.append('  Previously...\n\n%s\n' % previous_attr)
         lines.append('  Updating to...\n\n%s' % new_attr)
+      elif attr == 'config_options':
+        for config_name, config_attr in new_attr.items():
+          previous = previous_attr.get(config_name)
+
+          if previous is None:
+            lines.append('  adding new config option => %s' % config_name)
+          elif config_attr != previous:
+            for attr in ('name', 'category', 'usage', 'summary', 'description'):
+              if getattr(config_attr, attr) != getattr(previous, attr):
+                lines.append('  modified %s (%s) => %s' % (config_name, attr, getattr(config_attr, attr)))
+
+        for config_name in set(previous_attr.keys()).difference(new_attr.keys()):
+          lines.append('  removing config option => %s' % config_name)
       else:
         added_items = set(new_attr.items()).difference(previous_attr.items())
         removed_items = set(previous_attr.items()).difference(new_attr.items())
