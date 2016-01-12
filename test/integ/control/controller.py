@@ -630,7 +630,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      for ports in (4567890, [4567, 4567890], {4567: 'not_an_address:4567'}):
+      for ports in (4567890, [4567, 4567890], {4567: '-:4567'}):
         try:
           # try creating a service with an invalid port
           response = controller.create_ephemeral_hidden_service(ports)
