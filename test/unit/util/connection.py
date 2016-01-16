@@ -53,6 +53,16 @@ tcp    ESTAB      0      0              127.0.0.1:22            127.0.0.1:56673
 tcp    ESTAB      0      0           192.168.0.1:44415        38.229.79.2:443    users:(("tor",15843,9))
 """
 
+SS_GENTOO_OUTPUT = """\
+Netid  State      Recv-Q Send-Q Local Address:Port               Peer Address:Port
+tcp    ESTAB      0      0      5.9.158.75:443                107.170.93.13:56159               users:(("tor",pid=25056,fd=997))
+tcp    ESTAB      0      0      5.9.158.75:443                159.203.97.91:37802               users:(("tor",pid=25056,fd=77))
+tcp    ESTAB      0      0      2a01:4f8:190:514a::2:443                2001:638:a000:4140::ffff:189:38556               users:(("tor",pid=25056,fd=3175))
+tcp    ESTAB      0      0         ::ffff:5.9.158.75:5222                ::ffff:78.54.131.65:34950               users:(("beam",pid=1712,fd=29))
+tcp    ESTAB      0      0      2a01:4f8:190:514a::2:443                   2001:858:2:2:aabb:0:563b:1526:51428               users:(("tor",pid=25056,fd=3248))
+tcp    ESTAB      0      0         ::ffff:5.9.158.75:5222                ::ffff:78.54.131.65:34882               users:(("beam",pid=1712,fd=26))
+"""
+
 LSOF_OUTPUT = """\
 COMMAND     PID   USER   FD   TYPE   DEVICE SIZE/OFF NODE NAME
 ubuntu-ge  2164 atagar   11u  IPv4    13593      0t0  TCP 192.168.0.1:55395->21.89.91.78:80 (CLOSE_WAIT)
@@ -229,6 +239,22 @@ class TestConnection(unittest.TestCase):
 
     call_mock.side_effect = OSError('Unable to call ss')
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_pid = 1111)
+
+  @patch('stem.util.system.call')
+  def test_get_connections_by_ss_on_gentoo(self, call_mock):
+    """
+    Checks the get_connections function with the ss resolver results on a
+    hardened Gentoo system...
+
+      https://trac.torproject.org/projects/tor/ticket/18079
+    """
+
+    call_mock.return_value = SS_GENTOO_OUTPUT.split('\n')
+    expected = [
+      Connection('5.9.158.75', 443, '107.170.93.13', 56159, 'tcp'),
+      Connection('5.9.158.75', 443, '159.203.97.91', 37802, 'tcp'),
+    ]
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SS, process_pid = 25056, process_name = 'tor'))
 
   @patch('stem.util.system.call')
   def test_get_connections_by_lsof(self, call_mock):

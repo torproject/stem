@@ -72,6 +72,7 @@ The following are only available within Stem's `git repository
  * **Utilities**
 
   * Added :func:`~stem.util.__init__.datetime_to_unix`
+  * Pattern used by our 'ss' connection resolver didn't work on Gentoo (:trac:`18079`)
 
  * **Interpreter**
 
