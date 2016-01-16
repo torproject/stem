@@ -110,25 +110,25 @@ RESOLVER_FILTER = {
   Resolver.PROC: '',
 
   # tcp        0    586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843/tor
-  Resolver.NETSTAT: '^{protocol}\s+.*\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED\s+{pid}/{name}\s*$',
+  Resolver.NETSTAT: '^{protocol}\s+.*\s+{local}\s+{remote}\s+ESTABLISHED\s+{pid}/{name}\s*$',
 
   # tcp        586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843
-  Resolver.NETSTAT_WINDOWS: '^\s*{protocol}\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED\s+{pid}\s*$',
+  Resolver.NETSTAT_WINDOWS: '^\s*{protocol}\s+{local}\s+{remote}\s+ESTABLISHED\s+{pid}\s*$',
 
   # tcp    ESTAB      0      0           192.168.0.20:44415       38.229.79.2:443    users:(("tor",15843,9))
-  Resolver.SS: '^{protocol}\s+ESTAB\s+.*\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+users:\(\("{name}",(?:pid=)?{pid},(?:fd=)?[0-9]+\)\)$',
+  Resolver.SS: '^{protocol}\s+ESTAB\s+.*\s+{local}\s+{remote}\s+users:\(\("{name}",(?:pid=)?{pid},(?:fd=)?[0-9]+\)\)$',
 
   # tor  3873  atagar  45u  IPv4  40994  0t0  TCP 10.243.55.20:45724->194.154.227.109:9001 (ESTABLISHED)
-  Resolver.LSOF: '^{name}\s+{pid}\s+.*\s+{protocol}\s+{local_address}:{local_port}->{remote_address}:{remote_port} \(ESTABLISHED\)$',
+  Resolver.LSOF: '^{name}\s+{pid}\s+.*\s+{protocol}\s+{local}->{remote} \(ESTABLISHED\)$',
 
   # atagar   tor                  15843    tcp4   192.168.0.20:44092        68.169.35.102:443         ESTABLISHED
-  Resolver.SOCKSTAT: '^\S+\s+{name}\s+{pid}\s+{protocol}4\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}\s+ESTABLISHED$',
+  Resolver.SOCKSTAT: '^\S+\s+{name}\s+{pid}\s+{protocol}4\s+{local}\s+{remote}\s+ESTABLISHED$',
 
   # _tor     tor        4397  12 tcp4   172.27.72.202:54011   127.0.0.1:9001
-  Resolver.BSD_SOCKSTAT: '^\S+\s+{name}\s+{pid}\s+\S+\s+{protocol}4\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}$',
+  Resolver.BSD_SOCKSTAT: '^\S+\s+{name}\s+{pid}\s+\S+\s+{protocol}4\s+{local}\s+{remote}$',
 
   # 3561 tor                 4 s - rw---n--   2       0 TCP 10.0.0.2:9050 10.0.0.1:22370
-  Resolver.BSD_PROCSTAT: '^\s*{pid}\s+{name}\s+.*\s+{protocol}\s+{local_address}:{local_port}\s+{remote_address}:{remote_port}$',
+  Resolver.BSD_PROCSTAT: '^\s*{pid}\s+{name}\s+.*\s+{protocol}\s+{local}\s+{remote}$',
 }
 
 
@@ -147,9 +147,15 @@ class Connection(collections.namedtuple('Connection', ['local_address', 'local_p
 def get_connections(resolver, process_pid = None, process_name = None):
   """
   Retrieves a list of the current connections for a given process. This
-  provides a list of :class:`~stem.util.connection.Connection`.
+  provides a list of :class:`~stem.util.connection.Connection`. Note that
+  addresses may be IPv4 *or* IPv6 depending on what the platform supports.
 
   .. versionadded:: 1.1.0
+
+  .. versionchanged:: 1.5.0
+     Basic IPv6 support. This is incomplete in that resolver commands we run
+     may not surface IPv6 connections. But when present this function now
+     includes them in our results.
 
   :param Resolver resolver: method of connection resolution to use
   :param int process_pid: pid of the process to retrieve
@@ -197,10 +203,8 @@ def get_connections(resolver, process_pid = None, process_name = None):
 
   resolver_regex_str = RESOLVER_FILTER[resolver].format(
     protocol = '(?P<protocol>\S+)',
-    local_address = '(?P<local_address>[0-9.]+)',
-    local_port = '(?P<local_port>[0-9]+)',
-    remote_address = '(?P<remote_address>[0-9.]+)',
-    remote_port = '(?P<remote_port>[0-9]+)',
+    local = '(?P<local>[0-9a-f.:]+)',
+    remote = '(?P<remote>[0-9a-f.:]+)',
     pid = process_pid if process_pid else '[0-9]*',
     name = process_name if process_name else '\S*',
   )
@@ -211,26 +215,36 @@ def get_connections(resolver, process_pid = None, process_name = None):
   connections = []
   resolver_regex = re.compile(resolver_regex_str)
 
+  def _parse_address_str(addr_type, addr_str, line):
+    addr, port = addr_str.rsplit(':', 1)
+
+    if not is_valid_ipv4_address(addr) and not is_valid_ipv6_address(addr):
+      _log('Invalid %s address (%s): %s' % (addr_type, addr, line))
+      return None, None
+    elif not is_valid_port(port):
+      _log('Invalid %s port (%s): %s' % (addr_type, port, line))
+      return None, None
+    else:
+      _log('Valid %s:%s: %s' % (addr, port, line))
+      return addr, int(port)
+
   for line in results:
     match = resolver_regex.match(line)
 
     if match:
       attr = match.groupdict()
-      local_addr = attr['local_address']
-      local_port = int(attr['local_port'])
-      remote_addr = attr['remote_address']
-      remote_port = int(attr['remote_port'])
+
+      local_addr, local_port = _parse_address_str('local', attr['local'], line)
+      remote_addr, remote_port = _parse_address_str('remote', attr['remote'], line)
+
+      if not (local_addr and local_port and remote_addr and remote_port):
+        continue  # missing or malformed field
+
       protocol = attr['protocol'].lower()
 
-      if remote_addr == '0.0.0.0':
-        continue  # procstat response for unestablished connections
-
-      if not (is_valid_ipv4_address(local_addr) and is_valid_ipv4_address(remote_addr)):
-        _log('Invalid address (%s or %s): %s' % (local_addr, remote_addr, line))
-      elif not (is_valid_port(local_port) and is_valid_port(remote_port)):
-        _log('Invalid port (%s or %s): %s' % (local_port, remote_port, line))
-      elif protocol not in ('tcp', 'udp'):
+      if protocol not in ('tcp', 'udp'):
         _log('Unrecognized protocol (%s): %s' % (protocol, line))
+        continue
 
       conn = Connection(local_addr, local_port, remote_addr, remote_port, protocol)
       connections.append(conn)

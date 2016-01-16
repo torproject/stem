@@ -253,8 +253,16 @@ class TestConnection(unittest.TestCase):
     expected = [
       Connection('5.9.158.75', 443, '107.170.93.13', 56159, 'tcp'),
       Connection('5.9.158.75', 443, '159.203.97.91', 37802, 'tcp'),
+      Connection('2a01:4f8:190:514a::2', 443, '2001:638:a000:4140::ffff:189', 38556, 'tcp'),
+      Connection('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 51428, 'tcp'),
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SS, process_pid = 25056, process_name = 'tor'))
+
+    # TODO: This example ss output has entries like "::ffff:5.9.158.75:5222".
+    # What is this? Looks like a IPv6 *and* IPv4 address mashed together. Our
+    # resolver understandably thinks this is invalid right now.
+
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_name = 'beam')
 
   @patch('stem.util.system.call')
   def test_get_connections_by_lsof(self, call_mock):
