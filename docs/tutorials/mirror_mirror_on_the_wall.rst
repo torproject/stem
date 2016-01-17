@@ -263,31 +263,77 @@ Each library has its own capabilities...
 .. role:: red
 .. role:: green
 
-=========================== ================= =============== ==============
-Capability                  Stem              Metrics-lib     Zoossh
-=========================== ================= =============== ==============
-Language                    :green:`Python`   :green:`Java`   :green:`Go`
-Checks signatures           :green:`Mostly`   :red:`No`       :red:`No`
-Create new descriptors      :red:`No`         :red:`No`       :red:`No`
-Lazy parsing                :green:`Yes`      :red:`No`       :green:`Yes`
-Type detection by @type     :green:`Yes`      :green:`Yes`    :green:`Yes`
-Type detection by filename  :green:`Yes`      :red:`No`       :red:`No`
-Packages                    :green:`Several`  :red:`None`     :red:`None`
+=========================== ===================== =================== ==============
+Capability                  Stem                  Metrics-lib         Zoossh
+=========================== ===================== =================== ==============
+Language                    :green:`Python`       :green:`Java`       :green:`Go`
+Checks signatures           :green:`Mostly`       :red:`No`           :red:`No`
+Create new descriptors      :red:`No`             :red:`No`           :red:`No`
+Lazy parsing                :green:`Yes`          :red:`No`           :green:`Yes`
+Type detection by @type     :green:`Yes`          :green:`Yes`        :green:`Yes`
+Type detection by filename  :green:`Yes`          :red:`No`           :red:`No`
+Packages                    :green:`Several`      :red:`None`         :red:`None`
 **Can Read/Download From**
-Files                       :green:`Yes`      :green:`Yes`    :green:`Yes`
-Tarballs                    :green:`Yes`      :green:`Yes`    :red:`No`
-Tor Process                 :green:`Yes`      :red:`No`       :red:`No`
-Directory Authorities       :green:`Yes`      :green:`Yes`    :red:`No`
-CollecTor                   :red:`No`         :green:`Yes`    :red:`No`
+Files                       :green:`Yes`          :green:`Yes`        :green:`Yes`
+Tarballs                    :green:`Yes`          :green:`Yes`        :red:`No`
+Tor Process                 :green:`Yes`          :red:`No`           :red:`No`
+Directory Authorities       :green:`Yes`          :green:`Yes`        :red:`No`
+CollecTor                   :red:`No`             :green:`Yes`        :red:`No`
 **Supported Types**
-Server Descriptors          :green:`Yes`      :green:`Yes`    :green:`Partly`
-Extrainfo Descriptors       :green:`Yes`      :green:`Yes`    :red:`No`
-Microdescriptors            :green:`Yes`      :green:`Yes`    :red:`No`
-Consensus                   :green:`Yes`      :green:`Yes`    :green:`Partly`
-Bridge Descriptors          :green:`Yes`      :green:`Yes`    :red:`No`
-Hidden Service Descriptors  :green:`Yes`      :red:`No`       :red:`No`
-Bridge Pool Assignments     :red:`No`         :green:`Yes`    :red:`No`
-Torperf                     :red:`No`         :green:`Yes`    :red:`No`
-Tordnsel                    :green:`Yes`      :green:`Yes`    :red:`No`
-=========================== ================= =============== ==============
+Server Descriptors          :green:`Yes`          :green:`Yes`        :green:`Partly`
+Extrainfo Descriptors       :green:`Yes`          :green:`Yes`        :red:`No`
+Microdescriptors            :green:`Yes`          :green:`Yes`        :red:`No`
+Consensus                   :green:`Yes`          :green:`Yes`        :green:`Partly`
+Bridge Descriptors          :green:`Yes`          :green:`Yes`        :red:`No`
+Hidden Service Descriptors  :green:`Yes`          :red:`No`           :red:`No`
+Bridge Pool Assignments     :red:`No`             :green:`Yes`        :red:`No`
+Torperf                     :red:`No`             :green:`Yes`        :red:`No`
+Tordnsel                    :green:`Yes`          :green:`Yes`        :red:`No`
+**Benchmarks**
+Server Descriptors          :green:`0.63 ms`      :green:`0.29 ms`    :green:`0.46 ms`
+Extrainfo Descriptors       :green:`0.42 ms`      :green:`0.22 ms`    :red:`unsupported`
+Microdescriptors            :green:`0.34 ms`      :green:`0.07 ms`    :red:`unsupported`
+Consensus                   :green:`876.09 ms`    :green:`246.71 ms`  :green:`83.00 ms`
+Benchmarked With Commit     :green:`c01a9cd`      :green:`8767f3e`    :green:`2380e55`
+Language Interpreter        :green:`Python 3.5.1` :green:`Java 1.7.0` :green:`Go 1.5.2`
+=========================== ===================== =================== ==============
 
+Few things to note about these benchmarks...
+
+* **Zoossh is the fastest.** Its benchmarks were at a disadvantage due to not
+  reading from tarballs.
+
+* Your Python version makes a very large difference for Stem. For instance,
+  with Python 2.7 reading a consensus takes **1,393.10 ms** (almost twice as
+  long).
+
+* Metrics-lib and Stem can both read from compressed tarballs at a small
+  performance cost. For instance, Metrics-lib can read an `lzma compressed
+  <../faq.html#how-do-i-read-tar-xz-descriptor-archives>`_ consensus in
+  **255.76 ms** and Stem can do it in **913.12 ms**.
+
+So what does code with each of these look like?
+
+Stem Example
+------------
+
+* `Benchmark Script <../.../../_static/example/benchmark_stem.py>`_
+
+.. literalinclude:: /_static/example/benchmark_server_descriptor_stem.py
+   :language: python
+
+Metrics-lib Example
+-------------------
+
+* `Benchmark Script <../.../../_static/example/benchmark_metrics_lib.java>`_
+
+.. literalinclude:: /_static/example/benchmark_server_descriptor_metrics_lib.java
+   :language: java
+
+Zoossh Example
+--------------
+
+* `Benchmark Script <../.../../_static/example/benchmark_zoossh.go>`_
+
+.. literalinclude:: /_static/example/benchmark_server_descriptor_zoossh.go
+   :language: go
