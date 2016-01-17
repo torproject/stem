@@ -74,6 +74,7 @@ The following are only available within Stem's `git repository
   * Added :func:`~stem.util.__init__.datetime_to_unix`
   * Basic IPv6 support in :func:`~stem.util.connection.get_connections`
   * The 'ss' connection resolver didn't work on Gentoo (:trac:`18079`)
+  * Allow :func:`stem.util.conf.Config.set` to remove values when provided with a **None** value
 
  * **Interpreter**
 

@@ -620,6 +620,9 @@ class Config(object):
     Appends the given key/value configuration mapping, behaving the same as if
     we'd loaded this from a configuration file.
 
+    .. versionchanged:: 1.5.0
+       Allow removal of values by overwriting with a **None** value.
+
     :param str key: key for the configuration mapping
     :param str,list value: value we're setting the mapping to
     :param bool overwrite: replaces the previous value if **True**, otherwise
@@ -629,7 +632,12 @@ class Config(object):
     with self._contents_lock:
       unicode_type = str if stem.prereq.is_python_3() else unicode
 
-      if isinstance(value, bytes) or isinstance(value, unicode_type):
+      if value is None:
+        if overwrite and key in self._contents:
+          del self._contents[key]
+        else:
+          pass  # no value so this is a no-op
+      elif isinstance(value, (bytes, unicode_type)):
         if not overwrite and key in self._contents:
           self._contents[key].append(value)
         else:
