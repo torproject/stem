@@ -256,7 +256,7 @@ def _parse_file_for_tarfile(descriptor_file, *args, **kwargs):
     if tar_entry.isfile():
       entry = descriptor_file.extractfile(tar_entry)
 
-      if entry.size == 0:
+      if tar_entry.size == 0:
         continue
 
       try:
