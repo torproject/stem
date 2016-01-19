@@ -355,7 +355,12 @@ def connections(pid):
   start_time, parameter = time.time(), 'process connections'
   inodes = []
 
-  for fd in os.listdir('/proc/%s/fd' % pid):
+  try:
+    fd_contents = os.listdir('/proc/%s/fd' % pid)
+  except OSError as exc:
+    raise IOError('Unable to read our file descriptors: %s' % exc)
+
+  for fd in fd_contents:
     fd_path = '/proc/%s/fd/%s' % (pid, fd)
 
     try:
