@@ -290,10 +290,10 @@ Bridge Pool Assignments     :red:`No`             :green:`Yes`        :red:`No`
 Torperf                     :red:`No`             :green:`Yes`        :red:`No`
 Tordnsel                    :green:`Yes`          :green:`Yes`        :red:`No`
 **Benchmarks**
-Server Descriptors          :green:`0.63 ms`      :green:`0.29 ms`    :green:`0.46 ms`
-Extrainfo Descriptors       :green:`0.42 ms`      :green:`0.22 ms`    :red:`unsupported`
-Microdescriptors            :green:`0.34 ms`      :green:`0.07 ms`    :red:`unsupported`
-Consensus                   :green:`876.09 ms`    :green:`246.71 ms`  :green:`83.00 ms`
+Server Descriptors          :green:`0.60 ms`      :green:`0.29 ms`    :green:`0.46 ms`
+Extrainfo Descriptors       :green:`0.40 ms`      :green:`0.22 ms`    :red:`unsupported`
+Microdescriptors            :green:`0.33 ms`      :green:`0.07 ms`    :red:`unsupported`
+Consensus                   :green:`865.72 ms`    :green:`246.71 ms`  :green:`83.00 ms`
 Benchmarked With Commit     :green:`c01a9cd`      :green:`8767f3e`    :green:`2380e55`
 Language Interpreter        :green:`Python 3.5.1` :green:`Java 1.7.0` :green:`Go 1.5.2`
 =========================== ===================== =================== ==============
@@ -304,7 +304,7 @@ Few things to note about these benchmarks...
   reading from tarballs.
 
 * Your Python version makes a very large difference for Stem. For instance,
-  with Python 2.7 reading a consensus takes **1,393.10 ms** (almost twice as
+  with Python 2.7 reading a consensus takes **1,290.84 ms** (almost twice as
   long).
 
 * Metrics-lib and Stem can both read from compressed tarballs at a small
