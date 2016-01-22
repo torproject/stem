@@ -310,7 +310,7 @@ Few things to note about these benchmarks...
 * Metrics-lib and Stem can both read from compressed tarballs at a small
   performance cost. For instance, Metrics-lib can read an `lzma compressed
   <../faq.html#how-do-i-read-tar-xz-descriptor-archives>`_ consensus in
-  **255.76 ms** and Stem can do it in **913.12 ms**.
+  **255.76 ms** and Stem can do it in **902.75 ms**.
 
 So what does code with each of these look like?
 
