@@ -552,6 +552,9 @@ class Config(object):
       raise ValueError('Unable to save configuration: no path provided')
 
     with self._contents_lock:
+      if not os.path.exists(os.path.dirname(self._path)):
+        os.makedirs(os.path.dirname(self._path))
+
       with open(self._path, 'w') as output_file:
         for entry_key in self.keys():
           for entry_value in self.get_value(entry_key, multiple = True):
