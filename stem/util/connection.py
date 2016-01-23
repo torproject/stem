@@ -203,8 +203,8 @@ def get_connections(resolver, process_pid = None, process_name = None):
 
   resolver_regex_str = RESOLVER_FILTER[resolver].format(
     protocol = '(?P<protocol>\S+)',
-    local = '(?P<local>[0-9a-f.:]+)',
-    remote = '(?P<remote>[0-9a-f.:]+)',
+    local = '(?P<local>[\[\]0-9a-f.:]+)',
+    remote = '(?P<remote>[\[\]0-9a-f.:]+)',
     pid = process_pid if process_pid else '[0-9]*',
     name = process_name if process_name else '\S*',
   )
@@ -218,7 +218,7 @@ def get_connections(resolver, process_pid = None, process_name = None):
   def _parse_address_str(addr_type, addr_str, line):
     addr, port = addr_str.rsplit(':', 1)
 
-    if not is_valid_ipv4_address(addr) and not is_valid_ipv6_address(addr):
+    if not is_valid_ipv4_address(addr) and not is_valid_ipv6_address(addr, allow_brackets = True):
       _log('Invalid %s address (%s): %s' % (addr_type, addr, line))
       return None, None
     elif not is_valid_port(port):
@@ -226,7 +226,7 @@ def get_connections(resolver, process_pid = None, process_name = None):
       return None, None
     else:
       _log('Valid %s:%s: %s' % (addr, port, line))
-      return addr, int(port)
+      return addr.lstrip('[').rstrip(']'), int(port)
 
   for line in results:
     match = resolver_regex.match(line)

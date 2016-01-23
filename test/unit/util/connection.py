@@ -11,9 +11,9 @@ from stem.util.connection import Resolver, Connection
 
 try:
   # added in python 3.3
-  from unittest.mock import patch
+  from unittest.mock import Mock, patch
 except ImportError:
-  from mock import patch
+  from mock import Mock, patch
 
 NETSTAT_OUTPUT = """\
 Active Internet connections (w/o servers)
@@ -73,6 +73,15 @@ tor       15843 atagar   10u  IPv4 34165291      0t0  TCP 192.168.0.1:44092->68.
 python    16422 atagar    3u  IPv4 34203773      0t0  UDP 127.0.0.1:39624->127.0.0.1:53
 firefox   20586 atagar   66u  IPv4  5765353      0t0  TCP 192.168.0.1:47486->62.135.16.134:443 (ESTABLISHED)
 firefox   20586 atagar   71u  IPv4 13094989      0t0  TCP 192.168.0.1:43762->182.3.10.42:443 (CLOSE_WAIT)
+"""
+
+LSOF_IPV6_OUTPUT = """\
+COMMAND  PID     USER   FD   TYPE   DEVICE SIZE/OFF NODE NAME
+ntpd    1818     root   20u  IPv6      530      0t0  UDP [::1]:123
+ntpd    1818     root   21u  IPv6      532      0t0  UDP [2a01:4f8:190:514a::2]:123
+ntpd    1818     root   22u  IPv6      534      0t0  UDP [fe80::3285:a9ff:feed:1cb]:123
+tor     1904      tor   10u  IPv6     4372      0t0  TCP [2a01:4f8:190:514a::2]:443 (LISTEN)
+tor     1904      tor 3228u  IPv6 10303350      0t0  TCP [2a01:4f8:190:514a::2]:443->[2001:858:2:2:aabb:0:563b:1526]:44811 (ESTABLISHED)
 """
 
 LSOF_OUTPUT_OSX = """\
@@ -240,8 +249,8 @@ class TestConnection(unittest.TestCase):
     call_mock.side_effect = OSError('Unable to call ss')
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_pid = 1111)
 
-  @patch('stem.util.system.call')
-  def test_get_connections_by_ss_ipv6(self, call_mock):
+  @patch('stem.util.system.call', Mock(return_value = SS_IPV6_OUTPUT.split('\n')))
+  def test_get_connections_by_ss_ipv6(self):
     """
     Checks the get_connections function with the ss resolver results on IPv6
     conections. This also checks with the output from a hardened Gentoo system
@@ -250,7 +259,6 @@ class TestConnection(unittest.TestCase):
       https://trac.torproject.org/projects/tor/ticket/18079
     """
 
-    call_mock.return_value = SS_IPV6_OUTPUT.split('\n')
     expected = [
       Connection('5.9.158.75', 443, '107.170.93.13', 56159, 'tcp'),
       Connection('5.9.158.75', 443, '159.203.97.91', 37802, 'tcp'),
@@ -279,14 +287,21 @@ class TestConnection(unittest.TestCase):
     call_mock.side_effect = OSError('Unable to call lsof')
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 1111)
 
-  @patch('stem.util.system.call')
-  def test_get_connections_by_lsof_osx(self, call_mock):
+  @patch('stem.util.system.call', Mock(return_value = LSOF_IPV6_OUTPUT.split('\n')))
+  def test_get_connections_by_lsof_ipv6(self):
+    """
+    Checks the get_connections function with the lsof resolver for IPv6.
+    """
+
+    expected = [Connection('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 44811, 'tcp')]
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.LSOF, process_pid = 1904, process_name = 'tor'))
+
+  @patch('stem.util.system.call', Mock(return_value = LSOF_OUTPUT_OSX.split('\n')))
+  def test_get_connections_by_lsof_osx(self):
     """
     Checks the get_connections function with the lsof resolver on OSX. This
     only includes entries for the tor process.
     """
-
-    call_mock.return_value = LSOF_OUTPUT_OSX.split('\n')
 
     expected = [
       Connection('192.168.1.20', 9090, '38.229.79.2', 14010, 'tcp'),
