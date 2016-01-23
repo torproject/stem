@@ -210,8 +210,8 @@ class TestProc(unittest.TestCase):
     self.assertEqual([], proc.connections(0))
 
     expected_results = [
-      ('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp'),
-      ('187.187.187.187', 48059, '204.204.204.204', 52428, 'udp'),
+      ('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp', False),
+      ('187.187.187.187', 48059, '204.204.204.204', 52428, 'udp', False),
     ]
 
     self.assertEqual(expected_results, proc.connections(pid))

@@ -185,13 +185,13 @@ class TestConnection(unittest.TestCase):
     """
 
     proc_mock.return_value = [
-      ('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp'),
-      ('187.187.187.187', 48059, '204.204.204.204', 52428, 'tcp'),
+      ('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp', False),
+      ('187.187.187.187', 48059, '204.204.204.204', 52428, 'tcp', False),
     ]
 
     expected = [
-      Connection('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp'),
-      Connection('187.187.187.187', 48059, '204.204.204.204', 52428, 'tcp'),
+      Connection('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp', False),
+      Connection('187.187.187.187', 48059, '204.204.204.204', 52428, 'tcp', False),
     ]
 
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.PROC, process_pid = 1111))
@@ -206,7 +206,7 @@ class TestConnection(unittest.TestCase):
     """
 
     call_mock.return_value = NETSTAT_OUTPUT.split('\n')
-    expected = [Connection('192.168.0.1', 44284, '38.229.79.2', 443, 'tcp')]
+    expected = [Connection('192.168.0.1', 44284, '38.229.79.2', 443, 'tcp', False)]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.NETSTAT, process_pid = 15843, process_name = 'tor'))
 
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 15843, process_name = 'stuff')
@@ -222,7 +222,7 @@ class TestConnection(unittest.TestCase):
     """
 
     call_mock.return_value = NETSTAT_WINDOWS_OUTPUT.split('\n')
-    expected = [Connection('192.168.0.1', 44284, '38.229.79.2', 443, 'tcp')]
+    expected = [Connection('192.168.0.1', 44284, '38.229.79.2', 443, 'tcp', False)]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.NETSTAT_WINDOWS, process_pid = 15843, process_name = 'tor'))
 
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT_WINDOWS, process_pid = 1111, process_name = 'tor')
@@ -238,8 +238,8 @@ class TestConnection(unittest.TestCase):
 
     call_mock.return_value = SS_OUTPUT.split('\n')
     expected = [
-      Connection('192.168.0.1', 44092, '23.112.135.72', 443, 'tcp'),
-      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp'),
+      Connection('192.168.0.1', 44092, '23.112.135.72', 443, 'tcp', False),
+      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp', False),
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SS, process_pid = 15843, process_name = 'tor'))
 
@@ -260,10 +260,10 @@ class TestConnection(unittest.TestCase):
     """
 
     expected = [
-      Connection('5.9.158.75', 443, '107.170.93.13', 56159, 'tcp'),
-      Connection('5.9.158.75', 443, '159.203.97.91', 37802, 'tcp'),
-      Connection('2a01:4f8:190:514a::2', 443, '2001:638:a000:4140::ffff:189', 38556, 'tcp'),
-      Connection('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 51428, 'tcp'),
+      Connection('5.9.158.75', 443, '107.170.93.13', 56159, 'tcp', False),
+      Connection('5.9.158.75', 443, '159.203.97.91', 37802, 'tcp', False),
+      Connection('2a01:4f8:190:514a::2', 443, '2001:638:a000:4140::ffff:189', 38556, 'tcp', True),
+      Connection('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 51428, 'tcp', True),
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SS, process_pid = 25056, process_name = 'tor'))
     self.assertEqual(2, len(stem.util.connection.get_connections(Resolver.SS, process_name = 'beam')))
@@ -276,8 +276,8 @@ class TestConnection(unittest.TestCase):
 
     call_mock.return_value = LSOF_OUTPUT.split('\n')
     expected = [
-      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp'),
-      Connection('192.168.0.1', 44092, '68.169.35.102', 443, 'tcp'),
+      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp', False),
+      Connection('192.168.0.1', 44092, '68.169.35.102', 443, 'tcp', False),
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.LSOF, process_pid = 15843, process_name = 'tor'))
 
@@ -293,7 +293,7 @@ class TestConnection(unittest.TestCase):
     Checks the get_connections function with the lsof resolver for IPv6.
     """
 
-    expected = [Connection('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 44811, 'tcp')]
+    expected = [Connection('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 44811, 'tcp', True)]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.LSOF, process_pid = 1904, process_name = 'tor'))
 
   @patch('stem.util.system.call', Mock(return_value = LSOF_OUTPUT_OSX.split('\n')))
@@ -304,9 +304,9 @@ class TestConnection(unittest.TestCase):
     """
 
     expected = [
-      Connection('192.168.1.20', 9090, '38.229.79.2', 14010, 'tcp'),
-      Connection('192.168.1.20', 9090, '68.169.35.102', 14815, 'tcp'),
-      Connection('192.168.1.20', 9090, '62.135.16.134', 14456, 'tcp'),
+      Connection('192.168.1.20', 9090, '38.229.79.2', 14010, 'tcp', False),
+      Connection('192.168.1.20', 9090, '68.169.35.102', 14815, 'tcp', False),
+      Connection('192.168.1.20', 9090, '62.135.16.134', 14456, 'tcp', False),
     ]
 
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.LSOF, process_pid = 129, process_name = 'tor'))
@@ -319,8 +319,8 @@ class TestConnection(unittest.TestCase):
 
     call_mock.return_value = SOCKSTAT_OUTPUT.split('\n')
     expected = [
-      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp'),
-      Connection('192.168.0.1', 44092, '68.169.35.102', 443, 'tcp'),
+      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp', False),
+      Connection('192.168.0.1', 44092, '68.169.35.102', 443, 'tcp', False),
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SOCKSTAT, process_pid = 15843, process_name = 'tor'))
 
@@ -339,11 +339,11 @@ class TestConnection(unittest.TestCase):
 
     call_mock.return_value = BSD_SOCKSTAT_OUTPUT.split('\n')
     expected = [
-      Connection('172.27.72.202', 54011, '38.229.79.2', 9001, 'tcp'),
-      Connection('172.27.72.202', 59374, '68.169.35.102', 9001, 'tcp'),
-      Connection('172.27.72.202', 59673, '213.24.100.160', 9001, 'tcp'),
-      Connection('172.27.72.202', 51946, '32.188.221.72', 443, 'tcp'),
-      Connection('172.27.72.202', 60344, '21.89.91.78', 9001, 'tcp'),
+      Connection('172.27.72.202', 54011, '38.229.79.2', 9001, 'tcp', False),
+      Connection('172.27.72.202', 59374, '68.169.35.102', 9001, 'tcp', False),
+      Connection('172.27.72.202', 59673, '213.24.100.160', 9001, 'tcp', False),
+      Connection('172.27.72.202', 51946, '32.188.221.72', 443, 'tcp', False),
+      Connection('172.27.72.202', 60344, '21.89.91.78', 9001, 'tcp', False),
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.BSD_SOCKSTAT, process_pid = 4397, process_name = 'tor'))
 
@@ -361,10 +361,10 @@ class TestConnection(unittest.TestCase):
 
     call_mock.return_value = BSD_PROCSTAT_OUTPUT.split('\n')
     expected = [
-      Connection('10.0.0.2', 9050, '10.0.0.1', 22370, 'tcp'),
-      Connection('10.0.0.2', 9050, '10.0.0.1', 44381, 'tcp'),
-      Connection('10.0.0.2', 33734, '38.229.79.2', 443, 'tcp'),
-      Connection('10.0.0.2', 47704, '68.169.35.102', 9001, 'tcp'),
+      Connection('10.0.0.2', 9050, '10.0.0.1', 22370, 'tcp', False),
+      Connection('10.0.0.2', 9050, '10.0.0.1', 44381, 'tcp', False),
+      Connection('10.0.0.2', 33734, '38.229.79.2', 443, 'tcp', False),
+      Connection('10.0.0.2', 47704, '68.169.35.102', 9001, 'tcp', False),
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.BSD_PROCSTAT, process_pid = 3561, process_name = 'tor'))
 

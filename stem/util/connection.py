@@ -132,7 +132,7 @@ RESOLVER_FILTER = {
 }
 
 
-class Connection(collections.namedtuple('Connection', ['local_address', 'local_port', 'remote_address', 'remote_port', 'protocol'])):
+class Connection(collections.namedtuple('Connection', ['local_address', 'local_port', 'remote_address', 'remote_port', 'protocol', 'is_ipv6'])):
   """
   Network connection information.
 
@@ -141,6 +141,7 @@ class Connection(collections.namedtuple('Connection', ['local_address', 'local_p
   :var str remote_address: destionation ip address
   :var int remote_port: destination port
   :var str protocol: protocol of the connection ('tcp', 'udp', etc)
+  :var bool is_ipv6: addresses are ipv6 if true, and ipv4 otherwise
   """
 
 
@@ -246,7 +247,7 @@ def get_connections(resolver, process_pid = None, process_name = None):
         _log('Unrecognized protocol (%s): %s' % (protocol, line))
         continue
 
-      conn = Connection(local_addr, local_port, remote_addr, remote_port, protocol)
+      conn = Connection(local_addr, local_port, remote_addr, remote_port, protocol, is_valid_ipv6_address(local_addr))
       connections.append(conn)
       _log(str(conn))
 
