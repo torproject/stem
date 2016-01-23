@@ -53,7 +53,7 @@ tcp    ESTAB      0      0              127.0.0.1:22            127.0.0.1:56673
 tcp    ESTAB      0      0           192.168.0.1:44415        38.229.79.2:443    users:(("tor",15843,9))
 """
 
-SS_GENTOO_OUTPUT = """\
+SS_IPV6_OUTPUT = """\
 Netid  State      Recv-Q Send-Q Local Address:Port               Peer Address:Port
 tcp    ESTAB      0      0      5.9.158.75:443                107.170.93.13:56159               users:(("tor",pid=25056,fd=997))
 tcp    ESTAB      0      0      5.9.158.75:443                159.203.97.91:37802               users:(("tor",pid=25056,fd=77))
@@ -241,15 +241,16 @@ class TestConnection(unittest.TestCase):
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_pid = 1111)
 
   @patch('stem.util.system.call')
-  def test_get_connections_by_ss_on_gentoo(self, call_mock):
+  def test_get_connections_by_ss_ipv6(self, call_mock):
     """
-    Checks the get_connections function with the ss resolver results on a
-    hardened Gentoo system...
+    Checks the get_connections function with the ss resolver results on IPv6
+    conections. This also checks with the output from a hardened Gentoo system
+    which has subtle differences...
 
       https://trac.torproject.org/projects/tor/ticket/18079
     """
 
-    call_mock.return_value = SS_GENTOO_OUTPUT.split('\n')
+    call_mock.return_value = SS_IPV6_OUTPUT.split('\n')
     expected = [
       Connection('5.9.158.75', 443, '107.170.93.13', 56159, 'tcp'),
       Connection('5.9.158.75', 443, '159.203.97.91', 37802, 'tcp'),
@@ -257,12 +258,7 @@ class TestConnection(unittest.TestCase):
       Connection('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 51428, 'tcp'),
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SS, process_pid = 25056, process_name = 'tor'))
-
-    # TODO: This example ss output has entries like "::ffff:5.9.158.75:5222".
-    # What is this? Looks like a IPv6 *and* IPv4 address mashed together. Our
-    # resolver understandably thinks this is invalid right now.
-
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_name = 'beam')
+    self.assertEqual(2, len(stem.util.connection.get_connections(Resolver.SS, process_name = 'beam')))
 
   @patch('stem.util.system.call')
   def test_get_connections_by_lsof(self, call_mock):
@@ -399,6 +395,9 @@ class TestConnection(unittest.TestCase):
       'fe80:0000:0000:0000:0202:b3ff:fe1e:8329',
       'fe80:0:0:0:202:b3ff:fe1e:8329',
       'fe80::202:b3ff:fe1e:8329',
+      '::ffff:5.9.158.75',
+      '5.9.158.75::ffff',
+      '::5.9.158.75:ffff',
       '::',
     )
 
@@ -406,16 +405,19 @@ class TestConnection(unittest.TestCase):
       'fe80:0000:0000:0000:0202:b3ff:fe1e:829g',
       'fe80:0000:0000:0000:0202:b3ff:fe1e: 8329',
       '2001:db8::aaaa::1',
+      '::ffff:5.9.158.75.12',
+      '::ffff:5.9.158',
+      '::ffff:5.9',
       ':::',
       ':',
       '',
     )
 
     for address in valid_addresses:
-      self.assertTrue(stem.util.connection.is_valid_ipv6_address(address))
+      self.assertTrue(stem.util.connection.is_valid_ipv6_address(address), "%s isn't a valid IPv6 address" % address)
 
     for address in invalid_addresses:
-      self.assertFalse(stem.util.connection.is_valid_ipv6_address(address))
+      self.assertFalse(stem.util.connection.is_valid_ipv6_address(address), '%s should be an invalid IPv6 address' % address)
 
   def test_is_valid_port(self):
     """
@@ -464,6 +466,9 @@ class TestConnection(unittest.TestCase):
       '::': '0000:0000:0000:0000:0000:0000:0000:0000',
       '::1': '0000:0000:0000:0000:0000:0000:0000:0001',
       '1::1': '0001:0000:0000:0000:0000:0000:0000:0001',
+      '::ffff:5.9.158.75': '0000:0000:0000:0000:0000:ffff:0509:9e4b',
+      '5.9.158.75::ffff': '0509:9e4b:0000:0000:0000:0000:0000:ffff',
+      '::5.9.158.75:ffff': '0000:0000:0000:0000:0000:0509:9e4b:ffff',
     }
 
     for test_arg, expected in test_values.items():

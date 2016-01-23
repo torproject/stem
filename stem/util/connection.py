@@ -393,6 +393,22 @@ def is_valid_ipv6_address(address, allow_brackets = False):
     if address.startswith('[') and address.endswith(']'):
       address = address[1:-1]
 
+  if address.count('.') == 3:
+    # Likely an ipv4-mapped portion. Check that its vaild, then replace with a
+    # filler.
+
+    ipv4_start = address.rfind(':', 0, address.find('.')) + 1
+    ipv4_end = address.find(':', ipv4_start + 1)
+
+    if ipv4_end == -1:
+      ipv4_end = None  # don't crop the last character
+
+    if not is_valid_ipv4_address(address[ipv4_start:ipv4_end]):
+      return False
+
+    addr_comp = [address[:ipv4_start - 1] if ipv4_start != 0 else None, 'ff:ff', address[ipv4_end + 1:] if ipv4_end else None]
+    address = ':'.join(filter(None, addr_comp))
+
   # addresses are made up of eight colon separated groups of four hex digits
   # with leading zeros being optional
   # https://en.wikipedia.org/wiki/IPv6#Address_format
@@ -494,6 +510,9 @@ def expand_ipv6_address(address):
     >>> expand_ipv6_address('::')
     '0000:0000:0000:0000:0000:0000:0000:0000'
 
+    >>> expand_ipv6_address('::ffff:5.9.158.75')
+    '0000:0000:0000:0000:0000:ffff:0509:9e4b'
+
   :param str address: IPv6 address to be expanded
 
   :raises: **ValueError** if the address can't be expanded due to being malformed
@@ -501,6 +520,25 @@ def expand_ipv6_address(address):
 
   if not is_valid_ipv6_address(address):
     raise ValueError("'%s' isn't a valid IPv6 address" % address)
+
+  # expand ipv4-mapped portions of addresses
+  if address.count('.') == 3:
+    ipv4_start = address.rfind(':', 0, address.find('.')) + 1
+    ipv4_end = address.find(':', ipv4_start + 1)
+
+    if ipv4_end == -1:
+      ipv4_end = None  # don't crop the last character
+
+    # Converts ipv4 address to its hex ipv6 representation. For instance...
+    #
+    #   '5.9.158.75' => '0509:9e4b'
+
+    ipv4_bin = _get_address_binary(address[ipv4_start:ipv4_end])
+    groupings = [ipv4_bin[16 * i:16 * (i + 1)] for i in range(2)]
+    ipv6_snippet = ':'.join(['%04x' % int(group, 2) for group in groupings])
+
+    addr_comp = [address[:ipv4_start - 1] if ipv4_start != 0 else None, ipv6_snippet, address[ipv4_end + 1:] if ipv4_end else None]
+    address = ':'.join(filter(None, addr_comp))
 
   # expands collapsed groupings, there can only be a single '::' in a valid
   # address
