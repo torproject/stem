@@ -136,6 +136,9 @@ class Connection(collections.namedtuple('Connection', ['local_address', 'local_p
   """
   Network connection information.
 
+  .. versionchanged:: 1.5.0
+     Added the **is_ipv6** attribute.
+
   :var str local_address: ip address the connection originates from
   :var int local_port: port the connection originates from
   :var str remote_address: destionation ip address
@@ -154,7 +157,7 @@ def get_connections(resolver, process_pid = None, process_name = None):
   .. versionadded:: 1.1.0
 
   .. versionchanged:: 1.5.0
-     IPv6 support when resolving via netstat, lsof, or ss.
+     IPv6 support when resolving via proc, netstat, lsof, or ss.
 
   :param Resolver resolver: method of connection resolution to use
   :param int process_pid: pid of the process to retrieve
