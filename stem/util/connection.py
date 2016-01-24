@@ -84,8 +84,8 @@ PORT_USES = None  # port number => description
 RESOLVER_COMMAND = {
   Resolver.PROC: '',
 
-  # -n = prevents dns lookups, -p = include process
-  Resolver.NETSTAT: 'netstat -np',
+  # -n = prevents dns lookups, -p = include process, -W = don't crop addresses (needed for ipv6)
+  Resolver.NETSTAT: 'netstat -npW',
 
   # -a = show all TCP/UDP connections, -n = numeric addresses and ports, -o = include pid
   Resolver.NETSTAT_WINDOWS: 'netstat -ano',
@@ -154,9 +154,7 @@ def get_connections(resolver, process_pid = None, process_name = None):
   .. versionadded:: 1.1.0
 
   .. versionchanged:: 1.5.0
-     Basic IPv6 support. This is incomplete in that resolver commands we run
-     may not surface IPv6 connections. But when present this function now
-     includes them in our results.
+     IPv6 support when resolving via netstat, lsof, or ss.
 
   :param Resolver resolver: method of connection resolution to use
   :param int process_pid: pid of the process to retrieve
@@ -242,6 +240,9 @@ def get_connections(resolver, process_pid = None, process_name = None):
         continue  # missing or malformed field
 
       protocol = attr['protocol'].lower()
+
+      if protocol == 'tcp6':
+        protocol = 'tcp'
 
       if protocol not in ('tcp', 'udp'):
         _log('Unrecognized protocol (%s): %s' % (protocol, line))

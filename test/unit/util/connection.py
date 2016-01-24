@@ -32,6 +32,16 @@ unix  3      [ ]         STREAM     CONNECTED     34164276 15843/tor
 unix  3      [ ]         STREAM     CONNECTED     7951     -
 """
 
+NETSTAT_IPV6_OUTPUT = """\
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp6       0      0 5.9.158.75:5222         80.171.220.248:48910    ESTABLISHED 9820/beam
+tcp6       0      0 2a01:4f8:190:514a::2:443 2001:638:a000:4140::ffff:189:41046 ESTABLISHED 1904/tor
+tcp6       0      0 5.9.158.75:5269         146.255.57.226:38703    ESTABLISHED 9820/beam
+tcp6       0      0 2a01:4f8:190:514a::2:443 2001:858:2:2:aabb:0:563b:1526:38260 ESTABLISHED 1904/tor
+tcp6       0      0 5.9.158.75:5222         80.171.220.248:48966    ESTABLISHED 9820/beam
+"""
+
 NETSTAT_WINDOWS_OUTPUT = """\
 Active Connections
 
@@ -214,6 +224,19 @@ class TestConnection(unittest.TestCase):
 
     call_mock.side_effect = OSError('Unable to call netstat')
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 1111)
+
+  @patch('stem.util.system.call', Mock(return_value = NETSTAT_IPV6_OUTPUT.split('\n')))
+  def test_get_connections_by_netstat_ipv6(self):
+    """
+    Checks the get_connections function with the netstat resolver for IPv6.
+    """
+
+    expected = [
+      Connection('2a01:4f8:190:514a::2', 443, '2001:638:a000:4140::ffff:189', 41046, 'tcp', True),
+      Connection('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 38260, 'tcp', True),
+    ]
+
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.NETSTAT, process_pid = 1904, process_name = 'tor'))
 
   @patch('stem.util.system.call')
   def test_get_connections_by_windows_netstat(self, call_mock):
