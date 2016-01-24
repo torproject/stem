@@ -2,20 +2,31 @@
 Unit testing code for the stem.util.proc functions.
 """
 
+import io
 import unittest
 
 from stem.util import proc
 from test import mocking
 
 try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
-
-try:
   from unittest.mock import Mock, patch
 except ImportError:
   from mock import Mock, patch
+
+TCP6_CONTENT = b"""\
+  sl  local_address                         remote_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
+   0: 00000000000000000000000000000000:1495 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000   106        0 14347030 1 0000000000000000 100 0 0 10 0
+   1: 00000000000000000000000000000000:0035 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 1457 1 0000000000000000 100 0 0 10 0
+   2: 00000000000000000000000000000000:0217 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 6606 1 0000000000000000 100 0 0 10 0
+   3: F804012A4A5190010000000002000000:01BB 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 4372 1 0000000000000000 100 0 0 10 0
+   4: 00000000000000000000000000000000:14A1 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000   106        0 14347031 1 0000000000000000 100 0 0 10 0
+   5: 00000000000000000000000000000000:1466 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000   106        0 14347029 1 0000000000000000 100 0 0 10 0
+   6: F804012A4A5190010000000002000000:01BB 38060120404100A0000000008901FFFF:9DF3 01 00000000:00000000 00:00000000 00000000   101        0 42088802 1 0000000000000000 20 4 25 10 7
+   7: F804012A4A5190010000000002000000:01BB 58080120020002000000BBAA26153B56:ADB5 01 00000000:00000000 00:00000000 00000000   101        0 41691357 1 0000000000000000 24 4 32 10 7
+   8: 0000000000000000FFFF00004B9E0905:1466 0000000000000000FFFF00002186364E:95BA 01 00000000:00000000 02:000A5B3D 00000000   106        0 41878761 2 0000000000000000 26 4 30 10 -1
+   9: F804012A4A5190010000000002000000:1495 F806012011006F120000000026000000:C5A2 01 00000000:00000000 02:000A5B3D 00000000   106        0 41825895 2 0000000000000000 21 4 15 10 -1
+  10: 0000000000000000FFFF00004B9E0905:1466 0000000000000000FFFF00002186364E:951E 01 00000000:00000000 02:00090E70 00000000   106        0 41512577 2 0000000000000000 26 4 31 10 -1
+"""
 
 
 class TestProc(unittest.TestCase):
@@ -178,9 +189,10 @@ class TestProc(unittest.TestCase):
     self.assertEqual(6, proc.file_descriptors_used('2118'))
 
   @patch('os.listdir')
+  @patch('os.path.exists')
   @patch('os.readlink')
   @patch('stem.util.proc.open', create = True)
-  def test_connections(self, open_mock, readlink_mock, listdir_mock):
+  def test_connections(self, open_mock, readlink_mock, path_exists_mock, listdir_mock):
     """
     Tests the connections function.
     """
@@ -198,12 +210,19 @@ class TestProc(unittest.TestCase):
       '/proc/%s/fd/4' % pid: 'pipe:[40404]',
     }[param]
 
-    tcp = '\n 0: 11111111:1111 22222222:2222 01 44444444:44444444 55:55555555 66666666 1111 8 99999999'
-    udp = '\n A: BBBBBBBB:BBBB CCCCCCCC:CCCC DD EEEEEEEE:EEEEEEEE FF:FFFFFFFF GGGGGGGG 1111 H IIIIIIII'
+    tcp = b'\n 0: 11111111:1111 22222222:2222 01 44444444:44444444 55:55555555 66666666 1111 8 99999999'
+    udp = b'\n A: BBBBBBBB:BBBB CCCCCCCC:CCCC DD EEEEEEEE:EEEEEEEE FF:FFFFFFFF GGGGGGGG 1111 H IIIIIIII'
+
+    path_exists_mock.side_effect = lambda param: {
+      '/proc/net/tcp': True,
+      '/proc/net/tcp6': False,
+      '/proc/net/udp': True,
+      '/proc/net/udp6': False
+    }[param]
 
     open_mock.side_effect = lambda param: {
-      '/proc/net/tcp': StringIO(tcp),
-      '/proc/net/udp': StringIO(udp)
+      '/proc/net/tcp': io.BytesIO(tcp),
+      '/proc/net/udp': io.BytesIO(udp)
     }[param]
 
     # tests the edge case of pid = 0
@@ -212,6 +231,50 @@ class TestProc(unittest.TestCase):
     expected_results = [
       ('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp', False),
       ('187.187.187.187', 48059, '204.204.204.204', 52428, 'udp', False),
+    ]
+
+    self.assertEqual(expected_results, proc.connections(pid))
+
+  @patch('os.listdir')
+  @patch('os.path.exists')
+  @patch('os.readlink')
+  @patch('stem.util.proc.open', create = True)
+  def test_connections_ipv6(self, open_mock, readlink_mock, path_exists_mock, listdir_mock):
+    """
+    Tests the connections function with ipv6 addresses.
+    """
+
+    pid = 1111
+
+    listdir_mock.side_effect = lambda param: {
+      '/proc/%s/fd' % pid: ['1', '2', '3', '4'],
+    }[param]
+
+    readlink_mock.side_effect = lambda param: {
+      '/proc/%s/fd/1' % pid: 'socket:[42088802]',
+      '/proc/%s/fd/2' % pid: 'socket:[41691357]',
+      '/proc/%s/fd/3' % pid: 'socket:[41878761]',
+      '/proc/%s/fd/4' % pid: 'socket:[41825895]',
+      '/proc/%s/fd/5' % pid: 'socket:[41512577]',
+      '/proc/%s/fd/6' % pid: 'socket:[14347030]',  # this shouldn't be present due to being unestablished
+    }[param]
+
+    path_exists_mock.side_effect = lambda param: {
+      '/proc/net/tcp': False,
+      '/proc/net/tcp6': True,
+      '/proc/net/udp': False,
+      '/proc/net/udp6': False
+    }[param]
+
+    open_mock.side_effect = lambda param: {
+      '/proc/net/tcp6': io.BytesIO(TCP6_CONTENT),
+    }[param]
+
+    expected_results = [
+      ('0:2::190:514a:2a01:4f8', 443, 'ffff:189::a000:4140:2001:638', 40435, 'tcp', True),
+      ('0:2::190:514a:2a01:4f8', 443, '563b:1526:aabb:0:2:2:2001:858', 44469, 'tcp', True),
+      ('509:9e4b:0:ffff::', 5222, '4e36:8621:0:ffff::', 38330, 'tcp', True),
+      ('0:2::190:514a:2a01:4f8', 5269, '0:26::126f:11:2001:6f8', 50594, 'tcp', True),
     ]
 
     self.assertEqual(expected_results, proc.connections(pid))

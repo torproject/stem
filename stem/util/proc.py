@@ -55,6 +55,7 @@ import sys
 import time
 
 import stem.util.enum
+import stem.util.str_tools
 
 from stem.util import log
 
@@ -369,7 +370,7 @@ def connections(pid):
       fd_name = os.readlink(fd_path)
 
       if fd_name.startswith('socket:['):
-        inodes.append(fd_name[8:-1])
+        inodes.append(stem.util.str_tools._to_bytes(fd_name[8:-1]))
     except OSError as exc:
       if not os.path.exists(fd_path):
         continue  # descriptors may shift while we're in the middle of iterating over them
@@ -387,25 +388,27 @@ def connections(pid):
 
   conn = []
 
-  for proc_file_path in ('/proc/net/tcp', '/proc/net/udp'):
+  for proc_file_path in ('/proc/net/tcp', '/proc/net/tcp6', '/proc/net/udp', '/proc/net/udp6'):
+    if not os.path.exists(proc_file_path):
+      continue
+
     try:
-      proc_file = open(proc_file_path)
-      proc_file.readline()  # skip the first line
+      with open(proc_file_path) as proc_file:
+        proc_file.readline()  # skip the first line
 
-      for line in proc_file:
-        _, l_addr, f_addr, status, _, _, _, _, _, inode = line.split()[:10]
+        for line in proc_file:
+          _, l_addr, f_addr, status, _, _, _, _, _, inode = line.split()[:10]
 
-        if inode in inodes:
-          # if a tcp connection, skip if it isn't yet established
-          if proc_file_path.endswith('/tcp') and status != '01':
-            continue
+          if inode in inodes:
+            protocol = proc_file_path[10:].rstrip('6')  # 'tcp' or 'udp'
+            is_ipv6 = proc_file_path.endswith('6')
 
-          local_ip, local_port = _decode_proc_address_encoding(l_addr)
-          foreign_ip, foreign_port = _decode_proc_address_encoding(f_addr)
-          protocol = proc_file_path[10:]
-          conn.append((local_ip, local_port, foreign_ip, foreign_port, protocol, False))
+            if protocol == 'tcp' and status != b'01':
+              continue  # skip tcp connections that aren't yet established
 
-      proc_file.close()
+            local_ip, local_port = _decode_proc_address_encoding(l_addr, is_ipv6)
+            foreign_ip, foreign_port = _decode_proc_address_encoding(f_addr, is_ipv6)
+            conn.append((local_ip, local_port, foreign_ip, foreign_port, protocol, is_ipv6))
     except IOError as exc:
       exc = IOError("unable to read '%s': %s" % (proc_file_path, exc))
       _log_failure(parameter, exc)
@@ -419,7 +422,7 @@ def connections(pid):
   return conn
 
 
-def _decode_proc_address_encoding(addr):
+def _decode_proc_address_encoding(addr, is_ipv6):
   """
   Translates an address entry in the /proc/net/* contents to a human readable
   form (`reference <http://linuxdevcenter.com/pub/a/linux/2000/11/16/LinuxAdmin.html>`_,
@@ -434,26 +437,21 @@ def _decode_proc_address_encoding(addr):
   :returns: **tuple** of the form **(addr, port)**, with addr as a string and port an int
   """
 
-  ip, port = addr.rsplit(':', 1)
+  ip, port = addr.rsplit(b':', 1)
 
-  # the port is represented as a two-byte hexadecimal number
-  port = int(port, 16)
+  port = int(port, 16)  # the port is represented as a two-byte hexadecimal number
 
-  if sys.version_info >= (3,):
-    ip = ip.encode('ascii')
-
-  # The IPv4 address portion is a little-endian four-byte hexadecimal number.
+  # The IP address portion is a little-endian four-byte hexadecimal number.
   # That is, the least significant byte is listed first, so we need to reverse
   # the order of the bytes to convert it to an IP address.
   #
   # This needs to account for the endian ordering as per...
+  #
   # http://code.google.com/p/psutil/issues/detail?id=201
   # https://trac.torproject.org/projects/tor/ticket/4777
 
-  if sys.byteorder == 'little':
-    ip = socket.inet_ntop(socket.AF_INET, base64.b16decode(ip)[::-1])
-  else:
-    ip = socket.inet_ntop(socket.AF_INET, base64.b16decode(ip))
+  ip_encoded = base64.b16decode(ip)[::-1] if sys.byteorder == 'little' else base64.b16decode(ip)
+  ip = socket.inet_ntop(socket.AF_INET6 if is_ipv6 else socket.AF_INET, ip_encoded)
 
   return (ip, port)
 
