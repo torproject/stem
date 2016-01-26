@@ -393,7 +393,7 @@ def connections(pid):
       continue
 
     try:
-      with open(proc_file_path) as proc_file:
+      with open(proc_file_path, 'rb') as proc_file:
         proc_file.readline()  # skip the first line
 
         for line in proc_file:
@@ -458,7 +458,7 @@ def _decode_proc_address_encoding(addr, is_ipv6):
         grouping = ip[8 * i:8 * (i + 1)]
         inverted += [grouping[2 * i:2 * (i + 1)] for i in range(4)][::-1]
 
-      ip = ''.join(inverted)
+      ip = b''.join(inverted)
 
     ip = socket.inet_ntop(socket.AF_INET6, base64.b16decode(ip))
 
