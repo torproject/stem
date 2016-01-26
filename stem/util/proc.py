@@ -431,8 +431,10 @@ def _decode_proc_address_encoding(addr, is_ipv6):
   ::
 
     "0500000A:0016" -> ("10.0.0.5", 22)
+    "F804012A4A5190010000000002000000:01BB" -> ("2a01:4f8:190:514a::2", 443)
 
   :param str addr: proc address entry to be decoded
+  :param bool is_ipv6: if we should treat the address as ipv6
 
   :returns: **tuple** of the form **(addr, port)**, with addr as a string and port an int
   """
@@ -441,17 +443,24 @@ def _decode_proc_address_encoding(addr, is_ipv6):
 
   port = int(port, 16)  # the port is represented as a two-byte hexadecimal number
 
-  # The IP address portion is a little-endian four-byte hexadecimal number.
-  # That is, the least significant byte is listed first, so we need to reverse
-  # the order of the bytes to convert it to an IP address.
-  #
-  # This needs to account for the endian ordering as per...
-  #
-  # http://code.google.com/p/psutil/issues/detail?id=201
-  # https://trac.torproject.org/projects/tor/ticket/4777
+  if not is_ipv6:
+    ip_encoded = base64.b16decode(ip)[::-1] if sys.byteorder == 'little' else base64.b16decode(ip)
+    ip = socket.inet_ntop(socket.AF_INET, ip_encoded)
+  else:
+    if sys.byteorder == 'little':
+      # Group into eight characters, then invert in pairs...
+      #
+      #   https://trac.torproject.org/projects/tor/ticket/18079#comment:24
 
-  ip_encoded = base64.b16decode(ip)[::-1] if sys.byteorder == 'little' else base64.b16decode(ip)
-  ip = socket.inet_ntop(socket.AF_INET6 if is_ipv6 else socket.AF_INET, ip_encoded)
+      inverted = []
+
+      for i in range(4):
+        grouping = ip[8 * i:8 * (i + 1)]
+        inverted += [grouping[2 * i:2 * (i + 1)] for i in range(4)][::-1]
+
+      ip = ''.join(inverted)
+
+    ip = socket.inet_ntop(socket.AF_INET6, base64.b16decode(ip))
 
   return (ip, port)
 

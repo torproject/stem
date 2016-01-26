@@ -247,16 +247,12 @@ class TestProc(unittest.TestCase):
     pid = 1111
 
     listdir_mock.side_effect = lambda param: {
-      '/proc/%s/fd' % pid: ['1', '2', '3', '4'],
+      '/proc/%s/fd' % pid: ['1', '2'],
     }[param]
 
     readlink_mock.side_effect = lambda param: {
       '/proc/%s/fd/1' % pid: 'socket:[42088802]',
       '/proc/%s/fd/2' % pid: 'socket:[41691357]',
-      '/proc/%s/fd/3' % pid: 'socket:[41878761]',
-      '/proc/%s/fd/4' % pid: 'socket:[41825895]',
-      '/proc/%s/fd/5' % pid: 'socket:[41512577]',
-      '/proc/%s/fd/6' % pid: 'socket:[14347030]',  # this shouldn't be present due to being unestablished
     }[param]
 
     path_exists_mock.side_effect = lambda param: {
@@ -271,10 +267,8 @@ class TestProc(unittest.TestCase):
     }[param]
 
     expected_results = [
-      ('0:2::190:514a:2a01:4f8', 443, 'ffff:189::a000:4140:2001:638', 40435, 'tcp', True),
-      ('0:2::190:514a:2a01:4f8', 443, '563b:1526:aabb:0:2:2:2001:858', 44469, 'tcp', True),
-      ('509:9e4b:0:ffff::', 5222, '4e36:8621:0:ffff::', 38330, 'tcp', True),
-      ('0:2::190:514a:2a01:4f8', 5269, '0:26::126f:11:2001:6f8', 50594, 'tcp', True),
+      ('2a01:4f8:190:514a::2', 443, '2001:638:a000:4140::ffff:189', 40435, 'tcp', True),
+      ('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 44469, 'tcp', True),
     ]
 
     self.assertEqual(expected_results, proc.connections(pid))
