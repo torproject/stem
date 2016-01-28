@@ -126,6 +126,32 @@ _PROCESS_NAME = None
 _MAX_NAME_LENGTH = -1
 
 
+class CallError(OSError):
+  """
+  Error response when making a system call. This is an **OSError** subclass
+  with additional information about the process. Depending on the nature of the
+  error not all of these attributes will be available.
+
+  :var str msg: exception string
+  :var str command: command that was ran
+  :var int exit_status: exit code of the process
+  :var float runtime: time the command took to run
+  :var str stdout: stdout of the process
+  :var str stderr: stderr of the process
+  """
+
+  def __init__(self, msg, command, exit_status, runtime, stdout, stderr):
+    self.msg = msg
+    self.command = command
+    self.exit_status = exit_status
+    self.runtime = runtime
+    self.stdout = stdout
+    self.stderr = stderr
+
+  def __str__(self):
+    return self.msg
+
+
 def is_windows():
   """
   Checks if we are running on Windows.
@@ -960,6 +986,10 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
   are not permitted.
 
   .. versionchanged:: 1.5.0
+     Providing additional information upon failure by raising a CallError. This
+     is a subclass of OSError, providing backward compatibility.
+
+  .. versionchanged:: 1.5.0
      Added env argument.
 
   :param str,list command: command to be issued
@@ -970,13 +1000,16 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
 
   :returns: **list** with the lines of output from the command
 
-  :raises: **OSError** if this fails and no default was provided
+  :raises: **CallError** if this fails and no default was provided, this is an
+    **OSError** subclass
   """
 
   if isinstance(command, str):
     command_list = command.split(' ')
   else:
     command_list = command
+
+  exit_status, runtime, stdout, stderr = None, None, None, None
 
   try:
     is_shell_command = command_list[0] in SHELL_COMMANDS
@@ -998,10 +1031,10 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
     elif stderr:
       log.trace(trace_prefix + ', stderr:\n%s' % stderr)
 
-    exit_code = process.poll()
+    exit_status = process.poll()
 
-    if not ignore_exit_status and exit_code != 0:
-      raise OSError('%s returned exit status %i' % (command, exit_code))
+    if not ignore_exit_status and exit_status != 0:
+      raise OSError('%s returned exit status %i' % (command, exit_status))
 
     if stdout:
       return stdout.decode('utf-8', 'replace').splitlines()
@@ -1013,7 +1046,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
     if default != UNDEFINED:
       return default
     else:
-      raise
+      raise CallError(str(exc), ' '.join(command_list), exit_status, runtime, stdout, stderr)
 
 
 def get_process_name():

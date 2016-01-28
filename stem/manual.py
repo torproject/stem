@@ -245,8 +245,8 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
 
       if not os.path.exists(manual_path):
         raise OSError('no man page was generated')
-    except OSError as exc:
-      raise IOError("Unable to run 'a2x -f manpage %s': %s" % (asciidoc_path, exc))
+    except stem.util.system.CallError as exc:
+      raise IOError("Unable to run '%s': %s" % (exc.command, exc.stderr))
 
     if path:
       try:
