@@ -166,13 +166,15 @@ def get_connections(resolver, process_pid = None, process_name = None):
   :returns: **list** of :class:`~stem.util.connection.Connection` instances
 
   :raises:
-    * **ValueError** if using **Resolver.PROC** or **Resolver.BSD_PROCSTAT**
-      and the process_pid wasn't provided
+    * **ValueError** if neither a process_pid nor process_name is provided
 
     * **IOError** if no connections are available or resolution fails
       (generally they're indistinguishable). The common causes are the
       command being unavailable or permissions.
   """
+
+  if not process_pid and not process_name:
+    raise ValueError('You must provide a pid or process name to provide connections for')
 
   def _log(msg):
     if LOG_CONNECTION_RESOLUTION:
@@ -187,11 +189,17 @@ def get_connections(resolver, process_pid = None, process_name = None):
     except ValueError:
       raise ValueError('Process pid was non-numeric: %s' % process_pid)
 
-  if process_pid is None and process_name and resolver == Resolver.NETSTAT_WINDOWS:
-    process_pid = stem.util.system.pid_by_name(process_name)
+  if process_pid is None:
+    all_pids = stem.util.system.pid_by_name(process_name, True)
 
-  if process_pid is None and resolver in (Resolver.NETSTAT_WINDOWS, Resolver.PROC, Resolver.BSD_PROCSTAT):
-    raise ValueError('%s resolution requires a pid' % resolver)
+    if len(all_pids) == 0:
+      if resolver in (Resolver.NETSTAT_WINDOWS, Resolver.PROC, Resolver.BSD_PROCSTAT):
+        raise IOError("Unable to determine the pid of '%s'. %s requires the pid to provide the connections." % (process_name, resolver))
+    elif len(all_pids) == 1:
+      process_pid = all_pids[0]
+    else:
+      if resolver in (Resolver.NETSTAT_WINDOWS, Resolver.PROC, Resolver.BSD_PROCSTAT):
+        raise IOError("There's multiple processes named '%s'. %s requires a single pid to provide the connections." % (process_name, resolver))
 
   if resolver == Resolver.PROC:
     return [Connection(*conn) for conn in stem.util.proc.connections(process_pid)]

@@ -238,7 +238,7 @@ class TestManual(unittest.TestCase):
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
   @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
-  @patch('stem.util.system.call', Mock(side_effect = OSError('call failed')))
+  @patch('stem.util.system.call', Mock(side_effect = stem.util.system.CallError('call failed', 'a2x -f manpage /no/such/path/tor.1.txt', 1, None, None, 'call failed')))
   @patch('stem.util.system.is_available', Mock(return_value = True))
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
   def test_download_man_page_when_a2x_fails(self):
