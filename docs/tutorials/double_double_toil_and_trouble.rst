@@ -74,6 +74,7 @@ Applications
 `OnionShare <https://github.com/micahflee/onionshare>`_                                                     Hidden service based file sharing application.
 `Syboa <https://gitorious.org/syboa/syboa>`_                                                                GTK Tor interface similar to `TorK <http://sourceforge.net/projects/tork/>`_.
 `hs-health <https://gitlab.com/hs-health/hs-health>`_                                                       Experiment to measure churn and reachability of hidden services.
+`TorTP <https://github.com/vinc3nt/stem-tortp>`_                                                            Configures iptables to torify all traffic.
 =========================================================================================================== ==========
 
 Scripts
