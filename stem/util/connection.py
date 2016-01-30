@@ -202,7 +202,7 @@ def get_connections(resolver, process_pid = None, process_name = None):
         raise IOError("There's multiple processes named '%s'. %s requires a single pid to provide the connections." % (process_name, resolver))
 
   if resolver == Resolver.PROC:
-    return [Connection(*conn) for conn in stem.util.proc.connections(process_pid)]
+    return stem.util.proc.connections(pid = process_pid)
 
   resolver_command = RESOLVER_COMMAND[resolver].format(pid = process_pid)
 

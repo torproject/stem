@@ -50,10 +50,12 @@ future, use them at your own risk.**
 import base64
 import os
 import platform
+import pwd
 import socket
 import sys
 import time
 
+import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
 
@@ -325,35 +327,87 @@ def file_descriptors_used(pid):
     raise IOError('Unable to check number of file descriptors used: %s' % exc)
 
 
-def connections(pid):
+def connections(pid = None, user = None):
   """
-  Queries connection related information from the proc contents. This provides
-  similar results to netstat, lsof, sockstat, and other connection resolution
-  utilities (though the lookup is far quicker).
+  Queries connections from the proc contents. This matches netstat, lsof, and
+  friends but is much faster. If no **pid** or **user** are provided this
+  provides all present connections.
 
-  :param int pid: process id of the process to be queried
+  :param int pid: pid to provide connections for
+  :param str user: username to look up connections for
 
-  :returns: A listing of connection tuples of the form **[(local_ipAddr1,
-    local_port1, foreign_ipAddr1, foreign_port1, protocol, is_ipv6), ...]**
-    (addresses and protocols are strings and ports are ints)
+  :returns: **list** of :class:`~stem.util.connection.Connection` instances
 
   :raises: **IOError** if it can't be determined
   """
 
+  start_time, conn = time.time(), []
+
+  if pid:
+    parameter = 'connections for pid %s' % pid
+
+    try:
+      pid = int(pid)
+
+      if pid < 0:
+        raise IOError("Process pids can't be negative: %s" % pid)
+    except (ValueError, TypeError):
+      raise IOError('Process pid was non-numeric: %s' % pid)
+  elif user:
+    parameter = 'connections for user %s' % user
+  else:
+    parameter = 'all connections'
+
   try:
-    pid = int(pid)
+    inodes = _inodes_for_sockets(pid) if pid else []
+    process_uid = pwd.getpwnam(user).pw_uid if user else None
 
-    if pid < 0:
-      raise IOError("Process pids can't be negative: %s" % pid)
-  except (ValueError, TypeError):
-    raise IOError('Process pid was non-numeric: %s' % pid)
+    for proc_file_path in ('/proc/net/tcp', '/proc/net/tcp6', '/proc/net/udp', '/proc/net/udp6'):
+      if proc_file_path.endswith('6') and not os.path.exists(proc_file_path):
+        continue  # ipv6 proc contents are optional
 
-  if pid == 0:
-    return []
+      try:
+        with open(proc_file_path, 'rb') as proc_file:
+          proc_file.readline()  # skip the first line
 
-  # fetches the inode numbers for socket file descriptors
+          for line in proc_file:
+            _, l_addr, f_addr, status, _, _, _, uid, _, inode = line.split()[:10]
+            protocol = proc_file_path[10:].rstrip('6')  # 'tcp' or 'udp'
+            is_ipv6 = proc_file_path.endswith('6')
 
-  start_time, parameter = time.time(), 'process connections'
+            if inodes and inode not in inodes:
+              continue
+            elif process_uid and int(uid) != process_uid:
+              continue
+            elif protocol == 'tcp' and status != b'01':
+              continue  # skip tcp connections that aren't yet established
+
+            local_ip, local_port = _decode_proc_address_encoding(l_addr, is_ipv6)
+            foreign_ip, foreign_port = _decode_proc_address_encoding(f_addr, is_ipv6)
+            conn.append(stem.util.connection.Connection(local_ip, local_port, foreign_ip, foreign_port, protocol, is_ipv6))
+      except IOError as exc:
+        raise IOError("unable to read '%s': %s" % (proc_file_path, exc))
+      except Exception as exc:
+        raise IOError("unable to parse '%s': %s" % (proc_file_path, exc))
+
+    _log_runtime(parameter, '/proc/net/[tcp|udp]', start_time)
+    return conn
+  except IOError as exc:
+    _log_failure(parameter, exc)
+    raise
+
+
+def _inodes_for_sockets(pid):
+  """
+  Provides inodes in use by a process for its sockets.
+
+  :param int pid: process id of the process to be queried
+
+  :returns: **list** with inodes for its sockets
+
+  :raises: **IOError** if it can't be determined
+  """
+
   inodes = []
 
   try:
@@ -376,50 +430,9 @@ def connections(pid):
         continue  # descriptors may shift while we're in the middle of iterating over them
 
       # most likely couldn't be read due to permissions
-      exc = IOError('unable to determine file descriptor destination (%s): %s' % (exc, fd_path))
-      _log_failure(parameter, exc)
-      raise exc
+      raise IOError('unable to determine file descriptor destination (%s): %s' % (exc, fd_path))
 
-  if not inodes:
-    # unable to fetch any connections for this process
-    return []
-
-  # check for the connection information from the /proc/net contents
-
-  conn = []
-
-  for proc_file_path in ('/proc/net/tcp', '/proc/net/tcp6', '/proc/net/udp', '/proc/net/udp6'):
-    if not os.path.exists(proc_file_path):
-      continue
-
-    try:
-      with open(proc_file_path, 'rb') as proc_file:
-        proc_file.readline()  # skip the first line
-
-        for line in proc_file:
-          _, l_addr, f_addr, status, _, _, _, _, _, inode = line.split()[:10]
-
-          if inode in inodes:
-            protocol = proc_file_path[10:].rstrip('6')  # 'tcp' or 'udp'
-            is_ipv6 = proc_file_path.endswith('6')
-
-            if protocol == 'tcp' and status != b'01':
-              continue  # skip tcp connections that aren't yet established
-
-            local_ip, local_port = _decode_proc_address_encoding(l_addr, is_ipv6)
-            foreign_ip, foreign_port = _decode_proc_address_encoding(f_addr, is_ipv6)
-            conn.append((local_ip, local_port, foreign_ip, foreign_port, protocol, is_ipv6))
-    except IOError as exc:
-      exc = IOError("unable to read '%s': %s" % (proc_file_path, exc))
-      _log_failure(parameter, exc)
-      raise exc
-    except Exception as exc:
-      exc = IOError("unable to parse '%s': %s" % (proc_file_path, exc))
-      _log_failure(parameter, exc)
-      raise exc
-
-  _log_runtime(parameter, '/proc/net/[tcp|udp]', start_time)
-  return conn
+  return inodes
 
 
 def _decode_proc_address_encoding(addr, is_ipv6):

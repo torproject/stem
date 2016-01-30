@@ -6,6 +6,7 @@ import io
 import unittest
 
 from stem.util import proc
+from stem.util.connection import Connection
 from test import mocking
 
 try:
@@ -225,12 +226,9 @@ class TestProc(unittest.TestCase):
       '/proc/net/udp': io.BytesIO(udp)
     }[param]
 
-    # tests the edge case of pid = 0
-    self.assertEqual([], proc.connections(0))
-
     expected_results = [
-      ('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp', False),
-      ('187.187.187.187', 48059, '204.204.204.204', 52428, 'udp', False),
+      Connection('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp', False),
+      Connection('187.187.187.187', 48059, '204.204.204.204', 52428, 'udp', False),
     ]
 
     self.assertEqual(expected_results, proc.connections(pid))
@@ -256,19 +254,48 @@ class TestProc(unittest.TestCase):
     }[param]
 
     path_exists_mock.side_effect = lambda param: {
-      '/proc/net/tcp': False,
       '/proc/net/tcp6': True,
-      '/proc/net/udp': False,
       '/proc/net/udp6': False
     }[param]
 
     open_mock.side_effect = lambda param, mode: {
+      '/proc/net/tcp': io.BytesIO(''),
       '/proc/net/tcp6': io.BytesIO(TCP6_CONTENT),
+      '/proc/net/udp': io.BytesIO(''),
     }[param]
 
     expected_results = [
-      ('2a01:4f8:190:514a::2', 443, '2001:638:a000:4140::ffff:189', 40435, 'tcp', True),
-      ('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 44469, 'tcp', True),
+      Connection('2a01:4f8:190:514a::2', 443, '2001:638:a000:4140::ffff:189', 40435, 'tcp', True),
+      Connection('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 44469, 'tcp', True),
     ]
 
-    self.assertEqual(expected_results, proc.connections(pid))
+    self.assertEqual(expected_results, proc.connections(pid = pid))
+
+  @patch('os.path.exists')
+  @patch('pwd.getpwnam')
+  @patch('stem.util.proc.open', create = True)
+  def test_connections_ipv6_by_user(self, open_mock, getpwnam_mock, path_exists_mock):
+    """
+    Tests the connections function with ipv6 addresses.
+    """
+
+    getpwnam_mock('me').pw_uid = 106
+
+    path_exists_mock.side_effect = lambda param: {
+      '/proc/net/tcp6': True,
+      '/proc/net/udp6': False
+    }[param]
+
+    open_mock.side_effect = lambda param, mode: {
+      '/proc/net/tcp': io.BytesIO(''),
+      '/proc/net/tcp6': io.BytesIO(TCP6_CONTENT),
+      '/proc/net/udp': io.BytesIO(''),
+    }[param]
+
+    expected_results = [
+      Connection('::ffff:5.9.158.75', 5222, '::ffff:78.54.134.33', 38330, 'tcp', True),
+      Connection('2a01:4f8:190:514a::2', 5269, '2001:6f8:126f:11::26', 50594, 'tcp', True),
+      Connection('::ffff:5.9.158.75', 5222, '::ffff:78.54.134.33', 38174, 'tcp', True),
+    ]
+
+    self.assertEqual(expected_results, proc.connections(user = 'me'))
