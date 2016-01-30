@@ -148,7 +148,7 @@ class Connection(collections.namedtuple('Connection', ['local_address', 'local_p
   """
 
 
-def get_connections(resolver, process_pid = None, process_name = None):
+def get_connections(resolver = None, process_pid = None, process_name = None):
   """
   Retrieves a list of the current connections for a given process. This
   provides a list of :class:`~stem.util.connection.Connection`. Note that
@@ -157,9 +157,14 @@ def get_connections(resolver, process_pid = None, process_name = None):
   .. versionadded:: 1.1.0
 
   .. versionchanged:: 1.5.0
+     Made our resolver argument optional.
+
+  .. versionchanged:: 1.5.0
      IPv6 support when resolving via proc, netstat, lsof, or ss.
 
-  :param Resolver resolver: method of connection resolution to use
+  :param Resolver resolver: method of connection resolution to use, if not
+    provided then one is picked from among those that should likely be
+    available for the system
   :param int process_pid: pid of the process to retrieve
   :param str process_name: name of the process to retrieve
 
@@ -172,6 +177,14 @@ def get_connections(resolver, process_pid = None, process_name = None):
       (generally they're indistinguishable). The common causes are the
       command being unavailable or permissions.
   """
+
+  if not resolver:
+    available_resolvers = system_resolvers()
+
+    if available_resolvers:
+      resolver = available_resolvers[0]
+    else:
+      raise IOError('Unable to determine a connection resolver')
 
   if not process_pid and not process_name:
     raise ValueError('You must provide a pid or process name to provide connections for')
@@ -286,6 +299,7 @@ def system_resolvers(system = None):
 
   :returns: **list** of :data:`~stem.util.connection.Resolver` instances available on this platform
   """
+
   if system is None:
     if stem.util.system.is_gentoo():
       system = 'Gentoo'
