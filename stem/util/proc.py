@@ -381,6 +381,8 @@ def connections(pid = None, user = None):
               continue
             elif protocol == 'tcp' and status != b'01':
               continue  # skip tcp connections that aren't yet established
+            elif protocol == 'udp' and (f_addr == '00000000:0000' or f_addr == '00000000000000000000000000000000:0000'):
+              continue  # skip udp connections with a blank destination
 
             local_ip, local_port = _decode_proc_address_encoding(l_addr, is_ipv6)
             foreign_ip, foreign_port = _decode_proc_address_encoding(f_addr, is_ipv6)
