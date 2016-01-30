@@ -77,6 +77,7 @@ The following are only available within Stem's `git repository
   * Allow :func:`stem.util.conf.Config.set` to remove values when provided with a **None** value
   * Additional information when :func:`~stem.util.system.call` fails through a :class:`~stem.util.system.CallError`
   * Added an **is_ipv6** value to :class:`~stem.util.connection.Connection` instances
+  * Added :func:`~stem.util.system.pids_by_user`
   * Added :func:`~stem.util.__init__.datetime_to_unix`
 
  * **Interpreter**

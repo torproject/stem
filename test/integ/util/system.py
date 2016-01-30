@@ -366,6 +366,16 @@ class TestSystem(unittest.TestCase):
     os.rmdir(tmpdir)
     self.assertEqual(None, stem.util.system.pid_by_open_file(tmpdir))
 
+  def test_pids_by_user(self):
+    """
+    Checks the stem.util.system.pids_by_user function.
+    """
+
+    # our own pid should be among the processes for our user
+
+    pids = stem.util.system.pids_by_user(getpass.getuser())
+    self.assertTrue(os.getpid() in pids)
+
   def test_cwd(self):
     """
     Checks general usage of the stem.util.system.cwd function.

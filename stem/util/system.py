@@ -27,6 +27,7 @@ best-effort, providing **None** if the lookup fails.
   pid_by_name - gets the pid for a process by the given name
   pid_by_port - gets the pid for a process listening to a given port
   pid_by_open_file - gets the pid for the process with an open file
+  pids_by_user - provides processes owned by a user
   cwd - provides the current working directory for a given process
   user - provides the user a process is running under
   start_time - provides the unix timestamp when the process started
@@ -84,6 +85,7 @@ GET_PID_BY_PORT_NETSTAT = 'netstat -npltu'
 GET_PID_BY_PORT_SOCKSTAT = 'sockstat -4l -P tcp -p %s'
 GET_PID_BY_PORT_LSOF = 'lsof -wnP -iTCP -sTCP:LISTEN'
 GET_PID_BY_FILE_LSOF = 'lsof -tw %s'
+GET_PIDS_BY_USER = 'ps -o pid -u %s'
 GET_CWD_PWDX = 'pwdx %s'
 GET_CWD_LSOF = 'lsof -a -p %s -d cwd -Fn'
 GET_BSD_JAIL_ID_PS = 'ps -p %s -o jid'
@@ -638,6 +640,35 @@ def pid_by_open_file(path):
         return int(pid)
 
   return None  # all queries failed
+
+
+def pids_by_user(user):
+  """
+  Provides processes owned by a given user.
+
+  .. versionadded:: 1.5.0
+
+  :param str user: user to look up processes for
+
+  :returns: **list** with the process ids, **None** if it can't be determined
+  """
+
+  # example output:
+  #   atagar@odin:~$ ps -o pid -u avahi
+  #     PID
+  #     914
+  #     915
+
+  if is_available('ps'):
+    results = call(GET_PIDS_BY_USER % user, None)
+
+    if results:
+      try:
+        return list(map(int, results[1:]))
+      except ValueError:
+        pass
+
+  return None
 
 
 def cwd(pid):
