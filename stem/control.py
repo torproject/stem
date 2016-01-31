@@ -347,6 +347,15 @@ CACHEABLE_GETINFO_PARAMS = (
   'events/names',
   'features/names',
   'process/descriptor-limit',
+  'status/version/current',
+)
+
+CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF = (
+  'accounting/enabled',
+  'net/listeners/control',
+  'net/listeners/dir',
+  'net/listeners/or',
+  'net/listeners/socks',
 )
 
 # GETCONF parameters we shouldn't cache. This includes hidden service
@@ -1120,7 +1129,7 @@ class Controller(BaseController):
         for key, value in response.entries.items():
           key = key.lower()  # make case insensitive
 
-          if key in CACHEABLE_GETINFO_PARAMS:
+          if key in CACHEABLE_GETINFO_PARAMS or key in CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF:
             to_cache[key] = value
           elif key.startswith('ip-to-country/'):
             # both cache-able and means that we should reset the geoip failure count
@@ -2330,6 +2339,10 @@ class Controller(BaseController):
 
           if param == 'exitpolicy':
             self._set_cache({'exitpolicy': None})
+
+        # reset any getinfo parameters that can be changed by a SETCONF
+
+        self._set_cache(dict([(k.lower(), None) for k in CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF]), 'getinfo')
 
         self._set_cache(to_cache, 'getconf')
         self._set_cache({'get_custom_options': None})
