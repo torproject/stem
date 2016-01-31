@@ -2339,6 +2339,8 @@ class Controller(BaseController):
 
           if param == 'exitpolicy':
             self._set_cache({'exitpolicy': None})
+          elif 'hidden' in param:
+            self._set_cache({'hidden_service_conf': None})
 
         # reset any getinfo parameters that can be changed by a SETCONF
 
@@ -2395,6 +2397,12 @@ class Controller(BaseController):
       provided a default response
     """
 
+    service_dir_map = self._get_cache('hidden_service_conf')
+
+    if service_dir_map is not None:
+      log.trace('GETCONF HiddenServiceOptions (cache fetch)')
+      return service_dir_map
+
     start_time = time.time()
 
     try:
@@ -2444,6 +2452,7 @@ class Controller(BaseController):
       else:
         service_dir_map[directory][k] = v
 
+    self._set_cache({'hidden_service_conf': service_dir_map})
     return service_dir_map
 
   def set_hidden_service_conf(self, conf):
