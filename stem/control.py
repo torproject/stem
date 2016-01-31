@@ -323,6 +323,8 @@ Listener = stem.util.enum.UppercaseEnum(
   'CONTROL',
 )
 
+LOG_CACHE_FETCHES = True  # provide trace level logging for cache hits
+
 # Configuration options that are fetched by a special key. The keys are
 # lowercase to make case insensitive lookups easier.
 
@@ -1104,7 +1106,8 @@ class Controller(BaseController):
 
     # if everything was cached then short circuit making the query
     if not params:
-      log.trace('GETINFO %s (cache fetch)' % ' '.join(reply.keys()))
+      if LOG_CACHE_FETCHES:
+        log.trace('GETINFO %s (cache fetch)' % ' '.join(reply.keys()))
 
       if is_multiple:
         return reply
@@ -2118,7 +2121,9 @@ class Controller(BaseController):
 
     # if everything was cached then short circuit making the query
     if not lookup_params:
-      log.trace('GETCONF %s (cache fetch)' % ' '.join(reply.keys()))
+      if LOG_CACHE_FETCHES:
+        log.trace('GETCONF %s (cache fetch)' % ' '.join(reply.keys()))
+
       return self._get_conf_dict_to_response(reply, default, multiple)
 
     try:
@@ -2400,7 +2405,9 @@ class Controller(BaseController):
     service_dir_map = self._get_cache('hidden_service_conf')
 
     if service_dir_map is not None:
-      log.trace('GETCONF HiddenServiceOptions (cache fetch)')
+      if LOG_CACHE_FETCHES:
+        log.trace('GETCONF HiddenServiceOptions (cache fetch)')
+
       return service_dir_map
 
     start_time = time.time()
