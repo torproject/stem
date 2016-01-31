@@ -80,6 +80,10 @@ import stem.util.str_tools
 
 from stem.util import log
 
+# lines to limit our trace logging to, you can disable this by setting it to None
+
+TRUNCATE_LOGS = 10
+
 
 class ControlSocket(object):
   """
@@ -589,6 +593,13 @@ def recv_message(control_file):
 
       raw_content_str = b''.join(raw_content)
       log_message = raw_content_str.replace(b'\r\n', b'\n').rstrip()
+
+      if TRUNCATE_LOGS:
+        log_message_lines = log_message.split(b'\n')
+
+        if len(log_message_lines) > TRUNCATE_LOGS:
+          log_message = b'\n'.join(log_message_lines[:TRUNCATE_LOGS] + [b'... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
+
       log.trace('Received from tor:\n' + stem.util.str_tools._to_unicode(log_message))
 
       return stem.response.ControlMessage(parsed_content, raw_content_str)
