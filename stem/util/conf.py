@@ -512,14 +512,10 @@ class Config(object):
 
         # parse the key/value pair
         if line:
-          try:
+          if ' ' in line:
             key, value = line.split(' ', 1)
-            value = value.strip()
-          except ValueError:
-            log.debug("Config entry '%s' is expected to be of the format 'Key Value', defaulting to '%s' -> ''" % (line, line))
-            key, value = line, ''
-
-          if not value:
+            self.set(key, value.strip(), False)
+          else:
             # this might be a multi-line entry, try processing it as such
             multiline_buffer = []
 
@@ -529,10 +525,9 @@ class Config(object):
               multiline_buffer.append(content)
 
             if multiline_buffer:
-              self.set(key, '\n'.join(multiline_buffer), False)
-              continue
-
-          self.set(key, value, False)
+              self.set(line, '\n'.join(multiline_buffer), False)
+            else:
+              self.set(line, '', False)  # default to a key => '' mapping
 
   def save(self, path = None):
     """
