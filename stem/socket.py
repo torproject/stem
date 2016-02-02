@@ -592,15 +592,15 @@ def recv_message(control_file):
       parsed_content.append((status_code, divider, content))
 
       raw_content_str = b''.join(raw_content)
-      log_message = raw_content_str.replace(b'\r\n', b'\n').rstrip()
+      log_message = stem.util.str_tools._to_unicode(raw_content_str.replace(b'\r\n', b'\n').rstrip())
 
       if TRUNCATE_LOGS:
-        log_message_lines = log_message.split(b'\n')
+        log_message_lines = log_message.split('\n')
 
         if len(log_message_lines) > TRUNCATE_LOGS:
-          log_message = b'\n'.join(log_message_lines[:TRUNCATE_LOGS] + [b'... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
+          log_message = '\n'.join(log_message_lines[:TRUNCATE_LOGS] + ['... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
 
-      log.trace('Received from tor:\n' + stem.util.str_tools._to_unicode(log_message))
+      log.trace('Received from tor:\n' + log_message)
 
       return stem.response.ControlMessage(parsed_content, raw_content_str)
     elif divider == '+':
