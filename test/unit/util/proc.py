@@ -259,9 +259,9 @@ class TestProc(unittest.TestCase):
     }[param]
 
     open_mock.side_effect = lambda param, mode: {
-      '/proc/net/tcp': io.BytesIO(''),
+      '/proc/net/tcp': io.BytesIO(b''),
       '/proc/net/tcp6': io.BytesIO(TCP6_CONTENT),
-      '/proc/net/udp': io.BytesIO(''),
+      '/proc/net/udp': io.BytesIO(b''),
     }[param]
 
     expected_results = [
@@ -287,9 +287,9 @@ class TestProc(unittest.TestCase):
     }[param]
 
     open_mock.side_effect = lambda param, mode: {
-      '/proc/net/tcp': io.BytesIO(''),
+      '/proc/net/tcp': io.BytesIO(b''),
       '/proc/net/tcp6': io.BytesIO(TCP6_CONTENT),
-      '/proc/net/udp': io.BytesIO(''),
+      '/proc/net/udp': io.BytesIO(b''),
     }[param]
 
     expected_results = [
