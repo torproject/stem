@@ -48,6 +48,14 @@ class GetConfResponse(stem.response.ControlMessage):
       else:
         key, value = (line.pop(), None)
 
+      # Tor's CommaList and RouterList have a bug where they map to an empty
+      # string when undefined rather than None...
+      #
+      # https://trac.torproject.org/projects/tor/ticket/18263
+
+      if value == '':
+        value = None
+
       if key not in self.entries:
         self.entries[key] = []
 
