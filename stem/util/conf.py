@@ -275,15 +275,15 @@ def uses_settings(handle, path, lazy_load = True):
 
   config = get_config(handle)
 
-  if not lazy_load and not config.get('settings_loaded', False):
+  if not lazy_load and not config._settings_loaded:
     config.load(path)
-    config.set('settings_loaded', 'true')
+    config._settings_loaded = True
 
   def decorator(func):
     def wrapped(*args, **kwargs):
-      if lazy_load and not config.get('settings_loaded', False):
+      if lazy_load and not config._settings_loaded:
         config.load(path)
-        config.set('settings_loaded', 'true')
+        config._settings_loaded = True
 
       if 'config' in inspect.getargspec(func).args:
         return func(*args, config = config, **kwargs)
@@ -459,6 +459,9 @@ class Config(object):
 
     # keys that have been requested (used to provide unused config contents)
     self._requested_keys = set()
+
+    # flag to support lazy loading in uses_settings()
+    self._settings_loaded = False
 
   def load(self, path = None, commenting = True):
     """
