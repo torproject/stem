@@ -34,7 +34,7 @@ EXPECTED_CATEGORIES = set([
   'AUTHORS',
 ])
 
-EXPECTED_CLI_OPTIONS = set(['-h, -help', '-f FILE', '--allow-missing-torrc', '--defaults-torrc FILE', '--ignore-missing-torrc', '--hash-password PASSWORD', '--list-fingerprint', '--verify-config', '--service install [--options command-line options]', '--service remove|start|stop', '--nt-service', '--list-torrc-options', '--version', '--quiet|--hush'])
+EXPECTED_CLI_OPTIONS = set(['-h, -help', '-f FILE', '--allow-missing-torrc', '--defaults-torrc FILE', '--ignore-missing-torrc', '--hash-password PASSWORD', '--list-fingerprint', '--verify-config', '--service install [--options command-line options]', '--service remove|start|stop', '--nt-service', '--keygen [--newpass]', '--list-torrc-options', '--version', '--quiet|--hush'])
 EXPECTED_SIGNALS = set(['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGUSR1', 'SIGUSR2', 'SIGCHLD', 'SIGPIPE', 'SIGXFSZ'])
 
 EXPECTED_DESCRIPTION = """

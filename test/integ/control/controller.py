@@ -1106,7 +1106,7 @@ class TestController(unittest.TestCase):
       # The response data for our request for request should be an IP address + '\n'
 
       ip_addr = response[response.find(b'\r\n\r\n'):].strip()
-      self.assertTrue(stem.util.connection.is_valid_ipv4_address(stem.util.str_tools._to_unicode(ip_addr)))
+      self.assertTrue(stem.util.connection.is_valid_ipv4_address(stem.util.str_tools._to_unicode(ip_addr)), "'%s' isn't an address" % ip_addr)
 
   @require_controller
   @require_online

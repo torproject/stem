@@ -32,6 +32,9 @@ class TestDescriptorDownloader(unittest.TestCase):
     consensus = downloader.get_consensus(document_handler = stem.descriptor.DocumentHandler.BARE_DOCUMENT).run()[0]
 
     for auth in consensus.directory_authorities:
+      if auth.nickname == 'dannenberg-legacy':
+        continue  # skip due to https://trac.torproject.org/projects/tor/ticket/17906
+
       stem_auth = stem.descriptor.remote.get_authorities().get(auth.nickname)
 
       if not stem_auth:
