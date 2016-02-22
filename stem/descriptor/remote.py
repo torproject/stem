@@ -44,7 +44,11 @@ itself...
 
   get_authorities - Provides tor directory information.
 
-  DirectoryAuthority - Information about a tor directory authority.
+  Directory - Relay we can retrieve directory information from
+    |- DirectoryAuthority - Information about a tor directory authority
+    +- FallbackDirectory - Directory mirror tor uses when authories are unavailable
+        |- from_cache - Provides fallback directories cached with Stem.
+        +- from_remote - Retrieves fallback directories remotely from tor's latest commit.
 
   Query - Asynchronous request to download tor descriptors
     |- start - issues the query if it isn't already running
@@ -73,7 +77,9 @@ itself...
 """
 
 import io
+import os
 import random
+import re
 import sys
 import threading
 import time
@@ -88,13 +94,16 @@ except ImportError:
 import stem.descriptor
 
 from stem import Flag
-from stem.util import log
+from stem.util import connection, log, tor_tools
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
 
 MAX_FINGERPRINTS = 96
 MAX_MICRODESCRIPTOR_HASHES = 92
+
+GITWEB_FALLBACK_DIR_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc'
+CACHE_PATH = os.path.join(os.path.dirname(__file__), 'fallback_directories.cfg')
 
 
 def _guess_descriptor_type(resource):
@@ -340,8 +349,10 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      authority = random.choice(list(filter(lambda auth: auth.v3ident is not None, get_authorities().values())))
-      address, dirport = authority.address, authority.dir_port
+      directories = get_authorities().values() + FallbackDirectory.from_cache().values()
+
+      picked = random.choice(directories)
+      address, dirport = picked.address, picked.dir_port
     else:
       address, dirport = random.choice(self.endpoints)
 
@@ -390,8 +401,8 @@ class DescriptorDownloader(object):
   def __init__(self, use_mirrors = False, **default_args):
     self._default_args = default_args
 
-    authorities = filter(lambda auth: auth.v3ident is not None, get_authorities().values())
-    self._endpoints = [(auth.address, auth.dir_port) for auth in authorities]
+    directories = get_authorities().values() + FallbackDirectory.from_cache().values()
+    self._endpoints = [(directory.address, directory.dir_port) for directory in directories]
 
     if use_mirrors:
       try:
@@ -412,8 +423,8 @@ class DescriptorDownloader(object):
     :raises: **Exception** if unable to determine the directory mirrors
     """
 
-    authorities = filter(lambda auth: auth.v3ident is not None, get_authorities().values())
-    new_endpoints = set([(auth.address, auth.dir_port) for auth in authorities])
+    directories = get_authorities().values() + FallbackDirectory.from_cache().values()
+    new_endpoints = set([(directory.address, directory.dir_port) for directory in directories])
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
 
@@ -617,7 +628,39 @@ class DescriptorDownloader(object):
     )
 
 
-class DirectoryAuthority(object):
+class Directory(object):
+  """
+  Relay we can constact for directory information
+
+  .. versionadded:: 1.5.0
+
+  :var str address: IP address of the authority, currently they're all IPv4 but
+    this may not always be the case
+  :var int or_port: port on which the relay services relay traffic
+  :var int dir_port: port on which directory information is available
+  :var str fingerprint: relay fingerprint
+  :var str nickname: nickname of the authority
+  """
+
+  def __init__(self, address, or_port, dir_port, fingerprint, nickname):
+    self.address = address
+    self.or_port = or_port
+    self.dir_port = dir_port
+    self.fingerprint = fingerprint
+    self.nickname = nickname
+
+  def __eq__(self, other):
+    if not isinstance(other, Directory):
+      return False
+
+    for attr in ('nickname', 'address', 'or_port', 'dir_port', 'fingerprint'):
+      if getattr(self, attr) != getattr(other, attr):
+        return False
+
+    return True
+
+
+class DirectoryAuthority(Directory):
   """
   Tor directory authority, a special type of relay `hardcoded into tor
   <https://gitweb.torproject.org/tor.git/tree/src/or/config.c#n819>`_
@@ -648,23 +691,21 @@ class DirectoryAuthority(object):
   .. versionchanged:: 1.3.0
      Added the is_bandwidth_authority attribute.
 
-  :var str nickname: nickname of the authority
-  :var str address: IP address of the authority, currently they're all IPv4 but
-    this may not always be the case
-  :var int or_port: port on which the relay services relay traffic
-  :var int dir_port: port on which directory information is available
-  :var str fingerprint: relay fingerprint
   :var str v3ident: identity key fingerprint used to sign votes and consensus
+  :var bool is_bandwidth_authority: **True** if this is a bandwidth authority,
+    **False** otherwise
   """
 
-  def __init__(self, nickname = None, address = None, or_port = None, dir_port = None, is_bandwidth_authority = False, fingerprint = None, v3ident = None):
-    self.nickname = nickname
-    self.address = address
-    self.or_port = or_port
-    self.dir_port = dir_port
-    self.is_bandwidth_authority = is_bandwidth_authority
-    self.fingerprint = fingerprint
+  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, v3ident = None, is_bandwidth_authority = False):
+    super(DirectoryAuthority, self).__init__(address, or_port, dir_port, fingerprint, nickname)
     self.v3ident = v3ident
+    self.is_bandwidth_authority = is_bandwidth_authority
+
+  def __eq__(self, other):
+    if isinstance(other, DirectoryAuthority) and super(DirectoryAuthority, self).__eq__(other):
+      return self.v3ident == other.v3ident and self.is_bandwidth_authority == other.is_bandwidth_authority
+    else:
+      return False
 
 
 DIRECTORY_AUTHORITIES = {
@@ -767,7 +808,186 @@ def get_authorities():
   The directory information hardcoded into Tor and occasionally changes, so the
   information this provides might not necessarily match your version of tor.
 
-  :returns: dict of str nicknames to :class:`~stem.descriptor.remote.DirectoryAuthority` instances
+  :returns: **dict** of **str** nicknames to :class:`~stem.descriptor.remote.DirectoryAuthority` instances
   """
 
   return dict(DIRECTORY_AUTHORITIES)
+
+
+class FallbackDirectory(Directory):
+  """
+  Tor directories tor uses as alternates for the authorities. These relays are
+  `hardcoded in tor <https://gitweb.torproject.org/tor.git/tree/src/or/fallback_dirs.inc>`_.
+
+  .. versionadded:: 1.5.0
+  """
+
+  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None):
+    super(FallbackDirectory, self).__init__(address, or_port, dir_port, fingerprint, nickname)
+
+  @staticmethod
+  def from_cache():
+    """
+    Provides fallback directory information cached with Stem. Unlike
+    :func:`~stem.descriptor.remote.FallbackDirectory.from_remote` this doesn't
+    have any system requirements, and is faster too. Only drawback is that
+    these fallback directories are only as up to date as the Stem release we're
+    using.
+
+    :returns: **dict** of **str** fingerprints to their
+      :class:`~stem.descriptor.remote.FallbackDirectory`
+    """
+
+    conf = stem.util.conf.Config()
+    conf.load(CACHE_PATH)
+
+    results = {}
+
+    for nickname in set([key.split('.')[0] for key in conf.keys()]):
+      if nickname in ('tor_commit', 'stem_commit'):
+        continue
+
+      attr = {}
+
+      for attr_name in ('address', 'or_port', 'dir_port', 'fingerprint'):
+        key = '%s.%s' % (nickname, attr_name)
+        attr[attr_name] = conf.get(key)
+
+        if not attr[attr_name]:
+          raise IOError("'%s' is missing from %s" % (key, CACHE_PATH))
+
+      if not connection.is_valid_ipv4_address(attr['address']):
+        raise IOError("'%s.address' was an invalid address (%s)" % (nickname, attr['address']))
+      elif not connection.is_valid_port(attr['or_port']):
+        raise IOError("'%s.or_port' was an invalid port (%s)" % (nickname, attr['or_port']))
+      elif not connection.is_valid_port(attr['dir_port']):
+        raise IOError("'%s.dir_port' was an invalid port (%s)" % (nickname, attr['dir_port']))
+      elif not tor_tools.is_valid_fingerprint(attr['fingerprint']):
+        raise IOError("'%s.fingerprint' was an invalid fingerprint (%s)" % (nickname, attr['fingerprint']))
+
+      results[attr['fingerprint']] = FallbackDirectory(
+        address = attr['address'],
+        or_port = int(attr['or_port']),
+        dir_port = int(attr['dir_port']),
+        fingerprint = attr['fingerprint'],
+        nickname = nickname,
+      )
+
+    return results
+
+  @staticmethod
+  def from_remote(timeout = 60):
+    """
+    Reads and parses tor's latest fallback directories `from
+    gitweb.torproject.org
+    <https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc>`_.
+    Note that while convenient, this reliance on GitWeb means you should alway
+    call with a fallback, such as...
+
+    ::
+
+      try:
+        fallback_directories = stem.descriptor.remote.from_remote()
+      except IOError:
+        fallback_directories = stem.descriptor.remote.from_cache()
+
+    :param int timeout: seconds to wait before timing out the request
+
+    :returns: **dict** of **str** fingerprints to their
+      :class:`~stem.descriptor.remote.FallbackDirectory`
+
+    :raises: **IOError** if unable to retrieve the fallback directories
+    """
+
+    try:
+      fallback_dir_page = urllib.urlopen(GITWEB_FALLBACK_DIR_URL, timeout = timeout).read()
+    except:
+      exc = sys.exc_info()[1]
+      raise IOError("Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_DIR_URL, exc))
+
+    # Example of an entry...
+    #
+    #   /*
+    #   wagner
+    #   Flags: Fast Guard Running Stable V2Dir Valid
+    #   Fallback Weight: 43680 / 491920 (8.879%)
+    #   Consensus Weight: 62600 / 546000 (11.465%)
+    #   Rarely used email <trff914 AT gmail DOT com>
+    #   */
+    #   "5.175.233.86:80 orport=443 id=5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33"
+    #   " weight=43680",
+
+    results, nickname, last_line = {}, None, None
+
+    for line in fallback_dir_page.splitlines():
+      if last_line == '/*':
+        nickname = line
+      elif line.startswith('"'):
+        addr_line_match = re.match('"([\d\.]+):(\d+) orport=(\d+) id=([\dA-F]{40}).*', line)
+
+        if addr_line_match:
+          address, dir_port, or_port, fingerprint = addr_line_match.groups()
+
+          if not connection.is_valid_ipv4_address(address):
+            raise IOError('%s has an invalid address: %s' % (nickname, address))
+          elif not connection.is_valid_port(or_port):
+            raise IOError('%s has an invalid or_port: %s' % (nickname, or_port))
+          elif not connection.is_valid_port(dir_port):
+            raise IOError('%s has an invalid dir_port: %s' % (nickname, dir_port))
+          elif not tor_tools.is_valid_fingerprint(fingerprint):
+            raise IOError('%s has an invalid fingerprint: %s' % (nickname, fingerprint))
+
+          results[fingerprint] = FallbackDirectory(
+            address = address,
+            or_port = int(or_port),
+            dir_port = int(dir_port),
+            fingerprint = fingerprint,
+            nickname = nickname,
+          )
+
+      last_line = line
+
+    return results
+
+
+def _fallback_directory_differences(previous_directories, new_directories):
+  """
+  Provides a description of how fallback directories differ.
+  """
+
+  lines = []
+
+  added_fp = set(new_directories.keys()).difference(previous_directories.keys())
+  removed_fp = set(previous_directories.keys()).difference(new_directories.keys())
+
+  for fp in added_fp:
+    directory = new_directories[fp]
+
+    lines += [
+      '* Added %s as a new fallback directory:' % directory.nickname,
+      '  address: %s' % directory.address,
+      '  or_port: %s' % directory.or_port,
+      '  dir_port: %s' % directory.dir_port,
+      '  fingerprint: %s' % directory.fingerprint,
+      '',
+    ]
+
+  for fp in removed_fp:
+    lines.append('* Removed %s as a fallback directory' % previous_directories[fp].nickname)
+
+  for fp in new_directories:
+    if fp in added_fp or fp in removed_fp:
+      continue  # already discussed these
+
+    previous_directory = previous_directories[fp]
+    new_directory = new_directories[fp]
+
+    if previous_directory != new_directory:
+      for attr in ('nickname', 'address', 'or_port', 'dir_port', 'fingerprint'):
+        old_attr = getattr(previous_directory, attr)
+        new_attr = getattr(new_directory, attr)
+
+        if old_attr != new_attr:
+          lines.append('* Changed the %s of %s from %s to %s' % (attr, fp, old_attr, new_attr))
+
+  return '\n'.join(lines)

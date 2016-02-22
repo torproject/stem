@@ -6,7 +6,6 @@
 Caches tor's latest manual content. Run this to pick new man page changes.
 """
 
-import os
 import re
 import sys
 
@@ -19,7 +18,6 @@ try:
 except ImportError:
   import urllib2 as urllib
 
-CACHE_PATH = os.path.join(os.path.dirname(__file__), 'stem', 'cached_tor_manual.cfg')
 GITWEB_MAN_LOG = 'https://gitweb.torproject.org/tor.git/log/doc/tor.1.txt'
 MAN_LOG_LINK = "href='/tor.git/commit/doc/tor.1.txt\?id=([^']*)'"
 
@@ -53,4 +51,4 @@ if __name__ == '__main__':
 
   latest_manual.man_commit = man_commit
   latest_manual.stem_commit = stem_commit
-  latest_manual.save(CACHE_PATH)
+  latest_manual.save(stem.manual.CACHE_PATH)

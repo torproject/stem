@@ -218,3 +218,41 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertTrue(isinstance(single_query_results[0], stem.descriptor.networkstatus.KeyCertificate))
 
     self.assertEqual(2, len(list(multiple_query)))
+
+  @require_online
+  def test_that_cache_is_up_to_date(self):
+    """
+    Check if the cached fallback directories bundled with Stem are up to date
+    or not.
+    """
+
+    cached_fallback_directories = stem.descriptor.remote.FallbackDirectory.from_cache()
+    latest_fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
+
+    if cached_fallback_directories != latest_fallback_directories:
+      self.fail("Stem's cached fallback directories are out of date. Please run 'cache_fallback_directories.py'...\n\n%s" % stem.descriptor.remote._fallback_directory_differences(cached_fallback_directories, latest_fallback_directories))
+
+  @require_online
+  def test_that_fallback_directories_are_reachable(self):
+    """
+    Fetch information from each fallback directory to confirm that it's
+    available.
+    """
+
+    unsuccessful = {}
+    downloader = stem.descriptor.remote.DescriptorDownloader()
+    moria1_v3ident = stem.descriptor.remote.get_authorities()['moria1'].v3ident
+
+    for fallback_directory in stem.descriptor.remote.FallbackDirectory.from_cache().values():
+      try:
+        downloader.get_key_certificates(authority_v3idents = moria1_v3ident, endpoints = [(fallback_directory.address, fallback_directory.dir_port)]).run()
+      except Exception as exc:
+        unsuccessful[fallback_directory] = exc
+
+    if unsuccessful:
+      lines = ['We were unable to contact the following fallback directories...\n']
+
+      for fallback_directory, exc in unsuccessful.items():
+        lines.append('* %s:%s (%s): %s' % (fallback_directory.address, fallback_directory.dir_port, fallback_directory.fingerprint, exc))
+
+      self.fail('\n'.join(lines))

@@ -58,6 +58,32 @@ iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
 -----END SIGNATURE-----
 """
 
+FALLBACK_DIR_CONTENT = b"""\
+/* Trial fallbacks for 0.2.8.1-alpha with ADDRESS_AND_PORT_STABLE_DAYS = 30
+ * This works around an issue where relays post a descriptor without a DirPort
+ * when restarted. If these relays stay up, they will have been up for 120 days
+ * by the 0.2.8 stable release -- teor */
+/*
+wagner
+Flags: Fast Guard Running Stable V2Dir Valid
+Fallback Weight: 43680 / 491920 (8.879%)
+Consensus Weight: 62600 / 546000 (11.465%)
+Rarely used email <trff914 AT gmail DOT com>
+*/
+"5.175.233.86:80 orport=443 id=5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33"
+" weight=43680",
+/*
+kitten2
+Flags: Fast Guard HSDir Running Stable V2Dir Valid
+Fallback Weight: 43680 / 491920 (8.879%)
+Consensus Weight: 59100 / 546000 (10.824%)
+0xEFB74277ECE4E222 Aeris <aeris+tor AT imirhil DOT fr> - 1aerisnnLWPchhDSXpxWGYWwLiSFUVFnd
+*/
+"62.210.124.124:9130 orport=9101 id=2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E"
+" ipv6=[2001:bc8:3f23:100::1]:9101"
+" weight=43680",
+"""
+
 
 class TestDescriptorDownloader(unittest.TestCase):
   @patch(URL_OPEN)
@@ -154,3 +180,33 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(list(query)))
     self.assertEqual(1, len(list(query)))
     self.assertEqual(1, len(list(query)))
+
+  def test_fallback_directories_from_cache(self):
+    # quick sanity test that we can load cached content
+    fallback_directories = stem.descriptor.remote.FallbackDirectory.from_cache()
+    self.assertTrue(len(fallback_directories) > 10)
+    self.assertEqual('wagner', fallback_directories['5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33'].nickname)
+
+  @patch(URL_OPEN)
+  def test_fallback_directories_from_remote(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT)
+    fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
+
+    expected = {
+      '5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33': stem.descriptor.remote.FallbackDirectory(
+        nickname = 'wagner',
+        address = '5.175.233.86',
+        or_port = 443,
+        dir_port = 80,
+        fingerprint = '5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33',
+      ),
+      '2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E': stem.descriptor.remote.FallbackDirectory(
+        nickname = 'kitten2',
+        address = '62.210.124.124',
+        or_port = 9101,
+        dir_port = 9130,
+        fingerprint = '2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E',
+      ),
+    }
+
+    self.assertEqual(expected, fallback_directories)
