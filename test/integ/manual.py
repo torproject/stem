@@ -302,6 +302,9 @@ class TestManual(unittest.TestCase):
 
     missing_from_manual = config_options_in_tor.difference(config_options_in_manual)
 
+    if 'TestingClientBootstrapConsensusAuthorityOnlyMaxDownloadTries' in missing_from_manual:
+      missing_from_manual.remove('TestingClientBootstrapConsensusAuthorityOnlyMaxDownloadTries')  # https://trac.torproject.org/projects/tor/ticket/17913
+
     if missing_from_manual:
       self.fail("The %s config options supported by tor isn't in its man page. Maybe we need to add them?" % ', '.join(missing_from_manual))
 
