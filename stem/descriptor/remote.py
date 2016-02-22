@@ -819,6 +819,30 @@ class FallbackDirectory(Directory):
   Tor directories tor uses as alternates for the authorities. These relays are
   `hardcoded in tor <https://gitweb.torproject.org/tor.git/tree/src/or/fallback_dirs.inc>`_.
 
+  For example, following checks the performance of tor's fallback directories...
+
+  ::
+
+    import time
+    from stem.descriptor.remote import DescriptorDownloader, FallbackDirectory
+
+    downloader = DescriptorDownloader()
+
+    for fallback_directory in FallbackDirectory.from_cache().values():
+      start = time.time()
+      downloader.get_consensus(endpoints = [(fallback_directory.address, fallback_directory.dir_port)]).run()
+      print('Downloading the consensus took %0.2f from %s' % (time.time() - start, fallback_directory.nickname))
+
+  ::
+
+    % python example.py
+    Downloading the consensus took 5.07 from Doedel22
+    Downloading the consensus took 3.59 from tornoderdednl
+    Downloading the consensus took 4.16 from Logforme
+    Downloading the consensus took 6.76 from Doedel21
+    Downloading the consensus took 5.21 from kitten4
+    ...
+
   .. versionadded:: 1.5.0
   """
 
