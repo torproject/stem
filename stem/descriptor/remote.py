@@ -94,7 +94,7 @@ except ImportError:
 import stem.descriptor
 
 from stem import Flag
-from stem.util import connection, log, tor_tools
+from stem.util import connection, log, str_tools, tor_tools
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -924,7 +924,7 @@ class FallbackDirectory(Directory):
     """
 
     try:
-      fallback_dir_page = urllib.urlopen(GITWEB_FALLBACK_DIR_URL, timeout = timeout).read()
+      fallback_dir_page = str_tools._to_unicode(urllib.urlopen(GITWEB_FALLBACK_DIR_URL, timeout = timeout).read())
     except:
       exc = sys.exc_info()[1]
       raise IOError("Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_DIR_URL, exc))
