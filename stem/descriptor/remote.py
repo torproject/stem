@@ -401,7 +401,7 @@ class DescriptorDownloader(object):
   def __init__(self, use_mirrors = False, **default_args):
     self._default_args = default_args
 
-    directories = get_authorities().values() + FallbackDirectory.from_cache().values()
+    directories = list(get_authorities().values()) + list(FallbackDirectory.from_cache().values())
     self._endpoints = [(directory.address, directory.dir_port) for directory in directories]
 
     if use_mirrors:
