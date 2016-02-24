@@ -816,10 +816,10 @@ def get_authorities():
 
 class FallbackDirectory(Directory):
   """
-  Tor directories tor uses as alternates for the authorities. These relays are
-  `hardcoded in tor <https://gitweb.torproject.org/tor.git/tree/src/or/fallback_dirs.inc>`_.
+  Particularly stable relays tor can instead of authorities when
+  bootstrapping. These relays are `hardcoded in tor <https://gitweb.torproject.org/tor.git/tree/src/or/fallback_dirs.inc>`_.
 
-  For example, following checks the performance of tor's fallback directories...
+  For example, the following checks the performance of tor's fallback directories...
 
   ::
 
