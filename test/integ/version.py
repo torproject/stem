@@ -62,5 +62,5 @@ class TestVersion(unittest.TestCase):
     # 250 OK
 
     tor_version = list(version_response)[0]
-    tor_version = tor_version[8:tor_version.find(' ', 8)]
+    tor_version = tor_version[8:].split(' ', 1)[0]
     stem.version.Version(tor_version)
