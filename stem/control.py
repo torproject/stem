@@ -1962,7 +1962,7 @@ class Controller(BaseController):
       request = 'HSFETCH %s' % address
 
       if servers:
-        request += ' '.join(['SERVER=%s' % s for s in servers])
+        request += ' ' + ' '.join(['SERVER=%s' % s for s in servers])
 
       response = self.msg(request)
       stem.response.convert('SINGLELINE', response)
