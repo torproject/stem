@@ -153,12 +153,6 @@ def get_config_policy(rules, ip_address = None):
     else:
       result.append(ExitPolicyRule(rule))
 
-  # torrc policies can apply to IPv4 or IPv6, so we need to make sure /0
-  # addresses aren't treated as being a full wildcard
-
-  for rule in result:
-    rule._submask_wildcard = False
-
   return ExitPolicy(*result)
 
 
@@ -632,7 +626,15 @@ class ExitPolicyRule(object):
 
   This should be treated as an immutable object.
 
+  .. versionchanged:: 1.5.0
+     Support for 'accept6/reject6' entries and our **is_ipv6_only** attribute.
+
+  .. versionchanged:: 1.5.0
+     Support for '\*4' and '\*6' wildcards.
+
   :var bool is_accept: indicates if exiting is allowed or disallowed
+  :var bool is_ipv6_only: indicates if this is an accept6 or reject6 rule, only
+    matching ipv6 addresses
 
   :var str address: address that this rule is for
 
@@ -645,17 +647,18 @@ class ExitPolicyRule(object):
   """
 
   def __init__(self, rule):
-    # policy ::= "accept" exitpattern | "reject" exitpattern
+    # policy ::= "accept[6]" exitpattern | "reject[6]" exitpattern
     # exitpattern ::= addrspec ":" portspec
 
-    if rule.startswith('accept'):
-      self.is_accept = True
-    elif rule.startswith('reject'):
-      self.is_accept = False
-    else:
-      raise ValueError("An exit policy must start with either 'accept' or 'reject': %s" % rule)
+    self.is_accept = rule.startswith('accept')
+    self.is_ipv6_only = rule.startswith('accept6') or rule.startswith('reject6')
 
-    exitpattern = rule[6:]
+    if rule.startswith('accept6') or rule.startswith('reject6'):
+      exitpattern = rule[7:]
+    elif rule.startswith('accept') or rule.startswith('reject'):
+      exitpattern = rule[6:]
+    else:
+      raise ValueError("An exit policy must start with either 'accept[6]' or 'reject[6]': %s" % rule)
 
     if not exitpattern.startswith(' '):
       raise ValueError('An exit policy should have a space separating its accept/reject from the exit pattern: %s' % rule)
@@ -677,14 +680,17 @@ class ExitPolicyRule(object):
 
     self._mask = None
 
+    # Malformed exit policies are rejected, but there's an exception where it's
+    # just skipped: when an accept6/reject6 rule has an IPv4 address...
+    #
+    #   "Using an IPv4 address with accept6 or reject6 is ignored and generates
+    #   a warning."
+
+    self._skip_rule = False
+
     addrspec, portspec = exitpattern.rsplit(':', 1)
     self._apply_addrspec(rule, addrspec)
     self._apply_portspec(rule, portspec)
-
-    # If true then a submask of /0 is treated by is_address_wildcard() as being
-    # a wildcard.
-
-    self._submask_wildcard = True
 
     # Flags to indicate if this rule seems to be expanded from the 'private'
     # keyword or tor's default policy suffix.
@@ -694,19 +700,13 @@ class ExitPolicyRule(object):
 
   def is_address_wildcard(self):
     """
-    **True** if we'll match against any address, **False** otherwise.
+    **True** if we'll match against **any** address, **False** otherwise.
 
-    Note that if this policy can apply to both IPv4 and IPv6 then this is
-    different from being for a /0 (since, for instance, 0.0.0.0/0 wouldn't
-    match against an IPv6 address). That said, /0 addresses are highly unusual
-    and most things citing exit policies are IPv4 specific anyway, making this
-    moot.
+    Note that this is different than \*4, \*6, or '/0' address which are
+    wildcards for only either IPv4 or IPv6.
 
     :returns: **bool** for if our address matching is a wildcard
     """
-
-    if self._submask_wildcard and self.get_masked_bits() == 0:
-      return True
 
     return self._address_type == _address_type_to_int(AddressType.WILDCARD)
 
@@ -735,9 +735,15 @@ class ExitPolicyRule(object):
     :raises: **ValueError** if provided with a malformed address or port
     """
 
+    if self._skip_rule:
+      return False
+
     # validate our input and check if the argument doesn't match our address type
 
     if address is not None:
+      if self.is_ipv6_only and stem.util.connection.is_valid_ipv4_address(address):
+        return False  # accept6/reject6 don't match ipv4
+
       address_type = self.get_address_type()
 
       if stem.util.connection.is_valid_ipv4_address(address):
@@ -868,7 +874,10 @@ class ExitPolicyRule(object):
     to re-create this rule.
     """
 
-    label = 'accept ' if self.is_accept else 'reject '
+    if self.is_ipv6_only:
+      label = 'accept6 ' if self.is_accept else 'reject6 '
+    else:
+      label = 'accept ' if self.is_accept else 'reject '
 
     if self.is_address_wildcard():
       label += '*:'
@@ -906,7 +915,7 @@ class ExitPolicyRule(object):
     if self._hash is None:
       my_hash = 0
 
-      for attr in ('is_accept', 'address', 'min_port', 'max_port'):
+      for attr in ('is_accept', 'is_ipv6_only', 'address', 'min_port', 'max_port'):
         my_hash *= 1024
 
         attr_value = getattr(self, attr)
@@ -937,6 +946,14 @@ class ExitPolicyRule(object):
     # Parses the addrspec...
     # addrspec ::= "*" | ip4spec | ip6spec
 
+    # Expand IPv4 and IPv6 specific wildcards into /0 entries so we have one
+    # fewer bizarre special case headaches to deal with.
+
+    if addrspec == '*4':
+      addrspec = '0.0.0.0/0'
+    elif addrspec == '*6':
+      addrspec = '[0000:0000:0000:0000:0000:0000:0000:0000]/0'
+
     if '/' in addrspec:
       self.address, addr_extra = addrspec.split('/', 1)
     else:
@@ -950,6 +967,9 @@ class ExitPolicyRule(object):
       # ip4 ::= an IPv4 address in dotted-quad format
       # ip4mask ::= an IPv4 mask in dotted-quad format
       # num_ip4_bits ::= an integer between 0 and 32
+
+      if self.is_ipv6_only:
+        self._skip_rule = True
 
       self._address_type = _address_type_to_int(AddressType.IPv4)
 
@@ -1054,10 +1074,12 @@ class MicroExitPolicyRule(ExitPolicyRule):
 
   def __init__(self, is_accept, min_port, max_port):
     self.is_accept = is_accept
+    self.is_ipv6_only = False
     self.address = None  # wildcard address
     self.min_port = min_port
     self.max_port = max_port
     self._hash = None
+    self._skip_rule = False
 
   def is_address_wildcard(self):
     return True
