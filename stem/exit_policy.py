@@ -632,7 +632,12 @@ class ExitPolicyRule(object):
 
   This should be treated as an immutable object.
 
+  .. versionchanged:: 1.5.0
+     Support for 'accept6/reject6' entries and our **is_ipv6_only** attribute.
+
   :var bool is_accept: indicates if exiting is allowed or disallowed
+  :var bool is_ipv6_only: indicates if this is an accept6 or reject6 rule, only
+    matching ipv6 addresses
 
   :var str address: address that this rule is for
 
@@ -645,17 +650,18 @@ class ExitPolicyRule(object):
   """
 
   def __init__(self, rule):
-    # policy ::= "accept" exitpattern | "reject" exitpattern
+    # policy ::= "accept[6]" exitpattern | "reject[6]" exitpattern
     # exitpattern ::= addrspec ":" portspec
 
-    if rule.startswith('accept'):
-      self.is_accept = True
-    elif rule.startswith('reject'):
-      self.is_accept = False
-    else:
-      raise ValueError("An exit policy must start with either 'accept' or 'reject': %s" % rule)
+    self.is_accept = rule.startswith('accept')
+    self.is_ipv6_only = rule.startswith('accept6') or rule.startswith('reject6')
 
-    exitpattern = rule[6:]
+    if rule.startswith('accept6') or rule.startswith('reject6'):
+      exitpattern = rule[7:]
+    elif rule.startswith('accept') or rule.startswith('reject'):
+      exitpattern = rule[6:]
+    else:
+      raise ValueError("An exit policy must start with either 'accept[6]' or 'reject[6]': %s" % rule)
 
     if not exitpattern.startswith(' '):
       raise ValueError('An exit policy should have a space separating its accept/reject from the exit pattern: %s' % rule)
@@ -738,6 +744,9 @@ class ExitPolicyRule(object):
     # validate our input and check if the argument doesn't match our address type
 
     if address is not None:
+      if self.is_ipv6_only and stem.util.connection.is_valid_ipv4_address(address):
+        return False  # accept6/reject6 don't match ipv4
+
       address_type = self.get_address_type()
 
       if stem.util.connection.is_valid_ipv4_address(address):
@@ -868,7 +877,10 @@ class ExitPolicyRule(object):
     to re-create this rule.
     """
 
-    label = 'accept ' if self.is_accept else 'reject '
+    if self.is_ipv6_only:
+      label = 'accept6 ' if self.is_accept else 'reject6 '
+    else:
+      label = 'accept ' if self.is_accept else 'reject '
 
     if self.is_address_wildcard():
       label += '*:'
@@ -906,7 +918,7 @@ class ExitPolicyRule(object):
     if self._hash is None:
       my_hash = 0
 
-      for attr in ('is_accept', 'address', 'min_port', 'max_port'):
+      for attr in ('is_accept', 'is_ipv6_only', 'address', 'min_port', 'max_port'):
         my_hash *= 1024
 
         attr_value = getattr(self, attr)
@@ -950,6 +962,10 @@ class ExitPolicyRule(object):
       # ip4 ::= an IPv4 address in dotted-quad format
       # ip4mask ::= an IPv4 mask in dotted-quad format
       # num_ip4_bits ::= an integer between 0 and 32
+
+      if self.is_ipv6_only:
+        rule_start = 'accept6' if self.is_accept else 'reject6'
+        raise ValueError("'%s' rules should have an IPv6 address, not IPv4 (%s)" % (rule_start, self.address))
 
       self._address_type = _address_type_to_int(AddressType.IPv4)
 
@@ -1054,6 +1070,7 @@ class MicroExitPolicyRule(ExitPolicyRule):
 
   def __init__(self, is_accept, min_port, max_port):
     self.is_accept = is_accept
+    self.is_ipv6_only = False
     self.address = None  # wildcard address
     self.min_port = min_port
     self.max_port = max_port

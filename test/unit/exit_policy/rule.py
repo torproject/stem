@@ -42,6 +42,8 @@ class TestExitPolicyRule(unittest.TestCase):
     test_inputs = (
       'accept *:*',
       'reject *:*',
+      'accept6 *:*',
+      'reject6 *:*',
       'accept *:80',
       'accept *:80-443',
       'accept 127.0.0.1:80',
@@ -82,6 +84,10 @@ class TestExitPolicyRule(unittest.TestCase):
       'reject [0000:0000:0000:0000:0000:0000:0000:0000]/0:80': (True, False),
       'reject [0000:0000:0000:0000:0000:0000:0000:0000]/64:80': (False, False),
       'reject [0000:0000:0000:0000:0000:0000:0000:0000]/128:80': (False, False),
+
+      'reject6 *:*': (True, True),
+      'reject6 *:80': (True, False),
+      'reject6 [0000:0000:0000:0000:0000:0000:0000:0000]/128:80': (False, False),
 
       'accept 192.168.0.1:0-65535': (False, True),
       'accept 192.168.0.1:1-65535': (False, True),
@@ -352,3 +358,16 @@ class TestExitPolicyRule(unittest.TestCase):
 
       for match_args, expected_result in matches.items():
         self.assertEqual(expected_result, rule.is_match(*match_args))
+
+  def test_ipv6_only_entries(self):
+    # accept6/reject6 shouldn't allow ipv4 addresses
+
+    self.assertRaises(ValueError, ExitPolicyRule, 'accept6 192.168.0.1:*')
+    self.assertRaises(ValueError, ExitPolicyRule, 'reject6 192.168.0.1:*')
+
+    # wildcards match all ipv6 but *not* ipv4
+
+    rule = ExitPolicyRule('accept6 *:*')
+    self.assertTrue(rule.is_ipv6_only)
+    self.assertTrue(rule.is_match('FE80:0000:0000:0000:0202:B3FF:FE1E:8329', 443))
+    self.assertFalse(rule.is_match('192.168.0.1', 443))
