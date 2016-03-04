@@ -44,6 +44,7 @@ class TestExitPolicyRule(unittest.TestCase):
       'reject *:*',
       'accept6 *:*',
       'reject6 *:*',
+
       'accept *:80',
       'accept *:80-443',
       'accept 127.0.0.1:80',
@@ -64,6 +65,11 @@ class TestExitPolicyRule(unittest.TestCase):
       'accept 192.168.0.1/255.255.255.0:80': 'accept 192.168.0.1/24:80',
       'accept [::]/32:*': 'accept [0000:0000:0000:0000:0000:0000:0000:0000]/32:*',
       'accept [::]/128:*': 'accept [0000:0000:0000:0000:0000:0000:0000:0000]:*',
+
+      'accept *4:*': 'accept 0.0.0.0/0:*',
+      'accept *6:*': 'accept [0000:0000:0000:0000:0000:0000:0000:0000]/0:*',
+      'accept6 *4:*': 'accept6 0.0.0.0/0:*',
+      'accept6 *6:*': 'accept6 [0000:0000:0000:0000:0000:0000:0000:0000]/0:*',
     }
 
     for rule_arg, expected_str in test_inputs.items():
@@ -77,11 +83,16 @@ class TestExitPolicyRule(unittest.TestCase):
       'accept 192.168.0.1:*': (False, True),
       'accept 192.168.0.1:80': (False, False),
 
-      'reject 127.0.0.1/0:*': (True, True),
-      'reject 127.0.0.1/0.0.0.0:*': (True, True),
+      'reject *4:*': (False, True),
+      'reject *6:*': (False, True),
+      'reject6 *4:*': (False, True),
+      'reject6 *6:*': (False, True),
+
+      'reject 127.0.0.1/0:*': (False, True),
+      'reject 127.0.0.1/0.0.0.0:*': (False, True),
       'reject 127.0.0.1/16:*': (False, True),
       'reject 127.0.0.1/32:*': (False, True),
-      'reject [0000:0000:0000:0000:0000:0000:0000:0000]/0:80': (True, False),
+      'reject [0000:0000:0000:0000:0000:0000:0000:0000]/0:80': (False, False),
       'reject [0000:0000:0000:0000:0000:0000:0000:0000]/64:80': (False, False),
       'reject [0000:0000:0000:0000:0000:0000:0000:0000]/128:80': (False, False),
 
@@ -256,6 +267,14 @@ class TestExitPolicyRule(unittest.TestCase):
         (None, None, False): False,
         (None, None, True): True,
       },
+      'reject *4:*': {
+        ('192.168.0.1', 80): True,
+        ('FE80:0000:0000:0000:0202:B3FF:FE1E:8329', 80): False,
+      },
+      'reject *6:*': {
+        ('192.168.0.1', 80): False,
+        ('FE80:0000:0000:0000:0202:B3FF:FE1E:8329', 80): True,
+      },
     }
 
     for rule_arg, matches in test_inputs.items():
@@ -367,6 +386,9 @@ class TestExitPolicyRule(unittest.TestCase):
     self.assertFalse(rule.is_match('192.168.0.1'))
     self.assertFalse(rule.is_match('FE80:0000:0000:0000:0202:B3FF:FE1E:8329'))
     self.assertFalse(rule.is_match())
+
+    rule = ExitPolicyRule('accept6 *4:*')
+    self.assertTrue(rule._skip_rule)
 
     # wildcards match all ipv6 but *not* ipv4
 

@@ -153,12 +153,6 @@ def get_config_policy(rules, ip_address = None):
     else:
       result.append(ExitPolicyRule(rule))
 
-  # torrc policies can apply to IPv4 or IPv6, so we need to make sure /0
-  # addresses aren't treated as being a full wildcard
-
-  for rule in result:
-    rule._submask_wildcard = False
-
   return ExitPolicy(*result)
 
 
@@ -635,6 +629,9 @@ class ExitPolicyRule(object):
   .. versionchanged:: 1.5.0
      Support for 'accept6/reject6' entries and our **is_ipv6_only** attribute.
 
+  .. versionchanged:: 1.5.0
+     Support for '\*4' and '\*6' wildcards.
+
   :var bool is_accept: indicates if exiting is allowed or disallowed
   :var bool is_ipv6_only: indicates if this is an accept6 or reject6 rule, only
     matching ipv6 addresses
@@ -695,11 +692,6 @@ class ExitPolicyRule(object):
     self._apply_addrspec(rule, addrspec)
     self._apply_portspec(rule, portspec)
 
-    # If true then a submask of /0 is treated by is_address_wildcard() as being
-    # a wildcard.
-
-    self._submask_wildcard = True
-
     # Flags to indicate if this rule seems to be expanded from the 'private'
     # keyword or tor's default policy suffix.
 
@@ -708,19 +700,13 @@ class ExitPolicyRule(object):
 
   def is_address_wildcard(self):
     """
-    **True** if we'll match against any address, **False** otherwise.
+    **True** if we'll match against **any** address, **False** otherwise.
 
-    Note that if this policy can apply to both IPv4 and IPv6 then this is
-    different from being for a /0 (since, for instance, 0.0.0.0/0 wouldn't
-    match against an IPv6 address). That said, /0 addresses are highly unusual
-    and most things citing exit policies are IPv4 specific anyway, making this
-    moot.
+    Note that this is different than \*4, \*6, or '/0' address which are
+    wildcards for only either IPv4 or IPv6.
 
     :returns: **bool** for if our address matching is a wildcard
     """
-
-    if self._submask_wildcard and self.get_masked_bits() == 0:
-      return True
 
     return self._address_type == _address_type_to_int(AddressType.WILDCARD)
 
@@ -959,6 +945,14 @@ class ExitPolicyRule(object):
   def _apply_addrspec(self, rule, addrspec):
     # Parses the addrspec...
     # addrspec ::= "*" | ip4spec | ip6spec
+
+    # Expand IPv4 and IPv6 specific wildcards into /0 entries so we have one
+    # fewer bizarre special case headaches to deal with.
+
+    if addrspec == '*4':
+      addrspec = '0.0.0.0/0'
+    elif addrspec == '*6':
+      addrspec = '[0000:0000:0000:0000:0000:0000:0000:0000]/0'
 
     if '/' in addrspec:
       self.address, addr_extra = addrspec.split('/', 1)

@@ -48,6 +48,7 @@ The following are only available within Stem's `git repository
   * Added `stem.manual <api/manual.html>`_, which provides information available about Tor from `its manual <https://www.torproject.org/docs/tor-manual.html.en>`_ (:trac:`8251`)
   * :func:`~stem.connection.connect` and :func:`~stem.control.Controller.from_port` now connect to both port 9051 (relay's default) and 9151 (Tor Browser's default) (:trac:`16075`)
   * :class:`~stem.exit_policy.ExitPolicy` support for *accept6* and *reject6* rules (:trac:`16103`)
+  * :class:`~stem.exit_policy.ExitPolicy` support for *\*4* and *\*6* wildcards (:trac:`16103`)
   * Added `support for NETWORK_LIVENESS events <api/response.html#stem.response.events.NetworkLivenessEvent>`_ (:spec:`44aac63`)
   * Added :func:`~stem.control.Controller.is_set` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.is_user_traffic_allowed` to the :class:`~stem.control.Controller`
