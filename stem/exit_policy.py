@@ -683,6 +683,14 @@ class ExitPolicyRule(object):
 
     self._mask = None
 
+    # Malformed exit policies are rejected, but there's an exception where it's
+    # just skipped: when an accept6/reject6 rule has an IPv4 address...
+    #
+    #   "Using an IPv4 address with accept6 or reject6 is ignored and generates
+    #   a warning."
+
+    self._skip_rule = False
+
     addrspec, portspec = exitpattern.rsplit(':', 1)
     self._apply_addrspec(rule, addrspec)
     self._apply_portspec(rule, portspec)
@@ -740,6 +748,9 @@ class ExitPolicyRule(object):
 
     :raises: **ValueError** if provided with a malformed address or port
     """
+
+    if self._skip_rule:
+      return False
 
     # validate our input and check if the argument doesn't match our address type
 
@@ -964,8 +975,7 @@ class ExitPolicyRule(object):
       # num_ip4_bits ::= an integer between 0 and 32
 
       if self.is_ipv6_only:
-        rule_start = 'accept6' if self.is_accept else 'reject6'
-        raise ValueError("'%s' rules should have an IPv6 address, not IPv4 (%s)" % (rule_start, self.address))
+        self._skip_rule = True
 
       self._address_type = _address_type_to_int(AddressType.IPv4)
 
@@ -1075,6 +1085,7 @@ class MicroExitPolicyRule(ExitPolicyRule):
     self.min_port = min_port
     self.max_port = max_port
     self._hash = None
+    self._skip_rule = False
 
   def is_address_wildcard(self):
     return True

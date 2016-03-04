@@ -360,10 +360,13 @@ class TestExitPolicyRule(unittest.TestCase):
         self.assertEqual(expected_result, rule.is_match(*match_args))
 
   def test_ipv6_only_entries(self):
-    # accept6/reject6 shouldn't allow ipv4 addresses
+    # accept6/reject6 shouldn't match anything when given an ipv4 addresses
 
-    self.assertRaises(ValueError, ExitPolicyRule, 'accept6 192.168.0.1:*')
-    self.assertRaises(ValueError, ExitPolicyRule, 'reject6 192.168.0.1:*')
+    rule = ExitPolicyRule('accept6 192.168.0.1/0:*')
+    self.assertTrue(rule._skip_rule)
+    self.assertFalse(rule.is_match('192.168.0.1'))
+    self.assertFalse(rule.is_match('FE80:0000:0000:0000:0202:B3FF:FE1E:8329'))
+    self.assertFalse(rule.is_match())
 
     # wildcards match all ipv6 but *not* ipv4
 
