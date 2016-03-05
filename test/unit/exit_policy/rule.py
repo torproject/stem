@@ -42,8 +42,6 @@ class TestExitPolicyRule(unittest.TestCase):
     test_inputs = (
       'accept *:*',
       'reject *:*',
-      'accept6 *:*',
-      'reject6 *:*',
 
       'accept *:80',
       'accept *:80-443',
@@ -66,10 +64,15 @@ class TestExitPolicyRule(unittest.TestCase):
       'accept [::]/32:*': 'accept [0000:0000:0000:0000:0000:0000:0000:0000]/32:*',
       'accept [::]/128:*': 'accept [0000:0000:0000:0000:0000:0000:0000:0000]:*',
 
+      'accept6 *:*': 'accept [0000:0000:0000:0000:0000:0000:0000:0000]/0:*',
+      'reject6 *:*': 'reject [0000:0000:0000:0000:0000:0000:0000:0000]/0:*',
+      'accept6 [FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF]:*': 'accept [FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF]:*',
+      'reject6 [FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF]:*': 'reject [FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF]:*',
+
       'accept *4:*': 'accept 0.0.0.0/0:*',
       'accept *6:*': 'accept [0000:0000:0000:0000:0000:0000:0000:0000]/0:*',
-      'accept6 *4:*': 'accept6 0.0.0.0/0:*',
-      'accept6 *6:*': 'accept6 [0000:0000:0000:0000:0000:0000:0000:0000]/0:*',
+      'accept6 *4:*': 'accept 0.0.0.0/0:*',
+      'accept6 *6:*': 'accept [0000:0000:0000:0000:0000:0000:0000:0000]/0:*',
     }
 
     for rule_arg, expected_str in test_inputs.items():
@@ -96,8 +99,8 @@ class TestExitPolicyRule(unittest.TestCase):
       'reject [0000:0000:0000:0000:0000:0000:0000:0000]/64:80': (False, False),
       'reject [0000:0000:0000:0000:0000:0000:0000:0000]/128:80': (False, False),
 
-      'reject6 *:*': (True, True),
-      'reject6 *:80': (True, False),
+      'reject6 *:*': (False, True),
+      'reject6 *:80': (False, False),
       'reject6 [0000:0000:0000:0000:0000:0000:0000:0000]/128:80': (False, False),
 
       'accept 192.168.0.1:0-65535': (False, True),
@@ -110,7 +113,7 @@ class TestExitPolicyRule(unittest.TestCase):
       is_address_wildcard, is_port_wildcard = attr
 
       rule = ExitPolicyRule(rule_arg)
-      self.assertEqual(is_address_wildcard, rule.is_address_wildcard())
+      self.assertEqual(is_address_wildcard, rule.is_address_wildcard(), '%s (wildcard expected %s and actually %s)' % (rule_arg, is_address_wildcard, rule.is_address_wildcard()))
       self.assertEqual(is_port_wildcard, rule.is_port_wildcard())
 
     # check that when appropriate a /0 is reported as *not* being a wildcard
@@ -393,6 +396,5 @@ class TestExitPolicyRule(unittest.TestCase):
     # wildcards match all ipv6 but *not* ipv4
 
     rule = ExitPolicyRule('accept6 *:*')
-    self.assertTrue(rule.is_ipv6_only)
     self.assertTrue(rule.is_match('FE80:0000:0000:0000:0202:B3FF:FE1E:8329', 443))
     self.assertFalse(rule.is_match('192.168.0.1', 443))

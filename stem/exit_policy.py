@@ -627,14 +627,9 @@ class ExitPolicyRule(object):
   This should be treated as an immutable object.
 
   .. versionchanged:: 1.5.0
-     Support for 'accept6/reject6' entries and our **is_ipv6_only** attribute.
-
-  .. versionchanged:: 1.5.0
-     Support for '\*4' and '\*6' wildcards.
+     Support for 'accept6/reject6' entries and '\*4/6' wildcards.
 
   :var bool is_accept: indicates if exiting is allowed or disallowed
-  :var bool is_ipv6_only: indicates if this is an accept6 or reject6 rule, only
-    matching ipv6 addresses
 
   :var str address: address that this rule is for
 
@@ -651,7 +646,7 @@ class ExitPolicyRule(object):
     # exitpattern ::= addrspec ":" portspec
 
     self.is_accept = rule.startswith('accept')
-    self.is_ipv6_only = rule.startswith('accept6') or rule.startswith('reject6')
+    is_ipv6_only = rule.startswith('accept6') or rule.startswith('reject6')
 
     if rule.startswith('accept6') or rule.startswith('reject6'):
       exitpattern = rule[7:]
@@ -689,7 +684,7 @@ class ExitPolicyRule(object):
     self._skip_rule = False
 
     addrspec, portspec = exitpattern.rsplit(':', 1)
-    self._apply_addrspec(rule, addrspec)
+    self._apply_addrspec(rule, addrspec, is_ipv6_only)
     self._apply_portspec(rule, portspec)
 
     # Flags to indicate if this rule seems to be expanded from the 'private'
@@ -741,9 +736,6 @@ class ExitPolicyRule(object):
     # validate our input and check if the argument doesn't match our address type
 
     if address is not None:
-      if self.is_ipv6_only and stem.util.connection.is_valid_ipv4_address(address):
-        return False  # accept6/reject6 don't match ipv4
-
       address_type = self.get_address_type()
 
       if stem.util.connection.is_valid_ipv4_address(address):
@@ -874,10 +866,7 @@ class ExitPolicyRule(object):
     to re-create this rule.
     """
 
-    if self.is_ipv6_only:
-      label = 'accept6 ' if self.is_accept else 'reject6 '
-    else:
-      label = 'accept ' if self.is_accept else 'reject '
+    label = 'accept ' if self.is_accept else 'reject '
 
     if self.is_address_wildcard():
       label += '*:'
@@ -915,7 +904,7 @@ class ExitPolicyRule(object):
     if self._hash is None:
       my_hash = 0
 
-      for attr in ('is_accept', 'is_ipv6_only', 'address', 'min_port', 'max_port'):
+      for attr in ('is_accept', 'address', 'min_port', 'max_port'):
         my_hash *= 1024
 
         attr_value = getattr(self, attr)
@@ -942,7 +931,7 @@ class ExitPolicyRule(object):
 
     return int(stem.util.connection._get_address_binary(self.address), 2) & self._get_mask_bin()
 
-  def _apply_addrspec(self, rule, addrspec):
+  def _apply_addrspec(self, rule, addrspec, is_ipv6_only):
     # Parses the addrspec...
     # addrspec ::= "*" | ip4spec | ip6spec
 
@@ -951,7 +940,7 @@ class ExitPolicyRule(object):
 
     if addrspec == '*4':
       addrspec = '0.0.0.0/0'
-    elif addrspec == '*6':
+    elif addrspec == '*6' or (addrspec == '*' and is_ipv6_only):
       addrspec = '[0000:0000:0000:0000:0000:0000:0000:0000]/0'
 
     if '/' in addrspec:
@@ -968,7 +957,7 @@ class ExitPolicyRule(object):
       # ip4mask ::= an IPv4 mask in dotted-quad format
       # num_ip4_bits ::= an integer between 0 and 32
 
-      if self.is_ipv6_only:
+      if is_ipv6_only:
         self._skip_rule = True
 
       self._address_type = _address_type_to_int(AddressType.IPv4)
@@ -1074,7 +1063,6 @@ class MicroExitPolicyRule(ExitPolicyRule):
 
   def __init__(self, is_accept, min_port, max_port):
     self.is_accept = is_accept
-    self.is_ipv6_only = False
     self.address = None  # wildcard address
     self.min_port = min_port
     self.max_port = max_port
