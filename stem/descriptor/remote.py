@@ -3,9 +3,20 @@
 
 """
 Module for remotely retrieving descriptors from directory authorities and
-mirrors. This is most easily done through the
+mirrors. This is the simplest method for getting current tor descriptor
+information...
+
+::
+
+  import stem.descriptor.remote
+
+  for desc in stem.descriptor.remote.get_server_descriptors():
+    if desc.exit_policy.is_exiting_allowed():
+      print '  %s (%s)' % (desc.nickname, desc.fingerprint)
+
+More custom downloading behavior can be done through the
 :class:`~stem.descriptor.remote.DescriptorDownloader` class, which issues
-:class:`~stem.descriptor.remote.Query` instances to get you the descriptor
+:class:`~stem.descriptor.remote.Query` instances to get you descriptor
 content. For example...
 
 ::
@@ -31,16 +42,13 @@ content. For example...
   except Exception as exc:
     print 'Unable to retrieve the server descriptors: %s' % exc
 
-If you don't care about errors then you can also simply iterate over the query
-itself...
-
 ::
 
-  for desc in downloader.get_server_descriptors():
-    if desc.exit_policy.is_exiting_allowed():
-      print '  %s (%s)' % (desc.nickname, desc.fingerprint)
-
-::
+  get_instance - Provides a singleton DescriptorDownloader used for...
+    |- get_server_descriptors - provides present server descriptors
+    |- get_extrainfo_descriptors - provides present extrainfo descriptors
+    |- get_microdescriptors - provides present microdescriptors
+    +- get_consensus - provides the present consensus or router status entries
 
   get_authorities - Provides tor directory information.
 
@@ -104,6 +112,79 @@ MAX_MICRODESCRIPTOR_HASHES = 92
 
 GITWEB_FALLBACK_DIR_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'fallback_directories.cfg')
+
+SINGLETON_DOWNLOADER = None
+
+
+def get_instance():
+  """
+  Provides the singleton :class:`~stem.descriptor.remote.DescriptorDownloader`
+  used for the following functions...
+
+    * :func:`stem.descriptor.remote.get_server_descriptors`
+    * :func:`stem.descriptor.remote.get_extrainfo_descriptors`
+    * :func:`stem.descriptor.remote.get_microdescriptors`
+    * :func:`stem.descriptor.remote.get_consensus`
+
+  .. versionadded:: 1.5.0
+
+  :returns: singleton :class:`~stem.descriptor.remote.DescriptorDownloader` instance
+  """
+
+  global SINGLETON_DOWNLOADER
+
+  if SINGLETON_DOWNLOADER is None:
+    SINGLETON_DOWNLOADER = DescriptorDownloader()
+
+  return SINGLETON_DOWNLOADER
+
+
+def get_server_descriptors(fingerprints = None, **query_args):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.remote.DescriptorDownloader.get_server_descriptors`
+  on our singleton instance.
+
+  .. versionadded:: 1.5.0
+  """
+
+  return get_instance().get_server_descriptors(fingerprints, **query_args)
+
+
+def get_extrainfo_descriptors(fingerprints = None, **query_args):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.remote.DescriptorDownloader.get_extrainfo_descriptors`
+  on our singleton instance.
+
+  .. versionadded:: 1.5.0
+  """
+
+  return get_instance().get_extrainfo_descriptors(fingerprints, **query_args)
+
+
+def get_microdescriptors(hashes, **query_args):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.remote.DescriptorDownloader.get_microdescriptors`
+  on our singleton instance.
+
+  .. versionadded:: 1.5.0
+  """
+
+  return get_instance().get_microdescriptors(hashes, **query_args)
+
+
+def get_consensus(authority_v3ident = None, **query_args):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.remote.DescriptorDownloader.get_consensus`
+  on our singleton instance.
+
+  .. versionadded:: 1.5.0
+  """
+
+  return get_instance().get_consensus(authority_v3ident, **query_args)
 
 
 def _guess_descriptor_type(resource):

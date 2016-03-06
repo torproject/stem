@@ -1,16 +1,15 @@
 import sys
 
-from stem.descriptor.remote import DescriptorDownloader
+import stem.descriptor.remote
+
 from stem.util import str_tools
 
 # provides a mapping of observed bandwidth to the relay nicknames
 def get_bw_to_relay():
   bw_to_relay = {}
 
-  downloader = DescriptorDownloader()
-
   try:
-    for desc in downloader.get_server_descriptors().run():
+    for desc in stem.descriptor.remote.get_server_descriptors().run():
       if desc.exit_policy.is_exiting_allowed():
         bw_to_relay.setdefault(desc.observed_bandwidth, []).append(desc.nickname)
   except Exception as exc:

@@ -1,7 +1,6 @@
-from stem.descriptor.remote import DescriptorDownloader
+import stem.descriptor.remote
 
-downloader = DescriptorDownloader()
-server_descriptors = downloader.get_server_descriptors().run()
+server_descriptors = stem.descriptor.remote.get_server_descriptors().run()
 
 with open('/tmp/descriptor_dump', 'wb') as descriptor_file:
   descriptor_file.write(''.join(map(str, server_descriptors)))

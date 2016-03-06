@@ -59,6 +59,7 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * `Shorthand functions for stem.descriptor.remote <api/descriptor/remote.html#stem.descriptor.remote.get_instance>`_
   * Added `fallback directory information <api/descriptor/remote.html#stem.descriptor.remote.FallbackDirectory>`_.
   * Lessened dirauth load of `stem.descriptor.remote <api/descriptor/remote.html>`_ by using fallback directories as well
   * Support for ed25519 descriptor fields (:spec:`5a79d67`)

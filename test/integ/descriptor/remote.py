@@ -22,6 +22,26 @@ from test.runner import (
 class TestDescriptorDownloader(unittest.TestCase):
   @require_online
   @only_run_once
+  def test_shorthand_aliases(self):
+    """
+    Quick sanity test that we can call our shorthand aliases for getting
+    descriptors.
+    """
+
+    desc = list(stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31'))[0]
+    self.assertEqual('moria1', desc.nickname)
+
+    desc = list(stem.descriptor.remote.get_extrainfo_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31'))[0]
+    self.assertEqual('moria1', desc.nickname)
+
+    desc = list(stem.descriptor.remote.get_microdescriptors('6dCl6ab8CLo0LeMjxi/MZgVJiZgWN8WKTesWPBMtyTo'))[0]
+    self.assertEqual('moria1', desc.digest)
+
+    consensus = list(stem.descriptor.remote.get_consensus())
+    self.assertTrue(len(consensus) > 50)
+
+  @require_online
+  @only_run_once
   def test_authorities_are_up_to_date(self):
     """
     Check that our hardcoded directory authority data matches the present
