@@ -429,7 +429,12 @@ class Query(object):
     :returns: **str** for the url being queried by this request
     """
 
-    if use_authority or not self.endpoints:
+    if use_authority:
+      directories = get_authorities().values()
+
+      picked = random.choice(directories)
+      address, dirport = picked.address, picked.dir_port
+    elif not self.endpoints:
       directories = get_authorities().values() + FallbackDirectory.from_cache().values()
 
       picked = random.choice(directories)
