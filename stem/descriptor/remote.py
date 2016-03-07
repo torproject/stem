@@ -429,13 +429,8 @@ class Query(object):
     :returns: **str** for the url being queried by this request
     """
 
-    if use_authority:
+    if use_authority or not self.endpoints:
       directories = get_authorities().values()
-
-      picked = random.choice(directories)
-      address, dirport = picked.address, picked.dir_port
-    elif not self.endpoints:
-      directories = get_authorities().values() + FallbackDirectory.from_cache().values()
 
       picked = random.choice(directories)
       address, dirport = picked.address, picked.dir_port
@@ -487,7 +482,7 @@ class DescriptorDownloader(object):
   def __init__(self, use_mirrors = False, **default_args):
     self._default_args = default_args
 
-    directories = list(get_authorities().values()) + list(FallbackDirectory.from_cache().values())
+    directories = list(get_authorities().values())
     self._endpoints = [(directory.address, directory.dir_port) for directory in directories]
 
     if use_mirrors:
@@ -509,7 +504,7 @@ class DescriptorDownloader(object):
     :raises: **Exception** if unable to determine the directory mirrors
     """
 
-    directories = get_authorities().values() + FallbackDirectory.from_cache().values()
+    directories = get_authorities().values()
     new_endpoints = set([(directory.address, directory.dir_port) for directory in directories])
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
