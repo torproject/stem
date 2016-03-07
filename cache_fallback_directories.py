@@ -55,10 +55,10 @@ if __name__ == '__main__':
   conf.set('stem_commit', stem_commit)
 
   for directory in latest_fallback_directories.values():
-    nickname = directory.nickname
-    conf.set('%s.address' % nickname, directory.address)
-    conf.set('%s.or_port' % nickname, str(directory.or_port))
-    conf.set('%s.dir_port' % nickname, str(directory.dir_port))
-    conf.set('%s.fingerprint' % nickname, directory.fingerprint)
+    fingerprint = directory.fingerprint
+    conf.set('%s.address' % fingerprint, directory.address)
+    conf.set('%s.or_port' % fingerprint, str(directory.or_port))
+    conf.set('%s.dir_port' % fingerprint, str(directory.dir_port))
+    conf.set('%s.nickname' % fingerprint, directory.nickname)
 
   conf.save(stem.descriptor.remote.CACHE_PATH)

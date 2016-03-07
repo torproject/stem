@@ -948,34 +948,34 @@ class FallbackDirectory(Directory):
 
     results = {}
 
-    for nickname in set([key.split('.')[0] for key in conf.keys()]):
-      if nickname in ('tor_commit', 'stem_commit'):
+    for fingerprint in set([key.split('.')[0] for key in conf.keys()]):
+      if fingerprint in ('tor_commit', 'stem_commit'):
         continue
 
       attr = {}
 
-      for attr_name in ('address', 'or_port', 'dir_port', 'fingerprint'):
-        key = '%s.%s' % (nickname, attr_name)
+      for attr_name in ('address', 'or_port', 'dir_port', 'nickname'):
+        key = '%s.%s' % (fingerprint, attr_name)
         attr[attr_name] = conf.get(key)
 
         if not attr[attr_name]:
           raise IOError("'%s' is missing from %s" % (key, CACHE_PATH))
 
       if not connection.is_valid_ipv4_address(attr['address']):
-        raise IOError("'%s.address' was an invalid address (%s)" % (nickname, attr['address']))
+        raise IOError("'%s.address' was an invalid address (%s)" % (fingerprint, attr['address']))
       elif not connection.is_valid_port(attr['or_port']):
-        raise IOError("'%s.or_port' was an invalid port (%s)" % (nickname, attr['or_port']))
+        raise IOError("'%s.or_port' was an invalid port (%s)" % (fingerprint, attr['or_port']))
       elif not connection.is_valid_port(attr['dir_port']):
-        raise IOError("'%s.dir_port' was an invalid port (%s)" % (nickname, attr['dir_port']))
-      elif not tor_tools.is_valid_fingerprint(attr['fingerprint']):
-        raise IOError("'%s.fingerprint' was an invalid fingerprint (%s)" % (nickname, attr['fingerprint']))
+        raise IOError("'%s.dir_port' was an invalid port (%s)" % (fingerprint, attr['dir_port']))
+      elif not tor_tools.is_valid_nickname(attr['nickname']):
+        raise IOError("'%s.nickname' was an invalid nickname (%s)" % (fingerprint, attr['nickname']))
 
-      results[attr['fingerprint']] = FallbackDirectory(
+      results[fingerprint] = FallbackDirectory(
         address = attr['address'],
         or_port = int(attr['or_port']),
         dir_port = int(attr['dir_port']),
-        fingerprint = attr['fingerprint'],
-        nickname = nickname,
+        fingerprint = fingerprint,
+        nickname = attr['nickname'],
       )
 
     return results
