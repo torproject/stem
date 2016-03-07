@@ -47,7 +47,6 @@ content. For example...
   get_instance - Provides a singleton DescriptorDownloader used for...
     |- get_server_descriptors - provides present server descriptors
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
-    |- get_microdescriptors - provides present microdescriptors
     +- get_consensus - provides the present consensus or router status entries
 
   get_authorities - Provides tor directory information.
@@ -66,7 +65,6 @@ content. For example...
     |- use_directory_mirrors - use directory mirrors to download future descriptors
     |- get_server_descriptors - provides present server descriptors
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
-    |- get_microdescriptors - provides present microdescriptors
     |- get_consensus - provides the present consensus or router status entries
     |- get_key_certificates - provides present authority key certificates
     +- query - request an arbitrary descriptor resource
@@ -123,7 +121,6 @@ def get_instance():
 
     * :func:`stem.descriptor.remote.get_server_descriptors`
     * :func:`stem.descriptor.remote.get_extrainfo_descriptors`
-    * :func:`stem.descriptor.remote.get_microdescriptors`
     * :func:`stem.descriptor.remote.get_consensus`
 
   .. versionadded:: 1.5.0
@@ -161,18 +158,6 @@ def get_extrainfo_descriptors(fingerprints = None, **query_args):
   """
 
   return get_instance().get_extrainfo_descriptors(fingerprints, **query_args)
-
-
-def get_microdescriptors(hashes, **query_args):
-  """
-  Shorthand for
-  :func:`~stem.descriptor.remote.DescriptorDownloader.get_microdescriptors`
-  on our singleton instance.
-
-  .. versionadded:: 1.5.0
-  """
-
-  return get_instance().get_microdescriptors(hashes, **query_args)
 
 
 def get_consensus(authority_v3ident = None, **query_args):
@@ -586,6 +571,10 @@ class DescriptorDownloader(object):
     :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`. Note
     that these are only provided via a microdescriptor consensus (such as
     'cached-microdesc-consensus' in your data directory).
+
+    .. deprecated:: 1.5.0
+       This function has never worked, as it was never implemented in tor
+       (:trac:`9271`).
 
     :param str,list hashes: microdescriptor hash or list of hashes to be
       retrieved

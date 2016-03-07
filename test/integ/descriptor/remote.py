@@ -6,12 +6,10 @@ import unittest
 
 import stem.descriptor
 import stem.descriptor.extrainfo_descriptor
-import stem.descriptor.microdescriptor
 import stem.descriptor.networkstatus
 import stem.descriptor.remote
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
-import test.runner
 
 from test.runner import (
   require_online,
@@ -28,14 +26,11 @@ class TestDescriptorDownloader(unittest.TestCase):
     descriptors.
     """
 
-    desc = list(stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31'))[0]
+    desc = list(stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31').run())[0]
     self.assertEqual('moria1', desc.nickname)
 
-    desc = list(stem.descriptor.remote.get_extrainfo_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31'))[0]
+    desc = list(stem.descriptor.remote.get_extrainfo_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31').run())[0]
     self.assertEqual('moria1', desc.nickname)
-
-    desc = list(stem.descriptor.remote.get_microdescriptors('6dCl6ab8CLo0LeMjxi/MZgVJiZgWN8WKTesWPBMtyTo'))[0]
-    self.assertEqual('moria1', desc.digest)
 
     consensus = list(stem.descriptor.remote.get_consensus())
     self.assertTrue(len(consensus) > 50)
@@ -166,37 +161,6 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(single_query_results))
     self.assertEqual('moria1', single_query_results[0].nickname)
     self.assertTrue(isinstance(single_query_results[0], stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor))
-
-    self.assertEqual(2, len(list(multiple_query)))
-
-  @require_online
-  @only_run_once
-  def test_get_microdescriptors(self):
-    """
-    Exercises the downloader's get_microdescriptors() method.
-    """
-
-    # TODO: method needs to be fixed - not quite sure what's going wrong...
-
-    test.runner.skip(self, '(test currently broken)')
-    return
-
-    downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
-
-    single_query = downloader.get_microdescriptors('6dCl6ab8CLo0LeMjxi/MZgVJiZgWN8WKTesWPBMtyTo')
-
-    multiple_query = downloader.get_microdescriptors([
-      '6dCl6ab8CLo0LeMjxi/MZgVJiZgWN8WKTesWPBMtyTo',  # moria1
-      'oXBV80OwMACBJpqNeZrYSXF18l9EJCi4/mB8UOl9sME',  # tor26
-    ])
-
-    single_query.run()
-    multiple_query.run()
-
-    single_query_results = list(single_query)
-    self.assertEqual(1, len(single_query_results))
-    self.assertEqual('moria1', single_query_results[0].digest)
-    self.assertTrue(isinstance(single_query_results[0], stem.descriptor.microdescriptor.Microdescriptor))
 
     self.assertEqual(2, len(list(multiple_query)))
 
