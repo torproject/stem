@@ -5,6 +5,8 @@ Tests for the examples given in stem's tutorial.
 import io
 import unittest
 
+import stem.descriptor.remote
+
 from stem.control import Controller
 from stem.descriptor.reader import DescriptorReader
 from stem.descriptor.server_descriptor import RelayDescriptor
@@ -38,6 +40,12 @@ MIRROR_MIRROR_OUTPUT = """\
 
 
 class TestTutorial(unittest.TestCase):
+  def tearDown(self):
+    # Ensure we don't cache a Mock object as our downloader. Otherwise future
+    # tests will understandably be very sad. :P
+
+    stem.descriptor.remote.SINGLETON_DOWNLOADER = None
+
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_the_little_relay_that_could(self, from_port_mock, stdout_mock):
