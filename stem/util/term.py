@@ -13,7 +13,7 @@ Utilities for working with the terminal.
 .. data:: Color (enum)
 .. data:: BgColor (enum)
 
-  Enumerations for foreground or background terminal color.
+  Foreground or background terminal colors.
 
   =========== ===========
   Color       Description
@@ -30,13 +30,13 @@ Utilities for working with the terminal.
 
 .. data:: Attr (enum)
 
-  Enumerations of terminal text attributes.
+  Terminal text attributes.
 
   =================== ===========
   Attr                Description
   =================== ===========
   **BOLD**            heavy typeface
-  **HILIGHT**         inverted foreground and background
+  **HIGHLIGHT**       inverted foreground and background
   **UNDERLINE**       underlined text
   **READLINE_ESCAPE** wrap encodings in `RL_PROMPT_START_IGNORE and RL_PROMPT_END_IGNORE sequences <https://stackoverflow.com/questions/9468435/look-how-to-fix-column-calculation-in-python-readline-if-use-color-prompt>`_
   =================== ===========
@@ -54,12 +54,12 @@ DISABLE_COLOR_SUPPORT = False
 
 Color = stem.util.enum.Enum(*TERM_COLORS)
 BgColor = stem.util.enum.Enum(*['BG_' + color for color in TERM_COLORS])
-Attr = stem.util.enum.Enum('BOLD', 'UNDERLINE', 'HILIGHT', 'READLINE_ESCAPE')
+Attr = stem.util.enum.Enum('BOLD', 'UNDERLINE', 'HIGHLIGHT', 'READLINE_ESCAPE')
 
 # mappings of terminal attribute enums to their ANSI escape encoding
 FG_ENCODING = dict([(list(Color)[i], str(30 + i)) for i in range(8)])
 BG_ENCODING = dict([(list(BgColor)[i], str(40 + i)) for i in range(8)])
-ATTR_ENCODING = {Attr.BOLD: '1', Attr.UNDERLINE: '4', Attr.HILIGHT: '7'}
+ATTR_ENCODING = {Attr.BOLD: '1', Attr.UNDERLINE: '4', Attr.HIGHLIGHT: '7'}
 
 CSI = '\x1B[%sm'
 RESET = CSI % '0'
@@ -96,6 +96,12 @@ def format(msg, *attr):
   encodings = []
 
   for text_attr in attr:
+    # TODO: Account for an earlier misspelled attribute. This should be dropped
+    # in Stem. 2.0.x.
+
+    if text_attr == 'HILIGHT':
+      text_attr = 'HIGHLIGHT'
+
     text_attr, encoding = stem.util.str_tools._to_camel_case(text_attr), None
     encoding = FG_ENCODING.get(text_attr, encoding)
     encoding = BG_ENCODING.get(text_attr, encoding)
