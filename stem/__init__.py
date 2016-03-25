@@ -60,23 +60,27 @@ Library for working with the tor process.
 
   **Note:** The BADDIRECTORY flag was `removed from tor <https://gitweb.torproject.org/torspec.git/commit/dir-spec.txt?id=2f012f1>`_.
 
-  ================= ===========
-  Flag              Description
-  ================= ===========
-  **AUTHORITY**     relay is a directory authority
-  **BADEXIT**       relay shouldn't be used as an exit due to being either problematic or malicious (`wiki <https://trac.torproject.org/projects/tor/wiki/doc/badRelays>`_)
-  **BADDIRECTORY**  relay shouldn't be used for directory information
-  **EXIT**          relay's exit policy makes it more useful as an exit rather than middle hop
-  **FAST**          relay's suitable for high-bandwidth circuits
-  **GUARD**         relay's suitable for being an entry guard (first hop)
-  **HSDIR**         relay is being used as a v2 hidden service directory
-  **NAMED**         relay can be referred to by its nickname
-  **RUNNING**       relay is currently usable
-  **STABLE**        relay's suitable for long-lived circuits
-  **UNNAMED**       relay isn't currently bound to a nickname
-  **V2DIR**         relay supports the v2 directory protocol
-  **VALID**         relay has been validated
-  ================= ===========
+  .. versionchanged:: 1.5.0
+     Added the NO_ED_CONSENSUS flag.
+
+  =================== ===========
+  Flag                Description
+  =================== ===========
+  **AUTHORITY**       relay is a directory authority
+  **BADEXIT**         relay shouldn't be used as an exit due to being either problematic or malicious
+  **BADDIRECTORY**    relay shouldn't be used for directory information
+  **EXIT**            relay's exit policy makes it more useful as an exit rather than middle hop
+  **FAST**            relay's suitable for high-bandwidth circuits
+  **GUARD**           relay's suitable for being an entry guard (first hop)
+  **HSDIR**           relay is being used as a v2 hidden service directory
+  **NAMED**           relay can be referred to by its nickname
+  **NO_ED_CONSENSUS** relay's Ed25519 doesn't reflrect the consensus
+  **RUNNING**         relay is currently usable
+  **STABLE**          relay's suitable for long-lived circuits
+  **UNNAMED**         relay isn't currently bound to a nickname
+  **V2DIR**           relay supports the v2 directory protocol
+  **VALID**           relay has been validated
+  =================== ===========
 
 .. data:: CircStatus (enum)
 
@@ -630,6 +634,7 @@ Flag = stem.util.enum.Enum(
   ('GUARD', 'Guard'),
   ('HSDIR', 'HSDir'),
   ('NAMED', 'Named'),
+  ('NO_ED_CONSENSUS', 'NoEdConsensus'),
   ('RUNNING', 'Running'),
   ('STABLE', 'Stable'),
   ('UNNAMED', 'Unnamed'),
