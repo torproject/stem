@@ -166,6 +166,19 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     self.assertEqual('7DSOQz9eGgjDX6GT7qcrVViK8yqJD4aoEnuhdAgYtgA', desc.router_digest_sha256)
     self.assertEqual([], desc.get_unrecognized_lines())
 
+  def test_nonascii_v3_reqs(self):
+    """
+    Malformed descriptor with non-ascii content for the 'dirreq-v3-reqs' line.
+    """
+
+    with open(get_resource('extrainfo_nonascii_v3_reqs'), 'rb') as descriptor_file:
+      try:
+        next(stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0', validate = True))
+        self.fail("validation should've raised an exception")
+      except ValueError as exc:
+        expected = "'dirreq-v3-reqs' line had non-ascii content: S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,??=4026591624,6?=4026537520,6?=4026537520,6?=4026537520,us=8"
+        self.assertEqual(expected, str(exc))
+
   def test_minimal_extrainfo_descriptor(self):
     """
     Basic sanity check that we can parse an extrainfo descriptor with minimal

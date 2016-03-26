@@ -42,6 +42,7 @@ import copy
 import hashlib
 import os
 import re
+import string
 import tarfile
 
 import stem.prereq
@@ -777,7 +778,7 @@ def _get_pseudo_pgp_block(remaining_contents):
     return None
 
 
-def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
+def _get_descriptor_components(raw_contents, validate, extra_keywords = (), non_ascii_fields = ()):
   """
   Initial breakup of the server descriptor contents to make parsing easier.
 
@@ -796,6 +797,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
     True, skips these checks otherwise
   :param list extra_keywords: entity keywords to put into a separate listing
     with ordering intact
+  :param list non_ascii_fields: fields containing non-ascii content
 
   :returns:
     **collections.OrderedDict** with the 'keyword => (value, pgp key) entries'
@@ -856,6 +858,13 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = ()):
         continue
 
       raise
+
+    if validate and keyword not in non_ascii_fields:
+      try:
+        value.decode('ascii')
+      except UnicodeError:
+        replaced = ''.join([(char if char in string.printable else '?') for char in value])
+        raise ValueError("'%s' line had non-ascii content: %s" % (keyword, replaced))
 
     if keyword in extra_keywords:
       extra_entries.append('%s %s' % (keyword, value))

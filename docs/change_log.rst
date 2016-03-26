@@ -73,6 +73,7 @@ The following are only available within Stem's `git repository
   * Deprecated :func:`~stem.descriptor.remote.DescriptorDownloader.get_microdescriptors` as it was never implemented in tor (:trac:`9271`)
   * Fixed parsing of server descriptor's *allow-single-hop-exits* and *caches-extra-info* lines
   * Bracketed IPv6 addresses were mistreated as being invalid content
+  * Better validation for non-ascii descriptor content
   * Updated dannenberg's v3ident (:trac:`17906`)
 
  * **Utilities**

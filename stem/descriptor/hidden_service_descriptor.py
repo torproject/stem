@@ -227,7 +227,7 @@ class HiddenServiceDescriptor(Descriptor):
 
   def __init__(self, raw_contents, validate = False):
     super(HiddenServiceDescriptor, self).__init__(raw_contents, lazy_load = not validate)
-    entries = _get_descriptor_components(raw_contents, validate)
+    entries = _get_descriptor_components(raw_contents, validate, non_ascii_fields = ('introduction-points'))
 
     if validate:
       for keyword in REQUIRED_FIELDS:

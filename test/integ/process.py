@@ -382,7 +382,7 @@ class TestProcess(unittest.TestCase):
     runtime = time.time() - start_time
 
     if not (runtime > 2 and runtime < 3):
-      self.fail('Test should have taken 2-3 seconds, took %i instead' % runtime)
+      self.fail('Test should have taken 2-3 seconds, took %0.1f instead' % runtime)
 
   @require_version(stem.version.Requirement.TAKEOWNERSHIP)
   @only_run_once

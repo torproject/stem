@@ -553,7 +553,7 @@ class ServerDescriptor(Descriptor):
     # influences the resulting exit policy, but for everything else the order
     # does not matter so breaking it into key / value pairs.
 
-    entries, self._unparsed_exit_policy = _get_descriptor_components(stem.util.str_tools._to_unicode(raw_contents), validate, ('accept', 'reject'))
+    entries, self._unparsed_exit_policy = _get_descriptor_components(stem.util.str_tools._to_unicode(raw_contents), validate, extra_keywords = ('accept', 'reject'), non_ascii_fields = ('contact', 'platform'))
 
     if validate:
       self._parse(entries, validate)

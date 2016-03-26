@@ -1,0 +1,30 @@
+extra-info newton C871C91489886D5E2E94C13EA1A5FDC4B6DC5204
+identity-ed25519
+-----BEGIN ED25519 CERT-----
+AQQABjBoAS6cmIIt3t0HjlInkuk+asDf7yAuTXhg20Gdy4uesKH3AQAgBAC6lLwz
+7+yzoMFGDKic6l7kOjyGlV3H01GWtErUWy0PIquP5kMVHnrvdhsBwX0zwSA19Bo+
+tdKPIKrMV+89QBGX2KSa7RRXqIdnGBnGdodglrvMFPGgO/LYHOb9YogFJgA=
+-----END ED25519 CERT-----
+published 2016-03-26 07:47:53
+write-history 2016-03-26 05:42:08 (14400 s) 682447872,1737454592,1207077888,1278699520,1157439488,635725824
+read-history 2016-03-26 05:42:08 (14400 s) 672482304,1680056320,1198174208,1233503232,1105783808,620540928
+dirreq-write-history 2016-03-26 05:42:08 (14400 s) 1960960,46080,2144256,218112,737280,3273728
+dirreq-read-history 2016-03-26 05:42:08 (14400 s) 322560,13312,323584,8192,46080,440320
+geoip-db-digest 6346E26E2BC96F8511588CE2695E9B0339A75D32
+geoip6-db-digest 43CCB43DBC653D8CC16396A882C5F116A6004F0C
+dirreq-stats-end 2016-03-25 19:53:29 (86400 s)
+dirreq-v3-ips us=8
+dirreq-v3-reqs Sÿ=4026597208,Sÿ=4026597208,Sÿ=4026597208,Sÿ=4026597208,Sÿ=4026597208,Sÿ=4026597208,¥þ=4026591624,6=4026537520,6=4026537520,6=4026537520,us=8
+dirreq-v3-resp ok=8,not-enough-sigs=0,unavailable=0,not-found=0,not-modified=0,busy=0
+dirreq-v3-direct-dl complete=0,timeout=0,running=0
+dirreq-v3-tunneled-dl complete=8,timeout=4,running=0
+hidserv-stats-end 2016-03-25 19:53:29 (86400 s)
+hidserv-rend-relayed-cells 5238 delta_f=2048 epsilon=0.30 bin_size=1024
+hidserv-dir-onions-seen -21 delta_f=8 epsilon=0.30 bin_size=8
+router-sig-ed25519 TeDQDiRfI/k31H+fxciE8q02/ddm/qIi4H7wpQ9A8wRwWBoFUBdwrjZu+pACiglomOuc/I2uSt0++/pmZulZDg
+router-signature
+-----BEGIN SIGNATURE-----
+OVkz0CKUwWSXjhUMEsYATzcfT+D24QR8w6IjUtb6Mcz5P5CMggqmSFhL6SzUFXWS
+JwipCWcd2/1NsJ7/JLyXKcG0Ak6FPNP3arweah8EwWkVo7rvscagI+u+Uq2FqtO/
+OTNjnriDWTZdSA9FOcQueBZi7Qf7xwA0LEjtadtCjUI=
+-----END SIGNATURE-----
