@@ -131,6 +131,9 @@ class TestManual(unittest.TestCase):
     if not stem.util.system.is_available('man'):
       test.runner.skip(self, '(require man command)')
       return
+    elif not stem.util.system.is_mac():
+      test.runner.skip(self, '(man lacks --encoding arg on OSX, #18660)')
+      return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
@@ -150,6 +153,9 @@ class TestManual(unittest.TestCase):
 
     if not stem.util.system.is_available('man'):
       test.runner.skip(self, '(require man command)')
+      return
+    elif not stem.util.system.is_mac():
+      test.runner.skip(self, '(man lacks --encoding arg on OSX, #18660)')
       return
 
     manual = stem.manual.Manual.from_man(UNKNOWN_OPTIONS_MAN_PATH)
