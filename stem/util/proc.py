@@ -475,7 +475,7 @@ def _decode_proc_address_encoding(addr, is_ipv6):
 
       ip = b''.join(inverted)
 
-    ip = socket.inet_ntop(socket.AF_INET6, base64.b16decode(ip))
+    ip = stem.util.connection.expand_ipv6_address(socket.inet_ntop(socket.AF_INET6, base64.b16decode(ip)))
 
   return (ip, port)
 

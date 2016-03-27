@@ -265,8 +265,8 @@ class TestProc(unittest.TestCase):
     }[param]
 
     expected_results = [
-      Connection('2a01:4f8:190:514a::2', 443, '2001:638:a000:4140::ffff:189', 40435, 'tcp', True),
-      Connection('2a01:4f8:190:514a::2', 443, '2001:858:2:2:aabb:0:563b:1526', 44469, 'tcp', True),
+      Connection('2a01:04f8:0190:514a:0000:0000:0000:0002', 443, '2001:0638:a000:4140:0000:0000:ffff:0189', 40435, 'tcp', True),
+      Connection('2a01:04f8:0190:514a:0000:0000:0000:0002', 443, '2001:0858:0002:0002:aabb:0000:563b:1526', 44469, 'tcp', True),
     ]
 
     self.assertEqual(expected_results, proc.connections(pid = pid))
@@ -293,9 +293,9 @@ class TestProc(unittest.TestCase):
     }[param]
 
     expected_results = [
-      Connection('::ffff:5.9.158.75', 5222, '::ffff:78.54.134.33', 38330, 'tcp', True),
-      Connection('2a01:4f8:190:514a::2', 5269, '2001:6f8:126f:11::26', 50594, 'tcp', True),
-      Connection('::ffff:5.9.158.75', 5222, '::ffff:78.54.134.33', 38174, 'tcp', True),
+      Connection('0000:0000:0000:0000:0000:ffff:0509:9e4b', 5222, '0000:0000:0000:0000:0000:ffff:4e36:8621', 38330, 'tcp', True),
+      Connection('2a01:04f8:0190:514a:0000:0000:0000:0002', 5269, '2001:06f8:126f:0011:0000:0000:0000:0026', 50594, 'tcp', True),
+      Connection('0000:0000:0000:0000:0000:ffff:0509:9e4b', 5222, '0000:0000:0000:0000:0000:ffff:4e36:8621', 38174, 'tcp', True),
     ]
 
     self.assertEqual(expected_results, proc.connections(user = 'me'))
