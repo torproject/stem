@@ -47,7 +47,7 @@ def random_fingerprint():
   Provides a random 40 character hex string.
   """
 
-  return hashlib.sha1(stem.util.str_tools._to_bytes(str(time.time()))).hexdigest().upper()
+  return hashlib.sha1(os.urandom(20)).hexdigest().upper()
 
 
 class TestController(unittest.TestCase):
