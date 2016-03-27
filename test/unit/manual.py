@@ -268,6 +268,7 @@ class TestManual(unittest.TestCase):
     self.assertEqual(b'a2x output', output.getvalue())
     call_mock.assert_called_once_with('a2x -f manpage /no/such/path/tor.1.txt')
 
+  @patch('stem.util.system.is_mac', Mock(return_value = False))
   @patch('stem.util.system.call', Mock(side_effect = OSError('man --encoding=ascii -P cat tor returned exit status 16')))
   def test_from_man_when_manual_is_unavailable(self):
     try:

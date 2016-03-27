@@ -360,6 +360,10 @@ class Manual(object):
     """
     Reads and parses a given man page.
 
+    On OSX the man command doesn't have an '--encoding' argument so its results
+    may not quite match other platforms. For instance, it normalizes long
+    dashes into '--'.
+
     :param str man_path: path argument for 'man', for example you might want
       '/path/to/tor/doc/tor.1' to read from tor's git repository
 
@@ -368,10 +372,12 @@ class Manual(object):
     :raises: **IOError** if unable to retrieve the manual
     """
 
+    man_cmd = 'man %s -P cat %s' % ('' if stem.util.system.is_mac() else '--encoding=ascii', man_path)
+
     try:
-      man_output = stem.util.system.call('man --encoding=ascii -P cat %s' % man_path, env = {'MANWIDTH': '10000000'})
+      man_output = stem.util.system.call(man_cmd, env = {'MANWIDTH': '10000000'})
     except OSError as exc:
-      raise IOError("Unable to run 'man --encoding=ascii -P cat %s': %s" % (man_path, exc))
+      raise IOError("Unable to run '%s': %s" % (man_cmd, exc))
 
     categories, config_options = _get_categories(man_output), OrderedDict()
 
