@@ -861,7 +861,7 @@ def _get_descriptor_components(raw_contents, validate, extra_keywords = (), non_
 
     if validate and keyword not in non_ascii_fields:
       try:
-        value.decode('ascii')
+        value.encode('ascii')
       except UnicodeError:
         replaced = ''.join([(char if char in string.printable else '?') for char in value])
         raise ValueError("'%s' line had non-ascii content: %s" % (keyword, replaced))
