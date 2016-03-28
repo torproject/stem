@@ -449,6 +449,9 @@ class ExitPolicy(object):
         decompressed_rules = self._input_rules
 
       for rule in decompressed_rules:
+        if not rule.strip():
+          continue
+
         if isinstance(rule, bytes):
           rule = stem.util.str_tools._to_unicode(rule)
 
