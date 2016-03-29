@@ -3,6 +3,7 @@ Tests for the examples given in stem's tutorial.
 """
 
 import itertools
+import os
 import unittest
 
 try:
@@ -344,3 +345,6 @@ class TestTutorialExamples(unittest.TestCase):
     exec_documentation_example('persisting_a_consensus_with_parse_file.py')
 
     self.assertEqual(PERSISTING_A_CONSENSUS_OUTPUT, stdout_mock.getvalue())
+
+    if os.path.exists('/tmp/descriptor_dump'):
+      os.remove('/tmp/descriptor_dump')
