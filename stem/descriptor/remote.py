@@ -700,7 +700,7 @@ class DescriptorDownloader(object):
 
 class Directory(object):
   """
-  Relay we can constact for directory information
+  Relay we can contact for directory information
 
   .. versionadded:: 1.5.0
 
