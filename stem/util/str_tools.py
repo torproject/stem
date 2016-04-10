@@ -210,6 +210,9 @@ def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, 
   # ellipse, and cropping words requires an extra space for hyphens
 
   if ending == Ending.ELLIPSE:
+    if size < 3:
+      return ('', msg) if get_remainder else ''
+
     size -= 3
   elif min_word_length and ending == Ending.HYPHEN:
     min_word_length += 1

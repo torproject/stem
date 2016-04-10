@@ -30,6 +30,7 @@ class TestStrTools(unittest.TestCase):
     self.assertEqual('This is a looo...', str_tools.crop('This is a looooong message', 17))
     self.assertEqual('This is a...', str_tools.crop('This is a looooong message', 12))
     self.assertEqual('', str_tools.crop('This is a looooong message', 3))
+    self.assertEqual('', str_tools.crop('This is a looooong message', 0))
 
   def test_size_label(self):
     """
