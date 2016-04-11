@@ -71,6 +71,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     | +- from_socket_file - Provides a Controller based on a socket file connection.
     |
     |- authenticate - authenticates this controller with tor
+    |- reconnect - reconnects and authenticates to socket
     |
     |- get_info - issues a GETINFO query for a parameter
     |- get_version - provides our tor version
@@ -1017,10 +1018,6 @@ class Controller(BaseController):
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
 
-  def connect(self):
-    super(Controller, self).connect()
-    self.clear_cache()
-
   def close(self):
     # making a best-effort attempt to quit before detaching the socket
     if self.is_alive():
@@ -1041,6 +1038,22 @@ class Controller(BaseController):
 
     import stem.connection
     stem.connection.authenticate(self, *args, **kwargs)
+
+  def reconnect(self, *args, **kwargs):
+    """
+    Reconnects and authenticates to our control socket.
+
+    .. versionadded:: 1.5.0
+
+    :raises:
+      * :class:`stem.SocketError` if unable to re-establish socket
+      * :class:`stem.connection.AuthenticationFailure` if unable to authenticate
+    """
+
+    with self._msg_lock:
+      self.connect()
+      self.clear_cache()
+      self.authenticate(*args, **kwargs)
 
   @with_default()
   def get_info(self, params, default = UNDEFINED, get_bytes = False):
