@@ -10,6 +10,10 @@ best-effort, providing **None** if the lookup fails.
    Dropped the get_* prefix from several function names. The old names still
    work, but are deprecated aliases.
 
+.. versionchanged:: 1.5.0
+   Added the **SYSTEM_CALL_TIME** global, which tracks total time spent making
+   system commands.
+
 **Module Overview:**
 
 ::
@@ -52,6 +56,7 @@ import platform
 import re
 import subprocess
 import tarfile
+import threading
 import time
 
 import stem.util.proc
@@ -126,6 +131,13 @@ _PROCESS_NAME = None
 # for Jake's limit.
 
 _MAX_NAME_LENGTH = -1
+
+# Tracks total time spent shelling out to other commands like 'ps' and
+# 'netstat', so we can account for it as part of our cpu time along with
+# os.times().
+
+SYSTEM_CALL_TIME = 0.0
+SYSTEM_CALL_TIME_LOCK = threading.RLock()
 
 
 class CallError(OSError):
@@ -1035,17 +1047,19 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
     **OSError** subclass
   """
 
+  global SYSTEM_CALL_TIME
+
   if isinstance(command, str):
     command_list = command.split(' ')
   else:
     command_list = command
 
   exit_status, runtime, stdout, stderr = None, None, None, None
+  start_time = time.time()
 
   try:
     is_shell_command = command_list[0] in SHELL_COMMANDS
 
-    start_time = time.time()
     process = subprocess.Popen(command_list, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command, env = env)
 
     stdout, stderr = process.communicate()
@@ -1078,6 +1092,9 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
       return default
     else:
       raise CallError(str(exc), ' '.join(command_list), exit_status, runtime, stdout, stderr)
+  finally:
+    with SYSTEM_CALL_TIME_LOCK:
+      SYSTEM_CALL_TIME += time.time() - start_time
 
 
 def get_process_name():
