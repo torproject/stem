@@ -807,8 +807,8 @@ class ExitPolicyRule(object):
     :returns: str of our subnet mask for the address (ex. '255.255.255.0')
     """
 
-    # Lazy loading our mask because it very infrequently requested. There's
-    # no reason to usually usse memory for it.
+    # Lazy loading our mask because it is very infrequently requested. There's
+    # no reason to usually use memory for it.
 
     if not self._mask:
       address_type = self.get_address_type()
