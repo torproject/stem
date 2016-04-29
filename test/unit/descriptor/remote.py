@@ -63,22 +63,8 @@ FALLBACK_DIR_CONTENT = b"""\
  * This works around an issue where relays post a descriptor without a DirPort
  * when restarted. If these relays stay up, they will have been up for 120 days
  * by the 0.2.8 stable release -- teor */
-/*
-wagner
-Flags: Fast Guard Running Stable V2Dir Valid
-Fallback Weight: 43680 / 491920 (8.879%)
-Consensus Weight: 62600 / 546000 (11.465%)
-Rarely used email <trff914 AT gmail DOT com>
-*/
 "5.175.233.86:80 orport=443 id=5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33"
 " weight=43680",
-/*
-kitten2
-Flags: Fast Guard HSDir Running Stable V2Dir Valid
-Fallback Weight: 43680 / 491920 (8.879%)
-Consensus Weight: 59100 / 546000 (10.824%)
-0xEFB74277ECE4E222 Aeris <aeris+tor AT imirhil DOT fr> - 1aerisnnLWPchhDSXpxWGYWwLiSFUVFnd
-*/
 "62.210.124.124:9130 orport=9101 id=2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E"
 " ipv6=[2001:bc8:3f23:100::1]:9101"
 " weight=43680",
@@ -185,7 +171,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     # quick sanity test that we can load cached content
     fallback_directories = stem.descriptor.remote.FallbackDirectory.from_cache()
     self.assertTrue(len(fallback_directories) > 10)
-    self.assertEqual('wagner', fallback_directories['5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33'].nickname)
+    self.assertEqual('5.175.233.86', fallback_directories['5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33'].address)
 
   @patch(URL_OPEN)
   def test_fallback_directories_from_remote(self, urlopen_mock):
@@ -194,14 +180,12 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     expected = {
       '5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33': stem.descriptor.remote.FallbackDirectory(
-        nickname = 'wagner',
         address = '5.175.233.86',
         or_port = 443,
         dir_port = 80,
         fingerprint = '5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33',
       ),
       '2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E': stem.descriptor.remote.FallbackDirectory(
-        nickname = 'kitten2',
         address = '62.210.124.124',
         or_port = 9101,
         dir_port = 9130,

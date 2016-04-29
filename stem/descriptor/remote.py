@@ -709,21 +709,19 @@ class Directory(object):
   :var int or_port: port on which the relay services relay traffic
   :var int dir_port: port on which directory information is available
   :var str fingerprint: relay fingerprint
-  :var str nickname: nickname of the authority
   """
 
-  def __init__(self, address, or_port, dir_port, fingerprint, nickname):
+  def __init__(self, address, or_port, dir_port, fingerprint):
     self.address = address
     self.or_port = or_port
     self.dir_port = dir_port
     self.fingerprint = fingerprint
-    self.nickname = nickname
 
   def __eq__(self, other):
     if not isinstance(other, Directory):
       return False
 
-    for attr in ('nickname', 'address', 'or_port', 'dir_port', 'fingerprint'):
+    for attr in ('address', 'or_port', 'dir_port', 'fingerprint'):
       if getattr(self, attr) != getattr(other, attr):
         return False
 
@@ -761,21 +759,29 @@ class DirectoryAuthority(Directory):
   .. versionchanged:: 1.3.0
      Added the is_bandwidth_authority attribute.
 
+  :var str nickname: nickname of the authority
   :var str v3ident: identity key fingerprint used to sign votes and consensus
   :var bool is_bandwidth_authority: **True** if this is a bandwidth authority,
     **False** otherwise
   """
 
   def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, v3ident = None, is_bandwidth_authority = False):
-    super(DirectoryAuthority, self).__init__(address, or_port, dir_port, fingerprint, nickname)
+    super(DirectoryAuthority, self).__init__(address, or_port, dir_port, fingerprint)
+    self.nickname = nickname
     self.v3ident = v3ident
     self.is_bandwidth_authority = is_bandwidth_authority
 
   def __eq__(self, other):
-    if isinstance(other, DirectoryAuthority) and super(DirectoryAuthority, self).__eq__(other):
-      return self.v3ident == other.v3ident and self.is_bandwidth_authority == other.is_bandwidth_authority
-    else:
+    if not isinstance(other, DirectoryAuthority):
       return False
+    elif not super(DirectoryAuthority, self).__eq__(other):
+      return False
+
+    for attr in ('nickname', 'v3ident', 'is_bandwidth_authority'):
+      if getattr(self, attr) != getattr(other, attr):
+        return False
+
+    return True
 
 
 DIRECTORY_AUTHORITIES = {
@@ -887,7 +893,8 @@ def get_authorities():
 class FallbackDirectory(Directory):
   """
   Particularly stable relays tor can instead of authorities when
-  bootstrapping. These relays are `hardcoded in tor <https://gitweb.torproject.org/tor.git/tree/src/or/fallback_dirs.inc>`_.
+  bootstrapping. These relays are `hardcoded in tor
+  <https://gitweb.torproject.org/tor.git/tree/src/or/fallback_dirs.inc>`_.
 
   For example, the following checks the performance of tor's fallback directories...
 
@@ -901,23 +908,21 @@ class FallbackDirectory(Directory):
     for fallback_directory in FallbackDirectory.from_cache().values():
       start = time.time()
       downloader.get_consensus(endpoints = [(fallback_directory.address, fallback_directory.dir_port)]).run()
-      print('Downloading the consensus took %0.2f from %s' % (time.time() - start, fallback_directory.nickname))
+      print('Downloading the consensus took %0.2f from %s' % (time.time() - start, fallback_directory.fingerprint))
 
   ::
 
     % python example.py
-    Downloading the consensus took 5.07 from Doedel22
-    Downloading the consensus took 3.59 from tornoderdednl
-    Downloading the consensus took 4.16 from Logforme
-    Downloading the consensus took 6.76 from Doedel21
-    Downloading the consensus took 5.21 from kitten4
+    Downloading the consensus took 5.07 from 0AD3FA884D18F89EEA2D89C019379E0E7FD94417
+    Downloading the consensus took 3.59 from C871C91489886D5E2E94C13EA1A5FDC4B6DC5204
+    Downloading the consensus took 4.16 from 74A910646BCEEFBCD2E874FC1DC997430F968145
     ...
 
   .. versionadded:: 1.5.0
   """
 
-  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None):
-    super(FallbackDirectory, self).__init__(address, or_port, dir_port, fingerprint, nickname)
+  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None):
+    super(FallbackDirectory, self).__init__(address, or_port, dir_port, fingerprint)
 
   @staticmethod
   def from_cache():
@@ -943,7 +948,7 @@ class FallbackDirectory(Directory):
 
       attr = {}
 
-      for attr_name in ('address', 'or_port', 'dir_port', 'nickname'):
+      for attr_name in ('address', 'or_port', 'dir_port'):
         key = '%s.%s' % (fingerprint, attr_name)
         attr[attr_name] = conf.get(key)
 
@@ -956,15 +961,12 @@ class FallbackDirectory(Directory):
         raise IOError("'%s.or_port' was an invalid port (%s)" % (fingerprint, attr['or_port']))
       elif not connection.is_valid_port(attr['dir_port']):
         raise IOError("'%s.dir_port' was an invalid port (%s)" % (fingerprint, attr['dir_port']))
-      elif not tor_tools.is_valid_nickname(attr['nickname']):
-        raise IOError("'%s.nickname' was an invalid nickname (%s)" % (fingerprint, attr['nickname']))
 
       results[fingerprint] = FallbackDirectory(
         address = attr['address'],
         or_port = int(attr['or_port']),
         dir_port = int(attr['dir_port']),
         fingerprint = fingerprint,
-        nickname = attr['nickname'],
       )
 
     return results
@@ -1001,45 +1003,33 @@ class FallbackDirectory(Directory):
 
     # Example of an entry...
     #
-    #   /*
-    #   wagner
-    #   Flags: Fast Guard Running Stable V2Dir Valid
-    #   Fallback Weight: 43680 / 491920 (8.879%)
-    #   Consensus Weight: 62600 / 546000 (11.465%)
-    #   Rarely used email <trff914 AT gmail DOT com>
-    #   */
     #   "5.175.233.86:80 orport=443 id=5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33"
     #   " weight=43680",
 
-    results, nickname, last_line = {}, None, None
+    results = {}
 
     for line in fallback_dir_page.splitlines():
-      if last_line == '/*':
-        nickname = line
-      elif line.startswith('"'):
+      if line.startswith('"'):
         addr_line_match = re.match('"([\d\.]+):(\d+) orport=(\d+) id=([\dA-F]{40}).*', line)
 
         if addr_line_match:
           address, dir_port, or_port, fingerprint = addr_line_match.groups()
 
           if not connection.is_valid_ipv4_address(address):
-            raise IOError('%s has an invalid address: %s' % (nickname, address))
+            raise IOError('%s has an invalid address: %s' % (fingerprint, address))
           elif not connection.is_valid_port(or_port):
-            raise IOError('%s has an invalid or_port: %s' % (nickname, or_port))
+            raise IOError('%s has an invalid or_port: %s' % (fingerprint, or_port))
           elif not connection.is_valid_port(dir_port):
-            raise IOError('%s has an invalid dir_port: %s' % (nickname, dir_port))
+            raise IOError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
           elif not tor_tools.is_valid_fingerprint(fingerprint):
-            raise IOError('%s has an invalid fingerprint: %s' % (nickname, fingerprint))
+            raise IOError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
 
           results[fingerprint] = FallbackDirectory(
             address = address,
             or_port = int(or_port),
             dir_port = int(dir_port),
             fingerprint = fingerprint,
-            nickname = nickname,
           )
-
-      last_line = line
 
     return results
 
@@ -1058,16 +1048,15 @@ def _fallback_directory_differences(previous_directories, new_directories):
     directory = new_directories[fp]
 
     lines += [
-      '* Added %s as a new fallback directory:' % directory.nickname,
+      '* Added %s as a new fallback directory:' % directory.fingerprint,
       '  address: %s' % directory.address,
       '  or_port: %s' % directory.or_port,
       '  dir_port: %s' % directory.dir_port,
-      '  fingerprint: %s' % directory.fingerprint,
       '',
     ]
 
   for fp in removed_fp:
-    lines.append('* Removed %s as a fallback directory' % previous_directories[fp].nickname)
+    lines.append('* Removed %s as a fallback directory' % fp)
 
   for fp in new_directories:
     if fp in added_fp or fp in removed_fp:
@@ -1077,7 +1066,7 @@ def _fallback_directory_differences(previous_directories, new_directories):
     new_directory = new_directories[fp]
 
     if previous_directory != new_directory:
-      for attr in ('nickname', 'address', 'or_port', 'dir_port', 'fingerprint'):
+      for attr in ('address', 'or_port', 'dir_port', 'fingerprint'):
         old_attr = getattr(previous_directory, attr)
         new_attr = getattr(new_directory, attr)
 
