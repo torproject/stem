@@ -94,12 +94,15 @@ Download
          % sudo pip install stem
 
    * - .. image:: /_static/section/download/debian.png
-          :target: http://packages.debian.org/sid/python-stem
+          :target: https://packages.debian.org/sid/python-stem
 
      - .. image:: /_static/label/debian.png
-          :target: http://packages.debian.org/sid/python-stem
+          :target: https://packages.debian.org/sid/python-stem
 
-       Package maintained by Dererk for Debian.
+       Packages by Dererk for Debian, including `python-stem
+       <https://packages.debian.org/sid/python-stem>`_ (for Python 2.x) and
+       `python3-stem <https://packages.debian.org/sid/python3-stem>`_ (for
+       Python 3.x).
 
        ::
 
@@ -123,9 +126,7 @@ Download
      - .. image:: /_static/label/fedora.png
           :target: https://apps.fedoraproject.org/packages/python-stem
 
-       Packages maintained by Juan for Fedora. These include **python-stem**
-       (Stem for Python 2.x), **python3-stem** (Stem for Python 3.x), and
-       **python-stem-doc** (this website).
+       Package by Juan for Fedora.
 
        ::
 
@@ -137,7 +138,7 @@ Download
      - .. image:: /_static/label/gentoo.png
           :target: http://packages.gentoo.org/package/net-libs/stem
 
-       Package maintained by Anthony Basile for Gentoo.
+       Package by Anthony Basile for Gentoo.
 
        ::
 
@@ -149,7 +150,7 @@ Download
      - .. image:: /_static/label/archlinux.png
           :target: https://aur.archlinux.org/packages/stem/
 
-       Package maintained by Sjon for `Arch Linux
+       Package by Sjon for `Arch Linux
        <https://wiki.archlinux.org/index.php/AUR#Installing_packages>`_.
 
        ::
@@ -165,7 +166,7 @@ Download
      - .. image:: /_static/label/slackware.png
           :target: http://slackbuilds.org/repository/14.1/python/stem/
 
-       Package maintained by Markus for `Slackware
+       Package by Markus for `Slackware
        <http://slackbuilds.org/howto/>`_.
 
    * - .. image:: /_static/section/download/freebsd.png
@@ -174,7 +175,7 @@ Download
      - .. image:: /_static/label/freebsd.png
           :target: http://www.freshports.org/security/py-stem/
 
-       Port maintained by Carlo for `FreeBSD
+       Port by Carlo for `FreeBSD
        <http://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/ports.html>`_.
 
        ::
