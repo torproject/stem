@@ -97,6 +97,7 @@ The following are only available within Stem's `git repository
 
   * `Comparison of our descriptor parsing libraries <tutorials/mirror_mirror_on_the_wall.html#are-there-any-other-parsing-libraries>`_
   * Example for `custom path selection for circuits <tutorials/to_russia_with_love.html#custom-path-selection>`_ (:trac:`8728`)
+  * Example for `persisting ephemeral hidden service keys <<tutorials/over_the_river.html#ephemeral-hidden-services>`_
 
 .. _version_1.4:
 

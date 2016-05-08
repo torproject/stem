@@ -127,7 +127,7 @@ Download
           :target: https://apps.fedoraproject.org/packages/python-stem
 
        Packages maintained by Juan for Fedora. These include **python-stem**
-       (Stem for Python 2.x), **python3-stem** (Stem for Python 3.x), and
+       (for Python 2.x), **python3-stem** (for Python 3.x), and
        **python-stem-doc** (this website).
 
        ::

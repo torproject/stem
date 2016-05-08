@@ -86,10 +86,6 @@ This has been a limitation of hidden services for years. However, as of version
 0.2.7.1 Tor offers another style for making services called **ephemeral hidden
 services**.
 
-Ephemeral hidden services do not touch disk, and as such are easier to work
-with but require you to persist your service's private key yourself if you want
-to reuse a '.onion' address.
-
 Ephemeral services can only be created through the controller, and only exist
 as long as your controller is attached unless you provide the **detached**
 flag. Controllers can only see their own ephemeral services, and ephemeral
@@ -105,6 +101,13 @@ Stem provides three methods to work with ephemeral hidden services...
 For example, with a ephemeral service our earlier example becomes as simple as...
 
 .. literalinclude:: /_static/example/ephemeral_hidden_services.py
+   :language: python
+
+Ephemeral hidden services do not touch disk, and as such are easier to work
+with but require you to persist your service's private key yourself if you want
+to reuse a '.onion' address...
+
+.. literalinclude:: /_static/example/resuming_ephemeral_hidden_service.py
    :language: python
 
 .. _hidden-service-descriptors:
