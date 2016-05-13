@@ -147,6 +147,7 @@ DEFAULT_PARAMS = {
   'cbttestfreq': 60,
   'cbtmintimeout': 2000,
   'cbtinitialtimeout': 60000,
+  'UseOptimisticData': 1,
   'Support022HiddenServices': 1,
   'usecreatefast': 1,
 }
