@@ -8,6 +8,7 @@ import time
 import stem
 import stem.control
 import stem.descriptor.router_status_entry
+import stem.manual
 import stem.response
 import stem.version
 
@@ -1319,6 +1320,17 @@ def _parse_cell_type_mapping(mapping):
     results[key] = int(value)
 
   return results
+
+
+def event_summary(event):
+  """
+  Provides a description for Tor events.
+
+  :param str event: the event for which a description is needed
+
+  :returns: str The event description
+  """
+  return stem.manual._config().get('event.description.%s' % event.lower(), '')
 
 
 EVENT_TYPE_TO_CLASS = {
