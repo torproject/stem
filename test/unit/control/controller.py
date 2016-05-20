@@ -34,10 +34,10 @@ class TestControl(unittest.TestCase):
     with patch('stem.control.Controller.add_event_listener', Mock()):
       self.controller = Controller(socket)
 
-  def test_event_summary(self):
-    self.assertEqual('Tor debug logging event.', stem.control.event_summary('DEBUG'))
-    self.assertEqual('Event emitted every second with the bytes sent and received by tor.', stem.control.event_summary('BW'))
-    self.assertEqual('Event emitted every second with the bytes sent and received by tor.', stem.control.event_summary('bw'))
+  def test_event_description(self):
+    self.assertEqual('Tor debug logging event.', stem.control.event_description('DEBUG'))
+    self.assertEqual('Event emitted every second with the bytes sent and received by tor.', stem.control.event_description('BW'))
+    self.assertEqual('Event emitted every second with the bytes sent and received by tor.', stem.control.event_description('bw'))
 
   @patch('stem.control.Controller.get_info')
   def test_get_version(self, get_info_mock):

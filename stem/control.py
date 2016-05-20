@@ -66,6 +66,8 @@ If you're fine with allowing your script to raise exceptions then this can be mo
 
 ::
 
+  event_description - brief description of a tor event type
+
   Controller - General controller class intended for direct use
     | |- from_port - Provides a Controller based on a port connection.
     | +- from_socket_file - Provides a Controller based on a socket file connection.
@@ -476,7 +478,7 @@ def with_default(yields = False):
   return decorator
 
 
-def event_summary(event):
+def event_description(event):
   """
   Provides a description for Tor events.
 
