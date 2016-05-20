@@ -261,6 +261,7 @@ import stem.descriptor.reader
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.exit_policy
+import stem.manual
 import stem.response
 import stem.response.events
 import stem.socket
@@ -473,6 +474,17 @@ def with_default(yields = False):
     return wrapped
 
   return decorator
+
+
+def event_summary(event):
+  """
+  Provides a description for Tor events.
+
+  :param str event: the event for which a description is needed
+
+  :returns: str The event description
+  """
+  return stem.manual._config().get('event.description.%s' % event.lower(), '')
 
 
 class BaseController(object):
