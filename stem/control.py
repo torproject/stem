@@ -66,6 +66,8 @@ If you're fine with allowing your script to raise exceptions then this can be mo
 
 ::
 
+  event_description - brief description of a tor event type
+
   Controller - General controller class intended for direct use
     | |- from_port - Provides a Controller based on a port connection.
     | +- from_socket_file - Provides a Controller based on a socket file connection.
@@ -264,6 +266,7 @@ import stem.exit_policy
 import stem.response
 import stem.response.events
 import stem.socket
+import stem.util.conf
 import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
@@ -375,11 +378,14 @@ UNCACHEABLE_GETCONF_PARAMS = (
 
 # number of sequential attempts before we decide that the Tor geoip database
 # is unavailable
+
 GEOIP_FAILURE_THRESHOLD = 5
 
 SERVER_DESCRIPTORS_UNSUPPORTED = "Tor is currently not configured to retrieve \
 server descriptors. As of Tor version 0.2.3.25 it downloads microdescriptors \
 instead unless you set 'UseMicrodescriptors 0' in your torrc."
+
+EVENT_DESCRIPTIONS = None
 
 
 class AccountingStats(collections.namedtuple('AccountingStats', ['retrieved', 'status', 'interval_end', 'time_until_reset', 'read_bytes', 'read_bytes_left', 'read_limit', 'written_bytes', 'write_bytes_left', 'write_limit'])):
@@ -473,6 +479,32 @@ def with_default(yields = False):
     return wrapped
 
   return decorator
+
+
+def event_description(event):
+  """
+  Provides a description for Tor events.
+
+  :param str event: the event for which a description is needed
+
+  :returns: str The event description or **None** if this is an event name we
+    don't have a description for
+  """
+
+  global EVENT_DESCRIPTIONS
+
+  if EVENT_DESCRIPTIONS is None:
+    config = stem.util.conf.Config()
+    config_path = os.path.join(os.path.dirname(__file__), 'settings.cfg')
+
+    try:
+      config.load(config_path)
+      EVENT_DESCRIPTIONS = dict([(key.lower()[18:], config.get_value(key)) for key in config.keys() if key.startswith('event.description.')])
+    except Exception as exc:
+      log.warn("BUG: stem failed to load its internal manual information from '%s': %s" % (config_path, exc))
+      return None
+
+  return EVENT_DESCRIPTIONS.get(event.lower())
 
 
 class BaseController(object):
