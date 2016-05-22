@@ -141,7 +141,7 @@ def _config(lowercase = True):
 
   try:
     config.load(config_path)
-    config_dict = dict([(key.lower() if lowercase else key, config.get_value(key)) for key in config.keys()])
+    config_dict = dict([(key.lower() if lowercase else key, config.get_value(key)) for key in config.keys() if key.startswith('manual.summary.')])
     config_dict['manual.important'] = [name.lower() if lowercase else name for name in config.get_value('manual.important', [], multiple = True)]
     return config_dict
   except Exception as exc:
