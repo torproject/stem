@@ -486,7 +486,7 @@ def event_description(event):
 
   :returns: str The event description
   """
-  return stem.manual._config().get('event.description.%s' % event.lower(), '')
+  return stem.manual._config().get('event.description.%s' % event.lower(), None)
 
 
 class BaseController(object):

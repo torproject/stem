@@ -35,9 +35,15 @@ class TestControl(unittest.TestCase):
       self.controller = Controller(socket)
 
   def test_event_description(self):
-    self.assertEqual('Tor debug logging event.', stem.control.event_description('DEBUG'))
+    self.assertEqual("Logging at the debug runlevel. This is low level, high volume information about tor's internals that generally isn't useful to users.", stem.control.event_description('DEBUG'))
     self.assertEqual('Event emitted every second with the bytes sent and received by tor.', stem.control.event_description('BW'))
     self.assertEqual('Event emitted every second with the bytes sent and received by tor.', stem.control.event_description('bw'))
+
+  def test_event_description_includes_all_events(self):
+    self.assertEqual(None, stem.control.event_description('NO_SUCH_EVENT'))
+
+    for event in stem.control.EventType:
+      self.assertTrue(stem.control.event_description(event) is not None)
 
   @patch('stem.control.Controller.get_info')
   def test_get_version(self, get_info_mock):
