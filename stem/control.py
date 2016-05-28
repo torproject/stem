@@ -487,8 +487,8 @@ def event_description(event):
 
   :param str event: the event for which a description is needed
 
-  :returns: str The event description or **None** if this is an event name we
-    don't have a description for
+  :returns: **str** The event description or **None** if this is an event name
+    we don't have a description for
   """
 
   global EVENT_DESCRIPTIONS

@@ -190,6 +190,7 @@ class TestDescriptorDownloader(unittest.TestCase):
         or_port = 9101,
         dir_port = 9130,
         fingerprint = '2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E',
+        orport_v6 = ('2001:bc8:3f23:100::1', 9101),
       ),
     }
 

@@ -60,4 +60,8 @@ if __name__ == '__main__':
     conf.set('%s.or_port' % fingerprint, str(directory.or_port))
     conf.set('%s.dir_port' % fingerprint, str(directory.dir_port))
 
+    if directory.orport_v6:
+      conf.set('%s.orport6_address' % fingerprint, str(directory.orport_v6[0]))
+      conf.set('%s.orport6_port' % fingerprint, str(directory.orport_v6[1]))
+
   conf.save(stem.descriptor.remote.CACHE_PATH)

@@ -704,8 +704,7 @@ class Directory(object):
 
   .. versionadded:: 1.5.0
 
-  :var str address: IP address of the authority, currently they're all IPv4 but
-    this may not always be the case
+  :var str address: IPv4 address of the directory
   :var int or_port: port on which the relay services relay traffic
   :var int dir_port: port on which directory information is available
   :var str fingerprint: relay fingerprint
@@ -919,10 +918,14 @@ class FallbackDirectory(Directory):
     ...
 
   .. versionadded:: 1.5.0
+
+  :var str orport_v6: **(address, port)** tuple for the directory's IPv6
+    ORPort, or **None** if it doesn't have one
   """
 
-  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None):
+  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, orport_v6 = None):
     super(FallbackDirectory, self).__init__(address, or_port, dir_port, fingerprint)
+    self.orport_v6 = orport_v6
 
   @staticmethod
   def from_cache():
@@ -948,25 +951,35 @@ class FallbackDirectory(Directory):
 
       attr = {}
 
-      for attr_name in ('address', 'or_port', 'dir_port'):
+      for attr_name in ('address', 'or_port', 'dir_port', 'orport6_address', 'orport6_port'):
         key = '%s.%s' % (fingerprint, attr_name)
         attr[attr_name] = conf.get(key)
 
-        if not attr[attr_name]:
+        if not attr[attr_name] and not attr_name.startswith('orport6_'):
           raise IOError("'%s' is missing from %s" % (key, CACHE_PATH))
 
       if not connection.is_valid_ipv4_address(attr['address']):
-        raise IOError("'%s.address' was an invalid address (%s)" % (fingerprint, attr['address']))
+        raise IOError("'%s.address' was an invalid IPv4 address (%s)" % (fingerprint, attr['address']))
       elif not connection.is_valid_port(attr['or_port']):
         raise IOError("'%s.or_port' was an invalid port (%s)" % (fingerprint, attr['or_port']))
       elif not connection.is_valid_port(attr['dir_port']):
         raise IOError("'%s.dir_port' was an invalid port (%s)" % (fingerprint, attr['dir_port']))
+      elif attr['orport6_address'] and not connection.is_valid_ipv6_address(attr['orport6_address']):
+        raise IOError("'%s.orport6_address' was an invalid IPv6 address (%s)" % (fingerprint, attr['orport6_address']))
+      elif attr['orport6_port'] and not connection.is_valid_port(attr['orport6_port']):
+        raise IOError("'%s.orport6_port' was an invalid port (%s)" % (fingerprint, attr['orport6_port']))
+
+      if attr['orport6_address'] and attr['orport6_port']:
+        orport_v6 = (attr['orport6_address'], int(attr['orport6_port']))
+      else:
+        orport_v6 = None
 
       results[fingerprint] = FallbackDirectory(
         address = attr['address'],
         or_port = int(attr['or_port']),
         dir_port = int(attr['dir_port']),
         fingerprint = fingerprint,
+        orport_v6 = orport_v6,
       )
 
     return results
@@ -1004,19 +1017,21 @@ class FallbackDirectory(Directory):
     # Example of an entry...
     #
     #   "5.175.233.86:80 orport=443 id=5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33"
+    #   " ipv6=[2a03:b0c0:0:1010::a4:b001]:9001"
     #   " weight=43680",
 
-    results = {}
+    results, attr = {}, {}
 
     for line in fallback_dir_page.splitlines():
       if line.startswith('"'):
         addr_line_match = re.match('"([\d\.]+):(\d+) orport=(\d+) id=([\dA-F]{40}).*', line)
+        ipv6_line_match = re.match('" ipv6=\[([\da-f:]+)\]:(\d+)"', line)
 
         if addr_line_match:
           address, dir_port, or_port, fingerprint = addr_line_match.groups()
 
           if not connection.is_valid_ipv4_address(address):
-            raise IOError('%s has an invalid address: %s' % (fingerprint, address))
+            raise IOError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
           elif not connection.is_valid_port(or_port):
             raise IOError('%s has an invalid or_port: %s' % (fingerprint, or_port))
           elif not connection.is_valid_port(dir_port):
@@ -1024,14 +1039,43 @@ class FallbackDirectory(Directory):
           elif not tor_tools.is_valid_fingerprint(fingerprint):
             raise IOError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
 
-          results[fingerprint] = FallbackDirectory(
-            address = address,
-            or_port = int(or_port),
-            dir_port = int(dir_port),
-            fingerprint = fingerprint,
+          attr = {
+            'address': address,
+            'or_port': int(or_port),
+            'dir_port': int(dir_port),
+            'fingerprint': fingerprint,
+          }
+        elif ipv6_line_match:
+          address, port = ipv6_line_match.groups()
+
+          if not connection.is_valid_ipv6_address(address):
+            raise IOError('%s has an invalid IPv6 address: %s' % (fingerprint, address))
+          elif not connection.is_valid_port(port):
+            raise IOError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, port))
+
+          attr['orport_v6'] = (address, int(port))
+        elif line.startswith('" weight=') and 'fingerprint' in attr:
+          results[attr.get('fingerprint')] = FallbackDirectory(
+            address = attr.get('address'),
+            or_port = attr.get('or_port'),
+            dir_port = attr.get('dir_port'),
+            fingerprint = attr.get('fingerprint'),
+            orport_v6 = attr.get('orport_v6'),
           )
 
+          attr = {}
+
     return results
+
+  def __eq__(self, other):
+    if not isinstance(other, FallbackDirectory):
+      return False
+    elif not super(FallbackDirectory, self).__eq__(other):
+      return False
+    elif self.orport_v6 != other.orport_v6:
+      return False
+
+    return True
 
 
 def _fallback_directory_differences(previous_directories, new_directories):
@@ -1052,6 +1096,7 @@ def _fallback_directory_differences(previous_directories, new_directories):
       '  address: %s' % directory.address,
       '  or_port: %s' % directory.or_port,
       '  dir_port: %s' % directory.dir_port,
+      '  orport_v6: %s' % directory.orport_v6 if directory.orport_v6 else '[none]',
       '',
     ]
 
@@ -1066,7 +1111,7 @@ def _fallback_directory_differences(previous_directories, new_directories):
     new_directory = new_directories[fp]
 
     if previous_directory != new_directory:
-      for attr in ('address', 'or_port', 'dir_port', 'fingerprint'):
+      for attr in ('address', 'or_port', 'dir_port', 'fingerprint', 'orport_v6'):
         old_attr = getattr(previous_directory, attr)
         new_attr = getattr(new_directory, attr)
 
