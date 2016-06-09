@@ -234,17 +234,18 @@ The following are the functional controller libraries I'm aware of. Dates are
 for highly active development. If I missed one then please `let me know
 <https://www.atagar.com/contact/>`_!
 
-==========================================================  ================    =======================
-Library                                                     Language            Developed
-==========================================================  ================    =======================
-`Stem <https://stem.torproject.org/>`_                      Python              October 2011 - Present
-`Txtorcon <https://txtorcon.readthedocs.org/>`_             Python (Twisted)    February 2012 - Present
-`TorCtl <https://gitweb.torproject.org/pytorctl.git>`_      Python              July 2008 - November 2011
-`PHP TorCtl <https://github.com/dunglas/php-torcontrol/>`_  PHP                 February 2013
-`JTorCtl <https://gitweb.torproject.org/jtorctl.git>`_      Java                June 2005 - May 2009
-`Orc <https://github.com/sycamoreone/orc>`_                 Go                  January 2015
-`Bulb <https://github.com/Yawning/bulb>`_                   Go                  March 2015
-==========================================================  ================    =======================
+==================================================================  ================    =======================
+Library                                                             Language            Developed
+==================================================================  ================    =======================
+`Stem <https://stem.torproject.org/>`_                              Python              October 2011 - Present
+`Txtorcon <https://txtorcon.readthedocs.org/>`_                     Python (Twisted)    February 2012 - Present
+`TorCtl <https://gitweb.torproject.org/pytorctl.git>`_              Python              July 2008 - November 2011
+`PHP TorCtl <https://github.com/dunglas/php-torcontrol/>`_          PHP                 February 2013
+`JTorCtl <https://gitweb.torproject.org/jtorctl.git>`_              Java                June 2005 - May 2009
+`Orc <https://github.com/sycamoreone/orc>`_                         Go                  January 2015
+`Bulb <https://github.com/Yawning/bulb>`_                           Go                  March 2015
+`Rust Controller <https://github.com/Dhole/rust-tor-controller>`_   Rust                May 2016
+==================================================================  ================    =======================
 
 .. _what_license_is_stem_under:
 

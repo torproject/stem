@@ -159,8 +159,7 @@ Download
 
            % wget https://aur.archlinux.org/packages/st/stem/stem.tar.gz
            % tar -xvf stem.tar.gz
-           % cd stem
-           % makepkg --install
+           % cd stem; makepkg --install
 
    * - .. image:: /_static/section/download/slackware.png
           :target: http://slackbuilds.org/repository/14.1/python/stem/
