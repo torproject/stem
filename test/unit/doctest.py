@@ -14,6 +14,7 @@ import stem.util.str_tools
 import stem.util.system
 import stem.version
 
+import test.mocking
 import test.util
 
 try:
@@ -25,6 +26,12 @@ except ImportError:
 EXPECTED_CIRCUIT_STATUS = """\
 20 EXTENDED $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA=Eskimo BUILD_FLAGS=NEED_CAPACITY PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:51:11.433755
 19 BUILT $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$30BAB8EE7606CBD12F3CC269AE976E0153E7A58D=Pascal1,$2765D8A8C4BBA3F89585A9FFE0E8575615880BEB=Anthracite PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:50:56.969938\
+"""
+
+ADD_ONION_RESPONSE = """\
+250-ServiceID=oekn5sqrvcu4wote
+250-ClientAuth=bob:nKwfvVPmTNr2k2pG0pzV4g
+250 OK
 """
 
 
@@ -76,6 +83,10 @@ class TestDocumentation(unittest.TestCase):
         controller.get_info.side_effect = lambda arg: {
           'circuit-status': EXPECTED_CIRCUIT_STATUS,
         }[arg]
+
+        response = test.mocking.get_message(ADD_ONION_RESPONSE)
+        stem.response.convert('ADD_ONION', response)
+        controller.create_ephemeral_hidden_service.return_value = response
 
         args['globs'] = {'controller': controller}
         test_run = doctest.testfile(path, **args)

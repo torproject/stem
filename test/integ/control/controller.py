@@ -641,6 +641,7 @@ class TestController(unittest.TestCase):
       response = controller.create_ephemeral_hidden_service(4567)
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
       self.assertTrue(response.private_key is not None)
+      self.assertEqual({}, response.client_auth)
 
       # drop the service
 
@@ -670,6 +671,26 @@ class TestController(unittest.TestCase):
       with runner.get_tor_controller() as second_controller:
         self.assertEqual(2, len(controller.list_ephemeral_hidden_services()))
         self.assertEqual(0, len(second_controller.list_ephemeral_hidden_services()))
+
+  @require_controller
+  @require_version(Requirement.ADD_ONION_BASIC_AUTH)
+  def test_with_ephemeral_hidden_services_with_basic_auth(self):
+    """
+    Exercises creating ephemeral hidden services that uses basic authentication.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      response = controller.create_ephemeral_hidden_service(4567, basic_auth = {'alice': 'nKwfvVPmTNr2k2pG0pzV4g', 'bob': None})
+      self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
+      self.assertTrue(response.private_key is not None)
+      self.assertEqual(['bob'], response.client_auth.keys())  # newly created credentials were only created for bob
+
+      # drop the service
+
+      self.assertEqual(True, controller.remove_ephemeral_hidden_service(response.service_id))
+      self.assertEqual([], controller.list_ephemeral_hidden_services())
 
   @require_controller
   @require_version(Requirement.ADD_ONION)

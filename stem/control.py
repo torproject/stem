@@ -2764,7 +2764,7 @@ class Controller(BaseController):
 
     return result
 
-  def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False, await_publication = False):
+  def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False, await_publication = False, basic_auth = None):
     """
     Creates a new hidden service. Unlike
     :func:`~stem.control.Controller.create_hidden_service` this style of
@@ -2789,7 +2789,33 @@ class Controller(BaseController):
 
       create_ephemeral_hidden_service({80: 80, 443: '173.194.33.133:443'})
 
+    If **basic_auth** is provided this service will require basic
+    authentication to access. This means users must set HidServAuth in their
+    torrc with credentials to access it.
+
+    **basic_auth** is a mapping of usernames to their credentials. If the
+    credential is **None** one is generated and returned as part of the
+    response. For instance, only bob can access using the given newly generated
+    credentials...
+
+    ::
+
+      >>> response = controller.create_ephemeral_hidden_service(80, basic_auth = {'bob': None})
+      >>> print(response.client_auth)
+      {'bob': 'nKwfvVPmTNr2k2pG0pzV4g'}
+
+    ... while both alice and bob can access with existing credentials in the
+    following...
+
+      controller.create_ephemeral_hidden_service(80, basic_auth = {
+        'alice': 'l4BT016McqV2Oail+Bwe6w',
+        'bob': 'vGnNRpWYiMBFTWD2gbBlcA',
+      })
+
     .. versionadded:: 1.4.0
+
+    .. versionchanged:: 1.5.0
+       Added the basic_auth argument.
 
     :param int,list,dict ports: hidden service port(s) or mapping of hidden
       service ports to their targets
@@ -2803,6 +2829,7 @@ class Controller(BaseController):
       connection is closed if **True**
     :param bool await_publication: blocks until our descriptor is successfully
       published if **True**
+    :param dict basic_auth: required user credentials to access this service
 
     :returns: :class:`~stem.response.add_onion.AddOnionResponse` with the response
 
@@ -2830,6 +2857,12 @@ class Controller(BaseController):
     if detached:
       flags.append('Detach')
 
+    if basic_auth is not None:
+      if self.get_version() < stem.version.Requirement.ADD_ONION_BASIC_AUTH:
+        raise stem.UnsatisfiableRequest(message = 'Basic authentication support was added to ADD_ONION in tor version %s' % stem.version.Requirement.ADD_ONION_BASIC_AUTH)
+
+      flags.append('BasicAuth')
+
     if flags:
       request += ' Flags=%s' % ','.join(flags)
 
@@ -2843,6 +2876,13 @@ class Controller(BaseController):
         request += ' Port=%s,%s' % (port, target)
     else:
       raise ValueError("The 'ports' argument of create_ephemeral_hidden_service() needs to be an int, list, or dict")
+
+    if basic_auth is not None:
+      for client_name, client_blob in basic_auth.items():
+        if client_blob:
+          request += ' ClientAuth=%s:%s' % (client_name, client_blob)
+        else:
+          request += ' ClientAuth=%s' % client_name
 
     response = self.msg(request)
     stem.response.convert('ADD_ONION', response)
