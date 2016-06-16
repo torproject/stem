@@ -674,7 +674,7 @@ class TestController(unittest.TestCase):
 
   @require_controller
   @require_version(Requirement.ADD_ONION_BASIC_AUTH)
-  def test_with_ephemeral_hidden_services_with_basic_auth(self):
+  def test_with_ephemeral_hidden_services_basic_auth(self):
     """
     Exercises creating ephemeral hidden services that uses basic authentication.
     """
@@ -691,6 +691,23 @@ class TestController(unittest.TestCase):
 
       self.assertEqual(True, controller.remove_ephemeral_hidden_service(response.service_id))
       self.assertEqual([], controller.list_ephemeral_hidden_services())
+
+  @require_controller
+  @require_version(Requirement.ADD_ONION_BASIC_AUTH)
+  def test_with_ephemeral_hidden_services_basic_auth_without_credentials(self):
+    """
+    Exercises creating ephemeral hidden services when attempting to use basic
+    auth but not including any credentials.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      try:
+        response = controller.create_ephemeral_hidden_service(4567, basic_auth = {})
+        self.fail('ADD_ONION should fail when using basic auth without any clients')
+      except stem.ProtocolError as exc:
+        self.assertEqual("ADD_ONION response didn't have an OK status: No auth clients specified", str(exc))
 
   @require_controller
   @require_version(Requirement.ADD_ONION)
