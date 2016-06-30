@@ -704,7 +704,7 @@ class TestController(unittest.TestCase):
 
     with runner.get_tor_controller() as controller:
       try:
-        response = controller.create_ephemeral_hidden_service(4567, basic_auth = {})
+        controller.create_ephemeral_hidden_service(4567, basic_auth = {})
         self.fail('ADD_ONION should fail when using basic auth without any clients')
       except stem.ProtocolError as exc:
         self.assertEqual("ADD_ONION response didn't have an OK status: No auth clients specified", str(exc))
