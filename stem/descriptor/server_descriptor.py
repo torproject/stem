@@ -95,6 +95,7 @@ SINGLE_FIELDS = (
   'hidden-service-dir',
   'protocols',
   'allow-single-hop-exits',
+  'tunnelled-dir-server',
   'onion-key-crosscert',
   'ntor-onion-key',
   'ntor-onion-key-crosscert',
@@ -392,6 +393,7 @@ _parse_read_history_line = functools.partial(_parse_history_line, 'read-history'
 _parse_write_history_line = functools.partial(_parse_history_line, 'write-history', 'write_history_end', 'write_history_interval', 'write_history_values')
 _parse_ipv6_policy_line = _parse_simple_line('ipv6-policy', 'exit_policy_v6', func = lambda v: stem.exit_policy.MicroExitPolicy(v))
 _parse_allow_single_hop_exits_line = _parse_if_present('allow-single-hop-exits', 'allow_single_hop_exits')
+_parse_tunneled_dir_server_line = _parse_if_present('tunnelled-dir-server', 'allow_tunneled_dir_requests')
 _parse_caches_extra_info_line = _parse_if_present('caches-extra-info', 'extra_info_cache')
 _parse_family_line = _parse_simple_line('family', 'family', func = lambda v: set(v.split(' ')))
 _parse_eventdns_line = _parse_simple_line('eventdns', 'eventdns', func = lambda v: v == '1')
@@ -436,6 +438,8 @@ class ServerDescriptor(Descriptor):
   :var list circuit_protocols: circuit protocols supported by the relay
   :var bool hibernating: **\*** hibernating when published
   :var bool allow_single_hop_exits: **\*** flag if single hop exiting is allowed
+  :var bool allow_tunneled_dir_requests: **\*** flag if tunneled directory
+    requests are accepted
   :var bool extra_info_cache: **\*** flag if a mirror for extra-info documents
   :var str extra_info_digest: upper-case hex encoded digest of our extra-info document
   :var bool eventdns: flag for evdns backend (**deprecated**, always unset)
@@ -456,6 +460,9 @@ class ServerDescriptor(Descriptor):
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
+
+  .. versionchanged:: 1.5.0
+     Added the allow_tunneled_dir_requests attribute.
   """
 
   ATTRIBUTES = {
@@ -485,6 +492,7 @@ class ServerDescriptor(Descriptor):
     'circuit_protocols': (None, _parse_protocols_line),
     'hibernating': (False, _parse_hibernating_line),
     'allow_single_hop_exits': (False, _parse_allow_single_hop_exits_line),
+    'allow_tunneled_dir_requests': (False, _parse_tunneled_dir_server_line),
     'extra_info_cache': (False, _parse_caches_extra_info_line),
     'extra_info_digest': (None, _parse_extrainfo_digest_line),
     'hidden_service_dir': (None, _parse_hidden_service_dir_line),
@@ -519,6 +527,7 @@ class ServerDescriptor(Descriptor):
     'write-history': _parse_write_history_line,
     'ipv6-policy': _parse_ipv6_policy_line,
     'allow-single-hop-exits': _parse_allow_single_hop_exits_line,
+    'tunnelled-dir-server': _parse_tunneled_dir_server_line,
     'caches-extra-info': _parse_caches_extra_info_line,
     'family': _parse_family_line,
     'eventdns': _parse_eventdns_line,

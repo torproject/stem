@@ -66,14 +66,15 @@ The following are only available within Stem's `git repository
   * `Shorthand functions for stem.descriptor.remote <api/descriptor/remote.html#stem.descriptor.remote.get_instance>`_
   * Added `fallback directory information <api/descriptor/remote.html#stem.descriptor.remote.FallbackDirectory>`_.
   * Support for ed25519 descriptor fields (:spec:`5a79d67`)
+  * Added server descriptor's new allow_tunneled_dir_requests attribute (:spec:`8bc30d6`)
   * Server descriptor validation fails with 'extra-info-digest line had an invalid value' from additions in proposal 228 (:trac:`16227`)
   * :class:`~stem.descriptor.server_descriptor.BridgeDescriptor` now has 'ntor_onion_key' like its unsanitized counterparts
   * Replaced the :class:`~stem.descriptor.microdescriptor.Microdescriptor` identifier and identifier_type attributes with an identifiers hash since it can now appear multiple times (:spec:`09ff9e2`)
   * Unable to read descriptors from data directories on Windows due to their CRLF newlines (:trac:`17051`)
   * TypeError under python3 when using 'use_mirrors = True' (:trac:`17083`)
   * Deprecated hidden service descriptor's *introduction_points_auth* field, which was never implemented in tor (:trac:`15190`, :spec:`9c218f9`)
-  * :func:`~stem.control.Controller.get_hidden_service_descriptor` errored when provided a *servers* argument (:trac:`18401`)
   * Deprecated :func:`~stem.descriptor.remote.DescriptorDownloader.get_microdescriptors` as it was never implemented in tor (:trac:`9271`)
+  * :func:`~stem.control.Controller.get_hidden_service_descriptor` errored when provided a *servers* argument (:trac:`18401`)
   * Fixed parsing of server descriptor's *allow-single-hop-exits* and *caches-extra-info* lines
   * Bracketed IPv6 addresses were mistreated as being invalid content
   * Better validation for non-ascii descriptor content
