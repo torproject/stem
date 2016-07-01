@@ -70,6 +70,7 @@ from __future__ import absolute_import
 import socket
 import zlib
 
+import stem
 import stem.prereq
 import stem.util.connection
 import stem.util.enum
@@ -519,10 +520,7 @@ class ExitPolicy(object):
     return self._hash
 
   def __eq__(self, other):
-    if isinstance(other, ExitPolicy):
-      return self._get_rules() == list(other)
-    else:
-      return False
+    return hash(self) == hash(other) if isinstance(other, ExitPolicy) else False
 
   def __ne__(self, other):
     return not self == other
@@ -605,10 +603,7 @@ class MicroExitPolicy(ExitPolicy):
     return hash(str(self))
 
   def __eq__(self, other):
-    if isinstance(other, MicroExitPolicy):
-      return str(self) == str(other)
-    else:
-      return False
+    return hash(self) == hash(other) if isinstance(other, MicroExitPolicy) else False
 
   def __ne__(self, other):
     return not self == other
@@ -903,25 +898,6 @@ class ExitPolicyRule(object):
 
     return label
 
-  def __hash__(self):
-    if self._hash is None:
-      my_hash = 0
-
-      for attr in ('is_accept', 'address', 'min_port', 'max_port'):
-        my_hash *= 1024
-
-        attr_value = getattr(self, attr)
-
-        if attr_value is not None:
-          my_hash += hash(attr_value)
-
-      my_hash *= 1024
-      my_hash += hash(self.get_mask(False))
-
-      self._hash = my_hash
-
-    return self._hash
-
   @lru_cache()
   def _get_mask_bin(self):
     # provides an integer representation of our mask
@@ -1036,16 +1012,14 @@ class ExitPolicyRule(object):
     else:
       raise ValueError("Port value isn't a wildcard, integer, or range: %s" % rule)
 
-  def __eq__(self, other):
-    if isinstance(other, ExitPolicyRule):
-      # Our string representation encompasses our effective policy. Technically
-      # this isn't quite right since our rule attribute may differ (ie, 'accept
-      # 0.0.0.0/0' == 'accept 0.0.0.0/0.0.0.0' will be True), but these
-      # policies are effectively equivalent.
+  def __hash__(self):
+    if self._hash is None:
+      self._hash = stem._hash_attr(self, 'is_accept', 'address', 'min_port', 'max_port') * 1024 + hash(self.get_mask(False))
 
-      return hash(self) == hash(other)
-    else:
-      return False
+    return self._hash
+
+  def __eq__(self, other):
+    return hash(self) == hash(other) if isinstance(other, ExitPolicyRule) else False
 
   def __ne__(self, other):
     return not self == other
@@ -1086,19 +1060,15 @@ class MicroExitPolicyRule(ExitPolicyRule):
 
   def __hash__(self):
     if self._hash is None:
-      my_hash = 0
-
-      for attr in ('is_accept', 'min_port', 'max_port'):
-        my_hash *= 1024
-
-        attr_value = getattr(self, attr)
-
-        if attr_value is not None:
-          my_hash += hash(attr_value)
-
-      self._hash = my_hash
+      self._hash = stem._hash_attr(self, 'is_accept', 'min_port', 'max_port')
 
     return self._hash
+
+  def __eq__(self, other):
+    return hash(self) == hash(other) if isinstance(other, MicroExitPolicyRule) else False
+
+  def __ne__(self, other):
+    return not self == other
 
 
 DEFAULT_POLICY_RULES = tuple([ExitPolicyRule(rule) for rule in (

@@ -52,6 +52,7 @@ import shutil
 import sys
 import tempfile
 
+import stem
 import stem.prereq
 import stem.util.conf
 import stem.util.enum
@@ -110,15 +111,11 @@ class ConfigOption(object):
     self.summary = summary
     self.description = description
 
+  def __hash__(self):
+    return stem._hash_attr(self, 'name', 'category', 'usage', 'summary', 'description')
+
   def __eq__(self, other):
-    if not isinstance(other, ConfigOption):
-      return False
-
-    for attr in ('name', 'category', 'usage', 'summary', 'description'):
-      if getattr(self, attr) != getattr(other, attr):
-        return False
-
-    return True
+    return hash(self) == hash(other) if isinstance(other, ConfigOption) else False
 
   def __ne__(self, other):
     return not self == other
@@ -470,15 +467,11 @@ class Manual(object):
 
     conf.save(path)
 
+  def __hash__(self):
+    return stem._hash_attr(self, 'name', 'synopsis', 'description', 'commandline_options', 'signals', 'files', 'config_options')
+
   def __eq__(self, other):
-    if not isinstance(other, Manual):
-      return False
-
-    for attr in ('name', 'synopsis', 'description', 'commandline_options', 'signals', 'files', 'config_options'):
-      if getattr(self, attr) != getattr(other, attr):
-        return False
-
-    return True
+    return hash(self) == hash(other) if isinstance(other, Manual) else False
 
   def __ne__(self, other):
     return not self == other

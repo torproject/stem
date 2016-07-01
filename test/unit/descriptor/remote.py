@@ -167,6 +167,10 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(list(query)))
     self.assertEqual(1, len(list(query)))
 
+  def test_using_authorities_in_hash(self):
+    # ensure our DirectoryAuthority instances can be used in hashes
+    {stem.descriptor.remote.get_authorities()['moria1']: 'hello'}
+
   def test_fallback_directories_from_cache(self):
     # quick sanity test that we can load cached content
     fallback_directories = stem.descriptor.remote.FallbackDirectory.from_cache()

@@ -477,6 +477,9 @@ class RouterStatusEntry(Descriptor):
 
     return method(str(self).strip(), str(other).strip())
 
+  def __hash__(self):
+    return hash(str(self).strip())
+
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 
@@ -519,6 +522,9 @@ class RouterStatusEntryV2(RouterStatusEntry):
       return False
 
     return method(str(self).strip(), str(other).strip())
+
+  def __hash__(self):
+    return hash(str(self).strip())
 
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
@@ -604,6 +610,9 @@ class RouterStatusEntryV3(RouterStatusEntry):
 
     return method(str(self).strip(), str(other).strip())
 
+  def __hash__(self):
+    return hash(str(self).strip())
+
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 
@@ -663,6 +672,9 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
       return False
 
     return method(str(self).strip(), str(other).strip())
+
+  def __hash__(self):
+    return hash(str(self).strip())
 
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)

@@ -413,6 +413,9 @@ class CircuitEvent(Event):
 
     return True
 
+  def __hash__(self):
+    return hash(str(self).strip())
+
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 

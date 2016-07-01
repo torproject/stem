@@ -72,6 +72,7 @@ easily parsed and compared, for instance...
 import os
 import re
 
+import stem
 import stem.util.enum
 import stem.util.system
 
@@ -232,6 +233,12 @@ class Version(object):
 
     return method(my_status, other_status)
 
+  def __hash__(self):
+    if self._hash is None:
+      self._hash = stem._hash_attr(self, 'major', 'minor', 'micro', 'patch', 'status')
+
+    return self._hash
+
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
 
@@ -263,22 +270,6 @@ class Version(object):
       return False
 
     return self._compare(other, lambda s, o: s >= o)
-
-  def __hash__(self):
-    if self._hash is None:
-      my_hash = 0
-
-      for attr in ('major', 'minor', 'micro', 'patch', 'status'):
-        my_hash *= 1024
-
-        attr_value = getattr(self, attr)
-
-        if attr_value is not None:
-          my_hash += hash(attr_value)
-
-      self._hash = my_hash
-
-    return self._hash
 
 
 class _VersionRequirements(object):

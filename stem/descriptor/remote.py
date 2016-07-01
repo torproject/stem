@@ -91,6 +91,8 @@ import threading
 import time
 import zlib
 
+import stem
+
 try:
   # account for urllib's change between python 2.x and 3.x
   import urllib.request as urllib
@@ -716,15 +718,14 @@ class Directory(object):
     self.dir_port = dir_port
     self.fingerprint = fingerprint
 
+  def __hash__(self):
+    return stem._hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint')
+
   def __eq__(self, other):
-    if not isinstance(other, Directory):
-      return False
+    return hash(self) == hash(other) if isinstance(other, Directory) else False
 
-    for attr in ('address', 'or_port', 'dir_port', 'fingerprint'):
-      if getattr(self, attr) != getattr(other, attr):
-        return False
-
-    return True
+  def __ne__(self, other):
+    return not self == other
 
 
 class DirectoryAuthority(Directory):
@@ -770,17 +771,14 @@ class DirectoryAuthority(Directory):
     self.v3ident = v3ident
     self.is_bandwidth_authority = is_bandwidth_authority
 
+  def __hash__(self):
+    return stem._hash_attr(self, 'nickname', 'v3ident', 'is_bandwidth_authority', parent = Directory)
+
   def __eq__(self, other):
-    if not isinstance(other, DirectoryAuthority):
-      return False
-    elif not super(DirectoryAuthority, self).__eq__(other):
-      return False
+    return hash(self) == hash(other) if isinstance(other, DirectoryAuthority) else False
 
-    for attr in ('nickname', 'v3ident', 'is_bandwidth_authority'):
-      if getattr(self, attr) != getattr(other, attr):
-        return False
-
-    return True
+  def __ne__(self, other):
+    return not self == other
 
 
 DIRECTORY_AUTHORITIES = {
@@ -1067,15 +1065,14 @@ class FallbackDirectory(Directory):
 
     return results
 
-  def __eq__(self, other):
-    if not isinstance(other, FallbackDirectory):
-      return False
-    elif not super(FallbackDirectory, self).__eq__(other):
-      return False
-    elif self.orport_v6 != other.orport_v6:
-      return False
+  def __hash__(self):
+    return stem._hash_attr(self, 'orport_v6', parent = Directory)
 
-    return True
+  def __eq__(self, other):
+    return hash(self) == hash(other) if isinstance(other, FallbackDirectory) else False
+
+  def __ne__(self, other):
+    return not self == other
 
 
 def _fallback_directory_differences(previous_directories, new_directories):
