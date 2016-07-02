@@ -91,7 +91,7 @@ import stem.descriptor
 import stem.prereq
 import stem.util.system
 
-from stem import str_type
+from stem.util import str_type
 
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = 'DONE'

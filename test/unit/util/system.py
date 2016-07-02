@@ -12,8 +12,7 @@ import posixpath
 import tempfile
 import unittest
 
-from stem import str_type
-from stem.util import system
+from stem.util import str_type, system
 
 try:
   # added in python 3.3

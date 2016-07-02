@@ -40,7 +40,7 @@ constructed as simple type listings...
     +- __iter__ - iterator over our enum keys
 """
 
-from stem import str_type
+from stem.util import str_type
 
 
 def UppercaseEnum(*args):

@@ -17,8 +17,7 @@ import stem.descriptor.reader
 import test.runner
 import test.unit.descriptor
 
-from stem import str_type
-from stem.util import system
+from stem.util import str_type, system
 
 try:
   # added in python 3.3

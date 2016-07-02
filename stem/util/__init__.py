@@ -24,6 +24,13 @@ __all__ = [
   'datetime_to_unix',
 ]
 
+if stem.prereq.is_python_3():
+  str_type = str
+  int_type = int
+else:
+  str_type = unicode
+  int_type = long
+
 
 def datetime_to_unix(timestamp):
   """

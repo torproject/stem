@@ -75,8 +75,7 @@ import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
 
-from stem import str_type
-from stem.util import _hash_attr
+from stem.util import _hash_attr, str_type
 
 try:
   # added in python 3.2

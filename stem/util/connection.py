@@ -53,8 +53,7 @@ import re
 import stem.util.proc
 import stem.util.system
 
-from stem import str_type
-from stem.util import conf, enum, log
+from stem.util import str_type, conf, enum, log
 
 # Connection resolution is risky to log about since it's highly likely to
 # contain sensitive information. That said, it's also difficult to get right in

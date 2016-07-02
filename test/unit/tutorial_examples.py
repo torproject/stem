@@ -17,8 +17,8 @@ import stem.prereq
 
 import test.runner
 
-from stem import str_type
 from stem.control import Controller
+from stem.util import str_type
 from stem.descriptor.remote import DIRECTORY_AUTHORITIES
 
 from test import mocking

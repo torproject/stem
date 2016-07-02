@@ -29,7 +29,7 @@ import sys
 import stem.prereq
 import stem.util.enum
 
-from stem import str_type
+from stem.util import str_type
 
 # label conversion tuples of the form...
 # (bits / bytes / seconds, short label, long label)

@@ -274,8 +274,8 @@ import stem.util.system
 import stem.util.tor_tools
 import stem.version
 
-from stem import UNDEFINED, CircStatus, Signal, str_type
-from stem.util import log
+from stem import UNDEFINED, CircStatus, Signal
+from stem.util import str_type, log
 
 # state changes a control socket can have
 

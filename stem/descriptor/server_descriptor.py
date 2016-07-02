@@ -43,7 +43,7 @@ import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
 
-from stem import str_type
+from stem.util import str_type
 
 from stem.descriptor import (
   PGP_BLOCK_END,
