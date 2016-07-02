@@ -70,13 +70,13 @@ from __future__ import absolute_import
 import socket
 import zlib
 
-import stem
 import stem.prereq
 import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
 
 from stem import str_type
+from stem.util import _hash_attr
 
 try:
   # added in python 3.2
@@ -1014,7 +1014,7 @@ class ExitPolicyRule(object):
 
   def __hash__(self):
     if self._hash is None:
-      self._hash = stem._hash_attr(self, 'is_accept', 'address', 'min_port', 'max_port') * 1024 + hash(self.get_mask(False))
+      self._hash = _hash_attr(self, 'is_accept', 'address', 'min_port', 'max_port') * 1024 + hash(self.get_mask(False))
 
     return self._hash
 
@@ -1060,7 +1060,7 @@ class MicroExitPolicyRule(ExitPolicyRule):
 
   def __hash__(self):
     if self._hash is None:
-      self._hash = stem._hash_attr(self, 'is_accept', 'min_port', 'max_port')
+      self._hash = _hash_attr(self, 'is_accept', 'min_port', 'max_port')
 
     return self._hash
 

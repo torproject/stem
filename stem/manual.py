@@ -52,12 +52,13 @@ import shutil
 import sys
 import tempfile
 
-import stem
 import stem.prereq
 import stem.util.conf
 import stem.util.enum
 import stem.util.log
 import stem.util.system
+
+from stem.util import _hash_attr
 
 try:
   # added in python 2.7
@@ -112,7 +113,7 @@ class ConfigOption(object):
     self.description = description
 
   def __hash__(self):
-    return stem._hash_attr(self, 'name', 'category', 'usage', 'summary', 'description')
+    return _hash_attr(self, 'name', 'category', 'usage', 'summary', 'description')
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, ConfigOption) else False
@@ -468,7 +469,7 @@ class Manual(object):
     conf.save(path)
 
   def __hash__(self):
-    return stem._hash_attr(self, 'name', 'synopsis', 'description', 'commandline_options', 'signals', 'files', 'config_options')
+    return _hash_attr(self, 'name', 'synopsis', 'description', 'commandline_options', 'signals', 'files', 'config_options')
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Manual) else False

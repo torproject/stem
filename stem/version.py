@@ -72,9 +72,10 @@ easily parsed and compared, for instance...
 import os
 import re
 
-import stem
 import stem.util.enum
 import stem.util.system
+
+from stem.util import _hash_attr
 
 try:
   # added in python 3.2
@@ -235,7 +236,7 @@ class Version(object):
 
   def __hash__(self):
     if self._hash is None:
-      self._hash = stem._hash_attr(self, 'major', 'minor', 'micro', 'patch', 'status')
+      self._hash = _hash_attr(self, 'major', 'minor', 'micro', 'patch', 'status')
 
     return self._hash
 

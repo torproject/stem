@@ -91,8 +91,6 @@ import threading
 import time
 import zlib
 
-import stem
-
 try:
   # account for urllib's change between python 2.x and 3.x
   import urllib.request as urllib
@@ -102,7 +100,7 @@ except ImportError:
 import stem.descriptor
 
 from stem import Flag
-from stem.util import connection, log, str_tools, tor_tools
+from stem.util import _hash_attr, connection, log, str_tools, tor_tools
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -719,7 +717,7 @@ class Directory(object):
     self.fingerprint = fingerprint
 
   def __hash__(self):
-    return stem._hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint')
+    return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint')
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Directory) else False
@@ -772,7 +770,7 @@ class DirectoryAuthority(Directory):
     self.is_bandwidth_authority = is_bandwidth_authority
 
   def __hash__(self):
-    return stem._hash_attr(self, 'nickname', 'v3ident', 'is_bandwidth_authority', parent = Directory)
+    return _hash_attr(self, 'nickname', 'v3ident', 'is_bandwidth_authority', parent = Directory)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, DirectoryAuthority) else False
@@ -1066,7 +1064,7 @@ class FallbackDirectory(Directory):
     return results
 
   def __hash__(self):
-    return stem._hash_attr(self, 'orport_v6', parent = Directory)
+    return _hash_attr(self, 'orport_v6', parent = Directory)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, FallbackDirectory) else False

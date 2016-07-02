@@ -40,3 +40,29 @@ def datetime_to_unix(timestamp):
     return int(timestamp.strftime('%s')) - int(datetime.datetime(1970, 1, 1).strftime('%s')) + 3600
   else:
     return (timestamp - datetime.datetime(1970, 1, 1)).total_seconds()
+
+
+def _hash_attr(obj, *attributes, **kwargs):
+  """
+  Provide a hash value for the given set of attributes.
+
+  :param Object obj: object to be hashed
+  :param list attributes: attribute names to take into account
+  :param class parent: parent object to include in the hash value
+  """
+
+  my_hash = 0 if kwargs.get('parent') == None else kwargs.get('parent').__hash__(obj)
+
+  for attr in attributes:
+    my_hash *= 1024
+
+    attr_value = getattr(obj, attr)
+
+    if attr_value is not None:
+      if isinstance(attr_value, dict):
+        for k, v in attr_value.items():
+          my_hash = (my_hash + hash(k)) * 1024 + hash(v)
+      else:
+        my_hash += hash(attr_value)
+
+  return my_hash
