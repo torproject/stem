@@ -834,15 +834,6 @@ DIRECTORY_AUTHORITIES = {
     fingerprint = '7BE683E65D48141321C5ED92F075C55364AC7123',
     v3ident = '0232AF901C31A04EE9848595AF9BB7620D4C5B2E',
   ),
-  'urras': DirectoryAuthority(
-    nickname = 'urras',
-    address = '208.83.223.34',
-    or_port = 80,
-    dir_port = 443,
-    is_bandwidth_authority = False,
-    fingerprint = '0AD3FA884D18F89EEA2D89C019379E0E7FD94417',
-    v3ident = '80550987E1D626E3EBA5E5E75A458DE0626D088C',
-  ),
   'maatuska': DirectoryAuthority(
     nickname = 'maatuska',
     address = '171.25.193.9',

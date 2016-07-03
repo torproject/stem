@@ -79,6 +79,7 @@ The following are only available within Stem's `git repository
   * Bracketed IPv6 addresses were mistreated as being invalid content
   * Better validation for non-ascii descriptor content
   * Updated dannenberg's v3ident (:trac:`17906`)
+  * Removed urras as a directory authority (:trac:`19271`)
 
  * **Utilities**
 
