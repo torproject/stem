@@ -70,6 +70,7 @@ from stem.descriptor import (
   _read_until_keywords,
   _value,
   _parse_simple_line,
+  _parse_if_present,
   _parse_timestamp_line,
   _parse_forty_character_hex,
   _parse_key_block,
@@ -118,6 +119,10 @@ HEADER_STATUS_DOCUMENT_FIELDS = (
   ('package', True, True, False),
   ('known-flags', True, True, True),
   ('flag-thresholds', True, False, False),
+  ('shared-rand-participate', True, False, False),
+  ('shared-rand-commit', True, False, False),
+  ('shared-rand-previous-value', True, True, False),
+  ('shared-rand-current-value', True, True, False),
   ('params', True, True, False),
 )
 
@@ -196,6 +201,7 @@ PARAM_RANGE = {
   'GuardLifetime': (2592000, 157766400),  # min: 30 days, max: 1826 days
   'NumNTorsPerTAP': (1, 100000),
   'AllowNonearlyExtend': (0, 1),
+  'AuthDirNumSRVAgreements': (1, MAX_PARAM),
 }
 
 
@@ -207,6 +213,19 @@ class PackageVersion(collections.namedtuple('PackageVersion', ['name', 'version'
   :var str version: latest recommended version
   :var str url: package's url
   :var dict digests: mapping of digest types to their value
+  """
+
+
+class SharedRandomnessCommitment(collections.namedtuple('SharedRandomnessCommitment', ['version', 'algorithm', 'identity', 'commit', 'reveal'])):
+  """
+  Directory authority's commitment for generating the next shared random value.
+
+  :var int version: shared randomness protocol version
+  :var str algorithm: hash algorithm used to make the commitment
+  :var str identity: authority's sha1 identity fingerprint
+  :var str commit: base64 encoded commitment hash to the shared random value
+  :var str reveal: base64 encoded commitment to the shared random value,
+    **None** of not provided
   """
 
 
@@ -681,6 +700,54 @@ def _parse_package_line(descriptor, entries):
   descriptor.packages = package_versions
 
 
+def _parsed_shared_rand_commit(descriptor, entries):
+  # "shared-rand-commit" Version AlgName Identity Commit [Reveal]
+
+  commitments = []
+
+  for value, _, _ in entries['shared-rand-commit']:
+    value_comp = value.split()
+
+    if len(value_comp) < 4:
+      raise ValueError("'shared-rand-commit' must at least have a 'Version AlgName Identity Commit': %s" % value)
+
+    version, algorithm, identity, commit = value_comp[:4]
+    reveal = value_comp[4] if len(value_comp) >= 5 else None
+
+    if not version.isdigit():
+      raise ValueError("The version on our 'shared-rand-commit' line wasn't an integer: %s" % value)
+
+    commitments.append(SharedRandomnessCommitment(int(version), algorithm, identity, commit, reveal))
+
+  descriptor.shared_randomness_commitments = commitments
+
+
+def _parse_shared_rand_previous_value(descriptor, entries):
+  # "shared-rand-previous-value" NumReveals Value
+
+  value = _value('shared-rand-previous-value', entries)
+  value_comp = value.split(' ')
+
+  if len(value_comp) == 2 and value_comp[0].isdigit():
+    descriptor.shared_randomness_previous_reveal_count = int(value_comp[0])
+    descriptor.shared_randomness_previous_value = value_comp[1]
+  else:
+    raise ValueError("A network status document's 'shared-rand-previous-value' line must be a pair of values, the first an integer but was '%s'" % value)
+
+
+def _parse_shared_rand_current_value(descriptor, entries):
+  # "shared-rand-current-value" NumReveals Value
+
+  value = _value('shared-rand-current-value', entries)
+  value_comp = value.split(' ')
+
+  if len(value_comp) == 2 and value_comp[0].isdigit():
+    descriptor.shared_randomness_current_reveal_count = int(value_comp[0])
+    descriptor.shared_randomness_current_value = value_comp[1]
+  else:
+    raise ValueError("A network status document's 'shared-rand-current-value' line must be a pair of values, the first an integer but was '%s'" % value)
+
+
 _parse_header_valid_after_line = _parse_timestamp_line('valid-after', 'valid_after')
 _parse_header_fresh_until_line = _parse_timestamp_line('fresh-until', 'fresh_until')
 _parse_header_valid_until_line = _parse_timestamp_line('valid-until', 'valid_until')
@@ -688,6 +755,7 @@ _parse_header_client_versions_line = _parse_versions_line('client-versions', 'cl
 _parse_header_server_versions_line = _parse_versions_line('server-versions', 'server_versions')
 _parse_header_known_flags_line = _parse_simple_line('known-flags', 'known_flags', func = lambda v: [entry for entry in v.split(' ') if entry])
 _parse_footer_bandwidth_weights_line = _parse_simple_line('bandwidth-weights', 'bandwidth_weights', func = lambda v: _parse_int_mappings('bandwidth-weights', v, True))
+_parse_shared_rand_participate_line = _parse_if_present('shared-rand-participate', 'is_shared_randomness_participate')
 
 
 class NetworkStatusDocumentV3(NetworkStatusDocument):
@@ -731,11 +799,31 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var datetime published: time when the document was published
   :var dict flag_thresholds: **\*** mapping of internal performance thresholds used while making the vote, values are **ints** or **floats**
 
+  :var bool is_shared_randomness_participate: **\*** **True** if this authority
+    participates in establishing a shared random value, **False** otherwise
+  :var list shared_randomness_commitments: **\*** list of
+    :data:`~stem.descriptor.networkstatus.SharedRandomnessCommitment` entries
+  :var int shared_randomness_previous_reveal_count: number of commitments
+    used to generate the last shared random value
+  :var str shared_randomness_previous_value: base64 encoded last shared random
+    value
+  :var int shared_randomness_current_reveal_count: number of commitments
+    used to generate the current shared random value
+  :var str shared_randomness_current_value: base64 encoded current shared
+    random value
+
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
 
   .. versionchanged:: 1.4.0
      Added the packages attribute.
+
+  .. versionchanged:: 1.5.0
+     Added the is_shared_randomness_participate, shared_randomness_commitments,
+     shared_randomness_previous_reveal_count,
+     shared_randomness_previous_value,
+     shared_randomness_current_reveal_count, and
+     shared_randomness_current_value attributes.
   """
 
   ATTRIBUTES = {
@@ -757,6 +845,12 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'packages': ([], _parse_package_line),
     'known_flags': ([], _parse_header_known_flags_line),
     'flag_thresholds': ({}, _parse_header_flag_thresholds_line),
+    'is_shared_randomness_participate': (False, _parse_shared_rand_participate_line),
+    'shared_randomness_commitments': ([], _parsed_shared_rand_commit),
+    'shared_randomness_previous_reveal_count': (None, _parse_shared_rand_previous_value),
+    'shared_randomness_previous_value': (None, _parse_shared_rand_previous_value),
+    'shared_randomness_current_reveal_count': (None, _parse_shared_rand_current_value),
+    'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
     'params': ({}, _parse_header_parameters_line),
 
     'signatures': ([], _parse_footer_directory_signature_line),
@@ -778,6 +872,10 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'package': _parse_package_line,
     'known-flags': _parse_header_known_flags_line,
     'flag-thresholds': _parse_header_flag_thresholds_line,
+    'shared-rand-participate': _parse_shared_rand_participate_line,
+    'shared-rand-commit': _parsed_shared_rand_commit,
+    'shared-rand-previous-value': _parse_shared_rand_previous_value,
+    'shared-rand-current-value': _parse_shared_rand_current_value,
     'params': _parse_header_parameters_line,
   }
 
@@ -869,7 +967,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       # all known header fields can only appear once except
 
       for keyword, values in list(entries.items()):
-        if len(values) > 1 and keyword in HEADER_FIELDS and keyword != 'package':
+        if len(values) > 1 and keyword in HEADER_FIELDS and keyword != 'package' and keyword != 'shared-rand-commit':
           raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
 
       if self._default_params:
@@ -1016,7 +1114,7 @@ def _check_for_misordered_fields(entries, expected):
   if actual != expected:
     actual_label = ', '.join(actual)
     expected_label = ', '.join(expected)
-    raise ValueError("The fields in a section of the document are misordered. It should be '%s' but was '%s'" % (actual_label, expected_label))
+    raise ValueError("The fields in a section of the document are misordered. It should be '%s' but was '%s'" % (expected_label, actual_label))
 
 
 def _parse_int_mappings(keyword, value, validate):

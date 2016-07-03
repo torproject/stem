@@ -60,6 +60,12 @@ try:
 except ImportError:
   from mock import Mock, patch
 
+try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
 CRYPTO_BLOB = """
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
 skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
@@ -321,7 +327,7 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
   if attr is None:
     attr = {}
 
-  attr = dict(attr)  # shallow copy since we're destructive
+  attr = OrderedDict(attr)  # shallow copy since we're destructive
 
   for content, template in ((header_content, header_template),
                             (footer_content, footer_template)):
