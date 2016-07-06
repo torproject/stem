@@ -388,7 +388,7 @@ class CircuitEvent(Event):
     if not isinstance(other, CircuitEvent):
       return False
 
-    for attr in ('id', 'status', 'path', 'build_flags', 'purpose', 'hs_state', 'rend_query', 'created', 'reason', 'remote_reason', 'socks_username', 'socks_port'):
+    for attr in ('id', 'status', 'path', 'build_flags', 'purpose', 'hs_state', 'rend_query', 'created', 'reason', 'remote_reason', 'socks_username', 'socks_password'):
       my_attr = getattr(self, attr)
       other_attr = getattr(other, attr)
 
