@@ -65,7 +65,7 @@ Applications
 `check_tor <http://anonscm.debian.org/gitweb/?p=users/lunar/check_tor.git;a=blob;f=check_tor.py;hb=HEAD>`_  Nagios check to verify that a relay is participating in the Tor network.
 `munin-tor <https://github.com/mweinelt/munin-tor>`_                                                        Plugin to provide Munin graphs.
 `tbbscraper <https://github.com/zackw/tbbscraper/blob/master/collector/lib/controller/controller.py>`_      Automated website scraper over Tor.
-`torirc <https://github.com/alfred-gw/torirc>`_                                                             IRC-like chat client using Tor hidden services.
+`torIRC <https://gist.github.com/torifier/f1a7c1ac7b6b003cd9e1c187df2c5347>`_                               IRC-like chat client using Tor hidden services.
 `exit-funding <https://github.com/torservers/exit-funding>`_                                                Script to estimate how much exit relays have been used.
 `torsearch <https://github.com/wfn/torsearch>`_                                                             Search engine prototype for descriptor data.
 `or-applet <https://github.com/Yawning/or-applet>`_                                                         GUI widget to provide circuit information and an interactive interpreter.
