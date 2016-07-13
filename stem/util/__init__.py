@@ -58,7 +58,7 @@ def _hash_attr(obj, *attributes, **kwargs):
   :param class parent: parent object to include in the hash value
   """
 
-  my_hash = 0 if kwargs.get('parent') == None else kwargs.get('parent').__hash__(obj)
+  my_hash = 0 if kwargs.get('parent') is None else kwargs.get('parent').__hash__(obj)
 
   for attr in attributes:
     my_hash *= 1024

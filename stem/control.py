@@ -1314,6 +1314,9 @@ class Controller(BaseController):
 
     .. versionadded:: 1.2.0
 
+    .. versionchanged:: 1.5.0
+       Recognize listeners with IPv6 addresses.
+
     :param stem.control.Listener listener_type: connection type being handled
       by the listeners we return
     :param object default: response if the query fails
@@ -1347,6 +1350,9 @@ class Controller(BaseController):
         if addr == 'unix':
           continue
 
+        if addr.startswith('[') and addr.endswith(']'):
+          addr = addr[1:-1]  # unbracket ipv6 address
+
         proxy_addrs.append((addr, port))
     except stem.InvalidArguments:
       # Tor version is old (pre-tor-0.2.2.26-beta), use get_conf() instead.
@@ -1378,6 +1384,10 @@ class Controller(BaseController):
       for listener in self.get_conf(listener_option, multiple = True):
         if ':' in listener:
           addr, port = listener.rsplit(':', 1)
+
+          if addr.startswith('[') and addr.endswith(']'):
+            addr = addr[1:-1]  # unbracket ipv6 address
+
           proxy_addrs.append((addr, port))
         else:
           proxy_addrs.append((listener, port_value))
@@ -1385,7 +1395,7 @@ class Controller(BaseController):
     # validate that address/ports are valid, and convert ports to ints
 
     for addr, port in proxy_addrs:
-      if not stem.util.connection.is_valid_ipv4_address(addr):
+      if not stem.util.connection.is_valid_ipv4_address(addr) and not stem.util.connection.is_valid_ipv6_address(addr):
         raise stem.ProtocolError('Invalid address for a %s listener: %s' % (listener_type, addr))
       elif not stem.util.connection.is_valid_port(port):
         raise stem.ProtocolError('Invalid port for a %s listener: %s' % (listener_type, port))

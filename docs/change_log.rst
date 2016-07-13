@@ -56,6 +56,7 @@ The following are only available within Stem's `git repository
   * Added :func:`~stem.control.Controller.is_user_traffic_allowed` to the :class:`~stem.control.Controller`
   * Added the replica attribute to the :class:`~stem.response.events.HSDescEvent` (:spec:`4989e73`)
   * Added the NoEdConsensus :data:`~stem.Flag` (:spec:`dc99160`)
+  * Recognize listeners with IPv6 addresses in :func:`~stem.control.Controller.get_listeners`
   * :func:`~stem.process.launch_tor` could leave a lingering process during an unexpected exception (:trac:`17946`)
   * IPv6 addresses could trigger errors in :func:`~stem.control.Controller.get_listeners`, :class:`~stem.response.events.ORConnEvent`, and quite a few other things (:trac:`16174`)
   * Don't obscure stacktraces, most notably :class:`~stem.control.Controller` getter methods with default values

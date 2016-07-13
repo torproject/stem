@@ -180,6 +180,15 @@ class TestControl(unittest.TestCase):
 
     self.assertEqual([1112, 1114], self.controller.get_ports(Listener.CONTROL))
 
+    # IPv6 address
+
+    get_info_mock.return_value = '"0.0.0.0:9001" "[fe80:0000:0000:0000:0202:b3ff:fe1e:8329]:9001"'
+
+    self.assertEqual(
+      [('0.0.0.0', 9001), ('fe80:0000:0000:0000:0202:b3ff:fe1e:8329', 9001)],
+      self.controller.get_listeners(Listener.CONTROL)
+    )
+
     # unix socket file
 
     get_info_mock.return_value = '"unix:/tmp/tor/socket"'
