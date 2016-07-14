@@ -57,6 +57,8 @@ Applications
        research paper.
 
 =========================================================================================================== ==========
+`OnionLauncher <https://github.com/neelchauhan/OnionLauncher>`_                                             Qt interface for launching tor.
+`TorNova <https://github.com/neelchauhan/TorNova>`_                                                         GTK interface for launching tor.
 `BeagleBone for Secret Agents <https://github.com/jbdatko/beagle-bone-for-secret-agents>`_                  Bridge with a `bandwidth monitor <https://github.com/jbdatko/beagle-bone-for-secret-agents/blob/master/ch2/beaglebridge.py>`_ on a BeagleBoard.
 `NavigaTor <https://naviga-tor.github.io>`_                                                                 Measures round-trip times for Tor circuits.
 `TorPS <https://www.torproject.org/getinvolved/volunteer.html.en#project-torps>`_                           Tor path simulator.
