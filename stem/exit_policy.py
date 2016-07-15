@@ -765,7 +765,7 @@ class ExitPolicyRule(object):
       if address is None:
         fuzzy_match = True
       else:
-        comparison_addr_bin = int(stem.util.connection._get_address_binary(address), 2)
+        comparison_addr_bin = stem.util.connection.address_to_int(address)
         comparison_addr_bin &= self._get_mask_bin()
 
         if self._get_address_bin() != comparison_addr_bin:
@@ -907,7 +907,7 @@ class ExitPolicyRule(object):
   def _get_address_bin(self):
     # provides an integer representation of our address
 
-    return int(stem.util.connection._get_address_binary(self.address), 2) & self._get_mask_bin()
+    return stem.util.connection.address_to_int(self.address) & self._get_mask_bin()
 
   def _apply_addrspec(self, rule, addrspec, is_ipv6_only):
     # Parses the addrspec...

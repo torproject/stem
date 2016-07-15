@@ -17,6 +17,8 @@ Connection and networking based utility functions.
   is_valid_port - checks if something is a valid representation for a port
   is_private_address - checks if an IPv4 address belongs to a private range or not
 
+  address_to_int - provides an integer representation of an IP address
+
   expand_ipv6_address - provides an IPv6 address with its collapsed portions expanded
   get_mask_ipv4 - provides the mask representation for a given number of bits
   get_mask_ipv6 - provides the IPv6 mask representation for a given number of bits
@@ -521,6 +523,24 @@ def is_private_address(address):
       return True
 
   return False
+
+
+def address_to_int(address):
+  """
+  Provides an integer representation of a IPv4 or IPv6 address that can be used
+  for sorting.
+
+  .. versionadded:: 1.5.0
+
+  :param str address: IPv4 or IPv6 address
+
+  :returns: **int** representation of the address
+  """
+
+  # TODO: Could be neat to also use this for serialization if we also had an
+  # int_to_address() function.
+
+  return int(_get_address_binary(address), 2)
 
 
 def expand_ipv6_address(address):

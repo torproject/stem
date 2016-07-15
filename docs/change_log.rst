@@ -93,6 +93,7 @@ The following are only available within Stem's `git repository
   * Added **stem.util.system.SYSTEM_CALL_TIME** with the total time spent on system calls
   * Added an **is_ipv6** value to :class:`~stem.util.connection.Connection` instances
   * Added :func:`~stem.util.system.pids_by_user`
+  * Added :func:`~stem.util.connection.address_to_int`
   * Added :func:`~stem.util.__init__.datetime_to_unix`
 
  * **Interpreter**
