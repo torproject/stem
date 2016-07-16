@@ -503,7 +503,7 @@ class TestConnection(unittest.TestCase):
     self.assertEqual(2, stem.util.connection.address_to_int('0.0.0.2'))
     self.assertEqual(256, stem.util.connection.address_to_int('0.0.1.0'))
     self.assertEqual(2130706433, stem.util.connection.address_to_int('127.0.0.1'))
-    self.assertEqual(338288524927261089654163772891438416681L, stem.util.connection.address_to_int('fe80:0000:0000:0000:0202:b3ff:fe1e:8329'))
+    self.assertEqual(338288524927261089654163772891438416681, stem.util.connection.address_to_int('fe80:0000:0000:0000:0202:b3ff:fe1e:8329'))
 
   def test_expand_ipv6_address(self):
     """
