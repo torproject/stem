@@ -8,6 +8,7 @@ Utilities for working with the terminal.
 
 ::
 
+  encoding - provides the ANSI escape sequence for a terminal attribute
   format - wrap text with ANSI for the given colors or attributes
 
 .. data:: Color (enum)
@@ -65,6 +66,41 @@ CSI = '\x1B[%sm'
 RESET = CSI % '0'
 
 
+def encoding(*attrs):
+  """
+  Provides the ANSI escape sequence for these terminal color or attributes.
+
+  .. versionadded:: 1.5.0
+
+  :param list attr: :data:`~stem.util.terminal.Color`,
+    :data:`~stem.util.terminal.BgColor`, or :data:`~stem.util.terminal.Attr` to
+    provide an ecoding for
+
+  :return: **str** of the ANSI escape sequence, **None** no attributes are
+    recognized
+  """
+
+  term_encodings = []
+
+  for attr in attrs:
+    # TODO: Account for an earlier misspelled attribute. This should be dropped
+    # in Stem. 2.0.x.
+
+    if attr == 'HILIGHT':
+      attr = 'HIGHLIGHT'
+
+    attr = stem.util.str_tools._to_camel_case(attr)
+    term_encoding = FG_ENCODING.get(attr, None)
+    term_encoding = BG_ENCODING.get(attr, term_encoding)
+    term_encoding = ATTR_ENCODING.get(attr, term_encoding)
+
+    if term_encoding:
+      term_encodings.append(term_encoding)
+
+  if term_encodings:
+    return CSI % ';'.join(term_encodings)
+
+
 def format(msg, *attr):
   """
   Simple terminal text formatting using `ANSI escape sequences
@@ -93,26 +129,9 @@ def format(msg, *attr):
   if RESET in msg:
     return ''.join([format(comp, *attr) for comp in msg.split(RESET)])
 
-  encodings = []
+  prefix, suffix = encoding(*attr), RESET
 
-  for text_attr in attr:
-    # TODO: Account for an earlier misspelled attribute. This should be dropped
-    # in Stem. 2.0.x.
-
-    if text_attr == 'HILIGHT':
-      text_attr = 'HIGHLIGHT'
-
-    text_attr, encoding = stem.util.str_tools._to_camel_case(text_attr), None
-    encoding = FG_ENCODING.get(text_attr, encoding)
-    encoding = BG_ENCODING.get(text_attr, encoding)
-    encoding = ATTR_ENCODING.get(text_attr, encoding)
-
-    if encoding:
-      encodings.append(encoding)
-
-  if encodings:
-    prefix, suffix = CSI % ';'.join(encodings), RESET
-
+  if prefix:
     if Attr.READLINE_ESCAPE in attr:
       prefix = '\001%s\002' % prefix
       suffix = '\001%s\002' % suffix
