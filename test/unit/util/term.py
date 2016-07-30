@@ -27,4 +27,6 @@ class TestTerminal(unittest.TestCase):
     self.assertEqual('hi!', stem.util.term.format('hi!'))
     self.assertEqual('\x1b[31mhi!\x1b[0m', stem.util.term.format('hi!', Color.RED))
     self.assertEqual('\x1b[31;1mhi!\x1b[0m', stem.util.term.format('hi!', Color.RED, Attr.BOLD))
+    self.assertEqual('\x1b[31mhi\nthere!\x1b[0m', stem.util.term.format('hi\nthere!', Color.RED))
+    self.assertEqual('\x1b[31mhi\x1b[0m\n\x1b[31mthere!\x1b[0m', stem.util.term.format('hi\nthere!', Color.RED, Attr.LINES))
     self.assertEqual('\001\x1b[31m\002hi!\001\x1b[0m\002', stem.util.term.format('hi!', Color.RED, Attr.READLINE_ESCAPE))

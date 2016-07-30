@@ -174,7 +174,8 @@ class TestInterpretorCommands(unittest.TestCase):
 
     interpreter = ControlInterpretor(controller)
 
-    self.assertEqual('\x1b[34m%s\x1b[0m\n' % response, interpreter.run_command('GETINFO version'))
+    self.assertEqual('\x1b[34m250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\r\x1b[0m\n\x1b[34m250 OK\x1b[0m\n', interpreter.run_command('GETINFO version'))
+    self.assertEqual('\x1b[34m250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\r\x1b[0m\n\x1b[34m250 OK\x1b[0m\n', interpreter.run_command('GETINFO version'))
     controller.msg.assert_called_with('GETINFO version')
 
     controller.msg.side_effect = stem.ControllerError('kaboom!')
@@ -188,7 +189,7 @@ class TestInterpretorCommands(unittest.TestCase):
 
     interpreter = ControlInterpretor(controller)
 
-    self.assertEqual('\x1b[34m%s\x1b[0m\n' % response, interpreter.run_command('GETCONF log address'))
+    self.assertEqual('\x1b[34m250-Log=notice stdout\r\x1b[0m\n\x1b[34m250 Address\x1b[0m\n', interpreter.run_command('GETCONF log address'))
     controller.msg.assert_called_with('GETCONF log address')
 
   def test_setevents(self):

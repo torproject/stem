@@ -33,6 +33,9 @@ Utilities for working with the terminal.
 
   Terminal text attributes.
 
+  .. versionchanged:: 1.5.0
+     Added the LINES attribute.
+
   =================== ===========
   Attr                Description
   =================== ===========
@@ -40,6 +43,7 @@ Utilities for working with the terminal.
   **HIGHLIGHT**       inverted foreground and background
   **UNDERLINE**       underlined text
   **READLINE_ESCAPE** wrap encodings in `RL_PROMPT_START_IGNORE and RL_PROMPT_END_IGNORE sequences <https://stackoverflow.com/questions/9468435/look-how-to-fix-column-calculation-in-python-readline-if-use-color-prompt>`_
+  **LINES**           formats lines individually
   =================== ===========
 """
 
@@ -55,7 +59,7 @@ DISABLE_COLOR_SUPPORT = False
 
 Color = stem.util.enum.Enum(*TERM_COLORS)
 BgColor = stem.util.enum.Enum(*['BG_' + color for color in TERM_COLORS])
-Attr = stem.util.enum.Enum('BOLD', 'UNDERLINE', 'HIGHLIGHT', 'READLINE_ESCAPE')
+Attr = stem.util.enum.Enum('BOLD', 'UNDERLINE', 'HIGHLIGHT', 'READLINE_ESCAPE', 'LINES')
 
 # mappings of terminal attribute enums to their ANSI escape encoding
 FG_ENCODING = dict([(list(Color)[i], str(30 + i)) for i in range(8)])
@@ -122,6 +126,12 @@ def format(msg, *attr):
 
   if DISABLE_COLOR_SUPPORT:
     return msg
+
+  if Attr.LINES in attr:
+    attr = list(attr)
+    attr.remove(Attr.LINES)
+    lines = [format(line, *attr) for line in msg.split('\n')]
+    return '\n'.join(lines)
 
   # if we have reset sequences in the message then apply our attributes
   # after each of them

@@ -92,6 +92,7 @@ The following are only available within Stem's `git repository
   * Additional information when :func:`~stem.util.system.call` fails through a :class:`~stem.util.system.CallError`
   * Added **stem.util.system.SYSTEM_CALL_TIME** with the total time spent on system calls
   * Added an **is_ipv6** value to :class:`~stem.util.connection.Connection` instances
+  * Added LINES attribute to :data:`~stem.util.term.Attr`
   * Added :func:`~stem.util.system.pids_by_user`
   * Added :func:`~stem.util.connection.address_to_int`
   * Added :func:`~stem.util.term.encoding`

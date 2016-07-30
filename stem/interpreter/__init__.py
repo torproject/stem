@@ -28,11 +28,11 @@ __all__ = [
 
 PROMPT = format('>>> ', Color.GREEN, Attr.BOLD, Attr.READLINE_ESCAPE)
 
-STANDARD_OUTPUT = (Color.BLUE, )
-BOLD_OUTPUT = (Color.BLUE, Attr.BOLD)
-HEADER_OUTPUT = (Color.GREEN, )
-HEADER_BOLD_OUTPUT = (Color.GREEN, Attr.BOLD)
-ERROR_OUTPUT = (Attr.BOLD, Color.RED)
+STANDARD_OUTPUT = (Color.BLUE, Attr.LINES)
+BOLD_OUTPUT = (Color.BLUE, Attr.BOLD, Attr.LINES)
+HEADER_OUTPUT = (Color.GREEN, Attr.LINES)
+HEADER_BOLD_OUTPUT = (Color.GREEN, Attr.BOLD, Attr.LINES)
+ERROR_OUTPUT = (Attr.BOLD, Color.RED, Attr.LINES)
 
 settings_path = os.path.join(os.path.dirname(__file__), 'settings.cfg')
 uses_settings = stem.util.conf.uses_settings('stem_interpreter', settings_path)
