@@ -5,7 +5,7 @@ import stem
 import stem.response
 import stem.version
 
-from stem.interpreter.commands import ControlInterpretor, _get_fingerprint
+from stem.interpreter.commands import ControlInterpreter, _get_fingerprint
 
 from test import mocking
 from test.unit.interpreter import CONTROLLER
@@ -40,7 +40,7 @@ EXPECTED_GETCONF_RESPONSE = """\
 FINGERPRINT = '9695DFC35FFEB861329B9F1AB04C46397020CE31'
 
 
-class TestInterpretorCommands(unittest.TestCase):
+class TestInterpreterCommands(unittest.TestCase):
   def test_get_fingerprint_for_ourselves(self):
     controller = Mock()
 
@@ -94,23 +94,23 @@ class TestInterpretorCommands(unittest.TestCase):
     controller = Mock()
     controller.is_alive.return_value = False
 
-    interpreter = ControlInterpretor(controller)
+    interpreter = ControlInterpreter(controller)
     self.assertRaises(stem.SocketClosed, interpreter.run_command, '/help')
 
   def test_quit(self):
-    interpreter = ControlInterpretor(CONTROLLER)
+    interpreter = ControlInterpreter(CONTROLLER)
     self.assertRaises(stem.SocketClosed, interpreter.run_command, '/quit')
     self.assertRaises(stem.SocketClosed, interpreter.run_command, 'QUIT')
 
   def test_help(self):
-    interpreter = ControlInterpretor(CONTROLLER)
+    interpreter = ControlInterpreter(CONTROLLER)
 
-    self.assertTrue('Interpretor commands include:' in interpreter.run_command('/help'))
+    self.assertTrue('Interpreter commands include:' in interpreter.run_command('/help'))
     self.assertTrue('Queries the tor process for information.' in interpreter.run_command('/help GETINFO'))
     self.assertTrue('Queries the tor process for information.' in interpreter.run_command('/help GETINFO version'))
 
   def test_events(self):
-    interpreter = ControlInterpretor(CONTROLLER)
+    interpreter = ControlInterpreter(CONTROLLER)
 
     # no received events
 
@@ -157,11 +157,11 @@ class TestInterpretorCommands(unittest.TestCase):
     server_desc.tor_version = stem.version.Version('0.2.5.4-alpha-dev')
     server_desc.contact = '1024D/28988BF5 arma mit edu'
 
-    interpreter = ControlInterpretor(controller)
+    interpreter = ControlInterpreter(controller)
     self.assertTrue(interpreter.run_command('/info ' + FINGERPRINT).startswith(EXPECTED_INFO_RESPONSE))
 
   def test_unrecognized_interpreter_command(self):
-    interpreter = ControlInterpretor(CONTROLLER)
+    interpreter = ControlInterpreter(CONTROLLER)
 
     expected = "\x1b[1;31m'/unrecognized' isn't a recognized command\x1b[0m\n"
     self.assertEqual(expected, interpreter.run_command('/unrecognized'))
@@ -172,7 +172,7 @@ class TestInterpretorCommands(unittest.TestCase):
     controller = Mock()
     controller.msg.return_value = mocking.get_message(response)
 
-    interpreter = ControlInterpretor(controller)
+    interpreter = ControlInterpreter(controller)
 
     self.assertEqual('\x1b[34m250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\r\x1b[0m\n\x1b[34m250 OK\x1b[0m\n', interpreter.run_command('GETINFO version'))
     self.assertEqual('\x1b[34m250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\r\x1b[0m\n\x1b[34m250 OK\x1b[0m\n', interpreter.run_command('GETINFO version'))
@@ -187,7 +187,7 @@ class TestInterpretorCommands(unittest.TestCase):
     controller = Mock()
     controller.msg.return_value = mocking.get_message(response)
 
-    interpreter = ControlInterpretor(controller)
+    interpreter = ControlInterpreter(controller)
 
     self.assertEqual('\x1b[34m250-Log=notice stdout\r\x1b[0m\n\x1b[34m250 Address\x1b[0m\n', interpreter.run_command('GETCONF log address'))
     controller.msg.assert_called_with('GETCONF log address')
@@ -196,6 +196,6 @@ class TestInterpretorCommands(unittest.TestCase):
     controller = Mock()
     controller.msg.return_value = mocking.get_message('250 OK')
 
-    interpreter = ControlInterpretor(controller)
+    interpreter = ControlInterpreter(controller)
 
     self.assertEqual('\x1b[34m250 OK\x1b[0m\n', interpreter.run_command('SETEVENTS BW'))

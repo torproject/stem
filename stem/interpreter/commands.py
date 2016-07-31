@@ -84,7 +84,7 @@ def _get_fingerprint(arg, controller):
     raise ValueError("'%s' isn't a fingerprint, nickname, or IP address" % arg)
 
 
-class ControlInterpretor(code.InteractiveConsole):
+class ControlInterpreter(code.InteractiveConsole):
   """
   Handles issuing requests and providing nicely formed responses, with support
   for special irc style subcommands.
@@ -295,7 +295,7 @@ class ControlInterpretor(code.InteractiveConsole):
 
     # Commands fall into three categories:
     #
-    # * Interpretor commands. These start with a '/'.
+    # * Interpreter commands. These start with a '/'.
     #
     # * Controller commands stem knows how to handle. We use our Controller's
     #   methods for these to take advantage of caching and present nicer

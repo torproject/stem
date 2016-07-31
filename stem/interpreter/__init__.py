@@ -122,7 +122,7 @@ def main():
     readline.set_completer(autocompleter.complete)
     readline.set_completer_delims('\n')
 
-    interpreter = stem.interpreter.commands.ControlInterpretor(controller)
+    interpreter = stem.interpreter.commands.ControlInterpreter(controller)
 
     for line in msg('msg.startup_banner').splitlines():
       line_format = HEADER_BOLD_OUTPUT if line.startswith('  ') else HEADER_OUTPUT

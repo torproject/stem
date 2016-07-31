@@ -25,7 +25,7 @@ class TestHelpResponses(unittest.TestCase):
 
   def test_general_help(self):
     result = response(CONTROLLER, '')
-    self.assertTrue('Interpretor commands include:' in result)
+    self.assertTrue('Interpreter commands include:' in result)
     self.assertTrue('\x1b[34;1m  GETINFO\x1b[0m\x1b[34m - queries information from tor\x1b[0m\n' in result)
 
   def test_getinfo_help(self):
