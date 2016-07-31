@@ -6,7 +6,9 @@ Handles making requests and formatting the responses.
 """
 
 import code
+import contextlib
 import socket
+import sys
 
 import stem
 import stem.control
@@ -18,6 +20,11 @@ import stem.util.tor_tools
 
 from stem.interpreter import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, uses_settings, msg
 from stem.util.term import format
+
+try:
+  from cStringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 
 def _get_fingerprint(arg, controller):
@@ -82,6 +89,17 @@ def _get_fingerprint(arg, controller):
       raise ValueError(response)
   else:
     raise ValueError("'%s' isn't a fingerprint, nickname, or IP address" % arg)
+
+
+@contextlib.contextmanager
+def redirect(stdout, stderr):
+  original = sys.stdout, sys.stderr
+  sys.stdout, sys.stderr = stdout, stderr
+
+  try:
+    yield
+  finally:
+    sys.stdout, sys.stderr = original
 
 
 class ControlInterpreter(code.InteractiveConsole):
@@ -338,8 +356,13 @@ class ControlInterpreter(code.InteractiveConsole):
         is_tor_command = cmd in config.get('help.usage', {}) and cmd.lower() != 'events'
 
         if self._run_python_commands and not is_tor_command:
-          self.is_multiline_context = code.InteractiveConsole.push(self, command)
-          return
+          console_output = StringIO()
+
+          with redirect(console_output, console_output):
+            self.is_multiline_context = code.InteractiveConsole.push(self, command)
+
+          output = console_output.getvalue()
+          return output if output else None
         else:
           try:
             output = format(self._controller.msg(command).raw_content().strip(), *STANDARD_OUTPUT)
