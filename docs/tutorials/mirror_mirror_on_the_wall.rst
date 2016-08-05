@@ -80,6 +80,22 @@ Listing the current relays in the Tor network is as easy as...
 .. literalinclude:: /_static/example/current_descriptors.py
    :language: python
 
+If you want to see what the raw descriptors look like you can also curl this
+information from the DirPort of directory authorities and mirrors...
+
+::
+
+  % curl 128.31.0.34:9131/tor/server/all
+  router Unnamed 83.227.81.207 9001 0 9030
+  identity-ed25519
+  -----BEGIN ED25519 CERT-----
+  AQQABj3aAV7JzKHjSJjocve8jvnMwmy/Pv2HsSKoymeepddNBU5iAQAgBABw1VVB
+  965QDxs+wicWj4vNXMKIkKCN4gQhvzqG2UxsgmkaQlsKiEMrIxrzwlazP6od9+hi
+  WZKl3tshd0ekgUB6AAKwlvsrxl9wfy0G/Bf8PVsBftvNCWPwLR4pI3nibQU=
+  -----END ED25519 CERT-----
+  master-key-ed25519 cNVVQfeuUA8bPsInFo+LzVzCiJCgjeIEIb86htlMbII
+  ...
+
 .. _where-can-i-get-past-descriptors:
 
 Where can I get past descriptors?
