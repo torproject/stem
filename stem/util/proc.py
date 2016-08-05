@@ -50,7 +50,6 @@ future, use them at your own risk.**
 import base64
 import os
 import platform
-import pwd
 import socket
 import sys
 import time
@@ -60,6 +59,13 @@ import stem.util.enum
 import stem.util.str_tools
 
 from stem.util import log
+
+try:
+  # unavailable on windows (#19823)
+  import pwd
+  IS_PWD_AVAILABLE = True
+except ImportError:
+  IS_PWD_AVAILABLE = False
 
 try:
   # added in python 3.2
@@ -359,6 +365,9 @@ def connections(pid = None, user = None):
     parameter = 'all connections'
 
   try:
+    if not IS_PWD_AVAILABLE:
+      raise IOError("This requires python's pwd module, which is unavailable on Windows.")
+
     inodes = _inodes_for_sockets(pid) if pid else []
     process_uid = pwd.getpwnam(user).pw_uid if user else None
 
