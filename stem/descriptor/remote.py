@@ -807,15 +807,6 @@ DIRECTORY_AUTHORITIES = {
     fingerprint = '7EA6EAD6FD83083C538F44038BBFA077587DD755',
     v3ident = 'E8A9C45EDE6D711294FADF8E7951F4DE6CA56B58',
   ),
-  'Tonga': DirectoryAuthority(
-    nickname = 'Tonga',
-    address = '82.94.251.203',
-    or_port = 443,
-    dir_port = 80,
-    is_bandwidth_authority = False,
-    fingerprint = '4A0CCD2DDC7995083D73F5D667100C8A5831F16D',
-    v3ident = None,  # does not vote in the consensus
-  ),
   'gabelmoo': DirectoryAuthority(
     nickname = 'gabelmoo',
     address = '131.188.40.189',
