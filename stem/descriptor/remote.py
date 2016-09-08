@@ -852,6 +852,15 @@ DIRECTORY_AUTHORITIES = {
     fingerprint = '74A910646BCEEFBCD2E874FC1DC997430F968145',
     v3ident = '23D15D965BC35114467363C165C4F724B64B4F66',
   ),
+  'Bifroest': DirectoryAuthority(
+    nickname = 'Bifroest',
+    address = '37.218.247.217',
+    or_port = 443,
+    dir_port = 80,
+    is_bandwidth_authority = False,
+    fingerprint = '1D8F3A91C37C5D1C4C19B1AD1D0CFBE8BF72D8E1',
+    v3ident = None,  # does not vote in the consensus
+  ),
 }
 
 
