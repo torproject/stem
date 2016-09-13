@@ -59,6 +59,7 @@ easily parsed and compared, for instance...
   **HSPOST**                            HSPOST requests
   **ADD_ONION**                         ADD_ONION and DEL_ONION requests
   **ADD_ONION_BASIC_AUTH**              ADD_ONION supports basic authentication
+  **ADD_ONION_NON_ANONYMOUS**           ADD_ONION supports non-anonymous mode
   **LOADCONF**                          LOADCONF requests
   **MICRODESCRIPTOR_IS_DEFAULT**        Tor gets microdescriptors by default rather than server descriptors
   **TAKEOWNERSHIP**                     TAKEOWNERSHIP requests
@@ -366,6 +367,7 @@ Requirement = stem.util.enum.Enum(
   ('HSPOST', Version('0.2.7.1-alpha')),
   ('ADD_ONION', Version('0.2.7.1-alpha')),
   ('ADD_ONION_BASIC_AUTH', Version('0.2.9.1-alpha')),
+  ('ADD_ONION_NON_ANONYMOUS', Version('0.2.9.3-alpha')),
   ('LOADCONF', Version('0.2.1.1')),
   ('MICRODESCRIPTOR_IS_DEFAULT', Version('0.2.3.3')),
   ('TAKEOWNERSHIP', Version('0.2.2.28-beta')),

@@ -2827,6 +2827,9 @@ class Controller(BaseController):
     .. versionchanged:: 1.5.0
        Added the basic_auth argument.
 
+    .. versionchanged:: 1.5.0
+       Added support for non-anonymous services.
+
     :param int,list,dict ports: hidden service port(s) or mapping of hidden
       service ports to their targets
     :param str key_type: type of key being provided, generates a new key if
@@ -2872,6 +2875,10 @@ class Controller(BaseController):
         raise stem.UnsatisfiableRequest(message = 'Basic authentication support was added to ADD_ONION in tor version %s' % stem.version.Requirement.ADD_ONION_BASIC_AUTH)
 
       flags.append('BasicAuth')
+
+    if self.get_version() >= stem.version.Requirement.ADD_ONION_NON_ANONYMOUS:
+      if self.get_conf('HiddenServiceSingleHopMode', None) == '1' and self.get_conf('HiddenServiceNonAnonymousMode', None) == '1':
+        flags.append('NonAnonymous')
 
     if flags:
       request += ' Flags=%s' % ','.join(flags)
@@ -3533,7 +3540,9 @@ class Controller(BaseController):
 
     :param stem.Signal signal: type of signal to be sent
 
-    :raises: :class:`stem.InvalidArguments` if signal provided wasn't recognized
+    :raises:
+      * :class:`stem.ControllerError` if sending the signal failed
+      * :class:`stem.InvalidArguments` if signal provided wasn't recognized
     """
 
     response = self.msg('SIGNAL %s' % signal)

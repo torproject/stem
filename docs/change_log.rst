@@ -50,6 +50,7 @@ The following are only available within Stem's `git repository
   * :class:`~stem.exit_policy.ExitPolicy` support for *accept6/reject6* and *\*4/6* wildcards (:trac:`16053`)
   * Added `support for NETWORK_LIVENESS events <api/response.html#stem.response.events.NetworkLivenessEvent>`_ (:spec:`44aac63`)
   * Added support for basic authentication to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`c2865d9`)
+  * Added support for non-anonymous services to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`b8fe774`)
   * Added :func:`~stem.control.event_description` for getting human-friendly descriptions of tor events (:trac:`19061`)
   * Added :func:`~stem.control.Controller.reconnect` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.is_set` to the :class:`~stem.control.Controller`
