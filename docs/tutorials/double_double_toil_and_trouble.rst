@@ -75,7 +75,9 @@ Applications
 `OnionPerf <https://github.com/robgjansen/onionperf>`_                                                      Measures onion service performance over time using customizable client behavior models.
 `OnioNS <https://github.com/Jesse-V/OnioNS-client>`_                                                        Distributed DNS for hidden services.
 `OnionShare <https://github.com/micahflee/onionshare>`_                                                     Hidden service based file sharing application.
-`Syboa <https://gitorious.org/syboa/syboa>`_                                                                GTK Tor interface similar to `TorK <http://sourceforge.net/projects/tork/>`_.
+`OnionView <https://github.com/skyguy/onionview>`_                                                          GTK interface for viewing circuit information.
+`OnionCircuits <https://git-tails.immerda.ch/onioncircuits/>`_                                              GTK interface for viewing circuit information.
+`Syboa <https://gitorious.org/syboa/syboa>`_                                                                GTK interface similar to `TorK <http://sourceforge.net/projects/tork/>`_.
 `hs-health <https://gitlab.com/hs-health/hs-health>`_                                                       Experiment to measure churn and reachability of hidden services.
 `trnnr <https://github.com/NullHypothesis/trnnr>`_                                                          Python implementation of tor's nearest neighbour ranking.
 `TorTP <https://github.com/vinc3nt/stem-tortp>`_                                                            Configures iptables to torify all traffic.
