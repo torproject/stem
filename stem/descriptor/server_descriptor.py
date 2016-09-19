@@ -62,6 +62,8 @@ from stem.descriptor import (
   _parse_key_block,
 )
 
+from stem.descriptor.certificate import _parse_certificate
+
 try:
   # added in python 3.2
   from functools import lru_cache
@@ -662,6 +664,14 @@ class ServerDescriptor(Descriptor):
     if expected_last_keyword and expected_last_keyword != list(entries.keys())[-1]:
       raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
 
+    if 'identity-ed25519' in entries.keys():
+      if not 'router-sig-ed25519' in entries.keys():
+        raise ValueError("Descriptor must have router-sig-ed25519 entry to accompany identity-ed25519")
+
+      if 'router-sig-ed25519' != list(entries.keys())[-2]:
+        if 'router-sig-ed25519' != list(entries.keys())[-1]:
+          raise ValueError("Descriptor must end with a 'router-sig-ed25519' entry")
+
     if not self.exit_policy:
       raise ValueError("Descriptor must have at least one 'accept' or 'reject' entry")
 
@@ -749,6 +759,25 @@ class RelayDescriptor(ServerDescriptor):
 
         if signed_digest != self.digest():
           raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, self.digest()))
+
+      if stem.prereq.is_nacl_available() and self.ed25519_certificate:
+        self.certificate = _parse_certificate(_bytes_for_block(self.ed25519_certificate),
+                                              self.ed25519_master_key,
+                                              validate)
+
+        if self.ed25519_master_key is not None:
+          if self.certificate.identity_key != self.ed25519_master_key:
+            raise ValueError("master-key-ed25519 does not match ed25519 certificate identity key")
+
+        self.certificate.verify_descriptor_signature(stem.util.str_tools._to_unicode(raw_contents),
+                                                     self.ed25519_signature)
+
+        onion_key_bytes = _bytes_for_block(self.onion_key)
+        from Crypto.Util import asn1
+        seq = asn1.DerSequence()
+        seq.decode(onion_key_bytes)
+        self._digest_for_signature(self.onion_key, self.onion_key_crosscert)
+
 
   @lru_cache()
   def digest(self):

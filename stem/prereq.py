@@ -15,6 +15,7 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
   check_requirements - checks for minimum requirements for running stem
   is_python_3 - checks if python 3.0 or later is available
   is_crypto_available - checks if the cryptography module is available
+  is_nacl_available - checks if the pynacl module is available
 """
 
 import inspect
@@ -27,6 +28,7 @@ except ImportError:
   from stem.util.lru_cache import lru_cache
 
 CRYPTO_UNAVAILABLE = "Unable to import the cryptography module. Because of this we'll be unable to verify descriptor signature integrity. You can get cryptography from: https://pypi.python.org/pypi/cryptography"
+NACL_UNAVAILABLE = "Unable to import the pynacl module. Because of this we'll be unable to verify descriptor ed25519 certificate integrity. You can get pynacl from https://github.com/pyca/pynacl/"
 
 
 def check_requirements():
@@ -145,4 +147,23 @@ def is_mock_available():
 
     return True
   except ImportError:
+    return False
+
+@lru_cache()
+def is_nacl_available():
+  """
+  Checks if the pynacl functions we use are available. This is used for
+  verifying ed25519 certificates in relay descriptor signatures.
+
+  :returns: **True** if we can use pynacl and **False** otherwise
+  """
+
+  from stem.util import log
+
+  try:
+    from nacl import encoding
+    from nacl import signing
+    return True
+  except ImportError:
+    log.log_once('stem.prereq.is_nacl_available', log.INFO, NACL_UNAVAILABLE)
     return False

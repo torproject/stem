@@ -3,6 +3,7 @@ Unit tests for stem.descriptor.server_descriptor.
 """
 
 import datetime
+import time
 import io
 import pickle
 import tarfile
@@ -245,6 +246,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     self.assertTrue(isinstance(str(desc), str))
 
+  @patch('time.time', Mock(return_value = time.mktime(datetime.date(2010, 1, 1).timetuple())))
   def test_with_ed25519(self):
     """
     Parses a descriptor with a ed25519 identity key, as added by proposal 228
@@ -298,6 +300,16 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertTrue('y72z1dZOYxVQVL' in desc.signature)
     self.assertEqual('B5E441051D139CCD84BC765D130B01E44DAC29AD', desc.digest())
     self.assertEqual([], desc.get_unrecognized_lines())
+
+  @patch('time.time', Mock(return_value = time.mktime(datetime.date(2020, 1, 1).timetuple())))
+  def test_with_ed25519_expired_cert(self):
+    """
+    Parses a server descriptor with an expired ed25519 certificate
+    """
+    desc_text = open(get_resource('bridge_descriptor_with_ed25519'), 'rb').read()
+    desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text), validate = True)
+    self.assertRaises(ValueError, list, desc_iter)
+
 
   def test_bridge_with_ed25519(self):
     """

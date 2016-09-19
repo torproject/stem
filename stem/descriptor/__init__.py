@@ -636,7 +636,17 @@ class Descriptor(object):
       raise ValueError("Digest is for the range ending with '%s' but that isn't in our descriptor" % end)
 
     digest_content = raw_descriptor[start_index:end_index + len(end)]
-    digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(digest_content))
+    return self._digest_for_bytes(digest_content)
+
+  def _digest_for_bytes(self, bytes_to_sign):
+    """
+    Provides a digest of the provided bytes
+
+    :param bytes bytes_to_sign: the bytes for which we should generate a digest
+
+    :returns: the digest string encoded in uppercase hex
+    """
+    digest_hash = hashlib.sha1(bytes_to_sign)
     return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
 
   def __getattr__(self, name):
