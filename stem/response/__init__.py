@@ -30,6 +30,7 @@ Parses replies from the control socket.
     +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
 """
 
+import io
 import re
 import threading
 
@@ -47,11 +48,6 @@ __all__ = [
   'ControlLine',
   'SingleLineResponse',
 ]
-
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
 
 KEY_ARG = re.compile('^(\S+)=')
 
@@ -157,7 +153,7 @@ class ControlMessage(object):
     :returns: stem.response.ControlMessage instance
     """
 
-    msg = stem.socket.recv_message(StringIO(content))
+    msg = stem.socket.recv_message(io.StringIO(stem.util.str_tools._to_unicode(content)))
 
     if msg_type is not None:
       convert(msg_type, msg, **kwargs)
