@@ -80,7 +80,7 @@ PYFLAKES_TASK = Task(
 )
 
 PEP8_TASK = Task(
-  'running pep8',
+  'running pycodestyle',
   stem.util.test_tools.stylistic_issues,
   args = (SRC_PATHS, True, True, True),
   is_required = False,
@@ -140,14 +140,14 @@ def main():
 
     sys.exit(1)
 
-  pyflakes_task, pep8_task = None, None
+  pyflakes_task, pycodestyle_task = None, None
 
   if not args.specific_test:
     if stem.util.test_tools.is_pyflakes_available():
       pyflakes_task = PYFLAKES_TASK
 
-    if stem.util.test_tools.is_pep8_available():
-      pep8_task = PEP8_TASK
+    if stem.util.test_tools.is_pycodestyle_available():
+      pycodestyle_task = PEP8_TASK
 
   test.util.run_tasks(
     'INITIALISING',
@@ -156,11 +156,11 @@ def main():
     Task('checking pycrypto version', test.util.check_pycrypto_version),
     Task('checking mock version', test.util.check_mock_version),
     Task('checking pyflakes version', test.util.check_pyflakes_version),
-    Task('checking pep8 version', test.util.check_pep8_version),
+    Task('checking pycodestyle version', test.util.check_pycodestyle_version),
     Task('checking for orphaned .pyc files', test.util.clean_orphaned_pyc, (SRC_PATHS,)),
     Task('checking for unused tests', test.util.check_for_unused_tests, ((os.path.join(STEM_BASE, 'test'),),)),
     pyflakes_task,
-    pep8_task,
+    pycodestyle_task,
   )
 
   # buffer that we log messages into so they can be printed after a test has finished
@@ -277,12 +277,12 @@ def main():
   elif not stem.util.test_tools.is_pyflakes_available():
     println('Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n', ERROR)
 
-  if pep8_task and pep8_task.is_successful:
-    for path, issues in pep8_task.result.items():
+  if pycodestyle_task and pycodestyle_task.is_successful:
+    for path, issues in pycodestyle_task.result.items():
       for issue in issues:
         static_check_issues.setdefault(path, []).append(issue)
-  elif not stem.util.test_tools.is_pep8_available():
-    println('Style checks require pep8 version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pep8\n', ERROR)
+  elif not stem.util.test_tools.is_pycodestyle_available():
+    println('Style checks require pycodestyle version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pycodestyle\n', ERROR)
 
   _print_static_issues(static_check_issues)
 
