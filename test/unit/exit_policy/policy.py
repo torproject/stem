@@ -161,6 +161,11 @@ class TestExitPolicy(unittest.TestCase):
 
     self.assertEqual(get_config_policy('accept *:80, accept 127.0.0.1:1-65533'), policy.strip_default())
 
+  def test_get_config_policy_with_ipv6(self):
+    # ensure our constructor accepts addresses both with and without brackets
+    self.assertTrue(get_config_policy('reject private:80', 'fe80:0000:0000:0000:0202:b3ff:fe1e:8329').is_exiting_allowed())
+    self.assertTrue(get_config_policy('reject private:80', '[fe80:0000:0000:0000:0202:b3ff:fe1e:8329]').is_exiting_allowed())
+
   def test_str(self):
     # sanity test for our __str__ method
 

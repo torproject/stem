@@ -118,8 +118,10 @@ def get_config_policy(rules, ip_address = None):
   :raises: **ValueError** if input isn't a valid tor exit policy
   """
 
-  if ip_address and not (stem.util.connection.is_valid_ipv4_address(ip_address) or stem.util.connection.is_valid_ipv6_address(ip_address)):
+  if ip_address and not (stem.util.connection.is_valid_ipv4_address(ip_address) or stem.util.connection.is_valid_ipv6_address(ip_address, allow_brackets = True)):
     raise ValueError("%s isn't a valid IP address" % ip_address)
+  elif ip_address and stem.util.connection.is_valid_ipv6_address(ip_address, allow_brackets = True) and not (ip_address[0] == '[' and ip_address[-1] == ']'):
+    ip_address = '[%s]' % ip_address  # ExitPolicy validation expects IPv6 addresses to be bracketed
 
   if isinstance(rules, (bytes, str_type)):
     rules = rules.split(',')
@@ -200,6 +202,7 @@ def _flag_private_rules(rules):
 
     if last_rule.is_address_wildcard() or last_rule.min_port != min_port or last_rule.max_port != max_port or last_rule.is_accept != is_accept:
       is_match = False
+
     if is_match:
       for rule in rule_set:
         rule._is_private = True
