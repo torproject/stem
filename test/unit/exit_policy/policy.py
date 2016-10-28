@@ -5,6 +5,12 @@ Unit tests for the stem.exit_policy.ExitPolicy class.
 import pickle
 import unittest
 
+try:
+  # added in python 3.3
+  from unittest.mock import Mock, patch
+except ImportError:
+  from mock import Mock, patch
+
 from stem.exit_policy import (
   DEFAULT_POLICY_RULES,
   get_config_policy,
@@ -123,7 +129,7 @@ class TestExitPolicy(unittest.TestCase):
 
   def test_all_private_policy(self):
     for port in ('*', '80', '1-1024'):
-      private_policy = get_config_policy('reject private:%s' % port)
+      private_policy = get_config_policy('reject private:%s' % port, '12.34.56.78')
 
       for rule in private_policy:
         self.assertTrue(rule.is_private())
@@ -134,6 +140,12 @@ class TestExitPolicy(unittest.TestCase):
 
     private_policy = get_config_policy('accept private:*')
     self.assertEqual(ExitPolicy(), private_policy.strip_private())
+
+  @patch('socket.gethostname', Mock(side_effect = IOError('no address')))
+  def test_all_private_policy_without_network(self):
+    for rule in get_config_policy('reject private:80, accept *:80'):
+      # all rules except the ending accept are part of the private policy
+      self.assertEqual(str(rule) != 'accept *:80', rule.is_private())
 
   def test_all_default_policy(self):
     policy = ExitPolicy(*DEFAULT_POLICY_RULES)

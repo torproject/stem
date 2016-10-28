@@ -165,10 +165,10 @@ def _flag_private_rules(rules):
   series of rules exactly matching it.
   """
 
-  matches = []
+  matches = []  # find all possible starting indexes
 
   for i, rule in enumerate(rules):
-    if i + len(PRIVATE_ADDRESSES) + 1 > len(rules):
+    if i + len(PRIVATE_ADDRESSES) > len(rules):
       break
 
     rule_str = '%s/%s' % (rule.address, rule.get_masked_bits())
@@ -180,32 +180,34 @@ def _flag_private_rules(rules):
     # To match the private policy the following must all be true...
     #
     #   * series of addresses and bit masks match PRIVATE_ADDRESSES
-    #   * all rules have the same port range and acceptance
+    #   * all rules have the same port range
     #   * all rules have the same acceptance (all accept or reject entries)
+    #
+    # The last rule is dynamically based on the relay's public address. It may
+    # not be present if get_config_policy() created this policy and we couldn't
+    # resolve our address.
 
-    rule_set = rules[start_index:start_index + len(PRIVATE_ADDRESSES) + 1]
+    last_index = start_index + len(PRIVATE_ADDRESSES)
+    rule_set = rules[start_index:last_index]
+    last_rule = rules[last_index] if len(rules) > last_index else None
     is_match = True
 
     min_port, max_port = rule_set[0].min_port, rule_set[0].max_port
     is_accept = rule_set[0].is_accept
 
-    for i, rule in enumerate(rule_set[:-1]):
+    for i, rule in enumerate(rule_set):
       rule_str = '%s/%s' % (rule.address, rule.get_masked_bits())
 
       if rule_str != PRIVATE_ADDRESSES[i] or rule.min_port != min_port or rule.max_port != max_port or rule.is_accept != is_accept:
         is_match = False
         break
 
-    # The last rule is for the relay's public address, so it's dynamic.
-
-    last_rule = rule_set[-1]
-
-    if last_rule.is_address_wildcard() or last_rule.min_port != min_port or last_rule.max_port != max_port or last_rule.is_accept != is_accept:
-      is_match = False
-
     if is_match:
       for rule in rule_set:
         rule._is_private = True
+
+      if last_rule and not last_rule.is_address_wildcard() and last_rule.min_port == min_port and last_rule.max_port == max_port and last_rule.is_accept == is_accept:
+        last_rule._is_private = True
 
 
 def _flag_default_rules(rules):
