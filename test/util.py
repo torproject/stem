@@ -23,7 +23,7 @@ Tasks are...
   |- check_python_version - checks our version of python
   |- check_pycrypto_version - checks our version of pycrypto
   |- check_pyflakes_version - checks our version of pyflakes
-  |- check_pycodestyle_version - checks our version of pep8
+  |- check_pycodestyle_version - checks our version of pycodestyle
   |- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
   +- check_for_unused_tests - checks to see if any tests are missing from our settings
 """

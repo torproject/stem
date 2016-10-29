@@ -79,7 +79,7 @@ PYFLAKES_TASK = Task(
   print_result = False,
 )
 
-PEP8_TASK = Task(
+PYCODESTYLE_TASK = Task(
   'running pycodestyle',
   stem.util.test_tools.stylistic_issues,
   args = (SRC_PATHS, True, True, True),
@@ -147,7 +147,7 @@ def main():
       pyflakes_task = PYFLAKES_TASK
 
     if stem.util.test_tools.is_pycodestyle_available():
-      pycodestyle_task = PEP8_TASK
+      pycodestyle_task = PYCODESTYLE_TASK
 
   test.util.run_tasks(
     'INITIALISING',
