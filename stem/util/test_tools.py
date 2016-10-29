@@ -13,7 +13,7 @@ Helper functions for testing.
   is_pyflakes_available - checks if pyflakes is available
   is_pycodestyle_available - checks if pycodestyle is available
 
-  stylistic_issues - checks for pycodestyle and other stylistic issues
+  stylistic_issues - checks for PEP8 and other stylistic issues
   pyflakes_issues - static checks for problems via pyflakes
 """
 
@@ -26,6 +26,7 @@ import stem.util.conf
 import stem.util.system
 
 CONFIG = stem.util.conf.config_dict('test', {
+  'pep8.ignore': [],  # TODO: drop with stem 2.x, legacy alias for pycodestyle.ignore
   'pycodestyle.ignore': [],
   'pyflakes.ignore': [],
   'exclude_paths': [],
@@ -119,9 +120,9 @@ def is_pycodestyle_available():
 
 def stylistic_issues(paths, check_newlines = False, check_exception_keyword = False, prefer_single_quotes = False):
   """
-  Checks for stylistic issues that are an issue according to the parts of
-  pycodestyle we conform to. You can suppress pycodestyle issues by making a
-  'test' configuration that sets 'pycodestyle.ignore'.
+  Checks for stylistic issues that are an issue according to the parts of PEP8
+  we conform to. You can suppress pycodestyle issues by making a 'test'
+  configuration that sets 'pycodestyle.ignore'.
 
   For example, with a 'test/settings.cfg' of...
 
@@ -179,7 +180,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
   ignore_rules = []
   ignore_for_file = []
 
-  for rule in CONFIG['pycodestyle.ignore']:
+  for rule in CONFIG['pycodestyle.ignore'] + CONFIG['pep8.ignore']:
     if '=>' in rule:
       path, rule_entry = rule.split('=>', 1)
 
@@ -197,10 +198,10 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
     return False
 
   if is_pycodestyle_available():
-    if _module_exists('pycodestyle'):
-      import pycodestyle
-    elif _module_exists('pep8'):
+    if _module_exists('pep8'):
       import pep8 as pycodestyle
+    else:
+      import pycodestyle
 
     class StyleReport(pycodestyle.BaseReport):
       def __init__(self, options):
@@ -346,10 +347,9 @@ def _module_exists(module_name):
 
   try:
     __import__(module_name)
+    return True
   except ImportError:
     return False
-  else:
-    return True
 
 
 def _python_files(paths):
@@ -367,7 +367,9 @@ def _python_files(paths):
 
 # TODO: drop with stem 2.x
 # We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
-# names for backward compatability.
+# names for backward compatability, and account for pep8 being renamed to
+# pycodestyle.
 
 get_stylistic_issues = stylistic_issues
 get_pyflakes_issues = pyflakes_issues
+is_pep8_available = is_pycodestyle_available
