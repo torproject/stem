@@ -84,18 +84,6 @@ STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 NEW_CAPABILITIES = []
 
-def module_exists(module_name):
-  """
-  Checks if a module exists
-
-  :returns: **True** if module exists and **False** otherwise
-  """
-  try:
-    mod = __import__(module_name)
-  except ImportError:
-    return False
-  else:
-    return True
 
 def get_unit_tests(module_prefix = None):
   """
@@ -239,9 +227,9 @@ def check_pyflakes_version():
 
 
 def check_pycodestyle_version():
-  if module_exists('pycodestyle'):
+  if stem.util.test_tools._module_exists('pycodestyle'):
     import pycodestyle
-  elif module_exists('pep8'):
+  elif stem.util.test_tools._module_exists('pep8'):
     import pep8 as pycodestyle
   else:
     return 'missing'

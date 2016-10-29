@@ -86,18 +86,6 @@ def clean_orphaned_pyc(paths):
 
   return orphaned_pyc
 
-def module_exists(module_name):
-  """
-  Checks if a module exists
-
-  :returns: **True** if module exists and **False** otherwise
-  """
-  try:
-    mod = __import__(module_name)
-  except ImportError:
-    return False
-  else:
-    return True
 
 def is_pyflakes_available():
   """
@@ -106,12 +94,7 @@ def is_pyflakes_available():
   :returns: **True** if we can use pyflakes and **False** otherwise
   """
 
-  try:
-    import pyflakes.api
-    import pyflakes.reporter
-    return True
-  except ImportError:
-    return False
+  return _module_exists('pyflakes.api') and _module_exists('pyflakes.reporter')
 
 
 def is_pycodestyle_available():
@@ -121,9 +104,9 @@ def is_pycodestyle_available():
   :returns: **True** if we can use pycodestyle and **False** otherwise
   """
 
-  if module_exists('pycodestyle'):
+  if _module_exists('pycodestyle'):
     import pycodestyle
-  elif module_exists('pep8'):
+  elif _module_exists('pep8'):
     import pep8 as pycodestyle
   else:
     return False
@@ -132,6 +115,7 @@ def is_pycodestyle_available():
     return False
   else:
     return True
+
 
 def stylistic_issues(paths, check_newlines = False, check_exception_keyword = False, prefer_single_quotes = False):
   """
@@ -213,9 +197,9 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
     return False
 
   if is_pycodestyle_available():
-    if module_exists('pycodestyle'):
+    if _module_exists('pycodestyle'):
       import pycodestyle
-    elif module_exists('pep8'):
+    elif _module_exists('pep8'):
       import pep8 as pycodestyle
 
     class StyleReport(pycodestyle.BaseReport):
@@ -349,6 +333,23 @@ def pyflakes_issues(paths):
       pyflakes.api.checkPath(path, reporter)
 
   return issues
+
+
+def _module_exists(module_name):
+  """
+  Checks if a module exists.
+
+  :param str module_name: module to check existance of
+
+  :returns: **True** if module exists and **False** otherwise
+  """
+
+  try:
+    __import__(module_name)
+  except ImportError:
+    return False
+  else:
+    return True
 
 
 def _python_files(paths):
