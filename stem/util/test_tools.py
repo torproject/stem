@@ -11,7 +11,7 @@ Helper functions for testing.
   clean_orphaned_pyc - delete *.pyc files without corresponding *.py
 
   is_pyflakes_available - checks if pyflakes is available
-  is_pep8_available - checks if pep8 is available
+  is_pycodestyle_available - checks if pycodestyle is available
 
   stylistic_issues - checks for PEP8 and other stylistic issues
   pyflakes_issues - static checks for problems via pyflakes
@@ -26,7 +26,8 @@ import stem.util.conf
 import stem.util.system
 
 CONFIG = stem.util.conf.config_dict('test', {
-  'pep8.ignore': [],
+  'pep8.ignore': [],  # TODO: drop with stem 2.x, legacy alias for pycodestyle.ignore
+  'pycodestyle.ignore': [],
   'pyflakes.ignore': [],
   'exclude_paths': [],
 })
@@ -34,7 +35,7 @@ CONFIG = stem.util.conf.config_dict('test', {
 
 class Issue(collections.namedtuple('Issue', ['line_number', 'message', 'line'])):
   """
-  Issue encountered by pyflakes or pep8.
+  Issue encountered by pyflakes or pycodestyle.
 
   :var int line_number: line number the issue occured on
   :var str message: description of the issue
@@ -94,52 +95,49 @@ def is_pyflakes_available():
   :returns: **True** if we can use pyflakes and **False** otherwise
   """
 
-  try:
-    import pyflakes.api
-    import pyflakes.reporter
-    return True
-  except ImportError:
-    return False
+  return _module_exists('pyflakes.api') and _module_exists('pyflakes.reporter')
 
 
-def is_pep8_available():
+def is_pycodestyle_available():
   """
-  Checks if pep8 is availalbe.
+  Checks if pycodestyle is availalbe.
 
-  :returns: **True** if we can use pep8 and **False** otherwise
+  :returns: **True** if we can use pycodestyle and **False** otherwise
   """
 
-  try:
-    import pep8
-
-    if not hasattr(pep8, 'BaseReport'):
-      raise ImportError()
-
-    return True
-  except ImportError:
+  if _module_exists('pycodestyle'):
+    import pycodestyle
+  elif _module_exists('pep8'):
+    import pep8 as pycodestyle
+  else:
     return False
+
+  if not hasattr(pycodestyle, 'BaseReport'):
+    return False
+  else:
+    return True
 
 
 def stylistic_issues(paths, check_newlines = False, check_exception_keyword = False, prefer_single_quotes = False):
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
-  we conform to. You can suppress PEP8 issues by making a 'test' configuration
-  that sets 'pep8.ignore'.
+  we conform to. You can suppress pycodestyle issues by making a 'test'
+  configuration that sets 'pycodestyle.ignore'.
 
   For example, with a 'test/settings.cfg' of...
 
   ::
 
-    # PEP8 compliance issues that we're ignoreing...
+    # pycodestyle compliance issues that we're ignoreing...
     #
     # * E111 and E121 four space indentations
     # * E501 line is over 79 characters
 
-    pep8.ignore E111
-    pep8.ignore E121
-    pep8.ignore E501
+    pycodestyle.ignore E111
+    pycodestyle.ignore E121
+    pycodestyle.ignore E501
 
-    pep8.ignore run_tests.py => E402: import stem.util.enum
+    pycodestyle.ignore run_tests.py => E402: import stem.util.enum
 
   ... you can then run tests with...
 
@@ -182,7 +180,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
   ignore_rules = []
   ignore_for_file = []
 
-  for rule in CONFIG['pep8.ignore']:
+  for rule in CONFIG['pycodestyle.ignore'] + CONFIG['pep8.ignore']:
     if '=>' in rule:
       path, rule_entry = rule.split('=>', 1)
 
@@ -199,10 +197,13 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
 
     return False
 
-  if is_pep8_available():
-    import pep8
+  if is_pycodestyle_available():
+    if _module_exists('pep8'):
+      import pep8 as pycodestyle
+    else:
+      import pycodestyle
 
-    class StyleReport(pep8.BaseReport):
+    class StyleReport(pycodestyle.BaseReport):
       def __init__(self, options):
         super(StyleReport, self).__init__(options)
 
@@ -215,7 +216,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
           if not is_ignored(self.filename, code, line):
             issues.setdefault(self.filename, []).append(Issue(line_number, text, line))
 
-    style_checker = pep8.StyleGuide(ignore = ignore_rules, reporter = StyleReport)
+    style_checker = pycodestyle.StyleGuide(ignore = ignore_rules, reporter = StyleReport)
     style_checker.check_files(list(_python_files(paths)))
 
   if check_newlines or check_exception_keyword:
@@ -269,7 +270,7 @@ def pyflakes_issues(paths):
   ::
 
     pyflakes.ignore stem/util/test_tools.py => 'pyflakes' imported but unused
-    pyflakes.ignore stem/util/test_tools.py => 'pep8' imported but unused
+    pyflakes.ignore stem/util/test_tools.py => 'pycodestyle' imported but unused
 
   If a 'exclude_paths' was set in our test config then we exclude any absolute
   paths matching those regexes.
@@ -335,6 +336,22 @@ def pyflakes_issues(paths):
   return issues
 
 
+def _module_exists(module_name):
+  """
+  Checks if a module exists.
+
+  :param str module_name: module to check existance of
+
+  :returns: **True** if module exists and **False** otherwise
+  """
+
+  try:
+    __import__(module_name)
+    return True
+  except ImportError:
+    return False
+
+
 def _python_files(paths):
   for path in paths:
     for file_path in stem.util.system.files_with_suffix(path, '.py'):
@@ -350,7 +367,9 @@ def _python_files(paths):
 
 # TODO: drop with stem 2.x
 # We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
-# names for backward compatability.
+# names for backward compatability, and account for pep8 being renamed to
+# pycodestyle.
 
 get_stylistic_issues = stylistic_issues
 get_pyflakes_issues = pyflakes_issues
+is_pep8_available = is_pycodestyle_available

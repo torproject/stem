@@ -23,7 +23,7 @@ Tasks are...
   |- check_python_version - checks our version of python
   |- check_pycrypto_version - checks our version of pycrypto
   |- check_pyflakes_version - checks our version of pyflakes
-  |- check_pep8_version - checks our version of pep8
+  |- check_pycodestyle_version - checks our version of pycodestyle
   |- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
   +- check_for_unused_tests - checks to see if any tests are missing from our settings
 """
@@ -226,12 +226,15 @@ def check_pyflakes_version():
     return 'missing'
 
 
-def check_pep8_version():
-  try:
-    import pep8
-    return pep8.__version__
-  except ImportError:
+def check_pycodestyle_version():
+  if stem.util.test_tools._module_exists('pycodestyle'):
+    import pycodestyle
+  elif stem.util.test_tools._module_exists('pep8'):
+    import pep8 as pycodestyle
+  else:
     return 'missing'
+
+  return pycodestyle.__version__
 
 
 def clean_orphaned_pyc(paths):
