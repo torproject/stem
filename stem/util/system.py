@@ -737,8 +737,8 @@ def cwd(pid):
   if is_available('lsof'):
     results = call(GET_CWD_LSOF % pid, [])
 
-    if len(results) == 2 and results[1].startswith('n/'):
-      lsof_result = results[1][1:].strip()
+    if len(results) >= 2 and results[-1].startswith('n/'):
+      lsof_result = results[-1][1:].strip()
 
       # If we lack read permissions for the cwd then it returns...
       # p2683

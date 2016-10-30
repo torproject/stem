@@ -362,6 +362,7 @@ class TestSystem(unittest.TestCase):
 
     responses = {
       '75717': ['p75717', 'n/Users/atagar/tor/src/or'],
+      '75717': ['p75717', 'fcwd', 'n/Users/atagar/tor/src/or'],
       '1234': ['malformed output'],
       '7878': [],
     }
