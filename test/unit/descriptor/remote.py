@@ -175,7 +175,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     # quick sanity test that we can load cached content
     fallback_directories = stem.descriptor.remote.FallbackDirectory.from_cache()
     self.assertTrue(len(fallback_directories) > 10)
-    self.assertEqual('5.175.233.86', fallback_directories['5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33'].address)
+    self.assertEqual('5.39.92.199', fallback_directories['0BEA4A88D069753218EAAAD6D22EA87B9A1319D6'].address)
 
   @patch(URL_OPEN)
   def test_fallback_directories_from_remote(self, urlopen_mock):

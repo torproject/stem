@@ -54,7 +54,7 @@ if __name__ == '__main__':
   conf.set('tor_commit', fallback_dir_commit)
   conf.set('stem_commit', stem_commit)
 
-  for directory in latest_fallback_directories.values():
+  for directory in sorted(latest_fallback_directories.values(), lambda x, y: cmp(x.fingerprint, y.fingerprint)):
     fingerprint = directory.fingerprint
     conf.set('%s.address' % fingerprint, directory.address)
     conf.set('%s.or_port' % fingerprint, str(directory.or_port))
