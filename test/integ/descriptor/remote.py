@@ -11,6 +11,8 @@ import stem.descriptor.remote
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 
+import test.runner
+
 from test.runner import (
   require_online,
   only_run_once,
@@ -225,6 +227,12 @@ class TestDescriptorDownloader(unittest.TestCase):
     Fetch information from each fallback directory to confirm that it's
     available.
     """
+
+    # Don't run this test by default. Once upon a time it was fine, but tor has
+    # added so many fallbacks now that this takes a looong time. :(
+
+    test.runner.skip(self, '(skipped by default)')
+    return
 
     unsuccessful = {}
     downloader = stem.descriptor.remote.DescriptorDownloader()
