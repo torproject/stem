@@ -184,6 +184,23 @@ class TestDescriptorDownloader(unittest.TestCase):
 
   @require_online
   @only_run_once
+  def test_get_consensus_for_microdescriptors(self):
+    """
+    Exercises the downloader's get_consensus() method for fetching a
+    microdescriptor consensus.
+    """
+
+    downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
+
+    consensus_query = downloader.get_consensus(microdescriptor = True)
+    consensus_query.run()
+
+    consensus = list(consensus_query)
+    self.assertTrue(len(consensus) > 50)
+    self.assertTrue(isinstance(consensus[0], stem.descriptor.router_status_entry.RouterStatusEntryMicroV3))
+
+  @require_online
+  @only_run_once
   def test_get_key_certificates(self):
     """
     Exercises the downloader's get_key_certificates() method.

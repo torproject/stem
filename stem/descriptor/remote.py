@@ -160,7 +160,7 @@ def get_extrainfo_descriptors(fingerprints = None, **query_args):
   return get_instance().get_extrainfo_descriptors(fingerprints, **query_args)
 
 
-def get_consensus(authority_v3ident = None, **query_args):
+def get_consensus(authority_v3ident = None, microdescriptor = False, **query_args):
   """
   Shorthand for
   :func:`~stem.descriptor.remote.DescriptorDownloader.get_consensus`
@@ -169,7 +169,7 @@ def get_consensus(authority_v3ident = None, **query_args):
   .. versionadded:: 1.5.0
   """
 
-  return get_instance().get_consensus(authority_v3ident, **query_args)
+  return get_instance().get_consensus(authority_v3ident, microdescriptor, **query_args)
 
 
 def _guess_descriptor_type(resource):
@@ -182,6 +182,8 @@ def _guess_descriptor_type(resource):
     return 'extra-info 1.0'
   elif resource.startswith('/tor/micro/'):
     return 'microdescriptor 1.0'
+  elif resource.startswith('/tor/status-vote/current/consensus-microdesc'):
+    return 'network-status-microdesc-consensus-3 1.0'
   elif resource.startswith('/tor/status-vote/'):
     return 'network-status-consensus-3 1.0'
   elif resource.startswith('/tor/keys/'):
@@ -236,18 +238,19 @@ class Query(object):
   <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_).
   Commonly useful ones include...
 
-  ===================================== ===========
-  Resource                              Description
-  ===================================== ===========
-  /tor/server/all.z                     all present server descriptors
-  /tor/server/fp/<fp1>+<fp2>+<fp3>.z    server descriptors with the given fingerprints
-  /tor/extra/all.z                      all present extrainfo descriptors
-  /tor/extra/fp/<fp1>+<fp2>+<fp3>.z     extrainfo descriptors with the given fingerprints
-  /tor/micro/d/<hash1>-<hash2>.z        microdescriptors with the given hashes
-  /tor/status-vote/current/consensus.z  present consensus
-  /tor/keys/all.z                       key certificates for the authorities
-  /tor/keys/fp/<v3ident1>+<v3ident2>.z  key certificates for specific authorities
-  ===================================== ===========
+  =============================================== ===========
+  Resource                                        Description
+  =============================================== ===========
+  /tor/server/all.z                               all present server descriptors
+  /tor/server/fp/<fp1>+<fp2>+<fp3>.z              server descriptors with the given fingerprints
+  /tor/extra/all.z                                all present extrainfo descriptors
+  /tor/extra/fp/<fp1>+<fp2>+<fp3>.z               extrainfo descriptors with the given fingerprints
+  /tor/micro/d/<hash1>-<hash2>.z                  microdescriptors with the given hashes
+  /tor/status-vote/current/consensus.z            present consensus
+  /tor/status-vote/current/consensus-microdesc.z  present microdescriptor consensus
+  /tor/keys/all.z                                 key certificates for the authorities
+  /tor/keys/fp/<v3ident1>+<v3ident2>.z            key certificates for specific authorities
+  =============================================== ===========
 
   The '.z' suffix can be excluded to get a plaintext rather than compressed
   response. Compression is handled transparently, so this shouldn't matter to
@@ -564,6 +567,8 @@ class DescriptorDownloader(object):
 
     return self.query(resource, **query_args)
 
+  # TODO: drop in python 2.x
+
   def get_microdescriptors(self, hashes, **query_args):
     """
     Provides the microdescriptors with the given hashes. To get these see the
@@ -595,14 +600,19 @@ class DescriptorDownloader(object):
 
     return self.query('/tor/micro/d/%s.z' % '-'.join(hashes), **query_args)
 
-  def get_consensus(self, authority_v3ident = None, **query_args):
+  def get_consensus(self, authority_v3ident = None, microdescriptor = False, **query_args):
     """
     Provides the present router status entries.
+
+    .. versionchanged:: 1.5.0
+       Added the microdescriptor argument.
 
     :param str authority_v3ident: fingerprint of the authority key for which
       to get the consensus, see `'v3ident' in tor's config.c
       <https://gitweb.torproject.org/tor.git/tree/src/or/config.c#n819>`_
       for the values.
+    :param bool microdescriptor: provides the microdescriptor consensus if
+      **True**, standard consensus otherwise
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 
@@ -610,7 +620,10 @@ class DescriptorDownloader(object):
       entries
     """
 
-    resource = '/tor/status-vote/current/consensus'
+    if microdescriptor:
+      resource = '/tor/status-vote/current/consensus-microdesc'
+    else:
+      resource = '/tor/status-vote/current/consensus'
 
     if authority_v3ident:
       resource += '/%s' % authority_v3ident

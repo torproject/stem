@@ -68,6 +68,7 @@ The following are only available within Stem's `git repository
   * `Shorthand functions for stem.descriptor.remote <api/descriptor/remote.html#stem.descriptor.remote.get_instance>`_
   * Added `fallback directory information <api/descriptor/remote.html#stem.descriptor.remote.FallbackDirectory>`_.
   * Support for ed25519 descriptor fields (:spec:`5a79d67`)
+  * Support downloading microdescriptor consensus with :func:~stem.descriptor.remote.DescriptorDownloader.get_consensus` (:spec`e788b8f`)
   * Added consensus and vote's new shared randomness attributes (:spec:`9949f64`) 
   * Added server descriptor's new allow_tunneled_dir_requests attribute (:spec:`8bc30d6`)
   * Server descriptor validation fails with 'extra-info-digest line had an invalid value' from additions in proposal 228 (:trac:`16227`)
