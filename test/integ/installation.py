@@ -82,8 +82,8 @@ class TestInstallation(unittest.TestCase):
     for root, dirnames, filenames in os.walk(os.path.join(BASE_DIRECTORY, 'stem')):
       for filename in filenames:
           file_format = filename.split('.')[-1]
-          excluded = ['pyc', 'swp', 'swo']
-          if not file_format in excluded:
+
+          if file_format not in ('pyc', 'swp', 'swo'):
             expected.add(os.path.join(root, filename)[len(BASE_DIRECTORY) + 1:])
 
     for root, dirnames, filenames in os.walk(self.site_packages_path):
