@@ -8,8 +8,7 @@ import stem
 import stem.util.system
 
 import test.runner
-
-BASE_DIRECTORY = os.path.sep.join(__file__.split(os.path.sep)[:-3])
+import test.util
 
 
 class TestInstallation(unittest.TestCase):
@@ -22,13 +21,13 @@ class TestInstallation(unittest.TestCase):
     self.skip_reason = None
     self.installation_error = None
 
-    if not os.path.exists(os.path.join(BASE_DIRECTORY, 'setup.py')):
+    if not os.path.exists(os.path.join(test.util.STEM_BASE, 'setup.py')):
       self.skip_reason = '(only for git checkout)'
 
     original_cwd = os.getcwd()
 
     try:
-      os.chdir(BASE_DIRECTORY)
+      os.chdir(test.util.STEM_BASE)
       stem.util.system.call(sys.executable + ' setup.py install --prefix /tmp/stem_test')
       stem.util.system.call(sys.executable + ' setup.py clean --all')  # tidy up the build directory
       site_packages_paths = glob.glob('/tmp/stem_test/lib*/*/site-packages')
@@ -79,12 +78,12 @@ class TestInstallation(unittest.TestCase):
 
     expected, installed = set(), set()
 
-    for root, dirnames, filenames in os.walk(os.path.join(BASE_DIRECTORY, 'stem')):
+    for root, dirnames, filenames in os.walk(os.path.join(test.util.STEM_BASE, 'stem')):
       for filename in filenames:
-          file_format = filename.split('.')[-1]
+        file_format = filename.split('.')[-1]
 
-          if file_format not in ('pyc', 'swp', 'swo'):
-            expected.add(os.path.join(root, filename)[len(BASE_DIRECTORY) + 1:])
+        if file_format not in ('pyc', 'swp', 'swo'):
+          expected.add(os.path.join(root, filename)[len(test.util.STEM_BASE) + 1:])
 
     for root, dirnames, filenames in os.walk(self.site_packages_path):
       for filename in filenames:
