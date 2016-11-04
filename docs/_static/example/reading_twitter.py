@@ -81,7 +81,7 @@ try:
     print("%i. %s" % (index + 1, tweet["created_at"]))
     print(tweet["text"])
     print("")
-except IOError, exc:
+except IOError as exc:
   print(exc)
 finally:
   tor_process.kill()  # stops tor
