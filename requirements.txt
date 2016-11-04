@@ -1,5 +1,5 @@
 mock
 pyflakes
-pep8
+pycodestyle
 pycrypto
 tox

@@ -35,9 +35,15 @@ General Information
 What is Stem?
 -------------
 
-Stem is a Python controller library that you can use to interact with `Tor <https://www.torproject.org/>`_. With it you can write scripts and applications with capabilities similar `arm <https://www.atagar.com/arm/>`_.
+Stem is a Python controller library that you can use to interact with `Tor
+<https://www.torproject.org/>`_. With it you can write scripts and applications
+with capabilities similar `arm <https://www.atagar.com/arm/>`_.
 
-From a technical standpoint, Stem is a Python implementation of Tor's `directory <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_ and `control specifications <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_. `To get started see our tutorials! <tutorials.html>`_
+From a technical standpoint, Stem is a Python implementation of Tor's
+`directory <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_ and
+`control specifications
+<https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_. `To get
+started see our tutorials! <tutorials.html>`_
 
 .. _does_stem_have_any_dependencies:
 
@@ -457,7 +463,7 @@ To start hacking on Stem please do the following and don't hesitate to let me
 know if you get stuck or would like to discuss anything!
 
 #. Clone our `git <http://git-scm.com/>`_ repository: **git clone https://git.torproject.org/stem.git**
-#. Get our test depdendencies: **sudo pip install mock pep8 pyflakes**.
+#. Get our test depdendencies: **sudo pip install mock pycodestyle pyflakes**.
 #. Find a `bug or feature <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_ that sounds interesting.
 #. When you have something that you would like to contribute back do the following...
 
@@ -501,9 +507,10 @@ can exercise alternate Tor configurations with the ``--target`` argument (see
   ~/stem$ ./run_tests.py --integ --target RUN_COOKIE
 
 **Static** tests use `pyflakes <https://launchpad.net/pyflakes>`_ to do static
-error checking and `pep8 <http://pep8.readthedocs.org/en/latest/>`_ for style
-checking. If you have them installed then they automatically take place as part
-of all test runs.
+error checking and `pycodestyle
+<http://pycodestyle.readthedocs.org/en/latest/>`_ for style checking. If you
+have them installed then they automatically take place as part of all test
+runs.
 
 See ``run_tests.py --help`` for more usage information.
 
