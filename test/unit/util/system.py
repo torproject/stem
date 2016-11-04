@@ -362,7 +362,7 @@ class TestSystem(unittest.TestCase):
 
     responses = {
       '75717': ['p75717', 'n/Users/atagar/tor/src/or'],
-      '75717': ['p75717', 'fcwd', 'n/Users/atagar/tor/src/or'],
+      '75718': ['p75718', 'fcwd', 'n/Users/atagar/tor/src/or'],
       '1234': ['malformed output'],
       '7878': [],
     }
@@ -370,7 +370,7 @@ class TestSystem(unittest.TestCase):
     call_mock.side_effect = mock_call(system.GET_CWD_LSOF, responses)
 
     for test_input in responses:
-      expected_response = '/Users/atagar/tor/src/or' if test_input == '75717' else None
+      expected_response = '/Users/atagar/tor/src/or' if test_input in ('75717', '75718') else None
       self.assertEqual(expected_response, system.cwd(test_input))
 
   def test_tail(self):
