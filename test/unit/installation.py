@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import unittest
@@ -22,7 +23,7 @@ class TestInstallation(unittest.TestCase):
     else:
       self.skip_reason = '(only for git checkout)'
 
-  def test_installation_has_all_modules(self):
+  def test_installs_all_modules(self):
     if self.skip_reason:
       test.runner.skip(self, self.skip_reason)
       return True
@@ -31,17 +32,51 @@ class TestInstallation(unittest.TestCase):
     #
     #   packages = ['stem', 'stem.descriptor', 'stem.util'],
 
-    modules = re.search('packages = \[(.*)\]', self.setup_contents).group(1).replace("'", '').replace(',', '').split()
+    modules = json.loads(re.search('packages = (\[.*\])', self.setup_contents).group(1).replace("'", '"'))
     module_paths = dict([(m, os.path.join(test.util.STEM_BASE, m.replace('.', os.path.sep))) for m in modules])
 
     for module, path in module_paths.items():
       if not os.path.exists(path):
-        self.fail("module %s from our setup.py doesn't exit at %s" % (module, path))
+        self.fail("setup.py's module %s doesn't exist at %s" % (module, path))
 
     for entry in os.walk(os.path.join(test.util.STEM_BASE, 'stem')):
-      path = entry[0]
+      directory = entry[0]
 
-      if path.endswith('__pycache__'):
+      if directory.endswith('__pycache__'):
         continue
-      elif path not in module_paths.values():
-        self.fail("%s isn't installed by our setup.py" % path)
+      elif directory not in module_paths.values():
+        self.fail("setup.py doesn't install %s" % directory)
+
+  def test_installs_all_data_files(self):
+    if self.skip_reason:
+      test.runner.skip(self, self.skip_reason)
+      return True
+
+    # Checking that we have all non-source files. Data looks like...
+    #
+    #   package_data = {'stem': ['cached_tor_manual.cfg', 'settings.cfg']},
+
+    package_data = json.loads(re.search('package_data = (\{.*\})', self.setup_contents).group(1).replace("'", '"'))
+    data_files = []
+
+    for module, files in package_data.items():
+      for module_file in files:
+        data_files.append(os.path.join(test.util.STEM_BASE, module.replace('.', os.path.sep), module_file))
+
+    for path in data_files:
+      if not os.path.exists(path):
+        self.fail("setup.py installs a data file that doesn't exist: %s" % path)
+
+    for entry in os.walk(os.path.join(test.util.STEM_BASE, 'stem')):
+      directory = entry[0]
+
+      if directory.endswith('__pycache__'):
+        continue
+
+      for filename in entry[2]:
+        path = os.path.join(directory, filename)
+
+        if path.endswith('.py') or path.endswith('.pyc'):
+          continue
+        elif path not in data_files:
+          self.fail("setup.py doesn't install %s" % path)
