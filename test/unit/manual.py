@@ -105,6 +105,25 @@ EXPECTED_CONFIG_OPTIONS['MaxAdvertisedBandwidth'] = stem.manual.ConfigOption(
 
 
 class TestManual(unittest.TestCase):
+  def test_has_all_summaries(self):
+    """
+    Check that we have brief, human readable summaries for all of tor's
+    configuration options. If you add a new config entry then please take a sec
+    to write a little summary. They're located in 'stem/settings.cfg'.
+    """
+
+    manual = stem.manual.Manual.from_cache()
+    present = set(manual.config_options.keys())
+    expected = set([key[15:] for key in stem.manual._config(lowercase = False) if key.startswith('manual.summary.')])
+
+    missing_options = present.difference(expected)
+    extra_options = expected.difference(present)
+
+    if missing_options:
+      self.fail("Ran cache_manual.py? Please update Stem's settings.cfg with summaries of the following config options: %s" % ', '.join(missing_options))
+    elif extra_options:
+      self.fail("Ran cache_manual.py? Please remove the following summaries from Stem's settings.cfg: %s" % ', '.join(extra_options))
+
   def test_is_important(self):
     self.assertTrue(stem.manual.is_important('ExitPolicy'))
     self.assertTrue(stem.manual.is_important('exitpolicy'))

@@ -246,28 +246,6 @@ class TestManual(unittest.TestCase):
     self.assertEqual(['tor - The second-generation onion router'], categories['NAME'])
     self.assertEqual(['tor [OPTION value]...'], categories['SYNOPSIS'])
 
-  def test_has_all_summaries(self):
-    """
-    Check that we have brief, human readable summaries for all of tor's
-    configuration options. If you add a new config entry then please take a sec
-    to write a little summary. They're located in 'stem/settings.cfg'.
-    """
-
-    if self.requires_downloaded_manual():
-      return
-
-    manual = stem.manual.Manual.from_man(self.man_path)
-    present = set(manual.config_options.keys())
-    expected = set([key[15:] for key in stem.manual._config(lowercase = False) if key.startswith('manual.summary.')])
-
-    missing_options = present.difference(expected)
-    extra_options = expected.difference(present)
-
-    if missing_options:
-      self.fail("Changed tor's man page? Please update Stem's settings.cfg with summaries of the following config options: %s" % ', '.join(missing_options))
-    elif extra_options:
-      self.fail("Changed tor's man page? Please remove the following summaries from Stem's settings.cfg: %s" % ', '.join(extra_options))
-
   def test_has_all_tor_config_options(self):
     """
     Check that all the configuration options tor supports are in the man page.
