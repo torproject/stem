@@ -93,15 +93,15 @@ def _render_graph(window, bandwidth_rates):
 
   # draw the graph
 
-  for col in xrange(GRAPH_WIDTH):
+  for col in range(GRAPH_WIDTH):
     col_height = GRAPH_HEIGHT * download_rates[col] / max(max_download_rate, 1)
 
-    for row in xrange(col_height):
+    for row in range(col_height):
       window.addstr(GRAPH_HEIGHT - row, col + 6, " ", DOWNLOAD_COLOR, curses.A_STANDOUT)
 
     col_height = GRAPH_HEIGHT * upload_rates[col] / max(max_upload_rate, 1)
 
-    for row in xrange(col_height):
+    for row in range(col_height):
       window.addstr(GRAPH_HEIGHT - row, col + GRAPH_WIDTH + 12, " ", UPLOAD_COLOR, curses.A_STANDOUT)
 
   window.refresh()
