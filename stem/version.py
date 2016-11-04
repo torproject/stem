@@ -112,7 +112,7 @@ def get_system_tor_version(tor_cmd = 'tor'):
         if os.path.isabs(tor_cmd):
           exc = "Unable to check tor's version. '%s' doesn't exist." % tor_cmd
         else:
-          exc = "Unable to run '%s'. Mabye tor isn't in your PATH?" % version_cmd
+          exc = "Unable to run '%s'. Maybe tor isn't in your PATH?" % version_cmd
 
       raise IOError(exc)
 

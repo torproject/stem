@@ -69,7 +69,7 @@ class TestInstallation(unittest.TestCase):
   def test_installs_all_files(self):
     """
     Check that all the files in the stem directory are present in the
-    installatnion. This is a very common gotcha since our setup.py
+    installation. This is a very common gotcha since our setup.py
     requires us to remember to add new modules and non-source files.
     """
 
