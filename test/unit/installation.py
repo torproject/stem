@@ -76,7 +76,7 @@ class TestInstallation(unittest.TestCase):
       for filename in entry[2]:
         path = os.path.join(directory, filename)
 
-        if path.endswith('.py') or path.endswith('.pyc'):
+        if path.endswith('.orig') or path.endswith('.py') or path.endswith('.pyc'):
           continue
         elif path not in data_files:
           self.fail("setup.py doesn't install %s" % path)
