@@ -326,7 +326,7 @@ An important thing to note is that a new circuit does not necessarily mean a new
 
 Tor does not have a method for cycling your IP address. This is on purpose, and done for a couple reasons. The first is that this capability is usually requested for not-so-nice reasons such as ban evasion or SEO. Second, repeated circuit creation puts a very high load on the Tor network, so please don't!
 
-With all that out of the way, how do you create a new circuit? You can customize the rate at which Tor cycles circuits with the **MaxCircuitDirtiness** option in your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. `Vidalia <https://www.torproject.org/getinvolved/volunteer.html.en#project-vidalia>`_ and `arm <https://www.atagar.com/arm/>`_ both provide a method to request a new identity, and you can do so programmatically by sending Tor a NEWNYM signal.
+With all that out of the way, how do you create a new circuit? You can customize the rate at which Tor cycles circuits with the **MaxCircuitDirtiness** option in your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. `Vidalia <https://en.wikipedia.org/wiki/Vidalia_%28software%29>`_ and `arm <https://www.atagar.com/arm/>`_ both provide a method to request a new identity, and you can do so programmatically by sending Tor a NEWNYM signal.
 
 To do this with telnet...
 
@@ -463,7 +463,7 @@ To start hacking on Stem please do the following and don't hesitate to let me
 know if you get stuck or would like to discuss anything!
 
 #. Clone our `git <http://git-scm.com/>`_ repository: **git clone https://git.torproject.org/stem.git**
-#. Get our test depdendencies: **sudo pip install mock pycodestyle pyflakes**.
+#. Get our test dependencies: **sudo pip install mock pycodestyle pyflakes**.
 #. Find a `bug or feature <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_ that sounds interesting.
 #. When you have something that you would like to contribute back do the following...
 
@@ -474,7 +474,7 @@ know if you get stuck or would like to discuss anything!
   * Description: longer description and a link to your repository with either the git commits or branch that has your change
   * Type: 'defect' if this is a bug fix and 'enhancement' otherwise
   * Priority: rough guess at the priority of your change
-  * Component: Stem
+  * Component: Core Tor / Stem
 
  * I'll review the change and give suggestions. When we're both happy with it I'll push your change to the official repository.
 
