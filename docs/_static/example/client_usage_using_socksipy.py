@@ -2,6 +2,8 @@ import socks  # SocksiPy module
 import socket
 import urllib
 
+SOCKS_PORT = 7000
+
 # Set socks proxy and wrap the urllib module
 
 socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, '127.0.0.1', SOCKS_PORT)
