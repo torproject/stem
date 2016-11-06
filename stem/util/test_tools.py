@@ -273,7 +273,8 @@ def pyflakes_issues(paths):
     pyflakes.ignore stem/util/test_tools.py => 'pycodestyle' imported but unused
 
   If a 'exclude_paths' was set in our test config then we exclude any absolute
-  paths matching those regexes.
+  paths matching those regexes. Issue strings can start or end with an asterisk
+  to match just against the prefix or suffix.
 
   .. versionchanged:: 1.3.0
      Renamed from get_pyflakes_issues() to pyflakes_issues(). The old name
@@ -282,6 +283,9 @@ def pyflakes_issues(paths):
   .. versionchanged:: 1.4.0
      Changing tuples in return value to be namedtuple instances, and adding the
      line that had the issue.
+
+  .. versionchanged:: 1.5.0
+     Support matching against prefix or suffix issue strings.
 
   :param list paths: paths to search for problems
 
@@ -316,8 +320,19 @@ def pyflakes_issues(paths):
         # path ends with any of them.
 
         for ignored_path, ignored_issues in self._ignored_issues.items():
-          if path.endswith(ignored_path) and issue in ignored_issues:
-            return True
+          if path.endswith(ignored_path):
+            is_match = issue in ignored_issues
+
+            for prefix in [i[:1] for i in ignored_issues if i.endswith('*')]:
+              if issue.startswith(prefix):
+                is_match = True
+
+            for suffix in [i[1:] for i in ignored_issues if i.startswith('*')]:
+              if issue.endswith(suffix):
+                is_match = True
+
+            if is_match:
+              return True
 
         return False
 

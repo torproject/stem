@@ -125,7 +125,7 @@ def main():
   if not stem.prereq.is_mock_available():
     try:
       try:
-        import unittest.mock
+        import unittest.mock as mock
       except ImportError:
         import mock
 

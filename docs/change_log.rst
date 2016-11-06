@@ -91,6 +91,7 @@ The following are only available within Stem's `git repository
   * The 'ss' connection resolver didn't work on Gentoo (:trac:`18079`)
   * Recognize IPv4-mapped IPv6 addresses in our utils (:trac:`18079`)
   * Allow :func:`stem.util.conf.Config.set` to remove values when provided with a **None** value
+  * Support prefix and suffix issue strings in :func:`~stem.util.test_tools.pyflakes_issues`
   * Additional information when :func:`~stem.util.system.call` fails through a :class:`~stem.util.system.CallError`
   * Added **stem.util.system.SYSTEM_CALL_TIME** with the total time spent on system calls
   * Added an **is_ipv6** value to :class:`~stem.util.connection.Connection` instances
