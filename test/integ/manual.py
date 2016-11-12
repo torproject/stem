@@ -34,7 +34,7 @@ EXPECTED_CATEGORIES = set([
   'AUTHORS',
 ])
 
-EXPECTED_CLI_OPTIONS = set(['-h, -help', '-f FILE', '--allow-missing-torrc', '--defaults-torrc FILE', '--ignore-missing-torrc', '--hash-password PASSWORD', '--list-fingerprint', '--verify-config', '--service install [--options command-line options]', '--service remove|start|stop', '--nt-service', '--keygen [--newpass]', '--list-torrc-options', '--version', '--quiet|--hush'])
+EXPECTED_CLI_OPTIONS = set(['-f FILE', '--hash-password PASSWORD', '--ignore-missing-torrc', '--defaults-torrc FILE', '--list-fingerprint', '--list-deprecated-options', '--allow-missing-torrc', '--nt-service', '--verify-config', '--service remove|start|stop', '--passphrase-fd FILEDES', '--keygen [--newpass]', '--list-torrc-options', '--service install [--options command-line options]', '--quiet|--hush', '--version', '-h, -help'])
 EXPECTED_SIGNALS = set(['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGUSR1', 'SIGUSR2', 'SIGCHLD', 'SIGPIPE', 'SIGXFSZ'])
 
 EXPECTED_DESCRIPTION = """
@@ -42,7 +42,7 @@ Tor is a connection-oriented anonymizing communication service. Users choose a s
 
 Basically, Tor provides a distributed network of servers or relays ("onion routers"). Users bounce their TCP streams -- web traffic, ftp, ssh, etc. -- around the network, and recipients, observers, and even the relays themselves have difficulty tracking the source of the stream.
 
-By default, tor will only act as a client only. To help the network by providing bandwidth as a relay, change the ORPort configuration option -- see below. Please also consult the documentation on the Tor Project's website.
+By default, tor will act as a client only. To help the network by providing bandwidth as a relay, change the ORPort configuration option -- see below. Please also consult the documentation on the Tor Project's website.
 """.strip()
 
 EXPECTED_FILE_DESCRIPTION = 'Specify a new configuration file to contain further Tor configuration options OR pass - to make Tor read its configuration from standard input. (Default: @CONFDIR@/torrc, or $HOME/.torrc if that file is not found)'
@@ -50,7 +50,7 @@ EXPECTED_FILE_DESCRIPTION = 'Specify a new configuration file to contain further
 EXPECTED_BANDWIDTH_RATE_DESCRIPTION = 'A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) -- but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible. (Default: 1 GByte)\n\nWith this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\'s easy to forget that "B" means bytes, not bits.'
 
 
-EXPECTED_EXIT_POLICY_DESCRIPTION = """\
+EXPECTED_EXIT_POLICY_DESCRIPTION = """
 Set an exit policy for this server. Each policy is of the form "accept[6]|reject[6] ADDR[/MASK][:PORT]". If /MASK is omitted then this policy just applies to the host given. Instead of giving a host or network you can also use "*" to denote the universe (0.0.0.0/0 and ::/128), or *4 to denote all IPv4 addresses, and *6 to denote all IPv6 addresses.  PORT can be a single port number, an interval of ports "FROM_PORT-TO_PORT", or "*". If PORT is omitted, that means "*".
 
 For example, "accept 18.7.22.69:*,reject 18.0.0.0/8:*,accept *:*" would reject any IPv4 traffic destined for MIT except for web.mit.edu, and accept any other IPv4 or IPv6 traffic.
@@ -61,7 +61,7 @@ accept6 and reject6 only produce IPv6 exit policy entries. Using an IPv4 address
 
 To specify all IPv4 and IPv6 internal and link-local networks (including 0.0.0.0/8, 169.254.0.0/16, 127.0.0.0/8, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, [::]/8, [FC00::]/7, [FE80::]/10, [FEC0::]/10, [FF00::]/8, and [::]/127), you can use the "private" alias instead of an address. ("private" always produces rules for IPv4 and IPv6 addresses, even when used with accept6/reject6.)
 
-Private addresses are rejected by default (at the beginning of your exit policy), along with any configured primary public IPv4 and IPv6 addresses, and any public IPv4 and IPv6 addresses on any interface on the relay. These private addresses are rejected unless you set the ExitPolicyRejectPrivate config option to 0. For example, once you've done that, you could allow HTTP to 127.0.0.1 and block all other connections to internal networks with "accept 127.0.0.1:80,reject private:*", though that may also allow connections to your own computer that are addressed to its public (external) IP address. See RFC 1918 and RFC 3330 for more details about internal and reserved IP address space.
+Private addresses are rejected by default (at the beginning of your exit policy), along with any configured primary public IPv4 and IPv6 addresses. These private addresses are rejected unless you set the ExitPolicyRejectPrivate config option to 0. For example, once you've done that, you could allow HTTP to 127.0.0.1 and block all other connections to internal networks with "accept 127.0.0.1:80,reject private:*", though that may also allow connections to your own computer that are addressed to its public (external) IP address. See RFC 1918 and RFC 3330 for more details about internal and reserved IP address space. See ExitPolicyRejectLocalInterfaces if you want to block every address on the relay, even those that aren't advertised in the descriptor.
 
 This directive can be specified multiple times so you don't have to put it all on one line.
 
@@ -80,8 +80,8 @@ Policies are considered first to last, and the first match wins. If you want to 
     accept *:*
 
     Since the default exit policy uses accept/reject *, it applies to both
-    IPv4 and IPv6 addresses.\
-"""
+    IPv4 and IPv6 addresses.
+""".strip()
 
 
 class TestManual(unittest.TestCase):
@@ -203,7 +203,7 @@ class TestManual(unittest.TestCase):
     assert_equal('signals', EXPECTED_SIGNALS, set(manual.signals.keys()))
     assert_equal('sighup description', 'Tor will catch this, clean up and sync to disk if necessary, and exit.', manual.signals['SIGTERM'])
 
-    assert_equal('number of files', 31, len(manual.files))
+    assert_equal('number of files', 44, len(manual.files))
     assert_equal('lib path description', 'The tor process stores keys and other data here.', manual.files['@LOCALSTATEDIR@/lib/tor/'])
 
     for category in Category:
@@ -218,7 +218,7 @@ class TestManual(unittest.TestCase):
     option = manual.config_options['BandwidthRate']
     self.assertEqual(Category.GENERAL, option.category)
     self.assertEqual('BandwidthRate', option.name)
-    self.assertEqual('N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits', option.usage)
+    self.assertEqual('N bytes|KBytes|MBytes|GBytes|TBytes|KBits|MBits|GBits|TBits', option.usage)
     self.assertEqual('Average bandwidth usage limit', option.summary)
     self.assertEqual(EXPECTED_BANDWIDTH_RATE_DESCRIPTION, option.description)
 
