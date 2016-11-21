@@ -7,6 +7,7 @@ unreleased. For a monthly report on work being done see my `development log
 
 * :ref:`versioning`
 * :ref:`unreleased`
+* :ref:`version_1.5`
 * :ref:`version_1.4`
 * :ref:`version_1.3`
 * :ref:`version_1.2`
@@ -42,9 +43,18 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+.. _version_1.5:
+
+Version 1.5 (November 20th, 2016)
+---------------------------------
+
+Stem 1.5 is a long overdue accumulation of seventeen months of improvements
+including dramatically improved python 3.x performance, `tor manual information
+<api/manual.html>`_, and much more.
+
  * **Controller**
 
-  * Dramatic, `300x performance improvement <https://github.com/DonnchaC/stem/pull/1>`_ for reading from the control port with python 3
+  * Dramatic, 300x performance improvement for reading from the control port with python 3
   * Added `stem.manual <api/manual.html>`_, which provides information available about Tor from `its manual <https://www.torproject.org/docs/tor-manual.html.en>`_ (:trac:`8251`)
   * :func:`~stem.connection.connect` and :func:`~stem.control.Controller.from_port` now connect to both port 9051 (relay's default) and 9151 (Tor Browser's default) (:trac:`16075`)
   * :class:`~stem.exit_policy.ExitPolicy` support for *accept6/reject6* and *\*4/6* wildcards (:trac:`16053`)
