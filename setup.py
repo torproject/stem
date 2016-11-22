@@ -43,7 +43,6 @@ distutils.core.setup(
   keywords = 'tor onion controller',
   scripts = ['tor-prompt'],
   package_data = {'stem': ['cached_tor_manual.cfg', 'settings.cfg'], 'stem.descriptor': ['fallback_directories.cfg'], 'stem.interpreter': ['settings.cfg'], 'stem.util': ['ports.cfg']},
-  provides = ['stem'],
   classifiers = [
     'Development Status :: 5 - Production/Stable',
     'Intended Audience :: Developers',
