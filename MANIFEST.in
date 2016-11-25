@@ -1,0 +1,11 @@
+include cache_fallback_directories.py
+include cache_manual.py
+include LICENSE
+include MANIFEST.in
+include requirements.txt
+include run_tests.py
+include tox.ini
+graft docs
+graft test
+global-exclude __pycache__
+global-exclude *.py[co]

@@ -42,9 +42,13 @@ distutils.core.setup(
   packages = ['stem', 'stem.descriptor', 'stem.interpreter', 'stem.response', 'stem.util'],
   keywords = 'tor onion controller',
   scripts = ['tor-prompt'],
-  package_data = {'stem': ['cached_tor_manual.cfg', 'settings.cfg'], 'stem.descriptor': ['fallback_directories.cfg'], 'stem.interpreter': ['settings.cfg'], 'stem.util': ['ports.cfg']},
   provides = ['stem'],
-  classifiers = [
+  package_data = {
+    'stem': ['cached_tor_manual.cfg', 'settings.cfg'],
+    'stem.descriptor': ['fallback_directories.cfg'],
+    'stem.interpreter': ['settings.cfg'],
+    'stem.util': ['ports.cfg'],
+  }, classifiers = [
     'Development Status :: 5 - Production/Stable',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
