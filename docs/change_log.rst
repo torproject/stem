@@ -111,6 +111,9 @@ The following are only available within Stem's `git repository
   * Example for `custom path selection for circuits <tutorials/to_russia_with_love.html#custom-path-selection>`_ (:trac:`8728`)
   * Example for `persisting ephemeral hidden service keys <tutorials/over_the_river.html#ephemeral-hidden-services>`_
 
+ * **Version 1.5.3** (December 5th, 2016) - including tests and site in the
+   release tarball
+
 .. _version_1.4:
 
 Version 1.4 (May 13th, 2015)
