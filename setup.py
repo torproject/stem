@@ -62,3 +62,6 @@ distutils.core.setup(
     'Topic :: Software Development :: Libraries :: Python Modules',
   ],
 )
+
+if os.path.exists('MANIFEST'):
+  os.remove('MANIFEST')
