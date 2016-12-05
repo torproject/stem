@@ -2,6 +2,7 @@ import glob
 import os
 import shutil
 import sys
+import tarfile
 import unittest
 
 import stem
@@ -9,6 +10,8 @@ import stem.util.system
 
 import test.runner
 import test.util
+
+INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git contents in the following way. The manifest in our setup.py may need to be updated...\n\n"
 
 
 class TestInstallation(unittest.TestCase):
@@ -54,6 +57,51 @@ class TestInstallation(unittest.TestCase):
       self.fail(self.installation_error)
 
     return False
+
+  @test.runner.only_run_once
+  def test_sdist_matches_git(self):
+    """
+    Check the source distribution tarball we make for releases matches the
+    contents of 'git archive'. This primarily is meant to test that our
+    MANIFEST.in is up to date.
+    """
+
+    if self.requires_installation():
+      return
+    elif not stem.util.system.is_available('git'):
+      test.runner.skip(self, '(git unavailable)')
+      return
+
+    original_cwd = os.getcwd()
+    dist_path = os.path.join(test.util.STEM_BASE, 'dist')
+    git_contents = [line.split()[-1] for line in stem.util.system.call('git ls-tree --full-tree -r HEAD')]
+
+    try:
+      os.chdir(test.util.STEM_BASE)
+      stem.util.system.call(sys.executable + ' setup.py sdist')
+
+      # tarball has a prefix 'stem-[verion]' directory so stipping that out
+
+      dist_tar = tarfile.open(os.path.join(dist_path, 'stem-dry-run-%s.tar.gz' % stem.__version__))
+      tar_contents = ['/'.join(info.name.split('/')[1:]) for info in dist_tar.getmembers() if info.isfile()]
+    finally:
+      if os.path.exists(dist_path):
+        shutil.rmtree(dist_path)
+
+      os.chdir(original_cwd)
+
+    issues = []
+
+    for path in git_contents:
+      if path not in tar_contents and path not in ['.gitignore']:
+        issues.append('  * %s is missing from our release tarball' % path)
+
+    for path in tar_contents:
+      if path not in git_contents and path not in ['MANIFEST.in', 'PKG-INFO']:
+        issues.append("  * %s isn't expected in our release tarball" % path)
+
+    if issues:
+      self.fail(INSTALL_MISMATCH_MSG + '\n'.join(issues))
 
   @test.runner.only_run_once
   def test_installing_stem(self):
