@@ -54,9 +54,21 @@ class TestInstallation(unittest.TestCase):
 
     # Checking that we have all non-source files. Data looks like...
     #
-    #   package_data = {'stem': ['cached_tor_manual.cfg', 'settings.cfg']},
+    #   package_data = {
+    #     'stem': ['cached_tor_manual.cfg', 'settings.cfg'],
+    #     'stem.descriptor': ['fallback_directories.cfg'],
+    #   },
 
-    package_data = json.loads(re.search('package_data = (\{.*\})', self.setup_contents).group(1).replace("'", '"'))
+    package_data = {}
+
+    for line in self.setup_contents.split('package_data = {\n', 1)[1].splitlines():
+      if '},' in line:
+        break
+
+      directory = line.strip().split()[0][1:-2]
+      files = line.strip().split(' ', 1)[1][2:-3].split("', '")
+      package_data[directory] = files
+
     data_files = []
 
     for module, files in package_data.items():
