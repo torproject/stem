@@ -130,7 +130,7 @@ class TestInstallation(unittest.TestCase):
       for filename in filenames:
         file_format = filename.split('.')[-1]
 
-        if file_format not in ('pyc', 'swp', 'swo'):
+        if file_format not in test.util.IGNORED_FILE_TYPES:
           expected.add(os.path.join(root, filename)[len(test.util.STEM_BASE) + 1:])
 
     for root, dirnames, filenames in os.walk(self.site_packages_path):

@@ -84,6 +84,15 @@ STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 NEW_CAPABILITIES = []
 
+# File extensions of contents that should be ignored.
+
+IGNORED_FILE_TYPES = []
+
+with open(os.path.join(STEM_BASE, '.gitignore')) as ignore_file:
+  for line in ignore_file:
+    if line.startswith('*.'):
+      IGNORED_FILE_TYPES.append(line[2:].strip())
+
 
 def get_unit_tests(module_prefix = None):
   """
