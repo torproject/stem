@@ -77,7 +77,7 @@ class TestInstallation(unittest.TestCase):
         path = os.path.join(directory, filename)
         file_type = path.split('.')[-1]
 
-        if not file_type in ['.py', '.pyc', '.swp', '.swo', 'orig']:
+        if file_type not in ['.py', '.pyc', '.swp', '.swo', 'orig']:
           continue
         elif path not in data_files:
           self.fail("setup.py doesn't install %s" % path)

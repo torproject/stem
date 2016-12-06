@@ -510,7 +510,6 @@ class TestController(unittest.TestCase):
     service2_path = os.path.join(test_dir, 'test_hidden_service2')
     service3_path = os.path.join(test_dir, 'test_hidden_service3')
     service4_path = os.path.join(test_dir, 'test_hidden_service4')
-    empty_service_path = os.path.join(test_dir, 'test_hidden_service_empty')
 
     with runner.get_tor_controller() as controller:
       try:
@@ -541,9 +540,6 @@ class TestController(unittest.TestCase):
               (8032, '127.0.0.1', 8032),
             ]
           },
-          empty_service_path: {
-            'HiddenServicePort': []
-          }
         }
 
         controller.set_hidden_service_conf(initialconf)
@@ -565,18 +561,18 @@ class TestController(unittest.TestCase):
         self.assertTrue(hs_address1.endswith('.onion'))
 
         conf = controller.get_hidden_service_conf()
-        self.assertEqual(4, len(conf))
+        self.assertEqual(3, len(conf))
         self.assertEqual(2, len(conf[hs_path]['HiddenServicePort']))
 
         # remove a hidden service, the service dir should still be there
 
         controller.remove_hidden_service(hs_path, 8888)
-        self.assertEqual(4, len(controller.get_hidden_service_conf()))
+        self.assertEqual(3, len(controller.get_hidden_service_conf()))
 
         # remove a service completely, it should now be gone
 
         controller.remove_hidden_service(hs_path, 8989)
-        self.assertEqual(3, len(controller.get_hidden_service_conf()))
+        self.assertEqual(2, len(controller.get_hidden_service_conf()))
 
         # add a new service, this time with client authentication
 
@@ -589,13 +585,13 @@ class TestController(unittest.TestCase):
         self.assertTrue(hs_attributes.hostname_for_client['c2'].endswith('.onion'))
 
         conf = controller.get_hidden_service_conf()
-        self.assertEqual(4, len(conf))
+        self.assertEqual(3, len(conf))
         self.assertEqual(1, len(conf[hs_path]['HiddenServicePort']))
 
         # remove a hidden service
 
         controller.remove_hidden_service(hs_path, 8888)
-        self.assertEqual(3, len(controller.get_hidden_service_conf()))
+        self.assertEqual(2, len(controller.get_hidden_service_conf()))
       finally:
         controller.set_hidden_service_conf({})  # drop hidden services created during the test
 
