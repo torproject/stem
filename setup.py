@@ -11,7 +11,7 @@ SUMMARY = 'Stem is a Python controller library that allows applications to inter
 DRY_RUN_SUMMARY = 'Ignore this package. This is dry-run release creation to work around PyPI limitations (https://github.com/pypa/packaging-problems/issues/74#issuecomment-260716129).'
 
 DESCRIPTION = """
-For tutorials and API documentation see `stem's homepage <https://stem.torproject.org/>`_.
+For tutorials and API documentation see `Stem's homepage <https://stem.torproject.org/>`_.
 
 Quick Start
 -----------
@@ -51,8 +51,7 @@ recursive-exclude test/data *
 recursive-exclude docs/_build *
 """.strip()
 
-# Ensure this is our cwd, otherwise distutils fails with 'standard file
-# 'setup.py' not found'.
+# installation requires us to be in our setup.py's directory
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -72,7 +71,6 @@ try:
     packages = ['stem', 'stem.descriptor', 'stem.interpreter', 'stem.response', 'stem.util'],
     keywords = 'tor onion controller',
     scripts = ['tor-prompt'],
-    provides = ['stem'],
     package_data = {
       'stem': ['cached_tor_manual.cfg', 'settings.cfg'],
       'stem.descriptor': ['fallback_directories.cfg'],
