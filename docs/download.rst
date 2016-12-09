@@ -71,9 +71,9 @@ Download
 
        Signed releases and instructions for both Python 2.x and 3.x. You can
        easily install from its `tarball
-       <https://pypi.python.org/packages/5f/45/4ea1e1eb4a0562955736e6e2393a7e207ba9ecb512f0aeaab99ec5d64833/stem-1.5.2.tar.gz>`_
+       <https://pypi.python.org/packages/ff/74/34d2235cd218356359ee746cf0e1aed1ebbc32151b7a4f000746e29366de/stem-1.5.3.tar.gz>`_
        (`sig
-       <https://pypi.python.org/packages/5f/45/4ea1e1eb4a0562955736e6e2393a7e207ba9ecb512f0aeaab99ec5d64833/stem-1.5.2.tar.gz.asc>`_),
+       <https://pypi.python.org/packages/ff/74/34d2235cd218356359ee746cf0e1aed1ebbc32151b7a4f000746e29366de/stem-1.5.3.tar.gz.asc>`_),
        or with **pip**...
 
        ::
