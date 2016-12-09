@@ -81,6 +81,7 @@ Applications
 `hs-health <https://gitlab.com/hs-health/hs-health>`_                                                       Experiment to measure churn and reachability of hidden services.
 `trnnr <https://github.com/NullHypothesis/trnnr>`_                                                          Python implementation of tor's nearest neighbour ranking.
 `TorTP <https://github.com/vinc3nt/stem-tortp>`_                                                            Configures iptables to torify all traffic.
+`BWScanner <https://github.com/TheTorProject/bwscanner>`_                                                   Measurements for the tor bandwidth authorities. Interesting example of txtorcon and stem being used together.
 =========================================================================================================== ==========
 
 Scripts
