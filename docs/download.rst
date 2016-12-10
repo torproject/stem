@@ -162,10 +162,10 @@ Download
            % cd stem; makepkg --install
 
    * - .. image:: /_static/section/download/slackware.png
-          :target: http://slackbuilds.org/repository/14.1/python/stem/
+          :target: https://slackbuilds.org/repository/14.2/python/stem/
 
      - .. image:: /_static/label/slackware.png
-          :target: http://slackbuilds.org/repository/14.1/python/stem/
+          :target: https://slackbuilds.org/repository/14.2/python/stem/
 
        Package by Markus for `Slackware
        <http://slackbuilds.org/howto/>`_.
