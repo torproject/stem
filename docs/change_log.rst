@@ -48,9 +48,10 @@ The following are only available within Stem's `git repository
 Version 1.5 (November 20th, 2016)
 ---------------------------------
 
-Stem 1.5 is a long overdue accumulation of seventeen months of improvements
-including dramatically improved python 3.x performance, `tor manual information
-<api/manual.html>`_, and much more.
+`Stem 1.5 <http://blog.atagar.com/stem-release-1-5/>`_ is a long overdue
+accumulation of seventeen months of improvements including dramatically
+improved python 3.x performance, `tor manual information <api/manual.html>`_,
+and much more.
 
  * **Controller**
 
