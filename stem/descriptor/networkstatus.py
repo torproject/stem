@@ -1104,7 +1104,13 @@ def _check_for_misordered_fields(entries, expected):
   # document type or are unknown. Remove the unknown fields since they
   # reflect a spec change and can appear anywhere in the document.
 
-  actual = [field for field in entries.keys() if field in expected]
+  # TODO: Ignoring shared-rand-current-value for now because it was placed in
+  # the wrong location. It'll take a while before a fix is in a release but
+  # when it is we can resume checking it...
+  #
+  #   https://trac.torproject.org/projects/tor/ticket/21059
+
+  actual = [field for field in entries.keys() if field in expected and field != 'shared-rand-current-value']
 
   # Narrow the expected to just what we have. If the lists then match then the
   # order's valid.
