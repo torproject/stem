@@ -74,6 +74,7 @@ from stem.descriptor import (
   _read_until_keywords,
   _values,
   _parse_simple_line,
+  _parse_protocol_line,
   _parse_key_block,
 )
 
@@ -98,6 +99,7 @@ SINGLE_FIELDS = (
   'family',
   'p',
   'p6',
+  'pr',
 )
 
 
@@ -187,6 +189,7 @@ _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC K
 _parse_ntor_onion_key_line = _parse_simple_line('ntor-onion-key', 'ntor_onion_key')
 _parse_family_line = _parse_simple_line('family', 'family', func = lambda v: v.split(' '))
 _parse_p6_line = _parse_simple_line('p6', 'exit_policy_v6', func = lambda v: stem.exit_policy.MicroExitPolicy(v))
+_parse_pr_line = _parse_protocol_line('pr', 'protocols')
 
 
 class Microdescriptor(Descriptor):
@@ -208,6 +211,7 @@ class Microdescriptor(Descriptor):
   :var hash identifiers: mapping of key types (like rsa1024 or ed25519) to
     their base64 encoded identity, this is only used for collision prevention
     (:trac:`11743`)
+  :var stem.descriptor.ProtocolSupport protocols: supported protocols
 
   :var str identifier: base64 encoded identity digest (**deprecated**, use
     identifiers instead)
@@ -222,6 +226,9 @@ class Microdescriptor(Descriptor):
   .. versionchanged:: 1.5.0
      Added the identifiers attribute, and deprecated identifier and
      identifier_type since the field can now appear multiple times.
+
+  .. versionchanged:: 1.6.0
+     Added the protocols attribute.
   """
 
   ATTRIBUTES = {
@@ -234,6 +241,7 @@ class Microdescriptor(Descriptor):
     'identifier_type': (None, _parse_id_line),  # deprecated in favor of identifiers
     'identifier': (None, _parse_id_line),  # deprecated in favor of identifiers
     'identifiers': ({}, _parse_id_line),
+    'protocols': (None, _parse_pr_line),
     'digest': (None, _parse_digest),
   }
 
@@ -244,6 +252,7 @@ class Microdescriptor(Descriptor):
     'family': _parse_family_line,
     'p': _parse_p_line,
     'p6': _parse_p6_line,
+    'pr': _parse_pr_line,
     'id': _parse_id_line,
   }
 

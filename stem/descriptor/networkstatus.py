@@ -73,6 +73,7 @@ from stem.descriptor import (
   _parse_if_present,
   _parse_timestamp_line,
   _parse_forty_character_hex,
+  _parse_protocol_line,
   _parse_key_block,
 )
 
@@ -123,6 +124,10 @@ HEADER_STATUS_DOCUMENT_FIELDS = (
   ('shared-rand-commit', True, False, False),
   ('shared-rand-previous-value', True, True, False),
   ('shared-rand-current-value', True, True, False),
+  ('recommended-client-protocols', True, True, False),
+  ('recommended-relay-protocols', True, True, False),
+  ('required-client-protocols', True, True, False),
+  ('required-relay-protocols', True, True, False),
   ('params', True, True, False),
 )
 
@@ -756,6 +761,10 @@ _parse_header_server_versions_line = _parse_versions_line('server-versions', 'se
 _parse_header_known_flags_line = _parse_simple_line('known-flags', 'known_flags', func = lambda v: [entry for entry in v.split(' ') if entry])
 _parse_footer_bandwidth_weights_line = _parse_simple_line('bandwidth-weights', 'bandwidth_weights', func = lambda v: _parse_int_mappings('bandwidth-weights', v, True))
 _parse_shared_rand_participate_line = _parse_if_present('shared-rand-participate', 'is_shared_randomness_participate')
+_parse_recommended_client_protocols_line = _parse_protocol_line('recommended-client-protocols', 'recommended_client_protocols')
+_parse_recommended_relay_protocols_line = _parse_protocol_line('recommended-relay-protocols', 'recommended_relay_protocols')
+_parse_required_client_protocols_line = _parse_protocol_line('required-client-protocols', 'required_client_protocols')
+_parse_required_relay_protocols_line = _parse_protocol_line('required-relay-protocols', 'required_relay_protocols')
 
 
 class NetworkStatusDocumentV3(NetworkStatusDocument):
@@ -812,6 +821,15 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var str shared_randomness_current_value: base64 encoded current shared
     random value
 
+  :var stem.descriptor.ProtocolSupport recommended_client_protocols: recommended
+    protocols for clients
+  :var stem.descriptor.ProtocolSupport recommended_relay_protocols: recommended
+    protocols for relays
+  :var stem.descriptor.ProtocolSupport required_client_protocols: required
+    protocols for clients
+  :var stem.descriptor.ProtocolSupport required_relay_protocols: required
+    protocols for relays
+
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
 
@@ -824,6 +842,10 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
      shared_randomness_previous_value,
      shared_randomness_current_reveal_count, and
      shared_randomness_current_value attributes.
+
+  .. versionchanged:: 1.6.0
+     Added the recommended_client_protocols, recommended_relay_protocols,
+     required_client_protocols, and required_relay_protocols.
   """
 
   ATTRIBUTES = {
@@ -851,6 +873,10 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'shared_randomness_previous_value': (None, _parse_shared_rand_previous_value),
     'shared_randomness_current_reveal_count': (None, _parse_shared_rand_current_value),
     'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
+    'recommended_client_protocols': (None, _parse_recommended_client_protocols_line),
+    'recommended_relay_protocols': (None, _parse_recommended_relay_protocols_line),
+    'required_client_protocols': (None, _parse_required_client_protocols_line),
+    'required_relay_protocols': (None, _parse_required_relay_protocols_line),
     'params': ({}, _parse_header_parameters_line),
 
     'signatures': ([], _parse_footer_directory_signature_line),
@@ -876,6 +902,10 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'shared-rand-commit': _parsed_shared_rand_commit,
     'shared-rand-previous-value': _parse_shared_rand_previous_value,
     'shared-rand-current-value': _parse_shared_rand_current_value,
+    'recommended-client-protocols': _parse_recommended_client_protocols_line,
+    'recommended-relay-protocols': _parse_recommended_relay_protocols_line,
+    'required-client-protocols': _parse_required_client_protocols_line,
+    'required-relay-protocols': _parse_required_relay_protocols_line,
     'params': _parse_header_parameters_line,
   }
 

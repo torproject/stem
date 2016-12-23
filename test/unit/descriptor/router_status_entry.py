@@ -482,6 +482,11 @@ class TestRouterStatusEntry(unittest.TestCase):
       content = get_router_status_entry_v3({'s': s_line}, content = True)
       self._expect_invalid_attr(content, 'flags', expected)
 
+  def test_protocols(self):
+    desc = get_router_status_entry_v3({'pr': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
+    self.assertEqual(10, len(list(desc.protocols)))
+    self.assertTrue(desc.protocols.is_supported('Desc'))
+
   def test_versions(self):
     """
     Handles a variety of version inputs.

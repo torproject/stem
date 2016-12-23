@@ -343,6 +343,10 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual(None, document.shared_randomness_previous_value)
     self.assertEqual(None, document.shared_randomness_current_reveal_count)
     self.assertEqual(None, document.shared_randomness_current_value)
+    self.assertEqual(None, document.recommended_client_protocols)
+    self.assertEqual(None, document.recommended_relay_protocols)
+    self.assertEqual(None, document.required_client_protocols)
+    self.assertEqual(None, document.required_relay_protocols)
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual((), document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
@@ -925,6 +929,24 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEqual(None, document.shared_randomness_previous_value)
       self.assertEqual(None, document.shared_randomness_current_reveal_count)
       self.assertEqual(None, document.shared_randomness_current_value)
+
+  def test_parameters(self):
+    """
+    Parses the parameters attributes.
+    """
+
+    document = get_network_status_document_v3(OrderedDict([
+      ('vote-status', 'vote'),
+      ('recommended-client-protocols', 'HSDir=1 HSIntro=3'),
+      ('recommended-relay-protocols', 'Cons=1 Desc=1'),
+      ('required-client-protocols', 'HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1'),
+      ('required-relay-protocols', 'DirCache=1'),
+    ]))
+
+    self.assertEqual(2, len(list(document.recommended_client_protocols)))
+    self.assertEqual(2, len(list(document.recommended_relay_protocols)))
+    self.assertEqual(4, len(list(document.required_client_protocols)))
+    self.assertEqual(1, len(list(document.required_relay_protocols)))
 
   def test_params(self):
     """

@@ -657,6 +657,15 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     desc = get_relay_server_descriptor({'ipv6-policy': 'accept 22-23,53,80,110'})
     self.assertEqual(expected, desc.exit_policy_v6)
 
+  def test_protocols(self):
+    """
+    Checks a 'proto' line.
+    """
+
+    desc = get_relay_server_descriptor({'proto': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
+    self.assertEqual(10, len(list(desc.protocols)))
+    self.assertTrue(desc.protocols.is_supported('Desc'))
+
   def test_ntor_onion_key(self):
     """
     Checks a 'ntor-onion-key' line.

@@ -43,6 +43,10 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Descriptors**
+
+  * Support for protocol descriptor fields (:spec:`eb4fb3c5`)
+
 .. _version_1.5:
 
 Version 1.5 (November 20th, 2016)

@@ -32,8 +32,11 @@ from stem.descriptor import (
   _value,
   _values,
   _get_descriptor_components,
+  _parse_protocol_line,
   _read_until_keywords,
 )
+
+_parse_pr_line = _parse_protocol_line('pr', 'protocols')
 
 
 def _parse_file(document_file, validate, entry_class, entry_keyword = 'r', start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
@@ -560,6 +563,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
     information that isn't yet recognized
 
   :var stem.exit_policy.MicroExitPolicy exit_policy: router's exit policy
+  :var stem.descriptor.ProtocolSupport protocols: supported protocols
 
   :var list microdescriptor_hashes: **\*** tuples of two values, the list of
     consensus methods for generating a set of digests and the 'algorithm =>
@@ -570,6 +574,9 @@ class RouterStatusEntryV3(RouterStatusEntry):
 
   .. versionchanged:: 1.5.0
      Added the identifier and identifier_type attributes.
+
+  .. versionchanged:: 1.6.0
+     Added the protocols attribute.
   """
 
   ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
@@ -584,6 +591,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
     'unrecognized_bandwidth_entries': ([], _parse_w_line),
 
     'exit_policy': (None, _parse_p_line),
+    'pr': (None, _parse_pr_line),
     'microdescriptor_hashes': ([], _parse_m_line),
   })
 
@@ -591,6 +599,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
     'a': _parse_a_line,
     'w': _parse_w_line,
     'p': _parse_p_line,
+    'pr': _parse_pr_line,
     'id': _parse_id_line,
     'm': _parse_m_line,
   })
