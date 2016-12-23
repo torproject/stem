@@ -236,6 +236,11 @@ of Stem. Though no longer actively developed, it's still quite functional and
 still used for several `TorFlow <https://gitweb.torproject.org/torflow.git>`_
 based projects.
 
+For PHP `TorUtils <https://github.com/dapphp/TorUtils>`_ supports a wide range
+of controller functionality. For examples of its usage see `Drew's tor-nodes
+<https://drew-phillips.com/tor-nodes/>`_ and `Open Internet
+<https://openinternet.io/>`_.
+
 The following are the functional controller libraries I'm aware of. Dates are
 for highly active development. If I missed one then please `let me know
 <https://www.atagar.com/contact/>`_!
@@ -246,6 +251,7 @@ Library                                                             Language    
 `Stem <https://stem.torproject.org/>`_                              Python              October 2011 - Present
 `Txtorcon <https://txtorcon.readthedocs.org/>`_                     Python (Twisted)    February 2012 - Present
 `TorCtl <https://gitweb.torproject.org/pytorctl.git>`_              Python              July 2008 - November 2011
+`TorUtils <https://github.com/dapphp/TorUtils>`_                    PHP                 October 2015 - Present
 `PHP TorCtl <https://github.com/dunglas/php-torcontrol/>`_          PHP                 February 2013
 `JTorCtl <https://gitweb.torproject.org/jtorctl.git>`_              Java                June 2005 - May 2009
 `Orc <https://github.com/sycamoreone/orc>`_                         Go                  January 2015
