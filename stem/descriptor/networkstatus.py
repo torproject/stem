@@ -1110,7 +1110,7 @@ def _check_for_misordered_fields(entries, expected):
   #
   #   https://trac.torproject.org/projects/tor/ticket/21059
 
-  actual = [field for field in entries.keys() if field in expected and field != 'shared-rand-current-value']
+  actual = [field for field in entries.keys() if field in expected and field not in ('shared-rand-current-value', 'shared-rand-previous-value')]
 
   # Narrow the expected to just what we have. If the lists then match then the
   # order's valid.
