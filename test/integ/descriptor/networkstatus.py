@@ -46,7 +46,7 @@ class TestNetworkStatus(unittest.TestCase):
             reported_flags.append(flag)
 
         for line in router.get_unrecognized_lines():
-          register_new_capability('Consensus Line', line)
+          register_new_capability('Consensus Line', line, suppression_token = line.split()[0])
 
     # Sanity test that there's at least a hundred relays. If that's not the
     # case then this probably isn't a real, complete tor consensus.
@@ -80,6 +80,6 @@ class TestNetworkStatus(unittest.TestCase):
             reported_flags.append(flag)
 
         for line in router.get_unrecognized_lines():
-          register_new_capability('Microdescriptor Consensus Line', line)
+          register_new_capability('Microdescriptor Consensus Line', line, suppression_token = line.split()[0])
 
     self.assertTrue(count > 100)

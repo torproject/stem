@@ -83,6 +83,7 @@ STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 # Store new capabilities (events, descriptor entries, etc.)
 
 NEW_CAPABILITIES = []
+NEW_CAPABILITIES_SUPPRESSION_TOKENS = set()
 
 # File extensions of contents that should be ignored.
 
@@ -292,15 +293,21 @@ def check_for_unused_tests(paths):
     raise ValueError('Test modules are missing from our test/settings.cfg:\n%s' % '\n'.join(unused_tests))
 
 
-def register_new_capability(capability_type, msg):
+def register_new_capability(capability_type, msg, suppression_token = None):
   """
   Register new capability found during the tests.
 
   :param str capability_type: type of capability this is
   :param str msg: description of what we found
+  :param str suppression_token: skip registration if this token's already been
+    provided
   """
 
-  NEW_CAPABILITIES.append((capability_type, msg))
+  if suppression_token not in NEW_CAPABILITIES_SUPPRESSION_TOKENS:
+    NEW_CAPABILITIES.append((capability_type, msg))
+
+    if suppression_token:
+      NEW_CAPABILITIES_SUPPRESSION_TOKENS.add(suppression_token)
 
 
 def _is_test_data(path):
