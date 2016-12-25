@@ -38,7 +38,6 @@ Package for parsing and processing descriptor data.
 
 import base64
 import codecs
-import collections
 import copy
 import hashlib
 import os
@@ -85,72 +84,6 @@ DocumentHandler = stem.util.enum.UppercaseEnum(
   'DOCUMENT',
   'BARE_DOCUMENT',
 )
-
-
-class ProtocolSupport(object):
-  """
-  Protocols supported by a relay.
-
-  .. versionadded:: 1.6.0
-  """
-
-  def __init__(self, keyword, value):
-    # parses 'protocol' entries like: Cons=1-2 Desc=1-2 DirCache=1 HSDir=1
-
-    self._entries = OrderedDict()
-
-    for entry in value.split():
-      if '=' not in entry:
-        raise ValueError("Protocol entires are expected to be a series of 'key=value' pairs but was: %s %s" % (keyword, value))
-
-      k, v = entry.split('=', 1)
-
-      if '-' in v:
-        min_value, max_value = v.split('-', 1)
-      else:
-        min_value = max_value = v
-
-      if not min_value.isdigit() or not max_value.isdigit():
-        raise ValueError('Protocol values should be a number or number range, but was: %s %s' % (keyword, value))
-
-      self._entries[k] = Protocol(k, int(min_value), int(max_value))
-
-  def is_supported(self, protocol, version = None):
-    """
-    Checks if the given protocol is supported.
-
-    :param str protocol: protocol to check support of (DirCache, HSDir, etc)
-    :param int version: protocol version to check support of
-
-    :returns: **True** if the protocol is supported, **False** otherwise
-    """
-
-    supported = self._entries.get(protocol)
-
-    if not supported:
-      return False
-    elif version and version < supported.min_version:
-      return False
-    elif version and version > supported.max_version:
-      return False
-    else:
-      return True
-
-  def __iter__(self):
-    for protocol in self._entries.values():
-      yield protocol
-
-
-class Protocol(collections.namedtuple('Protocol', ['name', 'min_version', 'max_version'])):
-  """
-  Individual protocol range supported by a relay.
-
-  .. versionadded:: 1.6.0
-
-  :var str name: protocol name (ex. DirCache, HSDir, etc)
-  :var int min_version: minimum protocol supported
-  :var int max_version: maximum protocol supported
-  """
 
 
 def parse_file(descriptor_file, descriptor_type = None, validate = False, document_handler = DocumentHandler.ENTRIES, normalize_newlines = None, **kwargs):
@@ -458,8 +391,32 @@ def _parse_forty_character_hex(keyword, attribute):
 
 def _parse_protocol_line(keyword, attribute):
   def _parse(descriptor, entries):
+    # parses 'protocol' entries like: Cons=1-2 Desc=1-2 DirCache=1 HSDir=1
+
     value = _value(keyword, entries)
-    setattr(descriptor, attribute, ProtocolSupport(keyword, value))
+    protocols = OrderedDict()
+
+    for entry in value.split():
+      if '=' not in entry:
+        raise ValueError("Protocol entires are expected to be a series of 'key=value' pairs but was: %s %s" % (keyword, value))
+
+      k, v = entry.split('=', 1)
+      versions = []
+
+      for subentry in v.split(','):
+        if '-' in subentry:
+          min_value, max_value = subentry.split('-', 1)
+        else:
+          min_value = max_value = subentry
+
+        if not min_value.isdigit() or not max_value.isdigit():
+          raise ValueError('Protocol values should be a number or number range, but was: %s %s' % (keyword, value))
+
+        versions += range(int(min_value), int(max_value) + 1)
+
+      protocols[k] = versions
+
+    setattr(descriptor, attribute, protocols)
 
   return _parse
 

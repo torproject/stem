@@ -98,7 +98,7 @@ class TestMicrodescriptor(unittest.TestCase):
     self.assertEqual({}, desc.identifiers)
     self.assertEqual(None, desc.identifier_type)
     self.assertEqual(None, desc.identifier)
-    self.assertEqual(None, desc.protocols)
+    self.assertEqual({}, desc.protocols)
     self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_unrecognized_line(self):
@@ -172,8 +172,7 @@ class TestMicrodescriptor(unittest.TestCase):
     """
 
     desc = get_microdescriptor({'pr': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
-    self.assertEqual(10, len(list(desc.protocols)))
-    self.assertTrue(desc.protocols.is_supported('Desc'))
+    self.assertEqual(10, len(desc.protocols))
 
   def test_identifier(self):
     """

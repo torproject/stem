@@ -450,7 +450,7 @@ class ServerDescriptor(Descriptor):
   :var list or_addresses: **\*** alternative for our address/or_port
     attributes, each entry is a tuple of the form (address (**str**), port
     (**int**), is_ipv6 (**bool**))
-  :var stem.descriptor.ProtocolSupport protocols: supported protocols
+  :var dict protocols: mapping of protocols to their supported versions
 
   **Deprecated**, moved to extra-info descriptor...
 

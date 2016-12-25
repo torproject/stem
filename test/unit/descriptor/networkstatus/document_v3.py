@@ -343,10 +343,10 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual(None, document.shared_randomness_previous_value)
     self.assertEqual(None, document.shared_randomness_current_reveal_count)
     self.assertEqual(None, document.shared_randomness_current_value)
-    self.assertEqual(None, document.recommended_client_protocols)
-    self.assertEqual(None, document.recommended_relay_protocols)
-    self.assertEqual(None, document.required_client_protocols)
-    self.assertEqual(None, document.required_relay_protocols)
+    self.assertEqual({}, document.recommended_client_protocols)
+    self.assertEqual({}, document.recommended_relay_protocols)
+    self.assertEqual({}, document.required_client_protocols)
+    self.assertEqual({}, document.required_relay_protocols)
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual((), document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
@@ -943,10 +943,10 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       ('required-relay-protocols', 'DirCache=1'),
     ]))
 
-    self.assertEqual(2, len(list(document.recommended_client_protocols)))
-    self.assertEqual(2, len(list(document.recommended_relay_protocols)))
-    self.assertEqual(4, len(list(document.required_client_protocols)))
-    self.assertEqual(1, len(list(document.required_relay_protocols)))
+    self.assertEqual(2, len(document.recommended_client_protocols))
+    self.assertEqual(2, len(document.recommended_relay_protocols))
+    self.assertEqual(4, len(document.required_client_protocols))
+    self.assertEqual(1, len(document.required_relay_protocols))
 
   def test_params(self):
     """

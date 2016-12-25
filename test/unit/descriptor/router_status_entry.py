@@ -484,8 +484,7 @@ class TestRouterStatusEntry(unittest.TestCase):
 
   def test_protocols(self):
     desc = get_router_status_entry_v3({'pr': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
-    self.assertEqual(10, len(list(desc.protocols)))
-    self.assertTrue(desc.protocols.is_supported('Desc'))
+    self.assertEqual(10, len(desc.protocols))
 
   def test_versions(self):
     """

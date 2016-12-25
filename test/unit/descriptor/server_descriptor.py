@@ -663,8 +663,29 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc = get_relay_server_descriptor({'proto': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
-    self.assertEqual(10, len(list(desc.protocols)))
-    self.assertTrue(desc.protocols.is_supported('Desc'))
+    self.assertEqual({'Cons': [1], 'Desc': [1], 'DirCache': [1], 'HSDir': [1], 'HSIntro': [3], 'HSRend': [1], 'Link': [1, 2, 3, 4], 'LinkAuth': [1], 'Microdesc': [1], 'Relay': [1, 2]}, desc.protocols)
+
+  def test_protocols_with_no_mapping(self):
+    """
+    Checks a 'proto' line when it's not key=value pairs.
+    """
+
+    try:
+      get_relay_server_descriptor({'proto': 'Desc Link=1-4'})
+      self.fail('Did not raise expected exception')
+    except ValueError as exc:
+      self.assertEqual("Protocol entires are expected to be a series of 'key=value' pairs but was: proto Desc Link=1-4", str(exc))
+
+  def test_parse_with_non_int_version(self):
+    """
+    Checks a 'proto' line with non-numeric content.
+    """
+
+    try:
+      get_relay_server_descriptor({'proto': 'Desc=hi Link=1-4'})
+      self.fail('Did not raise expected exception')
+    except ValueError as exc:
+      self.assertEqual('Protocol values should be a number or number range, but was: proto Desc=hi Link=1-4', str(exc))
 
   def test_ntor_onion_key(self):
     """

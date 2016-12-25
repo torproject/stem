@@ -563,7 +563,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
     information that isn't yet recognized
 
   :var stem.exit_policy.MicroExitPolicy exit_policy: router's exit policy
-  :var stem.descriptor.ProtocolSupport protocols: supported protocols
+  :var dict protocols: mapping of protocols to their supported versions
 
   :var list microdescriptor_hashes: **\*** tuples of two values, the list of
     consensus methods for generating a set of digests and the 'algorithm =>
@@ -591,7 +591,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
     'unrecognized_bandwidth_entries': ([], _parse_w_line),
 
     'exit_policy': (None, _parse_p_line),
-    'pr': (None, _parse_pr_line),
+    'protocols': ({}, _parse_pr_line),
     'microdescriptor_hashes': ([], _parse_m_line),
   })
 
@@ -611,7 +611,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
     return ('r', 's')
 
   def _single_fields(self):
-    return ('r', 's', 'v', 'w', 'p')
+    return ('r', 's', 'v', 'w', 'p', 'pr')
 
   def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntryV3):
@@ -646,8 +646,12 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     measurements
   :var list unrecognized_bandwidth_entries: **\*** bandwidth weighting
     information that isn't yet recognized
+  :var dict protocols: mapping of protocols to their supported versions
 
   :var str digest: **\*** router's hex encoded digest of our corresponding microdescriptor
+
+  .. versionchanged:: 1.6.0
+     Added the protocols attribute.
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -658,6 +662,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     'measured': (None, _parse_w_line),
     'is_unmeasured': (False, _parse_w_line),
     'unrecognized_bandwidth_entries': ([], _parse_w_line),
+    'protocols': ({}, _parse_pr_line),
 
     'digest': (None, _parse_microdescriptor_m_line),
   })
@@ -665,6 +670,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   PARSER_FOR_LINE = dict(RouterStatusEntry.PARSER_FOR_LINE, **{
     'w': _parse_w_line,
     'm': _parse_microdescriptor_m_line,
+    'pr': _parse_pr_line,
   })
 
   def _name(self, is_plural = False):
@@ -674,7 +680,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     return ('r', 's', 'm')
 
   def _single_fields(self):
-    return ('r', 's', 'v', 'w', 'm')
+    return ('r', 's', 'v', 'w', 'm', 'pr')
 
   def _compare(self, other, method):
     if not isinstance(other, RouterStatusEntryMicroV3):

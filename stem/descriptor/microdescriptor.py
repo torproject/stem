@@ -211,7 +211,7 @@ class Microdescriptor(Descriptor):
   :var hash identifiers: mapping of key types (like rsa1024 or ed25519) to
     their base64 encoded identity, this is only used for collision prevention
     (:trac:`11743`)
-  :var stem.descriptor.ProtocolSupport protocols: supported protocols
+  :var dict protocols: mapping of protocols to their supported versions
 
   :var str identifier: base64 encoded identity digest (**deprecated**, use
     identifiers instead)
@@ -241,7 +241,7 @@ class Microdescriptor(Descriptor):
     'identifier_type': (None, _parse_id_line),  # deprecated in favor of identifiers
     'identifier': (None, _parse_id_line),  # deprecated in favor of identifiers
     'identifiers': ({}, _parse_id_line),
-    'protocols': (None, _parse_pr_line),
+    'protocols': ({}, _parse_pr_line),
     'digest': (None, _parse_digest),
   }
 

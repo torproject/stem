@@ -821,14 +821,10 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var str shared_randomness_current_value: base64 encoded current shared
     random value
 
-  :var stem.descriptor.ProtocolSupport recommended_client_protocols: recommended
-    protocols for clients
-  :var stem.descriptor.ProtocolSupport recommended_relay_protocols: recommended
-    protocols for relays
-  :var stem.descriptor.ProtocolSupport required_client_protocols: required
-    protocols for clients
-  :var stem.descriptor.ProtocolSupport required_relay_protocols: required
-    protocols for relays
+  :var dict recommended_client_protocols: recommended protocols for clients
+  :var dict recommended_relay_protocols: recommended protocols for relays
+  :var dict required_client_protocols: required protocols for clients
+  :var dict required_relay_protocols: required protocols for relays
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
@@ -873,10 +869,10 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'shared_randomness_previous_value': (None, _parse_shared_rand_previous_value),
     'shared_randomness_current_reveal_count': (None, _parse_shared_rand_current_value),
     'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
-    'recommended_client_protocols': (None, _parse_recommended_client_protocols_line),
-    'recommended_relay_protocols': (None, _parse_recommended_relay_protocols_line),
-    'required_client_protocols': (None, _parse_required_client_protocols_line),
-    'required_relay_protocols': (None, _parse_required_relay_protocols_line),
+    'recommended_client_protocols': ({}, _parse_recommended_client_protocols_line),
+    'recommended_relay_protocols': ({}, _parse_recommended_relay_protocols_line),
+    'required_client_protocols': ({}, _parse_required_client_protocols_line),
+    'required_relay_protocols': ({}, _parse_required_relay_protocols_line),
     'params': ({}, _parse_header_parameters_line),
 
     'signatures': ([], _parse_footer_directory_signature_line),
