@@ -2827,7 +2827,9 @@ class Controller(BaseController):
        Added the basic_auth argument.
 
     .. versionchanged:: 1.5.0
-       Added support for non-anonymous services.
+       Added support for non-anonymous services. To do so set
+       'HiddenServiceSingleHopMode 1' and 'HiddenServiceNonAnonymousMode 1' in
+       your torrc.
 
     :param int,list,dict ports: hidden service port(s) or mapping of hidden
       service ports to their targets
