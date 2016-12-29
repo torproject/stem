@@ -158,7 +158,10 @@ def main():
     Task('checking pyflakes version', test.util.check_pyflakes_version),
     Task('checking pycodestyle version', test.util.check_pycodestyle_version),
     Task('checking for orphaned .pyc files', test.util.clean_orphaned_pyc, (SRC_PATHS,)),
-    Task('checking for unused tests', test.util.check_for_unused_tests, ((os.path.join(STEM_BASE, 'test'),),)),
+    Task('checking for unused tests', test.util.check_for_unused_tests, [(
+      os.path.join(STEM_BASE, 'test', 'unit'),
+      os.path.join(STEM_BASE, 'test', 'integ'),
+    )]),
     pyflakes_task,
     pycodestyle_task,
   )
@@ -381,7 +384,7 @@ def _run_test(args, test_class, output_filters, logging_buffer):
     return None
 
   test_results = StringIO()
-  run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+  run_result = stem.util.test_tools.TimedTestRunner(test_results, verbosity=2).run(suite)
 
   if args.verbose:
     println(test.output.apply_filters(test_results.getvalue(), *output_filters))
