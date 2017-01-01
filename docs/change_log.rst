@@ -45,7 +45,7 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
-  * Support for protocol descriptor fields (:spec:`eb4fb3c5`)
+  * Support for protocol descriptor fields (:spec:`eb4fb3c`)
 
 .. _version_1.5:
 
