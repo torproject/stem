@@ -137,9 +137,6 @@ FOOTER_STATUS_DOCUMENT_FIELDS = (
   ('directory-signature', True, True, True),
 )
 
-HEADER_FIELDS = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS]
-FOOTER_FIELDS = [attr[0] for attr in FOOTER_STATUS_DOCUMENT_FIELDS]
-
 AUTH_START = 'dir-source'
 ROUTERS_START = 'r'
 FOOTER_START = 'directory-footer'
@@ -988,12 +985,13 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   def _header(self, document_file, validate):
     content = bytes.join(b'', _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
     entries = _get_descriptor_components(content, validate)
+    header_fields = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS]
 
     if validate:
       # all known header fields can only appear once except
 
       for keyword, values in list(entries.items()):
-        if len(values) > 1 and keyword in HEADER_FIELDS and keyword != 'package' and keyword != 'shared-rand-commit':
+        if len(values) > 1 and keyword in header_fields and keyword != 'package' and keyword != 'shared-rand-commit':
           raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
 
       if self._default_params:
@@ -1002,7 +1000,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       self._parse(entries, validate, parser_for_line = self.HEADER_PARSER_FOR_LINE)
 
       _check_for_missing_and_disallowed_fields(self, entries, HEADER_STATUS_DOCUMENT_FIELDS)
-      _check_for_misordered_fields(entries, HEADER_FIELDS)
 
       # default consensus_method and consensus_methods based on if we're a consensus or vote
 
@@ -1016,13 +1013,14 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   def _footer(self, document_file, validate):
     entries = _get_descriptor_components(document_file.read(), validate)
+    footer_fields = [attr[0] for attr in FOOTER_STATUS_DOCUMENT_FIELDS]
 
     if validate:
       for keyword, values in list(entries.items()):
         # all known footer fields can only appear once except...
         # * 'directory-signature' in a consensus
 
-        if len(values) > 1 and keyword in FOOTER_FIELDS:
+        if len(values) > 1 and keyword in footer_fields:
           if not (keyword == 'directory-signature' and self.is_consensus):
             raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
 
@@ -1041,7 +1039,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
             raise ValueError("Network status document's footer should start with a 'directory-signature' line prior to consensus-method 9")
 
         _check_for_missing_and_disallowed_fields(self, entries, FOOTER_STATUS_DOCUMENT_FIELDS)
-        _check_for_misordered_fields(entries, FOOTER_FIELDS)
     else:
       self._footer_entries = entries
       self._entries.update(entries)
@@ -1111,42 +1108,6 @@ def _check_for_missing_and_disallowed_fields(document, entries, fields):
 
   if disallowed_fields:
     raise ValueError("Network status document has fields that shouldn't appear in this document type or version: %s" % ', '.join(disallowed_fields))
-
-
-def _check_for_misordered_fields(entries, expected):
-  """
-  To be valid a network status document's fiends need to appear in a specific
-  order. Checks that known fields appear in that order (unrecognized fields
-  are ignored).
-
-  :param dict entries: ordered keyword/value mappings of the header or footer
-  :param list expected: ordered list of expected fields (either
-    **HEADER_FIELDS** or **FOOTER_FIELDS**)
-
-  :raises: **ValueError** if entries aren't properly ordered
-  """
-
-  # Earlier validation has ensured that our fields either belong to our
-  # document type or are unknown. Remove the unknown fields since they
-  # reflect a spec change and can appear anywhere in the document.
-
-  # TODO: Ignoring shared-rand-current-value for now because it was placed in
-  # the wrong location. It'll take a while before a fix is in a release but
-  # when it is we can resume checking it...
-  #
-  #   https://trac.torproject.org/projects/tor/ticket/21059
-
-  actual = [field for field in entries.keys() if field in expected and field not in ('shared-rand-current-value', 'shared-rand-previous-value')]
-
-  # Narrow the expected to just what we have. If the lists then match then the
-  # order's valid.
-
-  expected = [field for field in expected if field in actual]
-
-  if actual != expected:
-    actual_label = ', '.join(actual)
-    expected_label = ', '.join(expected)
-    raise ValueError("The fields in a section of the document are misordered. It should be '%s' but was '%s'" % (expected_label, actual_label))
 
 
 def _parse_int_mappings(keyword, value, validate):

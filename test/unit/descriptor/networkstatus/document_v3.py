@@ -32,7 +32,6 @@ from test.mocking import (
   get_router_status_entry_micro_v3,
   get_directory_authority,
   get_network_status_document_v3,
-  CRYPTO_BLOB,
   DOC_SIG,
   NETWORK_STATUS_DOCUMENT_FOOTER,
 )
@@ -478,7 +477,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
       for entries in (HEADER_STATUS_DOCUMENT_FIELDS, FOOTER_STATUS_DOCUMENT_FIELDS):
         for field, in_votes, in_consensus, is_mandatory in entries:
-          if is_mandatory and ((is_consensus and in_consensus) or (is_vote and in_votes)):
+          if is_mandatory and field != 'vote-status' and ((is_consensus and in_consensus) or (is_vote and in_votes)):
             content = get_network_status_document_v3(attr, exclude = (field,), content = True)
             self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
             NetworkStatusDocumentV3(content, False)  # constructs without validation
@@ -490,32 +489,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     document = get_network_status_document_v3({'pepperjack': 'is oh so tasty!'})
     self.assertEqual(['pepperjack is oh so tasty!'], document.get_unrecognized_lines())
-
-  def test_misordered_fields(self):
-    """
-    Rearranges our descriptor fields.
-    """
-
-    for is_consensus in (True, False):
-      attr = {'vote-status': 'consensus'} if is_consensus else {'vote-status': 'vote'}
-      lines = get_network_status_document_v3(attr, content = True).split(b'\n')
-
-      for index in range(len(lines) - 1):
-        # once we reach the authority entry or later we're done since swapping
-        # those won't be detected
-
-        if is_consensus and lines[index].startswith(stem.util.str_tools._to_bytes(CRYPTO_BLOB[1:10])):
-          break
-        elif not is_consensus and lines[index].startswith(b'dir-source'):
-          break
-
-        # swaps this line with the one after it
-        test_lines = list(lines)
-        test_lines[index], test_lines[index + 1] = test_lines[index + 1], test_lines[index]
-
-        content = b'\n'.join(test_lines)
-        self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
-        NetworkStatusDocumentV3(content, False)  # constructs without validation
 
   def test_duplicate_fields(self):
     """

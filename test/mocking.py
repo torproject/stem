@@ -323,9 +323,7 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
   """
 
   header_content, footer_content = [], []
-
-  if attr is None:
-    attr = {}
+  attr = {} if attr is None else dict(attr)
 
   attr = OrderedDict(attr)  # shallow copy since we're destructive
 
@@ -564,8 +562,7 @@ def get_directory_authority(attr = None, exclude = (), is_vote = False, content 
   :returns: DirectoryAuthority for the requested descriptor content
   """
 
-  if attr is None:
-    attr = {}
+  attr = {} if attr is None else dict(attr)
 
   if not is_vote:
     # entries from a consensus also have a mandatory 'vote-digest' field
@@ -637,8 +634,7 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
   :returns: NetworkStatusDocumentV3 for the requested descriptor content
   """
 
-  if attr is None:
-    attr = {}
+  attr = {} if attr is None else dict(attr)
 
   # add defaults only found in a vote, consensus, or microdescriptor
 
@@ -658,7 +654,9 @@ def get_network_status_document_v3(attr = None, exclude = (), authorities = None
     }
 
   for k, v in extra_defaults.items():
-    if not (k in attr or (exclude and k in exclude)):
+    if exclude and k in exclude:
+      continue  # explicitly excluding this field
+    elif k not in attr:
       attr[k] = v
 
   desc_content = _get_descriptor_content(attr, exclude, NETWORK_STATUS_DOCUMENT_HEADER, NETWORK_STATUS_DOCUMENT_FOOTER)
