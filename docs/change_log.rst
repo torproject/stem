@@ -114,6 +114,9 @@ The following are only available within Stem's `git repository
  * **Version 1.5.3** (December 5th, 2016) - including tests and site in the
    release tarball
 
+ * **Version 1.5.4** (January 4th, 2017) - drop validation of the order of
+   fields in the tor consensus (:trac:`21059`)
+
 .. _version_1.4:
 
 Version 1.4 (May 13th, 2015)
