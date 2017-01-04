@@ -10,6 +10,7 @@ import re
 import sys
 
 import stem.util.enum
+import stem.util.test_tools
 
 from stem.util import system, term
 
@@ -154,6 +155,27 @@ def strip_module(line_type, line_content):
   return line_content
 
 
+def runtimes(line_type, line_content):
+  """
+  Provides test runtimes if showing verbose results.
+  """
+
+  m = re.search('(test\.[^)]*)', line_content)
+
+  if m and line_type == LineType.OK:
+    test = '%s.%s' % (m.group(0), line_content.split()[0])
+    runtime = stem.util.test_tools.test_runtimes().get(test)
+
+    if runtime is None:
+      pass
+    if runtime >= 1.0:
+      line_content = '%s (%0.2fs)' % (line_content, runtime)
+    else:
+      line_content = '%s (%i ms)' % (line_content, runtime * 1000)
+
+  return line_content
+
+
 def align_results(line_type, line_content):
   """
   Strips the normal test results, and adds a right aligned variant instead with
@@ -168,6 +190,12 @@ def align_results(line_type, line_content):
     if LINE_ENDINGS[ending] == line_type:
       line_content = line_content.replace(ending, '', 1)
       break
+
+  # right align runtimes
+
+  if line_content.endswith('s)'):
+    div = line_content.rfind(' (')
+    line_content = '%-53s%6s  ' % (line_content[:div], line_content[div + 2:-1])
 
   # skipped tests have extra single quotes around the reason
   if line_type == LineType.SKIPPED:

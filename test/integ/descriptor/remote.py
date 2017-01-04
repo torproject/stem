@@ -184,7 +184,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
   @require_online
   @only_run_once
-  def test_get_consensus_for_microdescriptors(self):
+  def test_get_microdescriptor_consensus(self):
     """
     Exercises the downloader's get_consensus() method for fetching a
     microdescriptor consensus.
@@ -239,7 +239,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       self.fail("Stem's cached fallback directories are out of date. Please run 'cache_fallback_directories.py'...\n\n%s" % stem.descriptor.remote._fallback_directory_differences(cached_fallback_directories, latest_fallback_directories))
 
   @require_online
-  def test_that_fallback_directories_are_reachable(self):
+  def test_fallback_directory_reachability(self):
     """
     Fetch information from each fallback directory to confirm that it's
     available.

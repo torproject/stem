@@ -690,7 +690,7 @@ class TestController(unittest.TestCase):
 
   @require_controller
   @require_version(Requirement.ADD_ONION_BASIC_AUTH)
-  def test_with_ephemeral_hidden_services_basic_auth_without_credentials(self):
+  def test_with_ephemeral_hidden_services_basic_auth_no_credentials(self):
     """
     Exercises creating ephemeral hidden services when attempting to use basic
     auth but not including any credentials.

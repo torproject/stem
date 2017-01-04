@@ -177,6 +177,7 @@ def main():
 
   output_filters = (
     error_tracker.get_filter(),
+    test.output.runtimes,
     test.output.strip_module,
     test.output.align_results,
     test.output.colorize,
