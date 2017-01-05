@@ -46,6 +46,7 @@ The following are only available within Stem's `git repository
  * **Descriptors**
 
   * Support for protocol descriptor fields (:spec:`eb4fb3c`)
+  * Shared randomness properties weren't being read in votes (:trac:`21102`)
 
 .. _version_1.5:
 

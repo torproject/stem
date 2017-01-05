@@ -805,19 +805,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var datetime published: time when the document was published
   :var dict flag_thresholds: **\*** mapping of internal performance thresholds used while making the vote, values are **ints** or **floats**
 
-  :var bool is_shared_randomness_participate: **\*** **True** if this authority
-    participates in establishing a shared random value, **False** otherwise
-  :var list shared_randomness_commitments: **\*** list of
-    :data:`~stem.descriptor.networkstatus.SharedRandomnessCommitment` entries
-  :var int shared_randomness_previous_reveal_count: number of commitments
-    used to generate the last shared random value
-  :var str shared_randomness_previous_value: base64 encoded last shared random
-    value
-  :var int shared_randomness_current_reveal_count: number of commitments
-    used to generate the current shared random value
-  :var str shared_randomness_current_value: base64 encoded current shared
-    random value
-
   :var dict recommended_client_protocols: recommended protocols for clients
   :var dict recommended_relay_protocols: recommended protocols for relays
   :var dict required_client_protocols: required protocols for clients
@@ -839,6 +826,10 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   .. versionchanged:: 1.6.0
      Added the recommended_client_protocols, recommended_relay_protocols,
      required_client_protocols, and required_relay_protocols.
+
+  .. versionchanged:: 1.6.0
+     The shared randomness attributes were misdocumented in the tor spec and as
+     such never set. They're now an attribute of **directory_authorities**.
   """
 
   ATTRIBUTES = {
@@ -860,12 +851,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'packages': ([], _parse_package_line),
     'known_flags': ([], _parse_header_known_flags_line),
     'flag_thresholds': ({}, _parse_header_flag_thresholds_line),
-    'is_shared_randomness_participate': (False, _parse_shared_rand_participate_line),
-    'shared_randomness_commitments': ([], _parsed_shared_rand_commit),
-    'shared_randomness_previous_reveal_count': (None, _parse_shared_rand_previous_value),
-    'shared_randomness_previous_value': (None, _parse_shared_rand_previous_value),
-    'shared_randomness_current_reveal_count': (None, _parse_shared_rand_current_value),
-    'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
     'recommended_client_protocols': ({}, _parse_recommended_client_protocols_line),
     'recommended_relay_protocols': ({}, _parse_recommended_relay_protocols_line),
     'required_client_protocols': ({}, _parse_required_client_protocols_line),
@@ -891,10 +876,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'package': _parse_package_line,
     'known-flags': _parse_header_known_flags_line,
     'flag-thresholds': _parse_header_flag_thresholds_line,
-    'shared-rand-participate': _parse_shared_rand_participate_line,
-    'shared-rand-commit': _parsed_shared_rand_commit,
-    'shared-rand-previous-value': _parse_shared_rand_previous_value,
-    'shared-rand-current-value': _parse_shared_rand_current_value,
     'recommended-client-protocols': _parse_recommended_client_protocols_line,
     'recommended-relay-protocols': _parse_recommended_relay_protocols_line,
     'required-client-protocols': _parse_required_client_protocols_line,
@@ -922,6 +903,17 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     super(NetworkStatusDocumentV3, self).__init__(raw_content, lazy_load = not validate)
     document_file = io.BytesIO(raw_content)
+
+    # TODO: Tor misdocumented these as being in the header rather than the
+    # authority section. As such these have never been set but we need the
+    # attributes for stem 1.5 compatability. Drop these in 2.0.
+
+    self.is_shared_randomness_participate = False
+    self.shared_randomness_commitments = []
+    self.shared_randomness_previous_reveal_count = None
+    self.shared_randomness_previous_value = None
+    self.shared_randomness_current_reveal_count = None
+    self.shared_randomness_current_value = None
 
     self._default_params = default_params
     self._header(document_file, validate)
@@ -1214,11 +1206,31 @@ class DirectoryAuthority(Descriptor):
   :var stem.descriptor.networkstatus.KeyCertificate key_certificate: **\***
     authority's key certificate
 
+  :var bool is_shared_randomness_participate: **\*** **True** if this authority
+    participates in establishing a shared random value, **False** otherwise
+  :var list shared_randomness_commitments: **\*** list of
+    :data:`~stem.descriptor.networkstatus.SharedRandomnessCommitment` entries
+  :var int shared_randomness_previous_reveal_count: number of commitments
+    used to generate the last shared random value
+  :var str shared_randomness_previous_value: base64 encoded last shared random
+    value
+  :var int shared_randomness_current_reveal_count: number of commitments
+    used to generate the current shared random value
+  :var str shared_randomness_current_value: base64 encoded current shared
+    random value
+
   **\*** mandatory attribute
 
   .. versionchanged:: 1.4.0
      Renamed our 'fingerprint' attribute to 'v3ident' (prior attribute exists
      for backward compatability, but is deprecated).
+
+  .. versionchanged:: 1.6.0
+     Added the is_shared_randomness_participate, shared_randomness_commitments,
+     shared_randomness_previous_reveal_count,
+     shared_randomness_previous_value,
+     shared_randomness_current_reveal_count, and
+     shared_randomness_current_value attributes.
   """
 
   ATTRIBUTES = {
@@ -1232,6 +1244,12 @@ class DirectoryAuthority(Descriptor):
     'contact': (None, _parse_contact_line),
     'vote_digest': (None, _parse_vote_digest_line),
     'legacy_dir_key': (None, _parse_legacy_dir_key_line),
+    'is_shared_randomness_participate': (False, _parse_shared_rand_participate_line),
+    'shared_randomness_commitments': ([], _parsed_shared_rand_commit),
+    'shared_randomness_previous_reveal_count': (None, _parse_shared_rand_previous_value),
+    'shared_randomness_previous_value': (None, _parse_shared_rand_previous_value),
+    'shared_randomness_current_reveal_count': (None, _parse_shared_rand_current_value),
+    'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
   }
 
   PARSER_FOR_LINE = {
@@ -1239,6 +1257,10 @@ class DirectoryAuthority(Descriptor):
     'contact': _parse_contact_line,
     'legacy-dir-key': _parse_legacy_dir_key_line,
     'vote-digest': _parse_vote_digest_line,
+    'shared-rand-participate': _parse_shared_rand_participate_line,
+    'shared-rand-commit': _parsed_shared_rand_commit,
+    'shared-rand-previous-value': _parse_shared_rand_previous_value,
+    'shared-rand-current-value': _parse_shared_rand_current_value,
   }
 
   def __init__(self, raw_content, validate = False, is_vote = False):

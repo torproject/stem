@@ -832,77 +832,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       document = NetworkStatusDocumentV3(content, False)
       self.assertEqual({}, document.flag_thresholds)
 
-  def test_shared_randomness(self):
-    """
-    Parses the shared randomness attributes.
-    """
-
-    COMMITMENT_1 = '1 sha3-256 4CAEC248004A0DC6CE86EBD5F608C9B05500C70C AAAAAFd4/kAaklgYr4ijHZjXXy/B354jQfL31BFhhE46nuOHSPITyw== AAAAAFd4/kCpZeis3yJyr//rz8hXCeeAhHa4k3lAcAiMJd1vEMTPuw=='
-    COMMITMENT_2 = '1 sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=='
-
-    document = get_network_status_document_v3(OrderedDict([
-      ('vote-status', 'vote'),
-      ('shared-rand-participate', ''),
-      ('shared-rand-commit', '%s\nshared-rand-commit %s' % (COMMITMENT_1, COMMITMENT_2)),
-      ('shared-rand-previous-value', '8 hAQLxyt0U3gu7QR2owixRCbIltcyPrz3B0YBfUshOkE='),
-      ('shared-rand-current-value', '7 KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU='),
-    ]))
-
-    self.assertEqual(True, document.is_shared_randomness_participate)
-    self.assertEqual(8, document.shared_randomness_previous_reveal_count)
-    self.assertEqual('hAQLxyt0U3gu7QR2owixRCbIltcyPrz3B0YBfUshOkE=', document.shared_randomness_previous_value)
-    self.assertEqual(7, document.shared_randomness_current_reveal_count)
-    self.assertEqual('KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU=', document.shared_randomness_current_value)
-
-    self.assertEqual(2, len(document.shared_randomness_commitments))
-
-    first_commitment = document.shared_randomness_commitments[0]
-    self.assertEqual(1, first_commitment.version)
-    self.assertEqual('sha3-256', first_commitment.algorithm)
-    self.assertEqual('4CAEC248004A0DC6CE86EBD5F608C9B05500C70C', first_commitment.identity)
-    self.assertEqual('AAAAAFd4/kAaklgYr4ijHZjXXy/B354jQfL31BFhhE46nuOHSPITyw==', first_commitment.commit)
-    self.assertEqual('AAAAAFd4/kCpZeis3yJyr//rz8hXCeeAhHa4k3lAcAiMJd1vEMTPuw==', first_commitment.reveal)
-
-    second_commitment = document.shared_randomness_commitments[1]
-    self.assertEqual(1, second_commitment.version)
-    self.assertEqual('sha3-256', second_commitment.algorithm)
-    self.assertEqual('598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31', second_commitment.identity)
-    self.assertEqual('AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ==', second_commitment.commit)
-    self.assertEqual(None, second_commitment.reveal)
-
-  def test_shared_randomness_malformed(self):
-    """
-    Checks shared randomness with malformed values.
-    """
-
-    test_values = [
-      ({'vote-status': 'vote', 'shared-rand-commit': 'hi sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=='},
-        "The version on our 'shared-rand-commit' line wasn't an integer: hi sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=="),
-      ({'vote-status': 'vote', 'shared-rand-commit': 'sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=='},
-        "'shared-rand-commit' must at least have a 'Version AlgName Identity Commit': sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=="),
-      ({'vote-status': 'vote', 'shared-rand-current-value': 'hi KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU='},
-        "A network status document's 'shared-rand-current-value' line must be a pair of values, the first an integer but was 'hi KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU='"),
-      ({'vote-status': 'vote', 'shared-rand-current-value': 'KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU='},
-        "A network status document's 'shared-rand-current-value' line must be a pair of values, the first an integer but was 'KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU='"),
-    ]
-
-    for attr, expected_exception in test_values:
-      content = get_network_status_document_v3(attr, content = True)
-
-      try:
-        NetworkStatusDocumentV3(content, True)
-        self.fail("validation should've rejected malformed shared randomness attribute")
-      except ValueError as exc:
-        self.assertEqual(expected_exception, str(exc))
-
-      document = NetworkStatusDocumentV3(content, False)
-
-      self.assertEqual([], document.shared_randomness_commitments)
-      self.assertEqual(None, document.shared_randomness_previous_reveal_count)
-      self.assertEqual(None, document.shared_randomness_previous_value)
-      self.assertEqual(None, document.shared_randomness_current_reveal_count)
-      self.assertEqual(None, document.shared_randomness_current_value)
-
   def test_parameters(self):
     """
     Parses the parameters attributes.
@@ -1257,6 +1186,76 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
           self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
           document = NetworkStatusDocumentV3(content, validate = False)
           self.assertEqual((authority1, authority2), document.directory_authorities)
+
+  def test_shared_randomness(self):
+    """
+    Parses the shared randomness attributes.
+    """
+
+    COMMITMENT_1 = '1 sha3-256 4CAEC248004A0DC6CE86EBD5F608C9B05500C70C AAAAAFd4/kAaklgYr4ijHZjXXy/B354jQfL31BFhhE46nuOHSPITyw== AAAAAFd4/kCpZeis3yJyr//rz8hXCeeAhHa4k3lAcAiMJd1vEMTPuw=='
+    COMMITMENT_2 = '1 sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=='
+
+    authority = get_directory_authority(OrderedDict([
+      ('shared-rand-participate', ''),
+      ('shared-rand-commit', '%s\nshared-rand-commit %s' % (COMMITMENT_1, COMMITMENT_2)),
+      ('shared-rand-previous-value', '8 hAQLxyt0U3gu7QR2owixRCbIltcyPrz3B0YBfUshOkE='),
+      ('shared-rand-current-value', '7 KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU='),
+    ]))
+
+    self.assertEqual(True, authority.is_shared_randomness_participate)
+    self.assertEqual(8, authority.shared_randomness_previous_reveal_count)
+    self.assertEqual('hAQLxyt0U3gu7QR2owixRCbIltcyPrz3B0YBfUshOkE=', authority.shared_randomness_previous_value)
+    self.assertEqual(7, authority.shared_randomness_current_reveal_count)
+    self.assertEqual('KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU=', authority.shared_randomness_current_value)
+
+    self.assertEqual(2, len(authority.shared_randomness_commitments))
+
+    first_commitment = authority.shared_randomness_commitments[0]
+    self.assertEqual(1, first_commitment.version)
+    self.assertEqual('sha3-256', first_commitment.algorithm)
+    self.assertEqual('4CAEC248004A0DC6CE86EBD5F608C9B05500C70C', first_commitment.identity)
+    self.assertEqual('AAAAAFd4/kAaklgYr4ijHZjXXy/B354jQfL31BFhhE46nuOHSPITyw==', first_commitment.commit)
+    self.assertEqual('AAAAAFd4/kCpZeis3yJyr//rz8hXCeeAhHa4k3lAcAiMJd1vEMTPuw==', first_commitment.reveal)
+
+    second_commitment = authority.shared_randomness_commitments[1]
+    self.assertEqual(1, second_commitment.version)
+    self.assertEqual('sha3-256', second_commitment.algorithm)
+    self.assertEqual('598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31', second_commitment.identity)
+    self.assertEqual('AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ==', second_commitment.commit)
+    self.assertEqual(None, second_commitment.reveal)
+
+  def test_shared_randomness_malformed(self):
+    """
+    Checks shared randomness with malformed values.
+    """
+
+    test_values = [
+      ({'vote-status': 'vote', 'shared-rand-commit': 'hi sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=='},
+        "The version on our 'shared-rand-commit' line wasn't an integer: hi sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=="),
+      ({'vote-status': 'vote', 'shared-rand-commit': 'sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=='},
+        "'shared-rand-commit' must at least have a 'Version AlgName Identity Commit': sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=="),
+      ({'vote-status': 'vote', 'shared-rand-current-value': 'hi KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU='},
+        "A network status document's 'shared-rand-current-value' line must be a pair of values, the first an integer but was 'hi KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU='"),
+      ({'vote-status': 'vote', 'shared-rand-current-value': 'KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU='},
+        "A network status document's 'shared-rand-current-value' line must be a pair of values, the first an integer but was 'KEIfSB7Db+ToasQIzJhbh0CtkeSePHLEehO+ams/RTU='"),
+    ]
+
+    for attr, expected_exception in test_values:
+      content = get_directory_authority(attr, content = True)
+
+      try:
+        DirectoryAuthority(content, True)
+        self.fail("validation should've rejected malformed shared randomness attribute")
+      except ValueError as exc:
+        self.assertEqual(expected_exception, str(exc))
+
+      authority = DirectoryAuthority(content, False)
+
+      self.assertEqual([], authority.shared_randomness_commitments)
+      self.assertEqual(None, authority.shared_randomness_previous_reveal_count)
+      self.assertEqual(None, authority.shared_randomness_previous_value)
+      self.assertEqual(None, authority.shared_randomness_current_reveal_count)
+      self.assertEqual(None, authority.shared_randomness_current_value)
 
   def test_with_legacy_directory_authorities(self):
     """
