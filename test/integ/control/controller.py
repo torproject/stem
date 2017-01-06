@@ -208,66 +208,29 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      controller.add_event_listener(listener, EventType.BW)
+      controller.add_event_listener(listener, EventType.CONF_CHANGED)
 
-      # Get a BW event or two. These should be emitted each second but under
-      # heavy system load that's not always the case.
+      # trigger an event
 
+      controller.set_conf('NodeFamily', random_fingerprint())
       event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)
 
-      # disconnect and check that we stop getting events
+      # disconnect, then reconnect and check that we get events again
 
       controller.close()
       event_notice.clear()
       event_buffer = []
-
-      event_notice.wait(2)
-      self.assertTrue(len(event_buffer) == 0)
-
-      # reconnect and check that we get events again
 
       controller.connect()
       controller.authenticate(password = test.runner.CONTROL_PASSWORD)
+      self.assertTrue(len(event_buffer) == 0)
+      controller.set_conf('NodeFamily', random_fingerprint())
 
       event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)
 
-      # disconnect
-
-      controller.close()
-      event_notice.clear()
-      event_buffer = []
-
-      # reconnect and check that we get events again
-
-      controller.connect()
-      stem.connection.authenticate(controller, password = test.runner.CONTROL_PASSWORD)
-
-      event_notice.wait(4)
-      self.assertTrue(len(event_buffer) >= 1)
-
-      # disconnect
-
-      controller.close()
-      event_notice.clear()
-      event_buffer = []
-
-      # Reconnect and check that we get events again. This is being done by
-      # calling AUTHENTICATE manually so skipping cookie auth.
-
-      tor_options = test.runner.get_runner().get_options()
-
-      if test.runner.Torrc.COOKIE not in tor_options:
-        controller.connect()
-
-        if test.runner.Torrc.PASSWORD in tor_options:
-          controller.msg('AUTHENTICATE "%s"' % test.runner.CONTROL_PASSWORD)
-        else:
-          controller.msg('AUTHENTICATE')
-
-        event_notice.wait(4)
-        self.assertTrue(len(event_buffer) >= 1)
+      controller.reset_conf('NodeFamily')
 
   @require_controller
   def test_getinfo(self):
