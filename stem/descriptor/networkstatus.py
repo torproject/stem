@@ -799,6 +799,11 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var int consensus_method: method version used to generate this consensus
   :var dict bandwidth_weights: dict of weight(str) => value(int) mappings
 
+  :var str shared_randomness_current_value: base64 encoded current shared
+    random value
+  :var str shared_randomness_previous_value: base64 encoded last shared random
+    value
+
   **Vote Attributes:**
 
   :var list consensus_methods: list of ints for the supported method versions
@@ -856,6 +861,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'required_client_protocols': ({}, _parse_required_client_protocols_line),
     'required_relay_protocols': ({}, _parse_required_relay_protocols_line),
     'params': ({}, _parse_header_parameters_line),
+    'shared_randomness_previous_value': (None, _parse_shared_rand_previous_value),
+    'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
 
     'signatures': ([], _parse_footer_directory_signature_line),
     'bandwidth_weights': ({}, _parse_footer_bandwidth_weights_line),
@@ -881,6 +888,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'required-client-protocols': _parse_required_client_protocols_line,
     'required-relay-protocols': _parse_required_relay_protocols_line,
     'params': _parse_header_parameters_line,
+    'shared-rand-previous-value': _parse_shared_rand_previous_value,
+    'shared-rand-current-value': _parse_shared_rand_current_value,
   }
 
   FOOTER_PARSER_FOR_LINE = {
@@ -911,9 +920,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     self.is_shared_randomness_participate = False
     self.shared_randomness_commitments = []
     self.shared_randomness_previous_reveal_count = None
-    self.shared_randomness_previous_value = None
     self.shared_randomness_current_reveal_count = None
-    self.shared_randomness_current_value = None
 
     self._default_params = default_params
     self._header(document_file, validate)
