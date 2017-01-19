@@ -20,6 +20,7 @@ Tasks are...
 
   Initialization
   |- check_stem_version - checks our version of stem
+  |- check_tor_version - checks our version of tor
   |- check_python_version - checks our version of python
   |- check_pycrypto_version - checks our version of pycrypto
   |- check_pyflakes_version - checks our version of pyflakes
@@ -202,6 +203,10 @@ def get_new_capabilities():
 
 def check_stem_version():
   return stem.__version__
+
+
+def check_tor_version(tor_path):
+  return str(stem.version.get_system_tor_version(tor_path)).split()[0]
 
 
 def check_python_version():

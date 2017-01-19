@@ -140,7 +140,7 @@ def main():
 
     sys.exit(1)
 
-  pyflakes_task, pycodestyle_task = None, None
+  tor_version_check, pyflakes_task, pycodestyle_task = None, None, None
 
   if not args.specific_test:
     if stem.util.test_tools.is_pyflakes_available():
@@ -149,9 +149,13 @@ def main():
     if stem.util.test_tools.is_pycodestyle_available():
       pycodestyle_task = PYCODESTYLE_TASK
 
+  if args.run_integ:
+    tor_version_check = Task('checking tor version', test.util.check_tor_version, (args.tor_path,))
+
   test.util.run_tasks(
     'INITIALISING',
     Task('checking stem version', test.util.check_stem_version),
+    tor_version_check,
     Task('checking python version', test.util.check_python_version),
     Task('checking pycrypto version', test.util.check_pycrypto_version),
     Task('checking mock version', test.util.check_mock_version),
