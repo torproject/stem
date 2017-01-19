@@ -2,6 +2,8 @@
 Integration tests for the stem.control.BaseController class.
 """
 
+import hashlib
+import os
 import re
 import threading
 import time
@@ -150,15 +152,11 @@ class TestBaseController(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = ControlledListener(control_socket)
-      controller.msg('SETEVENTS BW')
+      controller.msg('SETEVENTS CONF_CHANGED')
 
-      # Wait for a couple events for events to be enqueued. Doing a bunch of
-      # GETINFO queries while waiting to better exercise the asynchronous event
-      # handling.
-
-      start_time = time.time()
-
-      while (time.time() - start_time) < 3:
+      for i in range(10):
+        random_fingerprint = hashlib.sha1(os.urandom(20)).hexdigest().upper()
+        controller.msg('SETCONF NodeFamily=%s' % random_fingerprint)
         test.runner.exercise_controller(self, controller)
 
       # Concurrently shut down the controller. We need to do this in another
@@ -177,10 +175,10 @@ class TestBaseController(unittest.TestCase):
 
       self.assertTrue(len(controller.received_events) >= 2)
 
-      for bw_event in controller.received_events:
-        self.assertTrue(re.match('BW [0-9]+ [0-9]+', str(bw_event)))
-        self.assertTrue(re.match('650 BW [0-9]+ [0-9]+\r\n', bw_event.raw_content()))
-        self.assertEqual(('650', ' '), bw_event.content()[0][:2])
+      for conf_changed_event in controller.received_events:
+        self.assertTrue(re.match('CONF_CHANGED\nNodeFamily=*', str(conf_changed_event)))
+        self.assertTrue(conf_changed_event.raw_content().startswith('650-CONF_CHANGED\r\n650-NodeFamily='))
+        self.assertEqual(('650', '-'), conf_changed_event.content()[0][:2])
 
   @require_controller
   def test_get_latest_heartbeat(self):
