@@ -54,7 +54,7 @@ class TestBaseController(unittest.TestCase):
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
 
-      for _ in range(250):
+      for _ in range(50):
         controller.connect()
         controller.close()
 
@@ -105,7 +105,7 @@ class TestBaseController(unittest.TestCase):
       controller = stem.control.BaseController(control_socket)
 
       def run_getinfo():
-        for _ in range(150):
+        for _ in range(50):
           try:
             controller.msg('GETINFO version')
             controller.msg('GETINFO blarg')
@@ -121,7 +121,7 @@ class TestBaseController(unittest.TestCase):
         msg_thread.setDaemon(True)
         msg_thread.start()
 
-      for index in range(100):
+      for index in range(50):
         controller.connect()
         controller.close()
 
