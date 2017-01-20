@@ -7,6 +7,7 @@ Helper functions for creating mock objects.
 ::
 
   get_all_combinations - provides all combinations of attributes
+  random_fingerprint - provides a random relay fingerprint
 
   Instance Constructors
     get_message                     - stem.response.ControlMessage
@@ -41,6 +42,7 @@ Helper functions for creating mock objects.
 import base64
 import hashlib
 import itertools
+import os
 import re
 import textwrap
 
@@ -240,6 +242,14 @@ def get_all_combinations(attr, include_empty = False):
       if item not in seen:
         seen.add(item)
         yield item
+
+
+def random_fingerprint():
+  """
+  Provides a random relay fingerprint.
+  """
+
+  return hashlib.sha1(os.urandom(20)).hexdigest().upper()
 
 
 def get_message(content, reformat = True):

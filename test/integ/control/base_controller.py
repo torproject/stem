@@ -2,8 +2,6 @@
 Integration tests for the stem.control.BaseController class.
 """
 
-import hashlib
-import os
 import re
 import threading
 import time
@@ -13,6 +11,7 @@ import stem.control
 import stem.socket
 import stem.util.system
 
+import test.mocking
 import test.runner
 
 from test.runner import require_controller
@@ -155,9 +154,11 @@ class TestBaseController(unittest.TestCase):
       controller.msg('SETEVENTS CONF_CHANGED')
 
       for i in range(10):
-        random_fingerprint = hashlib.sha1(os.urandom(20)).hexdigest().upper()
-        controller.msg('SETCONF NodeFamily=%s' % random_fingerprint)
+        controller.msg('SETCONF NodeFamily=%s' % test.mocking.random_fingerprint())
         test.runner.exercise_controller(self, controller)
+
+      controller.msg('SETEVENTS')
+      controller.msg('RESETCONF NodeFamily')
 
       # Concurrently shut down the controller. We need to do this in another
       # thread because it'll block on the event handling, which in turn is

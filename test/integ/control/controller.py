@@ -2,7 +2,6 @@
 Integration tests for the stem.control.Controller class.
 """
 
-import hashlib
 import os
 import shutil
 import socket
@@ -19,6 +18,7 @@ import stem.response.protocolinfo
 import stem.socket
 import stem.util.str_tools
 import stem.version
+import test.mocking
 import test.network
 import test.runner
 
@@ -40,14 +40,6 @@ from test.runner import (
 # used for a few tests that need to look up a relay.
 
 TEST_ROUTER_STATUS_ENTRY = None
-
-
-def random_fingerprint():
-  """
-  Provides a random 40 character hex string.
-  """
-
-  return hashlib.sha1(os.urandom(20)).hexdigest().upper()
 
 
 class TestController(unittest.TestCase):
@@ -158,7 +150,7 @@ class TestController(unittest.TestCase):
       controller.add_event_listener(listener2, EventType.CONF_CHANGED, EventType.DEBUG)
 
       # The NodeFamily is a harmless option we can toggle
-      controller.set_conf('NodeFamily', random_fingerprint())
+      controller.set_conf('NodeFamily', test.mocking.random_fingerprint())
 
       # Wait for the event. Assert that we get it within 10 seconds
       event_notice1.wait(10)
@@ -175,7 +167,7 @@ class TestController(unittest.TestCase):
 
       buffer2_size = len(event_buffer2)
 
-      controller.set_conf('NodeFamily', random_fingerprint())
+      controller.set_conf('NodeFamily', test.mocking.random_fingerprint())
       event_notice1.wait(10)
       self.assertEqual(len(event_buffer1), 2)
       event_notice1.clear()
@@ -212,7 +204,7 @@ class TestController(unittest.TestCase):
 
       # trigger an event
 
-      controller.set_conf('NodeFamily', random_fingerprint())
+      controller.set_conf('NodeFamily', test.mocking.random_fingerprint())
       event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)
 
@@ -225,7 +217,7 @@ class TestController(unittest.TestCase):
       controller.connect()
       controller.authenticate(password = test.runner.CONTROL_PASSWORD)
       self.assertTrue(len(event_buffer) == 0)
-      controller.set_conf('NodeFamily', random_fingerprint())
+      controller.set_conf('NodeFamily', test.mocking.random_fingerprint())
 
       event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)
