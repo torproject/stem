@@ -418,6 +418,8 @@ class TestProcess(unittest.TestCase):
 
     # tor polls for the process every fifteen seconds so this may take a
     # while...
+    #
+    #   https://trac.torproject.org/projects/tor/ticket/21281
 
     for seconds_waited in range(30):
       if tor_process.poll() == 0:
