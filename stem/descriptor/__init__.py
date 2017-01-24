@@ -78,6 +78,7 @@ KEYWORD_LINE = re.compile('^([%s]+)(?:[%s]+(.*))?$' % (KEYWORD_CHAR, WHITESPACE)
 SPECIFIC_KEYWORD_LINE = '^(%%s)(?:[%s]+(.*))?$' % WHITESPACE
 PGP_BLOCK_START = re.compile('^-----BEGIN ([%s%s]+)-----$' % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END = '-----END %s-----'
+EMPTY_COLLECTION = ([], {}, set())
 
 DocumentHandler = stem.util.enum.UppercaseEnum(
   'ENTRIES',
@@ -519,7 +520,16 @@ class Descriptor(object):
 
     for attr in self.ATTRIBUTES:
       if not hasattr(self, attr):
-        setattr(self, attr, copy.copy(self.ATTRIBUTES[attr][0]))
+        value = self.ATTRIBUTES[attr][0]
+
+        if value is None or isinstance(value, (bool, stem.exit_policy.ExitPolicy)):
+          pass  # immutable
+        elif value in EMPTY_COLLECTION:
+          value = type(value)()  # collection construction tad faster than copy
+        else:
+          value = copy.copy(value)
+
+        setattr(self, attr, value)
 
     for keyword, values in list(entries.items()):
       try:
