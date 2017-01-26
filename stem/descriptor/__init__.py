@@ -642,12 +642,6 @@ class Descriptor(object):
     return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
 
   def __getattr__(self, name):
-    # Our constructor sets these, but when unpickling we might lack them. This
-    # check is needed to avoid an infinite loop in that case.
-
-    if name in ('_lazy_loading', 'ATTRIBUTES'):
-      return super(Descriptor, self).__getattribute__(name)
-
     # If an attribute we should have isn't present it means either...
     #    
     #   a. we still need to lazy load this
