@@ -638,11 +638,6 @@ def _parse_header_parameters_line(descriptor, entries):
 
   value = _value('params', entries)
 
-  # should only appear in consensus-method 7 or later
-
-  if not descriptor.meets_consensus_method(7):
-    raise ValueError("A network status document's 'params' line should only appear in consensus-method 7 or later")
-
   if value != '':
     descriptor.params = _parse_int_mappings('params', value, True)
     descriptor._check_params_constraints()
@@ -997,6 +992,11 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
         self.params = dict(DEFAULT_PARAMS)
 
       self._parse(entries, validate, parser_for_line = self.HEADER_PARSER_FOR_LINE)
+
+      # should only appear in consensus-method 7 or later
+
+      if not self.meets_consensus_method(7) and 'params' in list(entries.keys()):
+        raise ValueError("A network status document's 'params' line should only appear in consensus-method 7 or later")
 
       _check_for_missing_and_disallowed_fields(self, entries, HEADER_STATUS_DOCUMENT_FIELDS)
 

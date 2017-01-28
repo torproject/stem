@@ -643,7 +643,7 @@ class Descriptor(object):
 
   def __getattr__(self, name):
     # If an attribute we should have isn't present it means either...
-    #    
+    #
     #   a. we still need to lazy load this
     #   b. we read the whole descriptor but it wasn't present, so needs the default
 
