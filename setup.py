@@ -47,6 +47,7 @@ global-exclude *.pyc
 global-exclude *.swp
 global-exclude *.swo
 global-exclude .tox
+global-exclude *~
 recursive-exclude test/data *
 recursive-exclude docs/_build *
 """.strip()
