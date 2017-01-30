@@ -378,11 +378,11 @@ class TestProcess(unittest.TestCase):
     runner = test.runner.get_runner()
     start_time = time.time()
     config = {'SocksPort': '2777', 'DataDirectory': self.data_directory}
-    self.assertRaises(OSError, stem.process.launch_tor_with_config, config, runner.get_tor_command(), 100, None, 2)
+    self.assertRaises(OSError, stem.process.launch_tor_with_config, config, runner.get_tor_command(), 100, None, 0.05)
     runtime = time.time() - start_time
 
-    if not (runtime > 2 and runtime < 3):
-      self.fail('Test should have taken 2-3 seconds, took %0.1f instead' % runtime)
+    if not (runtime > 0.05 and runtime < 1):
+      self.fail('Test should have taken 0.05-1 seconds, took %0.1f instead' % runtime)
 
   @require_version(stem.version.Requirement.TAKEOWNERSHIP)
   @only_run_once
@@ -418,6 +418,8 @@ class TestProcess(unittest.TestCase):
 
     # tor polls for the process every fifteen seconds so this may take a
     # while...
+    #
+    #   https://trac.torproject.org/projects/tor/ticket/21281
 
     for seconds_waited in range(30):
       if tor_process.poll() == 0:

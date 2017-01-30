@@ -11,6 +11,7 @@ import stem.control
 import stem.socket
 import stem.util.system
 
+import test.mocking
 import test.runner
 
 from test.runner import require_controller
@@ -52,7 +53,7 @@ class TestBaseController(unittest.TestCase):
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
 
-      for _ in range(250):
+      for _ in range(50):
         controller.connect()
         controller.close()
 
@@ -103,7 +104,7 @@ class TestBaseController(unittest.TestCase):
       controller = stem.control.BaseController(control_socket)
 
       def run_getinfo():
-        for _ in range(150):
+        for _ in range(50):
           try:
             controller.msg('GETINFO version')
             controller.msg('GETINFO blarg')
@@ -119,7 +120,7 @@ class TestBaseController(unittest.TestCase):
         msg_thread.setDaemon(True)
         msg_thread.start()
 
-      for index in range(100):
+      for index in range(50):
         controller.connect()
         controller.close()
 
@@ -150,16 +151,14 @@ class TestBaseController(unittest.TestCase):
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = ControlledListener(control_socket)
-      controller.msg('SETEVENTS BW')
+      controller.msg('SETEVENTS CONF_CHANGED')
 
-      # Wait for a couple events for events to be enqueued. Doing a bunch of
-      # GETINFO queries while waiting to better exercise the asynchronous event
-      # handling.
-
-      start_time = time.time()
-
-      while (time.time() - start_time) < 3:
+      for i in range(10):
+        controller.msg('SETCONF NodeFamily=%s' % test.mocking.random_fingerprint())
         test.runner.exercise_controller(self, controller)
+
+      controller.msg('SETEVENTS')
+      controller.msg('RESETCONF NodeFamily')
 
       # Concurrently shut down the controller. We need to do this in another
       # thread because it'll block on the event handling, which in turn is
@@ -177,10 +176,10 @@ class TestBaseController(unittest.TestCase):
 
       self.assertTrue(len(controller.received_events) >= 2)
 
-      for bw_event in controller.received_events:
-        self.assertTrue(re.match('BW [0-9]+ [0-9]+', str(bw_event)))
-        self.assertTrue(re.match('650 BW [0-9]+ [0-9]+\r\n', bw_event.raw_content()))
-        self.assertEqual(('650', ' '), bw_event.content()[0][:2])
+      for conf_changed_event in controller.received_events:
+        self.assertTrue(re.match('CONF_CHANGED\nNodeFamily=*', str(conf_changed_event)))
+        self.assertTrue(conf_changed_event.raw_content().startswith('650-CONF_CHANGED\r\n650-NodeFamily='))
+        self.assertEqual(('650', '-'), conf_changed_event.content()[0][:2])
 
   @require_controller
   def test_get_latest_heartbeat(self):

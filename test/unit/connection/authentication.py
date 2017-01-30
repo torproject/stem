@@ -65,35 +65,25 @@ class TestAuthenticate(unittest.TestCase):
 
     # exceptions that the authentication functions are documented to raise
 
-    all_auth_none_exc = (None, stem.connection.OpenAuthRejected(None))
+    all_auth_none_exc = (
+      None,
+      stem.connection.OpenAuthRejected(None),
+      stem.ControllerError(None))
 
     all_auth_password_exc = (
       None,
       stem.connection.PasswordAuthRejected(None),
-      stem.connection.IncorrectPassword(None))
+      stem.connection.IncorrectPassword(None),
+      stem.ControllerError(None))
 
     all_auth_cookie_exc = (
       None,
-      stem.connection.IncorrectCookieSize(None, False, None),
-      stem.connection.UnreadableCookieFile(None, False, None),
       stem.connection.CookieAuthRejected(None, False, None),
       stem.connection.IncorrectCookieValue(None, False, None),
-      stem.connection.UnrecognizedAuthChallengeMethod(None, None, None),
+      stem.connection.IncorrectCookieSize(None, False, None),
+      stem.connection.UnreadableCookieFile(None, False, None),
       stem.connection.AuthChallengeFailed(None, None),
-      stem.connection.AuthSecurityFailure(None, None),
-      stem.connection.InvalidClientNonce(None, None))
-
-    # authentication functions might raise a controller error when
-    # 'suppress_ctl_errors' is False, so including those
-
-    control_exc = (
-      stem.ProtocolError(None),
-      stem.SocketError(None),
-      stem.SocketClosed(None))
-
-    all_auth_none_exc += control_exc
-    all_auth_password_exc += control_exc
-    all_auth_cookie_exc += control_exc
+      stem.ControllerError(None))
 
     auth_method_combinations = mocking.get_all_combinations([
       stem.connection.AuthMethod.NONE,

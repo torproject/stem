@@ -140,7 +140,7 @@ def main():
 
     sys.exit(1)
 
-  pyflakes_task, pycodestyle_task = None, None
+  tor_version_check, pyflakes_task, pycodestyle_task = None, None, None
 
   if not args.specific_test:
     if stem.util.test_tools.is_pyflakes_available():
@@ -149,16 +149,23 @@ def main():
     if stem.util.test_tools.is_pycodestyle_available():
       pycodestyle_task = PYCODESTYLE_TASK
 
+  if args.run_integ:
+    tor_version_check = Task('checking tor version', test.util.check_tor_version, (args.tor_path,))
+
   test.util.run_tasks(
     'INITIALISING',
     Task('checking stem version', test.util.check_stem_version),
+    tor_version_check,
     Task('checking python version', test.util.check_python_version),
     Task('checking pycrypto version', test.util.check_pycrypto_version),
     Task('checking mock version', test.util.check_mock_version),
     Task('checking pyflakes version', test.util.check_pyflakes_version),
     Task('checking pycodestyle version', test.util.check_pycodestyle_version),
     Task('checking for orphaned .pyc files', test.util.clean_orphaned_pyc, (SRC_PATHS,)),
-    Task('checking for unused tests', test.util.check_for_unused_tests, ((os.path.join(STEM_BASE, 'test'),),)),
+    Task('checking for unused tests', test.util.check_for_unused_tests, [(
+      os.path.join(STEM_BASE, 'test', 'unit'),
+      os.path.join(STEM_BASE, 'test', 'integ'),
+    )]),
     pyflakes_task,
     pycodestyle_task,
   )
@@ -174,6 +181,7 @@ def main():
 
   output_filters = (
     error_tracker.get_filter(),
+    test.output.runtimes,
     test.output.strip_module,
     test.output.align_results,
     test.output.colorize,
@@ -381,7 +389,7 @@ def _run_test(args, test_class, output_filters, logging_buffer):
     return None
 
   test_results = StringIO()
-  run_result = unittest.TextTestRunner(test_results, verbosity=2).run(suite)
+  run_result = stem.util.test_tools.TimedTestRunner(test_results, verbosity=2).run(suite)
 
   if args.verbose:
     println(test.output.apply_filters(test_results.getvalue(), *output_filters))

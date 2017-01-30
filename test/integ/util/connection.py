@@ -18,7 +18,7 @@ class TestConnection(unittest.TestCase):
       test.runner.skip(self, '(no control port)')
       return
     elif not runner.is_ptraceable():
-      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
+      test.runner.skip(self, '(DisableDebuggerAttachment set)')
       return
     elif resolver not in system_resolvers():
       test.runner.skip(self, '(resolver unavailable on this platform)')
@@ -33,28 +33,28 @@ class TestConnection(unittest.TestCase):
 
       self.fail('Unable to find localhost connection with %s:\n%s' % (resolver, '\n'.join(connections)))
 
-  def test_get_connections_by_proc(self):
+  def test_connections_by_proc(self):
     self.check_resolver(Resolver.PROC)
 
-  def test_get_connections_by_netstat(self):
+  def test_connections_by_netstat(self):
     self.check_resolver(Resolver.NETSTAT)
 
-  def test_get_connections_by_windows_netstat(self):
+  def test_connections_by_windows_netstat(self):
     self.check_resolver(Resolver.NETSTAT_WINDOWS)
 
-  def test_get_connections_by_ss(self):
+  def test_connections_by_ss(self):
     self.check_resolver(Resolver.SS)
 
-  def test_get_connections_by_lsof(self):
+  def test_connections_by_lsof(self):
     self.check_resolver(Resolver.LSOF)
 
-  def test_get_connections_by_sockstat(self):
+  def test_connections_by_sockstat(self):
     self.check_resolver(Resolver.SOCKSTAT)
 
-  def test_get_connections_by_bsd_sockstat(self):
+  def test_connections_by_bsd_sockstat(self):
     self.check_resolver(Resolver.BSD_SOCKSTAT)
 
-  def test_get_connections_by_bsd_procstat(self):
+  def test_connections_by_bsd_procstat(self):
     self.check_resolver(Resolver.BSD_PROCSTAT)
 
   def test_that_we_are_checking_all_resolvers(self):

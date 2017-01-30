@@ -50,6 +50,9 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
   Note: The timeout argument does not work on Windows, and relies on the global
   state of the signal module.
 
+  .. versionchanged:: 1.6.0
+     Allowing the timeout argument to be a float.
+
   :param str tor_cmd: command for starting tor
   :param list args: additional arguments for tor
   :param str torrc_path: location of the torrc for us to use
@@ -119,7 +122,7 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
         raise OSError('reached a %i second timeout without success' % timeout)
 
       signal.signal(signal.SIGALRM, timeout_handler)
-      signal.alarm(timeout)
+      signal.setitimer(signal.ITIMER_REAL, timeout)
 
     bootstrap_line = re.compile('Bootstrapped ([0-9]+)%: ')
     problem_line = re.compile('\[(warn|err)\] (.*)$')

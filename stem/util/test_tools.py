@@ -8,6 +8,9 @@ Helper functions for testing.
 
 ::
 
+  TimedTestRunner - test runner that tracks test runtimes
+  test_runtimes - provides runtime of tests excuted through TimedTestRunners
+
   clean_orphaned_pyc - delete *.pyc files without corresponding *.py
 
   is_pyflakes_available - checks if pyflakes is available
@@ -21,6 +24,8 @@ import collections
 import linecache
 import os
 import re
+import time
+import unittest
 
 import stem.util.conf
 import stem.util.system
@@ -32,6 +37,8 @@ CONFIG = stem.util.conf.config_dict('test', {
   'exclude_paths': [],
 })
 
+TEST_RUNTIMES = {}
+
 
 class Issue(collections.namedtuple('Issue', ['line_number', 'message', 'line'])):
   """
@@ -41,6 +48,50 @@ class Issue(collections.namedtuple('Issue', ['line_number', 'message', 'line']))
   :var str message: description of the issue
   :var str line: content of the line the issue is about
   """
+
+
+class TimedTestRunner(unittest.TextTestRunner):
+  """
+  Test runner that tracks the runtime of individual tests. When tests are run
+  with this their runtimes are made available through
+  :func:`stem.util.test_tools.test_runtimes`.
+
+  .. versionadded:: 1.6.0
+  """
+
+  def run(self, test):
+    for t in test._tests:
+      original_type = type(t)
+
+      class _TestWrapper(original_type):
+        def run(self, result = None):
+          start_time = time.time()
+          result = super(type(self), self).run(result)
+          TEST_RUNTIMES[self.id()] = time.time() - start_time
+          return result
+
+        def id(self):
+          return '%s.%s.%s' % (original_type.__module__, original_type.__name__, self._testMethodName)
+
+        def __str__(self):
+          return '%s (%s.%s)' % (self._testMethodName, original_type.__module__, original_type.__name__)
+
+      t.__class__ = _TestWrapper
+
+    return super(TimedTestRunner, self).run(test)
+
+
+def test_runtimes():
+  """
+  Provides the runtimes of tests executed through TimedTestRunners.
+
+  :returns: **dict** of fully qualified test names to floats for the runtime in
+    seconds
+
+  .. versionadded:: 1.6.0
+  """
+
+  return dict(TEST_RUNTIMES)
 
 
 def clean_orphaned_pyc(paths):

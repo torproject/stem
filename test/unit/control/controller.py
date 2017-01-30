@@ -462,7 +462,7 @@ class TestControl(unittest.TestCase):
     self.assertEqual(stem.descriptor.router_status_entry.RouterStatusEntryV3(desc), self.controller.get_network_status())
 
   @patch('stem.control.Controller.get_info')
-  def test_get_network_status_when_raising_descriptor_unavailable(self, get_info_mock):
+  def test_get_network_status_when_unavailable(self, get_info_mock):
     """
     Exercises the get_network_status() method.
     """

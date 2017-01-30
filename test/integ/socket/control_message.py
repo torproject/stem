@@ -7,6 +7,7 @@ import unittest
 
 import stem.socket
 import stem.version
+import test.mocking
 import test.runner
 
 from test.runner import (
@@ -145,23 +146,26 @@ class TestControlMessage(unittest.TestCase):
         self.assertTrue('%s' % torrc_entry in config_text_response.content()[0][2])
 
   @require_controller
-  def test_bw_event(self):
+  def test_setconf_event(self):
     """
-    Issues 'SETEVENTS BW' and parses a couple events.
+    Issues 'SETEVENTS CONF_CHANGED' and parses an events.
     """
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
-      control_socket.send('SETEVENTS BW')
+      control_socket.send('SETEVENTS CONF_CHANGED')
       setevents_response = control_socket.recv()
       self.assertEqual('OK', str(setevents_response))
       self.assertEqual(['OK'], list(setevents_response))
       self.assertEqual('250 OK\r\n', setevents_response.raw_content())
       self.assertEqual([('250', ' ', 'OK')], setevents_response.content())
 
-      # Tor will emit a BW event once per second. Parsing two of them.
+      # CONF_CHANGED event will come before the SETCONF 'OK' response
 
-      for _ in range(2):
-        bw_event = control_socket.recv()
-        self.assertTrue(re.match('BW [0-9]+ [0-9]+', str(bw_event)))
-        self.assertTrue(re.match('650 BW [0-9]+ [0-9]+\r\n', bw_event.raw_content()))
-        self.assertEqual(('650', ' '), bw_event.content()[0][:2])
+      control_socket.send('SETCONF NodeFamily=%s' % test.mocking.random_fingerprint())
+
+      conf_changed_event = control_socket.recv()
+      self.assertTrue(re.match('CONF_CHANGED\nNodeFamily=.*', str(conf_changed_event)))
+      self.assertTrue(re.match('650-CONF_CHANGED\r\n650-NodeFamily=.*\r\n650 OK', conf_changed_event.raw_content()))
+      self.assertEqual(('650', '-'), conf_changed_event.content()[0][:2])
+
+      self.assertEqual([('250', ' ', 'OK')], control_socket.recv().content())

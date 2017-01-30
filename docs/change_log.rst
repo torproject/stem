@@ -45,8 +45,13 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * Sped descriptor reading by ~25% by deferring defaulting when validating
   * Support for protocol descriptor fields (:spec:`eb4fb3c`)
   * Shared randomness properties weren't being read in votes (:trac:`21102`)
+
+ * **Utilities**
+
+  * Added :class:`~stem.util.test_tools.TimedTestRunner` and :func:`~stem.util.test_tools.test_runtimes`
 
 .. _version_1.5:
 

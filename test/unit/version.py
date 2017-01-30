@@ -27,13 +27,13 @@ class TestVersion(unittest.TestCase):
   def test_get_system_tor_version(self, call_mock):
     call_mock.return_value = TOR_VERSION_OUTPUT.splitlines()
 
-    version = stem.version.get_system_tor_version()
+    version = stem.version.get_system_tor_version('tor_unit')
 
     self.assert_versions_match(version, 0, 2, 2, 35, None, 'git-73ff13ab3cc9570d')
     self.assertEqual('73ff13ab3cc9570d', version.git_commit)
-    call_mock.assert_called_once_with('tor --version')
+    call_mock.assert_called_once_with('tor_unit --version')
 
-    self.assertEqual({'tor': version}, stem.version.VERSION_CACHE)
+    self.assertEqual(stem.version.VERSION_CACHE['tor_unit'], version)
 
   def test_parsing(self):
     """

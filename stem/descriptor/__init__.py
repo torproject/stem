@@ -78,6 +78,7 @@ KEYWORD_LINE = re.compile('^([%s]+)(?:[%s]+(.*))?$' % (KEYWORD_CHAR, WHITESPACE)
 SPECIFIC_KEYWORD_LINE = '^(%%s)(?:[%s]+(.*))?$' % WHITESPACE
 PGP_BLOCK_START = re.compile('^-----BEGIN ([%s%s]+)-----$' % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END = '-----END %s-----'
+EMPTY_COLLECTION = ([], {}, set())
 
 DocumentHandler = stem.util.enum.UppercaseEnum(
   'ENTRIES',
@@ -436,6 +437,15 @@ def _parse_key_block(keyword, attribute, expected_block_type, value_attribute = 
   return _parse
 
 
+def _copy(default):
+  if default is None or isinstance(default, (bool, stem.exit_policy.ExitPolicy)):
+    return default  # immutable
+  elif default in EMPTY_COLLECTION:
+    return type(default)()  # collection construction tad faster than copy
+  else:
+    return copy.copy(default)
+
+
 class Descriptor(object):
   """
   Common parent for all types of descriptors.
@@ -514,12 +524,6 @@ class Descriptor(object):
 
     if parser_for_line is None:
       parser_for_line = self.PARSER_FOR_LINE
-
-    # set defaults
-
-    for attr in self.ATTRIBUTES:
-      if not hasattr(self, attr):
-        setattr(self, attr, copy.copy(self.ATTRIBUTES[attr][0]))
 
     for keyword, values in list(entries.items()):
       try:
@@ -638,25 +642,25 @@ class Descriptor(object):
     return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
 
   def __getattr__(self, name):
-    # Our constructor sets these, but when unpickling we might lack them. This
-    # check is needed to avoid an infinite loop in that case.
+    # If an attribute we should have isn't present it means either...
+    #
+    #   a. we still need to lazy load this
+    #   b. we read the whole descriptor but it wasn't present, so needs the default
 
-    if name in ('_lazy_loading', 'ATTRIBUTES'):
-      return super(Descriptor, self).__getattribute__(name)
-
-    # If attribute isn't already present we might be lazy loading it...
-
-    if self._lazy_loading and name in self.ATTRIBUTES:
+    if name in self.ATTRIBUTES and not hasattr(self, name):
       default, parsing_function = self.ATTRIBUTES[name]
 
-      try:
-        parsing_function(self, self._entries)
-      except (ValueError, KeyError):
+      if self._lazy_loading:
         try:
-          # despite having a validation failure check to see if we set something
-          return super(Descriptor, self).__getattribute__(name)
-        except AttributeError:
-          setattr(self, name, copy.copy(default))
+          parsing_function(self, self._entries)
+        except (ValueError, KeyError):
+          try:
+            # despite having a validation failure check to see if we set something
+            return super(Descriptor, self).__getattribute__(name)
+          except AttributeError:
+            setattr(self, name, _copy(default))
+      else:
+        setattr(self, name, _copy(default))
 
     return super(Descriptor, self).__getattribute__(name)
 

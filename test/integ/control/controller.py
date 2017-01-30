@@ -2,7 +2,6 @@
 Integration tests for the stem.control.Controller class.
 """
 
-import hashlib
 import os
 import shutil
 import socket
@@ -19,6 +18,7 @@ import stem.response.protocolinfo
 import stem.socket
 import stem.util.str_tools
 import stem.version
+import test.mocking
 import test.network
 import test.runner
 
@@ -40,14 +40,6 @@ from test.runner import (
 # used for a few tests that need to look up a relay.
 
 TEST_ROUTER_STATUS_ENTRY = None
-
-
-def random_fingerprint():
-  """
-  Provides a random 40 character hex string.
-  """
-
-  return hashlib.sha1(os.urandom(20)).hexdigest().upper()
 
 
 class TestController(unittest.TestCase):
@@ -158,7 +150,7 @@ class TestController(unittest.TestCase):
       controller.add_event_listener(listener2, EventType.CONF_CHANGED, EventType.DEBUG)
 
       # The NodeFamily is a harmless option we can toggle
-      controller.set_conf('NodeFamily', random_fingerprint())
+      controller.set_conf('NodeFamily', test.mocking.random_fingerprint())
 
       # Wait for the event. Assert that we get it within 10 seconds
       event_notice1.wait(10)
@@ -175,7 +167,7 @@ class TestController(unittest.TestCase):
 
       buffer2_size = len(event_buffer2)
 
-      controller.set_conf('NodeFamily', random_fingerprint())
+      controller.set_conf('NodeFamily', test.mocking.random_fingerprint())
       event_notice1.wait(10)
       self.assertEqual(len(event_buffer1), 2)
       event_notice1.clear()
@@ -208,66 +200,29 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      controller.add_event_listener(listener, EventType.BW)
+      controller.add_event_listener(listener, EventType.CONF_CHANGED)
 
-      # Get a BW event or two. These should be emitted each second but under
-      # heavy system load that's not always the case.
+      # trigger an event
 
+      controller.set_conf('NodeFamily', test.mocking.random_fingerprint())
       event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)
 
-      # disconnect and check that we stop getting events
+      # disconnect, then reconnect and check that we get events again
 
       controller.close()
       event_notice.clear()
       event_buffer = []
-
-      event_notice.wait(2)
-      self.assertTrue(len(event_buffer) == 0)
-
-      # reconnect and check that we get events again
 
       controller.connect()
       controller.authenticate(password = test.runner.CONTROL_PASSWORD)
+      self.assertTrue(len(event_buffer) == 0)
+      controller.set_conf('NodeFamily', test.mocking.random_fingerprint())
 
       event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)
 
-      # disconnect
-
-      controller.close()
-      event_notice.clear()
-      event_buffer = []
-
-      # reconnect and check that we get events again
-
-      controller.connect()
-      stem.connection.authenticate(controller, password = test.runner.CONTROL_PASSWORD)
-
-      event_notice.wait(4)
-      self.assertTrue(len(event_buffer) >= 1)
-
-      # disconnect
-
-      controller.close()
-      event_notice.clear()
-      event_buffer = []
-
-      # Reconnect and check that we get events again. This is being done by
-      # calling AUTHENTICATE manually so skipping cookie auth.
-
-      tor_options = test.runner.get_runner().get_options()
-
-      if test.runner.Torrc.COOKIE not in tor_options:
-        controller.connect()
-
-        if test.runner.Torrc.PASSWORD in tor_options:
-          controller.msg('AUTHENTICATE "%s"' % test.runner.CONTROL_PASSWORD)
-        else:
-          controller.msg('AUTHENTICATE')
-
-        event_notice.wait(4)
-        self.assertTrue(len(event_buffer) >= 1)
+      controller.reset_conf('NodeFamily')
 
   @require_controller
   def test_getinfo(self):
@@ -690,7 +645,7 @@ class TestController(unittest.TestCase):
 
   @require_controller
   @require_version(Requirement.ADD_ONION_BASIC_AUTH)
-  def test_with_ephemeral_hidden_services_basic_auth_without_credentials(self):
+  def test_with_ephemeral_hidden_services_basic_auth_no_credentials(self):
     """
     Exercises creating ephemeral hidden services when attempting to use basic
     auth but not including any credentials.
