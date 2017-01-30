@@ -86,15 +86,19 @@ Library for working with the tor process.
 
   Statuses that a circuit can be in. Tor may provide statuses not in this enum.
 
-  ============ ===========
-  CircStatus   Description
-  ============ ===========
-  **LAUNCHED** new circuit was created
-  **BUILT**    circuit finished being created and can accept traffic
-  **EXTENDED** circuit has been extended by a hop
-  **FAILED**   circuit construction failed
-  **CLOSED**   circuit has been closed
-  ============ ===========
+  .. versionchanged:: 1.6.0
+     Added the GUARD_WAIT signal.
+
+  ============== ===========
+  CircStatus     Description
+  ============== ===========
+  **LAUNCHED**   new circuit was created
+  **BUILT**      circuit finished being created and can accept traffic
+  **GUARD_WAIT** waiting to see if there's a circuit with a better guard before using
+  **EXTENDED**   circuit has been extended by a hop
+  **FAILED**     circuit construction failed
+  **CLOSED**     circuit has been closed
+  ============== ===========
 
 .. data:: CircBuildFlag (enum)
 
@@ -653,6 +657,7 @@ Signal = stem.util.enum.UppercaseEnum(
 CircStatus = stem.util.enum.UppercaseEnum(
   'LAUNCHED',
   'BUILT',
+  'GUARD_WAIT',
   'EXTENDED',
   'FAILED',
   'CLOSED',

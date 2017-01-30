@@ -43,6 +43,10 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Controller**
+
+  * Added the GUARD_WAIT :data:`~stem.CircStatus` (:spec:`6446210`)
+
  * **Descriptors**
 
   * Sped descriptor reading by ~25% by deferring defaulting when validating
