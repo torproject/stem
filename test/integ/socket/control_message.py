@@ -159,13 +159,20 @@ class TestControlMessage(unittest.TestCase):
       self.assertEqual('250 OK\r\n', setevents_response.raw_content())
       self.assertEqual([('250', ' ', 'OK')], setevents_response.content())
 
-      # CONF_CHANGED event will come before the SETCONF 'OK' response
+      # We'll receive both a CONF_CHANGED event and 'OK' response for the
+      # SETCONF, but not necessarily in any specific order.
 
       control_socket.send('SETCONF NodeFamily=%s' % test.mocking.random_fingerprint())
+      msg1 = control_socket.recv()
+      msg2 = control_socket.recv()
 
-      conf_changed_event = control_socket.recv()
+      if msg1.content()[0][0] == 650:
+        conf_changed_event, setconf_response = msg1, msg2
+      else:
+        setconf_response, conf_changed_event = msg1, msg2
+
       self.assertTrue(re.match('CONF_CHANGED\nNodeFamily=.*', str(conf_changed_event)))
       self.assertTrue(re.match('650-CONF_CHANGED\r\n650-NodeFamily=.*\r\n650 OK', conf_changed_event.raw_content()))
       self.assertEqual(('650', '-'), conf_changed_event.content()[0][:2])
 
-      self.assertEqual([('250', ' ', 'OK')], control_socket.recv().content())
+      self.assertEqual([('250', ' ', 'OK')], setconf_response.content())
