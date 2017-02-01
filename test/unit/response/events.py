@@ -476,7 +476,7 @@ class TestEvents(unittest.TestCase):
     def event_sender():
       for index in range(3):
         print_bw(_get_event('650 BW 15 25'))
-        time.sleep(0.05)
+        time.sleep(0.0005)
 
     controller = Mock(spec = Controller)
 
@@ -485,7 +485,7 @@ class TestEvents(unittest.TestCase):
 
     events_thread = threading.Thread(target = event_sender)
     events_thread.start()
-    time.sleep(0.2)
+    time.sleep(0.002)
     events_thread.join()
 
   def test_event(self):
