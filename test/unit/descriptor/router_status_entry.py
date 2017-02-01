@@ -629,7 +629,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Read a descriptor file with windows newlines (CRLF).
     """
 
-    descriptor_path = get_resource('cached-microdesc-consensus_with_carriage_returns')
+    descriptor_path = get_resource('unparseable/cached-microdesc-consensus_with_carriage_returns')
 
     with open(descriptor_path, 'rb') as descriptor_file:
       descriptors = stem.descriptor.parse_file(descriptor_file, 'network-status-microdesc-consensus-3 1.0', normalize_newlines = True)

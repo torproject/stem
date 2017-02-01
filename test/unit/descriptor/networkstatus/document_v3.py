@@ -240,7 +240,7 @@ JZ/1HL9sHyZfo6bwaC6YSM9PNiiY6L7rnGpS7UkHiFI+M96VCMorvjm5YPs3FioJ
 DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 -----END SIGNATURE-----"""
 
-    with open(get_resource('vote'), 'rb') as descriptor_file:
+    with open(get_resource('unparseable/vote'), 'rb') as descriptor_file:
       document = stem.descriptor.networkstatus.NetworkStatusDocumentV3(descriptor_file.read(), default_params = False)
 
       self.assertEqual(3, document.version)

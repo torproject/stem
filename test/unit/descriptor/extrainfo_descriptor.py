@@ -171,7 +171,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     Malformed descriptor with non-ascii content for the 'dirreq-v3-reqs' line.
     """
 
-    with open(get_resource('extrainfo_nonascii_v3_reqs'), 'rb') as descriptor_file:
+    with open(get_resource('unparseable/extrainfo_nonascii_v3_reqs'), 'rb') as descriptor_file:
       try:
         next(stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0', validate = True))
         self.fail("validation should've raised an exception")
