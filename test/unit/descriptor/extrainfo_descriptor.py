@@ -375,12 +375,10 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
     test_entries = (
       '',
-      '2012-05-03 ',
       '2012-05-03',
       '2012-05-03 12:07:60 (500 s)',
-      '2012-05-03 12:07:50 (500s)',
       '2012-05-03 12:07:50 (500 s',
-      '2012-05-03 12:07:50 (500 )',
+      '2012-05-03 12:07:50 (500s)',
       '2012-05-03 12:07:50 (500 s)11',
       '2012-05-03 12:07:50 (500 s) 277431,12089,0',
       '2012-05-03 12:07:50 (500 s) 277431,12089,0a,2134',
@@ -495,21 +493,21 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
       self.assertEqual(500, getattr(desc, interval_attr))
 
-      test_entries = (
-        '',
-        '2012-05-03 ',
-        '2012-05-03',
-        '2012-05-03 12:07:60 (500 s)',
-        '2012-05-03 12:07:50 (500s)',
-        '2012-05-03 12:07:50 (500 s',
-        '2012-05-03 12:07:50 (500 )',
-      )
+    test_entries = (
+      '',
+      '2012-05-03 ',
+      '2012-05-03',
+      '2012-05-03 12:07:60 (500 s)',
+      '2012-05-03 12:07:50 (500s)',
+      '2012-05-03 12:07:50 (500 s',
+      '2012-05-03 12:07:50 (500 )',
+    )
 
-      for entry in test_entries:
-        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        desc = self._expect_invalid_attr(desc_text)
-        self.assertEqual(None, getattr(desc, end_attr))
-        self.assertEqual(None, getattr(desc, interval_attr))
+    for entry in test_entries:
+      desc_text = get_relay_extrainfo_descriptor({'entry-stats-end': entry}, content = True)
+      desc = self._expect_invalid_attr(desc_text)
+      self.assertEqual(None, desc.entry_stats_end)
+      self.assertEqual(None, desc.entry_stats_interval)
 
   def test_timestamp_interval_and_value_lines(self):
     """
@@ -523,35 +521,32 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       interval_attr = base_attr + '_interval'
       values_attr = base_attr + '_values'
 
-      test_entries = (
-        ('', []),
-        (' ', []),
-        (' 50,11,5', [50, 11, 5]),
-      )
+      desc = get_relay_extrainfo_descriptor({keyword: '2012-05-03 12:07:50 (500 s) 50,11,5'})
+      self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
+      self.assertEqual(500, getattr(desc, interval_attr))
+      self.assertEqual([50, 11, 5], getattr(desc, values_attr))
 
-      for test_values, expected_values in test_entries:
-        desc = get_relay_extrainfo_descriptor({keyword: '2012-05-03 12:07:50 (500 s)%s' % test_values})
-        self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
-        self.assertEqual(500, getattr(desc, interval_attr))
-        self.assertEqual(expected_values, getattr(desc, values_attr))
+    for test_value in ('', ' '):
+      desc = get_relay_extrainfo_descriptor({'write-history': '2012-05-03 12:07:50 (500 s)%s' % test_value})
+      self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.write_history_end)
+      self.assertEqual(500, desc.write_history_interval)
+      self.assertEqual([], desc.write_history_values)
 
-      test_entries = (
-        '',
-        '2012-05-03 ',
-        '2012-05-03',
-        '2012-05-03 12:07:60 (500 s)',
-        '2012-05-03 12:07:50 (500s)',
-        '2012-05-03 12:07:50 (500 s',
-        '2012-05-03 12:07:50 (500 )',
-        '2012-05-03 12:07:50 (500 s)11',
-      )
+    test_entries = (
+      '',
+      '2012-05-03',
+      '2012-05-03 12:07:60 (500 s)',
+      '2012-05-03 12:07:50 (500s)',
+      '2012-05-03 12:07:50 (500 s',
+      '2012-05-03 12:07:50 (500 s)11',
+    )
 
-      for entry in test_entries:
-        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        desc = self._expect_invalid_attr(desc_text)
-        self.assertEqual(None, getattr(desc, end_attr))
-        self.assertEqual(None, getattr(desc, interval_attr))
-        self.assertEqual(None, getattr(desc, values_attr))
+    for entry in test_entries:
+      desc_text = get_relay_extrainfo_descriptor({'write-history': entry}, content = True)
+      desc = self._expect_invalid_attr(desc_text)
+      self.assertEqual(None, desc.write_history_end)
+      self.assertEqual(None, desc.write_history_interval)
+      self.assertEqual(None, desc.write_history_values)
 
   def test_port_mapping_lines(self):
     """

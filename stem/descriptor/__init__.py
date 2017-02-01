@@ -642,22 +642,33 @@ class Descriptor(object):
     return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
 
   def __getattr__(self, name):
+    # We can't use standard hasattr() since it calls this function, recursing.
+    # Doing so works since it stops recursing after several dozen iterations
+    # (not sure why), but horrible in terms of performance.
+
+    def has_attr():
+      try:
+        super(Descriptor, self).__getattribute__(name)
+        return True
+      except:
+        return False
+
     # If an attribute we should have isn't present it means either...
     #
     #   a. we still need to lazy load this
     #   b. we read the whole descriptor but it wasn't present, so needs the default
 
-    if name in self.ATTRIBUTES and not hasattr(self, name):
+    if name in self.ATTRIBUTES and not has_attr():
       default, parsing_function = self.ATTRIBUTES[name]
 
       if self._lazy_loading:
         try:
           parsing_function(self, self._entries)
         except (ValueError, KeyError):
-          try:
-            # despite having a validation failure check to see if we set something
-            return super(Descriptor, self).__getattribute__(name)
-          except AttributeError:
+          # Despite having a validation failure we might've set something. If
+          # not then set the default.
+
+          if not has_attr():
             setattr(self, name, _copy(default))
       else:
         setattr(self, name, _copy(default))
