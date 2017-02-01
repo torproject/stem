@@ -315,7 +315,7 @@ class TestDescriptorReader(unittest.TestCase):
 
     with reader:
       self.assertTrue(reader.get_buffered_descriptor_count() <= 2)
-      time.sleep(0.01)
+      time.sleep(0.001)
       self.assertTrue(reader.get_buffered_descriptor_count() <= 2)
 
   def test_persistence_path(self):
@@ -430,7 +430,7 @@ class TestDescriptorReader(unittest.TestCase):
     signal.alarm(2)
 
     reader.start()
-    time.sleep(0.1)
+    time.sleep(0.001)
     reader.stop()
     is_test_running = False
 
@@ -440,20 +440,15 @@ class TestDescriptorReader(unittest.TestCase):
     iterating over our test data.
     """
 
-    expected_results = {}
+    desc_path = os.path.join(DESCRIPTOR_TEST_DATA, 'example_descriptor')
+    last_modified = int(os.stat(desc_path).st_mtime)
 
-    for root, _, files in os.walk(DESCRIPTOR_TEST_DATA):
-      for filename in files:
-        path = os.path.join(root, filename)
-        last_modified = int(os.stat(path).st_mtime)
-        expected_results[path] = last_modified
-
-    reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA)
+    reader = stem.descriptor.reader.DescriptorReader(desc_path)
 
     with reader:
       list(reader)  # iterates over all of the descriptors
 
-    self.assertEqual(expected_results, reader.get_processed_files())
+    self.assertEqual({desc_path: last_modified}, reader.get_processed_files())
 
   def test_skip_nondescriptor_contents(self):
     """
@@ -462,7 +457,7 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     skip_listener = SkipListener()
-    reader = stem.descriptor.reader.DescriptorReader(DESCRIPTOR_TEST_DATA)
+    reader = stem.descriptor.reader.DescriptorReader(os.path.join(DESCRIPTOR_TEST_DATA, 'unparseable'))
     reader.register_skip_listener(skip_listener.listener)
 
     expected_skip_files = ('riddle', 'tiny.png', 'vote', 'new_metrics_type', 'cached-microdesc-consensus_with_carriage_returns', 'extrainfo_nonascii_v3_reqs')
@@ -612,7 +607,7 @@ class TestDescriptorReader(unittest.TestCase):
     Parses a file that has a valid metrics header, but an unrecognized type.
     """
 
-    test_path = test.unit.descriptor.get_resource('new_metrics_type')
+    test_path = test.unit.descriptor.get_resource('unparseable/new_metrics_type')
 
     skip_listener = SkipListener()
     reader = stem.descriptor.reader.DescriptorReader(test_path)
