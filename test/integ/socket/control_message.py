@@ -166,7 +166,7 @@ class TestControlMessage(unittest.TestCase):
       msg1 = control_socket.recv()
       msg2 = control_socket.recv()
 
-      if msg1.content()[0][0] == 650:
+      if msg1.content()[0][0] == '650':
         conf_changed_event, setconf_response = msg1, msg2
       else:
         setconf_response, conf_changed_event = msg1, msg2
