@@ -34,6 +34,7 @@ etc). This information is provided from a few sources...
 import functools
 import hashlib
 import re
+import base64
 
 import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
@@ -760,23 +761,22 @@ class RelayDescriptor(ServerDescriptor):
         if signed_digest != self.digest():
           raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, self.digest()))
 
+        if self.onion_key_crosscert:
+          onion_key_crosscert_digest = self._digest_for_signature(self.onion_key, self.onion_key_crosscert)
+          if onion_key_crosscert_digest != self.onion_key_crosscert_digest():
+            raise ValueError('Decrypted onion-key-crosscert digest does not match local digest (calculated: %s, local: %s)' % (onion_key_crosscert_digest, self.onion_key_crosscert_digest()))
+
       if stem.prereq.is_nacl_available() and self.ed25519_certificate:
         self.certificate = _parse_certificate(_bytes_for_block(self.ed25519_certificate),
                                               self.ed25519_master_key,
                                               validate)
 
-        if self.ed25519_master_key is not None:
-          if self.certificate.identity_key != self.ed25519_master_key:
-            raise ValueError("master-key-ed25519 does not match ed25519 certificate identity key")
+        if self.certificate.identity_key != self.ed25519_master_key:
+          raise ValueError("master-key-ed25519 does not match ed25519 certificate identity key")
 
-        self.certificate.verify_descriptor_signature(stem.util.str_tools._to_unicode(raw_contents),
+        self.certificate.verify_descriptor_signature(raw_contents,
                                                      self.ed25519_signature)
 
-        onion_key_bytes = _bytes_for_block(self.onion_key)
-        from Crypto.Util import asn1
-        seq = asn1.DerSequence()
-        seq.decode(onion_key_bytes)
-        self._digest_for_signature(self.onion_key, self.onion_key_crosscert)
 
 
   @lru_cache()
@@ -786,10 +786,28 @@ class RelayDescriptor(ServerDescriptor):
 
     :returns: the digest string encoded in uppercase hex
 
-    :raises: ValueError if the digest canot be calculated
+    :raises: ValueError if the digest cannot be calculated
     """
 
     return self._digest_for_content(b'router ', b'\nrouter-signature\n')
+
+
+  @lru_cache()
+  def onion_key_crosscert_digest(self):
+    """
+    Provides the digest of the onion-key-crosscert data consisting of the following:
+
+    1. SHA1 digest of the RSA identity key
+    2. the ed25519 identity key
+
+    :returns: the digest encoded in uppercase hex
+
+    :raises: ValueError if the digest cannot be calculated
+    """
+    signing_key_digest = hashlib.sha1(_bytes_for_block(self.signing_key)).digest()
+    data = signing_key_digest + base64.b64decode(self.ed25519_master_key +  b'=')
+    return data.encode("hex").upper()
+
 
   def _compare(self, other, method):
     if not isinstance(other, RelayDescriptor):

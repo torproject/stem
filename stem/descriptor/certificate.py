@@ -162,7 +162,11 @@ class Ed25519KeyCertificate(Certificate):
     signed_part = descriptor[:descriptor.index('router-sig-ed25519 ') + len('router-sig-ed25519 ')]
     descriptor_with_prefix = ED25519_ROUTER_SIGNATURE_PREFIX + signed_part
     descriptor_sha256_digest = hashlib.sha256(descriptor_with_prefix).digest()
-    verify_key.verify(descriptor_sha256_digest, signature_bytes)
+
+    try:
+      verify_key.verify(descriptor_sha256_digest, signature_bytes)
+    except BadSignatureError:
+      raise ValueError('Descriptor Ed25519 certificate signature invalid')
 
   def _verify_signature(self):
     if self.identity_key:
