@@ -14,61 +14,93 @@ import test.util
 INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git contents in the following way. The manifest in our setup.py may need to be updated...\n\n"
 
 
+def _install(path):
+  """
+  Installs to the given location.
+  
+  :param str path: location to install ourselves to
+
+  :returns: **str** where our site packages are located
+
+  :raises: **AssertionError** if installation is unsuccessful
+  """
+
+  original_cwd = os.getcwd()
+
+  try:
+    os.chdir(test.util.STEM_BASE)
+    stem.util.system.call('%s setup.py install --prefix %s' % (sys.executable, path))
+    stem.util.system.call('%s setup.py clean --all' % sys.executable)  # tidy up the build directory
+    site_packages_paths = glob.glob('%s/lib*/*/site-packages' % path)
+
+    if len(site_packages_paths) != 1:
+      raise AssertionError('We should only have a single site-packages directory, but instead had: %s' % site_packages_paths)
+
+    return site_packages_paths[0]
+  except Exception as exc:
+    raise AssertionError("Unable to install with 'python setup.py install': %s" % exc)
+  finally:
+    os.chdir(original_cwd)
+
+
+def _assert_has_all_files(path):
+  """
+  Check that all the files in the stem directory are present in the
+  installation. This is a very common gotcha since our setup.py
+  requires us to remember to add new modules and non-source files.
+
+  :raises: **AssertionError** files don't match our content
+  """
+
+  expected, installed = set(), set()
+
+  for root, dirnames, filenames in os.walk(os.path.join(test.util.STEM_BASE, 'stem')):
+    for filename in filenames:
+      file_format = filename.split('.')[-1]
+
+      if file_format not in test.util.IGNORED_FILE_TYPES:
+        expected.add(os.path.join(root, filename)[len(test.util.STEM_BASE) + 1:])
+
+  for root, dirnames, filenames in os.walk(path):
+    for filename in filenames:
+      if not filename.endswith('.pyc') and not filename.endswith('egg-info'):
+        installed.add(os.path.join(root, filename)[len(path) + 1:])
+
+  missing = expected.difference(installed)
+  extra = installed.difference(expected)
+
+  if missing:
+    raise AssertionError("The following files were expected to be in our installation but weren't. Maybe our setup.py needs to be updated?\n\n%s" % '\n'.join(missing))
+  elif extra:
+    raise AssertionError("The following files weren't expected to be in our installation.\n\n%s" % '\n'.join(extra))
+
+
 class TestInstallation(unittest.TestCase):
-  # TODO: remove when dropping support for python 2.6
-  skip_reason = 'setUpClass() unsupported in python 2.6'
-
-  @classmethod
-  def setUpClass(self):
-    self.site_packages_path = None
-    self.skip_reason = None
-    self.installation_error = None
-
-    if not os.path.exists(os.path.join(test.util.STEM_BASE, 'setup.py')):
-      self.skip_reason = '(only for git checkout)'
-
-    original_cwd = os.getcwd()
+  @test.runner.only_run_once
+  def test_install(self):
+    """
+    Installs with 'python setup.py install' and checks we can use what we
+    install.
+    """
 
     try:
-      os.chdir(test.util.STEM_BASE)
-      stem.util.system.call(sys.executable + ' setup.py install --prefix /tmp/stem_test')
-      stem.util.system.call(sys.executable + ' setup.py clean --all')  # tidy up the build directory
-      site_packages_paths = glob.glob('/tmp/stem_test/lib*/*/site-packages')
+      site_packages_path = _install('/tmp/stem_test')
 
-      if len(site_packages_paths) != 1:
-        self.installation_error = 'We should only have a single site-packages directory, but instead had: %s' % site_packages_paths
-
-      self.site_packages_path = site_packages_paths[0]
-    except Exception as exc:
-      self.installation_error = 'Unable to download the man page: %s' % exc
+      self.assertEqual(stem.__version__, stem.util.system.call([sys.executable, '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % site_packages_path])[0])
+      _assert_has_all_files(site_packages_path)
     finally:
-      os.chdir(original_cwd)
-
-  @classmethod
-  def tearDownClass(self):
-    if os.path.exists('/tmp/stem_test'):
-      shutil.rmtree('/tmp/stem_test')
-
-  def requires_installation(self):
-    if self.skip_reason:
-      test.runner.skip(self, self.skip_reason)
-      return True
-    elif self.installation_error:
-      self.fail(self.installation_error)
-
-    return False
+      if os.path.exists('/tmp/stem_test'):
+        shutil.rmtree('/tmp/stem_test')
 
   @test.runner.only_run_once
-  def test_sdist_matches_git(self):
+  def test_sdist(self):
     """
-    Check the source distribution tarball we make for releases matches the
-    contents of 'git archive'. This primarily is meant to test that our
-    MANIFEST.in is up to date.
+    Creates a source distribution tarball with 'python setup.py sdist' and
+    checks that it matches the content of our git repository. This primarily is
+    meant to test that our MANIFEST.in is up to date.
     """
 
-    if self.requires_installation():
-      return
-    elif not stem.util.system.is_available('git'):
+    if not stem.util.system.is_available('git'):
       test.runner.skip(self, '(git unavailable)')
       return
 
@@ -102,46 +134,3 @@ class TestInstallation(unittest.TestCase):
 
     if issues:
       self.fail(INSTALL_MISMATCH_MSG + '\n'.join(issues))
-
-  @test.runner.only_run_once
-  def test_installing_stem(self):
-    """
-    Attempt to use the package we install.
-    """
-
-    if self.requires_installation():
-      return
-
-    self.assertEqual(stem.__version__, stem.util.system.call([sys.executable, '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % self.site_packages_path])[0])
-
-  def test_installs_all_files(self):
-    """
-    Check that all the files in the stem directory are present in the
-    installation. This is a very common gotcha since our setup.py
-    requires us to remember to add new modules and non-source files.
-    """
-
-    if self.requires_installation():
-      return
-
-    expected, installed = set(), set()
-
-    for root, dirnames, filenames in os.walk(os.path.join(test.util.STEM_BASE, 'stem')):
-      for filename in filenames:
-        file_format = filename.split('.')[-1]
-
-        if file_format not in test.util.IGNORED_FILE_TYPES:
-          expected.add(os.path.join(root, filename)[len(test.util.STEM_BASE) + 1:])
-
-    for root, dirnames, filenames in os.walk(self.site_packages_path):
-      for filename in filenames:
-        if not filename.endswith('.pyc') and not filename.endswith('egg-info'):
-          installed.add(os.path.join(root, filename)[len(self.site_packages_path) + 1:])
-
-    missing = expected.difference(installed)
-    extra = installed.difference(expected)
-
-    if missing:
-      self.fail("The following files were expected to be in our installation but weren't. Maybe our setup.py needs to be updated?\n\n%s" % '\n'.join(missing))
-    elif extra:
-      self.fail("The following files weren't expected to be in our installation.\n\n%s" % '\n'.join(extra))
