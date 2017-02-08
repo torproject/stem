@@ -5,7 +5,7 @@
 Parsing for the Tor server descriptor Ed25519 Certificates, which is used to
 validate the Ed25519 key used to sign the relay descriptor.
 
-Certificates can optionally contain CertificateExtension objects depending on their type and purpose. Currently Ed25519KeyCertificate certificates will contain one SignedWithEd25519KeyCertificateExtensio
+Certificates can optionally contain CertificateExtension objects depending on their type and purpose. Currently Ed25519KeyCertificate certificates will contain one SignedWithEd25519KeyCertificateExtension
 
 
 **Module Overview:**
@@ -82,9 +82,9 @@ def _parse_extensions(raw_contents):
   extensions = []
   extension_bytes = raw_contents[STANDARD_ATTRIBUTES_LENGTH:-SIGNATURE_LENGTH]
   while len(extension_bytes) > 0:
-    ext_length = _bytes_to_long(extension_bytes[0:2])
-    ext_type, ext_flags = extension_bytes[2:CERTIFICATE_FLAGS_LENGTH]
     try:
+      ext_length = _bytes_to_long(extension_bytes[0:2])
+      ext_type, ext_flags = extension_bytes[2:CERTIFICATE_FLAGS_LENGTH]
       ext_data = extension_bytes[CERTIFICATE_FLAGS_LENGTH:(CERTIFICATE_FLAGS_LENGTH + ext_length)]
     except:
       raise ValueError('Certificate contained truncated extension')
