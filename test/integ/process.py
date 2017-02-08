@@ -421,11 +421,13 @@ class TestProcess(unittest.TestCase):
     #
     #   https://trac.torproject.org/projects/tor/ticket/21281
 
-    for seconds_waited in range(30):
+    start_time = time.time()
+
+    while time.time() - start_time < 30:
       if tor_process.poll() == 0:
         return  # tor exited
 
-      time.sleep(1)
+      time.sleep(0.01)
 
     self.fail("tor didn't quit after the process that owned it terminated")
 
@@ -455,11 +457,13 @@ class TestProcess(unittest.TestCase):
     controller.close()
 
     # give tor a few seconds to quit
-    for seconds_waited in range(5):
+    start_time = time.time()
+
+    while time.time() - start_time < 5:
       if tor_process.poll() == 0:
         return  # tor exited
 
-      time.sleep(1)
+      time.sleep(0.01)
 
     self.fail("tor didn't quit after the controller that owned it disconnected")
 

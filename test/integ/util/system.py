@@ -569,8 +569,8 @@ class TestSystem(unittest.TestCase):
     """
 
     initial = stem.util.system.SYSTEM_CALL_TIME
-    stem.util.system.call('sleep 0.5')
-    self.assertTrue(stem.util.system.SYSTEM_CALL_TIME - initial > 0.4)
+    stem.util.system.call('sleep 0.005')
+    self.assertTrue(stem.util.system.SYSTEM_CALL_TIME - initial > 0.004)
 
   def test_set_process_name(self):
     """

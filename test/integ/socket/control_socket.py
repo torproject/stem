@@ -38,7 +38,7 @@ class TestControlSocket(unittest.TestCase):
 
       # connection time should be absolute (shouldn't change as time goes on)
 
-      time.sleep(0.1)
+      time.sleep(0.001)
       self.assertEqual(connection_time, control_socket.connection_time())
 
       # should change to the disconnection time if we detactch
@@ -49,7 +49,7 @@ class TestControlSocket(unittest.TestCase):
 
       # then change again if we reconnect
 
-      time.sleep(0.1)
+      time.sleep(0.001)
       control_socket.connect()
       reconnection_time = control_socket.connection_time()
       self.assertTrue(disconnection_time < reconnection_time <= time.time())
