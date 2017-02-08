@@ -64,7 +64,7 @@ class TestExitPolicy(unittest.TestCase):
 
     policy = ExitPolicy('accept *:80', 'accept *:443', 'reject *:*')
 
-    for index in range(1, 500):
+    for index in range(1, 100):
       ip_addr = '%i.%i.%i.%i' % (index / 2, index / 2, index / 2, index / 2)
       expected_result = index in (80, 443)
 

@@ -662,15 +662,12 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       '2012-12-12 01:a1:01',
     )
 
-    for field in ('published', 'valid-after', 'fresh-until', 'valid-until'):
-      attr = field.replace('-', '_')
+    for test_value in test_values:
+      content = get_network_status_document_v3({'vote-status': 'vote', 'published': test_value}, content = True)
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
-      for test_value in test_values:
-        content = get_network_status_document_v3({'vote-status': 'vote', field: test_value}, content = True)
-        self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
-
-        document = NetworkStatusDocumentV3(content, False)
-        self.assertEqual(None, getattr(document, attr))
+      document = NetworkStatusDocumentV3(content, False)
+      self.assertEqual(None, document.published)
 
   def test_voting_delay(self):
     """
