@@ -55,6 +55,7 @@ The following are only available within Stem's `git repository
 
  * **Utilities**
 
+  * Added timeout argument to :func:`~stem.util.system.call`
   * Added :class:`~stem.util.test_tools.TimedTestRunner` and :func:`~stem.util.test_tools.test_runtimes`
 
 .. _version_1.5:

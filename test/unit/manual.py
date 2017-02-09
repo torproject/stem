@@ -105,6 +105,7 @@ EXPECTED_CONFIG_OPTIONS['MaxAdvertisedBandwidth'] = stem.manual.ConfigOption(
 
 CACHED_MANUAL = None
 
+
 def _cached_manual():
   global CACHED_MANUAL
 

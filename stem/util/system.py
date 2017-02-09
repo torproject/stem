@@ -166,6 +166,20 @@ class CallError(OSError):
     return self.msg
 
 
+class CallTimeoutError(CallError):
+  """
+  Error response when making a system call that has timed out.
+
+  .. versionadded:: 1.6.0
+
+  :var float timeout: time we waited
+  """
+
+  def __init__(self, msg, command, exit_status, runtime, stdout, stderr, timeout):
+    super(CallTimeoutError, self).__init__(msg, command, exit_status, runtime, stdout, stderr)
+    self.timeout = timeout
+
+
 def is_windows():
   """
   Checks if we are running on Windows.
@@ -1020,7 +1034,7 @@ def files_with_suffix(base_path, suffix):
           yield os.path.join(root, filename)
 
 
-def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
+def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = None, env = None):
   """
   call(command, default = UNDEFINED, ignore_exit_status = False)
 
@@ -1035,16 +1049,22 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
   .. versionchanged:: 1.5.0
      Added env argument.
 
+  .. versionchanged:: 1.6.0
+     Added timeout argument.
+
   :param str,list command: command to be issued
   :param object default: response if the query fails
   :param bool ignore_exit_status: reports failure if our command's exit status
     was non-zero
+  :param float timeout: maximum seconds to wait, blocks indefinitely if
+    **None**
   :param dict env: environment variables
 
   :returns: **list** with the lines of output from the command
 
-  :raises: **CallError** if this fails and no default was provided, this is an
-    **OSError** subclass
+  :raises:
+    * **CallError** if this fails and no default was provided
+    * **CallTimeoutError** if the timeout is reached without a default
   """
 
   global SYSTEM_CALL_TIME
@@ -1061,6 +1081,13 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
     is_shell_command = command_list[0] in SHELL_COMMANDS
 
     process = subprocess.Popen(command_list, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command, env = env)
+
+    if timeout:
+      while process.poll() is None:
+        if time.time() - start_time > timeout:
+          raise CallTimeoutError("Process didn't finish after %0.1f seconds" % timeout, ' '.join(command_list), None, timeout, '', '', timeout)
+
+        time.sleep(0.001)
 
     stdout, stderr = process.communicate()
     stdout, stderr = stdout.strip(), stderr.strip()
@@ -1085,6 +1112,13 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, env = None):
       return stdout.decode('utf-8', 'replace').splitlines()
     else:
       return []
+  except CallTimeoutError as exc:
+    log.debug('System call (timeout): %s (after %0.4fs)' % (command, timeout))
+
+    if default != UNDEFINED:
+      return default
+    else:
+      raise
   except OSError as exc:
     log.debug('System call (failed): %s (error: %s)' % (command, exc))
 
