@@ -26,6 +26,7 @@ import stem.util.system
 import stem.util.test_tools
 
 import test.arguments
+import test.integ.installation
 import test.output
 import test.runner
 import test.util
@@ -212,6 +213,9 @@ def main():
 
     our_version = stem.version.get_system_tor_version(args.tor_path)
     skipped_targets = []
+
+    if not args.specific_test or 'test.integ.installation'.startswith(args.specific_test):
+      test.integ.installation.setup()
 
     for target in args.run_targets:
       # check if we meet this target's tor version prerequisites
