@@ -30,11 +30,13 @@ Parses replies from the control socket.
     +- pop_mapping - removes and returns the next entry as a KEY=VALUE mapping
 """
 
+import codecs
 import io
 import re
 import threading
 
 import stem.socket
+import stem.util.str_tools
 
 __all__ = [
   'add_onion',
@@ -50,16 +52,6 @@ __all__ = [
 ]
 
 KEY_ARG = re.compile('^(\S+)=')
-
-# Escape sequences from the 'esc_for_log' function of tor's 'common/util.c'.
-# It's hard to tell what controller functions use this in practice, but direct
-# users are...
-# - 'COOKIEFILE' field of PROTOCOLINFO responses
-# - logged messages about bugs
-# - the 'getinfo_helper_listeners' function of control.c
-
-CONTROL_ESCAPES = {r'\\': '\\', r'\"': '\"', r'\'': '\'',
-                   r'\r': '\r', r'\n': '\n', r'\t': '\t'}
 
 
 def convert(response_type, message, **kwargs):
@@ -333,7 +325,7 @@ class ControlLine(str):
     """
     Checks if our next entry is a quoted value or not.
 
-    :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
+    :param bool escaped: unescapes the string
 
     :returns: **True** if the next entry can be parsed as a quoted value, **False** otherwise
     """
@@ -347,7 +339,7 @@ class ControlLine(str):
 
     :param str key: checks that the key matches this value, skipping the check if **None**
     :param bool quoted: checks that the mapping is to a quoted value
-    :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
+    :param bool escaped: unescapes the string
 
     :returns: **True** if the next entry can be parsed as a key=value mapping,
       **False** otherwise
@@ -405,7 +397,7 @@ class ControlLine(str):
         "this has a \\" and \\\\ in it"
 
     :param bool quoted: parses the next entry as a quoted value, removing the quotes
-    :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
+    :param bool escaped: unescapes the string
 
     :returns: **str** of the next space separated entry
 
@@ -415,17 +407,21 @@ class ControlLine(str):
     """
 
     with self._remainder_lock:
-      next_entry, remainder = _parse_entry(self._remainder, quoted, escaped)
+      next_entry, remainder = _parse_entry(self._remainder, quoted, escaped, False)
       self._remainder = remainder
       return next_entry
 
-  def pop_mapping(self, quoted = False, escaped = False):
+  def pop_mapping(self, quoted = False, escaped = False, get_bytes = False):
     """
     Parses the next space separated entry as a KEY=VALUE mapping, removing it
     and the space from our remaining content.
 
+    .. versionchanged:: 1.6.0
+       Added the get_bytes argument.
+
     :param bool quoted: parses the value as being quoted, removing the quotes
-    :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
+    :param bool escaped: unescapes the string
+    :param bool get_bytes: provides **bytes** for the **value** rather than a **str**
 
     :returns: **tuple** of the form (key, value)
 
@@ -447,18 +443,18 @@ class ControlLine(str):
       key = key_match.groups()[0]
       remainder = self._remainder[key_match.end():]
 
-      next_entry, remainder = _parse_entry(remainder, quoted, escaped)
+      next_entry, remainder = _parse_entry(remainder, quoted, escaped, get_bytes)
       self._remainder = remainder
       return (key, next_entry)
 
 
-def _parse_entry(line, quoted, escaped):
+def _parse_entry(line, quoted, escaped, get_bytes):
   """
   Parses the next entry from the given space separated content.
 
   :param str line: content to be parsed
   :param bool quoted: parses the next entry as a quoted value, removing the quotes
-  :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
+  :param bool escaped: unescapes the string
 
   :returns: **tuple** of the form (entry, remainder)
 
@@ -488,7 +484,26 @@ def _parse_entry(line, quoted, escaped):
       next_entry, remainder = remainder, ''
 
   if escaped:
-    next_entry = _unescape(next_entry)
+    # Tor does escaping in its 'esc_for_log' function of 'common/util.c'. It's
+    # hard to tell what controller functions use this in practice, but direct
+    # users are...
+    #
+    #   * 'COOKIEFILE' field of PROTOCOLINFO responses
+    #   * logged messages about bugs
+    #   * the 'getinfo_helper_listeners' function of control.c
+    #
+    # Ideally we'd use "next_entry.decode('string_escape')" but it was removed
+    # in python 3.x and 'unicode_escape' isn't quite the same...
+    #
+    #   https://stackoverflow.com/questions/14820429/how-do-i-decodestring-escape-in-python3
+
+    next_entry = codecs.escape_decode(next_entry)[0]
+
+    if stem.prereq.is_python_3() and not get_bytes:
+      next_entry = stem.util.str_tools._to_unicode(next_entry)  # normalize back to str
+
+  if get_bytes:
+    next_entry = stem.util.str_tools._to_bytes(next_entry)
 
   return (next_entry, remainder.lstrip())
 
@@ -498,7 +513,7 @@ def _get_quote_indices(line, escaped):
   Provides the indices of the next two quotes in the given content.
 
   :param str line: content to be parsed
-  :param bool escaped: unescapes the CONTROL_ESCAPES escape sequences
+  :param bool escaped: unescapes the string
 
   :returns: **tuple** of two ints, indices being -1 if a quote doesn't exist
   """
@@ -517,34 +532,6 @@ def _get_quote_indices(line, escaped):
     indices.append(quote_index)
 
   return tuple(indices)
-
-
-def _unescape(entry):
-  # Unescapes the given string with the mappings in CONTROL_ESCAPES.
-  #
-  # This can't be a simple series of str.replace() calls because replacements
-  # need to be excluded from consideration for further unescaping. For
-  # instance, '\\t' should be converted to '\t' rather than a tab.
-
-  def _pop_with_unescape(entry):
-    # Pop either the first character or the escape sequence conversion the
-    # entry starts with. This provides a tuple of...
-    #
-    #   (unescaped prefix, remaining entry)
-
-    for esc_sequence, replacement in CONTROL_ESCAPES.items():
-      if entry.startswith(esc_sequence):
-        return (replacement, entry[len(esc_sequence):])
-
-    return (entry[0], entry[1:])
-
-  result = []
-
-  while entry:
-    prefix, entry = _pop_with_unescape(entry)
-    result.append(prefix)
-
-  return ''.join(result)
 
 
 class SingleLineResponse(ControlMessage):

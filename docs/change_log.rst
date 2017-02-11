@@ -46,6 +46,7 @@ The following are only available within Stem's `git repository
  * **Controller**
 
   * Added the GUARD_WAIT :data:`~stem.CircStatus` (:spec:`6446210`)
+  * Unable to use cookie auth when path includes wide characters (chinese, japanese, etc)
 
  * **Descriptors**
 

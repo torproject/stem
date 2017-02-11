@@ -49,10 +49,17 @@ UNKNOWN_AUTH = """250-PROTOCOLINFO 1
 MINIMUM_RESPONSE = """250-PROTOCOLINFO 5
 250 OK"""
 
+UNICODE_COOKIE_PATH = r"""250-PROTOCOLINFO 1
+250-AUTH METHODS=COOKIE COOKIEFILE="/home/user/\346\226\207\346\241\243/tor-browser_en-US/Browser/TorBrowser/Data/Tor/control_auth_cookie"
+250-VERSION Tor="0.2.1.30"
+250 OK"""
+
 RELATIVE_COOKIE_PATH = r"""250-PROTOCOLINFO 1
 250-AUTH METHODS=COOKIE COOKIEFILE="./tor-browser_en-US/Data/control_auth_cookie"
 250-VERSION Tor="0.2.1.30"
 250 OK"""
+
+EXPECTED_UNICODE_PATH = b"/home/user/\346\226\207\346\241\243/tor-browser_en-US/Browser/TorBrowser/Data/Tor/control_auth_cookie".decode('utf-8')
 
 
 class TestProtocolInfoResponse(unittest.TestCase):
@@ -150,6 +157,16 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertEqual((), control_message.auth_methods)
     self.assertEqual((), control_message.unknown_auth_methods)
     self.assertEqual(None, control_message.cookie_path)
+
+  @patch('sys.getfilesystemencoding', Mock(return_value = 'UTF-8'))
+  def test_unicode_cookie(self):
+    """
+    Checks an authentication cookie with a unicode path.
+    """
+
+    control_message = mocking.get_message(UNICODE_COOKIE_PATH)
+    stem.response.convert('PROTOCOLINFO', control_message)
+    self.assertEqual(EXPECTED_UNICODE_PATH, control_message.cookie_path)
 
   @patch('stem.util.proc.is_available', Mock(return_value = False))
   @patch('stem.util.system.is_available', Mock(return_value = True))
