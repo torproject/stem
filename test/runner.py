@@ -91,7 +91,6 @@ Torrc = stem.util.enum.Enum(
   ('PTRACE', 'DisableDebuggerAttachment 0'),
 )
 
-# (test_instance, test_name) tuples that we've registered as having been ran
 RAN_TESTS = []
 
 
@@ -173,8 +172,8 @@ def only_run_once(func):
   """
 
   def wrapped(self, *args, **kwargs):
-    if (self, self.id()) not in RAN_TESTS:
-      RAN_TESTS.append((self, self.id()))
+    if self.id() not in RAN_TESTS:
+      RAN_TESTS.append(self.id())
       return func(self, *args, **kwargs)
     else:
       skip(self, '(already ran)')
