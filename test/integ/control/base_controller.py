@@ -242,7 +242,7 @@ class TestBaseController(unittest.TestCase):
 
       controller.add_status_listener(state_observer.listener, True)
       controller.close()
-      time.sleep(0.1)  # not much work going on so this doesn't need to be much
+      time.sleep(0.001)  # not much work going on so this doesn't need to be much
       self.assertEqual(controller, state_observer.controller)
       self.assertEqual(stem.control.State.CLOSED, state_observer.state)
       self.assertTrue(state_observer.timestamp <= time.time())

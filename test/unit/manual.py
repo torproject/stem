@@ -103,6 +103,17 @@ EXPECTED_CONFIG_OPTIONS['MaxAdvertisedBandwidth'] = stem.manual.ConfigOption(
   summary = 'Limit for the bandwidth we advertise as being available for relaying',
   description = 'If set, we will not advertise more than this amount of bandwidth for our BandwidthRate. Server operators who want to reduce the number of clients who ask to build circuits through them (since this is proportional to advertised bandwidth rate) can thus reduce the CPU demands on their server without impacting network performance.')
 
+CACHED_MANUAL = None
+
+
+def _cached_manual():
+  global CACHED_MANUAL
+
+  if CACHED_MANUAL is None:
+    CACHED_MANUAL = stem.manual.Manual.from_cache()
+
+  return CACHED_MANUAL
+
 
 class TestManual(unittest.TestCase):
   def test_has_all_summaries(self):
@@ -112,7 +123,7 @@ class TestManual(unittest.TestCase):
     to write a little summary. They're located in 'stem/settings.cfg'.
     """
 
-    manual = stem.manual.Manual.from_cache()
+    manual = _cached_manual()
     present = set(manual.config_options.keys())
     expected = set([key[15:] for key in stem.manual._config(lowercase = False) if key.startswith('manual.summary.')])
 
@@ -212,7 +223,7 @@ class TestManual(unittest.TestCase):
       self.assertEqual(manual, loaded_manual)
 
   def test_cached_manual(self):
-    manual = stem.manual.Manual.from_cache()
+    manual = _cached_manual()
 
     self.assertEqual('tor - The second-generation onion router', manual.name)
     self.assertEqual('tor [OPTION value]...', manual.synopsis)

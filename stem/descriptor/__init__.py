@@ -646,9 +646,9 @@ class Descriptor(object):
     # Doing so works since it stops recursing after several dozen iterations
     # (not sure why), but horrible in terms of performance.
 
-    def has_attr():
+    def has_attr(attr):
       try:
-        super(Descriptor, self).__getattribute__(name)
+        super(Descriptor, self).__getattribute__(attr)
         return True
       except:
         return False
@@ -658,18 +658,20 @@ class Descriptor(object):
     #   a. we still need to lazy load this
     #   b. we read the whole descriptor but it wasn't present, so needs the default
 
-    if name in self.ATTRIBUTES and not has_attr():
+    if name in self.ATTRIBUTES and not has_attr(name):
       default, parsing_function = self.ATTRIBUTES[name]
 
       if self._lazy_loading:
         try:
           parsing_function(self, self._entries)
         except (ValueError, KeyError):
-          # Despite having a validation failure we might've set something. If
-          # not then set the default.
+          # Set defaults for anything the parsing function should've covered.
+          # Despite having a validation failure some attributes might be set in
+          # which case we keep them.
 
-          if not has_attr():
-            setattr(self, name, _copy(default))
+          for attr_name, (attr_default, attr_parser) in self.ATTRIBUTES.items():
+            if parsing_function == attr_parser and not has_attr(attr_name):
+              setattr(self, attr_name, _copy(attr_default))
       else:
         setattr(self, name, _copy(default))
 

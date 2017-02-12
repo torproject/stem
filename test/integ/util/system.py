@@ -563,14 +563,21 @@ class TestSystem(unittest.TestCase):
     self.assertEqual(home_dir, stem.util.system.expand_path('~%s' % username))
     self.assertEqual(os.path.join(home_dir, 'foo'), stem.util.system.expand_path('~%s/foo' % username))
 
+  def test_call_timeout(self):
+    try:
+      stem.util.system.call('sleep 1', timeout = 0.001)
+      self.fail("sleep should've timed out")
+    except stem.util.system.CallTimeoutError as exc:
+      self.assertEqual("Process didn't finish after 0.0 seconds", str(exc))
+
   def test_call_time_tracked(self):
     """
     Check that time taken in the call() function is tracked by SYSTEM_CALL_TIME.
     """
 
     initial = stem.util.system.SYSTEM_CALL_TIME
-    stem.util.system.call('sleep 0.5')
-    self.assertTrue(stem.util.system.SYSTEM_CALL_TIME - initial > 0.4)
+    stem.util.system.call('sleep 0.005')
+    self.assertTrue(stem.util.system.SYSTEM_CALL_TIME - initial > 0.004)
 
   def test_set_process_name(self):
     """

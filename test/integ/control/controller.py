@@ -111,7 +111,7 @@ class TestController(unittest.TestCase):
         if (time.time() - before) > 2:
           self.fail("We've waited a couple seconds for SIGHUP to generate an event, but it didn't come")
 
-        time.sleep(0.1)
+        time.sleep(0.001)
 
       after = time.time()
 
