@@ -78,6 +78,7 @@ PYFLAKES_TASK = Task(
   args = (SRC_PATHS,),
   is_required = False,
   print_result = False,
+  print_runtime = True,
 )
 
 PYCODESTYLE_TASK = Task(
@@ -86,6 +87,7 @@ PYCODESTYLE_TASK = Task(
   args = (SRC_PATHS, True, True, True),
   is_required = False,
   print_result = False,
+  print_runtime = True,
 )
 
 if stem.prereq._is_python_26():

@@ -32,6 +32,7 @@ Tasks are...
 import re
 import os
 import sys
+import time
 
 import stem
 import stem.prereq
@@ -350,7 +351,7 @@ class Task(object):
   message or list of strings for its results.
   """
 
-  def __init__(self, label, runner, args = None, is_required = True, print_result = True):
+  def __init__(self, label, runner, args = None, is_required = True, print_result = True, print_runtime = False):
     super(Task, self).__init__()
 
     self.label = label
@@ -358,12 +359,14 @@ class Task(object):
     self.args = args
     self.is_required = is_required
     self.print_result = print_result
+    self.print_runtime = print_runtime
     self.error = None
 
     self.is_successful = False
     self.result = None
 
   def run(self):
+    start_time = time.time()
     println('  %s...' % self.label, STATUS, NO_NL)
 
     padding = 50 - len(self.label)
@@ -380,6 +383,8 @@ class Task(object):
 
       if self.print_result and isinstance(self.result, str):
         output_msg = self.result
+      elif self.print_runtime:
+        output_msg += ' (%0.1fs)' % (time.time() - start_time)
 
       println(output_msg, STATUS)
 
