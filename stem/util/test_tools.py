@@ -163,10 +163,7 @@ def is_pycodestyle_available():
   else:
     return False
 
-  if not hasattr(pycodestyle, 'BaseReport'):
-    return False
-  else:
-    return True
+  return hasattr(pycodestyle, 'BaseReport')
 
 
 def stylistic_issues(paths, check_newlines = False, check_exception_keyword = False, prefer_single_quotes = False):
@@ -258,6 +255,50 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
       def __init__(self, options):
         super(StyleReport, self).__init__(options)
 
+      def init_file(self, filename, lines, expected, line_offset):
+        super(StyleReport, self).init_file(filename, lines, expected, line_offset)
+
+        if not check_newlines and not check_exception_keyword and not prefer_single_quotes:
+          return
+
+        is_block_comment = False
+
+        for index, line in enumerate(lines):
+          content = line.split('#', 1)[0].strip()
+
+          if check_newlines and '\r' in line:
+            issues.setdefault(filename, []).append(Issue(index + 1, 'contains a windows newline', line))
+
+          if not content:
+            continue  # blank line
+
+          if '"""' in content:
+            is_block_comment = not is_block_comment
+
+          if check_exception_keyword and content.startswith('except') and content.endswith(', exc:'):
+            # Python 2.6 - 2.7 supports two forms for exceptions...
+            #
+            #   except ValueError, exc:
+            #   except ValueError as exc:
+            #
+            # The former is the old method and no longer supported in python 3
+            # going forward.
+
+            # TODO: This check only works if the exception variable is called
+            # 'exc'. We should generalize this via a regex so other names work
+            # too.
+
+            issues.setdefault(filename, []).append(Issue(index + 1, "except clause should use 'as', not comma", line))
+
+          if prefer_single_quotes and not is_block_comment:
+            if '"' in content and "'" not in content and '"""' not in content and not content.endswith('\\'):
+              # Checking if the line already has any single quotes since that
+              # usually means double quotes are preferable for the content (for
+              # instance "I'm hungry"). Also checking for '\' at the end since
+              # that can indicate a multi-line string.
+
+              issues.setdefault(filename, []).append(Issue(index + 1, 'use single rather than double quotes', line))
+
       def error(self, line_number, offset, text, check):
         code = super(StyleReport, self).error(line_number, offset, text, check)
 
@@ -269,46 +310,6 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
 
     style_checker = pycodestyle.StyleGuide(ignore = ignore_rules, reporter = StyleReport)
     style_checker.check_files(list(_python_files(paths)))
-
-  if check_newlines or check_exception_keyword:
-    for path in _python_files(paths):
-      with open(path) as f:
-        file_contents = f.read()
-
-      lines = file_contents.split('\n')
-      is_block_comment = False
-
-      for index, line in enumerate(lines):
-        if '"""' in line:
-          is_block_comment = not is_block_comment
-
-        if check_newlines and '\r' in line:
-          issues.setdefault(path, []).append(Issue(index + 1, 'contains a windows newline', line))
-        elif check_exception_keyword and line.strip().startswith('except') and line.strip().endswith(', exc:'):
-          # Python 2.6 - 2.7 supports two forms for exceptions...
-          #
-          #   except ValueError, exc:
-          #   except ValueError as exc:
-          #
-          # The former is the old method and no longer supported in python 3
-          # going forward.
-
-          # TODO: This check only works if the exception variable is called
-          # 'exc'. We should generalize this via a regex so other names work
-          # too.
-
-          issues.setdefault(path, []).append(Issue(index + 1, "except clause should use 'as', not comma", line))
-
-        if prefer_single_quotes and line and not is_block_comment:
-          content = line.strip().split('#', 1)[0]
-
-          if '"' in content and "'" not in content and '"""' not in content and not content.endswith('\\'):
-            # Checking if the line already has any single quotes since that
-            # usually means double quotes are preferable for the content (for
-            # instance "I'm hungry"). Also checking for '\' at the end since
-            # that can indicate a multi-line string.
-
-            issues.setdefault(path, []).append(Issue(index + 1, 'use single rather than double quotes', line))
 
   return issues
 
