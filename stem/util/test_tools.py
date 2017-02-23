@@ -252,9 +252,6 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
       import pycodestyle
 
     class StyleReport(pycodestyle.BaseReport):
-      def __init__(self, options):
-        super(StyleReport, self).__init__(options)
-
       def init_file(self, filename, lines, expected, line_offset):
         super(StyleReport, self).init_file(filename, lines, expected, line_offset)
 
@@ -373,18 +370,16 @@ def pyflakes_issues(paths):
 
         for ignored_path, ignored_issues in self._ignored_issues.items():
           if path.endswith(ignored_path):
-            is_match = issue in ignored_issues
+            if issue in ignored_issues:
+              return True
 
             for prefix in [i[:1] for i in ignored_issues if i.endswith('*')]:
               if issue.startswith(prefix):
-                is_match = True
+                return True
 
             for suffix in [i[1:] for i in ignored_issues if i.startswith('*')]:
               if issue.endswith(suffix):
-                is_match = True
-
-            if is_match:
-              return True
+                return True
 
         return False
 
