@@ -2739,6 +2739,10 @@ class Controller(BaseController):
 
     .. versionadded:: 1.4.0
 
+    .. versionchanged:: 1.6.0
+       Tor change caused this to start providing empty strings if unset
+       (:trac:`21329`).
+
     :param object default: response if the query fails
     :param bool our_services: include services created with this controller
       that weren't flagged as 'detached'
@@ -2761,6 +2765,11 @@ class Controller(BaseController):
       try:
         result += self.get_info('onions/current').split('\n')
       except stem.ProtocolError as exc:
+        # TODO: Tor's behavior around this was changed in Feb 2017, we should
+        # drop it when all versions that did this are deprecated...
+        #
+        #   https://trac.torproject.org/projects/tor/ticket/21329
+
         if 'No onion services of the specified type.' not in str(exc):
           raise
 
@@ -2771,7 +2780,7 @@ class Controller(BaseController):
         if 'No onion services of the specified type.' not in str(exc):
           raise
 
-    return result
+    return [r for r in result if r]  # drop any empty responses (GETINFO is blank if unset)
 
   def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False, await_publication = False, basic_auth = None):
     """
