@@ -296,9 +296,8 @@ class HiddenServiceDescriptor(Descriptor):
 
   @staticmethod
   def _decrypt_basic_auth(content, authentication_cookie):
-    from Crypto.Cipher import AES
-    from Crypto.Util import Counter
-    from Crypto.Util.number import bytes_to_long
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.backends import default_backend
 
     try:
       client_blocks = int(binascii.hexlify(content[1:2]), 16)
@@ -322,15 +321,15 @@ class HiddenServiceDescriptor(Descriptor):
 
       # try decrypting the session key
 
-      counter = Counter.new(128, initial_value = 0)
-      cipher = AES.new(authentication_cookie, AES.MODE_CTR, counter = counter)
-      session_key = cipher.decrypt(encrypted_session_key)
+      cipher = Cipher(algorithms.AES(authentication_cookie), modes.CTR('\x00' * len(iv)), default_backend())
+      decryptor = cipher.decryptor()
+      session_key = decryptor.update(encrypted_session_key) + decryptor.finalize()
 
       # attempt to decrypt the intro points with the session key
 
-      counter = Counter.new(128, initial_value = bytes_to_long(iv))
-      cipher = AES.new(session_key, AES.MODE_CTR, counter = counter)
-      decrypted = cipher.decrypt(encrypted)
+      cipher = Cipher(algorithms.AES(session_key), modes.CTR(iv), default_backend())
+      decryptor = cipher.decryptor()
+      decrypted = decryptor.update(encrypted) + decryptor.finalize()
 
       # check if the decryption looks correct
 
@@ -341,17 +340,15 @@ class HiddenServiceDescriptor(Descriptor):
 
   @staticmethod
   def _decrypt_stealth_auth(content, authentication_cookie):
-    from Crypto.Cipher import AES
-    from Crypto.Util import Counter
-    from Crypto.Util.number import bytes_to_long
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.backends import default_backend
 
     # byte 1 = authentication type, 2-17 = input vector, 18 on = encrypted content
-
     iv, encrypted = content[1:17], content[17:]
-    counter = Counter.new(128, initial_value = bytes_to_long(iv))
-    cipher = AES.new(authentication_cookie, AES.MODE_CTR, counter = counter)
+    cipher = Cipher(algorithms.AES(authentication_cookie), modes.CTR(iv), default_backend())
+    decryptor = cipher.decryptor()
 
-    return cipher.decrypt(encrypted)
+    return decryptor.update(encrypted) + decryptor.finalize()
 
   @staticmethod
   def _parse_introduction_points(content):
