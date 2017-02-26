@@ -565,17 +565,16 @@ class Descriptor(object):
     if not stem.prereq.is_crypto_available():
       raise ValueError('Generating the signed digest requires pycrypto')
 
-    from Crypto.Util import asn1
-    from Crypto.Util.number import bytes_to_long, long_to_bytes
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.serialization import load_der_public_key
+    from cryptography.utils import int_to_bytes, int_from_bytes
 
-    # get the ASN.1 sequence
-
-    seq = asn1.DerSequence()
-    seq.decode(_bytes_for_block(signing_key))
-    modulus, public_exponent = seq[0], seq[1]
+    key = load_der_public_key(_bytes_for_block(signing_key), default_backend())
+    modulus = key.public_numbers().n
+    public_exponent = key.public_numbers().e
 
     sig_as_bytes = _bytes_for_block(signature)
-    sig_as_long = bytes_to_long(sig_as_bytes)  # convert signature to an int
+    sig_as_long = int_from_bytes(sig_as_bytes, byteorder='big')  # convert signature to an int
     blocksize = 128  # block size will always be 128 for a 1024 bit key
 
     # use the public exponent[e] & the modulus[n] to decrypt the int
@@ -583,8 +582,7 @@ class Descriptor(object):
     decrypted_int = pow(sig_as_long, public_exponent, modulus)
 
     # convert the int to a byte array
-
-    decrypted_bytes = long_to_bytes(decrypted_int, blocksize)
+    decrypted_bytes = int_to_bytes(decrypted_int, blocksize)
 
     ############################################################################
     # The decrypted bytes should have a structure exactly along these lines.

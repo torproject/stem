@@ -3,3 +3,4 @@ pyflakes
 pycodestyle
 pycrypto
 tox
+cryptography
