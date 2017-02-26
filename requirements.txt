@@ -1,6 +1,5 @@
 mock
 pyflakes
 pycodestyle
-pycrypto
 tox
 cryptography

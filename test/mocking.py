@@ -722,33 +722,19 @@ def sign_descriptor_content(desc_content):
   if not stem.prereq.is_crypto_available():
     return desc_content
   else:
-    from Crypto.PublicKey import RSA
-    from Crypto.Util import asn1
-    from Crypto.Util.number import long_to_bytes
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import rsa, padding
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-    # generate a key
-    private_key = RSA.generate(1024)
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=1024, backend=default_backend())
+    public_key = private_key.public_key()
 
-    # get a string representation of the public key
-    seq = asn1.DerSequence()
-    seq.append(private_key.n)
-    seq.append(private_key.e)
-    seq_as_string = seq.encode()
-    public_key_string = base64.b64encode(seq_as_string)
-
-    # split public key into lines 64 characters long
-    public_key_string = b'\n'.join([
-      public_key_string[:64],
-      public_key_string[64:128],
-      public_key_string[128:],
-    ])
-
-    # generate the new signing key string
+    # Get a string representation of the public key
 
     signing_key_token = b'\nsigning-key\n'  # note the trailing '\n' is important here so as not to match the string elsewhere
-    signing_key_token_start = b'-----BEGIN RSA PUBLIC KEY-----\n'
     signing_key_token_end = b'\n-----END RSA PUBLIC KEY-----\n'
-    new_sk = signing_key_token + signing_key_token_start + public_key_string + signing_key_token_end
+    new_sk = signing_key_token + public_key.public_bytes(encoding=Encoding.PEM, format=PublicFormat.PKCS1)
 
     # update the descriptor string with the new signing key
 
@@ -758,6 +744,7 @@ def sign_descriptor_content(desc_content):
 
     # generate the new fingerprint string
 
+    seq_as_string = public_key.public_bytes(encoding=Encoding.DER, format=PublicFormat.PKCS1)
     key_hash = stem.util.str_tools._to_bytes(hashlib.sha1(seq_as_string).hexdigest().upper())
     grouped_fingerprint = b''
 
@@ -799,16 +786,15 @@ def sign_descriptor_content(desc_content):
     #  2 bytes for the type info
     #  1 byte for the separator
 
-    padding = b''
+    digest_padding = b''
 
     for x in range(125 - len(new_digest)):
-      padding += b'\xFF'
-      digestBuffer = b'\x00\x01' + padding + b'\x00' + new_digest
+      digest_padding += b'\xFF'
+      digest_buffer = b'\x00\x01' + digest_padding + b'\x00' + new_digest
 
     # generate a new signature by signing the digest buffer with the private key
 
-    (signature, ) = private_key.sign(digestBuffer, None)
-    signature_as_bytes = long_to_bytes(signature, 128)
+    signature_as_bytes = private_key.sign(digest_buffer, padding.PKCS1v15(), hashes.SHA1())
     signature_base64 = base64.b64encode(signature_as_bytes)
 
     signature_base64 = b'b'.join([

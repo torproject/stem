@@ -85,7 +85,7 @@ def is_python_3():
 @lru_cache()
 def is_crypto_available():
   """
-  Checks if the pycrypto functions we use are available. This is used for
+  Checks if the cryptography functions we use are available. This is used for
   verifying relay descriptor signatures.
 
   :returns: **True** if we can use pycrypto and **False** otherwise
@@ -94,9 +94,10 @@ def is_crypto_available():
   from stem.util import log
 
   try:
-    from Crypto.PublicKey import RSA
-    from Crypto.Util import asn1
-    from Crypto.Util.number import long_to_bytes
+    from cryptography.utils import int_from_bytes, int_to_bytes
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.serialization import load_der_public_key
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     return True
   except ImportError:
     log.log_once('stem.prereq.is_crypto_available', log.INFO, CRYPTO_UNAVAILABLE)
