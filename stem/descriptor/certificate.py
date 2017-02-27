@@ -157,7 +157,7 @@ class Ed25519KeyCertificate(Certificate):
         raise ValueError('Expired Ed25519KeyCertificate')
 
   def verify_descriptor_signature(self, descriptor, signature):
-    if not stem.prereq.is_nacl_available():
+    if not stem.prereq._is_nacl_available():
       raise ValueError('Certificate validation requires the nacl module')
 
     import nacl.signing
@@ -177,7 +177,7 @@ class Ed25519KeyCertificate(Certificate):
       raise ValueError('Descriptor Ed25519 certificate signature invalid')
 
   def _verify_signature(self):
-    if not stem.prereq.is_nacl_available():
+    if not stem.prereq._is_nacl_available():
       raise ValueError('Certificate validation requires the nacl module')
 
     import nacl.signing

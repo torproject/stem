@@ -87,7 +87,7 @@ class TestCertificate(unittest.TestCase):
      )
 
   def test_certificate_with_invalid_signature(self):
-    if not stem.prereq.is_nacl_available():
+    if not stem.prereq._is_nacl_available():
       test.runner.skip(self, '(require nacl module)')
       return
 

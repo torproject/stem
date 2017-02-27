@@ -766,16 +766,13 @@ class RelayDescriptor(ServerDescriptor):
           if onion_key_crosscert_digest != self.onion_key_crosscert_digest():
             raise ValueError('Decrypted onion-key-crosscert digest does not match local digest (calculated: %s, local: %s)' % (onion_key_crosscert_digest, self.onion_key_crosscert_digest()))
 
-      if stem.prereq.is_nacl_available() and self.ed25519_certificate:
-        self.certificate = _parse_certificate(_bytes_for_block(self.ed25519_certificate),
-                                              self.ed25519_master_key,
-                                              validate)
+      if stem.prereq._is_nacl_available() and self.ed25519_certificate:
+        self.certificate = _parse_certificate(_bytes_for_block(self.ed25519_certificate), self.ed25519_master_key, validate)
 
         if self.certificate.identity_key != self.ed25519_master_key:
           raise ValueError('master-key-ed25519 does not match ed25519 certificate identity key')
 
-        self.certificate.verify_descriptor_signature(raw_contents,
-                                                     self.ed25519_signature)
+        self.certificate.verify_descriptor_signature(raw_contents, self.ed25519_signature)
 
   @lru_cache()
   def digest(self):
