@@ -51,6 +51,7 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * Moved from the deprecated `pycrypto <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography <https://pypi.python.org/pypi/cryptography>`_ for validating signatures (:trac:`21086`)
   * Sped descriptor reading by ~25% by deferring defaulting when validating
   * Support for protocol descriptor fields (:spec:`eb4fb3c`)
   * Shared randomness properties weren't being read in votes (:trac:`21102`)

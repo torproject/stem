@@ -703,6 +703,11 @@ class RelayDescriptor(ServerDescriptor):
      Added the ed25519_certificate, ed25519_master_key, ed25519_signature,
      onion_key_crosscert, ntor_onion_key_crosscert, and
      ntor_onion_key_crosscert_sign attributes.
+
+  .. versionchanged:: 1.6.0
+     Moved from the deprecated `pycrypto
+     <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography
+     <https://pypi.python.org/pypi/cryptography>`_ for validating signatures.
   """
 
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{

@@ -6,7 +6,7 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
 3.x series), but note we'll be bumping our requirements to python 2.7 in stem
 2.0. Other requirements for complete functionality are...
 
-* pycrypto module
+* cryptography module
 
   * validating descriptor signature integrity
 
@@ -14,7 +14,7 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
 
   check_requirements - checks for minimum requirements for running stem
   is_python_3 - checks if python 3.0 or later is available
-  is_crypto_available - checks if the pycrypto module is available
+  is_crypto_available - checks if the cryptography module is available
 """
 
 import inspect
@@ -26,7 +26,7 @@ try:
 except ImportError:
   from stem.util.lru_cache import lru_cache
 
-CRYPTO_UNAVAILABLE = "Unable to import the pycrypto module. Because of this we'll be unable to verify descriptor signature integrity. You can get pycrypto from: https://www.dlitz.net/software/pycrypto/"
+CRYPTO_UNAVAILABLE = "Unable to import the cryptography module. Because of this we'll be unable to verify descriptor signature integrity. You can get cryptography from: https://pypi.python.org/pypi/cryptography"
 
 
 def check_requirements():
@@ -85,18 +85,20 @@ def is_python_3():
 @lru_cache()
 def is_crypto_available():
   """
-  Checks if the pycrypto functions we use are available. This is used for
+  Checks if the cryptography functions we use are available. This is used for
   verifying relay descriptor signatures.
 
-  :returns: **True** if we can use pycrypto and **False** otherwise
+  :returns: **True** if we can use the cryptography module and **False**
+    otherwise
   """
 
   from stem.util import log
 
   try:
-    from Crypto.PublicKey import RSA
-    from Crypto.Util import asn1
-    from Crypto.Util.number import long_to_bytes
+    from cryptography.utils import int_from_bytes, int_to_bytes
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.serialization import load_der_public_key
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     return True
   except ImportError:
     log.log_once('stem.prereq.is_crypto_available', log.INFO, CRYPTO_UNAVAILABLE)
