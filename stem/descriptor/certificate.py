@@ -1,4 +1,4 @@
-# Copyright 2016, Patrick O'Doherty and The Tor Project
+# Copyright 2017, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 
 """
