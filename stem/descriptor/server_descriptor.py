@@ -666,8 +666,8 @@ class ServerDescriptor(Descriptor):
       raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
 
     if 'identity-ed25519' in entries.keys():
-      if not 'router-sig-ed25519' in entries.keys():
-        raise ValueError("Descriptor must have router-sig-ed25519 entry to accompany identity-ed25519")
+      if 'router-sig-ed25519' not in entries.keys():
+        raise ValueError('Descriptor must have router-sig-ed25519 entry to accompany identity-ed25519')
 
       if 'router-sig-ed25519' != list(entries.keys())[-2]:
         if 'router-sig-ed25519' != list(entries.keys())[-1]:
@@ -772,12 +772,10 @@ class RelayDescriptor(ServerDescriptor):
                                               validate)
 
         if self.certificate.identity_key != self.ed25519_master_key:
-          raise ValueError("master-key-ed25519 does not match ed25519 certificate identity key")
+          raise ValueError('master-key-ed25519 does not match ed25519 certificate identity key')
 
         self.certificate.verify_descriptor_signature(raw_contents,
                                                      self.ed25519_signature)
-
-
 
   @lru_cache()
   def digest(self):
@@ -791,7 +789,6 @@ class RelayDescriptor(ServerDescriptor):
 
     return self._digest_for_content(b'router ', b'\nrouter-signature\n')
 
-
   @lru_cache()
   def onion_key_crosscert_digest(self):
     """
@@ -804,10 +801,10 @@ class RelayDescriptor(ServerDescriptor):
 
     :raises: ValueError if the digest cannot be calculated
     """
-    signing_key_digest = hashlib.sha1(_bytes_for_block(self.signing_key)).digest()
-    data = signing_key_digest + base64.b64decode(self.ed25519_master_key +  b'=')
-    return data.encode("hex").upper()
 
+    signing_key_digest = hashlib.sha1(_bytes_for_block(self.signing_key)).digest()
+    data = signing_key_digest + base64.b64decode(self.ed25519_master_key + b'=')
+    return data.encode('hex').upper()
 
   def _compare(self, other, method):
     if not isinstance(other, RelayDescriptor):

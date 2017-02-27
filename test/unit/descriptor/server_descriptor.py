@@ -310,7 +310,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text), validate = True)
     self.assertRaises(ValueError, list, desc_iter)
 
-
   def test_bridge_with_ed25519(self):
     """
     Parses a bridge descriptor with ed25519.

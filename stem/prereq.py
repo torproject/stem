@@ -149,6 +149,7 @@ def is_mock_available():
   except ImportError:
     return False
 
+
 @lru_cache()
 def is_nacl_available():
   """
