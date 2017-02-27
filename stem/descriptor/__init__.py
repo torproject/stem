@@ -646,6 +646,7 @@ class Descriptor(object):
 
     :returns: the digest string encoded in uppercase hex
     """
+
     digest_hash = hashlib.sha1(bytes_to_sign)
     return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
 

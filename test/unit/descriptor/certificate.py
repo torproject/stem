@@ -5,13 +5,11 @@ Unit tests for stem.descriptor.certificate.
 import unittest
 
 import stem.descriptor.certificate
-
-import nacl.signing
-import nacl.encoding
+import stem.prereq
+import test.runner
 
 
 class TestCertificate(unittest.TestCase):
-
   def test_with_invalid_version(self):
     cert_bytes = '\x02\x04'
     self.assertRaisesRegexp(
@@ -89,6 +87,13 @@ class TestCertificate(unittest.TestCase):
      )
 
   def test_certificate_with_invalid_signature(self):
+    if not stem.prereq.is_nacl_available():
+      test.runner.skip(self, '(require nacl module)')
+      return
+
+    import nacl.signing
+    import nacl.encoding
+
     master_key = nacl.signing.SigningKey.generate()
     master_key_base64 = master_key.encode(nacl.encoding.Base64Encoder)
 

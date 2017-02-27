@@ -5,32 +5,34 @@
 Parsing for the Tor server descriptor Ed25519 Certificates, which is used to
 validate the Ed25519 key used to sign the relay descriptor.
 
-Certificates can optionally contain CertificateExtension objects depending on their type and purpose. Currently Ed25519KeyCertificate certificates will contain one SignedWithEd25519KeyCertificateExtension
-
+Certificates can optionally contain CertificateExtension objects depending on
+their type and purpose. Currently Ed25519KeyCertificate certificates will
+contain one SignedWithEd25519KeyCertificateExtension.
 
 **Module Overview:**
 
 ::
 
   Certificate - Tor Certificate
-    |- Ed25519KeyCertificate - Certificate for Ed25519 signing key
-    +- +- verify_descriptor_signature - verify a relay descriptor against a signature
-
+    +- Ed25519KeyCertificate - Certificate for Ed25519 signing key
+       +- verify_descriptor_signature - verify a relay descriptor against a signature
 
   CertificateExtension - Certificate extension
-  +- - SignedWithEd25519KeyCertificateExtension - Ed25519 signing key extension
+    +- SignedWithEd25519KeyCertificateExtension - Ed25519 signing key extension
 """
 
 import base64
 import hashlib
 import time
-from collections import OrderedDict
 
+import stem.prereq
 import stem.util.str_tools
 
-import nacl.signing
-from nacl.exceptions import BadSignatureError
-
+try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
 
 SIGNATURE_LENGTH = 64
 STANDARD_ATTRIBUTES_LENGTH = 40
@@ -155,6 +157,12 @@ class Ed25519KeyCertificate(Certificate):
         raise ValueError('Expired Ed25519KeyCertificate')
 
   def verify_descriptor_signature(self, descriptor, signature):
+    if not stem.prereq.is_nacl_available():
+      raise ValueError('Certificate validation requires the nacl module')
+
+    import nacl.signing
+    from nacl.exceptions import BadSignatureError
+
     missing_padding = len(signature) % 4
     signature_bytes = base64.b64decode(stem.util.str_tools._to_bytes(signature) + b'=' * missing_padding)
     verify_key = nacl.signing.VerifyKey(self.certified_key)
@@ -169,6 +177,12 @@ class Ed25519KeyCertificate(Certificate):
       raise ValueError('Descriptor Ed25519 certificate signature invalid')
 
   def _verify_signature(self):
+    if not stem.prereq.is_nacl_available():
+      raise ValueError('Certificate validation requires the nacl module')
+
+    import nacl.signing
+    from nacl.exceptions import BadSignatureError
+
     if self.identity_key:
       verify_key = nacl.signing.VerifyKey(base64.b64decode(self.identity_key + '='))
     else:
