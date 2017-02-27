@@ -52,10 +52,26 @@ Does Stem have any dependencies?
 
 **No.** All you need in order to use Stem is Python.
 
-When it is available Stem will use `pycrypto
-<https://www.dlitz.net/software/pycrypto/>`_ to validate descriptor signatures.
-However, there is no need to install pycrypto unless you need this
+When it is available Stem will use `cryptography
+<https://pypi.python.org/pypi/cryptography>`_ to validate descriptor signatures.
+However, there is no need to install cryptography unless you need this
 functionality.
+
+Note that if cryptography installation fails with...
+
+::
+
+  build/temp.linux-i686-2.7/_openssl.c:18:20: fatal error: Python.h: No such file or directory
+  compilation terminated.
+  error: command 'gcc' failed with exit status 1
+
+You need python-dev. For instance on Debian and Ubuntu you can install
+cryptography with...
+
+::
+
+  % sudo apt-get install python-dev
+  % sudo pip install cryptography
 
 .. _what_python_versions_is_stem_compatible_with:
 

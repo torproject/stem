@@ -563,7 +563,7 @@ class Descriptor(object):
     """
 
     if not stem.prereq.is_crypto_available():
-      raise ValueError('Generating the signed digest requires pycrypto')
+      raise ValueError('Generating the signed digest requires the cryptography module')
 
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives.serialization import load_der_public_key

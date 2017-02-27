@@ -199,6 +199,11 @@ class HiddenServiceDescriptor(Descriptor):
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
+
+  .. versionchanged:: 1.6.0
+     Moved from the deprecated `pycrypto
+     <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography
+     <https://pypi.python.org/pypi/cryptography>`_ for validating signatures.
   """
 
   ATTRIBUTES = {
@@ -270,7 +275,7 @@ class HiddenServiceDescriptor(Descriptor):
       return []
     elif authentication_cookie:
       if not stem.prereq.is_crypto_available():
-        raise DecryptionFailure('Decrypting introduction-points requires pycrypto')
+        raise DecryptionFailure('Decrypting introduction-points requires the cryptography module')
 
       try:
         missing_padding = len(authentication_cookie) % 4

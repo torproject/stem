@@ -273,7 +273,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     """
 
     if not stem.prereq.is_crypto_available():
-      return test.runner.skip(self, 'requires pycrypto')
+      return test.runner.skip(self, 'requires cryptography')
 
     descriptor_file = open(get_resource('hidden_service_basic_auth'), 'rb')
 
@@ -322,7 +322,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     """
 
     if not stem.prereq.is_crypto_available():
-      return test.runner.skip(self, 'requires pycrypto')
+      return test.runner.skip(self, 'requires cryptography')
 
     descriptor_file = open(get_resource('hidden_service_stealth_auth'), 'rb')
 

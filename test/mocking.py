@@ -710,8 +710,8 @@ def sign_descriptor_content(desc_content):
   """
   Add a valid signature to the supplied descriptor string.
 
-  If pycrypto is available the function will generate a key pair, and use it to
-  sign the descriptor string. Any existing fingerprint, signing-key or
+  If cryptography is available the function will generate a key pair, and use
+  it to sign the descriptor string. Any existing fingerprint, signing-key or
   router-signature data will be overwritten. If the library's unavailable the
   code will return the unaltered descriptor.
 

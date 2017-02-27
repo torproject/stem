@@ -160,7 +160,7 @@ def main():
     Task('checking stem version', test.util.check_stem_version),
     tor_version_check,
     Task('checking python version', test.util.check_python_version),
-    Task('checking pycrypto version', test.util.check_pycrypto_version),
+    Task('checking cryptography version', test.util.check_cryptography_version),
     Task('checking mock version', test.util.check_mock_version),
     Task('checking pyflakes version', test.util.check_pyflakes_version),
     Task('checking pycodestyle version', test.util.check_pycodestyle_version),
