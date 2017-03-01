@@ -217,8 +217,8 @@ def check_python_version():
 
 def check_cryptography_version():
   if stem.prereq.is_crypto_available():
-    import Crypto
-    return Crypto.__version__
+    import cryptography
+    return cryptography.__version__
   else:
     return 'missing'
 
