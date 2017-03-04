@@ -326,7 +326,7 @@ class HiddenServiceDescriptor(Descriptor):
 
       # try decrypting the session key
 
-      cipher = Cipher(algorithms.AES(authentication_cookie), modes.CTR('\x00' * len(iv)), default_backend())
+      cipher = Cipher(algorithms.AES(authentication_cookie), modes.CTR(stem.util.str_tools._to_bytes('\x00' * len(iv))), default_backend())
       decryptor = cipher.decryptor()
       session_key = decryptor.update(encrypted_session_key) + decryptor.finalize()
 
