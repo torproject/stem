@@ -78,6 +78,8 @@ Target = stem.util.enum.UppercaseEnum(
   'RUN_ALL',
 )
 
+TOR_VERSION = None
+
 # We make some paths relative to stem's base directory (the one above us)
 # rather than the process' cwd. This doesn't end with a slash.
 
@@ -208,7 +210,12 @@ def check_stem_version():
 
 
 def check_tor_version(tor_path):
-  return str(stem.version.get_system_tor_version(tor_path)).split()[0]
+  global TOR_VERSION
+
+  if TOR_VERSION is None:
+    TOR_VERSION = stem.version.get_system_tor_version(tor_path)
+
+  return str(TOR_VERSION).split()[0]
 
 
 def check_python_version():
@@ -352,6 +359,23 @@ def run_tasks(category, *tasks):
       sys.exit(1)
 
   println()
+
+
+def tor_version():
+  """
+  Provides the version of tor we're testing against.
+
+  :returns: :class:`~stem.version.Version` of tor invoked by our integration
+    tests
+
+  :raise: **ValueError** if :func:`~test.util.check_tor_version` isn't called
+    first
+  """
+
+  if TOR_VERSION is None:
+    raise ValueError('BUG: check_tor_version() must be called before tor_version()')
+
+  return TOR_VERSION
 
 
 class Task(object):

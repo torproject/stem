@@ -27,7 +27,7 @@ from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
 
-from test.util import register_new_capability
+from test.util import register_new_capability, tor_version
 
 from test.runner import (
   require_controller,
@@ -273,7 +273,7 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       version = controller.get_version()
       self.assertTrue(isinstance(version, stem.version.Version))
-      self.assertEqual(version, runner.get_tor_version())
+      self.assertEqual(version, tor_version())
 
   @require_controller
   def test_get_exit_policy(self):
@@ -344,13 +344,12 @@ class TestController(unittest.TestCase):
 
       # Doing a sanity test on the ProtocolInfoResponse instance returned.
       tor_options = runner.get_options()
-      tor_version = runner.get_tor_version()
       auth_methods = []
 
       if test.runner.Torrc.COOKIE in tor_options:
         auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
 
-        if tor_version >= stem.version.Requirement.AUTH_SAFECOOKIE:
+        if tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
           auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
 
       if test.runner.Torrc.PASSWORD in tor_options:
@@ -1147,7 +1146,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if runner.get_tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
+    if tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
       test.runner.skip(self, '(requires server descriptors)')
       return
 
@@ -1177,7 +1176,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if runner.get_tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
+    if tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
       test.runner.skip(self, '(requires server descriptors)')
       return
 

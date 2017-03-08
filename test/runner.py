@@ -35,7 +35,6 @@ about the tor test instance they're running against.
     |- get_pid - process id of our tor process
     |- get_tor_socket - provides a socket to our test instance
     |- get_tor_controller - provides a controller for our test instance
-    |- get_tor_version - provides the version of tor we're running against
     +- get_tor_command - provides the command used to start tor
 """
 
@@ -57,7 +56,7 @@ import stem.util.enum
 import stem.version
 
 from test.output import println, STATUS, ERROR, SUBSTATUS, NO_NL
-from test.util import Target, STEM_BASE
+from test.util import Target, STEM_BASE, tor_version
 
 CONFIG = stem.util.conf.config_dict('test', {
   'integ.test_directory': './test/data',
@@ -139,7 +138,7 @@ def require_version(req_version):
 
   def decorator(func):
     def wrapped(self, *args, **kwargs):
-      if get_runner().get_tor_version() >= req_version:
+      if tor_version() >= req_version:
         return func(self, *args, **kwargs)
       else:
         skip(self, '(requires %s)' % req_version)
@@ -414,8 +413,7 @@ class Runner(object):
     # If we're running a tor version where ptrace is disabled and we didn't
     # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
 
-    tor_version = self.get_tor_version()
-    has_option = tor_version >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
+    has_option = tor_version() >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
     return not has_option or Torrc.PTRACE in self.get_options()
 
   def get_options(self):
@@ -557,33 +555,6 @@ class Runner(object):
       controller.authenticate(password = CONTROL_PASSWORD, chroot_path = self.get_chroot())
 
     return controller
-
-  def get_tor_version(self):
-    """
-    Queries our test instance for tor's version.
-
-    :returns: :class:`stem.version.Version` for our test instance
-    """
-
-    try:
-      # TODO: replace with higher level functions when we've completed a basic
-      # controller class
-
-      control_socket = self.get_tor_socket()
-
-      control_socket.send('GETINFO version')
-      version_response = control_socket.recv()
-      control_socket.close()
-
-      tor_version = list(version_response)[0]
-      tor_version = tor_version[8:]
-
-      if ' ' in tor_version:
-        tor_version = tor_version.split(' ', 1)[0]
-
-      return stem.version.Version(tor_version)
-    except TorInaccessable:
-      return stem.version.get_system_tor_version(self.get_tor_command())
 
   def get_tor_command(self, base_cmd = False):
     """
