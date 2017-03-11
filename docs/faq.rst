@@ -66,12 +66,20 @@ Note that if cryptography installation fails with...
   compilation terminated.
   error: command 'gcc' failed with exit status 1
 
-You need python-dev. For instance on Debian and Ubuntu you can install
-cryptography with...
+... or...
 
 ::
 
-  % sudo apt-get install python-dev
+  No package 'libffi' found
+  c/_cffi_backend.c:15:17: fatal error: ffi.h: No such file or directory
+  compilation terminated.
+
+You need the python-dev and libffi-dev packages. For instance on Debian and
+Ubuntu you can install these with...
+
+::
+
+  % sudo apt-get install python-dev libffi-dev
   % sudo pip install cryptography
   % sudo pip install pynacl
 
