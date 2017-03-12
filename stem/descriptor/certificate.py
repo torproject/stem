@@ -76,9 +76,9 @@ def _parse_certificate(raw_contents, master_key_bytes, validate = False):
       # Ed25519 authentication signed with ed25519 signing key
       pass
     else:
-      raise ValueError("Unknown Certificate type %s" % binascii.hexlify(cert_type))
+      raise ValueError('Unknown Certificate type %s' % binascii.hexlify(cert_type))
   else:
-    raise ValueError("Unknown Certificate version %s" % binascii.hexlify(version))
+    raise ValueError('Unknown Certificate version %s' % binascii.hexlify(version))
 
 
 def _parse_extensions(raw_contents):

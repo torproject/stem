@@ -42,7 +42,7 @@ class TestCertificate(unittest.TestCase):
       'Certificate contained truncated extension',
       stem.descriptor.certificate._parse_extensions,
       stem.util.str_tools._to_bytes(cert_bytes)
-     )
+    )
 
   def test_parse_extensions_invalid_certificate_extension_type(self):
     cert_bytes = '\x00' * 39  # First 40 bytes are standard fields
@@ -56,7 +56,7 @@ class TestCertificate(unittest.TestCase):
       'Invalid certificate extension type:',
       stem.descriptor.certificate._parse_extensions,
       stem.util.str_tools._to_bytes(cert_bytes)
-     )
+    )
 
   def test_parse_extensions_invalid_n_extensions_count(self):
     cert_bytes = '\x00' * 39  # First 40 bytes are standard fields
@@ -71,7 +71,7 @@ class TestCertificate(unittest.TestCase):
       'n_extensions was 2 but parsed 1',
       stem.descriptor.certificate._parse_extensions,
       stem.util.str_tools._to_bytes(cert_bytes)
-     )
+    )
 
   def test_ed25519_key_certificate_without_extensions(self):
     cert_bytes = '\x01\x04' + '\x00' * 37  # First 40 bytes are standard fields
@@ -85,7 +85,7 @@ class TestCertificate(unittest.TestCase):
       stem.util.str_tools._to_bytes(cert_bytes),
       None,
       validate = True
-     )
+    )
 
   def test_certificate_with_invalid_signature(self):
     if not stem.prereq._is_pynacl_available():
