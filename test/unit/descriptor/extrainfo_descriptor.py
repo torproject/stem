@@ -3,6 +3,7 @@ Unit tests for stem.descriptor.extrainfo_descriptor.
 """
 
 import datetime
+import re
 import unittest
 
 import stem.descriptor
@@ -172,12 +173,9 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     """
 
     with open(get_resource('unparseable/extrainfo_nonascii_v3_reqs'), 'rb') as descriptor_file:
-      try:
-        next(stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0', validate = True))
-        self.fail("validation should've raised an exception")
-      except ValueError as exc:
-        expected = "'dirreq-v3-reqs' line had non-ascii content: S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,??=4026591624,6?=4026537520,6?=4026537520,6?=4026537520,us=8"
-        self.assertEqual(expected, str(exc))
+      desc_generator = stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0', validate = True)
+      exc_msg = "'dirreq-v3-reqs' line had non-ascii content: S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,??=4026591624,6?=4026537520,6?=4026537520,6?=4026537520,us=8"
+      self.assertRaisesRegexp(ValueError, re.escape(exc_msg), next, desc_generator)
 
   def test_minimal_extrainfo_descriptor(self):
     """

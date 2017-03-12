@@ -681,22 +681,16 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Checks a 'proto' line when it's not key=value pairs.
     """
 
-    try:
-      get_relay_server_descriptor({'proto': 'Desc Link=1-4'})
-      self.fail('Did not raise expected exception')
-    except ValueError as exc:
-      self.assertEqual("Protocol entires are expected to be a series of 'key=value' pairs but was: proto Desc Link=1-4", str(exc))
+    exc_msg = "Protocol entires are expected to be a series of 'key=value' pairs but was: proto Desc Link=1-4"
+    self.assertRaisesRegexp(ValueError, exc_msg, get_relay_server_descriptor, {'proto': 'Desc Link=1-4'})
 
   def test_parse_with_non_int_version(self):
     """
     Checks a 'proto' line with non-numeric content.
     """
 
-    try:
-      get_relay_server_descriptor({'proto': 'Desc=hi Link=1-4'})
-      self.fail('Did not raise expected exception')
-    except ValueError as exc:
-      self.assertEqual('Protocol values should be a number or number range, but was: proto Desc=hi Link=1-4', str(exc))
+    exc_msg = 'Protocol values should be a number or number range, but was: proto Desc=hi Link=1-4'
+    self.assertRaisesRegexp(ValueError, exc_msg, get_relay_server_descriptor, {'proto': 'Desc=hi Link=1-4'})
 
   def test_ntor_onion_key(self):
     """

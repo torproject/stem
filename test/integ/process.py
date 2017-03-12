@@ -356,18 +356,17 @@ class TestProcess(unittest.TestCase):
     #   [warn] Failed to parse/validate config: Failed to bind one of the listener ports.
     #   [err] Reading config failed--see warnings above.
 
-    try:
-      stem.process.launch_tor_with_config(
-        tor_cmd = test.runner.get_runner().get_tor_command(),
-        config = {
-          'SocksPort': '2777',
-          'ControlPort': '2777',
-          'DataDirectory': self.data_directory,
-        },
-      )
-      self.fail("We should abort when there's an identical SocksPort and ControlPort")
-    except OSError as exc:
-      self.assertEqual('Process terminated: Failed to bind one of the listener ports.', str(exc))
+    self.assertRaisesRegexp(
+      OSError,
+      'Process terminated: Failed to bind one of the listener ports.',
+      stem.process.launch_tor_with_config,
+      tor_cmd = test.runner.get_runner().get_tor_command(),
+      config = {
+        'SocksPort': '2777',
+        'ControlPort': '2777',
+        'DataDirectory': self.data_directory,
+      },
+    )
 
   @only_run_once
   def test_launch_tor_with_timeout(self):

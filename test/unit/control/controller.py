@@ -442,12 +442,8 @@ class TestControl(unittest.TestCase):
 
     get_info_mock.side_effect = ControllerError('nope, too bad')
 
-    try:
-      self.controller.get_network_status()
-      self.fail("We should've raised an exception")
-    except ControllerError as exc:
-      self.assertEqual('Unable to determine our own fingerprint: nope, too bad', str(exc))
-
+    exc_msg = 'Unable to determine our own fingerprint: nope, too bad'
+    self.assertRaisesRegexp(ControllerError, exc_msg, self.controller.get_network_status)
     self.assertEqual('boom', self.controller.get_network_status(default = 'boom'))
 
     # successful request
@@ -469,11 +465,8 @@ class TestControl(unittest.TestCase):
 
     get_info_mock.side_effect = InvalidArguments(None, 'GETINFO request contained unrecognized keywords: ns/id/5AC9C5AA75BA1F18D8459B326B4B8111A856D290')
 
-    try:
-      self.controller.get_network_status('5AC9C5AA75BA1F18D8459B326B4B8111A856D290')
-      self.fail("We should've raised an exception")
-    except DescriptorUnavailable as exc:
-      self.assertEqual("Tor was unable to provide the descriptor for '5AC9C5AA75BA1F18D8459B326B4B8111A856D290'", str(exc))
+    exc_msg = "Tor was unable to provide the descriptor for '5AC9C5AA75BA1F18D8459B326B4B8111A856D290'"
+    self.assertRaisesRegexp(DescriptorUnavailable, exc_msg, self.controller.get_network_status, '5AC9C5AA75BA1F18D8459B326B4B8111A856D290')
 
   @patch('stem.control.Controller.get_info')
   def test_get_network_status(self, get_info_mock):

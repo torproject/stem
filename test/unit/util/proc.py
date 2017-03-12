@@ -3,6 +3,7 @@ Unit testing code for the stem.util.proc functions.
 """
 
 import io
+import re
 import unittest
 
 from stem.util import proc
@@ -174,12 +175,8 @@ class TestProc(unittest.TestCase):
     error_msg = "OSError: [Errno 2] No such file or directory: '/proc/2118/fd'"
     listdir_mock.side_effect = OSError(error_msg)
 
-    try:
-      proc.file_descriptors_used(2118)
-      self.fail('We should raise when listdir() fails')
-    except IOError as exc:
-      expected = 'Unable to check number of file descriptors used: %s' % error_msg
-      self.assertEqual(expected, str(exc))
+    exc_msg = 'Unable to check number of file descriptors used: %s' % error_msg
+    self.assertRaisesRegexp(IOError, re.escape(exc_msg), proc.file_descriptors_used, 2118)
 
     # successful calls
 

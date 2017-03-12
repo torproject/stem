@@ -204,8 +204,5 @@ class TestMicrodescriptor(unittest.TestCase):
     desc = Microdescriptor(desc_text)
     self.assertEqual({}, desc.identifiers)
 
-    try:
-      Microdescriptor(desc_text, validate = True)
-      self.fail('constructor validation should fail')
-    except ValueError as exc:
-      self.assertEqual("There can only be one 'id' line per a key type, but 'rsa1024' appeared multiple times", str(exc))
+    exc_msg = "There can only be one 'id' line per a key type, but 'rsa1024' appeared multiple times"
+    self.assertRaisesRegexp(ValueError, exc_msg, Microdescriptor, desc_text, validate = True)
