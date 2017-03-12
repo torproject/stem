@@ -173,6 +173,9 @@ class TestManual(unittest.TestCase):
     self.assertEqual(EXPECTED_CLI_OPTIONS, manual.commandline_options)
     self.assertEqual(EXPECTED_SIGNALS, manual.signals)
     self.assertEqual(EXPECTED_FILES, manual.files)
+    if EXPECTED_CONFIG_OPTIONS != manual.config_options:
+      print(EXPECTED_CONFIG_OPTIONS)
+      print(manual.config_options)
     self.assertEqual(EXPECTED_CONFIG_OPTIONS, manual.config_options)
 
   def test_parsing_with_unknown_options(self):
