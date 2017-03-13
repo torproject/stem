@@ -764,6 +764,7 @@ class RelayDescriptor(ServerDescriptor):
 
         if self.onion_key_crosscert:
           onion_key_crosscert_digest = self._digest_for_signature(self.onion_key, self.onion_key_crosscert)
+
           if onion_key_crosscert_digest != self.onion_key_crosscert_digest():
             raise ValueError('Decrypted onion-key-crosscert digest does not match local digest (calculated: %s, local: %s)' % (onion_key_crosscert_digest, self.onion_key_crosscert_digest()))
 
