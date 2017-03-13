@@ -3,10 +3,10 @@ Unit tests for stem.descriptor.server_descriptor.
 """
 
 import datetime
-import time
 import io
 import pickle
 import tarfile
+import time
 import unittest
 
 import stem.descriptor.server_descriptor
@@ -306,6 +306,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
     Parses a server descriptor with an expired ed25519 certificate
     """
+
     desc_text = open(get_resource('bridge_descriptor_with_ed25519'), 'rb').read()
     desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text), validate = True)
     self.assertRaises(ValueError, list, desc_iter)

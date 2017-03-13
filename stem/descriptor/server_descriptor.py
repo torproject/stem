@@ -31,11 +31,11 @@ etc). This information is provided from a few sources...
     +- get_annotation_lines - lines that provided the annotations
 """
 
+import base64
+import binascii
 import functools
 import hashlib
 import re
-import base64
-import binascii
 
 import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
