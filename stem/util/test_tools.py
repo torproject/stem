@@ -27,6 +27,7 @@ import re
 import time
 import unittest
 
+import stem.prereq
 import stem.util.conf
 import stem.util.system
 
@@ -69,6 +70,17 @@ class TimedTestRunner(unittest.TextTestRunner):
           result = super(type(self), self).run(result)
           TEST_RUNTIMES[self.id()] = time.time() - start_time
           return result
+
+        # TODO: remove when dropping python 2.6 support
+
+        def assertRaisesRegexp(self, exc_type, exc_msg, func, *args, **kwargs):
+          if stem.prereq._is_python_26():
+            try:
+              func(*args, **kwargs)
+            except exc_type as exc:
+              self.assertTrue(re.match(exc_msg, str(exc)))
+          else:
+            return super(original_type, self).assertRaisesRegexp(exc_type, exc_msg, func, *args, **kwargs)
 
         def id(self):
           return '%s.%s.%s' % (original_type.__module__, original_type.__name__, self._testMethodName)
