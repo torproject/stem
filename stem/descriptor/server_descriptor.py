@@ -669,10 +669,8 @@ class ServerDescriptor(Descriptor):
     if 'identity-ed25519' in entries.keys():
       if 'router-sig-ed25519' not in entries.keys():
         raise ValueError('Descriptor must have router-sig-ed25519 entry to accompany identity-ed25519')
-
-      if 'router-sig-ed25519' != list(entries.keys())[-2]:
-        if 'router-sig-ed25519' != list(entries.keys())[-1]:
-          raise ValueError("Descriptor must end with a 'router-sig-ed25519' entry")
+      elif 'router-sig-ed25519' not in list(entries.keys())[-2:]:
+        raise ValueError("Descriptor must have 'router-sig-ed25519' as the next-to-last entry")
 
     if not self.exit_policy:
       raise ValueError("Descriptor must have at least one 'accept' or 'reject' entry")
