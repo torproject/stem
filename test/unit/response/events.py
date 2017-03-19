@@ -1416,7 +1416,7 @@ class TestEvents(unittest.TestCase):
     self.assertTrue(isinstance(event, stem.response.events.ConnectionBandwidthEvent))
     self.assertEqual(CONN_BW.lstrip('650 '), str(event))
     self.assertEqual('11', event.id)
-    self.assertEqual(stem.ConnectionType.DIR, event.type)
+    self.assertEqual(stem.ConnectionType.DIR, event.conn_type)
     self.assertEqual(272, event.read)
     self.assertEqual(817, event.written)
 

@@ -1113,14 +1113,14 @@ class ConnectionBandwidthEvent(Event):
   .. versionadded:: 1.2.0
 
   :var str id: connection identifier
-  :var stem.ConnectionType type: connection type
+  :var stem.ConnectionType conn_type: connection type
   :var long read: bytes received by tor that second
   :var long written: bytes sent by tor that second
   """
 
   _KEYWORD_ARGS = {
     'ID': 'id',
-    'TYPE': 'type',
+    'TYPE': 'conn_type',
     'READ': 'read',
     'WRITTEN': 'written',
   }
@@ -1130,8 +1130,8 @@ class ConnectionBandwidthEvent(Event):
   def _parse(self):
     if not self.id:
       raise stem.ProtocolError('CONN_BW event is missing its id')
-    elif not self.type:
-      raise stem.ProtocolError('CONN_BW event is missing its type')
+    elif not self.conn_type:
+      raise stem.ProtocolError('CONN_BW event is missing its connection type')
     elif not self.read:
       raise stem.ProtocolError('CONN_BW event is missing its read value')
     elif not self.written:
@@ -1144,7 +1144,7 @@ class ConnectionBandwidthEvent(Event):
     self.read = int_type(self.read)
     self.written = int_type(self.written)
 
-    self._log_if_unrecognized('type', stem.ConnectionType)
+    self._log_if_unrecognized('conn_type', stem.ConnectionType)
 
 
 class CircuitBandwidthEvent(Event):
