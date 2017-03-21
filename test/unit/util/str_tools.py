@@ -9,6 +9,23 @@ from stem.util import str_tools
 
 
 class TestStrTools(unittest.TestCase):
+  def test_to_int(self):
+    """
+    Checks the _to_int() function.
+    """
+
+    test_inputs = {
+      '': 0,
+      'h': 104,
+      'hi': 26729,
+      'hello': 448378203247,
+      str_tools._to_bytes('hello'): 448378203247,
+      str_tools._to_unicode('hello'): 448378203247,
+    }
+
+    for arg, expected in test_inputs.items():
+      self.assertEqual(expected, str_tools._to_int(arg))
+
   def test_to_camel_case(self):
     """
     Checks the _to_camel_case() function.

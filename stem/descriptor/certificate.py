@@ -2,8 +2,8 @@
 # See LICENSE for licensing information
 
 """
-Parsing for the Tor server descriptor Ed25519 Certificates, which is used to
-validate the Ed25519 key used to sign the relay descriptor.
+Parsing for Tor Ed25519 certificates, which is used to validate the key used to
+sign server descriptors.
 
 Certificates can optionally contain CertificateExtension objects depending on
 their type and purpose. Currently Ed25519KeyCertificate certificates will
@@ -41,16 +41,9 @@ CERTIFICATE_FLAGS_LENGTH = 4
 ED25519_ROUTER_SIGNATURE_PREFIX = b'Tor router descriptor signature v1'
 
 
-def _bytes_to_long(b):
-  if stem.prereq.is_python_3():
-    return int(binascii.hexlify(stem.util.str_tools._to_bytes(b)), 16)
-  else:
-    return long(binascii.hexlify(b), 16)
-
-
 def _parse_long_offset(offset, length):
   def _parse(raw_contents):
-    return _bytes_to_long(raw_contents[offset:(offset + length)])
+    return stem.util.str_tools._to_int(raw_contents[offset:(offset + length)])
 
   return _parse
 
@@ -82,7 +75,8 @@ def _parse_certificate(raw_contents, master_key_bytes, validate = False):
 
 
 def _parse_extensions(raw_contents):
-  n_extensions = _bytes_to_long(raw_contents[39:40])
+  n_extensions = stem.util.str_tools._to_int(raw_contents[39:40])
+
   if n_extensions == 0:
     return []
 
@@ -90,7 +84,7 @@ def _parse_extensions(raw_contents):
   extension_bytes = raw_contents[STANDARD_ATTRIBUTES_LENGTH:-SIGNATURE_LENGTH]
 
   while len(extension_bytes) > 0:
-    ext_length = _bytes_to_long(extension_bytes[0:2])
+    ext_length = stem.util.str_tools._to_int(extension_bytes[0:2])
     ext_type = extension_bytes[2:3]
     ext_flags = extension_bytes[3:CERTIFICATE_FLAGS_LENGTH]
     ext_data = extension_bytes[CERTIFICATE_FLAGS_LENGTH:(CERTIFICATE_FLAGS_LENGTH + ext_length)]

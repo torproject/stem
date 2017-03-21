@@ -117,6 +117,22 @@ def _to_unicode(msg):
   return _to_unicode_impl(msg)
 
 
+def _to_int(msg):
+  """
+  Serializes a string to a number.
+
+  :param str msg: string to be serialized
+
+  :returns: **int** representation of the string
+  """
+
+  if stem.prereq.is_python_3() and isinstance(msg, bytes):
+    # iterating over bytes in python3 provides ints rather than characters
+    return sum([pow(256, (len(msg) - i - 1)) * c for (i, c) in enumerate(msg)])
+  else:
+    return sum([pow(256, (len(msg) - i - 1)) * ord(c) for (i, c) in enumerate(msg)])
+
+
 def _to_camel_case(label, divider = '_', joiner = ' '):
   """
   Converts the given string to camel case, ie:
