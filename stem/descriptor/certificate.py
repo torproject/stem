@@ -110,7 +110,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
   Version 1 Ed25519 certificate, which are used for signing tor server
   descriptors.
 
-  :var CertType cert_type: certificate purpose
+  :var CertType type: certificate purpose
   :var datetime expiration: expiration of the certificate
   :var int key_type: format of the key
   :var bytes key: key content
@@ -129,18 +129,18 @@ class Ed25519CertificateV1(Ed25519Certificate):
     if cert_type in (0, 1, 2, 3):
       raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved to avoid conflicts with tor CERTS cells.' % cert_type)
     elif cert_type == 4:
-      self.cert_type = CertType.SIGNING
+      self.type = CertType.SIGNING
     elif cert_type == 5:
-      self.cert_type = CertType.LINK_CERT
+      self.type = CertType.LINK_CERT
     elif cert_type == 6:
-      self.cert_type = CertType.AUTH
+      self.type = CertType.AUTH
     elif cert_type == 7:
       raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
     else:
       raise ValueError("BUG: Ed25519 certificate type is decoded from one byte. It shouldn't be possible to have a value of %i." % cert_type)
 
     # expiration time is in hours since epoch
-    self.expiration = datetime.datetime.fromtimestamp(stem.util.str_tools._to_int(decoded[2:6]) * 60 * 60)
+    self.expiration = datetime.datetime.fromtimestamp(stem.util.str_tools._to_int(decoded[2:6]) * 3600)
 
     self.key_type = stem.util.str_tools._to_int(decoded[6])
     self.key = decoded[7:39]
@@ -178,11 +178,11 @@ class Ed25519CertificateV1(Ed25519Certificate):
       raise ValueError('Ed25519 certificate had %i bytes of unused extension data' % len(remaining_data))
 
 
-class Ed25519Extension(collections.namedtuple('Ed25519Extension', ['extension_type', 'flags', 'flag_int', 'data'])):
+class Ed25519Extension(collections.namedtuple('Ed25519Extension', ['type', 'flags', 'flag_int', 'data'])):
   """
   Extension within an Ed25519 certificate.
 
-  :var int extension_type: extension type
+  :var int type: extension type
   :var list flags: extension attribute flags
   :var int flag_int: integer encoding of the extension attribute flags
   :var bytes data: data the extension concerns

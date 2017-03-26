@@ -47,18 +47,18 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(Ed25519CertificateV1, type(cert))
     self.assertEqual(1, cert.version)
     self.assertEqual(cert_bytes, cert.encoded)
-    self.assertEqual(CertType.SIGNING, cert.cert_type)
+    self.assertEqual(CertType.SIGNING, cert.type)
     self.assertEqual(datetime.datetime(1970, 1, 1, 1, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
     self.assertEqual(b'\x03' * 32, cert.key)
     self.assertEqual(b'\x01' * ED25519_SIGNATURE_LENGTH, cert.signature)
 
     self.assertEqual([
-      Ed25519Extension(extension_type = 4, flags = [ExtensionFlag.AFFECTS_VALIDATION, ExtensionFlag.UNKNOWN], flag_int = 7, data = b'\x15\x12'),
-      Ed25519Extension(extension_type = 5, flags = [ExtensionFlag.UNKNOWN], flag_int = 4, data = b''),
+      Ed25519Extension(type = 4, flags = [ExtensionFlag.AFFECTS_VALIDATION, ExtensionFlag.UNKNOWN], flag_int = 7, data = b'\x15\x12'),
+      Ed25519Extension(type = 5, flags = [ExtensionFlag.UNKNOWN], flag_int = 4, data = b''),
     ], cert.extensions)
 
-    self.assertEqual(ExtensionType.HAS_SIGNING_KEY, cert.extensions[0].extension_type)
+    self.assertEqual(ExtensionType.HAS_SIGNING_KEY, cert.extensions[0].type)
 
   def test_with_real_cert(self):
     cert = Ed25519Certificate.parse(ED25519_CERT)
@@ -66,11 +66,11 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(Ed25519CertificateV1, type(cert))
     self.assertEqual(1, cert.version)
     self.assertEqual(ED25519_CERT, cert.encoded)
-    self.assertEqual(CertType.SIGNING, cert.cert_type)
+    self.assertEqual(CertType.SIGNING, cert.type)
     self.assertEqual(datetime.datetime(2015, 8, 28, 19, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
     self.assertEqual(EXPECTED_CERT_KEY, cert.key)
-    self.assertEqual([Ed25519Extension(extension_type = 4, flags = [], flag_int = 0, data = EXPECTED_EXTENSION_DATA)], cert.extensions)
+    self.assertEqual([Ed25519Extension(type = 4, flags = [], flag_int = 0, data = EXPECTED_EXTENSION_DATA)], cert.extensions)
     self.assertEqual(EXPECTED_SIGNATURE, cert.signature)
 
   def test_non_base64(self):
