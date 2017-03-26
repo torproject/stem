@@ -28,6 +28,16 @@ used to validate the key used to sign server descriptors.
   **AUTH**        authentication key signed with ed25519 signing key
   ==============  ===========
 
+.. data::ExtensionType (enum)
+
+  Recognized exception types.
+
+  ====================  ===========
+  ExtensionType         Description
+  ====================  ===========
+  HAS_SIGNING_KEY       includes key used to sign the certificate
+  ====================  ===========
+
 .. data::ExtensionFlag (enum)
 
   Flags that can be assigned to Ed25519 certificate extensions.
@@ -50,6 +60,7 @@ ED25519_HEADER_LENGTH = 40
 ED25519_SIGNATURE_LENGTH = 64
 
 CertType = enum.UppercaseEnum('SIGNING', 'LINK_CERT', 'AUTH')
+ExtensionType = enum.Enum(('HAS_SIGNING_KEY', 4),)
 ExtensionFlag = enum.UppercaseEnum('AFFECTS_VALIDATION', 'UNKNOWN')
 
 

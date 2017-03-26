@@ -11,7 +11,7 @@ import stem.descriptor.certificate
 import stem.prereq
 import test.runner
 
-from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, CertType, ExtensionFlag, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
+from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, CertType, ExtensionType, ExtensionFlag, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
 
 ED25519_CERT = """
 AQQABhtZAaW2GoBED1IjY3A6f6GNqBEl5A83fD2Za9upGke51JGqAQAgBABnprVR
@@ -57,6 +57,8 @@ class TestEd25519Certificate(unittest.TestCase):
       Ed25519Extension(extension_type = 4, flags = [ExtensionFlag.AFFECTS_VALIDATION, ExtensionFlag.UNKNOWN], flag_int = 7, data = b'\x15\x12'),
       Ed25519Extension(extension_type = 5, flags = [ExtensionFlag.UNKNOWN], flag_int = 4, data = b''),
     ], cert.extensions)
+
+    self.assertEqual(ExtensionType.HAS_SIGNING_KEY, cert.extensions[0].extension_type)
 
   def test_with_real_cert(self):
     cert = Ed25519Certificate.parse(ED25519_CERT)
