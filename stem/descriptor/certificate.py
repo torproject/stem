@@ -177,6 +177,16 @@ class Ed25519CertificateV1(Ed25519Certificate):
     if remaining_data:
       raise ValueError('Ed25519 certificate had %i bytes of unused extension data' % len(remaining_data))
 
+  def is_expired(self):
+    """
+    Checks if this certificate is presently expired or not.
+
+    :returns: **True** if the certificate has expired, **False** otherwise
+    """
+
+    return datetime.datetime.now() > self.expiration
+
+
 
 class Ed25519Extension(collections.namedtuple('Ed25519Extension', ['type', 'flags', 'flag_int', 'data'])):
   """

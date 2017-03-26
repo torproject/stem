@@ -59,6 +59,7 @@ class TestEd25519Certificate(unittest.TestCase):
     ], cert.extensions)
 
     self.assertEqual(ExtensionType.HAS_SIGNING_KEY, cert.extensions[0].type)
+    self.assertTrue(cert.is_expired())
 
   def test_with_real_cert(self):
     cert = Ed25519Certificate.parse(ED25519_CERT)
