@@ -26,6 +26,17 @@ to sign server descriptors.
   **LINK_CERT**   TLS link certificate signed with ed25519 signing key
   **AUTH**        authentication key signed with ed25519 signing key
   ==============  ===========
+
+.. data::ExtensionFlag (enum)
+
+  Flags that can be assigned to Ed25519 certificate extensions.
+
+  ====================  ===========
+  ExtensionFlag         Description
+  ====================  ===========
+  AFFECTS_VALIDATION    extension affects whether the certificate is valid
+  UNKNOWN               extension includes flags not yet recognized by stem
+  ====================  ===========
 """
 
 import base64
@@ -38,6 +49,7 @@ ED25519_HEADER_LENGTH = 40
 ED25519_SIGNATURE_LENGTH = 64
 
 CertType = enum.UppercaseEnum('SIGNING', 'LINK_CERT', 'AUTH')
+ExtensionFlag = enum.UppercaseEnum('AFFECTS_VALIDATION', 'UNKNOWN')
 
 
 class Ed25519Certificate(object):
@@ -138,19 +150,29 @@ class Ed25519CertificateV1(Ed25519Certificate):
       if extension_length != len(extension_data):
         raise ValueError("Ed25519 extension is truncated. It should have %i bytes of data but there's only %i." % (extension_length, len(extension_data)))
 
-      self.extensions.append(Ed25519Extension(extension_type, extension_flags, extension_data))
+      flags, remaining_flags = [], extension_flags
+
+      if remaining_flags % 2 == 1:
+        flags.append(ExtensionFlag.AFFECTS_VALIDATION)
+        remaining_flags -= 1
+
+      if remaining_flags:
+        flags.append(ExtensionFlag.UNKNOWN)
+
+      self.extensions.append(Ed25519Extension(extension_type, flags, extension_flags, extension_data))
       remaining_data = remaining_data[4 + extension_length:]
 
     if remaining_data:
       raise ValueError('Ed25519 certificate had %i bytes of unused extension data' % len(remaining_data))
 
 
-class Ed25519Extension(collections.namedtuple('Ed25519Extension', ['extension_type', 'flags', 'data'])):
+class Ed25519Extension(collections.namedtuple('Ed25519Extension', ['extension_type', 'flags', 'flag_int', 'data'])):
   """
   Extension within an Ed25519 certificate.
 
   :var int extension_type: extension type
-  :var int flags: extension attributes
+  :var list flags: extension attribute flags
+  :var int flag_int: integer encoding of the extension attribute flags
   :var bytes data: data the extension concerns
   """
 
