@@ -29,6 +29,7 @@ to sign server descriptors.
 """
 
 import base64
+import collections
 import datetime
 
 from stem.util import enum
@@ -89,6 +90,8 @@ class Ed25519CertificateV1(Ed25519Certificate):
   :var datetime expiration: expiration of the certificate
   :var int key_type: format of the key
   :var bytes key: key content
+  :var list extensions: :class:`~stem.descriptor.certificate.Ed25519Extension` in this certificate
+  :var bytes signature: certificate signature
   """
 
   def __init__(self, version, encoded, decoded):
@@ -117,11 +120,39 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     self.key_type = stem.util.str_tools._to_int(decoded[6])
     self.key = decoded[7:39]
+    self.signature = decoded[-ED25519_SIGNATURE_LENGTH:]
+
+    self.extensions = []
+    extension_count = stem.util.str_tools._to_int(decoded[39])
+    remaining_data = decoded[40:-ED25519_SIGNATURE_LENGTH]
+
+    for i in range(extension_count):
+      if len(remaining_data) < 4:
+        raise ValueError('Ed25519 extension is missing header field data')
+
+      extension_length = stem.util.str_tools._to_int(remaining_data[:2])
+      extension_type = stem.util.str_tools._to_int(remaining_data[2])
+      extension_flags = stem.util.str_tools._to_int(remaining_data[3])
+      extension_data = remaining_data[4:4 + extension_length]
+
+      if extension_length != len(extension_data):
+        raise ValueError("Ed25519 extension is truncated. It should have %i bytes of data but there's only %i." % (extension_length, len(extension_data)))
+
+      self.extensions.append(Ed25519Extension(extension_type, extension_flags, extension_data))
+      remaining_data = remaining_data[4 + extension_length:]
+
+    if remaining_data:
+      raise ValueError('Ed25519 certificate had %i bytes of unused extension data' % len(remaining_data))
 
 
+class Ed25519Extension(collections.namedtuple('Ed25519Extension', ['extension_type', 'flags', 'data'])):
+  """
+  Extension within an Ed25519 certificate.
 
-
-
+  :var int extension_type: extension type
+  :var int flags: extension attributes
+  :var bytes data: data the extension concerns
+  """
 
 
 

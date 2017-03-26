@@ -11,7 +11,7 @@ import stem.descriptor.certificate
 import stem.prereq
 import test.runner
 
-from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, CertType, Ed25519Certificate, Ed25519CertificateV1
+from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, CertType, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
 
 ED25519_CERT = """
 AQQABhtZAaW2GoBED1IjY3A6f6GNqBEl5A83fD2Za9upGke51JGqAQAgBABnprVR
@@ -19,15 +19,21 @@ ptIr43bWPo2fIzo3uOywfoMrryprpbm4HhCkZMaO064LP+1KNuLvlc8sGG8lTjx1
 g4k3ELuWYgHYWU5rAia7nl4gUfBZOEfHAfKES7l3d63dBEjEX98Ljhdp2w4=
 """.strip()
 
+EXPECTED_CERT_KEY = '\xa5\xb6\x1a\x80D\x0fR#cp:\x7f\xa1\x8d\xa8\x11%\xe4\x0f7|=\x99k\xdb\xa9\x1aG\xb9\xd4\x91\xaa'
+EXPECTED_EXTENSION_DATA = 'g\xa6\xb5Q\xa6\xd2+\xe3v\xd6>\x8d\x9f#:7\xb8\xec\xb0~\x83+\xaf*k\xa5\xb9\xb8\x1e\x10\xa4d'
+EXPECTED_SIGNATURE = '\xc6\x8e\xd3\xae\x0b?\xedJ6\xe2\xef\x95\xcf,\x18o%N<u\x83\x897\x10\xbb\x96b\x01\xd8YNk\x02&\xbb\x9e^ Q\xf0Y8G\xc7\x01\xf2\x84K\xb9ww\xad\xdd\x04H\xc4_\xdf\x0b\x8e\x17i\xdb\x0e'
 
-def certificate(version = 1, cert_type = 4):
+
+def certificate(version = 1, cert_type = 4, extension_data = []):
   return base64.b64encode(''.join([
     chr(version),
     chr(cert_type),
-    b'\x00' * 4,   # expiration date, leaving this as the epoch
-    b'\x01',       # key type
-    b'\x03' * 32,  # key
-    b'\x00' + b'\x00' * ED25519_SIGNATURE_LENGTH]))
+    b'\x00' * 4,               # expiration date, leaving this as the epoch
+    b'\x01',                   # key type
+    b'\x03' * 32,              # key
+    chr(len(extension_data)),  # extension count
+    b''.join(extension_data),
+    b'\x01' * ED25519_SIGNATURE_LENGTH]))
 
 
 class TestEd25519Certificate(unittest.TestCase):
@@ -35,7 +41,7 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, re.escape(exc_msg), Ed25519Certificate.parse, parse_arg)
 
   def test_basic_parsing(self):
-    cert_bytes = certificate()
+    cert_bytes = certificate(extension_data = [b'\x00\x02\x04\x07\x15\x12', b'\x00\x00\x05\x03'])
     cert = Ed25519Certificate.parse(cert_bytes)
 
     self.assertEqual(Ed25519CertificateV1, type(cert))
@@ -45,6 +51,12 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(datetime.datetime(1970, 1, 1, 1, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
     self.assertEqual(b'\x03' * 32, cert.key)
+    self.assertEqual(b'\x01' * ED25519_SIGNATURE_LENGTH, cert.signature)
+
+    self.assertEqual([
+      Ed25519Extension(extension_type = 4, flags = 7, data = b'\x15\x12'),
+      Ed25519Extension(extension_type = 5, flags = 3, data = b''),
+    ], cert.extensions)
 
   def test_with_real_cert(self):
     cert = Ed25519Certificate.parse(ED25519_CERT)
@@ -55,7 +67,9 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(CertType.SIGNING, cert.cert_type)
     self.assertEqual(datetime.datetime(2015, 8, 28, 19, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
-    self.assertEqual('\xa5\xb6\x1a\x80D\x0fR#cp:\x7f\xa1\x8d\xa8\x11%\xe4\x0f7|=\x99k\xdb\xa9\x1aG\xb9\xd4\x91\xaa', cert.key)
+    self.assertEqual(EXPECTED_CERT_KEY, cert.key)
+    self.assertEqual([Ed25519Extension(extension_type = 4, flags = 0, data = EXPECTED_EXTENSION_DATA)], cert.extensions)
+    self.assertEqual(EXPECTED_SIGNATURE, cert.signature)
 
   def test_non_base64(self):
     self.assert_raises('\x02\x0323\x04', "Ed25519 certificate wasn't propoerly base64 encoded (Incorrect padding):")
@@ -71,8 +85,12 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assert_raises(certificate(cert_type = 0), 'Ed25519 certificate cannot have a type of 0. This is reserved to avoid conflicts with tor CERTS cells.')
     self.assert_raises(certificate(cert_type = 7), 'Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
 
+  def test_truncated_extension(self):
+    self.assert_raises(certificate(extension_data = [b'']), 'Ed25519 extension is missing header field data')
+    self.assert_raises(certificate(extension_data = [b'\x50\x00\x00\x00\x15\x12']), "Ed25519 extension is truncated. It should have 20480 bytes of data but there's only 2.")
 
-
+  def test_extra_extension_data(self):
+    self.assert_raises(certificate(extension_data = [b'\x00\x01\x00\x00\x15\x12']), "Ed25519 certificate had 1 bytes of unused extension data")
 
 
 
