@@ -2,16 +2,137 @@
 # See LICENSE for licensing information
 
 """
-Parsing for Tor Ed25519 certificates, which is used to validate the key used to
-sign server descriptors.
+Parsing for Tor Ed25519 certificates, which are used to validate the key used
+to sign server descriptors.
 
-Certificates can optionally contain CertificateExtension objects depending on
-their type and purpose. Currently Ed25519KeyCertificate certificates will
-contain one SignedWithEd25519KeyCertificateExtension.
+.. versionadded:: 1.6.0
 
 **Module Overview:**
 
 ::
+
+  Ed25519Certificate - Ed25519 signing key certificate
+    +- parse - reads base64 encoded certificate data
+
+.. data:: CertType (enum)
+
+  Purpose of Ed25519 certificate. As new certificate versions are added this
+  enumeration will expand.
+
+  ==============  ===========
+  CertType        Description
+  ==============  ===========
+  **SIGNING**     signing a signing key with an identity key
+  **LINK_CERT**   TLS link certificate signed with ed25519 signing key
+  **AUTH**        authentication key signed with ed25519 signing key
+  ==============  ===========
+"""
+
+import base64
+import datetime
+
+from stem.util import enum
+
+ED25519_HEADER_LENGTH = 40
+ED25519_SIGNATURE_LENGTH = 64
+
+CertType = enum.UppercaseEnum('SIGNING', 'LINK_CERT', 'AUTH')
+
+
+class Ed25519Certificate(object):
+  """
+  Base class for an Ed25519 certificate.
+
+  :var int version: certificate format version
+  :var str encoded: base64 encoded ed25519 certificate
+  """
+
+  def __init__(self, version, encoded):
+    self.version = version
+    self.encoded = encoded
+
+  @staticmethod
+  def parse(content):
+    """
+    Parses the given base64 encoded data as an Ed25519 certificate.
+
+    :param str content: base64 encoded certificate
+
+    :returns: :class:`~stem.descriptor.certificate.Ed25519Certificate` subclsss
+      for the given certificate
+
+    :raises: **ValueError** if content is malformed
+    """
+
+    try:
+      decoded = base64.b64decode(content)
+
+      if not decoded:
+        raise TypeError('empty')
+    except TypeError as exc:
+      raise ValueError("Ed25519 certificate wasn't propoerly base64 encoded (%s):\n%s" % (exc, content))
+
+    version = stem.util.str_tools._to_int(decoded[0])
+
+    if version == 1:
+      return Ed25519CertificateV1(version, content, decoded)
+    else:
+      raise ValueError('Ed25519 certificate is version %i. Parser presently only supports version 1.' % version)
+
+
+class Ed25519CertificateV1(Ed25519Certificate):
+  """
+  Version 1 Ed25519 certificate, which are used for signing tor server
+  descriptors.
+
+  :var CertType cert_type: certificate purpose
+  :var datetime expiration: expiration of the certificate
+  :var int key_type: format of the key
+  :var bytes key: key content
+  """
+
+  def __init__(self, version, encoded, decoded):
+    super(Ed25519CertificateV1, self).__init__(version, encoded)
+
+    if len(decoded) < ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH:
+      raise ValueError('Ed25519 certificate was %i bytes, but should be at least %i' % (len(decoded), ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH))
+
+    cert_type = stem.util.str_tools._to_int(decoded[1])
+
+    if cert_type in (0, 1, 2, 3):
+      raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved to avoid conflicts with tor CERTS cells.' % cert_type)
+    elif cert_type == 4:
+      self.cert_type = CertType.SIGNING
+    elif cert_type == 5:
+      self.cert_type = CertType.LINK_CERT
+    elif cert_type == 6:
+      self.cert_type = CertType.AUTH
+    elif cert_type == 7:
+      raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
+    else:
+      raise ValueError("BUG: Ed25519 certificate type is decoded from one byte. It shouldn't be possible to have a value of %i." % cert_type)
+
+    # expiration time is in hours since epoch
+    self.expiration = datetime.datetime.fromtimestamp(stem.util.str_tools._to_int(decoded[2:6]) * 60 * 60)
+
+    self.key_type = stem.util.str_tools._to_int(decoded[6])
+    self.key = decoded[7:39]
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+Certificates can optionally contain CertificateExtension objects depending on
+their type and purpose. Currently Ed25519KeyCertificate certificates will
+contain one SignedWithEd25519KeyCertificateExtension.
 
   Certificate - Tor Certificate
     +- Ed25519KeyCertificate - Certificate for Ed25519 signing key
@@ -21,7 +142,6 @@ contain one SignedWithEd25519KeyCertificateExtension.
     +- SignedWithEd25519KeyCertificateExtension - Ed25519 signing key extension
 """
 
-import base64
 import binascii
 import hashlib
 import time
