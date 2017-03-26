@@ -2,8 +2,9 @@
 # See LICENSE for licensing information
 
 """
-Parsing for Tor Ed25519 certificates, which are used to validate the key used
-to sign server descriptors.
+Parsing for `Tor Ed25519 certificates
+<https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_, which are
+used to validate the key used to sign server descriptors.
 
 .. versionadded:: 1.6.0
 
