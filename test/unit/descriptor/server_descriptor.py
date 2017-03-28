@@ -16,6 +16,7 @@ import stem.version
 import stem.util.str_tools
 
 from stem.util import str_type
+from stem.descriptor.certificate import CertType, ExtensionType
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 
 from test.mocking import (
@@ -110,6 +111,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(9001, desc.or_port)
     self.assertEqual(None, desc.socks_port)
     self.assertEqual(None, desc.dir_port)
+    self.assertEqual(None, desc.certificate)
     self.assertEqual(None, desc.ed25519_certificate)
     self.assertEqual(None, desc.ed25519_master_key)
     self.assertEqual(None, desc.ed25519_signature)
@@ -262,6 +264,21 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       '$B0279A521375F3CB2AE210BDBFC645FDD2E1973A',
       '$EC116BCB80565A408CE67F8EC3FE3B0B02C3A065',
     ])
+
+    self.assertEqual(1, desc.certificate.version)
+    self.assertEqual(CertType.SIGNING, desc.certificate.type)
+    self.assertEqual(datetime.datetime(2015, 8, 28, 19, 0, 0), desc.certificate.expiration)
+    self.assertEqual(1, desc.certificate.key_type)
+    self.assertTrue(desc.certificate.key.startswith('\xa5\xb6\x1a\x80D\x0f'))
+    self.assertTrue(desc.certificate.signature.startswith('\xc6\x8e\xd3\xae\x0b'))
+    self.assertEqual(1, len(desc.certificate.extensions))
+    self.assertTrue('bWPo2fIzo3uOywfoM' in desc.certificate.encoded)
+
+    extension = desc.certificate.extensions[0]
+    self.assertEqual(ExtensionType.HAS_SIGNING_KEY, extension.type)
+    self.assertEqual([], extension.flags)
+    self.assertEqual(0, extension.flag_int)
+    self.assertTrue(extension.data.startswith('g\xa6\xb5Q\xa6\xd2'))
 
     self.assertEqual('destiny', desc.nickname)
     self.assertEqual('F65E0196C94DFFF48AFBF2F5F9E3E19AAE583FD0', desc.fingerprint)

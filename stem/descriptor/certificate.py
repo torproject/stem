@@ -187,7 +187,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return datetime.datetime.now() > self.expiration
 
-  def verify(self, server_descriptor):
+  def validate(self, server_descriptor):
     """
     Validates our signing key and that the given descriptor content matches its
     Ed25519 signature.

@@ -391,7 +391,12 @@ def _parse_exit_policy(descriptor, entries):
 
 def _parse_identity_ed25519_line(descriptor, entries):
   _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')(descriptor, entries)
-  descriptor.certificate = stem.descriptor.certificate.Ed25519Certificate.parse(descriptor.ed25519_certificate)
+
+  if descriptor.ed25519_certificate:
+    cert_lines = descriptor.ed25519_certificate.split('\n')
+
+    if cert_lines[0] == '-----BEGIN ED25519 CERT-----' and cert_lines[-1] == '-----END ED25519 CERT-----':
+      descriptor.certificate = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
 
 
 _parse_master_key_ed25519_line = _parse_simple_line('master-key-ed25519', 'ed25519_master_key')
