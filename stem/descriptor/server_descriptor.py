@@ -37,6 +37,7 @@ import functools
 import hashlib
 import re
 
+import stem.descriptor.certificate
 import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
 import stem.prereq
@@ -63,8 +64,6 @@ from stem.descriptor import (
   _parse_protocol_line,
   _parse_key_block,
 )
-
-from stem.descriptor.certificate import _parse_certificate
 
 try:
   # added in python 3.2
@@ -390,7 +389,11 @@ def _parse_exit_policy(descriptor, entries):
     del descriptor._unparsed_exit_policy
 
 
-_parse_identity_ed25519_line = _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')
+def _parse_identity_ed25519_line(descriptor, entries):
+  _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')(descriptor, entries)
+  descriptor.certificate = stem.descriptor.certificate.Ed25519Certificate.parse(descriptor.ed25519_certificate)
+
+
 _parse_master_key_ed25519_line = _parse_simple_line('master-key-ed25519', 'ed25519_master_key')
 _parse_master_key_ed25519_for_hash_line = _parse_simple_line('master-key-ed25519', 'ed25519_certificate_hash')
 _parse_contact_line = _parse_bytes_line('contact', 'contact')
@@ -696,6 +699,7 @@ class RelayDescriptor(ServerDescriptor):
   Server descriptor (`descriptor specification
   <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_)
 
+  :var stem.certificate.Ed25519Certificate certificate: ed25519 certificate
   :var str ed25519_certificate: base64 encoded ed25519 certificate
   :var str ed25519_master_key: base64 encoded master key for our ed25519 certificate
   :var str ed25519_signature: signature of this document using ed25519
@@ -718,9 +722,18 @@ class RelayDescriptor(ServerDescriptor):
      Moved from the deprecated `pycrypto
      <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography
      <https://pypi.python.org/pypi/cryptography>`_ for validating signatures.
+
+  .. versionchanged:: 1.6.0
+     Added the certificate attribute.
+
+  .. deprecated:: 1.6.0
+     Our **ed25519_certificate** is deprecated in favor of our new
+     **certificate** attribute. The base64 encoded certificate is available via
+     the certificate's **encoded** attribute.
   """
 
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
+    'certificate': (None, _parse_identity_ed25519_line),
     'ed25519_certificate': (None, _parse_identity_ed25519_line),
     'ed25519_master_key': (None, _parse_master_key_ed25519_line),
     'ed25519_signature': (None, _parse_router_sig_ed25519_line),
@@ -766,10 +779,8 @@ class RelayDescriptor(ServerDescriptor):
           if onion_key_crosscert_digest != self.onion_key_crosscert_digest():
             raise ValueError('Decrypted onion-key-crosscert digest does not match local digest (calculated: %s, local: %s)' % (onion_key_crosscert_digest, self.onion_key_crosscert_digest()))
 
-      if stem.prereq._is_pynacl_available() and self.ed25519_certificate:
-        self.certificate = _parse_certificate(_bytes_for_block(self.ed25519_certificate), self.ed25519_master_key, validate)
-
-        self.certificate.verify_descriptor_signature(raw_contents, self.ed25519_signature)
+      if stem.prereq._is_pynacl_available() and self.certificate:
+        self.certificate.validate(self)
 
   @lru_cache()
   def digest(self):
@@ -786,12 +797,10 @@ class RelayDescriptor(ServerDescriptor):
   @lru_cache()
   def onion_key_crosscert_digest(self):
     """
-    Provides the digest of the onion-key-crosscert data consisting of the following:
+    Provides the digest of the onion-key-crosscert data. This consists of the
+    RSA identity key sha1 and ed25519 identity key.
 
-    1. SHA1 digest of the RSA identity key
-    2. the ed25519 identity key
-
-    :returns: the digest encoded in uppercase hex
+    :returns: **unicode** digest encoded in uppercase hex
 
     :raises: ValueError if the digest cannot be calculated
     """

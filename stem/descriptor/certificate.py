@@ -58,6 +58,7 @@ from stem.util import enum
 
 ED25519_HEADER_LENGTH = 40
 ED25519_SIGNATURE_LENGTH = 64
+ED25519_ROUTER_SIGNATURE_PREFIX = b'Tor router descriptor signature v1'
 
 CertType = enum.UppercaseEnum('SIGNING', 'LINK_CERT', 'AUTH')
 ExtensionType = enum.Enum(('HAS_SIGNING_KEY', 4),)
@@ -186,6 +187,57 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return datetime.datetime.now() > self.expiration
 
+  def verify(self, server_descriptor):
+    """
+    Validates our signing key and that the given descriptor content matches its
+    Ed25519 signature.
+
+    :param stem.descriptor.server_descriptor.Ed25519 server_descriptor: relay
+      server descriptor to validate
+
+    :raises:
+      * **ValueError** if signing key or descriptor are invalid
+      * **ImportError** if pynacl module is unavailable
+    """
+
+    if not stem.prereq._is_pynacl_available():
+      raise ImportError('Certificate validation requires the pynacl module')
+
+    import nacl.signing
+    import nacl.encoding
+    from nacl.exceptions import BadSignatureError
+
+    descriptor_content = server_descriptor.get_bytes()
+    signing_key = server_descriptor.ed25519_master_key
+
+    if not signing_key:
+      for extension in self.extensions:
+        if extension.type == ExtensionType.HAS_SIGNING_KEY:
+          signing_key = extension.data
+          break
+
+    if not signing_key:
+      raise ValueError('Server descriptor missing an ed25519 signing key')
+
+    try:
+      verify_key = nacl.signing.VerifyKey(signing_key + '=', encoder = nacl.encoding.Base64Encoder)
+      verify_key.verify(descriptor_content[:-ED25519_SIGNATURE_LENGTH], self.signature)
+    except BadSignatureError as exc:
+      raise ValueError('Ed25519KeyCertificate signing key is invalid (%s)' % exc)
+
+    # ed25519 signature validates descriptor content up until the signature itself
+
+    signed_content = descriptor_content[:descriptor_content.index(b'router-sig-ed25519 ') + 19]
+    descriptor_sha256_digest = hashlib.sha256(ED25519_ROUTER_SIGNATURE_PREFIX + signed_content).digest()
+
+    missing_padding = len(server_descriptor.ed25519_signature) % 4
+    signature_bytes = base64.b64decode(stem.util.str_tools._to_bytes(server_descriptor.ed25519_signature) + b'=' * missing_padding)
+
+    try:
+      verify_key = nacl.signing.VerifyKey(self.key)
+      verify_key.verify(descriptor_sha256_digest, signature_bytes)
+    except BadSignatureError as exc:
+      raise ValueError('Descriptor Ed25519 certificate signature invalid (%s)' % exc)
 
 
 class Ed25519Extension(collections.namedtuple('Ed25519Extension', ['type', 'flags', 'flag_int', 'data'])):
