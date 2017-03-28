@@ -1271,7 +1271,7 @@ def _set_proc_title(process_name):
 
   libc = ctypes.CDLL(ctypes.util.find_library('c'))
   name_buffer = ctypes.create_string_buffer(len(process_name) + 1)
-  name_buffer.value = process_name
+  name_buffer.value = process_name.encode()
 
   try:
     libc.setproctitle(ctypes.byref(name_buffer))
