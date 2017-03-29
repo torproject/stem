@@ -208,20 +208,21 @@ class Ed25519CertificateV1(Ed25519Certificate):
     from nacl.exceptions import BadSignatureError
 
     descriptor_content = server_descriptor.get_bytes()
-    signing_key = server_descriptor.ed25519_master_key
+    signing_key = None
 
-    if not signing_key:
+    if server_descriptor.ed25519_master_key:
+      signing_key = nacl.signing.VerifyKey(server_descriptor.ed25519_master_key + '=', encoder = nacl.encoding.Base64Encoder)
+    else:
       for extension in self.extensions:
         if extension.type == ExtensionType.HAS_SIGNING_KEY:
-          signing_key = extension.data
+          signing_key = nacl.signing.VerifyKey(extension.data)
           break
 
     if not signing_key:
       raise ValueError('Server descriptor missing an ed25519 signing key')
 
     try:
-      verify_key = nacl.signing.VerifyKey(signing_key + '=', encoder = nacl.encoding.Base64Encoder)
-      verify_key.verify(descriptor_content[:-ED25519_SIGNATURE_LENGTH], self.signature)
+      signing_key.verify(base64.b64decode(self.encoded)[:-ED25519_SIGNATURE_LENGTH], self.signature)
     except BadSignatureError as exc:
       raise ValueError('Ed25519KeyCertificate signing key is invalid (%s)' % exc)
 
