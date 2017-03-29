@@ -231,6 +231,9 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     # ed25519 signature validates descriptor content up until the signature itself
 
+    if b'router-sig-ed25519 ' not in descriptor_content:
+      raise ValueError("Descriptor doesn't have a router-sig-ed25519 entry.")
+
     signed_content = descriptor_content[:descriptor_content.index(b'router-sig-ed25519 ') + 19]
     descriptor_sha256_digest = hashlib.sha256(ED25519_ROUTER_SIGNATURE_PREFIX + signed_content).digest()
 
