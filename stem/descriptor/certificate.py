@@ -172,6 +172,9 @@ class Ed25519CertificateV1(Ed25519Certificate):
       if remaining_flags:
         flags.append(ExtensionFlag.UNKNOWN)
 
+      if extension_type == ExtensionType.HAS_SIGNING_KEY and len(extension_data) != 32:
+        raise ValueError('Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was %i.' % len(extension_data))
+
       self.extensions.append(Ed25519Extension(extension_type, flags, extension_flags, extension_data))
       remaining_data = remaining_data[4 + extension_length:]
 

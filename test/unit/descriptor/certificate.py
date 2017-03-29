@@ -41,7 +41,8 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, re.escape(exc_msg), Ed25519Certificate.parse, parse_arg)
 
   def test_basic_parsing(self):
-    cert_bytes = certificate(extension_data = [b'\x00\x02\x04\x07\x15\x12', b'\x00\x00\x05\x04'])
+    signing_key = b'\x11' * 32
+    cert_bytes = certificate(extension_data = [b'\x00\x20\x04\x07' + signing_key, b'\x00\x00\x05\x04'])
     cert = Ed25519Certificate.parse(cert_bytes)
 
     self.assertEqual(Ed25519CertificateV1, type(cert))
@@ -54,7 +55,7 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(b'\x01' * ED25519_SIGNATURE_LENGTH, cert.signature)
 
     self.assertEqual([
-      Ed25519Extension(type = 4, flags = [ExtensionFlag.AFFECTS_VALIDATION, ExtensionFlag.UNKNOWN], flag_int = 7, data = b'\x15\x12'),
+      Ed25519Extension(type = ExtensionType.HAS_SIGNING_KEY, flags = [ExtensionFlag.AFFECTS_VALIDATION, ExtensionFlag.UNKNOWN], flag_int = 7, data = signing_key),
       Ed25519Extension(type = 5, flags = [ExtensionFlag.UNKNOWN], flag_int = 4, data = b''),
     ], cert.extensions)
 
@@ -91,6 +92,9 @@ class TestEd25519Certificate(unittest.TestCase):
   def test_truncated_extension(self):
     self.assert_raises(certificate(extension_data = [b'']), 'Ed25519 extension is missing header field data')
     self.assert_raises(certificate(extension_data = [b'\x50\x00\x00\x00\x15\x12']), "Ed25519 extension is truncated. It should have 20480 bytes of data but there's only 2.")
+
+  def test_truncated_signing_key(self):
+    self.assert_raises(certificate(extension_data = [b'\x00\x02\x04\x07\11\12']), "Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was 2.")
 
   def test_extra_extension_data(self):
     self.assert_raises(certificate(extension_data = [b'\x00\x01\x00\x00\x15\x12']), "Ed25519 certificate had 1 bytes of unused extension data")

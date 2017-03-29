@@ -9,6 +9,7 @@ import tarfile
 import time
 import unittest
 
+import stem.descriptor
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.prereq
