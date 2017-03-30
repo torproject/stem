@@ -8,6 +8,7 @@ import re
 import unittest
 
 import stem.descriptor.certificate
+import stem.util.str_tools
 import stem.prereq
 import test.runner
 
@@ -20,9 +21,9 @@ ptIr43bWPo2fIzo3uOywfoMrryprpbm4HhCkZMaO064LP+1KNuLvlc8sGG8lTjx1
 g4k3ELuWYgHYWU5rAia7nl4gUfBZOEfHAfKES7l3d63dBEjEX98Ljhdp2w4=
 """.strip()
 
-EXPECTED_CERT_KEY = '\xa5\xb6\x1a\x80D\x0fR#cp:\x7f\xa1\x8d\xa8\x11%\xe4\x0f7|=\x99k\xdb\xa9\x1aG\xb9\xd4\x91\xaa'
-EXPECTED_EXTENSION_DATA = 'g\xa6\xb5Q\xa6\xd2+\xe3v\xd6>\x8d\x9f#:7\xb8\xec\xb0~\x83+\xaf*k\xa5\xb9\xb8\x1e\x10\xa4d'
-EXPECTED_SIGNATURE = '\xc6\x8e\xd3\xae\x0b?\xedJ6\xe2\xef\x95\xcf,\x18o%N<u\x83\x897\x10\xbb\x96b\x01\xd8YNk\x02&\xbb\x9e^ Q\xf0Y8G\xc7\x01\xf2\x84K\xb9ww\xad\xdd\x04H\xc4_\xdf\x0b\x8e\x17i\xdb\x0e'
+EXPECTED_CERT_KEY = b'\xa5\xb6\x1a\x80D\x0fR#cp:\x7f\xa1\x8d\xa8\x11%\xe4\x0f7|=\x99k\xdb\xa9\x1aG\xb9\xd4\x91\xaa'
+EXPECTED_EXTENSION_DATA = b'g\xa6\xb5Q\xa6\xd2+\xe3v\xd6>\x8d\x9f#:7\xb8\xec\xb0~\x83+\xaf*k\xa5\xb9\xb8\x1e\x10\xa4d'
+EXPECTED_SIGNATURE = b'\xc6\x8e\xd3\xae\x0b?\xedJ6\xe2\xef\x95\xcf,\x18o%N<u\x83\x897\x10\xbb\x96b\x01\xd8YNk\x02&\xbb\x9e^ Q\xf0Y8G\xc7\x01\xf2\x84K\xb9ww\xad\xdd\x04H\xc4_\xdf\x0b\x8e\x17i\xdb\x0e'
 
 
 def certificate(version = 1, cert_type = 4, extension_data = []):
@@ -34,13 +35,13 @@ def certificate(version = 1, cert_type = 4, extension_data = []):
   :param list extension_data: extensions to embed within the certificate
   """
 
-  return base64.b64encode(''.join([
-    chr(version),
-    chr(cert_type),
+  return base64.b64encode(b''.join([
+    stem.util.str_tools._to_bytes(chr(version)),
+    stem.util.str_tools._to_bytes(chr(cert_type)),
     b'\x00' * 4,               # expiration date, leaving this as the epoch
     b'\x01',                   # key type
     b'\x03' * 32,              # key
-    chr(len(extension_data)),  # extension count
+    stem.util.str_tools._to_bytes(chr(len(extension_data))),  # extension count
     b''.join(extension_data),
     b'\x01' * ED25519_SIGNATURE_LENGTH]))
 

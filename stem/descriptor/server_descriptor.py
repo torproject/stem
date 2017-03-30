@@ -811,7 +811,7 @@ class RelayDescriptor(ServerDescriptor):
     """
 
     signing_key_digest = hashlib.sha1(_bytes_for_block(self.signing_key)).digest()
-    data = signing_key_digest + base64.b64decode(self.ed25519_master_key + '=')
+    data = signing_key_digest + base64.b64decode(stem.util.str_tools._to_bytes(self.ed25519_master_key) + b'=')
     return stem.util.str_tools._to_unicode(binascii.hexlify(data).upper())
 
   def _compare(self, other, method):

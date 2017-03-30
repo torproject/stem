@@ -270,8 +270,8 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(CertType.SIGNING, desc.certificate.type)
     self.assertEqual(datetime.datetime(2015, 8, 28, 17, 0, 0), desc.certificate.expiration)
     self.assertEqual(1, desc.certificate.key_type)
-    self.assertTrue(desc.certificate.key.startswith('\xa5\xb6\x1a\x80D\x0f'))
-    self.assertTrue(desc.certificate.signature.startswith('\xc6\x8e\xd3\xae\x0b'))
+    self.assertTrue(desc.certificate.key.startswith(b'\xa5\xb6\x1a\x80D\x0f'))
+    self.assertTrue(desc.certificate.signature.startswith(b'\xc6\x8e\xd3\xae\x0b'))
     self.assertEqual(1, len(desc.certificate.extensions))
     self.assertTrue('bWPo2fIzo3uOywfoM' in desc.certificate.encoded)
 
@@ -279,7 +279,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(ExtensionType.HAS_SIGNING_KEY, extension.type)
     self.assertEqual([], extension.flags)
     self.assertEqual(0, extension.flag_int)
-    self.assertTrue(extension.data.startswith('g\xa6\xb5Q\xa6\xd2'))
+    self.assertTrue(extension.data.startswith(b'g\xa6\xb5Q\xa6\xd2'))
 
     self.assertEqual('destiny', desc.nickname)
     self.assertEqual('F65E0196C94DFFF48AFBF2F5F9E3E19AAE583FD0', desc.fingerprint)

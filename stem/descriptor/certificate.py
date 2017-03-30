@@ -57,6 +57,7 @@ used to validate the key used to sign server descriptors.
 """
 
 import base64
+import binascii
 import collections
 import datetime
 import hashlib
@@ -111,14 +112,14 @@ class Ed25519Certificate(object):
     """
 
     try:
-      decoded = base64.b64decode(content)
+      decoded = base64.b64decode(stem.util.str_tools._to_bytes(content))
 
       if not decoded:
         raise TypeError('empty')
-    except TypeError as exc:
+    except (TypeError, binascii.Error) as exc:
       raise ValueError("Ed25519 certificate wasn't propoerly base64 encoded (%s):\n%s" % (exc, content))
 
-    version = stem.util.str_tools._to_int(decoded[0])
+    version = stem.util.str_tools._to_int(decoded[0:1])
 
     if version == 1:
       return Ed25519CertificateV1(version, content, decoded)
@@ -145,7 +146,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     if len(decoded) < ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH:
       raise ValueError('Ed25519 certificate was %i bytes, but should be at least %i' % (len(decoded), ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH))
 
-    cert_type = stem.util.str_tools._to_int(decoded[1])
+    cert_type = stem.util.str_tools._to_int(decoded[1:2])
 
     if cert_type in (0, 1, 2, 3):
       raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved to avoid conflicts with tor CERTS cells.' % cert_type)
@@ -163,12 +164,12 @@ class Ed25519CertificateV1(Ed25519Certificate):
     # expiration time is in hours since epoch
     self.expiration = datetime.datetime.utcfromtimestamp(stem.util.str_tools._to_int(decoded[2:6]) * 3600)
 
-    self.key_type = stem.util.str_tools._to_int(decoded[6])
+    self.key_type = stem.util.str_tools._to_int(decoded[6:7])
     self.key = decoded[7:39]
     self.signature = decoded[-ED25519_SIGNATURE_LENGTH:]
 
     self.extensions = []
-    extension_count = stem.util.str_tools._to_int(decoded[39])
+    extension_count = stem.util.str_tools._to_int(decoded[39:40])
     remaining_data = decoded[40:-ED25519_SIGNATURE_LENGTH]
 
     for i in range(extension_count):
@@ -176,8 +177,8 @@ class Ed25519CertificateV1(Ed25519Certificate):
         raise ValueError('Ed25519 extension is missing header field data')
 
       extension_length = stem.util.str_tools._to_int(remaining_data[:2])
-      extension_type = stem.util.str_tools._to_int(remaining_data[2])
-      extension_flags = stem.util.str_tools._to_int(remaining_data[3])
+      extension_type = stem.util.str_tools._to_int(remaining_data[2:3])
+      extension_flags = stem.util.str_tools._to_int(remaining_data[3:4])
       extension_data = remaining_data[4:4 + extension_length]
 
       if extension_length != len(extension_data):
@@ -234,7 +235,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     signing_key = None
 
     if server_descriptor.ed25519_master_key:
-      signing_key = nacl.signing.VerifyKey(server_descriptor.ed25519_master_key + '=', encoder = nacl.encoding.Base64Encoder)
+      signing_key = nacl.signing.VerifyKey(stem.util.str_tools._to_bytes(server_descriptor.ed25519_master_key) + b'=', encoder = nacl.encoding.Base64Encoder)
     else:
       for extension in self.extensions:
         if extension.type == ExtensionType.HAS_SIGNING_KEY:
@@ -245,7 +246,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
       raise ValueError('Server descriptor missing an ed25519 signing key')
 
     try:
-      signing_key.verify(base64.b64decode(self.encoded)[:-ED25519_SIGNATURE_LENGTH], self.signature)
+      signing_key.verify(base64.b64decode(stem.util.str_tools._to_bytes(self.encoded))[:-ED25519_SIGNATURE_LENGTH], self.signature)
     except BadSignatureError as exc:
       raise ValueError('Ed25519KeyCertificate signing key is invalid (%s)' % exc)
 
