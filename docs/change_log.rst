@@ -51,6 +51,7 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * Support and validation for `ed25519 certificates <api/descriptor/certificate.html>`_ (`spec <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_, :trac:`21558`)
   * Moved from the deprecated `pycrypto <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography <https://pypi.python.org/pypi/cryptography>`_ for validating signatures (:trac:`21086`)
   * Sped descriptor reading by ~25% by deferring defaulting when validating
   * Support for protocol descriptor fields (:spec:`eb4fb3c`)

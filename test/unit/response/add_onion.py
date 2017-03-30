@@ -95,21 +95,13 @@ class TestAddOnionResponse(unittest.TestCase):
     Checks a response that lack an initial service id.
     """
 
-    try:
-      response = mocking.get_message(WRONG_FIRST_KEY)
-      stem.response.convert('ADD_ONION', response)
-      self.fail("we should've raised a ProtocolError")
-    except stem.ProtocolError as exc:
-      self.assertTrue(str(exc).startswith('ADD_ONION response should start with'))
+    response = mocking.get_message(WRONG_FIRST_KEY)
+    self.assertRaisesRegexp(stem.ProtocolError, 'ADD_ONION response should start with', stem.response.convert, 'ADD_ONION', response)
 
   def test_no_key_type(self):
     """
     Checks a response that's missing the private key type.
     """
 
-    try:
-      response = mocking.get_message(MISSING_KEY_TYPE)
-      stem.response.convert('ADD_ONION', response)
-      self.fail("we should've raised a ProtocolError")
-    except stem.ProtocolError as exc:
-      self.assertTrue(str(exc).startswith('ADD_ONION PrivateKey lines should be of the form'))
+    response = mocking.get_message(MISSING_KEY_TYPE)
+    self.assertRaisesRegexp(stem.ProtocolError, 'ADD_ONION PrivateKey lines should be of the form', stem.response.convert, 'ADD_ONION', response)

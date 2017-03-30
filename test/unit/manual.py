@@ -4,6 +4,7 @@ Unit testing for the stem.manual module.
 
 import io
 import os
+import re
 import tempfile
 import unittest
 
@@ -234,30 +235,21 @@ class TestManual(unittest.TestCase):
     self.assertTrue(len(manual.config_options) > 200)
 
   def test_download_man_page_without_arguments(self):
-    try:
-      stem.manual.download_man_page()
-      self.fail('we should fail without a path or file handler')
-    except ValueError as exc:
-      self.assertEqual("Either the path or file_handle we're saving to must be provided", str(exc))
+    exc_msg = "Either the path or file_handle we're saving to must be provided"
+    self.assertRaisesRegexp(ValueError, exc_msg, stem.manual.download_man_page)
 
   @patch('stem.util.system.is_available', Mock(return_value = False))
   def test_download_man_page_requires_a2x(self):
-    try:
-      stem.manual.download_man_page('/tmp/no_such_file')
-      self.fail('we should require a2x to be available')
-    except IOError as exc:
-      self.assertEqual('We require a2x from asciidoc to provide a man page', str(exc))
+    exc_msg = 'We require a2x from asciidoc to provide a man page'
+    self.assertRaisesRegexp(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
 
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
   @patch('stem.manual.open', Mock(side_effect = IOError('unable to write to file')), create = True)
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_download_man_page_when_unable_to_write(self):
-    try:
-      stem.manual.download_man_page('/tmp/no_such_file')
-      self.fail("we shouldn't be able to write to /no/such/path")
-    except IOError as exc:
-      self.assertEqual("Unable to download tor's manual from https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt to /no/such/path/tor.1.txt: unable to write to file", str(exc))
+    exc_msg = "Unable to download tor's manual from https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt to /no/such/path/tor.1.txt: unable to write to file"
+    self.assertRaisesRegexp(IOError, re.escape(exc_msg), stem.manual.download_man_page, '/tmp/no_such_file')
 
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
@@ -265,11 +257,8 @@ class TestManual(unittest.TestCase):
   @patch('stem.util.system.is_available', Mock(return_value = True))
   @patch(URL_OPEN, Mock(side_effect = urllib.URLError('<urlopen error [Errno -2] Name or service not known>')))
   def test_download_man_page_when_download_fails(self):
-    try:
-      stem.manual.download_man_page('/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
-      self.fail("downloading from test_invalid_url.org shouldn't work")
-    except IOError as exc:
-      self.assertEqual("Unable to download tor's manual from https://www.atagar.com/foo/bar to /no/such/path/tor.1.txt: <urlopen error <urlopen error [Errno -2] Name or service not known>>", str(exc))
+    exc_msg = "Unable to download tor's manual from https://www.atagar.com/foo/bar to /no/such/path/tor.1.txt: <urlopen error <urlopen error [Errno -2] Name or service not known>>"
+    self.assertRaisesRegexp(IOError, re.escape(exc_msg), stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
 
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
@@ -278,11 +267,8 @@ class TestManual(unittest.TestCase):
   @patch('stem.util.system.is_available', Mock(return_value = True))
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
   def test_download_man_page_when_a2x_fails(self):
-    try:
-      stem.manual.download_man_page('/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
-      self.fail("downloading from test_invalid_url.org shouldn't work")
-    except IOError as exc:
-      self.assertEqual("Unable to run 'a2x -f manpage /no/such/path/tor.1.txt': call failed", str(exc))
+    exc_msg = "Unable to run 'a2x -f manpage /no/such/path/tor.1.txt': call failed"
+    self.assertRaisesRegexp(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
 
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
@@ -307,11 +293,8 @@ class TestManual(unittest.TestCase):
   @patch('stem.util.system.is_mac', Mock(return_value = False))
   @patch('stem.util.system.call', Mock(side_effect = OSError('man --encoding=ascii -P cat tor returned exit status 16')))
   def test_from_man_when_manual_is_unavailable(self):
-    try:
-      stem.manual.Manual.from_man()
-      self.fail("fetching the manual should fail when it's unavailable")
-    except IOError as exc:
-      self.assertEqual("Unable to run 'man --encoding=ascii -P cat tor': man --encoding=ascii -P cat tor returned exit status 16", str(exc))
+    exc_msg = "Unable to run 'man --encoding=ascii -P cat tor': man --encoding=ascii -P cat tor returned exit status 16"
+    self.assertRaisesRegexp(IOError, exc_msg, stem.manual.Manual.from_man)
 
   @patch('stem.util.system.call', Mock(return_value = []))
   def test_when_man_is_empty(self):

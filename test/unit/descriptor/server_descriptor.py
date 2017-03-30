@@ -6,8 +6,10 @@ import datetime
 import io
 import pickle
 import tarfile
+import time
 import unittest
 
+import stem.descriptor
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.prereq
@@ -15,6 +17,7 @@ import stem.version
 import stem.util.str_tools
 
 from stem.util import str_type
+from stem.descriptor.certificate import CertType, ExtensionType
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 
 from test.mocking import (
@@ -109,6 +112,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(9001, desc.or_port)
     self.assertEqual(None, desc.socks_port)
     self.assertEqual(None, desc.dir_port)
+    self.assertEqual(None, desc.certificate)
     self.assertEqual(None, desc.ed25519_certificate)
     self.assertEqual(None, desc.ed25519_master_key)
     self.assertEqual(None, desc.ed25519_signature)
@@ -245,6 +249,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     self.assertTrue(isinstance(str(desc), str))
 
+  @patch('time.time', Mock(return_value = time.mktime(datetime.date(2010, 1, 1).timetuple())))
   def test_with_ed25519(self):
     """
     Parses a descriptor with a ed25519 identity key, as added by proposal 228
@@ -260,6 +265,21 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       '$B0279A521375F3CB2AE210BDBFC645FDD2E1973A',
       '$EC116BCB80565A408CE67F8EC3FE3B0B02C3A065',
     ])
+
+    self.assertEqual(1, desc.certificate.version)
+    self.assertEqual(CertType.SIGNING, desc.certificate.type)
+    self.assertEqual(datetime.datetime(2015, 8, 28, 17, 0, 0), desc.certificate.expiration)
+    self.assertEqual(1, desc.certificate.key_type)
+    self.assertTrue(desc.certificate.key.startswith(b'\xa5\xb6\x1a\x80D\x0f'))
+    self.assertTrue(desc.certificate.signature.startswith(b'\xc6\x8e\xd3\xae\x0b'))
+    self.assertEqual(1, len(desc.certificate.extensions))
+    self.assertTrue('bWPo2fIzo3uOywfoM' in desc.certificate.encoded)
+
+    extension = desc.certificate.extensions[0]
+    self.assertEqual(ExtensionType.HAS_SIGNING_KEY, extension.type)
+    self.assertEqual([], extension.flags)
+    self.assertEqual(0, extension.flag_int)
+    self.assertTrue(extension.data.startswith(b'g\xa6\xb5Q\xa6\xd2'))
 
     self.assertEqual('destiny', desc.nickname)
     self.assertEqual('F65E0196C94DFFF48AFBF2F5F9E3E19AAE583FD0', desc.fingerprint)
@@ -298,6 +318,16 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertTrue('y72z1dZOYxVQVL' in desc.signature)
     self.assertEqual('B5E441051D139CCD84BC765D130B01E44DAC29AD', desc.digest())
     self.assertEqual([], desc.get_unrecognized_lines())
+
+  @patch('time.time', Mock(return_value = time.mktime(datetime.date(2020, 1, 1).timetuple())))
+  def test_with_ed25519_expired_cert(self):
+    """
+    Parses a server descriptor with an expired ed25519 certificate
+    """
+
+    desc_text = open(get_resource('bridge_descriptor_with_ed25519'), 'rb').read()
+    desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text), validate = True)
+    self.assertRaises(ValueError, list, desc_iter)
 
   def test_bridge_with_ed25519(self):
     """
@@ -670,22 +700,16 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Checks a 'proto' line when it's not key=value pairs.
     """
 
-    try:
-      get_relay_server_descriptor({'proto': 'Desc Link=1-4'})
-      self.fail('Did not raise expected exception')
-    except ValueError as exc:
-      self.assertEqual("Protocol entires are expected to be a series of 'key=value' pairs but was: proto Desc Link=1-4", str(exc))
+    exc_msg = "Protocol entires are expected to be a series of 'key=value' pairs but was: proto Desc Link=1-4"
+    self.assertRaisesRegexp(ValueError, exc_msg, get_relay_server_descriptor, {'proto': 'Desc Link=1-4'})
 
   def test_parse_with_non_int_version(self):
     """
     Checks a 'proto' line with non-numeric content.
     """
 
-    try:
-      get_relay_server_descriptor({'proto': 'Desc=hi Link=1-4'})
-      self.fail('Did not raise expected exception')
-    except ValueError as exc:
-      self.assertEqual('Protocol values should be a number or number range, but was: proto Desc=hi Link=1-4', str(exc))
+    exc_msg = 'Protocol values should be a number or number range, but was: proto Desc=hi Link=1-4'
+    self.assertRaisesRegexp(ValueError, exc_msg, get_relay_server_descriptor, {'proto': 'Desc=hi Link=1-4'})
 
   def test_ntor_onion_key(self):
     """

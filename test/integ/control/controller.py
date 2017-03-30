@@ -581,13 +581,11 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
+      # try creating a service with an invalid ports
+
       for ports in (4567890, [4567, 4567890], {4567: '-:4567'}):
-        try:
-          # try creating a service with an invalid port
-          response = controller.create_ephemeral_hidden_service(ports)
-          self.fail("we should've raised a stem.ProtocolError")
-        except stem.ProtocolError as exc:
-          self.assertEqual("ADD_ONION response didn't have an OK status: Invalid VIRTPORT/TARGET", str(exc))
+        exc_msg = "ADD_ONION response didn't have an OK status: Invalid VIRTPORT/TARGET"
+        self.assertRaisesRegexp(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, ports)
 
       response = controller.create_ephemeral_hidden_service(4567)
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
@@ -654,11 +652,8 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      try:
-        controller.create_ephemeral_hidden_service(4567, basic_auth = {})
-        self.fail('ADD_ONION should fail when using basic auth without any clients')
-      except stem.ProtocolError as exc:
-        self.assertEqual("ADD_ONION response didn't have an OK status: No auth clients specified", str(exc))
+      exc_msg = "ADD_ONION response didn't have an OK status: No auth clients specified"
+      self.assertRaisesRegexp(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, 4567, basic_auth = {})
 
   @require_controller
   @require_version(Requirement.ADD_ONION)
@@ -1266,11 +1261,8 @@ class TestController(unittest.TestCase):
 
       # try to fetch something that doesn't exist
 
-      try:
-        desc = controller.get_hidden_service_descriptor('m4cfuk6qp4lpu2g3')
-        self.fail("Didn't expect m4cfuk6qp4lpu2g3.onion to exist, but provided: %s" % desc)
-      except stem.DescriptorUnavailable as exc:
-        self.assertEqual('No running hidden service at m4cfuk6qp4lpu2g3.onion', str(exc))
+      exc_msg = 'No running hidden service at m4cfuk6qp4lpu2g3.onion'
+      self.assertRaisesRegexp(stem.DescriptorUnavailable, exc_msg, controller.get_hidden_service_descriptor, 'm4cfuk6qp4lpu2g3')
 
       # ... but shouldn't fail if we have a default argument or aren't awaiting the descriptor
 

@@ -23,6 +23,7 @@ Tasks are...
   |- check_tor_version - checks our version of tor
   |- check_python_version - checks our version of python
   |- check_cryptography_version - checks our version of cryptography
+  |- check_pynacl_version - checks our version of pynacl
   |- check_pyflakes_version - checks our version of pyflakes
   |- check_pycodestyle_version - checks our version of pycodestyle
   |- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
@@ -216,8 +217,16 @@ def check_python_version():
 
 def check_cryptography_version():
   if stem.prereq.is_crypto_available():
-    import Crypto
-    return Crypto.__version__
+    import cryptography
+    return cryptography.__version__
+  else:
+    return 'missing'
+
+
+def check_pynacl_version():
+  if stem.prereq._is_pynacl_available():
+    import nacl
+    return nacl.__version__
   else:
     return 'missing'
 

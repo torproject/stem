@@ -564,11 +564,7 @@ class TestSystem(unittest.TestCase):
     self.assertEqual(os.path.join(home_dir, 'foo'), stem.util.system.expand_path('~%s/foo' % username))
 
   def test_call_timeout(self):
-    try:
-      stem.util.system.call('sleep 1', timeout = 0.001)
-      self.fail("sleep should've timed out")
-    except stem.util.system.CallTimeoutError as exc:
-      self.assertEqual("Process didn't finish after 0.0 seconds", str(exc))
+    self.assertRaisesRegexp(stem.util.system.CallTimeoutError, "Process didn't finish after 0.0 seconds", stem.util.system.call, 'sleep 1', timeout = 0.001)
 
   def test_call_time_tracked(self):
     """

@@ -37,6 +37,7 @@ Contents
    api/manual
    api/version
 
+   api/descriptor/certificate
    api/descriptor/descriptor
    api/descriptor/server_descriptor
    api/descriptor/extrainfo_descriptor

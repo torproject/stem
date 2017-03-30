@@ -31,10 +31,13 @@ etc). This information is provided from a few sources...
     +- get_annotation_lines - lines that provided the annotations
 """
 
+import base64
+import binascii
 import functools
 import hashlib
 import re
 
+import stem.descriptor.certificate
 import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
 import stem.prereq
@@ -386,7 +389,16 @@ def _parse_exit_policy(descriptor, entries):
     del descriptor._unparsed_exit_policy
 
 
-_parse_identity_ed25519_line = _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')
+def _parse_identity_ed25519_line(descriptor, entries):
+  _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')(descriptor, entries)
+
+  if descriptor.ed25519_certificate:
+    cert_lines = descriptor.ed25519_certificate.split('\n')
+
+    if cert_lines[0] == '-----BEGIN ED25519 CERT-----' and cert_lines[-1] == '-----END ED25519 CERT-----':
+      descriptor.certificate = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
+
+
 _parse_master_key_ed25519_line = _parse_simple_line('master-key-ed25519', 'ed25519_master_key')
 _parse_master_key_ed25519_for_hash_line = _parse_simple_line('master-key-ed25519', 'ed25519_certificate_hash')
 _parse_contact_line = _parse_bytes_line('contact', 'contact')
@@ -662,6 +674,12 @@ class ServerDescriptor(Descriptor):
     if expected_last_keyword and expected_last_keyword != list(entries.keys())[-1]:
       raise ValueError("Descriptor must end with a '%s' entry" % expected_last_keyword)
 
+    if 'identity-ed25519' in entries.keys():
+      if 'router-sig-ed25519' not in entries.keys():
+        raise ValueError('Descriptor must have router-sig-ed25519 entry to accompany identity-ed25519')
+      elif 'router-sig-ed25519' not in list(entries.keys())[-2:]:
+        raise ValueError("Descriptor must have 'router-sig-ed25519' as the next-to-last entry")
+
     if not self.exit_policy:
       raise ValueError("Descriptor must have at least one 'accept' or 'reject' entry")
 
@@ -686,6 +704,7 @@ class RelayDescriptor(ServerDescriptor):
   Server descriptor (`descriptor specification
   <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_)
 
+  :var stem.certificate.Ed25519Certificate certificate: ed25519 certificate
   :var str ed25519_certificate: base64 encoded ed25519 certificate
   :var str ed25519_master_key: base64 encoded master key for our ed25519 certificate
   :var str ed25519_signature: signature of this document using ed25519
@@ -708,9 +727,18 @@ class RelayDescriptor(ServerDescriptor):
      Moved from the deprecated `pycrypto
      <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography
      <https://pypi.python.org/pypi/cryptography>`_ for validating signatures.
+
+  .. versionchanged:: 1.6.0
+     Added the certificate attribute.
+
+  .. deprecated:: 1.6.0
+     Our **ed25519_certificate** is deprecated in favor of our new
+     **certificate** attribute. The base64 encoded certificate is available via
+     the certificate's **encoded** attribute.
   """
 
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
+    'certificate': (None, _parse_identity_ed25519_line),
     'ed25519_certificate': (None, _parse_identity_ed25519_line),
     'ed25519_master_key': (None, _parse_master_key_ed25519_line),
     'ed25519_signature': (None, _parse_router_sig_ed25519_line),
@@ -750,6 +778,15 @@ class RelayDescriptor(ServerDescriptor):
         if signed_digest != self.digest():
           raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, self.digest()))
 
+        if self.onion_key_crosscert:
+          onion_key_crosscert_digest = self._digest_for_signature(self.onion_key, self.onion_key_crosscert)
+
+          if onion_key_crosscert_digest != self.onion_key_crosscert_digest():
+            raise ValueError('Decrypted onion-key-crosscert digest does not match local digest (calculated: %s, local: %s)' % (onion_key_crosscert_digest, self.onion_key_crosscert_digest()))
+
+      if stem.prereq._is_pynacl_available() and self.certificate:
+        self.certificate.validate(self)
+
   @lru_cache()
   def digest(self):
     """
@@ -757,10 +794,25 @@ class RelayDescriptor(ServerDescriptor):
 
     :returns: the digest string encoded in uppercase hex
 
-    :raises: ValueError if the digest canot be calculated
+    :raises: ValueError if the digest cannot be calculated
     """
 
     return self._digest_for_content(b'router ', b'\nrouter-signature\n')
+
+  @lru_cache()
+  def onion_key_crosscert_digest(self):
+    """
+    Provides the digest of the onion-key-crosscert data. This consists of the
+    RSA identity key sha1 and ed25519 identity key.
+
+    :returns: **unicode** digest encoded in uppercase hex
+
+    :raises: ValueError if the digest cannot be calculated
+    """
+
+    signing_key_digest = hashlib.sha1(_bytes_for_block(self.signing_key)).digest()
+    data = signing_key_digest + base64.b64decode(stem.util.str_tools._to_bytes(self.ed25519_master_key) + b'=')
+    return stem.util.str_tools._to_unicode(binascii.hexlify(data).upper())
 
   def _compare(self, other, method):
     if not isinstance(other, RelayDescriptor):

@@ -4,6 +4,7 @@ Unit tests for the NetworkStatusDocumentV3 of stem.descriptor.networkstatus.
 
 import datetime
 import io
+import re
 import unittest
 
 import stem.descriptor
@@ -1239,15 +1240,9 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for attr, expected_exception in test_values:
       content = get_directory_authority(attr, content = True)
-
-      try:
-        DirectoryAuthority(content, True)
-        self.fail("validation should've rejected malformed shared randomness attribute")
-      except ValueError as exc:
-        self.assertEqual(expected_exception, str(exc))
+      self.assertRaisesRegexp(ValueError, re.escape(expected_exception), DirectoryAuthority, content, True)
 
       authority = DirectoryAuthority(content, False)
-
       self.assertEqual([], authority.shared_randomness_commitments)
       self.assertEqual(None, authority.shared_randomness_previous_reveal_count)
       self.assertEqual(None, authority.shared_randomness_previous_value)

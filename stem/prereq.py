@@ -27,6 +27,7 @@ except ImportError:
   from stem.util.lru_cache import lru_cache
 
 CRYPTO_UNAVAILABLE = "Unable to import the cryptography module. Because of this we'll be unable to verify descriptor signature integrity. You can get cryptography from: https://pypi.python.org/pypi/cryptography"
+PYNACL_UNAVAILABLE = "Unable to import the pynacl module. Because of this we'll be unable to verify descriptor ed25519 certificate integrity. You can get pynacl from https://pypi.python.org/pypi/PyNaCl/"
 
 
 def check_requirements():
@@ -145,4 +146,24 @@ def is_mock_available():
 
     return True
   except ImportError:
+    return False
+
+
+@lru_cache()
+def _is_pynacl_available():
+  """
+  Checks if the pynacl functions we use are available. This is used for
+  verifying ed25519 certificates in relay descriptor signatures.
+
+  :returns: **True** if we can use pynacl and **False** otherwise
+  """
+
+  from stem.util import log
+
+  try:
+    from nacl import encoding
+    from nacl import signing
+    return True
+  except ImportError:
+    log.log_once('stem.prereq._is_pynacl_available', log.INFO, PYNACL_UNAVAILABLE)
     return False

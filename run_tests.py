@@ -161,6 +161,7 @@ def main():
     tor_version_check,
     Task('checking python version', test.util.check_python_version),
     Task('checking cryptography version', test.util.check_cryptography_version),
+    Task('checking pynacl version', test.util.check_pynacl_version),
     Task('checking mock version', test.util.check_mock_version),
     Task('checking pyflakes version', test.util.check_pyflakes_version),
     Task('checking pycodestyle version', test.util.check_pycodestyle_version),
