@@ -161,7 +161,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
       raise ValueError("BUG: Ed25519 certificate type is decoded from one byte. It shouldn't be possible to have a value of %i." % cert_type)
 
     # expiration time is in hours since epoch
-    self.expiration = datetime.datetime.fromtimestamp(stem.util.str_tools._to_int(decoded[2:6]) * 3600)
+    self.expiration = datetime.datetime.utcfromtimestamp(stem.util.str_tools._to_int(decoded[2:6]) * 3600)
 
     self.key_type = stem.util.str_tools._to_int(decoded[6])
     self.key = decoded[7:39]

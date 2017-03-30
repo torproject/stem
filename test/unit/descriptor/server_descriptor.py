@@ -268,7 +268,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     self.assertEqual(1, desc.certificate.version)
     self.assertEqual(CertType.SIGNING, desc.certificate.type)
-    self.assertEqual(datetime.datetime(2015, 8, 28, 19, 0, 0), desc.certificate.expiration)
+    self.assertEqual(datetime.datetime(2015, 8, 28, 17, 0, 0), desc.certificate.expiration)
     self.assertEqual(1, desc.certificate.key_type)
     self.assertTrue(desc.certificate.key.startswith('\xa5\xb6\x1a\x80D\x0f'))
     self.assertTrue(desc.certificate.signature.startswith('\xc6\x8e\xd3\xae\x0b'))
