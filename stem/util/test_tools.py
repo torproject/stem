@@ -77,6 +77,7 @@ class TimedTestRunner(unittest.TextTestRunner):
           if stem.prereq._is_python_26():
             try:
               func(*args, **kwargs)
+              self.fail('Expected a %s to be raised but nothing was' % exc_type)
             except exc_type as exc:
               self.assertTrue(re.match(exc_msg, str(exc)))
           else:
