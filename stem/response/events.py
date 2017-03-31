@@ -1112,6 +1112,10 @@ class ConnectionBandwidthEvent(Event):
 
   .. versionadded:: 1.2.0
 
+  .. versionchanged:: 1.6.0
+     Renamed 'type' attribute to 'conn_type' so it wouldn't be override parent
+     class attribute with the same name.
+
   :var str id: connection identifier
   :var stem.ConnectionType conn_type: connection type
   :var long read: bytes received by tor that second
