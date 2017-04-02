@@ -45,6 +45,7 @@ The following are only available within Stem's `git repository
 
  * **Controller**
 
+  * :func:`~stem.process.launch_tor` raised a ValueError if invoked when outside the main thread
   * Renamed :class:`~stem.response.events.ConnectionBandwidthEvent` type attribute to conn_type to avoid conflict with parent class (:trac:`21774`)
   * Added the GUARD_WAIT :data:`~stem.CircStatus` (:spec:`6446210`)
   * Unable to use cookie auth when path includes wide characters (chinese, japanese, etc)

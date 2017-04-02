@@ -23,6 +23,7 @@ import re
 import signal
 import subprocess
 import tempfile
+import threading
 
 import stem.prereq
 import stem.util.str_tools
@@ -47,8 +48,8 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
   default, but if you have a 'Log' entry in your torrc then you'll also need
   'Log NOTICE stdout'.
 
-  Note: The timeout argument does not work on Windows, and relies on the global
-  state of the signal module.
+  Note: The timeout argument does not work on Windows or when outside the
+  main thread, and relies on the global state of the signal module.
 
   .. versionchanged:: 1.6.0
      Allowing the timeout argument to be a float.
@@ -74,6 +75,14 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
   """
 
   if stem.util.system.is_windows():
+    if timeout is not None and timeout != DEFAULT_INIT_TIMEOUT:
+      raise OSError('You cannot launch tor with a timeout on Windows')
+
+    timeout = None
+  elif threading.current_thread().__class__.__name__ != '_MainThread':
+    if timeout is not None and timeout != DEFAULT_INIT_TIMEOUT:
+      raise OSError('Launching tor with a timeout can only be done in the main thread')
+
     timeout = None
 
   # sanity check that we got a tor binary

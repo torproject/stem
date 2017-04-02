@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
 import unittest
 
@@ -273,6 +274,49 @@ class TestProcess(unittest.TestCase):
     output = self.run_tor('-f', '/path/that/really/shouldnt/exist', '--verify-config', '--ignore-missing-torrc')
     self.assertTrue('[notice] Configuration file "/path/that/really/shouldnt/exist" not present, using reasonable defaults.' in output)
     self.assertTrue('Configuration was valid' in output)
+
+  @only_run_once
+  def test_can_run_multithreaded(self):
+    """
+    Our launch_tor() function uses signal to support its timeout argument.
+    This only works in the main thread so ensure we give a useful message when
+    it isn't.
+    """
+
+    # Tries running tor in another thread with the given timeout argument. This
+    # issues an invalid torrc so we terminate right away if we get to the point
+    # of actually invoking tor.
+    #
+    # Returns None if launching tor is successful, and otherwise returns the
+    # exception we raised.
+
+    def launch_async_with_timeout(timeout_arg):
+      raised_exc, tor_cmd = [None], test.runner.get_runner().get_tor_command()
+
+      def short_launch():
+        try:
+          stem.process.launch_tor_with_config({'SocksPort': 'invalid', 'DataDirectory': self.data_directory}, tor_cmd, 100, None, timeout_arg)
+        except Exception as exc:
+          raised_exc[0] = exc
+
+      t = threading.Thread(target = short_launch)
+      t.start()
+      t.join()
+
+      if 'Invalid SocksPort/SocksListenAddress' in str(raised_exc[0]):
+        return None  # got to the point of invoking tor
+      else:
+        return raised_exc[0]
+
+    exc = launch_async_with_timeout(0.5)
+    self.assertEqual(OSError, type(exc))
+    self.assertEqual('Launching tor with a timeout can only be done in the main thread', str(exc))
+
+    # We should launch successfully if no timeout is specified or we specify it
+    # to be 'None'.
+
+    self.assertEqual(None, launch_async_with_timeout(None))
+    self.assertEqual(None, launch_async_with_timeout(stem.process.DEFAULT_INIT_TIMEOUT))
 
   @only_run_once
   @patch('stem.version.get_system_tor_version', Mock(return_value = stem.version.Version('0.0.0.1')))
