@@ -41,19 +41,19 @@ used to validate the key used to sign server descriptors.
   ====================  ===========
   ExtensionType         Description
   ====================  ===========
-  HAS_SIGNING_KEY       includes key used to sign the certificate
+  **HAS_SIGNING_KEY**   includes key used to sign the certificate
   ====================  ===========
 
 .. data:: ExtensionFlag (enum)
 
   Flags that can be assigned to Ed25519 certificate extensions.
 
-  ====================  ===========
-  ExtensionFlag         Description
-  ====================  ===========
-  AFFECTS_VALIDATION    extension affects whether the certificate is valid
-  UNKNOWN               extension includes flags not yet recognized by stem
-  ====================  ===========
+  ======================  ===========
+  ExtensionFlag           Description
+  ======================  ===========
+  **AFFECTS_VALIDATION**  extension affects whether the certificate is valid
+  **UNKNOWN**             extension includes flags not yet recognized by stem
+  ======================  ===========
 """
 
 import base64
