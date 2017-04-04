@@ -34,7 +34,7 @@ used to validate the key used to sign server descriptors.
   **AUTH**        authentication key signed with ed25519 signing key
   ==============  ===========
 
-.. data::ExtensionType (enum)
+.. data:: ExtensionType (enum)
 
   Recognized exception types.
 
@@ -44,7 +44,7 @@ used to validate the key used to sign server descriptors.
   HAS_SIGNING_KEY       includes key used to sign the certificate
   ====================  ===========
 
-.. data::ExtensionFlag (enum)
+.. data:: ExtensionFlag (enum)
 
   Flags that can be assigned to Ed25519 certificate extensions.
 
