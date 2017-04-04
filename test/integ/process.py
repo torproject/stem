@@ -22,11 +22,13 @@ import stem.util.tor_tools
 import stem.version
 import test.runner
 
-from test.runner import (
+from test.util import (
+  skip,
   require_controller,
   require_version,
-  only_run_once,
 )
+
+from test.util import only_run_once
 
 try:
   # added in python 3.3
@@ -340,6 +342,7 @@ class TestProcess(unittest.TestCase):
     )
 
     control_socket = None
+
     try:
       control_socket = stem.socket.ControlPort(port = 2778)
       stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
@@ -374,6 +377,7 @@ class TestProcess(unittest.TestCase):
     )
 
     control_socket = None
+
     try:
       control_socket = stem.socket.ControlPort(port = 2778)
       stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
@@ -437,7 +441,7 @@ class TestProcess(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('sleep'):
-      test.runner.skip(self, "('sleep' command is unavailable)")
+      skip(self, "('sleep' command is unavailable)")
       return
 
     sleep_process = subprocess.Popen(['sleep', '60'])

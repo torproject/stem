@@ -16,8 +16,7 @@ import stem.control
 import stem.socket
 import test.runner
 
-from test.runner import require_controller
-from test.util import tor_version
+from test.util import require_controller, tor_version
 
 
 class TestControlSocket(unittest.TestCase):

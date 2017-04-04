@@ -10,9 +10,9 @@ except ImportError:
   from io import StringIO
 
 import stem.prereq
-import test.runner
 
 from stem.descriptor.export import export_csv, export_csv_file
+from test.util import skip
 
 from test.mocking import (
   get_relay_server_descriptor,
@@ -27,7 +27,7 @@ class TestExport(unittest.TestCase):
     """
 
     if stem.prereq._is_python_26():
-      test.runner.skip(self, '(header added in python 2.7)')
+      skip(self, '(header added in python 2.7)')
       return
 
     desc = get_relay_server_descriptor()
@@ -76,7 +76,7 @@ class TestExport(unittest.TestCase):
     """
 
     if stem.prereq._is_python_26():
-      test.runner.skip(self, '(header added in python 2.7)')
+      skip(self, '(header added in python 2.7)')
       return
 
     desc = get_relay_server_descriptor()

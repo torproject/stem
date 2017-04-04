@@ -13,7 +13,7 @@ except ImportError:
 import stem.connection
 import test.runner
 
-from test.runner import require_controller
+from test.util import require_controller
 
 
 class TestConnect(unittest.TestCase):

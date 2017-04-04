@@ -13,6 +13,7 @@ import stem.util.system
 import test.runner
 
 from stem.manual import Category
+from test.util import skip
 
 EXPECTED_CATEGORIES = set([
   'NAME',
@@ -119,7 +120,7 @@ class TestManual(unittest.TestCase):
 
   def requires_downloaded_manual(self):
     if self.skip_reason:
-      test.runner.skip(self, self.skip_reason)
+      skip(self, self.skip_reason)
       return True
     elif self.download_error:
       self.fail(self.download_error)

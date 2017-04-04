@@ -27,13 +27,14 @@ from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
 
-from test.util import register_new_capability, tor_version
-
-from test.runner import (
+from test.util import (
+  register_new_capability,
+  tor_version,
+  skip,
+  only_run_once,
   require_controller,
   require_version,
   require_online,
-  only_run_once,
 )
 
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
@@ -1125,7 +1126,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if not os.path.exists(runner.get_test_dir('cached-descriptors')):
-      test.runner.skip(self, '(no cached microdescriptors)')
+      skip(self, '(no cached microdescriptors)')
       return
 
     with runner.get_tor_controller() as controller:
@@ -1147,7 +1148,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
-      test.runner.skip(self, '(requires server descriptors)')
+      skip(self, '(requires server descriptors)')
       return
 
     with runner.get_tor_controller() as controller:
@@ -1177,7 +1178,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
-      test.runner.skip(self, '(requires server descriptors)')
+      skip(self, '(requires server descriptors)')
       return
 
     with runner.get_tor_controller() as controller:
@@ -1357,7 +1358,7 @@ class TestController(unittest.TestCase):
 
       if TEST_ROUTER_STATUS_ENTRY is None:
         # this is only likely to occure if we can't get descriptors
-        test.runner.skip(self, '(no named relays)')
+        skip(self, '(no named relays)')
         return
 
     return TEST_ROUTER_STATUS_ENTRY

@@ -9,8 +9,12 @@ import unittest
 import stem
 import stem.util.system
 
-import test.runner
 import test.util
+
+from test.util import (
+  skip,
+  only_run_once,
+)
 
 INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git contents in the following way. The manifest in our setup.py may need to be updated...\n\n"
 
@@ -105,7 +109,7 @@ def _assert_has_all_files(path):
 
 
 class TestInstallation(unittest.TestCase):
-  @test.runner.only_run_once
+  @only_run_once
   def test_install(self):
     """
     Installs with 'python setup.py install' and checks we can use what we
@@ -121,7 +125,7 @@ class TestInstallation(unittest.TestCase):
     self.assertEqual(stem.__version__, stem.util.system.call([sys.executable, '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % INSTALL_PATH])[0])
     _assert_has_all_files(INSTALL_PATH)
 
-  @test.runner.only_run_once
+  @only_run_once
   def test_sdist(self):
     """
     Creates a source distribution tarball with 'python setup.py sdist' and
@@ -130,7 +134,7 @@ class TestInstallation(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('git'):
-      test.runner.skip(self, '(git unavailable)')
+      skip(self, '(git unavailable)')
       return
 
     setup().join()

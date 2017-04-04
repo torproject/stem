@@ -15,14 +15,14 @@ import stem.response
 import stem.descriptor.remote
 import stem.prereq
 
-import test.runner
-
 from stem.control import Controller
 from stem.util import str_type
 from stem.descriptor.remote import DIRECTORY_AUTHORITIES
 
 from test import mocking
 from test.unit import exec_documentation_example
+from test.util import skip
+
 from test.mocking import (
   get_relay_server_descriptor,
   get_router_status_entry_v3,
@@ -247,7 +247,7 @@ class TestTutorialExamples(unittest.TestCase):
       # example imports OrderedDict from collections which doesn't work under
       # python 2.6
 
-      test.runner.skip(self, "(example doesn't support python 2.6)")
+      skip(self, "(example doesn't support python 2.6)")
       return
 
     get_authorities_mock().items.return_value = [('moria1', DIRECTORY_AUTHORITIES['moria1']), ('maatuska', DIRECTORY_AUTHORITIES['maatuska'])]

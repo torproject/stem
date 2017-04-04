@@ -9,6 +9,7 @@ import unittest
 import test.runner
 
 from stem.util import proc
+from test.util import skip
 
 
 class TestProc(unittest.TestCase):
@@ -18,10 +19,10 @@ class TestProc(unittest.TestCase):
     """
 
     if not proc.is_available():
-      test.runner.skip(self, '(proc unavailable)')
+      skip(self, '(proc unavailable)')
       return
     elif not test.runner.get_runner().is_ptraceable():
-      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
+      skip(self, '(DisableDebuggerAttachment is set)')
       return
 
     runner = test.runner.get_runner()
@@ -34,7 +35,7 @@ class TestProc(unittest.TestCase):
     """
 
     if not proc.is_available():
-      test.runner.skip(self, '(proc unavailable)')
+      skip(self, '(proc unavailable)')
       return
 
     tor_pid = test.runner.get_runner().get_pid()
@@ -46,7 +47,7 @@ class TestProc(unittest.TestCase):
     """
 
     if not proc.is_available():
-      test.runner.skip(self, '(proc unavailable)')
+      skip(self, '(proc unavailable)')
       return
 
     tor_pid = test.runner.get_runner().get_pid()
@@ -62,7 +63,7 @@ class TestProc(unittest.TestCase):
     """
 
     if not proc.is_available():
-      test.runner.skip(self, '(proc unavailable)')
+      skip(self, '(proc unavailable)')
       return
 
     tor_cmd = test.runner.get_runner().get_tor_command(True)
@@ -83,16 +84,16 @@ class TestProc(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if not proc.is_available():
-      test.runner.skip(self, '(proc unavailable)')
+      skip(self, '(proc unavailable)')
       return
     elif test.runner.Torrc.PORT not in runner.get_options():
-      test.runner.skip(self, '(no control port)')
+      skip(self, '(no control port)')
       return
     elif not test.runner.get_runner().is_ptraceable():
-      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
+      skip(self, '(DisableDebuggerAttachment is set)')
       return
     elif not os.access('/proc/net/tcp', os.R_OK) or not os.access('/proc/net/udp', os.R_OK):
-      test.runner.skip(self, '(proc lacks read permissions)')
+      skip(self, '(proc lacks read permissions)')
       return
 
     # making a controller connection so that we have something to query for

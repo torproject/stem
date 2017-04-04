@@ -12,8 +12,7 @@ import stem.version
 import test.runner
 
 from test.integ.util.system import filter_system_call
-from test.runner import require_controller
-from test.util import tor_version
+from test.util import require_controller, tor_version
 
 try:
   # added in python 3.3

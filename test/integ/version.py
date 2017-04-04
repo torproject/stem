@@ -9,7 +9,10 @@ import stem.prereq
 import stem.version
 import test.runner
 
-from test.runner import require_controller
+from test.util import (
+  skip,
+  require_controller,
+)
 
 
 class TestVersion(unittest.TestCase):
@@ -19,7 +22,7 @@ class TestVersion(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('tor'):
-      test.runner.skip(self, "(tor isn't in our path)")
+      skip(self, "(tor isn't in our path)")
       return
 
     # Since tor is in our path we should expect to be able to get the version

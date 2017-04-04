@@ -11,8 +11,7 @@ import stem.socket
 import stem.version
 import test.runner
 
-from test.runner import require_controller
-from test.util import tor_version
+from test.util import require_controller, tor_version
 
 # Responses given by tor for various authentication failures. These may change
 # in the future and if they do then this test should be updated.

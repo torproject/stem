@@ -18,6 +18,18 @@ Tasks are...
 
 ::
 
+  Test Skipping
+  |- skip - skips the current test if we can
+  |- only_run_once - skip test if it has been ran before
+  |- require - skips the test unless a requirement is met
+  |
+  |- require_cryptography - skips test unless the cryptography module is present
+  |- require_pynacl - skips test unless the pynacl module is present
+  |
+  |- require_controller - skips test unless tor provides a controller endpoint
+  |- require_version - skips test unless we meet a tor version requirement
+  +- require_online - skips unless targets allow for online tests
+
   Initialization
   |- check_stem_version - checks our version of stem
   |- check_tor_version - checks our version of tor
@@ -28,6 +40,8 @@ Tasks are...
   |- check_pycodestyle_version - checks our version of pycodestyle
   |- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
   +- check_for_unused_tests - checks to see if any tests are missing from our settings
+
+  tor_version - provides the version of tor we're testing against
 """
 
 import re
@@ -79,6 +93,7 @@ Target = stem.util.enum.UppercaseEnum(
 )
 
 TOR_VERSION = None
+RAN_TESTS = []
 
 # We make some paths relative to stem's base directory (the one above us)
 # rather than the process' cwd. This doesn't end with a slash.
@@ -203,6 +218,97 @@ def get_new_capabilities():
   """
 
   return NEW_CAPABILITIES
+
+
+def skip(test_case, message):
+  """
+  Skips the test if we can. The capability for skipping tests was added in
+  python 2.7 so callers should return after this, so they report 'success' if
+  this method is unavailable.
+
+  :param unittest.TestCase test_case: test being ran
+  :param str message: message to skip the test with
+  """
+
+  if not stem.prereq._is_python_26():
+    test_case.skipTest(message)
+
+
+def only_run_once(func):
+  """
+  Skips the test if it has ran before. If it hasn't then flags it as being ran.
+  This is useful to prevent lengthy tests that are independent of integ targets
+  from being run repeatedly with ``RUN_ALL``.
+  """
+
+  def wrapped(self, *args, **kwargs):
+    if self.id() not in RAN_TESTS:
+      RAN_TESTS.append(self.id())
+      return func(self, *args, **kwargs)
+    else:
+      skip(self, '(already ran)')
+
+  return wrapped
+
+
+def require(condition, message):
+  """
+  Skips teh test unless the conditional evaluates to 'true'.
+  """
+
+  def decorator(func):
+    def wrapped(self, *args, **kwargs):
+      if condition():
+        return func(self, *args, **kwargs)
+      else:
+        skip(self, '(%s)' % message)
+
+    return wrapped
+
+  return decorator
+
+
+require_cryptography = require(stem.prereq.is_crypto_available, 'requires cryptography')
+require_pynacl = require(stem.prereq._is_pynacl_available, 'requires pynacl module')
+
+
+def require_controller(func):
+  """
+  Skips the test unless tor provides an endpoint for controllers to attach to.
+  """
+
+  def wrapped(self, *args, **kwargs):
+    if test.runner.get_runner().is_accessible():
+      return func(self, *args, **kwargs)
+    else:
+      skip(self, '(no connection)')
+
+  return wrapped
+
+
+def require_version(req_version):
+  """
+  Skips the test unless we meet the required version.
+
+  :param stem.version.Version req_version: required tor version for the test
+  """
+
+  return require(lambda: tor_version() >= req_version, 'requires %s' % req_version)
+
+
+def require_online(func):
+  """
+  Skips the test if we weren't started with the ONLINE target, which indicates
+  that tests requiring network connectivity should run.
+  """
+
+  def wrapped(self, *args, **kwargs):
+    if Target.ONLINE in test.runner.get_runner().attribute_targets:
+      return func(self, *args, **kwargs)
+    else:
+      skip(self, '(requires online target)')
+
+  return wrapped
 
 
 def check_stem_version():
@@ -432,3 +538,6 @@ class Task(object):
 
       println(output_msg, ERROR)
       self.error = exc
+
+
+import test.runner  # needs to be imported at the end to avoid a circular dependency

@@ -11,14 +11,9 @@ about the tor test instance they're running against.
   RunnerStopped - Runner doesn't have an active tor instance
   TorInaccessable - Tor can't be queried for the information
 
-  skip - skips the current test if we can
-  require_controller - skips the test unless tor provides a controller endpoint
-  require_version - skips the test unless we meet a tor version requirement
-  require_online - skips unless targets allow for online tests
-  only_run_once - skip the test if it has been ran before
   exercise_controller - basic sanity check that a controller connection can be used
-
   get_runner - Singleton for fetching our runtime context.
+
   Runner - Runtime context for our integration tests.
     |- start - prepares and starts a tor instance for our tests to run against
     |- stop - stops our tor instance and cleans up any temporary files
@@ -90,8 +85,6 @@ Torrc = stem.util.enum.Enum(
   ('PTRACE', 'DisableDebuggerAttachment 0'),
 )
 
-RAN_TESTS = []
-
 
 class RunnerStopped(Exception):
   "Raised when we try to use a Runner that doesn't have an active tor instance"
@@ -99,85 +92,6 @@ class RunnerStopped(Exception):
 
 class TorInaccessable(Exception):
   'Raised when information is needed from tor but the instance we have is inaccessible'
-
-
-def skip(test_case, message):
-  """
-  Skips the test if we can. The capability for skipping tests was added in
-  python 2.7 so callers should return after this, so they report 'success' if
-  this method is unavailable.
-
-  :param unittest.TestCase test_case: test being ran
-  :param str message: message to skip the test with
-  """
-
-  if not stem.prereq._is_python_26():
-    test_case.skipTest(message)
-
-
-def require_controller(func):
-  """
-  Skips the test unless tor provides an endpoint for controllers to attach to.
-  """
-
-  def wrapped(self, *args, **kwargs):
-    if get_runner().is_accessible():
-      return func(self, *args, **kwargs)
-    else:
-      skip(self, '(no connection)')
-
-  return wrapped
-
-
-def require_version(req_version):
-  """
-  Skips the test unless we meet the required version.
-
-  :param stem.version.Version req_version: required tor version for the test
-  """
-
-  def decorator(func):
-    def wrapped(self, *args, **kwargs):
-      if tor_version() >= req_version:
-        return func(self, *args, **kwargs)
-      else:
-        skip(self, '(requires %s)' % req_version)
-
-    return wrapped
-
-  return decorator
-
-
-def require_online(func):
-  """
-  Skips the test if we weren't started with the ONLINE target, which indicates
-  that tests requiring network connectivity should run.
-  """
-
-  def wrapped(self, *args, **kwargs):
-    if Target.ONLINE in get_runner().attribute_targets:
-      return func(self, *args, **kwargs)
-    else:
-      skip(self, '(requires online target)')
-
-  return wrapped
-
-
-def only_run_once(func):
-  """
-  Skips the test if it has ran before. If it hasn't then flags it as being ran.
-  This is useful to prevent lengthy tests that are independent of integ targets
-  from being run repeatedly with ``RUN_ALL``.
-  """
-
-  def wrapped(self, *args, **kwargs):
-    if self.id() not in RAN_TESTS:
-      RAN_TESTS.append(self.id())
-      return func(self, *args, **kwargs)
-    else:
-      skip(self, '(already ran)')
-
-  return wrapped
 
 
 def exercise_controller(test_case, controller):

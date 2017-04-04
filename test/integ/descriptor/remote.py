@@ -11,11 +11,10 @@ import stem.descriptor.remote
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 
-import test.runner
-
-from test.runner import (
-  require_online,
+from test.util import (
+  skip,
   only_run_once,
+  require_online,
 )
 
 
@@ -248,7 +247,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     # Don't run this test by default. Once upon a time it was fine, but tor has
     # added so many fallbacks now that this takes a looong time. :(
 
-    test.runner.skip(self, '(skipped by default)')
+    skip(self, '(skipped by default)')
     return
 
     unsuccessful = {}

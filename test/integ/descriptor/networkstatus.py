@@ -11,8 +11,11 @@ import stem.descriptor.networkstatus
 import stem.version
 import test.runner
 
-from test.runner import only_run_once
-from test.util import register_new_capability
+from test.util import (
+  register_new_capability,
+  skip,
+  only_run_once,
+)
 
 
 class TestNetworkStatus(unittest.TestCase):
@@ -25,13 +28,13 @@ class TestNetworkStatus(unittest.TestCase):
     consensus_path = test.runner.get_runner().get_test_dir('cached-consensus')
 
     if not os.path.exists(consensus_path):
-      test.runner.skip(self, '(no cached-consensus)')
+      skip(self, '(no cached-consensus)')
       return
     elif stem.util.system.is_windows():
       # Unable to check memory usage on windows, so can't prevent hanging the
       # system if things go bad.
 
-      test.runner.skip(self, '(unavailable on windows)')
+      skip(self, '(unavailable on windows)')
       return
 
     count, reported_flags = 0, []
@@ -62,10 +65,10 @@ class TestNetworkStatus(unittest.TestCase):
     consensus_path = test.runner.get_runner().get_test_dir('cached-microdesc-consensus')
 
     if not os.path.exists(consensus_path):
-      test.runner.skip(self, '(no cached-microdesc-consensus)')
+      skip(self, '(no cached-microdesc-consensus)')
       return
     elif stem.util.system.is_windows():
-      test.runner.skip(self, '(unavailable on windows)')
+      skip(self, '(unavailable on windows)')
       return
 
     count, reported_flags = 0, []
