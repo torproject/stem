@@ -14,10 +14,7 @@ import stem.util.system
 import test.mocking
 import test.runner
 
-from test.util import (
-  skip,
-  require_controller,
-)
+from test.util import require_controller
 
 
 class StateObserver(object):
@@ -50,7 +47,7 @@ class TestBaseController(unittest.TestCase):
     """
 
     if stem.util.system.is_mac():
-      skip(self, '(ticket #6235)')
+      self.skipTest('(ticket #6235)')
       return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
@@ -100,7 +97,7 @@ class TestBaseController(unittest.TestCase):
     """
 
     if stem.util.system.is_mac():
-      skip(self, '(ticket #6235)')
+      self.skipTest('(ticket #6235)')
       return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:

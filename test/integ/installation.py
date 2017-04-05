@@ -11,10 +11,7 @@ import stem.util.system
 
 import test.util
 
-from test.util import (
-  skip,
-  only_run_once,
-)
+from test.util import only_run_once
 
 INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git contents in the following way. The manifest in our setup.py may need to be updated...\n\n"
 
@@ -134,7 +131,7 @@ class TestInstallation(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('git'):
-      skip(self, '(git unavailable)')
+      self.skipTest('(git unavailable)')
       return
 
     setup().join()

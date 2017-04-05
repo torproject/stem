@@ -23,7 +23,6 @@ import stem.version
 import test.runner
 
 from test.util import (
-  skip,
   require_controller,
   require_version,
 )
@@ -441,7 +440,7 @@ class TestProcess(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('sleep'):
-      skip(self, "('sleep' command is unavailable)")
+      self.skipTest("('sleep' command is unavailable)")
       return
 
     sleep_process = subprocess.Popen(['sleep', '60'])

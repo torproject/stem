@@ -12,8 +12,6 @@ import stem.prereq
 import stem.manual
 import stem.util.system
 
-from test.util import skip
-
 try:
   # account for urllib's change between python 2.x and 3.x
   import urllib.request as urllib
@@ -160,10 +158,10 @@ class TestManual(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('man'):
-      skip(self, '(require man command)')
+      self.skipTest('(require man command)')
       return
     elif stem.util.system.is_mac():
-      skip(self, '(man lacks --encoding arg on OSX, #18660)')
+      self.skipTest('(man lacks --encoding arg on OSX, #18660)')
       return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
@@ -183,10 +181,10 @@ class TestManual(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('man'):
-      skip(self, '(require man command)')
+      self.skipTest('(require man command)')
       return
     elif stem.util.system.is_mac():
-      skip(self, '(man lacks --encoding arg on OSX, #18660)')
+      self.skipTest('(man lacks --encoding arg on OSX, #18660)')
       return
 
     manual = stem.manual.Manual.from_man(UNKNOWN_OPTIONS_MAN_PATH)
@@ -213,7 +211,7 @@ class TestManual(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('man'):
-      skip(self, '(require man command)')
+      self.skipTest('(require man command)')
       return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)

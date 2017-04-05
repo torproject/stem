@@ -18,8 +18,7 @@ Tasks are...
 
 ::
 
-  Test Skipping
-  |- skip - skips the current test if we can
+  Test Requirements
   |- only_run_once - skip test if it has been ran before
   |- require - skips the test unless a requirement is met
   |
@@ -220,20 +219,6 @@ def get_new_capabilities():
   return NEW_CAPABILITIES
 
 
-def skip(test_case, message):
-  """
-  Skips the test if we can. The capability for skipping tests was added in
-  python 2.7 so callers should return after this, so they report 'success' if
-  this method is unavailable.
-
-  :param unittest.TestCase test_case: test being ran
-  :param str message: message to skip the test with
-  """
-
-  if not stem.prereq._is_python_26():
-    test_case.skipTest(message)
-
-
 def only_run_once(func):
   """
   Skips the test if it has ran before. If it hasn't then flags it as being ran.
@@ -246,7 +231,7 @@ def only_run_once(func):
       RAN_TESTS.append(self.id())
       return func(self, *args, **kwargs)
     else:
-      skip(self, '(already ran)')
+      self.skipTest('(already ran)')
 
   return wrapped
 
@@ -261,7 +246,7 @@ def require(condition, message):
       if condition():
         return func(self, *args, **kwargs)
       else:
-        skip(self, '(%s)' % message)
+        self.skipTest('(%s)' % message)
 
     return wrapped
 
@@ -281,7 +266,7 @@ def require_controller(func):
     if test.runner.get_runner().is_accessible():
       return func(self, *args, **kwargs)
     else:
-      skip(self, '(no connection)')
+      self.skipTest('(no connection)')
 
   return wrapped
 
@@ -306,7 +291,7 @@ def require_online(func):
     if Target.ONLINE in test.runner.get_runner().attribute_targets:
       return func(self, *args, **kwargs)
     else:
-      skip(self, '(requires online target)')
+      self.skipTest('(requires online target)')
 
   return wrapped
 

@@ -10,7 +10,6 @@ import test.runner
 
 from test.util import (
   register_new_capability,
-  skip,
   only_run_once,
 )
 
@@ -27,7 +26,7 @@ class TestMicrodescriptor(unittest.TestCase):
     descriptor_path = test.runner.get_runner().get_test_dir('cached-microdescs')
 
     if not os.path.exists(descriptor_path):
-      skip(self, '(no cached microdescriptors)')
+      self.skipTest('(no cached microdescriptors)')
       return
 
     with open(descriptor_path, 'rb') as descriptor_file:

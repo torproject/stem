@@ -11,7 +11,6 @@ import test.runner
 
 from test.util import (
   register_new_capability,
-  skip,
   only_run_once,
 )
 
@@ -28,7 +27,7 @@ class TestServerDescriptor(unittest.TestCase):
     descriptor_path = test.runner.get_runner().get_test_dir('cached-descriptors')
 
     if not os.path.exists(descriptor_path):
-      skip(self, '(no cached descriptors)')
+      self.skipTest('(no cached descriptors)')
       return
 
     with open(descriptor_path, 'rb') as descriptor_file:

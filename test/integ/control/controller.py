@@ -30,7 +30,6 @@ from stem.version import Requirement
 from test.util import (
   register_new_capability,
   tor_version,
-  skip,
   only_run_once,
   require_controller,
   require_version,
@@ -1126,7 +1125,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if not os.path.exists(runner.get_test_dir('cached-descriptors')):
-      skip(self, '(no cached microdescriptors)')
+      self.skipTest('(no cached microdescriptors)')
       return
 
     with runner.get_tor_controller() as controller:
@@ -1148,7 +1147,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
-      skip(self, '(requires server descriptors)')
+      self.skipTest('(requires server descriptors)')
       return
 
     with runner.get_tor_controller() as controller:
@@ -1178,7 +1177,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
-      skip(self, '(requires server descriptors)')
+      self.skipTest('(requires server descriptors)')
       return
 
     with runner.get_tor_controller() as controller:
@@ -1358,7 +1357,7 @@ class TestController(unittest.TestCase):
 
       if TEST_ROUTER_STATUS_ENTRY is None:
         # this is only likely to occure if we can't get descriptors
-        skip(self, '(no named relays)')
+        self.skipTest('(no named relays)')
         return
 
     return TEST_ROUTER_STATUS_ENTRY

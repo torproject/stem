@@ -12,8 +12,6 @@ import stem.util.proc
 import stem.util.system
 import test.runner
 
-from test.util import skip
-
 try:
   # added in python 3.3
   from unittest.mock import Mock, patch
@@ -69,7 +67,7 @@ class TestSystem(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('ps'):
-      skip(self, '(ps unavailable)')
+      self.skipTest('(ps unavailable)')
       return
 
     # Check to see if the command we started tor with is running. The process
@@ -87,7 +85,7 @@ class TestSystem(unittest.TestCase):
     """
 
     if self._is_extra_tor_running():
-      skip(self, '(multiple tor instances)')
+      self.skipTest('(multiple tor instances)')
       return
 
     tor_pid = test.runner.get_runner().get_pid()
@@ -101,10 +99,10 @@ class TestSystem(unittest.TestCase):
     """
 
     if self._is_extra_tor_running():
-      skip(self, '(multiple tor instances)')
+      self.skipTest('(multiple tor instances)')
       return
     elif not stem.util.system.is_available('pgrep'):
-      skip(self, '(pgrep unavailable)')
+      self.skipTest('(pgrep unavailable)')
       return
 
     pgrep_prefix = stem.util.system.GET_PID_BY_NAME_PGREP % ''
@@ -124,10 +122,10 @@ class TestSystem(unittest.TestCase):
     """
 
     if self._is_extra_tor_running():
-      skip(self, '(multiple tor instances)')
+      self.skipTest('(multiple tor instances)')
       return
     elif not stem.util.system.is_available('pidof'):
-      skip(self, '(pidof unavailable)')
+      self.skipTest('(pidof unavailable)')
       return
 
     pidof_prefix = stem.util.system.GET_PID_BY_NAME_PIDOF % ''
@@ -147,13 +145,13 @@ class TestSystem(unittest.TestCase):
     """
 
     if self._is_extra_tor_running():
-      skip(self, '(multiple tor instances)')
+      self.skipTest('(multiple tor instances)')
       return
     elif not stem.util.system.is_available('ps'):
-      skip(self, '(ps unavailable)')
+      self.skipTest('(ps unavailable)')
       return
     elif stem.util.system.is_bsd():
-      skip(self, '(linux only)')
+      self.skipTest('(linux only)')
       return
 
     ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_LINUX % ''
@@ -173,13 +171,13 @@ class TestSystem(unittest.TestCase):
     """
 
     if self._is_extra_tor_running():
-      skip(self, '(multiple tor instances)')
+      self.skipTest('(multiple tor instances)')
       return
     elif not stem.util.system.is_available('ps'):
-      skip(self, '(ps unavailable)')
+      self.skipTest('(ps unavailable)')
       return
     elif not stem.util.system.is_bsd():
-      skip(self, '(bsd only)')
+      self.skipTest('(bsd only)')
       return
 
     ps_prefix = stem.util.system.GET_PID_BY_NAME_PS_BSD
@@ -200,13 +198,13 @@ class TestSystem(unittest.TestCase):
 
     runner = test.runner.get_runner()
     if self._is_extra_tor_running():
-      skip(self, '(multiple tor instances)')
+      self.skipTest('(multiple tor instances)')
       return
     elif not stem.util.system.is_available('lsof'):
-      skip(self, '(lsof unavailable)')
+      self.skipTest('(lsof unavailable)')
       return
     elif not runner.is_ptraceable():
-      skip(self, '(DisableDebuggerAttachment is set)')
+      self.skipTest('(DisableDebuggerAttachment is set)')
       return
 
     lsof_prefix = stem.util.system.GET_PID_BY_NAME_LSOF % ''
@@ -229,10 +227,10 @@ class TestSystem(unittest.TestCase):
     """
 
     if self._is_extra_tor_running():
-      skip(self, '(multiple tor instances)')
+      self.skipTest('(multiple tor instances)')
       return
     elif not stem.util.system.is_available('tasklist'):
-      skip(self, '(tasklist unavailable)')
+      self.skipTest('(tasklist unavailable)')
       return
 
     runner = test.runner.get_runner()
@@ -245,21 +243,21 @@ class TestSystem(unittest.TestCase):
 
     runner = test.runner.get_runner()
     if stem.util.system.is_windows():
-      skip(self, '(unavailable on windows)')
+      self.skipTest('(unavailable on windows)')
       return
     elif not _has_port():
-      skip(self, '(test instance has no port)')
+      self.skipTest('(test instance has no port)')
       return
     elif stem.util.system.is_mac() or stem.util.system.is_gentoo():
-      skip(self, '(resolvers unavailable)')
+      self.skipTest('(resolvers unavailable)')
       return
     elif not runner.is_ptraceable():
-      skip(self, '(DisableDebuggerAttachment is set)')
+      self.skipTest('(DisableDebuggerAttachment is set)')
       return
     elif not (stem.util.system.is_available('netstat') or
               stem.util.system.is_available('sockstat') or
               stem.util.system.is_available('lsof')):
-      skip(self, '(connection resolvers unavailable)')
+      self.skipTest('(connection resolvers unavailable)')
       return
 
     tor_pid, tor_port = runner.get_pid(), test.runner.CONTROL_PORT
@@ -272,20 +270,21 @@ class TestSystem(unittest.TestCase):
     """
 
     runner = test.runner.get_runner()
+
     if not _has_port():
-      skip(self, '(test instance has no port)')
+      self.skipTest('(test instance has no port)')
       return
     elif not stem.util.system.is_available('netstat'):
-      skip(self, '(netstat unavailable)')
+      self.skipTest('(netstat unavailable)')
       return
     elif stem.util.system.is_bsd() or stem.util.system.is_windows():
-      skip(self, '(linux only)')
+      self.skipTest('(linux only)')
       return
     elif stem.util.system.is_gentoo():
-      skip(self, '(unavailable on gentoo)')
+      self.skipTest('(unavailable on gentoo)')
       return
     elif not runner.is_ptraceable():
-      skip(self, '(DisableDebuggerAttachment is set)')
+      self.skipTest('(DisableDebuggerAttachment is set)')
       return
 
     netstat_prefix = stem.util.system.GET_PID_BY_PORT_NETSTAT
@@ -304,17 +303,18 @@ class TestSystem(unittest.TestCase):
     """
 
     runner = test.runner.get_runner()
+
     if not _has_port():
-      skip(self, '(test instance has no port)')
+      self.skipTest('(test instance has no port)')
       return
     elif not stem.util.system.is_available('sockstat'):
-      skip(self, '(sockstat unavailable)')
+      self.skipTest('(sockstat unavailable)')
       return
     elif not stem.util.system.is_bsd():
-      skip(self, '(bsd only)')
+      self.skipTest('(bsd only)')
       return
     elif not runner.is_ptraceable():
-      skip(self, '(DisableDebuggerAttachment is set)')
+      self.skipTest('(DisableDebuggerAttachment is set)')
       return
 
     sockstat_prefix = stem.util.system.GET_PID_BY_PORT_SOCKSTAT % ''
@@ -333,17 +333,18 @@ class TestSystem(unittest.TestCase):
     """
 
     runner = test.runner.get_runner()
+
     if not _has_port():
-      skip(self, '(test instance has no port)')
+      self.skipTest('(test instance has no port)')
       return
     elif not stem.util.system.is_available('lsof'):
-      skip(self, '(lsof unavailable)')
+      self.skipTest('(lsof unavailable)')
       return
     elif stem.util.system.is_mac() or stem.util.system.is_gentoo():
-      skip(self, '(resolvers unavailable)')
+      self.skipTest('(resolvers unavailable)')
       return
     elif not runner.is_ptraceable():
-      skip(self, '(DisableDebuggerAttachment is set)')
+      self.skipTest('(DisableDebuggerAttachment is set)')
       return
 
     lsof_prefix = stem.util.system.GET_PID_BY_PORT_LSOF
@@ -387,10 +388,10 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if stem.util.system.is_windows():
-      skip(self, '(unavailable on windows)')
+      self.skipTest('(unavailable on windows)')
       return
     elif not runner.is_ptraceable():
-      skip(self, '(DisableDebuggerAttachment is set)')
+      self.skipTest('(DisableDebuggerAttachment is set)')
       return
 
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
@@ -405,10 +406,10 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if not stem.util.system.is_available('pwdx'):
-      skip(self, '(pwdx unavailable)')
+      self.skipTest('(pwdx unavailable)')
       return
     elif not runner.is_ptraceable():
-      skip(self, '(DisableDebuggerAttachment is set)')
+      self.skipTest('(DisableDebuggerAttachment is set)')
       return
 
     # filter the call function to only allow this command
@@ -431,10 +432,10 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if not stem.util.system.is_available('lsof'):
-      skip(self, '(lsof unavailable)')
+      self.skipTest('(lsof unavailable)')
       return
     elif not runner.is_ptraceable():
-      skip(self, '(DisableDebuggerAttachment is set)')
+      self.skipTest('(DisableDebuggerAttachment is set)')
       return
 
     # filter the call function to only allow this command
@@ -464,7 +465,7 @@ class TestSystem(unittest.TestCase):
     """
 
     if not stem.util.proc.is_available():
-      skip(self, '(proc unavailable)')
+      self.skipTest('(proc unavailable)')
       return
 
     call_replacement = filter_system_call(['ps '])
@@ -484,7 +485,7 @@ class TestSystem(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('ps'):
-      skip(self, '(ps unavailable)')
+      self.skipTest('(ps unavailable)')
       return
 
     pid = test.runner.get_runner().get_pid()
@@ -505,7 +506,7 @@ class TestSystem(unittest.TestCase):
     """
 
     if not stem.util.proc.is_available():
-      skip(self, '(proc unavailable)')
+      self.skipTest('(proc unavailable)')
       return
 
     call_replacement = filter_system_call(['ps '])
@@ -523,7 +524,7 @@ class TestSystem(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('ps'):
-      skip(self, '(ps unavailable)')
+      self.skipTest('(ps unavailable)')
       return
 
     pid = test.runner.get_runner().get_pid()
@@ -553,7 +554,7 @@ class TestSystem(unittest.TestCase):
     #   '/root'
 
     if getpass.getuser() == 'root':
-      skip(self, '(running as root)')
+      self.skipTest('(running as root)')
       return
 
     self.assertEqual(os.getcwd(), stem.util.system.expand_path('.'))

@@ -8,7 +8,6 @@ import unittest
 import test.runner
 
 from stem.util.connection import Resolver, get_connections, system_resolvers
-from test.util import skip
 
 
 class TestConnection(unittest.TestCase):
@@ -16,13 +15,13 @@ class TestConnection(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if test.runner.Torrc.PORT not in runner.get_options():
-      skip(self, '(no control port)')
+      self.skipTest('(no control port)')
       return
     elif not runner.is_ptraceable():
-      skip(self, '(DisableDebuggerAttachment set)')
+      self.skipTest('(DisableDebuggerAttachment set)')
       return
     elif resolver not in system_resolvers():
-      skip(self, '(resolver unavailable on this platform)')
+      self.skipTest('(resolver unavailable on this platform)')
       return
 
     with runner.get_tor_socket():

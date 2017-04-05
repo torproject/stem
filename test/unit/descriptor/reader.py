@@ -17,7 +17,6 @@ import stem.descriptor.reader
 import test.unit.descriptor
 
 from stem.util import str_type, system
-from test.util import skip
 
 try:
   # added in python 3.3
@@ -191,7 +190,7 @@ class TestDescriptorReader(unittest.TestCase):
     # test relies on being unable to read a file
 
     if getpass.getuser() == 'root':
-      skip(self, '(running as root)')
+      self.skipTest('(running as root)')
       return
 
     # Skip the test on windows, since you can only set the file's
@@ -199,7 +198,7 @@ class TestDescriptorReader(unittest.TestCase):
     # http://docs.python.org/library/os.html#os.chmod
 
     if system.is_windows():
-      skip(self, '(chmod not functional)')
+      self.skipTest('(chmod not functional)')
 
     test_listing_path = self._make_processed_files_listing(BASIC_LISTING)
     os.chmod(test_listing_path, 0o077)  # remove read permissions
@@ -413,7 +412,7 @@ class TestDescriptorReader(unittest.TestCase):
     # Skip on windows since SIGALRM is unavailable
 
     if system.is_windows():
-      skip(self, '(SIGALRM unavailable)')
+      self.skipTest('(SIGALRM unavailable)')
 
     is_test_running = True
     reader = stem.descriptor.reader.DescriptorReader('/usr')
@@ -550,10 +549,10 @@ class TestDescriptorReader(unittest.TestCase):
     # test relies on being unable to read a file
 
     if getpass.getuser() == 'root':
-      skip(self, '(running as root)')
+      self.skipTest('(running as root)')
       return
     elif system.is_windows():
-      skip(self, '(chmod not functional)')
+      self.skipTest('(chmod not functional)')
       return
 
     test_path = os.path.join(self.temp_directory, 'secret_file')
