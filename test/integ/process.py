@@ -23,6 +23,7 @@ import stem.version
 import test.runner
 
 from test.util import (
+  require_command,
   require_controller,
   require_version,
 )
@@ -198,6 +199,7 @@ class TestProcess(unittest.TestCase):
     self.assertTrue('UseBridges' in output)
     self.assertTrue('SocksPort' in output)
 
+  @require_command('sleep')
   @patch('re.compile', Mock(side_effect = KeyboardInterrupt('nope')))
   def test_no_orphaned_process(self):
     """
@@ -430,6 +432,7 @@ class TestProcess(unittest.TestCase):
     if not (runtime > 0.05 and runtime < 1):
       self.fail('Test should have taken 0.05-1 seconds, took %0.1f instead' % runtime)
 
+  @require_command('sleep')
   @require_version(stem.version.Requirement.TAKEOWNERSHIP)
   @only_run_once
   @patch('os.getpid')
@@ -438,10 +441,6 @@ class TestProcess(unittest.TestCase):
     Checks that the tor process quits after we do if we set take_ownership. To
     test this we spawn a process and trick tor into thinking that it is us.
     """
-
-    if not stem.util.system.is_available('sleep'):
-      self.skipTest("('sleep' command is unavailable)")
-      return
 
     sleep_process = subprocess.Popen(['sleep', '60'])
     getpid_mock.return_value = str(sleep_process.pid)

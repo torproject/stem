@@ -24,9 +24,12 @@ Tasks are...
   |
   |- require_cryptography - skips test unless the cryptography module is present
   |- require_pynacl - skips test unless the pynacl module is present
+  |- require_command - requires a command to be on the path
+  |- require_proc - requires the platform to have recognized /proc contents
   |
   |- require_controller - skips test unless tor provides a controller endpoint
   |- require_version - skips test unless we meet a tor version requirement
+  |- require_ptrace - requires 'DisableDebuggerAttachment' to be set
   +- require_online - skips unless targets allow for online tests
 
   Initialization
@@ -255,6 +258,7 @@ def require(condition, message):
 
 require_cryptography = require(stem.prereq.is_crypto_available, 'requires cryptography')
 require_pynacl = require(stem.prereq._is_pynacl_available, 'requires pynacl module')
+require_proc = require(stem.util.proc.is_available, 'proc unavailable')
 
 
 def require_controller(func):
@@ -269,6 +273,14 @@ def require_controller(func):
       self.skipTest('(no connection)')
 
   return wrapped
+
+
+def require_command(cmd):
+  """
+  Skips the test unless a command is available on the path.
+  """
+
+  return require(lambda: stem.util.system.is_available(cmd), '%s unavailable' % cmd)
 
 
 def require_version(req_version):
@@ -526,3 +538,5 @@ class Task(object):
 
 
 import test.runner  # needs to be imported at the end to avoid a circular dependency
+
+require_ptrace = require(test.runner.get_runner().is_ptraceable, 'DisableDebuggerAttachment is set')

@@ -12,6 +12,8 @@ import stem.prereq
 import stem.manual
 import stem.util.system
 
+from test.util import require_command
+
 try:
   # account for urllib's change between python 2.x and 3.x
   import urllib.request as urllib
@@ -150,6 +152,7 @@ class TestManual(unittest.TestCase):
     self.assertEqual('', blank.summary)
     self.assertEqual('', blank.description)
 
+  @require_command('man')
   def test_parsing_with_example(self):
     """
     Read a trimmed copy of tor's man page. This gives a good exercise of our
@@ -157,10 +160,7 @@ class TestManual(unittest.TestCase):
     expand our example (or add another).
     """
 
-    if not stem.util.system.is_available('man'):
-      self.skipTest('(require man command)')
-      return
-    elif stem.util.system.is_mac():
+    if stem.util.system.is_mac():
       self.skipTest('(man lacks --encoding arg on OSX, #18660)')
       return
 
@@ -174,16 +174,14 @@ class TestManual(unittest.TestCase):
     self.assertEqual(EXPECTED_FILES, manual.files)
     self.assertEqual(EXPECTED_CONFIG_OPTIONS, manual.config_options)
 
+  @require_command('man')
   def test_parsing_with_unknown_options(self):
     """
     Check that we can read a local mock man page that contains unrecognized
     options. Unlike most other tests this doesn't require network access.
     """
 
-    if not stem.util.system.is_available('man'):
-      self.skipTest('(require man command)')
-      return
-    elif stem.util.system.is_mac():
+    if stem.util.system.is_mac():
       self.skipTest('(man lacks --encoding arg on OSX, #18660)')
       return
 
@@ -205,14 +203,11 @@ class TestManual(unittest.TestCase):
     self.assertEqual('', option.summary)
     self.assertEqual('Description of this new option.', option.description)
 
+  @require_command('man')
   def test_saving_manual(self):
     """
     Check that we can save and reload manuals.
     """
-
-    if not stem.util.system.is_available('man'):
-      self.skipTest('(require man command)')
-      return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
