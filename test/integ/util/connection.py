@@ -15,13 +15,13 @@ class TestConnection(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if test.runner.Torrc.PORT not in runner.get_options():
-      test.runner.skip(self, '(no control port)')
+      self.skipTest('(no control port)')
       return
     elif not runner.is_ptraceable():
-      test.runner.skip(self, '(DisableDebuggerAttachment set)')
+      self.skipTest('(DisableDebuggerAttachment set)')
       return
     elif resolver not in system_resolvers():
-      test.runner.skip(self, '(resolver unavailable on this platform)')
+      self.skipTest('(resolver unavailable on this platform)')
       return
 
     with runner.get_tor_socket():

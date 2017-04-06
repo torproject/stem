@@ -71,12 +71,20 @@ class TimedTestRunner(unittest.TextTestRunner):
           TEST_RUNTIMES[self.id()] = time.time() - start_time
           return result
 
+        # TODO: remove and drop unnecessary 'returns' when dropping python 2.6
+        # support
+
+        def skipTest(self, message):
+          if not stem.prereq._is_python_26():
+            return super(original_type, self).skipTest(message)
+
         # TODO: remove when dropping python 2.6 support
 
         def assertRaisesRegexp(self, exc_type, exc_msg, func, *args, **kwargs):
           if stem.prereq._is_python_26():
             try:
               func(*args, **kwargs)
+              self.fail('Expected a %s to be raised but nothing was' % exc_type)
             except exc_type as exc:
               self.assertTrue(re.match(exc_msg, str(exc)))
           else:

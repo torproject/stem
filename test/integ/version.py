@@ -9,18 +9,18 @@ import stem.prereq
 import stem.version
 import test.runner
 
-from test.runner import require_controller
+from test.util import (
+  require_command,
+  require_controller,
+)
 
 
 class TestVersion(unittest.TestCase):
+  @require_command('tor')
   def test_get_system_tor_version(self):
     """
     Basic verification checks for the get_system_tor_version() function.
     """
-
-    if not stem.util.system.is_available('tor'):
-      test.runner.skip(self, "(tor isn't in our path)")
-      return
 
     # Since tor is in our path we should expect to be able to get the version
     # that way, though this might not belong to our test instance (if we're
@@ -33,17 +33,6 @@ class TestVersion(unittest.TestCase):
 
     # try running against a command that doesn't exist
     self.assertRaises(IOError, stem.version.get_system_tor_version, 'blarg')
-
-  @require_controller
-  def test_get_system_tor_version_value(self):
-    """
-    Checks that the get_system_tor_version() provides the same value as our
-    test instance provides.
-    """
-
-    runner = test.runner.get_runner()
-    system_tor_version = stem.version.get_system_tor_version(runner.get_tor_command())
-    self.assertEqual(runner.get_tor_version(), system_tor_version)
 
   @require_controller
   def test_getinfo_version_parsing(self):

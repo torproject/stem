@@ -3,7 +3,6 @@ import os
 import re
 import unittest
 
-import test.runner
 import test.util
 
 
@@ -25,7 +24,7 @@ class TestInstallation(unittest.TestCase):
 
   def test_installs_all_modules(self):
     if self.skip_reason:
-      test.runner.skip(self, self.skip_reason)
+      self.skipTest(self.skip_reason)
       return True
 
     # Modules cited my our setup.py looks like...
@@ -49,7 +48,7 @@ class TestInstallation(unittest.TestCase):
 
   def test_installs_all_data_files(self):
     if self.skip_reason:
-      test.runner.skip(self, self.skip_reason)
+      self.skipTest(self.skip_reason)
       return True
 
     # Checking that we have all non-source files. Data looks like...

@@ -18,6 +18,20 @@ Tasks are...
 
 ::
 
+  Test Requirements
+  |- only_run_once - skip test if it has been ran before
+  |- require - skips the test unless a requirement is met
+  |
+  |- require_cryptography - skips test unless the cryptography module is present
+  |- require_pynacl - skips test unless the pynacl module is present
+  |- require_command - requires a command to be on the path
+  |- require_proc - requires the platform to have recognized /proc contents
+  |
+  |- require_controller - skips test unless tor provides a controller endpoint
+  |- require_version - skips test unless we meet a tor version requirement
+  |- require_ptrace - requires 'DisableDebuggerAttachment' to be set
+  +- require_online - skips unless targets allow for online tests
+
   Initialization
   |- check_stem_version - checks our version of stem
   |- check_tor_version - checks our version of tor
@@ -28,6 +42,8 @@ Tasks are...
   |- check_pycodestyle_version - checks our version of pycodestyle
   |- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
   +- check_for_unused_tests - checks to see if any tests are missing from our settings
+
+  tor_version - provides the version of tor we're testing against
 """
 
 import re
@@ -77,6 +93,9 @@ Target = stem.util.enum.UppercaseEnum(
   'RUN_PTRACE',
   'RUN_ALL',
 )
+
+TOR_VERSION = None
+RAN_TESTS = []
 
 # We make some paths relative to stem's base directory (the one above us)
 # rather than the process' cwd. This doesn't end with a slash.
@@ -203,12 +222,103 @@ def get_new_capabilities():
   return NEW_CAPABILITIES
 
 
+def only_run_once(func):
+  """
+  Skips the test if it has ran before. If it hasn't then flags it as being ran.
+  This is useful to prevent lengthy tests that are independent of integ targets
+  from being run repeatedly with ``RUN_ALL``.
+  """
+
+  def wrapped(self, *args, **kwargs):
+    if self.id() not in RAN_TESTS:
+      RAN_TESTS.append(self.id())
+      return func(self, *args, **kwargs)
+    else:
+      self.skipTest('(already ran)')
+
+  return wrapped
+
+
+def require(condition, message):
+  """
+  Skips teh test unless the conditional evaluates to 'true'.
+  """
+
+  def decorator(func):
+    def wrapped(self, *args, **kwargs):
+      if condition():
+        return func(self, *args, **kwargs)
+      else:
+        self.skipTest('(%s)' % message)
+
+    return wrapped
+
+  return decorator
+
+
+require_cryptography = require(stem.prereq.is_crypto_available, 'requires cryptography')
+require_pynacl = require(stem.prereq._is_pynacl_available, 'requires pynacl module')
+require_proc = require(stem.util.proc.is_available, 'proc unavailable')
+
+
+def require_controller(func):
+  """
+  Skips the test unless tor provides an endpoint for controllers to attach to.
+  """
+
+  def wrapped(self, *args, **kwargs):
+    if test.runner.get_runner().is_accessible():
+      return func(self, *args, **kwargs)
+    else:
+      self.skipTest('(no connection)')
+
+  return wrapped
+
+
+def require_command(cmd):
+  """
+  Skips the test unless a command is available on the path.
+  """
+
+  return require(lambda: stem.util.system.is_available(cmd), '%s unavailable' % cmd)
+
+
+def require_version(req_version):
+  """
+  Skips the test unless we meet the required version.
+
+  :param stem.version.Version req_version: required tor version for the test
+  """
+
+  return require(lambda: tor_version() >= req_version, 'requires %s' % req_version)
+
+
+def require_online(func):
+  """
+  Skips the test if we weren't started with the ONLINE target, which indicates
+  that tests requiring network connectivity should run.
+  """
+
+  def wrapped(self, *args, **kwargs):
+    if Target.ONLINE in test.runner.get_runner().attribute_targets:
+      return func(self, *args, **kwargs)
+    else:
+      self.skipTest('(requires online target)')
+
+  return wrapped
+
+
 def check_stem_version():
   return stem.__version__
 
 
 def check_tor_version(tor_path):
-  return str(stem.version.get_system_tor_version(tor_path)).split()[0]
+  global TOR_VERSION
+
+  if TOR_VERSION is None:
+    TOR_VERSION = stem.version.get_system_tor_version(tor_path)
+
+  return str(TOR_VERSION).split()[0]
 
 
 def check_python_version():
@@ -354,6 +464,23 @@ def run_tasks(category, *tasks):
   println()
 
 
+def tor_version():
+  """
+  Provides the version of tor we're testing against.
+
+  :returns: :class:`~stem.version.Version` of tor invoked by our integration
+    tests
+
+  :raise: **ValueError** if :func:`~test.util.check_tor_version` isn't called
+    first
+  """
+
+  if TOR_VERSION is None:
+    raise ValueError('BUG: check_tor_version() must be called before tor_version()')
+
+  return TOR_VERSION
+
+
 class Task(object):
   """
   Task we can process while running our tests. The runner can return either a
@@ -408,3 +535,8 @@ class Task(object):
 
       println(output_msg, ERROR)
       self.error = exc
+
+
+import test.runner  # needs to be imported at the end to avoid a circular dependency
+
+require_ptrace = require(test.runner.get_runner().is_ptraceable, 'DisableDebuggerAttachment is set')

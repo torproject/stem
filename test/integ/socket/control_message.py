@@ -10,7 +10,7 @@ import stem.version
 import test.mocking
 import test.runner
 
-from test.runner import (
+from test.util import (
   require_controller,
   require_version,
 )

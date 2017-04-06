@@ -10,10 +10,10 @@ import unittest
 import stem.descriptor.certificate
 import stem.util.str_tools
 import stem.prereq
-import test.runner
 
 from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, CertType, ExtensionType, ExtensionFlag, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
 from test.unit.descriptor import get_resource
+from test.util import require_pynacl
 
 ED25519_CERT = """
 AQQABhtZAaW2GoBED1IjY3A6f6GNqBEl5A83fD2Za9upGke51JGqAQAgBABnprVR
@@ -147,30 +147,24 @@ class TestEd25519Certificate(unittest.TestCase):
 
     self.assert_raises(certificate(extension_data = [b'\x00\x02\x04\x07\11\12']), "Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was 2.")
 
+  @require_pynacl
   def test_validation_with_descriptor_key(self):
     """
     Validate a descriptor signature using the ed25519 master key within the
     descriptor.
     """
 
-    if not stem.prereq._is_pynacl_available():
-      test.runner.skip(self, '(requires pynacl module)')
-      return
-
     with open(get_resource('server_descriptor_with_ed25519'), 'rb') as descriptor_file:
       desc = next(stem.descriptor.parse_file(descriptor_file, validate = False))
 
     desc.certificate.validate(desc)
 
+  @require_pynacl
   def test_validation_with_embedded_key(self):
     """
     Validate a descriptor signature using the signing key within the ed25519
     certificate.
     """
-
-    if not stem.prereq._is_pynacl_available():
-      test.runner.skip(self, '(requires pynacl module)')
-      return
 
     with open(get_resource('server_descriptor_with_ed25519'), 'rb') as descriptor_file:
       desc = next(stem.descriptor.parse_file(descriptor_file, validate = False))
@@ -178,14 +172,11 @@ class TestEd25519Certificate(unittest.TestCase):
     desc.ed25519_master_key = None
     desc.certificate.validate(desc)
 
+  @require_pynacl
   def test_validation_with_invalid_descriptor(self):
     """
     Validate a descriptor without a valid signature.
     """
-
-    if not stem.prereq._is_pynacl_available():
-      test.runner.skip(self, '(requires pynacl module)')
-      return
 
     with open(get_resource('server_descriptor_with_ed25519'), 'rb') as descriptor_file:
       desc = next(stem.descriptor.parse_file(descriptor_file, validate = False))

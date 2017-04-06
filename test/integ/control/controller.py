@@ -27,13 +27,13 @@ from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
 
-from test.util import register_new_capability
-
-from test.runner import (
+from test.util import (
+  register_new_capability,
+  tor_version,
+  only_run_once,
   require_controller,
   require_version,
   require_online,
-  only_run_once,
 )
 
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
@@ -273,7 +273,7 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       version = controller.get_version()
       self.assertTrue(isinstance(version, stem.version.Version))
-      self.assertEqual(version, runner.get_tor_version())
+      self.assertEqual(version, tor_version())
 
   @require_controller
   def test_get_exit_policy(self):
@@ -344,13 +344,12 @@ class TestController(unittest.TestCase):
 
       # Doing a sanity test on the ProtocolInfoResponse instance returned.
       tor_options = runner.get_options()
-      tor_version = runner.get_tor_version()
       auth_methods = []
 
       if test.runner.Torrc.COOKIE in tor_options:
         auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
 
-        if tor_version >= stem.version.Requirement.AUTH_SAFECOOKIE:
+        if tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
           auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
 
       if test.runner.Torrc.PASSWORD in tor_options:
@@ -1126,7 +1125,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     if not os.path.exists(runner.get_test_dir('cached-descriptors')):
-      test.runner.skip(self, '(no cached microdescriptors)')
+      self.skipTest('(no cached microdescriptors)')
       return
 
     with runner.get_tor_controller() as controller:
@@ -1147,8 +1146,8 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if runner.get_tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
-      test.runner.skip(self, '(requires server descriptors)')
+    if tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
+      self.skipTest('(requires server descriptors)')
       return
 
     with runner.get_tor_controller() as controller:
@@ -1177,8 +1176,8 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if runner.get_tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
-      test.runner.skip(self, '(requires server descriptors)')
+    if tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
+      self.skipTest('(requires server descriptors)')
       return
 
     with runner.get_tor_controller() as controller:
@@ -1358,7 +1357,7 @@ class TestController(unittest.TestCase):
 
       if TEST_ROUTER_STATUS_ENTRY is None:
         # this is only likely to occure if we can't get descriptors
-        test.runner.skip(self, '(no named relays)')
+        self.skipTest('(no named relays)')
         return
 
     return TEST_ROUTER_STATUS_ENTRY

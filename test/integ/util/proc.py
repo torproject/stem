@@ -10,44 +10,38 @@ import test.runner
 
 from stem.util import proc
 
+from test.util import (
+  require_proc,
+  require_ptrace,
+)
+
 
 class TestProc(unittest.TestCase):
+  @require_proc
+  @require_ptrace
   def test_cwd(self):
     """
     Checks that stem.util.proc.cwd matches our tor instance's cwd.
     """
 
-    if not proc.is_available():
-      test.runner.skip(self, '(proc unavailable)')
-      return
-    elif not test.runner.get_runner().is_ptraceable():
-      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
-      return
-
     runner = test.runner.get_runner()
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
     self.assertEqual(tor_cwd, proc.cwd(runner_pid))
 
+  @require_proc
   def test_uid(self):
     """
     Checks that stem.util.proc.uid matches our tor instance's uid.
     """
 
-    if not proc.is_available():
-      test.runner.skip(self, '(proc unavailable)')
-      return
-
     tor_pid = test.runner.get_runner().get_pid()
     self.assertEqual(os.geteuid(), proc.uid(tor_pid))
 
+  @require_proc
   def test_memory_usage(self):
     """
     Checks that stem.util.proc.memory_usage looks somewhat reasonable.
     """
-
-    if not proc.is_available():
-      test.runner.skip(self, '(proc unavailable)')
-      return
 
     tor_pid = test.runner.get_runner().get_pid()
     res_size, vir_size = proc.memory_usage(tor_pid)
@@ -56,14 +50,11 @@ class TestProc(unittest.TestCase):
     self.assertTrue(res_size > 1024)
     self.assertTrue(vir_size > 1024)
 
+  @require_proc
   def test_stats(self):
     """
     Checks that stem.util.proc.stats looks somewhat reasonable.
     """
-
-    if not proc.is_available():
-      test.runner.skip(self, '(proc unavailable)')
-      return
 
     tor_cmd = test.runner.get_runner().get_tor_command(True)
     tor_pid = test.runner.get_runner().get_pid()
@@ -74,6 +65,8 @@ class TestProc(unittest.TestCase):
     self.assertTrue(float(stime) >= 0)
     self.assertTrue(float(start_time) > proc.system_start_time())
 
+  @require_proc
+  @require_ptrace
   def test_connections(self):
     """
     Checks for our control port in the stem.util.proc.connections output if
@@ -82,17 +75,11 @@ class TestProc(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if not proc.is_available():
-      test.runner.skip(self, '(proc unavailable)')
-      return
-    elif test.runner.Torrc.PORT not in runner.get_options():
-      test.runner.skip(self, '(no control port)')
-      return
-    elif not test.runner.get_runner().is_ptraceable():
-      test.runner.skip(self, '(DisableDebuggerAttachment is set)')
+    if test.runner.Torrc.PORT not in runner.get_options():
+      self.skiTestp('(no control port)')
       return
     elif not os.access('/proc/net/tcp', os.R_OK) or not os.access('/proc/net/udp', os.R_OK):
-      test.runner.skip(self, '(proc lacks read permissions)')
+      self.skipTest('(proc lacks read permissions)')
       return
 
     # making a controller connection so that we have something to query for

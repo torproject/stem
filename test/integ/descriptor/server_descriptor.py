@@ -9,8 +9,10 @@ import stem.descriptor
 
 import test.runner
 
-from test.runner import only_run_once
-from test.util import register_new_capability
+from test.util import (
+  register_new_capability,
+  only_run_once,
+)
 
 
 class TestServerDescriptor(unittest.TestCase):
@@ -25,7 +27,7 @@ class TestServerDescriptor(unittest.TestCase):
     descriptor_path = test.runner.get_runner().get_test_dir('cached-descriptors')
 
     if not os.path.exists(descriptor_path):
-      test.runner.skip(self, '(no cached descriptors)')
+      self.skipTest('(no cached descriptors)')
       return
 
     with open(descriptor_path, 'rb') as descriptor_file:

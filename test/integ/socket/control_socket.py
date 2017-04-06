@@ -16,7 +16,7 @@ import stem.control
 import stem.socket
 import test.runner
 
-from test.runner import require_controller
+from test.util import require_controller, tor_version
 
 
 class TestControlSocket(unittest.TestCase):
@@ -61,7 +61,6 @@ class TestControlSocket(unittest.TestCase):
     """
 
     runner = test.runner.get_runner()
-    tor_version = runner.get_tor_version()
 
     with runner.get_tor_socket() as control_socket:
       for _ in range(100):
@@ -69,7 +68,7 @@ class TestControlSocket(unittest.TestCase):
 
       for _ in range(100):
         response = control_socket.recv()
-        self.assertTrue(str(response).startswith('version=%s' % tor_version))
+        self.assertTrue(str(response).startswith('version=%s' % tor_version()))
         self.assertTrue(str(response).endswith('\nOK'))
 
   @require_controller
