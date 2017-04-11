@@ -129,6 +129,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(False, desc.allow_tunneled_dir_requests)
     self.assertEqual(False, desc.extra_info_cache)
     self.assertEqual('D225B728768D7EA4B5587C13A7A9D22EBBEE6E66', desc.extra_info_digest)
+    self.assertEqual(None, desc.extra_info_sha256_digest)
     self.assertEqual(['2'], desc.hidden_service_dir)
     self.assertEqual(expected_family, desc.family)
     self.assertEqual(153600, desc.average_bandwidth)
@@ -187,6 +188,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(False, desc.allow_tunneled_dir_requests)
     self.assertEqual(False, desc.extra_info_cache)
     self.assertEqual(None, desc.extra_info_digest)
+    self.assertEqual(None, desc.extra_info_sha256_digest)
     self.assertEqual(None, desc.hidden_service_dir)
     self.assertEqual(set(), desc.family)
     self.assertEqual(102400, desc.average_bandwidth)
@@ -234,6 +236,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(False, desc.allow_tunneled_dir_requests)
     self.assertEqual(False, desc.extra_info_cache)
     self.assertEqual('56403D838DE152421CD401B8E57DAD4483A3D56B', desc.extra_info_digest)
+    self.assertEqual(None, desc.extra_info_sha256_digest)
     self.assertEqual(['2'], desc.hidden_service_dir)
     self.assertEqual(set(), desc.family)
     self.assertEqual(102400, desc.average_bandwidth)
@@ -303,6 +306,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(False, desc.allow_tunneled_dir_requests)
     self.assertEqual(False, desc.extra_info_cache)
     self.assertEqual('44E9B679AF0B4EB09296985BAF4066AE9CA5BB93', desc.extra_info_digest)
+    self.assertEqual('r+roMxhsjd1GPpn5knQoBvtE9Rhsv8zQHCqiYL6u2CA', desc.extra_info_sha256_digest)
     self.assertEqual(['2'], desc.hidden_service_dir)
     self.assertEqual(family, desc.family)
     self.assertEqual(149715200, desc.average_bandwidth)
@@ -413,6 +417,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(False, desc.allow_tunneled_dir_requests)
     self.assertEqual(True, desc.extra_info_cache)
     self.assertEqual('BB1F13AA431421BEA29B840A2E33BB1C31C2990B', desc.extra_info_digest)
+    self.assertEqual(None, desc.extra_info_sha256_digest)
     self.assertEqual(None, desc.hidden_service_dir)
     self.assertEqual(set(), desc.family)
     self.assertEqual(3220480, desc.average_bandwidth)
@@ -686,6 +691,15 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     expected = stem.exit_policy.MicroExitPolicy('accept 22-23,53,80,110')
     desc = get_relay_server_descriptor({'ipv6-policy': 'accept 22-23,53,80,110'})
     self.assertEqual(expected, desc.exit_policy_v6)
+
+  def test_extrainfo_sha256_digest(self):
+    """
+    Extrainfo descriptor line with both a hex and base64 encoded sha256 digest.
+    """
+
+    desc = get_relay_server_descriptor({'extra-info-digest': '03272BF7C68484AFBDA508DAE3734D809E4A5BC4 DWMz1AEdqPlcroubwx3lPEoGbT+oX7S2BH653sPIqfI'})
+    self.assertEqual('03272BF7C68484AFBDA508DAE3734D809E4A5BC4', desc.extra_info_digest)
+    self.assertEqual('DWMz1AEdqPlcroubwx3lPEoGbT+oX7S2BH653sPIqfI', desc.extra_info_sha256_digest)
 
   def test_protocols(self):
     """

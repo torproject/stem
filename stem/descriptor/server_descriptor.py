@@ -279,12 +279,13 @@ def _parse_fingerprint_line(descriptor, entries):
 
 def _parse_extrainfo_digest_line(descriptor, entries):
   value = _value('extra-info-digest', entries)
-  value = value.split(' ')[0]  # lines have additional content from propsal 228, waiting for it to be documented: #16227
+  digest_comp = value.split(' ')
 
-  if not stem.util.tor_tools.is_hex_digits(value, 40):
-    raise ValueError('extra-info-digest should be 40 hex characters: %s' % value)
+  if not stem.util.tor_tools.is_hex_digits(digest_comp[0], 40):
+    raise ValueError('extra-info-digest should be 40 hex characters: %s' % digest_comp[0])
 
-  descriptor.extra_info_digest = value
+  descriptor.extra_info_digest = digest_comp[0]
+  descriptor.extra_info_sha256_digest = digest_comp[1] if len(digest_comp) >= 2 else None
 
 
 def _parse_hibernating_line(descriptor, entries):
@@ -457,6 +458,7 @@ class ServerDescriptor(Descriptor):
     requests are accepted
   :var bool extra_info_cache: **\*** flag if a mirror for extra-info documents
   :var str extra_info_digest: upper-case hex encoded digest of our extra-info document
+  :var str extra_info_sha256_digest: base64 encoded sha256 digest of our extra-info document
   :var bool eventdns: flag for evdns backend (**deprecated**, always unset)
   :var str ntor_onion_key: base64 key used to encrypt EXTEND in the ntor protocol
   :var list or_addresses: **\*** alternative for our address/or_port
@@ -481,7 +483,7 @@ class ServerDescriptor(Descriptor):
      Added the allow_tunneled_dir_requests attribute.
 
   .. versionchanged:: 1.6.0
-     Added the protocols attribute.
+     Added the extra_info_sha256_digest and protocols attributes.
   """
 
   ATTRIBUTES = {
@@ -515,6 +517,7 @@ class ServerDescriptor(Descriptor):
     'protocols': ({}, _parse_proto_line),
     'extra_info_cache': (False, _parse_caches_extra_info_line),
     'extra_info_digest': (None, _parse_extrainfo_digest_line),
+    'extra_info_sha256_digest': (None, _parse_extrainfo_digest_line),
     'hidden_service_dir': (None, _parse_hidden_service_dir_line),
     'eventdns': (None, _parse_eventdns_line),
     'ntor_onion_key': (None, _parse_ntor_onion_key_line),
