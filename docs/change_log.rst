@@ -65,6 +65,10 @@ The following are only available within Stem's `git repository
   * Added timeout argument to :func:`~stem.util.system.call`
   * Added :class:`~stem.util.test_tools.TimedTestRunner` and :func:`~stem.util.test_tools.test_runtimes`
 
+ * **Interpreter**
+
+  * Added a '--run [command or path]' argument to invoke specific commands (:trac:`21541`)
+
 .. _version_1.5:
 
 Version 1.5 (November 20th, 2016)

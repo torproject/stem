@@ -7,6 +7,7 @@ Commandline argument parsing for our interpreter prompt.
 
 import collections
 import getopt
+import os
 
 import stem.interpreter
 import stem.util.connection
@@ -18,12 +19,14 @@ DEFAULT_ARGS = {
   'control_socket': '/var/run/tor/control',
   'user_provided_socket': False,
   'tor_path': 'tor',
+  'run_cmd': None,
+  'run_path': None,
   'disable_color': False,
   'print_help': False,
 }
 
 OPT = 'i:s:h'
-OPT_EXPANDED = ['interface=', 'socket=', 'tor=', 'no-color', 'help']
+OPT_EXPANDED = ['interface=', 'socket=', 'tor=', 'run=', 'no-color', 'help']
 
 
 def parse(argv):
@@ -71,6 +74,11 @@ def parse(argv):
       args['user_provided_socket'] = True
     elif opt in ('--tor'):
       args['tor_path'] = arg
+    elif opt in ('--run'):
+      if os.path.exists(arg):
+        args['run_path'] = arg
+      else:
+        args['run_cmd'] = arg
     elif opt == '--no-color':
       args['disable_color'] = True
     elif opt in ('-h', '--help'):

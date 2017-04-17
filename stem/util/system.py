@@ -1072,7 +1072,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = Non
   if isinstance(command, str):
     command_list = command.split(' ')
   else:
-    command_list = command
+    command_list = map(str, command)
 
   exit_status, runtime, stdout, stderr = None, None, None, None
   start_time = time.time()

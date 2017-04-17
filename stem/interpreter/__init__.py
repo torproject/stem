@@ -60,7 +60,7 @@ def main():
     print(stem.interpreter.arguments.get_help())
     sys.exit()
 
-  if args.disable_color:
+  if args.disable_color or not sys.stdout.isatty():
     global PROMPT
     stem.util.term.DISABLE_COLOR_SUPPORT = True
     PROMPT = '>>> '
@@ -76,7 +76,8 @@ def main():
         print(format(msg('msg.tor_unavailable'), *ERROR_OUTPUT))
         sys.exit(1)
       else:
-        print(format(msg('msg.starting_tor'), *HEADER_OUTPUT))
+        if not args.run_cmd and not args.run_path:
+          print(format(msg('msg.starting_tor'), *HEADER_OUTPUT))
 
         control_port = '9051' if args.control_port == 'default' else str(args.control_port)
 
@@ -124,25 +125,28 @@ def main():
 
     interpreter = stem.interpreter.commands.ControlInterpreter(controller)
 
-    for line in msg('msg.startup_banner').splitlines():
-      line_format = HEADER_BOLD_OUTPUT if line.startswith('  ') else HEADER_OUTPUT
-      print(format(line, *line_format))
-
-    print('')
-
-    while True:
+    if args.run_cmd:
+      interpreter.run_command(args.run_cmd, print_response = True)
+    elif args.run_path:
       try:
-        prompt = '... ' if interpreter.is_multiline_context else PROMPT
+        for line in open(args.run_path).readlines():
+          interpreter.run_command(line.strip(), print_response = True)
+      except IOError as exc:
+        print(format(msg('msg.unable_to_read_file', path = args.run_path, error = exc), *ERROR_OUTPUT))
+        sys.exit(1)
 
-        if stem.prereq.is_python_3():
-          user_input = input(prompt)
-        else:
-          user_input = raw_input(prompt)
+    else:
+      for line in msg('msg.startup_banner').splitlines():
+        line_format = HEADER_BOLD_OUTPUT if line.startswith('  ') else HEADER_OUTPUT
+        print(format(line, *line_format))
 
-        response = interpreter.run_command(user_input)
+      print('')
 
-        if response is not None:
-          print(response)
-      except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
-        print('')  # move cursor to the following line
-        break
+      while True:
+        try:
+          prompt = '... ' if interpreter.is_multiline_context else PROMPT
+          user_input = input(prompt) if stem.prereq.is_python_3() else raw_input(prompt)
+          interpreter.run_command(user_input, print_response = True)
+        except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
+          print('')  # move cursor to the following line
+          break

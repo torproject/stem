@@ -51,6 +51,12 @@ class TestArgumentParsing(unittest.TestCase):
     for invalid_input in invalid_inputs:
       self.assertRaises(ValueError, parse, ['--interface', invalid_input])
 
+  def test_run_with_command(self):
+    self.assertEqual('GETINFO version', parse(['--run', 'GETINFO version']).run_cmd)
+
+  def test_run_with_path(self):
+    self.assertEqual(__file__, parse(['--run', __file__]).run_path)
+
   def test_get_help(self):
     help_text = get_help()
     self.assertTrue('Interactive interpreter for Tor.' in help_text)

@@ -1,3 +1,7 @@
+"""
+Tests installation of our library.
+"""
+
 import glob
 import os
 import shutil

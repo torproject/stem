@@ -294,13 +294,14 @@ class ControlInterpreter(code.InteractiveConsole):
     return format(response, *STANDARD_OUTPUT)
 
   @uses_settings
-  def run_command(self, command, config):
+  def run_command(self, command, config, print_response = False):
     """
     Runs the given command. Requests starting with a '/' are special commands
     to the interpreter, and anything else is sent to the control port.
 
     :param stem.control.Controller controller: tor control connection
     :param str command: command to be processed
+    :param bool print_response: prints the response to stdout if true
 
     :returns: **list** out output lines, each line being a list of
       (msg, format) tuples
@@ -373,5 +374,8 @@ class ControlInterpreter(code.InteractiveConsole):
               output = format(str(exc), *ERROR_OUTPUT)
 
     output += '\n'  # give ourselves an extra line before the next prompt
+
+    if print_response and output is not None:
+      print(output)
 
     return output
