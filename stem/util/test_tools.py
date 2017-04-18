@@ -232,6 +232,10 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
   .. versionchanged:: 1.4.0
      Added the prefer_single_quotes option.
 
+  .. versionchanged:: 1.6.0
+     Changed 'pycodestyle.ignore' code snippets to only need to match against
+     the prefix.
+
   :param list paths: paths to search for stylistic issues
   :param bool check_newlines: check that we have standard newlines (\\n), not
     windows (\\r\\n) nor classic mac (\\r)
@@ -260,7 +264,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
 
   def is_ignored(path, rule, code):
     for ignored_path, ignored_rule, ignored_code in ignore_for_file:
-      if path.endswith(ignored_path) and ignored_rule == rule and ignored_code == code.strip():
+      if path.endswith(ignored_path) and ignored_rule == rule and code.strip().startswith(ignored_code):
         return True
 
     return False
