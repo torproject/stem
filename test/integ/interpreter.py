@@ -11,15 +11,37 @@ import stem.util.system
 import test.runner
 import test.util
 
+from test.util import require_controller
+
 PROMPT_CMD = os.path.join(test.util.STEM_BASE, 'tor-prompt')
 
 
-class TestInterpreter(unittest.TestCase):
-  def test_running_command(self):
-    expected = ['250-config-file=%s' % test.runner.get_runner().get_torrc_path(), '250 OK']
-    self.assertEqual(expected, stem.util.system.call([PROMPT_CMD, '--interface', test.runner.CONTROL_PORT, '--run', 'GETINFO config-file']))
+def _run_prompt(*args):
+  if test.runner.Torrc.SOCKET not in test.runner.get_runner().get_options():
+    return stem.util.system.call([PROMPT_CMD, '--interface', test.runner.CONTROL_PORT] + list(args))
+  else:
+    return stem.util.system.call([PROMPT_CMD, '--socket', test.runner.CONTROL_SOCKET_PATH] + list(args))
 
+
+class TestInterpreter(unittest.TestCase):
+  @require_controller
+  def test_running_command(self):
+    # We'd need to provide the password to stdin. Fine test to add later but
+    # not gonna hassle for now.
+
+    if test.runner.Torrc.PASSWORD in test.runner.get_runner().get_options():
+      self.skipTest('password auth unsupported')
+      return
+
+    expected = ['250-config-file=%s' % test.runner.get_runner().get_torrc_path(), '250 OK']
+    self.assertEqual(expected, _run_prompt('--run', 'GETINFO config-file'))
+
+  @require_controller
   def test_running_file(self):
+    if test.runner.Torrc.PASSWORD in test.runner.get_runner().get_options():
+      self.skipTest('password auth unsupported')
+      return
+
     expected = [
       '250-config-file=%s' % test.runner.get_runner().get_torrc_path(),
       '250 OK',
@@ -32,4 +54,4 @@ class TestInterpreter(unittest.TestCase):
       tmp.write('GETINFO config-file\nGETINFO version')
       tmp.flush()
 
-      self.assertEqual(expected, stem.util.system.call([PROMPT_CMD, '--interface', test.runner.CONTROL_PORT, '--run', tmp.name]))
+      self.assertEqual(expected, _run_prompt('--run', tmp.name))
