@@ -126,7 +126,28 @@ def main():
     interpreter = stem.interpreter.commands.ControlInterpreter(controller)
 
     if args.run_cmd:
-      interpreter.run_command(args.run_cmd, print_response = True)
+      if args.run_cmd.upper().startswith('SETEVENTS '):
+        # TODO: we can use a lambda here when dropping python 2.x support, but
+        # until then print's status as a keyword prevents it from being used in
+        # lambdas
+
+        def handle_event(event_message):
+          print(format(str(event_message), *STANDARD_OUTPUT))
+
+        controller._handle_event = handle_event
+
+        if sys.stdout.isatty():
+          events = args.run_cmd.upper().split(' ', 1)[1]
+          print(format('Listening to %s events. Press any key to quit.\n' % events, *HEADER_BOLD_OUTPUT))
+
+        controller.msg(args.run_cmd)
+
+        try:
+          raw_input()
+        except (KeyboardInterrupt, stem.SocketClosed) as exc:
+          pass
+      else:
+        interpreter.run_command(args.run_cmd, print_response = True)
     elif args.run_path:
       try:
         for line in open(args.run_path).readlines():
