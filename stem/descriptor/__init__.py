@@ -17,6 +17,22 @@ Package for parsing and processing descriptor data.
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
 
+.. data:: DescriptorType (enum)
+
+  Common descriptor types.
+
+  .. versionadded:: 1.6.0
+
+  =================== ===========
+  DescriptorType      Description
+  =================== ===========
+  **SERVER**          :class:`~stem.descriptor.server_descriptor.RelayDescriptor`
+  **EXTRA**           :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
+  **MICRO**           :class:`~stem.descriptor.microdescriptor.Microdescriptor`
+  **CONSENSUS**       :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`
+  **HIDDEN_SERVICE**  :class:`~stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor`
+  =================== ===========
+
 .. data:: DocumentHandler (enum)
 
   Ways in which we can parse a
@@ -84,6 +100,14 @@ DocumentHandler = stem.util.enum.UppercaseEnum(
   'ENTRIES',
   'DOCUMENT',
   'BARE_DOCUMENT',
+)
+
+DescriptorType = stem.util.enum.Enum(
+  ('SERVER', 'server-descriptor 1.0'),
+  ('EXTRAINFO', 'extra-info 1.0'),
+  ('MICRO', 'microdescriptor 1.0'),
+  ('CONSENSUS', 'network-status-consensus-3 1.0'),
+  ('HIDDEN_SERVICE', 'hidden-service-descriptor 1.0'),
 )
 
 
