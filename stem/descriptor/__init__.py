@@ -9,6 +9,7 @@ Package for parsing and processing descriptor data.
 ::
 
   parse_file - Parses the descriptors in a file.
+  create - Creates a new custom descriptor.
 
   Descriptor - Common parent for all descriptor file types.
     |- get_path - location of the descriptor on disk if it came from a file
@@ -350,6 +351,41 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
       yield desc
   else:
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
+
+
+def create(desc_type, attr = None, exclude = (), validate = False, sign = False):
+  """
+  Creates a descriptor with the given attributes.
+
+  .. versionadded:: 1.6.0
+
+  :param DescriptorType desc_type: type of descriptor to be created
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor, this
+    results in an invalid descriptor
+  :param bool validate: checks the validity of the descriptor's content if
+    **True**, skips these checks otherwise
+  :param bool sign_content: includes cryptographic digest if True
+
+  :returns: :class:`~stem.descriptor.Descriptor` subclass
+
+  :raises:
+    * **ValueError** if the contents is malformed and validate is True
+    * **ImportError** if cryptography is unavailable and sign is True
+  """
+
+  if desc_type == DescriptorType.SERVER:
+    pass
+  elif desc_type == DescriptorType.EXTRAINFO:
+    pass
+  elif desc_type == DescriptorType.MICRO:
+    pass
+  elif desc_type == DescriptorType.CONSENSUS:
+    pass
+  elif desc_type == DescriptorType.HIDDEN_SERVICE:
+    pass
+  else:
+    raise TypeError("'%s' isn't a valid descriptor type we can create" % desc_type)
 
 
 def _value(line, entries):
