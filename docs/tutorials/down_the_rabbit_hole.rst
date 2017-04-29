@@ -113,3 +113,22 @@ receive events of those types (for instance, **events('BW', 'DEBUG')**).
 To stop receiving events run **SETEVENTS** without any event types, and to
 clear the backlog of events we've received run **/events clear**.
 
+.. _running-individual-commands:
+
+Running individual commands
+---------------------------
+
+With its **--run** argument tor-prompt can also be used to run individual
+commands...
+
+.. image:: /_static/prompt/run.png
+
+... listen to a space separated list of events with **--run 'SETEVENTS
+[event_types]'**...
+
+.. image:: /_static/prompt/run_events.png
+
+... and pipe its output to other locations...
+
+.. image:: /_static/prompt/run_events_pipe.png
+
