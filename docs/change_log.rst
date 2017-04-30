@@ -67,7 +67,7 @@ The following are only available within Stem's `git repository
 
  * **Interpreter**
 
-  * Added a '--run [command or path]' argument to invoke specific commands (:trac:`21541`)
+  * Added a `'--run [command or path]' argument <tutorials/down_the_rabbit_hole.html#running-individual-commands>`_ to invoke specific commands (:trac:`21541`)
 
 .. _version_1.5:
 
